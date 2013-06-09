@@ -1,6 +1,7 @@
 # Tokens and tokenization.
 
 
+import ast
 import re
 
 
@@ -30,6 +31,9 @@ class Token(object):
   # Structured identifier: '$foo', '@bar:bar', ...
   IDENTIFIER = 'identifier'
 
+  # Unexpected input.
+  ERROR = 'error'
+
   # This token does not act as a delimiter in any way.
   NO_DELIMITER = {'is_delimiter': False, 'is_explicit': False}
 
@@ -43,6 +47,14 @@ class Token(object):
     self.type = type
     self.value = value
     self.delimiter = delimiter
+
+  # Is this token of the given type?
+  def has_type(self, type):
+    return self.type == type
+
+  # Returns this token's value.
+  def get_value(self):
+    return self.value
 
   # Just for debugging.
   def __str__(self):
@@ -74,6 +86,10 @@ class Token(object):
   @staticmethod
   def identifier(value, delimiter=NO_DELIMITER):
     return Token(Token.IDENTIFIER, value, delimiter)
+
+  @staticmethod
+  def error(value, delimiter=NO_DELIMITER):
+    return Token(Token.ERROR, value, delimiter)
 
 
 # Keeps track of state while parsing input.
@@ -141,7 +157,7 @@ class Tokenizer(object):
     self.next_delimiter = Token.NO_DELIMITER
     if self.is_alpha(c):
       result = self.scan_word_or_tag(delim)
-    elif c == '$':
+    elif (c == '$') or (c == '@'):
       result = self.scan_identifier(delim)
     elif c == '.':
       result = self.scan_named_operation(delim)
@@ -176,14 +192,25 @@ class Tokenizer(object):
 
   # Scans over the next structured identifier, semis and all.
   def scan_identifier(self, delim):
-    assert self.current() == '$'
-    start = self.cursor
+    if self.current() == '$':
+      phase = 0
+      direction = 1
+      char = '$'
+    else:
+      assert self.current() == '@'
+      phase = -1
+      direction = -1
+      char = '@'
     self.advance()
+    while self.current() == char:
+      phase += direction
+      self.advance()
+    start = self.cursor
     while self.has_more() and (self.is_alpha(self.current()) or self.current() == ':'):
       self.advance()
     end = self.cursor
-    value = self.slice(start, end)
-    return Token.identifier(value, delim)
+    value = self.slice(start, end).split(':')
+    return Token.identifier(ast.Name(phase, value), delim)
 
   # Scans over the next named operation.
   def scan_named_operation(self, delim):
