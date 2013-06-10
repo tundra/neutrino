@@ -10,6 +10,9 @@ class Literal(object):
   def __init__(self, value=None):
     self.value = value
 
+  def __str__(self):
+    return str(self.value)
+
 
 # A reference to an enclosing binding.
 @plankton.serializable
@@ -68,7 +71,9 @@ class Name(object):
     self.path = path
 
   def __eq__(self, that):
-    return self.phase == that.phase and self.path == that.path
+    return (isinstance(that, Name) and
+            self.phase == that.phase and
+            self.path == that.path)
 
   def __str__(self):
     if self.phase < 0:

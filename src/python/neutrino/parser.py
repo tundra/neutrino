@@ -47,6 +47,7 @@ class Parser(object):
   #   -> <literal>
   def parse_atomic_expression(self):
     if self.at_type(Token.LITERAL):
-      return self.expect_type(Token.LITERAL)
+      value = self.expect_type(Token.LITERAL)
+      return ast.Literal(value)
     else:
       raise self.new_syntax_error()

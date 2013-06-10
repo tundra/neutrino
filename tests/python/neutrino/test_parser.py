@@ -10,7 +10,11 @@ lt = ast.Literal
 class ParserTest(unittest.TestCase):
   
   def check_expression(self, input, expected):
-    print parser.Parser(token.tokenize(input)).parse_expression()
+    found = parser.Parser(token.tokenize(input)).parse_expression()
+    # Convert the asts to strings because that's just infinitely easier to
+    # debug when assertions fail. Of course that requires that ast string
+    # conversion is sane, which it is.
+    self.assertEquals(str(expected), str(found))
 
   def test_expression(self):
     test = self.check_expression
