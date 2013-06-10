@@ -13,6 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import optparse
 import parser
 import plankton
+import re
 import token
 
 
@@ -28,6 +29,7 @@ class Main(object):
   def build_option_parser(self):
     parser = optparse.OptionParser()
     parser.add_option('--expression', action='append', default=[])
+    parser.add_option('--filter', action='store_true', default=False)
     return parser
 
   # Parses the script arguments, storing the values in the appropriate fields.
@@ -35,9 +37,27 @@ class Main(object):
     parser = self.build_option_parser()
     (self.flags, self.args) = parser.parse_args()
 
+  # If the filter option is set, filters input and return True. Otherwise
+  # returns False.
+  def run_filter(self):
+    if not self.flags.filter:
+      return False
+    pattern = re.compile(r'^p64/([a-zA-Z0-9=]+)$')
+    for line in sys.stdin:
+      match = pattern.match(line)
+      if match:
+        code = match.group(1)
+        data = plankton.base64decode(code)
+        print data
+      else:
+        print line
+    return True
+
   # Main entry-point.
   def run(self):
     self.parse_arguments()
+    if self.run_filter():
+      return
     self.run_expressions()
 
   # Processes any --expression arguments.
@@ -45,7 +65,7 @@ class Main(object):
     for expr in self.flags.expression:
       tokens = token.tokenize(expr)
       ast = parser.Parser(tokens).parse_expression()
-      print plankton.base64encode(ast)
+      print "p64/%s" % plankton.base64encode(ast)
 
 
 if __name__ == '__main__':
