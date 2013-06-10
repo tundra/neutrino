@@ -10,6 +10,13 @@ def id(phase, *names):
   name = ast.Name(phase, list(names))
   return ast.Variable(name=name)
 
+def bn(left, op, right):
+  return ast.Invocation([
+    ast.Argument('this', left),
+    ast.Argument('name', ast.Literal(op)),
+    ast.Argument(0, right)
+  ])
+
 
 class ParserTest(unittest.TestCase):
   
@@ -30,6 +37,10 @@ class ParserTest(unittest.TestCase):
     test('(1)', lt(1))
     test('((($foo)))', id(0, 'foo'))
 
+  def test_calls(self):
+    test = self.check_expression
+    test('1 + 2', bn(lt(1), '+', lt(2)))
+    test('1 + 2 + 3', bn(bn(lt(1), '+', lt(2)), '+', lt(3)))
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)

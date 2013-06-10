@@ -58,8 +58,27 @@ class Parser(object):
     self.advance()
 
   # <expression>
-  #   -> <atomic expression>
+  #   -> <operator expression>
   def parse_expression(self):
+    return self.parse_operator_expression()
+
+  # <operator expression>
+  #   -> <call expression> +: <operation>
+  def parse_operator_expression(self):
+    left = self.parse_call_expression()
+    while self.at_type(Token.OPERATION):
+      name = self.expect_type(Token.OPERATION)
+      right = self.parse_call_expression()
+      left = ast.Invocation([
+        ast.Argument('this', left),
+        ast.Argument('name', ast.Literal(name)),
+        ast.Argument(0, right)
+      ])
+    return left
+
+  # <call expression>
+  #   -> <atomic expression>
+  def parse_call_expression(self):
     return self.parse_atomic_expression()
 
   # <atomic expression>
