@@ -14,7 +14,7 @@ class AstTest(unittest.TestCase):
 
   def test_symbol_encoding(self):
     sb = ast.Symbol("x")
-    eb = ast.Binding(sb, ast.Sequence([ast.Variable(sb), ast.Variable(sb)]))
+    eb = ast.Binding(sb, ast.Sequence([ast.Variable(symbol=sb), ast.Variable(symbol=sb)]))
     ea = plankton.deserialize(plankton.serialize(eb))
     self.assertTrue(ea.symbol is ea.value.values[0].symbol)
     self.assertTrue(ea.symbol is ea.value.values[1].symbol)

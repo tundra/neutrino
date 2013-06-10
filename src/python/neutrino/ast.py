@@ -11,16 +11,21 @@ class Literal(object):
     self.value = value
 
   def __str__(self):
-    return str(self.value)
+    return "#<literal: %s>" % self.value
 
 
-# A reference to an enclosing binding.
+# A reference to an enclosing binding. The name is used before the variable
+# has been resolved, the symbol after.
 @plankton.serializable
 class Variable(object):
 
   @plankton.field("symbol")
-  def __init__(self, symbol=None):
+  def __init__(self, name=None, symbol=None):
+    self.name = name
     self.symbol = symbol
+
+  def __str__(self):
+    return str(self.name)
 
 
 # A binding from a symbol to a value.
@@ -80,4 +85,4 @@ class Name(object):
       prefix = "@" * -self.phase
     else:
       prefix = "$" * (self.phase + 1)
-    return "%s%s" % (prefix, ":".join(self.path))
+    return "#<name: %s%s>" % (prefix, ":".join(self.path))

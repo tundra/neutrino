@@ -38,6 +38,25 @@ class Parser(object):
   def at_type(self, type):
     return self.has_more() and self.current().has_type(type)
 
+  # Returns true if we're currently at the given token type with the given
+  # value.
+  def at_token(self, type, value):
+    if not self.has_more():
+      return False
+    current = self.current()
+    return current.has_type(type) and current.get_value() == value
+
+  # Returns true if the next token is the specified punctuation.
+  def at_punctuation(self, value):
+    return self.at_token(Token.PUNCTUATION, value)
+
+  # Skips over the current punctuation which must have the specified value,
+  # if it's not it raises a syntax error.
+  def expect_punctuation(self, value):
+    if not self.at_punctuation(value):
+      raise self.new_syntax_error()
+    self.advance()
+
   # <expression>
   #   -> <atomic expression>
   def parse_expression(self):
@@ -49,5 +68,27 @@ class Parser(object):
     if self.at_type(Token.LITERAL):
       value = self.expect_type(Token.LITERAL)
       return ast.Literal(value)
+    elif self.at_type(Token.IDENTIFIER):
+      name = self.expect_type(Token.IDENTIFIER)
+      return ast.Variable(name=name)
+    elif self.at_punctuation('('):
+      self.expect_punctuation('(')
+      result = self.parse_expression()
+      self.expect_punctuation(')')
+      return result
     else:
       raise self.new_syntax_error()
+
+  # Creates a new syntax error at the current token.
+  def new_syntax_error(self):
+    return SyntaxError(self.current())
+
+
+# Exception signalling a syntax error.
+class SyntaxError(Exception):
+
+  def __init__(self, token):
+    self.token = token
+
+  def __str__(self):
+    return "at %s" % self.token.value

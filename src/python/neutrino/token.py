@@ -270,16 +270,6 @@ class Tokenizer(object):
     return Token.punctuation(value, delim)
 
 
-# Exception signalling a syntax error.
-class SyntaxError(Exception):
-
-  def __init__(self, token):
-    self.token = token
-
-  def __str__(self):
-    return "at %s" % self.token.value
-
-
 # Tokenizes the given input, returning a list of tokens.
 def tokenize(input):
   tokenizer = Tokenizer(input)
