@@ -47,8 +47,8 @@ class Main(object):
       match = pattern.match(line)
       if match:
         code = match.group(1)
-        data = plankton.base64decode(code)
-        print data
+        data = plankton.base64decode(code, {})
+        print plankton.stringify(data)
       else:
         print line
     return True
