@@ -1,6 +1,8 @@
 #include <stdio.h>
+#include "value.h"
 
 int main(int argc, char *argv[]) {
-  printf("!!!\n");
+  value_ptr_t v = new_integer(10);
+  printf("%i\n", get_value_tag(v));
   return 0;
 }
