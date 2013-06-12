@@ -87,16 +87,16 @@ C_TEST_TOC_SRCS=$(BIN)/tests/c/toc.c
 
 
 # Build the table of contents. Yuck.
-$(C_TEST_TOC_SRCS):
+$(C_TEST_TOC_SRCS):	$(C_TEST_LIB_SRCS)
 	@mkdir -p $(shell dirname $@)
 	@echo Generating test table of contents
-	@cat $(C_TEST_LIB_SRCS) \
+	@cat $^ \
 	  | grep "TEST\(.*\)" \
 	  | sed "s/\(TEST(.*)\).*/DECLARE_\1;/g" \
 	  > $@
 	@echo "ENUMERATE_TESTS_HEADER {" \
 	  >> $@
-	@cat $(C_TEST_LIB_SRCS) \
+	@cat $^ \
 	  | grep "TEST\(.*\)" \
 	  | sed "s/\(TEST(.*)\).*/  ENUMERATE_\1;/g" \
 	  >> $@
@@ -136,10 +136,10 @@ tests-c:$(C_TEST_LIB_RUNS)
 
 
 # Build everything.
-main:	$(C_MAIN_EXE) $(C_TEST_MAIN_EXE)
+all-c:	$(C_MAIN_EXE) $(C_TEST_MAIN_EXE)
 
 
-all-c:
+clean:
 	@echo Cleaning $(BIN)
 	@rm -rf $(BIN)
 
