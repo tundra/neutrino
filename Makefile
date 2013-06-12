@@ -1,9 +1,8 @@
 BIN=bin
-MAIN=$(BIN)/ctrino
 
 
-# Build everything.
-main:	$(MAIN)
+# Default target.
+main:	all-c
 
 
 # Run all tests.
@@ -25,50 +24,79 @@ $(PYTHON_TESTS): test-%: %
 		python $<
 
 
-C_SRCS=$(shell find src/c -name "*.c")
-C_HDRS=$(shell find src/c -name "*.h")
-C_OBJS=$(patsubst %.c, bin/%.o, $(C_SRCS))
-
-C_TEST_LIB_SRCS=tests/c/test.c
-C_TEST_LIB_OBJS=$(BIN)/tests/c/test.o
-C_TEST_SRCS=$(shell find tests/c -name "test_*.c")
-C_TEST_HDRS=$(shell find tests/c -name "*.h")
-C_TEST_OBJS=$(patsubst %.c, $(BIN)/%.o, $(C_TEST_SRCS))
-C_TEST_EXES=$(patsubst %.c, $(BIN)/%, $(C_TEST_SRCS))
-C_TEST_GEN_SRC=$(BIN)/tests/c/toc.c
-C_TESTS=$(patsubst %, test-%, $(C_TEST_EXES))
-
-ALL_C_OBJS=$(C_OBJS) $(C_TEST_OBJS) $(C_TEST_LIB_OBJS)
-
-C_DIALECT_FLAGS=-Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function
+# Configuration of the C language dialect to use.
+C_DIALECT_FLAGS=-Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -std=c99 -pedantic
 C_ENV_FLAGS=-Isrc/c -I$(BIN)/tests/c
 CFLAGS=$(C_DIALECT_FLAGS) $(C_ENV_FLAGS) -O0 -g
 
 
-# Build all things C.
-$(MAIN):$(C_OBJS)
-	@mkdir -p $(shell dirname $@)
-	@echo Building $(MAIN)
-	@gcc $(C_OBJS) -o $@
+# The library part of ctrino, that is, everything but main.
+C_MAIN_NAME=main.c
+C_LIB_SRCS=$(shell find src/c -name "*.c" -and -not -name $(C_MAIN_NAME))
+C_LIB_HDRS=$(shell find src/c -name "*.h")
+C_LIB_OBJS=$(patsubst %.c, bin/%.o, $(C_LIB_SRCS))
+C_LIB_DEPS=$(C_LIB_HRDS)
 
 
-# Individual object files.
-$(ALL_C_OBJS): $(BIN)/%.o: %.c $(C_HDRS) $(C_TEST_HDRS) $(C_TEST_GEN_SRC)
+# The C library object files.
+$(C_LIB_OBJS): $(BIN)/%.o: %.c $(C_LIB_DEPS)
 	@mkdir -p $(shell dirname $@)
 	@echo Compiling $<
 	@gcc $(CFLAGS) -c $< -o $@
 
 
-$(C_TEST_GEN_SRC): $(C_TEST_SRCS)
+# The main part of ctrino.
+C_MAIN_SRCS=$(shell find src/c -name "*.c" -and -name $(C_MAIN_NAME))
+C_MAIN_OBJS=$(patsubst %.c, bin/%.o, $(C_MAIN_SRCS))
+C_MAIN_DEPS=$(C_LIB_DEPS)
+C_MAIN_EXE=$(BIN)/ctrino
+
+
+# The main object files.
+$(C_MAIN_OBJS): $(BIN)/%.o: %.c $(C_MAIN_DEPS)
+	@mkdir -p $(shell dirname $@)
+	@echo Compiling $<
+	@gcc $(CFLAGS) -c $< -o $@
+
+
+# Build the ctrino executable.
+$(C_MAIN_EXE): $(C_MAIN_OBJS) $(C_LIB_OBJS)
+	@mkdir -p $(shell dirname $@)
+	@echo Building $@
+	@gcc $(LINKFLAGS) $^ -o $@
+
+
+# The library parts of the tests, that it, everything but the test main.
+C_TEST_MAIN_NAME=test.c
+C_TEST_LIB_SRCS=$(shell find tests/c -name "*.c" -and -not -name $(C_TEST_MAIN_NAME))
+C_TEST_LIB_HDRS=$(shell find tests/c -name "*.h")
+C_TEST_LIB_OBJS=$(patsubst %.c, $(BIN)/%.o, $(C_TEST_LIB_SRCS))
+C_TEST_LIB_RUNS=$(patsubst tests/c/test_%.c, test-%, $(C_TEST_LIB_SRCS))
+C_TEST_LIB_DEPS=$(C_LIB_DEPS) $(C_TEST_LIB_HDRS)
+
+
+# The test object files.
+$(C_TEST_LIB_OBJS): $(BIN)/%.o: %.c $(C_TEST_LIB_DEPS)
+	@mkdir -p $(shell dirname $@)
+	@echo Compiling $<
+	@gcc $(CFLAGS) -c $< -o $@
+
+
+# The generated table of contents
+C_TEST_TOC_SRCS=$(BIN)/tests/c/toc.c
+
+
+# Build the table of contents. Yuck.
+$(C_TEST_TOC_SRCS):
 	@mkdir -p $(shell dirname $@)
 	@echo Generating test table of contents
-	@cat $(C_TEST_SRCS) \
+	@cat $(C_TEST_LIB_SRCS) \
 	  | grep "TEST\(.*\)" \
 	  | sed "s/\(TEST(.*)\).*/DECLARE_\1;/g" \
 	  > $@
 	@echo "ENUMERATE_TESTS_HEADER {" \
 	  >> $@
-	@cat $(C_TEST_SRCS) \
+	@cat $(C_TEST_LIB_SRCS) \
 	  | grep "TEST\(.*\)" \
 	  | sed "s/\(TEST(.*)\).*/  ENUMERATE_\1;/g" \
 	  >> $@
@@ -76,22 +104,42 @@ $(C_TEST_GEN_SRC): $(C_TEST_SRCS)
 	  >> $@
 
 
-$(C_TEST_EXES): %: %.o $(C_TEST_LIB_OBJS)
+# The main test runner.
+C_TEST_MAIN_SRCS=$(shell find tests/c -name "*.c" -and -name $(C_TEST_MAIN_NAME))
+C_TEST_MAIN_OBJS=$(patsubst %.c, $(BIN)/%.o, $(C_TEST_MAIN_SRCS))
+C_TEST_MAIN_DEPS=$(C_TEST_LIB_DEPS) $(C_TEST_TOC_SRCS)
+C_TEST_MAIN_EXE=$(BIN)/tests/c/main
+
+
+# The main object files.
+$(C_TEST_MAIN_OBJS): $(BIN)/%.o: %.c $(C_TEST_MAIN_DEPS)
+	@mkdir -p $(shell dirname $@)
+	@echo Compiling $<
+	@gcc $(CFLAGS) -c $< -o $@
+
+
+# Build all the tests into one executable.
+$(C_TEST_MAIN_EXE): $(C_TEST_MAIN_OBJS) $(C_TEST_LIB_OBJS) $(C_LIB_OBJS)
 	@mkdir -p $(shell dirname $@)
 	@echo Building $@
-	@gcc $(C_TEST_LIB_OBJS) $< -o $@
-
-
-tests-c:$(C_TESTS)
+	@gcc $(LINKFLAGS) $^ -o $@
 
 
 # Individual C tests.
-$(C_TESTS):test-%: %
-	@echo Running $<
-	@./$<
+$(C_TEST_LIB_RUNS):test-%: tests/c/test_%.c $(C_TEST_MAIN_EXE)
+	@echo Running test_$*
+	@./$(C_TEST_MAIN_EXE) $*
 
 
-clean:
+# Shorthand for running all the C tests.
+tests-c:$(C_TEST_LIB_RUNS)
+
+
+# Build everything.
+main:	$(C_MAIN_EXE) $(C_TEST_MAIN_EXE)
+
+
+all-c:
 	@echo Cleaning $(BIN)
 	@rm -rf $(BIN)
 
