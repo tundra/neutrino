@@ -18,6 +18,16 @@ value_t new_heap_species(runtime_t *runtime, object_type_t instance_type) {
   return result;
 }
 
+value_t new_heap_array(runtime_t *runtime, size_t length) {
+  size_t size = calc_array_size(length);
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.array_species));
+  set_array_length(result, length);
+  for (size_t i = 0; i < length; i++)
+    set_array_at(result, i, runtime->roots.null);
+  return result;
+}
+
 value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species) {
   address_t addr;
   if (!heap_try_alloc(heap, bytes, &addr))

@@ -30,3 +30,17 @@ TEST(alloc, heap_species) {
 
   runtime_dispose(&runtime);
 }
+
+TEST(alloc, heap_array) {
+  runtime_t runtime;
+  runtime_init(&runtime, NULL);
+
+  value_t array = new_heap_array(&runtime, 3);
+  ASSERT_EQ(3, get_array_length(array));
+  value_t null = runtime_null(&runtime);
+  ASSERT_EQ(null, get_array_at(array, 0));
+  ASSERT_EQ(null, get_array_at(array, 1));
+  ASSERT_EQ(null, get_array_at(array, 2));
+
+  runtime_dispose(&runtime);
+}

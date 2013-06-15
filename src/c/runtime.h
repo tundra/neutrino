@@ -12,6 +12,9 @@ typedef struct {
   value_t species_species;
   // The species of the different value types.
   value_t string_species;
+  value_t array_species;
+  // Singletons
+  value_t null;
 } roots_t;
 
 
@@ -33,6 +36,9 @@ void runtime_clear(runtime_t *runtime);
 
 // Disposes of the given runtime.
 void runtime_dispose(runtime_t *runtime);
+
+// Returns this runtime's null value.
+value_t runtime_null(runtime_t *runtime);
 
 
 // Initialize this root set.

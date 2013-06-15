@@ -17,6 +17,10 @@ value_t new_heap_string(runtime_t *runtime, string_t *contents);
 // Allocates a new species whose instances have the specified instance type.
 value_t new_heap_species(runtime_t *runtime, object_type_t instance_type);
 
+// Allocates a new heap array in the given runtime with room for the given
+// number of elements. The array will be initialized to null.
+value_t new_heap_array(runtime_t *runtime, size_t length);
+
 // Allocates a new heap object in the given heap of the given size and
 // initializes it with the given type but requires the caller to complete
 // initialization.

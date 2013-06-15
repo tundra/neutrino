@@ -77,6 +77,8 @@ typedef enum {
   otSpecies = 0,
   // A dumb string.
   otString,
+  // A primitive array of values.
+  otArray
 } object_type_t;
 
 // Number of bytes in an object header.
@@ -131,6 +133,7 @@ void set_species_instance_type(value_t species, object_type_t instance_type);
 // Given a species object, returns the instance type field.
 object_type_t get_species_instance_type(value_t species);
 
+
 // Returns the size of a heap string with the given number of characters.
 size_t calc_string_size(size_t char_count);
 
@@ -145,5 +148,21 @@ char *get_string_chars(value_t value);
 
 // Stores the contents of this string in the given output.
 void get_string_contents(value_t value, string_t *out);
+
+
+// Calculates the size of a heap array with the given number of elements.
+size_t calc_array_size(size_t length);
+
+// Returns the length of the given array.
+size_t get_array_length(value_t value);
+
+// Sets the length field of an array object.
+void set_array_length(value_t value, size_t length);
+
+// Returns the index'th element in the given array.
+value_t get_array_at(value_t value, size_t index);
+
+// Sets the index'th element in the given array.
+void set_array_at(value_t value, size_t index, value_t element);
 
 #endif // _VALUE
