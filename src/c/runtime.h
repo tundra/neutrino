@@ -13,6 +13,7 @@ typedef struct {
   // The species of the different value types.
   value_t string_species;
   value_t array_species;
+  value_t null_species;
   // Singletons
   value_t null;
 } roots_t;

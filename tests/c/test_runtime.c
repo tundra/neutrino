@@ -20,3 +20,13 @@ TEST(runtime, create) {
   config.allocator.malloc = blocking_malloc;
   ASSERT_TRUE(HAS_TAG(Signal, runtime_init(&r1, &config)));
 }
+
+TEST(runtime, null) {
+  runtime_t r;
+  ASSERT_FALSE(HAS_TAG(Signal, runtime_init(&r, NULL)));
+
+  value_t null = runtime_null(&r);
+  ASSERT_EQ(otNull, get_object_type(null));
+
+  runtime_dispose(&r);
+}

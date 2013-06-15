@@ -21,6 +21,9 @@ value_t new_heap_species(runtime_t *runtime, object_type_t instance_type);
 // number of elements. The array will be initialized to null.
 value_t new_heap_array(runtime_t *runtime, size_t length);
 
+// Creates the singleton null value.
+value_t new_heap_null(runtime_t *runtime);
+
 // Allocates a new heap object in the given heap of the given size and
 // initializes it with the given type but requires the caller to complete
 // initialization.

@@ -35,12 +35,21 @@ TEST(alloc, heap_array) {
   runtime_t runtime;
   runtime_init(&runtime, NULL);
 
+  // Check initial state.
   value_t array = new_heap_array(&runtime, 3);
   ASSERT_EQ(3, get_array_length(array));
   value_t null = runtime_null(&runtime);
   ASSERT_EQ(null, get_array_at(array, 0));
   ASSERT_EQ(null, get_array_at(array, 1));
   ASSERT_EQ(null, get_array_at(array, 2));
+
+  // Update the array, then check its state.
+  set_array_at(array, 0, array);
+  set_array_at(array, 2, array);
+  ASSERT_EQ(3, get_array_length(array));
+  ASSERT_EQ(array, get_array_at(array, 0));
+  ASSERT_EQ(null, get_array_at(array, 1));
+  ASSERT_EQ(array, get_array_at(array, 2));
 
   runtime_dispose(&runtime);
 }

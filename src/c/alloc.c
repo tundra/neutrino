@@ -28,6 +28,11 @@ value_t new_heap_array(runtime_t *runtime, size_t length) {
   return result;
 }
 
+value_t new_heap_null(runtime_t *runtime) {
+  size_t size = kNullSize;
+  return alloc_heap_object(&runtime->heap, size, runtime->roots.null_species);
+}
+
 value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species) {
   address_t addr;
   if (!heap_try_alloc(heap, bytes, &addr))

@@ -11,6 +11,10 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   // The other species are straightforward.
   TRY_SET(roots->string_species, new_heap_species(runtime, otString));
   TRY_SET(roots->array_species, new_heap_species(runtime, otArray));
+  TRY_SET(roots->null_species, new_heap_species(runtime, otNull));
+
+  // Singletons
+  TRY_SET(roots->null, new_heap_null(runtime));
   return non_signal();
 }
 
@@ -18,6 +22,7 @@ void roots_clear(roots_t *roots) {
   roots->species_species = non_signal();
   roots->string_species = non_signal();
   roots->array_species = non_signal();
+  roots->null_species = non_signal();
   roots->null = non_signal();
 }
 

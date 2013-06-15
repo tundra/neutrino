@@ -30,6 +30,9 @@ static value_tag_t get_value_tag(value_t value) {
   return (value_tag_t) (value & kTagMask);
 }
 
+
+// --- I n t e g e r ---
+
 // Creates a new tagged integer with the given value.
 static value_t new_integer(int64_t value) {
   return (value << kTagSize) | vtInteger;
@@ -47,6 +50,8 @@ static value_t non_signal() {
   return new_integer(0);
 }
 
+
+// --- S i g n a l ---
 
 // Enum identifying the type of a signal.
 typedef enum {
@@ -71,6 +76,8 @@ static signal_cause_t get_signal_cause(value_t value) {
 }
 
 
+// --- O b j e c t ---
+
 // Enum identifying the different types of heap objects.
 typedef enum {
   // A species object.
@@ -78,7 +85,9 @@ typedef enum {
   // A dumb string.
   otString,
   // A primitive array of values.
-  otArray
+  otArray,
+  // Singleton null value.
+  otNull
 } object_type_t;
 
 // Number of bytes in an object header.
@@ -124,6 +133,8 @@ void set_object_species(value_t value, value_t species);
 value_t get_object_species(value_t value);
 
 
+// --- S p e c i e s ---
+
 // The size of a species object.
 static const size_t kSpeciesSize = OBJECT_SIZE(1);
 
@@ -133,6 +144,8 @@ void set_species_instance_type(value_t species, object_type_t instance_type);
 // Given a species object, returns the instance type field.
 object_type_t get_species_instance_type(value_t species);
 
+
+// --- S t r i n g ---
 
 // Returns the size of a heap string with the given number of characters.
 size_t calc_string_size(size_t char_count);
@@ -150,6 +163,8 @@ char *get_string_chars(value_t value);
 void get_string_contents(value_t value, string_t *out);
 
 
+// --- A r r a y ---
+
 // Calculates the size of a heap array with the given number of elements.
 size_t calc_array_size(size_t length);
 
@@ -164,5 +179,10 @@ value_t get_array_at(value_t value, size_t index);
 
 // Sets the index'th element in the given array.
 void set_array_at(value_t value, size_t index, value_t element);
+
+
+// --- N u l l ---
+
+static const size_t kNullSize = OBJECT_SIZE(1);
 
 #endif // _VALUE
