@@ -1,5 +1,5 @@
 #include "heap.h"
-#include "value.h"
+#include "value-inl.h"
 
 #include <string.h>
 

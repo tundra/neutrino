@@ -1,5 +1,27 @@
 #include "heap.h"
 
+void set_object_species(value_ptr_t value, value_ptr_t species) {
+  *access_object_field(value, 0) = species;
+}
+
+value_ptr_t get_object_species(value_ptr_t value) {
+  return *access_object_field(value, 0);
+}
+
+object_type_t get_object_type(value_ptr_t value) {
+  value_ptr_t species = get_object_species(value);
+  return get_species_instance_type(species);
+}
+
+void set_species_instance_type(value_ptr_t value, object_type_t instance_type) {
+  *access_object_field(value, 1) = (value_ptr_t) instance_type;
+}
+
+object_type_t get_species_instance_type(value_ptr_t value) {
+  return (object_type_t) *access_object_field(value, 1);
+}
+
+
 size_t calc_string_size(size_t char_count) {
   // We need to fix one extra byte, the terminating null.
   size_t bytes = char_count + 1;

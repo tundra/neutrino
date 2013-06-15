@@ -8,7 +8,6 @@
 // External function used to signal a check failure.
 void check_fail(const char *file, int line);
 
-
 // Fails if the given expression doesn't evaluate to true.
 #define CHECK_TRUE(E) do {          \
   if (!(E))                         \

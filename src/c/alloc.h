@@ -3,19 +3,23 @@
 
 #include "globals.h"
 #include "heap.h"
+#include "runtime.h"
 #include "utils.h"
 #include "value.h"
 
 #ifndef _ALLOC
 #define _ALLOC
 
-// Allocates a new heap string in the given heap, if there is room, otherwise
+// Allocates a new heap string in the given runtime, if there is room, otherwise
 // returns a signal to indicate an error.
-value_ptr_t new_heap_string(heap_t *heap, string_t *contents);
+value_ptr_t new_heap_string(runtime_t *runtime, string_t *contents);
+
+// Allocates a new species whose instances have the specified instance type.
+value_ptr_t new_heap_species(runtime_t *runtime, object_type_t instance_type);
 
 // Allocates a new heap object in the given heap of the given size and
-// initializes it to the given type but requires the caller to complete
+// initializes it with the given type but requires the caller to complete
 // initialization.
-value_ptr_t alloc_heap_object(heap_t *heap, size_t bytes, object_type_t type);
+value_ptr_t alloc_heap_object(heap_t *heap, size_t bytes, value_ptr_t species);
 
 #endif // _ALLOC

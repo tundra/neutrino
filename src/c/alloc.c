@@ -1,19 +1,28 @@
 #include "alloc.h"
+#include "value-inl.h"
 
-value_ptr_t new_heap_string(heap_t *heap, string_t *contents) {
+value_ptr_t new_heap_string(runtime_t *runtime, string_t *contents) {
   size_t bytes = calc_string_size(string_length(contents));
-  value_ptr_t result = alloc_heap_object(heap, bytes, otString);
-  TRY(result);
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, bytes,
+      runtime->roots.string_species));
   set_string_length(result, string_length(contents));
   string_copy_to(contents, get_string_chars(result), string_length(contents) + 1);
   return result;
 }
 
-value_ptr_t alloc_heap_object(heap_t *heap, size_t bytes, object_type_t type) {
+value_ptr_t new_heap_species(runtime_t *runtime, object_type_t instance_type) {
+  size_t bytes = kSpeciesSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, bytes,
+      runtime->roots.species_species));
+  set_species_instance_type(result, instance_type);
+  return result;
+}
+
+value_ptr_t alloc_heap_object(heap_t *heap, size_t bytes, value_ptr_t species) {
   address_t addr;
   if (!heap_try_alloc(heap, bytes, &addr))
     return new_signal(scHeapExhausted);
   value_ptr_t result = new_object(addr);
-  set_object_type(result, type);
+  set_object_species(result, species);
   return result;  
 }

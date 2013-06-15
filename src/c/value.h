@@ -30,11 +30,6 @@ static value_tag_t get_value_tag(value_ptr_t value) {
   return (value_tag_t) (value & kTagMask);
 }
 
-// Macro that evaluates to true if the given expression has the specified
-// value tag.
-#define HAS_TAG(Tag, EXPR) (get_value_tag(EXPR) == vt##Tag)
-
-
 // Creates a new tagged integer with the given value.
 static value_ptr_t new_integer(int64_t value) {
   return (value << kTagSize) | vtInteger;
@@ -75,14 +70,6 @@ static signal_cause_t get_signal_cause(value_ptr_t value) {
   return  (((int64_t) value) >> kTagSize) & kSignalCauseMask;
 }
 
-// Evaluates the given expression; if it yields a signal returns it otherwise
-// ignores the value.
-#define TRY(EXPR) do {             \
-  value_ptr_t __result__ = (EXPR); \
-  if (HAS_TAG(Signal, __result__)) \
-    return __result__;             \
-} while (false)
-
 
 // Enum identifying the different types of heap objects.
 typedef enum {
@@ -91,6 +78,13 @@ typedef enum {
   // A dumb string.
   otString,
 } object_type_t;
+
+// Number of bytes in an object header.
+#define kObjectHeaderSize kValueSize
+
+// Returns the size in bytes of an object with N fields, where the header
+// is not counted as a field. 
+#define OBJECT_SIZE(N) ((N * kValueSize) + kObjectHeaderSize)
 
 // Converts a pointer to an object into an tagged object value pointer.
 static value_ptr_t new_object(address_t addr) {
@@ -114,17 +108,28 @@ static value_ptr_t *access_object_field(value_ptr_t value, size_t index) {
 }
 
 // Returns the object type of the object the given value points to.
-static object_type_t get_object_type(value_ptr_t value) {
-  return (object_type_t) *access_object_field(value, 0);
-}
+object_type_t get_object_type(value_ptr_t value);
 
 // Sets the type of the given object.
 static void set_object_type(value_ptr_t value, object_type_t type) {
   *access_object_field(value, 0) = (value_ptr_t) type;
 }
 
-// Number of bytes in an object header.
-#define kObjectHeaderSize kValueSize
+// Sets the species pointer of an object to the specified species value.
+void set_object_species(value_ptr_t value, value_ptr_t species);
+
+// Returns the species of the given object value.
+value_ptr_t get_object_species(value_ptr_t value);
+
+
+// The size of a species object.
+static const size_t kSpeciesSize = OBJECT_SIZE(1);
+
+// Given a species object, sets the instance type field to the specified value.
+void set_species_instance_type(value_ptr_t species, object_type_t instance_type);
+
+// Given a species object, returns the instance type field.
+object_type_t get_species_instance_type(value_ptr_t species);
 
 // Returns the size of a heap string with the given number of characters.
 size_t calc_string_size(size_t char_count);

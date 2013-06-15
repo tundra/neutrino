@@ -1,5 +1,6 @@
 #include "runtime.h"
 #include "test.h"
+#include "value-inl.h"
 
 // A malloc that refuses to yield any memory.
 address_t blocking_malloc(void *data, size_t size) {

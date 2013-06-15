@@ -14,6 +14,7 @@ typedef struct {
   value_ptr_t string_species;
 } roots_t;
 
+
 // All the data associated with a single VM instance.
 typedef struct {
   // The heap where all the data lives.
@@ -25,7 +26,19 @@ typedef struct {
 // Initializes the given runtime according to the given config.
 value_ptr_t runtime_init(runtime_t *runtime, space_config_t *config);
 
+// Resets this runtime to a well-defined state such that if anything fails
+// during the subsequent initialization all fields that haven't been
+// initialized are sane.
+void runtime_clear(runtime_t *runtime);
+
 // Disposes of the given runtime.
 void runtime_dispose(runtime_t *runtime);
+
+
+// Initialize this root set.
+value_ptr_t roots_init(roots_t *roots, runtime_t *runtime);
+
+// Clears all the fields to a well-defined value.
+void roots_clear(roots_t *roots);
 
 #endif // _RUNTIME

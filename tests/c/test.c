@@ -53,5 +53,5 @@ int main(int argc, char *argv[]) {
 // Dump an error on test failure.
 void fail(const char *error, const char *file, int line) {
   printf("%s:%i: %s\n", file, line, error);
-  exit(1);
+  abort();
 }
