@@ -10,11 +10,11 @@ value_t new_heap_string(runtime_t *runtime, string_t *contents) {
   return result;
 }
 
-value_t new_heap_species(runtime_t *runtime, object_type_t instance_type) {
+value_t new_heap_species(runtime_t *runtime, object_family_t instance_family) {
   size_t bytes = kSpeciesSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, bytes,
       runtime->roots.species_species));
-  set_species_instance_type(result, instance_type);
+  set_species_instance_family(result, instance_family);
   return result;
 }
 

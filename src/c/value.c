@@ -8,17 +8,17 @@ value_t get_object_species(value_t value) {
   return *access_object_field(value, 0);
 }
 
-object_type_t get_object_type(value_t value) {
+object_family_t get_object_family(value_t value) {
   value_t species = get_object_species(value);
-  return get_species_instance_type(species);
+  return get_species_instance_family(species);
 }
 
-void set_species_instance_type(value_t value, object_type_t instance_type) {
-  *access_object_field(value, 1) = (value_t) instance_type;
+void set_species_instance_family(value_t value, object_family_t instance_family) {
+  *access_object_field(value, 1) = (value_t) instance_family;
 }
 
-object_type_t get_species_instance_type(value_t value) {
-  return (object_type_t) *access_object_field(value, 1);
+object_family_t get_species_instance_family(value_t value) {
+  return (object_family_t) *access_object_field(value, 1);
 }
 
 
@@ -31,17 +31,17 @@ size_t calc_string_size(size_t char_count) {
 }
 
 void set_string_length(value_t value, size_t length) {
-  CHECK_EQ(otString, get_object_type(value));
+  CHECK_FAMILY(ofString, value);
   *access_object_field(value, 1) = (value_t) length;
 }
 
 size_t get_string_length(value_t value) {
-  CHECK_EQ(otString, get_object_type(value));
+  CHECK_FAMILY(ofString, value);
   return (size_t) *access_object_field(value, 1);
 }
 
 char *get_string_chars(value_t value) {
-  CHECK_EQ(otString, get_object_type(value));
+  CHECK_FAMILY(ofString, value);
   return (char*) access_object_field(value, 2);  
 }
 
@@ -58,23 +58,23 @@ size_t calc_array_size(size_t length) {
 }
 
 size_t get_array_length(value_t value) {
-  CHECK_EQ(otArray, get_object_type(value));
+  CHECK_FAMILY(ofArray, value);
   return (size_t) *access_object_field(value, 1);
 }
 
 void set_array_length(value_t value, size_t length) {
-  CHECK_EQ(otArray, get_object_type(value));
+  CHECK_FAMILY(ofArray, value);
   *access_object_field(value, 1) = (value_t) length;
 }
 
 value_t get_array_at(value_t value, size_t index) {
-  CHECK_EQ(otArray, get_object_type(value));
+  CHECK_FAMILY(ofArray, value);
   CHECK_TRUE(index < get_array_length(value));
   return *access_object_field(value, 2 + index);
 }
 
 void set_array_at(value_t value, size_t index, value_t element) {
-  CHECK_EQ(otArray, get_object_type(value));
+  CHECK_FAMILY(ofArray, value);
   CHECK_TRUE(index < get_array_length(value));
   *access_object_field(value, 2 + index) = element;
 }

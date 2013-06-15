@@ -1,3 +1,5 @@
+// The basic types of values.
+
 #include "check.h"
 #include "globals.h"
 #include "utils.h"
@@ -5,29 +7,42 @@
 #ifndef _VALUE
 #define _VALUE
 
-// Tags used to distinguish between values.
-typedef enum {
-  // Pointer to a heap object.
-  vtObject = 0,
-  // Tagged integer.
-  vtInteger,
-  // A VM-internal signal.
-  vtSignal
-} value_tag_t;
-
-// A tagged value pointer.
+// A tagged value pointer. Values are divided into a hierarchy with three
+// different levels. At the top level they are divided into different _domains_
+// which can be distinguished by how the pointer is tagged; objects, integers,
+// signals, etc. are different domains.
+//
+// Object pointers can point to objects with different layouts, each such kind
+// of object is a _family_; strings and arrays are different families. Which
+// family an object belongs to is stored in a field in the object's species.
+// 
+// Finally, within each family there may be objects with the same basic layout
+// but different shared state, each kind of state is a _species_. For instance,
+// all user-defined types are within the same family but each different type
+// belong to a different species. The species is given by the object's species
+// pointer.
 typedef uint64_t value_t;
 
-// How many bits are used for tags?
-static const int kTagSize = 3;
-static const int kTagMask = 0x7;
+// Value domain identifiers.
+typedef enum {
+  // Pointer to a heap object.
+  vdObject = 0,
+  // Tagged integer.
+  vdInteger,
+  // A VM-internal signal.
+  vdSignal
+} value_domain_t;
+
+// How many bits are used for the domain tag?
+static const int kDomainTagSize = 3;
+static const int kDomainTagMask = 0x7;
 
 // Alignment that ensures that object pointers have tag 0.
 #define kValueSize 8
 
 // Returns the tag from a tagged value.
-static value_tag_t get_value_tag(value_t value) {
-  return (value_tag_t) (value & kTagMask);
+static value_domain_t get_value_domain(value_t value) {
+  return (value_domain_t) (value & kDomainTagMask);
 }
 
 
@@ -35,13 +50,13 @@ static value_tag_t get_value_tag(value_t value) {
 
 // Creates a new tagged integer with the given value.
 static value_t new_integer(int64_t value) {
-  return (value << kTagSize) | vtInteger;
+  return (value << kDomainTagSize) | vdInteger;
 }
 
 // Returns the integer value stored in a tagged integer.
 static int64_t get_integer_value(value_t value) {
-  CHECK_EQ(vtInteger, get_value_tag(value));
-  return (((int64_t) value) >> kTagSize);
+  CHECK_DOMAIN(vdInteger, value);
+  return (((int64_t) value) >> kDomainTagSize);
 }
 
 // Returns a value that is _not_ a signal. This can be used to indicate
@@ -57,7 +72,8 @@ static value_t non_signal() {
 typedef enum {
   // The heap has run out of space.
   scHeapExhausted = 0,
-  scSystemError
+  scSystemError,
+  scValidationFailed
 } signal_cause_t;
 
 // How many bits do we need to hold the cause of a signal?
@@ -66,29 +82,29 @@ static const int kSignalCauseMask = 0x1f;
 
 // Creates a new signal with the specified cause.
 static value_t new_signal(signal_cause_t cause) {
-  return (value_t) (cause << kTagSize) | vtSignal;
+  return (value_t) (cause << kDomainTagSize) | vdSignal;
 }
 
 // Returns the cause of a signal.
 static signal_cause_t get_signal_cause(value_t value) {
-  CHECK_EQ(vtSignal, get_value_tag(value));
-  return  (((int64_t) value) >> kTagSize) & kSignalCauseMask;
+  CHECK_DOMAIN(vdSignal, value);
+  return  (((int64_t) value) >> kDomainTagSize) & kSignalCauseMask;
 }
 
 
 // --- O b j e c t ---
 
-// Enum identifying the different types of heap objects.
+// Enum identifying the different families of heap objects.
 typedef enum {
   // A species object.
-  otSpecies = 0,
+  ofSpecies = 0,
   // A dumb string.
-  otString,
+  ofString,
   // A primitive array of values.
-  otArray,
+  ofArray,
   // Singleton null value.
-  otNull
-} object_type_t;
+  ofNull
+} object_family_t;
 
 // Number of bytes in an object header.
 #define kObjectHeaderSize kValueSize
@@ -99,32 +115,27 @@ typedef enum {
 
 // Converts a pointer to an object into an tagged object value pointer.
 static value_t new_object(address_t addr) {
-  CHECK_EQ(0, ((address_arith_t) addr) & kTagMask);
+  CHECK_EQ(0, ((address_arith_t) addr) & kDomainTagMask);
   return (value_t) ((address_arith_t) addr);
 }
 
 // Returns the address of the object pointed to by a tagged object value
 // pointer.
 static address_t get_object_address(value_t value) {
-  CHECK_EQ(vtObject, get_value_tag(value));
+  CHECK_DOMAIN(vdObject, value);
   return (address_t) ((address_arith_t) value);
 }
 
 // Returns a pointer to the index'th field in the given heap object. Check
 // fails if the value is not a heap object.
 static value_t *access_object_field(value_t value, size_t index) {
-  CHECK_EQ(vtObject, get_value_tag(value));
+  CHECK_DOMAIN(vdObject, value);
   address_t addr = get_object_address(value);
   return ((value_t*) addr) + index;
 }
 
 // Returns the object type of the object the given value points to.
-object_type_t get_object_type(value_t value);
-
-// Sets the type of the given object.
-static void set_object_type(value_t value, object_type_t type) {
-  *access_object_field(value, 0) = (value_t) type;
-}
+object_family_t get_object_family(value_t value);
 
 // Sets the species pointer of an object to the specified species value.
 void set_object_species(value_t value, value_t species);
@@ -139,10 +150,10 @@ value_t get_object_species(value_t value);
 static const size_t kSpeciesSize = OBJECT_SIZE(1);
 
 // Given a species object, sets the instance type field to the specified value.
-void set_species_instance_type(value_t species, object_type_t instance_type);
+void set_species_instance_family(value_t species, object_family_t instance_family);
 
 // Given a species object, returns the instance type field.
-object_type_t get_species_instance_type(value_t species);
+object_family_t get_species_instance_family(value_t species);
 
 
 // --- S t r i n g ---

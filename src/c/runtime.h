@@ -41,11 +41,19 @@ void runtime_dispose(runtime_t *runtime);
 // Returns this runtime's null value.
 value_t runtime_null(runtime_t *runtime);
 
+// Run a series of sanity checks on the runtime to check that it is consistent.
+// Returns a signal iff something is wrong. A runtime will only validate if it
+// has been initialized successfully.
+value_t runtime_validate(runtime_t *runtime);
+
 
 // Initialize this root set.
 value_t roots_init(roots_t *roots, runtime_t *runtime);
 
 // Clears all the fields to a well-defined value.
 void roots_clear(roots_t *roots);
+
+// Checks that the roots are correctly initialized.
+value_t roots_validate(roots_t *roots);
 
 #endif // _RUNTIME

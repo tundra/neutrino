@@ -14,8 +14,8 @@
 // returns a signal to indicate an error.
 value_t new_heap_string(runtime_t *runtime, string_t *contents);
 
-// Allocates a new species whose instances have the specified instance type.
-value_t new_heap_species(runtime_t *runtime, object_type_t instance_type);
+// Allocates a new species whose instances have the specified instance family.
+value_t new_heap_species(runtime_t *runtime, object_family_t instance_family);
 
 // Allocates a new heap array in the given runtime with room for the given
 // number of elements. The array will be initialized to null.

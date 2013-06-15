@@ -20,4 +20,10 @@ void check_fail(const char *file, int line);
 // Fails if the given values aren't equal.
 #define CHECK_EQ(A, B) CHECK_TRUE((A) == (B))
 
+// Check that fails unless the value is in the specified domain.
+#define CHECK_DOMAIN(vdDomain, EXPR) CHECK_EQ(vdDomain, get_value_domain(EXPR))
+
+// Check that fails unless the object is in the specified family.
+#define CHECK_FAMILY(ofFamily, EXPR) CHECK_EQ(ofFamily, get_object_family(EXPR))
+
 #endif // _CHECK
