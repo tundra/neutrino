@@ -16,5 +16,9 @@ extern void fail(const char *error, const char *file, int line);
 } while (0)
 
 
+// Fails unless the condition is false.
+#define ASSERT_FALSE(COND) ASSERT_TRUE(!(COND))
+
+
 // Fails unless the two values are equal.
 #define ASSERT_EQ(A, B) ASSERT_TRUE((A) == (B))

@@ -1,7 +1,12 @@
 #include "heap.h"
 #include "value.h"
 
+#include <string.h>
+
 // --- S p a c e ---
+
+static const uint8_t kBlankHeapMarker = 0xDA;
+static const uint8_t kAllocedHeapMarker = 0xFE;
 
 address_t align_address(uint32_t alignment, address_t ptr) {
   address_arith_t addr = (address_arith_t) ptr;
@@ -21,9 +26,12 @@ void space_init(space_t *space, space_config_t *config) {
   space_clear(space);
   // Allocate one word more than strictly necessary to account for possible
   // alignment.
-  address_t memory = (address_t) malloc(config->size_bytes + kValuePtrAlignment);
+  size_t bytes = config->size_bytes + kValueSize;
+  address_t memory = (address_t) malloc(bytes);
+  // Clear the newly allocated memory to a recognizable value.
+  memset(memory, kBlankHeapMarker, bytes);
   space->memory = memory;
-  space->next_free = align_address(kValuePtrAlignment, memory);
+  space->next_free = align_address(kValueSize, memory);
   // If malloc gives us an aligned pointer using only 'size_bytes' of memory
   // wastes the extra word we allocated to make room for alignment. However,
   // making the space size slightly different depending on whether malloc
@@ -48,10 +56,13 @@ bool space_is_empty(space_t *space) {
 }
 
 bool space_try_alloc(space_t *space, size_t size, address_t *memory_out) {
-  size_t aligned = align_size(kValuePtrAlignment, size);
+  size_t aligned = align_size(kValueSize, size);
   address_t addr = space->next_free;
   address_t next = addr + aligned;
   if (next <= space->limit) {
+    // Clear the newly allocated memory to a different value, again to make the
+    // contents recognizable.
+    memset(addr, kAllocedHeapMarker, aligned);
     *memory_out = addr;
     space->next_free = next;
     return true;

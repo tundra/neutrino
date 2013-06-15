@@ -128,7 +128,7 @@ $(C_TEST_MAIN_EXE): $(C_TEST_MAIN_OBJS) $(C_TEST_LIB_OBJS) $(C_LIB_OBJS)
 # Individual C tests.
 $(C_TEST_LIB_RUNS):test-%: tests/c/test_%.c $(C_TEST_MAIN_EXE)
 	@echo Running test_$*
-	@./$(C_TEST_MAIN_EXE) $*
+	@valgrind -q ./$(C_TEST_MAIN_EXE) $*
 
 
 # Shorthand for running all the C tests.
