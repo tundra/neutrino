@@ -36,7 +36,7 @@ typedef struct {
 
 // Initialize the given space, assumed to be uninitialized. If this fails for
 // whatever reason a signal is returned.
-value_ptr_t space_init(space_t *space, space_config_t *config);
+value_t space_init(space_t *space, space_config_t *config);
 
 // If necessary, dispose the memory held by this space.
 void space_dispose(space_t *space);
@@ -71,7 +71,7 @@ typedef struct {
 
 // Initialize the given heap, returning a signal to indicate success or
 // failure. If the config is NULL the default is used.
-value_ptr_t heap_init(heap_t *heap, space_config_t *config);
+value_t heap_init(heap_t *heap, space_config_t *config);
 
 // Allocate the given number of byte in the given space. The size is not
 // required to be value pointer aligned, this function will take care of

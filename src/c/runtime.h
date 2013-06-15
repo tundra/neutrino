@@ -9,9 +9,9 @@
 // A collection of all the root objects.
 typedef struct {
   // The species of species (which is its own species).
-  value_ptr_t species_species;
+  value_t species_species;
   // The species of the different value types.
-  value_ptr_t string_species;
+  value_t string_species;
 } roots_t;
 
 
@@ -24,7 +24,7 @@ typedef struct {
 } runtime_t;
 
 // Initializes the given runtime according to the given config.
-value_ptr_t runtime_init(runtime_t *runtime, space_config_t *config);
+value_t runtime_init(runtime_t *runtime, space_config_t *config);
 
 // Resets this runtime to a well-defined state such that if anything fails
 // during the subsequent initialization all fields that haven't been
@@ -36,7 +36,7 @@ void runtime_dispose(runtime_t *runtime);
 
 
 // Initialize this root set.
-value_ptr_t roots_init(roots_t *roots, runtime_t *runtime);
+value_t roots_init(roots_t *roots, runtime_t *runtime);
 
 // Clears all the fields to a well-defined value.
 void roots_clear(roots_t *roots);

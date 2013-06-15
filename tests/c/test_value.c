@@ -5,19 +5,19 @@
 
 // Really simple value tagging stuff.
 TEST(value, tagged_integers) {
-  value_ptr_t v0 = new_integer(10);
+  value_t v0 = new_integer(10);
   ASSERT_EQ(vtInteger, get_value_tag(v0));
   ASSERT_EQ(10, get_integer_value(v0));
-  value_ptr_t v1 = new_integer(-10);
+  value_t v1 = new_integer(-10);
   ASSERT_EQ(vtInteger, get_value_tag(v1));
   ASSERT_EQ(-10, get_integer_value(v1));
-  value_ptr_t v2 = new_integer(0);
+  value_t v2 = new_integer(0);
   ASSERT_EQ(vtInteger, get_value_tag(v2));
   ASSERT_EQ(0, get_integer_value(v2));
 }
 
 TEST(value, signals) {
-  value_ptr_t v0 = new_signal(scHeapExhausted);
+  value_t v0 = new_signal(scHeapExhausted);
   ASSERT_EQ(vtSignal, get_value_tag(v0));
   ASSERT_EQ(scHeapExhausted, get_signal_cause(v0));  
 }
@@ -29,7 +29,7 @@ TEST(value, objects) {
 
   address_t addr;
   ASSERT_TRUE(heap_try_alloc(&heap, 16, &addr));
-  value_ptr_t v0 = new_object(addr);
+  value_t v0 = new_object(addr);
   ASSERT_EQ(vtObject, get_value_tag(v0));
   ASSERT_EQ(addr, get_object_address(v0));
 

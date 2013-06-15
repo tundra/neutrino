@@ -16,7 +16,7 @@ typedef enum {
 } value_tag_t;
 
 // A tagged value pointer.
-typedef uint64_t value_ptr_t;
+typedef uint64_t value_t;
 
 // How many bits are used for tags?
 static const int kTagSize = 3;
@@ -26,24 +26,24 @@ static const int kTagMask = 0x7;
 #define kValueSize 8
 
 // Returns the tag from a tagged value.
-static value_tag_t get_value_tag(value_ptr_t value) {
+static value_tag_t get_value_tag(value_t value) {
   return (value_tag_t) (value & kTagMask);
 }
 
 // Creates a new tagged integer with the given value.
-static value_ptr_t new_integer(int64_t value) {
+static value_t new_integer(int64_t value) {
   return (value << kTagSize) | vtInteger;
 }
 
 // Returns the integer value stored in a tagged integer.
-static int64_t get_integer_value(value_ptr_t value) {
+static int64_t get_integer_value(value_t value) {
   CHECK_EQ(vtInteger, get_value_tag(value));
   return (((int64_t) value) >> kTagSize);
 }
 
 // Returns a value that is _not_ a signal. This can be used to indicate
 // unspecific success.
-static value_ptr_t non_signal() {
+static value_t non_signal() {
   return new_integer(0);
 }
 
@@ -60,12 +60,12 @@ static const int kSignalCauseSize = 5;
 static const int kSignalCauseMask = 0x1f;
 
 // Creates a new signal with the specified cause.
-static value_ptr_t new_signal(signal_cause_t cause) {
-  return (value_ptr_t) (cause << kTagSize) | vtSignal;
+static value_t new_signal(signal_cause_t cause) {
+  return (value_t) (cause << kTagSize) | vtSignal;
 }
 
 // Returns the cause of a signal.
-static signal_cause_t get_signal_cause(value_ptr_t value) {
+static signal_cause_t get_signal_cause(value_t value) {
   CHECK_EQ(vtSignal, get_value_tag(value));
   return  (((int64_t) value) >> kTagSize) & kSignalCauseMask;
 }
@@ -87,63 +87,63 @@ typedef enum {
 #define OBJECT_SIZE(N) ((N * kValueSize) + kObjectHeaderSize)
 
 // Converts a pointer to an object into an tagged object value pointer.
-static value_ptr_t new_object(address_t addr) {
+static value_t new_object(address_t addr) {
   CHECK_EQ(0, ((address_arith_t) addr) & kTagMask);
-  return (value_ptr_t) ((address_arith_t) addr);
+  return (value_t) ((address_arith_t) addr);
 }
 
 // Returns the address of the object pointed to by a tagged object value
 // pointer.
-static address_t get_object_address(value_ptr_t value) {
+static address_t get_object_address(value_t value) {
   CHECK_EQ(vtObject, get_value_tag(value));
   return (address_t) ((address_arith_t) value);
 }
 
 // Returns a pointer to the index'th field in the given heap object. Check
 // fails if the value is not a heap object.
-static value_ptr_t *access_object_field(value_ptr_t value, size_t index) {
+static value_t *access_object_field(value_t value, size_t index) {
   CHECK_EQ(vtObject, get_value_tag(value));
   address_t addr = get_object_address(value);
-  return ((value_ptr_t*) addr) + index;
+  return ((value_t*) addr) + index;
 }
 
 // Returns the object type of the object the given value points to.
-object_type_t get_object_type(value_ptr_t value);
+object_type_t get_object_type(value_t value);
 
 // Sets the type of the given object.
-static void set_object_type(value_ptr_t value, object_type_t type) {
-  *access_object_field(value, 0) = (value_ptr_t) type;
+static void set_object_type(value_t value, object_type_t type) {
+  *access_object_field(value, 0) = (value_t) type;
 }
 
 // Sets the species pointer of an object to the specified species value.
-void set_object_species(value_ptr_t value, value_ptr_t species);
+void set_object_species(value_t value, value_t species);
 
 // Returns the species of the given object value.
-value_ptr_t get_object_species(value_ptr_t value);
+value_t get_object_species(value_t value);
 
 
 // The size of a species object.
 static const size_t kSpeciesSize = OBJECT_SIZE(1);
 
 // Given a species object, sets the instance type field to the specified value.
-void set_species_instance_type(value_ptr_t species, object_type_t instance_type);
+void set_species_instance_type(value_t species, object_type_t instance_type);
 
 // Given a species object, returns the instance type field.
-object_type_t get_species_instance_type(value_ptr_t species);
+object_type_t get_species_instance_type(value_t species);
 
 // Returns the size of a heap string with the given number of characters.
 size_t calc_string_size(size_t char_count);
 
 // Sets the length of a heap string.
-void set_string_length(value_ptr_t value, size_t length);
+void set_string_length(value_t value, size_t length);
 
 // Returns the length of a heap string.
-size_t get_string_length(value_ptr_t value);
+size_t get_string_length(value_t value);
 
 // Returns a pointer to the array that holds the contents of this array.
-char *get_string_chars(value_ptr_t value);
+char *get_string_chars(value_t value);
 
 // Stores the contents of this string in the given output.
-void get_string_contents(value_ptr_t value, string_t *out);
+void get_string_contents(value_t value, string_t *out);
 
 #endif // _VALUE

@@ -27,7 +27,7 @@ void space_config_init_defaults(space_config_t *config) {
   *config = kDefaultConfig;
 }
 
-value_ptr_t space_init(space_t *space, space_config_t *config_or_null) {
+value_t space_init(space_t *space, space_config_t *config_or_null) {
   const space_config_t *config = (config_or_null
       ? config_or_null
       : &kDefaultConfig);
@@ -94,7 +94,7 @@ bool space_try_alloc(space_t *space, size_t size, address_t *memory_out) {
 
 // --- H e a p ---
 
-value_ptr_t heap_init(heap_t *heap, space_config_t *config) {
+value_t heap_init(heap_t *heap, space_config_t *config) {
   // Initialize new space, leave old space clear; we won't use that until
   // later.
   TRY(space_init(&heap->new_space, config));
