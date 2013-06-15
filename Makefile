@@ -10,15 +10,15 @@ tests:	tests-python tests-c
 
 
 PYTHON_TEST_FILES=$(shell find tests/python -name "[^_]*.py")
-PYTHON_TESTS=$(patsubst %, test-%, $(PYTHON_TEST_FILES))
+PYTHON_TEST_RUNS=$(patsubst %, test-%, $(PYTHON_TEST_FILES))
 
 
 # Runs the python tests.
-tests-python:	$(PYTHON_TESTS)
+tests-python:	$(PYTHON_TEST_RUNS)
 
 
 # Individual python tests.
-$(PYTHON_TESTS): test-%: %
+$(PYTHON_TEST_RUNS): test-%: %
 	@echo Running $<
 	@PYTHONPATH=$(PYTHONPATH):src/python \
 		python $<
@@ -144,4 +144,4 @@ clean:
 	@rm -rf $(BIN)
 
 
-.PHONY:	clean tests-c tests-python
+.PHONY:	clean tests-c tests-python $(C_TEST_LIB_RUNS) $(PYTHON_TEST_RUNS)

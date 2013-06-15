@@ -14,8 +14,3 @@ TEST(value, simple) {
   ASSERT_EQ(tInteger, get_value_tag(v2));
   ASSERT_EQ(0, get_integer_value(v2));
 }
-
-
-TEST(value, pointe) {
-
-}

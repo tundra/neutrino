@@ -1,7 +1,8 @@
 #include "check.h"
+#include "globals.h"
 
-#include <stdint.h>
-#include <stdbool.h>
+#ifndef _VALUE
+#define _VALUE
 
 // Tags used to distinguish between values.
 typedef enum {
@@ -15,6 +16,9 @@ typedef uint64_t value_ptr_t;
 // How many bits are used for tags?
 static const int kTagSize = 3;
 static const int kTagMask = 0x7;
+
+// Alignment that ensures that object pointers have tag 0.
+static const int kValuePtrAlignment = 8;
 
 // Returns the tag from a tagged value.
 static value_tag_t get_value_tag(value_ptr_t value) {
@@ -31,3 +35,5 @@ static int64_t get_integer_value(value_ptr_t value) {
   CHECK_EQ(tInteger, get_value_tag(value));
   return (((int64_t) value) >> kTagSize);
 }
+
+#endif // _VALUE
