@@ -17,17 +17,35 @@ size_t align_size(uint32_t alignment, size_t size) {
   return (size + (alignment - 1)) & ~(alignment - 1);
 }
 
+// The default space config.
+static const space_config_t kDefaultConfig = {
+  1 * kMB,
+  {NULL, NULL, NULL}
+};
+
 void space_config_init_defaults(space_config_t *config) {
-  config->size_bytes = 1 * kMB;
+  *config = kDefaultConfig;
 }
 
-void space_init(space_t *space, space_config_t *config) {
+value_ptr_t space_init(space_t *space, space_config_t *config_or_null) {
+  const space_config_t *config = (config_or_null
+      ? config_or_null
+      : &kDefaultConfig);
   // Start out by clearing it, just for good measure.
   space_clear(space);
+  if (config->allocator.malloc == NULL) {
+    // If we haven't been given an allocator explicitly use the system one.
+    init_system_allocator(&space->allocator);
+  } else {
+    // Otherwise copy the one we've been given into this space.
+    space->allocator = config->allocator;
+  }
   // Allocate one word more than strictly necessary to account for possible
   // alignment.
   size_t bytes = config->size_bytes + kValueSize;
-  address_t memory = (address_t) malloc(bytes);
+  address_t memory = allocator_malloc(&space->allocator, bytes);
+  if (memory == NULL)
+    return new_signal(scSystemError);
   // Clear the newly allocated memory to a recognizable value.
   memset(memory, kBlankHeapMarker, bytes);
   space->memory = memory;
@@ -37,11 +55,13 @@ void space_init(space_t *space, space_config_t *config) {
   // making the space size slightly different depending on whether malloc
   // aligns its data or not is a recipe for subtle bugs.
   space->limit = space->next_free + config->size_bytes;
+  return non_signal();
 }
 
 void space_dispose(space_t *space) {
-  // Even if the space is empty it's safe to free NULL.
-  free(space->memory);
+  if (space->memory == NULL)
+    return;
+  allocator_free(&space->allocator, space->memory);
   space_clear(space);
 }
 
@@ -74,11 +94,12 @@ bool space_try_alloc(space_t *space, size_t size, address_t *memory_out) {
 
 // --- H e a p ---
 
-void heap_init(heap_t *heap, space_config_t *config) {
+value_ptr_t heap_init(heap_t *heap, space_config_t *config) {
   // Initialize new space, leave old space clear; we won't use that until
   // later.
-  space_init(&heap->new_space, config);
+  TRY(space_init(&heap->new_space, config));
   space_clear(&heap->old_space);
+  return non_signal();
 }
 
 bool heap_try_alloc(heap_t *heap, size_t size, address_t *memory_out) {

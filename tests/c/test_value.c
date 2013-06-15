@@ -22,18 +22,10 @@ TEST(value, signals) {
   ASSERT_EQ(scHeapExhausted, get_signal_cause(v0));  
 }
 
-// Initializes a heap with default values such that it can be used for testing.
-static void heap_init_for_test(heap_t *heap) {
-  // Configure the space.
-  space_config_t config;
-  space_config_init_defaults(&config);
-  heap_init(heap, &config);
-}
-
 TEST(value, objects) {
   // Set up the test heap.
   heap_t heap;
-  heap_init_for_test(&heap);
+  heap_init(&heap, NULL);
 
   address_t addr;
   ASSERT_TRUE(heap_try_alloc(&heap, 16, &addr));

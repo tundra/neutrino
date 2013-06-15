@@ -30,6 +30,10 @@ static value_tag_t get_value_tag(value_ptr_t value) {
   return (value_tag_t) (value & kTagMask);
 }
 
+// Macro that evaluates to true if the given expression has the specified
+// value tag.
+#define HAS_TAG(Tag, EXPR) (get_value_tag(EXPR) == vt##Tag)
+
 
 // Creates a new tagged integer with the given value.
 static value_ptr_t new_integer(int64_t value) {
@@ -42,11 +46,18 @@ static int64_t get_integer_value(value_ptr_t value) {
   return (((int64_t) value) >> kTagSize);
 }
 
+// Returns a value that is _not_ a signal. This can be used to indicate
+// unspecific success.
+static value_ptr_t non_signal() {
+  return new_integer(0);
+}
+
 
 // Enum identifying the type of a signal.
 typedef enum {
   // The heap has run out of space.
   scHeapExhausted = 0,
+  scSystemError
 } signal_cause_t;
 
 // How many bits do we need to hold the cause of a signal?
@@ -63,6 +74,14 @@ static signal_cause_t get_signal_cause(value_ptr_t value) {
   CHECK_EQ(vtSignal, get_value_tag(value));
   return  (((int64_t) value) >> kTagSize) & kSignalCauseMask;
 }
+
+// Evaluates the given expression; if it yields a signal returns it otherwise
+// ignores the value.
+#define TRY(EXPR) do {             \
+  value_ptr_t __result__ = (EXPR); \
+  if (HAS_TAG(Signal, __result__)) \
+    return __result__;             \
+} while (false)
 
 
 // Enum identifying the different types of heap objects.

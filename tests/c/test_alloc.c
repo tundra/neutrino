@@ -2,17 +2,9 @@
 #include "test.h"
 #include "value.h"
 
-// Initializes a heap with default values such that it can be used for testing.
-static void heap_init_for_test(heap_t *heap) {
-  // Configure the space.
-  space_config_t config;
-  space_config_init_defaults(&config);
-  heap_init(heap, &config);
-}
-
 TEST(alloc, heap_string) {
   heap_t heap;
-  heap_init_for_test(&heap);
+  heap_init(&heap, NULL);
 
   string_t chars;
   string_init(&chars, "Hut!");

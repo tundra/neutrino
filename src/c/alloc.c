@@ -3,8 +3,7 @@
 value_ptr_t new_heap_string(heap_t *heap, string_t *contents) {
   size_t bytes = calc_string_size(string_length(contents));
   value_ptr_t result = alloc_heap_object(heap, bytes, otString);
-  if (get_value_tag(result) == vtSignal)
-    return result;
+  TRY(result);
   set_string_length(result, string_length(contents));
   string_copy_to(contents, get_string_chars(result), string_length(contents) + 1);
   return result;

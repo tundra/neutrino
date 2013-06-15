@@ -18,7 +18,7 @@ typedef uint8_t *address_t;
 typedef uint32_t address_arith_t;
 
 // Shorthands for commonly used sizes.
-static const size_t kKB = 1024;
-static const size_t kMB = 1024 * 1024;
+#define kKB 1024
+#define kMB (kKB * kKB)
 
 #endif // _GLOBALS
