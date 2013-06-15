@@ -1,4 +1,5 @@
 BIN=bin
+VALGRIND=valgrind -q --leak-check=full
 
 
 # Default target.
@@ -128,7 +129,7 @@ $(C_TEST_MAIN_EXE): $(C_TEST_MAIN_OBJS) $(C_TEST_LIB_OBJS) $(C_LIB_OBJS)
 # Individual C tests.
 $(C_TEST_LIB_RUNS):test-%: tests/c/test_%.c $(C_TEST_MAIN_EXE)
 	@echo Running test_$*
-	@valgrind -q ./$(C_TEST_MAIN_EXE) $*
+	@$(VALGRIND) ./$(C_TEST_MAIN_EXE) $*
 
 
 # Shorthand for running all the C tests.
