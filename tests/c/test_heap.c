@@ -42,12 +42,12 @@ TEST(heap, space_alloc) {
 
   // Check that we can allocate all the memory but no more.
   address_t addr;
-  CHECK_TRUE(space_alloc(&space, kKB / 4, &addr));
-  CHECK_TRUE(space_alloc(&space, kKB / 4, &addr));
-  CHECK_TRUE(space_alloc(&space, kKB / 4, &addr));
-  CHECK_TRUE(space_alloc(&space, kKB / 4, &addr));
-  CHECK_FALSE(space_alloc(&space, 1, &addr));
+  CHECK_TRUE(space_try_alloc(&space, kKB / 4, &addr));
+  CHECK_TRUE(space_try_alloc(&space, kKB / 4, &addr));
+  CHECK_TRUE(space_try_alloc(&space, kKB / 4, &addr));
+  CHECK_TRUE(space_try_alloc(&space, kKB / 4, &addr));
+  CHECK_FALSE(space_try_alloc(&space, 1, &addr));
 
-
+  // Clean up.
   space_dispose(&space);
 }

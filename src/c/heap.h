@@ -45,7 +45,7 @@ bool space_is_empty(space_t *space);
 // required to be value pointer aligned, this function will take care of
 // that if necessary. If allocation is successful the result will be stored
 // in the out argument and true returned; otherwise false will be returned.
-bool space_alloc(space_t *space, size_t size, address_t *memory_out);
+bool space_try_alloc(space_t *space, size_t size, address_t *memory_out);
 
 // Returns a pointer greater than or equal to the given pointer which is
 // aligned to an 'alignment' boundary.
@@ -64,6 +64,12 @@ typedef struct {
 
 // Initialize the given heap.
 void heap_init(heap_t *heap, space_config_t *config);
+
+// Allocate the given number of byte in the given space. The size is not
+// required to be value pointer aligned, this function will take care of
+// that if necessary. If allocation is successful the result will be stored
+// in the out argument and true returned; otherwise false will be returned.
+bool heap_try_alloc(heap_t *heap, size_t size, address_t *memory_out);
 
 // Dispose of the given heap.
 void heap_dispose(heap_t *heap);

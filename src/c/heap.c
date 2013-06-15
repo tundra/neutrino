@@ -47,7 +47,7 @@ bool space_is_empty(space_t *space) {
   return space->next_free == NULL;
 }
 
-bool space_alloc(space_t *space, size_t size, address_t *memory_out) {
+bool space_try_alloc(space_t *space, size_t size, address_t *memory_out) {
   size_t aligned = align_size(kValuePtrAlignment, size);
   address_t addr = space->next_free;
   address_t next = addr + aligned;
@@ -68,6 +68,10 @@ void heap_init(heap_t *heap, space_config_t *config) {
   // later.
   space_init(&heap->new_space, config);
   space_clear(&heap->old_space);
+}
+
+bool heap_try_alloc(heap_t *heap, size_t size, address_t *memory_out) {
+  return space_try_alloc(&heap->new_space, size, memory_out);
 }
 
 void heap_dispose(heap_t *heap) {
