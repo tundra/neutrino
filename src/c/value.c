@@ -21,12 +21,12 @@ object_family_t get_object_family(value_t value) {
 void set_species_instance_family(value_t value,
     object_family_t instance_family) {
   *access_object_field(value, kSpeciesInstanceFamilyOffset) =
-      (value_t) instance_family;
+      new_integer(instance_family);
 }
 
 object_family_t get_species_instance_family(value_t value) {
-  return (object_family_t) *access_object_field(value,
-      kSpeciesInstanceFamilyOffset);
+  value_t family = *access_object_field(value, kSpeciesInstanceFamilyOffset);
+  return (object_family_t) get_integer_value(family);
 }
 
 void set_species_behavior(value_t value, behavior_t *behavior) {
@@ -52,12 +52,12 @@ size_t calc_string_size(size_t char_count) {
 
 void set_string_length(value_t value, size_t length) {
   CHECK_FAMILY(ofString, value);
-  *access_object_field(value, kStringLengthOffset) = (value_t) length;
+  *access_object_field(value, kStringLengthOffset) = new_integer(length);
 }
 
 size_t get_string_length(value_t value) {
   CHECK_FAMILY(ofString, value);
-  return (size_t) *access_object_field(value, kStringLengthOffset);
+  return get_integer_value(*access_object_field(value, kStringLengthOffset));
 }
 
 char *get_string_chars(value_t value) {
@@ -81,12 +81,12 @@ size_t calc_array_size(size_t length) {
 
 size_t get_array_length(value_t value) {
   CHECK_FAMILY(ofArray, value);
-  return (size_t) *access_object_field(value, kArrayLengthOffset);
+  return get_integer_value(*access_object_field(value, kArrayLengthOffset));
 }
 
 void set_array_length(value_t value, size_t length) {
   CHECK_FAMILY(ofArray, value);
-  *access_object_field(value, kArrayLengthOffset) = (value_t) length;
+  *access_object_field(value, kArrayLengthOffset) = new_integer(length);
 }
 
 value_t get_array_at(value_t value, size_t index) {
