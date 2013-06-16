@@ -6,17 +6,20 @@
 #ifndef _BEHAVIOR
 #define _BEHAVIOR
 
-// A unary method.
-typedef value_t (unary_map_t)(value_t value);
-typedef bool (binary_predicate_t)(value_t a, value_t b);
-
 // A collection of "virtual" methods that define how a particular species
 // behaves.
 typedef struct behavior_t {
   // Function for validating an object.
-  unary_map_t *validate;
-  unary_map_t *transient_identity_hash;
-  binary_predicate_t *are_identical;
+  value_t (*validate)(value_t value);
+  // Calculates the transient identity hash.
+  value_t (*transient_identity_hash)(value_t value);
+  // Returns true iff the two values are identical.
+  bool (*are_identical)(value_t a, value_t b);
+  // Writes a string representation of the value on a string buffer.
+  void (*print_on)(value_t value, string_buffer_t *buf);
+  // Writes an atomic (that is, doesn't recurse into contents) string
+  // representation on a string buffer.
+  void (*print_atomic_on)(value_t value, string_buffer_t *buf);
 } behavior_t;
 
 // Validates an object.
@@ -30,6 +33,10 @@ value_t value_transient_identity_hash(value_t value);
 
 // Returns true iff the two values are identical.
 bool value_are_identical(value_t a, value_t b);
+
+// Prints a human-readable representation of the given value on the given
+// string buffer.
+void value_print_on(value_t value, string_buffer_t *buf);
 
 // Declare the behavior structs for all the families on one fell swoop.
 #define DECLARE_BEHAVIOR(Family, family) \

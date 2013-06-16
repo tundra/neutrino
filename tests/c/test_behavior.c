@@ -25,8 +25,8 @@ TEST(behavior, identity) {
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
   // Convenient shorthands.
-  unary_map_t *hash = value_transient_identity_hash;
-  binary_predicate_t *equal = value_are_identical;
+  value_t (*hash)(value_t value) = value_transient_identity_hash;
+  bool (*equal)(value_t a, value_t b) = value_are_identical;
 
   // Integers
   ASSERT_SUCCESS(hash(new_integer(0)));
@@ -58,6 +58,55 @@ TEST(behavior, identity) {
   value_t null = runtime_null(&runtime);
   ASSERT_SUCCESS(hash(null));
   ASSERT_TRUE(equal(null, null));
+
+  runtime_dispose(&runtime);
+}
+
+// Check that printing the given value yields the expected string.
+static void check_print_on(const char *expected_chars, value_t value) {
+  string_buffer_t buf;
+  string_buffer_init(&buf, NULL);
+
+  value_print_on(value, &buf);
+  string_t result;
+  string_buffer_flush(&buf, &result);
+  DEF_STRING(expected, expected_chars);
+  ASSERT_TRUE(string_equals(&expected, &result));
+
+  string_buffer_dispose(&buf);
+}
+
+TEST(behavior, print_on) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  // Integers
+  check_print_on("0", new_integer(0));
+  check_print_on("413", new_integer(413));
+  check_print_on("-1231", new_integer(-1231));
+
+  // Singletons
+  check_print_on("null", runtime_null(&runtime));
+  check_print_on("true", runtime_bool(&runtime, true));
+  check_print_on("false", runtime_bool(&runtime, false));
+
+  // Strings
+  DEF_STRING(foo_chars, "foo");
+  value_t foo = new_heap_string(&runtime, &foo_chars);
+  check_print_on("\"foo\"", foo);
+  DEF_STRING(empty_chars, "");
+  value_t empty = new_heap_string(&runtime, &empty_chars);
+  check_print_on("\"\"", empty);
+
+  // Arrays.
+  value_t arr = new_heap_array(&runtime, 3);
+  check_print_on("[null, null, null]", arr);
+  set_array_at(arr, 1, new_integer(4));
+  check_print_on("[null, 4, null]", arr);  
+  set_array_at(arr, 2, foo);
+  check_print_on("[null, 4, \"foo\"]", arr);  
+  set_array_at(arr, 0, arr);
+  check_print_on("[#<array[3]>, 4, \"foo\"]", arr);  
 
   runtime_dispose(&runtime);
 }

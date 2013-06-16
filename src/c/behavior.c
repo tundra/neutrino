@@ -186,6 +186,114 @@ static bool map_are_identical(value_t a, value_t b) {
 }
 
 
+// --- P r i n t ---
+
+// Print a value atomically, that is, without recursively printing any
+// elements contained in the value.
+void value_print_atomic_on(value_t value, string_buffer_t *buf);
+
+static void integer_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_DOMAIN(vdInteger, value);
+  string_buffer_printf(buf, "%lli", get_integer_value(value));
+}
+
+static void object_print_on(value_t value, string_buffer_t *buf) {
+  CHECK_DOMAIN(vdObject, value);
+  value_t species = get_object_species(value);
+  behavior_t *behavior = get_species_behavior(species);
+  (behavior->print_on)(value, buf);
+}
+
+static void object_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_DOMAIN(vdObject, value);
+  value_t species = get_object_species(value);
+  behavior_t *behavior = get_species_behavior(species);
+  (behavior->print_atomic_on)(value, buf);  
+}
+
+static void null_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "null");
+}
+
+static void null_print_on(value_t value, string_buffer_t *buf) {
+  null_print_atomic_on(value, buf);
+}
+
+static void bool_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, get_bool_value(value) ? "true" : "false");
+}
+
+static void bool_print_on(value_t value, string_buffer_t *buf) {
+  bool_print_atomic_on(value, buf);
+}
+
+static void species_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<species>");
+}
+
+static void species_print_on(value_t value, string_buffer_t *buf) {
+  species_print_atomic_on(value, buf);
+}
+
+static void array_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<array[%i]>", (int) get_array_length(value));
+}
+
+static void array_print_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "[");
+  for (size_t i = 0; i < get_array_length(value); i++) {
+    if (i > 0)
+      string_buffer_printf(buf, ", ");
+    value_print_atomic_on(get_array_at(value, i), buf);
+  }
+  string_buffer_printf(buf, "]");
+}
+
+static void map_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<map>");
+}
+
+static void map_print_on(value_t value, string_buffer_t *buf) {
+  map_print_atomic_on(value, buf);
+}
+
+static void string_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_t contents;
+  get_string_contents(value, &contents);
+  string_buffer_printf(buf, "\"%s\"", contents.chars);
+}
+
+static void string_print_on(value_t value, string_buffer_t *buf) {
+  string_print_atomic_on(value, buf);
+}
+
+void value_print_on(value_t value, string_buffer_t *buf) {
+  switch (get_value_domain(value)) {
+    case vdInteger:
+      integer_print_atomic_on(value, buf);
+      break;
+    case vdObject:
+      object_print_on(value, buf);
+      break;
+    default:
+      UNREACHABLE();
+  }
+}
+
+void value_print_atomic_on(value_t value, string_buffer_t *buf) {
+  switch (get_value_domain(value)) {
+    case vdInteger:
+      integer_print_atomic_on(value, buf);
+      break;
+    case vdObject:
+      object_print_atomic_on(value, buf);
+      break;
+    default:
+      UNREACHABLE();
+  }
+}
+
+
 // Define all the family behaviors in one go. Because of this, as soon as you
 // add a new object type you'll get errors for all the behaviors you need to
 // implement.
@@ -193,7 +301,9 @@ static bool map_are_identical(value_t a, value_t b) {
 behavior_t k##Family##Behavior = {      \
   &family##_validate,                   \
   &family##_transient_identity_hash,    \
-  &family##_are_identical               \
+  &family##_are_identical,              \
+  &family##_print_on,                   \
+  &family##_print_atomic_on             \
 };
 ENUM_FAMILIES(DEFINE_BEHAVIOR)
 #undef DEFINE_BEHAVIOR
