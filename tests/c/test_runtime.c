@@ -21,12 +21,18 @@ TEST(runtime, create) {
   ASSERT_SIGNAL(scSystemError, runtime_init(&r1, &config));
 }
 
-TEST(runtime, null) {
+TEST(runtime, singletons) {
   runtime_t r;
   ASSERT_NOT_DOMAIN(vdSignal, runtime_init(&r, NULL));
 
   value_t null = runtime_null(&r);
   ASSERT_FAMILY(ofNull, null);
+  value_t thrue = runtime_bool(&r, true);
+  value_t fahlse = runtime_bool(&r, false);
+  ASSERT_FAMILY(ofBool, thrue);
+  ASSERT_TRUE(get_bool_value(thrue));
+  ASSERT_FAMILY(ofBool, fahlse);
+  ASSERT_FALSE(get_bool_value(fahlse));
 
   runtime_dispose(&r);
 }

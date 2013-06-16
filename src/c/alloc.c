@@ -36,6 +36,14 @@ value_t new_heap_null(runtime_t *runtime) {
   return alloc_heap_object(&runtime->heap, size, runtime->roots.null_species);
 }
 
+value_t new_heap_bool(runtime_t *runtime, bool value) {
+  size_t size = kBoolSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.bool_species));
+  set_bool_value(result, value);
+  return result;
+}
+
 value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species) {
   address_t addr;
   if (!heap_try_alloc(heap, bytes, &addr))

@@ -13,9 +13,12 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   TRY_SET(roots->string_species, new_heap_species(runtime, ofString, &kStringBehavior));
   TRY_SET(roots->array_species, new_heap_species(runtime, ofArray, &kArrayBehavior));
   TRY_SET(roots->null_species, new_heap_species(runtime, ofNull, &kNullBehavior));
+  TRY_SET(roots->bool_species, new_heap_species(runtime, ofBool, &kBoolBehavior));
 
   // Singletons
   TRY_SET(roots->null, new_heap_null(runtime));
+  TRY_SET(roots->thrue, new_heap_bool(runtime, true));
+  TRY_SET(roots->fahlse, new_heap_bool(runtime, false));
   return non_signal();
 }
 
@@ -24,7 +27,10 @@ void roots_clear(roots_t *roots) {
   roots->string_species = non_signal();
   roots->array_species = non_signal();
   roots->null_species = non_signal();
+  roots->bool_species = non_signal();
   roots->null = non_signal();
+  roots->thrue = non_signal();
+  roots->fahlse = non_signal();
 }
 
 value_t roots_validate(roots_t *roots) {
@@ -49,8 +55,11 @@ value_t roots_validate(roots_t *roots) {
   VALIDATE_SPECIES(ofString, roots->string_species);
   VALIDATE_SPECIES(ofArray, roots->array_species);
   VALIDATE_SPECIES(ofNull, roots->null_species);
+  VALIDATE_SPECIES(ofBool, roots->bool_species);
 
   VALIDATE_OBJECT(ofNull, roots->null);
+  VALIDATE_OBJECT(ofBool, roots->thrue);
+  VALIDATE_OBJECT(ofBool, roots->fahlse);
 
   #undef VALIDATE_TYPE
   #undef VALIDATE_SPECIES
@@ -79,4 +88,8 @@ void runtime_dispose(runtime_t *runtime) {
 
 value_t runtime_null(runtime_t *runtime) {
   return runtime->roots.null;
+}
+
+value_t runtime_bool(runtime_t *runtime, bool which) {
+  return which ? runtime->roots.thrue : runtime->roots.fahlse;
 }

@@ -44,6 +44,13 @@ static value_t validate_null(value_t value) {
   return non_signal();
 }
 
+static value_t validate_bool(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofBool, value);
+  bool which = get_bool_value(value);
+  VALIDATE((which == true) || (which == false));
+  return non_signal();
+}
+
 // Define all the family behaviors in one go. Because of this, as soon as you
 // add a new object type you'll get errors for all the behaviors you need to
 // implement.

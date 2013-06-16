@@ -99,7 +99,8 @@ static signal_cause_t get_signal_cause(value_t value) {
   F(Species, species)    \
   F(String,  string)     \
   F(Array,   array)      \
-  F(Null,    null)
+  F(Null,    null)       \
+  F(Bool,    bool)
 
 // Enum identifying the different families of heap objects.
 typedef enum {
@@ -209,6 +210,17 @@ void set_array_at(value_t value, size_t index, value_t element);
 
 // --- N u l l ---
 
-static const size_t kNullSize = OBJECT_SIZE(1);
+static const size_t kNullSize = OBJECT_SIZE(0);
+
+
+// --- B o o l ---
+
+static const size_t kBoolSize = OBJECT_SIZE(1);
+
+// Sets whether the given bool represents true or false.
+void set_bool_value(value_t value, bool truth);
+
+// Returns whether the given bool is true.
+bool get_bool_value(value_t value);
 
 #endif // _VALUE

@@ -14,8 +14,11 @@ typedef struct {
   value_t string_species;
   value_t array_species;
   value_t null_species;
+  value_t bool_species;
   // Singletons
   value_t null;
+  value_t thrue;
+  value_t fahlse;
 } roots_t;
 
 
@@ -40,6 +43,10 @@ void runtime_dispose(runtime_t *runtime);
 
 // Returns this runtime's null value.
 value_t runtime_null(runtime_t *runtime);
+
+// Returns either this runtime's true or false value, depending on 'value'.
+value_t runtime_bool(runtime_t *runtime, bool value);
+
 
 // Run a series of sanity checks on the runtime to check that it is consistent.
 // Returns a signal iff something is wrong. A runtime will only validate if it

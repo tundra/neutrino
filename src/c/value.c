@@ -33,6 +33,9 @@ behavior_t *get_species_behavior(value_t value) {
   return (behavior_t*) (address_arith_t) *access_object_field(value, 2);
 }
 
+
+// --- S t r i n g ---
+
 size_t calc_string_size(size_t char_count) {
   // We need to fix one extra byte, the terminating null.
   size_t bytes = char_count + 1;
@@ -62,6 +65,8 @@ void get_string_contents(value_t value, string_t *out) {
 }
 
 
+// --- A r r a y ---
+
 size_t calc_array_size(size_t length) {
   return kObjectHeaderSize       // header
        + kValueSize              // length
@@ -88,4 +93,17 @@ void set_array_at(value_t value, size_t index, value_t element) {
   CHECK_FAMILY(ofArray, value);
   CHECK_TRUE(index < get_array_length(value));
   *access_object_field(value, 2 + index) = element;
+}
+
+
+// --- B o o l ---
+
+void set_bool_value(value_t value, bool truth) {
+  CHECK_FAMILY(ofBool, value);
+  *access_object_field(value, 1) = (value_t) truth;
+}
+
+bool get_bool_value(value_t value) {
+  CHECK_FAMILY(ofBool, value);
+  return (bool) *access_object_field(value, 1);
 }
