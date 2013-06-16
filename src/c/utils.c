@@ -2,6 +2,7 @@
 #include "utils.h"
 
 #include <string.h>
+#include <stdarg.h>
 
 void string_init(string_t *str, const char *chars) {
   str->chars = chars;
@@ -68,4 +69,62 @@ address_t allocator_malloc(allocator_t *alloc, size_t size) {
 
 void allocator_free(allocator_t *alloc, address_t ptr) {
   (alloc->free)(alloc->data, ptr);
+}
+
+void string_buffer_init(string_buffer_t *buf, allocator_t *alloc_or_null) {
+  if (alloc_or_null == NULL) {
+    init_system_allocator(&buf->allocator);
+  } else {
+    buf->allocator = *alloc_or_null;
+  }
+  buf->length = 0;
+  buf->capacity = 128;
+  buf->chars = (char*) allocator_malloc(&buf->allocator, buf->capacity);
+}
+
+void string_buffer_dispose(string_buffer_t *buf) {
+  allocator_free(&buf->allocator, (address_t) buf->chars);
+}
+
+// Expands the buffer to make room for 'length' characters if necessary.
+static void string_buffer_ensure_capacity(string_buffer_t *buf,
+    size_t length) {
+  if (length < buf->capacity)
+    return;
+  size_t new_capacity = (length * 2);
+  char *new_chars = (char*) allocator_malloc(&buf->allocator,
+      new_capacity);
+  memcpy(new_chars, buf->chars, buf->length);
+  allocator_free(&buf->allocator, (address_t) buf->chars);
+  buf->chars = new_chars;
+  buf->capacity = new_capacity;
+}
+
+// Appends the given string to the string buffer, extending it as necessary.
+static void string_buffer_append(string_buffer_t *buf, string_t *str) {
+  string_buffer_ensure_capacity(buf, buf->length + string_length(str));
+  string_copy_to(str, buf->chars + buf->length, buf->capacity - buf->length);
+  buf->length += string_length(str);
+}
+
+void string_buffer_printf(string_buffer_t *buf, const char *fmt, ...) {
+  va_list argp;
+  va_start(argp, fmt);
+  // Write the formatted string into a temporary buffer.
+  static const size_t kMaxSize = 1024;
+  char buffer[kMaxSize + 1];
+  // Null terminate explicitly just to be on the safe side.
+  buffer[kMaxSize] = '\0';
+  size_t written = vsnprintf(buffer, kMaxSize, fmt, argp);
+  // Then write the temp string into the string buffer.
+  string_t data = {written, buffer};
+  string_buffer_append(buf, &data);
+  va_end(argp);
+}
+
+void string_buffer_flush(string_buffer_t *buf, string_t *str_out) {
+  CHECK_TRUE(buf->length < buf->capacity);
+  buf->chars[buf->length] = '\0';
+  str_out->length = buf->length;
+  str_out->chars = buf->chars;
 }

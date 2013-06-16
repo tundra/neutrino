@@ -55,4 +55,32 @@ address_t allocator_malloc(allocator_t *alloc, size_t size);
 // Frees a block of memory using the given allocator.
 void allocator_free(allocator_t *alloc, address_t ptr);
 
+
+// Buffer for building a string incrementally.
+typedef struct {
+  // Size of string currently in the buffer.
+  size_t length;
+  // Length of the total buffer (including null terminator).
+  size_t capacity;
+  // The actual data.
+  char *chars;
+  // The allocator to use to grab memory.
+  allocator_t allocator;
+} string_buffer_t;
+
+// Initialize a string buffer. If an allocator is passed it will be used for
+// all allocation, otherwise the default system allocator will be used.
+void string_buffer_init(string_buffer_t *buf, allocator_t *allocator);
+
+// Disposes the given string buffer.
+void string_buffer_dispose(string_buffer_t *buf);
+
+// Append the given text to the given buffer.
+void string_buffer_printf(string_buffer_t *buf, const char *format, ...);
+
+// Null-terminates the buffer and stores the result in the given out parameter.
+// The string is still backed by the buffer and so becomes invalid when the
+// buffer is disposed.
+void string_buffer_flush(string_buffer_t *buf, string_t *str_out);
+
 #endif // _UTILS
