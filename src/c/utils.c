@@ -35,6 +35,15 @@ bool string_equals(string_t *a, string_t *b) {
   return true;
 }
 
+size_t string_hash(string_t *str) {
+  // This is a dreadful hash but it has the right properties. Improve later.
+  size_t length = string_length(str);
+  size_t result = length;
+  for (size_t i = 0; i < length; i++)
+    result = (result << 1) ^ (string_char_at(str, i));
+  return result;
+}
+
 // Throws away the data argument and just calls malloc.
 static address_t system_malloc_trampoline(void *data, size_t size) {
   CHECK_EQ(NULL, data);

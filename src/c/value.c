@@ -204,7 +204,7 @@ static bool find_map_entry(value_t map, value_t key, size_t hash,
     size_t entry_hash = get_map_entry_hash(entry);
     if (entry_hash == hash) {
       value_t entry_key = get_map_entry_key(entry);
-      if (value_equals(key, entry_key)) {
+      if (value_are_identical(key, entry_key)) {
         // Found the key; just return it.
         *entry_out = entry;
         return true;
@@ -221,7 +221,7 @@ value_t try_set_map_at(value_t map, value_t key, value_t value) {
   size_t capacity = get_map_capacity(map);
   bool is_full = (size == (capacity - 1));
   // Calculate the hash.
-  TRY_DEF(hash_value, value_hash(key));
+  TRY_DEF(hash_value, value_transient_identity_hash(key));
   size_t hash = get_integer_value(hash_value);
   // Locate where the new entry goes in the entry array.
   value_t *entry = NULL;
@@ -241,7 +241,7 @@ value_t try_set_map_at(value_t map, value_t key, value_t value) {
 
 value_t get_map_at(value_t map, value_t key) {
   CHECK_FAMILY(ofMap, map);
-  TRY_DEF(hash_value, value_hash(key));
+  TRY_DEF(hash_value, value_transient_identity_hash(key));
   size_t hash = get_integer_value(hash_value);
   value_t *entry = NULL;
   if (find_map_entry(map, key, hash, &entry, NULL)) {

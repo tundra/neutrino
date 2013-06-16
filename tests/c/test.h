@@ -35,3 +35,8 @@ extern void fail(const char *error, const char *file, int line);
 // Fails unless the given value is a signal of the given type.
 #define ASSERT_SIGNAL(scCause, EXPR) \
   ASSERT_TRUE(is_signal(scCause, EXPR))
+
+// Declares a new string_t variable and initializes it with the given contents.
+#define DEF_STRING(name, contents) \
+string_t name;                     \
+string_init(&name, contents)

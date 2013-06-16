@@ -6,8 +6,7 @@ TEST(alloc, heap_string) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
-  string_t chars;
-  string_init(&chars, "Hut!");
+  DEF_STRING(chars, "Hut!");
   value_t str = new_heap_string(&runtime, &chars);
   ASSERT_DOMAIN(vdObject, str);
   ASSERT_FAMILY(ofString, str);

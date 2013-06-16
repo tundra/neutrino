@@ -37,24 +37,6 @@ TEST(value, objects) {
   heap_dispose(&heap);
 }
 
-TEST(value, string_validation) {
-  runtime_t r;
-  ASSERT_SUCCESS(runtime_init(&r, NULL));
-
-  string_t chars;
-  string_init(&chars, "Hut!");
-  value_t str = new_heap_string(&r, &chars);
-
-  // String starts out validating.
-  ASSERT_FALSE(in_domain(vdSignal, object_validate(str)));
-  // Zap the null terminator.
-  get_string_chars(str)[4] = 'x';
-  // Now the string no longer terminates.
-  ASSERT_SIGNAL(scValidationFailed, object_validate(str));
-
-  runtime_dispose(&r);
-}
-
 TEST(value, maps_simple) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
@@ -97,6 +79,24 @@ TEST(value, maps_simple) {
   ASSERT_EQ(new_integer(3), get_map_at(map, new_integer(0)));
   ASSERT_EQ(new_integer(9), get_map_at(map, new_integer(1)));
   ASSERT_EQ(new_integer(5), get_map_at(map, new_integer(100)));
+
+  runtime_dispose(&runtime);
+}
+
+
+TEST(value, maps_strings) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  string_t one_chars;
+  string_init(&one_chars, "One");
+  value_t one = new_heap_string(&runtime, &one_chars);
+
+  value_t map = new_heap_map(&runtime, 4);
+  ASSERT_EQ(0, get_map_size(map));
+  ASSERT_SUCCESS(try_set_map_at(map, one, new_integer(4)));
+  ASSERT_EQ(1, get_map_size(map));
+  ASSERT_EQ(new_integer(4), get_map_at(map, one));
 
   runtime_dispose(&runtime);
 }
