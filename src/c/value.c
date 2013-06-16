@@ -1,3 +1,4 @@
+#include "behavior.h"
 #include "heap.h"
 
 void set_object_species(value_t value, value_t species) {
@@ -13,6 +14,9 @@ object_family_t get_object_family(value_t value) {
   return get_species_instance_family(species);
 }
 
+
+// --- S p e c i e s ---
+
 void set_species_instance_family(value_t value, object_family_t instance_family) {
   *access_object_field(value, 1) = (value_t) instance_family;
 }
@@ -21,6 +25,13 @@ object_family_t get_species_instance_family(value_t value) {
   return (object_family_t) *access_object_field(value, 1);
 }
 
+void set_species_behavior(value_t value, behavior_t *behavior) {
+  *access_object_field(value, 2) = (value_t) (address_arith_t) behavior;
+}
+
+behavior_t *get_species_behavior(value_t value) {
+  return (behavior_t*) (address_arith_t) *access_object_field(value, 2);
+}
 
 size_t calc_string_size(size_t char_count) {
   // We need to fix one extra byte, the terminating null.

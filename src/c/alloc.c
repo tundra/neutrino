@@ -1,4 +1,5 @@
 #include "alloc.h"
+#include "behavior.h"
 #include "value-inl.h"
 
 value_t new_heap_string(runtime_t *runtime, string_t *contents) {
@@ -10,11 +11,13 @@ value_t new_heap_string(runtime_t *runtime, string_t *contents) {
   return result;
 }
 
-value_t new_heap_species(runtime_t *runtime, object_family_t instance_family) {
+value_t new_heap_species(runtime_t *runtime, object_family_t instance_family,
+    behavior_t *behavior) {
   size_t bytes = kSpeciesSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, bytes,
       runtime->roots.species_species));
   set_species_instance_family(result, instance_family);
+  set_species_behavior(result, behavior);
   return result;
 }
 

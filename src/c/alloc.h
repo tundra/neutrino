@@ -1,6 +1,7 @@
 // Higher-level allocation routines that allocate and initialize objects in a
 // given heap.
 
+#include "behavior.h"
 #include "globals.h"
 #include "heap.h"
 #include "runtime.h"
@@ -15,7 +16,8 @@
 value_t new_heap_string(runtime_t *runtime, string_t *contents);
 
 // Allocates a new species whose instances have the specified instance family.
-value_t new_heap_species(runtime_t *runtime, object_family_t instance_family);
+value_t new_heap_species(runtime_t *runtime, object_family_t instance_family,
+    behavior_t *behavior);
 
 // Allocates a new heap array in the given runtime with room for the given
 // number of elements. The array will be initialized to null.

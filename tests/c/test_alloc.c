@@ -23,7 +23,7 @@ TEST(alloc, heap_species) {
   runtime_t runtime;
   runtime_init(&runtime, NULL);
 
-  value_t species = new_heap_species(&runtime, ofString);
+  value_t species = new_heap_species(&runtime, ofString, &kStringBehavior);
   ASSERT_DOMAIN(vdObject, species);
   ASSERT_FAMILY(ofSpecies, species);
   ASSERT_EQ(ofString, get_species_instance_family(species));

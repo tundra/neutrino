@@ -10,7 +10,7 @@ address_t blocking_malloc(void *data, size_t size) {
 TEST(runtime, create) {
   // Successfully create a runtime.
   runtime_t r0;
-  ASSERT_FALSE(in_domain(vdSignal, runtime_init(&r0, NULL)));
+  ASSERT_NOT_DOMAIN(vdSignal, runtime_init(&r0, NULL));
   runtime_dispose(&r0);
 
   // Propagating failure correctly when malloc fails during startup.
@@ -18,12 +18,12 @@ TEST(runtime, create) {
   space_config_t config;
   space_config_init_defaults(&config);
   config.allocator.malloc = blocking_malloc;
-  ASSERT_TRUE(in_domain(vdSignal, runtime_init(&r1, &config)));
+  ASSERT_SIGNAL(scSystemError, runtime_init(&r1, &config));
 }
 
 TEST(runtime, null) {
   runtime_t r;
-  ASSERT_FALSE(in_domain(vdSignal, runtime_init(&r, NULL)));
+  ASSERT_NOT_DOMAIN(vdSignal, runtime_init(&r, NULL));
 
   value_t null = runtime_null(&r);
   ASSERT_FAMILY(ofNull, null);
@@ -31,18 +31,18 @@ TEST(runtime, null) {
   runtime_dispose(&r);
 }
 
-TEST(runtime, validation) {
+TEST(runtime, runtime_validation) {
   runtime_t r;
-  ASSERT_FALSE(in_domain(vdSignal, runtime_init(&r, NULL)));
+  ASSERT_NOT_DOMAIN(vdSignal, runtime_init(&r, NULL));
 
   // Initially it validates.
-  ASSERT_FALSE(in_domain(vdSignal, runtime_validate(&r)));
+  ASSERT_NOT_DOMAIN(vdSignal, runtime_validate(&r));
 
   // Break this runtime.
   r.roots.null = new_integer(0);
 
-  // Initially it no longer validates.
-  ASSERT_TRUE(in_domain(vdSignal, runtime_validate(&r)));
+  // Now it no longer validates.
+  ASSERT_SIGNAL(scValidationFailed, runtime_validate(&r));
 
   runtime_dispose(&r);
 }

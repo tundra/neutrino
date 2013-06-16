@@ -33,9 +33,12 @@ static inline bool in_domain(value_domain_t domain, value_t value) {
 
 // Returns true iff the given value is an object within the given family.
 static inline bool in_family(object_family_t family, value_t value) {
-  if (!in_domain(vdObject, value))
-    return false;
-  return get_object_family(value) == family;
+  return in_domain(vdObject, value) && (get_object_family(value) == family);
+}
+
+// Returns true iff the value is a signal with the specified cause.
+static inline bool is_signal(signal_cause_t cause, value_t value) {
+  return in_domain(vdSignal, value) && (get_signal_cause(value) == cause);
 }
 
 #endif // _VALUE_INL

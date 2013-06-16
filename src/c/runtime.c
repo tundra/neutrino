@@ -1,17 +1,18 @@
 #include "alloc.h"
+#include "behavior.h"
 #include "runtime.h"
 #include "value-inl.h"
 
 value_t roots_init(roots_t *roots, runtime_t *runtime) {
   // First set up the meta-species which it its own species.
-  TRY_DEF(meta, new_heap_species(runtime, ofSpecies));
+  TRY_DEF(meta, new_heap_species(runtime, ofSpecies, &kSpeciesBehavior));
   set_object_species(meta, meta);
   roots->species_species = meta;
 
   // The other species are straightforward.
-  TRY_SET(roots->string_species, new_heap_species(runtime, ofString));
-  TRY_SET(roots->array_species, new_heap_species(runtime, ofArray));
-  TRY_SET(roots->null_species, new_heap_species(runtime, ofNull));
+  TRY_SET(roots->string_species, new_heap_species(runtime, ofString, &kStringBehavior));
+  TRY_SET(roots->array_species, new_heap_species(runtime, ofArray, &kArrayBehavior));
+  TRY_SET(roots->null_species, new_heap_species(runtime, ofNull, &kNullBehavior));
 
   // Singletons
   TRY_SET(roots->null, new_heap_null(runtime));
@@ -32,6 +33,7 @@ value_t roots_validate(roots_t *roots) {
   #define VALIDATE_OBJECT(ofFamily, value) do { \
     if (!in_family(ofFamily, (value)))          \
       return new_signal(scValidationFailed);    \
+    TRY(object_validate(value));                \
   } while (false)
 
   // Checks that the given value is a species with the specified instance
@@ -40,6 +42,7 @@ value_t roots_validate(roots_t *roots) {
     VALIDATE_OBJECT(ofSpecies, value);                  \
     if (get_species_instance_family(value) != ofFamily) \
       return new_signal(scValidationFailed);            \
+    TRY(object_validate(value));                        \
   } while (false)
 
   VALIDATE_SPECIES(ofSpecies, roots->species_species);

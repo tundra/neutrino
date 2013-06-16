@@ -1,6 +1,8 @@
+#include "alloc.h"
 #include "heap.h"
+#include "runtime.h"
 #include "test.h"
-#include "value.h"
+#include "value-inl.h"
 
 
 // Really simple value tagging stuff.
@@ -23,7 +25,6 @@ TEST(value, signals) {
 }
 
 TEST(value, objects) {
-  // Set up the test heap.
   heap_t heap;
   heap_init(&heap, NULL);
 
@@ -35,3 +36,24 @@ TEST(value, objects) {
 
   heap_dispose(&heap);
 }
+
+TEST(runtime, string_validation) {
+  runtime_t r;
+  ASSERT_FALSE(in_domain(vdSignal, runtime_init(&r, NULL)));
+
+  string_t chars;
+  string_init(&chars, "Hut!");
+  value_t str = new_heap_string(&r, &chars);
+
+  // String starts out validating.
+  ASSERT_FALSE(in_domain(vdSignal, object_validate(str)));
+
+  // Zap the null terminator.
+  get_string_chars(str)[4] = 'x';
+
+  // Now the string no longer terminates.
+  ASSERT_SIGNAL(scValidationFailed, object_validate(str));
+
+  runtime_dispose(&r);
+}
+ 

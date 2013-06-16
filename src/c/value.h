@@ -94,16 +94,19 @@ static signal_cause_t get_signal_cause(value_t value) {
 
 // --- O b j e c t ---
 
+// Macro that invokes the given macro callback for each object family.
+#define ENUM_FAMILIES(F) \
+  F(Species, species)    \
+  F(String,  string)     \
+  F(Array,   array)      \
+  F(Null,    null)
+
 // Enum identifying the different families of heap objects.
 typedef enum {
-  // A species object.
-  ofSpecies = 0,
-  // A dumb string.
-  ofString,
-  // A primitive array of values.
-  ofArray,
-  // Singleton null value.
-  ofNull
+  __ofFirst__ = -1
+  #define DECLARE_FAMILY_ENUM(Family, family) , of##Family
+  ENUM_FAMILIES(DECLARE_FAMILY_ENUM)
+  #undef DECLARE_FAMILY_ENUM
 } object_family_t;
 
 // Number of bytes in an object header.
@@ -147,13 +150,25 @@ value_t get_object_species(value_t value);
 // --- S p e c i e s ---
 
 // The size of a species object.
-static const size_t kSpeciesSize = OBJECT_SIZE(1);
+static const size_t kSpeciesSize = OBJECT_SIZE(
+    1  // instance family
+  + 1  // behavior
+);
 
 // Given a species object, sets the instance type field to the specified value.
 void set_species_instance_family(value_t species, object_family_t instance_family);
 
 // Given a species object, returns the instance type field.
 object_family_t get_species_instance_family(value_t species);
+
+// Forward declaration of the behavior struct (see behavior.h).
+struct behavior_t;
+
+// Returns the behavior of this species belongs to.
+struct behavior_t *get_species_behavior(value_t species);
+
+// Sets the behavior of this species.
+void set_species_behavior(value_t species, struct behavior_t *behavior);
 
 
 // --- S t r i n g ---
