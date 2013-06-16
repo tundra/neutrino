@@ -121,6 +121,8 @@ typedef enum {
 // is not counted as a field. 
 #define OBJECT_SIZE(N) ((N * kValueSize) + kObjectHeaderSize)
 
+static const size_t kObjectSpeciesOffset = 0;
+
 // Converts a pointer to an object into an tagged object value pointer.
 static value_t new_object(address_t addr) {
   CHECK_EQ(0, ((address_arith_t) addr) & kDomainTagMask);
@@ -154,11 +156,9 @@ value_t get_object_species(value_t value);
 
 // --- S p e c i e s ---
 
-// The size of a species object.
-static const size_t kSpeciesSize = OBJECT_SIZE(
-    1  // instance family
-  + 1  // behavior
-);
+static const size_t kSpeciesSize = OBJECT_SIZE(2);
+static const size_t kSpeciesInstanceFamilyOffset = 1;
+static const size_t kSpeciesBehaviorOffset = 2;
 
 // Given a species object, sets the instance type field to the specified value.
 void set_species_instance_family(value_t species, object_family_t instance_family);
@@ -178,6 +178,9 @@ void set_species_behavior(value_t species, struct behavior_t *behavior);
 
 // --- S t r i n g ---
 
+static const size_t kStringLengthOffset = 1;
+static const size_t kStringCharsOffset = 2;
+
 // Returns the size of a heap string with the given number of characters.
 size_t calc_string_size(size_t char_count);
 
@@ -195,6 +198,9 @@ void get_string_contents(value_t value, string_t *out);
 
 
 // --- A r r a y ---
+
+static const size_t kArrayLengthOffset = 1;
+static const size_t kArrayElementsOffset = 2;
 
 // Calculates the size of a heap array with the given number of elements.
 size_t calc_array_size(size_t length);
@@ -214,20 +220,16 @@ void set_array_at(value_t value, size_t index, value_t element);
 
 // --- M a p ---
 
-static const size_t kMapSize = OBJECT_SIZE(
-    1    // size
-  + 1    // capacity
-  + 1);  // entry_array
+static const size_t kMapSize = OBJECT_SIZE(3);
+static const size_t kMapSizeOffset = 1;
+static const size_t kMapCapacityOffset = 2;
+static const size_t kMapEntryArrayOffset = 3;
 
-static const size_t kMapEntryFieldCount = (
-    1   // key
-  + 1   // hash
-  + 1); // value
+static const size_t kMapEntryFieldCount = (3);
+static const size_t kMapEntryKeyOffset = 0;
+static const size_t kMapEntryHashOffset = 1;
+static const size_t kMapEntryValueOffset = 2;
 
-
-// --- N u l l ---
-
-static const size_t kNullSize = OBJECT_SIZE(0);
 
 // Returns the array of hash map entries for this map.
 value_t get_map_entry_array(value_t value);
@@ -256,9 +258,16 @@ value_t try_set_map_at(value_t map, value_t key, value_t value);
 // appropriate signal.
 value_t get_map_at(value_t map, value_t key);
 
+
+// --- N u l l ---
+
+static const size_t kNullSize = OBJECT_SIZE(0);
+
+
 // --- B o o l ---
 
 static const size_t kBoolSize = OBJECT_SIZE(1);
+static const size_t kBoolValueOffset = 1;
 
 // Sets whether the given bool represents true or false.
 void set_bool_value(value_t value, bool truth);

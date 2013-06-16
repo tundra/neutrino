@@ -3,11 +3,11 @@
 #include "value-inl.h"
 
 void set_object_species(value_t value, value_t species) {
-  *access_object_field(value, 0) = species;
+  *access_object_field(value, kObjectSpeciesOffset) = species;
 }
 
 value_t get_object_species(value_t value) {
-  return *access_object_field(value, 0);
+  return *access_object_field(value, kObjectSpeciesOffset);
 }
 
 object_family_t get_object_family(value_t value) {
@@ -18,20 +18,25 @@ object_family_t get_object_family(value_t value) {
 
 // --- S p e c i e s ---
 
-void set_species_instance_family(value_t value, object_family_t instance_family) {
-  *access_object_field(value, 1) = (value_t) instance_family;
+void set_species_instance_family(value_t value,
+    object_family_t instance_family) {
+  *access_object_field(value, kSpeciesInstanceFamilyOffset) =
+      (value_t) instance_family;
 }
 
 object_family_t get_species_instance_family(value_t value) {
-  return (object_family_t) *access_object_field(value, 1);
+  return (object_family_t) *access_object_field(value,
+      kSpeciesInstanceFamilyOffset);
 }
 
 void set_species_behavior(value_t value, behavior_t *behavior) {
-  *access_object_field(value, 2) = (value_t) (address_arith_t) behavior;
+  *access_object_field(value, kSpeciesBehaviorOffset) =
+      (value_t) (address_arith_t) behavior;
 }
 
 behavior_t *get_species_behavior(value_t value) {
-  return (behavior_t*) (address_arith_t) *access_object_field(value, 2);
+  return (behavior_t*) (address_arith_t)
+      *access_object_field(value, kSpeciesBehaviorOffset);
 }
 
 
@@ -47,17 +52,17 @@ size_t calc_string_size(size_t char_count) {
 
 void set_string_length(value_t value, size_t length) {
   CHECK_FAMILY(ofString, value);
-  *access_object_field(value, 1) = (value_t) length;
+  *access_object_field(value, kStringLengthOffset) = (value_t) length;
 }
 
 size_t get_string_length(value_t value) {
   CHECK_FAMILY(ofString, value);
-  return (size_t) *access_object_field(value, 1);
+  return (size_t) *access_object_field(value, kStringLengthOffset);
 }
 
 char *get_string_chars(value_t value) {
   CHECK_FAMILY(ofString, value);
-  return (char*) access_object_field(value, 2);  
+  return (char*) access_object_field(value, kStringCharsOffset);  
 }
 
 void get_string_contents(value_t value, string_t *out) {
@@ -76,24 +81,24 @@ size_t calc_array_size(size_t length) {
 
 size_t get_array_length(value_t value) {
   CHECK_FAMILY(ofArray, value);
-  return (size_t) *access_object_field(value, 1);
+  return (size_t) *access_object_field(value, kArrayLengthOffset);
 }
 
 void set_array_length(value_t value, size_t length) {
   CHECK_FAMILY(ofArray, value);
-  *access_object_field(value, 1) = (value_t) length;
+  *access_object_field(value, kArrayLengthOffset) = (value_t) length;
 }
 
 value_t get_array_at(value_t value, size_t index) {
   CHECK_FAMILY(ofArray, value);
   CHECK_TRUE(index < get_array_length(value));
-  return *access_object_field(value, 2 + index);
+  return *access_object_field(value, kArrayElementsOffset + index);
 }
 
 void set_array_at(value_t value, size_t index, value_t element) {
   CHECK_FAMILY(ofArray, value);
   CHECK_TRUE(index < get_array_length(value));
-  *access_object_field(value, 2 + index) = element;
+  *access_object_field(value, kArrayElementsOffset + index) = element;
 }
 
 
@@ -101,71 +106,71 @@ void set_array_at(value_t value, size_t index, value_t element) {
 
 value_t get_map_entry_array(value_t value) {
   CHECK_FAMILY(ofMap, value);
-  return *access_object_field(value, 3);
+  return *access_object_field(value, kMapEntryArrayOffset);
 }
 
 void set_map_entry_array(value_t value, value_t entry_array) {
   CHECK_FAMILY(ofMap, value);
   CHECK_FAMILY(ofArray, entry_array);
-  *access_object_field(value, 3) = entry_array;
+  *access_object_field(value, kMapEntryArrayOffset) = entry_array;
 }
 
 size_t get_map_size(value_t value) {
   CHECK_FAMILY(ofMap, value);
-  value_t size = *access_object_field(value, 1);
+  value_t size = *access_object_field(value, kMapSizeOffset);
   return get_integer_value(size);
-}
-
-void set_map_capacity(value_t value, size_t capacity) {
-  CHECK_FAMILY(ofMap, value);
-  *access_object_field(value, 2) = new_integer(capacity);
-}
-
-size_t get_map_capacity(value_t value) {
-  CHECK_FAMILY(ofMap, value);
-  value_t capacity = *access_object_field(value, 2);
-  return get_integer_value(capacity);
 }
 
 void set_map_size(value_t value, size_t size) {
   CHECK_FAMILY(ofMap, value);
-  *access_object_field(value, 1) = new_integer(size);  
+  *access_object_field(value, kMapSizeOffset) = new_integer(size);  
+}
+
+void set_map_capacity(value_t value, size_t capacity) {
+  CHECK_FAMILY(ofMap, value);
+  *access_object_field(value, kMapCapacityOffset) = new_integer(capacity);
+}
+
+size_t get_map_capacity(value_t value) {
+  CHECK_FAMILY(ofMap, value);
+  value_t capacity = *access_object_field(value, kMapCapacityOffset);
+  return get_integer_value(capacity);
 }
 
 // Returns a pointer to the start of the index'th entry in the given map.
 static value_t *get_map_entry(value_t map, size_t index) {
-  return access_object_field(map, 3) + (index * kMapEntryFieldCount);
+  return access_object_field(map, kMapEntryArrayOffset) + (index * kMapEntryFieldCount);
 }
 
 // Returns true if the given map entry is not storing a binding.
 static bool is_map_entry_empty(value_t *entry) {
-  return !in_domain(vdInteger, entry[1]);
+  return !in_domain(vdInteger, entry[kMapEntryHashOffset]);
 }
 
 // Returns the hash value stored in this map entry, which must not be empty.
 static size_t get_map_entry_hash(value_t *entry) {
   CHECK_FALSE(is_map_entry_empty(entry));
-  return get_integer_value(entry[1]);
+  return get_integer_value(entry[kMapEntryHashOffset]);
 }
 
 // Returns the key stored in this hash map entry, which must not be empty.
 static value_t get_map_entry_key(value_t *entry) {
   CHECK_FALSE(is_map_entry_empty(entry));
-  return entry[0];
+  return entry[kMapEntryKeyOffset];
 }
 
 // Returns the value stored in this hash map entry, which must not be empty.
 static value_t get_map_entry_value(value_t *entry) {
   CHECK_FALSE(is_map_entry_empty(entry));
-  return entry[2];
+  return entry[kMapEntryValueOffset];
 }
 
 // Sets the full contents of a map entry.
 static void set_map_entry(value_t *entry, value_t key, size_t hash,
     value_t value) {
-  entry[0] = key;
-  entry[1] = new_integer(hash);
-  entry[2] = value;
+  entry[kMapEntryKeyOffset] = key;
+  entry[kMapEntryHashOffset] = new_integer(hash);
+  entry[kMapEntryValueOffset] = value;
 }
 
 // Finds the appropriate entry to store a mapping for the given key with the
@@ -251,10 +256,10 @@ value_t get_map_at(value_t map, value_t key) {
 
 void set_bool_value(value_t value, bool truth) {
   CHECK_FAMILY(ofBool, value);
-  *access_object_field(value, 1) = (value_t) truth;
+  *access_object_field(value, kBoolValueOffset) = (value_t) truth;
 }
 
 bool get_bool_value(value_t value) {
   CHECK_FAMILY(ofBool, value);
-  return (bool) *access_object_field(value, 1);
+  return (bool) *access_object_field(value, kBoolValueOffset);
 }
