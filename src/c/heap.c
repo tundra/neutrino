@@ -55,7 +55,7 @@ value_t space_init(space_t *space, space_config_t *config_or_null) {
   // making the space size slightly different depending on whether malloc
   // aligns its data or not is a recipe for subtle bugs.
   space->limit = space->next_free + config->size_bytes;
-  return non_signal();
+  return success();
 }
 
 void space_dispose(space_t *space) {
@@ -99,7 +99,7 @@ value_t heap_init(heap_t *heap, space_config_t *config) {
   // later.
   TRY(space_init(&heap->new_space, config));
   space_clear(&heap->old_space);
-  return non_signal();
+  return success();
 }
 
 bool heap_try_alloc(heap_t *heap, size_t size, address_t *memory_out) {
