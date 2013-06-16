@@ -236,7 +236,7 @@ value_t try_set_map_at(value_t map, value_t key, value_t value) {
   // Only increment the size if we created a new entry.
   if (was_created)
     set_map_size(map, size + 1);
-  return non_signal();
+  return success();
 }
 
 value_t get_map_at(value_t map, value_t key) {

@@ -61,7 +61,7 @@ static int64_t get_integer_value(value_t value) {
 
 // Returns a value that is _not_ a signal. This can be used to indicate
 // unspecific success.
-static value_t non_signal() {
+static value_t success() {
   return new_integer(0);
 }
 

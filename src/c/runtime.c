@@ -20,19 +20,19 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   TRY_SET(roots->null, new_heap_null(runtime));
   TRY_SET(roots->thrue, new_heap_bool(runtime, true));
   TRY_SET(roots->fahlse, new_heap_bool(runtime, false));
-  return non_signal();
+  return success();
 }
 
 void roots_clear(roots_t *roots) {
-  roots->species_species = non_signal();
-  roots->string_species = non_signal();
-  roots->array_species = non_signal();
-  roots->map_species = non_signal();
-  roots->null_species = non_signal();
-  roots->bool_species = non_signal();
-  roots->null = non_signal();
-  roots->thrue = non_signal();
-  roots->fahlse = non_signal();
+  roots->species_species = success();
+  roots->string_species = success();
+  roots->array_species = success();
+  roots->map_species = success();
+  roots->null_species = success();
+  roots->bool_species = success();
+  roots->null = success();
+  roots->thrue = success();
+  roots->fahlse = success();
 }
 
 value_t roots_validate(roots_t *roots) {
@@ -66,7 +66,7 @@ value_t roots_validate(roots_t *roots) {
 
   #undef VALIDATE_TYPE
   #undef VALIDATE_SPECIES
-  return non_signal();
+  return success();
 }
 
 value_t runtime_init(runtime_t *runtime, space_config_t *config) {

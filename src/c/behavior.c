@@ -26,35 +26,35 @@ static value_t string_validate(value_t value) {
   // Check that the string is null-terminated.
   size_t length = get_string_length(value);
   VALIDATE(get_string_chars(value)[length] == '\0');
-  return non_signal();
+  return success();
 }
 
 static value_t species_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofSpecies, value);
-  return non_signal();
+  return success();
 }
 
 static value_t array_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofArray, value);
-  return non_signal();
+  return success();
 }
 
 static value_t map_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofMap, value);
   VALIDATE_VALUE_FAMILY(ofMap, get_map_entry_array(value));
-  return non_signal();
+  return success();
 }
 
 static value_t null_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofNull, value);
-  return non_signal();
+  return success();
 }
 
 static value_t bool_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofBool, value);
   bool which = get_bool_value(value);
   VALIDATE((which == true) || (which == false));
-  return non_signal();
+  return success();
 }
 
 
