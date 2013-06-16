@@ -73,7 +73,10 @@ typedef enum {
   // The heap has run out of space.
   scHeapExhausted = 0,
   scSystemError,
-  scValidationFailed
+  scValidationFailed,
+  scUnsupportedBehavior,
+  scMapFull,
+  scNotFound
 } signal_cause_t;
 
 // How many bits do we need to hold the cause of a signal?
@@ -100,7 +103,8 @@ static signal_cause_t get_signal_cause(value_t value) {
   F(String,  string)     \
   F(Array,   array)      \
   F(Null,    null)       \
-  F(Bool,    bool)
+  F(Bool,    bool)       \
+  F(Map,     map)
 
 // Enum identifying the different families of heap objects.
 typedef enum {
@@ -208,10 +212,49 @@ value_t get_array_at(value_t value, size_t index);
 void set_array_at(value_t value, size_t index, value_t element);
 
 
+// --- M a p ---
+
+static const size_t kMapSize = OBJECT_SIZE(
+    1    // size
+  + 1    // capacity
+  + 1);  // entry_array
+
+static const size_t kMapEntryFieldCount = (
+    1   // key
+  + 1   // hash
+  + 1); // value
+
+
 // --- N u l l ---
 
 static const size_t kNullSize = OBJECT_SIZE(0);
 
+// Returns the array of hash map entries for this map.
+value_t get_map_entry_array(value_t value);
+
+// Replaces the array of hash map entries for this map.
+void set_map_entry_array(value_t value, value_t entry_array);
+
+// Returns the size of a map.
+size_t get_map_size(value_t value);
+
+// Updates the size of a map.
+void set_map_size(value_t value, size_t size);
+
+// Returns the total capacity of the given map.
+size_t get_map_capacity(value_t value);
+
+// Sets the total capacity of this map.
+void set_map_capacity(value_t value, size_t size);
+
+// Adds a binding from the given key to the given value to this map, replacing
+// the existing one if it already exists. Returns a signal on failure, either
+// if the key cannot be hashed or the map is full.
+value_t try_set_map_at(value_t map, value_t key, value_t value);
+
+// Returns the binding for the given key or, if no binding is present, an
+// appropriate signal.
+value_t get_map_at(value_t map, value_t key);
 
 // --- B o o l ---
 

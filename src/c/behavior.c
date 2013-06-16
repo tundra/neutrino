@@ -39,6 +39,12 @@ static value_t validate_array(value_t value) {
   return non_signal();
 }
 
+static value_t validate_map(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofMap, value);
+  VALIDATE_VALUE_FAMILY(ofMap, get_map_entry_array(value));
+  return non_signal();
+}
+
 static value_t validate_null(value_t value) {
   VALIDATE_VALUE_FAMILY(ofNull, value);
   return non_signal();
@@ -50,6 +56,47 @@ static value_t validate_bool(value_t value) {
   VALIDATE((which == true) || (which == false));
   return non_signal();
 }
+
+
+// --- H a s h ---
+
+static value_t integer_hash(value_t value) {
+  CHECK_DOMAIN(vdInteger, value);
+  return value;
+}
+
+value_t value_hash(value_t value) {
+  switch (get_value_domain(value)) {
+    case vdInteger:
+      return integer_hash(value);
+    default:
+      return new_signal(scUnsupportedBehavior);
+  }
+}
+
+
+// --- E q u a l s ---
+
+bool integer_equals(value_t a, value_t b) {
+  return (a == b);
+}
+
+bool value_equals(value_t a, value_t b) {
+  // First check that they even belong to the same domain. Values can be equal
+  // across domains.
+  value_domain_t a_domain = get_value_domain(a);
+  value_domain_t b_domain = get_value_domain(b);
+  if (a_domain != b_domain)
+    return false;
+  // Then dispatch to the domain equals functions.
+  switch (a_domain) {
+    case vdInteger:
+      return integer_equals(a, b);
+    default:
+      return false;
+  }
+}
+
 
 // Define all the family behaviors in one go. Because of this, as soon as you
 // add a new object type you'll get errors for all the behaviors you need to

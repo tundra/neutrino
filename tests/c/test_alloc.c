@@ -4,7 +4,7 @@
 
 TEST(alloc, heap_string) {
   runtime_t runtime;
-  runtime_init(&runtime, NULL);
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
   string_t chars;
   string_init(&chars, "Hut!");
@@ -21,7 +21,7 @@ TEST(alloc, heap_string) {
 
 TEST(alloc, heap_species) {
   runtime_t runtime;
-  runtime_init(&runtime, NULL);
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
   value_t species = new_heap_species(&runtime, ofString, &kStringBehavior);
   ASSERT_DOMAIN(vdObject, species);
@@ -33,7 +33,7 @@ TEST(alloc, heap_species) {
 
 TEST(alloc, heap_array) {
   runtime_t runtime;
-  runtime_init(&runtime, NULL);
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
   // Check initial state.
   value_t array = new_heap_array(&runtime, 3);
@@ -50,6 +50,18 @@ TEST(alloc, heap_array) {
   ASSERT_EQ(array, get_array_at(array, 0));
   ASSERT_EQ(null, get_array_at(array, 1));
   ASSERT_EQ(array, get_array_at(array, 2));
+
+  runtime_dispose(&runtime);
+}
+
+TEST(alloc, heap_map) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t map = new_heap_map(&runtime, 16);
+  ASSERT_FAMILY(ofMap, map);
+  ASSERT_EQ(0, get_map_size(map));
+  ASSERT_EQ(16, get_map_capacity(map));
 
   runtime_dispose(&runtime);
 }

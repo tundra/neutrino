@@ -26,7 +26,7 @@ TEST(value, signals) {
 
 TEST(value, objects) {
   heap_t heap;
-  heap_init(&heap, NULL);
+  ASSERT_SUCCESS(heap_init(&heap, NULL));
 
   address_t addr;
   ASSERT_TRUE(heap_try_alloc(&heap, 16, &addr));
@@ -37,9 +37,9 @@ TEST(value, objects) {
   heap_dispose(&heap);
 }
 
-TEST(runtime, string_validation) {
+TEST(value, string_validation) {
   runtime_t r;
-  ASSERT_FALSE(in_domain(vdSignal, runtime_init(&r, NULL)));
+  ASSERT_SUCCESS(runtime_init(&r, NULL));
 
   string_t chars;
   string_init(&chars, "Hut!");
@@ -47,13 +47,56 @@ TEST(runtime, string_validation) {
 
   // String starts out validating.
   ASSERT_FALSE(in_domain(vdSignal, object_validate(str)));
-
   // Zap the null terminator.
   get_string_chars(str)[4] = 'x';
-
   // Now the string no longer terminates.
   ASSERT_SIGNAL(scValidationFailed, object_validate(str));
 
   runtime_dispose(&r);
 }
- 
+
+TEST(value, maps_simple) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  // Create a map.
+  value_t map = new_heap_map(&runtime, 4);
+  ASSERT_FAMILY(ofMap, map);
+  ASSERT_EQ(0, get_map_size(map));
+  // Add something to it.
+  ASSERT_SUCCESS(try_set_map_at(map, new_integer(0), new_integer(1)));
+  ASSERT_EQ(1, get_map_size(map));
+  ASSERT_EQ(new_integer(1), get_map_at(map, new_integer(0)));
+  ASSERT_SIGNAL(scNotFound, get_map_at(map, new_integer(1)));
+  // Add some more to it.
+  ASSERT_SUCCESS(try_set_map_at(map, new_integer(1), new_integer(2)));
+  ASSERT_EQ(2, get_map_size(map));
+  ASSERT_EQ(new_integer(1), get_map_at(map, new_integer(0)));
+  ASSERT_EQ(new_integer(2), get_map_at(map, new_integer(1)));
+  // Replace an existing value.
+  ASSERT_SUCCESS(try_set_map_at(map, new_integer(0), new_integer(3)));
+  ASSERT_EQ(2, get_map_size(map));
+  ASSERT_EQ(new_integer(3), get_map_at(map, new_integer(0)));
+  ASSERT_EQ(new_integer(2), get_map_at(map, new_integer(1)));
+  // There's room for one more value.
+  ASSERT_SUCCESS(try_set_map_at(map, new_integer(100), new_integer(5)));
+  ASSERT_EQ(3, get_map_size(map));
+  ASSERT_EQ(new_integer(3), get_map_at(map, new_integer(0)));
+  ASSERT_EQ(new_integer(2), get_map_at(map, new_integer(1)));
+  ASSERT_EQ(new_integer(5), get_map_at(map, new_integer(100)));
+  // Now the map should refuse to let us add more.
+  ASSERT_SIGNAL(scMapFull, try_set_map_at(map, new_integer(88),
+      new_integer(79)));
+  ASSERT_EQ(3, get_map_size(map));
+  ASSERT_EQ(new_integer(3), get_map_at(map, new_integer(0)));
+  ASSERT_EQ(new_integer(2), get_map_at(map, new_integer(1)));
+  ASSERT_EQ(new_integer(5), get_map_at(map, new_integer(100)));
+  // However it should still be possible to replace existing mappings.
+  ASSERT_SUCCESS(try_set_map_at(map, new_integer(1), new_integer(9)));
+  ASSERT_EQ(3, get_map_size(map));
+  ASSERT_EQ(new_integer(3), get_map_at(map, new_integer(0)));
+  ASSERT_EQ(new_integer(9), get_map_at(map, new_integer(1)));
+  ASSERT_EQ(new_integer(5), get_map_at(map, new_integer(100)));
+
+  runtime_dispose(&runtime);
+}

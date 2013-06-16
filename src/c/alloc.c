@@ -31,6 +31,18 @@ value_t new_heap_array(runtime_t *runtime, size_t length) {
   return result;
 }
 
+value_t new_heap_map(runtime_t *runtime, size_t init_capacity) {
+  CHECK_TRUE(init_capacity > 0);
+  TRY_DEF(entries, new_heap_array(runtime, init_capacity * kMapEntryFieldCount));
+  size_t size = kMapSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.map_species));
+  set_map_entry_array(result, entries);
+  set_map_size(result, 0);
+  set_map_capacity(result, init_capacity);
+  return result;
+}
+
 value_t new_heap_null(runtime_t *runtime) {
   size_t size = kNullSize;
   return alloc_heap_object(&runtime->heap, size, runtime->roots.null_species);

@@ -23,6 +23,9 @@ value_t new_heap_species(runtime_t *runtime, object_family_t instance_family,
 // number of elements. The array will be initialized to null.
 value_t new_heap_array(runtime_t *runtime, size_t length);
 
+// Creates a new map with the given initial capacity.
+value_t new_heap_map(runtime_t *runtime, size_t init_capacity);
+
 // Creates the singleton null value.
 value_t new_heap_null(runtime_t *runtime);
 

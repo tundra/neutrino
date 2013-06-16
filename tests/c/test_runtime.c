@@ -10,7 +10,7 @@ address_t blocking_malloc(void *data, size_t size) {
 TEST(runtime, create) {
   // Successfully create a runtime.
   runtime_t r0;
-  ASSERT_NOT_DOMAIN(vdSignal, runtime_init(&r0, NULL));
+  ASSERT_SUCCESS(runtime_init(&r0, NULL));
   runtime_dispose(&r0);
 
   // Propagating failure correctly when malloc fails during startup.
@@ -23,7 +23,7 @@ TEST(runtime, create) {
 
 TEST(runtime, singletons) {
   runtime_t r;
-  ASSERT_NOT_DOMAIN(vdSignal, runtime_init(&r, NULL));
+  ASSERT_SUCCESS(runtime_init(&r, NULL));
 
   value_t null = runtime_null(&r);
   ASSERT_FAMILY(ofNull, null);
@@ -39,10 +39,10 @@ TEST(runtime, singletons) {
 
 TEST(runtime, runtime_validation) {
   runtime_t r;
-  ASSERT_NOT_DOMAIN(vdSignal, runtime_init(&r, NULL));
+  ASSERT_SUCCESS(runtime_init(&r, NULL));
 
   // Initially it validates.
-  ASSERT_NOT_DOMAIN(vdSignal, runtime_validate(&r));
+  ASSERT_SUCCESS(runtime_validate(&r));
 
   // Break this runtime.
   r.roots.null = new_integer(0);

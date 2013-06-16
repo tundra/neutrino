@@ -19,6 +19,13 @@ typedef struct behavior_t {
 // Validates an object.
 value_t object_validate(value_t value);
 
+// Returns the hash of the given value or a signal if the value cannot be
+// hashed.
+value_t value_hash(value_t value);
+
+// Returns true iff the two values are equal.
+bool value_equals(value_t a, value_t b);
+
 // Declare the behavior structs for all the families on one fell swoop.
 #define DECLARE_BEHAVIOR(Family, family) \
 extern behavior_t k##Family##Behavior;

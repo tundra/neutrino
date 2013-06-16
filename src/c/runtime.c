@@ -12,6 +12,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   // The other species are straightforward.
   TRY_SET(roots->string_species, new_heap_species(runtime, ofString, &kStringBehavior));
   TRY_SET(roots->array_species, new_heap_species(runtime, ofArray, &kArrayBehavior));
+  TRY_SET(roots->map_species, new_heap_species(runtime, ofMap, &kMapBehavior));
   TRY_SET(roots->null_species, new_heap_species(runtime, ofNull, &kNullBehavior));
   TRY_SET(roots->bool_species, new_heap_species(runtime, ofBool, &kBoolBehavior));
 
@@ -26,6 +27,7 @@ void roots_clear(roots_t *roots) {
   roots->species_species = non_signal();
   roots->string_species = non_signal();
   roots->array_species = non_signal();
+  roots->map_species = non_signal();
   roots->null_species = non_signal();
   roots->bool_species = non_signal();
   roots->null = non_signal();
@@ -54,6 +56,7 @@ value_t roots_validate(roots_t *roots) {
   VALIDATE_SPECIES(ofSpecies, roots->species_species);
   VALIDATE_SPECIES(ofString, roots->string_species);
   VALIDATE_SPECIES(ofArray, roots->array_species);
+  VALIDATE_SPECIES(ofMap, roots->map_species);
   VALIDATE_SPECIES(ofNull, roots->null_species);
   VALIDATE_SPECIES(ofBool, roots->bool_species);
 

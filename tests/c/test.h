@@ -24,9 +24,9 @@ extern void fail(const char *error, const char *file, int line);
 #define ASSERT_DOMAIN(vdDomain, EXPR) \
   ASSERT_EQ(vdDomain, get_value_domain(EXPR))
 
-// Fails if the given value is within the given domain.
-#define ASSERT_NOT_DOMAIN(vdDomain, EXPR) \
-  ASSERT_FALSE(vdDomain == get_value_domain(EXPR))
+// Fails if the given value is a signal.
+#define ASSERT_SUCCESS(EXPR) \
+  ASSERT_FALSE(vdSignal == get_value_domain(EXPR))
 
 // Fails unless the given value is within the given family.
 #define ASSERT_FAMILY(ofFamily, EXPR) \

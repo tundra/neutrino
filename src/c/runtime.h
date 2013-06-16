@@ -15,6 +15,7 @@ typedef struct {
   value_t array_species;
   value_t null_species;
   value_t bool_species;
+  value_t map_species;
   // Singletons
   value_t null;
   value_t thrue;
