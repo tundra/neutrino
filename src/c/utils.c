@@ -116,6 +116,8 @@ void string_buffer_printf(string_buffer_t *buf, const char *fmt, ...) {
   // Null terminate explicitly just to be on the safe side.
   buffer[kMaxSize] = '\0';
   size_t written = vsnprintf(buffer, kMaxSize, fmt, argp);
+  // TODO: fix this if we ever hit it.
+  CHECK_TRUE(written < kMaxSize);
   // Then write the temp string into the string buffer.
   string_t data = {written, buffer};
   string_buffer_append(buf, &data);
