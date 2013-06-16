@@ -1,5 +1,6 @@
 #include "test.h"
 #include "utils.h"
+#include "value-inl.h"
 
 TEST(utils, string_simple) {
   string_t str;
@@ -42,4 +43,50 @@ TEST(utils, string_equality) {
   ASSERT_FALSE(string_equals(&s3, &s1));
   ASSERT_FALSE(string_equals(&s3, &s2));
   ASSERT_TRUE(string_equals(&s3, &s3));
+}
+
+TEST(utils, string_buffer_simple) {
+  string_buffer_t buf;
+  string_buffer_init(&buf, NULL);
+
+  string_buffer_printf(&buf, "[%s: %i]", "test", 8);
+  string_t str;
+  string_buffer_flush(&buf, &str);
+  DEF_STRING(expected, "[test: 8]");
+  ASSERT_TRUE(string_equals(&expected, &str));
+
+  string_buffer_dispose(&buf);
+}
+
+TEST(utils, string_buffer_concat) {
+  string_buffer_t buf;
+  string_buffer_init(&buf, NULL);
+
+  string_buffer_printf(&buf, "foo");
+  string_buffer_printf(&buf, "bar");
+  string_buffer_printf(&buf, "baz");
+  string_t str;
+  string_buffer_flush(&buf, &str);
+  DEF_STRING(expected, "foobarbaz");
+  ASSERT_TRUE(string_equals(&expected, &str));
+
+  string_buffer_dispose(&buf);
+}
+
+TEST(utils, string_buffer_long) {
+  string_buffer_t buf;
+  string_buffer_init(&buf, NULL);
+
+  // Cons up a really long string.
+  for (size_t i = 0; i < 1024; i++)
+    string_buffer_printf(&buf, "0123456789");
+  // Check that it's correct.
+  string_t str;
+  string_buffer_flush(&buf, &str);
+  ASSERT_EQ(10240, string_length(&str));
+  for (size_t i = 0; i < 10240; i++) {
+    CHECK_EQ((char) ('0' + (i % 10)), string_char_at(&str, i));
+  }
+
+  string_buffer_dispose(&buf);
 }
