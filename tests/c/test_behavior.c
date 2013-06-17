@@ -111,7 +111,11 @@ TEST(behavior, print_on) {
   // Maps
   value_t map = new_heap_map(&runtime, 16);
   set_array_at(arr, 0, map);
+  check_print_on("{}", map);
   check_print_on("[#<map{0}>, 4, \"foo\"]", arr);
+  ASSERT_SUCCESS(try_set_map_at(map, new_integer(3), new_integer(5)));
+  check_print_on("{3: 5}", map);
+  check_print_on("[#<map{1}>, 4, \"foo\"]", arr);
 
   runtime_dispose(&runtime);
 }

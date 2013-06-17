@@ -254,7 +254,18 @@ static void map_print_atomic_on(value_t value, string_buffer_t *buf) {
 }
 
 static void map_print_on(value_t value, string_buffer_t *buf) {
-  map_print_atomic_on(value, buf);
+  string_buffer_printf(buf, "{");
+  map_iter_t iter;
+  map_iter_init(&iter, value);
+  while (map_iter_advance(&iter)) {
+    value_t key;
+    value_t value;
+    map_iter_get_current(&iter, &key, &value);
+    value_print_on(key, buf);
+    string_buffer_printf(buf, ": ");
+    value_print_on(value, buf);
+  }
+  string_buffer_printf(buf, "}");
 }
 
 static void string_print_atomic_on(value_t value, string_buffer_t *buf) {
