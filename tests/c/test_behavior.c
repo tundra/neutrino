@@ -106,7 +106,12 @@ TEST(behavior, print_on) {
   set_array_at(arr, 2, foo);
   check_print_on("[null, 4, \"foo\"]", arr);  
   set_array_at(arr, 0, arr);
-  check_print_on("[#<array[3]>, 4, \"foo\"]", arr);  
+  check_print_on("[#<array[3]>, 4, \"foo\"]", arr);
+
+  // Maps
+  value_t map = new_heap_map(&runtime, 16);
+  set_array_at(arr, 0, map);
+  check_print_on("[#<map{0}>, 4, \"foo\"]", arr);
 
   runtime_dispose(&runtime);
 }

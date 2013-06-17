@@ -250,7 +250,7 @@ static void array_print_on(value_t value, string_buffer_t *buf) {
 }
 
 static void map_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<map>");
+  string_buffer_printf(buf, "#<map{%i}>", (int) get_map_size(value));
 }
 
 static void map_print_on(value_t value, string_buffer_t *buf) {
