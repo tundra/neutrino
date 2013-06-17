@@ -13,7 +13,7 @@ TEST(alloc, heap_string) {
   ASSERT_EQ(4, get_string_length(str));
   string_t out;
   get_string_contents(str, &out);
-  ASSERT_TRUE(string_equals(&chars, &out));
+  ASSERT_STREQ(&chars, &out);
 
   runtime_dispose(&runtime);
 }

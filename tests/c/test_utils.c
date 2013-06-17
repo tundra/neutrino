@@ -53,7 +53,7 @@ TEST(utils, string_buffer_simple) {
   string_t str;
   string_buffer_flush(&buf, &str);
   DEF_STRING(expected, "[test: 8]");
-  ASSERT_TRUE(string_equals(&expected, &str));
+  ASSERT_STREQ(&expected, &str);
 
   string_buffer_dispose(&buf);
 }
@@ -68,7 +68,7 @@ TEST(utils, string_buffer_concat) {
   string_t str;
   string_buffer_flush(&buf, &str);
   DEF_STRING(expected, "foobarbaz");
-  ASSERT_TRUE(string_equals(&expected, &str));
+  ASSERT_STREQ(&expected, &str);
 
   string_buffer_dispose(&buf);
 }

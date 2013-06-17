@@ -71,7 +71,7 @@ static void check_print_on(const char *expected_chars, value_t value) {
   string_t result;
   string_buffer_flush(&buf, &result);
   DEF_STRING(expected, expected_chars);
-  ASSERT_TRUE(string_equals(&expected, &result));
+  ASSERT_STREQ(&expected, &result);
 
   string_buffer_dispose(&buf);
 }

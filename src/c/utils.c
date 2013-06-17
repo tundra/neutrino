@@ -110,6 +110,11 @@ static void string_buffer_append(string_buffer_t *buf, string_t *str) {
 void string_buffer_printf(string_buffer_t *buf, const char *fmt, ...) {
   va_list argp;
   va_start(argp, fmt);
+  string_buffer_vprintf(buf, fmt, argp);
+  va_end(argp);
+}
+
+void string_buffer_vprintf(string_buffer_t *buf, const char *fmt, va_list argp) {
   // Write the formatted string into a temporary buffer.
   static const size_t kMaxSize = 1024;
   char buffer[kMaxSize + 1];
@@ -121,7 +126,6 @@ void string_buffer_printf(string_buffer_t *buf, const char *fmt, ...) {
   // Then write the temp string into the string buffer.
   string_t data = {written, buffer};
   string_buffer_append(buf, &data);
-  va_end(argp);
 }
 
 void string_buffer_flush(string_buffer_t *buf, string_t *str_out) {
