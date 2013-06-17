@@ -3,6 +3,8 @@
 
 #include "globals.h"
 
+#include <stdarg.h>
+
 // A C string with a length.
 typedef struct {
   size_t length;
@@ -77,6 +79,9 @@ void string_buffer_dispose(string_buffer_t *buf);
 
 // Append the given text to the given buffer.
 void string_buffer_printf(string_buffer_t *buf, const char *format, ...);
+
+// Append the given text to the given buffer.
+void string_buffer_vprintf(string_buffer_t *buf, const char *format, va_list argp);
 
 // Null-terminates the buffer and stores the result in the given out parameter.
 // The string is still backed by the buffer and so becomes invalid when the

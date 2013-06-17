@@ -1,5 +1,6 @@
 #include "check.h"
 #include "test.h"
+#include "utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,7 +52,19 @@ int main(int argc, char *argv[]) {
 
 
 // Dump an error on test failure.
-void fail(const char *error, const char *file, int line) {
-  printf("%s:%i: %s\n", file, line, error);
+void fail(const char *file, int line, const char *fmt, ...) {
+  // Write the error message into a string buffer.
+  string_buffer_t buf;
+  string_buffer_init(&buf, NULL);
+  va_list argp;
+  va_start(argp, fmt);
+  string_buffer_vprintf(&buf, fmt, argp);
+  va_end(argp);
+  // Flush the string buffer.
+  string_t str;
+  string_buffer_flush(&buf, &str);
+  // Print the formatted error message.
+  printf("%s:%i: %s\n", file, line, str.chars);
+  string_buffer_dispose(&buf);
   abort();
 }
