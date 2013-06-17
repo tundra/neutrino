@@ -117,5 +117,10 @@ TEST(behavior, print_on) {
   check_print_on("{3: 5}", map);
   check_print_on("[#<map{1}>, 4, \"foo\"]", arr);
 
+  // Blobs
+  value_t blob = new_heap_blob(&runtime, 9);
+  set_array_at(arr, 0, blob);
+  check_print_on("[#<blob[9]>, 4, \"foo\"]", arr);  
+
   runtime_dispose(&runtime);
 }

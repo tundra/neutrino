@@ -104,7 +104,8 @@ static signal_cause_t get_signal_cause(value_t value) {
   F(Array,   array)      \
   F(Null,    null)       \
   F(Bool,    bool)       \
-  F(Map,     map)
+  F(Map,     map)        \
+  F(Blob,    blob)
 
 // Enum identifying the different families of heap objects.
 typedef enum {
@@ -195,6 +196,24 @@ char *get_string_chars(value_t value);
 
 // Stores the contents of this string in the given output.
 void get_string_contents(value_t value, string_t *out);
+
+
+// --- B l o b ---
+
+static const size_t kBlobLengthOffset = 1;
+static const size_t kBlobDataOffset = 2;
+
+// Returns the size of a heap blob with the given number of bytes.
+size_t calc_blob_size(size_t size);
+
+// Sets the length of a heap blob.
+void set_blob_length(value_t value, size_t length);
+
+// Returns the length of a heap blob.
+size_t get_blob_length(value_t value);
+
+// Returns a pointer to the array that holds the contents of this array.
+uint8_t *get_blob_data(value_t value);
 
 
 // --- A r r a y ---
@@ -294,5 +313,6 @@ void set_bool_value(value_t value, bool truth);
 
 // Returns whether the given bool is true.
 bool get_bool_value(value_t value);
+
 
 #endif // _VALUE
