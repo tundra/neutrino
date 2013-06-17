@@ -98,7 +98,7 @@ TEST(behavior, print_on) {
   value_t empty = new_heap_string(&runtime, &empty_chars);
   check_print_on("\"\"", empty);
 
-  // Arrays.
+  // Arrays
   value_t arr = new_heap_array(&runtime, 3);
   check_print_on("[null, null, null]", arr);
   set_array_at(arr, 1, new_integer(4));
@@ -106,7 +106,12 @@ TEST(behavior, print_on) {
   set_array_at(arr, 2, foo);
   check_print_on("[null, 4, \"foo\"]", arr);  
   set_array_at(arr, 0, arr);
-  check_print_on("[#<array[3]>, 4, \"foo\"]", arr);  
+  check_print_on("[#<array[3]>, 4, \"foo\"]", arr);
+
+  // Maps
+  value_t map = new_heap_map(&runtime, 16);
+  set_array_at(arr, 0, map);
+  check_print_on("[#<map{0}>, 4, \"foo\"]", arr);
 
   runtime_dispose(&runtime);
 }
