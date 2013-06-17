@@ -110,6 +110,7 @@ TEST(behavior, print_on) {
 
   // Maps
   value_t map = new_heap_map(&runtime, 16);
+  check_print_on("{}", map);
   set_array_at(arr, 0, map);
   check_print_on("[#<map{0}>, 4, \"foo\"]", arr);
 
