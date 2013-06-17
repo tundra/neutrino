@@ -71,6 +71,30 @@ void get_string_contents(value_t value, string_t *out) {
 }
 
 
+// --- B l o b ---
+
+size_t calc_blob_size(size_t size) {
+  return kObjectHeaderSize              // header
+       + kValueSize                     // length
+       + align_size(kValueSize, size);  // contents
+}
+
+void set_blob_length(value_t value, size_t length) {
+  CHECK_FAMILY(ofBlob, value);
+  *access_object_field(value, kBlobLengthOffset) = new_integer(length);
+}
+
+size_t get_blob_length(value_t value) {
+  CHECK_FAMILY(ofBlob, value);
+  return get_integer_value(*access_object_field(value, kBlobLengthOffset));
+}
+
+uint8_t *get_blob_data(value_t value) {
+  CHECK_FAMILY(ofBlob, value);
+  return (uint8_t*) access_object_field(value, kBlobDataOffset);  
+}
+
+
 // --- A r r a y ---
 
 size_t calc_array_size(size_t length) {

@@ -15,6 +15,11 @@
 // returns a signal to indicate an error.
 value_t new_heap_string(runtime_t *runtime, string_t *contents);
 
+// Allocates a new heap blob in the given runtime, if there is room, otherwise
+// returns a signal to indicate an error. The result's data will be reset to
+// all zeros.
+value_t new_heap_blob(runtime_t *runtime, size_t length);
+
 // Allocates a new species whose instances have the specified instance family.
 value_t new_heap_species(runtime_t *runtime, object_family_t instance_family,
     behavior_t *behavior);
