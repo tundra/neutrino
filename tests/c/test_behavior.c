@@ -98,7 +98,7 @@ TEST(behavior, print_on) {
   value_t empty = new_heap_string(&runtime, &empty_chars);
   check_print_on("\"\"", empty);
 
-  // Arrays
+  // Arrays.
   value_t arr = new_heap_array(&runtime, 3);
   check_print_on("[null, null, null]", arr);
   set_array_at(arr, 1, new_integer(4));
