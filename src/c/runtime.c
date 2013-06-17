@@ -11,6 +11,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
 
   // The other species are straightforward.
   TRY_SET(roots->string_species, new_heap_species(runtime, ofString, &kStringBehavior));
+  TRY_SET(roots->blob_species, new_heap_species(runtime, ofBlob, &kBlobBehavior));
   TRY_SET(roots->array_species, new_heap_species(runtime, ofArray, &kArrayBehavior));
   TRY_SET(roots->map_species, new_heap_species(runtime, ofMap, &kMapBehavior));
   TRY_SET(roots->null_species, new_heap_species(runtime, ofNull, &kNullBehavior));
@@ -26,6 +27,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
 void roots_clear(roots_t *roots) {
   roots->species_species = success();
   roots->string_species = success();
+  roots->blob_species = success();
   roots->array_species = success();
   roots->map_species = success();
   roots->null_species = success();
@@ -55,6 +57,7 @@ value_t roots_validate(roots_t *roots) {
 
   VALIDATE_SPECIES(ofSpecies, roots->species_species);
   VALIDATE_SPECIES(ofString, roots->string_species);
+  VALIDATE_SPECIES(ofBlob, roots->blob_species);
   VALIDATE_SPECIES(ofArray, roots->array_species);
   VALIDATE_SPECIES(ofMap, roots->map_species);
   VALIDATE_SPECIES(ofNull, roots->null_species);

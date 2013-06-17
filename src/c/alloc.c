@@ -2,12 +2,23 @@
 #include "behavior.h"
 #include "value-inl.h"
 
+#include <string.h>
+
 value_t new_heap_string(runtime_t *runtime, string_t *contents) {
   size_t bytes = calc_string_size(string_length(contents));
   TRY_DEF(result, alloc_heap_object(&runtime->heap, bytes,
       runtime->roots.string_species));
   set_string_length(result, string_length(contents));
   string_copy_to(contents, get_string_chars(result), string_length(contents) + 1);
+  return result;
+}
+
+value_t new_heap_blob(runtime_t *runtime, size_t length) {
+  size_t size = calc_blob_size(length);
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.blob_species));
+  set_blob_length(result, length);
+  memset(get_blob_data(result), 0, length);
   return result;
 }
 

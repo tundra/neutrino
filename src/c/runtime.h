@@ -12,6 +12,7 @@ typedef struct {
   value_t species_species;
   // The species of the different value types.
   value_t string_species;
+  value_t blob_species;
   value_t array_species;
   value_t null_species;
   value_t bool_species;

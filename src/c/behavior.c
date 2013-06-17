@@ -23,9 +23,15 @@ value_t object_validate(value_t value) {
 }
 
 static value_t string_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofString, value);
   // Check that the string is null-terminated.
   size_t length = get_string_length(value);
   VALIDATE(get_string_chars(value)[length] == '\0');
+  return success();
+}
+
+static value_t blob_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofBlob, value);
   return success();
 }
 
@@ -90,6 +96,10 @@ static value_t string_transient_identity_hash(value_t value) {
   return new_integer(hash);
 }
 
+static value_t blob_transient_identity_hash(value_t value) {
+  return new_signal(scUnsupportedBehavior);
+}
+
 static value_t bool_transient_identity_hash(value_t value) {
   static const size_t kTrueHash = 0x3213;
   static const size_t kFalseHash = 0x5423;
@@ -151,11 +161,19 @@ bool value_are_identical(value_t a, value_t b) {
 }
 
 static bool string_are_identical(value_t a, value_t b) {
+  CHECK_FAMILY(ofString, a);
+  CHECK_FAMILY(ofString, b);
   string_t a_contents;
   get_string_contents(a, &a_contents);
   string_t b_contents;
   get_string_contents(b, &b_contents);
   return string_equals(&a_contents, &b_contents);
+}
+
+static bool blob_are_identical(value_t a, value_t b) {
+  CHECK_FAMILY(ofBlob, a);
+  CHECK_FAMILY(ofBlob, b);
+  return (a == b);
 }
 
 static bool null_are_identical(value_t a, value_t b) {
@@ -269,6 +287,7 @@ static void map_print_on(value_t value, string_buffer_t *buf) {
 }
 
 static void string_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofString, value);
   string_t contents;
   get_string_contents(value, &contents);
   string_buffer_printf(buf, "\"%s\"", contents.chars);
@@ -276,6 +295,15 @@ static void string_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 static void string_print_on(value_t value, string_buffer_t *buf) {
   string_print_atomic_on(value, buf);
+}
+
+static void blob_print_on(value_t value, string_buffer_t *buf) {
+  string_print_atomic_on(value, buf);
+}
+
+static void blob_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofBlob, value);
+  string_buffer_printf(buf, "#<blob[%i]>", (int) get_blob_length(value));    
 }
 
 void value_print_on(value_t value, string_buffer_t *buf) {

@@ -18,6 +18,21 @@ TEST(alloc, heap_string) {
   runtime_dispose(&runtime);
 }
 
+TEST(alloc, heap_blob) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t blob = new_heap_blob(&runtime, 9);
+  ASSERT_DOMAIN(vdObject, blob);
+  ASSERT_FAMILY(ofBlob, blob);
+  ASSERT_EQ(9, get_blob_length(blob));
+  uint8_t *data = get_blob_data(blob);
+  for (size_t i = 0; i < 9; i++)
+    ASSERT_EQ(0, data[i]);
+
+  runtime_dispose(&runtime);
+}
+
 TEST(alloc, heap_species) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
