@@ -139,6 +139,7 @@ size_t get_map_capacity(value_t value) {
 
 // Returns a pointer to the start of the index'th entry in the given map.
 static value_t *get_map_entry(value_t map, size_t index) {
+  CHECK_TRUE(index < get_map_capacity(map));
   return access_object_field(map, kMapEntryArrayOffset) + (index * kMapEntryFieldCount);
 }
 
@@ -251,6 +252,33 @@ value_t get_map_at(value_t map, value_t key) {
   }
 }
 
+void map_iter_init(map_iter_t *iter, value_t map) {
+  iter->map = map;
+  iter->cursor = 0;
+  iter->current = NULL;
+}
+
+bool map_iter_advance(map_iter_t *iter) {
+  // Test successive entries until we find a non-empty one.
+  while (iter->cursor < get_map_capacity(iter->map)) {
+    value_t *entry = get_map_entry(iter->map, iter->cursor);
+    iter->cursor++;
+    if (!is_map_entry_empty(entry)) {
+      // Found one, store it in current and return success.
+      iter->current = entry;
+      return true;
+    }
+  }
+  // Didn't find one. Clear current and return failure.
+  iter->current = NULL;
+  return false;
+}
+
+void map_iter_get_current(map_iter_t *iter, value_t *key_out, value_t *value_out) {
+  CHECK_TRUE(iter->current != NULL);
+  *key_out = get_map_entry_key(iter->current);
+  *value_out = get_map_entry_value(iter->current);
+}
 
 // --- B o o l ---
 

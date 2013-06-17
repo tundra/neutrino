@@ -230,7 +230,6 @@ static const size_t kMapEntryKeyOffset = 0;
 static const size_t kMapEntryHashOffset = 1;
 static const size_t kMapEntryValueOffset = 2;
 
-
 // Returns the array of hash map entries for this map.
 value_t get_map_entry_array(value_t value);
 
@@ -258,6 +257,27 @@ value_t try_set_map_at(value_t map, value_t key, value_t value);
 // appropriate signal.
 value_t get_map_at(value_t map, value_t key);
 
+// Data associated with iterating through a map.
+typedef struct {
+  // The map we're iterating through.
+  value_t map;
+  // The starting point from which to search for the next entry to return.
+  size_t cursor;
+  // The current entry.
+  value_t *current;
+} map_iter_t;
+
+// Initializes an iterator for iterating the given map.
+void map_iter_init(map_iter_t *iter, value_t map);
+
+// Advances the iterator to the next element. Returns true iff an element
+// is found.
+bool map_iter_advance(map_iter_t *iter);
+
+// Reads the key and value from the current map entry, storing them in the
+// out parameters. Fails if the last advance call did not return true.
+void map_iter_get_current(map_iter_t *iter, value_t *key_out,
+    value_t *value_out);
 
 // --- N u l l ---
 
