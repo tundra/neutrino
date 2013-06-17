@@ -5,8 +5,8 @@
 
 // --- S p a c e ---
 
-static const uint8_t kBlankHeapMarker = 0xDA;
-static const uint8_t kAllocedHeapMarker = 0xFE;
+static const uint8_t kBlankHeapMarker = 0xBE;
+static const uint8_t kAllocedHeapMarker = 0xFA;
 
 address_t align_address(uint32_t alignment, address_t ptr) {
   address_arith_t addr = (address_arith_t) ptr;
