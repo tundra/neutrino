@@ -102,9 +102,9 @@ TEST(behavior, print_on) {
   value_t arr = new_heap_array(&runtime, 3);
   check_print_on("[null, null, null]", arr);
   set_array_at(arr, 1, new_integer(4));
-  check_print_on("[null, 4, null]", arr);  
+  check_print_on("[null, 4, null]", arr);
   set_array_at(arr, 2, foo);
-  check_print_on("[null, 4, \"foo\"]", arr);  
+  check_print_on("[null, 4, \"foo\"]", arr);
   set_array_at(arr, 0, arr);
   check_print_on("[#<array[3]>, 4, \"foo\"]", arr);
 
@@ -120,7 +120,7 @@ TEST(behavior, print_on) {
   // Blobs
   value_t blob = new_heap_blob(&runtime, 9);
   set_array_at(arr, 0, blob);
-  check_print_on("[#<blob[9]>, 4, \"foo\"]", arr);  
+  check_print_on("[#<blob[9]>, 4, \"foo\"]", arr);
 
   runtime_dispose(&runtime);
 }
