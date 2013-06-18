@@ -1,6 +1,11 @@
+#include "alloc.h"
 #include "plankton.h"
+#include "value-inl.h"
 
 #include <string.h>
+
+
+// --- B y t e   b u f f e r ---
 
 // Buffer for building a block of bytes incrementally.
 typedef struct {
@@ -24,7 +29,7 @@ static void byte_buffer_init(byte_buffer_t *buf, allocator_t *alloc_or_null) {
   }
   buf->length = 0;
   buf->capacity = 128;
-  buf->data = (uint8_t*) allocator_malloc(&buf->allocator, buf->capacity);
+  buf->data = allocator_malloc(&buf->allocator, buf->capacity);
 }
 
 // Disposes the given byte buffer.
@@ -37,8 +42,7 @@ static void string_buffer_ensure_capacity(byte_buffer_t *buf, size_t length) {
   if (length < buf->capacity)
     return;
   size_t new_capacity = (length * 2);
-  uint8_t *new_data = (uint8_t*) allocator_malloc(&buf->allocator,
-      new_capacity);
+  uint8_t *new_data = allocator_malloc(&buf->allocator, new_capacity);
   memcpy(new_data, buf->data, buf->length);
   allocator_free(&buf->allocator, (address_t) buf->data);
   buf->data = new_data;
@@ -52,13 +56,34 @@ static void byte_buffer_append(byte_buffer_t *buf, uint8_t value) {
   buf->length++;
 }
 
-value_t plankton_serialize(value_t data) {
-  byte_buffer_t buf;
-  byte_buffer_init(&buf, NULL);
-  byte_buffer_dispose(&buf);
-  return new_integer(0);
+// Write the current contents to the given blob. The data in the blob will
+// still be backed by this buffer so disposing this will make the blob invalid.
+static void byte_buffer_flush(byte_buffer_t *buf, blob_t *blob_out) {
+  blob_init(blob_out, buf->data, buf->length);
 }
 
-value_t plankton_deserialize(value_t blob) {
+
+// --- S e r i a l i z e ---
+
+value_t plankton_serialize(runtime_t *runtime, value_t data) {
+  // Write the data to a C heap blob.
+  byte_buffer_t buf;
+  byte_buffer_init(&buf, NULL);
+  blob_t buffer_data;
+  byte_buffer_flush(&buf, &buffer_data);
+  // Allocate the blob object to hold the result.
+  TRY_DEF(blob, new_heap_blob(runtime, blob_length(&buffer_data)));
+  blob_t blob_data;
+  get_blob_data(blob, &blob_data);
+  // Copy the result into the heap blob.
+  blob_copy_to(&buffer_data, &blob_data);
+  byte_buffer_dispose(&buf);
+  return blob;
+}
+
+
+// --- D e s e r i a l i z e ---
+
+value_t plankton_deserialize(runtime_t *runtime, value_t blob) {
   return new_integer(0);
 }

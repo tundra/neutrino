@@ -316,4 +316,10 @@ void set_bool_value(value_t value, bool truth);
 bool get_bool_value(value_t value);
 
 
+// --- D e b u g ---
+
+// Prints the string representation of the given value on stdout.
+void value_print_ln(value_t value);
+
+
 #endif // _VALUE
