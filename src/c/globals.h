@@ -9,8 +9,11 @@
 #ifndef _GLOBALS
 #define _GLOBALS
 
+// A single byte.
+typedef uint8_t byte_t;
+
 // Shorthand for pointers into memory.
-typedef uint8_t *address_t;
+typedef byte_t *address_t;
 
 // The type to cast pointers to when you need to do advanced pointer
 // arithmetic.
