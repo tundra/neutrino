@@ -297,13 +297,13 @@ static void string_print_on(value_t value, string_buffer_t *buf) {
   string_print_atomic_on(value, buf);
 }
 
-static void blob_print_on(value_t value, string_buffer_t *buf) {
-  string_print_atomic_on(value, buf);
-}
-
 static void blob_print_atomic_on(value_t value, string_buffer_t *buf) {
   CHECK_FAMILY(ofBlob, value);
   string_buffer_printf(buf, "#<blob[%i]>", (int) get_blob_length(value));    
+}
+
+static void blob_print_on(value_t value, string_buffer_t *buf) {
+  blob_print_atomic_on(value, buf);
 }
 
 void value_print_on(value_t value, string_buffer_t *buf) {

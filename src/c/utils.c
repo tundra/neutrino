@@ -64,6 +64,11 @@ void blob_fill(blob_t *blob, byte_t value) {
   memset(blob->data, value, blob_length(blob));
 }
 
+void blob_copy_to(blob_t *src, blob_t *dest) {
+  CHECK_TRUE(blob_length(dest) >= blob_length(src));
+  memcpy(dest->data, src->data, blob_length(src));
+}
+
 
 // Throws away the data argument and just calls malloc.
 static void *system_malloc_trampoline(void *data, size_t size) {

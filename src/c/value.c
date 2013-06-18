@@ -317,3 +317,16 @@ bool get_bool_value(value_t value) {
   CHECK_FAMILY(ofBool, value);
   return (bool) *access_object_field(value, kBoolValueOffset);
 }
+
+void value_print_ln(value_t value) {
+  // Write the value on a string buffer.
+  string_buffer_t buf;
+  string_buffer_init(&buf, NULL);
+  value_print_on(value, &buf);
+  string_t result;
+  string_buffer_flush(&buf, &result);
+  // Print it on stdout.
+  printf("%s\n", result.chars);
+  // Done!
+  string_buffer_dispose(&buf);
+}
