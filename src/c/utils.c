@@ -66,13 +66,13 @@ void blob_fill(blob_t *blob, byte_t value) {
 
 
 // Throws away the data argument and just calls malloc.
-static address_t system_malloc_trampoline(void *data, size_t size) {
+static void *system_malloc_trampoline(void *data, size_t size) {
   CHECK_EQ(NULL, data);
-  return (address_t) malloc(size);
+  return malloc(size);
 }
 
 // Throws away the data argument and just calls free.
-static void system_free_trampoline(void *data, address_t ptr) {
+static void system_free_trampoline(void *data, void *ptr) {
   CHECK_EQ(NULL, data);
   free(ptr);
 }

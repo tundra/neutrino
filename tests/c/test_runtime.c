@@ -3,7 +3,7 @@
 #include "value-inl.h"
 
 // A malloc that refuses to yield any memory.
-address_t blocking_malloc(void *data, size_t size) {
+void *blocking_malloc(void *data, size_t size) {
   return NULL;
 }
 
