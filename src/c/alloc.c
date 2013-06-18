@@ -18,7 +18,9 @@ value_t new_heap_blob(runtime_t *runtime, size_t length) {
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.blob_species));
   set_blob_length(result, length);
-  memset(get_blob_data(result), 0, length);
+  blob_t data;
+  get_blob_data(result, &data);
+  blob_fill(&data, 0);
   return result;
 }
 

@@ -26,9 +26,11 @@ TEST(alloc, heap_blob) {
   ASSERT_DOMAIN(vdObject, blob);
   ASSERT_FAMILY(ofBlob, blob);
   ASSERT_EQ(9, get_blob_length(blob));
-  uint8_t *data = get_blob_data(blob);
+  blob_t data;
+  get_blob_data(blob, &data);
+  ASSERT_EQ(9, blob_length(&data));
   for (size_t i = 0; i < 9; i++)
-    ASSERT_EQ(0, data[i]);
+    ASSERT_EQ(0, blob_byte_at(&data, i));
 
   runtime_dispose(&runtime);
 }

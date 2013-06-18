@@ -89,9 +89,11 @@ size_t get_blob_length(value_t value) {
   return get_integer_value(*access_object_field(value, kBlobLengthOffset));
 }
 
-uint8_t *get_blob_data(value_t value) {
+void get_blob_data(value_t value, blob_t *blob_out) {
   CHECK_FAMILY(ofBlob, value);
-  return (uint8_t*) access_object_field(value, kBlobDataOffset);  
+  size_t length = get_blob_length(value);
+  byte_t *data = (byte_t*) access_object_field(value, kBlobDataOffset);
+  blob_init(blob_out, data, length);
 }
 
 

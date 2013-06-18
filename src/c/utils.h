@@ -5,6 +5,9 @@
 
 #include <stdarg.h>
 
+
+// --- S t r i n g ---
+
 // A C string with a length.
 typedef struct {
   size_t length;
@@ -30,6 +33,29 @@ bool string_equals(string_t *a, string_t *b);
 // Calculates a hash code for the given string.
 size_t string_hash(string_t *str);
 
+
+// --- B l o b ---
+
+// A block of data with a length.
+typedef struct {
+  size_t length;
+  byte_t *data;
+} blob_t;
+
+// Initializes a blob to hold this data.
+void blob_init(blob_t *blob, byte_t *data, size_t length);
+
+// The number of bytes in this blob.
+size_t blob_length(blob_t *blob);
+
+// Returns the index'th byte in the given blob.
+byte_t blob_byte_at(blob_t *blob, size_t index);
+
+// Fills this blob's data with the given value.
+void blob_fill(blob_t *blob, byte_t value);
+
+
+// --- A l l o c a t o r ---
 
 // An allocator function.
 typedef address_t (alloc_t)(void *data, size_t size);
@@ -57,6 +83,8 @@ address_t allocator_malloc(allocator_t *alloc, size_t size);
 // Frees a block of memory using the given allocator.
 void allocator_free(allocator_t *alloc, address_t ptr);
 
+
+// --- S t r i n g   b u f f e r ---
 
 // Buffer for building a string incrementally.
 typedef struct {
