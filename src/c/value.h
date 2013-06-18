@@ -212,8 +212,9 @@ void set_blob_length(value_t value, size_t length);
 // Returns the length of a heap blob.
 size_t get_blob_length(value_t value);
 
-// Returns a pointer to the array that holds the contents of this array.
-uint8_t *get_blob_data(value_t value);
+// Gives access to the data in the given blob value in a blob struct through
+// the out parameter.
+void get_blob_data(value_t value, blob_t *blob_out);
 
 
 // --- A r r a y ---

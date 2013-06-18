@@ -45,6 +45,26 @@ size_t string_hash(string_t *str) {
   return result;
 }
 
+
+void blob_init(blob_t *blob, byte_t *data, size_t length) {
+  blob->length = length;
+  blob->data = data;
+}
+
+size_t blob_length(blob_t *blob) {
+  return blob->length;
+}
+
+byte_t blob_byte_at(blob_t *blob, size_t index) {
+  CHECK_TRUE(index < blob_length(blob));
+  return blob->data[index];
+}
+
+void blob_fill(blob_t *blob, byte_t value) {
+  memset(blob->data, value, blob_length(blob));
+}
+
+
 // Throws away the data argument and just calls malloc.
 static address_t system_malloc_trampoline(void *data, size_t size) {
   CHECK_EQ(NULL, data);
