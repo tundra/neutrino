@@ -54,6 +54,9 @@ byte_t blob_byte_at(blob_t *blob, size_t index);
 // Fills this blob's data with the given value.
 void blob_fill(blob_t *blob, byte_t value);
 
+// Write the contents of the source blob into the destination.
+void blob_copy_to(blob_t *src, blob_t *dest);
+
 
 // --- A l l o c a t o r ---
 
