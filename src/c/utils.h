@@ -57,18 +57,13 @@ void blob_fill(blob_t *blob, byte_t value);
 
 // --- A l l o c a t o r ---
 
-// An allocator function.
-typedef address_t (alloc_t)(void *data, size_t size);
-
-// A deallocator function. Note: the pointer to deallocate is the _second_ one.
-typedef void (free_t)(void *data, address_t ptr);
-
 // An allocator encapsulates a source of memory from the system.
 typedef struct {
   // Function to call to do allocation.
-  alloc_t *malloc;
-  // Function to call to dispose memory.
-  free_t *free;
+  void *(*malloc)(void *data, size_t size);
+  // Function to call to dispose memory. Note: the memory to deallocate is
+  // the second arguments.
+  void (*free)(void *data, void *ptr);
   // Extra data that can be used by the alloc/dealloc functions.
   void *data;
 } allocator_t;
