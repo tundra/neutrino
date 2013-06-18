@@ -28,3 +28,10 @@ TEST(plankton, simple) {
 
   runtime_dispose(&runtime);
 }
+
+TEST(plankton, composite) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  runtime_dispose(&runtime);
+}
