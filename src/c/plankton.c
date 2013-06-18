@@ -136,10 +136,30 @@ static value_t integer_serialize(value_t value, byte_buffer_t *buf) {
   return encode_int32(trunc, buf);
 }
 
+static value_t singleton_serialize(plankton_tag_t tag, byte_buffer_t *buf) {
+  byte_buffer_append(buf, tag);
+  return success();
+}
+
+static value_t object_serialize(value_t value, byte_buffer_t *buf) {
+  CHECK_DOMAIN(vdObject, value);
+  switch (get_object_family(value)) {
+    case ofNull:
+      return singleton_serialize(pNull, buf);
+    case ofBool:
+      return singleton_serialize(get_bool_value(value) ? pTrue : pFalse, buf);
+    default:
+      UNREACHABLE();
+      return new_signal(scUnsupportedBehavior);
+  }
+}
+
 static value_t value_serialize(value_t data, byte_buffer_t *buf) {
   switch (get_value_domain(data)) {
     case vdInteger:
       return integer_serialize(data, buf);
+    case vdObject:
+      return object_serialize(data, buf);
     default:
       UNREACHABLE();
       return new_signal(scUnsupportedBehavior);
@@ -189,6 +209,12 @@ static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in) {
   switch (byte_stream_read(in)) {
     case pInt32:
       return int32_deserialize(runtime, in);
+    case pNull:
+      return runtime_null(runtime);
+    case pTrue:
+      return runtime_bool(runtime, true);
+    case pFalse:
+      return runtime_bool(runtime, false);
     default:
       UNREACHABLE();
       return new_signal(scNotFound);
