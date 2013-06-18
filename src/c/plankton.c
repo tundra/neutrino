@@ -4,17 +4,20 @@
 
 #include <string.h>
 
+// The different plankton type tags.
+typedef enum {
+  pInt32 = 0,
+  pString = 1,
+  pArray = 2,
+  pMap = 3,
+  pNull = 4,
+  pTrue = 5,
+  pFalse = 6,
+  pObject = 7,
+  pReference = 8,
+  pEnvironment = 9,
+} plankton_tag_t;
 
-static const byte_t kInt32Tag = 0;
-static const byte_t kStringTag = 1;
-static const byte_t kArrayTag = 2;
-static const byte_t kMapTag = 3;
-static const byte_t kNullTag = 4;
-static const byte_t kTrueTag = 5;
-static const byte_t kFalseTag = 6;
-static const byte_t kObjectTag = 7;
-static const byte_t kReferenceTag = 8;
-static const byte_t kEnvironmentTag = 9;
 
 // --- B y t e   b u f f e r ---
 
@@ -74,6 +77,34 @@ static void byte_buffer_flush(byte_buffer_t *buf, blob_t *blob_out) {
 }
 
 
+// --- B y t e   s t r e a m ---
+
+// A stream that allows bytes to be read one at a time from a blob.
+typedef struct {
+  blob_t *blob;
+  size_t cursor;
+} byte_stream_t;
+
+// Initializes a stream to read from the beginning of the given blob.
+void byte_stream_init(byte_stream_t *stream, blob_t *blob) {
+  stream->blob = blob;
+  stream->cursor = 0;
+}
+
+// Returns true iff data can be read from this stream.
+bool byte_stream_has_more(byte_stream_t *stream) {
+  return stream->cursor < blob_length(stream->blob);
+}
+
+// Returns the next byte from the given byte stream.
+byte_t byte_stream_read(byte_stream_t *stream) {
+  CHECK_TRUE(byte_stream_has_more(stream));
+  byte_t result = blob_byte_at(stream->blob, stream->cursor);
+  stream->cursor++;
+  return result;
+}
+
+
 // --- S e r i a l i z e ---
 
 // Encodes an unsigned 32-bit integer.
@@ -95,9 +126,9 @@ static value_t encode_int32(int32_t value, byte_buffer_t *buf) {
   return encode_uint32(zig_zag, buf);
 }
 
-value_t integer_serialize(value_t value, byte_buffer_t *buf) {
+static value_t integer_serialize(value_t value, byte_buffer_t *buf) {
   CHECK_DOMAIN(vdInteger, value);
-  byte_buffer_append(buf, kInt32Tag);
+  byte_buffer_append(buf, pInt32);
   // TODO: deal with full size integers, for now just trap loss of data.
   int64_t int_value = get_integer_value(value);
   int32_t trunc = (int32_t) int_value;
@@ -105,7 +136,7 @@ value_t integer_serialize(value_t value, byte_buffer_t *buf) {
   return encode_int32(trunc, buf);
 }
 
-value_t value_serialize(value_t data, byte_buffer_t *buf) {
+static value_t value_serialize(value_t data, byte_buffer_t *buf) {
   switch (get_value_domain(data)) {
     case vdInteger:
       return integer_serialize(data, buf);
@@ -135,6 +166,39 @@ value_t plankton_serialize(runtime_t *runtime, value_t data) {
 
 // --- D e s e r i a l i z e ---
 
+static uint32_t uint32_deserialize(runtime_t *runtime, byte_stream_t *in) {
+  byte_t current = 0xFF;
+  uint32_t result = 0;
+  byte_t offset = 0;
+  while ((current & 0x80) != 0) {
+    current = byte_stream_read(in);
+    result = result | ((current & 0x7f) << offset);
+    offset += 7;
+  }
+  return result;
+}
+
+// Reads an int32 into an integer object.
+static value_t int32_deserialize(runtime_t *runtime, byte_stream_t *in) {
+  uint32_t zig_zag = uint32_deserialize(runtime, in);
+  int32_t value = (zig_zag >> 1) ^ (-(zig_zag & 1));
+  return new_integer(value);
+}
+
+static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in) {
+  switch (byte_stream_read(in)) {
+    case pInt32:
+      return int32_deserialize(runtime, in);
+    default:
+      UNREACHABLE();
+      return new_signal(scNotFound);
+  }
+}
+
 value_t plankton_deserialize(runtime_t *runtime, value_t blob) {
-  return new_integer(0);
+  blob_t data;
+  get_blob_data(blob, &data);
+  byte_stream_t in;
+  byte_stream_init(&in, &data);
+  return value_deserialize(runtime, &in);
 }
