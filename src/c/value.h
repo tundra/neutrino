@@ -281,8 +281,9 @@ value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value);
 value_t get_id_hash_map_at(value_t map, value_t key);
 
 // Data associated with iterating through a map. The iterator grabs the fields
-// it needs from the map on initialization of it's safe to overwrite map fields
-// while iterating, however it is _not_ safe to add or override elements.
+// it needs from the map on initialization so it's safe to overwrite map fields
+// while iterating, however it is _not_ safe to modify the entry array that was
+// captured in any way.
 typedef struct {
   // The entries we're iterating through.
   value_t *entries;

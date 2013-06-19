@@ -87,20 +87,21 @@ static value_t extend_id_hash_map(runtime_t *runtime, value_t map) {
   size_t old_capacity = get_id_hash_map_capacity(map);
   size_t new_capacity = old_capacity * 2;
   TRY_DEF(new_entry_array, new_heap_id_hash_map_entry_array(runtime, new_capacity));
-  // Create an iterator for scanning through the old map before modifying the
-  // map.
+  // Capture the relevant old state in an iterator before resetting the map.
   id_hash_map_iter_t iter;
   id_hash_map_iter_init(&iter, map);
   // Reset the map.
   set_id_hash_map_capacity(map, new_capacity);
   set_id_hash_map_size(map, 0);
   set_id_hash_map_entry_array(map, new_entry_array);
-  // Scan through and add the data from before we reset the map.
+  // Scan through and add the old data.
   while (id_hash_map_iter_advance(&iter)) {
     value_t key;
     value_t value;
     id_hash_map_iter_get_current(&iter, &key, &value);
     value_t extension = try_set_id_hash_map_at(map, key, value);
+    // Since we were able to successfully add these pairs to the old smaller
+    // map it can't fail this time around.
     CHECK_TRUE("rehashing failed", get_value_domain(extension) != vdSignal);
   }
   return success();
