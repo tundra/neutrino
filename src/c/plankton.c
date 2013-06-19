@@ -98,7 +98,7 @@ bool byte_stream_has_more(byte_stream_t *stream) {
 
 // Returns the next byte from the given byte stream.
 byte_t byte_stream_read(byte_stream_t *stream) {
-  CHECK_TRUE(byte_stream_has_more(stream));
+  CHECK_TRUE("byte stream empty", byte_stream_has_more(stream));
   byte_t result = blob_byte_at(stream->blob, stream->cursor);
   stream->cursor++;
   return result;
@@ -132,7 +132,7 @@ static value_t integer_serialize(value_t value, byte_buffer_t *buf) {
   // TODO: deal with full size integers, for now just trap loss of data.
   int64_t int_value = get_integer_value(value);
   int32_t trunc = (int32_t) int_value;
-  CHECK_EQ(int_value, (int64_t) trunc);
+  CHECK_EQ("plankton integer overflow", int_value, (int64_t) trunc);
   return encode_int32(trunc, buf);
 }
 
@@ -149,7 +149,7 @@ static value_t object_serialize(value_t value, byte_buffer_t *buf) {
     case ofBool:
       return singleton_serialize(get_bool_value(value) ? pTrue : pFalse, buf);
     default:
-      UNREACHABLE();
+      UNREACHABLE("object serialize");
       return new_signal(scUnsupportedBehavior);
   }
 }
@@ -161,7 +161,7 @@ static value_t value_serialize(value_t data, byte_buffer_t *buf) {
     case vdObject:
       return object_serialize(data, buf);
     default:
-      UNREACHABLE();
+      UNREACHABLE("value serialize");
       return new_signal(scUnsupportedBehavior);
   }
 }
@@ -216,7 +216,7 @@ static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in) {
     case pFalse:
       return runtime_bool(runtime, false);
     default:
-      UNREACHABLE();
+      UNREACHABLE("value deserialize");
       return new_signal(scNotFound);
   }
 }

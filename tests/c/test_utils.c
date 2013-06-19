@@ -85,7 +85,7 @@ TEST(utils, string_buffer_long) {
   string_buffer_flush(&buf, &str);
   ASSERT_EQ(10240, string_length(&str));
   for (size_t i = 0; i < 10240; i++) {
-    CHECK_EQ((char) ('0' + (i % 10)), string_char_at(&str, i));
+    ASSERT_EQ((char) ('0' + (i % 10)), string_char_at(&str, i));
   }
 
   string_buffer_dispose(&buf);
