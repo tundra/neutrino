@@ -1,3 +1,4 @@
+#include "behavior.h"
 #include "check.h"
 #include "test.h"
 #include "utils.h"
@@ -67,4 +68,45 @@ void fail(const char *file, int line, const char *fmt, ...) {
   printf("%s:%i: %s\n", file, line, str.chars);
   string_buffer_dispose(&buf);
   abort();
+}
+
+static bool array_structural_equal(value_t a, value_t b) {
+  CHECK_FAMILY(ofArray, a);
+  CHECK_FAMILY(ofArray, b);
+  size_t length = get_array_length(a);
+  if (get_array_length(b) != length)
+    return false;
+  for (size_t i = 0; i < length; i++) {
+    if (!(value_structural_equal(get_array_at(a, i), get_array_at(b, i))))
+      return false;
+  }
+  return true;
+}
+
+static bool object_structural_equal(value_t a, value_t b) {
+  CHECK_DOMAIN(vdObject, a);
+  CHECK_DOMAIN(vdObject, b);
+  object_family_t a_family = get_object_family(a);
+  object_family_t b_family = get_object_family(b);
+  if (a_family != b_family)
+    return false;
+  switch (a_family) {
+    case ofArray:
+      return array_structural_equal(a, b);
+    default:
+      return value_are_identical(a, b);
+  }
+}
+
+bool value_structural_equal(value_t a, value_t b) {
+  value_domain_t a_domain = get_value_domain(a);
+  value_domain_t b_domain = get_value_domain(b);
+  if (a_domain != b_domain)
+    return false;
+  switch (a_domain) {
+    case vdObject:
+      return object_structural_equal(a, b);
+    default:
+      return value_are_identical(a, b);
+  }
 }

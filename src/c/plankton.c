@@ -107,6 +107,9 @@ byte_t byte_stream_read(byte_stream_t *stream) {
 
 // --- S e r i a l i z e ---
 
+// Serialize any (non-signal) value on the given buffer.
+static value_t value_serialize(value_t value, byte_buffer_t *buf);
+
 // Encodes an unsigned 32-bit integer.
 static value_t encode_uint32(uint32_t value, byte_buffer_t *buf) {
   while (value > 0x7F) {
@@ -141,6 +144,17 @@ static value_t singleton_serialize(plankton_tag_t tag, byte_buffer_t *buf) {
   return success();
 }
 
+static value_t array_serialize(value_t value, byte_buffer_t *buf) {
+  CHECK_FAMILY(ofArray, value);
+  byte_buffer_append(buf, pArray);
+  size_t length = get_array_length(value);
+  encode_uint32(length, buf);
+  for (size_t i = 0; i < length; i++) {
+    TRY(value_serialize(get_array_at(value, i), buf));
+  }
+  return success();
+}
+
 static value_t object_serialize(value_t value, byte_buffer_t *buf) {
   CHECK_DOMAIN(vdObject, value);
   switch (get_object_family(value)) {
@@ -148,6 +162,8 @@ static value_t object_serialize(value_t value, byte_buffer_t *buf) {
       return singleton_serialize(pNull, buf);
     case ofBool:
       return singleton_serialize(get_bool_value(value) ? pTrue : pFalse, buf);
+    case ofArray:
+      return array_serialize(value, buf);
     default:
       UNREACHABLE();
       return new_signal(scUnsupportedBehavior);
@@ -186,6 +202,9 @@ value_t plankton_serialize(runtime_t *runtime, value_t data) {
 
 // --- D e s e r i a l i z e ---
 
+// Reads the next value from the stream.
+static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in);
+
 static uint32_t uint32_deserialize(runtime_t *runtime, byte_stream_t *in) {
   byte_t current = 0xFF;
   uint32_t result = 0;
@@ -205,6 +224,16 @@ static value_t int32_deserialize(runtime_t *runtime, byte_stream_t *in) {
   return new_integer(value);
 }
 
+static value_t array_deserialize(runtime_t *runtime, byte_stream_t *in) {
+  size_t length = uint32_deserialize(runtime, in);
+  TRY_DEF(result, new_heap_array(runtime, length));
+  for (size_t i = 0; i < length; i++) {
+    TRY_DEF(value, value_deserialize(runtime, in));
+    set_array_at(result, i, value);
+  }
+  return result;
+}
+
 static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in) {
   switch (byte_stream_read(in)) {
     case pInt32:
@@ -215,6 +244,8 @@ static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in) {
       return runtime_bool(runtime, true);
     case pFalse:
       return runtime_bool(runtime, false);
+    case pArray:
+      return array_deserialize(runtime, in);
     default:
       UNREACHABLE();
       return new_signal(scNotFound);

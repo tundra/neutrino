@@ -1,3 +1,4 @@
+#include "alloc.h"
 #include "plankton.h"
 #include "test.h"
 
@@ -7,7 +8,7 @@ static void check_plankton(runtime_t *runtime, value_t value) {
   // Encode and decode the value.
   value_t encoded = plankton_serialize(runtime, value);
   value_t decoded = plankton_deserialize(runtime, encoded);
-  ASSERT_EQ(value, decoded);
+  ASSERT_VALEQ(value, decoded);
 }
 
 TEST(plankton, simple) {
@@ -33,5 +34,11 @@ TEST(plankton, composite) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
+  value_t arr = new_heap_array(&runtime, 5);
+  check_plankton(&runtime, arr);
+  set_array_at(arr, new_integer(5), 0);
+  check_plankton(&runtime, arr);
+
   runtime_dispose(&runtime);
+
 }
