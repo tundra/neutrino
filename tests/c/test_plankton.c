@@ -40,5 +40,4 @@ TEST(plankton, array) {
   check_plankton(&runtime, arr);
 
   runtime_dispose(&runtime);
-
 }
