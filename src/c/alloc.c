@@ -4,13 +4,22 @@
 
 #include <string.h>
 
+// Run a couple of sanity checks before returning the value from a constructor.
+// Returns a signal if the check fails, otherwise returns the given value.
+static value_t post_create_sanity_check(value_t value, size_t size) {
+  TRY(object_validate(value));
+  if (get_object_heap_size(value) != size)
+    return new_signal(scValidationFailed);
+  return value;
+}
+
 value_t new_heap_string(runtime_t *runtime, string_t *contents) {
-  size_t bytes = calc_string_size(string_length(contents));
-  TRY_DEF(result, alloc_heap_object(&runtime->heap, bytes,
+  size_t size = calc_string_size(string_length(contents));
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.string_species));
   set_string_length(result, string_length(contents));
   string_copy_to(contents, get_string_chars(result), string_length(contents) + 1);
-  return result;
+  return post_create_sanity_check(result, size);
 }
 
 value_t new_heap_blob(runtime_t *runtime, size_t length) {
@@ -21,7 +30,7 @@ value_t new_heap_blob(runtime_t *runtime, size_t length) {
   blob_t data;
   get_blob_data(result, &data);
   blob_fill(&data, 0);
-  return result;
+  return post_create_sanity_check(result, size);
 }
 
 value_t new_heap_species(runtime_t *runtime, object_family_t instance_family,
@@ -41,7 +50,7 @@ value_t new_heap_array(runtime_t *runtime, size_t length) {
   set_array_length(result, length);
   for (size_t i = 0; i < length; i++)
     set_array_at(result, i, runtime->roots.null);
-  return result;
+  return post_create_sanity_check(result, size);
 }
 
 static value_t new_heap_id_hash_map_entry_array(runtime_t *runtime, size_t capacity) {
@@ -57,7 +66,7 @@ value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity) {
   set_id_hash_map_entry_array(result, entries);
   set_id_hash_map_size(result, 0);
   set_id_hash_map_capacity(result, init_capacity);
-  return result;
+  return post_create_sanity_check(result, size);
 }
 
 value_t new_heap_null(runtime_t *runtime) {
@@ -70,7 +79,7 @@ value_t new_heap_bool(runtime_t *runtime, bool value) {
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.bool_species));
   set_bool_value(result, value);
-  return result;
+  return post_create_sanity_check(result, size);
 }
 
 value_t new_heap_instance(runtime_t *runtime) {
@@ -79,7 +88,7 @@ value_t new_heap_instance(runtime_t *runtime) {
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.instance_species));
   set_instance_fields(result, fields);
-  return result;
+  return post_create_sanity_check(result, size);
 }
 
 value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species) {
