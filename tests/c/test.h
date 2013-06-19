@@ -54,16 +54,21 @@ ASSERT_CLASS(object_family_t, ofFamily, EXPR, get_object_family)
 #define ASSERT_SIGNAL(scCause, EXPR) \
 ASSERT_CLASS(signal_cause_t, scCause, EXPR, get_signal_cause)
 
-#define ASSERT_CLASS(class_t, cExpected, EXPR, get_class) do {               \
-  class_t __class__ = get_class(EXPR);                                       \
-  if (__class__ != cExpected)                                                \
-    fail(__FILE__, __LINE__, "Assertion failed: %s(%s) == %s.\n  Found: %i", \
-        #get_class, #EXPR, #cExpected, __class__);                           \
+#define ASSERT_CLASS(class_t, cExpected, EXPR, get_class) do {                 \
+  class_t __class__ = get_class(EXPR);                                         \
+  if (__class__ != cExpected)                                                  \
+    fail(__FILE__, __LINE__, "Assertion failed: %s(%s) == %s.\n  Found: %i",   \
+        #get_class, #EXPR, #cExpected, __class__);                             \
 } while (false)
 
 // Fails if the given value is a signal.
-#define ASSERT_SUCCESS(EXPR) \
-  ASSERT_FALSE(vdSignal == get_value_domain(EXPR))
+#define ASSERT_SUCCESS(EXPR) do {                                              \
+  value_t __value__ = (EXPR);                                                  \
+  if (get_value_domain(__value__) == vdSignal) {                               \
+    fail(__FILE__, __LINE__, "Assertion failed: %s is a value.\n  Was signal: %i",\
+        #EXPR, get_signal_cause(__value__));                                   \
+  }                                                                            \
+} while (false)
 
 // Declares a new string_t variable and initializes it with the given contents.
 #define DEF_STRING(name, contents) \

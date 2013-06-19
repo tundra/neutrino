@@ -42,4 +42,10 @@ value_t new_heap_bool(runtime_t *runtime, bool value);
 // initialization.
 value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species);
 
+// Adds a binding from the given key to the given value to this map, replacing
+// the existing one if it already exists. Returns a signal on failure, either
+// if the key cannot be hashed or there isn't enough memory in the runtime to
+// extend the map.
+value_t set_id_hash_map_at(runtime_t *runtime, value_t map, value_t key, value_t value);
+
 #endif // _ALLOC

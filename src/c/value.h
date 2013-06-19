@@ -237,6 +237,9 @@ value_t get_array_at(value_t value, size_t index);
 // Sets the index'th element in the given array.
 void set_array_at(value_t value, size_t index, value_t element);
 
+// Returns the underlying array element array.
+value_t *get_array_elements(value_t value);
+
 
 // --- I d e n t i t y   h a s h   m a p ---
 
@@ -277,12 +280,16 @@ value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value);
 // appropriate signal.
 value_t get_id_hash_map_at(value_t map, value_t key);
 
-// Data associated with iterating through a map.
+// Data associated with iterating through a map. The iterator grabs the fields
+// it needs from the map on initialization of it's safe to overwrite map fields
+// while iterating, however it is _not_ safe to add or override elements.
 typedef struct {
-  // The map we're iterating through.
-  value_t map;
+  // The entries we're iterating through.
+  value_t *entries;
   // The starting point from which to search for the next entry to return.
   size_t cursor;
+  // The total capacity of this map.
+  size_t capacity;
   // The current entry.
   value_t *current;
 } id_hash_map_iter_t;

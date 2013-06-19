@@ -100,3 +100,25 @@ TEST(value, id_hash_maps_strings) {
 
   runtime_dispose(&runtime);
 }
+
+
+TEST(value, large_id_hash_maps) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t map = new_heap_is_hash_map(&runtime, 4);
+  for (size_t i = 0; i < 128; i++) {
+    value_t key = new_integer(i);
+    value_t value = new_integer(1024 - i);
+    ASSERT_SUCCESS(set_id_hash_map_at(&runtime, map, key, value));
+    ASSERT_SUCCESS(object_validate(map));
+    for (size_t j = 0; j <= i; j++) {
+      value_t check_key = new_integer(j);
+      value_t check_value = get_id_hash_map_at(map, check_key);
+      ASSERT_SUCCESS(check_value);
+      ASSERT_EQ(1024 - j, get_integer_value(check_value));
+    }
+  }
+
+  runtime_dispose(&runtime);
+}

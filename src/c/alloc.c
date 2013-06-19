@@ -44,9 +44,13 @@ value_t new_heap_array(runtime_t *runtime, size_t length) {
   return result;
 }
 
+static value_t new_heap_id_hash_map_entry_array(runtime_t *runtime, size_t capacity) {
+  return new_heap_array(runtime, capacity * kIdHashMapEntryFieldCount);
+}
+
 value_t new_heap_is_hash_map(runtime_t *runtime, size_t init_capacity) {
   CHECK_TRUE("invalid initial capacity", init_capacity > 0);
-  TRY_DEF(entries, new_heap_array(runtime, init_capacity * kIdHashMapEntryFieldCount));
+  TRY_DEF(entries, new_heap_id_hash_map_entry_array(runtime, init_capacity));
   size_t size = kIdHashMapSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.id_hash_map_species));
@@ -76,4 +80,42 @@ value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species) {
   value_t result = new_object(addr);
   set_object_species(result, species);
   return result;
+}
+
+static value_t extend_id_hash_map(runtime_t *runtime, value_t map) {
+  // Create the new entry array first so that if it fails we bail out asap.
+  size_t old_capacity = get_id_hash_map_capacity(map);
+  size_t new_capacity = old_capacity * 2;
+  TRY_DEF(new_entry_array, new_heap_id_hash_map_entry_array(runtime, new_capacity));
+  // Create an iterator for scanning through the old map before modifying the
+  // map.
+  id_hash_map_iter_t iter;
+  id_hash_map_iter_init(&iter, map);
+  // Reset the map.
+  set_id_hash_map_capacity(map, new_capacity);
+  set_id_hash_map_size(map, 0);
+  set_id_hash_map_entry_array(map, new_entry_array);
+  // Scan through and add the data from before we reset the map.
+  while (id_hash_map_iter_advance(&iter)) {
+    value_t key;
+    value_t value;
+    id_hash_map_iter_get_current(&iter, &key, &value);
+    value_t extension = try_set_id_hash_map_at(map, key, value);
+    CHECK_TRUE("rehashing failed", get_value_domain(extension) != vdSignal);
+  }
+  return success();
+}
+
+value_t set_id_hash_map_at(runtime_t *runtime, value_t map, value_t key, value_t value) {
+  value_t first_try = try_set_id_hash_map_at(map, key, value);
+  if (is_signal(scMapFull, first_try)) {
+    TRY(extend_id_hash_map(runtime, map));
+    value_t second_try = try_set_id_hash_map_at(map, key, value);
+    // It should be impossible for the second try to fail if the first try could
+    // hash the key and extending was successful.
+    CHECK_TRUE("second try failure", get_value_domain(second_try) != vdSignal);
+    return second_try;
+  } else {
+    return first_try;
+  }
 }
