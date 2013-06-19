@@ -30,13 +30,13 @@ TEST(plankton, simple) {
   runtime_dispose(&runtime);
 }
 
-TEST(plankton, composite) {
+TEST(plankton, array) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
   value_t arr = new_heap_array(&runtime, 5);
   check_plankton(&runtime, arr);
-  set_array_at(arr, new_integer(5), 0);
+  set_array_at(arr, 0, new_integer(5));
   check_plankton(&runtime, arr);
 
   runtime_dispose(&runtime);
