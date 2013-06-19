@@ -21,7 +21,7 @@ TEST(value, tagged_integers) {
 TEST(value, signals) {
   value_t v0 = new_signal(scHeapExhausted);
   ASSERT_DOMAIN(vdSignal, v0);
-  ASSERT_EQ(scHeapExhausted, get_signal_cause(v0));  
+  ASSERT_EQ(scHeapExhausted, get_signal_cause(v0));
 }
 
 TEST(value, objects) {
@@ -37,54 +37,54 @@ TEST(value, objects) {
   heap_dispose(&heap);
 }
 
-TEST(value, maps_simple) {
+TEST(value, id_hash_maps_simple) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
   // Create a map.
-  value_t map = new_heap_map(&runtime, 4);
-  ASSERT_FAMILY(ofMap, map);
-  ASSERT_EQ(0, get_map_size(map));
+  value_t map = new_heap_is_hash_map(&runtime, 4);
+  ASSERT_FAMILY(ofIdHashMap, map);
+  ASSERT_EQ(0, get_id_hash_map_size(map));
   // Add something to it.
-  ASSERT_SUCCESS(try_set_map_at(map, new_integer(0), new_integer(1)));
-  ASSERT_EQ(1, get_map_size(map));
-  ASSERT_EQ(new_integer(1), get_map_at(map, new_integer(0)));
-  ASSERT_SIGNAL(scNotFound, get_map_at(map, new_integer(1)));
+  ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(0), new_integer(1)));
+  ASSERT_EQ(1, get_id_hash_map_size(map));
+  ASSERT_EQ(new_integer(1), get_id_hash_map_at(map, new_integer(0)));
+  ASSERT_SIGNAL(scNotFound, get_id_hash_map_at(map, new_integer(1)));
   // Add some more to it.
-  ASSERT_SUCCESS(try_set_map_at(map, new_integer(1), new_integer(2)));
-  ASSERT_EQ(2, get_map_size(map));
-  ASSERT_EQ(new_integer(1), get_map_at(map, new_integer(0)));
-  ASSERT_EQ(new_integer(2), get_map_at(map, new_integer(1)));
+  ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(1), new_integer(2)));
+  ASSERT_EQ(2, get_id_hash_map_size(map));
+  ASSERT_EQ(new_integer(1), get_id_hash_map_at(map, new_integer(0)));
+  ASSERT_EQ(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
   // Replace an existing value.
-  ASSERT_SUCCESS(try_set_map_at(map, new_integer(0), new_integer(3)));
-  ASSERT_EQ(2, get_map_size(map));
-  ASSERT_EQ(new_integer(3), get_map_at(map, new_integer(0)));
-  ASSERT_EQ(new_integer(2), get_map_at(map, new_integer(1)));
+  ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(0), new_integer(3)));
+  ASSERT_EQ(2, get_id_hash_map_size(map));
+  ASSERT_EQ(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
+  ASSERT_EQ(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
   // There's room for one more value.
-  ASSERT_SUCCESS(try_set_map_at(map, new_integer(100), new_integer(5)));
-  ASSERT_EQ(3, get_map_size(map));
-  ASSERT_EQ(new_integer(3), get_map_at(map, new_integer(0)));
-  ASSERT_EQ(new_integer(2), get_map_at(map, new_integer(1)));
-  ASSERT_EQ(new_integer(5), get_map_at(map, new_integer(100)));
+  ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(100), new_integer(5)));
+  ASSERT_EQ(3, get_id_hash_map_size(map));
+  ASSERT_EQ(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
+  ASSERT_EQ(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
+  ASSERT_EQ(new_integer(5), get_id_hash_map_at(map, new_integer(100)));
   // Now the map should refuse to let us add more.
-  ASSERT_SIGNAL(scMapFull, try_set_map_at(map, new_integer(88),
+  ASSERT_SIGNAL(scMapFull, try_set_id_hash_map_at(map, new_integer(88),
       new_integer(79)));
-  ASSERT_EQ(3, get_map_size(map));
-  ASSERT_EQ(new_integer(3), get_map_at(map, new_integer(0)));
-  ASSERT_EQ(new_integer(2), get_map_at(map, new_integer(1)));
-  ASSERT_EQ(new_integer(5), get_map_at(map, new_integer(100)));
+  ASSERT_EQ(3, get_id_hash_map_size(map));
+  ASSERT_EQ(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
+  ASSERT_EQ(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
+  ASSERT_EQ(new_integer(5), get_id_hash_map_at(map, new_integer(100)));
   // However it should still be possible to replace existing mappings.
-  ASSERT_SUCCESS(try_set_map_at(map, new_integer(1), new_integer(9)));
-  ASSERT_EQ(3, get_map_size(map));
-  ASSERT_EQ(new_integer(3), get_map_at(map, new_integer(0)));
-  ASSERT_EQ(new_integer(9), get_map_at(map, new_integer(1)));
-  ASSERT_EQ(new_integer(5), get_map_at(map, new_integer(100)));
+  ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(1), new_integer(9)));
+  ASSERT_EQ(3, get_id_hash_map_size(map));
+  ASSERT_EQ(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
+  ASSERT_EQ(new_integer(9), get_id_hash_map_at(map, new_integer(1)));
+  ASSERT_EQ(new_integer(5), get_id_hash_map_at(map, new_integer(100)));
 
   runtime_dispose(&runtime);
 }
 
 
-TEST(value, maps_strings) {
+TEST(value, id_hash_maps_strings) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
@@ -92,11 +92,11 @@ TEST(value, maps_strings) {
   string_init(&one_chars, "One");
   value_t one = new_heap_string(&runtime, &one_chars);
 
-  value_t map = new_heap_map(&runtime, 4);
-  ASSERT_EQ(0, get_map_size(map));
-  ASSERT_SUCCESS(try_set_map_at(map, one, new_integer(4)));
-  ASSERT_EQ(1, get_map_size(map));
-  ASSERT_EQ(new_integer(4), get_map_at(map, one));
+  value_t map = new_heap_is_hash_map(&runtime, 4);
+  ASSERT_EQ(0, get_id_hash_map_size(map));
+  ASSERT_SUCCESS(try_set_id_hash_map_at(map, one, new_integer(4)));
+  ASSERT_EQ(1, get_id_hash_map_size(map));
+  ASSERT_EQ(new_integer(4), get_id_hash_map_at(map, one));
 
   runtime_dispose(&runtime);
 }

@@ -45,9 +45,9 @@ static value_t array_validate(value_t value) {
   return success();
 }
 
-static value_t map_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofMap, value);
-  VALIDATE_VALUE_FAMILY(ofMap, get_map_entry_array(value));
+static value_t id_hash_map_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofIdHashMap, value);
+  VALIDATE_VALUE_FAMILY(ofIdHashMap, get_id_hash_map_entry_array(value));
   return success();
 }
 
@@ -119,7 +119,7 @@ static value_t array_transient_identity_hash(value_t value) {
   return new_signal(scUnsupportedBehavior);
 }
 
-static value_t map_transient_identity_hash(value_t value) {
+static value_t id_hash_map_transient_identity_hash(value_t value) {
   return new_signal(scUnsupportedBehavior);
 }
 
@@ -198,7 +198,7 @@ static bool array_are_identical(value_t a, value_t b) {
   return (a == b);
 }
 
-static bool map_are_identical(value_t a, value_t b) {
+static bool id_hash_map_are_identical(value_t a, value_t b) {
   // Maps compare using object identity.
   return (a == b);
 }
@@ -267,18 +267,18 @@ static void array_print_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, "]");
 }
 
-static void map_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<map{%i}>", (int) get_map_size(value));
+static void id_hash_map_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<map{%i}>", (int) get_id_hash_map_size(value));
 }
 
-static void map_print_on(value_t value, string_buffer_t *buf) {
+static void id_hash_map_print_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, "{");
-  map_iter_t iter;
-  map_iter_init(&iter, value);
-  while (map_iter_advance(&iter)) {
+  id_hash_map_iter_t iter;
+  id_hash_map_iter_init(&iter, value);
+  while (id_hash_map_iter_advance(&iter)) {
     value_t key;
     value_t value;
-    map_iter_get_current(&iter, &key, &value);
+    id_hash_map_iter_get_current(&iter, &key, &value);
     value_print_on(key, buf);
     string_buffer_printf(buf, ": ");
     value_print_on(value, buf);
