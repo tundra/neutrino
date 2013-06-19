@@ -29,14 +29,13 @@ object_family_t get_species_instance_family(value_t value) {
   return (object_family_t) get_integer_value(family);
 }
 
-void set_species_behavior(value_t value, behavior_t *behavior) {
-  *access_object_field(value, kSpeciesBehaviorOffset) =
-      (value_t) (address_arith_t) behavior;
+void set_species_behavior(value_t value, value_t behavior) {
+  *access_object_field(value, kSpeciesBehaviorOffset) = behavior;
 }
 
 behavior_t *get_species_behavior(value_t value) {
-  return (behavior_t*) (address_arith_t)
-      *access_object_field(value, kSpeciesBehaviorOffset);
+  value_t ptr = *access_object_field(value, kSpeciesBehaviorOffset);
+  return get_void_p_value(ptr);
 }
 
 
@@ -94,6 +93,19 @@ void get_blob_data(value_t value, blob_t *blob_out) {
   size_t length = get_blob_length(value);
   byte_t *data = (byte_t*) access_object_field(value, kBlobDataOffset);
   blob_init(blob_out, data, length);
+}
+
+
+// --- V o i d   P ---
+
+void set_void_p_value(value_t value, void *ptr) {
+  CHECK_FAMILY(ofVoidP, value);
+  *access_object_field(value, kVoidPValueOffset) = (value_t) (address_arith_t) ptr;
+}
+
+void *get_void_p_value(value_t value) {
+  CHECK_FAMILY(ofVoidP, value);
+  return (void*) (address_arith_t) *access_object_field(value, kVoidPValueOffset);
 }
 
 
@@ -321,12 +333,12 @@ void id_hash_map_iter_get_current(id_hash_map_iter_t *iter, value_t *key_out, va
 
 void set_bool_value(value_t value, bool truth) {
   CHECK_FAMILY(ofBool, value);
-  *access_object_field(value, kBoolValueOffset) = (value_t) truth;
+  *access_object_field(value, kBoolValueOffset) = new_integer(truth ? 1 : 0);
 }
 
 bool get_bool_value(value_t value) {
   CHECK_FAMILY(ofBool, value);
-  return (bool) *access_object_field(value, kBoolValueOffset);
+  return get_integer_value(*access_object_field(value, kBoolValueOffset));
 }
 
 
@@ -352,7 +364,6 @@ value_t try_set_instance_field(value_t instance, value_t key, value_t value) {
   value_t fields = get_instance_fields(instance);
   return try_set_id_hash_map_at(fields, key, value);
 }
-
 
 
 // --- D e b u g ---

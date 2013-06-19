@@ -4,10 +4,24 @@
 #include "value-inl.h"
 
 value_t roots_init(roots_t *roots, runtime_t *runtime) {
-  // First set up the meta-species which it its own species.
-  TRY_DEF(meta, new_heap_species(runtime, ofSpecies, &kSpeciesBehavior));
+  // The first few roots are tricky because they depend on each other. We have
+  // to set them up manually rather than depend on it being done automatically
+  // as with the rest of them.
+
+  // First set up the meta-species which it its own species. We can't give it
+  // behavior yet because we're not ready to create void-ps yet.
+  TRY_DEF(meta, new_heap_species(runtime, ofSpecies, NULL));
   set_object_species(meta, meta);
   roots->species_species = meta;
+  // Then set up the void-p species which is what we need for the behavior
+  // pointers.
+  TRY_DEF(void_p_species, new_heap_species(runtime, ofVoidP, NULL));
+  roots->void_p_species = void_p_species;
+  // Finally set up the behavior pointers manually.
+  TRY_DEF(meta_behavior, new_heap_void_p(runtime, &kSpeciesBehavior));
+  set_species_behavior(meta, meta_behavior);
+  TRY_DEF(void_p_behavior, new_heap_void_p(runtime, &kVoidPBehavior));
+  set_species_behavior(void_p_species, void_p_behavior);
 
   // The other species are straightforward.
   TRY_SET(roots->string_species, new_heap_species(runtime, ofString, &kStringBehavior));
@@ -27,6 +41,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
 
 void roots_clear(roots_t *roots) {
   roots->species_species = success();
+  roots->void_p_species = success();
   roots->string_species = success();
   roots->blob_species = success();
   roots->array_species = success();
@@ -58,6 +73,7 @@ value_t roots_validate(roots_t *roots) {
   } while (false)
 
   VALIDATE_SPECIES(ofSpecies, roots->species_species);
+  VALIDATE_SPECIES(ofVoidP, roots->void_p_species);
   VALIDATE_SPECIES(ofString, roots->string_species);
   VALIDATE_SPECIES(ofBlob, roots->blob_species);
   VALIDATE_SPECIES(ofArray, roots->array_species);

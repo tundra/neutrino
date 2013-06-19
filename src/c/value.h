@@ -106,7 +106,8 @@ static signal_cause_t get_signal_cause(value_t value) {
   F(Bool,      bool)                                                           \
   F(IdHashMap, id_hash_map)                                                    \
   F(Blob,      blob)                                                           \
-  F(Instance,  instance)
+  F(Instance,  instance)                                                       \
+  F(VoidP,     void_p)
 
 // Enum identifying the different families of heap objects.
 typedef enum {
@@ -175,7 +176,7 @@ struct behavior_t;
 struct behavior_t *get_species_behavior(value_t species);
 
 // Sets the behavior of this species.
-void set_species_behavior(value_t species, struct behavior_t *behavior);
+void set_species_behavior(value_t species, value_t behavior);
 
 
 // --- S t r i n g ---
@@ -216,6 +217,18 @@ size_t get_blob_length(value_t value);
 // Gives access to the data in the given blob value in a blob struct through
 // the out parameter.
 void get_blob_data(value_t value, blob_t *blob_out);
+
+
+// --- V o i d   P ---
+
+static const size_t kVoidPSize = OBJECT_SIZE(1);
+static const size_t kVoidPValueOffset = 1;
+
+// Sets the pointer stored in a void-p.
+void set_void_p_value(value_t value, void *ptr);
+
+// Gets the pointer stored in a void-p.
+void *get_void_p_value(value_t value);
 
 
 // --- A r r a y ---

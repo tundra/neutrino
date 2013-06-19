@@ -40,6 +40,9 @@ value_t new_heap_bool(runtime_t *runtime, bool value);
 // Creates a new empty object instance.
 value_t new_heap_instance(runtime_t *runtime);
 
+// Creates a new pointer wrapper around the given value.
+value_t new_heap_void_p(runtime_t *runtime, void *value);
+
 // Allocates a new heap object in the given heap of the given size and
 // initializes it with the given type but requires the caller to complete
 // initialization.

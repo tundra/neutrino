@@ -39,7 +39,12 @@ value_t new_heap_species(runtime_t *runtime, object_family_t instance_family,
   TRY_DEF(result, alloc_heap_object(&runtime->heap, bytes,
       runtime->roots.species_species));
   set_species_instance_family(result, instance_family);
-  set_species_behavior(result, behavior);
+  if (behavior == NULL) {
+    set_species_behavior(result, new_integer(0));
+  } else {
+    TRY_DEF(void_p, new_heap_void_p(runtime, behavior));
+    set_species_behavior(result, void_p);
+  }
   return result;
 }
 
@@ -89,6 +94,14 @@ value_t new_heap_instance(runtime_t *runtime) {
       runtime->roots.instance_species));
   set_instance_fields(result, fields);
   return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_void_p(runtime_t *runtime, void *value) {
+  size_t size = kVoidPSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.void_p_species));
+  set_void_p_value(result, value);
+  return result;
 }
 
 value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species) {
