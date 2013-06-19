@@ -1,4 +1,4 @@
-// Declares a unit test case.
+#include "value.h"
 
 // Declare a unit test method. The suite name must match the file the test
 // case is declared in.
@@ -6,7 +6,10 @@
 
 
 // Aborts exception, signalling an error.
-extern void fail(const char *file, int line, const char *fmt, ...);
+void fail(const char *file, int line, const char *fmt, ...);
+
+// Returns true iff the two values are structurally equal.
+bool value_structural_equal(value_t a, value_t b);
 
 // Fails unless the two values are equal.
 #define ASSERT_EQ(A, B) do {                                         \
@@ -21,6 +24,16 @@ extern void fail(const char *file, int line, const char *fmt, ...);
   if (!(string_equals(__a__, __b__)))                                         \
     fail(__FILE__, __LINE__, "Assertion failed: %s == %s.\n  Expected: %s\n  Found: %s", \
         #A, #B, __a__->chars, __b__->chars);                                  \
+} while (false)
+
+// Check that the two values A and B are structurally equivalent. Note that this
+// only handles object trees, not cyclical graphs of objects.
+#define ASSERT_VALEQ(A, B) do {                                        \
+  value_t __a__ = (A);                                                 \
+  value_t __b__ = (B);                                                 \
+  if (!(value_structural_equal(__a__, __b__))) {                       \
+    fail(__FILE__, __LINE__, "Assertion failed: %s == %s.\n", #A, #B); \
+  }                                                                    \
 } while (false)
 
 // Fails unless the condition is true.

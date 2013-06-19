@@ -7,6 +7,10 @@ VALGRIND=valgrind -q --leak-check=full
 main:	all-c
 
 
+# Convenience alias for building everything.
+all:	main
+
+
 # Run all tests.
 test:	test-python test-c
 
