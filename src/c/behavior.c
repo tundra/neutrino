@@ -35,6 +35,11 @@ static value_t blob_validate(value_t value) {
   return success();
 }
 
+static value_t void_p_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofVoidP, value);
+  return success();
+}
+
 static value_t species_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofSpecies, value);
   return success();
@@ -96,6 +101,10 @@ static size_t get_blob_heap_size(value_t value) {
   return calc_blob_size(get_blob_length(value));
 }
 
+static size_t get_void_p_heap_size(value_t value) {
+  return kVoidPSize;
+}
+
 static size_t get_array_heap_size(value_t value) {
   return calc_array_size(get_array_length(value));
 }
@@ -150,6 +159,10 @@ static value_t string_transient_identity_hash(value_t value) {
 }
 
 static value_t blob_transient_identity_hash(value_t value) {
+  return new_signal(scUnsupportedBehavior);
+}
+
+static value_t void_p_transient_identity_hash(value_t value) {
   return new_signal(scUnsupportedBehavior);
 }
 
@@ -230,6 +243,12 @@ static bool string_are_identical(value_t a, value_t b) {
 static bool blob_are_identical(value_t a, value_t b) {
   CHECK_FAMILY(ofBlob, a);
   CHECK_FAMILY(ofBlob, b);
+  return (a == b);
+}
+
+static bool void_p_are_identical(value_t a, value_t b) {
+  CHECK_FAMILY(ofVoidP, a);
+  CHECK_FAMILY(ofVoidP, b);
   return (a == b);
 }
 
@@ -366,6 +385,15 @@ static void blob_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 static void blob_print_on(value_t value, string_buffer_t *buf) {
   blob_print_atomic_on(value, buf);
+}
+
+static void void_p_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofVoidP, value);
+  string_buffer_printf(buf, "#<void*>");
+}
+
+static void void_p_print_on(value_t value, string_buffer_t *buf) {
+  void_p_print_atomic_on(value, buf);
 }
 
 static void instance_print_atomic_on(value_t value, string_buffer_t *buf) {

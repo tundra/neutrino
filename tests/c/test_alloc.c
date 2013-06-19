@@ -95,3 +95,15 @@ TEST(alloc, instance) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+TEST(alloc, void_p) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t vp = new_heap_void_p(&runtime, NULL);
+  ASSERT_EQ(NULL, get_void_p_value(vp));
+  set_void_p_value(vp, &runtime);
+  ASSERT_EQ(&runtime, get_void_p_value(vp));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
