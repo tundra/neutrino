@@ -316,6 +316,7 @@ void id_hash_map_iter_get_current(id_hash_map_iter_t *iter, value_t *key_out, va
   *value_out = get_id_hash_map_entry_value(iter->current);
 }
 
+
 // --- B o o l ---
 
 void set_bool_value(value_t value, bool truth) {
@@ -327,6 +328,34 @@ bool get_bool_value(value_t value) {
   CHECK_FAMILY(ofBool, value);
   return (bool) *access_object_field(value, kBoolValueOffset);
 }
+
+
+// --- I n s t a n c e ---
+
+void set_instance_fields(value_t value, value_t fields) {
+  CHECK_FAMILY(ofInstance, value);
+  CHECK_FAMILY(ofIdHashMap, fields);
+  *access_object_field(value, kInstanceFieldsOffset) = fields;
+}
+
+value_t get_instance_fields(value_t value) {
+  CHECK_FAMILY(ofInstance, value);
+  return *access_object_field(value, kInstanceFieldsOffset);
+}
+
+value_t get_instance_field(value_t value, value_t key) {
+  value_t fields = get_instance_fields(value);
+  return get_id_hash_map_at(fields, key);
+}
+
+value_t try_set_instance_field(value_t instance, value_t key, value_t value) {
+  value_t fields = get_instance_fields(instance);
+  return try_set_id_hash_map_at(fields, key, value);
+}
+
+
+
+// --- D e b u g ---
 
 void value_print_ln(value_t value) {
   // Write the value on a string buffer.

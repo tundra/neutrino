@@ -67,6 +67,13 @@ static value_t bool_validate(value_t value) {
   return success();
 }
 
+static value_t instance_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofInstance, value);
+  value_t fields = get_instance_fields(value);
+  VALIDATE_VALUE_FAMILY(ofIdHashMap, fields);
+  return success();
+}
+
 
 // --- H e a p   s i z e ---
 
@@ -104,6 +111,11 @@ static size_t get_null_heap_size(value_t value) {
 static size_t get_bool_heap_size(value_t value) {
   return kBoolSize;
 }
+
+static size_t get_instance_heap_size(value_t value) {
+  return kInstanceSize;
+}
+
 
 // --- H a s h ---
 
@@ -161,6 +173,10 @@ static value_t array_transient_identity_hash(value_t value) {
 }
 
 static value_t id_hash_map_transient_identity_hash(value_t value) {
+  return new_signal(scUnsupportedBehavior);
+}
+
+static value_t instance_transient_identity_hash(value_t value) {
   return new_signal(scUnsupportedBehavior);
 }
 
@@ -241,6 +257,11 @@ static bool array_are_identical(value_t a, value_t b) {
 
 static bool id_hash_map_are_identical(value_t a, value_t b) {
   // Maps compare using object identity.
+  return (a == b);
+}
+
+static bool instance_are_identical(value_t a, value_t b) {
+  // Instances compare using object identity.
   return (a == b);
 }
 
@@ -345,6 +366,15 @@ static void blob_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 static void blob_print_on(value_t value, string_buffer_t *buf) {
   blob_print_atomic_on(value, buf);
+}
+
+static void instance_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofInstance, value);
+  string_buffer_printf(buf, "#<instance>");
+}
+
+static void instance_print_on(value_t value, string_buffer_t *buf) {
+  instance_print_atomic_on(value, buf);
 }
 
 void value_print_on(value_t value, string_buffer_t *buf) {

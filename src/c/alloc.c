@@ -73,6 +73,15 @@ value_t new_heap_bool(runtime_t *runtime, bool value) {
   return result;
 }
 
+value_t new_heap_instance(runtime_t *runtime) {
+  TRY_DEF(fields, new_heap_id_hash_map(runtime, 16));
+  size_t size = kInstanceSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.instance_species));
+  set_instance_fields(result, fields);
+  return result;
+}
+
 value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species) {
   address_t addr;
   if (!heap_try_alloc(heap, bytes, &addr))
