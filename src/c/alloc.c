@@ -44,15 +44,15 @@ value_t new_heap_array(runtime_t *runtime, size_t length) {
   return result;
 }
 
-value_t new_heap_map(runtime_t *runtime, size_t init_capacity) {
+value_t new_heap_is_hash_map(runtime_t *runtime, size_t init_capacity) {
   CHECK_TRUE("invalid initial capacity", init_capacity > 0);
-  TRY_DEF(entries, new_heap_array(runtime, init_capacity * kMapEntryFieldCount));
-  size_t size = kMapSize;
+  TRY_DEF(entries, new_heap_array(runtime, init_capacity * kIdHashMapEntryFieldCount));
+  size_t size = kIdHashMapSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.map_species));
-  set_map_entry_array(result, entries);
-  set_map_size(result, 0);
-  set_map_capacity(result, init_capacity);
+      runtime->roots.id_hash_map_species));
+  set_id_hash_map_entry_array(result, entries);
+  set_id_hash_map_size(result, 0);
+  set_id_hash_map_capacity(result, init_capacity);
   return result;
 }
 

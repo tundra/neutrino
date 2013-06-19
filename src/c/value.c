@@ -130,74 +130,74 @@ void set_array_at(value_t value, size_t index, value_t element) {
 
 // --- M a p ---
 
-value_t get_map_entry_array(value_t value) {
-  CHECK_FAMILY(ofMap, value);
-  return *access_object_field(value, kMapEntryArrayOffset);
+value_t get_id_hash_map_entry_array(value_t value) {
+  CHECK_FAMILY(ofIdHashMap, value);
+  return *access_object_field(value, kIdHashMapEntryArrayOffset);
 }
 
-void set_map_entry_array(value_t value, value_t entry_array) {
-  CHECK_FAMILY(ofMap, value);
+void set_id_hash_map_entry_array(value_t value, value_t entry_array) {
+  CHECK_FAMILY(ofIdHashMap, value);
   CHECK_FAMILY(ofArray, entry_array);
-  *access_object_field(value, kMapEntryArrayOffset) = entry_array;
+  *access_object_field(value, kIdHashMapEntryArrayOffset) = entry_array;
 }
 
-size_t get_map_size(value_t value) {
-  CHECK_FAMILY(ofMap, value);
-  value_t size = *access_object_field(value, kMapSizeOffset);
+size_t get_id_hash_map_size(value_t value) {
+  CHECK_FAMILY(ofIdHashMap, value);
+  value_t size = *access_object_field(value, kIdHashMapSizeOffset);
   return get_integer_value(size);
 }
 
-void set_map_size(value_t value, size_t size) {
-  CHECK_FAMILY(ofMap, value);
-  *access_object_field(value, kMapSizeOffset) = new_integer(size);
+void set_id_hash_map_size(value_t value, size_t size) {
+  CHECK_FAMILY(ofIdHashMap, value);
+  *access_object_field(value, kIdHashMapSizeOffset) = new_integer(size);
 }
 
-void set_map_capacity(value_t value, size_t capacity) {
-  CHECK_FAMILY(ofMap, value);
-  *access_object_field(value, kMapCapacityOffset) = new_integer(capacity);
+void set_id_hash_map_capacity(value_t value, size_t capacity) {
+  CHECK_FAMILY(ofIdHashMap, value);
+  *access_object_field(value, kIdHashMapCapacityOffset) = new_integer(capacity);
 }
 
-size_t get_map_capacity(value_t value) {
-  CHECK_FAMILY(ofMap, value);
-  value_t capacity = *access_object_field(value, kMapCapacityOffset);
+size_t get_id_hash_map_capacity(value_t value) {
+  CHECK_FAMILY(ofIdHashMap, value);
+  value_t capacity = *access_object_field(value, kIdHashMapCapacityOffset);
   return get_integer_value(capacity);
 }
 
 // Returns a pointer to the start of the index'th entry in the given map.
-static value_t *get_map_entry(value_t map, size_t index) {
-  CHECK_TRUE("map entry out of bounds", index < get_map_capacity(map));
-  return access_object_field(map, kMapEntryArrayOffset) + (index * kMapEntryFieldCount);
+static value_t *get_id_hash_map_entry(value_t map, size_t index) {
+  CHECK_TRUE("map entry out of bounds", index < get_id_hash_map_capacity(map));
+  return access_object_field(map, kIdHashMapEntryArrayOffset) + (index * kIdHashMapEntryFieldCount);
 }
 
 // Returns true if the given map entry is not storing a binding.
-static bool is_map_entry_empty(value_t *entry) {
-  return !in_domain(vdInteger, entry[kMapEntryHashOffset]);
+static bool is_id_hash_map_entry_empty(value_t *entry) {
+  return !in_domain(vdInteger, entry[kIdHashMapEntryHashOffset]);
 }
 
 // Returns the hash value stored in this map entry, which must not be empty.
-static size_t get_map_entry_hash(value_t *entry) {
-  CHECK_FALSE("empty map entry", is_map_entry_empty(entry));
-  return get_integer_value(entry[kMapEntryHashOffset]);
+static size_t get_id_hash_map_entry_hash(value_t *entry) {
+  CHECK_FALSE("empty id hash map entry", is_id_hash_map_entry_empty(entry));
+  return get_integer_value(entry[kIdHashMapEntryHashOffset]);
 }
 
 // Returns the key stored in this hash map entry, which must not be empty.
-static value_t get_map_entry_key(value_t *entry) {
-  CHECK_FALSE("empty map entry", is_map_entry_empty(entry));
-  return entry[kMapEntryKeyOffset];
+static value_t get_id_hash_map_entry_key(value_t *entry) {
+  CHECK_FALSE("empty id hash map entry", is_id_hash_map_entry_empty(entry));
+  return entry[kIdHashMapEntryKeyOffset];
 }
 
 // Returns the value stored in this hash map entry, which must not be empty.
-static value_t get_map_entry_value(value_t *entry) {
-  CHECK_FALSE("empty map entry", is_map_entry_empty(entry));
-  return entry[kMapEntryValueOffset];
+static value_t get_id_hash_map_entry_value(value_t *entry) {
+  CHECK_FALSE("empty id hash map entry", is_id_hash_map_entry_empty(entry));
+  return entry[kIdHashMapEntryValueOffset];
 }
 
 // Sets the full contents of a map entry.
-static void set_map_entry(value_t *entry, value_t key, size_t hash,
+static void set_id_hash_map_entry(value_t *entry, value_t key, size_t hash,
     value_t value) {
-  entry[kMapEntryKeyOffset] = key;
-  entry[kMapEntryHashOffset] = new_integer(hash);
-  entry[kMapEntryValueOffset] = value;
+  entry[kIdHashMapEntryKeyOffset] = key;
+  entry[kIdHashMapEntryHashOffset] = new_integer(hash);
+  entry[kIdHashMapEntryValueOffset] = value;
 }
 
 // Finds the appropriate entry to store a mapping for the given key with the
@@ -205,19 +205,19 @@ static void set_map_entry(value_t *entry, value_t key, size_t hash,
 // stores the index in the index out parameter. If there isn't and a non-null
 // was_created parameter is passed then a free index is stored in the out
 // parameter and true is stored in was_created. Otherwise false is returned.
-static bool find_map_entry(value_t map, value_t key, size_t hash,
+static bool find_id_hash_map_entry(value_t map, value_t key, size_t hash,
     value_t **entry_out, bool *was_created) {
-  CHECK_FAMILY(ofMap, map);
+  CHECK_FAMILY(ofIdHashMap, map);
   CHECK_TRUE("was_created not initialized", (was_created == NULL) || !*was_created);
-  size_t capacity = get_map_capacity(map);
-  CHECK_TRUE("map overfull", get_map_size(map) < capacity);
+  size_t capacity = get_id_hash_map_capacity(map);
+  CHECK_TRUE("map overfull", get_id_hash_map_size(map) < capacity);
   size_t current_index = hash % capacity;
   // Loop around until we find the key or an empty entry. Since we know the
   // capacity is at least one greater than the size there must be at least
   // one empty entry so we know the loop will terminate.
   while (true) {
-    value_t *entry = get_map_entry(map, current_index);
-    if (is_map_entry_empty(entry)) {
+    value_t *entry = get_id_hash_map_entry(map, current_index);
+    if (is_id_hash_map_entry_empty(entry)) {
       if (was_created == NULL) {
         // Report that we didn't find the entry.
         return false;
@@ -228,9 +228,9 @@ static bool find_map_entry(value_t map, value_t key, size_t hash,
         return true;
       }
     }
-    size_t entry_hash = get_map_entry_hash(entry);
+    size_t entry_hash = get_id_hash_map_entry_hash(entry);
     if (entry_hash == hash) {
-      value_t entry_key = get_map_entry_key(entry);
+      value_t entry_key = get_id_hash_map_entry_key(entry);
       if (value_are_identical(key, entry_key)) {
         // Found the key; just return it.
         *entry_out = entry;
@@ -240,14 +240,14 @@ static bool find_map_entry(value_t map, value_t key, size_t hash,
     // Didn't find it here so try the next one.
     current_index = (current_index + 1) % capacity;
   }
-  UNREACHABLE("map entry impossible loop");
+  UNREACHABLE("id hash map entry impossible loop");
   return false;
 }
 
-value_t try_set_map_at(value_t map, value_t key, value_t value) {
-  CHECK_FAMILY(ofMap, map);
-  size_t size = get_map_size(map);
-  size_t capacity = get_map_capacity(map);
+value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value) {
+  CHECK_FAMILY(ofIdHashMap, map);
+  size_t size = get_id_hash_map_size(map);
+  size_t capacity = get_id_hash_map_capacity(map);
   bool is_full = (size == (capacity - 1));
   // Calculate the hash.
   TRY_DEF(hash_value, value_transient_identity_hash(key));
@@ -255,43 +255,43 @@ value_t try_set_map_at(value_t map, value_t key, value_t value) {
   // Locate where the new entry goes in the entry array.
   value_t *entry = NULL;
   bool was_created = false;
-  if (!find_map_entry(map, key, hash, &entry, is_full ? NULL : &was_created)) {
+  if (!find_id_hash_map_entry(map, key, hash, &entry, is_full ? NULL : &was_created)) {
     // The only way this can return false is if the map is full (since if
     // was_created was non-null we would have created a new entry) and the
     // key couldn't be found. Report this.
     return new_signal(scMapFull);
   }
-  set_map_entry(entry, key, hash, value);
+  set_id_hash_map_entry(entry, key, hash, value);
   // Only increment the size if we created a new entry.
   if (was_created)
-    set_map_size(map, size + 1);
+    set_id_hash_map_size(map, size + 1);
   return success();
 }
 
-value_t get_map_at(value_t map, value_t key) {
-  CHECK_FAMILY(ofMap, map);
+value_t get_id_hash_map_at(value_t map, value_t key) {
+  CHECK_FAMILY(ofIdHashMap, map);
   TRY_DEF(hash_value, value_transient_identity_hash(key));
   size_t hash = get_integer_value(hash_value);
   value_t *entry = NULL;
-  if (find_map_entry(map, key, hash, &entry, NULL)) {
-    return get_map_entry_value(entry);
+  if (find_id_hash_map_entry(map, key, hash, &entry, NULL)) {
+    return get_id_hash_map_entry_value(entry);
   } else {
     return new_signal(scNotFound);
   }
 }
 
-void map_iter_init(map_iter_t *iter, value_t map) {
+void id_hash_map_iter_init(id_hash_map_iter_t *iter, value_t map) {
   iter->map = map;
   iter->cursor = 0;
   iter->current = NULL;
 }
 
-bool map_iter_advance(map_iter_t *iter) {
+bool id_hash_map_iter_advance(id_hash_map_iter_t *iter) {
   // Test successive entries until we find a non-empty one.
-  while (iter->cursor < get_map_capacity(iter->map)) {
-    value_t *entry = get_map_entry(iter->map, iter->cursor);
+  while (iter->cursor < get_id_hash_map_capacity(iter->map)) {
+    value_t *entry = get_id_hash_map_entry(iter->map, iter->cursor);
     iter->cursor++;
-    if (!is_map_entry_empty(entry)) {
+    if (!is_id_hash_map_entry_empty(entry)) {
       // Found one, store it in current and return success.
       iter->current = entry;
       return true;
@@ -302,10 +302,10 @@ bool map_iter_advance(map_iter_t *iter) {
   return false;
 }
 
-void map_iter_get_current(map_iter_t *iter, value_t *key_out, value_t *value_out) {
+void id_hash_map_iter_get_current(id_hash_map_iter_t *iter, value_t *key_out, value_t *value_out) {
   CHECK_TRUE("map iter overrun", iter->current != NULL);
-  *key_out = get_map_entry_key(iter->current);
-  *value_out = get_map_entry_value(iter->current);
+  *key_out = get_id_hash_map_entry_key(iter->current);
+  *value_out = get_id_hash_map_entry_value(iter->current);
 }
 
 // --- B o o l ---

@@ -98,14 +98,14 @@ static signal_cause_t get_signal_cause(value_t value) {
 // --- O b j e c t ---
 
 // Macro that invokes the given macro callback for each object family.
-#define ENUM_FAMILIES(F) \
-  F(Species, species)    \
-  F(String,  string)     \
-  F(Array,   array)      \
-  F(Null,    null)       \
-  F(Bool,    bool)       \
-  F(Map,     map)        \
-  F(Blob,    blob)
+#define ENUM_FAMILIES(F)                                                       \
+  F(Species,   species)                                                        \
+  F(String,    string)                                                         \
+  F(Array,     array)                                                          \
+  F(Null,      null)                                                           \
+  F(Bool,      bool)                                                           \
+  F(IdHashMap, id_hash_map)                                                    \
+  F(Blob,      blob)
 
 // Enum identifying the different families of heap objects.
 typedef enum {
@@ -238,44 +238,44 @@ value_t get_array_at(value_t value, size_t index);
 void set_array_at(value_t value, size_t index, value_t element);
 
 
-// --- M a p ---
+// --- I d e n t i t y   h a s h   m a p ---
 
-static const size_t kMapSize = OBJECT_SIZE(3);
-static const size_t kMapSizeOffset = 1;
-static const size_t kMapCapacityOffset = 2;
-static const size_t kMapEntryArrayOffset = 3;
+static const size_t kIdHashMapSize = OBJECT_SIZE(3);
+static const size_t kIdHashMapSizeOffset = 1;
+static const size_t kIdHashMapCapacityOffset = 2;
+static const size_t kIdHashMapEntryArrayOffset = 3;
 
-static const size_t kMapEntryFieldCount = (3);
-static const size_t kMapEntryKeyOffset = 0;
-static const size_t kMapEntryHashOffset = 1;
-static const size_t kMapEntryValueOffset = 2;
+static const size_t kIdHashMapEntryFieldCount = 3;
+static const size_t kIdHashMapEntryKeyOffset = 0;
+static const size_t kIdHashMapEntryHashOffset = 1;
+static const size_t kIdHashMapEntryValueOffset = 2;
 
 // Returns the array of hash map entries for this map.
-value_t get_map_entry_array(value_t value);
+value_t get_id_hash_map_entry_array(value_t value);
 
 // Replaces the array of hash map entries for this map.
-void set_map_entry_array(value_t value, value_t entry_array);
+void set_id_hash_map_entry_array(value_t value, value_t entry_array);
 
 // Returns the size of a map.
-size_t get_map_size(value_t value);
+size_t get_id_hash_map_size(value_t value);
 
 // Updates the size of a map.
-void set_map_size(value_t value, size_t size);
+void set_id_hash_map_size(value_t value, size_t size);
 
 // Returns the total capacity of the given map.
-size_t get_map_capacity(value_t value);
+size_t get_id_hash_map_capacity(value_t value);
 
 // Sets the total capacity of this map.
-void set_map_capacity(value_t value, size_t size);
+void set_id_hash_map_capacity(value_t value, size_t size);
 
 // Adds a binding from the given key to the given value to this map, replacing
 // the existing one if it already exists. Returns a signal on failure, either
 // if the key cannot be hashed or the map is full.
-value_t try_set_map_at(value_t map, value_t key, value_t value);
+value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value);
 
 // Returns the binding for the given key or, if no binding is present, an
 // appropriate signal.
-value_t get_map_at(value_t map, value_t key);
+value_t get_id_hash_map_at(value_t map, value_t key);
 
 // Data associated with iterating through a map.
 typedef struct {
@@ -285,18 +285,18 @@ typedef struct {
   size_t cursor;
   // The current entry.
   value_t *current;
-} map_iter_t;
+} id_hash_map_iter_t;
 
 // Initializes an iterator for iterating the given map.
-void map_iter_init(map_iter_t *iter, value_t map);
+void id_hash_map_iter_init(id_hash_map_iter_t *iter, value_t map);
 
 // Advances the iterator to the next element. Returns true iff an element
 // is found.
-bool map_iter_advance(map_iter_t *iter);
+bool id_hash_map_iter_advance(id_hash_map_iter_t *iter);
 
 // Reads the key and value from the current map entry, storing them in the
 // out parameters. Fails if the last advance call did not return true.
-void map_iter_get_current(map_iter_t *iter, value_t *key_out,
+void id_hash_map_iter_get_current(id_hash_map_iter_t *iter, value_t *key_out,
     value_t *value_out);
 
 // --- N u l l ---

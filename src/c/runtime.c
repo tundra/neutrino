@@ -13,7 +13,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   TRY_SET(roots->string_species, new_heap_species(runtime, ofString, &kStringBehavior));
   TRY_SET(roots->blob_species, new_heap_species(runtime, ofBlob, &kBlobBehavior));
   TRY_SET(roots->array_species, new_heap_species(runtime, ofArray, &kArrayBehavior));
-  TRY_SET(roots->map_species, new_heap_species(runtime, ofMap, &kMapBehavior));
+  TRY_SET(roots->id_hash_map_species, new_heap_species(runtime, ofIdHashMap, &kIdHashMapBehavior));
   TRY_SET(roots->null_species, new_heap_species(runtime, ofNull, &kNullBehavior));
   TRY_SET(roots->bool_species, new_heap_species(runtime, ofBool, &kBoolBehavior));
 
@@ -29,7 +29,7 @@ void roots_clear(roots_t *roots) {
   roots->string_species = success();
   roots->blob_species = success();
   roots->array_species = success();
-  roots->map_species = success();
+  roots->id_hash_map_species = success();
   roots->null_species = success();
   roots->bool_species = success();
   roots->null = success();
@@ -59,7 +59,7 @@ value_t roots_validate(roots_t *roots) {
   VALIDATE_SPECIES(ofString, roots->string_species);
   VALIDATE_SPECIES(ofBlob, roots->blob_species);
   VALIDATE_SPECIES(ofArray, roots->array_species);
-  VALIDATE_SPECIES(ofMap, roots->map_species);
+  VALIDATE_SPECIES(ofIdHashMap, roots->id_hash_map_species);
   VALIDATE_SPECIES(ofNull, roots->null_species);
   VALIDATE_SPECIES(ofBool, roots->bool_species);
 
