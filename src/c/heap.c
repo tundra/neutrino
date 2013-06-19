@@ -1,7 +1,22 @@
+#include "behavior.h"
 #include "heap.h"
 #include "value-inl.h"
 
 #include <string.h>
+
+
+// --- M i s c ---
+
+void value_callback_init(value_callback_t *callback, value_callback_function_t *function,
+    void *data) {
+  callback->function = function;
+  callback->data = data;
+}
+
+value_t value_callback_call(value_callback_t *callback, value_t value) {
+  return (callback->function)(value, callback);
+}
+
 
 // --- S p a c e ---
 
@@ -15,6 +30,11 @@ address_t align_address(uint32_t alignment, address_t ptr) {
 
 size_t align_size(uint32_t alignment, size_t size) {
   return (size + (alignment - 1)) & ~(alignment - 1);
+}
+
+// Returns true if the given size value is aligned to the given boundary.
+static size_t is_size_aligned(uint32_t alignment, size_t size) {
+  return (size & (alignment - 1)) == 0;
 }
 
 // The default space config.
@@ -49,7 +69,7 @@ value_t space_init(space_t *space, space_config_t *config_or_null) {
   // Clear the newly allocated memory to a recognizable value.
   memset(memory, kBlankHeapMarker, bytes);
   space->memory = memory;
-  space->next_free = align_address(kValueSize, memory);
+  space->next_free = space->start = align_address(kValueSize, memory);
   // If malloc gives us an aligned pointer using only 'size_bytes' of memory
   // wastes the extra word we allocated to make room for alignment. However,
   // making the space size slightly different depending on whether malloc
@@ -91,6 +111,18 @@ bool space_try_alloc(space_t *space, size_t size, address_t *memory_out) {
   }
 }
 
+value_t space_for_each_object(space_t *space, value_callback_t *callback) {
+  address_t current = space->start;
+  while (current < space->next_free) {
+    value_t value = new_object(current);
+    TRY(value_callback_call(callback, value));
+    size_t size = get_object_heap_size(value);
+    CHECK_TRUE("object heap size alignment", is_size_aligned(kValueSize, size));
+    current += size;
+  }
+  return success();
+}
+
 
 // --- H e a p ---
 
@@ -109,4 +141,8 @@ bool heap_try_alloc(heap_t *heap, size_t size, address_t *memory_out) {
 void heap_dispose(heap_t *heap) {
   space_dispose(&heap->new_space);
   space_dispose(&heap->old_space);
+}
+
+value_t heap_for_each_object(heap_t *heap, value_callback_t *callback) {
+  return space_for_each_object(&heap->new_space, callback);
 }

@@ -7,6 +7,31 @@
 #ifndef _HEAP
 #define _HEAP
 
+struct value_callback_t;
+
+
+// --- M i s c ---
+
+// The type of a value callback function.
+typedef value_t (value_callback_function_t)(value_t value, struct value_callback_t *self);
+
+// A callback along with a data pointer that can be used to iterate through a
+// set of objects.
+typedef struct value_callback_t {
+  // The callback to invoke for each value.
+  value_callback_function_t *function;
+  // Some extra data accessible from the callback.
+  void *data;
+} value_callback_t;
+
+// Initialize the given callback to call the given function with the given data.
+void value_callback_init(value_callback_t *callback, value_callback_function_t *function,
+    void *data);
+
+// Invokes the given callback with the given value.
+value_t value_callback_call(value_callback_t *callback, value_t value);
+
+
 // Settings to apply when creating a space. This struct gets passed by value
 // under some circumstances so be sure it doesn't break anything to do that.
 typedef struct {
@@ -21,6 +46,8 @@ void space_config_init_defaults(space_config_t *config);
 
 // An allocation space. The heap is made up of several of these.
 typedef struct {
+  // Address of the first object in this space.
+  address_t start;
   // Next free address in this space. This will always be value pointer
   // aligned.
   address_t next_free;
@@ -54,6 +81,9 @@ bool space_is_empty(space_t *space);
 // in the out argument and true returned; otherwise false will be returned.
 bool space_try_alloc(space_t *space, size_t size, address_t *memory_out);
 
+// Invokes the given callback for each object in the space.
+value_t space_for_each_object(space_t *space, value_callback_t *callback);
+
 // Returns a pointer greater than or equal to the given pointer which is
 // aligned to an 'alignment' boundary.
 address_t align_address(uint32_t alignment, address_t ptr);
@@ -78,6 +108,9 @@ value_t heap_init(heap_t *heap, space_config_t *config);
 // that if necessary. If allocation is successful the result will be stored
 // in the out argument and true returned; otherwise false will be returned.
 bool heap_try_alloc(heap_t *heap, size_t size, address_t *memory_out);
+
+// Invokes the given callback for each object in the heap.
+value_t heap_for_each_object(heap_t *heap, value_callback_t *callback);
 
 // Dispose of the given heap.
 void heap_dispose(heap_t *heap);

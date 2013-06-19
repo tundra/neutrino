@@ -1,3 +1,4 @@
+#include "alloc.h"
 #include "runtime.h"
 #include "test.h"
 #include "value-inl.h"
@@ -11,7 +12,7 @@ TEST(runtime, create) {
   // Successfully create a runtime.
   runtime_t r0;
   ASSERT_SUCCESS(runtime_init(&r0, NULL));
-  runtime_dispose(&r0);
+  ASSERT_SUCCESS(runtime_dispose(&r0));
 
   // Propagating failure correctly when malloc fails during startup.
   runtime_t r1;
@@ -34,21 +35,30 @@ TEST(runtime, singletons) {
   ASSERT_FAMILY(ofBool, fahlse);
   ASSERT_FALSE(get_bool_value(fahlse));
 
-  runtime_dispose(&runtime);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
 TEST(runtime, runtime_validation) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
-
-  // Initially it validates.
   ASSERT_SUCCESS(runtime_validate(&runtime));
 
-  // Break this runtime.
+
+  // Break a root.
+  value_t old_null = runtime_null(&runtime);
   runtime.roots.null = new_integer(0);
-
-  // Now it no longer validates.
   ASSERT_SIGNAL(scValidationFailed, runtime_validate(&runtime));
+  runtime.roots.null = old_null;
+  ASSERT_SUCCESS(runtime_validate(&runtime));
 
-  runtime_dispose(&runtime);
+  // Break a non-root.
+  size_t capacity = 16;
+  value_t map = new_heap_id_hash_map(&runtime, capacity);
+  ASSERT_SUCCESS(runtime_validate(&runtime));
+  set_id_hash_map_capacity(map, capacity + 1);
+  ASSERT_SIGNAL(scValidationFailed, runtime_validate(&runtime));
+  set_id_hash_map_capacity(map, capacity);
+  ASSERT_SUCCESS(runtime_validate(&runtime));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

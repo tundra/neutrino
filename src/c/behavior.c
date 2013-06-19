@@ -68,6 +68,43 @@ static value_t bool_validate(value_t value) {
 }
 
 
+// --- H e a p   s i z e ---
+
+size_t get_object_heap_size(value_t value) {
+  CHECK_DOMAIN(vdObject, value);
+  value_t species = get_object_species(value);
+  behavior_t *behavior = get_species_behavior(species);
+  return (behavior->get_object_heap_size)(value);
+}
+
+static size_t get_species_heap_size(value_t value) {
+  return kSpeciesSize;
+}
+
+static size_t get_string_heap_size(value_t value) {
+  return calc_string_size(get_string_length(value));
+}
+
+static size_t get_blob_heap_size(value_t value) {
+  return calc_blob_size(get_blob_length(value));
+}
+
+static size_t get_array_heap_size(value_t value) {
+  return calc_array_size(get_array_length(value));
+}
+
+static size_t get_id_hash_map_heap_size(value_t value) {
+  return kIdHashMapSize;
+}
+
+static size_t get_null_heap_size(value_t value) {
+  return kNullSize;
+}
+
+static size_t get_bool_heap_size(value_t value) {
+  return kBoolSize;
+}
+
 // --- H a s h ---
 
 static value_t integer_transient_identity_hash(value_t value) {
@@ -342,13 +379,14 @@ void value_print_atomic_on(value_t value, string_buffer_t *buf) {
 // Define all the family behaviors in one go. Because of this, as soon as you
 // add a new object type you'll get errors for all the behaviors you need to
 // implement.
-#define DEFINE_BEHAVIOR(Family, family) \
-behavior_t k##Family##Behavior = {      \
-  &family##_validate,                   \
-  &family##_transient_identity_hash,    \
-  &family##_are_identical,              \
-  &family##_print_on,                   \
-  &family##_print_atomic_on             \
+#define DEFINE_BEHAVIOR(Family, family)                                        \
+behavior_t k##Family##Behavior = {                                             \
+  &family##_validate,                                                          \
+  &family##_transient_identity_hash,                                           \
+  &family##_are_identical,                                                     \
+  &family##_print_on,                                                          \
+  &family##_print_atomic_on,                                                   \
+  &get_##family##_heap_size                                                    \
 };
 ENUM_FAMILIES(DEFINE_BEHAVIOR)
 #undef DEFINE_BEHAVIOR

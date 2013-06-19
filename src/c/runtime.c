@@ -80,16 +80,27 @@ value_t runtime_init(runtime_t *runtime, space_config_t *config) {
   return runtime_validate(runtime);
 }
 
+// Adaptor function for passing object validate as a value callback.
+static value_t runtime_validate_object(value_t value, value_callback_t *self) {
+  return object_validate(value);
+}
+
 value_t runtime_validate(runtime_t *runtime) {
-  return roots_validate(&runtime->roots);
+  TRY(roots_validate(&runtime->roots));
+  value_callback_t validate_callback;
+  value_callback_init(&validate_callback, runtime_validate_object, NULL);
+  TRY(heap_for_each_object(&runtime->heap, &validate_callback));
+  return success();
 }
 
 void runtime_clear(runtime_t *runtime) {
   roots_clear(&runtime->roots);
 }
 
-void runtime_dispose(runtime_t *runtime) {
+value_t runtime_dispose(runtime_t *runtime) {
+  TRY(runtime_validate(runtime));
   heap_dispose(&runtime->heap);
+  return success();
 }
 
 value_t runtime_null(runtime_t *runtime) {

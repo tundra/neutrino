@@ -40,8 +40,8 @@ value_t runtime_init(runtime_t *runtime, space_config_t *config);
 // initialized are sane.
 void runtime_clear(runtime_t *runtime);
 
-// Disposes of the given runtime.
-void runtime_dispose(runtime_t *runtime);
+// Disposes of the given runtime. If disposing fails a signal is returned.
+value_t runtime_dispose(runtime_t *runtime);
 
 // Returns this runtime's null value.
 value_t runtime_null(runtime_t *runtime);

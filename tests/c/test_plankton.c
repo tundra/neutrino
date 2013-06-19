@@ -27,7 +27,7 @@ TEST(plankton, simple) {
   check_plankton(&runtime, runtime_bool(&runtime, true));
   check_plankton(&runtime, runtime_bool(&runtime, false));
 
-  runtime_dispose(&runtime);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
 TEST(plankton, array) {
@@ -39,5 +39,5 @@ TEST(plankton, array) {
   set_array_at(arr, 0, new_integer(5));
   check_plankton(&runtime, arr);
 
-  runtime_dispose(&runtime);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
