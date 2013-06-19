@@ -128,7 +128,7 @@ void set_array_at(value_t value, size_t index, value_t element) {
 }
 
 
-// --- M a p ---
+// --- I d e n t i t y   h a s h   m a p ---
 
 value_t get_id_hash_map_entry_array(value_t value) {
   CHECK_FAMILY(ofIdHashMap, value);
