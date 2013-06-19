@@ -62,7 +62,7 @@ size_t get_string_length(value_t value) {
 
 char *get_string_chars(value_t value) {
   CHECK_FAMILY(ofString, value);
-  return (char*) access_object_field(value, kStringCharsOffset);  
+  return (char*) access_object_field(value, kStringCharsOffset);
 }
 
 void get_string_contents(value_t value, string_t *out) {
@@ -117,13 +117,13 @@ void set_array_length(value_t value, size_t length) {
 
 value_t get_array_at(value_t value, size_t index) {
   CHECK_FAMILY(ofArray, value);
-  CHECK_TRUE(index < get_array_length(value));
+  CHECK_TRUE("array index out of bounds", index < get_array_length(value));
   return *access_object_field(value, kArrayElementsOffset + index);
 }
 
 void set_array_at(value_t value, size_t index, value_t element) {
   CHECK_FAMILY(ofArray, value);
-  CHECK_TRUE(index < get_array_length(value));
+  CHECK_TRUE("array index out of bounds", index < get_array_length(value));
   *access_object_field(value, kArrayElementsOffset + index) = element;
 }
 
@@ -149,7 +149,7 @@ size_t get_map_size(value_t value) {
 
 void set_map_size(value_t value, size_t size) {
   CHECK_FAMILY(ofMap, value);
-  *access_object_field(value, kMapSizeOffset) = new_integer(size);  
+  *access_object_field(value, kMapSizeOffset) = new_integer(size);
 }
 
 void set_map_capacity(value_t value, size_t capacity) {
@@ -165,7 +165,7 @@ size_t get_map_capacity(value_t value) {
 
 // Returns a pointer to the start of the index'th entry in the given map.
 static value_t *get_map_entry(value_t map, size_t index) {
-  CHECK_TRUE(index < get_map_capacity(map));
+  CHECK_TRUE("map entry out of bounds", index < get_map_capacity(map));
   return access_object_field(map, kMapEntryArrayOffset) + (index * kMapEntryFieldCount);
 }
 
@@ -176,19 +176,19 @@ static bool is_map_entry_empty(value_t *entry) {
 
 // Returns the hash value stored in this map entry, which must not be empty.
 static size_t get_map_entry_hash(value_t *entry) {
-  CHECK_FALSE(is_map_entry_empty(entry));
+  CHECK_FALSE("empty map entry", is_map_entry_empty(entry));
   return get_integer_value(entry[kMapEntryHashOffset]);
 }
 
 // Returns the key stored in this hash map entry, which must not be empty.
 static value_t get_map_entry_key(value_t *entry) {
-  CHECK_FALSE(is_map_entry_empty(entry));
+  CHECK_FALSE("empty map entry", is_map_entry_empty(entry));
   return entry[kMapEntryKeyOffset];
 }
 
 // Returns the value stored in this hash map entry, which must not be empty.
 static value_t get_map_entry_value(value_t *entry) {
-  CHECK_FALSE(is_map_entry_empty(entry));
+  CHECK_FALSE("empty map entry", is_map_entry_empty(entry));
   return entry[kMapEntryValueOffset];
 }
 
@@ -208,9 +208,9 @@ static void set_map_entry(value_t *entry, value_t key, size_t hash,
 static bool find_map_entry(value_t map, value_t key, size_t hash,
     value_t **entry_out, bool *was_created) {
   CHECK_FAMILY(ofMap, map);
-  CHECK_TRUE((was_created == NULL) || !*was_created);
+  CHECK_TRUE("was_created not initialized", (was_created == NULL) || !*was_created);
   size_t capacity = get_map_capacity(map);
-  CHECK_TRUE(get_map_size(map) < capacity);
+  CHECK_TRUE("map overfull", get_map_size(map) < capacity);
   size_t current_index = hash % capacity;
   // Loop around until we find the key or an empty entry. Since we know the
   // capacity is at least one greater than the size there must be at least
@@ -240,6 +240,8 @@ static bool find_map_entry(value_t map, value_t key, size_t hash,
     // Didn't find it here so try the next one.
     current_index = (current_index + 1) % capacity;
   }
+  UNREACHABLE("map entry impossible loop");
+  return false;
 }
 
 value_t try_set_map_at(value_t map, value_t key, value_t value) {
@@ -301,7 +303,7 @@ bool map_iter_advance(map_iter_t *iter) {
 }
 
 void map_iter_get_current(map_iter_t *iter, value_t *key_out, value_t *value_out) {
-  CHECK_TRUE(iter->current != NULL);
+  CHECK_TRUE("map iter overrun", iter->current != NULL);
   *key_out = get_map_entry_key(iter->current);
   *value_out = get_map_entry_value(iter->current);
 }
