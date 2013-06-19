@@ -42,7 +42,7 @@ TEST(value, id_hash_maps_simple) {
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
   // Create a map.
-  value_t map = new_heap_is_hash_map(&runtime, 4);
+  value_t map = new_heap_id_hash_map(&runtime, 4);
   ASSERT_FAMILY(ofIdHashMap, map);
   ASSERT_EQ(0, get_id_hash_map_size(map));
   // Add something to it.
@@ -92,7 +92,7 @@ TEST(value, id_hash_maps_strings) {
   string_init(&one_chars, "One");
   value_t one = new_heap_string(&runtime, &one_chars);
 
-  value_t map = new_heap_is_hash_map(&runtime, 4);
+  value_t map = new_heap_id_hash_map(&runtime, 4);
   ASSERT_EQ(0, get_id_hash_map_size(map));
   ASSERT_SUCCESS(try_set_id_hash_map_at(map, one, new_integer(4)));
   ASSERT_EQ(1, get_id_hash_map_size(map));
@@ -106,7 +106,7 @@ TEST(value, large_id_hash_maps) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
-  value_t map = new_heap_is_hash_map(&runtime, 4);
+  value_t map = new_heap_id_hash_map(&runtime, 4);
   for (size_t i = 0; i < 128; i++) {
     value_t key = new_integer(i);
     value_t value = new_integer(1024 - i);
@@ -118,6 +118,28 @@ TEST(value, large_id_hash_maps) {
       ASSERT_SUCCESS(check_value);
       ASSERT_EQ(1024 - j, get_integer_value(check_value));
     }
+  }
+
+  runtime_dispose(&runtime);
+}
+
+
+TEST(value, exhaust_id_hash_map) {
+  space_config_t config;
+  space_config_init_defaults(&config);
+  config.size_bytes = 4096;
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, &config));
+
+  value_t map = new_heap_id_hash_map(&runtime, 4);
+  for (size_t i = 0; true; i++) {
+    value_t key = new_integer(i);
+    value_t value = new_integer(1024 - i);
+    value_t result = set_id_hash_map_at(&runtime, map, key, value);
+    ASSERT_SUCCESS(object_validate(map));
+    if (is_signal(scHeapExhausted, result))
+      break;
+    ASSERT_SUCCESS(result);
   }
 
   runtime_dispose(&runtime);

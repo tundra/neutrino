@@ -48,7 +48,7 @@ static value_t new_heap_id_hash_map_entry_array(runtime_t *runtime, size_t capac
   return new_heap_array(runtime, capacity * kIdHashMapEntryFieldCount);
 }
 
-value_t new_heap_is_hash_map(runtime_t *runtime, size_t init_capacity) {
+value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity) {
   CHECK_TRUE("invalid initial capacity", init_capacity > 0);
   TRY_DEF(entries, new_heap_id_hash_map_entry_array(runtime, init_capacity));
   size_t size = kIdHashMapSize;

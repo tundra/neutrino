@@ -74,7 +74,7 @@ TEST(alloc, heap_map) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
-  value_t map = new_heap_is_hash_map(&runtime, 16);
+  value_t map = new_heap_id_hash_map(&runtime, 16);
   ASSERT_FAMILY(ofIdHashMap, map);
   ASSERT_EQ(0, get_id_hash_map_size(map));
   ASSERT_EQ(16, get_id_hash_map_capacity(map));
