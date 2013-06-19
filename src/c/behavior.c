@@ -179,7 +179,7 @@ static bool blob_are_identical(value_t a, value_t b) {
 static bool null_are_identical(value_t a, value_t b) {
   // There is only one null so you should never end up comparing two different
   // ones.
-  CHECK_EQ(a, b);
+  CHECK_EQ("multiple nulls", a, b);
   return true;
 }
 
@@ -226,7 +226,7 @@ static void object_print_atomic_on(value_t value, string_buffer_t *buf) {
   CHECK_DOMAIN(vdObject, value);
   value_t species = get_object_species(value);
   behavior_t *behavior = get_species_behavior(species);
-  (behavior->print_atomic_on)(value, buf);  
+  (behavior->print_atomic_on)(value, buf);
 }
 
 static void null_print_atomic_on(value_t value, string_buffer_t *buf) {
@@ -299,7 +299,7 @@ static void string_print_on(value_t value, string_buffer_t *buf) {
 
 static void blob_print_atomic_on(value_t value, string_buffer_t *buf) {
   CHECK_FAMILY(ofBlob, value);
-  string_buffer_printf(buf, "#<blob[%i]>", (int) get_blob_length(value));    
+  string_buffer_printf(buf, "#<blob[%i]>", (int) get_blob_length(value));
 }
 
 static void blob_print_on(value_t value, string_buffer_t *buf) {
@@ -315,7 +315,8 @@ void value_print_on(value_t value, string_buffer_t *buf) {
       object_print_on(value, buf);
       break;
     default:
-      UNREACHABLE();
+      UNREACHABLE("value print on");
+      break;
   }
 }
 
@@ -328,7 +329,8 @@ void value_print_atomic_on(value_t value, string_buffer_t *buf) {
       object_print_atomic_on(value, buf);
       break;
     default:
-      UNREACHABLE();
+      UNREACHABLE("value print atomic on");
+      break;
   }
 }
 

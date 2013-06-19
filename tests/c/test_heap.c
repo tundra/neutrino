@@ -11,25 +11,25 @@ TEST(heap, init) {
 }
 
 TEST(heap, align_size) {
-  CHECK_EQ(0, align_size(4, 0));
-  CHECK_EQ(4, align_size(4, 1));
-  CHECK_EQ(4, align_size(4, 2));
-  CHECK_EQ(4, align_size(4, 3));
-  CHECK_EQ(4, align_size(4, 4));
-  CHECK_EQ(8, align_size(4, 5));
-  CHECK_EQ(0, align_size(8, 0));
-  CHECK_EQ(8, align_size(8, 1));
-  CHECK_EQ(8, align_size(8, 2));
-  CHECK_EQ(8, align_size(8, 7));
-  CHECK_EQ(8, align_size(8, 8));
-  CHECK_EQ(16, align_size(8, 9));
+  ASSERT_EQ(0, align_size(4, 0));
+  ASSERT_EQ(4, align_size(4, 1));
+  ASSERT_EQ(4, align_size(4, 2));
+  ASSERT_EQ(4, align_size(4, 3));
+  ASSERT_EQ(4, align_size(4, 4));
+  ASSERT_EQ(8, align_size(4, 5));
+  ASSERT_EQ(0, align_size(8, 0));
+  ASSERT_EQ(8, align_size(8, 1));
+  ASSERT_EQ(8, align_size(8, 2));
+  ASSERT_EQ(8, align_size(8, 7));
+  ASSERT_EQ(8, align_size(8, 8));
+  ASSERT_EQ(16, align_size(8, 9));
 }
 
 TEST(heap, align_address) {
-  CHECK_EQ((address_t) 0, align_address(4, (address_t) 0));
-  CHECK_EQ((address_t) 4, align_address(4, (address_t) 1));
-  CHECK_EQ((address_t) 4, align_address(4, (address_t) 4));
-  CHECK_EQ((address_t) 8, align_address(4, (address_t) 5));
+  ASSERT_EQ((address_t) 0, align_address(4, (address_t) 0));
+  ASSERT_EQ((address_t) 4, align_address(4, (address_t) 1));
+  ASSERT_EQ((address_t) 4, align_address(4, (address_t) 4));
+  ASSERT_EQ((address_t) 8, align_address(4, (address_t) 5));
 }
 
 TEST(heap, space_alloc) {
@@ -42,11 +42,11 @@ TEST(heap, space_alloc) {
 
   // Check that we can allocate all the memory but no more.
   address_t addr;
-  CHECK_TRUE(space_try_alloc(&space, kKB / 4, &addr));
-  CHECK_TRUE(space_try_alloc(&space, kKB / 4, &addr));
-  CHECK_TRUE(space_try_alloc(&space, kKB / 4, &addr));
-  CHECK_TRUE(space_try_alloc(&space, kKB / 4, &addr));
-  CHECK_FALSE(space_try_alloc(&space, 1, &addr));
+  ASSERT_TRUE(space_try_alloc(&space, kKB / 4, &addr));
+  ASSERT_TRUE(space_try_alloc(&space, kKB / 4, &addr));
+  ASSERT_TRUE(space_try_alloc(&space, kKB / 4, &addr));
+  ASSERT_TRUE(space_try_alloc(&space, kKB / 4, &addr));
+  ASSERT_FALSE(space_try_alloc(&space, 1, &addr));
 
   // Clean up.
   space_dispose(&space);

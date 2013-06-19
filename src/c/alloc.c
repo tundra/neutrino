@@ -45,7 +45,7 @@ value_t new_heap_array(runtime_t *runtime, size_t length) {
 }
 
 value_t new_heap_map(runtime_t *runtime, size_t init_capacity) {
-  CHECK_TRUE(init_capacity > 0);
+  CHECK_TRUE("invalid initial capacity", init_capacity > 0);
   TRY_DEF(entries, new_heap_array(runtime, init_capacity * kMapEntryFieldCount));
   size_t size = kMapSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
@@ -75,5 +75,5 @@ value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species) {
     return new_signal(scHeapExhausted);
   value_t result = new_object(addr);
   set_object_species(result, species);
-  return result;  
+  return result;
 }

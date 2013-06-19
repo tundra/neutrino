@@ -15,7 +15,7 @@
 // Object pointers can point to objects with different layouts, each such kind
 // of object is a _family_; strings and arrays are different families. Which
 // family an object belongs to is stored in a field in the object's species.
-// 
+//
 // Finally, within each family there may be objects with the same basic layout
 // but different shared state, each kind of state is a _species_. For instance,
 // all user-defined types are within the same family but each different type
@@ -119,14 +119,14 @@ typedef enum {
 #define kObjectHeaderSize kValueSize
 
 // Returns the size in bytes of an object with N fields, where the header
-// is not counted as a field. 
+// is not counted as a field.
 #define OBJECT_SIZE(N) ((N * kValueSize) + kObjectHeaderSize)
 
 static const size_t kObjectSpeciesOffset = 0;
 
 // Converts a pointer to an object into an tagged object value pointer.
 static value_t new_object(address_t addr) {
-  CHECK_EQ(0, ((address_arith_t) addr) & kDomainTagMask);
+  CHECK_EQ("unaligned", 0, ((address_arith_t) addr) & kDomainTagMask);
   return (value_t) ((address_arith_t) addr);
 }
 
