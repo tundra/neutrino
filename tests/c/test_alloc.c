@@ -81,3 +81,17 @@ TEST(alloc, heap_map) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+TEST(alloc, instance) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t instance = new_heap_instance(&runtime);
+  ASSERT_FAMILY(ofInstance, instance);
+  value_t key = new_integer(0);
+  ASSERT_SIGNAL(scNotFound, get_instance_field(instance, key));
+  ASSERT_SUCCESS(try_set_instance_field(instance, key, new_integer(3)));
+  ASSERT_VALEQ(new_integer(3), get_instance_field(instance, key));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}

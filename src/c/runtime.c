@@ -16,6 +16,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   TRY_SET(roots->id_hash_map_species, new_heap_species(runtime, ofIdHashMap, &kIdHashMapBehavior));
   TRY_SET(roots->null_species, new_heap_species(runtime, ofNull, &kNullBehavior));
   TRY_SET(roots->bool_species, new_heap_species(runtime, ofBool, &kBoolBehavior));
+  TRY_SET(roots->instance_species, new_heap_species(runtime, ofInstance, &kInstanceBehavior));
 
   // Singletons
   TRY_SET(roots->null, new_heap_null(runtime));
@@ -35,6 +36,7 @@ void roots_clear(roots_t *roots) {
   roots->null = success();
   roots->thrue = success();
   roots->fahlse = success();
+  roots->instance_species = success();
 }
 
 value_t roots_validate(roots_t *roots) {
@@ -62,6 +64,7 @@ value_t roots_validate(roots_t *roots) {
   VALIDATE_SPECIES(ofIdHashMap, roots->id_hash_map_species);
   VALIDATE_SPECIES(ofNull, roots->null_species);
   VALIDATE_SPECIES(ofBool, roots->bool_species);
+  VALIDATE_SPECIES(ofInstance, roots->instance_species);
 
   VALIDATE_OBJECT(ofNull, roots->null);
   VALIDATE_OBJECT(ofBool, roots->thrue);

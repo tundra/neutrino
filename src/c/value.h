@@ -105,7 +105,8 @@ static signal_cause_t get_signal_cause(value_t value) {
   F(Null,      null)                                                           \
   F(Bool,      bool)                                                           \
   F(IdHashMap, id_hash_map)                                                    \
-  F(Blob,      blob)
+  F(Blob,      blob)                                                           \
+  F(Instance,  instance)
 
 // Enum identifying the different families of heap objects.
 typedef enum {
@@ -322,6 +323,25 @@ void set_bool_value(value_t value, bool truth);
 
 // Returns whether the given bool is true.
 bool get_bool_value(value_t value);
+
+
+// --- I n s t a n c e ---
+
+static const size_t kInstanceSize = OBJECT_SIZE(1);
+static const size_t kInstanceFieldsOffset = 1;
+
+// Returns the fields map from the given instance.
+value_t get_instance_fields(value_t value);
+
+// Sets the fields map for the given instance.
+void set_instance_fields(value_t value, value_t fields);
+
+// Returns the field with the given key from the given instance.
+value_t get_instance_field(value_t value, value_t key);
+
+// Sets the field with the given key on the given instance. Returns a signal
+// if setting the field failed, for instance if the field map was full.
+value_t try_set_instance_field(value_t instance, value_t key, value_t value);
 
 
 // --- D e b u g ---
