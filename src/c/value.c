@@ -127,6 +127,11 @@ void set_array_at(value_t value, size_t index, value_t element) {
   *access_object_field(value, kArrayElementsOffset + index) = element;
 }
 
+value_t *get_array_elements(value_t value) {
+  CHECK_FAMILY(ofArray, value);
+  return access_object_field(value, kArrayElementsOffset);
+}
+
 
 // --- I d e n t i t y   h a s h   m a p ---
 
@@ -166,7 +171,8 @@ size_t get_id_hash_map_capacity(value_t value) {
 // Returns a pointer to the start of the index'th entry in the given map.
 static value_t *get_id_hash_map_entry(value_t map, size_t index) {
   CHECK_TRUE("map entry out of bounds", index < get_id_hash_map_capacity(map));
-  return access_object_field(map, kIdHashMapEntryArrayOffset) + (index * kIdHashMapEntryFieldCount);
+  value_t array = get_id_hash_map_entry_array(map);
+  return get_array_elements(array) + (index * kIdHashMapEntryFieldCount);
 }
 
 // Returns true if the given map entry is not storing a binding.
@@ -281,15 +287,17 @@ value_t get_id_hash_map_at(value_t map, value_t key) {
 }
 
 void id_hash_map_iter_init(id_hash_map_iter_t *iter, value_t map) {
-  iter->map = map;
+  value_t entry_array = get_id_hash_map_entry_array(map);
+  iter->entries = get_array_elements(entry_array);
   iter->cursor = 0;
+  iter->capacity = get_id_hash_map_capacity(map);
   iter->current = NULL;
 }
 
 bool id_hash_map_iter_advance(id_hash_map_iter_t *iter) {
   // Test successive entries until we find a non-empty one.
-  while (iter->cursor < get_id_hash_map_capacity(iter->map)) {
-    value_t *entry = get_id_hash_map_entry(iter->map, iter->cursor);
+  while (iter->cursor < iter->capacity) {
+    value_t *entry = iter->entries + (iter->cursor * kIdHashMapEntryFieldCount);
     iter->cursor++;
     if (!is_id_hash_map_entry_empty(entry)) {
       // Found one, store it in current and return success.

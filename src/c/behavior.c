@@ -47,7 +47,11 @@ static value_t array_validate(value_t value) {
 
 static value_t id_hash_map_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofIdHashMap, value);
-  VALIDATE_VALUE_FAMILY(ofIdHashMap, get_id_hash_map_entry_array(value));
+  value_t entry_array = get_id_hash_map_entry_array(value);
+  VALIDATE_VALUE_FAMILY(ofArray, entry_array);
+  size_t capacity = get_id_hash_map_capacity(value);
+  VALIDATE(get_id_hash_map_size(value) < capacity);
+  VALIDATE(get_array_length(entry_array) == (capacity * kIdHashMapEntryFieldCount));
   return success();
 }
 
