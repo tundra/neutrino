@@ -15,7 +15,7 @@ TEST(alloc, heap_string) {
   get_string_contents(str, &out);
   ASSERT_STREQ(&chars, &out);
 
-  runtime_dispose(&runtime);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
 TEST(alloc, heap_blob) {
@@ -32,7 +32,7 @@ TEST(alloc, heap_blob) {
   for (size_t i = 0; i < 9; i++)
     ASSERT_EQ(0, blob_byte_at(&data, i));
 
-  runtime_dispose(&runtime);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
 TEST(alloc, heap_species) {
@@ -44,7 +44,7 @@ TEST(alloc, heap_species) {
   ASSERT_FAMILY(ofSpecies, species);
   ASSERT_EQ(ofString, get_species_instance_family(species));
 
-  runtime_dispose(&runtime);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
 TEST(alloc, heap_array) {
@@ -67,7 +67,7 @@ TEST(alloc, heap_array) {
   ASSERT_EQ(null, get_array_at(array, 1));
   ASSERT_EQ(array, get_array_at(array, 2));
 
-  runtime_dispose(&runtime);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
 TEST(alloc, heap_map) {
@@ -79,5 +79,5 @@ TEST(alloc, heap_map) {
   ASSERT_EQ(0, get_id_hash_map_size(map));
   ASSERT_EQ(16, get_id_hash_map_capacity(map));
 
-  runtime_dispose(&runtime);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

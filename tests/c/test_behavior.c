@@ -16,8 +16,9 @@ TEST(behavior, string_validation) {
   get_string_chars(str)[4] = 'x';
   // Now the string no longer terminates.
   ASSERT_SIGNAL(scValidationFailed, object_validate(str));
+  get_string_chars(str)[4] = '\0';
 
-  runtime_dispose(&runtime);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
 TEST(behavior, identity) {
@@ -59,7 +60,7 @@ TEST(behavior, identity) {
   ASSERT_SUCCESS(hash(null));
   ASSERT_TRUE(equal(null, null));
 
-  runtime_dispose(&runtime);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
 // Check that printing the given value yields the expected string.
@@ -122,5 +123,5 @@ TEST(behavior, print_on) {
   set_array_at(arr, 0, blob);
   check_print_on("[#<blob[9]>, 4, \"foo\"]", arr);
 
-  runtime_dispose(&runtime);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

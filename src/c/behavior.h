@@ -20,10 +20,15 @@ typedef struct behavior_t {
   // Writes an atomic (that is, doesn't recurse into contents) string
   // representation on a string buffer.
   void (*print_atomic_on)(value_t value, string_buffer_t *buf);
+  // Returns the size in bytes on the heap of the given object.
+  size_t (*get_object_heap_size)(value_t value);
 } behavior_t;
 
 // Validates an object.
 value_t object_validate(value_t value);
+
+// Returns the size in bytes of the given object on the heap.
+size_t get_object_heap_size(value_t value);
 
 // Returns the transient identity hash of the given value. This hash is
 // transient in the sense that it may be changed by garbage collection. It

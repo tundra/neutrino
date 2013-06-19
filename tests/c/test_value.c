@@ -80,7 +80,7 @@ TEST(value, id_hash_maps_simple) {
   ASSERT_EQ(new_integer(9), get_id_hash_map_at(map, new_integer(1)));
   ASSERT_EQ(new_integer(5), get_id_hash_map_at(map, new_integer(100)));
 
-  runtime_dispose(&runtime);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
 
@@ -98,7 +98,7 @@ TEST(value, id_hash_maps_strings) {
   ASSERT_EQ(1, get_id_hash_map_size(map));
   ASSERT_EQ(new_integer(4), get_id_hash_map_at(map, one));
 
-  runtime_dispose(&runtime);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
 
@@ -120,7 +120,7 @@ TEST(value, large_id_hash_maps) {
     }
   }
 
-  runtime_dispose(&runtime);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
 
@@ -142,5 +142,5 @@ TEST(value, exhaust_id_hash_map) {
     ASSERT_SUCCESS(result);
   }
 
-  runtime_dispose(&runtime);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
