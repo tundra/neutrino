@@ -129,6 +129,13 @@ static value_t string_serialize(value_t value, byte_buffer_t *buf) {
   return success();
 }
 
+static value_t instance_serialize(value_t value, byte_buffer_t *buf) {
+  CHECK_FAMILY(ofInstance, value);
+  byte_buffer_append(buf, pObject);
+  byte_buffer_append(buf, pNull);
+  return value_serialize(get_instance_fields(value), buf);
+}
+
 static value_t object_serialize(value_t value, byte_buffer_t *buf) {
   CHECK_DOMAIN(vdObject, value);
   switch (get_object_family(value)) {
@@ -142,6 +149,8 @@ static value_t object_serialize(value_t value, byte_buffer_t *buf) {
       return map_serialize(value, buf);
     case ofString:
       return string_serialize(value, buf);
+    case ofInstance:
+      return instance_serialize(value, buf);
     default:
       return new_signal(scInvalidInput);
   }
@@ -235,6 +244,15 @@ static value_t string_deserialize(runtime_t *runtime, byte_stream_t *in) {
   return result;
 }
 
+static value_t object_deserialize(runtime_t *runtime, byte_stream_t *in) {
+  TRY_DEF(header, value_deserialize(runtime, in));
+  CHECK_FAMILY(ofNull, header);
+  TRY_DEF(payload, value_deserialize(runtime, in));
+  TRY_DEF(result, new_heap_instance(runtime));
+  set_instance_fields(result, payload);
+  return result;
+}
+
 static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in) {
   switch (byte_stream_read(in)) {
     case pInt32:
@@ -251,6 +269,8 @@ static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in) {
       return map_deserialize(runtime, in);
     case pString:
       return string_deserialize(runtime, in);
+    case pObject:
+      return object_deserialize(runtime, in);
     default:
       return new_signal(scInvalidInput);
   }
