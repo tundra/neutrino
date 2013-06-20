@@ -114,4 +114,34 @@ void string_buffer_vprintf(string_buffer_t *buf, const char *format, va_list arg
 // buffer is disposed.
 void string_buffer_flush(string_buffer_t *buf, string_t *str_out);
 
+
+// --- B y t e   b u f f e r ---
+
+// Buffer for building a block of bytes incrementally.
+typedef struct {
+  // Size of data currently in the buffer.
+  size_t length;
+  // Length of the total buffer.
+  size_t capacity;
+  // The actual data.
+  uint8_t *data;
+  // The allocator to use to grab memory.
+  allocator_t allocator;
+} byte_buffer_t;
+
+// Initialize a byte buffer. If an allocator is passed it will be used for
+// all allocation, otherwise the default system allocator will be used.
+void byte_buffer_init(byte_buffer_t *buf, allocator_t *alloc_or_null);
+
+// Disposes the given byte buffer.
+void byte_buffer_dispose(byte_buffer_t *buf);
+
+// Add a byte to the given buffer.
+void byte_buffer_append(byte_buffer_t *buf, uint8_t value);
+
+// Write the current contents to the given blob. The data in the blob will
+// still be backed by this buffer so disposing this will make the blob invalid.
+void byte_buffer_flush(byte_buffer_t *buf, blob_t *blob_out);
+
+
 #endif // _UTILS

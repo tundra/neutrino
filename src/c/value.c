@@ -2,6 +2,19 @@
 #include "heap.h"
 #include "value-inl.h"
 
+const char *signal_cause_name(signal_cause_t cause) {
+  switch (cause) {
+#define GEN_CASE(Name) case sc##Name: return #Name;
+    ENUM_SIGNAL_CAUSES(GEN_CASE)
+#undef GEN_CASE
+    default:
+      return "?";
+  }
+}
+
+
+// --- O b j e c t ---
+
 void set_object_species(value_t value, value_t species) {
   *access_object_field(value, kObjectSpeciesOffset) = species;
 }

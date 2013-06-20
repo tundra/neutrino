@@ -68,16 +68,24 @@ static value_t success() {
 
 // --- S i g n a l ---
 
+#define ENUM_SIGNAL_CAUSES(F)                                                  \
+  F(HeapExhausted)                                                             \
+  F(SystemError)                                                               \
+  F(ValidationFailed)                                                          \
+  F(UnsupportedBehavior)                                                       \
+  F(MapFull)                                                                   \
+  F(NotFound)
+
 // Enum identifying the type of a signal.
 typedef enum {
-  // The heap has run out of space.
-  scHeapExhausted = 0,
-  scSystemError,
-  scValidationFailed,
-  scUnsupportedBehavior,
-  scMapFull,
-  scNotFound
+  __scFirst__ = -1
+#define DECLARE_SIGNAL_CAUSE_ENUM(Cause) , sc##Cause
+  ENUM_SIGNAL_CAUSES(DECLARE_SIGNAL_CAUSE_ENUM)
+#undef DECLARE_SIGNAL_CAUSE_ENUM
 } signal_cause_t;
+
+// Returns the string name of a signal cause.
+const char *signal_cause_name(signal_cause_t cause);
 
 // How many bits do we need to hold the cause of a signal?
 static const int kSignalCauseSize = 5;
