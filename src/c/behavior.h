@@ -6,9 +6,9 @@
 #ifndef _BEHAVIOR
 #define _BEHAVIOR
 
-// A collection of "virtual" methods that define how a particular species
-// behaves.
-typedef struct behavior_t {
+// A collection of "virtual" methods that define how a particular family of
+// objects behave.
+typedef struct family_behavior_t {
   // Function for validating an object.
   value_t (*validate)(value_t value);
   // Calculates the transient identity hash.
@@ -22,7 +22,7 @@ typedef struct behavior_t {
   void (*print_atomic_on)(value_t value, string_buffer_t *buf);
   // Returns the size in bytes on the heap of the given object.
   size_t (*get_object_heap_size)(value_t value);
-} behavior_t;
+} family_behavior_t;
 
 // Validates an object.
 value_t object_validate(value_t value);
@@ -44,9 +44,23 @@ bool value_are_identical(value_t a, value_t b);
 void value_print_on(value_t value, string_buffer_t *buf);
 
 // Declare the behavior structs for all the families on one fell swoop.
-#define DECLARE_BEHAVIOR(Family, family) \
-extern behavior_t k##Family##Behavior;
-ENUM_FAMILIES(DECLARE_BEHAVIOR)
-#undef DECLARE_BEHAVIOR
+#define DECLARE_FAMILY_BEHAVIOR(Family, family) \
+extern family_behavior_t k##Family##Behavior;
+ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
+#undef DECLARE_FAMILY_BEHAVIOR
+
+
+// Virtual methods that control how the species of a particular division behave.
+typedef struct division_behavior_t {
+  // The division this behavior belongs to.
+  species_division_t division;
+  // Returns the size in bytes on the heap of species for this division.
+  size_t (*get_species_heap_size)(value_t species);
+} division_behavior_t;
+
+#define DECLARE_DIVISION_BEHAVIOR(Division, division) \
+extern division_behavior_t k##Division##Behavior;
+ENUM_SPECIES_DIVISIONS(DECLARE_DIVISION_BEHAVIOR)
+#undef DECLARE_DIVISION_BEHAVIOR
 
 #endif // _BEHAVIOR

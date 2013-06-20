@@ -7,7 +7,7 @@
 #ifndef _VALUE
 #define _VALUE
 
-// A tagged value pointer. Values are divided into a hierarchy with three
+// A tagged value pointer. Values are divided into a hierarchy with four
 // different levels. At the top level they are divided into different _domains_
 // which can be distinguished by how the pointer is tagged; objects, integers,
 // signals, etc. are different domains.
@@ -16,11 +16,41 @@
 // of object is a _family_; strings and arrays are different families. Which
 // family an object belongs to is stored in a field in the object's species.
 //
+// Species can also have different layout since some families have extra state
+// associated with them that is stored in extra fields in their species. For
+// instance, the syntax tree families all have a tag in their species that allows
+// the vm to recognize them. Each of these is called a _division_.
+//
 // Finally, within each family there may be objects with the same basic layout
 // but different shared state, each kind of state is a _species_. For instance,
 // all user-defined types are within the same family but each different type
 // belong to a different species. The species is given by the object's species
 // pointer.
+//
+// In short: all values belong to some domain, within each domain values are
+// divided into divisions based on their species' layout, each division is again
+// divided into families based on instances' layout, and finally some families
+// are divided into species based on their species objects.
+//
+// (domains)
+// - integer
+// - object
+//   (divisions)
+//   - compact
+//     (families)
+//     - species
+//     - string
+//     - array
+//     - null
+//     - bool
+//     - id hash map
+//     - blob
+//     - instance
+//       (species)
+//       ...
+//     - void-p
+//     - literal
+// - signal
 typedef uint64_t value_t;
 
 // Value domain identifiers.
@@ -107,7 +137,7 @@ static signal_cause_t get_signal_cause(value_t value) {
 // --- O b j e c t ---
 
 // Macro that invokes the given macro callback for each object family.
-#define ENUM_FAMILIES(F)                                                       \
+#define ENUM_OBJECT_FAMILIES(F)                                                \
   F(Species,   species)                                                        \
   F(String,    string)                                                         \
   F(Array,     array)                                                          \
@@ -121,9 +151,9 @@ static signal_cause_t get_signal_cause(value_t value) {
 // Enum identifying the different families of heap objects.
 typedef enum {
   __ofFirst__ = -1
-  #define DECLARE_FAMILY_ENUM(Family, family) , of##Family
-  ENUM_FAMILIES(DECLARE_FAMILY_ENUM)
-  #undef DECLARE_FAMILY_ENUM
+  #define DECLARE_OBJECT_FAMILY_ENUM(Family, family) , of##Family
+  ENUM_OBJECT_FAMILIES(DECLARE_OBJECT_FAMILY_ENUM)
+  #undef DECLARE_OBJECT_FAMILY_ENUM
 } object_family_t;
 
 // Number of bytes in an object header.
@@ -168,9 +198,20 @@ value_t get_object_species(value_t value);
 
 // --- S p e c i e s ---
 
-static const size_t kSpeciesSize = OBJECT_SIZE(2);
+#define ENUM_SPECIES_DIVISIONS(F)                                              \
+  F(Compact, compact)
+
+// Identifies the division a species belongs to.
+typedef enum {
+  __sdFirst__ = -1
+#define DECLARE_SPECIES_DIVISION_ENUM(Division, division) , sd##Division
+ENUM_SPECIES_DIVISIONS(DECLARE_SPECIES_DIVISION_ENUM)
+#undef DECLARE_SPECIES_DIVISION_ENUM
+} species_division_t;
+
 static const size_t kSpeciesInstanceFamilyOffset = 1;
-static const size_t kSpeciesBehaviorOffset = 2;
+static const size_t kSpeciesFamilyBehaviorOffset = 2;
+static const size_t kSpeciesDivisionBehaviorOffset = 3;
 
 // Given a species object, sets the instance type field to the specified value.
 void set_species_instance_family(value_t species, object_family_t instance_family);
@@ -178,14 +219,28 @@ void set_species_instance_family(value_t species, object_family_t instance_famil
 // Given a species object, returns the instance type field.
 object_family_t get_species_instance_family(value_t species);
 
-// Forward declaration of the behavior struct (see behavior.h).
-struct behavior_t;
+// Forward declaration of the object behavior struct (see behavior.h).
+struct family_behavior_t;
 
-// Returns the behavior of this species belongs to.
-struct behavior_t *get_species_behavior(value_t species);
+// Returns the object family behavior of this species belongs to.
+struct family_behavior_t *get_species_family_behavior(value_t species);
 
-// Sets the behavior of this species.
-void set_species_behavior(value_t species, value_t behavior);
+// Sets the object family behavior of this species.
+void set_species_family_behavior(value_t species, value_t behavior);
+
+struct division_behavior_t;
+
+// Returns the species division behavior of this species belongs to.
+struct division_behavior_t *get_species_division_behavior(value_t species);
+
+// Sets the species division behavior of this species.
+void set_species_division_behavior(value_t species, value_t behavior);
+
+
+// --- C o m p a c t   s p e c i e s ---
+
+static const size_t kCompactSpeciesSize = OBJECT_SIZE(3);
+
 
 
 // --- S t r i n g ---

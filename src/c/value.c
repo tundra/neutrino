@@ -42,12 +42,21 @@ object_family_t get_species_instance_family(value_t value) {
   return (object_family_t) get_integer_value(family);
 }
 
-void set_species_behavior(value_t value, value_t behavior) {
-  *access_object_field(value, kSpeciesBehaviorOffset) = behavior;
+void set_species_family_behavior(value_t value, value_t behavior) {
+  *access_object_field(value, kSpeciesFamilyBehaviorOffset) = behavior;
 }
 
-behavior_t *get_species_behavior(value_t value) {
-  value_t ptr = *access_object_field(value, kSpeciesBehaviorOffset);
+family_behavior_t *get_species_family_behavior(value_t value) {
+  value_t ptr = *access_object_field(value, kSpeciesFamilyBehaviorOffset);
+  return get_void_p_value(ptr);
+}
+
+void set_species_division_behavior(value_t value, value_t behavior) {
+  *access_object_field(value, kSpeciesDivisionBehaviorOffset) = behavior;
+}
+
+division_behavior_t *get_species_division_behavior(value_t value) {
+  value_t ptr = *access_object_field(value, kSpeciesDivisionBehaviorOffset);
   return get_void_p_value(ptr);
 }
 
