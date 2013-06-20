@@ -117,6 +117,17 @@ static value_t map_serialize(value_t value, byte_buffer_t *buf) {
   return success();
 }
 
+static value_t string_serialize(value_t value, byte_buffer_t *buf) {
+  CHECK_FAMILY(ofString, value);
+  byte_buffer_append(buf, pString);
+  string_t contents;
+  get_string_contents(value, &contents);
+  size_t length = string_length(&contents);
+  encode_uint32(length, buf);
+  for (size_t i = 0; i < length; i++)
+    byte_buffer_append(buf, string_char_at(&contents, i));
+  return success();
+}
 
 static value_t object_serialize(value_t value, byte_buffer_t *buf) {
   CHECK_DOMAIN(vdObject, value);
@@ -129,6 +140,8 @@ static value_t object_serialize(value_t value, byte_buffer_t *buf) {
       return array_serialize(value, buf);
     case ofIdHashMap:
       return map_serialize(value, buf);
+    case ofString:
+      return string_serialize(value, buf);
     default:
       return new_signal(scInvalidInput);
   }
@@ -209,6 +222,19 @@ static value_t map_deserialize(runtime_t *runtime, byte_stream_t *in) {
   return result;
 }
 
+static value_t string_deserialize(runtime_t *runtime, byte_stream_t *in) {
+  string_buffer_t buf;
+  string_buffer_init(&buf, NULL);
+  size_t length = uint32_deserialize(in);
+  for (size_t i = 0; i < length; i++)
+    string_buffer_putc(&buf, byte_stream_read(in));
+  string_t contents;
+  string_buffer_flush(&buf, &contents);
+  TRY_DEF(result, new_heap_string(runtime, &contents));
+  string_buffer_dispose(&buf);
+  return result;
+}
+
 static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in) {
   switch (byte_stream_read(in)) {
     case pInt32:
@@ -223,6 +249,8 @@ static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in) {
       return array_deserialize(runtime, in);
     case pMap:
       return map_deserialize(runtime, in);
+    case pString:
+      return string_deserialize(runtime, in);
     default:
       return new_signal(scInvalidInput);
   }

@@ -132,6 +132,12 @@ static void string_buffer_append(string_buffer_t *buf, string_t *str) {
   buf->length += string_length(str);
 }
 
+void string_buffer_putc(string_buffer_t *buf, char c) {
+  string_buffer_ensure_capacity(buf, buf->length + 1);
+  buf->chars[buf->length] = c;
+  buf->length++;
+}
+
 void string_buffer_printf(string_buffer_t *buf, const char *fmt, ...) {
   va_list argp;
   va_start(argp, fmt);
