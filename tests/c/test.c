@@ -104,6 +104,12 @@ static bool id_hash_map_structural_equal(value_t a, value_t b) {
   return true;
 }
 
+static bool instance_structural_equal(value_t a, value_t b) {
+  CHECK_FAMILY(ofInstance, a);
+  CHECK_FAMILY(ofInstance, b);
+  return value_structural_equal(get_instance_fields(a), get_instance_fields(b));
+}
+
 static bool object_structural_equal(value_t a, value_t b) {
   CHECK_DOMAIN(vdObject, a);
   CHECK_DOMAIN(vdObject, b);
@@ -116,6 +122,8 @@ static bool object_structural_equal(value_t a, value_t b) {
       return array_structural_equal(a, b);
     case ofIdHashMap:
       return id_hash_map_structural_equal(a, b);
+    case ofInstance:
+      return instance_structural_equal(a, b);
     default:
       return value_are_identical(a, b);
   }

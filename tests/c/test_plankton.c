@@ -3,12 +3,15 @@
 #include "test.h"
 
 // Encodes and decodes a plankton value and checks that the result is the
-// same as the input.
-static void check_plankton(runtime_t *runtime, value_t value) {
+// same as the input. Returns the decoded value.
+static value_t check_plankton(runtime_t *runtime, value_t value) {
   // Encode and decode the value.
   value_t encoded = plankton_serialize(runtime, value);
+  ASSERT_SUCCESS(encoded);
   value_t decoded = plankton_deserialize(runtime, encoded);
+  ASSERT_SUCCESS(decoded);
   ASSERT_VALEQ(value, decoded);
+  return decoded;
 }
 
 TEST(plankton, simple) {
@@ -59,7 +62,7 @@ TEST(plankton, map) {
 // Declares a new variable that holds a heap string with the given contents.
 #define DEF_HEAP_STR(name, value)                                              \
 DEF_STR(name##_chars, value);                                                  \
-value_t name = new_heap_string(&runtime, &name##_chars);
+value_t name = new_heap_string(&runtime, &name##_chars)
 
 TEST(plankton, string) {
   runtime_t runtime;
@@ -71,6 +74,24 @@ TEST(plankton, string) {
   check_plankton(&runtime, empty);
   DEF_HEAP_STR(hello, "Hello, World!");
   check_plankton(&runtime, hello);
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
+
+
+TEST(plankton, instance) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t instance = new_heap_instance(&runtime);
+  check_plankton(&runtime, instance);
+  DEF_HEAP_STR(x, "x");
+  ASSERT_SUCCESS(try_set_instance_field(instance, x, new_integer(8)));
+  DEF_HEAP_STR(y, "y");
+  ASSERT_SUCCESS(try_set_instance_field(instance, y, new_integer(13)));
+  value_t decoded = check_plankton(&runtime, instance);
+  ASSERT_SUCCESS(decoded);
+  ASSERT_VALEQ(new_integer(8), get_instance_field(decoded, x));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
