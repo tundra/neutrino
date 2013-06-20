@@ -155,6 +155,27 @@ static value_t array_serialize(value_t value, byte_buffer_t *buf) {
   return success();
 }
 
+static value_t map_serialize(value_t value, byte_buffer_t *buf) {
+  CHECK_FAMILY(ofIdHashMap, value);
+  byte_buffer_append(buf, pMap);
+  size_t entry_count = get_id_hash_map_size(value);
+  encode_uint32(entry_count, buf);
+  id_hash_map_iter_t iter;
+  id_hash_map_iter_init(&iter, value);
+  size_t entries_written = 0;
+  while (id_hash_map_iter_advance(&iter)) {
+    value_t key;
+    value_t value;
+    id_hash_map_iter_get_current(&iter, &key, &value);
+    value_serialize(key, buf);
+    value_serialize(value, buf);
+    entries_written++;
+  }
+  CHECK_EQ("serialized map length", entry_count, entries_written);
+  return success();
+}
+
+
 static value_t object_serialize(value_t value, byte_buffer_t *buf) {
   CHECK_DOMAIN(vdObject, value);
   switch (get_object_family(value)) {
@@ -164,6 +185,8 @@ static value_t object_serialize(value_t value, byte_buffer_t *buf) {
       return singleton_serialize(get_bool_value(value) ? pTrue : pFalse, buf);
     case ofArray:
       return array_serialize(value, buf);
+    case ofIdHashMap:
+      return map_serialize(value, buf);
     default:
       UNREACHABLE("object serialize");
       return new_signal(scUnsupportedBehavior);
@@ -205,7 +228,7 @@ value_t plankton_serialize(runtime_t *runtime, value_t data) {
 // Reads the next value from the stream.
 static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in);
 
-static uint32_t uint32_deserialize(runtime_t *runtime, byte_stream_t *in) {
+static uint32_t uint32_deserialize(byte_stream_t *in) {
   byte_t current = 0xFF;
   uint32_t result = 0;
   byte_t offset = 0;
@@ -218,14 +241,14 @@ static uint32_t uint32_deserialize(runtime_t *runtime, byte_stream_t *in) {
 }
 
 // Reads an int32 into an integer object.
-static value_t int32_deserialize(runtime_t *runtime, byte_stream_t *in) {
-  uint32_t zig_zag = uint32_deserialize(runtime, in);
+static value_t int32_deserialize(byte_stream_t *in) {
+  uint32_t zig_zag = uint32_deserialize(in);
   int32_t value = (zig_zag >> 1) ^ (-(zig_zag & 1));
   return new_integer(value);
 }
 
 static value_t array_deserialize(runtime_t *runtime, byte_stream_t *in) {
-  size_t length = uint32_deserialize(runtime, in);
+  size_t length = uint32_deserialize(in);
   TRY_DEF(result, new_heap_array(runtime, length));
   for (size_t i = 0; i < length; i++) {
     TRY_DEF(value, value_deserialize(runtime, in));
@@ -234,10 +257,21 @@ static value_t array_deserialize(runtime_t *runtime, byte_stream_t *in) {
   return result;
 }
 
+static value_t map_deserialize(runtime_t *runtime, byte_stream_t *in) {
+  size_t entry_count = uint32_deserialize(in);
+  TRY_DEF(result, new_heap_id_hash_map(runtime, 16));
+  for (size_t i = 0; i < entry_count; i++) {
+    TRY_DEF(key, value_deserialize(runtime, in));
+    TRY_DEF(value, value_deserialize(runtime, in));
+    set_id_hash_map_at(runtime, result, key, value);
+  }
+  return result;
+}
+
 static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in) {
   switch (byte_stream_read(in)) {
     case pInt32:
-      return int32_deserialize(runtime, in);
+      return int32_deserialize(in);
     case pNull:
       return runtime_null(runtime);
     case pTrue:
@@ -246,6 +280,8 @@ static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in) {
       return runtime_bool(runtime, false);
     case pArray:
       return array_deserialize(runtime, in);
+    case pMap:
+      return map_deserialize(runtime, in);
     default:
       UNREACHABLE("value deserialize");
       return new_signal(scNotFound);

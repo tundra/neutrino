@@ -41,3 +41,17 @@ TEST(plankton, array) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+TEST(plankton, map) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t map = new_heap_id_hash_map(&runtime, 16);
+  check_plankton(&runtime, map);
+  for (size_t i = 0; i < 16; i++) {
+    set_id_hash_map_at(&runtime, map, new_integer(i), new_integer(5));
+    check_plankton(&runtime, map);
+  }
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
