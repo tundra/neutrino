@@ -24,6 +24,7 @@ static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
   blob_t result_blob;
   get_blob_data(result, &result_blob);
   blob_copy_to(&data_blob, &result_blob);
+  byte_buffer_dispose(&buffer);
   return result;
 }
 
