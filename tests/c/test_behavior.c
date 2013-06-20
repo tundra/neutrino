@@ -121,7 +121,7 @@ TEST(behavior, print_on) {
   // Blobs
   value_t blob = new_heap_blob(&runtime, 9);
   set_array_at(arr, 0, blob);
-  check_print_on("[#<blob[9]>, 4, \"foo\"]", arr);
+  check_print_on("[#<blob: [0000000000000000...]>, 4, \"foo\"]", arr);
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
