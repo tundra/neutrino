@@ -42,22 +42,26 @@ object_family_t get_species_instance_family(value_t value) {
   return (object_family_t) get_integer_value(family);
 }
 
-void set_species_family_behavior(value_t value, value_t behavior) {
-  *access_object_field(value, kSpeciesFamilyBehaviorOffset) = behavior;
+// Casts a pointer to a value_t.
+#define PTR_TO_VAL(EXPR) ((value_t) (address_arith_t) (EXPR))
+
+// Casts a value_t to a void*.
+#define VAL_TO_PTR(EXPR) ((void*) (address_arith_t) (EXPR))
+
+void set_species_family_behavior(value_t value, family_behavior_t *behavior) {
+  *access_object_field(value, kSpeciesFamilyBehaviorOffset) = PTR_TO_VAL(behavior);
 }
 
 family_behavior_t *get_species_family_behavior(value_t value) {
-  value_t ptr = *access_object_field(value, kSpeciesFamilyBehaviorOffset);
-  return get_void_p_value(ptr);
+  return VAL_TO_PTR(*access_object_field(value, kSpeciesFamilyBehaviorOffset));
 }
 
-void set_species_division_behavior(value_t value, value_t behavior) {
-  *access_object_field(value, kSpeciesDivisionBehaviorOffset) = behavior;
+void set_species_division_behavior(value_t value, division_behavior_t *behavior) {
+  *access_object_field(value, kSpeciesDivisionBehaviorOffset) = PTR_TO_VAL(behavior);
 }
 
 division_behavior_t *get_species_division_behavior(value_t value) {
-  value_t ptr = *access_object_field(value, kSpeciesDivisionBehaviorOffset);
-  return get_void_p_value(ptr);
+  return VAL_TO_PTR(*access_object_field(value, kSpeciesDivisionBehaviorOffset));
 }
 
 
@@ -122,12 +126,12 @@ void get_blob_data(value_t value, blob_t *blob_out) {
 
 void set_void_p_value(value_t value, void *ptr) {
   CHECK_FAMILY(ofVoidP, value);
-  *access_object_field(value, kVoidPValueOffset) = (value_t) (address_arith_t) ptr;
+  *access_object_field(value, kVoidPValueOffset) = PTR_TO_VAL(ptr);
 }
 
 void *get_void_p_value(value_t value) {
   CHECK_FAMILY(ofVoidP, value);
-  return (void*) (address_arith_t) *access_object_field(value, kVoidPValueOffset);
+  return VAL_TO_PTR(*access_object_field(value, kVoidPValueOffset));
 }
 
 

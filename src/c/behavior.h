@@ -59,7 +59,7 @@ typedef struct division_behavior_t {
 } division_behavior_t;
 
 #define DECLARE_DIVISION_BEHAVIOR(Division, division) \
-extern division_behavior_t k##Division##Behavior;
+extern division_behavior_t k##Division##SpeciesBehavior;
 ENUM_SPECIES_DIVISIONS(DECLARE_DIVISION_BEHAVIOR)
 #undef DECLARE_DIVISION_BEHAVIOR
 
