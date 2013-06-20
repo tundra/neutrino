@@ -313,8 +313,8 @@ static value_t object_deserialize(deserialize_state_t *state) {
   TRY_DEF(result, new_heap_instance(state->runtime));
   TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
       result));
-  TRY_DEF(header, value_deserialize(state));
-  CHECK_FAMILY(ofNull, header);
+  // For now just swallow the header.
+  TRY(value_deserialize(state));
   TRY_DEF(payload, value_deserialize(state));
   set_instance_fields(result, payload);
   return result;

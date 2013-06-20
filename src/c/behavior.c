@@ -421,7 +421,10 @@ static void instance_print_atomic_on(value_t value, string_buffer_t *buf) {
 }
 
 static void instance_print_on(value_t value, string_buffer_t *buf) {
-  instance_print_atomic_on(value, buf);
+  CHECK_FAMILY(ofInstance, value);
+  string_buffer_printf(buf, "#<instance: ");
+  value_print_on(get_instance_fields(value), buf);
+  string_buffer_printf(buf, ">");
 }
 
 void value_print_on(value_t value, string_buffer_t *buf) {
