@@ -167,8 +167,8 @@ static value_t map_serialize(value_t value, byte_buffer_t *buf) {
     value_t key;
     value_t value;
     id_hash_map_iter_get_current(&iter, &key, &value);
-    value_serialize(key, buf);
-    value_serialize(value, buf);
+    TRY(value_serialize(key, buf));
+    TRY(value_serialize(value, buf));
     entries_written++;
   }
   CHECK_EQ("serialized map length", entry_count, entries_written);
