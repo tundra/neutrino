@@ -18,7 +18,7 @@ value_t object_validate(value_t value) {
   CHECK_DOMAIN(vdObject, value);
   value_t species = get_object_species(value);
   VALIDATE_VALUE_FAMILY(ofSpecies, species);
-  behavior_t *behavior = get_species_behavior(species);
+  family_behavior_t *behavior = get_species_family_behavior(species);
   return (behavior->validate)(value);
 }
 
@@ -85,12 +85,13 @@ static value_t instance_validate(value_t value) {
 size_t get_object_heap_size(value_t value) {
   CHECK_DOMAIN(vdObject, value);
   value_t species = get_object_species(value);
-  behavior_t *behavior = get_species_behavior(species);
+  family_behavior_t *behavior = get_species_family_behavior(species);
   return (behavior->get_object_heap_size)(value);
 }
 
 static size_t get_species_heap_size(value_t value) {
-  return kSpeciesSize;
+  division_behavior_t *behavior = get_species_division_behavior(value);
+  return (behavior->get_species_heap_size)(value);
 }
 
 static size_t get_string_heap_size(value_t value) {
@@ -136,7 +137,7 @@ static value_t integer_transient_identity_hash(value_t value) {
 static value_t object_transient_identity_hash(value_t value) {
   CHECK_DOMAIN(vdObject, value);
   value_t species = get_object_species(value);
-  behavior_t *behavior = get_species_behavior(species);
+  family_behavior_t *behavior = get_species_family_behavior(species);
   return (behavior->transient_identity_hash)(value);
 }
 
@@ -209,7 +210,7 @@ static bool object_are_identical(value_t a, value_t b) {
   if (a_family != b_family)
     return false;
   value_t species = get_object_species(a);
-  behavior_t *behavior = get_species_behavior(species);
+  family_behavior_t *behavior = get_species_family_behavior(species);
   return (behavior->are_identical)(a, b);
 }
 
@@ -306,14 +307,14 @@ static void signal_print_atomic_on(value_t value, string_buffer_t *buf) {
 static void object_print_on(value_t value, string_buffer_t *buf) {
   CHECK_DOMAIN(vdObject, value);
   value_t species = get_object_species(value);
-  behavior_t *behavior = get_species_behavior(species);
+  family_behavior_t *behavior = get_species_family_behavior(species);
   (behavior->print_on)(value, buf);
 }
 
 static void object_print_atomic_on(value_t value, string_buffer_t *buf) {
   CHECK_DOMAIN(vdObject, value);
   value_t species = get_object_species(value);
-  behavior_t *behavior = get_species_behavior(species);
+  family_behavior_t *behavior = get_species_family_behavior(species);
   (behavior->print_atomic_on)(value, buf);
 }
 
@@ -462,8 +463,8 @@ void value_print_atomic_on(value_t value, string_buffer_t *buf) {
 // Define all the family behaviors in one go. Because of this, as soon as you
 // add a new object type you'll get errors for all the behaviors you need to
 // implement.
-#define DEFINE_BEHAVIOR(Family, family)                                        \
-behavior_t k##Family##Behavior = {                                             \
+#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family)                          \
+family_behavior_t k##Family##Behavior = {                                      \
   &family##_validate,                                                          \
   &family##_transient_identity_hash,                                           \
   &family##_are_identical,                                                     \
@@ -471,5 +472,21 @@ behavior_t k##Family##Behavior = {                                             \
   &family##_print_atomic_on,                                                   \
   &get_##family##_heap_size                                                    \
 };
-ENUM_FAMILIES(DEFINE_BEHAVIOR)
-#undef DEFINE_BEHAVIOR
+ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
+#undef DEFINE_FAMILY_BEHAVIOR
+
+
+// --- S p e c i e s   h e a p   s i z e ---
+
+static size_t get_compact_species_heap_size(value_t species) {
+  return kCompactSpeciesSize;
+}
+
+// Define all the division behaviors.
+#define DEFINE_SPECIES_DIVISION_BEHAVIOR(Division, division)                   \
+division_behavior_t k##Division##Behavior = {                                  \
+  sd##Division,                                                                \
+  &get_##division##_species_heap_size                                          \
+};
+ENUM_SPECIES_DIVISIONS(DEFINE_SPECIES_DIVISION_BEHAVIOR)
+#undef DEFINE_SPECIES_DIVISION_BEHAVIOR

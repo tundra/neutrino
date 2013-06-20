@@ -33,17 +33,20 @@ value_t new_heap_blob(runtime_t *runtime, size_t length) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_species(runtime_t *runtime, object_family_t instance_family,
-    behavior_t *behavior) {
-  size_t bytes = kSpeciesSize;
+value_t new_heap_compact_species(runtime_t *runtime, object_family_t instance_family,
+    family_behavior_t *family_behavior) {
+  size_t bytes = kCompactSpeciesSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, bytes,
       runtime->roots.species_species));
   set_species_instance_family(result, instance_family);
-  if (behavior == NULL) {
-    set_species_behavior(result, new_integer(0));
+  if (family_behavior == NULL) {
+    set_species_family_behavior(result, new_integer(0));
+    set_species_division_behavior(result, new_integer(0));
   } else {
-    TRY_DEF(void_p, new_heap_void_p(runtime, behavior));
-    set_species_behavior(result, void_p);
+    TRY_DEF(family_ptr, new_heap_void_p(runtime, family_behavior));
+    set_species_family_behavior(result, family_ptr);
+    TRY_DEF(division_ptr, new_heap_void_p(runtime, &kCompactBehavior));
+    set_species_division_behavior(result, division_ptr);
   }
   return result;
 }
