@@ -2,6 +2,7 @@
 #include "check.h"
 #include "test.h"
 #include "utils.h"
+#include "value-inl.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -83,6 +84,26 @@ static bool array_structural_equal(value_t a, value_t b) {
   return true;
 }
 
+static bool id_hash_map_structural_equal(value_t a, value_t b) {
+  CHECK_FAMILY(ofIdHashMap, a);
+  CHECK_FAMILY(ofIdHashMap, b);
+  if (get_id_hash_map_size(a) != get_id_hash_map_size(b))
+    return false;
+  id_hash_map_iter_t iter;
+  id_hash_map_iter_init(&iter, a);
+  while (id_hash_map_iter_advance(&iter)) {
+    value_t key;
+    value_t a_value;
+    id_hash_map_iter_get_current(&iter, &key, &a_value);
+    value_t b_value = get_id_hash_map_at(b, key);
+    if (is_signal(scNotFound, b_value))
+      return false;
+    if (!value_structural_equal(a_value, b_value))
+      return false;
+  }
+  return true;
+}
+
 static bool object_structural_equal(value_t a, value_t b) {
   CHECK_DOMAIN(vdObject, a);
   CHECK_DOMAIN(vdObject, b);
@@ -93,6 +114,8 @@ static bool object_structural_equal(value_t a, value_t b) {
   switch (a_family) {
     case ofArray:
       return array_structural_equal(a, b);
+    case ofIdHashMap:
+      return id_hash_map_structural_equal(a, b);
     default:
       return value_are_identical(a, b);
   }
