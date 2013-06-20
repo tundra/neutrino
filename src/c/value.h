@@ -74,7 +74,8 @@ static value_t success() {
   F(ValidationFailed)                                                          \
   F(UnsupportedBehavior)                                                       \
   F(MapFull)                                                                   \
-  F(NotFound)
+  F(NotFound)                                                                  \
+  F(InvalidInput)
 
 // Enum identifying the type of a signal.
 typedef enum {
