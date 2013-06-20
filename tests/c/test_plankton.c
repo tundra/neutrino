@@ -78,7 +78,6 @@ TEST(plankton, string) {
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
-
 TEST(plankton, instance) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
