@@ -103,6 +103,9 @@ void string_buffer_init(string_buffer_t *buf, allocator_t *allocator);
 // Disposes the given string buffer.
 void string_buffer_dispose(string_buffer_t *buf);
 
+// Add a single character to this buffer.
+void string_buffer_putc(string_buffer_t *buf, char c);
+
 // Append the given text to the given buffer.
 void string_buffer_printf(string_buffer_t *buf, const char *format, ...);
 

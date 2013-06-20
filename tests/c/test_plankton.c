@@ -56,13 +56,21 @@ TEST(plankton, map) {
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
+// Declares a new variable that holds a heap string with the given contents.
+#define DEF_HEAP_STR(name, value)                                              \
+DEF_STR(name##_chars, value);                                                  \
+value_t name = new_heap_string(&runtime, &name##_chars);
+
 TEST(plankton, string) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
-  DEF_STR(foo_chars, "foo");
-  value_t foo = new_heap_string(&runtime, &foo_chars);
+  DEF_HEAP_STR(foo, "foo");
   check_plankton(&runtime, foo);
+  DEF_HEAP_STR(empty, "");
+  check_plankton(&runtime, empty);
+  DEF_HEAP_STR(hello, "Hello, World!");
+  check_plankton(&runtime, hello);
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
