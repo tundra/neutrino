@@ -94,3 +94,27 @@ TEST(plankton, instance) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+TEST(plankton, references) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t i0 = new_heap_instance(&runtime);
+  value_t i1 = new_heap_instance(&runtime);
+  value_t i2 = new_heap_instance(&runtime);
+  value_t array = new_heap_array(&runtime, 6);
+  set_array_at(array, 0, i0);
+  set_array_at(array, 1, i2);
+  set_array_at(array, 2, i0);
+  set_array_at(array, 3, i1);
+  set_array_at(array, 4, i2);
+  set_array_at(array, 5, i1);
+  value_t decoded = check_plankton(&runtime, array);
+  ASSERT_EQ(get_array_at(decoded, 0), get_array_at(decoded, 2));
+  ASSERT_FALSE(get_array_at(decoded, 0) == get_array_at(decoded, 1));
+  ASSERT_EQ(get_array_at(decoded, 1), get_array_at(decoded, 4));
+  ASSERT_FALSE(get_array_at(decoded, 1) == get_array_at(decoded, 3));
+  ASSERT_EQ(get_array_at(decoded, 3), get_array_at(decoded, 5));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}

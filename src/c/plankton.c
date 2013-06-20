@@ -49,8 +49,30 @@ byte_t byte_stream_read(byte_stream_t *stream) {
 
 // --- S e r i a l i z e ---
 
+// Collection of state used when serializing data.
+typedef struct {
+  // The buffer we're writing the output to.
+  byte_buffer_t *buf;
+  // Map from objects we've seen to their index.
+  value_t ref_map;
+  // The offset of the next object we're going to write.
+  size_t object_offset;
+  // The runtime to use for heap allocation.
+  runtime_t *runtime;
+} serialize_state_t;
+
+// Initialize serialization state.
+static value_t serialize_state_init(serialize_state_t *state, runtime_t *runtime,
+    byte_buffer_t *buf) {
+  state->buf = buf;
+  state->object_offset = 0;
+  state->runtime = runtime;
+  TRY_SET(state->ref_map, new_heap_id_hash_map(runtime, 16));
+  return success();
+}
+
 // Serialize any (non-signal) value on the given buffer.
-static value_t value_serialize(value_t value, byte_buffer_t *buf);
+static value_t value_serialize(value_t value, serialize_state_t *state);
 
 // Encodes an unsigned 32-bit integer.
 static value_t encode_uint32(uint32_t value, byte_buffer_t *buf) {
@@ -86,22 +108,22 @@ static value_t singleton_serialize(plankton_tag_t tag, byte_buffer_t *buf) {
   return success();
 }
 
-static value_t array_serialize(value_t value, byte_buffer_t *buf) {
+static value_t array_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofArray, value);
-  byte_buffer_append(buf, pArray);
+  byte_buffer_append(state->buf, pArray);
   size_t length = get_array_length(value);
-  encode_uint32(length, buf);
+  encode_uint32(length, state->buf);
   for (size_t i = 0; i < length; i++) {
-    TRY(value_serialize(get_array_at(value, i), buf));
+    TRY(value_serialize(get_array_at(value, i), state));
   }
   return success();
 }
 
-static value_t map_serialize(value_t value, byte_buffer_t *buf) {
+static value_t map_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofIdHashMap, value);
-  byte_buffer_append(buf, pMap);
+  byte_buffer_append(state->buf, pMap);
   size_t entry_count = get_id_hash_map_size(value);
-  encode_uint32(entry_count, buf);
+  encode_uint32(entry_count, state->buf);
   id_hash_map_iter_t iter;
   id_hash_map_iter_init(&iter, value);
   size_t entries_written = 0;
@@ -109,8 +131,8 @@ static value_t map_serialize(value_t value, byte_buffer_t *buf) {
     value_t key;
     value_t value;
     id_hash_map_iter_get_current(&iter, &key, &value);
-    TRY(value_serialize(key, buf));
-    TRY(value_serialize(value, buf));
+    TRY(value_serialize(key, state));
+    TRY(value_serialize(value, state));
     entries_written++;
   }
   CHECK_EQ("serialized map length", entry_count, entries_written);
@@ -129,39 +151,55 @@ static value_t string_serialize(value_t value, byte_buffer_t *buf) {
   return success();
 }
 
-static value_t instance_serialize(value_t value, byte_buffer_t *buf) {
+static value_t instance_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofInstance, value);
-  byte_buffer_append(buf, pObject);
-  byte_buffer_append(buf, pNull);
-  return value_serialize(get_instance_fields(value), buf);
+  value_t ref = get_id_hash_map_at(state->ref_map, value);
+  if (is_signal(scNotFound, ref)) {
+    // We haven't seen this object before. Assign an offset to it.
+    size_t offset = state->object_offset;
+    state->object_offset++;
+    set_id_hash_map_at(state->runtime, state->ref_map, value, new_integer(offset));
+    // The write it.
+    byte_buffer_append(state->buf, pObject);
+    byte_buffer_append(state->buf, pNull);
+    return value_serialize(get_instance_fields(value), state);
+  } else {
+    // We've already seen this object; write a reference back to the last time
+    // we saw it.
+    size_t delta = get_integer_value(ref);
+    size_t offset = state->object_offset - delta - 1;
+    byte_buffer_append(state->buf, pReference);
+    encode_uint32(offset, state->buf);
+    return success();
+  }
 }
 
-static value_t object_serialize(value_t value, byte_buffer_t *buf) {
+static value_t object_serialize(value_t value, serialize_state_t *state) {
   CHECK_DOMAIN(vdObject, value);
   switch (get_object_family(value)) {
     case ofNull:
-      return singleton_serialize(pNull, buf);
+      return singleton_serialize(pNull, state->buf);
     case ofBool:
-      return singleton_serialize(get_bool_value(value) ? pTrue : pFalse, buf);
+      return singleton_serialize(get_bool_value(value) ? pTrue : pFalse, state->buf);
     case ofArray:
-      return array_serialize(value, buf);
+      return array_serialize(value, state);
     case ofIdHashMap:
-      return map_serialize(value, buf);
+      return map_serialize(value, state);
     case ofString:
-      return string_serialize(value, buf);
+      return string_serialize(value, state->buf);
     case ofInstance:
-      return instance_serialize(value, buf);
+      return instance_serialize(value, state);
     default:
       return new_signal(scInvalidInput);
   }
 }
 
-static value_t value_serialize(value_t data, byte_buffer_t *buf) {
+static value_t value_serialize(value_t data, serialize_state_t *state) {
   switch (get_value_domain(data)) {
     case vdInteger:
-      return integer_serialize(data, buf);
+      return integer_serialize(data, state->buf);
     case vdObject:
-      return object_serialize(data, buf);
+      return object_serialize(data, state);
     default:
       UNREACHABLE("value serialize");
       return new_signal(scUnsupportedBehavior);
@@ -172,7 +210,9 @@ value_t plankton_serialize(runtime_t *runtime, value_t data) {
   // Write the data to a C heap blob.
   byte_buffer_t buf;
   byte_buffer_init(&buf, NULL);
-  TRY(value_serialize(data, &buf));
+  serialize_state_t state;
+  TRY(serialize_state_init(&state, runtime, &buf));
+  TRY(value_serialize(data, &state));
   blob_t buffer_data;
   byte_buffer_flush(&buf, &buffer_data);
   // Allocate the blob object to hold the result.
@@ -188,8 +228,31 @@ value_t plankton_serialize(runtime_t *runtime, value_t data) {
 
 // --- D e s e r i a l i z e ---
 
+// Collection of state used when serializing data.
+typedef struct {
+  // The buffer we're reading input from.
+  byte_stream_t *in;
+  // Map from object offsets we've seen to their values.
+  value_t ref_map;
+  // The offset of the next object we're going to write.
+  size_t object_offset;
+  // The runtime to use for heap allocation.
+  runtime_t *runtime;
+} deserialize_state_t;
+
+// Initialize deserialization state.
+static value_t deserialize_state_init(deserialize_state_t *state, runtime_t *runtime,
+    byte_stream_t *in) {
+  state->in = in;
+  state->object_offset = 0;
+  state->runtime = runtime;
+  TRY_SET(state->ref_map, new_heap_id_hash_map(runtime, 16));
+  return success();
+}
+
+
 // Reads the next value from the stream.
-static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in);
+static value_t value_deserialize(deserialize_state_t *state);
 
 static uint32_t uint32_deserialize(byte_stream_t *in) {
   byte_t current = 0xFF;
@@ -210,67 +273,81 @@ static value_t int32_deserialize(byte_stream_t *in) {
   return new_integer(value);
 }
 
-static value_t array_deserialize(runtime_t *runtime, byte_stream_t *in) {
-  size_t length = uint32_deserialize(in);
-  TRY_DEF(result, new_heap_array(runtime, length));
+static value_t array_deserialize(deserialize_state_t *state) {
+  size_t length = uint32_deserialize(state->in);
+  TRY_DEF(result, new_heap_array(state->runtime, length));
   for (size_t i = 0; i < length; i++) {
-    TRY_DEF(value, value_deserialize(runtime, in));
+    TRY_DEF(value, value_deserialize(state));
     set_array_at(result, i, value);
   }
   return result;
 }
 
-static value_t map_deserialize(runtime_t *runtime, byte_stream_t *in) {
-  size_t entry_count = uint32_deserialize(in);
-  TRY_DEF(result, new_heap_id_hash_map(runtime, 16));
+static value_t map_deserialize(deserialize_state_t *state) {
+  size_t entry_count = uint32_deserialize(state->in);
+  TRY_DEF(result, new_heap_id_hash_map(state->runtime, 16));
   for (size_t i = 0; i < entry_count; i++) {
-    TRY_DEF(key, value_deserialize(runtime, in));
-    TRY_DEF(value, value_deserialize(runtime, in));
-    set_id_hash_map_at(runtime, result, key, value);
+    TRY_DEF(key, value_deserialize(state));
+    TRY_DEF(value, value_deserialize(state));
+    set_id_hash_map_at(state->runtime, result, key, value);
   }
   return result;
 }
 
-static value_t string_deserialize(runtime_t *runtime, byte_stream_t *in) {
+static value_t string_deserialize(deserialize_state_t *state) {
   string_buffer_t buf;
   string_buffer_init(&buf, NULL);
-  size_t length = uint32_deserialize(in);
+  size_t length = uint32_deserialize(state->in);
   for (size_t i = 0; i < length; i++)
-    string_buffer_putc(&buf, byte_stream_read(in));
+    string_buffer_putc(&buf, byte_stream_read(state->in));
   string_t contents;
   string_buffer_flush(&buf, &contents);
-  TRY_DEF(result, new_heap_string(runtime, &contents));
+  TRY_DEF(result, new_heap_string(state->runtime, &contents));
   string_buffer_dispose(&buf);
   return result;
 }
 
-static value_t object_deserialize(runtime_t *runtime, byte_stream_t *in) {
-  TRY_DEF(header, value_deserialize(runtime, in));
+static value_t object_deserialize(deserialize_state_t *state) {
+  size_t offset = state->object_offset;
+  state->object_offset++;
+  TRY_DEF(result, new_heap_instance(state->runtime));
+  TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
+      result));
+  TRY_DEF(header, value_deserialize(state));
   CHECK_FAMILY(ofNull, header);
-  TRY_DEF(payload, value_deserialize(runtime, in));
-  TRY_DEF(result, new_heap_instance(runtime));
+  TRY_DEF(payload, value_deserialize(state));
   set_instance_fields(result, payload);
   return result;
 }
 
-static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in) {
-  switch (byte_stream_read(in)) {
+static value_t reference_deserialize(deserialize_state_t *state) {
+  size_t offset = uint32_deserialize(state->in);
+  size_t index = state->object_offset - offset - 1;
+  value_t result = get_id_hash_map_at(state->ref_map, new_integer(index));
+  CHECK_FALSE("missing reference", is_signal(scNotFound, result));
+  return result;
+}
+
+static value_t value_deserialize(deserialize_state_t *state) {
+  switch (byte_stream_read(state->in)) {
     case pInt32:
-      return int32_deserialize(in);
+      return int32_deserialize(state->in);
     case pNull:
-      return runtime_null(runtime);
+      return runtime_null(state->runtime);
     case pTrue:
-      return runtime_bool(runtime, true);
+      return runtime_bool(state->runtime, true);
     case pFalse:
-      return runtime_bool(runtime, false);
+      return runtime_bool(state->runtime, false);
     case pArray:
-      return array_deserialize(runtime, in);
+      return array_deserialize(state);
     case pMap:
-      return map_deserialize(runtime, in);
+      return map_deserialize(state);
     case pString:
-      return string_deserialize(runtime, in);
+      return string_deserialize(state);
     case pObject:
-      return object_deserialize(runtime, in);
+      return object_deserialize(state);
+    case pReference:
+      return reference_deserialize(state);
     default:
       return new_signal(scInvalidInput);
   }
@@ -281,5 +358,7 @@ value_t plankton_deserialize(runtime_t *runtime, value_t blob) {
   get_blob_data(blob, &data);
   byte_stream_t in;
   byte_stream_init(&in, &data);
-  return value_deserialize(runtime, &in);
+  deserialize_state_t state;
+  TRY(deserialize_state_init(&state, runtime, &in));
+  return value_deserialize(&state);
 }

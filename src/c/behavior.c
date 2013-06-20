@@ -190,7 +190,8 @@ static value_t id_hash_map_transient_identity_hash(value_t value) {
 }
 
 static value_t instance_transient_identity_hash(value_t value) {
-  return new_signal(scUnsupportedBehavior);
+  size_t hash = (size_t) value;
+  return new_integer(hash);
 }
 
 
