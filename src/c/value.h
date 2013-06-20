@@ -226,7 +226,7 @@ struct family_behavior_t;
 struct family_behavior_t *get_species_family_behavior(value_t species);
 
 // Sets the object family behavior of this species.
-void set_species_family_behavior(value_t species, value_t behavior);
+void set_species_family_behavior(value_t species, struct family_behavior_t *behavior);
 
 struct division_behavior_t;
 
@@ -234,7 +234,7 @@ struct division_behavior_t;
 struct division_behavior_t *get_species_division_behavior(value_t species);
 
 // Sets the species division behavior of this species.
-void set_species_division_behavior(value_t species, value_t behavior);
+void set_species_division_behavior(value_t species, struct division_behavior_t *behavior);
 
 
 // --- C o m p a c t   s p e c i e s ---

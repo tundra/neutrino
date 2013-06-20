@@ -24,6 +24,11 @@ value_t new_heap_blob(runtime_t *runtime, size_t length);
 value_t new_heap_compact_species(runtime_t *runtime, object_family_t instance_family,
     family_behavior_t *behavior);
 
+// Allocates a new species whose instances have the specified instance family.
+// The result will not be sanity checked.
+value_t new_heap_compact_species_unchecked(runtime_t *runtime,
+    object_family_t instance_family, family_behavior_t *behavior);
+
 // Allocates a new heap array in the given runtime with room for the given
 // number of elements. The array will be initialized to null.
 value_t new_heap_array(runtime_t *runtime, size_t length);

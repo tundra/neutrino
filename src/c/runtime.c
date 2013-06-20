@@ -10,23 +10,12 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
 
   // First set up the meta-species which it its own species. We can't give it
   // behavior yet because we're not ready to create void-ps yet.
-  TRY_DEF(meta, new_heap_compact_species(runtime, ofSpecies, NULL));
+  TRY_DEF(meta, new_heap_compact_species_unchecked(runtime, ofSpecies, &kSpeciesBehavior));
   set_object_species(meta, meta);
   roots->species_species = meta;
-  // Then set up the void-p species which is what we need for the behavior
-  // pointers.
-  TRY_DEF(void_p_species, new_heap_compact_species(runtime, ofVoidP, NULL));
-  roots->void_p_species = void_p_species;
-  // Finally set up the behavior pointers manually.
-  TRY_DEF(compact_behavior, new_heap_void_p(runtime, &kCompactBehavior));
-  TRY_DEF(meta_behavior, new_heap_void_p(runtime, &kSpeciesBehavior));
-  set_species_family_behavior(meta, meta_behavior);
-  set_species_division_behavior(meta, compact_behavior);
-  TRY_DEF(void_p_behavior, new_heap_void_p(runtime, &kVoidPBehavior));
-  set_species_family_behavior(void_p_species, void_p_behavior);
-  set_species_division_behavior(void_p_species, compact_behavior);
 
   // The other species are straightforward.
+  TRY_SET(roots->void_p_species, new_heap_compact_species(runtime, ofVoidP, &kVoidPBehavior));
   TRY_SET(roots->string_species, new_heap_compact_species(runtime, ofString, &kStringBehavior));
   TRY_SET(roots->blob_species, new_heap_compact_species(runtime, ofBlob, &kBlobBehavior));
   TRY_SET(roots->array_species, new_heap_compact_species(runtime, ofArray, &kArrayBehavior));
