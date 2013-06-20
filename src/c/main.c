@@ -39,10 +39,10 @@ static value_t neutrino_main(int argc, char *argv[]) {
     const char *filename = argv[i];
     value_t input;
     if (strcmp("-", filename) == 0) {
-      input = read_file_to_blob(&runtime, stdin);
+      TRY_SET(input, read_file_to_blob(&runtime, stdin));
     } else {
       FILE *file = fopen(filename, "r");
-      input = read_file_to_blob(&runtime, file);
+      TRY_SET(input, read_file_to_blob(&runtime, file));
       fclose(file);
     }
     TRY_DEF(value, plankton_deserialize(&runtime, input));
