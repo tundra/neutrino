@@ -296,6 +296,12 @@ static void integer_print_atomic_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, "%lli", get_integer_value(value));
 }
 
+static void signal_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_DOMAIN(vdSignal, value);
+  signal_cause_t cause = get_signal_cause(value);
+  string_buffer_printf(buf, "%%<signal: %s>", signal_cause_name(cause));
+}
+
 static void object_print_on(value_t value, string_buffer_t *buf) {
   CHECK_DOMAIN(vdObject, value);
   value_t species = get_object_species(value);
@@ -380,7 +386,19 @@ static void string_print_on(value_t value, string_buffer_t *buf) {
 
 static void blob_print_atomic_on(value_t value, string_buffer_t *buf) {
   CHECK_FAMILY(ofBlob, value);
-  string_buffer_printf(buf, "#<blob[%i]>", (int) get_blob_length(value));
+  string_buffer_printf(buf, "#<blob: [");
+  blob_t blob;
+  get_blob_data(value, &blob);
+  size_t length = blob_length(&blob);
+  size_t bytes_to_show = (length <= 8) ? length : 8;
+  for (size_t i = 0; i < bytes_to_show; i++) {
+    static const char *kChars = "0123456789abcdef";
+    byte_t byte = blob_byte_at(&blob, i);
+    string_buffer_printf(buf, "%c%c", kChars[byte >> 4], kChars[byte & 0xF]);
+  }
+  if (bytes_to_show < length)
+    string_buffer_printf(buf, "...");
+  string_buffer_printf(buf, "]>");
 }
 
 static void blob_print_on(value_t value, string_buffer_t *buf) {
@@ -412,6 +430,9 @@ void value_print_on(value_t value, string_buffer_t *buf) {
       break;
     case vdObject:
       object_print_on(value, buf);
+      break;
+    case vdSignal:
+      signal_print_atomic_on(value, buf);
       break;
     default:
       UNREACHABLE("value print on");

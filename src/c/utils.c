@@ -159,3 +159,43 @@ void string_buffer_flush(string_buffer_t *buf, string_t *str_out) {
   str_out->length = buf->length;
   str_out->chars = buf->chars;
 }
+
+
+// --- B y t e   b u f f e r ---
+
+void byte_buffer_init(byte_buffer_t *buf, allocator_t *alloc_or_null) {
+  if (alloc_or_null == NULL) {
+    init_system_allocator(&buf->allocator);
+  } else {
+    buf->allocator = *alloc_or_null;
+  }
+  buf->length = 0;
+  buf->capacity = 128;
+  buf->data = allocator_malloc(&buf->allocator, buf->capacity);
+}
+
+void byte_buffer_dispose(byte_buffer_t *buf) {
+  allocator_free(&buf->allocator, (address_t) buf->data);
+}
+
+// Expands the buffer to make room for 'length' characters if necessary.
+static void byte_buffer_ensure_capacity(byte_buffer_t *buf, size_t length) {
+  if (length < buf->capacity)
+    return;
+  size_t new_capacity = (length * 2);
+  uint8_t *new_data = allocator_malloc(&buf->allocator, new_capacity);
+  memcpy(new_data, buf->data, buf->length);
+  allocator_free(&buf->allocator, (address_t) buf->data);
+  buf->data = new_data;
+  buf->capacity = new_capacity;
+}
+
+void byte_buffer_append(byte_buffer_t *buf, uint8_t value) {
+  byte_buffer_ensure_capacity(buf, buf->length + 1);
+  buf->data[buf->length] = value;
+  buf->length++;
+}
+
+void byte_buffer_flush(byte_buffer_t *buf, blob_t *blob_out) {
+  blob_init(blob_out, buf->data, buf->length);
+}
