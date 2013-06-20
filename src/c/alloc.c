@@ -151,3 +151,9 @@ value_t set_id_hash_map_at(runtime_t *runtime, value_t map, value_t key, value_t
     return first_try;
   }
 }
+
+value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,
+    value_t value) {
+  value_t fields = get_instance_fields(instance);
+  return set_id_hash_map_at(runtime, fields, key, value);
+}
