@@ -71,6 +71,6 @@ ASSERT_CLASS(signal_cause_t, scCause, EXPR, get_signal_cause)
 } while (false)
 
 // Declares a new string_t variable and initializes it with the given contents.
-#define DEF_STRING(name, contents) \
-string_t name;                     \
+#define DEF_STR(name, contents)                                                \
+string_t name;                                                                 \
 string_init(&name, contents)

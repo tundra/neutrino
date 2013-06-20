@@ -7,7 +7,7 @@ TEST(behavior, string_validation) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
-  DEF_STRING(chars, "Hut!");
+  DEF_STR(chars, "Hut!");
   value_t str = new_heap_string(&runtime, &chars);
 
   // String starts out validating.
@@ -37,9 +37,9 @@ TEST(behavior, identity) {
   ASSERT_FALSE(equal(new_integer(1), new_integer(0)));
 
   // Strings
-  DEF_STRING(foo_chars, "foo");
+  DEF_STR(foo_chars, "foo");
   value_t foo = new_heap_string(&runtime, &foo_chars);
-  DEF_STRING(bar_chars, "bar");
+  DEF_STR(bar_chars, "bar");
   value_t bar = new_heap_string(&runtime, &bar_chars);
   ASSERT_SUCCESS(hash(foo));
   ASSERT_FALSE(hash(foo) == hash(bar));
@@ -71,7 +71,7 @@ static void check_print_on(const char *expected_chars, value_t value) {
   value_print_on(value, &buf);
   string_t result;
   string_buffer_flush(&buf, &result);
-  DEF_STRING(expected, expected_chars);
+  DEF_STR(expected, expected_chars);
   ASSERT_STREQ(&expected, &result);
 
   string_buffer_dispose(&buf);
@@ -92,10 +92,10 @@ TEST(behavior, print_on) {
   check_print_on("false", runtime_bool(&runtime, false));
 
   // Strings
-  DEF_STRING(foo_chars, "foo");
+  DEF_STR(foo_chars, "foo");
   value_t foo = new_heap_string(&runtime, &foo_chars);
   check_print_on("\"foo\"", foo);
-  DEF_STRING(empty_chars, "");
+  DEF_STR(empty_chars, "");
   value_t empty = new_heap_string(&runtime, &empty_chars);
   check_print_on("\"\"", empty);
 

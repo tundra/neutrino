@@ -55,3 +55,14 @@ TEST(plankton, map) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+TEST(plankton, string) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  DEF_STR(foo_chars, "foo");
+  value_t foo = new_heap_string(&runtime, &foo_chars);
+  check_plankton(&runtime, foo);
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
