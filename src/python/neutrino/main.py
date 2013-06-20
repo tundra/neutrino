@@ -30,6 +30,7 @@ class Main(object):
     parser = optparse.OptionParser()
     parser.add_option('--expression', action='append', default=[])
     parser.add_option('--filter', action='store_true', default=False)
+    parser.add_option('--base64', action='store_true', default=False)
     return parser
 
   # Parses the script arguments, storing the values in the appropriate fields.
@@ -65,7 +66,13 @@ class Main(object):
     for expr in self.flags.expression:
       tokens = token.tokenize(expr)
       ast = parser.Parser(tokens).parse_expression()
-      print "p64/%s" % plankton.base64encode(ast)
+      self.output_value(ast)
+
+  def output_value(self, value):
+    if self.flags.base64:
+      print "p64/%s" % plankton.base64encode(value)
+    else:
+      sys.stdout.write(plankton.serialize(value))
 
 
 if __name__ == '__main__':

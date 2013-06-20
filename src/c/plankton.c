@@ -130,8 +130,7 @@ static value_t object_serialize(value_t value, byte_buffer_t *buf) {
     case ofIdHashMap:
       return map_serialize(value, buf);
     default:
-      UNREACHABLE("object serialize");
-      return new_signal(scUnsupportedBehavior);
+      return new_signal(scInvalidInput);
   }
 }
 
@@ -225,8 +224,7 @@ static value_t value_deserialize(runtime_t *runtime, byte_stream_t *in) {
     case pMap:
       return map_deserialize(runtime, in);
     default:
-      UNREACHABLE("value deserialize");
-      return new_signal(scNotFound);
+      return new_signal(scInvalidInput);
   }
 }
 

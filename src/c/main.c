@@ -1,8 +1,10 @@
 #include "alloc.h"
+#include "plankton.h"
 #include "runtime.h"
 #include "value-inl.h"
 
 #include <unistd.h>
+#include <string.h>
 
 static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
   // Read the complete file into a byte buffer.
@@ -33,8 +35,19 @@ static value_t neutrino_main(int argc, char *argv[]) {
   runtime_t runtime;
   TRY(runtime_init(&runtime, NULL));
 
-  value_t input = read_file_to_blob(&runtime, stdin);
-  value_print_ln(input);
+  for (int i = 1; i < argc; i++) {
+    const char *filename = argv[i];
+    value_t input;
+    if (strcmp("-", filename) == 0) {
+      input = read_file_to_blob(&runtime, stdin);
+    } else {
+      FILE *file = fopen(filename, "r");
+      input = read_file_to_blob(&runtime, file);
+      fclose(file);
+    }
+    TRY_DEF(value, plankton_deserialize(&runtime, input));
+    value_print_ln(value);
+  }
 
   TRY(runtime_dispose(&runtime));
   return success();
