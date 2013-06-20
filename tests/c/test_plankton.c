@@ -2,14 +2,21 @@
 #include "plankton.h"
 #include "test.h"
 
-// Encodes and decodes a plankton value and checks that the result is the
-// same as the input. Returns the decoded value.
-static value_t check_plankton(runtime_t *runtime, value_t value) {
+// Encodes and decodes a plankton value and returns the result.
+static value_t transcode_plankton(runtime_t *runtime, value_t value) {
   // Encode and decode the value.
   value_t encoded = plankton_serialize(runtime, value);
   ASSERT_SUCCESS(encoded);
   value_t decoded = plankton_deserialize(runtime, encoded);
   ASSERT_SUCCESS(decoded);
+  return decoded;
+}
+
+
+// Encodes and decodes a plankton value and checks that the result is the
+// same as the input. Returns the decoded value.
+static value_t check_plankton(runtime_t *runtime, value_t value) {
+  value_t decoded = transcode_plankton(runtime, value);
   ASSERT_VALEQ(value, decoded);
   return decoded;
 }
@@ -115,6 +122,36 @@ TEST(plankton, references) {
   ASSERT_EQ(get_array_at(decoded, 1), get_array_at(decoded, 4));
   ASSERT_FALSE(get_array_at(decoded, 1) == get_array_at(decoded, 3));
   ASSERT_EQ(get_array_at(decoded, 3), get_array_at(decoded, 5));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
+
+TEST(plankton, cycles) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t i0 = new_heap_instance(&runtime);
+  value_t k0 = new_integer(78);
+  ASSERT_SUCCESS(set_instance_field(&runtime, i0, k0, i0));
+  value_t d0 = transcode_plankton(&runtime, i0);
+  ASSERT_EQ(d0, get_instance_field(d0, k0));
+
+  value_t i1 = new_heap_instance(&runtime);
+  value_t i2 = new_heap_instance(&runtime);
+  value_t i3 = new_heap_instance(&runtime);
+  value_t k1 = new_integer(79);
+  ASSERT_SUCCESS(set_instance_field(&runtime, i1, k0, i2));
+  ASSERT_SUCCESS(set_instance_field(&runtime, i1, k1, i3));
+  ASSERT_SUCCESS(set_instance_field(&runtime, i2, k1, i3));
+  ASSERT_SUCCESS(set_instance_field(&runtime, i3, k0, i1));
+  value_t d1 = transcode_plankton(&runtime, i1);
+  value_t d2 = get_instance_field(d1, k0);
+  value_t d3 = get_instance_field(d1, k1);
+  ASSERT_TRUE(d1 != d2);
+  ASSERT_TRUE(d1 != d3);
+  ASSERT_EQ(d3, get_instance_field(d2, k1));
+  ASSERT_EQ(d1, get_instance_field(d3, k0));
+
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
