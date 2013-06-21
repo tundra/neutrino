@@ -237,11 +237,13 @@ struct division_behavior_t *get_species_division_behavior(value_t species);
 // Sets the species division behavior of this species.
 void set_species_division_behavior(value_t species, struct division_behavior_t *behavior);
 
+// Returns the division the given species belongs to.
+species_division_t get_species_division(value_t value);
+
 
 // --- C o m p a c t   s p e c i e s ---
 
 static const size_t kCompactSpeciesSize = OBJECT_SIZE(3);
-
 
 
 // --- S t r i n g ---

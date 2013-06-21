@@ -107,3 +107,13 @@ TEST(alloc, void_p) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+TEST(alloc, literal) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t lit = new_heap_literal(&runtime, new_integer(0));
+  ASSERT_SUCCESS(lit);
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}

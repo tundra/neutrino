@@ -32,12 +32,15 @@ void check_fail(const char *file, int line, const char *fmt, ...);
 } while (false)
 
 // Check that fails unless the value is in the specified domain.
-#define CHECK_DOMAIN(vdDomain, EXPR) \
+#define CHECK_DOMAIN(vdDomain, EXPR)                                           \
 CHECK_CLASS(value_domain_t, vdDomain, EXPR, get_value_domain)
 
 // Check that fails unless the object is in the specified family.
-#define CHECK_FAMILY(ofFamily, EXPR) \
+#define CHECK_FAMILY(ofFamily, EXPR)                                           \
 CHECK_CLASS(object_family_t, ofFamily, EXPR, get_object_family)
+
+#define CHECK_DIVISION(sdDivision, EXPR)                                       \
+CHECK_CLASS(species_division_t, sdDivision, EXPR, get_species_division)
 
 // Fails if executed.
 #define UNREACHABLE(M) do {                                                    \

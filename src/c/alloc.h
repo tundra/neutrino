@@ -5,6 +5,7 @@
 #include "globals.h"
 #include "heap.h"
 #include "runtime.h"
+#include "syntax.h"
 #include "utils.h"
 #include "value.h"
 
@@ -47,6 +48,12 @@ value_t new_heap_instance(runtime_t *runtime);
 
 // Creates a new pointer wrapper around the given value.
 value_t new_heap_void_p(runtime_t *runtime, void *value);
+
+
+// --- S y n t a x ---
+
+// Creates a new literal syntax tree with the given value.
+value_t new_heap_literal(runtime_t *runtime, value_t value);
 
 // Allocates a new heap object in the given heap of the given size and
 // initializes it with the given type but requires the caller to complete

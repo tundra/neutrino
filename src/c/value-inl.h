@@ -36,6 +36,10 @@ static inline bool in_family(object_family_t family, value_t value) {
   return in_domain(vdObject, value) && (get_object_family(value) == family);
 }
 
+static inline bool in_division(species_division_t division, value_t value) {
+  return in_family(ofSpecies, value) && (get_species_division(value) == division);
+}
+
 // Returns true iff the value is a signal with the specified cause.
 static inline bool is_signal(signal_cause_t cause, value_t value) {
   return in_domain(vdSignal, value) && (get_signal_cause(value) == cause);

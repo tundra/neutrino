@@ -64,6 +64,10 @@ division_behavior_t *get_species_division_behavior(value_t value) {
   return VAL_TO_PTR(*access_object_field(value, kSpeciesDivisionBehaviorOffset));
 }
 
+species_division_t get_species_division(value_t value) {
+  return get_species_division_behavior(value)->division;
+}
+
 
 // --- S t r i n g ---
 
