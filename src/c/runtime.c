@@ -4,26 +4,17 @@
 #include "value-inl.h"
 
 value_t roots_init(roots_t *roots, runtime_t *runtime) {
-  // The first few roots are tricky because they depend on each other. We have
-  // to set them up manually rather than depend on it being done automatically
-  // as with the rest of them.
-
-  // First set up the meta-species which it its own species. We can't give it
-  // behavior yet because we're not ready to create void-ps yet.
+  // The meta-root is tricky because it is its own species. So we set it up in
+  // two steps.
   TRY_DEF(meta, new_heap_compact_species_unchecked(runtime, ofSpecies, &kSpeciesBehavior));
   set_object_species(meta, meta);
   roots->species_species = meta;
 
-  // The basic species are straightforward.
-  TRY_SET(roots->void_p_species, new_heap_compact_species(runtime, ofVoidP, &kVoidPBehavior));
-  TRY_SET(roots->string_species, new_heap_compact_species(runtime, ofString, &kStringBehavior));
-  TRY_SET(roots->blob_species, new_heap_compact_species(runtime, ofBlob, &kBlobBehavior));
-  TRY_SET(roots->array_species, new_heap_compact_species(runtime, ofArray, &kArrayBehavior));
-  TRY_SET(roots->id_hash_map_species, new_heap_compact_species(runtime, ofIdHashMap, &kIdHashMapBehavior));
-  TRY_SET(roots->null_species, new_heap_compact_species(runtime, ofNull, &kNullBehavior));
-  TRY_SET(roots->bool_species, new_heap_compact_species(runtime, ofBool, &kBoolBehavior));
-  TRY_SET(roots->instance_species, new_heap_compact_species(runtime, ofInstance, &kInstanceBehavior));
-  TRY_SET(roots->literal_ast_species, new_heap_compact_species(runtime, ofLiteralAst, &kLiteralAstBehavior));
+  // Generate initialization for the other compact species.
+#define CREATE_COMPACT_SPECIES(Family, family) \
+  TRY_SET(roots->family##_species, new_heap_compact_species(runtime, of##Family, &k##Family##Behavior));
+  ENUM_COMPACT_OBJECT_FAMILIES(CREATE_COMPACT_SPECIES)
+#undef CREATE_COMPACT_SPECIES
 
   // Singletons
   TRY_SET(roots->null, new_heap_null(runtime));
@@ -33,17 +24,12 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
 }
 
 void roots_clear(roots_t *roots) {
-  roots->species_species = success();
-  roots->void_p_species = success();
-  roots->string_species = success();
-  roots->blob_species = success();
-  roots->array_species = success();
-  roots->id_hash_map_species = success();
-  roots->null_species = success();
-  roots->bool_species = success();
-  roots->instance_species = success();
-  roots->literal_ast_species = success();
+  // Generate code for clearing the species.
+#define CLEAR_SPECIES_FIELD(Family, family) roots->family##_species = success();
+  ENUM_OBJECT_FAMILIES(CLEAR_SPECIES_FIELD)
+#undef CLEAR_SPECIES_FIELD
 
+  // Clear the singletons manually.
   roots->null = success();
   roots->thrue = success();
   roots->fahlse = success();
@@ -67,16 +53,12 @@ value_t roots_validate(roots_t *roots) {
     TRY(object_validate(value));                        \
   } while (false)
 
-  VALIDATE_SPECIES(ofSpecies, roots->species_species);
-  VALIDATE_SPECIES(ofVoidP, roots->void_p_species);
-  VALIDATE_SPECIES(ofString, roots->string_species);
-  VALIDATE_SPECIES(ofBlob, roots->blob_species);
-  VALIDATE_SPECIES(ofArray, roots->array_species);
-  VALIDATE_SPECIES(ofIdHashMap, roots->id_hash_map_species);
-  VALIDATE_SPECIES(ofNull, roots->null_species);
-  VALIDATE_SPECIES(ofBool, roots->bool_species);
-  VALIDATE_SPECIES(ofInstance, roots->instance_species);
+  // Generate validation for species.
+#define VALIDATE_SPECIES_FIELD(Family, family) VALIDATE_SPECIES(of##Family, roots->family##_species);
+  ENUM_OBJECT_FAMILIES(VALIDATE_SPECIES_FIELD)
+#undef VALIDATE_SPECIES_FIELD
 
+  // Validate singletons manually.
   VALIDATE_OBJECT(ofNull, roots->null);
   VALIDATE_OBJECT(ofBool, roots->thrue);
   VALIDATE_OBJECT(ofBool, roots->fahlse);
