@@ -136,9 +136,13 @@ static signal_cause_t get_signal_cause(value_t value) {
 
 // --- O b j e c t ---
 
-// Macro that invokes the given macro callback for each object family.
-#define ENUM_OBJECT_FAMILIES(F)                                                \
-  F(Species,    species)                                                       \
+// Enumerates the special species, the ones that require special handling during
+// startup.
+#define ENUM_SPECIAL_OBJECT_FAMILIES(F)                                        \
+  F(Species,    species)
+
+// Enumerates the compact object species.
+#define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
   F(String,     string)                                                        \
   F(Array,      array)                                                         \
   F(Null,       null)                                                          \
@@ -148,6 +152,11 @@ static signal_cause_t get_signal_cause(value_t value) {
   F(Instance,   instance)                                                      \
   F(VoidP,      void_p)                                                        \
   F(LiteralAst, literal_ast)
+
+// Enumerates all the object families.
+#define ENUM_OBJECT_FAMILIES(F)                                                \
+    ENUM_SPECIAL_OBJECT_FAMILIES(F)                                            \
+    ENUM_COMPACT_OBJECT_FAMILIES(F)
 
 // Enum identifying the different families of heap objects.
 typedef enum {
