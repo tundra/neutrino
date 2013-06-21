@@ -1,4 +1,5 @@
 #include "behavior.h"
+#include "syntax.h"
 #include "value-inl.h"
 
 // --- V a l i d a t i o n ---
@@ -480,6 +481,10 @@ ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 
 static size_t get_compact_species_heap_size(value_t species) {
   return kCompactSpeciesSize;
+}
+
+static size_t get_syntax_species_heap_size(value_t species) {
+  return kSyntaxSpeciesSize;
 }
 
 // Define all the division behaviors.

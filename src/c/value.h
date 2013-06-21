@@ -199,7 +199,8 @@ value_t get_object_species(value_t value);
 // --- S p e c i e s ---
 
 #define ENUM_SPECIES_DIVISIONS(F)                                              \
-  F(Compact, compact)
+  F(Compact, compact)                                                          \
+  F(Syntax,  syntax)
 
 // Identifies the division a species belongs to.
 typedef enum {
