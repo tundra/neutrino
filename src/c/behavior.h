@@ -43,11 +43,31 @@ bool value_are_identical(value_t a, value_t b);
 // string buffer.
 void value_print_on(value_t value, string_buffer_t *buf);
 
+// Prints a human-readable representation of the given value on the given
+// string buffer without descending into objects that may cause cycles.
+void value_print_atomic_on(value_t value, string_buffer_t *buf);
+
+// Returns a value suitable to be returned as a hash from the address of an
+// object.
+#define OBJ_ADDR_HASH(VAL) new_integer((size_t) (VAL))
+
 // Declare the behavior structs for all the families on one fell swoop.
 #define DECLARE_FAMILY_BEHAVIOR(Family, family) \
 extern family_behavior_t k##Family##Behavior;
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 #undef DECLARE_FAMILY_BEHAVIOR
+
+// Declare the functions that implement the behaviors too, that way they can be
+// implemented wherever.
+#define DECLARE_FAMILY_BEHAVIOR_IMPLS(Family, family)                          \
+value_t family##_validate(value_t value);                                      \
+value_t family##_transient_identity_hash(value_t value);                       \
+bool family##_are_identical(value_t a, value_t b);                             \
+void family##_print_on(value_t value, string_buffer_t *buf);                   \
+void family##_print_atomic_on(value_t value, string_buffer_t *buf);            \
+size_t get_##family##_heap_size(value_t value);
+ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR_IMPLS)
+#undef DECLARE_FAMILY_BEHAVIOR_IMPLS
 
 
 // Virtual methods that control how the species of a particular division behave.
@@ -58,9 +78,17 @@ typedef struct division_behavior_t {
   size_t (*get_species_heap_size)(value_t species);
 } division_behavior_t;
 
+// Declare the division behavior structs.
 #define DECLARE_DIVISION_BEHAVIOR(Division, division) \
 extern division_behavior_t k##Division##SpeciesBehavior;
 ENUM_SPECIES_DIVISIONS(DECLARE_DIVISION_BEHAVIOR)
 #undef DECLARE_DIVISION_BEHAVIOR
+
+// Declare all the division behaviors.
+#define DECLARE_DIVISION_BEHAVIOR_IMPLS(Division, division)                    \
+size_t get_##division##_species_heap_size(value_t species);
+ENUM_SPECIES_DIVISIONS(DECLARE_DIVISION_BEHAVIOR_IMPLS)
+#undef DECLARE_DIVISION_BEHAVIOR_IMPLS
+
 
 #endif // _BEHAVIOR
