@@ -68,6 +68,33 @@ species_division_t get_species_division(value_t value) {
   return get_species_division_behavior(value)->division;
 }
 
+value_t species_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofSpecies, value);
+  return success();
+}
+
+size_t get_species_heap_size(value_t value) {
+  division_behavior_t *behavior = get_species_division_behavior(value);
+  return (behavior->get_species_heap_size)(value);
+}
+
+value_t species_transient_identity_hash(value_t value) {
+  return new_signal(scUnsupportedBehavior);
+}
+
+bool species_are_identical(value_t a, value_t b) {
+  // Species compare using object identity.
+  return (a == b);
+}
+
+void species_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<species>");
+}
+
+void species_print_on(value_t value, string_buffer_t *buf) {
+  species_print_atomic_on(value, buf);
+}
+
 
 // --- S t r i n g ---
 
@@ -99,6 +126,46 @@ void get_string_contents(value_t value, string_t *out) {
   out->chars = get_string_chars(value);
 }
 
+value_t string_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofString, value);
+  // Check that the string is null-terminated.
+  size_t length = get_string_length(value);
+  VALIDATE(get_string_chars(value)[length] == '\0');
+  return success();
+}
+
+size_t get_string_heap_size(value_t value) {
+  return calc_string_size(get_string_length(value));
+}
+
+value_t string_transient_identity_hash(value_t value) {
+  string_t contents;
+  get_string_contents(value, &contents);
+  size_t hash = string_hash(&contents);
+  return new_integer(hash);
+}
+
+bool string_are_identical(value_t a, value_t b) {
+  CHECK_FAMILY(ofString, a);
+  CHECK_FAMILY(ofString, b);
+  string_t a_contents;
+  get_string_contents(a, &a_contents);
+  string_t b_contents;
+  get_string_contents(b, &b_contents);
+  return string_equals(&a_contents, &b_contents);
+}
+
+void string_print_on(value_t value, string_buffer_t *buf) {
+  string_print_atomic_on(value, buf);
+}
+
+void string_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofString, value);
+  string_t contents;
+  get_string_contents(value, &contents);
+  string_buffer_printf(buf, "\"%s\"", contents.chars);
+}
+
 
 // --- B l o b ---
 
@@ -125,6 +192,46 @@ void get_blob_data(value_t value, blob_t *blob_out) {
   blob_init(blob_out, data, length);
 }
 
+value_t blob_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofBlob, value);
+  return success();
+}
+
+size_t get_blob_heap_size(value_t value) {
+  return calc_blob_size(get_blob_length(value));
+}
+
+value_t blob_transient_identity_hash(value_t value) {
+  return new_signal(scUnsupportedBehavior);
+}
+
+bool blob_are_identical(value_t a, value_t b) {
+  CHECK_FAMILY(ofBlob, a);
+  CHECK_FAMILY(ofBlob, b);
+  return (a == b);
+}
+
+void blob_print_on(value_t value, string_buffer_t *buf) {
+  blob_print_atomic_on(value, buf);
+}
+
+void blob_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofBlob, value);
+  string_buffer_printf(buf, "#<blob: [");
+  blob_t blob;
+  get_blob_data(value, &blob);
+  size_t length = blob_length(&blob);
+  size_t bytes_to_show = (length <= 8) ? length : 8;
+  for (size_t i = 0; i < bytes_to_show; i++) {
+    static const char *kChars = "0123456789abcdef";
+    byte_t byte = blob_byte_at(&blob, i);
+    string_buffer_printf(buf, "%c%c", kChars[byte >> 4], kChars[byte & 0xF]);
+  }
+  if (bytes_to_show < length)
+    string_buffer_printf(buf, "...");
+  string_buffer_printf(buf, "]>");
+}
+
 
 // --- V o i d   P ---
 
@@ -136,6 +243,34 @@ void set_void_p_value(value_t value, void *ptr) {
 void *get_void_p_value(value_t value) {
   CHECK_FAMILY(ofVoidP, value);
   return VAL_TO_PTR(*access_object_field(value, kVoidPValueOffset));
+}
+
+value_t void_p_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofVoidP, value);
+  return success();
+}
+
+size_t get_void_p_heap_size(value_t value) {
+  return kVoidPSize;
+}
+
+value_t void_p_transient_identity_hash(value_t value) {
+  return new_signal(scUnsupportedBehavior);
+}
+
+bool void_p_are_identical(value_t a, value_t b) {
+  CHECK_FAMILY(ofVoidP, a);
+  CHECK_FAMILY(ofVoidP, b);
+  return (a == b);
+}
+
+void void_p_print_on(value_t value, string_buffer_t *buf) {
+  void_p_print_atomic_on(value, buf);
+}
+
+void void_p_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofVoidP, value);
+  string_buffer_printf(buf, "#<void*>");
 }
 
 
@@ -172,6 +307,38 @@ void set_array_at(value_t value, size_t index, value_t element) {
 value_t *get_array_elements(value_t value) {
   CHECK_FAMILY(ofArray, value);
   return access_object_field(value, kArrayElementsOffset);
+}
+
+value_t array_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofArray, value);
+  return success();
+}
+
+size_t get_array_heap_size(value_t value) {
+  return calc_array_size(get_array_length(value));
+}
+
+value_t array_transient_identity_hash(value_t value) {
+  return new_signal(scUnsupportedBehavior);
+}
+
+bool array_are_identical(value_t a, value_t b) {
+  // Arrays compare using object identity.
+  return (a == b);
+}
+
+void array_print_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "[");
+  for (size_t i = 0; i < get_array_length(value); i++) {
+    if (i > 0)
+      string_buffer_printf(buf, ", ");
+    value_print_atomic_on(get_array_at(value, i), buf);
+  }
+  string_buffer_printf(buf, "]");
+}
+
+void array_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<array[%i]>", (int) get_array_length(value));
 }
 
 
@@ -358,6 +525,80 @@ void id_hash_map_iter_get_current(id_hash_map_iter_t *iter, value_t *key_out, va
   *value_out = get_id_hash_map_entry_value(iter->current);
 }
 
+value_t id_hash_map_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofIdHashMap, value);
+  value_t entry_array = get_id_hash_map_entry_array(value);
+  VALIDATE_VALUE_FAMILY(ofArray, entry_array);
+  size_t capacity = get_id_hash_map_capacity(value);
+  VALIDATE(get_id_hash_map_size(value) < capacity);
+  VALIDATE(get_array_length(entry_array) == (capacity * kIdHashMapEntryFieldCount));
+  return success();
+}
+
+size_t get_id_hash_map_heap_size(value_t value) {
+  return kIdHashMapSize;
+}
+
+value_t id_hash_map_transient_identity_hash(value_t value) {
+  return new_signal(scUnsupportedBehavior);
+}
+
+bool id_hash_map_are_identical(value_t a, value_t b) {
+  // Maps compare using object identity.
+  return (a == b);
+}
+
+void id_hash_map_print_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "{");
+  id_hash_map_iter_t iter;
+  id_hash_map_iter_init(&iter, value);
+  while (id_hash_map_iter_advance(&iter)) {
+    value_t key;
+    value_t value;
+    id_hash_map_iter_get_current(&iter, &key, &value);
+    value_print_on(key, buf);
+    string_buffer_printf(buf, ": ");
+    value_print_on(value, buf);
+  }
+  string_buffer_printf(buf, "}");
+}
+
+void id_hash_map_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<map{%i}>", (int) get_id_hash_map_size(value));
+}
+
+
+// --- N u l l ---
+
+value_t null_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofNull, value);
+  return success();
+}
+
+size_t get_null_heap_size(value_t value) {
+  return kNullSize;
+}
+
+value_t null_transient_identity_hash(value_t value) {
+  static const size_t kNullHash = 0x4323;
+  return kNullHash;
+}
+
+bool null_are_identical(value_t a, value_t b) {
+  // There is only one null so you should never end up comparing two different
+  // ones.
+  CHECK_EQ("multiple nulls", a, b);
+  return true;
+}
+
+void null_print_on(value_t value, string_buffer_t *buf) {
+  null_print_atomic_on(value, buf);
+}
+
+void null_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "null");
+}
+
 
 // --- B o o l ---
 
@@ -369,6 +610,36 @@ void set_bool_value(value_t value, bool truth) {
 bool get_bool_value(value_t value) {
   CHECK_FAMILY(ofBool, value);
   return get_integer_value(*access_object_field(value, kBoolValueOffset));
+}
+
+value_t bool_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofBool, value);
+  bool which = get_bool_value(value);
+  VALIDATE((which == true) || (which == false));
+  return success();
+}
+
+size_t get_bool_heap_size(value_t value) {
+  return kBoolSize;
+}
+
+value_t bool_transient_identity_hash(value_t value) {
+  static const size_t kTrueHash = 0x3213;
+  static const size_t kFalseHash = 0x5423;
+  return get_bool_value(value) ? kTrueHash : kFalseHash;
+}
+
+bool bool_are_identical(value_t a, value_t b) {
+  // There is only one true and false which are both only equal to themselves.
+  return (a == b);
+}
+
+void bool_print_on(value_t value, string_buffer_t *buf) {
+  bool_print_atomic_on(value, buf);
+}
+
+void bool_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, get_bool_value(value) ? "true" : "false");
 }
 
 
@@ -393,6 +664,38 @@ value_t get_instance_field(value_t value, value_t key) {
 value_t try_set_instance_field(value_t instance, value_t key, value_t value) {
   value_t fields = get_instance_fields(instance);
   return try_set_id_hash_map_at(fields, key, value);
+}
+
+value_t instance_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofInstance, value);
+  value_t fields = get_instance_fields(value);
+  VALIDATE_VALUE_FAMILY(ofIdHashMap, fields);
+  return success();
+}
+
+size_t get_instance_heap_size(value_t value) {
+  return kInstanceSize;
+}
+
+value_t instance_transient_identity_hash(value_t value) {
+  return OBJ_ADDR_HASH(value);
+}
+
+bool instance_are_identical(value_t a, value_t b) {
+  // Instances compare using object identity.
+  return (a == b);
+}
+
+void instance_print_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofInstance, value);
+  string_buffer_printf(buf, "#<instance: ");
+  value_print_on(get_instance_fields(value), buf);
+  string_buffer_printf(buf, ">");
+}
+
+void instance_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofInstance, value);
+  string_buffer_printf(buf, "#<instance>");
 }
 
 

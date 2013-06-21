@@ -46,4 +46,15 @@ static inline bool is_signal(signal_cause_t cause, value_t value) {
   return in_domain(vdSignal, value) && (get_signal_cause(value) == cause);
 }
 
+// Checks whether the expression holds and if not returns a validation failure.
+#define VALIDATE(EXPR) do {                \
+  if (!(EXPR))                             \
+    return new_signal(scValidationFailed); \
+} while (false)
+
+// Checks whether the value at the end of the given pointer belongs to the
+// specified family. If not, returns a validation failure.
+#define VALIDATE_VALUE_FAMILY(ofFamily, EXPR) \
+VALIDATE(in_family(ofFamily, EXPR))
+
 #endif // _VALUE_INL
