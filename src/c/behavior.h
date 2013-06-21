@@ -78,9 +78,17 @@ typedef struct division_behavior_t {
   size_t (*get_species_heap_size)(value_t species);
 } division_behavior_t;
 
+// Declare the division behavior structs.
 #define DECLARE_DIVISION_BEHAVIOR(Division, division) \
 extern division_behavior_t k##Division##SpeciesBehavior;
 ENUM_SPECIES_DIVISIONS(DECLARE_DIVISION_BEHAVIOR)
 #undef DECLARE_DIVISION_BEHAVIOR
+
+// Declare all the division behaviors.
+#define DECLARE_DIVISION_BEHAVIOR_IMPLS(Division, division)                    \
+size_t get_##division##_species_heap_size(value_t species);
+ENUM_SPECIES_DIVISIONS(DECLARE_DIVISION_BEHAVIOR_IMPLS)
+#undef DECLARE_DIVISION_BEHAVIOR_IMPLS
+
 
 #endif // _BEHAVIOR

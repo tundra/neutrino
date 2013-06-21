@@ -2,7 +2,8 @@
 #include "syntax.h"
 #include "value-inl.h"
 
-// --- V a l i d a t i o n ---
+
+// --- V a l i d a t e ---
 
 value_t object_validate(value_t value) {
   CHECK_DOMAIN(vdObject, value);
@@ -10,11 +11,6 @@ value_t object_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofSpecies, species);
   family_behavior_t *behavior = get_species_family_behavior(species);
   return (behavior->validate)(value);
-}
-
-value_t literal_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofLiteralAst, value);
-  return success();
 }
 
 
@@ -27,12 +23,8 @@ size_t get_object_heap_size(value_t value) {
   return (behavior->get_object_heap_size)(value);
 }
 
-size_t get_literal_ast_heap_size(value_t value) {
-  return kLiteralAstSize;
-}
 
-
-// --- H a s h ---
+// --- I d e n t i t y   h a s h ---
 
 static value_t integer_transient_identity_hash(value_t value) {
   CHECK_DOMAIN(vdInteger, value);
@@ -57,12 +49,8 @@ value_t value_transient_identity_hash(value_t value) {
   }
 }
 
-value_t literal_ast_transient_identity_hash(value_t value) {
-  return OBJ_ADDR_HASH(value);
-}
 
-
-// --- E q u a l s ---
+// --- I d e n t i t y ---
 
 static bool integer_are_identical(value_t a, value_t b) {
   return (a == b);
@@ -98,17 +86,8 @@ bool value_are_identical(value_t a, value_t b) {
   }
 }
 
-bool literal_ast_are_identical(value_t a, value_t b) {
-  // Literal syntax compares using object identity.
-  return (a == b);
-}
 
-
-// --- P r i n t ---
-
-// Print a value atomically, that is, without recursively printing any
-// elements contained in the value.
-void value_print_atomic_on(value_t value, string_buffer_t *buf);
+// --- P r i n t i n g ---
 
 static void integer_print_atomic_on(value_t value, string_buffer_t *buf) {
   CHECK_DOMAIN(vdInteger, value);
@@ -133,16 +112,6 @@ static void object_print_atomic_on(value_t value, string_buffer_t *buf) {
   value_t species = get_object_species(value);
   family_behavior_t *behavior = get_species_family_behavior(species);
   (behavior->print_atomic_on)(value, buf);
-}
-
-void literal_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<literal>");
-}
-
-void literal_ast_print_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<literal: ");
-  value_print_atomic_on(get_literal_ast_value(value), buf);
-  string_buffer_printf(buf, ">");
 }
 
 void value_print_on(value_t value, string_buffer_t *buf) {
@@ -177,6 +146,8 @@ void value_print_atomic_on(value_t value, string_buffer_t *buf) {
 }
 
 
+// --- F r a m e w o r k ---
+
 // Define all the family behaviors in one go. Because of this, as soon as you
 // add a new object type you'll get errors for all the behaviors you need to
 // implement.
@@ -193,13 +164,8 @@ ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #undef DEFINE_FAMILY_BEHAVIOR
 
 
-// --- S p e c i e s   h e a p   s i z e ---
-
-static size_t get_compact_species_heap_size(value_t species) {
-  return kCompactSpeciesSize;
-}
-
-// Define all the division behaviors.
+// Define all the division behaviors. Similarly to families, when you add a new
+// division you have to add the methods or this will break.
 #define DEFINE_SPECIES_DIVISION_BEHAVIOR(Division, division)                   \
 division_behavior_t k##Division##SpeciesBehavior = {                           \
   sd##Division,                                                                \

@@ -78,6 +78,10 @@ size_t get_species_heap_size(value_t value) {
   return (behavior->get_species_heap_size)(value);
 }
 
+size_t get_compact_species_heap_size(value_t species) {
+  return kCompactSpeciesSize;
+}
+
 value_t species_transient_identity_hash(value_t value) {
   return new_signal(scUnsupportedBehavior);
 }
