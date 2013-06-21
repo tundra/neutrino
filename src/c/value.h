@@ -138,15 +138,16 @@ static signal_cause_t get_signal_cause(value_t value) {
 
 // Macro that invokes the given macro callback for each object family.
 #define ENUM_OBJECT_FAMILIES(F)                                                \
-  F(Species,   species)                                                        \
-  F(String,    string)                                                         \
-  F(Array,     array)                                                          \
-  F(Null,      null)                                                           \
-  F(Bool,      bool)                                                           \
-  F(IdHashMap, id_hash_map)                                                    \
-  F(Blob,      blob)                                                           \
-  F(Instance,  instance)                                                       \
-  F(VoidP,     void_p)
+  F(Species,    species)                                                       \
+  F(String,     string)                                                        \
+  F(Array,      array)                                                         \
+  F(Null,       null)                                                          \
+  F(Bool,       bool)                                                          \
+  F(IdHashMap,  id_hash_map)                                                   \
+  F(Blob,       blob)                                                          \
+  F(Instance,   instance)                                                      \
+  F(VoidP,      void_p)                                                        \
+  F(LiteralAst, literal_ast)
 
 // Enum identifying the different families of heap objects.
 typedef enum {
@@ -199,8 +200,7 @@ value_t get_object_species(value_t value);
 // --- S p e c i e s ---
 
 #define ENUM_SPECIES_DIVISIONS(F)                                              \
-  F(Compact, compact)                                                          \
-  F(Syntax,  syntax)
+  F(Compact, compact)
 
 // Identifies the division a species belongs to.
 typedef enum {

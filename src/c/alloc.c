@@ -113,11 +113,11 @@ value_t new_heap_void_p(runtime_t *runtime, void *value) {
 
 // --- S y n t a x ---
 
-value_t new_heap_literal(runtime_t *runtime, value_t value) {
-  size_t size = kLiteralSize;
+value_t new_heap_literal_ast(runtime_t *runtime, value_t value) {
+  size_t size = kLiteralAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.literal_species));
-  set_literal_value(result, value);
+      runtime->roots.literal_ast_species));
+  set_literal_ast_value(result, value);
   return post_create_sanity_check(result, size);
 }
 

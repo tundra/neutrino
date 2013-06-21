@@ -80,6 +80,11 @@ static value_t instance_validate(value_t value) {
   return success();
 }
 
+static value_t literal_ast_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofLiteralAst, value);
+  return success();
+}
+
 
 // --- H e a p   s i z e ---
 
@@ -125,6 +130,10 @@ static size_t get_bool_heap_size(value_t value) {
 
 static size_t get_instance_heap_size(value_t value) {
   return kInstanceSize;
+}
+
+static size_t get_literal_ast_heap_size(value_t value) {
+  return kLiteralAstSize;
 }
 
 
@@ -191,9 +200,16 @@ static value_t id_hash_map_transient_identity_hash(value_t value) {
   return new_signal(scUnsupportedBehavior);
 }
 
+// Returns a value suitable to be returned as a hash from the address of an
+// object.
+#define OBJ_ADDR_HASH(VAL) new_integer((size_t) (VAL))
+
 static value_t instance_transient_identity_hash(value_t value) {
-  size_t hash = (size_t) value;
-  return new_integer(hash);
+  return OBJ_ADDR_HASH(value);
+}
+
+static value_t literal_ast_transient_identity_hash(value_t value) {
+  return OBJ_ADDR_HASH(value);
 }
 
 
@@ -284,6 +300,11 @@ static bool id_hash_map_are_identical(value_t a, value_t b) {
 
 static bool instance_are_identical(value_t a, value_t b) {
   // Instances compare using object identity.
+  return (a == b);
+}
+
+static bool literal_ast_are_identical(value_t a, value_t b) {
+  // Literal syntax compares using object identity.
   return (a == b);
 }
 
@@ -426,6 +447,16 @@ static void instance_print_on(value_t value, string_buffer_t *buf) {
   CHECK_FAMILY(ofInstance, value);
   string_buffer_printf(buf, "#<instance: ");
   value_print_on(get_instance_fields(value), buf);
+  string_buffer_printf(buf, ">");
+}
+
+static void literal_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<literal>");
+}
+
+static void literal_ast_print_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<literal: ");
+  value_print_atomic_on(get_literal_ast_value(value), buf);
   string_buffer_printf(buf, ">");
 }
 

@@ -53,7 +53,7 @@ value_t new_heap_void_p(runtime_t *runtime, void *value);
 // --- S y n t a x ---
 
 // Creates a new literal syntax tree with the given value.
-value_t new_heap_literal(runtime_t *runtime, value_t value);
+value_t new_heap_literal_ast(runtime_t *runtime, value_t value);
 
 // Allocates a new heap object in the given heap of the given size and
 // initializes it with the given type but requires the caller to complete
