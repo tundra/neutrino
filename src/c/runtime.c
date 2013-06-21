@@ -14,7 +14,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   set_object_species(meta, meta);
   roots->species_species = meta;
 
-  // The other species are straightforward.
+  // The basic species are straightforward.
   TRY_SET(roots->void_p_species, new_heap_compact_species(runtime, ofVoidP, &kVoidPBehavior));
   TRY_SET(roots->string_species, new_heap_compact_species(runtime, ofString, &kStringBehavior));
   TRY_SET(roots->blob_species, new_heap_compact_species(runtime, ofBlob, &kBlobBehavior));
@@ -23,6 +23,10 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   TRY_SET(roots->null_species, new_heap_compact_species(runtime, ofNull, &kNullBehavior));
   TRY_SET(roots->bool_species, new_heap_compact_species(runtime, ofBool, &kBoolBehavior));
   TRY_SET(roots->instance_species, new_heap_compact_species(runtime, ofInstance, &kInstanceBehavior));
+
+  // As are the syntax species.
+  TRY_SET(roots->literal_ast_species, new_heap_compact_species(runtime, ofLiteralAst,
+      &kLiteralAstBehavior));
 
   // Singletons
   TRY_SET(roots->null, new_heap_null(runtime));
@@ -40,10 +44,13 @@ void roots_clear(roots_t *roots) {
   roots->id_hash_map_species = success();
   roots->null_species = success();
   roots->bool_species = success();
+  roots->instance_species = success();
+
+  roots->literal_ast_species = success();
+
   roots->null = success();
   roots->thrue = success();
   roots->fahlse = success();
-  roots->instance_species = success();
 }
 
 value_t roots_validate(roots_t *roots) {

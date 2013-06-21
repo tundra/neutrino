@@ -10,7 +10,7 @@
 typedef struct {
   // The species of species (which is its own species).
   value_t species_species;
-  // The species of the different value types.
+  // The species of the basic value types.
   value_t void_p_species;
   value_t string_species;
   value_t blob_species;
@@ -19,6 +19,8 @@ typedef struct {
   value_t bool_species;
   value_t id_hash_map_species;
   value_t instance_species;
+  // The species of the syntax types.
+  value_t literal_ast_species;
   // Singletons
   value_t null;
   value_t thrue;

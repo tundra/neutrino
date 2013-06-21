@@ -107,3 +107,14 @@ TEST(alloc, void_p) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+TEST(alloc, literal) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t lit = new_heap_literal_ast(&runtime, new_integer(0));
+  ASSERT_FAMILY(ofLiteralAst, lit);
+  ASSERT_VALEQ(new_integer(0), get_literal_ast_value(lit));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}

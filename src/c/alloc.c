@@ -4,6 +4,9 @@
 
 #include <string.h>
 
+
+// --- B a s i c ---
+
 // Run a couple of sanity checks before returning the value from a constructor.
 // Returns a signal if the check fails, otherwise returns the given value.
 static value_t post_create_sanity_check(value_t value, size_t size) {
@@ -104,6 +107,17 @@ value_t new_heap_void_p(runtime_t *runtime, void *value) {
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.void_p_species));
   set_void_p_value(result, value);
+  return post_create_sanity_check(result, size);
+}
+
+
+// --- S y n t a x ---
+
+value_t new_heap_literal_ast(runtime_t *runtime, value_t value) {
+  size_t size = kLiteralAstSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.literal_ast_species));
+  set_literal_ast_value(result, value);
   return post_create_sanity_check(result, size);
 }
 

@@ -138,15 +138,16 @@ static signal_cause_t get_signal_cause(value_t value) {
 
 // Macro that invokes the given macro callback for each object family.
 #define ENUM_OBJECT_FAMILIES(F)                                                \
-  F(Species,   species)                                                        \
-  F(String,    string)                                                         \
-  F(Array,     array)                                                          \
-  F(Null,      null)                                                           \
-  F(Bool,      bool)                                                           \
-  F(IdHashMap, id_hash_map)                                                    \
-  F(Blob,      blob)                                                           \
-  F(Instance,  instance)                                                       \
-  F(VoidP,     void_p)
+  F(Species,    species)                                                       \
+  F(String,     string)                                                        \
+  F(Array,      array)                                                         \
+  F(Null,       null)                                                          \
+  F(Bool,       bool)                                                          \
+  F(IdHashMap,  id_hash_map)                                                   \
+  F(Blob,       blob)                                                          \
+  F(Instance,   instance)                                                      \
+  F(VoidP,      void_p)                                                        \
+  F(LiteralAst, literal_ast)
 
 // Enum identifying the different families of heap objects.
 typedef enum {
@@ -236,11 +237,13 @@ struct division_behavior_t *get_species_division_behavior(value_t species);
 // Sets the species division behavior of this species.
 void set_species_division_behavior(value_t species, struct division_behavior_t *behavior);
 
+// Returns the division the given species belongs to.
+species_division_t get_species_division(value_t value);
+
 
 // --- C o m p a c t   s p e c i e s ---
 
 static const size_t kCompactSpeciesSize = OBJECT_SIZE(3);
-
 
 
 // --- S t r i n g ---
