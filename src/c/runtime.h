@@ -19,7 +19,6 @@ typedef struct {
   value_t bool_species;
   value_t id_hash_map_species;
   value_t instance_species;
-  // The species of the syntax types.
   value_t literal_ast_species;
   // Singletons
   value_t null;

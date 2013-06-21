@@ -23,10 +23,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   TRY_SET(roots->null_species, new_heap_compact_species(runtime, ofNull, &kNullBehavior));
   TRY_SET(roots->bool_species, new_heap_compact_species(runtime, ofBool, &kBoolBehavior));
   TRY_SET(roots->instance_species, new_heap_compact_species(runtime, ofInstance, &kInstanceBehavior));
-
-  // As are the syntax species.
-  TRY_SET(roots->literal_ast_species, new_heap_compact_species(runtime, ofLiteralAst,
-      &kLiteralAstBehavior));
+  TRY_SET(roots->literal_ast_species, new_heap_compact_species(runtime, ofLiteralAst, &kLiteralAstBehavior));
 
   // Singletons
   TRY_SET(roots->null, new_heap_null(runtime));
@@ -45,7 +42,6 @@ void roots_clear(roots_t *roots) {
   roots->null_species = success();
   roots->bool_species = success();
   roots->instance_species = success();
-
   roots->literal_ast_species = success();
 
   roots->null = success();

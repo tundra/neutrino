@@ -36,6 +36,7 @@ static inline bool in_family(object_family_t family, value_t value) {
   return in_domain(vdObject, value) && (get_object_family(value) == family);
 }
 
+// Returns true iff the given species belongs to the given division.
 static inline bool in_division(species_division_t division, value_t value) {
   return in_family(ofSpecies, value) && (get_species_division(value) == division);
 }

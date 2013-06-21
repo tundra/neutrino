@@ -514,10 +514,6 @@ static size_t get_compact_species_heap_size(value_t species) {
   return kCompactSpeciesSize;
 }
 
-static size_t get_syntax_species_heap_size(value_t species) {
-  return kSyntaxSpeciesSize;
-}
-
 // Define all the division behaviors.
 #define DEFINE_SPECIES_DIVISION_BEHAVIOR(Division, division)                   \
 division_behavior_t k##Division##SpeciesBehavior = {                           \
