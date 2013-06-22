@@ -45,7 +45,7 @@ static value_t neutrino_main(int argc, char *argv[]) {
       TRY_SET(input, read_file_to_blob(&runtime, file));
       fclose(file);
     }
-    TRY_DEF(value, plankton_deserialize(&runtime, input));
+    TRY_DEF(value, plankton_deserialize(&runtime, NULL, input));
     value_print_ln(value);
   }
 
