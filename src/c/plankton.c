@@ -59,14 +59,22 @@ typedef struct {
   size_t object_offset;
   // The runtime to use for heap allocation.
   runtime_t *runtime;
+  // The resolver used to determine when to reference an object through the
+  // environment.
+  value_mapping_t *resolver;
 } serialize_state_t;
+
+value_t value_mapping_apply(value_mapping_t *mapping, value_t value, runtime_t *runtime) {
+  return (mapping->function)(value, runtime, mapping->data);
+}
 
 // Initialize serialization state.
 static value_t serialize_state_init(serialize_state_t *state, runtime_t *runtime,
-    byte_buffer_t *buf) {
+    value_mapping_t *resolver, byte_buffer_t *buf) {
   state->buf = buf;
   state->object_offset = 0;
   state->runtime = runtime;
+  state->resolver = resolver;
   TRY_SET(state->ref_map, new_heap_id_hash_map(runtime, 16));
   return success();
 }
@@ -151,18 +159,34 @@ static value_t string_serialize(value_t value, byte_buffer_t *buf) {
   return success();
 }
 
+static void register_serialized_object(value_t value, serialize_state_t *state) {
+  size_t offset = state->object_offset;
+  state->object_offset++;
+  set_id_hash_map_at(state->runtime, state->ref_map, value, new_integer(offset));
+}
+
 static value_t instance_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofInstance, value);
   value_t ref = get_id_hash_map_at(state->ref_map, value);
   if (is_signal(scNotFound, ref)) {
-    // We haven't seen this object before. Assign an offset to it.
-    size_t offset = state->object_offset;
-    state->object_offset++;
-    set_id_hash_map_at(state->runtime, state->ref_map, value, new_integer(offset));
-    // The write it.
-    byte_buffer_append(state->buf, pObject);
-    byte_buffer_append(state->buf, pNull);
-    return value_serialize(get_instance_fields(value), state);
+    // We haven't seen this object before. First we check if it should be an
+    // environment object.
+    value_t raw_resolved = value_mapping_apply(state->resolver, value, state->runtime);
+    if (is_signal(scNothing, raw_resolved)) {
+      // It's not an environment object. Just serialize it directly.
+      byte_buffer_append(state->buf, pObject);
+      byte_buffer_append(state->buf, pNull);
+      // Cycles are only allowed through the payload of an object so we only
+      // register the object after the header has been written.
+      register_serialized_object(value, state);
+      return value_serialize(get_instance_fields(value), state);
+    } else {
+      TRY_DEF(resolved, raw_resolved);
+      byte_buffer_append(state->buf, pEnvironment);
+      TRY(value_serialize(resolved, state));
+      register_serialized_object(value, state);
+      return success();
+    }
   } else {
     // We've already seen this object; write a reference back to the last time
     // we saw it.
@@ -206,12 +230,25 @@ static value_t value_serialize(value_t data, serialize_state_t *state) {
   }
 }
 
-value_t plankton_serialize(runtime_t *runtime, value_t data) {
+// Never resolve.
+static value_t nothing_mapping(value_t value, runtime_t *runtime, void *data) {
+  return new_signal(scNothing);
+}
+
+value_t plankton_serialize(runtime_t *runtime, value_mapping_t *resolver_or_null,
+    value_t data) {
   // Write the data to a C heap blob.
   byte_buffer_t buf;
   byte_buffer_init(&buf, NULL);
+  // Use the empty resolver if the resolver pointer is null.
+  value_mapping_t resolver;
+  if (resolver_or_null == NULL) {
+    value_mapping_init(&resolver, nothing_mapping, NULL);
+  } else {
+    resolver = *resolver_or_null;
+  }
   serialize_state_t state;
-  TRY(serialize_state_init(&state, runtime, &buf));
+  TRY(serialize_state_init(&state, runtime, &resolver, &buf));
   TRY(value_serialize(data, &state));
   blob_t buffer_data;
   byte_buffer_flush(&buf, &buffer_data);
@@ -225,6 +262,11 @@ value_t plankton_serialize(runtime_t *runtime, value_t data) {
   return blob;
 }
 
+void value_mapping_init(value_mapping_t *resolver,
+    value_mapping_function_t function, void *data) {
+  resolver->function = function;
+  resolver->data = data;
+}
 
 // --- D e s e r i a l i z e ---
 
@@ -238,14 +280,17 @@ typedef struct {
   size_t object_offset;
   // The runtime to use for heap allocation.
   runtime_t *runtime;
+  // Environment access used to resolve environment references.
+  value_mapping_t *access;
 } deserialize_state_t;
 
 // Initialize deserialization state.
 static value_t deserialize_state_init(deserialize_state_t *state, runtime_t *runtime,
-    byte_stream_t *in) {
+    value_mapping_t *access, byte_stream_t *in) {
   state->in = in;
   state->object_offset = 0;
   state->runtime = runtime;
+  state->access = access;
   TRY_SET(state->ref_map, new_heap_id_hash_map(runtime, 16));
   return success();
 }
@@ -321,6 +366,16 @@ static value_t object_deserialize(deserialize_state_t *state) {
   return result;
 }
 
+static value_t environment_deserialize(deserialize_state_t *state) {
+  TRY_DEF(key, value_deserialize(state));
+  TRY_DEF(result, value_mapping_apply(state->access, key, state->runtime));
+  size_t offset = state->object_offset;
+  state->object_offset++;
+  TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
+      result));
+  return result;
+}
+
 static value_t reference_deserialize(deserialize_state_t *state) {
   size_t offset = uint32_deserialize(state->in);
   size_t index = state->object_offset - offset - 1;
@@ -349,17 +404,33 @@ static value_t value_deserialize(deserialize_state_t *state) {
       return object_deserialize(state);
     case pReference:
       return reference_deserialize(state);
+    case pEnvironment:
+      return environment_deserialize(state);
     default:
       return new_signal(scInvalidInput);
   }
 }
 
-value_t plankton_deserialize(runtime_t *runtime, value_t blob) {
+// Always report invalid input.
+static value_t invalid_input_mapping(value_t value, runtime_t *runtime, void *data) {
+  return new_signal(scInvalidInput);
+}
+
+value_t plankton_deserialize(runtime_t *runtime, value_mapping_t *access_or_null,
+    value_t blob) {
+  // Make a byte stream out of the blob.
   blob_t data;
   get_blob_data(blob, &data);
   byte_stream_t in;
   byte_stream_init(&in, &data);
+  // Use a failing environment accessor if the access pointer is null.
+  value_mapping_t access;
+  if (access_or_null == NULL) {
+    value_mapping_init(&access, invalid_input_mapping, NULL);
+  } else {
+    access = *access_or_null;
+  }
   deserialize_state_t state;
-  TRY(deserialize_state_init(&state, runtime, &in));
+  TRY(deserialize_state_init(&state, runtime, &access, &in));
   return value_deserialize(&state);
 }

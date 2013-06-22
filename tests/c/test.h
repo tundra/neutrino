@@ -65,8 +65,8 @@ ASSERT_CLASS(signal_cause_t, scCause, EXPR, get_signal_cause)
 #define ASSERT_SUCCESS(EXPR) do {                                              \
   value_t __value__ = (EXPR);                                                  \
   if (get_value_domain(__value__) == vdSignal) {                               \
-    fail(__FILE__, __LINE__, "Assertion failed: %s is a value.\n  Was signal: %i",\
-        #EXPR, get_signal_cause(__value__));                                   \
+    fail(__FILE__, __LINE__, "Assertion failed: is_signal(%s).\n  Was signal: %s",\
+        #EXPR, signal_cause_name(get_signal_cause(__value__)));                \
   }                                                                            \
 } while (false)
 
