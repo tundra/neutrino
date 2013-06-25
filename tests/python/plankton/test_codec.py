@@ -79,6 +79,14 @@ class PlanktonTest(unittest.TestCase):
     self.assertTrue(aa[0] is aa[1])
     self.assertTrue(aa[0] is aa[2])
 
+  def test_environment(self):
+    val_to_int = {}
+    int_to_val = {}
+    def add_object(value, index):
+      val_to_int[value] = index
+      int_to_val[index] = value
+    
+
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)
   unittest.main(testRunner=runner)

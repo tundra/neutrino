@@ -39,10 +39,11 @@ def visit_data(data, visitor):
 # Encapsulates state relevant to writing plankton data.
 class DataOutputStream(object):
 
-  def __init__(self):
+  def __init__(self, resolver):
     self.bytes = bytearray()
     self.object_index = {}
     self.object_offset = 0
+    self.resolver = resolver
 
   # Writes a value to the stream.
   def write_object(self, obj):
@@ -85,6 +86,11 @@ class DataOutputStream(object):
     else:
       self._add_byte(_FALSE_TAG)
 
+  def acquire_offset(self):
+    index = self.object_offset
+    self.object_offset += 1
+    return index
+
   # Emit a tagged object or reference.
   def visit_object(self, obj):
     if obj in self.object_index:
@@ -92,18 +98,24 @@ class DataOutputStream(object):
       offset = self.object_offset - self.object_index[obj] - 1
       self._encode_uint32(offset)
     else:
-      name = obj.__class__.__name__
-      desc = _DESCRIPTORS.get(name, None)
-      if desc is None:
-        raise Exception(obj)
-      index = self.object_offset
-      self.object_offset += 1
-      self._add_byte(_OBJECT_TAG)
-      self.object_index[obj] = -1
-      self.write_object(desc.get_header())
-      self.object_index[obj] = index
-      self.write_object(desc.get_payload(obj))
-
+      resolved = (self.resolver)(obj)
+      if resolved is None:
+        name = obj.__class__.__name__
+        desc = _DESCRIPTORS.get(name, None)
+        if desc is None:
+          raise Exception(obj)
+        index = self.acquire_offset()
+        self._add_byte(_OBJECT_TAG)
+        self.object_index[obj] = -1
+        self.write_object(desc.get_header())
+        self.object_index[obj] = index
+        self.write_object(desc.get_payload(obj))
+      else:
+        index = self.acquire_offset()
+        self._add_byte(_ENVIRONMENT_TAG)
+        self.object_index[obj] = -1
+        self.write_data(resolved)
+        self.object_index[obj] = index
 
   # Writes a naked unsigned int32.
   def _encode_uint32(self, value):
@@ -311,9 +323,13 @@ def field(name):
   return callback
 
 
+def always_none(value):
+  return None
+
+
 # Encodes an object as plankton, returning a byte array.
-def serialize(obj):
-  stream = DataOutputStream()
+def serialize(obj, resolver=always_none):
+  stream = DataOutputStream(resolver)
   stream.write_object(obj)
   return stream.bytes
 
