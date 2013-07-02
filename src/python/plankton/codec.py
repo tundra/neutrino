@@ -114,7 +114,7 @@ class DataOutputStream(object):
         index = self.acquire_offset()
         self._add_byte(_ENVIRONMENT_TAG)
         self.object_index[obj] = -1
-        self.write_data(resolved)
+        self.write_object(resolved)
         self.object_index[obj] = index
 
   # Writes a naked unsigned int32.
@@ -138,12 +138,13 @@ class DataOutputStream(object):
 # Encapsulates state relevant to reading plankton data.
 class DataInputStream(object):
 
-  def __init__(self, bytes, descriptors):
+  def __init__(self, bytes, descriptors, access):
     self.bytes = bytes
     self.cursor = 0
     self.object_index = {}
     self.object_offset = 0
     self.descriptors = descriptors
+    self.access = access
 
   # Reads the next value from the stream.
   def read_object(self):
@@ -166,6 +167,8 @@ class DataInputStream(object):
       return self._decode_object()
     elif tag == _REFERENCE_TAG:
       return self._decode_reference()
+    elif tag == _ENVIRONMENT_TAG:
+      return self._decode_environment()
     else:
       raise Exception(tag)
 
@@ -225,6 +228,15 @@ class DataInputStream(object):
     payload = self.read_object()
     desc.apply_payload(instance, payload)
     return instance
+
+  def _decode_environment(self):
+    index = self.object_offset
+    self.object_offset += 1
+    self.object_index[index] = None
+    key = self.read_object()
+    value = (self.access)(key)
+    self.object_index[index] = value
+    return value
 
   # Reads a raw object reference from the stream.
   def _decode_reference(self):
@@ -323,31 +335,61 @@ def field(name):
   return callback
 
 
+# Function that always returns none. Easy.
 def always_none(value):
   return None
 
 
-# Encodes an object as plankton, returning a byte array.
-def serialize(obj, resolver=always_none):
-  stream = DataOutputStream(resolver)
-  stream.write_object(obj)
-  return stream.bytes
+# Configuration object that sets up how to perform plankton encoding.
+class Encoder(object):
+
+  def __init__(self):
+    self.resolver = always_none
+    self.descriptors = _DESCRIPTORS
+
+  # Encodes the given object into a byte array.
+  def encode(self, obj):
+    stream = DataOutputStream(self.resolver)
+    stream.write_object(obj)
+    return stream.bytes
+
+  # Encodes the given object into a base64 string.
+  def base64encode(self, obj):
+    return base64.b64encode(str(self.encode(obj)))
+
+  # Sets the environment resolver to use when encoding. If the given value is
+  # None the resolver is left unchanged.
+  def set_resolver(self, value):
+    if not value is None:
+      self.resolver = value
+    return self
 
 
-# Encodes an object as plankton, returning a base64 encoded string.
-def base64encode(obj):
-  return base64.b64encode(str(serialize(obj)))
+# Function that always throws its argument.
+def always_throw(key):
+  raise Exception(key)
 
 
-# Decodes a plankton byte array as an object.
-def deserialize(data, descriptors=_DESCRIPTORS):
-  stream = DataInputStream(data, descriptors)
-  return stream.read_object()
+class Decoder(object):
 
+  def __init__(self):
+    self.descriptors = _DESCRIPTORS
+    self.access = always_throw
 
-# Decodes a base64 encoded string into a plankton object.
-def base64decode(data, descriptors=_DESCRIPTORS):
-  return deserialize(bytearray(base64.b64decode(data)), descriptors)
+  # Decodes a byte array into a plankton object.
+  def decode(self, data):
+    stream = DataInputStream(data, self.descriptors, self.access)
+    return stream.read_object()
+
+  # Decodes a base64 encoded string into a plankton object.
+  def base64decode(self, data):
+    return self.decode(bytearray(base64.b64decode(data)))
+
+  # Sets the function to use to access environment values by key.
+  def set_access(self, value):
+    if not value is None:
+      self.access = value
+    return self
 
 
 # Holds state used when stringifying a value.
