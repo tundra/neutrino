@@ -75,13 +75,13 @@ value_t species_validate(value_t value) {
   return success();
 }
 
-size_t get_species_heap_size(value_t value) {
+void get_species_layout(value_t value, object_layout_t *layout_out) {
   division_behavior_t *behavior = get_species_division_behavior(value);
-  return (behavior->get_species_heap_size)(value);
+  (behavior->get_species_layout)(value, layout_out);
 }
 
-size_t get_compact_species_heap_size(value_t species) {
-  return kCompactSpeciesSize;
+void get_compact_species_layout(value_t species, object_layout_t *layout_out) {
+  object_layout_set(layout_out, kCompactSpeciesSize);
 }
 
 void species_print_atomic_on(value_t value, string_buffer_t *buf) {
@@ -131,8 +131,9 @@ value_t string_validate(value_t value) {
   return success();
 }
 
-size_t get_string_heap_size(value_t value) {
-  return calc_string_size(get_string_length(value));
+void get_string_layout(value_t value, object_layout_t *layout_out) {
+  size_t size = calc_string_size(get_string_length(value));
+  object_layout_set(layout_out, size);
 }
 
 value_t string_transient_identity_hash(value_t value) {
@@ -196,8 +197,9 @@ value_t blob_validate(value_t value) {
   return success();
 }
 
-size_t get_blob_heap_size(value_t value) {
-  return calc_blob_size(get_blob_length(value));
+void get_blob_layout(value_t value, object_layout_t *layout_out) {
+  size_t size = calc_blob_size(get_blob_length(value));
+  object_layout_set(layout_out, size);
 }
 
 void blob_print_on(value_t value, string_buffer_t *buf) {
@@ -294,8 +296,9 @@ value_t array_validate(value_t value) {
   return success();
 }
 
-size_t get_array_heap_size(value_t value) {
-  return calc_array_size(get_array_length(value));
+void get_array_layout(value_t value, object_layout_t *layout_out) {
+  size_t size = calc_array_size(get_array_length(value));
+  object_layout_set(layout_out, size);
 }
 
 void array_print_on(value_t value, string_buffer_t *buf) {

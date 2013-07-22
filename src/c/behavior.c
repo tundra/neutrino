@@ -15,13 +15,21 @@ value_t object_validate(value_t value) {
 }
 
 
-// --- H e a p   s i z e ---
+// --- L a y o u t ---
 
-size_t get_object_heap_size(value_t value) {
+void object_layout_init(object_layout_t *layout) {
+  layout->size = 0;
+}
+
+void object_layout_set(object_layout_t *layout, size_t size) {
+  layout->size = size;
+}
+
+void get_object_layout(value_t value, object_layout_t *layout_out) {
   CHECK_DOMAIN(vdObject, value);
   value_t species = get_object_species(value);
   family_behavior_t *behavior = get_species_family_behavior(species);
-  return (behavior->get_object_heap_size)(value);
+  (behavior->get_object_layout)(value, layout_out);
 }
 
 
@@ -187,7 +195,7 @@ family_behavior_t k##Family##Behavior = {                                      \
   &family##_are_identical,                                                     \
   &family##_print_on,                                                          \
   &family##_print_atomic_on,                                                   \
-  &get_##family##_heap_size                                                    \
+  &get_##family##_layout                                                       \
 };
 ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #undef DEFINE_FAMILY_BEHAVIOR
@@ -198,7 +206,7 @@ ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #define DEFINE_SPECIES_DIVISION_BEHAVIOR(Division, division)                   \
 division_behavior_t k##Division##SpeciesBehavior = {                           \
   sd##Division,                                                                \
-  &get_##division##_species_heap_size                                          \
+  &get_##division##_species_layout                                             \
 };
 ENUM_SPECIES_DIVISIONS(DEFINE_SPECIES_DIVISION_BEHAVIOR)
 #undef DEFINE_SPECIES_DIVISION_BEHAVIOR

@@ -11,7 +11,10 @@
 // Returns a signal if the check fails, otherwise returns the given value.
 static value_t post_create_sanity_check(value_t value, size_t size) {
   TRY(object_validate(value));
-  if (get_object_heap_size(value) != size)
+  object_layout_t layout;
+  object_layout_init(&layout);
+  get_object_layout(value, &layout);
+  if (layout.size != size)
     return new_signal(scValidationFailed);
   return value;
 }

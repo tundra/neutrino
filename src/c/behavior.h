@@ -9,6 +9,18 @@
 // Forward declare the runtime struct to make it available as an argument.
 struct runtime_t;
 
+// A description of the layout of an object.
+typedef struct {
+  // Size in bytes of the whole object.
+  size_t size;
+} object_layout_t;
+
+// Initializes the fields of an object layout struct.
+void object_layout_init(object_layout_t *layout);
+
+// Sets the fields of an object layout struct.
+void object_layout_set(object_layout_t *layout, size_t size);
+
 // A collection of "virtual" methods that define how a particular family of
 // objects behave.
 typedef struct family_behavior_t {
@@ -23,15 +35,15 @@ typedef struct family_behavior_t {
   // Writes an atomic (that is, doesn't recurse into contents) string
   // representation on a string buffer.
   void (*print_atomic_on)(value_t value, string_buffer_t *buf);
-  // Returns the size in bytes on the heap of the given object.
-  size_t (*get_object_heap_size)(value_t value);
+  // Stores the layout of the given object in the output layout struct.
+  void (*get_object_layout)(value_t value, object_layout_t *layout_out);
 } family_behavior_t;
 
 // Validates an object.
 value_t object_validate(value_t value);
 
 // Returns the size in bytes of the given object on the heap.
-size_t get_object_heap_size(value_t value);
+void get_object_layout(value_t value, object_layout_t *layout_out);
 
 // Returns the transient identity hash of the given value. This hash is
 // transient in the sense that it may be changed by garbage collection. It
@@ -72,7 +84,7 @@ value_t family##_transient_identity_hash(value_t value);                       \
 bool family##_are_identical(value_t a, value_t b);                             \
 void family##_print_on(value_t value, string_buffer_t *buf);                   \
 void family##_print_atomic_on(value_t value, string_buffer_t *buf);            \
-size_t get_##family##_heap_size(value_t value);
+void get_##family##_layout(value_t value, object_layout_t *layout_out);
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR_IMPLS)
 #undef DECLARE_FAMILY_BEHAVIOR_IMPLS
 
@@ -82,7 +94,7 @@ typedef struct division_behavior_t {
   // The division this behavior belongs to.
   species_division_t division;
   // Returns the size in bytes on the heap of species for this division.
-  size_t (*get_species_heap_size)(value_t species);
+  void (*get_species_layout)(value_t species, object_layout_t *layout_out);
 } division_behavior_t;
 
 // Declare the division behavior structs.
@@ -93,7 +105,7 @@ ENUM_SPECIES_DIVISIONS(DECLARE_DIVISION_BEHAVIOR)
 
 // Declare all the division behaviors.
 #define DECLARE_DIVISION_BEHAVIOR_IMPLS(Division, division)                    \
-size_t get_##division##_species_heap_size(value_t species);
+void get_##division##_species_layout(value_t species, object_layout_t *layout_out);
 ENUM_SPECIES_DIVISIONS(DECLARE_DIVISION_BEHAVIOR_IMPLS)
 #undef DECLARE_DIVISION_BEHAVIOR_IMPLS
 
