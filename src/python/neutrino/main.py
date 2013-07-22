@@ -69,10 +69,11 @@ class Main(object):
       self.output_value(ast)
 
   def output_value(self, value):
+    encoder = plankton.Encoder()
     if self.flags.base64:
-      print "p64/%s" % plankton.base64encode(value)
+      print "p64/%s" % encoder.base64encode(value)
     else:
-      sys.stdout.write(plankton.serialize(value))
+      sys.stdout.write(encoder.encode(value))
 
 
 if __name__ == '__main__':
