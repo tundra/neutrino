@@ -126,18 +126,27 @@ TEST(behavior, print_on) {
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
-value_t zero_constructor(runtime_t *runtime) {
+static value_t dummy_constructor(runtime_t *runtime) {
   return new_integer(434);
+}
+
+static value_t signal_constructor(runtime_t *runtime) {
+  return new_signal(scNothing);
 }
 
 TEST(behavior, new_instance) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
-  value_t fact = new_heap_factory(&runtime, zero_constructor);
-  ASSERT_SUCCESS(fact);
-  value_t instance = new_instance_of_value(&runtime, fact);
+  value_t dummy_fact = new_heap_factory(&runtime, dummy_constructor);
+  ASSERT_SUCCESS(dummy_fact);
+  value_t instance = new_instance_of_value(&runtime, dummy_fact);
   ASSERT_VALEQ(new_integer(434), instance);
+
+  value_t signal_fact = new_heap_factory(&runtime, signal_constructor);
+  ASSERT_SUCCESS(signal_fact);
+  value_t sig = new_instance_of_value(&runtime, signal_fact);
+  ASSERT_SIGNAL(scNothing, sig);
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
