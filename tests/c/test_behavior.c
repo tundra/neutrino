@@ -125,3 +125,19 @@ TEST(behavior, print_on) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+value_t zero_constructor(runtime_t *runtime) {
+  return new_integer(434);
+}
+
+TEST(behavior, new_instance) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t fact = new_heap_factory(&runtime, zero_constructor);
+  ASSERT_SUCCESS(fact);
+  value_t instance = new_instance_of_value(&runtime, fact);
+  ASSERT_VALEQ(new_integer(434), instance);
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}

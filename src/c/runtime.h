@@ -19,6 +19,7 @@ typedef struct {
   value_t bool_species;
   value_t id_hash_map_species;
   value_t instance_species;
+  value_t factory_species;
   value_t literal_ast_species;
   // Singletons
   value_t null;
@@ -28,7 +29,7 @@ typedef struct {
 
 
 // All the data associated with a single VM instance.
-typedef struct {
+typedef struct runtime_t {
   // The heap where all the data lives.
   heap_t heap;
   // The root objects.
