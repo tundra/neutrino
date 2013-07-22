@@ -12,28 +12,6 @@ const char *signal_cause_name(signal_cause_t cause) {
   }
 }
 
-// Expands to a declaration that is missing a semicolon at the end. If used
-// at the end of a macro that doesn't allow a final semi this allows the semi
-// to be written.
-#define SWALLOW_SEMI() typedef int __CONCAT_WITH_EVAL__(__ignore__, __LINE__)
-
-// Concatenates the values A and B without evaluating them if they're macros.
-#define __CONCAT_NO_EVAL__(A, B) A##B
-
-// Concatenates the value A and B, evaluating A and B first if they are macros.
-#define __CONCAT_WITH_EVAL__(A, B) __CONCAT_NO_EVAL__(A, B)
-
-// Declares the identity and identity hash functions for a value family that
-// uses object identity.
-#define OBJECT_IDENTITY_IMPL(family)                                           \
-value_t family##_transient_identity_hash(value_t value) {                      \
-  return OBJ_ADDR_HASH(value);                                                 \
-}                                                                              \
-bool family##_are_identical(value_t a, value_t b) {                            \
-  return (a == b);                                                             \
-}                                                                              \
-SWALLOW_SEMI()
-
 
 // --- O b j e c t ---
 
@@ -52,6 +30,8 @@ object_family_t get_object_family(value_t value) {
 
 
 // --- S p e c i e s ---
+
+OBJECT_IDENTITY_IMPL(species);
 
 void set_species_instance_family(value_t value,
     object_family_t instance_family) {
@@ -102,15 +82,6 @@ size_t get_species_heap_size(value_t value) {
 
 size_t get_compact_species_heap_size(value_t species) {
   return kCompactSpeciesSize;
-}
-
-value_t species_transient_identity_hash(value_t value) {
-  return new_signal(scUnsupportedBehavior);
-}
-
-bool species_are_identical(value_t a, value_t b) {
-  // Species compare using object identity.
-  return (a == b);
 }
 
 void species_print_atomic_on(value_t value, string_buffer_t *buf) {
@@ -195,6 +166,8 @@ void string_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- B l o b ---
 
+OBJECT_IDENTITY_IMPL(blob);
+
 size_t calc_blob_size(size_t size) {
   return kObjectHeaderSize              // header
        + kValueSize                     // length
@@ -227,16 +200,6 @@ size_t get_blob_heap_size(value_t value) {
   return calc_blob_size(get_blob_length(value));
 }
 
-value_t blob_transient_identity_hash(value_t value) {
-  return new_signal(scUnsupportedBehavior);
-}
-
-bool blob_are_identical(value_t a, value_t b) {
-  CHECK_FAMILY(ofBlob, a);
-  CHECK_FAMILY(ofBlob, b);
-  return (a == b);
-}
-
 void blob_print_on(value_t value, string_buffer_t *buf) {
   blob_print_atomic_on(value, buf);
 }
@@ -261,6 +224,9 @@ void blob_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- V o i d   P ---
 
+OBJECT_IDENTITY_IMPL(void_p);
+FIXED_SIZE_IMPL(void_p, VoidP);
+
 void set_void_p_value(value_t value, void *ptr) {
   CHECK_FAMILY(ofVoidP, value);
   *access_object_field(value, kVoidPValueOffset) = PTR_TO_VAL(ptr);
@@ -276,20 +242,6 @@ value_t void_p_validate(value_t value) {
   return success();
 }
 
-size_t get_void_p_heap_size(value_t value) {
-  return kVoidPSize;
-}
-
-value_t void_p_transient_identity_hash(value_t value) {
-  return new_signal(scUnsupportedBehavior);
-}
-
-bool void_p_are_identical(value_t a, value_t b) {
-  CHECK_FAMILY(ofVoidP, a);
-  CHECK_FAMILY(ofVoidP, b);
-  return (a == b);
-}
-
 void void_p_print_on(value_t value, string_buffer_t *buf) {
   void_p_print_atomic_on(value, buf);
 }
@@ -301,6 +253,8 @@ void void_p_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 
 // --- A r r a y ---
+
+OBJECT_IDENTITY_IMPL(array);
 
 size_t calc_array_size(size_t length) {
   return kObjectHeaderSize       // header
@@ -344,15 +298,6 @@ size_t get_array_heap_size(value_t value) {
   return calc_array_size(get_array_length(value));
 }
 
-value_t array_transient_identity_hash(value_t value) {
-  return new_signal(scUnsupportedBehavior);
-}
-
-bool array_are_identical(value_t a, value_t b) {
-  // Arrays compare using object identity.
-  return (a == b);
-}
-
 void array_print_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, "[");
   for (size_t i = 0; i < get_array_length(value); i++) {
@@ -369,6 +314,9 @@ void array_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 
 // --- I d e n t i t y   h a s h   m a p ---
+
+OBJECT_IDENTITY_IMPL(id_hash_map);
+FIXED_SIZE_IMPL(id_hash_map, IdHashMap);
 
 value_t get_id_hash_map_entry_array(value_t value) {
   CHECK_FAMILY(ofIdHashMap, value);
@@ -561,19 +509,6 @@ value_t id_hash_map_validate(value_t value) {
   return success();
 }
 
-size_t get_id_hash_map_heap_size(value_t value) {
-  return kIdHashMapSize;
-}
-
-value_t id_hash_map_transient_identity_hash(value_t value) {
-  return new_signal(scUnsupportedBehavior);
-}
-
-bool id_hash_map_are_identical(value_t a, value_t b) {
-  // Maps compare using object identity.
-  return (a == b);
-}
-
 void id_hash_map_print_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, "{");
   id_hash_map_iter_t iter;
@@ -596,13 +531,11 @@ void id_hash_map_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- N u l l ---
 
+FIXED_SIZE_IMPL(null, Null);
+
 value_t null_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofNull, value);
   return success();
-}
-
-size_t get_null_heap_size(value_t value) {
-  return kNullSize;
 }
 
 value_t null_transient_identity_hash(value_t value) {
@@ -628,6 +561,8 @@ void null_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- B o o l ---
 
+FIXED_SIZE_IMPL(bool, Bool);
+
 void set_bool_value(value_t value, bool truth) {
   CHECK_FAMILY(ofBool, value);
   *access_object_field(value, kBoolValueOffset) = new_integer(truth ? 1 : 0);
@@ -643,10 +578,6 @@ value_t bool_validate(value_t value) {
   bool which = get_bool_value(value);
   VALIDATE((which == true) || (which == false));
   return success();
-}
-
-size_t get_bool_heap_size(value_t value) {
-  return kBoolSize;
 }
 
 value_t bool_transient_identity_hash(value_t value) {
@@ -672,6 +603,7 @@ void bool_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- I n s t a n c e ---
 
 OBJECT_IDENTITY_IMPL(instance);
+FIXED_SIZE_IMPL(instance, Instance);
 
 void set_instance_fields(value_t value, value_t fields) {
   CHECK_FAMILY(ofInstance, value);
@@ -701,10 +633,6 @@ value_t instance_validate(value_t value) {
   return success();
 }
 
-size_t get_instance_heap_size(value_t value) {
-  return kInstanceSize;
-}
-
 void instance_print_on(value_t value, string_buffer_t *buf) {
   CHECK_FAMILY(ofInstance, value);
   string_buffer_printf(buf, "#<instance: ");
@@ -721,6 +649,7 @@ void instance_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- F a c t o r y ---
 
 OBJECT_IDENTITY_IMPL(factory);
+FIXED_SIZE_IMPL(factory, Factory);
 
 void set_factory_constructor(value_t value, value_t constructor) {
   CHECK_FAMILY(ofFactory, value);
@@ -733,16 +662,11 @@ value_t get_factory_constructor(value_t value) {
   return *access_object_field(value, kFactoryConstructorOffset);
 }
 
-
 value_t factory_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofFactory, value);
   value_t constructor = get_factory_constructor(value);
   VALIDATE_VALUE_FAMILY(ofVoidP, constructor);
   return success();
-}
-
-size_t get_factory_heap_size(value_t value) {
-  return kFactorySize;
 }
 
 void factory_print_on(value_t value, string_buffer_t *buf) {
