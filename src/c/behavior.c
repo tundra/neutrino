@@ -1,4 +1,5 @@
 #include "behavior.h"
+#include "runtime.h"
 #include "syntax.h"
 #include "value-inl.h"
 
@@ -142,6 +143,34 @@ void value_print_atomic_on(value_t value, string_buffer_t *buf) {
     default:
       UNREACHABLE("value print atomic on");
       break;
+  }
+}
+
+
+// --- N e w   i n s t a n c e ---
+
+static value_t new_instance_of_factory(runtime_t *runtime, value_t type) {
+  value_t constr_wrapper = get_factory_constructor(type);
+  void *constr_ptr = get_void_p_value(constr_wrapper);
+  factory_constructor_t *constr = (factory_constructor_t*) (intptr_t) constr_ptr;
+  return constr(runtime);
+}
+
+static value_t new_instance_of_object(runtime_t *runtime, value_t type) {
+  switch (get_object_family(type)) {
+    case ofFactory:
+      return new_instance_of_factory(runtime, type);
+    default:
+      return new_signal(scUnsupportedBehavior);
+  }
+}
+
+value_t new_instance_of_value(runtime_t *runtime, value_t type) {
+  switch (get_value_domain(type)) {
+    case vdObject:
+      return new_instance_of_object(runtime, type);
+    default:
+      return new_signal(scUnsupportedBehavior);
   }
 }
 

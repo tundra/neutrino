@@ -7,6 +7,8 @@
 #ifndef _VALUE
 #define _VALUE
 
+struct runtime_t;
+
 // A tagged value pointer. Values are divided into a hierarchy with four
 // different levels. At the top level they are divided into different _domains_
 // which can be distinguished by how the pointer is tagged; objects, integers,
@@ -152,6 +154,7 @@ static signal_cause_t get_signal_cause(value_t value) {
   F(Blob,       blob)                                                          \
   F(Instance,   instance)                                                      \
   F(VoidP,      void_p)                                                        \
+  F(Factory,    factory)                                                       \
   F(LiteralAst, literal_ast)
 
 // Enumerates all the object families.
@@ -432,6 +435,26 @@ value_t get_instance_field(value_t value, value_t key);
 // Sets the field with the given key on the given instance. Returns a signal
 // if setting the field failed, for instance if the field map was full.
 value_t try_set_instance_field(value_t instance, value_t key, value_t value);
+
+
+// --- F a c t o r y ---
+
+// A factory is a wrapper around a constructor C function that produces
+// instances of a particular family.
+
+// The type of constructor functions stored in a factory.
+typedef value_t (factory_constructor_t)(struct runtime_t *runtime);
+
+static const size_t kFactorySize = OBJECT_SIZE(1);
+static const size_t kFactoryConstructorOffset = 1;
+
+// Sets the constructor pointer for this factory. The pointer must be wrapped in
+// a void-p.
+void set_factory_constructor(value_t value, value_t constructor);
+
+// Returns the constructor pointer for this factory. The pointer is wrapped in
+// a void-p.
+value_t get_factory_constructor(value_t value);
 
 
 // --- D e b u g ---

@@ -110,6 +110,15 @@ value_t new_heap_void_p(runtime_t *runtime, void *value) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr) {
+  TRY_DEF(constr_wrapper, new_heap_void_p(runtime, (void*) (intptr_t) constr));
+  size_t size = kFactorySize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.factory_species));
+  set_factory_constructor(result, constr_wrapper);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- S y n t a x ---
 

@@ -49,11 +49,17 @@ value_t new_heap_instance(runtime_t *runtime);
 // Creates a new pointer wrapper around the given value.
 value_t new_heap_void_p(runtime_t *runtime, void *value);
 
+// Creates a new factory object backed by the given constructor function.
+value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr);
+
 
 // --- S y n t a x ---
 
 // Creates a new literal syntax tree with the given value.
 value_t new_heap_literal_ast(runtime_t *runtime, value_t value);
+
+
+// --- U t i l s ---
 
 // Allocates a new heap object in the given heap of the given size and
 // initializes it with the given type but requires the caller to complete

@@ -6,6 +6,9 @@
 #ifndef _BEHAVIOR
 #define _BEHAVIOR
 
+// Forward declare the runtime struct to make it available as an argument.
+struct runtime_t;
+
 // A collection of "virtual" methods that define how a particular family of
 // objects behave.
 typedef struct family_behavior_t {
@@ -46,6 +49,10 @@ void value_print_on(value_t value, string_buffer_t *buf);
 // Prints a human-readable representation of the given value on the given
 // string buffer without descending into objects that may cause cycles.
 void value_print_atomic_on(value_t value, string_buffer_t *buf);
+
+// Creates a new empty instance of the given type. Not all types support this,
+// in which case an unsupported behavior signal is returned.
+value_t new_instance_of_value(struct runtime_t *runtime, value_t type);
 
 // Returns a value suitable to be returned as a hash from the address of an
 // object.

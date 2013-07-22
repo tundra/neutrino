@@ -12,6 +12,28 @@ const char *signal_cause_name(signal_cause_t cause) {
   }
 }
 
+// Expands to a declaration that is missing a semicolon at the end. If used
+// at the end of a macro that doesn't allow a final semi this allows the semi
+// to be written.
+#define SWALLOW_SEMI() typedef int __CONCAT_WITH_EVAL__(__ignore__, __LINE__)
+
+// Concatenates the values A and B without evaluating them if they're macros.
+#define __CONCAT_NO_EVAL__(A, B) A##B
+
+// Concatenates the value A and B, evaluating A and B first if they are macros.
+#define __CONCAT_WITH_EVAL__(A, B) __CONCAT_NO_EVAL__(A, B)
+
+// Declares the identity and identity hash functions for a value family that
+// uses object identity.
+#define OBJECT_IDENTITY_IMPL(family)                                           \
+value_t family##_transient_identity_hash(value_t value) {                      \
+  return OBJ_ADDR_HASH(value);                                                 \
+}                                                                              \
+bool family##_are_identical(value_t a, value_t b) {                            \
+  return (a == b);                                                             \
+}                                                                              \
+SWALLOW_SEMI()
+
 
 // --- O b j e c t ---
 
@@ -649,6 +671,8 @@ void bool_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- I n s t a n c e ---
 
+OBJECT_IDENTITY_IMPL(instance);
+
 void set_instance_fields(value_t value, value_t fields) {
   CHECK_FAMILY(ofInstance, value);
   CHECK_FAMILY(ofIdHashMap, fields);
@@ -681,15 +705,6 @@ size_t get_instance_heap_size(value_t value) {
   return kInstanceSize;
 }
 
-value_t instance_transient_identity_hash(value_t value) {
-  return OBJ_ADDR_HASH(value);
-}
-
-bool instance_are_identical(value_t a, value_t b) {
-  // Instances compare using object identity.
-  return (a == b);
-}
-
 void instance_print_on(value_t value, string_buffer_t *buf) {
   CHECK_FAMILY(ofInstance, value);
   string_buffer_printf(buf, "#<instance: ");
@@ -700,6 +715,46 @@ void instance_print_on(value_t value, string_buffer_t *buf) {
 void instance_print_atomic_on(value_t value, string_buffer_t *buf) {
   CHECK_FAMILY(ofInstance, value);
   string_buffer_printf(buf, "#<instance>");
+}
+
+
+// --- F a c t o r y ---
+
+OBJECT_IDENTITY_IMPL(factory);
+
+void set_factory_constructor(value_t value, value_t constructor) {
+  CHECK_FAMILY(ofFactory, value);
+  CHECK_FAMILY(ofVoidP, constructor);
+  *access_object_field(value, kFactoryConstructorOffset) = constructor;
+}
+
+value_t get_factory_constructor(value_t value) {
+  CHECK_FAMILY(ofFactory, value);
+  return *access_object_field(value, kFactoryConstructorOffset);
+}
+
+
+value_t factory_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofFactory, value);
+  value_t constructor = get_factory_constructor(value);
+  VALIDATE_VALUE_FAMILY(ofVoidP, constructor);
+  return success();
+}
+
+size_t get_factory_heap_size(value_t value) {
+  return kFactorySize;
+}
+
+void factory_print_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofFactory, value);
+  string_buffer_printf(buf, "#<factory: ");
+  value_print_on(get_factory_constructor(value), buf);
+  string_buffer_printf(buf, ">");
+}
+
+void factory_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofInstance, value);
+  string_buffer_printf(buf, "#<factory>");
 }
 
 
