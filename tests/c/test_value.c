@@ -116,7 +116,8 @@ TEST(value, large_id_hash_maps) {
       value_t check_key = new_integer(j);
       value_t check_value = get_id_hash_map_at(map, check_key);
       ASSERT_SUCCESS(check_value);
-      ASSERT_EQ(1024 - j, get_integer_value(check_value));
+      int64_t expected = 1024 - j;
+      ASSERT_EQ(expected, get_integer_value(check_value));
     }
   }
 

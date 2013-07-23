@@ -35,10 +35,11 @@ $(PYTHON_TEST_RUNS): test-python-%: tests/python/% $(GLOBAL_DEPS)
 
 
 # Configuration of the C language dialect to use.
+MACHINE=64
 C_DIALECT_FLAGS=-Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -std=c99 -pedantic
 C_ENV_FLAGS=-Isrc/c -I$(BIN)/tests/c
-CFLAGS=$(C_DIALECT_FLAGS) $(C_ENV_FLAGS) -O0 -g -m32
-LINKFLAGS=
+CFLAGS=$(C_DIALECT_FLAGS) $(C_ENV_FLAGS) -O0 -g -m$(MACHINE) -DM$(MACHINE)=1
+LINKFLAGS=-m$(MACHINE)
 
 
 # The library part of ctrino, that is, everything but main.
