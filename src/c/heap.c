@@ -116,7 +116,10 @@ value_t space_for_each_object(space_t *space, value_callback_t *callback) {
   while (current < space->next_free) {
     value_t value = new_object(current);
     TRY(value_callback_call(callback, value));
-    size_t size = get_object_heap_size(value);
+    object_layout_t layout;
+    object_layout_init(&layout);
+    get_object_layout(value, &layout);
+    size_t size = layout.size;
     CHECK_TRUE("object heap size alignment", is_size_aligned(kValueSize, size));
     current += size;
   }

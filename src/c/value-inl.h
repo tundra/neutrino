@@ -70,8 +70,8 @@ SWALLOW_SEMI()
 
 // Declares the heap size functions for a fixed-size object.
 #define FIXED_SIZE_IMPL(family, Family)                                        \
-size_t get_##family##_heap_size(value_t value) {                               \
-  return k##Family##Size;                                                      \
+void get_##family##_layout(value_t value, object_layout_t *layout_out) {       \
+  object_layout_set(layout_out, k##Family##Size);                              \
 }                                                                              \
 SWALLOW_SEMI()
 
