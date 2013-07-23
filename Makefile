@@ -1,12 +1,16 @@
 BIN=bin
 OUT=$(BIN)/out
 
+# Toggle the valgrind command depending on the VALGRIND variable.
 VALGRIND=off
 ifeq ($(VALGRIND),on)
   VALGRIND_CMD=valgrind -q --leak-check=full
 else
   VALGRIND_CMD=
 endif
+
+# Configurable emulator command that can be used to run tests on an emulator.
+EMULATOR_CMD=
 
 # Default target.
 main:	all-c
@@ -148,7 +152,7 @@ $(C_TEST_MAIN_EXE): $(C_TEST_MAIN_OBJS) $(C_TEST_LIB_OBJS) $(C_LIB_OBJS)
 $(C_TEST_LIB_OUTS):$(OUT)/tests/c/test_%.out:$(C_TEST_MAIN_EXE)
 	@echo Running test_$*
 	@mkdir -p $(shell dirname $@)
-	@$(VALGRIND_CMD) ./$(C_TEST_MAIN_EXE) $* > $@ || touch $@.fail
+	@$(VALGRIND_CMD) $(EMULATOR_CMD) ./$(C_TEST_MAIN_EXE) $* > $@ || touch $@.fail
 	@cat $@
 	@if [ -f $@.fail ]; then rm $@ $@.fail; false; else true; fi
 
