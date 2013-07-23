@@ -154,7 +154,7 @@ $(C_TEST_LIB_OUTS):$(OUT)/tests/c/test_%.out:$(C_TEST_MAIN_EXE)
 	@echo Running test_$*
 	@mkdir -p $(shell dirname $@)
 	@$(VALGRIND_CMD) $(EMULATOR_CMD) ./$(C_TEST_MAIN_EXE) $* > $@ || touch $@.fail
-	@cat $@
+	@cat $@ | ./src/sh/filter-backtrace.sh
 	@if [ -f $@.fail ]; then rm $@ $@.fail; false; else true; fi
 
 

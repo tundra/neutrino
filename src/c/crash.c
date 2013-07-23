@@ -23,7 +23,7 @@ static void print_stack_trace(FILE *out, int signum) {
 
 // Processes crashes.
 static void crash_handler(int signum) {
-  print_stack_trace(stderr, signum);
+  print_stack_trace(stdout, signum);
   // Propagate the signal when we're done with it.
   kill(getpid(), signum);
 }
