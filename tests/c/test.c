@@ -1,5 +1,6 @@
 #include "behavior.h"
 #include "check.h"
+#include "crash.h"
 #include "test.h"
 #include "utils.h"
 #include "value-inl.h"
@@ -38,6 +39,7 @@ void run_unit_test(const char *suite, const char *name, unit_test_data_t *data,
 
 // Run!
 int main(int argc, char *argv[]) {
+  install_crash_handler();
   if (argc >= 2) {
     // If there are arguments run the relevant test suites.
     for (int i = 1; i < argc; i++) {
