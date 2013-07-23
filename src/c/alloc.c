@@ -134,7 +134,7 @@ value_t new_heap_literal_ast(runtime_t *runtime, value_t value) {
 }
 
 value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species) {
-  address_t addr;
+  address_t addr = NULL;
   if (!heap_try_alloc(heap, bytes, &addr))
     return new_signal(scHeapExhausted);
   value_t result = new_object(addr);

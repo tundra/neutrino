@@ -47,7 +47,7 @@ $(PYTHON_TEST_RUNS): test-python-%: tests/python/% $(GLOBAL_DEPS)
 MACHINE=64
 C_DIALECT_FLAGS=-Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -std=c99 -pedantic
 C_ENV_FLAGS=-Isrc/c -I$(BIN)/tests/c
-DEBUG_FLAGS=-O0 -g -rdynamic
+DEBUG_FLAGS=-O0 -g
 CFLAGS=$(C_DIALECT_FLAGS) $(C_ENV_FLAGS) $(DEBUG_FLAGS) -m$(MACHINE) -DM$(MACHINE)=1
 LINKFLAGS=-m$(MACHINE) -rdynamic
 
@@ -64,7 +64,7 @@ C_LIB_DEPS=$(C_LIB_HDRS) $(GLOBAL_DEPS)
 $(C_LIB_OBJS): $(BIN)/%.o: %.c $(C_LIB_DEPS)
 	@mkdir -p $(shell dirname $@)
 	@echo Compiling $<
-	@gcc $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 
 # The main part of ctrino.
@@ -78,14 +78,14 @@ C_MAIN_EXE=$(BIN)/ctrino
 $(C_MAIN_OBJS): $(BIN)/%.o: %.c $(C_MAIN_DEPS)
 	@mkdir -p $(shell dirname $@)
 	@echo Compiling $<
-	@gcc $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 
 # Build the ctrino executable.
 $(C_MAIN_EXE): $(C_MAIN_OBJS) $(C_LIB_OBJS)
 	@mkdir -p $(shell dirname $@)
 	@echo Building $@
-	@gcc $(LINKFLAGS) $^ -o $@
+	@$(CC) $(LINKFLAGS) $^ -o $@
 
 
 # The library parts of the tests, that it, everything but the test main.
@@ -102,7 +102,7 @@ C_TEST_LIB_DEPS=$(C_LIB_DEPS) $(C_TEST_LIB_HDRS)
 $(C_TEST_LIB_OBJS): $(BIN)/%.o: %.c $(C_TEST_LIB_DEPS)
 	@mkdir -p $(shell dirname $@)
 	@echo Compiling $<
-	@gcc $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 
 # The generated table of contents
@@ -138,14 +138,14 @@ C_TEST_MAIN_EXE=$(BIN)/tests/c/main
 $(C_TEST_MAIN_OBJS): $(BIN)/%.o: %.c $(C_TEST_MAIN_DEPS)
 	@mkdir -p $(shell dirname $@)
 	@echo Compiling $<
-	@gcc $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 
 # Build all the tests into one executable.
 $(C_TEST_MAIN_EXE): $(C_TEST_MAIN_OBJS) $(C_TEST_LIB_OBJS) $(C_LIB_OBJS)
 	@mkdir -p $(shell dirname $@)
 	@echo Building $@
-	@gcc $(LINKFLAGS) $^ -o $@
+	@$(CC) $(LINKFLAGS) $^ -o $@
 
 
 # Run a C test and store the result in a file. This is kind of tricky because
@@ -154,7 +154,7 @@ $(C_TEST_LIB_OUTS):$(OUT)/tests/c/test_%.out:$(C_TEST_MAIN_EXE)
 	@echo Running test_$*
 	@mkdir -p $(shell dirname $@)
 	@$(VALGRIND_CMD) $(EMULATOR_CMD) ./$(C_TEST_MAIN_EXE) $* > $@ || touch $@.fail
-	@cat $@
+	@cat $@ | ./src/sh/filter-backtrace.sh
 	@if [ -f $@.fail ]; then rm $@ $@.fail; false; else true; fi
 
 
