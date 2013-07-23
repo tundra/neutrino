@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# Dummy configuration script that does nothing but just ensures that tools
+# that need that kind of thing don't break.
