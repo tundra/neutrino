@@ -1,7 +1,16 @@
 BIN=bin
 OUT=$(BIN)/out
-VALGRIND=valgrind -q --leak-check=full
 
+# Toggle the valgrind command depending on the VALGRIND variable.
+VALGRIND=off
+ifeq ($(VALGRIND),on)
+  VALGRIND_CMD=valgrind -q --leak-check=full
+else
+  VALGRIND_CMD=
+endif
+
+# Configurable emulator command that can be used to run tests on an emulator.
+EMULATOR_CMD=
 
 # Default target.
 main:	all-c
@@ -35,10 +44,11 @@ $(PYTHON_TEST_RUNS): test-python-%: tests/python/% $(GLOBAL_DEPS)
 
 
 # Configuration of the C language dialect to use.
+MACHINE=64
 C_DIALECT_FLAGS=-Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -std=c99 -pedantic
 C_ENV_FLAGS=-Isrc/c -I$(BIN)/tests/c
-CFLAGS=$(C_DIALECT_FLAGS) $(C_ENV_FLAGS) -O0 -g
-LINKFLAGS=
+CFLAGS=$(C_DIALECT_FLAGS) $(C_ENV_FLAGS) -O0 -g -m$(MACHINE) -DM$(MACHINE)=1
+LINKFLAGS=-m$(MACHINE)
 
 
 # The library part of ctrino, that is, everything but main.
@@ -142,7 +152,7 @@ $(C_TEST_MAIN_EXE): $(C_TEST_MAIN_OBJS) $(C_TEST_LIB_OBJS) $(C_LIB_OBJS)
 $(C_TEST_LIB_OUTS):$(OUT)/tests/c/test_%.out:$(C_TEST_MAIN_EXE)
 	@echo Running test_$*
 	@mkdir -p $(shell dirname $@)
-	@$(VALGRIND) ./$(C_TEST_MAIN_EXE) $* > $@ || touch $@.fail
+	@$(VALGRIND_CMD) $(EMULATOR_CMD) ./$(C_TEST_MAIN_EXE) $* > $@ || touch $@.fail
 	@cat $@
 	@if [ -f $@.fail ]; then rm $@ $@.fail; false; else true; fi
 
