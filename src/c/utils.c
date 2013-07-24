@@ -76,12 +76,14 @@ static void *system_malloc_trampoline(void *data, size_t size) {
   CHECK_EQ("invalid system allocator", NULL, data);
   void *result = malloc(size);
   memset(result, kMallocHeapMarker, size);
+  fprintf(stdout, "malloc: %p %li\n", result, size); fflush(stdout);
   return result;
 }
 
 // Throws away the data argument and just calls free.
 static void system_free_trampoline(void *data, void *ptr) {
   CHECK_EQ("invalid system allocator", NULL, data);
+  fprintf(stdout, "free: %p\n", ptr); fflush(stdout);
   free(ptr);
 }
 
