@@ -1,18 +1,21 @@
 MACHINE=64
 
-BIN=bin-$(MACHINE)
-OUT=$(BIN)/out
-
 # Toggle the valgrind command depending on the VALGRIND variable.
 VALGRIND=off
+
+# Configurable emulator command that can be used to run tests on an emulator.
+EMULATOR_CMD=
+
+-include .$(CONFIG).cfg
+
 ifeq ($(VALGRIND),on)
   VALGRIND_CMD=valgrind -q --leak-check=full
 else
   VALGRIND_CMD=
 endif
 
-# Configurable emulator command that can be used to run tests on an emulator.
-EMULATOR_CMD=
+BIN=bin-$(MACHINE)
+OUT=$(BIN)/out
 
 # Default target.
 main:	all-c
