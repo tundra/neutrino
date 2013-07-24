@@ -1,4 +1,6 @@
-BIN=bin
+MACHINE=64
+
+BIN=bin-$(MACHINE)
 OUT=$(BIN)/out
 
 # Toggle the valgrind command depending on the VALGRIND variable.
@@ -44,7 +46,6 @@ $(PYTHON_TEST_RUNS): test-python-%: tests/python/% $(GLOBAL_DEPS)
 
 
 # Configuration of the C language dialect to use.
-MACHINE=64
 C_DIALECT_FLAGS=-Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -std=c99 -pedantic
 C_ENV_FLAGS=-Isrc/c -I$(BIN)/tests/c
 DEBUG_FLAGS=-O0 -g
@@ -56,7 +57,7 @@ LINKFLAGS=-m$(MACHINE) -rdynamic
 C_MAIN_NAME=main.c
 C_LIB_SRCS=$(shell find src/c -name "*.c" -and -not -name $(C_MAIN_NAME) | sort)
 C_LIB_HDRS=$(shell find src/c -name "*.h" | sort)
-C_LIB_OBJS=$(patsubst %.c, bin/%.o, $(C_LIB_SRCS))
+C_LIB_OBJS=$(patsubst %.c, $(BIN)/%.o, $(C_LIB_SRCS))
 C_LIB_DEPS=$(C_LIB_HDRS) $(GLOBAL_DEPS)
 
 
@@ -69,7 +70,7 @@ $(C_LIB_OBJS): $(BIN)/%.o: %.c $(C_LIB_DEPS)
 
 # The main part of ctrino.
 C_MAIN_SRCS=$(shell find src/c -name "*.c" -and -name $(C_MAIN_NAME) | sort)
-C_MAIN_OBJS=$(patsubst %.c, bin/%.o, $(C_MAIN_SRCS))
+C_MAIN_OBJS=$(patsubst %.c, $(BIN)/%.o, $(C_MAIN_SRCS))
 C_MAIN_DEPS=$(C_LIB_DEPS)
 C_MAIN_EXE=$(BIN)/ctrino
 

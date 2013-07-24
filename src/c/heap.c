@@ -23,7 +23,7 @@ value_t value_callback_call(value_callback_t *callback, value_t value) {
 static const byte_t kBlankHeapMarker = 0xBE;
 static const byte_t kAllocedHeapMarker = 0xFA;
 
-address_t align_address(uint32_t alignment, address_t ptr) {
+address_t align_address(address_arith_t alignment, address_t ptr) {
   address_arith_t addr = (address_arith_t) ptr;
   return (address_t) ((addr + (alignment - 1)) & ~(alignment - 1));
 }
@@ -68,8 +68,9 @@ value_t space_init(space_t *space, space_config_t *config_or_null) {
     return new_signal(scSystemError);
   // Clear the newly allocated memory to a recognizable value.
   memset(memory, kBlankHeapMarker, bytes);
+  address_t aligned = align_address(kValueSize, memory);
   space->memory = memory;
-  space->next_free = space->start = align_address(kValueSize, memory);
+  space->next_free = space->start = aligned;
   // If malloc gives us an aligned pointer using only 'size_bytes' of memory
   // wastes the extra word we allocated to make room for alignment. However,
   // making the space size slightly different depending on whether malloc

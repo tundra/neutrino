@@ -30,6 +30,9 @@ TEST(heap, align_address) {
   ASSERT_EQ((address_t) 4, align_address(4, (address_t) 1));
   ASSERT_EQ((address_t) 4, align_address(4, (address_t) 4));
   ASSERT_EQ((address_t) 8, align_address(4, (address_t) 5));
+#ifdef M64
+  ASSERT_EQ((address_t) 0x2ba3b9505010, align_address(8, (address_t) 0x2ba3b9505010));
+#endif
 }
 
 TEST(heap, space_alloc) {
