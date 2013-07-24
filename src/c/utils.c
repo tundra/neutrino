@@ -69,11 +69,14 @@ void blob_copy_to(blob_t *src, blob_t *dest) {
   memcpy(dest->data, src->data, blob_length(src));
 }
 
+static const byte_t kMallocHeapMarker = 0xB0;
 
 // Throws away the data argument and just calls malloc.
 static void *system_malloc_trampoline(void *data, size_t size) {
   CHECK_EQ("invalid system allocator", NULL, data);
-  return malloc(size);
+  void *result = malloc(size);
+  memset(result, kMallocHeapMarker, size);
+  return result;
 }
 
 // Throws away the data argument and just calls free.
