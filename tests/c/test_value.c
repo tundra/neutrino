@@ -45,6 +45,7 @@ TEST(value, id_hash_maps_simple) {
   value_t map = new_heap_id_hash_map(&runtime, 4);
   ASSERT_FAMILY(ofIdHashMap, map);
   ASSERT_EQ(0, get_id_hash_map_size(map));
+  ASSERT_SIGNAL(scNotFound, get_id_hash_map_at(map, new_integer(0)));
   // Add something to it.
   ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(0), new_integer(1)));
   ASSERT_EQ(1, get_id_hash_map_size(map));

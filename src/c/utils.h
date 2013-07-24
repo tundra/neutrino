@@ -30,6 +30,9 @@ void string_copy_to(string_t *str, char *dest, size_t count);
 // Returns true iff the two strings are equal.
 bool string_equals(string_t *a, string_t *b);
 
+// Returns true iff the given string is equal to the given c-string.
+bool string_equals_cstr(string_t *a, const char *b);
+
 // Calculates a hash code for the given string.
 size_t string_hash(string_t *str);
 

@@ -21,6 +21,8 @@ typedef struct {
   value_t instance_species;
   value_t factory_species;
   value_t literal_ast_species;
+  // String->factory mapping.
+  value_t syntax_factories;
   // Singletons
   value_t null;
   value_t thrue;

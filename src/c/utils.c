@@ -36,6 +36,12 @@ bool string_equals(string_t *a, string_t *b) {
   return true;
 }
 
+bool string_equals_cstr(string_t *a, const char *str) {
+  string_t b;
+  string_init(&b, str);
+  return string_equals(a, &b);
+}
+
 size_t string_hash(string_t *str) {
   // This is a dreadful hash but it has the right properties. Improve later.
   size_t length = string_length(str);

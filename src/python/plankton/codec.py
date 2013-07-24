@@ -91,15 +91,25 @@ class DataOutputStream(object):
     self.object_offset += 1
     return index
 
+  def resolve_object(self, obj):
+    if isinstance(obj, EnvironmentPlaceholder):
+      return obj.key
+    else:
+      return (self.resolver)(obj)
+
   # Emit a tagged object or reference.
   def visit_object(self, obj):
     if obj in self.object_index:
+      # We've already emitted this object so just reference the previous
+      # instance.
       self._add_byte(_REFERENCE_TAG)
       offset = self.object_offset - self.object_index[obj] - 1
       self._encode_uint32(offset)
     else:
-      resolved = (self.resolver)(obj)
+      resolved = self.resolve_object(obj)
       if resolved is None:
+        # This object is not an environment reference so just emit it
+        # directly.
         name = obj.__class__.__name__
         desc = _DESCRIPTORS.get(name, None)
         if desc is None:
@@ -280,17 +290,28 @@ _DESCRIPTORS = {}
 _DEFAULT_DESCRIPTOR = DefaultDescriptor()
 
 
+# An object that will always be resolved as an environment reference.
+class EnvironmentPlaceholder(object):
+
+  def __init__(self, key):
+    self.key = key
+
+
 # A description of how to serialize and deserialize values of a particular
 # type.
 class ObjectDescriptor(object):
 
-  def __init__(self, klass):
+  def __init__(self, klass, environment):
     self.klass = klass
+    if environment is None:
+      self.header = self.klass.__name__
+    else:
+      self.header = EnvironmentPlaceholder(environment)
     self.fields = None
 
   # Returns the header to use when encoding the given instance
   def get_header(self):
-    return self.klass.__name__
+    return self.header
 
   # Returns the data payload to use when encoding the given instance.
   def get_payload(self, instance):
@@ -318,10 +339,12 @@ class ObjectDescriptor(object):
 
 
 # Marks the given class as serializable.
-def serializable(klass):
-  name = klass.__name__
-  _DESCRIPTORS[name] = ObjectDescriptor(klass)
-  return klass
+def serializable(environment=None):
+  def callback(klass):
+    name = klass.__name__
+    _DESCRIPTORS[name] = ObjectDescriptor(klass, environment)
+    return klass
+  return callback
 
 
 # When used to decorate __init__ indicates that a serializable class has the
