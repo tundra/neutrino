@@ -102,8 +102,8 @@ bool space_try_alloc(space_t *space, size_t size, address_t *memory_out) {
   if (next <= space->limit) {
     // Clear the newly allocated memory to a different value, again to make the
     // contents recognizable.
+    printf("%p\n", addr);
     memset(addr, kAllocedHeapMarker, aligned);
-    printf("%p\n", memory_out);
     *memory_out = addr;
     space->next_free = next;
     return true;
