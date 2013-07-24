@@ -64,12 +64,15 @@ value_t space_init(space_t *space, space_config_t *config_or_null) {
   // alignment.
   size_t bytes = config->size_bytes + kValueSize;
   address_t memory = allocator_malloc(&space->allocator, bytes);
+  fprintf(stdout, "allocator_malloc: %p\n", memory); fflush(stdout);
   if (memory == NULL)
     return new_signal(scSystemError);
   // Clear the newly allocated memory to a recognizable value.
   memset(memory, kBlankHeapMarker, bytes);
+  address_t aligned = align_address(kValueSize, memory);
+  fprintf(stdout, "aligned: %p\n", aligned); fflush(stdout);
   space->memory = memory;
-  space->next_free = space->start = align_address(kValueSize, memory);
+  space->next_free = space->start = aligned;
   // If malloc gives us an aligned pointer using only 'size_bytes' of memory
   // wastes the extra word we allocated to make room for alignment. However,
   // making the space size slightly different depending on whether malloc
