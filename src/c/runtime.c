@@ -16,10 +16,16 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   ENUM_COMPACT_OBJECT_FAMILIES(CREATE_COMPACT_SPECIES)
 #undef CREATE_COMPACT_SPECIES
 
-  // Singletons
+  // Initialize singletons first since we need those to create more complex
+  // values below.
   TRY_SET(roots->null, new_heap_null(runtime));
   TRY_SET(roots->thrue, new_heap_bool(runtime, true));
   TRY_SET(roots->fahlse, new_heap_bool(runtime, false));
+
+  TRY_DEF(syntax_factories, new_heap_id_hash_map(runtime, 16));
+  init_syntax_factory_map(syntax_factories, runtime);
+  roots->syntax_factories = syntax_factories;
+
   return success();
 }
 
@@ -30,6 +36,7 @@ void roots_clear(roots_t *roots) {
 #undef CLEAR_SPECIES_FIELD
 
   // Clear the singletons manually.
+  roots->syntax_factories = success();
   roots->null = success();
   roots->thrue = success();
   roots->fahlse = success();

@@ -462,6 +462,8 @@ value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value) {
 
 value_t get_id_hash_map_at(value_t map, value_t key) {
   CHECK_FAMILY(ofIdHashMap, map);
+  // We need to handle this as a special case otherwise the find loop won't
+  // terminate.
   TRY_DEF(hash_value, value_transient_identity_hash(key));
   size_t hash = get_integer_value(hash_value);
   value_t *entry = NULL;

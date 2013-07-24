@@ -3,7 +3,7 @@
 import plankton
 
 # A constant literal value.
-@plankton.serializable
+@plankton.serializable(("ast", "Literal"))
 class Literal(object):
 
   @plankton.field("value")
@@ -16,7 +16,7 @@ class Literal(object):
 
 # A reference to an enclosing binding. The name is used before the variable
 # has been resolved, the symbol after.
-@plankton.serializable
+@plankton.serializable()
 class Variable(object):
 
   @plankton.field("symbol")
@@ -29,7 +29,7 @@ class Variable(object):
 
 
 # A multi-method invocation.
-@plankton.serializable
+@plankton.serializable()
 class Invocation(object):
 
   @plankton.field("arguments")
@@ -41,7 +41,7 @@ class Invocation(object):
 
 
 # An individual argument to an invocation.
-@plankton.serializable
+@plankton.serializable()
 class Argument(object):
 
   @plankton.field("tag")
@@ -55,7 +55,7 @@ class Argument(object):
 
 
 # A binding from a symbol to a value.
-@plankton.serializable
+@plankton.serializable()
 class Binding(object):
 
   @plankton.field("symbol")
@@ -67,7 +67,7 @@ class Binding(object):
 
 # A sequence of expressions to execute in order, yielding the value of the last
 # expression.
-@plankton.serializable
+@plankton.serializable()
 class Sequence(object):
 
   @plankton.field("values")
@@ -76,7 +76,7 @@ class Sequence(object):
 
 
 # A symbol that identifies a scoped binding.
-@plankton.serializable
+@plankton.serializable()
 class Symbol(object):
 
   @plankton.field("display_name")
@@ -84,7 +84,7 @@ class Symbol(object):
     self.display_name = display_name
 
 
-@plankton.serializable
+@plankton.serializable()
 class Path(object):
 
   @plankton.field("parts")
@@ -92,7 +92,7 @@ class Path(object):
     self.parts = parts
 
 
-@plankton.serializable
+@plankton.serializable()
 class Name(object):
 
   @plankton.field("path")

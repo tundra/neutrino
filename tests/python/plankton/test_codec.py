@@ -5,7 +5,7 @@ import plankton
 import unittest
 
 
-@plankton.serializable
+@plankton.serializable()
 class Pair(object):
 
   @plankton.field("first")
@@ -21,7 +21,7 @@ class Pair(object):
     return "(%s, %s)" % (self.first, self.second)
 
 
-@plankton.serializable
+@plankton.serializable()
 class Key(object):
 
   @plankton.field("id")

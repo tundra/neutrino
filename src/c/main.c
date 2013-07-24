@@ -1,4 +1,5 @@
 #include "alloc.h"
+#include "crash.h"
 #include "plankton.h"
 #include "runtime.h"
 #include "value-inl.h"
@@ -45,7 +46,9 @@ static value_t neutrino_main(int argc, char *argv[]) {
       TRY_SET(input, read_file_to_blob(&runtime, file));
       fclose(file);
     }
-    TRY_DEF(value, plankton_deserialize(&runtime, NULL, input));
+    value_mapping_t syntax_mapping;
+    TRY(init_syntax_mapping(&syntax_mapping, &runtime));
+    TRY_DEF(value, plankton_deserialize(&runtime, &syntax_mapping, input));
     value_print_ln(value);
   }
 
@@ -54,6 +57,7 @@ static value_t neutrino_main(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
+  install_crash_handler();
   value_t result = neutrino_main(argc, argv);
   if (get_value_domain(result) == vdSignal) {
     value_print_ln(result);
