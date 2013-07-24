@@ -23,7 +23,7 @@ value_t value_callback_call(value_callback_t *callback, value_t value) {
 static const byte_t kBlankHeapMarker = 0xBE;
 static const byte_t kAllocedHeapMarker = 0xFA;
 
-address_t align_address(uint32_t alignment, address_t ptr) {
+address_t align_address(address_arith_t alignment, address_t ptr) {
   address_arith_t addr = (address_arith_t) ptr;
   return (address_t) ((addr + (alignment - 1)) & ~(alignment - 1));
 }
@@ -64,13 +64,11 @@ value_t space_init(space_t *space, space_config_t *config_or_null) {
   // alignment.
   size_t bytes = config->size_bytes + kValueSize;
   address_t memory = allocator_malloc(&space->allocator, bytes);
-  fprintf(stdout, "allocator_malloc: %p\n", memory); fflush(stdout);
   if (memory == NULL)
     return new_signal(scSystemError);
   // Clear the newly allocated memory to a recognizable value.
   memset(memory, kBlankHeapMarker, bytes);
   address_t aligned = align_address(kValueSize, memory);
-  fprintf(stdout, "aligned: %p\n", aligned); fflush(stdout);
   space->memory = memory;
   space->next_free = space->start = aligned;
   // If malloc gives us an aligned pointer using only 'size_bytes' of memory
@@ -105,12 +103,8 @@ bool space_try_alloc(space_t *space, size_t size, address_t *memory_out) {
   if (next <= space->limit) {
     // Clear the newly allocated memory to a different value, again to make the
     // contents recognizable.
-    fprintf(stdout, "1\n"); fflush(stdout);
-    fprintf(stdout, "memset: %p %i %li\n", addr, kAllocedHeapMarker, aligned); fflush(stdout);
     memset(addr, kAllocedHeapMarker, aligned);
-    fprintf(stdout, "2\n"); fflush(stdout);
     *memory_out = addr;
-    fprintf(stdout, "3\n"); fflush(stdout);
     space->next_free = next;
     return true;
   } else {
