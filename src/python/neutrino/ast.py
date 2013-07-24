@@ -3,7 +3,7 @@
 import plankton
 
 # A constant literal value.
-@plankton.serializable(["ast", "Literal"])
+@plankton.serializable(("ast", "Literal"))
 class Literal(object):
 
   @plankton.field("value")

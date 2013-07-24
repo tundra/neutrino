@@ -24,7 +24,7 @@ def visit_data(data, visitor):
     return visitor.visit_int(data)
   elif t == str:
     return visitor.visit_string(data)
-  elif t == list:
+  elif (t == list) or (t == tuple):
     return visitor.visit_array(data)
   elif t == dict:
     return visitor.visit_map(data)
@@ -239,12 +239,18 @@ class DataInputStream(object):
     desc.apply_payload(instance, payload)
     return instance
 
+  def access_environment(self, key):
+    if (type(key) is list) and not self.descriptors.get(tuple(key), None) is None:
+      return EnvironmentPlaceholder(tuple(key))
+    else:
+      return (self.access)(key)
+
   def _decode_environment(self):
     index = self.object_offset
     self.object_offset += 1
     self.object_index[index] = None
     key = self.read_object()
-    value = (self.access)(key)
+    value = self.access_environment(key)
     self.object_index[index] = value
     return value
 
@@ -296,6 +302,15 @@ class EnvironmentPlaceholder(object):
   def __init__(self, key):
     self.key = key
 
+  def __hash__(self):
+    return ~hash(self.key)
+
+  def __eq__(self, that):
+    if not isinstance(that, EnvironmentPlaceholder):
+      return False
+    else:
+      return self.key == that.key
+
 
 # A description of how to serialize and deserialize values of a particular
 # type.
@@ -341,8 +356,19 @@ class ObjectDescriptor(object):
 # Marks the given class as serializable.
 def serializable(environment=None):
   def callback(klass):
-    name = klass.__name__
-    _DESCRIPTORS[name] = ObjectDescriptor(klass, environment)
+    descriptor = ObjectDescriptor(klass, environment)
+    # We need to be able to access the descriptor through the class' name,
+    # that's how we get access to it when serializing an instance.
+    _DESCRIPTORS[klass.__name__] = descriptor
+    if not environment is None:
+      # If there is an environment we also key the descriptor under the
+      # environment key such that when we meet the key during deserialization
+      # we know there's a descriptor.
+      _DESCRIPTORS[environment] = descriptor
+      # Finally we key it under the environment placeholder such that once
+      # the header has been read as an environment placeholder the object
+      # construction code can get it that way.
+      _DESCRIPTORS[EnvironmentPlaceholder(environment)] = descriptor
     return klass
   return callback
 
