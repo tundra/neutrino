@@ -1,5 +1,6 @@
 #include "alloc.h"
 #include "plankton.h"
+#include "value-inl.h"
 #include "test.h"
 
 // Encodes and decodes a plankton value and returns the result.
@@ -12,7 +13,6 @@ static value_t transcode_plankton(runtime_t *runtime, value_mapping_t *resolver,
   ASSERT_SUCCESS(decoded);
   return decoded;
 }
-
 
 // Encodes and decodes a plankton value and checks that the result is the
 // same as the input. Returns the decoded value.
@@ -224,32 +224,60 @@ TEST(plankton, env_resolution) {
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
-static value_t write_string(const char *c_str, byte_buffer_t *buf) {
+// Writes a tagged plankton string to the given buffer.
+static value_t write_string(byte_buffer_t *buf, const char *c_str) {
   string_t str;
   string_init(&str, c_str);
   byte_buffer_append(buf, pString);
   return plankton_wire_encode_string(&str, buf);
 }
 
+// Writes an ast factory reference with the given ast type to the given buffer.
+static value_t write_ast_factory(byte_buffer_t *buf, const char *ast_type) {
+  byte_buffer_append(buf, pEnvironment);
+  byte_buffer_append(buf, pArray);
+  TRY(plankton_wire_encode_uint32(2, buf));
+  TRY(write_string(buf, "ast"));
+  TRY(write_string(buf, ast_type));
+  return success();
+}
+
+// Deserializes the contents of the given buffer as plankton within the given
+// runtime, resolving environment references using a syntax mapping.
+static value_t deserialize(runtime_t *runtime, byte_buffer_t *buf) {
+  blob_t raw_blob;
+  byte_buffer_flush(buf, &raw_blob);
+  value_t blob = new_heap_blob_with_data(runtime, &raw_blob);
+  value_mapping_t syntax_mapping;
+  TRY(init_syntax_mapping(&syntax_mapping, runtime));
+  return plankton_deserialize(runtime, &syntax_mapping, blob);
+}
+
 TEST(plankton, env_construction) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
-  byte_buffer_t buf;
-  byte_buffer_init(&buf, NULL);
-  byte_buffer_append(&buf, pEnvironment);
-  byte_buffer_append(&buf, pArray);
-  plankton_wire_encode_uint32(2, &buf);
-  write_string("ast", &buf);
-  write_string("Literal", &buf);
-  blob_t raw_blob;
-  byte_buffer_flush(&buf, &raw_blob);
-  value_t blob =
-  plankton_deserialize(&runtime, NULL, )
+  // Environment references resolve correctly to ast factories.
+  {
+    byte_buffer_t buf;
+    byte_buffer_init(&buf, NULL);
+    write_ast_factory(&buf, "Literal");
+    value_t value = deserialize(&runtime, &buf);
+    ASSERT_FAMILY(ofFactory, value);
+    byte_buffer_dispose(&buf);
+  }
 
-  byte_buffer_dispose(&buf);
-
-
+  {
+    byte_buffer_t buf;
+    byte_buffer_init(&buf, NULL);
+    byte_buffer_append(&buf, pObject);
+    write_ast_factory(&buf, "Literal");
+    byte_buffer_append(&buf, pMap);
+    plankton_wire_encode_uint32(0, &buf);
+    value_t value = deserialize(&runtime, &buf);
+    ASSERT_FAMILY(ofLiteralAst, value);
+    byte_buffer_dispose(&buf);
+  }
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

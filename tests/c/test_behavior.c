@@ -140,12 +140,12 @@ TEST(behavior, new_instance) {
 
   value_t dummy_fact = new_heap_factory(&runtime, dummy_constructor);
   ASSERT_SUCCESS(dummy_fact);
-  value_t instance = new_instance_of_value(&runtime, dummy_fact);
+  value_t instance = new_object_with_type(&runtime, dummy_fact);
   ASSERT_VALEQ(new_integer(434), instance);
 
   value_t signal_fact = new_heap_factory(&runtime, signal_constructor);
   ASSERT_SUCCESS(signal_fact);
-  value_t sig = new_instance_of_value(&runtime, signal_fact);
+  value_t sig = new_object_with_type(&runtime, signal_fact);
   ASSERT_SIGNAL(scNothing, sig);
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));

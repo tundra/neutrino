@@ -337,15 +337,15 @@ static value_t string_deserialize(deserialize_state_t *state) {
 
 static value_t object_deserialize(deserialize_state_t *state) {
   // Read the header before creating the instance.
-  TRY(value_deserialize(state));
+  TRY_DEF(header, value_deserialize(state));
   // Assign an offset to this object.
   size_t offset = state->object_offset;
   state->object_offset++;
-  TRY_DEF(result, new_heap_instance(state->runtime));
+  TRY_DEF(result, new_object_with_type(state->runtime, header));
   TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
       result));
   TRY_DEF(payload, value_deserialize(state));
-  set_instance_fields(result, payload);
+  set_object_payload(state->runtime, result, payload);
   return result;
 }
 
