@@ -39,6 +39,17 @@ value_t new_heap_blob(runtime_t *runtime, size_t length) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_blob_with_data(runtime_t *runtime, blob_t *contents) {
+  // Allocate the blob object to hold the result.
+  TRY_DEF(blob, new_heap_blob(runtime, blob_length(contents)));
+  blob_t blob_data;
+  get_blob_data(blob, contents);
+  // Copy the result into the heap blob.
+  blob_copy_to(contents, &blob_data);
+  return blob;
+
+}
+
 value_t new_heap_compact_species_unchecked(runtime_t *runtime, object_family_t instance_family,
     family_behavior_t *family_behavior) {
   size_t bytes = kCompactSpeciesSize;

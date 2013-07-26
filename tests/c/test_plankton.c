@@ -223,3 +223,33 @@ TEST(plankton, env_resolution) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+static value_t write_string(const char *c_str, byte_buffer_t *buf) {
+  string_t str;
+  string_init(&str, c_str);
+  byte_buffer_append(buf, pString);
+  return plankton_wire_encode_string(&str, buf);
+}
+
+TEST(plankton, env_construction) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  byte_buffer_t buf;
+  byte_buffer_init(&buf, NULL);
+  byte_buffer_append(&buf, pEnvironment);
+  byte_buffer_append(&buf, pArray);
+  plankton_wire_encode_uint32(2, &buf);
+  write_string("ast", &buf);
+  write_string("Literal", &buf);
+  blob_t raw_blob;
+  byte_buffer_flush(&buf, &raw_blob);
+  value_t blob =
+  plankton_deserialize(&runtime, NULL, )
+
+  byte_buffer_dispose(&buf);
+
+
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}

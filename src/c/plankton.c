@@ -4,21 +4,6 @@
 
 #include <string.h>
 
-// The different plankton type tags.
-typedef enum {
-  pInt32 = 0,
-  pString = 1,
-  pArray = 2,
-  pMap = 3,
-  pNull = 4,
-  pTrue = 5,
-  pFalse = 6,
-  pObject = 7,
-  pReference = 8,
-  pEnvironment = 9,
-} plankton_tag_t;
-
-
 // --- B y t e   s t r e a m ---
 
 // A stream that allows bytes to be read one at a time from a blob.
@@ -82,8 +67,7 @@ static value_t serialize_state_init(serialize_state_t *state, runtime_t *runtime
 // Serialize any (non-signal) value on the given buffer.
 static value_t value_serialize(value_t value, serialize_state_t *state);
 
-// Encodes an unsigned 32-bit integer.
-static value_t encode_uint32(uint32_t value, byte_buffer_t *buf) {
+value_t plankton_wire_encode_uint32(uint32_t value, byte_buffer_t *buf) {
   while (value > 0x7F) {
     // As long as the value doesn't fit in 7 bits chop off 7 bits and mark
     // them with a high 1 to indicate that there's more coming.
@@ -98,7 +82,7 @@ static value_t encode_uint32(uint32_t value, byte_buffer_t *buf) {
 // Zig-zag encodes a 32-bit signed integer.
 static value_t encode_int32(int32_t value, byte_buffer_t *buf) {
   uint32_t zig_zag = (value << 1) ^ (value >> 31);
-  return encode_uint32(zig_zag, buf);
+  return plankton_wire_encode_uint32(zig_zag, buf);
 }
 
 static value_t integer_serialize(value_t value, byte_buffer_t *buf) {
@@ -120,7 +104,7 @@ static value_t array_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofArray, value);
   byte_buffer_append(state->buf, pArray);
   size_t length = get_array_length(value);
-  encode_uint32(length, state->buf);
+  plankton_wire_encode_uint32(length, state->buf);
   for (size_t i = 0; i < length; i++) {
     TRY(value_serialize(get_array_at(value, i), state));
   }
@@ -131,7 +115,7 @@ static value_t map_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofIdHashMap, value);
   byte_buffer_append(state->buf, pMap);
   size_t entry_count = get_id_hash_map_size(value);
-  encode_uint32(entry_count, state->buf);
+  plankton_wire_encode_uint32(entry_count, state->buf);
   id_hash_map_iter_t iter;
   id_hash_map_iter_init(&iter, value);
   size_t entries_written = 0;
@@ -147,16 +131,20 @@ static value_t map_serialize(value_t value, serialize_state_t *state) {
   return success();
 }
 
+value_t plankton_wire_encode_string(string_t *str, byte_buffer_t *buf) {
+  size_t length = string_length(str);
+  plankton_wire_encode_uint32(length, buf);
+  for (size_t i = 0; i < length; i++)
+    byte_buffer_append(buf, string_char_at(str, i));
+  return success();
+}
+
 static value_t string_serialize(value_t value, byte_buffer_t *buf) {
   CHECK_FAMILY(ofString, value);
-  byte_buffer_append(buf, pString);
   string_t contents;
   get_string_contents(value, &contents);
-  size_t length = string_length(&contents);
-  encode_uint32(length, buf);
-  for (size_t i = 0; i < length; i++)
-    byte_buffer_append(buf, string_char_at(&contents, i));
-  return success();
+  byte_buffer_append(buf, pString);
+  return plankton_wire_encode_string(&contents, buf);
 }
 
 static void register_serialized_object(value_t value, serialize_state_t *state) {
@@ -193,7 +181,7 @@ static value_t instance_serialize(value_t value, serialize_state_t *state) {
     size_t delta = get_integer_value(ref);
     size_t offset = state->object_offset - delta - 1;
     byte_buffer_append(state->buf, pReference);
-    encode_uint32(offset, state->buf);
+    plankton_wire_encode_uint32(offset, state->buf);
     return success();
   }
 }
@@ -252,14 +240,9 @@ value_t plankton_serialize(runtime_t *runtime, value_mapping_t *resolver_or_null
   TRY(value_serialize(data, &state));
   blob_t buffer_data;
   byte_buffer_flush(&buf, &buffer_data);
-  // Allocate the blob object to hold the result.
-  TRY_DEF(blob, new_heap_blob(runtime, blob_length(&buffer_data)));
-  blob_t blob_data;
-  get_blob_data(blob, &blob_data);
-  // Copy the result into the heap blob.
-  blob_copy_to(&buffer_data, &blob_data);
+  TRY_DEF(result, new_heap_blob_with_data(runtime, &buffer_data));
   byte_buffer_dispose(&buf);
-  return blob;
+  return result;
 }
 
 void value_mapping_init(value_mapping_t *resolver,
