@@ -67,8 +67,10 @@ static value_t new_literal_ast(runtime_t *runtime) {
   return new_heap_literal_ast(runtime, runtime->roots.null);
 }
 
-value_t set_literal_ast_contents(value_t value, runtime_t *runtime, value_t contents) {
-  // TODO: actually set the contents.
+value_t set_literal_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+  SIG_CHECK_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(value, get_id_hash_map_at(contents, runtime->roots.string_table.value));
+  set_literal_ast_value(object, value);
   return success();
 }
 

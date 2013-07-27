@@ -274,9 +274,12 @@ TEST(plankton, env_construction) {
     byte_buffer_append(&buf, pObject);
     write_ast_factory(&buf, "Literal");
     byte_buffer_append(&buf, pMap);
-    plankton_wire_encode_uint32(&buf, 0);
+    plankton_wire_encode_uint32(&buf, 1);
+    write_string(&buf, "value");
+    byte_buffer_append(&buf, pTrue);
     value_t value = deserialize(&runtime, &buf);
     ASSERT_FAMILY(ofLiteralAst, value);
+    ASSERT_VALEQ(runtime_bool(&runtime, true), get_literal_ast_value(value));
     byte_buffer_dispose(&buf);
   }
 

@@ -16,7 +16,7 @@ value_t init_syntax_factory_map(value_t map, runtime_t *runtime);
 // --- L i t e r a l ---
 
 static const size_t kLiteralAstSize = OBJECT_SIZE(1);
-static const size_t kLiteralAstValueOffset = 3;
+static const size_t kLiteralAstValueOffset = 1;
 
 // Returns the value this literal syntax tree represents.
 value_t get_literal_ast_value(value_t value);
