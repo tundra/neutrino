@@ -1,4 +1,5 @@
 #include "behavior.h"
+#include "check.h"
 #include "heap.h"
 #include "value-inl.h"
 
@@ -17,6 +18,19 @@ value_t value_callback_call(value_callback_t *callback, value_t value) {
   return (callback->function)(value, callback);
 }
 
+void field_callback_init(field_callback_t *callback, field_callback_function_t *function,
+    void *data) {
+  callback->function = function;
+  callback->data = data;
+}
+
+value_t field_callback_call(field_callback_t *callback, value_t *value) {
+  return (callback->function)(value, callback);
+}
+
+void *field_callback_get_data(field_callback_t *callback) {
+  return callback->data;
+}
 
 // --- S p a c e ---
 
@@ -133,20 +147,36 @@ value_t space_for_each_object(space_t *space, value_callback_t *callback) {
 value_t heap_init(heap_t *heap, space_config_t *config) {
   // Initialize new space, leave old space clear; we won't use that until
   // later.
-  TRY(space_init(&heap->new_space, config));
-  space_clear(&heap->old_space);
+  if (config == NULL) {
+    space_config_init_defaults(&heap->config);
+  } else {
+    heap->config = *config;
+  }
+  TRY(space_init(&heap->to_space, &heap->config));
+  space_clear(&heap->from_space);
   return success();
 }
 
 bool heap_try_alloc(heap_t *heap, size_t size, address_t *memory_out) {
-  return space_try_alloc(&heap->new_space, size, memory_out);
+  return space_try_alloc(&heap->to_space, size, memory_out);
 }
 
 void heap_dispose(heap_t *heap) {
-  space_dispose(&heap->new_space);
-  space_dispose(&heap->old_space);
+  space_dispose(&heap->to_space);
+  space_dispose(&heap->from_space);
 }
 
 value_t heap_for_each_object(heap_t *heap, value_callback_t *callback) {
-  return space_for_each_object(&heap->new_space, callback);
+  return space_for_each_object(&heap->to_space, callback);
+}
+
+value_t heap_prepare_garbage_collection(heap_t *heap) {
+  CHECK_TRUE("from space not empty", space_is_empty(&heap->from_space));
+  CHECK_FALSE("to space empty", space_is_empty(&heap->to_space));
+  // Move to-space to from-space so we have a handle on it for later.
+  heap->from_space = heap->to_space;
+  // Reset to-space so we can use the fields again.
+  space_clear(&heap->to_space);
+  // Then create a new empty to-space.
+  return space_init(&heap->to_space, &heap->config);
 }

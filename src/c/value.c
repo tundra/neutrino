@@ -15,12 +15,21 @@ const char *signal_cause_name(signal_cause_t cause) {
 
 // --- O b j e c t ---
 
+void set_object_header(value_t value, value_t species) {
+  *access_object_field(value, kObjectHeaderOffset) = species;
+}
+
+value_t get_object_header(value_t value) {
+  return *access_object_field(value, kObjectHeaderOffset);
+}
+
 void set_object_species(value_t value, value_t species) {
-  *access_object_field(value, kObjectSpeciesOffset) = species;
+  CHECK_FAMILY(ofSpecies, species);
+  set_object_header(value, species);
 }
 
 value_t get_object_species(value_t value) {
-  return *access_object_field(value, kObjectSpeciesOffset);
+  return *access_object_field(value, kObjectHeaderOffset);
 }
 
 object_family_t get_object_family(value_t value) {

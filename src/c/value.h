@@ -177,7 +177,7 @@ typedef enum {
 // is not counted as a field.
 #define OBJECT_SIZE(N) ((N * kValueSize) + kObjectHeaderSize)
 
-static const size_t kObjectSpeciesOffset = 0;
+static const size_t kObjectHeaderOffset = 0;
 
 // Converts a pointer to an object into an tagged object value pointer.
 static value_t new_object(address_t addr) {
@@ -209,6 +209,16 @@ void set_object_species(value_t value, value_t species);
 // Returns the species of the given object value.
 value_t get_object_species(value_t value);
 
+// Sets the species pointer of an object to the specified species value. This
+// can be used to set object headers while the heap is not in a consistent state,
+// for instance during initialization or GC. Otherwise use set_object_species
+// which does more checking.
+void set_object_header(value_t value, value_t species);
+
+// Returns the header of the given object value. During normal execution this
+// will be the species but during GC it may be a forward pointer. Only use this
+// call during GC, anywhere else use get_object_species which does more checking.
+value_t get_object_header(value_t value);
 
 // --- S p e c i e s ---
 
