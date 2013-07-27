@@ -59,19 +59,19 @@ void roots_clear(roots_t *roots) {
 value_t roots_validate(roots_t *roots) {
   // Checks whether the argument is within the specified family, otherwise
   // signals a validation failure.
-  #define VALIDATE_OBJECT(ofFamily, value) do { \
-    if (!in_family(ofFamily, (value)))          \
-      return new_signal(scValidationFailed);    \
-    TRY(object_validate(value));                \
+  #define VALIDATE_OBJECT(ofFamily, value) do {                                \
+    if (!in_family(ofFamily, (value)))                                         \
+      return new_signal(scValidationFailed);                                   \
+    TRY(object_validate(value));                                               \
   } while (false)
 
   // Checks that the given value is a species with the specified instance
   // family.
-  #define VALIDATE_SPECIES(ofFamily, value) do {        \
-    VALIDATE_OBJECT(ofSpecies, value);                  \
-    if (get_species_instance_family(value) != ofFamily) \
-      return new_signal(scValidationFailed);            \
-    TRY(object_validate(value));                        \
+  #define VALIDATE_SPECIES(ofFamily, value) do {                               \
+    VALIDATE_OBJECT(ofSpecies, value);                                         \
+    if (get_species_instance_family(value) != ofFamily)                        \
+      return new_signal(scValidationFailed);                                   \
+    TRY(object_validate(value));                                               \
   } while (false)
 
   // Generate validation for species.

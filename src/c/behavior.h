@@ -81,7 +81,7 @@ value_t set_object_contents(struct runtime_t *runtime, value_t object,
 #define OBJ_ADDR_HASH(VAL) new_integer((size_t) (VAL))
 
 // Declare the behavior structs for all the families on one fell swoop.
-#define DECLARE_FAMILY_BEHAVIOR(Family, family) \
+#define DECLARE_FAMILY_BEHAVIOR(Family, family)                                \
 extern family_behavior_t k##Family##Behavior;
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 #undef DECLARE_FAMILY_BEHAVIOR
@@ -110,7 +110,7 @@ typedef struct division_behavior_t {
 } division_behavior_t;
 
 // Declare the division behavior structs.
-#define DECLARE_DIVISION_BEHAVIOR(Division, division) \
+#define DECLARE_DIVISION_BEHAVIOR(Division, division)                          \
 extern division_behavior_t k##Division##SpeciesBehavior;
 ENUM_SPECIES_DIVISIONS(DECLARE_DIVISION_BEHAVIOR)
 #undef DECLARE_DIVISION_BEHAVIOR

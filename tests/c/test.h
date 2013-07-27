@@ -12,28 +12,28 @@ void fail(const char *file, int line, const char *fmt, ...);
 bool value_structural_equal(value_t a, value_t b);
 
 // Fails unless the two values are equal.
-#define ASSERT_EQ(A, B) do {                                         \
-  if (!((A) == (B)))                                                 \
-    fail(__FILE__, __LINE__, "Assertion failed: %s == %s.", #A, #B); \
+#define ASSERT_EQ(A, B) do {                                                   \
+  if (!((A) == (B)))                                                           \
+    fail(__FILE__, __LINE__, "Assertion failed: %s == %s.", #A, #B);           \
 } while (false)
 
 // Fails unless the two given strings are equal.
-#define ASSERT_STREQ(A, B) do {                                               \
-  string_t *__a__ = (A);                                                      \
-  string_t *__b__ = (B);                                                      \
-  if (!(string_equals(__a__, __b__)))                                         \
+#define ASSERT_STREQ(A, B) do {                                                \
+  string_t *__a__ = (A);                                                       \
+  string_t *__b__ = (B);                                                       \
+  if (!(string_equals(__a__, __b__)))                                          \
     fail(__FILE__, __LINE__, "Assertion failed: %s == %s.\n  Expected: %s\n  Found: %s", \
-        #A, #B, __a__->chars, __b__->chars);                                  \
+        #A, #B, __a__->chars, __b__->chars);                                   \
 } while (false)
 
 // Check that the two values A and B are structurally equivalent. Note that this
 // only handles object trees, not cyclical graphs of objects.
-#define ASSERT_VALEQ(A, B) do {                                        \
-  value_t __a__ = (A);                                                 \
-  value_t __b__ = (B);                                                 \
-  if (!(value_structural_equal(__a__, __b__))) {                       \
-    fail(__FILE__, __LINE__, "Assertion failed: %s == %s.\n", #A, #B); \
-  }                                                                    \
+#define ASSERT_VALEQ(A, B) do {                                                \
+  value_t __a__ = (A);                                                         \
+  value_t __b__ = (B);                                                         \
+  if (!(value_structural_equal(__a__, __b__))) {                               \
+    fail(__FILE__, __LINE__, "Assertion failed: %s == %s.\n", #A, #B);         \
+  }                                                                            \
 } while (false)
 
 // Fails unless the condition is true.
