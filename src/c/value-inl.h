@@ -68,6 +68,8 @@ bool family##_are_identical(value_t a, value_t b) {                            \
 }                                                                              \
 SWALLOW_SEMI()
 
+// Declares a set_contents function that returns a signal indicating that this
+// family doesn't support setting contents.
 #define CANT_SET_CONTENTS(family)                                              \
 value_t set_##family##_contents(value_t value, struct runtime_t *runtime,      \
     value_t contents) {                                                        \
