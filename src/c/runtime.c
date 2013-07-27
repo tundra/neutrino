@@ -11,7 +11,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   roots->species_species = meta;
 
   // Generate initialization for the other compact species.
-#define CREATE_COMPACT_SPECIES(Family, family) \
+#define CREATE_COMPACT_SPECIES(Family, family)                                 \
   TRY_SET(roots->family##_species, new_heap_compact_species(runtime, of##Family, &k##Family##Behavior));
   ENUM_COMPACT_OBJECT_FAMILIES(CREATE_COMPACT_SPECIES)
 #undef CREATE_COMPACT_SPECIES
@@ -21,6 +21,16 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   TRY_SET(roots->null, new_heap_null(runtime));
   TRY_SET(roots->thrue, new_heap_bool(runtime, true));
   TRY_SET(roots->fahlse, new_heap_bool(runtime, false));
+
+  // Generates code for initializing a string table entry.
+#define __CREATE_STRING_TABLE_ENTRY__(name, value)                             \
+  do {                                                                         \
+    string_t contents;                                                         \
+    string_init(&contents, value);                                             \
+    TRY_SET(roots->string_table.name, new_heap_string(runtime, &contents));    \
+  } while (false);
+  ENUM_STRING_TABLE(__CREATE_STRING_TABLE_ENTRY__)
+#undef __CREATE_STRING_TABLE_ENTRY__
 
   TRY_DEF(syntax_factories, new_heap_id_hash_map(runtime, 16));
   init_syntax_factory_map(syntax_factories, runtime);
@@ -40,6 +50,10 @@ void roots_clear(roots_t *roots) {
   roots->null = success();
   roots->thrue = success();
   roots->fahlse = success();
+
+#define __CLEAR_STRING_TABLE_ENTRY__(name, value) roots->string_table.name = success();
+  ENUM_STRING_TABLE(__CLEAR_STRING_TABLE_ENTRY__)
+#undef __CLEAR_STRING_TABLE_ENTRY__
 }
 
 value_t roots_validate(roots_t *roots) {
@@ -69,6 +83,10 @@ value_t roots_validate(roots_t *roots) {
   VALIDATE_OBJECT(ofNull, roots->null);
   VALIDATE_OBJECT(ofBool, roots->thrue);
   VALIDATE_OBJECT(ofBool, roots->fahlse);
+
+#define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_OBJECT(ofString, roots->string_table.name);
+  ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)
+#undef __VALIDATE_STRING_TABLE_ENTRY__
 
   #undef VALIDATE_TYPE
   #undef VALIDATE_SPECIES

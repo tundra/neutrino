@@ -6,27 +6,29 @@
 #ifndef _RUNTIME
 #define _RUNTIME
 
+// Enumerates the string table strings that will be stored as easily accessible
+// roots.
+#define ENUM_STRING_TABLE(F)                                                   \
+  F(value, "value")
+
 // A collection of all the root objects.
 typedef struct {
-  // The species of species (which is its own species).
-  value_t species_species;
-  // The species of the basic value types.
-  value_t void_p_species;
-  value_t string_species;
-  value_t blob_species;
-  value_t array_species;
-  value_t null_species;
-  value_t bool_species;
-  value_t id_hash_map_species;
-  value_t instance_species;
-  value_t factory_species;
-  value_t literal_ast_species;
+  // Basic family species.
+#define __DECLARE_SPECIES_FIELD__(Family, family) value_t family##_species;
+  ENUM_OBJECT_FAMILIES(__DECLARE_SPECIES_FIELD__)
+#undef __DECLARE_SPECIES_FIELD__
   // String->factory mapping.
   value_t syntax_factories;
   // Singletons
   value_t null;
   value_t thrue;
   value_t fahlse;
+  // The string table
+  struct {
+#define __DECLARE_STRING_TABLE_ENTRY__(name, value) value_t name;
+    ENUM_STRING_TABLE(__DECLARE_STRING_TABLE_ENTRY__)
+#undef __DECLARE_STRING_TABLE_ENTRY__
+  } string_table;
 } roots_t;
 
 
