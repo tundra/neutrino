@@ -1,3 +1,4 @@
+#include "alloc.h"
 #include "behavior.h"
 #include "runtime.h"
 #include "syntax.h"
@@ -164,8 +165,12 @@ static value_t new_instance_of_factory(runtime_t *runtime, value_t type) {
   return constr(runtime);
 }
 
-static value_t new_instance_of_object(runtime_t *runtime, value_t type) {
+static value_t new_object_with_object_type(runtime_t *runtime, value_t type) {
   switch (get_object_family(type)) {
+    case ofNull:
+      // For now we use null to indicate an instance. Later this should be
+      // replaced by something else, something species-like possibly.
+      return new_heap_instance(runtime);
     case ofFactory:
       return new_instance_of_factory(runtime, type);
     default:
@@ -173,13 +178,24 @@ static value_t new_instance_of_object(runtime_t *runtime, value_t type) {
   }
 }
 
-value_t new_instance_of_value(runtime_t *runtime, value_t type) {
+value_t new_object_with_type(runtime_t *runtime, value_t type) {
   switch (get_value_domain(type)) {
     case vdObject:
-      return new_instance_of_object(runtime, type);
+      return new_object_with_object_type(runtime, type);
     default:
       return new_signal(scUnsupportedBehavior);
   }
+}
+
+
+// --- P a y l o a d ---
+
+value_t set_object_contents(runtime_t *runtime, value_t object, value_t payload) {
+  CHECK_DOMAIN(vdObject, object);
+  value_t species = get_object_species(object);
+  VALIDATE_VALUE_FAMILY(ofSpecies, species);
+  family_behavior_t *behavior = get_species_family_behavior(species);
+  return (behavior->set_contents)(object, runtime, payload);
 }
 
 
@@ -195,7 +211,8 @@ family_behavior_t k##Family##Behavior = {                                      \
   &family##_are_identical,                                                     \
   &family##_print_on,                                                          \
   &family##_print_atomic_on,                                                   \
-  &get_##family##_layout                                                       \
+  &get_##family##_layout,                                                      \
+  &set_##family##_contents                                                     \
 };
 ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #undef DEFINE_FAMILY_BEHAVIOR

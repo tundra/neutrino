@@ -37,6 +37,9 @@ typedef struct family_behavior_t {
   void (*print_atomic_on)(value_t value, string_buffer_t *buf);
   // Stores the layout of the given object in the output layout struct.
   void (*get_object_layout)(value_t value, object_layout_t *layout_out);
+  // Sets the contents of the given value from the given serialized contents.
+  value_t (*set_contents)(value_t value, struct runtime_t *runtime,
+      value_t contents);
 } family_behavior_t;
 
 // Validates an object.
@@ -64,7 +67,14 @@ void value_print_atomic_on(value_t value, string_buffer_t *buf);
 
 // Creates a new empty instance of the given type. Not all types support this,
 // in which case an unsupported behavior signal is returned.
-value_t new_instance_of_value(struct runtime_t *runtime, value_t type);
+value_t new_object_with_type(struct runtime_t *runtime, value_t type);
+
+// Sets the payload of an object, passing in the object to set and the data to
+// inject as the object payload. If somehow the payload is not as the object
+// expects a signal should be returned (as well as if anything else fails
+// obviously).
+value_t set_object_contents(struct runtime_t *runtime, value_t object,
+    value_t payload);
 
 // Returns a value suitable to be returned as a hash from the address of an
 // object.
@@ -84,7 +94,9 @@ value_t family##_transient_identity_hash(value_t value);                       \
 bool family##_are_identical(value_t a, value_t b);                             \
 void family##_print_on(value_t value, string_buffer_t *buf);                   \
 void family##_print_atomic_on(value_t value, string_buffer_t *buf);            \
-void get_##family##_layout(value_t value, object_layout_t *layout_out);
+void get_##family##_layout(value_t value, object_layout_t *layout_out);        \
+value_t set_##family##_contents(value_t value, struct runtime_t *runtime,      \
+    value_t contents);
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR_IMPLS)
 #undef DECLARE_FAMILY_BEHAVIOR_IMPLS
 

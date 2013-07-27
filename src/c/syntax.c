@@ -67,6 +67,11 @@ static value_t new_literal_ast(runtime_t *runtime) {
   return new_heap_literal_ast(runtime, runtime->roots.null);
 }
 
+value_t set_literal_ast_contents(value_t value, runtime_t *runtime, value_t contents) {
+  // TODO: actually set the contents.
+  return success();
+}
+
 
 // --- F a c t o r i e s ---
 

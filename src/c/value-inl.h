@@ -68,6 +68,15 @@ bool family##_are_identical(value_t a, value_t b) {                            \
 }                                                                              \
 SWALLOW_SEMI()
 
+// Declares a set_contents function that returns a signal indicating that this
+// family doesn't support setting contents.
+#define CANT_SET_CONTENTS(family)                                              \
+value_t set_##family##_contents(value_t value, struct runtime_t *runtime,      \
+    value_t contents) {                                                        \
+  return new_signal(scUnsupportedBehavior);                                    \
+}                                                                              \
+SWALLOW_SEMI()
+
 // Declares the heap size functions for a fixed-size object.
 #define FIXED_SIZE_IMPL(family, Family)                                        \
 void get_##family##_layout(value_t value, object_layout_t *layout_out) {       \
