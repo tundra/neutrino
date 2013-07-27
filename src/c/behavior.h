@@ -93,7 +93,9 @@ value_t family##_transient_identity_hash(value_t value);                       \
 bool family##_are_identical(value_t a, value_t b);                             \
 void family##_print_on(value_t value, string_buffer_t *buf);                   \
 void family##_print_atomic_on(value_t value, string_buffer_t *buf);            \
-void get_##family##_layout(value_t value, object_layout_t *layout_out);
+void get_##family##_layout(value_t value, object_layout_t *layout_out);        \
+value_t set_##family##_contents(value_t value, struct runtime_t *runtime,      \
+    value_t contents);
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR_IMPLS)
 #undef DECLARE_FAMILY_BEHAVIOR_IMPLS
 

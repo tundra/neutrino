@@ -212,7 +212,7 @@ family_behavior_t k##Family##Behavior = {                                      \
   &family##_print_on,                                                          \
   &family##_print_atomic_on,                                                   \
   &get_##family##_layout,                                                      \
-  NULL,                                                                        \
+  &set_##family##_contents                                                     \
 };
 ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #undef DEFINE_FAMILY_BEHAVIOR

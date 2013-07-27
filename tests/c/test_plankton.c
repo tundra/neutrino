@@ -267,6 +267,7 @@ TEST(plankton, env_construction) {
     byte_buffer_dispose(&buf);
   }
 
+  // Objects with ast factory headers produce asts.
   {
     byte_buffer_t buf;
     byte_buffer_init(&buf, NULL);

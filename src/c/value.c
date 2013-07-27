@@ -32,6 +32,7 @@ object_family_t get_object_family(value_t value) {
 // --- S p e c i e s ---
 
 OBJECT_IDENTITY_IMPL(species);
+CANT_SET_CONTENTS(species);
 
 void set_species_instance_family(value_t value,
     object_family_t instance_family) {
@@ -94,6 +95,8 @@ void species_print_on(value_t value, string_buffer_t *buf) {
 
 
 // --- S t r i n g ---
+
+CANT_SET_CONTENTS(string);
 
 size_t calc_string_size(size_t char_count) {
   // We need to fix one extra byte, the terminating null.
@@ -168,6 +171,7 @@ void string_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- B l o b ---
 
 OBJECT_IDENTITY_IMPL(blob);
+CANT_SET_CONTENTS(blob);
 
 size_t calc_blob_size(size_t size) {
   return kObjectHeaderSize              // header
@@ -227,6 +231,7 @@ void blob_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- V o i d   P ---
 
 OBJECT_IDENTITY_IMPL(void_p);
+CANT_SET_CONTENTS(void_p);
 FIXED_SIZE_IMPL(void_p, VoidP);
 
 void set_void_p_value(value_t value, void *ptr) {
@@ -257,6 +262,7 @@ void void_p_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- A r r a y ---
 
 OBJECT_IDENTITY_IMPL(array);
+CANT_SET_CONTENTS(array);
 
 size_t calc_array_size(size_t length) {
   return kObjectHeaderSize       // header
@@ -319,6 +325,7 @@ void array_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- I d e n t i t y   h a s h   m a p ---
 
 OBJECT_IDENTITY_IMPL(id_hash_map);
+CANT_SET_CONTENTS(id_hash_map);
 FIXED_SIZE_IMPL(id_hash_map, IdHashMap);
 
 value_t get_id_hash_map_entry_array(value_t value) {
@@ -536,6 +543,7 @@ void id_hash_map_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- N u l l ---
 
+CANT_SET_CONTENTS(null);
 FIXED_SIZE_IMPL(null, Null);
 
 value_t null_validate(value_t value) {
@@ -566,6 +574,7 @@ void null_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- B o o l ---
 
+CANT_SET_CONTENTS(bool);
 FIXED_SIZE_IMPL(bool, Bool);
 
 void set_bool_value(value_t value, bool truth) {
@@ -650,10 +659,18 @@ void instance_print_atomic_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, "#<instance>");
 }
 
+value_t set_instance_contents(value_t instance, struct runtime_t *runtime,
+    value_t contents) {
+  SIG_CHECK_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  set_instance_fields(instance, contents);
+  return success();
+}
+
 
 // --- F a c t o r y ---
 
 OBJECT_IDENTITY_IMPL(factory);
+CANT_SET_CONTENTS(factory);
 FIXED_SIZE_IMPL(factory, Factory);
 
 void set_factory_constructor(value_t value, value_t constructor) {

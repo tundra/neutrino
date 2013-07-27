@@ -345,7 +345,7 @@ static value_t object_deserialize(deserialize_state_t *state) {
   TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
       result));
   TRY_DEF(payload, value_deserialize(state));
-  set_object_payload(state->runtime, result, payload);
+  TRY(set_object_payload(state->runtime, result, payload));
   return result;
 }
 
