@@ -57,6 +57,9 @@ value_t runtime_null(runtime_t *runtime);
 // Returns either this runtime's true or false value, depending on 'value'.
 value_t runtime_bool(runtime_t *runtime, bool value);
 
+// Collect garbage in the given runtime. If anything goes wrong, such as the os
+// running out a memory, a signal will be returned.
+value_t runtime_garbage_collect(runtime_t *runtime);
 
 // Run a series of sanity checks on the runtime to check that it is consistent.
 // Returns a signal iff something is wrong. A runtime will only validate if it

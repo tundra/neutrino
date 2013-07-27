@@ -114,6 +114,10 @@ value_t runtime_validate(runtime_t *runtime) {
   return success();
 }
 
+value_t runtime_garbage_collect(runtime_t *runtime) {
+  return success();
+}
+
 void runtime_clear(runtime_t *runtime) {
   roots_clear(&runtime->roots);
 }
