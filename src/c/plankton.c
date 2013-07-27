@@ -67,7 +67,7 @@ static value_t serialize_state_init(serialize_state_t *state, runtime_t *runtime
 // Serialize any (non-signal) value on the given buffer.
 static value_t value_serialize(value_t value, serialize_state_t *state);
 
-value_t plankton_wire_encode_uint32(uint32_t value, byte_buffer_t *buf) {
+value_t plankton_wire_encode_uint32(byte_buffer_t *buf, uint32_t value) {
   while (value > 0x7F) {
     // As long as the value doesn't fit in 7 bits chop off 7 bits and mark
     // them with a high 1 to indicate that there's more coming.
@@ -82,7 +82,7 @@ value_t plankton_wire_encode_uint32(uint32_t value, byte_buffer_t *buf) {
 // Zig-zag encodes a 32-bit signed integer.
 static value_t encode_int32(int32_t value, byte_buffer_t *buf) {
   uint32_t zig_zag = (value << 1) ^ (value >> 31);
-  return plankton_wire_encode_uint32(zig_zag, buf);
+  return plankton_wire_encode_uint32(buf, zig_zag);
 }
 
 static value_t integer_serialize(value_t value, byte_buffer_t *buf) {
@@ -104,7 +104,7 @@ static value_t array_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofArray, value);
   byte_buffer_append(state->buf, pArray);
   size_t length = get_array_length(value);
-  plankton_wire_encode_uint32(length, state->buf);
+  plankton_wire_encode_uint32(state->buf, length);
   for (size_t i = 0; i < length; i++) {
     TRY(value_serialize(get_array_at(value, i), state));
   }
@@ -115,7 +115,7 @@ static value_t map_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofIdHashMap, value);
   byte_buffer_append(state->buf, pMap);
   size_t entry_count = get_id_hash_map_size(value);
-  plankton_wire_encode_uint32(entry_count, state->buf);
+  plankton_wire_encode_uint32(state->buf, entry_count);
   id_hash_map_iter_t iter;
   id_hash_map_iter_init(&iter, value);
   size_t entries_written = 0;
@@ -131,20 +131,20 @@ static value_t map_serialize(value_t value, serialize_state_t *state) {
   return success();
 }
 
-value_t plankton_wire_encode_string(string_t *str, byte_buffer_t *buf) {
+value_t plankton_wire_encode_string(byte_buffer_t *buf, string_t *str) {
   size_t length = string_length(str);
-  plankton_wire_encode_uint32(length, buf);
+  plankton_wire_encode_uint32(buf, length);
   for (size_t i = 0; i < length; i++)
     byte_buffer_append(buf, string_char_at(str, i));
   return success();
 }
 
-static value_t string_serialize(value_t value, byte_buffer_t *buf) {
+static value_t string_serialize(byte_buffer_t *buf, value_t value) {
   CHECK_FAMILY(ofString, value);
   string_t contents;
   get_string_contents(value, &contents);
   byte_buffer_append(buf, pString);
-  return plankton_wire_encode_string(&contents, buf);
+  return plankton_wire_encode_string(buf, &contents);
 }
 
 static void register_serialized_object(value_t value, serialize_state_t *state) {
@@ -181,7 +181,7 @@ static value_t instance_serialize(value_t value, serialize_state_t *state) {
     size_t delta = get_integer_value(ref);
     size_t offset = state->object_offset - delta - 1;
     byte_buffer_append(state->buf, pReference);
-    plankton_wire_encode_uint32(offset, state->buf);
+    plankton_wire_encode_uint32(state->buf, offset);
     return success();
   }
 }
@@ -198,7 +198,7 @@ static value_t object_serialize(value_t value, serialize_state_t *state) {
     case ofIdHashMap:
       return map_serialize(value, state);
     case ofString:
-      return string_serialize(value, state->buf);
+      return string_serialize(state->buf, value);
     case ofInstance:
       return instance_serialize(value, state);
     default:
@@ -345,7 +345,7 @@ static value_t object_deserialize(deserialize_state_t *state) {
   TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
       result));
   TRY_DEF(payload, value_deserialize(state));
-  TRY(set_object_payload(state->runtime, result, payload));
+  TRY(set_object_contents(state->runtime, result, payload));
   return result;
 }
 

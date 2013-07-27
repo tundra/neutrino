@@ -38,7 +38,8 @@ typedef struct family_behavior_t {
   // Stores the layout of the given object in the output layout struct.
   void (*get_object_layout)(value_t value, object_layout_t *layout_out);
   // Sets the contents of the given value from the given serialized contents.
-  value_t (*set_contents)(value_t value, struct runtime_t *runtime, value_t contents);
+  value_t (*set_contents)(value_t value, struct runtime_t *runtime,
+      value_t contents);
 } family_behavior_t;
 
 // Validates an object.
@@ -72,7 +73,7 @@ value_t new_object_with_type(struct runtime_t *runtime, value_t type);
 // inject as the object payload. If somehow the payload is not as the object
 // expects a signal should be returned (as well as if anything else fails
 // obviously).
-value_t set_object_payload(struct runtime_t *runtime, value_t object,
+value_t set_object_contents(struct runtime_t *runtime, value_t object,
     value_t payload);
 
 // Returns a value suitable to be returned as a hash from the address of an

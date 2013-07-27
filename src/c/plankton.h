@@ -51,10 +51,10 @@ value_t plankton_deserialize(runtime_t *runtime, value_mapping_t *access_or_null
 
 // Encodes an unsigned 32-bit integer in the plankton wire format. This does not
 // emit the tag, only the integer value.
-value_t plankton_wire_encode_uint32(uint32_t value, byte_buffer_t *buf);
+value_t plankton_wire_encode_uint32(byte_buffer_t *buf, uint32_t value);
 
 // Encodes a string in the plankton wire format. This does not emit the tag,
 // only the string contents.
-value_t plankton_wire_encode_string(string_t *str, byte_buffer_t *buf);
+value_t plankton_wire_encode_string(byte_buffer_t *buf, string_t *str);
 
 #endif // _PLANKTON

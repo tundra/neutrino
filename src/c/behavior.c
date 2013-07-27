@@ -190,7 +190,7 @@ value_t new_object_with_type(runtime_t *runtime, value_t type) {
 
 // --- P a y l o a d ---
 
-value_t set_object_payload(runtime_t *runtime, value_t object, value_t payload) {
+value_t set_object_contents(runtime_t *runtime, value_t object, value_t payload) {
   CHECK_DOMAIN(vdObject, object);
   value_t species = get_object_species(object);
   VALIDATE_VALUE_FAMILY(ofSpecies, species);

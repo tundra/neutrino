@@ -229,14 +229,14 @@ static value_t write_string(byte_buffer_t *buf, const char *c_str) {
   string_t str;
   string_init(&str, c_str);
   byte_buffer_append(buf, pString);
-  return plankton_wire_encode_string(&str, buf);
+  return plankton_wire_encode_string(buf, &str);
 }
 
 // Writes an ast factory reference with the given ast type to the given buffer.
 static value_t write_ast_factory(byte_buffer_t *buf, const char *ast_type) {
   byte_buffer_append(buf, pEnvironment);
   byte_buffer_append(buf, pArray);
-  TRY(plankton_wire_encode_uint32(2, buf));
+  TRY(plankton_wire_encode_uint32(buf, 2));
   TRY(write_string(buf, "ast"));
   TRY(write_string(buf, ast_type));
   return success();
@@ -274,7 +274,7 @@ TEST(plankton, env_construction) {
     byte_buffer_append(&buf, pObject);
     write_ast_factory(&buf, "Literal");
     byte_buffer_append(&buf, pMap);
-    plankton_wire_encode_uint32(0, &buf);
+    plankton_wire_encode_uint32(&buf, 0);
     value_t value = deserialize(&runtime, &buf);
     ASSERT_FAMILY(ofLiteralAst, value);
     byte_buffer_dispose(&buf);
