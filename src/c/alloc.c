@@ -149,7 +149,7 @@ value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species) {
   if (!heap_try_alloc(heap, bytes, &addr))
     return new_signal(scHeapExhausted);
   value_t result = new_object(addr);
-  set_object_species(result, species);
+  set_object_header(result, species);
   return result;
 }
 

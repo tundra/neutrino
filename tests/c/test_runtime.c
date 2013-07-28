@@ -62,3 +62,11 @@ TEST(runtime, runtime_validation) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+
+TEST(runtime, gc) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  ASSERT_SUCCESS(runtime_garbage_collect(&runtime));
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}

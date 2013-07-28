@@ -36,7 +36,7 @@ value_t init_syntax_mapping(value_mapping_t *mapping, runtime_t *runtime) {
 // --- L i t e r a l ---
 
 OBJECT_IDENTITY_IMPL(literal_ast);
-FIXED_SIZE_IMPL(literal_ast, LiteralAst);
+FIXED_SIZE_PURE_VALUE_IMPL(literal_ast, LiteralAst);
 
 value_t get_literal_ast_value(value_t value) {
   CHECK_FAMILY(ofLiteralAst, value);

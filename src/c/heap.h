@@ -8,6 +8,7 @@
 #define _HEAP
 
 struct value_callback_t;
+struct field_callback_t;
 
 
 // --- M i s c ---
@@ -30,6 +31,32 @@ void value_callback_init(value_callback_t *callback, value_callback_function_t *
 
 // Invokes the given callback with the given value.
 value_t value_callback_call(value_callback_t *callback, value_t value);
+
+// Returns the data stored with this value callback.
+void *value_callback_get_data(value_callback_t *callback);
+
+
+// The type of a field (pointer to value) function.
+typedef value_t (field_callback_function_t)(value_t *field, struct field_callback_t *self);
+
+// A callback along with a data pointer that can be used to iterate through a
+// set of fields.
+typedef struct field_callback_t {
+  // The callback to invoke.
+  field_callback_function_t *function;
+  // Some extra data accessible from the callback.
+  void *data;
+} field_callback_t;
+
+// Initializes the given callback to call the given function with the given data.
+void field_callback_init(field_callback_t *callback, field_callback_function_t *function,
+    void *data);
+
+// Invokes the given callback with the given value.
+value_t field_callback_call(field_callback_t *callback, value_t *value);
+
+// Returns the data stored with this field callback.
+void *field_callback_get_data(field_callback_t *callback);
 
 
 // Settings to apply when creating a space. This struct gets passed by value
@@ -81,7 +108,9 @@ bool space_is_empty(space_t *space);
 // in the out argument and true returned; otherwise false will be returned.
 bool space_try_alloc(space_t *space, size_t size, address_t *memory_out);
 
-// Invokes the given callback for each object in the space.
+// Invokes the given callback for each object in the space. It is safe to allocate
+// new objects while traversing the space, new objects will be visited in order
+// of allocation.
 value_t space_for_each_object(space_t *space, value_callback_t *callback);
 
 // Returns a pointer greater than or equal to the given pointer which is
@@ -95,8 +124,13 @@ size_t align_size(uint32_t alignment, size_t size);
 
 // A full garbage-collectable heap.
 typedef struct {
-  space_t new_space;
-  space_t old_space;
+  // The space configuration this heap gets it settings from.
+  space_config_t config;
+  // The space where we allocate new objects.
+  space_t to_space;
+  // The space that, during gc, holds existing object and from which values are
+  // copied into to-space.
+  space_t from_space;
 } heap_t;
 
 // Initialize the given heap, returning a signal to indicate success or
@@ -112,7 +146,19 @@ bool heap_try_alloc(heap_t *heap, size_t size, address_t *memory_out);
 // Invokes the given callback for each object in the heap.
 value_t heap_for_each_object(heap_t *heap, value_callback_t *callback);
 
+// Invokes the given callback for each object field in the space. It is safe to
+// allocate new object while traversing the space, new objects will have their
+// fields visited in order of allocation.
+value_t heap_for_each_field(heap_t *heap, field_callback_t *callback);
+
 // Dispose of the given heap.
 void heap_dispose(heap_t *heap);
+
+// Prepares this heap to be garbage collected by creating a new arena and swapping
+// it in as the new allocation space.
+value_t heap_prepare_garbage_collection(heap_t *heap);
+
+// Wraps up an in-progress garbage collection by discarding from-space.
+value_t heap_complete_garbage_collection(heap_t *heap);
 
 #endif // _HEAP

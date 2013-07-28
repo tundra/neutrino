@@ -15,12 +15,21 @@ const char *signal_cause_name(signal_cause_t cause) {
 
 // --- O b j e c t ---
 
+void set_object_header(value_t value, value_t species) {
+  *access_object_field(value, kObjectHeaderOffset) = species;
+}
+
+value_t get_object_header(value_t value) {
+  return *access_object_field(value, kObjectHeaderOffset);
+}
+
 void set_object_species(value_t value, value_t species) {
-  *access_object_field(value, kObjectSpeciesOffset) = species;
+  CHECK_FAMILY(ofSpecies, species);
+  set_object_header(value, species);
 }
 
 value_t get_object_species(value_t value) {
-  return *access_object_field(value, kObjectSpeciesOffset);
+  return *access_object_field(value, kObjectHeaderOffset);
 }
 
 object_family_t get_object_family(value_t value) {
@@ -76,13 +85,14 @@ value_t species_validate(value_t value) {
   return success();
 }
 
-void get_species_layout(value_t value, object_layout_t *layout_out) {
+void get_species_layout(value_t value, object_layout_t *layout) {
   division_behavior_t *behavior = get_species_division_behavior(value);
-  (behavior->get_species_layout)(value, layout_out);
+  (behavior->get_species_layout)(value, layout);
 }
 
-void get_compact_species_layout(value_t species, object_layout_t *layout_out) {
-  object_layout_set(layout_out, kCompactSpeciesSize);
+void get_compact_species_layout(value_t species, object_layout_t *layout) {
+  // Compact species have no value fields.
+  object_layout_set(layout, kCompactSpeciesSize, kCompactSpeciesSize);
 }
 
 void species_print_atomic_on(value_t value, string_buffer_t *buf) {
@@ -134,9 +144,10 @@ value_t string_validate(value_t value) {
   return success();
 }
 
-void get_string_layout(value_t value, object_layout_t *layout_out) {
+void get_string_layout(value_t value, object_layout_t *layout) {
+  // Strings have no value fields.
   size_t size = calc_string_size(get_string_length(value));
-  object_layout_set(layout_out, size);
+  object_layout_set(layout, size, size);
 }
 
 value_t string_transient_identity_hash(value_t value) {
@@ -201,9 +212,10 @@ value_t blob_validate(value_t value) {
   return success();
 }
 
-void get_blob_layout(value_t value, object_layout_t *layout_out) {
+void get_blob_layout(value_t value, object_layout_t *layout) {
+  // Blobs have no value fields.
   size_t size = calc_blob_size(get_blob_length(value));
-  object_layout_set(layout_out, size);
+  object_layout_set(layout, size, size);
 }
 
 void blob_print_on(value_t value, string_buffer_t *buf) {
@@ -232,7 +244,6 @@ void blob_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 OBJECT_IDENTITY_IMPL(void_p);
 CANT_SET_CONTENTS(void_p);
-FIXED_SIZE_IMPL(void_p, VoidP);
 
 void set_void_p_value(value_t value, void *ptr) {
   CHECK_FAMILY(ofVoidP, value);
@@ -256,6 +267,11 @@ void void_p_print_on(value_t value, string_buffer_t *buf) {
 void void_p_print_atomic_on(value_t value, string_buffer_t *buf) {
   CHECK_FAMILY(ofVoidP, value);
   string_buffer_printf(buf, "#<void*>");
+}
+
+void get_void_p_layout(value_t value, object_layout_t *layout) {
+  // A void-p has no value fields.
+  object_layout_set(layout, kVoidPSize, kVoidPSize);
 }
 
 
@@ -302,9 +318,9 @@ value_t array_validate(value_t value) {
   return success();
 }
 
-void get_array_layout(value_t value, object_layout_t *layout_out) {
+void get_array_layout(value_t value, object_layout_t *layout) {
   size_t size = calc_array_size(get_array_length(value));
-  object_layout_set(layout_out, size);
+  object_layout_set(layout, size, kArrayElementsOffset * kValueSize);
 }
 
 void array_print_on(value_t value, string_buffer_t *buf) {
@@ -326,7 +342,7 @@ void array_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 OBJECT_IDENTITY_IMPL(id_hash_map);
 CANT_SET_CONTENTS(id_hash_map);
-FIXED_SIZE_IMPL(id_hash_map, IdHashMap);
+FIXED_SIZE_PURE_VALUE_IMPL(id_hash_map, IdHashMap);
 
 value_t get_id_hash_map_entry_array(value_t value) {
   CHECK_FAMILY(ofIdHashMap, value);
@@ -544,7 +560,7 @@ void id_hash_map_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- N u l l ---
 
 CANT_SET_CONTENTS(null);
-FIXED_SIZE_IMPL(null, Null);
+FIXED_SIZE_PURE_VALUE_IMPL(null, Null);
 
 value_t null_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofNull, value);
@@ -575,7 +591,7 @@ void null_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- B o o l ---
 
 CANT_SET_CONTENTS(bool);
-FIXED_SIZE_IMPL(bool, Bool);
+FIXED_SIZE_PURE_VALUE_IMPL(bool, Bool);
 
 void set_bool_value(value_t value, bool truth) {
   CHECK_FAMILY(ofBool, value);
@@ -617,7 +633,7 @@ void bool_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- I n s t a n c e ---
 
 OBJECT_IDENTITY_IMPL(instance);
-FIXED_SIZE_IMPL(instance, Instance);
+FIXED_SIZE_PURE_VALUE_IMPL(instance, Instance);
 
 void set_instance_fields(value_t value, value_t fields) {
   CHECK_FAMILY(ofInstance, value);
@@ -671,7 +687,7 @@ value_t set_instance_contents(value_t instance, struct runtime_t *runtime,
 
 OBJECT_IDENTITY_IMPL(factory);
 CANT_SET_CONTENTS(factory);
-FIXED_SIZE_IMPL(factory, Factory);
+FIXED_SIZE_PURE_VALUE_IMPL(factory, Factory);
 
 void set_factory_constructor(value_t value, value_t constructor) {
   CHECK_FAMILY(ofFactory, value);
