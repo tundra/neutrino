@@ -1,3 +1,6 @@
+// Copyright 2013 the Neutrino authors (see AUTHORS).
+// Licensed under the Apache License, Version 2.0 (see LICENSE)
+
 #include "value.h"
 
 // Declare a unit test method. The suite name must match the file the test

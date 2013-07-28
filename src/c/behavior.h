@@ -1,3 +1,6 @@
+// Copyright 2013 the Neutrino authors (see AUTHORS).
+// Licensed under the Apache License, Version 2.0 (see LICENSE)
+
 // Behavior specific to each family of objects. It's just like virtual methods
 // except done manually using function pointers.
 
