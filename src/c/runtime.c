@@ -1,7 +1,10 @@
 #include "alloc.h"
 #include "behavior.h"
+#include "check.h"
 #include "runtime.h"
 #include "value-inl.h"
+
+#include <string.h>
 
 value_t roots_init(roots_t *roots, runtime_t *runtime) {
   // The meta-root is tricky because it is its own species. So we set it up in
@@ -131,14 +134,53 @@ value_t runtime_validate(runtime_t *runtime) {
   return success();
 }
 
+// Allocates memory in to-space for the given object and copies it raw into that
+// memory, leaving fields unmigrated.
+static value_t migrate_object_shallow(value_t object, space_t *space) {
+  // Ask the object to describe its layout.
+  object_layout_t layout;
+  get_object_layout(object, &layout);
+  // Allocate new room for the object.
+  address_t source = get_object_address(object);
+  address_t target = NULL;
+  CHECK_TRUE("clone alloc failed", space_try_alloc(space, layout.size, &target));
+  // Do a raw copy of the object to the target.
+  memcpy(target, source, layout.size);
+  // Tag the new location as an object and return it.
+  return new_object(target);
+}
+
 // Callback that migrates an object from from to to space, if it hasn't been
 // migrated already.
-static value_t runtime_migrate_field(value_t *field, field_callback_t *callback) {
+static value_t migrate_field_shallow(value_t *field, field_callback_t *callback) {
 //  runtime_t *runtime = field_callback_get_data(callback);
-  value_t value = *field;
-  if (get_value_domain(value) != vdObject)
+  value_t old_object = *field;
+  // If this is not a heap object there's nothing to do.
+  if (get_value_domain(old_object) != vdObject)
     return success();
-  get_object_species(value);
+  // Check if this object has already been moved.
+  value_t old_header = get_object_header(old_object);
+  value_t new_object;
+  if (get_value_domain(old_header) == vdMovedObject) {
+    // This object has already been moved and the header points to the new
+    // location so we just get out the location of the migrated object and update
+    // the field.
+    new_object = get_moved_object_target(old_header);
+  } else {
+    // The header indicates that this object hasn't been moved yet. First make
+    // a raw clone of the object in to-space.
+    CHECK_DOMAIN(vdObject, old_header);
+    runtime_t *runtime = field_callback_get_data(callback);
+    new_object = migrate_object_shallow(old_object, &runtime->heap.to_space);
+    CHECK_DOMAIN(vdObject, new_object);
+    // Point the old object to the new one so we know to use the new clone
+    // instead of ever cloning it again.
+    value_t forward_pointer = new_moved_object(new_object);
+    set_object_header(old_object, forward_pointer);
+    // At this point the cloned object still needs some work to update the
+    // fields but we rely on traversing the heap to do that eventually.
+  }
+  *field = new_object;
   return success();
 }
 
@@ -149,11 +191,18 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
   TRY(heap_prepare_garbage_collection(&runtime->heap));
   // Create the migrator callback that will be used to migrate objects from from
   // to to space.
-  field_callback_t migrate_callback;
-  field_callback_init(&migrate_callback, runtime_migrate_field, runtime);
-  // Migrate all the roots.
-  roots_for_each_field(&runtime->roots, &migrate_callback);
-  return success();
+  field_callback_t migrate_shallow_callback;
+  field_callback_init(&migrate_shallow_callback, migrate_field_shallow, runtime);
+  // Shallow migration of all the roots.
+  TRY(roots_for_each_field(&runtime->roots, &migrate_shallow_callback));
+  // Shallow migration of everything currently stored in to-space which, since
+  // we keep going until all objects have been migrated, effectively makes a deep
+  // copy.
+  TRY(heap_for_each_field(&runtime->heap, &migrate_shallow_callback));
+  // Now everything has been migrated so we can throw away from-space.
+  TRY(heap_complete_garbage_collection(&runtime->heap));
+  // Validate that everything's still healthy.
+  return runtime_validate(runtime);
 }
 
 void runtime_clear(runtime_t *runtime) {

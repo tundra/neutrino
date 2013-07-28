@@ -174,6 +174,21 @@ test-c:$(C_TEST_LIB_RUNS)
 all-c:	$(C_MAIN_EXE) $(C_TEST_MAIN_EXE)
 
 
+# The markdown files.
+MD_SRCS=$(shell find -name "*.md" | sort)
+MD_OBJS=$(patsubst %.md, $(BIN)/doc/%.html, $(MD_SRCS))
+
+
+# The main object files.
+$(MD_OBJS): $(BIN)/doc/%.html: %.md
+	@mkdir -p $(shell dirname $@)
+	@echo Generating $<
+	@markdown $< > $@
+
+
+docs:	$(MD_OBJS)
+
+
 clean:
 	@echo Cleaning $(BIN)
 	@rm -rf $(BIN)

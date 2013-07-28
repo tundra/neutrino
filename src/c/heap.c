@@ -18,6 +18,10 @@ value_t value_callback_call(value_callback_t *callback, value_t value) {
   return (callback->function)(value, callback);
 }
 
+void *value_callback_get_data(value_callback_t *callback) {
+  return callback->data;
+}
+
 void field_callback_init(field_callback_t *callback, field_callback_function_t *function,
     void *data) {
   callback->function = function;
@@ -31,6 +35,7 @@ value_t field_callback_call(field_callback_t *callback, value_t *value) {
 void *field_callback_get_data(field_callback_t *callback) {
   return callback->data;
 }
+
 
 // --- S p a c e ---
 
@@ -167,7 +172,42 @@ void heap_dispose(heap_t *heap) {
 }
 
 value_t heap_for_each_object(heap_t *heap, value_callback_t *callback) {
+  CHECK_FALSE("traversing empty space", space_is_empty(&heap->to_space));
   return space_for_each_object(&heap->to_space, callback);
+}
+
+// Visitor method that invokes a field callback stored as data in the given value
+// callback for each value field in the given object.
+static value_t visit_object_fields(value_t object, value_callback_t *value_callback) {
+  // Visit the object's species first.
+  field_callback_t *field_callback = value_callback_get_data(value_callback);
+  value_t *header = access_object_field(object, kObjectHeaderOffset);
+  // Check that the header isn't a forward pointer -- traversing a space that's
+  // being migrated from doesn't work so all headers must be objects. We also
+  // know they must be species but the heap may not be in a state that allows
+  // us to easily check that.
+  CHECK_DOMAIN(vdObject, *header);
+  field_callback_call(field_callback, header);
+  // Get the object's layout so we know which fields to visit.
+  object_layout_t layout;
+  get_object_layout(object, &layout);
+  address_t object_start = get_object_address(object);
+  // The first address past this object.
+  address_t object_limit = object_start + layout.size;
+  // The address of the first value field (or, if there are no fields, the
+  // object limit).
+  address_t first_value_field = object_start + layout.value_offset;
+  for (address_t addr = first_value_field; addr < object_limit; addr += kValueSize) {
+    value_t *field = (value_t*) addr;
+    TRY(field_callback_call(field_callback, field));
+  }
+  return success();
+}
+
+value_t heap_for_each_field(heap_t *heap, field_callback_t *callback) {
+  value_callback_t object_field_visitor;
+  value_callback_init(&object_field_visitor, visit_object_fields, callback);
+  return heap_for_each_object(heap, &object_field_visitor);
 }
 
 value_t heap_prepare_garbage_collection(heap_t *heap) {
@@ -179,4 +219,11 @@ value_t heap_prepare_garbage_collection(heap_t *heap) {
   space_clear(&heap->to_space);
   // Then create a new empty to-space.
   return space_init(&heap->to_space, &heap->config);
+}
+
+value_t heap_complete_garbage_collection(heap_t *heap) {
+  CHECK_FALSE("from space empty", space_is_empty(&heap->from_space));
+  CHECK_FALSE("to space empty", space_is_empty(&heap->to_space));
+  space_dispose(&heap->from_space);
+  return success();
 }

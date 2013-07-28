@@ -77,10 +77,11 @@ value_t set_##family##_contents(value_t value, struct runtime_t *runtime,      \
 }                                                                              \
 SWALLOW_SEMI()
 
-// Declares the heap size functions for a fixed-size object.
-#define FIXED_SIZE_IMPL(family, Family)                                        \
+// Declares the heap size functions for a fixed-size object that don't have any
+// non-value fields.
+#define FIXED_SIZE_PURE_VALUE_IMPL(family, Family)                             \
 void get_##family##_layout(value_t value, object_layout_t *layout_out) {       \
-  object_layout_set(layout_out, k##Family##Size);                              \
+  object_layout_set(layout_out, k##Family##Size, kValueSize);                  \
 }                                                                              \
 SWALLOW_SEMI()
 

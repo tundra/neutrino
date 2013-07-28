@@ -20,10 +20,12 @@ value_t object_validate(value_t value) {
 
 void object_layout_init(object_layout_t *layout) {
   layout->size = 0;
+  layout->value_offset = 0;
 }
 
-void object_layout_set(object_layout_t *layout, size_t size) {
+void object_layout_set(object_layout_t *layout, size_t size, size_t value_offset) {
   layout->size = size;
+  layout->value_offset = value_offset;
 }
 
 void get_object_layout(value_t value, object_layout_t *layout_out) {

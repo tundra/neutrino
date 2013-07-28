@@ -9,17 +9,21 @@
 // Forward declare the runtime struct to make it available as an argument.
 struct runtime_t;
 
-// A description of the layout of an object.
+// A description of the layout of an object. See details about object layout in
+// value.md.
 typedef struct {
   // Size in bytes of the whole object.
   size_t size;
+  // The offset in bytes within the object where the contiguous block of value
+  // pointers start.
+  size_t value_offset;
 } object_layout_t;
 
 // Initializes the fields of an object layout struct.
 void object_layout_init(object_layout_t *layout);
 
 // Sets the fields of an object layout struct.
-void object_layout_set(object_layout_t *layout, size_t size);
+void object_layout_set(object_layout_t *layout, size_t size, size_t value_offset);
 
 // A collection of "virtual" methods that define how a particular family of
 // objects behave.

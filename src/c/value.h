@@ -9,50 +9,7 @@
 
 struct runtime_t;
 
-// A tagged value pointer. Values are divided into a hierarchy with four
-// different levels. At the top level they are divided into different _domains_
-// which can be distinguished by how the pointer is tagged; objects, integers,
-// signals, etc. are different domains.
-//
-// Object pointers can point to objects with different layouts, each such kind
-// of object is a _family_; strings and arrays are different families. Which
-// family an object belongs to is stored in a field in the object's species.
-//
-// Species can also have different layout since some families have extra state
-// associated with them that is stored in extra fields in their species. For
-// instance, the syntax tree families all have a tag in their species that allows
-// the vm to recognize them. Each of these is called a _division_.
-//
-// Finally, within each family there may be objects with the same basic layout
-// but different shared state, each kind of state is a _species_. For instance,
-// all user-defined types are within the same family but each different type
-// belong to a different species. The species is given by the object's species
-// pointer.
-//
-// In short: all values belong to some domain, within each domain values are
-// divided into divisions based on their species' layout, each division is again
-// divided into families based on instances' layout, and finally some families
-// are divided into species based on their species objects.
-//
-// (domains)
-// - integer
-// - object
-//   (divisions)
-//   - compact
-//     (families)
-//     - species
-//     - string
-//     - array
-//     - null
-//     - bool
-//     - id hash map
-//     - blob
-//     - instance
-//       (species)
-//       ...
-//     - void-p
-//     - literal
-// - signal
+// A tagged value pointer. See details in value.md.
 typedef uint64_t value_t;
 
 // Value domain identifiers.
@@ -62,7 +19,9 @@ typedef enum {
   // Tagged integer.
   vdInteger,
   // A VM-internal signal.
-  vdSignal
+  vdSignal,
+  // An object that has been moved during an in-process garbage collection.
+  vdMovedObject
 } value_domain_t;
 
 // How many bits are used for the domain tag?
@@ -134,6 +93,26 @@ static value_t new_signal(signal_cause_t cause) {
 static signal_cause_t get_signal_cause(value_t value) {
   CHECK_DOMAIN(vdSignal, value);
   return  (((int64_t) value) >> kDomainTagSize) & kSignalCauseMask;
+}
+
+
+// --- M o v e d   o b j e c t ---
+
+// Given a moved object forward pointer returns the object this object has been
+// moved to.
+static value_t get_moved_object_target(value_t value) {
+  CHECK_DOMAIN(vdMovedObject, value);
+  value_t target = value - vdMovedObject;
+  CHECK_DOMAIN(vdObject, target);
+  return target;
+}
+
+// Creates a new moved object pointer pointing to the given target object.
+static value_t new_moved_object(value_t target) {
+  CHECK_DOMAIN(vdObject, target);
+  value_t moved = target + vdMovedObject;
+  CHECK_DOMAIN(vdMovedObject, moved);
+  return moved;
 }
 
 
