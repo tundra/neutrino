@@ -1,3 +1,6 @@
+// Copyright 2013 the Neutrino authors (see AUTHORS).
+// Licensed under the Apache License, Version 2.0 (see LICENSE)
+
 // The runtime structure which holds all the shared state of a single VM
 // instance.
 
