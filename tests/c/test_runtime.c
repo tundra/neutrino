@@ -66,10 +66,22 @@ TEST(runtime, runtime_validation) {
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
-
-TEST(runtime, gc) {
+TEST(runtime, gc_move_null) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  // Check that anything gets moved at all and that we can call behavior
+  // correctly.
+  object_layout_t layout_before;
+  value_t null_before = runtime_null(&runtime);
+  get_object_layout(null_before, &layout_before);
   ASSERT_SUCCESS(runtime_garbage_collect(&runtime));
+  value_t null_after = runtime_null(&runtime);
+  ASSERT_FALSE(null_before == null_after);
+  object_layout_t layout_after;
+  get_object_layout(null_after, &layout_after);
+  ASSERT_EQ(layout_before.size, layout_after.size);
+  ASSERT_EQ(layout_before.value_offset, layout_after.value_offset);
+
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
