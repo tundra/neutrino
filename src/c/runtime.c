@@ -130,6 +130,7 @@ static value_t runtime_validate_object(value_t value, value_callback_t *self) {
 }
 
 value_t runtime_validate(runtime_t *runtime) {
+  TRY(heap_validate(&runtime->heap));
   TRY(roots_validate(&runtime->roots));
   value_callback_t validate_callback;
   value_callback_init(&validate_callback, runtime_validate_object, NULL);
@@ -224,4 +225,12 @@ value_t runtime_null(runtime_t *runtime) {
 
 value_t runtime_bool(runtime_t *runtime, bool which) {
   return which ? runtime->roots.thrue : runtime->roots.fahlse;
+}
+
+gc_safe_t *runtime_new_gc_safe(runtime_t *runtime, value_t value) {
+  return heap_new_gc_safe(&runtime->heap, value);
+}
+
+void runtime_dispose_gc_safe(runtime_t *runtime, gc_safe_t *gc_safe) {
+  heap_dispose_gc_safe(&runtime->heap, gc_safe);
 }

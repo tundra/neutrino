@@ -14,6 +14,11 @@ struct value_callback_t;
 struct field_callback_t;
 
 
+static const byte_t kBlankHeapMarker = 0xBE;
+static const byte_t kAllocedHeapMarker = 0xFA;
+static const byte_t kFreedHeapMarker = 0xD0;
+
+
 // --- M i s c ---
 
 // The type of a value callback function.
@@ -87,6 +92,8 @@ typedef struct {
   // The memory to free when disposing this space. The start address may point
   // somewhere inside this memory so we can't free that directly.
   address_t memory;
+  // The size of the allocated memory block.
+  size_t memory_size;
   // The allocator to get memory from and return it to.
   allocator_t allocator;
 } space_t;
@@ -124,6 +131,22 @@ address_t align_address(address_arith_t alignment, address_t ptr);
 // aligned to an 'alignment' boundary.
 size_t align_size(uint32_t alignment, size_t size);
 
+// Opaque datatype that can be used to unpin a pinned value.
+// Extra data associated with a gc-safe value. These handles form a doubly-linked
+// list such that nodes can add and remove themselves from the chain of all safe
+// values.
+typedef struct gc_safe_t {
+  // The next pin descriptor.
+  struct gc_safe_t *next;
+  // The previous pin descriptor.
+  struct gc_safe_t *prev;
+  // The pinned value.
+  value_t value;
+} gc_safe_t;
+
+// Returns the value stored in the given gc-safe handle.
+value_t gc_safe_get_value(gc_safe_t *handle);
+
 
 // A full garbage-collectable heap.
 typedef struct {
@@ -134,6 +157,11 @@ typedef struct {
   // The space that, during gc, holds existing object and from which values are
   // copied into to-space.
   space_t from_space;
+  // A the gc safe nodes are kept in a linked list cycle where this node is
+  // always linked in.
+  gc_safe_t root_gc_safe;
+  // The number of gc safe handles allocated.
+  size_t gc_safe_count;
 } heap_t;
 
 // Initialize the given heap, returning a signal to indicate success or
@@ -157,11 +185,20 @@ value_t heap_for_each_field(heap_t *heap, field_callback_t *callback);
 // Dispose of the given heap.
 void heap_dispose(heap_t *heap);
 
+// Checks that the heap's data structures are consistent.
+value_t heap_validate(heap_t *heap);
+
 // Prepares this heap to be garbage collected by creating a new arena and swapping
 // it in as the new allocation space.
 value_t heap_prepare_garbage_collection(heap_t *heap);
 
 // Wraps up an in-progress garbage collection by discarding from-space.
 value_t heap_complete_garbage_collection(heap_t *heap);
+
+// Creates a new GC safe handle that holds the specified value.
+gc_safe_t *heap_new_gc_safe(heap_t *heap, value_t value);
+
+// Disposes a GC safe handle.
+void heap_dispose_gc_safe(heap_t *heap, gc_safe_t *gc_safe);
 
 #endif // _HEAP

@@ -42,9 +42,6 @@ void *field_callback_get_data(field_callback_t *callback) {
 
 // --- S p a c e ---
 
-static const byte_t kBlankHeapMarker = 0xBE;
-static const byte_t kAllocedHeapMarker = 0xFA;
-
 address_t align_address(address_arith_t alignment, address_t ptr) {
   address_arith_t addr = (address_arith_t) ptr;
   return (address_t) ((addr + (alignment - 1)) & ~(alignment - 1));
@@ -67,6 +64,7 @@ static const space_config_t kDefaultConfig = {
 
 void space_config_init_defaults(space_config_t *config) {
   *config = kDefaultConfig;
+  init_system_allocator(&config->allocator);
 }
 
 value_t space_init(space_t *space, space_config_t *config_or_null) {
@@ -92,6 +90,7 @@ value_t space_init(space_t *space, space_config_t *config_or_null) {
   memset(memory, kBlankHeapMarker, bytes);
   address_t aligned = align_address(kValueSize, memory);
   space->memory = memory;
+  space->memory_size = bytes;
   space->next_free = space->start = aligned;
   // If malloc gives us an aligned pointer using only 'size_bytes' of memory
   // wastes the extra word we allocated to make room for alignment. However,
@@ -104,6 +103,7 @@ value_t space_init(space_t *space, space_config_t *config_or_null) {
 void space_dispose(space_t *space) {
   if (space->memory == NULL)
     return;
+  memset(space->memory, kFreedHeapMarker, space->memory_size);
   allocator_free(&space->allocator, space->memory);
   space_clear(space);
 }
@@ -112,6 +112,7 @@ void space_clear(space_t *space) {
   space->next_free = NULL;
   space->limit = NULL;
   space->memory = NULL;
+  space->memory_size = 0;
 }
 
 bool space_is_empty(space_t *space) {
@@ -149,6 +150,92 @@ value_t space_for_each_object(space_t *space, value_callback_t *callback) {
   return success();
 }
 
+// --- G C   S a f e ---
+
+// Data used when iterating the gc safe handles within a heap.
+typedef struct gc_safe_iter_t {
+  // The current node being visited.
+  gc_safe_t *current;
+  // The node that indicates when we've reached the end.
+  gc_safe_t *limit;
+} gc_safe_iter_t;
+
+// Initializes a gc safe iterator so that it's ready to iterate through all the
+// handles in the given heap.
+static void gc_safe_iter_init(gc_safe_iter_t *iter, heap_t *heap) {
+  iter->current = heap->root_gc_safe.next;
+  iter->limit = &heap->root_gc_safe;
+}
+
+// Returns true if there is a current node to return, false if we've reached the
+// end.
+static bool gc_safe_iter_has_current(gc_safe_iter_t *iter) {
+  return iter->current != iter->limit;
+}
+
+// Returns the current gc safe handle.
+static gc_safe_t *gc_safe_iter_get_current(gc_safe_iter_t *iter) {
+  CHECK_TRUE("gc safe iter get past end", gc_safe_iter_has_current(iter));
+  return iter->current;
+}
+
+// Advances the iterator to the next node.
+static void gc_safe_iter_advance(gc_safe_iter_t *iter) {
+  CHECK_TRUE("gc safe iter advance past end", gc_safe_iter_has_current(iter));
+  iter->current = iter->current->next;
+}
+
+value_t gc_safe_get_value(gc_safe_t *handle) {
+  return handle->value;
+}
+
+gc_safe_t *heap_new_gc_safe(heap_t *heap, value_t value) {
+  allocator_t *alloc = &heap->config.allocator;
+  gc_safe_t *new_gc_safe = (void*) allocator_malloc(alloc, sizeof(gc_safe_t));
+  gc_safe_t *next = heap->root_gc_safe.next;
+  gc_safe_t *prev = next->prev;
+  new_gc_safe->next = next;
+  new_gc_safe->prev = prev;
+  new_gc_safe->value = value;
+  prev->next = new_gc_safe;
+  next->prev = new_gc_safe;
+  heap->gc_safe_count++;
+  return new_gc_safe;
+}
+
+void heap_dispose_gc_safe(heap_t *heap, gc_safe_t *gc_safe) {
+  CHECK_TRUE("freed too many gc safes", heap->gc_safe_count > 0);
+  gc_safe_t *prev = gc_safe->prev;
+  CHECK_EQ("wrong gc safe prev", gc_safe, prev->next);
+  gc_safe_t *next = gc_safe->next;
+  CHECK_EQ("wrong gc safe next", gc_safe, next->prev);
+  allocator_t *alloc = &heap->config.allocator;
+  allocator_free(alloc, (address_t) gc_safe);
+  prev->next = next;
+  next->prev = prev;
+  heap->gc_safe_count--;
+}
+
+value_t heap_validate(heap_t *heap) {
+  gc_safe_iter_t iter;
+  gc_safe_iter_init(&iter, heap);
+  gc_safe_t *prev = &heap->root_gc_safe;
+  size_t gc_safes_seen = 0;
+  while (gc_safe_iter_has_current(&iter)) {
+    gc_safe_t *current = gc_safe_iter_get_current(&iter);
+    gc_safes_seen++;
+    if (prev->next != current)
+      return new_signal(scValidationFailed);
+    if (current->prev != prev)
+      return new_signal(scValidationFailed);
+    prev = current;
+    gc_safe_iter_advance(&iter);
+  }
+  if (gc_safes_seen != heap->gc_safe_count)
+    return new_signal(scValidationFailed);
+  return success();
+}
+
 
 // --- H e a p ---
 
@@ -162,6 +249,9 @@ value_t heap_init(heap_t *heap, space_config_t *config) {
   }
   TRY(space_init(&heap->to_space, &heap->config));
   space_clear(&heap->from_space);
+  // Initialize the gc safe loop using the dummy node.
+  heap->root_gc_safe.next = heap->root_gc_safe.prev = &heap->root_gc_safe;
+  heap->gc_safe_count = 0;
   return success();
 }
 
@@ -176,6 +266,13 @@ void heap_dispose(heap_t *heap) {
 
 value_t heap_for_each_object(heap_t *heap, value_callback_t *callback) {
   CHECK_FALSE("traversing empty space", space_is_empty(&heap->to_space));
+  gc_safe_iter_t iter;
+  gc_safe_iter_init(&iter, heap);
+  while (gc_safe_iter_has_current(&iter)) {
+    gc_safe_t *current = gc_safe_iter_get_current(&iter);
+    value_callback_call(callback, current->value);
+    gc_safe_iter_advance(&iter);
+  }
   return space_for_each_object(&heap->to_space, callback);
 }
 
@@ -208,9 +305,16 @@ static value_t visit_object_fields(value_t object, value_callback_t *value_callb
 }
 
 value_t heap_for_each_field(heap_t *heap, field_callback_t *callback) {
+  gc_safe_iter_t iter;
+  gc_safe_iter_init(&iter, heap);
+  while (gc_safe_iter_has_current(&iter)) {
+    gc_safe_t *current = gc_safe_iter_get_current(&iter);
+    field_callback_call(callback, &current->value);
+    gc_safe_iter_advance(&iter);
+  }
   value_callback_t object_field_visitor;
   value_callback_init(&object_field_visitor, visit_object_fields, callback);
-  return heap_for_each_object(heap, &object_field_visitor);
+  return space_for_each_object(&heap->to_space, &object_field_visitor);
 }
 
 value_t heap_prepare_garbage_collection(heap_t *heap) {

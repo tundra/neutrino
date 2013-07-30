@@ -85,3 +85,46 @@ TEST(runtime, gc_move_null) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+TEST(runtime, simple_gc_safe) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t array_before = new_heap_array(&runtime, 2);
+  set_array_at(array_before, 0, runtime_bool(&runtime, true));
+  set_array_at(array_before, 1, runtime_bool(&runtime, false));
+  gc_safe_t *gc_safe = runtime_new_gc_safe(&runtime, array_before);
+  ASSERT_EQ(array_before, gc_safe_get_value(gc_safe));
+  ASSERT_SUCCESS(runtime_garbage_collect(&runtime));
+  value_t array_after = gc_safe_get_value(gc_safe);
+  ASSERT_FALSE(array_before == array_after);
+  ASSERT_VALEQ(runtime_bool(&runtime, true), get_array_at(array_after, 0));
+  ASSERT_VALEQ(runtime_bool(&runtime, false), get_array_at(array_after, 1));
+
+  runtime_dispose_gc_safe(&runtime, gc_safe);
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
+
+TEST(runtime, gc_safe_loop) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t a0b = new_heap_array(&runtime, 2);
+  value_t a1b = new_heap_array(&runtime, 1);
+  set_array_at(a0b, 0, a1b);
+  set_array_at(a0b, 1, a1b);
+  set_array_at(a1b, 0, a0b);
+  gc_safe_t *sa0 = runtime_new_gc_safe(&runtime, a0b);
+  gc_safe_t *sa1 = runtime_new_gc_safe(&runtime, a1b);
+  ASSERT_SUCCESS(runtime_garbage_collect(&runtime));
+  value_t a0a = gc_safe_get_value(sa0);
+  value_t a1a = gc_safe_get_value(sa1);
+  ASSERT_EQ(a1a, get_array_at(a0a, 0));
+  ASSERT_EQ(a1a, get_array_at(a0a, 1));
+  ASSERT_EQ(a0a, get_array_at(a1a, 0));
+  runtime_dispose_gc_safe(&runtime, sa0);
+  runtime_dispose_gc_safe(&runtime, sa1);
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
