@@ -77,7 +77,7 @@ TEST(runtime, gc_move_null) {
   get_object_layout(null_before, &layout_before);
   ASSERT_SUCCESS(runtime_garbage_collect(&runtime));
   value_t null_after = runtime_null(&runtime);
-  ASSERT_FALSE(null_before == null_after);
+  ASSERT_NSAME(null_before, null_after);
   object_layout_t layout_after;
   get_object_layout(null_after, &layout_after);
   ASSERT_EQ(layout_before.size, layout_after.size);
@@ -94,10 +94,10 @@ TEST(runtime, simple_gc_safe) {
   set_array_at(array_before, 0, runtime_bool(&runtime, true));
   set_array_at(array_before, 1, runtime_bool(&runtime, false));
   gc_safe_t *gc_safe = runtime_new_gc_safe(&runtime, array_before);
-  ASSERT_EQ(array_before, gc_safe_get_value(gc_safe));
+  ASSERT_SAME(array_before, gc_safe_get_value(gc_safe));
   ASSERT_SUCCESS(runtime_garbage_collect(&runtime));
   value_t array_after = gc_safe_get_value(gc_safe);
-  ASSERT_FALSE(array_before == array_after);
+  ASSERT_NSAME(array_before, array_after);
   ASSERT_VALEQ(runtime_bool(&runtime, true), get_array_at(array_after, 0));
   ASSERT_VALEQ(runtime_bool(&runtime, false), get_array_at(array_after, 1));
 
@@ -120,9 +120,9 @@ TEST(runtime, gc_safe_loop) {
   ASSERT_SUCCESS(runtime_garbage_collect(&runtime));
   value_t a0a = gc_safe_get_value(sa0);
   value_t a1a = gc_safe_get_value(sa1);
-  ASSERT_EQ(a1a, get_array_at(a0a, 0));
-  ASSERT_EQ(a1a, get_array_at(a0a, 1));
-  ASSERT_EQ(a0a, get_array_at(a1a, 0));
+  ASSERT_SAME(a1a, get_array_at(a0a, 0));
+  ASSERT_SAME(a1a, get_array_at(a0a, 1));
+  ASSERT_SAME(a0a, get_array_at(a1a, 0));
   runtime_dispose_gc_safe(&runtime, sa0);
   runtime_dispose_gc_safe(&runtime, sa1);
 

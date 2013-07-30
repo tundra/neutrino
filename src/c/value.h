@@ -12,9 +12,6 @@
 
 struct runtime_t;
 
-// A tagged value pointer. See details in value.md.
-typedef uint64_t value_t;
-
 // Value domain identifiers.
 typedef enum {
   // Pointer to a heap object.
@@ -27,40 +24,6 @@ typedef enum {
   vdMovedObject
 } value_domain_t;
 
-// How many bits are used for the domain tag?
-static const int kDomainTagSize = 3;
-static const int kDomainTagMask = 0x7;
-
-// Alignment that ensures that object pointers have tag 0.
-#define kValueSize 8
-
-// Returns the tag from a tagged value.
-static value_domain_t get_value_domain(value_t value) {
-  return (value_domain_t) (value & kDomainTagMask);
-}
-
-
-// --- I n t e g e r ---
-
-// Creates a new tagged integer with the given value.
-static value_t new_integer(int64_t value) {
-  return (value << kDomainTagSize) | vdInteger;
-}
-
-// Returns the integer value stored in a tagged integer.
-static int64_t get_integer_value(value_t value) {
-  CHECK_DOMAIN(vdInteger, value);
-  return (((int64_t) value) >> kDomainTagSize);
-}
-
-// Returns a value that is _not_ a signal. This can be used to indicate
-// unspecific success.
-static value_t success() {
-  return new_integer(0);
-}
-
-
-// --- S i g n a l ---
 
 #define ENUM_SIGNAL_CAUSES(F)                                                  \
   F(HeapExhausted)                                                             \
@@ -80,6 +43,74 @@ typedef enum {
 #undef DECLARE_SIGNAL_CAUSE_ENUM
 } signal_cause_t;
 
+
+// Data for a tagged integer value.
+typedef struct {
+  value_domain_t domain : 3;
+  int64_t value : 61;
+} integer_value_t;
+
+// Data for any value.
+typedef struct {
+  value_domain_t domain : 3;
+  uint64_t payload : 61;
+} unknown_value_t;
+
+// Data for signals.
+typedef struct {
+  value_domain_t domain : 3;
+  signal_cause_t cause;
+} signal_value_t;
+
+// The data type used to represent a raw encoded value.
+typedef uint64_t encoded_value_t;
+
+// A tagged runtime value.
+typedef union {
+  unknown_value_t as_unknown;
+  integer_value_t as_integer;
+  signal_value_t as_signal;
+  encoded_value_t encoded;
+} value_t;
+
+// How many bits are used for the domain tag?
+static const int kDomainTagSize = 3;
+static const int kDomainTagMask = 0x7;
+
+// Alignment that ensures that object pointers have tag 0.
+#define kValueSize sizeof(value_t)
+
+// Returns the tag from a tagged value.
+static value_domain_t get_value_domain(value_t value) {
+  return value.as_unknown.domain;
+}
+
+
+// --- I n t e g e r ---
+
+// Creates a new tagged integer with the given value.
+static value_t new_integer(int64_t value) {
+  value_t result;
+  result.as_integer.value = value;
+  result.as_integer.domain = vdInteger;
+  return result;
+}
+
+// Returns the integer value stored in a tagged integer.
+static int64_t get_integer_value(value_t value) {
+  CHECK_DOMAIN(vdInteger, value);
+  return value.as_integer.value;
+}
+
+// Returns a value that is _not_ a signal. This can be used to indicate
+// unspecific success.
+static value_t success() {
+  return new_integer(0);
+}
+
+
+// --- S i g n a l ---
+
 // Returns the string name of a signal cause.
 const char *signal_cause_name(signal_cause_t cause);
 
@@ -89,13 +120,16 @@ static const int kSignalCauseMask = 0x1f;
 
 // Creates a new signal with the specified cause.
 static value_t new_signal(signal_cause_t cause) {
-  return (value_t) (cause << kDomainTagSize) | vdSignal;
+  value_t result;
+  result.as_signal.cause = cause;
+  result.as_signal.domain = vdSignal;
+  return result;
 }
 
 // Returns the cause of a signal.
 static signal_cause_t get_signal_cause(value_t value) {
   CHECK_DOMAIN(vdSignal, value);
-  return  (((int64_t) value) >> kDomainTagSize) & kSignalCauseMask;
+  return  value.as_signal.cause;
 }
 
 
@@ -105,7 +139,8 @@ static signal_cause_t get_signal_cause(value_t value) {
 // moved to.
 static value_t get_moved_object_target(value_t value) {
   CHECK_DOMAIN(vdMovedObject, value);
-  value_t target = value - vdMovedObject;
+  value_t target;
+  target.encoded = value.encoded - vdMovedObject;
   CHECK_DOMAIN(vdObject, target);
   return target;
 }
@@ -113,7 +148,8 @@ static value_t get_moved_object_target(value_t value) {
 // Creates a new moved object pointer pointing to the given target object.
 static value_t new_moved_object(value_t target) {
   CHECK_DOMAIN(vdObject, target);
-  value_t moved = target + vdMovedObject;
+  value_t moved;
+  moved.encoded = target.encoded + vdMovedObject;
   CHECK_DOMAIN(vdMovedObject, moved);
   return moved;
 }
@@ -164,14 +200,16 @@ static const size_t kObjectHeaderOffset = 0;
 // Converts a pointer to an object into an tagged object value pointer.
 static value_t new_object(address_t addr) {
   CHECK_EQ("unaligned", 0, ((address_arith_t) addr) & kDomainTagMask);
-  return (value_t) ((address_arith_t) addr);
+  value_t result;
+  result.encoded = ((address_arith_t) addr);
+  return result;
 }
 
 // Returns the address of the object pointed to by a tagged object value
 // pointer.
 static address_t get_object_address(value_t value) {
   CHECK_DOMAIN(vdObject, value);
-  return (address_t) ((address_arith_t) value);
+  return (address_t) value.encoded;
 }
 
 // Returns a pointer to the index'th field in the given heap object. Check

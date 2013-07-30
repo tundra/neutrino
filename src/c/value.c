@@ -58,25 +58,25 @@ object_family_t get_species_instance_family(value_t value) {
 }
 
 // Casts a pointer to a value_t.
-#define PTR_TO_VAL(EXPR) ((value_t) (address_arith_t) (EXPR))
+#define PTR_TO_VAL(EXPR) ((encoded_value_t) (address_arith_t) (EXPR))
 
 // Casts a value_t to a void*.
 #define VAL_TO_PTR(EXPR) ((void*) (address_arith_t) (EXPR))
 
 void set_species_family_behavior(value_t value, family_behavior_t *behavior) {
-  *access_object_field(value, kSpeciesFamilyBehaviorOffset) = PTR_TO_VAL(behavior);
+  access_object_field(value, kSpeciesFamilyBehaviorOffset)->encoded = PTR_TO_VAL(behavior);
 }
 
 family_behavior_t *get_species_family_behavior(value_t value) {
-  return VAL_TO_PTR(*access_object_field(value, kSpeciesFamilyBehaviorOffset));
+  return VAL_TO_PTR(access_object_field(value, kSpeciesFamilyBehaviorOffset)->encoded);
 }
 
 void set_species_division_behavior(value_t value, division_behavior_t *behavior) {
-  *access_object_field(value, kSpeciesDivisionBehaviorOffset) = PTR_TO_VAL(behavior);
+  access_object_field(value, kSpeciesDivisionBehaviorOffset)->encoded = PTR_TO_VAL(behavior);
 }
 
 division_behavior_t *get_species_division_behavior(value_t value) {
-  return VAL_TO_PTR(*access_object_field(value, kSpeciesDivisionBehaviorOffset));
+  return VAL_TO_PTR(access_object_field(value, kSpeciesDivisionBehaviorOffset)->encoded);
 }
 
 species_division_t get_species_division(value_t value) {
@@ -250,12 +250,12 @@ CANT_SET_CONTENTS(void_p);
 
 void set_void_p_value(value_t value, void *ptr) {
   CHECK_FAMILY(ofVoidP, value);
-  *access_object_field(value, kVoidPValueOffset) = PTR_TO_VAL(ptr);
+  access_object_field(value, kVoidPValueOffset)->encoded = PTR_TO_VAL(ptr);
 }
 
 void *get_void_p_value(value_t value) {
   CHECK_FAMILY(ofVoidP, value);
-  return VAL_TO_PTR(*access_object_field(value, kVoidPValueOffset));
+  return VAL_TO_PTR(access_object_field(value, kVoidPValueOffset)->encoded);
 }
 
 value_t void_p_validate(value_t value) {
@@ -572,13 +572,13 @@ value_t null_validate(value_t value) {
 
 value_t null_transient_identity_hash(value_t value) {
   static const size_t kNullHash = 0x4323;
-  return kNullHash;
+  return new_integer(kNullHash);
 }
 
 bool null_are_identical(value_t a, value_t b) {
   // There is only one null so you should never end up comparing two different
   // ones.
-  CHECK_EQ("multiple nulls", a, b);
+  CHECK_EQ("multiple nulls", a.encoded, b.encoded);
   return true;
 }
 
@@ -616,12 +616,12 @@ value_t bool_validate(value_t value) {
 value_t bool_transient_identity_hash(value_t value) {
   static const size_t kTrueHash = 0x3213;
   static const size_t kFalseHash = 0x5423;
-  return get_bool_value(value) ? kTrueHash : kFalseHash;
+  return new_integer(get_bool_value(value) ? kTrueHash : kFalseHash);
 }
 
 bool bool_are_identical(value_t a, value_t b) {
   // There is only one true and false which are both only equal to themselves.
-  return (a == b);
+  return (a.encoded == b.encoded);
 }
 
 void bool_print_on(value_t value, string_buffer_t *buf) {

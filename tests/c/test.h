@@ -20,6 +20,9 @@ bool value_structural_equal(value_t a, value_t b);
     fail(__FILE__, __LINE__, "Assertion failed: %s == %s.", #A, #B);           \
 } while (false)
 
+// Fails unless the two values are different.
+#define ASSERT_NEQ(A, B) ASSERT_FALSE((A) == (B))
+
 // Fails unless the two given strings are equal.
 #define ASSERT_STREQ(A, B) do {                                                \
   string_t *__a__ = (A);                                                       \
@@ -38,6 +41,12 @@ bool value_structural_equal(value_t a, value_t b);
     fail(__FILE__, __LINE__, "Assertion failed: %s == %s.\n", #A, #B);         \
   }                                                                            \
 } while (false)
+
+// Checks that A and B are the same object or value.
+#define ASSERT_SAME(A, B) ASSERT_EQ((A).encoded, (B).encoded)
+
+// Fails unless A and B are different objects, even if they're equal.
+#define ASSERT_NSAME(A, B) ASSERT_NEQ((A).encoded, (B).encoded)
 
 // Fails unless the condition is true.
 #define ASSERT_TRUE(COND) ASSERT_EQ(COND, true)
