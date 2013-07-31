@@ -68,7 +68,7 @@ value_t value_transient_identity_hash(value_t value) {
 // --- I d e n t i t y ---
 
 static bool integer_are_identical(value_t a, value_t b) {
-  return (a == b);
+  return (a.encoded == b.encoded);
 }
 
 static bool object_are_identical(value_t a, value_t b) {

@@ -34,9 +34,9 @@ TEST(behavior, identity) {
 
   // Integers
   ASSERT_SUCCESS(hash(new_integer(0)));
-  ASSERT_EQ(hash(new_integer(0)), hash(new_integer(0)));
+  ASSERT_SAME(hash(new_integer(0)), hash(new_integer(0)));
   ASSERT_TRUE(equal(new_integer(0), new_integer(0)));
-  ASSERT_FALSE(hash(new_integer(1)) == hash(new_integer(0)));
+  ASSERT_FALSE(hash(new_integer(1)).encoded == hash(new_integer(0)).encoded);
   ASSERT_FALSE(equal(new_integer(1), new_integer(0)));
 
   // Strings
@@ -45,7 +45,7 @@ TEST(behavior, identity) {
   DEF_STR(bar_chars, "bar");
   value_t bar = new_heap_string(&runtime, &bar_chars);
   ASSERT_SUCCESS(hash(foo));
-  ASSERT_FALSE(hash(foo) == hash(bar));
+  ASSERT_NSAME(hash(foo), hash(bar));
   ASSERT_TRUE(equal(foo, foo));
   ASSERT_FALSE(equal(foo, bar));
 
@@ -53,7 +53,7 @@ TEST(behavior, identity) {
   value_t thrue = runtime_bool(&runtime, true);
   value_t fahlse = runtime_bool(&runtime, false);
   ASSERT_SUCCESS(hash(thrue));
-  ASSERT_FALSE(hash(thrue) == hash(fahlse));
+  ASSERT_NSAME(hash(thrue), hash(fahlse));
   ASSERT_TRUE(equal(thrue, thrue));
   ASSERT_FALSE(equal(thrue, fahlse));
   ASSERT_TRUE(equal(fahlse, fahlse));

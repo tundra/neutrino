@@ -121,11 +121,11 @@ TEST(plankton, references) {
   set_array_at(array, 4, i2);
   set_array_at(array, 5, i1);
   value_t decoded = check_plankton(&runtime, array);
-  ASSERT_EQ(get_array_at(decoded, 0), get_array_at(decoded, 2));
-  ASSERT_FALSE(get_array_at(decoded, 0) == get_array_at(decoded, 1));
-  ASSERT_EQ(get_array_at(decoded, 1), get_array_at(decoded, 4));
-  ASSERT_FALSE(get_array_at(decoded, 1) == get_array_at(decoded, 3));
-  ASSERT_EQ(get_array_at(decoded, 3), get_array_at(decoded, 5));
+  ASSERT_SAME(get_array_at(decoded, 0), get_array_at(decoded, 2));
+  ASSERT_NSAME(get_array_at(decoded, 0), get_array_at(decoded, 1));
+  ASSERT_SAME(get_array_at(decoded, 1), get_array_at(decoded, 4));
+  ASSERT_NSAME(get_array_at(decoded, 1), get_array_at(decoded, 3));
+  ASSERT_SAME(get_array_at(decoded, 3), get_array_at(decoded, 5));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
@@ -138,7 +138,7 @@ TEST(plankton, cycles) {
   value_t k0 = new_integer(78);
   ASSERT_SUCCESS(set_instance_field(&runtime, i0, k0, i0));
   value_t d0 = transcode_plankton(&runtime, NULL, NULL, i0);
-  ASSERT_EQ(d0, get_instance_field(d0, k0));
+  ASSERT_SAME(d0, get_instance_field(d0, k0));
 
   value_t i1 = new_heap_instance(&runtime);
   value_t i2 = new_heap_instance(&runtime);
@@ -151,10 +151,10 @@ TEST(plankton, cycles) {
   value_t d1 = transcode_plankton(&runtime, NULL, NULL, i1);
   value_t d2 = get_instance_field(d1, k0);
   value_t d3 = get_instance_field(d1, k1);
-  ASSERT_TRUE(d1 != d2);
-  ASSERT_TRUE(d1 != d3);
-  ASSERT_EQ(d3, get_instance_field(d2, k1));
-  ASSERT_EQ(d1, get_instance_field(d3, k0));
+  ASSERT_NSAME(d1, d2);
+  ASSERT_NSAME(d1, d3);
+  ASSERT_SAME(d3, get_instance_field(d2, k1));
+  ASSERT_SAME(d1, get_instance_field(d3, k0));
 
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));

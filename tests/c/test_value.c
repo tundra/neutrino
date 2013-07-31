@@ -7,6 +7,11 @@
 #include "test.h"
 #include "value-inl.h"
 
+TEST(value, encoding) {
+  ASSERT_EQ(sizeof(encoded_value_t), sizeof(value_t));
+  value_t v0 = new_integer(0);
+  ASSERT_EQ(vdInteger, v0.encoded & 0x7);
+}
 
 // Really simple value tagging stuff.
 TEST(value, tagged_integers) {
@@ -52,37 +57,37 @@ TEST(value, id_hash_maps_simple) {
   // Add something to it.
   ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(0), new_integer(1)));
   ASSERT_EQ(1, get_id_hash_map_size(map));
-  ASSERT_EQ(new_integer(1), get_id_hash_map_at(map, new_integer(0)));
+  ASSERT_SAME(new_integer(1), get_id_hash_map_at(map, new_integer(0)));
   ASSERT_SIGNAL(scNotFound, get_id_hash_map_at(map, new_integer(1)));
   // Add some more to it.
   ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(1), new_integer(2)));
   ASSERT_EQ(2, get_id_hash_map_size(map));
-  ASSERT_EQ(new_integer(1), get_id_hash_map_at(map, new_integer(0)));
-  ASSERT_EQ(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
+  ASSERT_SAME(new_integer(1), get_id_hash_map_at(map, new_integer(0)));
+  ASSERT_SAME(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
   // Replace an existing value.
   ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(0), new_integer(3)));
   ASSERT_EQ(2, get_id_hash_map_size(map));
-  ASSERT_EQ(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
-  ASSERT_EQ(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
+  ASSERT_SAME(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
+  ASSERT_SAME(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
   // There's room for one more value.
   ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(100), new_integer(5)));
   ASSERT_EQ(3, get_id_hash_map_size(map));
-  ASSERT_EQ(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
-  ASSERT_EQ(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
-  ASSERT_EQ(new_integer(5), get_id_hash_map_at(map, new_integer(100)));
+  ASSERT_SAME(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
+  ASSERT_SAME(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
+  ASSERT_SAME(new_integer(5), get_id_hash_map_at(map, new_integer(100)));
   // Now the map should refuse to let us add more.
   ASSERT_SIGNAL(scMapFull, try_set_id_hash_map_at(map, new_integer(88),
       new_integer(79)));
   ASSERT_EQ(3, get_id_hash_map_size(map));
-  ASSERT_EQ(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
-  ASSERT_EQ(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
-  ASSERT_EQ(new_integer(5), get_id_hash_map_at(map, new_integer(100)));
+  ASSERT_SAME(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
+  ASSERT_SAME(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
+  ASSERT_SAME(new_integer(5), get_id_hash_map_at(map, new_integer(100)));
   // However it should still be possible to replace existing mappings.
   ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(1), new_integer(9)));
   ASSERT_EQ(3, get_id_hash_map_size(map));
-  ASSERT_EQ(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
-  ASSERT_EQ(new_integer(9), get_id_hash_map_at(map, new_integer(1)));
-  ASSERT_EQ(new_integer(5), get_id_hash_map_at(map, new_integer(100)));
+  ASSERT_SAME(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
+  ASSERT_SAME(new_integer(9), get_id_hash_map_at(map, new_integer(1)));
+  ASSERT_SAME(new_integer(5), get_id_hash_map_at(map, new_integer(100)));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
@@ -100,7 +105,7 @@ TEST(value, id_hash_maps_strings) {
   ASSERT_EQ(0, get_id_hash_map_size(map));
   ASSERT_SUCCESS(try_set_id_hash_map_at(map, one, new_integer(4)));
   ASSERT_EQ(1, get_id_hash_map_size(map));
-  ASSERT_EQ(new_integer(4), get_id_hash_map_at(map, one));
+  ASSERT_SAME(new_integer(4), get_id_hash_map_at(map, one));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

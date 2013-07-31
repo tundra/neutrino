@@ -67,7 +67,7 @@ value_t family##_transient_identity_hash(value_t value) {                      \
   return OBJ_ADDR_HASH(value);                                                 \
 }                                                                              \
 bool family##_are_identical(value_t a, value_t b) {                            \
-  return (a == b);                                                             \
+  return (a.encoded == b.encoded);                                             \
 }                                                                              \
 SWALLOW_SEMI()
 

@@ -85,7 +85,7 @@ value_t set_object_contents(struct runtime_t *runtime, value_t object,
 
 // Returns a value suitable to be returned as a hash from the address of an
 // object.
-#define OBJ_ADDR_HASH(VAL) new_integer((size_t) (VAL))
+#define OBJ_ADDR_HASH(VAL) new_integer((VAL).encoded)
 
 // Declare the behavior structs for all the families on one fell swoop.
 #define DECLARE_FAMILY_BEHAVIOR(Family, family)                                \
