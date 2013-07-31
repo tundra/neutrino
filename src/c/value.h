@@ -66,7 +66,7 @@ typedef struct {
 typedef uint64_t encoded_value_t;
 
 // A tagged runtime value.
-typedef union {
+typedef union value_t {
   unknown_value_t as_unknown;
   integer_value_t as_integer;
   signal_value_t as_signal;
