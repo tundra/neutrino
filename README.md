@@ -1,6 +1,8 @@
 Neutrino
 ========
 
+[![Build Status](https://travis-ci.org/ne-utrino/neutrino.png?branch=master)](https://travis-ci.org/ne-utrino/neutrino)
+
 Neutrino is a new general-purpose programming language. The purpose of neutrino is to create a language, a community, and an ecosystem of tools that serves programmers better than existing languages. At the highest level the goals are:
 
  - **Give the community control**. As much as possible the community around a code base – corporate, open source, or otherwise – should be in control and make decisions about how to adapt and use the language in a way that's appropriate for that code base.
