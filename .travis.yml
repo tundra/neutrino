@@ -1,3 +1,7 @@
 language: c
 compiler:
   - clang
+  - gcc
+script:
+  - make MODE=dbg test
+  - make MODE=opt test
