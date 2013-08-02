@@ -27,13 +27,18 @@ value_t assembler_flush(assembler_t *assm) {
   TRY_DEF(value_pool, new_heap_array(assm->runtime, value_pool_size));
   id_hash_map_iter_t iter;
   id_hash_map_iter_init(&iter, value_pool_map);
+  size_t entries_seen = 0;
   while (id_hash_map_iter_advance(&iter)) {
     value_t key;
     value_t value;
     id_hash_map_iter_get_current(&iter, &key, &value);
     size_t index = get_integer_value(value);
+    // Check that the entry hasn't been set already.
+    CHECK_FAMILY(ofNull, get_array_at(value_pool, index));
     set_array_at(value_pool, index, key);
+    entries_seen++;
   }
+  CHECK_EQ("wrong number of entries", entries_seen, value_pool_size);
   return new_heap_code_block(assm->runtime, bytecode, value_pool);
 }
 
