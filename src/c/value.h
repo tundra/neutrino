@@ -33,7 +33,8 @@ typedef enum {
   F(MapFull)                                                                   \
   F(NotFound)                                                                  \
   F(InvalidInput)                                                              \
-  F(Nothing)
+  F(Nothing)                                                                   \
+  F(InvalidSyntax)
 
 // Enum identifying the type of a signal.
 typedef enum {
@@ -162,6 +163,10 @@ static value_t new_moved_object(value_t target) {
 #define ENUM_SPECIAL_OBJECT_FAMILIES(F)                                        \
   F(Species,    species)
 
+// Enumerates the syntax tree families.
+#define ENUM_SYNTAX_OBJECT_FAMILIES(F)                                         \
+  F(LiteralAst, literal_ast)
+
 // Enumerates the compact object species.
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
   F(String,     string)                                                        \
@@ -173,7 +178,8 @@ static value_t new_moved_object(value_t target) {
   F(Instance,   instance)                                                      \
   F(VoidP,      void_p)                                                        \
   F(Factory,    factory)                                                       \
-  F(LiteralAst, literal_ast)
+  F(CodeBlock,  code_block)                                                    \
+  ENUM_SYNTAX_OBJECT_FAMILIES(F)
 
 // Enumerates all the object families.
 #define ENUM_OBJECT_FAMILIES(F)                                                \
@@ -485,6 +491,25 @@ void set_factory_constructor(value_t value, value_t constructor);
 // Returns the constructor pointer for this factory. The pointer is wrapped in
 // a void-p.
 value_t get_factory_constructor(value_t value);
+
+
+//  --- C o d e   b l o c k ---
+
+static const size_t kCodeBlockSize = OBJECT_SIZE(2);
+static const size_t kCodeBlockBytecodeOffset = 1;
+static const size_t kCodeBlockValuePoolOffset = 2;
+
+// Returns the binary blob of bytecode for this code block.
+value_t get_code_block_bytecode(value_t value);
+
+// Sets the binary blob of bytecode for this code block.
+void set_code_block_bytecode(value_t value, value_t bytecode);
+
+// Returns the value pool array for this code block.
+value_t get_code_block_value_pool(value_t value);
+
+// Sets the value pool array for this code block.
+void set_code_block_value_pool(value_t value, value_t value_pool);
 
 
 // --- D e b u g ---
