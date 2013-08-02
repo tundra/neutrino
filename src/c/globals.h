@@ -33,7 +33,7 @@ typedef uint32_t address_arith_t;
 // Expands to a declaration that is missing a semicolon at the end. If used
 // at the end of a macro that doesn't allow a final semi this allows the semi
 // to be written.
-#define SWALLOW_SEMI() typedef int __CONCAT_WITH_EVAL__(__ignore__, __LINE__)
+#define SWALLOW_SEMI(U) typedef int __CONCAT_WITH_EVAL__(__ignore_##U##__, __LINE__)
 
 // Concatenates the values A and B without evaluating them if they're macros.
 #define __CONCAT_NO_EVAL__(A, B) A##B
