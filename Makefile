@@ -52,7 +52,7 @@ $(PYTHON_TEST_RUNS): test-python-%: tests/python/% $(GLOBAL_DEPS)
 
 
 # Configuration of the C language dialect to use.
-C_DIALECT_FLAGS=-Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -std=c99 -pedantic
+C_DIALECT_FLAGS=-Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -std=c99
 C_ENV_FLAGS=-Isrc/c -I$(BIN)/tests/c
 DEBUG_FLAGS=-O0 -g
 CFLAGS=$(C_DIALECT_FLAGS) $(C_ENV_FLAGS) $(DEBUG_FLAGS) -m$(MACHINE) -DM$(MACHINE)=1
