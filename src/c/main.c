@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "crash.h"
+#include "interp.h"
 #include "plankton.h"
 #include "runtime.h"
 #include "value-inl.h"
@@ -26,12 +27,20 @@ static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
   blob_t data_blob;
   byte_buffer_flush(&buffer, &data_blob);
   // Create a blob to hold the result and copy the data into it.
-  TRY_DEF(result, new_heap_blob(runtime, blob_length(&data_blob)));
-  blob_t result_blob;
-  get_blob_data(result, &result_blob);
-  blob_copy_to(&data_blob, &result_blob);
-  byte_buffer_dispose(&buffer);
-  return result;
+  return new_heap_blob_with_data(runtime, &data_blob);
+}
+
+// Executes the given program (syntax tree) within the given runtime.
+static value_t execute_program(runtime_t *runtime, value_t program) {
+  // Generate code for the program.
+  assembler_t assm;
+  TRY(assembler_init(&assm, runtime));
+  TRY(emit_value(program, &assm));
+  assembler_emit_opcode(&assm, ocReturn);
+  assembler_dispose(&assm);
+  TRY_DEF(code_block, assembler_flush(&assm));
+  // TODO: Execute the program.
+  return success();
 }
 
 // Create a vm and run the program.
@@ -51,8 +60,8 @@ static value_t neutrino_main(int argc, char *argv[]) {
     }
     value_mapping_t syntax_mapping;
     TRY(init_syntax_mapping(&syntax_mapping, &runtime));
-    TRY_DEF(value, plankton_deserialize(&runtime, &syntax_mapping, input));
-    value_print_ln(value);
+    TRY_DEF(program, plankton_deserialize(&runtime, &syntax_mapping, input));
+    TRY(execute_program(&runtime, program));
   }
 
   TRY(runtime_dispose(&runtime));

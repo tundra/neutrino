@@ -60,6 +60,11 @@ value_t new_heap_void_p(runtime_t *runtime, void *value);
 // Creates a new factory object backed by the given constructor function.
 value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr);
 
+// Creates a new code block object with the given bytecode blob and value pool
+// array.
+value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
+    value_t value_pool);
+
 
 // --- S y n t a x ---
 

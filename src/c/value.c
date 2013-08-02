@@ -718,8 +718,58 @@ void factory_print_on(value_t value, string_buffer_t *buf) {
 }
 
 void factory_print_atomic_on(value_t value, string_buffer_t *buf) {
-  CHECK_FAMILY(ofInstance, value);
+  CHECK_FAMILY(ofFactory, value);
   string_buffer_printf(buf, "#<factory>");
+}
+
+
+// --- C o d e   b l o c k ---
+
+OBJECT_IDENTITY_IMPL(code_block);
+CANT_SET_CONTENTS(code_block);
+FIXED_SIZE_PURE_VALUE_IMPL(code_block, CodeBlock);
+
+value_t code_block_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofCodeBlock, value);
+  value_t bytecode = get_code_block_bytecode(value);
+  VALIDATE_VALUE_FAMILY(ofBlob, bytecode);
+  value_t value_pool = get_code_block_value_pool(value);
+  VALIDATE_VALUE_FAMILY(ofArray, value_pool);
+  return success();
+}
+
+void code_block_print_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofCodeBlock, value);
+  string_buffer_printf(buf, "#<code block: bc@%i, vp@%i>",
+      get_blob_length(get_code_block_bytecode(value)),
+      get_array_length(get_code_block_value_pool(value)));
+}
+
+void code_block_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofCodeBlock, value);
+  string_buffer_printf(buf, "#<code block>");
+}
+
+void set_code_block_bytecode(value_t value, value_t bytecode) {
+  CHECK_FAMILY(ofCodeBlock, value);
+  CHECK_FAMILY(ofBlob, bytecode);
+  *access_object_field(value, kCodeBlockBytecodeOffset) = bytecode;
+}
+
+value_t get_code_block_bytecode(value_t value) {
+  CHECK_FAMILY(ofCodeBlock, value);
+  return *access_object_field(value, kCodeBlockBytecodeOffset);
+}
+
+void set_code_block_value_pool(value_t value, value_t value_pool) {
+  CHECK_FAMILY(ofCodeBlock, value);
+  CHECK_FAMILY(ofArray, value_pool);
+  *access_object_field(value, kCodeBlockValuePoolOffset) = value_pool;
+}
+
+value_t get_code_block_value_pool(value_t value) {
+  CHECK_FAMILY(ofCodeBlock, value);
+  return *access_object_field(value, kCodeBlockValuePoolOffset);
 }
 
 

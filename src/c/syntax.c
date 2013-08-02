@@ -6,6 +6,8 @@
 #include "syntax.h"
 #include "value-inl.h"
 
+// --- M i s c ---
+
 static value_t resolve_syntax_factory(value_t key, runtime_t *runtime, void *data) {
   // We only accept keys of the form ["ast", <name>] so first we check that the
   // key does indeed have that shape.
@@ -75,6 +77,29 @@ value_t set_literal_ast_contents(value_t object, runtime_t *runtime, value_t con
   TRY_DEF(value, get_id_hash_map_at(contents, runtime->roots.string_table.value));
   set_literal_ast_value(object, value);
   return success();
+}
+
+value_t emit_literal_ast(value_t value, assembler_t *assm) {
+  assembler_emit_opcode(assm, ocLiteral);
+  TRY(assembler_emit_value(assm, get_literal_ast_value(value)));
+  return success();
+}
+
+
+// --- C o d e   g e n e r a t i o n ---
+
+value_t emit_value(value_t value, assembler_t *assm) {
+  if (!in_domain(vdObject, value))
+    return new_signal(scInvalidSyntax);
+  switch (get_object_family(value)) {
+#define __EMIT_SYNTAX_FAMILY_CASE__(Family, family)                            \
+    case of##Family:                                                           \
+      return emit_##family(value, assm);
+    ENUM_SYNTAX_OBJECT_FAMILIES(__EMIT_SYNTAX_FAMILY_CASE__)
+#undef __EMIT_SYNTAX_FAMILY_CASE__
+    default:
+      return new_signal(scInvalidSyntax);
+  }
 }
 
 
