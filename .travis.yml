@@ -3,4 +3,5 @@ compiler:
   - clang
   - gcc
 script:
-  - make test
+  - make MODE=dbg test
+  - make MODE=opt test

@@ -9,6 +9,9 @@ VALGRIND=off
 # Configurable emulator command that can be used to run tests on an emulator.
 EMULATOR_CMD=
 
+# Whether to compile in optimized or debug mode.
+MODE=dbg
+
 -include .$(CONFIG).cfg
 
 ifeq ($(VALGRIND),on)
@@ -17,7 +20,7 @@ else
   VALGRIND_CMD=
 endif
 
-BIN=bin-$(MACHINE)
+BIN=bin-$(MACHINE)-$(MODE)
 OUT=$(BIN)/out
 
 # Default target.
@@ -51,11 +54,18 @@ $(PYTHON_TEST_RUNS): test-python-%: tests/python/% $(GLOBAL_DEPS)
 		python $<
 
 
+# Decide the optimization mode based on the MODE parameter.
+ifeq ($(MODE),dbg)
+  OPT_FLAGS=-O0 -g
+else
+  OPT_FLAGS=-O3
+endif
+
+
 # Configuration of the C language dialect to use.
 C_DIALECT_FLAGS=-Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -std=c99
 C_ENV_FLAGS=-Isrc/c -I$(BIN)/tests/c
-DEBUG_FLAGS=-O0 -g
-CFLAGS=$(C_DIALECT_FLAGS) $(C_ENV_FLAGS) $(DEBUG_FLAGS) -m$(MACHINE) -DM$(MACHINE)=1
+CFLAGS=$(C_DIALECT_FLAGS) $(C_ENV_FLAGS) $(OPT_FLAGS) -m$(MACHINE) -DM$(MACHINE)=1
 LINKFLAGS=-m$(MACHINE) -rdynamic
 
 
