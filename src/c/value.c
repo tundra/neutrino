@@ -119,15 +119,7 @@ size_t calc_string_size(size_t char_count) {
        + align_size(kValueSize, bytes);  // contents
 }
 
-void set_string_length(value_t value, size_t length) {
-  CHECK_FAMILY(ofString, value);
-  *access_object_field(value, kStringLengthOffset) = new_integer(length);
-}
-
-size_t get_string_length(value_t value) {
-  CHECK_FAMILY(ofString, value);
-  return get_integer_value(*access_object_field(value, kStringLengthOffset));
-}
+INTEGER_GETTER_SETTER_IMPL(String, string, Length, length);
 
 char *get_string_chars(value_t value) {
   CHECK_FAMILY(ofString, value);
@@ -193,15 +185,7 @@ size_t calc_blob_size(size_t size) {
        + align_size(kValueSize, size);  // contents
 }
 
-void set_blob_length(value_t value, size_t length) {
-  CHECK_FAMILY(ofBlob, value);
-  *access_object_field(value, kBlobLengthOffset) = new_integer(length);
-}
-
-size_t get_blob_length(value_t value) {
-  CHECK_FAMILY(ofBlob, value);
-  return get_integer_value(*access_object_field(value, kBlobLengthOffset));
-}
+INTEGER_GETTER_SETTER_IMPL(Blob, blob, Length, length);
 
 void get_blob_data(value_t value, blob_t *blob_out) {
   CHECK_FAMILY(ofBlob, value);
@@ -289,15 +273,7 @@ size_t calc_array_size(size_t length) {
        + (length * kValueSize);  // contents
 }
 
-size_t get_array_length(value_t value) {
-  CHECK_FAMILY(ofArray, value);
-  return get_integer_value(*access_object_field(value, kArrayLengthOffset));
-}
-
-void set_array_length(value_t value, size_t length) {
-  CHECK_FAMILY(ofArray, value);
-  *access_object_field(value, kArrayLengthOffset) = new_integer(length);
-}
+INTEGER_GETTER_SETTER_IMPL(Array, array, Length, length);
 
 value_t get_array_at(value_t value, size_t index) {
   CHECK_FAMILY(ofArray, value);
@@ -347,38 +323,9 @@ OBJECT_IDENTITY_IMPL(id_hash_map);
 CANT_SET_CONTENTS(id_hash_map);
 FIXED_SIZE_PURE_VALUE_IMPL(id_hash_map, IdHashMap);
 
-value_t get_id_hash_map_entry_array(value_t value) {
-  CHECK_FAMILY(ofIdHashMap, value);
-  return *access_object_field(value, kIdHashMapEntryArrayOffset);
-}
-
-void set_id_hash_map_entry_array(value_t value, value_t entry_array) {
-  CHECK_FAMILY(ofIdHashMap, value);
-  CHECK_FAMILY(ofArray, entry_array);
-  *access_object_field(value, kIdHashMapEntryArrayOffset) = entry_array;
-}
-
-size_t get_id_hash_map_size(value_t value) {
-  CHECK_FAMILY(ofIdHashMap, value);
-  value_t size = *access_object_field(value, kIdHashMapSizeOffset);
-  return get_integer_value(size);
-}
-
-void set_id_hash_map_size(value_t value, size_t size) {
-  CHECK_FAMILY(ofIdHashMap, value);
-  *access_object_field(value, kIdHashMapSizeOffset) = new_integer(size);
-}
-
-void set_id_hash_map_capacity(value_t value, size_t capacity) {
-  CHECK_FAMILY(ofIdHashMap, value);
-  *access_object_field(value, kIdHashMapCapacityOffset) = new_integer(capacity);
-}
-
-size_t get_id_hash_map_capacity(value_t value) {
-  CHECK_FAMILY(ofIdHashMap, value);
-  value_t capacity = *access_object_field(value, kIdHashMapCapacityOffset);
-  return get_integer_value(capacity);
-}
+CHECKED_GETTER_SETTER_IMPL(IdHashMap, id_hash_map, Array, EntryArray, entry_array);
+INTEGER_GETTER_SETTER_IMPL(IdHashMap, id_hash_map, Size, size);
+INTEGER_GETTER_SETTER_IMPL(IdHashMap, id_hash_map, Capacity, capacity);
 
 // Returns a pointer to the start of the index'th entry in the given map.
 static value_t *get_id_hash_map_entry(value_t map, size_t index) {
@@ -638,16 +585,7 @@ void bool_print_atomic_on(value_t value, string_buffer_t *buf) {
 OBJECT_IDENTITY_IMPL(instance);
 FIXED_SIZE_PURE_VALUE_IMPL(instance, Instance);
 
-void set_instance_fields(value_t value, value_t fields) {
-  CHECK_FAMILY(ofInstance, value);
-  CHECK_FAMILY(ofIdHashMap, fields);
-  *access_object_field(value, kInstanceFieldsOffset) = fields;
-}
-
-value_t get_instance_fields(value_t value) {
-  CHECK_FAMILY(ofInstance, value);
-  return *access_object_field(value, kInstanceFieldsOffset);
-}
+CHECKED_GETTER_SETTER_IMPL(Instance, instance, IdHashMap, Fields, fields);
 
 value_t get_instance_field(value_t value, value_t key) {
   value_t fields = get_instance_fields(value);
@@ -692,16 +630,7 @@ OBJECT_IDENTITY_IMPL(factory);
 CANT_SET_CONTENTS(factory);
 FIXED_SIZE_PURE_VALUE_IMPL(factory, Factory);
 
-void set_factory_constructor(value_t value, value_t constructor) {
-  CHECK_FAMILY(ofFactory, value);
-  CHECK_FAMILY(ofVoidP, constructor);
-  *access_object_field(value, kFactoryConstructorOffset) = constructor;
-}
-
-value_t get_factory_constructor(value_t value) {
-  CHECK_FAMILY(ofFactory, value);
-  return *access_object_field(value, kFactoryConstructorOffset);
-}
+CHECKED_GETTER_SETTER_IMPL(Factory, factory, VoidP, Constructor, constructor);
 
 value_t factory_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofFactory, value);
@@ -729,6 +658,9 @@ OBJECT_IDENTITY_IMPL(code_block);
 CANT_SET_CONTENTS(code_block);
 FIXED_SIZE_PURE_VALUE_IMPL(code_block, CodeBlock);
 
+CHECKED_GETTER_SETTER_IMPL(CodeBlock, code_block, Blob, Bytecode, bytecode);
+CHECKED_GETTER_SETTER_IMPL(CodeBlock, code_block, Array, ValuePool, value_pool);
+
 value_t code_block_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofCodeBlock, value);
   value_t bytecode = get_code_block_bytecode(value);
@@ -748,28 +680,6 @@ void code_block_print_on(value_t value, string_buffer_t *buf) {
 void code_block_print_atomic_on(value_t value, string_buffer_t *buf) {
   CHECK_FAMILY(ofCodeBlock, value);
   string_buffer_printf(buf, "#<code block>");
-}
-
-void set_code_block_bytecode(value_t value, value_t bytecode) {
-  CHECK_FAMILY(ofCodeBlock, value);
-  CHECK_FAMILY(ofBlob, bytecode);
-  *access_object_field(value, kCodeBlockBytecodeOffset) = bytecode;
-}
-
-value_t get_code_block_bytecode(value_t value) {
-  CHECK_FAMILY(ofCodeBlock, value);
-  return *access_object_field(value, kCodeBlockBytecodeOffset);
-}
-
-void set_code_block_value_pool(value_t value, value_t value_pool) {
-  CHECK_FAMILY(ofCodeBlock, value);
-  CHECK_FAMILY(ofArray, value_pool);
-  *access_object_field(value, kCodeBlockValuePoolOffset) = value_pool;
-}
-
-value_t get_code_block_value_pool(value_t value) {
-  CHECK_FAMILY(ofCodeBlock, value);
-  return *access_object_field(value, kCodeBlockValuePoolOffset);
 }
 
 
