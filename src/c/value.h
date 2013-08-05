@@ -35,7 +35,8 @@ typedef enum {
   F(OutOfBounds)                                                               \
   F(SystemError)                                                               \
   F(UnsupportedBehavior)                                                       \
-  F(ValidationFailed)
+  F(ValidationFailed)                                                          \
+  F(Wat)
 
 // Enum identifying the type of a signal.
 typedef enum {
@@ -180,6 +181,8 @@ static value_t new_moved_object(value_t target) {
   F(VoidP,      void_p)                                                        \
   F(Factory,    factory)                                                       \
   F(CodeBlock,  code_block)                                                    \
+  F(StackPiece, stack_piece)                                                   \
+  F(Stack,      stack)                                                         \
   ENUM_SYNTAX_OBJECT_FAMILIES(F)
 
 // Enumerates all the object families.

@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "behavior.h"
+#include "process.h"
 #include "value-inl.h"
 
 #include <string.h>
@@ -143,6 +144,30 @@ value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
       runtime->roots.code_block_species));
   set_code_block_bytecode(result, bytecode);
   set_code_block_value_pool(result, value_pool);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
+    value_t previous) {
+  size_t size = kStackPieceSize;
+  TRY_DEF(storage, new_heap_array(runtime, storage_size));
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.stack_piece_species));
+  set_stack_piece_storage(result, storage);
+  set_stack_piece_previous(result, previous);
+  set_stack_piece_top_frame_pointer(result, 0);
+  set_stack_piece_top_stack_pointer(result, 0);
+  set_stack_piece_top_capacity(result, 0);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_stack(runtime_t *runtime, size_t initial_capacity) {
+  size_t size = kStackSize;
+  TRY_DEF(piece, new_heap_stack_piece(runtime, initial_capacity,
+      runtime_null(runtime)));
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.stack_species));
+  set_stack_top(result, piece);
   return post_create_sanity_check(result, size);
 }
 

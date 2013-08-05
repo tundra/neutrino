@@ -103,6 +103,17 @@ void set_##receiver##_##field(value_t self, value_t value) {                   \
 }                                                                              \
 SWALLOW_SEMI(csi)
 
+// Expands to a function that sets the given field on the given receiver,
+// checking that the receiver has the expected type but without checking
+// anything about the value.
+#define UNCHECKED_SETTER_IMPL(Receiver, receiver, Field, field)                \
+void set_##receiver##_##field(value_t self, value_t value) {                   \
+  CHECK_FAMILY(of##Receiver, self);                                            \
+  *access_object_field(self, k##Receiver##Field##Offset) = value;              \
+}                                                                              \
+SWALLOW_SEMI(usi)
+
+
 // Expands to a function that gets the specified field in the specified object
 // family.
 #define GETTER_IMPL(Receiver, receiver, Field, field)                          \
@@ -115,6 +126,11 @@ SWALLOW_SEMI(gi)
 // Expands to a checked setter and a getter for the specified types.
 #define CHECKED_GETTER_SETTER_IMPL(Receiver, receiver, Family, Field, field)   \
 CHECKED_SETTER_IMPL(Receiver, receiver, Family, Field, field);                 \
+GETTER_IMPL(Receiver, receiver, Field, field)
+
+// Expands to an unchecked setter and a getter for the specified types.
+#define UNCHECKED_GETTER_SETTER_IMPL(Receiver, receiver, Field, field)         \
+UNCHECKED_SETTER_IMPL(Receiver, receiver, Field, field);                       \
 GETTER_IMPL(Receiver, receiver, Field, field)
 
 // Expands to a setter that sets an integer-valued field to an integer value,
