@@ -202,6 +202,12 @@ $(MD_OBJS): $(BIN)/doc/%.html: %.md
 docs:	$(MD_OBJS)
 
 
+loc:
+	@echo LOC \
+	  C: `find . -name \*.[ch] | xargs cat | grep -v -e ^// -e ^$$ | wc -l` \
+	  py: `find . -name \*.py | xargs cat | grep -v -e '^#' -e ^$$ | wc -l`
+
+
 clean:
 	@echo Cleaning $(BIN)
 	@rm -rf $(BIN)
