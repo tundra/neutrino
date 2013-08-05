@@ -16,6 +16,7 @@ CHECKED_GETTER_SETTER_IMPL(StackPiece, stack_piece, Array, Storage, storage);
 UNCHECKED_GETTER_SETTER_IMPL(StackPiece, stack_piece, Previous, previous);
 INTEGER_GETTER_SETTER_IMPL(StackPiece, stack_piece, TopFramePointer, top_frame_pointer);
 INTEGER_GETTER_SETTER_IMPL(StackPiece, stack_piece, TopStackPointer, top_stack_pointer);
+INTEGER_GETTER_SETTER_IMPL(StackPiece, stack_piece, TopCapacity, top_capacity);
 
 value_t stack_piece_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofStackPiece, value);
@@ -61,36 +62,58 @@ void stack_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- F r a m e ---
 
-bool try_push_frame(frame_t *frame, value_t stack_piece, size_t frame_size) {
-  // The amount of space required in this frame.
-  size_t size = frame_size + kFrameHeaderSize;
+// Sets the given frame to be the top frame of the given stack piece.
+static void get_top_stack_piece_frame(value_t stack_piece, frame_t *frame) {
+  frame->stack_piece = stack_piece;
+  frame->frame_pointer = get_stack_piece_top_frame_pointer(stack_piece);
+  frame->stack_pointer = get_stack_piece_top_stack_pointer(stack_piece);
+  frame->capacity = get_stack_piece_top_capacity(stack_piece);
+}
+
+bool try_push_frame(value_t stack_piece, frame_t *frame, size_t frame_capacity) {
+  // First record the current state of the old top frame so we can store it in
+  // the header if the new frame.
+  frame_t old_frame;
+  get_top_stack_piece_frame(stack_piece, &old_frame);
+  // The amount of space required to make this frame.
+  size_t size = frame_capacity + kFrameHeaderSize;
   // Determine how much room is left in the stack piece.
   value_t storage = get_stack_piece_storage(stack_piece);
-  size_t capacity = get_array_length(storage);
-  size_t old_stack_pointer = get_stack_piece_top_stack_pointer(stack_piece);
-  size_t old_frame_pointer = get_stack_piece_top_frame_pointer(stack_piece);
-  size_t available = capacity - old_stack_pointer;
+  size_t stack_piece_capacity = get_array_length(storage);
+  size_t available = stack_piece_capacity - old_frame.stack_pointer;
   if (available < size)
     return false;
   // Points to the first field in this frame's header.
-  size_t new_frame_pointer = old_stack_pointer + kFrameHeaderSize;
+  size_t new_frame_pointer = old_frame.stack_pointer + kFrameHeaderSize;
+  // Store the new frame's info in the frame struct.
   frame->stack_pointer = frame->frame_pointer = new_frame_pointer;
-  set_stack_piece_top_stack_pointer(stack_piece, new_frame_pointer);
-  set_stack_piece_top_frame_pointer(stack_piece, new_frame_pointer);
-  frame->capacity = frame_size;
+  frame->capacity = frame_capacity;
   frame->stack_piece = stack_piece;
-  set_frame_previous_frame_pointer(frame, old_frame_pointer);
+  // Record the relevant information about the previous frame in the new frame's
+  // header.
+  set_frame_previous_frame_pointer(frame, old_frame.frame_pointer);
+  set_frame_previous_capacity(frame, old_frame.capacity);
+  // Update the stack piece's top frame data to reflect the new top frame.
+  set_stack_piece_top_stack_pointer(stack_piece, frame->stack_pointer);
+  set_stack_piece_top_frame_pointer(stack_piece, frame->frame_pointer);
+  set_stack_piece_top_capacity(stack_piece, frame->capacity);
   return true;
 }
 
-bool try_pop_frame(frame_t *frame) {
-  size_t next_frame_pointer = get_frame_previous_frame_pointer(frame);
-  size_t next_stack_pointer = frame->frame_pointer - kFrameHeaderSize;
-  frame->frame_pointer = next_frame_pointer;
-  frame->stack_pointer = next_stack_pointer;
-  set_stack_piece_top_stack_pointer(frame->stack_piece, frame->stack_pointer);
-  set_stack_piece_top_frame_pointer(frame->stack_piece, frame->frame_pointer);
-  return true;
+bool pop_frame(value_t stack_piece, frame_t *frame) {
+  // Grab the current top frame.
+  frame_t top_frame;
+  get_top_stack_piece_frame(stack_piece, &top_frame);
+  CHECK_TRUE("empty stack piece", top_frame.frame_pointer > 0);
+  // Get the frame pointer and capacity from the top frame's header.
+  frame->frame_pointer = get_frame_previous_frame_pointer(&top_frame);
+  frame->capacity = get_frame_previous_capacity(&top_frame);
+  // The stack pointer will be the first field of the top frame's header.
+  frame->stack_pointer = top_frame.frame_pointer - kFrameHeaderSize;
+  set_stack_piece_top_stack_pointer(stack_piece, frame->stack_pointer);
+  set_stack_piece_top_frame_pointer(stack_piece, frame->frame_pointer);
+  set_stack_piece_top_capacity(stack_piece, frame->capacity);
+  return (frame->frame_pointer != 0);
 }
 
 // Accesses a frame header field, that is, a bookkeeping field below the frame
@@ -124,11 +147,21 @@ static value_t *access_frame_field(frame_t *frame, size_t offset) {
 }
 
 void set_frame_previous_frame_pointer(frame_t *frame, size_t value) {
-  *access_frame_header_field(frame, kFrameHeaderPreviousFramePointerOffset) = new_integer(value);
+  *access_frame_header_field(frame, kFrameHeaderPreviousFramePointerOffset) =
+      new_integer(value);
 }
 
 size_t get_frame_previous_frame_pointer(frame_t *frame) {
   return get_integer_value(*access_frame_header_field(frame, kFrameHeaderPreviousFramePointerOffset));
+}
+
+void set_frame_previous_capacity(frame_t *frame, size_t value) {
+  *access_frame_header_field(frame, kFrameHeaderPreviousCapacityOffset) =
+      new_integer(value);
+}
+
+size_t get_frame_previous_capacity(frame_t *frame) {
+  return get_integer_value(*access_frame_header_field(frame, kFrameHeaderPreviousCapacityOffset));
 }
 
 value_t frame_push_value(frame_t *frame, value_t value) {

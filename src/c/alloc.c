@@ -157,6 +157,7 @@ value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
   set_stack_piece_previous(result, previous);
   set_stack_piece_top_frame_pointer(result, 0);
   set_stack_piece_top_stack_pointer(result, 0);
+  set_stack_piece_top_capacity(result, 0);
   return post_create_sanity_check(result, size);
 }
 
