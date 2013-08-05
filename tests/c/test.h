@@ -28,11 +28,13 @@ typedef struct {
 
 // Installs a check recorder and switch to soft check failure mode. This also
 // resets the recorder so it's not necessary to explicitly initialize it in
-// advance.
+// advance. The initial cause is set to a value that is different from all
+// signal causes but the concrete value should not otherwise be relied on.
 void install_check_recorder(check_recorder_t *recorder);
 
 // Uninstalls the given check recorder, which must be the currently active one,
-// and restores checks to the same state as before it was installed.
+// and restores checks to the same state as before it was installed. The state
+// of the recorder is otherwise left undefined.
 void uninstall_check_recorder(check_recorder_t *recorder);
 
 // Fails unless the two values are equal.

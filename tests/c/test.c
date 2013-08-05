@@ -159,8 +159,11 @@ void install_check_recorder(check_recorder_t *recorder) {
   recorder->cause = __scFirst__;
   init_abort_callback(&recorder->callback, recorder_abort_callback, recorder);
   recorder->previous = set_abort_callback(&recorder->callback);
+  CHECK_TRUE("no previous abort callback", recorder->previous != NULL);
 }
 
 void uninstall_check_recorder(check_recorder_t *recorder) {
+  CHECK_TRUE("uninstalling again", recorder->previous != NULL);
   set_abort_callback(recorder->previous);
+  recorder->previous = NULL;
 }
