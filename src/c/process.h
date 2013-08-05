@@ -78,10 +78,13 @@ void set_frame_previous_frame_pointer(frame_t *frame, size_t value);
 // one.
 size_t get_frame_previous_frame_pointer(frame_t *frame);
 
-// Pushes a value onto this stack frame.
-void frame_push_value(frame_t *frame, value_t value);
+// Pushes a value onto this stack frame. The returned value will always be
+// success except on bounds check failures in soft check failure mode where it
+// will be OutOfBounds.
+value_t frame_push_value(frame_t *frame, value_t value);
 
-// Pops a value off this stack frame.
+// Pops a value off this stack frame. Bounds checks whether there is a value to
+// pop and in soft check failure mode returns an OutOfBounds signal if not.
 value_t frame_pop_value(frame_t *frame);
 
 

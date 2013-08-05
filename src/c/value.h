@@ -35,7 +35,8 @@ typedef enum {
   F(OutOfBounds)                                                               \
   F(SystemError)                                                               \
   F(UnsupportedBehavior)                                                       \
-  F(ValidationFailed)
+  F(ValidationFailed)                                                          \
+  F(Wat)
 
 // Enum identifying the type of a signal.
 typedef enum {

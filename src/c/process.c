@@ -103,10 +103,21 @@ static value_t *access_frame_header_field(frame_t *frame, size_t offset) {
   return get_array_elements(storage) + index;
 }
 
+// Returns true if the given absolute offset is within the fields available to
+// the given frame.
+static bool is_offset_within_frame(frame_t *frame, size_t offset) {
+  return (offset - frame->frame_pointer) < frame->capacity;
+}
+
+// Returns true iff the given frame is the top stack frame on its stack piece.
+static bool is_top_frame(frame_t *frame) {
+  return frame->stack_pointer == get_stack_piece_top_stack_pointer(frame->stack_piece);
+}
+
 // Accesses a frame field, that is, a local to the current call. The offset is
 // relative to the whole stack piece, not the frame.
 static value_t *access_frame_field(frame_t *frame, size_t offset) {
-  CHECK_TRUE("frame field out of bounds", (offset - frame->frame_pointer) < frame->capacity);
+  CHECK_TRUE("frame field out of bounds", is_offset_within_frame(frame, offset));
   value_t storage = get_stack_piece_storage(frame->stack_piece);
   CHECK_TRUE("frame field out of bounds", offset < get_array_length(storage));
   return get_array_elements(storage) + offset;
@@ -120,18 +131,23 @@ size_t get_frame_previous_frame_pointer(frame_t *frame) {
   return get_integer_value(*access_frame_header_field(frame, kFrameHeaderPreviousFramePointerOffset));
 }
 
-void frame_push_value(frame_t *frame, value_t value) {
+value_t frame_push_value(frame_t *frame, value_t value) {
   // Check that the stack is in sync with this frame.
-  CHECK_EQ("disconnected frame", frame->stack_pointer,
-      get_stack_piece_top_stack_pointer(frame->stack_piece));
+  SIG_CHECK_TRUE("push on lower frame", scWat, is_top_frame(frame));
+  SIG_CHECK_TRUE("push out of frame bounds", scOutOfBounds,
+      is_offset_within_frame(frame, frame->stack_pointer));
   *access_frame_field(frame, frame->stack_pointer) = value;
   frame->stack_pointer++;
   set_stack_piece_top_stack_pointer(frame->stack_piece, frame->stack_pointer);
+  return success();
 }
 
 value_t frame_pop_value(frame_t *frame) {
-  value_t result = *access_frame_field(frame, frame->stack_pointer - 1);
+  SIG_CHECK_TRUE("pop off lower frame", scWat, is_top_frame(frame));
+  SIG_CHECK_TRUE("pop out of frame bounds", scOutOfBounds,
+      is_offset_within_frame(frame, frame->stack_pointer - 1));
   frame->stack_pointer--;
+  value_t result = *access_frame_field(frame, frame->stack_pointer);
   set_stack_piece_top_stack_pointer(frame->stack_piece, frame->stack_pointer);
   return result;
 }
