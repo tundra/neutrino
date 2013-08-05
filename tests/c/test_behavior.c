@@ -14,11 +14,11 @@ TEST(behavior, string_validation) {
   value_t str = new_heap_string(&runtime, &chars);
 
   // String starts out validating.
-  ASSERT_FALSE(in_domain(vdSignal, object_validate(str)));
+  ASSERT_SUCCESS(object_validate(str));
   // Zap the null terminator.
   get_string_chars(str)[4] = 'x';
   // Now the string no longer terminates.
-  ASSERT_SIGNAL(scValidationFailed, object_validate(str));
+  ASSERT_CHECK_FAILURE(scValidationFailed, object_validate(str));
   get_string_chars(str)[4] = '\0';
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));

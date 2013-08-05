@@ -14,6 +14,29 @@ void fail(const char *file, int line, const char *fmt, ...);
 // Returns true iff the two values are structurally equal.
 bool value_structural_equal(value_t a, value_t b);
 
+// Data recorded about check failures.
+typedef struct {
+  // How many check failures were triggered?
+  size_t count;
+  // What was the cause of the last check failure triggered?
+  signal_cause_t cause;
+  // The abort callback to restore when we're done recording checks.
+  abort_callback_t *previous;
+  // This recorder's callback.
+  abort_callback_t callback;
+} check_recorder_t;
+
+// Installs a check recorder and switch to soft check failure mode. This also
+// resets the recorder so it's not necessary to explicitly initialize it in
+// advance. The initial cause is set to a value that is different from all
+// signal causes but the concrete value should not otherwise be relied on.
+void install_check_recorder(check_recorder_t *recorder);
+
+// Uninstalls the given check recorder, which must be the currently active one,
+// and restores checks to the same state as before it was installed. The state
+// of the recorder is otherwise left undefined.
+void uninstall_check_recorder(check_recorder_t *recorder);
+
 // Fails unless the two values are equal.
 #define ASSERT_EQ(A, B) do {                                                   \
   if (!((A) == (B)))                                                           \
@@ -80,6 +103,17 @@ ASSERT_CLASS(signal_cause_t, scCause, EXPR, get_signal_cause)
     fail(__FILE__, __LINE__, "Assertion failed: is_signal(%s).\n  Was signal: %s",\
         #EXPR, signal_cause_name(get_signal_cause(__value__)));                \
   }                                                                            \
+} while (false)
+
+// Fails unless the given expression returns the given failure _and_ CHECK fails
+// with the same cause.
+#define ASSERT_CHECK_FAILURE(scCause, E) do {                                  \
+  check_recorder_t __recorder__;                                               \
+  install_check_recorder(&__recorder__);                                       \
+  ASSERT_SIGNAL(scCause, E);                                                   \
+  ASSERT_EQ(1, __recorder__.count);                                            \
+  ASSERT_EQ(scCause, __recorder__.cause);                                      \
+  uninstall_check_recorder(&__recorder__);                                     \
 } while (false)
 
 // Declares a new string_t variable and initializes it with the given contents.

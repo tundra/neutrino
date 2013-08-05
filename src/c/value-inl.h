@@ -51,8 +51,7 @@ static inline bool is_signal(signal_cause_t cause, value_t value) {
 
 // Checks whether the expression holds and if not returns a validation failure.
 #define VALIDATE(EXPR) do {                                                    \
-  if (!(EXPR))                                                                 \
-    return new_signal(scValidationFailed);                                     \
+  SIG_CHECK_TRUE("validation", scValidationFailed, EXPR);                      \
 } while (false)
 
 // Checks whether the value at the end of the given pointer belongs to the

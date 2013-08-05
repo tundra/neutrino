@@ -3,13 +3,11 @@
 
 // Runtime assertions.
 
+#include "crash.h"
 #include "globals.h"
 
 #ifndef _CHECK
 #define _CHECK
-
-// External function used to signal a check failure.
-void check_fail(const char *file, int line, const char *fmt, ...);
 
 // Fails unless the two values are equal.
 #define CHECK_EQ(M, A, B) do {                                                 \
@@ -18,8 +16,22 @@ void check_fail(const char *file, int line, const char *fmt, ...);
         #A, #B);                                                               \
 } while (false)
 
+// Fails unless the two values are equal under hard check failures, returns the
+// specified signal under soft check failures.
+#define SIG_CHECK_EQ(M, scCause, A, B) do {                                    \
+  if (!((A) == (B))) {                                                         \
+    sig_check_fail(__FILE__, __LINE__, scCause,                                \
+        "Check failed (" M "): %s == %s.", #A, #B);                            \
+    return new_signal(scCause);                                                \
+  }                                                                            \
+} while (false)
+
 // Fails if the given expression doesn't evaluate to true.
 #define CHECK_TRUE(M, E) CHECK_EQ(M, E, true)
+
+// Fails if the given expression doesn't evaluate to true under hard check
+// failures, returns the specified signal under soft check failures.
+#define SIG_CHECK_TRUE(M, scCause, E) SIG_CHECK_EQ(M, scCause, E, true)
 
 // Fails if the given expression doesn't evaluate to false.
 #define CHECK_FALSE(M, E) CHECK_EQ(M, E, false)
@@ -37,7 +49,7 @@ void check_fail(const char *file, int line, const char *fmt, ...);
 // Check that a given value belongs to a particular class and otherwise returns
 // a signal, where the class is given by calling a particular getter on the
 // value. You generally don't want to use this directly.
-#define SIG_CHECK_CLASS(scCause, class_t, cExpected, EXPR, get_class) do {     \
+#define EXPECT_CLASS(scCause, class_t, cExpected, EXPR, get_class) do {     \
   class_t __class__ = get_class(EXPR);                                         \
   if (__class__ != cExpected)                                                  \
     return new_signal(scCause);                                                \
@@ -52,8 +64,8 @@ CHECK_CLASS(value_domain_t, vdDomain, EXPR, get_value_domain)
 CHECK_CLASS(object_family_t, ofFamily, EXPR, get_object_family)
 
 // Check that returns a signal unless the object is in the specified family.
-#define SIG_CHECK_FAMILY(scCause, ofFamily, EXPR)                              \
-SIG_CHECK_CLASS(scCause, object_family_t, ofFamily, EXPR, get_object_family)
+#define EXPECT_FAMILY(scCause, ofFamily, EXPR)                                 \
+EXPECT_CLASS(scCause, object_family_t, ofFamily, EXPR, get_object_family)
 
 #define CHECK_DIVISION(sdDivision, EXPR)                                       \
 CHECK_CLASS(species_division_t, sdDivision, EXPR, get_species_division)
