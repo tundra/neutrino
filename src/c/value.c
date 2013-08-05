@@ -664,10 +664,8 @@ CHECKED_GETTER_SETTER_IMPL(CodeBlock, code_block, Array, ValuePool, value_pool);
 
 value_t code_block_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofCodeBlock, value);
-  value_t bytecode = get_code_block_bytecode(value);
-  VALIDATE_VALUE_FAMILY(ofBlob, bytecode);
-  value_t value_pool = get_code_block_value_pool(value);
-  VALIDATE_VALUE_FAMILY(ofArray, value_pool);
+  VALIDATE_VALUE_FAMILY(ofBlob, get_code_block_bytecode(value));
+  VALIDATE_VALUE_FAMILY(ofArray, get_code_block_value_pool(value));
   return success();
 }
 

@@ -169,3 +169,13 @@ TEST(value, array_bounds) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+
+TEST(value, stack) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
