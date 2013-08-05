@@ -59,7 +59,7 @@ TEST(runtime, runtime_validation) {
   value_t map = new_heap_id_hash_map(&runtime, capacity);
   ASSERT_SUCCESS(runtime_validate(&runtime));
   set_id_hash_map_capacity(map, capacity + 1);
-  ASSERT_SIGNAL(scValidationFailed, runtime_validate(&runtime));
+  ASSERT_CHECK_FAILURE(scValidationFailed, runtime_validate(&runtime));
   set_id_hash_map_capacity(map, capacity);
   ASSERT_SUCCESS(runtime_validate(&runtime));
 

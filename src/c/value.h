@@ -24,17 +24,18 @@ typedef enum {
   vdMovedObject
 } value_domain_t;
 
-
+// Invokes the given macro for each signal cause.
 #define ENUM_SIGNAL_CAUSES(F)                                                  \
   F(HeapExhausted)                                                             \
-  F(SystemError)                                                               \
-  F(ValidationFailed)                                                          \
-  F(UnsupportedBehavior)                                                       \
+  F(InvalidInput)                                                              \
+  F(InvalidSyntax)                                                             \
   F(MapFull)                                                                   \
   F(NotFound)                                                                  \
-  F(InvalidInput)                                                              \
   F(Nothing)                                                                   \
-  F(InvalidSyntax)
+  F(OutOfBounds)                                                               \
+  F(SystemError)                                                               \
+  F(UnsupportedBehavior)                                                       \
+  F(ValidationFailed)
 
 // Enum identifying the type of a signal.
 typedef enum {
@@ -361,7 +362,8 @@ size_t get_array_length(value_t value);
 // Sets the length field of an array object.
 void set_array_length(value_t value, size_t length);
 
-// Returns the index'th element in the given array.
+// Returns the index'th element in the given array. Bounds checks the index and
+// returns an OutOfBounds signal under soft check failures.
 value_t get_array_at(value_t value, size_t index);
 
 // Sets the index'th element in the given array.

@@ -154,3 +154,18 @@ TEST(value, exhaust_id_hash_map) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+
+TEST(value, array_bounds) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t arr = new_heap_array(&runtime, 4);
+  ASSERT_SUCCESS(get_array_at(arr, 0));
+  ASSERT_SUCCESS(get_array_at(arr, 1));
+  ASSERT_SUCCESS(get_array_at(arr, 2));
+  ASSERT_SUCCESS(get_array_at(arr, 3));
+  ASSERT_CHECK_FAILURE(scOutOfBounds, get_array_at(arr, 4));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}

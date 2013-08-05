@@ -277,7 +277,8 @@ INTEGER_GETTER_SETTER_IMPL(Array, array, Length, length);
 
 value_t get_array_at(value_t value, size_t index) {
   CHECK_FAMILY(ofArray, value);
-  CHECK_TRUE("array index out of bounds", index < get_array_length(value));
+  SIG_CHECK_TRUE("array index out of bounds", scOutOfBounds,
+      index < get_array_length(value));
   return *access_object_field(value, kArrayElementsOffset + index);
 }
 
@@ -618,7 +619,7 @@ void instance_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 value_t set_instance_contents(value_t instance, struct runtime_t *runtime,
     value_t contents) {
-  SIG_CHECK_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   set_instance_fields(instance, contents);
   return success();
 }

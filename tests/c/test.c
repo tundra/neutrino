@@ -146,3 +146,21 @@ bool value_structural_equal(value_t a, value_t b) {
       return value_are_identical(a, b);
   }
 }
+
+void recorder_abort_callback(void *data, const char *file, int line,
+    int signal_cause, const char *message) {
+  check_recorder_t *recorder = data;
+  recorder->count++;
+  recorder->cause = signal_cause;
+}
+
+void install_check_recorder(check_recorder_t *recorder) {
+  recorder->count = 0;
+  recorder->cause = __scFirst__;
+  init_abort_callback(&recorder->callback, recorder_abort_callback, recorder);
+  recorder->previous = set_abort_callback(&recorder->callback);
+}
+
+void uninstall_check_recorder(check_recorder_t *recorder) {
+  set_abort_callback(recorder->previous);
+}
