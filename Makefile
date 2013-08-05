@@ -203,10 +203,9 @@ docs:	$(MD_OBJS)
 
 
 loc:
-	@echo C:
-	@find . -name \*.[ch] | xargs cat | grep -v -e ^// -e ^$$ | wc
-	@echo py:
-	@find . -name \*.py | xargs cat | grep -v -e '^#' -e ^$$ | wc
+	@echo LOC \
+	  C: `find . -name \*.[ch] | xargs cat | grep -v -e ^// -e ^$$ | wc -l` \
+	  py: `find . -name \*.py | xargs cat | grep -v -e '^#' -e ^$$ | wc -l`
 
 
 clean:
