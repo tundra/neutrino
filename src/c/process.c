@@ -13,11 +13,11 @@ OBJECT_IDENTITY_IMPL(stack_piece);
 CANT_SET_CONTENTS(stack_piece);
 FIXED_SIZE_PURE_VALUE_IMPL(stack_piece, StackPiece);
 
-CHECKED_GETTER_SETTER_IMPL(StackPiece, stack_piece, Array, Storage, storage);
-UNCHECKED_GETTER_SETTER_IMPL(StackPiece, stack_piece, Previous, previous);
-INTEGER_GETTER_SETTER_IMPL(StackPiece, stack_piece, TopFramePointer, top_frame_pointer);
-INTEGER_GETTER_SETTER_IMPL(StackPiece, stack_piece, TopStackPointer, top_stack_pointer);
-INTEGER_GETTER_SETTER_IMPL(StackPiece, stack_piece, TopCapacity, top_capacity);
+CHECKED_ACCESSORS_IMPL(StackPiece, stack_piece, Array, Storage, storage);
+UNCHECKED_ACCESSORS_IMPL(StackPiece, stack_piece, Previous, previous);
+INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopFramePointer, top_frame_pointer);
+INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopStackPointer, top_stack_pointer);
+INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopCapacity, top_capacity);
 
 value_t stack_piece_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofStackPiece, value);
@@ -43,7 +43,7 @@ OBJECT_IDENTITY_IMPL(stack);
 CANT_SET_CONTENTS(stack);
 FIXED_SIZE_PURE_VALUE_IMPL(stack, Stack);
 
-CHECKED_GETTER_SETTER_IMPL(Stack, stack, StackPiece, TopPiece, top_piece);
+CHECKED_ACCESSORS_IMPL(Stack, stack, StackPiece, TopPiece, top_piece);
 
 value_t stack_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofStack, value);

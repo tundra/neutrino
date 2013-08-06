@@ -28,10 +28,7 @@ value_t emit_value(value_t value, assembler_t *assm);
 static const size_t kLiteralAstSize = OBJECT_SIZE(1);
 static const size_t kLiteralAstValueOffset = 1;
 
-// Returns the value this literal syntax tree represents.
-value_t get_literal_ast_value(value_t value);
-
-// Sets the value this literal syntax tree represents.
-void set_literal_ast_value(value_t literal, value_t value);
+// The value this literal syntax tree represents.
+ACCESSORS_DECL(literal_ast, value);
 
 #endif // _SYNTAX

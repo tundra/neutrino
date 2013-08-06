@@ -236,19 +236,37 @@ object_family_t get_object_family(value_t value);
 // Sets the species pointer of an object to the specified species value.
 void set_object_species(value_t value, value_t species);
 
-// Returns the species of the given object value.
-value_t get_object_species(value_t value);
+// Expands to the declaration of a setter function.
+#define SETTER_DECL(receiver, field)                                           \
+void set_##receiver##_##field(value_t self, value_t value)
 
-// Sets the species pointer of an object to the specified species value. This
-// can be used to set object headers while the heap is not in a consistent state,
-// for instance during initialization or GC. Otherwise use set_object_species
-// which does more checking.
-void set_object_header(value_t value, value_t species);
+// Expands to the declaration of a getter.
+#define GETTER_DECL(receiver, field)                                           \
+value_t get_##receiver##_##field(value_t self)
 
-// Returns the header of the given object value. During normal execution this
-// will be the species but during GC it may be a forward pointer. Only use this
-// call during GC, anywhere else use get_object_species which does more checking.
-value_t get_object_header(value_t value);
+// Expands to declarations of a getter and setter for the specified field in the
+// specified object.
+#define ACCESSORS_DECL(receiver, field)                                        \
+SETTER_DECL(receiver, field);                                                  \
+GETTER_DECL(receiver, field)
+
+#define INTEGER_SETTER_DECL(receiver, field)                                   \
+void set_##receiver##_##field(value_t self, size_t value)
+
+#define INTEGER_GETTER_DECL(receiver, field)                                   \
+size_t get_##receiver##_##field(value_t self)
+
+#define INTEGER_ACCESSORS_DECL(receiver, field)                                \
+INTEGER_SETTER_DECL(receiver, field);                                          \
+INTEGER_GETTER_DECL(receiver, field)
+
+// The species of this object.
+ACCESSORS_DECL(object, species);
+
+// The header of the given object value. During normal execution this will be
+// the species but during GC it may be a forward pointer. Only use these calls
+// during GC, anywhere else use the species accessors which does more checking.
+ACCESSORS_DECL(object, header);
 
 // --- S p e c i e s ---
 
@@ -307,11 +325,8 @@ static const size_t kStringCharsOffset = 2;
 // Returns the size of a heap string with the given number of characters.
 size_t calc_string_size(size_t char_count);
 
-// Sets the length of a heap string.
-void set_string_length(value_t value, size_t length);
-
-// Returns the length of a heap string.
-size_t get_string_length(value_t value);
+// The length in characters of a heap string.
+INTEGER_ACCESSORS_DECL(string, length);
 
 // Returns a pointer to the array that holds the contents of this array.
 char *get_string_chars(value_t value);
@@ -328,11 +343,8 @@ static const size_t kBlobDataOffset = 2;
 // Returns the size of a heap blob with the given number of bytes.
 size_t calc_blob_size(size_t size);
 
-// Sets the length of a heap blob.
-void set_blob_length(value_t value, size_t length);
-
-// Returns the length of a heap blob.
-size_t get_blob_length(value_t value);
+// The length in bytes of a heap blob.
+INTEGER_ACCESSORS_DECL(blob, length);
 
 // Gives access to the data in the given blob value in a blob struct through
 // the out parameter.
@@ -359,11 +371,8 @@ static const size_t kArrayElementsOffset = 2;
 // Calculates the size of a heap array with the given number of elements.
 size_t calc_array_size(size_t length);
 
-// Returns the length of the given array.
-size_t get_array_length(value_t value);
-
-// Sets the length field of an array object.
-void set_array_length(value_t value, size_t length);
+// The number of elements in this array.
+INTEGER_ACCESSORS_DECL(array, length);
 
 // Returns the index'th element in the given array. Bounds checks the index and
 // returns an OutOfBounds signal under soft check failures.
@@ -388,23 +397,14 @@ static const size_t kIdHashMapEntryKeyOffset = 0;
 static const size_t kIdHashMapEntryHashOffset = 1;
 static const size_t kIdHashMapEntryValueOffset = 2;
 
-// Returns the array of hash map entries for this map.
-value_t get_id_hash_map_entry_array(value_t value);
+// The backing array storing the entries of this hash map.
+ACCESSORS_DECL(id_hash_map, entry_array);
 
-// Replaces the array of hash map entries for this map.
-void set_id_hash_map_entry_array(value_t value, value_t entry_array);
+// The number of mappings in this hash map.
+INTEGER_ACCESSORS_DECL(id_hash_map, size);
 
-// Returns the size of a map.
-size_t get_id_hash_map_size(value_t value);
-
-// Updates the size of a map.
-void set_id_hash_map_size(value_t value, size_t size);
-
-// Returns the total capacity of the given map.
-size_t get_id_hash_map_capacity(value_t value);
-
-// Sets the total capacity of this map.
-void set_id_hash_map_capacity(value_t value, size_t size);
+// The max capacity of this hash map.
+INTEGER_ACCESSORS_DECL(id_hash_map, capacity);
 
 // Adds a binding from the given key to the given value to this map, replacing
 // the existing one if it already exists. Returns a signal on failure, either
@@ -464,11 +464,8 @@ bool get_bool_value(value_t value);
 static const size_t kInstanceSize = OBJECT_SIZE(1);
 static const size_t kInstanceFieldsOffset = 1;
 
-// Returns the fields map from the given instance.
-value_t get_instance_fields(value_t value);
-
-// Sets the fields map for the given instance.
-void set_instance_fields(value_t value, value_t fields);
+// The field map for this instance.
+ACCESSORS_DECL(instance, fields);
 
 // Returns the field with the given key from the given instance.
 value_t get_instance_field(value_t value, value_t key);
@@ -489,13 +486,8 @@ typedef value_t (factory_constructor_t)(runtime_t *runtime);
 static const size_t kFactorySize = OBJECT_SIZE(1);
 static const size_t kFactoryConstructorOffset = 1;
 
-// Sets the constructor pointer for this factory. The pointer must be wrapped in
-// a void-p.
-void set_factory_constructor(value_t value, value_t constructor);
-
-// Returns the constructor pointer for this factory. The pointer is wrapped in
-// a void-p.
-value_t get_factory_constructor(value_t value);
+// The constructor function for this factory wrapped in a void-p.
+ACCESSORS_DECL(factory, constructor);
 
 
 //  --- C o d e   b l o c k ---
@@ -504,17 +496,11 @@ static const size_t kCodeBlockSize = OBJECT_SIZE(2);
 static const size_t kCodeBlockBytecodeOffset = 1;
 static const size_t kCodeBlockValuePoolOffset = 2;
 
-// Returns the binary blob of bytecode for this code block.
-value_t get_code_block_bytecode(value_t value);
+// The binary blob of bytecode for this code block.
+ACCESSORS_DECL(code_block, bytecode);
 
-// Sets the binary blob of bytecode for this code block.
-void set_code_block_bytecode(value_t value, value_t bytecode);
-
-// Returns the value pool array for this code block.
-value_t get_code_block_value_pool(value_t value);
-
-// Sets the value pool array for this code block.
-void set_code_block_value_pool(value_t value, value_t value_pool);
+// The value pool array for this code block.
+ACCESSORS_DECL(code_block, value_pool);
 
 
 // --- D e b u g ---

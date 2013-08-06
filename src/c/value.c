@@ -119,7 +119,7 @@ size_t calc_string_size(size_t char_count) {
        + align_size(kValueSize, bytes);  // contents
 }
 
-INTEGER_GETTER_SETTER_IMPL(String, string, Length, length);
+INTEGER_ACCESSORS_IMPL(String, string, Length, length);
 
 char *get_string_chars(value_t value) {
   CHECK_FAMILY(ofString, value);
@@ -185,7 +185,7 @@ size_t calc_blob_size(size_t size) {
        + align_size(kValueSize, size);  // contents
 }
 
-INTEGER_GETTER_SETTER_IMPL(Blob, blob, Length, length);
+INTEGER_ACCESSORS_IMPL(Blob, blob, Length, length);
 
 void get_blob_data(value_t value, blob_t *blob_out) {
   CHECK_FAMILY(ofBlob, value);
@@ -273,7 +273,7 @@ size_t calc_array_size(size_t length) {
        + (length * kValueSize);  // contents
 }
 
-INTEGER_GETTER_SETTER_IMPL(Array, array, Length, length);
+INTEGER_ACCESSORS_IMPL(Array, array, Length, length);
 
 value_t get_array_at(value_t value, size_t index) {
   CHECK_FAMILY(ofArray, value);
@@ -324,9 +324,9 @@ OBJECT_IDENTITY_IMPL(id_hash_map);
 CANT_SET_CONTENTS(id_hash_map);
 FIXED_SIZE_PURE_VALUE_IMPL(id_hash_map, IdHashMap);
 
-CHECKED_GETTER_SETTER_IMPL(IdHashMap, id_hash_map, Array, EntryArray, entry_array);
-INTEGER_GETTER_SETTER_IMPL(IdHashMap, id_hash_map, Size, size);
-INTEGER_GETTER_SETTER_IMPL(IdHashMap, id_hash_map, Capacity, capacity);
+CHECKED_ACCESSORS_IMPL(IdHashMap, id_hash_map, Array, EntryArray, entry_array);
+INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Size, size);
+INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Capacity, capacity);
 
 // Returns a pointer to the start of the index'th entry in the given map.
 static value_t *get_id_hash_map_entry(value_t map, size_t index) {
@@ -586,7 +586,7 @@ void bool_print_atomic_on(value_t value, string_buffer_t *buf) {
 OBJECT_IDENTITY_IMPL(instance);
 FIXED_SIZE_PURE_VALUE_IMPL(instance, Instance);
 
-CHECKED_GETTER_SETTER_IMPL(Instance, instance, IdHashMap, Fields, fields);
+CHECKED_ACCESSORS_IMPL(Instance, instance, IdHashMap, Fields, fields);
 
 value_t get_instance_field(value_t value, value_t key) {
   value_t fields = get_instance_fields(value);
@@ -631,7 +631,7 @@ OBJECT_IDENTITY_IMPL(factory);
 CANT_SET_CONTENTS(factory);
 FIXED_SIZE_PURE_VALUE_IMPL(factory, Factory);
 
-CHECKED_GETTER_SETTER_IMPL(Factory, factory, VoidP, Constructor, constructor);
+CHECKED_ACCESSORS_IMPL(Factory, factory, VoidP, Constructor, constructor);
 
 value_t factory_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofFactory, value);
@@ -659,8 +659,8 @@ OBJECT_IDENTITY_IMPL(code_block);
 CANT_SET_CONTENTS(code_block);
 FIXED_SIZE_PURE_VALUE_IMPL(code_block, CodeBlock);
 
-CHECKED_GETTER_SETTER_IMPL(CodeBlock, code_block, Blob, Bytecode, bytecode);
-CHECKED_GETTER_SETTER_IMPL(CodeBlock, code_block, Array, ValuePool, value_pool);
+CHECKED_ACCESSORS_IMPL(CodeBlock, code_block, Blob, Bytecode, bytecode);
+CHECKED_ACCESSORS_IMPL(CodeBlock, code_block, Array, ValuePool, value_pool);
 
 value_t code_block_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofCodeBlock, value);

@@ -113,7 +113,6 @@ void set_##receiver##_##field(value_t self, value_t value) {                   \
 }                                                                              \
 SWALLOW_SEMI(usi)
 
-
 // Expands to a function that gets the specified field in the specified object
 // family.
 #define GETTER_IMPL(Receiver, receiver, Field, field)                          \
@@ -124,12 +123,12 @@ value_t get_##receiver##_##field(value_t self) {                               \
 SWALLOW_SEMI(gi)
 
 // Expands to a checked setter and a getter for the specified types.
-#define CHECKED_GETTER_SETTER_IMPL(Receiver, receiver, Family, Field, field)   \
+#define CHECKED_ACCESSORS_IMPL(Receiver, receiver, Family, Field, field)       \
 CHECKED_SETTER_IMPL(Receiver, receiver, Family, Field, field);                 \
 GETTER_IMPL(Receiver, receiver, Field, field)
 
 // Expands to an unchecked setter and a getter for the specified types.
-#define UNCHECKED_GETTER_SETTER_IMPL(Receiver, receiver, Field, field)         \
+#define UNCHECKED_ACCESSORS_IMPL(Receiver, receiver, Field, field)             \
 UNCHECKED_SETTER_IMPL(Receiver, receiver, Field, field);                       \
 GETTER_IMPL(Receiver, receiver, Field, field)
 
@@ -152,7 +151,7 @@ size_t get_##receiver##_##field(value_t self) {                                \
 SWALLOW_SEMI(igi)
 
 // Expands to an integer getter and setter.
-#define INTEGER_GETTER_SETTER_IMPL(Receiver, receiver, Field, field)           \
+#define INTEGER_ACCESSORS_IMPL(Receiver, receiver, Field, field)               \
 INTEGER_SETTER_IMPL(Receiver, receiver, Field, field);                         \
 INTEGER_GETTER_IMPL(Receiver, receiver, Field, field)
 

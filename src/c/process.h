@@ -3,7 +3,7 @@
 
 // Objects and functionality related to processes and execution.
 
-#include "value.h"
+#include "value-inl.h"
 
 #ifndef _PROCESS
 #define _PROCESS
@@ -18,35 +18,20 @@ static const size_t kStackPieceTopFramePointerOffset = 3;
 static const size_t kStackPieceTopStackPointerOffset = 4;
 static const size_t kStackPieceTopCapacityOffset = 5;
 
-// Returns the storage array for this stack segment.
-value_t get_stack_piece_storage(value_t value);
+// The plain array used for storage for this stack piece.
+ACCESSORS_DECL(stack_piece, storage);
 
-// Sets the storage array for this stack segment.
-void set_stack_piece_storage(value_t value, value_t storage);
+// The previous, lower, stack piece.
+ACCESSORS_DECL(stack_piece, previous);
 
-// Returns the previous piece for this stack.
-value_t get_stack_piece_previous(value_t value);
+// The frame pointer for the top frame.
+INTEGER_ACCESSORS_DECL(stack_piece, top_frame_pointer);
 
-// Sets the previous piece for this stack.
-void set_stack_piece_previous(value_t value, value_t previous);
+// The current stack pointer for the top frame.
+INTEGER_ACCESSORS_DECL(stack_piece, top_stack_pointer);
 
-// Returns the frame pointer of the top stack frame.
-size_t get_stack_piece_top_frame_pointer(value_t value);
-
-// Sets the frame pointer of the top stack frame.
-void set_stack_piece_top_frame_pointer(value_t value, size_t frame_pointer);
-
-// Returns the stack pointer of the top stack frame.
-size_t get_stack_piece_top_stack_pointer(value_t value);
-
-// Sets the stack pointer of the top stack frame.
-void set_stack_piece_top_stack_pointer(value_t value, size_t stack_pointer);
-
-// Returns the capacity of the top stack frame.
-size_t get_stack_piece_top_capacity(value_t value);
-
-// Sets the capacity of the top stack frame.
-void set_stack_piece_top_capacity(value_t value, size_t capacity);
+// The capacity for the top frame.
+INTEGER_ACCESSORS_DECL(stack_piece, top_capacity);
 
 
 // --- F r a m e ---
