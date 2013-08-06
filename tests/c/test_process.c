@@ -14,7 +14,7 @@ TEST(process, frame_bounds) {
 
   // Check that push/pop outside the frame boundaries causes a check failure.
   frame_t frame;
-  ASSERT_TRUE(try_push_frame(stack_piece, &frame, 4));
+  ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 4));
   ASSERT_CHECK_FAILURE(scOutOfBounds, frame_pop_value(&frame));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(6)));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(5)));
@@ -30,12 +30,12 @@ TEST(process, frame_bounds) {
 
   // Mutating a frame that's below the top causes a check failure.
   frame_t inner;
-  ASSERT_TRUE(try_push_frame(stack_piece, &inner, 4));
+  ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &inner, 4));
   ASSERT_CHECK_FAILURE(scWat, frame_push_value(&frame, new_integer(1)));
   ASSERT_CHECK_FAILURE(scWat, frame_pop_value(&frame));
 
   // Popping down to the frame makes value popping work again.
-  ASSERT_TRUE(pop_frame(stack_piece, &inner));
+  ASSERT_TRUE(pop_stack_piece_frame(stack_piece, &inner));
   ASSERT_VALEQ(new_integer(0), frame_pop_value(&frame));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
@@ -49,7 +49,7 @@ TEST(process, simple_frames) {
   frame_t frame;
   for (int i = 0; i < 256; i++) {
     if (i % 16 == 0)
-      ASSERT_TRUE(try_push_frame(stack_piece, &frame, 16));
+      ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 16));
     frame_push_value(&frame, new_integer(i));
   }
   for (int i = 255; i >= 0; i--) {
@@ -57,7 +57,7 @@ TEST(process, simple_frames) {
     value_t found = frame_pop_value(&frame);
     ASSERT_VALEQ(expected, found);
     if (i % 16 == 0)
-      ASSERT_EQ(i != 0, pop_frame(stack_piece, &frame));
+      ASSERT_EQ(i != 0, pop_stack_piece_frame(stack_piece, &frame));
   }
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
@@ -70,17 +70,17 @@ TEST(process, frame_capacity) {
   value_t stack_piece = new_heap_stack_piece(&runtime, 1024, runtime_null(&runtime));
   for (int i = 0; i < 16; i++) {
     frame_t frame;
-    ASSERT_TRUE(try_push_frame(stack_piece, &frame, i));
+    ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, i));
     ASSERT_EQ((size_t) i, frame.capacity);
   }
 
   for (int i = 14; i >= 0; i--) {
     frame_t frame;
-    ASSERT_TRUE(pop_frame(stack_piece, &frame));
+    ASSERT_TRUE(pop_stack_piece_frame(stack_piece, &frame));
     ASSERT_EQ((size_t) i, frame.capacity);
   }
   frame_t frame;
-  ASSERT_FALSE(pop_frame(stack_piece, &frame));
+  ASSERT_FALSE(pop_stack_piece_frame(stack_piece, &frame));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
@@ -92,12 +92,26 @@ TEST(process, bottom_frame) {
   value_t stack_piece = new_heap_stack_piece(&runtime, 1024, runtime_null(&runtime));
   frame_t frame;
   // Push two frames onto the stack piece.
-  ASSERT_TRUE(try_push_frame(stack_piece, &frame, 10));
-  ASSERT_TRUE(try_push_frame(stack_piece, &frame, 10));
+  ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 10));
+  ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 10));
   // Popping the first one succeeds since there's a second one below to pop to.
-  ASSERT_TRUE(pop_frame(stack_piece, &frame));
+  ASSERT_TRUE(pop_stack_piece_frame(stack_piece, &frame));
   // Popping the second fails since there is no frame below to pop to.
-  ASSERT_FALSE(pop_frame(stack_piece, &frame));
+  ASSERT_FALSE(pop_stack_piece_frame(stack_piece, &frame));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
+
+TEST(process, stack_frames) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t stack = new_heap_stack(&runtime, 16);
+  for (size_t i = 0; i < 256; i++) {
+    frame_t frame;
+    ASSERT_SUCCESS(push_stack_frame(&runtime, stack, &frame, 4));
+    printf("%i %i\n", frame.frame_pointer, frame.stack_pointer);
+  }
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

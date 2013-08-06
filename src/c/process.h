@@ -73,13 +73,13 @@ static const size_t kFrameHeaderPreviousCapacityOffset = 1;
 
 // Tries to allocate a new frame on the given stack piece of the given capacity.
 // Returns true iff allocation succeeds.
-bool try_push_frame(value_t stack_piece, frame_t *frame, size_t capacity);
+bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame, size_t capacity);
 
 // Pops the top frame off the given stack piece, storing the next frame in the
 // given frame struct. Returns true if there are more frames to pop off the stack,
 // false if the one popped off was the last one. If false is returned the frame
 // is invalid.
-bool pop_frame(value_t stack_piece, frame_t *frame);
+bool pop_stack_piece_frame(value_t stack_piece, frame_t *frame);
 
 // Record the frame pointer for the previous stack frame, the one below this one.
 void set_frame_previous_frame_pointer(frame_t *frame, size_t value);
@@ -107,12 +107,17 @@ value_t frame_pop_value(frame_t *frame);
 // --- S t a c k ---
 
 static const size_t kStackSize = OBJECT_SIZE(1);
-static const size_t kStackTopOffset = 1;
+static const size_t kStackTopPieceOffset = 1;
 
 // Returns the top piece of this stack.
-value_t get_stack_top(value_t value);
+value_t get_stack_top_piece(value_t value);
 
 // Sets the top piece of this stack.
-void set_stack_top(value_t value, value_t piece);
+void set_stack_top_piece(value_t value, value_t piece);
+
+// Allocates a new frame on this stack. If allocating fails, for instance if a
+// new stack piece is required and we're out of memory, a signal is returned.
+value_t push_stack_frame(struct runtime_t *runtime, value_t stack, frame_t *frame,
+    size_t frame_capacity);
 
 #endif // _PROCESS

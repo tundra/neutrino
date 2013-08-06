@@ -12,6 +12,9 @@ EMULATOR_CMD=
 # Whether to compile in optimized or debug mode.
 MODE=dbg
 
+# Whether to treat warnings as errors or just warnings.
+STRICT_ERRORS=on
+
 -include .$(CONFIG).cfg
 
 ifeq ($(VALGRIND),on)
@@ -63,7 +66,12 @@ endif
 
 
 # Configuration of the C language dialect to use.
-C_DIALECT_FLAGS=-Wall -Wextra -Werror -Wno-unused-parameter -Wno-unused-function -std=c99
+C_DIALECT_FLAGS=-Wall -Wextra -Wno-unused-parameter -Wno-unused-function -std=c99
+ifeq ($(STRICT_ERRORS),on)
+  C_DIALECT_FLAGS := $(C_DIALECT_FLAGS) -Werror
+endif
+
+
 C_ENV_FLAGS=-Isrc/c -I$(BIN)/tests/c
 CFLAGS=$(C_DIALECT_FLAGS) $(C_ENV_FLAGS) $(OPT_FLAGS) -m$(MACHINE) -DM$(MACHINE)=1
 LINKFLAGS=-m$(MACHINE) -rdynamic

@@ -1,6 +1,7 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "alloc.h"
 #include "behavior.h"
 #include "process.h"
 #include "value-inl.h"
@@ -42,11 +43,11 @@ OBJECT_IDENTITY_IMPL(stack);
 CANT_SET_CONTENTS(stack);
 FIXED_SIZE_PURE_VALUE_IMPL(stack, Stack);
 
-CHECKED_GETTER_SETTER_IMPL(Stack, stack, StackPiece, Top, top);
+CHECKED_GETTER_SETTER_IMPL(Stack, stack, StackPiece, TopPiece, top_piece);
 
 value_t stack_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofStack, value);
-  VALIDATE_VALUE_FAMILY(ofStackPiece, get_stack_top(value));
+  VALIDATE_VALUE_FAMILY(ofStackPiece, get_stack_top_piece(value));
   return success();
 }
 
@@ -57,6 +58,19 @@ void stack_print_on(value_t value, string_buffer_t *buf) {
 void stack_print_atomic_on(value_t value, string_buffer_t *buf) {
   CHECK_FAMILY(ofStack, value);
   string_buffer_printf(buf, "#<stack>");
+}
+
+value_t push_stack_frame(struct runtime_t *runtime, value_t stack, frame_t *frame,
+    size_t frame_capacity) {
+  CHECK_FAMILY(ofStack, stack);
+  value_t top_piece = get_stack_top_piece(stack);
+  if (!try_push_stack_piece_frame(top_piece, frame, frame_capacity)) {
+    TRY_DEF(new_piece, new_heap_stack_piece(runtime, 16, top_piece));
+    set_stack_top_piece(stack, new_piece);
+    CHECK_TRUE("pushing on new piece failed", try_push_stack_piece_frame(new_piece,
+        frame, frame_capacity));
+  }
+  return success();
 }
 
 
@@ -70,7 +84,7 @@ static void get_top_stack_piece_frame(value_t stack_piece, frame_t *frame) {
   frame->capacity = get_stack_piece_top_capacity(stack_piece);
 }
 
-bool try_push_frame(value_t stack_piece, frame_t *frame, size_t frame_capacity) {
+bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame, size_t frame_capacity) {
   // First record the current state of the old top frame so we can store it in
   // the header if the new frame.
   frame_t old_frame;
@@ -100,7 +114,7 @@ bool try_push_frame(value_t stack_piece, frame_t *frame, size_t frame_capacity) 
   return true;
 }
 
-bool pop_frame(value_t stack_piece, frame_t *frame) {
+bool pop_stack_piece_frame(value_t stack_piece, frame_t *frame) {
   // Grab the current top frame.
   frame_t top_frame;
   get_top_stack_piece_frame(stack_piece, &top_frame);

@@ -167,7 +167,7 @@ value_t new_heap_stack(runtime_t *runtime, size_t initial_capacity) {
       runtime_null(runtime)));
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.stack_species));
-  set_stack_top(result, piece);
+  set_stack_top_piece(result, piece);
   return post_create_sanity_check(result, size);
 }
 
