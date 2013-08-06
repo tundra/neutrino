@@ -109,9 +109,20 @@ TEST(process, stack_frames) {
   value_t stack = new_heap_stack(&runtime, 16);
   for (size_t i = 0; i < 256; i++) {
     frame_t frame;
-    ASSERT_SUCCESS(push_stack_frame(&runtime, stack, &frame, 4));
-    printf("%i %i\n", frame.frame_pointer, frame.stack_pointer);
+    ASSERT_SUCCESS(push_stack_frame(&runtime, stack, &frame, i + 1));
+    frame_push_value(&frame, new_integer(i * 3));
   }
+
+  for (int i = 255; i > 0; i--) {
+    frame_t frame;
+    get_stack_top_frame(stack, &frame);
+    ASSERT_EQ((size_t) i + 1, frame.capacity);
+    value_t value = frame_pop_value(&frame);
+    ASSERT_EQ(i * 3, get_integer_value(value));
+    ASSERT_TRUE(pop_stack_frame(stack, &frame));
+  }
+  frame_t frame;
+  ASSERT_FALSE(pop_stack_frame(stack, &frame));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

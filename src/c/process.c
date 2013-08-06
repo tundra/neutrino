@@ -44,6 +44,7 @@ CANT_SET_CONTENTS(stack);
 FIXED_SIZE_PURE_VALUE_IMPL(stack, Stack);
 
 CHECKED_ACCESSORS_IMPL(Stack, stack, StackPiece, TopPiece, top_piece);
+INTEGER_ACCESSORS_IMPL(Stack, stack, DefaultPieceCapacity, default_piece_capacity);
 
 value_t stack_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofStack, value);
@@ -60,12 +61,20 @@ void stack_print_atomic_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, "#<stack>");
 }
 
-value_t push_stack_frame(struct runtime_t *runtime, value_t stack, frame_t *frame,
+// Returns the greatest of a and b.
+static size_t max_size(size_t a, size_t b) {
+  return (a < b) ? b : a;
+}
+
+value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     size_t frame_capacity) {
   CHECK_FAMILY(ofStack, stack);
   value_t top_piece = get_stack_top_piece(stack);
   if (!try_push_stack_piece_frame(top_piece, frame, frame_capacity)) {
-    TRY_DEF(new_piece, new_heap_stack_piece(runtime, 16, top_piece));
+    size_t default_capacity = get_stack_default_piece_capacity(stack);
+    size_t required_capacity = frame_capacity + kFrameHeaderSize;
+    size_t new_capacity = max_size(default_capacity, required_capacity);
+    TRY_DEF(new_piece, new_heap_stack_piece(runtime, new_capacity, top_piece));
     set_stack_top_piece(stack, new_piece);
     CHECK_TRUE("pushing on new piece failed", try_push_stack_piece_frame(new_piece,
         frame, frame_capacity));
@@ -73,16 +82,43 @@ value_t push_stack_frame(struct runtime_t *runtime, value_t stack, frame_t *fram
   return success();
 }
 
+bool pop_stack_frame(value_t stack, frame_t *frame) {
+  value_t top_piece = get_stack_top_piece(stack);
+  if (pop_stack_piece_frame(top_piece, frame)) {
+    // There was a frame to pop on the top piece so we're good.
+    return true;
+  }
+  // The piece was empty so we have to pop down to the previous piece.
+  value_t next_piece = get_stack_piece_previous(top_piece);
+  if (is_null(next_piece)) {
+    // There are no more pieces. Leave the empty one in place and report that
+    // popping failed.
+    return false;
+  } else {
+    // There are more pieces. Update the stack and fetch the top frame (which
+    // we know will be there).
+    set_stack_top_piece(stack, next_piece);
+    get_stack_top_frame(stack, frame);
+    return true;
+  }
+}
 
-// --- F r a m e ---
-
-// Sets the given frame to be the top frame of the given stack piece.
+// Sets the given frame to be the top frame of the given stack piece. If the
+// stack piece has no frames the frame is set to all zeroes.
 static void get_top_stack_piece_frame(value_t stack_piece, frame_t *frame) {
   frame->stack_piece = stack_piece;
   frame->frame_pointer = get_stack_piece_top_frame_pointer(stack_piece);
   frame->stack_pointer = get_stack_piece_top_stack_pointer(stack_piece);
   frame->capacity = get_stack_piece_top_capacity(stack_piece);
 }
+
+void get_stack_top_frame(value_t stack, frame_t *frame) {
+  CHECK_FAMILY(ofStack, stack);
+  value_t top_piece = get_stack_top_piece(stack);
+  get_top_stack_piece_frame(top_piece, frame);
+}
+
+// --- F r a m e ---
 
 bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame, size_t frame_capacity) {
   // First record the current state of the old top frame so we can store it in

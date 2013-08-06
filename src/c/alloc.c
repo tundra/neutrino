@@ -161,13 +161,14 @@ value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_stack(runtime_t *runtime, size_t initial_capacity) {
+value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {
   size_t size = kStackSize;
-  TRY_DEF(piece, new_heap_stack_piece(runtime, initial_capacity,
+  TRY_DEF(piece, new_heap_stack_piece(runtime, default_piece_capacity,
       runtime_null(runtime)));
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.stack_species));
   set_stack_top_piece(result, piece);
+  set_stack_default_piece_capacity(result, default_piece_capacity);
   return post_create_sanity_check(result, size);
 }
 
