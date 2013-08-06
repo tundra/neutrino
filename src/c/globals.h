@@ -41,4 +41,7 @@ typedef uint32_t address_arith_t;
 // Concatenates the value A and B, evaluating A and B first if they are macros.
 #define __CONCAT_WITH_EVAL__(A, B) __CONCAT_NO_EVAL__(A, B)
 
+// Forward declares a struct type with the given name.
+#define FORWARD(name_t) typedef struct name_t name_t
+
 #endif // _GLOBALS

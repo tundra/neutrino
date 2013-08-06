@@ -10,7 +10,7 @@
 #ifndef _VALUE
 #define _VALUE
 
-struct runtime_t;
+FORWARD(runtime_t);
 
 // Value domain identifiers.
 typedef enum {
@@ -274,21 +274,21 @@ void set_species_instance_family(value_t species, object_family_t instance_famil
 object_family_t get_species_instance_family(value_t species);
 
 // Forward declaration of the object behavior struct (see behavior.h).
-struct family_behavior_t;
+FORWARD(family_behavior_t);
 
 // Returns the object family behavior of this species belongs to.
-struct family_behavior_t *get_species_family_behavior(value_t species);
+family_behavior_t *get_species_family_behavior(value_t species);
 
 // Sets the object family behavior of this species.
-void set_species_family_behavior(value_t species, struct family_behavior_t *behavior);
+void set_species_family_behavior(value_t species, family_behavior_t *behavior);
 
-struct division_behavior_t;
+FORWARD(division_behavior_t);
 
 // Returns the species division behavior of this species belongs to.
-struct division_behavior_t *get_species_division_behavior(value_t species);
+division_behavior_t *get_species_division_behavior(value_t species);
 
 // Sets the species division behavior of this species.
-void set_species_division_behavior(value_t species, struct division_behavior_t *behavior);
+void set_species_division_behavior(value_t species, division_behavior_t *behavior);
 
 // Returns the division the given species belongs to.
 species_division_t get_species_division(value_t value);
@@ -484,7 +484,7 @@ value_t try_set_instance_field(value_t instance, value_t key, value_t value);
 // instances of a particular family.
 
 // The type of constructor functions stored in a factory.
-typedef value_t (factory_constructor_t)(struct runtime_t *runtime);
+typedef value_t (factory_constructor_t)(runtime_t *runtime);
 
 static const size_t kFactorySize = OBJECT_SIZE(1);
 static const size_t kFactoryConstructorOffset = 1;

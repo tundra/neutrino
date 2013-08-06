@@ -36,12 +36,12 @@ typedef struct {
 
 
 // All the data associated with a single VM instance.
-typedef struct runtime_t {
+struct runtime_t {
   // The heap where all the data lives.
   heap_t heap;
   // The root objects.
   roots_t roots;
-} runtime_t;
+};
 
 // Initializes the given runtime according to the given config.
 value_t runtime_init(runtime_t *runtime, space_config_t *config);
