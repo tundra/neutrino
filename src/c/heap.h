@@ -10,8 +10,8 @@
 #ifndef _HEAP
 #define _HEAP
 
-struct value_callback_t;
-struct field_callback_t;
+FORWARD(value_callback_t);
+FORWARD(field_callback_t);
 
 
 static const byte_t kBlankHeapMarker = 0xBE;
@@ -22,16 +22,16 @@ static const byte_t kFreedHeapMarker = 0xD0;
 // --- M i s c ---
 
 // The type of a value callback function.
-typedef value_t (value_callback_function_t)(value_t value, struct value_callback_t *self);
+typedef value_t (value_callback_function_t)(value_t value, value_callback_t *self);
 
 // A callback along with a data pointer that can be used to iterate through a
 // set of objects.
-typedef struct value_callback_t {
+struct value_callback_t {
   // The callback to invoke for each value.
   value_callback_function_t *function;
   // Some extra data accessible from the callback.
   void *data;
-} value_callback_t;
+};
 
 // Initialize the given callback to call the given function with the given data.
 void value_callback_init(value_callback_t *callback, value_callback_function_t *function,
@@ -45,16 +45,16 @@ void *value_callback_get_data(value_callback_t *callback);
 
 
 // The type of a field (pointer to value) function.
-typedef value_t (field_callback_function_t)(value_t *field, struct field_callback_t *self);
+typedef value_t (field_callback_function_t)(value_t *field, field_callback_t *self);
 
 // A callback along with a data pointer that can be used to iterate through a
 // set of fields.
-typedef struct field_callback_t {
+struct field_callback_t {
   // The callback to invoke.
   field_callback_function_t *function;
   // Some extra data accessible from the callback.
   void *data;
-} field_callback_t;
+};
 
 // Initializes the given callback to call the given function with the given data.
 void field_callback_init(field_callback_t *callback, field_callback_function_t *function,
@@ -131,18 +131,20 @@ address_t align_address(address_arith_t alignment, address_t ptr);
 // aligned to an 'alignment' boundary.
 size_t align_size(uint32_t alignment, size_t size);
 
+FORWARD(gc_safe_t);
+
 // Opaque datatype that can be used to unpin a pinned value.
 // Extra data associated with a gc-safe value. These handles form a doubly-linked
 // list such that nodes can add and remove themselves from the chain of all safe
 // values.
-typedef struct gc_safe_t {
+struct gc_safe_t {
   // The next pin descriptor.
-  struct gc_safe_t *next;
+  gc_safe_t *next;
   // The previous pin descriptor.
-  struct gc_safe_t *prev;
+  gc_safe_t *prev;
   // The pinned value.
   value_t value;
-} gc_safe_t;
+};
 
 // Returns the value stored in the given gc-safe handle.
 value_t gc_safe_get_value(gc_safe_t *handle);

@@ -9,9 +9,6 @@
 #ifndef _BEHAVIOR
 #define _BEHAVIOR
 
-// Forward declare the runtime struct to make it available as an argument.
-struct runtime_t;
-
 // A description of the layout of an object. See details about object layout in
 // value.md.
 typedef struct {
@@ -30,7 +27,7 @@ void object_layout_set(object_layout_t *layout, size_t size, size_t value_offset
 
 // A collection of "virtual" methods that define how a particular family of
 // objects behave.
-typedef struct family_behavior_t {
+struct family_behavior_t {
   // Function for validating an object.
   value_t (*validate)(value_t value);
   // Calculates the transient identity hash.
@@ -45,9 +42,9 @@ typedef struct family_behavior_t {
   // Stores the layout of the given object in the output layout struct.
   void (*get_object_layout)(value_t value, object_layout_t *layout_out);
   // Sets the contents of the given value from the given serialized contents.
-  value_t (*set_contents)(value_t value, struct runtime_t *runtime,
+  value_t (*set_contents)(value_t value, runtime_t *runtime,
       value_t contents);
-} family_behavior_t;
+};
 
 // Validates an object.
 value_t object_validate(value_t value);
@@ -74,13 +71,13 @@ void value_print_atomic_on(value_t value, string_buffer_t *buf);
 
 // Creates a new empty instance of the given type. Not all types support this,
 // in which case an unsupported behavior signal is returned.
-value_t new_object_with_type(struct runtime_t *runtime, value_t type);
+value_t new_object_with_type(runtime_t *runtime, value_t type);
 
 // Sets the payload of an object, passing in the object to set and the data to
 // inject as the object payload. If somehow the payload is not as the object
 // expects a signal should be returned (as well as if anything else fails
 // obviously).
-value_t set_object_contents(struct runtime_t *runtime, value_t object,
+value_t set_object_contents(runtime_t *runtime, value_t object,
     value_t payload);
 
 // Returns a value suitable to be returned as a hash from the address of an
@@ -102,19 +99,19 @@ bool family##_are_identical(value_t a, value_t b);                             \
 void family##_print_on(value_t value, string_buffer_t *buf);                   \
 void family##_print_atomic_on(value_t value, string_buffer_t *buf);            \
 void get_##family##_layout(value_t value, object_layout_t *layout_out);        \
-value_t set_##family##_contents(value_t value, struct runtime_t *runtime,      \
+value_t set_##family##_contents(value_t value, runtime_t *runtime,             \
     value_t contents);
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR_IMPLS)
 #undef DECLARE_FAMILY_BEHAVIOR_IMPLS
 
 
 // Virtual methods that control how the species of a particular division behave.
-typedef struct division_behavior_t {
+struct division_behavior_t {
   // The division this behavior belongs to.
   species_division_t division;
   // Returns the size in bytes on the heap of species for this division.
   void (*get_species_layout)(value_t species, object_layout_t *layout_out);
-} division_behavior_t;
+};
 
 // Declare the division behavior structs.
 #define DECLARE_DIVISION_BEHAVIOR(Division, division)                          \

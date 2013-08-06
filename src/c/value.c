@@ -617,7 +617,7 @@ void instance_print_atomic_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, "#<instance>");
 }
 
-value_t set_instance_contents(value_t instance, struct runtime_t *runtime,
+value_t set_instance_contents(value_t instance, runtime_t *runtime,
     value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   set_instance_fields(instance, contents);
