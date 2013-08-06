@@ -71,13 +71,16 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
   CHECK_FAMILY(ofStack, stack);
   value_t top_piece = get_stack_top_piece(stack);
   if (!try_push_stack_piece_frame(top_piece, frame, frame_capacity)) {
+    // There wasn't room to push this frame onto the top stack piece so
+    // allocate a new top piece that definitely has room.
     size_t default_capacity = get_stack_default_piece_capacity(stack);
     size_t required_capacity = frame_capacity + kFrameHeaderSize;
     size_t new_capacity = max_size(default_capacity, required_capacity);
     TRY_DEF(new_piece, new_heap_stack_piece(runtime, new_capacity, top_piece));
     set_stack_top_piece(stack, new_piece);
-    CHECK_TRUE("pushing on new piece failed", try_push_stack_piece_frame(new_piece,
-        frame, frame_capacity));
+    bool pushed_stack_piece = try_push_stack_piece_frame(new_piece,
+        frame, frame_capacity);
+    CHECK_TRUE("pushing on new piece failed", pushed_stack_piece);
   }
   return success();
 }
