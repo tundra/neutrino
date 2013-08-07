@@ -86,6 +86,8 @@ class Parser(object):
 
   # <atomic expression>
   #   -> <literal>
+  #   -> "(" <expression> ")"
+  #   -> <array expression>
   def parse_atomic_expression(self):
     if self.at_type(Token.LITERAL):
       value = self.expect_type(Token.LITERAL)
@@ -98,8 +100,27 @@ class Parser(object):
       result = self.parse_expression()
       self.expect_punctuation(')')
       return result
+    elif self.at_punctuation('['):
+      return self.parse_array_expression()
     else:
       raise self.new_syntax_error()
+
+  # <array expression>
+  #   -> "[" <expression> *: "," "]"
+  def parse_array_expression(self):
+    self.expect_punctuation('[')
+    elements = []
+    if self.at_punctuation(']'):
+      elements = []
+    else:
+      first = self.parse_expression()
+      elements.append(first)
+      while self.at_punctuation(','):
+        self.expect_punctuation(',')
+        next = self.parse_expression()
+        elements.append(next)
+    self.expect_punctuation(']')
+    return ast.Array(elements)
 
   # Creates a new syntax error at the current token.
   def new_syntax_error(self):

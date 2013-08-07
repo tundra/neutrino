@@ -11,7 +11,8 @@
 // Invokes the given macro for each opcode name.
 #define ENUM_OPCODES(F)                                                        \
   F(Push)                                                                      \
-  F(Return)
+  F(Return)                                                                    \
+  F(NewArray)
 
 // The enum of all opcodes.
 typedef enum {
@@ -55,6 +56,10 @@ value_t assembler_flush(assembler_t *assm);
 
 // Emits a push instruction.
 value_t assembler_emit_push(assembler_t *assm, value_t value);
+
+// Emits a new-array instruction that builds an array from the top 'length'
+// elements.
+value_t assembler_emit_new_array(assembler_t *assm, size_t length);
 
 // Emits a return instruction.
 value_t assembler_emit_return(assembler_t *assm);

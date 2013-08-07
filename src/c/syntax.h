@@ -34,4 +34,14 @@ static const size_t kLiteralAstValueOffset = 1;
 // The value this literal syntax tree represents.
 ACCESSORS_DECL(literal_ast, value);
 
+
+// --- A r r a y ---
+
+static const size_t kArrayAstSize = OBJECT_SIZE(1);
+static const size_t kArrayAstElementsOffset = 1;
+
+// The array of element expressions.
+ACCESSORS_DECL(array_ast, elements);
+
+
 #endif // _SYNTAX

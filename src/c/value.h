@@ -167,6 +167,7 @@ static value_t new_moved_object(value_t target) {
 
 // Enumerates the syntax tree families.
 #define ENUM_SYNTAX_OBJECT_FAMILIES(F)                                         \
+  F(ArrayAst, array_ast)                                                       \
   F(LiteralAst, literal_ast)
 
 // Enumerates the compact object species.

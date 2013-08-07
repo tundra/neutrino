@@ -53,15 +53,7 @@ value_t compile_syntax(runtime_t *runtime, value_t program) {
 OBJECT_IDENTITY_IMPL(literal_ast);
 FIXED_SIZE_PURE_VALUE_IMPL(literal_ast, LiteralAst);
 
-value_t get_literal_ast_value(value_t value) {
-  CHECK_FAMILY(ofLiteralAst, value);
-  return *access_object_field(value, kLiteralAstValueOffset);
-}
-
-void set_literal_ast_value(value_t literal, value_t value) {
-  CHECK_FAMILY(ofLiteralAst, literal);
-  *access_object_field(literal, kLiteralAstValueOffset) = value;
-}
+UNCHECKED_ACCESSORS_IMPL(LiteralAst, literal_ast, Value, value);
 
 value_t literal_ast_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofLiteralAst, value);
@@ -69,13 +61,13 @@ value_t literal_ast_validate(value_t value) {
 }
 
 void literal_ast_print_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<literal: ");
+  string_buffer_printf(buf, "#<literal ast: ");
   value_print_atomic_on(get_literal_ast_value(value), buf);
   string_buffer_printf(buf, ">");
 }
 
 void literal_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<literal>");
+  string_buffer_printf(buf, "#<literal ast>");
 }
 
 static value_t new_literal_ast(runtime_t *runtime) {
@@ -90,7 +82,52 @@ value_t set_literal_ast_contents(value_t object, runtime_t *runtime, value_t con
 }
 
 value_t emit_literal_ast(value_t value, assembler_t *assm) {
+  CHECK_FAMILY(ofLiteralAst, value);
   return assembler_emit_push(assm, get_literal_ast_value(value));
+}
+
+// --- A r r a y ---
+
+OBJECT_IDENTITY_IMPL(array_ast);
+FIXED_SIZE_PURE_VALUE_IMPL(array_ast, ArrayAst);
+
+CHECKED_ACCESSORS_IMPL(ArrayAst, array_ast, Array, Elements, elements);
+
+value_t emit_array_ast(value_t value, assembler_t *assm) {
+  CHECK_FAMILY(ofArrayAst, value);
+  value_t elements = get_array_ast_elements(value);
+  size_t length = get_array_length(elements);
+  for (size_t i = 0; i < length; i++)
+    TRY(emit_value(get_array_at(elements, i), assm));
+  assembler_emit_new_array(assm, length);
+  return success();
+}
+
+value_t array_ast_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofArrayAst, value);
+  VALIDATE_VALUE_FAMILY(ofArray, get_array_ast_elements(value));
+  return success();
+}
+
+void array_ast_print_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<array ast: ");
+  value_print_atomic_on(get_array_ast_elements(value), buf);
+  string_buffer_printf(buf, ">");
+}
+
+void array_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<array ast>");
+}
+
+value_t set_array_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(value, get_id_hash_map_at(contents, runtime->roots.string_table.elements));
+  set_array_ast_elements(object, value);
+  return success();
+}
+
+static value_t new_array_ast(runtime_t *runtime) {
+  return new_heap_array_ast(runtime, runtime->roots.empty_array);
 }
 
 
@@ -127,5 +164,6 @@ static value_t add_syntax_factory(value_t map, const char *name,
 
 value_t init_syntax_factory_map(value_t map, runtime_t *runtime) {
   TRY(add_syntax_factory(map, "Literal", new_literal_ast, runtime));
+  TRY(add_syntax_factory(map, "Array", new_array_ast, runtime));
   return success();
 }
