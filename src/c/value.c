@@ -661,6 +661,7 @@ FIXED_SIZE_PURE_VALUE_IMPL(code_block, CodeBlock);
 
 CHECKED_ACCESSORS_IMPL(CodeBlock, code_block, Blob, Bytecode, bytecode);
 CHECKED_ACCESSORS_IMPL(CodeBlock, code_block, Array, ValuePool, value_pool);
+INTEGER_ACCESSORS_IMPL(CodeBlock, code_block, HighWaterMark, high_water_mark);
 
 value_t code_block_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofCodeBlock, value);

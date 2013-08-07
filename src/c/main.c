@@ -32,15 +32,8 @@ static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
 
 // Executes the given program (syntax tree) within the given runtime.
 static value_t execute_program(runtime_t *runtime, value_t program) {
-  // Generate code for the program.
-  assembler_t assm;
-  TRY(assembler_init(&assm, runtime));
-  TRY(emit_value(program, &assm));
-  assembler_emit_opcode(&assm, ocReturn);
-  assembler_dispose(&assm);
-  TRY_DEF(code_block, assembler_flush(&assm));
-  // TODO: Execute the program.
-  return success();
+  TRY_DEF(code_block, compile_syntax(runtime, program));
+  return run_code_block(runtime, code_block);
 }
 
 // Create a vm and run the program.
@@ -61,7 +54,8 @@ static value_t neutrino_main(int argc, char *argv[]) {
     value_mapping_t syntax_mapping;
     TRY(init_syntax_mapping(&syntax_mapping, &runtime));
     TRY_DEF(program, plankton_deserialize(&runtime, &syntax_mapping, input));
-    TRY(execute_program(&runtime, program));
+    TRY_DEF(result, execute_program(&runtime, program));
+    value_print_ln(result);
   }
 
   TRY(runtime_dispose(&runtime));

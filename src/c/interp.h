@@ -22,6 +22,14 @@ typedef enum {
 } opcode_t;
 
 
+// --- I n t e r p r e t e r ---
+
+// Executes the given code block object, returning the result.
+value_t run_code_block(runtime_t *runtime, value_t code);
+
+
+// --- A s s e m b l e r ---
+
 // Bytecode assembler data.
 typedef struct {
   // The runtime we're generating code within.
