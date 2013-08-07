@@ -173,12 +173,15 @@ $(C_TEST_MAIN_EXE): $(C_TEST_MAIN_OBJS) $(C_TEST_LIB_OBJS) $(C_LIB_OBJS)
 	@$(CC) $(LINKFLAGS) $^ -o $@
 
 
+EXEC_PREFIX=$(VALGRIND_CMD) $(EMULATOR_CMD)
+
+
 # Run a C test and store the result in a file. This is kind of tricky because
 # we want to both store the output and signal an error 
 $(C_TEST_LIB_OUTS):$(OUT)/tests/c/test_%.out:$(C_TEST_MAIN_EXE)
 	@echo Running test_$*
 	@mkdir -p $(shell dirname $@)
-	@$(VALGRIND_CMD) $(EMULATOR_CMD) ./$(C_TEST_MAIN_EXE) $* > $@ || touch $@.fail
+	@$(EXEC_PREFIX) ./$(C_TEST_MAIN_EXE) $* > $@ || touch $@.fail
 	@cat $@ | ./src/sh/filter-backtrace.sh
 	@if [ -f $@.fail ]; then rm $@ $@.fail; false; else true; fi
 
@@ -223,9 +226,9 @@ $(GOLDEN_OUTS):$(OUT)/tests/n/golden/%.out:tests/n/golden/%.gn $(C_MAIN_EXE)
 	@echo Running golden test $*
 	@mkdir -p $(shell dirname $@)
 	@./src/sh/run-golden-test.sh                                          \
-	  -t $<                                                               \
-	  -o $@                                                               \
-	  -e $(C_MAIN_EXE)
+	  -t "$<"                                                             \
+	  -o "$@"                                                              \
+	  -e "$(EXEC_PREFIX) $(C_MAIN_EXE)"
 
 
 # Run all the golden tests.

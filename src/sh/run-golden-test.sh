@@ -50,7 +50,7 @@ while read LINE; do
   fi
   if [ -n "$INPUT" -a -n "$EXPECT" ]; then
     # If we now have both an INPUT and an EXPECT line run the test.
-    FOUND=$(./src/python/neutrino/main.py --expression "$INPUT" | $EXECUTABLE -)
+    FOUND=$(./src/python/neutrino/main.py --expression "$INPUT" | $EXECUTABLE - 2>&1)
     if [ "$EXPECT" != "$FOUND" ]; then
       # Test failed. Display an error.
       printf "Error on input '%s':\\n" "$INPUT"

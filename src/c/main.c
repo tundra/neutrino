@@ -27,7 +27,9 @@ static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
   blob_t data_blob;
   byte_buffer_flush(&buffer, &data_blob);
   // Create a blob to hold the result and copy the data into it.
-  return new_heap_blob_with_data(runtime, &data_blob);
+  value_t result = new_heap_blob_with_data(runtime, &data_blob);
+  byte_buffer_dispose(&buffer);
+  return result;
 }
 
 // Executes the given program (syntax tree) within the given runtime.
