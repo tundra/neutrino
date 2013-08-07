@@ -37,7 +37,7 @@ rm -f "$OUTPUT_FILE"
 
 INPUT=
 EXPECT=
-cat "$TEST_FILE" | while read LINE; do
+while read LINE; do
   # Strip end-of-line comments.
   LINE=$(echo "$LINE" | sed -e s/#.*$//g)
   # Check if this is an input line.
@@ -62,7 +62,7 @@ cat "$TEST_FILE" | while read LINE; do
     INPUT=
     EXPECT=
   fi
-done
+done < "$TEST_FILE"
 
 # We completed successfully so we can signal success by touching the output
 # file (as well as implicitly exiting 0).
