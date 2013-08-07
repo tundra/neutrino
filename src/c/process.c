@@ -61,11 +61,6 @@ void stack_print_atomic_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, "#<stack>");
 }
 
-// Returns the greatest of a and b.
-static size_t max_size(size_t a, size_t b) {
-  return (a < b) ? b : a;
-}
-
 value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     size_t frame_capacity) {
   CHECK_FAMILY(ofStack, stack);

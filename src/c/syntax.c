@@ -41,7 +41,7 @@ value_t compile_syntax(runtime_t *runtime, value_t program) {
   assembler_t assm;
   TRY(assembler_init(&assm, runtime));
   TRY(emit_value(program, &assm));
-  assembler_emit_opcode(&assm, ocReturn);
+  assembler_emit_return(&assm);
   TRY_DEF(code_block, assembler_flush(&assm));
   assembler_dispose(&assm);
   return code_block;
@@ -90,9 +90,7 @@ value_t set_literal_ast_contents(value_t object, runtime_t *runtime, value_t con
 }
 
 value_t emit_literal_ast(value_t value, assembler_t *assm) {
-  assembler_emit_opcode(assm, ocLiteral);
-  TRY(assembler_emit_value(assm, get_literal_ast_value(value)));
-  return success();
+  return assembler_emit_push(assm, get_literal_ast_value(value));
 }
 
 

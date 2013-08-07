@@ -10,7 +10,7 @@
 
 // Invokes the given macro for each opcode name.
 #define ENUM_OPCODES(F)                                                        \
-  F(Literal)                                                                   \
+  F(Push)                                                                      \
   F(Return)
 
 // The enum of all opcodes.
@@ -38,6 +38,10 @@ typedef struct {
   byte_buffer_t code;
   // The value pool map.
   value_t value_pool;
+  // The current stack height.
+  size_t stack_height;
+  // The highest the stack has been at any point.
+  size_t high_water_mark;
 } assembler_t;
 
 // Initializes an assembler.
@@ -49,11 +53,10 @@ void assembler_dispose(assembler_t *assm);
 // Returns a code block object containing the code written to this assembler.
 value_t assembler_flush(assembler_t *assm);
 
-// Writes an opcode to this assembler.
-void assembler_emit_opcode(assembler_t *assm, opcode_t opcode);
+// Emits a push instruction.
+value_t assembler_emit_push(assembler_t *assm, value_t value);
 
-// Writes a reference to a value in the value pool, adding the value to the
-// pool if necessary.
-value_t assembler_emit_value(assembler_t *assm, value_t value);
+// Emits a return instruction.
+value_t assembler_emit_return(assembler_t *assm);
 
 #endif // _INTERP
