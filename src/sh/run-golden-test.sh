@@ -39,7 +39,7 @@ INPUT=
 EXPECT=
 while read LINE; do
   # Strip end-of-line comments.
-  LINE=$(echo "$LINE" | sed -e s/#.*$//g)
+  LINE=$(echo "$LINE" | sed -e s/^\\s*#.*$//g)
   # Check if this is an input line.
   if echo "$LINE" | grep INPUT: > /dev/null; then
     INPUT=$(echo "$LINE" | sed -e s/^INPUT:\\s*//g)
