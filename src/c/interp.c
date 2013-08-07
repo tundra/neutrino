@@ -92,10 +92,13 @@ value_t assembler_flush(assembler_t *assm) {
       assm->high_water_mark);
 }
 
+// Writes an opcode to this assembler.
 static void assembler_emit_opcode(assembler_t *assm, opcode_t opcode) {
   byte_buffer_append(&assm->code, opcode);
 }
 
+// Writes a reference to a value in the value pool, adding the value to the
+// pool if necessary.
 static value_t assembler_emit_value(assembler_t *assm, value_t value) {
   value_t value_pool = assm->value_pool;
   // Check if we've already emitted this value then we can use the index again.
