@@ -210,6 +210,28 @@ $(MD_OBJS): $(BIN)/doc/%.html: %.md
 docs:	$(MD_OBJS)
 
 
+GOLDEN_SRCS=$(shell find tests/n/golden -name "*.gn" | sort)
+GOLDEN_OUTS=$(patsubst tests/n/golden/%.gn, $(OUT)/tests/n/golden/%.out, $(GOLDEN_SRCS))
+GOLDEN_RUNS=$(patsubst tests/n/golden/%.gn, test-golden-%, $(GOLDEN_SRCS))
+
+# Shorthand for running individual golden tests.
+$(GOLDEN_RUNS):test-golden-%:$(OUT)/tests/n/golden/%.out
+
+
+# Run a golden test using the test runner script.
+$(GOLDEN_OUTS):$(OUT)/tests/n/golden/%.out:tests/n/golden/%.gn $(C_MAIN_EXE)
+	@echo Running golden test $*
+	@mkdir -p $(shell dirname $@)
+	@./src/sh/run-golden-test.sh                                          \
+	  -t $<                                                               \
+	  -o $@                                                               \
+	  -e $(C_MAIN_EXE)
+
+
+# Run all the golden tests.
+test-golden:	$(GOLDEN_RUNS)
+
+
 loc:
 	@echo LOC \
 	  C: `find . -name \*.[ch] | xargs cat | grep -v -e ^// -e ^$$ | wc -l` \
