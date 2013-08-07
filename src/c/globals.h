@@ -46,4 +46,9 @@ typedef uint32_t address_arith_t;
 // conflict it should mean that one of the occurrences can safely be removed.
 #define FORWARD(name_t) typedef struct name_t name_t
 
+// Returns the greatest of a and b.
+static size_t max_size(size_t a, size_t b) {
+  return (a < b) ? b : a;
+}
+
 #endif // _GLOBALS

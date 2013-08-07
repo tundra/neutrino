@@ -20,7 +20,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
   while (true) {
     opcode_t opcode = blob_byte_at(&bytecode_blob, pc++);
     switch (opcode) {
-      case ocLiteral: {
+      case ocPush: {
         size_t index = blob_byte_at(&bytecode_blob, pc++);
         value_t value = get_array_at(value_pool, index);
         frame_push_value(&frame, value);
@@ -54,9 +54,10 @@ value_t run_code_block(runtime_t *runtime, value_t code) {
 // --- A s s e m b l e r ---
 
 value_t assembler_init(assembler_t *assm, runtime_t *runtime) {
+  TRY_SET(assm->value_pool, new_heap_id_hash_map(runtime, 16));
   assm->runtime = runtime;
   byte_buffer_init(&assm->code, NULL);
-  TRY_SET(assm->value_pool, new_heap_id_hash_map(runtime, 16));
+  assm->stack_height = assm->high_water_mark = 0;
   return success();
 }
 
@@ -87,16 +88,15 @@ value_t assembler_flush(assembler_t *assm) {
     entries_seen++;
   }
   CHECK_EQ("wrong number of entries", entries_seen, value_pool_size);
-  // TODO: calculate this correctly.
-  size_t high_water_mark = 16;
-  return new_heap_code_block(assm->runtime, bytecode, value_pool, high_water_mark);
+  return new_heap_code_block(assm->runtime, bytecode, value_pool,
+      assm->high_water_mark);
 }
 
-void assembler_emit_opcode(assembler_t *assm, opcode_t opcode) {
+static void assembler_emit_opcode(assembler_t *assm, opcode_t opcode) {
   byte_buffer_append(&assm->code, opcode);
 }
 
-value_t assembler_emit_value(assembler_t *assm, value_t value) {
+static value_t assembler_emit_value(assembler_t *assm, value_t value) {
   value_t value_pool = assm->value_pool;
   // Check if we've already emitted this value then we can use the index again.
   value_t prev_index = get_id_hash_map_at(value_pool, value);
@@ -113,5 +113,24 @@ value_t assembler_emit_value(assembler_t *assm, value_t value) {
   CHECK_TRUE("negative index", index >= 0);
   CHECK_TRUE("large index", index <= 0xFF);
   byte_buffer_append(&assm->code, index);
+  return success();
+}
+
+// Adds the given delta to the recorded stack height and updates the high water
+// mark if necessary.
+static void assembler_adjust_stack_height(assembler_t *assm, int delta) {
+  assm->stack_height += delta;
+  assm->high_water_mark = max_size(assm->high_water_mark, assm->stack_height);
+}
+
+value_t assembler_emit_push(assembler_t *assm, value_t value) {
+  assembler_emit_opcode(assm, ocPush);
+  assembler_emit_value(assm, value);
+  assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
+value_t assembler_emit_return(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocReturn);
   return success();
 }
