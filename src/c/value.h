@@ -492,15 +492,19 @@ ACCESSORS_DECL(factory, constructor);
 
 //  --- C o d e   b l o c k ---
 
-static const size_t kCodeBlockSize = OBJECT_SIZE(2);
+static const size_t kCodeBlockSize = OBJECT_SIZE(3);
 static const size_t kCodeBlockBytecodeOffset = 1;
 static const size_t kCodeBlockValuePoolOffset = 2;
+static const size_t kCodeBlockHighWaterMarkOffset = 3;
 
 // The binary blob of bytecode for this code block.
 ACCESSORS_DECL(code_block, bytecode);
 
 // The value pool array for this code block.
 ACCESSORS_DECL(code_block, value_pool);
+
+// The highest stack height possible when executing this code.
+INTEGER_ACCESSORS_DECL(code_block, high_water_mark);
 
 
 // --- D e b u g ---

@@ -138,12 +138,13 @@ value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr) {
 }
 
 value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
-    value_t value_pool) {
+    value_t value_pool, size_t high_water_mark) {
   size_t size = kCodeBlockSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.code_block_species));
   set_code_block_bytecode(result, bytecode);
   set_code_block_value_pool(result, value_pool);
+  set_code_block_high_water_mark(result, high_water_mark);
   return post_create_sanity_check(result, size);
 }
 

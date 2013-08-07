@@ -50,11 +50,13 @@ typedef struct {
 } frame_t;
 
 // The number of words in a stack frame header.
-static const size_t kFrameHeaderSize = 2;
+static const size_t kFrameHeaderSize = 4;
 
 // Offsets _down_ from the frame pointer to the header fields.
 static const size_t kFrameHeaderPreviousFramePointerOffset = 0;
 static const size_t kFrameHeaderPreviousCapacityOffset = 1;
+static const size_t kFrameHeaderCodeBlockOffset = 2;
+static const size_t kFrameHeaderPcOffset = 3;
 
 // Tries to allocate a new frame on the given stack piece of the given capacity.
 // Returns true iff allocation succeeds.
@@ -78,6 +80,18 @@ void set_frame_previous_capacity(frame_t *frame, size_t capacity);
 
 // Returns the capacity of the previous stack frame.
 size_t get_frame_previous_capacity(frame_t *frame);
+
+// Sets the code block this frame is executing.
+void set_frame_code_block(frame_t *frame, value_t code_block);
+
+// Returns the code block this frame is executing.
+value_t get_frame_code_block(frame_t *frame);
+
+// Sets the program counter for this frame.
+void set_frame_pc(frame_t *frame, size_t pc);
+
+// Returns the program counter for this frame.
+size_t get_frame_pc(frame_t *frame);
 
 // Pushes a value onto this stack frame. The returned value will always be
 // success except on bounds check failures in soft check failure mode where it

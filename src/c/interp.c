@@ -3,7 +3,55 @@
 
 #include "alloc.h"
 #include "interp.h"
+#include "process.h"
 #include "value-inl.h"
+
+// --- I n t e r p r e t e r ---
+
+value_t run_stack(runtime_t *runtime, value_t stack) {
+  frame_t frame;
+  get_stack_top_frame(stack, &frame);
+  size_t pc = get_frame_pc(&frame);
+  value_t code_block = get_frame_code_block(&frame);
+  value_t bytecode = get_code_block_bytecode(code_block);
+  blob_t bytecode_blob;
+  get_blob_data(bytecode, &bytecode_blob);
+  value_t value_pool = get_code_block_value_pool(code_block);
+  while (true) {
+    opcode_t opcode = blob_byte_at(&bytecode_blob, pc++);
+    switch (opcode) {
+      case ocLiteral: {
+        size_t index = blob_byte_at(&bytecode_blob, pc++);
+        value_t value = get_array_at(value_pool, index);
+        frame_push_value(&frame, value);
+        break;
+      }
+      case ocReturn: {
+        value_t result = frame_pop_value(&frame);
+        return result;
+      }
+      default:
+        printf("opcode: %i\n", opcode);
+        CHECK_TRUE("unexpected opcode", false);
+        break;
+    }
+  }
+  return success();
+}
+
+value_t run_code_block(runtime_t *runtime, value_t code) {
+  TRY_DEF(stack, new_heap_stack(runtime, 1024));
+  frame_t frame;
+  size_t frame_size = get_code_block_high_water_mark(code);
+  push_stack_frame(runtime, stack, &frame, frame_size);
+  set_frame_code_block(&frame, code);
+  set_frame_pc(&frame, 0);
+  return run_stack(runtime, stack);
+}
+
+
+
+// --- A s s e m b l e r ---
 
 value_t assembler_init(assembler_t *assm, runtime_t *runtime) {
   assm->runtime = runtime;
@@ -39,7 +87,9 @@ value_t assembler_flush(assembler_t *assm) {
     entries_seen++;
   }
   CHECK_EQ("wrong number of entries", entries_seen, value_pool_size);
-  return new_heap_code_block(assm->runtime, bytecode, value_pool);
+  // TODO: calculate this correctly.
+  size_t high_water_mark = 16;
+  return new_heap_code_block(assm->runtime, bytecode, value_pool, high_water_mark);
 }
 
 void assembler_emit_opcode(assembler_t *assm, opcode_t opcode) {

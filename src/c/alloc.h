@@ -63,7 +63,7 @@ value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr);
 // Creates a new code block object with the given bytecode blob and value pool
 // array.
 value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
-    value_t value_pool);
+    value_t value_pool, size_t high_water_mark);
 
 // Creates a new stack piece of the given size with the given previous segment.
 value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,

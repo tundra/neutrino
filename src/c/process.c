@@ -205,7 +205,8 @@ void set_frame_previous_frame_pointer(frame_t *frame, size_t value) {
 }
 
 size_t get_frame_previous_frame_pointer(frame_t *frame) {
-  return get_integer_value(*access_frame_header_field(frame, kFrameHeaderPreviousFramePointerOffset));
+  return get_integer_value(*access_frame_header_field(frame,
+      kFrameHeaderPreviousFramePointerOffset));
 }
 
 void set_frame_previous_capacity(frame_t *frame, size_t value) {
@@ -214,8 +215,29 @@ void set_frame_previous_capacity(frame_t *frame, size_t value) {
 }
 
 size_t get_frame_previous_capacity(frame_t *frame) {
-  return get_integer_value(*access_frame_header_field(frame, kFrameHeaderPreviousCapacityOffset));
+  return get_integer_value(*access_frame_header_field(frame,
+      kFrameHeaderPreviousCapacityOffset));
 }
+
+void set_frame_code_block(frame_t *frame, value_t code_block) {
+  *access_frame_header_field(frame, kFrameHeaderCodeBlockOffset) =
+      code_block;
+}
+
+value_t get_frame_code_block(frame_t *frame) {
+  return *access_frame_header_field(frame, kFrameHeaderCodeBlockOffset);
+}
+
+void set_frame_pc(frame_t *frame, size_t pc) {
+  *access_frame_header_field(frame, kFrameHeaderPcOffset) =
+      new_integer(pc);
+}
+
+size_t get_frame_pc(frame_t *frame) {
+  return get_integer_value(*access_frame_header_field(frame,
+      kFrameHeaderPcOffset));
+}
+
 
 value_t frame_push_value(frame_t *frame, value_t value) {
   // Check that the stack is in sync with this frame.

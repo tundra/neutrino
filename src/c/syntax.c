@@ -37,6 +37,16 @@ value_t init_syntax_mapping(value_mapping_t *mapping, runtime_t *runtime) {
   return success();
 }
 
+value_t compile_syntax(runtime_t *runtime, value_t program) {
+  assembler_t assm;
+  TRY(assembler_init(&assm, runtime));
+  TRY(emit_value(program, &assm));
+  assembler_emit_opcode(&assm, ocReturn);
+  TRY_DEF(code_block, assembler_flush(&assm));
+  assembler_dispose(&assm);
+  return code_block;
+}
+
 
 // --- L i t e r a l ---
 
