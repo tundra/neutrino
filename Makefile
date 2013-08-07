@@ -35,7 +35,7 @@ all:	main
 
 
 # Run all tests.
-test:	test-python test-c
+test:	test-python test-c test-golden
 
 
 # Dependencies for all targets.
