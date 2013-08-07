@@ -99,7 +99,7 @@ class Token(object):
 class Tokenizer(object):
 
   # Punctuation characters.
-  _PUNCTUATION = "(){};"
+  _PUNCTUATION = "(){}[];,"
 
   # Operator characters.
   _OPERATORS = "+-<>%*/=:"

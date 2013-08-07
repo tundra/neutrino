@@ -27,6 +27,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   TRY_SET(roots->null, new_heap_null(runtime));
   TRY_SET(roots->thrue, new_heap_bool(runtime, true));
   TRY_SET(roots->fahlse, new_heap_bool(runtime, false));
+  TRY_SET(roots->empty_array, new_heap_array(runtime, 0));
 
   // Generates code for initializing a string table entry.
 #define __CREATE_STRING_TABLE_ENTRY__(name, value)                             \
@@ -84,6 +85,7 @@ value_t roots_validate(roots_t *roots) {
   VALIDATE_OBJECT(ofNull, roots->null);
   VALIDATE_OBJECT(ofBool, roots->thrue);
   VALIDATE_OBJECT(ofBool, roots->fahlse);
+  VALIDATE_OBJECT(ofArray, roots->empty_array);
 
 #define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_OBJECT(ofString, roots->string_table.name);
   ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)
@@ -106,6 +108,7 @@ value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
   TRY(field_callback_call(callback, &roots->null));
   TRY(field_callback_call(callback, &roots->thrue));
   TRY(field_callback_call(callback, &roots->fahlse));
+  TRY(field_callback_call(callback, &roots->empty_array));
 
   // Generate code for visiting the string table.
 #define __VISIT_STRING_TABLE_ENTRY__(name, value)                              \

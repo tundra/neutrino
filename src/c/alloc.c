@@ -184,6 +184,14 @@ value_t new_heap_literal_ast(runtime_t *runtime, value_t value) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_array_ast(runtime_t *runtime, value_t elements) {
+  size_t size = kArrayAstSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.array_ast_species));
+  set_array_ast_elements(result, elements);
+  return post_create_sanity_check(result, size);
+}
+
 value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species) {
   address_t addr = NULL;
   if (!heap_try_alloc(heap, bytes, &addr))

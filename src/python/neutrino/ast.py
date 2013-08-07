@@ -17,6 +17,18 @@ class Literal(object):
     return "#<literal: %s>" % self.value
 
 
+# An array expression.
+@plankton.serializable(("ast", "Array"))
+class Array(object):
+
+  @plankton.field("elements")
+  def __init__(self, elements=None):
+    self.elements = elements
+
+  def __str__(self):
+    return "#<array: %s>" % map(str, self.elements)
+
+
 # A reference to an enclosing binding. The name is used before the variable
 # has been resolved, the symbol after.
 @plankton.serializable()

@@ -5,6 +5,7 @@ import unittest
 
 
 lt = ast.Literal
+ar = lambda *e: ast.Array(e)
 
 def id(phase, *names):
   name = ast.Name(phase, list(names))
@@ -36,6 +37,11 @@ class ParserTest(unittest.TestCase):
     test('@foo:bar', id(-1, 'foo', 'bar'))
     test('(1)', lt(1))
     test('((($foo)))', id(0, 'foo'))
+    test('[]', ar())
+    test('[1]', ar(lt(1)))
+    test('[2, 3]', ar(lt(2), lt(3)))
+    test('[4, 5, 6]', ar(lt(4), lt(5), lt(6)))
+    test('[7, [8, [9]]]', ar(lt(7), ar(lt(8), ar(lt(9)))))
 
   def test_calls(self):
     test = self.check_expression

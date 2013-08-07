@@ -12,7 +12,8 @@
 // Enumerates the string table strings that will be stored as easily accessible
 // roots.
 #define ENUM_STRING_TABLE(F)                                                   \
-  F(value, "value")
+  F(value, "value")                                                            \
+  F(elements, "elements")
 
 // A collection of all the root objects.
 typedef struct {
@@ -26,6 +27,7 @@ typedef struct {
   value_t null;
   value_t thrue;
   value_t fahlse;
+  value_t empty_array;
   // The string table
   struct {
 #define __DECLARE_STRING_TABLE_ENTRY__(name, value) value_t name;

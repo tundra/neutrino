@@ -26,6 +26,16 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         frame_push_value(&frame, value);
         break;
       }
+      case ocNewArray: {
+        size_t length = blob_byte_at(&bytecode_blob, pc++);
+        TRY_DEF(array, new_heap_array(runtime, length));
+        for (size_t i = 0; i < length; i++) {
+          value_t element = frame_pop_value(&frame);
+          set_array_at(array, length - i - 1, element);
+        }
+        frame_push_value(&frame, array);
+        break;
+      }
       case ocReturn: {
         value_t result = frame_pop_value(&frame);
         return result;
@@ -92,9 +102,15 @@ value_t assembler_flush(assembler_t *assm) {
       assm->high_water_mark);
 }
 
+// Writes a single byte to this assembler.
+static void assembler_emit_byte(assembler_t *assm, size_t value) {
+  CHECK_TRUE("large value", value <= 0xFF);
+  byte_buffer_append(&assm->code, (byte_t) value);
+}
+
 // Writes an opcode to this assembler.
 static void assembler_emit_opcode(assembler_t *assm, opcode_t opcode) {
-  byte_buffer_append(&assm->code, opcode);
+  assembler_emit_byte(assm, opcode);
 }
 
 // Writes a reference to a value in the value pool, adding the value to the
@@ -130,6 +146,14 @@ value_t assembler_emit_push(assembler_t *assm, value_t value) {
   assembler_emit_opcode(assm, ocPush);
   assembler_emit_value(assm, value);
   assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
+value_t assembler_emit_new_array(assembler_t *assm, size_t length) {
+  assembler_emit_opcode(assm, ocNewArray);
+  assembler_emit_byte(assm, length);
+  // Pops off 'length' elements, pushes back an array.
+  assembler_adjust_stack_height(assm, -length+1);
   return success();
 }
 

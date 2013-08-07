@@ -78,6 +78,9 @@ value_t new_heap_stack(runtime_t *runtime, size_t initial_capacity);
 // Creates a new literal syntax tree with the given value.
 value_t new_heap_literal_ast(runtime_t *runtime, value_t value);
 
+// Creates a new array syntax tree with the given element array.
+value_t new_heap_array_ast(runtime_t *runtime, value_t elements);
+
 
 // --- U t i l s ---
 
