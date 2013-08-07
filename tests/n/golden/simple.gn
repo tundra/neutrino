@@ -1,0 +1,19 @@
+# Really basic literal expressions.
+
+INPUT: 1
+EXPECT: 1
+
+INPUT: []
+EXPECT: []
+
+INPUT: [1]
+EXPECT: [1]
+
+INPUT: [1, 2]
+EXPECT: [1, 2]
+
+INPUT: [1, 2, 3]
+EXPECT: [1, 2, 3]
+
+INPUT: [1, 2, [3]]
+EXPECT: [1, 2, #<array[1]>]

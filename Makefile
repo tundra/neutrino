@@ -35,7 +35,7 @@ all:	main
 
 
 # Run all tests.
-test:	test-python test-c
+test:	test-python test-c test-golden
 
 
 # Dependencies for all targets.
@@ -173,12 +173,15 @@ $(C_TEST_MAIN_EXE): $(C_TEST_MAIN_OBJS) $(C_TEST_LIB_OBJS) $(C_LIB_OBJS)
 	@$(CC) $(LINKFLAGS) $^ -o $@
 
 
+EXEC_PREFIX=$(VALGRIND_CMD) $(EMULATOR_CMD)
+
+
 # Run a C test and store the result in a file. This is kind of tricky because
 # we want to both store the output and signal an error 
 $(C_TEST_LIB_OUTS):$(OUT)/tests/c/test_%.out:$(C_TEST_MAIN_EXE)
 	@echo Running test_$*
 	@mkdir -p $(shell dirname $@)
-	@$(VALGRIND_CMD) $(EMULATOR_CMD) ./$(C_TEST_MAIN_EXE) $* > $@ || touch $@.fail
+	@$(EXEC_PREFIX) ./$(C_TEST_MAIN_EXE) $* > $@ || touch $@.fail
 	@cat $@ | ./src/sh/filter-backtrace.sh
 	@if [ -f $@.fail ]; then rm $@ $@.fail; false; else true; fi
 
@@ -208,6 +211,28 @@ $(MD_OBJS): $(BIN)/doc/%.html: %.md
 
 
 docs:	$(MD_OBJS)
+
+
+GOLDEN_SRCS=$(shell find tests/n/golden -name "*.gn" | sort)
+GOLDEN_OUTS=$(patsubst tests/n/golden/%.gn, $(OUT)/tests/n/golden/%.out, $(GOLDEN_SRCS))
+GOLDEN_RUNS=$(patsubst tests/n/golden/%.gn, test-golden-%, $(GOLDEN_SRCS))
+
+# Shorthand for running individual golden tests.
+$(GOLDEN_RUNS):test-golden-%:$(OUT)/tests/n/golden/%.out
+
+
+# Run a golden test using the test runner script.
+$(GOLDEN_OUTS):$(OUT)/tests/n/golden/%.out:tests/n/golden/%.gn $(C_MAIN_EXE)
+	@echo Running golden test $*
+	@mkdir -p $(shell dirname $@)
+	@./src/sh/run-golden-test.sh                                          \
+	  -t "$<"                                                             \
+	  -o "$@"                                                              \
+	  -e "$(EXEC_PREFIX) $(C_MAIN_EXE)"
+
+
+# Run all the golden tests.
+test-golden:	$(GOLDEN_RUNS)
 
 
 loc:
