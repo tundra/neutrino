@@ -17,10 +17,10 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   roots->species_species = meta;
 
   // Generate initialization for the other compact species.
-#define CREATE_COMPACT_SPECIES(Family, family)                                 \
+#define __CREATE_COMPACT_SPECIES__(Family, family)                             \
   TRY_SET(roots->family##_species, new_heap_compact_species(runtime, of##Family, &k##Family##Behavior));
-  ENUM_COMPACT_OBJECT_FAMILIES(CREATE_COMPACT_SPECIES)
-#undef CREATE_COMPACT_SPECIES
+  ENUM_COMPACT_OBJECT_FAMILIES(__CREATE_COMPACT_SPECIES__)
+#undef __CREATE_COMPACT_SPECIES__
 
   // Initialize singletons first since we need those to create more complex
   // values below.
@@ -30,6 +30,13 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   TRY_SET(roots->empty_array, new_heap_array(runtime, 0));
   TRY_SET(roots->empty_array_buffer, new_heap_array_buffer(runtime, 0));
   TRY_SET(roots->any_guard, new_heap_guard(runtime, gtAny, roots->null));
+  TRY_SET(roots->integer_protocol, new_heap_protocol(runtime, roots->null));
+
+  // Generate initialization for the per-family protocols.
+#define __CREATE_FAMILY_PROTOCOL__(Family, family)                             \
+  TRY_SET(roots->family##_protocol, new_heap_protocol(runtime, roots->null));
+  ENUM_OBJECT_FAMILIES(__CREATE_FAMILY_PROTOCOL__)
+#undef __CREATE_FAMILY_PROTOCOL__
 
   // Generates code for initializing a string table entry.
 #define __CREATE_STRING_TABLE_ENTRY__(name, value)                             \
@@ -85,9 +92,11 @@ value_t roots_validate(roots_t *roots) {
   } while (false)
 
   // Generate validation for species.
-#define VALIDATE_SPECIES_FIELD(Family, family) VALIDATE_SPECIES(of##Family, roots->family##_species);
-  ENUM_OBJECT_FAMILIES(VALIDATE_SPECIES_FIELD)
-#undef VALIDATE_SPECIES_FIELD
+#define __VALIDATE_PER_FAMILY_FIELDS__(Family, family)                         \
+  VALIDATE_SPECIES(of##Family, roots->family##_species);                       \
+  VALIDATE_OBJECT(ofProtocol, roots->family##_protocol);
+  ENUM_OBJECT_FAMILIES(__VALIDATE_PER_FAMILY_FIELDS__)
+#undef __VALIDATE_PER_FAMILY_FIELDS__
 
   // Validate singletons manually.
   VALIDATE_OBJECT(ofNull, roots->null);
@@ -98,6 +107,7 @@ value_t roots_validate(roots_t *roots) {
   VALIDATE_CHECK_EQ(0, get_array_buffer_length(roots->empty_array_buffer));
   VALIDATE_OBJECT(ofGuard, roots->any_guard);
   VALIDATE_CHECK_EQ(gtAny, get_guard_type(roots->any_guard));
+  VALIDATE_OBJECT(ofProtocol, roots->integer_protocol);
 
 #define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_OBJECT(ofString, roots->string_table.name);
   ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)
@@ -110,10 +120,11 @@ value_t roots_validate(roots_t *roots) {
 
 value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
   // Generate code for visiting the species.
-#define __VISIT_SPECIES_FIELD__(Family, family)                                \
-  TRY(field_callback_call(callback, &roots->family##_species));
-  ENUM_OBJECT_FAMILIES(__VISIT_SPECIES_FIELD__)
-#undef __VISIT_SPECIES_FIELD__
+#define __VISIT_PER_FAMILY_FIELDS__(Family, family)                            \
+  TRY(field_callback_call(callback, &roots->family##_species));                \
+  TRY(field_callback_call(callback, &roots->family##_protocol));
+  ENUM_OBJECT_FAMILIES(__VISIT_PER_FAMILY_FIELDS__)
+#undef __VISIT_PER_FAMILY_FIELDS__
 
   // Clear the singletons manually.
   TRY(field_callback_call(callback, &roots->syntax_factories));
@@ -123,6 +134,7 @@ value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
   TRY(field_callback_call(callback, &roots->empty_array));
   TRY(field_callback_call(callback, &roots->empty_array_buffer));
   TRY(field_callback_call(callback, &roots->any_guard));
+  TRY(field_callback_call(callback, &roots->integer_protocol));
 
   // Generate code for visiting the string table.
 #define __VISIT_STRING_TABLE_ENTRY__(name, value)                              \

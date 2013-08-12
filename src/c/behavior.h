@@ -44,6 +44,8 @@ struct family_behavior_t {
   // Sets the contents of the given value from the given serialized contents.
   value_t (*set_contents)(value_t value, runtime_t *runtime,
       value_t contents);
+  // Returns the protocol object for the given object.
+  value_t (*get_protocol)(value_t value, runtime_t *runtime);
 };
 
 // Validates an object. Check fails if validation fails except in soft check
@@ -81,6 +83,9 @@ value_t new_object_with_type(runtime_t *runtime, value_t type);
 value_t set_object_contents(runtime_t *runtime, value_t object,
     value_t payload);
 
+// Returns the primary protocol of the given value.
+value_t get_protocol(value_t value, runtime_t *runtime);
+
 // Returns a value suitable to be returned as a hash from the address of an
 // object.
 #define OBJ_ADDR_HASH(VAL) new_integer((VAL).encoded)
@@ -101,7 +106,8 @@ void family##_print_on(value_t value, string_buffer_t *buf);                   \
 void family##_print_atomic_on(value_t value, string_buffer_t *buf);            \
 void get_##family##_layout(value_t value, object_layout_t *layout_out);        \
 value_t set_##family##_contents(value_t value, runtime_t *runtime,             \
-    value_t contents);
+    value_t contents);                                                         \
+value_t get_##family##_protocol(value_t value, runtime_t *runtime);
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR_IMPLS)
 #undef DECLARE_FAMILY_BEHAVIOR_IMPLS
 

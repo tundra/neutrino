@@ -197,3 +197,18 @@ TEST(value, array_buffer) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+
+TEST(value, get_protocol) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t int_proto = get_protocol(new_integer(2), &runtime);
+  ASSERT_VALEQ(int_proto, runtime.roots.integer_protocol);
+  ASSERT_VALEQ(int_proto, get_protocol(new_integer(6), &runtime));
+  value_t null_proto = get_protocol(runtime_null(&runtime), &runtime);
+  ASSERT_FALSE(value_structural_equal(int_proto, null_proto));
+  ASSERT_VALEQ(null_proto, runtime.roots.null_protocol);
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}

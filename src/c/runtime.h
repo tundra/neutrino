@@ -17,10 +17,12 @@
 
 // A collection of all the root objects.
 typedef struct {
-  // Basic family species.
-#define __DECLARE_SPECIES_FIELD__(Family, family) value_t family##_species;
-  ENUM_OBJECT_FAMILIES(__DECLARE_SPECIES_FIELD__)
-#undef __DECLARE_SPECIES_FIELD__
+  // Basic family species and protocols
+#define __DECLARE_PER_SPECIES_ROOTS__(Family, family)                          \
+  value_t family##_species;                                                    \
+  value_t family##_protocol;
+  ENUM_OBJECT_FAMILIES(__DECLARE_PER_SPECIES_ROOTS__)
+#undef __DECLARE_PER_SPECIES_ROOTS__
   // String->factory mapping.
   value_t syntax_factories;
   // Singletons
@@ -30,12 +32,15 @@ typedef struct {
   value_t empty_array;
   value_t empty_array_buffer;
   value_t any_guard;
+  // Special protocols
+  value_t integer_protocol;
   // The string table
   struct {
 #define __DECLARE_STRING_TABLE_ENTRY__(name, value) value_t name;
     ENUM_STRING_TABLE(__DECLARE_STRING_TABLE_ENTRY__)
 #undef __DECLARE_STRING_TABLE_ENTRY__
   } string_table;
+  // Basic family protocols.
 } roots_t;
 
 

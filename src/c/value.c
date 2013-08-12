@@ -3,6 +3,7 @@
 
 #include "behavior.h"
 #include "heap.h"
+#include "runtime.h"
 #include "value-inl.h"
 
 const char *signal_cause_name(signal_cause_t cause) {
@@ -40,12 +41,20 @@ object_family_t get_object_family(value_t value) {
   return get_species_instance_family(species);
 }
 
+family_behavior_t *get_object_family_behavior(value_t self) {
+  CHECK_DOMAIN(vdObject, self);
+  value_t species = get_object_species(self);
+  CHECK_TRUE("invalid object header", in_family(ofSpecies, species));
+  return get_species_family_behavior(species);
+}
+
 
 // --- S p e c i e s ---
 
 OBJECT_IDENTITY_IMPL(species);
 CANT_SET_CONTENTS(species);
 TRIVIAL_PRINT_ON_IMPL(Species, species);
+NO_FAMILY_PROTOCOL_IMPL(species);
 
 void set_species_instance_family(value_t value,
     object_family_t instance_family) {
@@ -103,6 +112,7 @@ void get_compact_species_layout(value_t species, object_layout_t *layout) {
 // --- S t r i n g ---
 
 CANT_SET_CONTENTS(string);
+GET_FAMILY_PROTOCOL_IMPL(string);
 
 size_t calc_string_size(size_t char_count) {
   // We need to fix one extra byte, the terminating null.
@@ -171,6 +181,7 @@ void string_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 OBJECT_IDENTITY_IMPL(blob);
 CANT_SET_CONTENTS(blob);
+GET_FAMILY_PROTOCOL_IMPL(blob);
 
 size_t calc_blob_size(size_t size) {
   return kObjectHeaderSize              // header
@@ -225,6 +236,7 @@ void blob_print_atomic_on(value_t value, string_buffer_t *buf) {
 OBJECT_IDENTITY_IMPL(void_p);
 CANT_SET_CONTENTS(void_p);
 TRIVIAL_PRINT_ON_IMPL(VoidP, void_p);
+NO_FAMILY_PROTOCOL_IMPL(void_p);
 
 void set_void_p_value(value_t value, void *ptr) {
   CHECK_FAMILY(ofVoidP, value);
@@ -251,6 +263,7 @@ void get_void_p_layout(value_t value, object_layout_t *layout) {
 
 OBJECT_IDENTITY_IMPL(array);
 CANT_SET_CONTENTS(array);
+GET_FAMILY_PROTOCOL_IMPL(array);
 
 size_t calc_array_size(size_t length) {
   return kObjectHeaderSize       // header
@@ -309,6 +322,7 @@ OBJECT_IDENTITY_IMPL(array_buffer);
 CANT_SET_CONTENTS(array_buffer);
 FIXED_SIZE_PURE_VALUE_IMPL(ArrayBuffer, array_buffer);
 TRIVIAL_PRINT_ON_IMPL(ArrayBuffer, array_buffer);
+GET_FAMILY_PROTOCOL_IMPL(array_buffer);
 
 CHECKED_ACCESSORS_IMPL(ArrayBuffer, array_buffer, Array, Elements, elements);
 INTEGER_ACCESSORS_IMPL(ArrayBuffer, array_buffer, Length, length);
@@ -343,6 +357,7 @@ value_t get_array_buffer_at(value_t self, size_t index) {
 OBJECT_IDENTITY_IMPL(id_hash_map);
 CANT_SET_CONTENTS(id_hash_map);
 FIXED_SIZE_PURE_VALUE_IMPL(IdHashMap, id_hash_map);
+GET_FAMILY_PROTOCOL_IMPL(id_hash_map);
 
 CHECKED_ACCESSORS_IMPL(IdHashMap, id_hash_map, Array, EntryArray, entry_array);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Size, size);
@@ -532,6 +547,7 @@ void id_hash_map_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 CANT_SET_CONTENTS(null);
 FIXED_SIZE_PURE_VALUE_IMPL(Null, null);
+GET_FAMILY_PROTOCOL_IMPL(null);
 
 value_t null_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofNull, value);
@@ -563,6 +579,7 @@ void null_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 CANT_SET_CONTENTS(bool);
 FIXED_SIZE_PURE_VALUE_IMPL(Bool, bool);
+GET_FAMILY_PROTOCOL_IMPL(bool);
 
 void set_bool_value(value_t value, bool truth) {
   CHECK_FAMILY(ofBool, value);
@@ -605,6 +622,7 @@ void bool_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 OBJECT_IDENTITY_IMPL(instance);
 FIXED_SIZE_PURE_VALUE_IMPL(Instance, instance);
+GET_FAMILY_PROTOCOL_IMPL(instance);
 
 CHECKED_ACCESSORS_IMPL(Instance, instance, IdHashMap, Fields, fields);
 
@@ -650,6 +668,7 @@ value_t set_instance_contents(value_t instance, runtime_t *runtime,
 OBJECT_IDENTITY_IMPL(factory);
 CANT_SET_CONTENTS(factory);
 FIXED_SIZE_PURE_VALUE_IMPL(Factory, factory);
+NO_FAMILY_PROTOCOL_IMPL(factory);
 
 CHECKED_ACCESSORS_IMPL(Factory, factory, VoidP, Constructor, constructor);
 
@@ -678,6 +697,7 @@ void factory_print_atomic_on(value_t value, string_buffer_t *buf) {
 OBJECT_IDENTITY_IMPL(code_block);
 CANT_SET_CONTENTS(code_block);
 FIXED_SIZE_PURE_VALUE_IMPL(CodeBlock, code_block);
+NO_FAMILY_PROTOCOL_IMPL(code_block);
 
 CHECKED_ACCESSORS_IMPL(CodeBlock, code_block, Blob, Bytecode, bytecode);
 CHECKED_ACCESSORS_IMPL(CodeBlock, code_block, Array, ValuePool, value_pool);
@@ -708,6 +728,7 @@ void code_block_print_atomic_on(value_t value, string_buffer_t *buf) {
 OBJECT_IDENTITY_IMPL(protocol);
 CANT_SET_CONTENTS(protocol);
 FIXED_SIZE_PURE_VALUE_IMPL(Protocol, protocol);
+GET_FAMILY_PROTOCOL_IMPL(protocol);
 
 UNCHECKED_ACCESSORS_IMPL(Protocol, protocol, DisplayName, display_name);
 
