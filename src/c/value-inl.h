@@ -180,6 +180,7 @@ __MAPPING_SETTER_IMPL__(Receiver, receiver, size_t, Field, field,              \
 __MAPPING_GETTER_IMPL__(Receiver, receiver, size_t, Field, field,              \
     __GET_INTEGER_VALUE_MAP__)
 
+// Expands to an enum getter and setter.
 #define ENUM_ACCESSORS_IMPL(Receiver, receiver, type_t, Field, field)          \
 __MAPPING_SETTER_IMPL__(Receiver, receiver, type_t, Field, field,              \
     __NEW_INTEGER_MAP__);                                                      \
@@ -189,8 +190,8 @@ __MAPPING_GETTER_IMPL__(Receiver, receiver, type_t, Field, field,              \
 
 // --- S p e c i e s   a c c e s s o r s ---
 
-// Expands to a function that gets the specified field in the specified object
-// family.
+// Expands to a function that gets the specified field in the specified division
+// of species.
 #define SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies,               \
     receiver_species, Field, field)                                            \
 value_t get_##receiver_species##_species_##field(value_t self) {               \
@@ -205,6 +206,8 @@ value_t get_##receiver##_##field(value_t self) {                               \
 }                                                                              \
 SWALLOW_SEMI(sgi)
 
+// Expands to function implementations that get and set checked values on a
+// particular kind of species.
 #define CHECKED_SPECIES_ACCESSORS_IMPL(Receiver, receiver, ReceiverSpecies,    \
     receiver_species, Family, Field, field)                                    \
 void set_##receiver_species##_species_##field(value_t self, value_t value) {   \
