@@ -32,7 +32,11 @@ void get_object_layout(value_t self, object_layout_t *layout_out) {
   // This has to work during gc so some of the normal behavior checks are
   // disabled.
   CHECK_DOMAIN(vdObject, self);
+  // We only get the layout of objects that have already been moved so this
+  // gives a proper species.
   value_t species = get_object_species(self);
+  // The species itself may have been moved but in any its memory will still be
+  // intact enough that we can get the behavior out.
   family_behavior_t *behavior = get_species_family_behavior(species);
   (behavior->get_object_layout)(self, layout_out);
 }

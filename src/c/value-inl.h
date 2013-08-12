@@ -123,6 +123,8 @@ value_t get_##family##_protocol(value_t self, runtime_t *runtime) {            \
   return new_signal(scUnsupportedBehavior);                                    \
 }                                                                              \
 SWALLOW_SEMI(nfpi)
+
+
 // --- A c c e s s o r s ---
 
 // Expands to a function that sets the given field on the given receiver,
