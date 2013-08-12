@@ -290,13 +290,13 @@ value_t get_array_at(value_t value, size_t index) {
   CHECK_FAMILY(ofArray, value);
   SIG_CHECK_TRUE("array index out of bounds", scOutOfBounds,
       index < get_array_length(value));
-  return *access_object_field(value, kArrayElementsOffset + index);
+  return get_array_elements(value)[index];
 }
 
 void set_array_at(value_t value, size_t index, value_t element) {
   CHECK_FAMILY(ofArray, value);
   CHECK_TRUE("array index out of bounds", index < get_array_length(value));
-  *access_object_field(value, kArrayElementsOffset + index) = element;
+  get_array_elements(value)[index] = element;
 }
 
 value_t *get_array_elements(value_t value) {
@@ -311,7 +311,7 @@ value_t array_validate(value_t value) {
 
 void get_array_layout(value_t value, object_layout_t *layout) {
   size_t size = calc_array_size(get_array_length(value));
-  object_layout_set(layout, size, kArrayElementsOffset * kValueSize);
+  object_layout_set(layout, size, kArrayElementsOffset);
 }
 
 void array_print_on(value_t value, string_buffer_t *buf) {

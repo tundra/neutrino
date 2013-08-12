@@ -210,6 +210,11 @@ typedef enum {
 // is not counted as a field.
 #define OBJECT_SIZE(N) ((N * kValueSize) + kObjectHeaderSize)
 
+// Returns the offset of the N'th field in an object, starting from 0 so the
+// header fields aren't included.
+#define OBJECT_FIELD_OFFSET(N) ((N * kValueSize) + kObjectHeaderSize)
+
+// The offset of the object header.
 static const size_t kObjectHeaderOffset = 0;
 
 // Forward declaration of the object behavior structs (see behavior.h).
@@ -236,7 +241,7 @@ static address_t get_object_address(value_t value) {
 static value_t *access_object_field(value_t value, size_t index) {
   CHECK_DOMAIN(vdObject, value);
   address_t addr = get_object_address(value);
-  return ((value_t*) addr) + index;
+  return (value_t*) (addr + index);
 }
 
 // Returns the object type of the object the given value points to.
@@ -303,12 +308,20 @@ ENUM_SPECIES_DIVISIONS(DECLARE_SPECIES_DIVISION_ENUM)
 #undef DECLARE_SPECIES_DIVISION_ENUM
 } species_division_t;
 
+// The size of the species header, the part that's the same for all species.
 #define kSpeciesHeaderSize OBJECT_SIZE(3)
-static const size_t kSpeciesInstanceFamilyOffset = 1;
-static const size_t kSpeciesFamilyBehaviorOffset = 2;
-static const size_t kSpeciesDivisionBehaviorOffset = 3;
 
+static const size_t kSpeciesInstanceFamilyOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kSpeciesFamilyBehaviorOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kSpeciesDivisionBehaviorOffset = OBJECT_FIELD_OFFSET(2);
+
+// Expands to the size of a species with N field in addition to the species
+// header.
 #define SPECIES_SIZE(N) (kSpeciesHeaderSize + (N * kValueSize))
+
+// Expands to the byte offset of the N'th field in a species object, starting
+// from 0 and not counting the species header fields.
+#define SPECIES_FIELD_OFFSET(N) (kSpeciesHeaderSize + (N * kValueSize))
 
 // The object family of instances of this species.
 TYPED_ACCESSORS_DECL(species, object_family_t, instance_family);
@@ -337,7 +350,7 @@ static const size_t kCompactSpeciesSize = SPECIES_SIZE(0);
 // --- I n s t a n c e   s p e c i e s ---
 
 static const size_t kInstanceSpeciesSize = SPECIES_SIZE(1);
-static const size_t kInstanceSpeciesPrimaryProtocolOffset = 4;
+static const size_t kInstanceSpeciesPrimaryProtocolOffset = SPECIES_FIELD_OFFSET(0);
 
 // The primary protocol of the instance.
 SPECIES_ACCESSORS_DECL(instance, primary_protocol);
@@ -345,8 +358,8 @@ SPECIES_ACCESSORS_DECL(instance, primary_protocol);
 
 // --- S t r i n g ---
 
-static const size_t kStringLengthOffset = 1;
-static const size_t kStringCharsOffset = 2;
+static const size_t kStringLengthOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kStringCharsOffset = OBJECT_FIELD_OFFSET(1);
 
 // Returns the size of a heap string with the given number of characters.
 size_t calc_string_size(size_t char_count);
@@ -363,8 +376,8 @@ void get_string_contents(value_t value, string_t *out);
 
 // --- B l o b ---
 
-static const size_t kBlobLengthOffset = 1;
-static const size_t kBlobDataOffset = 2;
+static const size_t kBlobLengthOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kBlobDataOffset = OBJECT_FIELD_OFFSET(1);
 
 // Returns the size of a heap blob with the given number of bytes.
 size_t calc_blob_size(size_t size);
@@ -380,7 +393,7 @@ void get_blob_data(value_t value, blob_t *blob_out);
 // --- V o i d   P ---
 
 static const size_t kVoidPSize = OBJECT_SIZE(1);
-static const size_t kVoidPValueOffset = 1;
+static const size_t kVoidPValueOffset = OBJECT_FIELD_OFFSET(0);
 
 // Sets the pointer stored in a void-p.
 void set_void_p_value(value_t value, void *ptr);
@@ -391,8 +404,8 @@ void *get_void_p_value(value_t value);
 
 // --- A r r a y ---
 
-static const size_t kArrayLengthOffset = 1;
-static const size_t kArrayElementsOffset = 2;
+static const size_t kArrayLengthOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kArrayElementsOffset = OBJECT_FIELD_OFFSET(1);
 
 // Calculates the size of a heap array with the given number of elements.
 size_t calc_array_size(size_t length);
@@ -417,8 +430,8 @@ value_t *get_array_elements(value_t value);
 // to it.
 
 static const size_t kArrayBufferSize = OBJECT_SIZE(2);
-static const size_t kArrayBufferElementsOffset = 1;
-static const size_t kArrayBufferLengthOffset = 2;
+static const size_t kArrayBufferElementsOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kArrayBufferLengthOffset = OBJECT_FIELD_OFFSET(1);
 
 // The array storing the elements in this buffer.
 ACCESSORS_DECL(array_buffer, elements);
@@ -438,9 +451,9 @@ bool try_add_to_array_buffer(value_t self, value_t value);
 // --- I d e n t i t y   h a s h   m a p ---
 
 static const size_t kIdHashMapSize = OBJECT_SIZE(3);
-static const size_t kIdHashMapSizeOffset = 1;
-static const size_t kIdHashMapCapacityOffset = 2;
-static const size_t kIdHashMapEntryArrayOffset = 3;
+static const size_t kIdHashMapSizeOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kIdHashMapCapacityOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kIdHashMapEntryArrayOffset = OBJECT_FIELD_OFFSET(2);
 
 static const size_t kIdHashMapEntryFieldCount = 3;
 static const size_t kIdHashMapEntryKeyOffset = 0;
@@ -500,7 +513,7 @@ static const size_t kNullSize = OBJECT_SIZE(0);
 // --- B o o l ---
 
 static const size_t kBoolSize = OBJECT_SIZE(1);
-static const size_t kBoolValueOffset = 1;
+static const size_t kBoolValueOffset = OBJECT_FIELD_OFFSET(0);
 
 // Sets whether the given bool represents true or false.
 void set_bool_value(value_t value, bool truth);
@@ -512,7 +525,7 @@ bool get_bool_value(value_t value);
 // --- I n s t a n c e ---
 
 static const size_t kInstanceSize = OBJECT_SIZE(1);
-static const size_t kInstanceFieldsOffset = 1;
+static const size_t kInstanceFieldsOffset = OBJECT_FIELD_OFFSET(0);
 
 // The field map for this instance.
 ACCESSORS_DECL(instance, fields);
@@ -534,7 +547,7 @@ value_t try_set_instance_field(value_t instance, value_t key, value_t value);
 typedef value_t (factory_constructor_t)(runtime_t *runtime);
 
 static const size_t kFactorySize = OBJECT_SIZE(1);
-static const size_t kFactoryConstructorOffset = 1;
+static const size_t kFactoryConstructorOffset = OBJECT_FIELD_OFFSET(0);
 
 // The constructor function for this factory wrapped in a void-p.
 ACCESSORS_DECL(factory, constructor);
@@ -543,9 +556,9 @@ ACCESSORS_DECL(factory, constructor);
 //  --- C o d e   b l o c k ---
 
 static const size_t kCodeBlockSize = OBJECT_SIZE(3);
-static const size_t kCodeBlockBytecodeOffset = 1;
-static const size_t kCodeBlockValuePoolOffset = 2;
-static const size_t kCodeBlockHighWaterMarkOffset = 3;
+static const size_t kCodeBlockBytecodeOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kCodeBlockValuePoolOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kCodeBlockHighWaterMarkOffset = OBJECT_FIELD_OFFSET(2);
 
 // The binary blob of bytecode for this code block.
 ACCESSORS_DECL(code_block, bytecode);
@@ -560,7 +573,7 @@ INTEGER_ACCESSORS_DECL(code_block, high_water_mark);
 // --- P r o t o c o l ---
 
 static const size_t kProtocolSize = OBJECT_SIZE(1);
-static const size_t kProtocolDisplayNameOffset = 1;
+static const size_t kProtocolDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
 
 // Returns the display (debug) name for this protocol object.
 ACCESSORS_DECL(protocol, display_name);
