@@ -87,7 +87,7 @@ bool is_score_match(score_t score);
 
 // --- M e t h o d   s p a c e ---
 
-static const size_t kMethodSpaceSize = OBJECT_SIZE(2);
+static const size_t kMethodSpaceSize = OBJECT_SIZE(1);
 static const size_t kMethodSpaceInheritanceMapOffset = 1;
 
 // The size of the inheritance map in an empty method space.

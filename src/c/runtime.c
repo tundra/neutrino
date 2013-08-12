@@ -64,6 +64,7 @@ void roots_clear(roots_t *roots) {
 #define VALIDATE_CHECK_TRUE(EXPR)                                              \
 SIG_CHECK_TRUE("validation", scValidationFailed, EXPR)
 
+// Check that A and B are equal, otherwise check fail with a validation error.
 #define VALIDATE_CHECK_EQ(A, B)                                                \
 SIG_CHECK_EQ("validation", scValidationFailed, A, B)
 
@@ -79,8 +80,7 @@ value_t roots_validate(roots_t *roots) {
   // family.
   #define VALIDATE_SPECIES(ofFamily, value) do {                               \
     VALIDATE_OBJECT(ofSpecies, value);                                         \
-    SIG_CHECK_EQ("validation", scValidationFailed,                             \
-        get_species_instance_family(value), ofFamily);                         \
+    VALIDATE_CHECK_EQ(get_species_instance_family(value), ofFamily);           \
     TRY(object_validate(value));                                               \
   } while (false)
 

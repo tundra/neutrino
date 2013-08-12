@@ -95,7 +95,7 @@ void get_##family##_layout(value_t value, object_layout_t *layout_out) {       \
 }                                                                              \
 SWALLOW_SEMI(fspvi)
 
-// Expands to a trivial implementation of print_on and atomic_print_on that just
+// Expands to a trivial implementation of print_on and print_atomic_on that just
 // prints the family's name within brackets.
 #define TRIVIAL_PRINT_ON_IMPL(Family, family)                                  \
 void family##_print_on(value_t value, string_buffer_t *buf) {                  \
