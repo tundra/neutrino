@@ -204,7 +204,7 @@ typedef enum {
 } object_family_t;
 
 // Number of bytes in an object header.
-static const size_t kObjectHeaderSize = kValueSize;
+#define kObjectHeaderSize kValueSize
 
 // Returns the size in bytes of an object with N fields, where the header
 // is not counted as a field.
@@ -303,7 +303,7 @@ ENUM_SPECIES_DIVISIONS(DECLARE_SPECIES_DIVISION_ENUM)
 #undef DECLARE_SPECIES_DIVISION_ENUM
 } species_division_t;
 
-static const size_t kSpeciesHeaderSize = OBJECT_SIZE(3);
+#define kSpeciesHeaderSize OBJECT_SIZE(3)
 static const size_t kSpeciesInstanceFamilyOffset = 1;
 static const size_t kSpeciesFamilyBehaviorOffset = 2;
 static const size_t kSpeciesDivisionBehaviorOffset = 3;
