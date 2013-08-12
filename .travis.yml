@@ -1,7 +1,12 @@
 language: c
+
 compiler:
   - clang
   - gcc
+
 script:
-  - make MODE=dbg test
+  - make MODE=dbg VALGRIND=on test
   - make MODE=opt test
+
+install:
+  - sudo apt-get install valgrind
