@@ -95,6 +95,18 @@ void get_##family##_layout(value_t value, object_layout_t *layout_out) {       \
 }                                                                              \
 SWALLOW_SEMI(fspvi)
 
+// Expands to a trivial implementation of print_on and print_atomic_on that just
+// prints the family's name within brackets.
+#define TRIVIAL_PRINT_ON_IMPL(Family, family)                                  \
+void family##_print_on(value_t value, string_buffer_t *buf) {                  \
+  family##_print_atomic_on(value, buf);                                        \
+}                                                                              \
+void family##_print_atomic_on(value_t value, string_buffer_t *buf) {           \
+  CHECK_FAMILY(of##Family, value);                                             \
+  string_buffer_printf(buf, "#<" #family ">");                                 \
+}                                                                              \
+SWALLOW_SEMI(tpo)
+
 
 // --- A c c e s s o r s ---
 

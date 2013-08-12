@@ -172,20 +172,22 @@ static value_t new_moved_object(value_t target) {
 
 // Enumerates the compact object species.
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
-  F(String,     string)                                                        \
-  F(Array,      array)                                                         \
-  F(ArrayBuffer, array_buffer)                                                 \
-  F(Null,       null)                                                          \
-  F(Bool,       bool)                                                          \
-  F(IdHashMap,  id_hash_map)                                                   \
-  F(Blob,       blob)                                                          \
-  F(Instance,   instance)                                                      \
-  F(VoidP,      void_p)                                                        \
-  F(Factory,    factory)                                                       \
-  F(CodeBlock,  code_block)                                                    \
-  F(StackPiece, stack_piece)                                                   \
-  F(Stack,      stack)                                                         \
-  F(Guard,      guard)                                                         \
+  F(Array,              array)                                                 \
+  F(ArrayBuffer,        array_buffer)                                          \
+  F(Blob,               blob)                                                  \
+  F(Bool,               bool)                                                  \
+  F(CodeBlock,          code_block)                                            \
+  F(Factory,            factory)                                               \
+  F(Guard,              guard)                                                 \
+  F(IdHashMap,          id_hash_map)                                           \
+  F(Instance,           instance)                                              \
+  F(MethodSpace,        method_space)                                          \
+  F(Null,               null)                                                  \
+  F(Protocol,           protocol)                                              \
+  F(Stack,              stack)                                                 \
+  F(StackPiece,         stack_piece)                                           \
+  F(String,             string)                                                \
+  F(VoidP,              void_p)                                                \
   ENUM_SYNTAX_OBJECT_FAMILIES(F)
 
 // Enumerates all the object families.
@@ -538,6 +540,15 @@ ACCESSORS_DECL(code_block, value_pool);
 
 // The highest stack height possible when executing this code.
 INTEGER_ACCESSORS_DECL(code_block, high_water_mark);
+
+
+// --- P r o t o c o l ---
+
+static const size_t kProtocolSize = OBJECT_SIZE(1);
+static const size_t kProtocolDisplayNameOffset = 1;
+
+// Returns the display (debug) name for this protocol object.
+ACCESSORS_DECL(protocol, display_name);
 
 
 // --- D e b u g ---

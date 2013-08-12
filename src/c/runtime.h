@@ -28,6 +28,7 @@ typedef struct {
   value_t thrue;
   value_t fahlse;
   value_t empty_array;
+  value_t empty_array_buffer;
   value_t any_guard;
   // The string table
   struct {

@@ -71,6 +71,9 @@ value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr);
 value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
     value_t value_pool, size_t high_water_mark);
 
+// Creates a new protocol object with the given display name.
+value_t new_heap_protocol(runtime_t *runtime, value_t display_name);
+
 
 // --- P r o c e s s ---
 
@@ -81,8 +84,14 @@ value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
 // Creates a new empty stack with one piece with the given capacity.
 value_t new_heap_stack(runtime_t *runtime, size_t initial_capacity);
 
+
+// --- M e t h o d ---
+
 // Creates a new parameter guard.
 value_t new_heap_guard(runtime_t *runtime, guard_type_t type, value_t value);
+
+// Creates a new empty method space.
+value_t new_heap_method_space(runtime_t *runtime);
 
 
 // --- S y n t a x ---
