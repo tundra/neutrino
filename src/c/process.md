@@ -11,3 +11,13 @@ The implementation works as follows. Each process has a stack which consists of 
 Unwind-protect creates a new stack frame which executes the code when you return to it, that deals with implicit returns, and pushes a pointer to the frame onto a chain of unwind-protect frames that it stored in the process separate from the stack. Executing the code also pops the pointer off the unwind-protect stack.
 
 Grabbing a one-shot escape works by creating a new object with a pointer to the current process, a flag that indicates whether the escape has been fired, and a pointer to an unwind-protect frame which is also set up. The unwind-protect flips whether the escape has been fired. When returning implicitly the unwind-protect marks the object as fired so it can't be fired again. When fired explicitly we first check if it is being called from the escape's process and that it hasn't already been fired. If not it marks itself as fired and pops unwind-protect pointers off the unwind-protect stack and executes them until it reaches its own which it pops off without executing.
+
+## Method lookup
+
+The runtime structure that represents a method has two parts: a signature which is used to perform lookups and a code block which holds the method implementation. A signature contains the same information as the source method signature but in a more digested form. If has the following fields:
+
+ * An array of all the method tags. For instance, the signature `def foo(x:, y:)` matches the explicit tags `"x"` and `"y"` and the implicit tags `this`, `name`, `0` and `1`. That makes the tag array `[name, this, 0, 1, "x", "y"]`.
+ * An array of parameter descriptors with an entry for each entry in the tag array. In the above signature the `"x"` and `0` tags identify the same parameter, as does `"y"` and `1`. Hence entry 2 and 4 in the descriptor array will point to a descriptor for the `"x"`/`0` parameter, and 3 and 5 `"y"`/`1`. A descriptor holds any guards, the index of the parameter in the evaluation order, whether it is optional, etc.
+ * The total number of parameters. If more arguments are given than this value the signature cannot match.
+ * The total number of required parameters. If fewer arguments are given than this value the signature cannot match.
+ * Whether all arguments must match a parameter or if extras are allowed.

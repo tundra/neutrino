@@ -28,6 +28,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   TRY_SET(roots->thrue, new_heap_bool(runtime, true));
   TRY_SET(roots->fahlse, new_heap_bool(runtime, false));
   TRY_SET(roots->empty_array, new_heap_array(runtime, 0));
+  TRY_SET(roots->any_guard, new_heap_guard(runtime, gtAny, roots->null));
 
   // Generates code for initializing a string table entry.
 #define __CREATE_STRING_TABLE_ENTRY__(name, value)                             \
@@ -62,8 +63,7 @@ value_t roots_validate(roots_t *roots) {
   // Checks whether the argument is within the specified family, otherwise
   // signals a validation failure.
   #define VALIDATE_OBJECT(ofFamily, value) do {                                \
-    if (!in_family(ofFamily, (value)))                                         \
-      return new_signal(scValidationFailed);                                   \
+    SIG_CHECK_TRUE("validation", scValidationFailed, in_family(ofFamily, (value))); \
     TRY(object_validate(value));                                               \
   } while (false)
 
@@ -71,8 +71,8 @@ value_t roots_validate(roots_t *roots) {
   // family.
   #define VALIDATE_SPECIES(ofFamily, value) do {                               \
     VALIDATE_OBJECT(ofSpecies, value);                                         \
-    if (get_species_instance_family(value) != ofFamily)                        \
-      return new_signal(scValidationFailed);                                   \
+    SIG_CHECK_EQ("validation", scValidationFailed,                             \
+        get_species_instance_family(value), ofFamily);                         \
     TRY(object_validate(value));                                               \
   } while (false)
 
@@ -86,6 +86,8 @@ value_t roots_validate(roots_t *roots) {
   VALIDATE_OBJECT(ofBool, roots->thrue);
   VALIDATE_OBJECT(ofBool, roots->fahlse);
   VALIDATE_OBJECT(ofArray, roots->empty_array);
+  VALIDATE_OBJECT(ofGuard, roots->any_guard);
+  SIG_CHECK_EQ("validation", scValidationFailed, get_guard_type(roots->any_guard), gtAny);
 
 #define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_OBJECT(ofString, roots->string_table.name);
   ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)
@@ -109,6 +111,7 @@ value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
   TRY(field_callback_call(callback, &roots->thrue));
   TRY(field_callback_call(callback, &roots->fahlse));
   TRY(field_callback_call(callback, &roots->empty_array));
+  TRY(field_callback_call(callback, &roots->any_guard));
 
   // Generate code for visiting the string table.
 #define __VISIT_STRING_TABLE_ENTRY__(name, value)                              \

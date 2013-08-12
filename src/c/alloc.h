@@ -7,6 +7,7 @@
 #include "behavior.h"
 #include "globals.h"
 #include "heap.h"
+#include "process.h"
 #include "runtime.h"
 #include "syntax.h"
 #include "utils.h"
@@ -65,12 +66,18 @@ value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr);
 value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
     value_t value_pool, size_t high_water_mark);
 
+
+// --- P r o c e s s ---
+
 // Creates a new stack piece of the given size with the given previous segment.
 value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
     value_t previous);
 
 // Creates a new empty stack with one piece with the given capacity.
 value_t new_heap_stack(runtime_t *runtime, size_t initial_capacity);
+
+// Creates a new parameter guard.
+value_t new_heap_guard(runtime_t *runtime, guard_type_t type, value_t value);
 
 
 // --- S y n t a x ---

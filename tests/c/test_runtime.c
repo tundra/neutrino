@@ -50,7 +50,7 @@ TEST(runtime, runtime_validation) {
   // Break a root.
   value_t old_null = runtime_null(&runtime);
   runtime.roots.null = new_integer(0);
-  ASSERT_SIGNAL(scValidationFailed, runtime_validate(&runtime));
+  ASSERT_CHECK_FAILURE(scValidationFailed, runtime_validate(&runtime));
   runtime.roots.null = old_null;
   ASSERT_SUCCESS(runtime_validate(&runtime));
 

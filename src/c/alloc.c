@@ -18,8 +18,7 @@ static value_t post_create_sanity_check(value_t value, size_t size) {
   object_layout_t layout;
   object_layout_init(&layout);
   get_object_layout(value, &layout);
-  if (layout.size != size)
-    return new_signal(scValidationFailed);
+  SIG_CHECK_EQ("post create sanity", scValidationFailed, layout.size, size);
   return value;
 }
 
@@ -148,6 +147,9 @@ value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
   return post_create_sanity_check(result, size);
 }
 
+
+// --- P r o c e s s ---
+
 value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
     value_t previous) {
   size_t size = kStackPieceSize;
@@ -170,6 +172,15 @@ value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {
       runtime->roots.stack_species));
   set_stack_top_piece(result, piece);
   set_stack_default_piece_capacity(result, default_piece_capacity);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_guard(runtime_t *runtime, guard_type_t type, value_t value) {
+  size_t size = kGuardSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.guard_species));
+  set_guard_type(result, type);
+  set_guard_value(result, value);
   return post_create_sanity_check(result, size);
 }
 

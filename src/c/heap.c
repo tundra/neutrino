@@ -224,15 +224,13 @@ value_t heap_validate(heap_t *heap) {
   while (gc_safe_iter_has_current(&iter)) {
     gc_safe_t *current = gc_safe_iter_get_current(&iter);
     gc_safes_seen++;
-    if (prev->next != current)
-      return new_signal(scValidationFailed);
-    if (current->prev != prev)
-      return new_signal(scValidationFailed);
+    SIG_CHECK_EQ("gc safe validate", scValidationFailed, prev->next, current);
+    SIG_CHECK_EQ("gc safe validate", scValidationFailed, current->prev, prev);
     prev = current;
     gc_safe_iter_advance(&iter);
   }
-  if (gc_safes_seen != heap->gc_safe_count)
-    return new_signal(scValidationFailed);
+  SIG_CHECK_EQ("gc safe validate", scValidationFailed, gc_safes_seen,
+      heap->gc_safe_count);
   return success();
 }
 
