@@ -10,11 +10,11 @@ matrix:
     - language: c
       compiler: clang
       script: make MODE=opt test
-    # Also test everything in debug mode under valgrind.
+    # Also test a clang build in debug mode under valgrind.
     - language: c
       compiler: clang
       script: make MODE=dbg VALGRIND=on test
     # Check that the C code compiles using gcc.
     - language: c
       compiler: gcc
-      script: make MODE=dbg test-c
+      script: make MODE=dbg test-c test-golden
