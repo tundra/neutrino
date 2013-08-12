@@ -17,3 +17,18 @@ EXPECT: [1, 2, 3]
 
 INPUT: [1, 2, [3]]
 EXPECT: [1, 2, #<array[1]>]
+
+INPUT: ""
+EXPECT: ""
+
+INPUT: "foo"
+EXPECT: "foo"
+
+INPUT: null
+EXPECT: null
+
+INPUT: true
+EXPECT: true
+
+INPUT: false
+EXPECT: false

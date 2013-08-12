@@ -53,6 +53,10 @@ class Parser(object):
   def at_punctuation(self, value):
     return self.at_token(Token.PUNCTUATION, value)
 
+  # Returns true if the next token is the specified word token.
+  def at_word(self, value):
+    return self.at_token(Token.WORD, value)
+
   # Skips over the current punctuation which must have the specified value,
   # if it's not it raises a syntax error.
   def expect_punctuation(self, value):
@@ -102,6 +106,12 @@ class Parser(object):
       return result
     elif self.at_punctuation('['):
       return self.parse_array_expression()
+    elif self.at_word('null'):
+      return ast.Literal(None)
+    elif self.at_word('true'):
+      return ast.Literal(True)
+    elif self.at_word('false'):
+      return ast.Literal(False)
     else:
       raise self.new_syntax_error()
 
