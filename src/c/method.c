@@ -27,13 +27,42 @@ bool is_score_match(score_t score) {
   return score != gsNoMatch;
 }
 
-score_t guard_match(value_t guard, value_t value) {
+// Given two scores returns the best of them.
+static score_t best_score(score_t a, score_t b) {
+  return (a < b) ? a : b;
+}
+
+static score_t find_best_match(runtime_t *runtime, value_t current,
+    value_t target, score_t current_score, value_t space) {
+  if (value_are_identical(current, target)) {
+    return current_score;
+  } else {
+    value_t parents = get_protocol_parents(runtime, space, current);
+    size_t length = get_array_buffer_length(parents);
+    score_t score = gsNoMatch;
+    for (size_t i = 0; i < length; i++) {
+      value_t parent = get_array_buffer_at(parents, i);
+      score_t next_score = find_best_match(runtime, parent, target,
+          current_score + 1, space);
+      score = best_score(score, next_score);
+    }
+    return score;
+  }
+}
+
+score_t guard_match(runtime_t *runtime, value_t guard, value_t value,
+    value_t space) {
   CHECK_FAMILY(ofGuard, guard);
   switch (get_guard_type(guard)) {
     case gtId: {
       value_t guard_value = get_guard_value(guard);
       bool match = value_are_identical(guard_value, value);
       return match ? gsIdenticalMatch : gsNoMatch;
+    }
+    case gtIs: {
+      value_t primary = get_protocol(value, runtime);
+      value_t target = get_guard_value(guard);
+      return find_best_match(runtime, primary, target, gsPerfectIsMatch, space);
     }
     case gtAny:
       return gsAnyMatch;
