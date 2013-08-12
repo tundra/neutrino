@@ -726,6 +726,40 @@ void code_block_print_atomic_on(value_t value, string_buffer_t *buf) {
 }
 
 
+// --- P r o t o c o l ---
+
+OBJECT_IDENTITY_IMPL(protocol);
+CANT_SET_CONTENTS(protocol);
+FIXED_SIZE_PURE_VALUE_IMPL(protocol, Protocol);
+
+UNCHECKED_ACCESSORS_IMPL(Protocol, protocol, DisplayName, display_name);
+
+value_t protocol_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofProtocol, value);
+  return success();
+}
+
+void protocol_print_on(value_t value, string_buffer_t *buf) {
+  protocol_print_atomic_on(value, buf);
+}
+
+void protocol_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofProtocol, value);
+  value_t display_name = get_protocol_display_name(value);
+  if (is_null(display_name) || in_family(ofProtocol, display_name)) {
+    string_buffer_printf(buf, "#<protocol>");
+  } else {
+    // We print the display name even though it's strictly against the rules
+    // for an atomic print function, but since we've checked that it isn't
+    // a protocol itself it shouldn't be possible to end up in a cycle and it
+    // makes debugging easier.
+    string_buffer_printf(buf, "#<protocol: ");
+    value_print_atomic_on(display_name, buf);
+    string_buffer_printf(buf, ">");
+  }
+}
+
+
 // --- D e b u g ---
 
 void value_print_ln(value_t value) {

@@ -185,12 +185,24 @@ value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {
   return post_create_sanity_check(result, size);
 }
 
+
+// --- M e t h o d ---
+
 value_t new_heap_guard(runtime_t *runtime, guard_type_t type, value_t value) {
   size_t size = kGuardSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.guard_species));
   set_guard_type(result, type);
   set_guard_value(result, value);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_method_space(runtime_t *runtime) {
+  size_t size = kMethodSpaceSize;
+  TRY_DEF(inheritance_map, new_heap_id_hash_map(runtime, kInheritanceMapInitialSize));
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.method_space_species));
+  set_method_space_inheritance_map(result, inheritance_map);
   return post_create_sanity_check(result, size);
 }
 

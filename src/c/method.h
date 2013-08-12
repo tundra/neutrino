@@ -84,4 +84,20 @@ score_t guard_match(value_t guard, value_t value);
 // Returns true if the given score represents a match.
 bool is_score_match(score_t score);
 
+
+// --- M e t h o d   s p a c e ---
+
+static const size_t kMethodSpaceSize = OBJECT_SIZE(2);
+static const size_t kMethodSpaceInheritanceMapOffset = 1;
+
+// The size of the inheritance map in an empty method space.
+static const size_t kInheritanceMapInitialSize = 16;
+
+// The mapping that defines the inheritance hierarchy within this method space.
+ACCESSORS_DECL(method_space, inheritance_map);
+
+value_t try_method_space_add_inheritance(value_t self, value_t subtype,
+    value_t supertype);
+
+
 #endif // _METHOD
