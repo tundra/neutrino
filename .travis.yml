@@ -1,12 +1,20 @@
-language: c
-
-compiler:
-  - clang
-  - gcc
-
-script:
-  - make MODE=dbg VALGRIND=on test
-  - make MODE=opt test
+language:
+  - c
 
 install:
   - sudo apt-get install valgrind
+
+matrix:
+  include:
+    # Test everything using an optimized clang build.
+    - language: c
+      compiler: clang
+      script: make MODE=opt test
+    # Also test a clang build in debug mode under valgrind.
+    - language: c
+      compiler: clang
+      script: make MODE=dbg VALGRIND=on test
+    # Check that the C code compiles using gcc.
+    - language: c
+      compiler: gcc
+      script: make MODE=dbg test-c test-golden
