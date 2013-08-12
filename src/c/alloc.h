@@ -7,6 +7,7 @@
 #include "behavior.h"
 #include "globals.h"
 #include "heap.h"
+#include "method.h"
 #include "process.h"
 #include "runtime.h"
 #include "syntax.h"
