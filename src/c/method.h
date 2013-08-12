@@ -66,6 +66,9 @@ typedef uint32_t score_t;
 // This guard matched perfectly.
 static const score_t gsIdenticalMatch = 0;
 
+// It's not an identical match but the closest possible instanceof-match.
+static const score_t gsPerfectIsMatch = 1;
+
 // Score that signifies that a guard didn't match at all.
 static const score_t gsNoMatch = 0xFFFFFFFF;
 
@@ -78,8 +81,9 @@ static const score_t gsExtraMatch = 0xFFFFFFFE;
 static const score_t gsAnyMatch = 0xFFFFFFFD;
 
 // Matches the given guard against the given value, returning a score for how
-// well it matched.
-score_t guard_match(value_t guard, value_t value);
+// well it matched within the given method space.
+score_t guard_match(runtime_t *runtime, value_t guard, value_t value,
+    value_t method_space);
 
 // Returns true if the given score represents a match.
 bool is_score_match(score_t score);
