@@ -64,6 +64,18 @@ value_t new_heap_compact_species_unchecked(runtime_t *runtime, object_family_t i
   return result;
 }
 
+value_t new_heap_instance_species(runtime_t *runtime, value_t primary) {
+  size_t size = kInstanceSpeciesSize;
+  CHECK_FAMILY(ofProtocol, primary);
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.species_species));
+  set_species_instance_family(result, ofInstance);
+  set_species_family_behavior(result, &kInstanceBehavior);
+  set_species_division_behavior(result, &kInstanceSpeciesBehavior);
+  set_instance_species_primary_protocol(result, primary);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_compact_species(runtime_t *runtime, object_family_t instance_family,
     family_behavior_t *family_behavior) {
   TRY_DEF(result, new_heap_compact_species_unchecked(runtime, instance_family,
@@ -120,11 +132,11 @@ value_t new_heap_bool(runtime_t *runtime, bool value) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_instance(runtime_t *runtime) {
+value_t new_heap_instance(runtime_t *runtime, value_t species) {
+  CHECK_DIVISION(sdInstance, species);
   TRY_DEF(fields, new_heap_id_hash_map(runtime, 16));
   size_t size = kInstanceSize;
-  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.instance_species));
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size, species));
   set_instance_fields(result, fields);
   return post_create_sanity_check(result, size);
 }

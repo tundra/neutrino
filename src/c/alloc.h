@@ -40,6 +40,9 @@ value_t new_heap_compact_species(runtime_t *runtime, object_family_t instance_fa
 value_t new_heap_compact_species_unchecked(runtime_t *runtime,
     object_family_t instance_family, family_behavior_t *behavior);
 
+// Creates a new instance species with the specified primary protocol.
+value_t new_heap_instance_species(runtime_t *runtime, value_t primary);
+
 // Allocates a new heap array in the given runtime with room for the given
 // number of elements. The array will be initialized to null.
 value_t new_heap_array(runtime_t *runtime, size_t length);
@@ -57,8 +60,8 @@ value_t new_heap_null(runtime_t *runtime);
 // Creates a boolean singleton.
 value_t new_heap_bool(runtime_t *runtime, bool value);
 
-// Creates a new empty object instance.
-value_t new_heap_instance(runtime_t *runtime);
+// Creates a new empty object instance with the given instance species.
+value_t new_heap_instance(runtime_t *runtime, value_t species);
 
 // Creates a new pointer wrapper around the given value.
 value_t new_heap_void_p(runtime_t *runtime, void *value);

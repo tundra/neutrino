@@ -125,27 +125,7 @@ value_t get_##family##_protocol(value_t self, runtime_t *runtime) {            \
 SWALLOW_SEMI(nfpi)
 
 
-// --- A c c e s s o r s ---
-
-// Expands to a function that sets the given field on the given receiver,
-// checking that both the receiver and the argument have the expected types.
-#define CHECKED_SETTER_IMPL(Receiver, receiver, Family, Field, field)          \
-void set_##receiver##_##field(value_t self, value_t value) {                   \
-  CHECK_FAMILY(of##Receiver, self);                                            \
-  CHECK_FAMILY(of##Family, value);                                             \
-  *access_object_field(self, k##Receiver##Field##Offset) = value;              \
-}                                                                              \
-SWALLOW_SEMI(csi)
-
-// Expands to a function that sets the given field on the given receiver,
-// checking that the receiver has the expected type but without checking
-// anything about the value.
-#define UNCHECKED_SETTER_IMPL(Receiver, receiver, Field, field)                \
-void set_##receiver##_##field(value_t self, value_t value) {                   \
-  CHECK_FAMILY(of##Receiver, self);                                            \
-  *access_object_field(self, k##Receiver##Field##Offset) = value;              \
-}                                                                              \
-SWALLOW_SEMI(usi)
+// --- P l a i n   a c c e s s o r s ---
 
 // Expands to a function that gets the specified field in the specified object
 // family.
@@ -158,13 +138,23 @@ SWALLOW_SEMI(gi)
 
 // Expands to a checked setter and a getter for the specified types.
 #define CHECKED_ACCESSORS_IMPL(Receiver, receiver, Family, Field, field)       \
-CHECKED_SETTER_IMPL(Receiver, receiver, Family, Field, field);                 \
+void set_##receiver##_##field(value_t self, value_t value) {                   \
+  CHECK_FAMILY(of##Receiver, self);                                            \
+  CHECK_FAMILY(of##Family, value);                                             \
+  *access_object_field(self, k##Receiver##Field##Offset) = value;              \
+}                                                                              \
 GETTER_IMPL(Receiver, receiver, Field, field)
 
 // Expands to an unchecked setter and a getter for the specified types.
 #define UNCHECKED_ACCESSORS_IMPL(Receiver, receiver, Field, field)             \
-UNCHECKED_SETTER_IMPL(Receiver, receiver, Field, field);                       \
+void set_##receiver##_##field(value_t self, value_t value) {                   \
+  CHECK_FAMILY(of##Receiver, self);                                            \
+  *access_object_field(self, k##Receiver##Field##Offset) = value;              \
+}                                                                              \
 GETTER_IMPL(Receiver, receiver, Field, field)
+
+
+// --- I n t e g e r / e n u m   a c c e s s o r s ---
 
 #define __MAPPING_SETTER_IMPL__(Receiver, receiver, type_t, Field, field, MAP) \
 void set_##receiver##_##field(value_t self, type_t value) {                    \
@@ -183,30 +173,46 @@ SWALLOW_SEMI(mgi)
 #define __NEW_INTEGER_MAP__(T, N) new_integer(N)
 #define __GET_INTEGER_VALUE_MAP__(T, N) get_integer_value(N)
 
-// Expands to a setter that sets an integer-valued field to an integer value,
-// wrapping the value as a tagged integer.
-#define INTEGER_SETTER_IMPL(Receiver, receiver, Field, field)                  \
-__MAPPING_SETTER_IMPL__(Receiver, receiver, size_t, Field, field, __NEW_INTEGER_MAP__)
-
-// Expands to a getter function that returns a integer-valued field, unwrapping
-// the tagged value appropriately.
-#define INTEGER_GETTER_IMPL(Receiver, receiver, Field, field)                  \
-__MAPPING_GETTER_IMPL__(Receiver, receiver, size_t, Field, field, __GET_INTEGER_VALUE_MAP__)
-
 // Expands to an integer getter and setter.
 #define INTEGER_ACCESSORS_IMPL(Receiver, receiver, Field, field)               \
-INTEGER_SETTER_IMPL(Receiver, receiver, Field, field);                         \
-INTEGER_GETTER_IMPL(Receiver, receiver, Field, field)
-
-#define ENUM_SETTER_IMPL(Receiver, receiver, type_t, Field, field)             \
-__MAPPING_SETTER_IMPL__(Receiver, receiver, type_t, Field, field, __NEW_INTEGER_MAP__)
-
-#define ENUM_GETTER_IMPL(Receiver, receiver, type_t, Field, field)             \
-__MAPPING_GETTER_IMPL__(Receiver, receiver, type_t, Field, field, __GET_INTEGER_VALUE_MAP__)
+__MAPPING_SETTER_IMPL__(Receiver, receiver, size_t, Field, field,              \
+    __NEW_INTEGER_MAP__);                                                      \
+__MAPPING_GETTER_IMPL__(Receiver, receiver, size_t, Field, field,              \
+    __GET_INTEGER_VALUE_MAP__)
 
 #define ENUM_ACCESSORS_IMPL(Receiver, receiver, type_t, Field, field)          \
-ENUM_SETTER_IMPL(Receiver, receiver, type_t, Field, field);                    \
-ENUM_GETTER_IMPL(Receiver, receiver, type_t, Field, field)
+__MAPPING_SETTER_IMPL__(Receiver, receiver, type_t, Field, field,              \
+    __NEW_INTEGER_MAP__);                                                      \
+__MAPPING_GETTER_IMPL__(Receiver, receiver, type_t, Field, field,              \
+    __GET_INTEGER_VALUE_MAP__)
 
+
+// --- S p e c i e s   a c c e s s o r s ---
+
+// Expands to a function that gets the specified field in the specified object
+// family.
+#define SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies,               \
+    receiver_species, Field, field)                                            \
+value_t get_##receiver_species##_species_##field(value_t self) {               \
+  CHECK_FAMILY(ofSpecies, self);                                               \
+  CHECK_DIVISION(sd##ReceiverSpecies, self);                                   \
+  return *access_object_field(self,                                            \
+      k##ReceiverSpecies##Species##Field##Offset);                             \
+}                                                                              \
+value_t get_##receiver##_##field(value_t self) {                               \
+  CHECK_FAMILY(of##Receiver, self);                                            \
+  return get_##receiver_species##_species_##field(get_object_species(self));   \
+}                                                                              \
+SWALLOW_SEMI(sgi)
+
+#define CHECKED_SPECIES_ACCESSORS_IMPL(Receiver, receiver, ReceiverSpecies,    \
+    receiver_species, Family, Field, field)                                    \
+void set_##receiver_species##_species_##field(value_t self, value_t value) {   \
+  CHECK_DIVISION(sd##ReceiverSpecies, self);                                   \
+  CHECK_FAMILY(of##Family, value);                                             \
+  *access_object_field(self, k##ReceiverSpecies##Species##Field##Offset) = value; \
+}                                                                              \
+SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
+    Field, field)
 
 #endif // _VALUE_INL

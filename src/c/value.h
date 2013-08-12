@@ -204,7 +204,7 @@ typedef enum {
 } object_family_t;
 
 // Number of bytes in an object header.
-#define kObjectHeaderSize kValueSize
+static const size_t kObjectHeaderSize = kValueSize;
 
 // Returns the size in bytes of an object with N fields, where the header
 // is not counted as a field.
@@ -261,17 +261,17 @@ type_t get_##receiver##_##field(value_t self)
 TYPED_SETTER_DECL(receiver, type_t, field);                                    \
 TYPED_GETTER_DECL(receiver, type_t, field)
 
-// Expands to the declaration of a setter function.
-#define SETTER_DECL(receiver, field) TYPED_SETTER_DECL(receiver, value_t, field)
-
-// Expands to the declaration of a getter.
-#define GETTER_DECL(receiver, field) TYPED_GETTER_DECL(receiver, value_t, field)
-
 // Expands to declarations of a getter and setter for the specified field in the
 // specified object.
 #define ACCESSORS_DECL(receiver, field)                                        \
-SETTER_DECL(receiver, field);                                                  \
-GETTER_DECL(receiver, field)
+TYPED_SETTER_DECL(receiver, value_t, field);                                   \
+TYPED_GETTER_DECL(receiver, value_t, field)
+
+// Expands to declarations of a getter and setter for the specified field in the
+// specified object.
+#define SPECIES_ACCESSORS_DECL(receiver, field)                                \
+ACCESSORS_DECL(receiver##_species, field);                                     \
+TYPED_GETTER_DECL(receiver, value_t, field)
 
 #define INTEGER_SETTER_DECL(receiver, field) TYPED_SETTER_DECL(receiver, size_t, field)
 
@@ -292,7 +292,8 @@ ACCESSORS_DECL(object, header);
 // --- S p e c i e s ---
 
 #define ENUM_SPECIES_DIVISIONS(F)                                              \
-  F(Compact, compact)
+  F(Compact, compact)                                                          \
+  F(Instance, instance)
 
 // Identifies the division a species belongs to.
 typedef enum {
@@ -302,9 +303,12 @@ ENUM_SPECIES_DIVISIONS(DECLARE_SPECIES_DIVISION_ENUM)
 #undef DECLARE_SPECIES_DIVISION_ENUM
 } species_division_t;
 
+static const size_t kSpeciesHeaderSize = OBJECT_SIZE(3);
 static const size_t kSpeciesInstanceFamilyOffset = 1;
 static const size_t kSpeciesFamilyBehaviorOffset = 2;
 static const size_t kSpeciesDivisionBehaviorOffset = 3;
+
+#define SPECIES_SIZE(N) (kSpeciesHeaderSize + (N * kValueSize))
 
 // The object family of instances of this species.
 TYPED_ACCESSORS_DECL(species, object_family_t, instance_family);
@@ -327,7 +331,16 @@ species_division_t get_species_division(value_t value);
 
 // --- C o m p a c t   s p e c i e s ---
 
-static const size_t kCompactSpeciesSize = OBJECT_SIZE(3);
+static const size_t kCompactSpeciesSize = SPECIES_SIZE(0);
+
+
+// --- I n s t a n c e   s p e c i e s ---
+
+static const size_t kInstanceSpeciesSize = SPECIES_SIZE(1);
+static const size_t kInstanceSpeciesPrimaryProtocolOffset = 4;
+
+// The primary protocol of the instance.
+SPECIES_ACCESSORS_DECL(instance, primary_protocol);
 
 
 // --- S t r i n g ---

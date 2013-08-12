@@ -31,6 +31,9 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   TRY_SET(roots->empty_array_buffer, new_heap_array_buffer(runtime, 0));
   TRY_SET(roots->any_guard, new_heap_guard(runtime, gtAny, roots->null));
   TRY_SET(roots->integer_protocol, new_heap_protocol(runtime, roots->null));
+  TRY_DEF(empty_protocol, new_heap_protocol(runtime, roots->null));
+  TRY_SET(roots->empty_instance_species,
+      new_heap_instance_species(runtime, empty_protocol));
 
   // Generate initialization for the per-family protocols.
 #define __CREATE_FAMILY_PROTOCOL__(Family, family)                             \
@@ -108,6 +111,7 @@ value_t roots_validate(roots_t *roots) {
   VALIDATE_OBJECT(ofGuard, roots->any_guard);
   VALIDATE_CHECK_EQ(gtAny, get_guard_type(roots->any_guard));
   VALIDATE_OBJECT(ofProtocol, roots->integer_protocol);
+  VALIDATE_OBJECT(ofSpecies, roots->empty_instance_species);
 
 #define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_OBJECT(ofString, roots->string_table.name);
   ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)
@@ -135,6 +139,7 @@ value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
   TRY(field_callback_call(callback, &roots->empty_array_buffer));
   TRY(field_callback_call(callback, &roots->any_guard));
   TRY(field_callback_call(callback, &roots->integer_protocol));
+  TRY(field_callback_call(callback, &roots->empty_instance_species));
 
   // Generate code for visiting the string table.
 #define __VISIT_STRING_TABLE_ENTRY__(name, value)                              \

@@ -212,3 +212,18 @@ TEST(value, get_protocol) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+
+TEST(value, instance_division) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t proto = new_heap_protocol(&runtime, runtime_null(&runtime));
+  value_t species = new_heap_instance_species(&runtime, proto);
+  value_t instance = new_heap_instance(&runtime, species);
+  ASSERT_VALEQ(proto, get_instance_species_primary_protocol(species));
+  ASSERT_VALEQ(proto, get_instance_primary_protocol(instance));
+  ASSERT_VALEQ(proto, get_protocol(instance, &runtime));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
