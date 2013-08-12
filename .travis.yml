@@ -1,5 +1,3 @@
-language: c
-
 # compiler:
 #  - clang
 #  - gcc
@@ -14,7 +12,9 @@ install:
 
 matrix:
   include:
-    - compiler: gcc
+    - language: c
+      compiler: gcc
       script: make MODE=opt test
-    - compiler: clang
+    - language: c
+      compiler: clang
       script: make MODE=opt test
