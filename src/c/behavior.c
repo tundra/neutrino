@@ -31,26 +31,26 @@ void object_layout_set(object_layout_t *layout, size_t size, size_t value_offset
   layout->value_offset = value_offset;
 }
 
-void get_object_layout(value_t value, object_layout_t *layout_out) {
-  CHECK_DOMAIN(vdObject, value);
-  value_t species = get_object_species(value);
+void get_object_layout(value_t self, object_layout_t *layout_out) {
+  CHECK_DOMAIN(vdObject, self);
+  value_t species = get_object_species(self);
   family_behavior_t *behavior = get_species_family_behavior(species);
-  (behavior->get_object_layout)(value, layout_out);
+  (behavior->get_object_layout)(self, layout_out);
 }
 
 
 // --- I d e n t i t y   h a s h ---
 
-static value_t integer_transient_identity_hash(value_t value) {
-  CHECK_DOMAIN(vdInteger, value);
-  return value;
+static value_t integer_transient_identity_hash(value_t self) {
+  CHECK_DOMAIN(vdInteger, self);
+  return self;
 }
 
-static value_t object_transient_identity_hash(value_t value) {
-  CHECK_DOMAIN(vdObject, value);
-  value_t species = get_object_species(value);
+static value_t object_transient_identity_hash(value_t self) {
+  CHECK_DOMAIN(vdObject, self);
+  value_t species = get_object_species(self);
   family_behavior_t *behavior = get_species_family_behavior(species);
-  return (behavior->transient_identity_hash)(value);
+  return (behavior->transient_identity_hash)(self);
 }
 
 value_t value_transient_identity_hash(value_t value) {

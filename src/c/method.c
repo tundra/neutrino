@@ -11,7 +11,7 @@
 
 OBJECT_IDENTITY_IMPL(guard);
 CANT_SET_CONTENTS(guard);
-FIXED_SIZE_PURE_VALUE_IMPL(guard, Guard);
+FIXED_SIZE_PURE_VALUE_IMPL(Guard, guard);
 TRIVIAL_PRINT_ON_IMPL(Guard, guard);
 
 ENUM_ACCESSORS_IMPL(Guard, guard, guard_type_t, Type, type);
@@ -46,7 +46,7 @@ score_t guard_match(value_t guard, value_t value) {
 
 OBJECT_IDENTITY_IMPL(method_space);
 CANT_SET_CONTENTS(method_space);
-FIXED_SIZE_PURE_VALUE_IMPL(method_space, MethodSpace);
+FIXED_SIZE_PURE_VALUE_IMPL(MethodSpace, method_space);
 TRIVIAL_PRINT_ON_IMPL(MethodSpace, method_space);
 
 CHECKED_ACCESSORS_IMPL(MethodSpace, method_space, IdHashMap, InheritanceMap,
