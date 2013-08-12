@@ -112,4 +112,9 @@ value_t set_id_hash_map_at(runtime_t *runtime, value_t map, value_t key, value_t
 value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,
     value_t value);
 
+// Adds an element at the end of the given array buffer, expanding it to a new
+// backing array if necessary. Returns a signal on failure.
+value_t add_to_array_buffer(runtime_t *runtime, value_t buffer, value_t value);
+
+
 #endif // _ALLOC

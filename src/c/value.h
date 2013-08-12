@@ -409,6 +409,10 @@ ACCESSORS_DECL(array_buffer, elements);
 // The length of this array buffer.
 INTEGER_ACCESSORS_DECL(array_buffer, length);
 
+// Returns the index'th element in the given array buffer. Bounds checks the
+// index and returns an OutOfBounds signal under soft check failures.
+value_t get_array_buffer_at(value_t self, size_t index);
+
 // Attempts to add an element at the end of this array buffer, increasing its
 // length by 1. Returns true if this succeeds, false if it wasn't possible.
 bool try_add_to_array_buffer(value_t self, value_t value);

@@ -266,3 +266,24 @@ value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,
   value_t fields = get_instance_fields(instance);
   return set_id_hash_map_at(runtime, fields, key, value);
 }
+
+value_t extend_array_buffer(runtime_t *runtime, value_t buffer) {
+  value_t old_elements = get_array_buffer_elements(buffer);
+  size_t old_capacity = get_array_length(old_elements);
+  size_t new_capacity = old_capacity * 2;
+  TRY_DEF(new_elements, new_heap_array(runtime, new_capacity));
+  for (size_t i = 0; i < old_capacity; i++)
+    set_array_at(new_elements, i, get_array_at(old_elements, i));
+  set_array_buffer_elements(buffer, new_elements);
+  return success();
+}
+
+value_t add_to_array_buffer(runtime_t *runtime, value_t buffer, value_t value) {
+  CHECK_FAMILY(ofArrayBuffer, buffer);
+  if (!try_add_to_array_buffer(buffer, value)) {
+    TRY(extend_array_buffer(runtime, buffer));
+    bool second_try = try_add_to_array_buffer(buffer, value);
+    CHECK_TRUE("second array try", second_try);
+  }
+  return success();
+}
