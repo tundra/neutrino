@@ -12,11 +12,11 @@
 // --- S i g n a t u r e ---
 
 static const size_t kSignatureSize = OBJECT_SIZE(5);
-static const size_t kSignatureTagsOffset = 1;
-static const size_t kSignatureDescriptorsOffset = 2;
-static const size_t kSignatureParameterCountOffset = 3;
-static const size_t kSignatureMandatoryCountOffset = 4;
-static const size_t kSignatureAllowExtraOffset = 5;
+static const size_t kSignatureTagsOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kSignatureDescriptorsOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kSignatureParameterCountOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kSignatureMandatoryCountOffset = OBJECT_FIELD_OFFSET(3);
+static const size_t kSignatureAllowExtraOffset = OBJECT_FIELD_OFFSET(4);
 
 // The sorted array of signature tags.
 ACCESSORS_DECL(signature, tags);
@@ -28,9 +28,9 @@ ACCESSORS_DECL(signature, descriptors);
 // --- P a r a m e t e r ---
 
 static const size_t kParameterSize = OBJECT_SIZE(3);
-static const size_t kParameterGuardOffset = 1;
-static const size_t kParameterIsOptionalOffset = 2;
-static const size_t kParameterIndexOffset = 3;
+static const size_t kParameterGuardOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kParameterIsOptionalOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kParameterIndexOffset = OBJECT_FIELD_OFFSET(2);
 
 // This parameter's guard.
 ACCESSORS_DECL(parameter, guard);
@@ -51,8 +51,8 @@ typedef enum {
 } guard_type_t;
 
 static const size_t kGuardSize = OBJECT_SIZE(2);
-static const size_t kGuardTypeOffset = 1;
-static const size_t kGuardValueOffset = 2;
+static const size_t kGuardTypeOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kGuardValueOffset = OBJECT_FIELD_OFFSET(1);
 
 // The value of this guard used to match by gtId and gtIs and unused for gtAny.
 ACCESSORS_DECL(guard, value);
@@ -92,7 +92,7 @@ bool is_score_match(score_t score);
 // --- M e t h o d   s p a c e ---
 
 static const size_t kMethodSpaceSize = OBJECT_SIZE(1);
-static const size_t kMethodSpaceInheritanceMapOffset = 1;
+static const size_t kMethodSpaceInheritanceMapOffset = OBJECT_FIELD_OFFSET(0);
 
 // The size of the inheritance map in an empty method space.
 static const size_t kInheritanceMapInitialSize = 16;

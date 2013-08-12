@@ -12,11 +12,11 @@
 // --- S t a c k   p i e c e ---
 
 static const size_t kStackPieceSize = OBJECT_SIZE(5);
-static const size_t kStackPieceStorageOffset = 1;
-static const size_t kStackPiecePreviousOffset = 2;
-static const size_t kStackPieceTopFramePointerOffset = 3;
-static const size_t kStackPieceTopStackPointerOffset = 4;
-static const size_t kStackPieceTopCapacityOffset = 5;
+static const size_t kStackPieceStorageOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kStackPiecePreviousOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kStackPieceTopFramePointerOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kStackPieceTopStackPointerOffset = OBJECT_FIELD_OFFSET(3);
+static const size_t kStackPieceTopCapacityOffset = OBJECT_FIELD_OFFSET(4);
 
 // The plain array used for storage for this stack piece.
 ACCESSORS_DECL(stack_piece, storage);
@@ -106,8 +106,8 @@ value_t frame_pop_value(frame_t *frame);
 // --- S t a c k ---
 
 static const size_t kStackSize = OBJECT_SIZE(2);
-static const size_t kStackTopPieceOffset = 1;
-static const size_t kStackDefaultPieceCapacityOffset = 2;
+static const size_t kStackTopPieceOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kStackDefaultPieceCapacityOffset = OBJECT_FIELD_OFFSET(1);
 
 // The top stack piece of this stack.
 ACCESSORS_DECL(stack, top_piece);

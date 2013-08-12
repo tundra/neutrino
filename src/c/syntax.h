@@ -29,7 +29,7 @@ value_t compile_syntax(runtime_t *runtime, value_t ast);
 // --- L i t e r a l ---
 
 static const size_t kLiteralAstSize = OBJECT_SIZE(1);
-static const size_t kLiteralAstValueOffset = 1;
+static const size_t kLiteralAstValueOffset = OBJECT_FIELD_OFFSET(0);
 
 // The value this literal syntax tree represents.
 ACCESSORS_DECL(literal_ast, value);
@@ -38,7 +38,7 @@ ACCESSORS_DECL(literal_ast, value);
 // --- A r r a y ---
 
 static const size_t kArrayAstSize = OBJECT_SIZE(1);
-static const size_t kArrayAstElementsOffset = 1;
+static const size_t kArrayAstElementsOffset = OBJECT_FIELD_OFFSET(0);
 
 // The array of element expressions.
 ACCESSORS_DECL(array_ast, elements);
