@@ -1,18 +1,20 @@
 language: c
 
-compiler:
-  - clang
-  - gcc
+# compiler:
+#  - clang
+#  - gcc
 
-script:
-  - make MODE=dbg VALGRIND=on test
-  - make MODE=opt test
-  - make
+#script:
+#  - make MODE=dbg VALGRIND=on test
+#  - make MODE=opt test
+#  - make
 
 install:
   - sudo apt-get install valgrind
 
 matrix:
-  exclude:
+  include:
     - compiler: gcc
+      script: make MODE=opt test
+    - compiler: clang
       script: make MODE=opt test
