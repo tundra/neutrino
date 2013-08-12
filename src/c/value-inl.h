@@ -137,27 +137,47 @@ GETTER_IMPL(Receiver, receiver, Field, field)
 UNCHECKED_SETTER_IMPL(Receiver, receiver, Field, field);                       \
 GETTER_IMPL(Receiver, receiver, Field, field)
 
+#define __MAPPING_SETTER_IMPL__(Receiver, receiver, type_t, Field, field, MAP) \
+void set_##receiver##_##field(value_t self, type_t value) {                    \
+  CHECK_FAMILY(of##Receiver, self);                                            \
+  *access_object_field(self, k##Receiver##Field##Offset) = MAP(type_t, value); \
+}                                                                              \
+SWALLOW_SEMI(msi)
+
+#define __MAPPING_GETTER_IMPL__(Receiver, receiver, type_t, Field, field, MAP) \
+type_t get_##receiver##_##field(value_t self) {                                \
+  CHECK_FAMILY(of##Receiver, self);                                            \
+  return MAP(type_t, *access_object_field(self, k##Receiver##Field##Offset));  \
+}                                                                              \
+SWALLOW_SEMI(mgi)
+
+#define __NEW_INTEGER_MAP__(T, N) new_integer(N)
+#define __GET_INTEGER_VALUE_MAP__(T, N) get_integer_value(N)
+
 // Expands to a setter that sets an integer-valued field to an integer value,
 // wrapping the value as a tagged integer.
 #define INTEGER_SETTER_IMPL(Receiver, receiver, Field, field)                  \
-void set_##receiver##_##field(value_t self, size_t value) {                    \
-  CHECK_FAMILY(of##Receiver, self);                                            \
-  *access_object_field(self, k##Receiver##Field##Offset) = new_integer(value); \
-}                                                                              \
-SWALLOW_SEMI(isi)
+__MAPPING_SETTER_IMPL__(Receiver, receiver, size_t, Field, field, __NEW_INTEGER_MAP__)
 
 // Expands to a getter function that returns a integer-valued field, unwrapping
 // the tagged value appropriately.
 #define INTEGER_GETTER_IMPL(Receiver, receiver, Field, field)                  \
-size_t get_##receiver##_##field(value_t self) {                                \
-  CHECK_FAMILY(of##Receiver, self);                                            \
-  return get_integer_value(*access_object_field(self, k##Receiver##Field##Offset)); \
-}                                                                              \
-SWALLOW_SEMI(igi)
+__MAPPING_GETTER_IMPL__(Receiver, receiver, size_t, Field, field, __GET_INTEGER_VALUE_MAP__)
 
 // Expands to an integer getter and setter.
 #define INTEGER_ACCESSORS_IMPL(Receiver, receiver, Field, field)               \
 INTEGER_SETTER_IMPL(Receiver, receiver, Field, field);                         \
 INTEGER_GETTER_IMPL(Receiver, receiver, Field, field)
+
+#define ENUM_SETTER_IMPL(Receiver, receiver, type_t, Field, field)             \
+__MAPPING_SETTER_IMPL__(Receiver, receiver, type_t, Field, field, __NEW_INTEGER_MAP__)
+
+#define ENUM_GETTER_IMPL(Receiver, receiver, type_t, Field, field)             \
+__MAPPING_GETTER_IMPL__(Receiver, receiver, type_t, Field, field, __GET_INTEGER_VALUE_MAP__)
+
+#define ENUM_ACCESSORS_IMPL(Receiver, receiver, type_t, Field, field)          \
+ENUM_SETTER_IMPL(Receiver, receiver, type_t, Field, field);                    \
+ENUM_GETTER_IMPL(Receiver, receiver, type_t, Field, field)
+
 
 #endif // _VALUE_INL

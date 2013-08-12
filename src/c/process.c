@@ -116,6 +116,7 @@ void get_stack_top_frame(value_t stack, frame_t *frame) {
   get_top_stack_piece_frame(top_piece, frame);
 }
 
+
 // --- F r a m e ---
 
 bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame, size_t frame_capacity) {

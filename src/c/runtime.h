@@ -28,6 +28,7 @@ typedef struct {
   value_t thrue;
   value_t fahlse;
   value_t empty_array;
+  value_t any_guard;
   // The string table
   struct {
 #define __DECLARE_STRING_TABLE_ENTRY__(name, value) value_t name;

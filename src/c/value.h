@@ -184,6 +184,7 @@ static value_t new_moved_object(value_t target) {
   F(CodeBlock,  code_block)                                                    \
   F(StackPiece, stack_piece)                                                   \
   F(Stack,      stack)                                                         \
+  F(Guard,      guard)                                                         \
   ENUM_SYNTAX_OBJECT_FAMILIES(F)
 
 // Enumerates all the object families.
@@ -237,13 +238,24 @@ object_family_t get_object_family(value_t value);
 // Sets the species pointer of an object to the specified species value.
 void set_object_species(value_t value, value_t species);
 
+// Expands to the declaration of a setter that takes the specified value type.
+#define TYPED_SETTER_DECL(receiver, type_t, field)                             \
+void set_##receiver##_##field(value_t self, type_t value);
+
+// Expands to the declaration of a getter that returns the specified value type.
+#define TYPED_GETTER_DECL(receiver, type_t, field)                             \
+type_t get_##receiver##_##field(value_t self)
+
+// Expands to the declaration of a getter and setter for the specified field.
+#define TYPED_ACCESSORS_DECL(receiver, type_t, field)                          \
+TYPED_SETTER_DECL(receiver, type_t, field);                                    \
+TYPED_GETTER_DECL(receiver, type_t, field)
+
 // Expands to the declaration of a setter function.
-#define SETTER_DECL(receiver, field)                                           \
-void set_##receiver##_##field(value_t self, value_t value)
+#define SETTER_DECL(receiver, field) TYPED_SETTER_DECL(receiver, value_t, field)
 
 // Expands to the declaration of a getter.
-#define GETTER_DECL(receiver, field)                                           \
-value_t get_##receiver##_##field(value_t self)
+#define GETTER_DECL(receiver, field) TYPED_GETTER_DECL(receiver, value_t, field)
 
 // Expands to declarations of a getter and setter for the specified field in the
 // specified object.
@@ -251,11 +263,9 @@ value_t get_##receiver##_##field(value_t self)
 SETTER_DECL(receiver, field);                                                  \
 GETTER_DECL(receiver, field)
 
-#define INTEGER_SETTER_DECL(receiver, field)                                   \
-void set_##receiver##_##field(value_t self, size_t value)
+#define INTEGER_SETTER_DECL(receiver, field) TYPED_SETTER_DECL(receiver, size_t, field)
 
-#define INTEGER_GETTER_DECL(receiver, field)                                   \
-size_t get_##receiver##_##field(value_t self)
+#define INTEGER_GETTER_DECL(receiver, field) TYPED_GETTER_DECL(receiver, size_t, field)
 
 #define INTEGER_ACCESSORS_DECL(receiver, field)                                \
 INTEGER_SETTER_DECL(receiver, field);                                          \
@@ -286,11 +296,8 @@ static const size_t kSpeciesInstanceFamilyOffset = 1;
 static const size_t kSpeciesFamilyBehaviorOffset = 2;
 static const size_t kSpeciesDivisionBehaviorOffset = 3;
 
-// Given a species object, sets the instance type field to the specified value.
-void set_species_instance_family(value_t species, object_family_t instance_family);
-
-// Given a species object, returns the instance type field.
-object_family_t get_species_instance_family(value_t species);
+// The object family of instances of this species.
+TYPED_ACCESSORS_DECL(species, object_family_t, instance_family);
 
 // Forward declaration of the object behavior struct (see behavior.h).
 FORWARD(family_behavior_t);
