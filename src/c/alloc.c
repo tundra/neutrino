@@ -81,6 +81,16 @@ value_t new_heap_array(runtime_t *runtime, size_t length) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_array_buffer(runtime_t *runtime, size_t initial_capacity) {
+  size_t size = kArrayBufferSize;
+  TRY_DEF(elements, new_heap_array(runtime, initial_capacity));
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.array_buffer_species));
+  set_array_buffer_elements(result, elements);
+  set_array_buffer_length(result, 0);
+  return post_create_sanity_check(result, size);
+}
+
 static value_t new_heap_id_hash_map_entry_array(runtime_t *runtime, size_t capacity) {
   return new_heap_array(runtime, capacity * kIdHashMapEntryFieldCount);
 }

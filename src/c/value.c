@@ -318,6 +318,42 @@ void array_print_atomic_on(value_t value, string_buffer_t *buf) {
 }
 
 
+// --- A r r a y   b u f f e r ---
+
+OBJECT_IDENTITY_IMPL(array_buffer);
+CANT_SET_CONTENTS(array_buffer);
+FIXED_SIZE_PURE_VALUE_IMPL(array_buffer, ArrayBuffer);
+
+CHECKED_ACCESSORS_IMPL(ArrayBuffer, array_buffer, Array, Elements, elements);
+INTEGER_ACCESSORS_IMPL(ArrayBuffer, array_buffer, Length, length);
+
+value_t array_buffer_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofArrayBuffer, value);
+  return success();
+}
+
+void array_buffer_print_on(value_t value, string_buffer_t *buf) {
+  array_buffer_print_atomic_on(value, buf);
+}
+
+void array_buffer_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofArrayBuffer, value);
+  string_buffer_printf(buf, "#<array buffer>");
+}
+
+bool try_add_to_array_buffer(value_t self, value_t value) {
+  CHECK_FAMILY(ofArrayBuffer, self);
+  value_t elements = get_array_buffer_elements(self);
+  size_t capacity = get_array_buffer_length(self);
+  size_t index = get_array_buffer_length(self);
+  if (index >= capacity)
+    return false;
+  set_array_at(elements, index, value);
+  set_array_buffer_length(self, index + 1);
+  return true;
+}
+
+
 // --- I d e n t i t y   h a s h   m a p ---
 
 OBJECT_IDENTITY_IMPL(id_hash_map);

@@ -33,5 +33,14 @@ TEST(method, any_guard) {
   ASSERT_TRUE(is_score_match(guard_match(any_guard, runtime_null(&runtime))));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
 
+TEST(method, method_space) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t space = new_heap_method_space(&runtime);
+
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

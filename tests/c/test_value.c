@@ -169,3 +169,18 @@ TEST(value, array_bounds) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+
+TEST(value, array_buffer) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t buf = new_heap_array_buffer(&runtime, 16);
+  ASSERT_SUCCESS(buf);
+  for (size_t i = 0; i < 16; i++) {
+    ASSERT_EQ(i, get_array_buffer_length(buf));
+    ASSERT_TRUE(try_add_to_array_buffer(buf, new_integer(i)));
+  }
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}

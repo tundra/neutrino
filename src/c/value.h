@@ -174,6 +174,7 @@ static value_t new_moved_object(value_t target) {
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
   F(String,     string)                                                        \
   F(Array,      array)                                                         \
+  F(ArrayBuffer, array_buffer)                                                 \
   F(Null,       null)                                                          \
   F(Bool,       bool)                                                          \
   F(IdHashMap,  id_hash_map)                                                   \
@@ -391,6 +392,26 @@ void set_array_at(value_t value, size_t index, value_t element);
 
 // Returns the underlying array element array.
 value_t *get_array_elements(value_t value);
+
+
+// --- A r r a y   b u f f e r ---
+
+// An array buffer is similar to an array but can grow as elements are added
+// to it.
+
+static const size_t kArrayBufferSize = OBJECT_SIZE(2);
+static const size_t kArrayBufferElementsOffset = 1;
+static const size_t kArrayBufferLengthOffset = 2;
+
+// The array storing the elements in this buffer.
+ACCESSORS_DECL(array_buffer, elements);
+
+// The length of this array buffer.
+INTEGER_ACCESSORS_DECL(array_buffer, length);
+
+// Attempts to add an element at the end of this array buffer, increasing its
+// length by 1. Returns true if this succeeds, false if it wasn't possible.
+bool try_add_to_array_buffer(value_t self, value_t value);
 
 
 // --- I d e n t i t y   h a s h   m a p ---
