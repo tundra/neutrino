@@ -57,3 +57,33 @@ value_t method_space_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofIdHashMap, get_method_space_inheritance_map(value));
   return success();
 }
+
+value_t add_method_space_inheritance(runtime_t *runtime, value_t self,
+    value_t subtype, value_t supertype) {
+  CHECK_FAMILY(ofMethodSpace, self);
+  CHECK_FAMILY(ofProtocol, subtype);
+  CHECK_FAMILY(ofProtocol, supertype);
+  value_t inheritance = get_method_space_inheritance_map(self);
+  value_t parents = get_id_hash_map_at(inheritance, subtype);
+  if (is_signal(scNotFound, parents)) {
+    // Make the parents buffer small since most protocols don't have many direct
+    // parents. If this fails nothing has happened.
+    TRY_SET(parents, new_heap_array_buffer(runtime, 4));
+    // If this fails we've wasted some space allocating the parents array but
+    // otherwise nothing has happened.
+    TRY(set_id_hash_map_at(runtime, inheritance, subtype, parents));
+  }
+  // If this fails we may have set the parents array of the subtype to an empty
+  // array which is awkward but okay.
+  return add_to_array_buffer(runtime, parents, supertype);
+}
+
+value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol) {
+  value_t inheritance = get_method_space_inheritance_map(space);
+  value_t parents = get_id_hash_map_at(inheritance, protocol);
+  if (is_signal(scNotFound, parents)) {
+    return runtime->roots.empty_array_buffer;
+  } else {
+    return parents;
+  }
+}

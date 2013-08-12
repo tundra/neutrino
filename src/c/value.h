@@ -172,22 +172,22 @@ static value_t new_moved_object(value_t target) {
 
 // Enumerates the compact object species.
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
-  F(String,             string)                                                \
   F(Array,              array)                                                 \
   F(ArrayBuffer,        array_buffer)                                          \
-  F(Null,               null)                                                  \
-  F(Bool,               bool)                                                  \
-  F(IdHashMap,          id_hash_map)                                           \
   F(Blob,               blob)                                                  \
-  F(Instance,           instance)                                              \
-  F(VoidP,              void_p)                                                \
-  F(Factory,            factory)                                               \
+  F(Bool,               bool)                                                  \
   F(CodeBlock,          code_block)                                            \
-  F(StackPiece,         stack_piece)                                           \
-  F(Stack,              stack)                                                 \
+  F(Factory,            factory)                                               \
   F(Guard,              guard)                                                 \
-  F(Protocol,           protocol)                                              \
+  F(IdHashMap,          id_hash_map)                                           \
+  F(Instance,           instance)                                              \
   F(MethodSpace,        method_space)                                          \
+  F(Null,               null)                                                  \
+  F(Protocol,           protocol)                                              \
+  F(Stack,              stack)                                                 \
+  F(StackPiece,         stack_piece)                                           \
+  F(String,             string)                                                \
+  F(VoidP,              void_p)                                                \
   ENUM_SYNTAX_OBJECT_FAMILIES(F)
 
 // Enumerates all the object families.

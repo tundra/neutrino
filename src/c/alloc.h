@@ -71,6 +71,9 @@ value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr);
 value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
     value_t value_pool, size_t high_water_mark);
 
+// Creates a new protocol object with the given display name.
+value_t new_heap_protocol(runtime_t *runtime, value_t display_name);
+
 
 // --- P r o c e s s ---
 

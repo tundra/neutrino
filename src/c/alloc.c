@@ -157,6 +157,14 @@ value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_protocol(runtime_t *runtime, value_t display_name) {
+  size_t size = kProtocolSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.protocol_species));
+  set_protocol_display_name(result, display_name);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- P r o c e s s ---
 

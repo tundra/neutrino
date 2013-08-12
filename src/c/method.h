@@ -96,8 +96,14 @@ static const size_t kInheritanceMapInitialSize = 16;
 // The mapping that defines the inheritance hierarchy within this method space.
 ACCESSORS_DECL(method_space, inheritance_map);
 
-value_t try_method_space_add_inheritance(value_t self, value_t subtype,
-    value_t supertype);
+// Records in the given method space that the subtype inherits directly from
+// the supertype. Returns a signal if adding fails, for instance of we run
+// out of memory to increase the size of the map.
+value_t add_method_space_inheritance(runtime_t *runtime, value_t self,
+    value_t subtype, value_t supertype);
+
+// Returns the array buffer of parents of the given protocol.
+value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol);
 
 
 #endif // _METHOD
