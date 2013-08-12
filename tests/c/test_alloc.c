@@ -100,7 +100,7 @@ TEST(alloc, instance) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
-  value_t instance = new_heap_instance(&runtime);
+  value_t instance = new_heap_instance(&runtime, runtime.roots.empty_instance_species);
   ASSERT_FAMILY(ofInstance, instance);
   value_t key = new_integer(0);
   ASSERT_SIGNAL(scNotFound, get_instance_field(instance, key));

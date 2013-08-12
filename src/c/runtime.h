@@ -34,6 +34,7 @@ typedef struct {
   value_t any_guard;
   // Special protocols
   value_t integer_protocol;
+  value_t empty_instance_species;
   // The string table
   struct {
 #define __DECLARE_STRING_TABLE_ENTRY__(name, value) value_t name;

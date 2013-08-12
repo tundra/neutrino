@@ -171,7 +171,7 @@ static value_t new_object_with_object_type(runtime_t *runtime, value_t type) {
     case ofNull:
       // For now we use null to indicate an instance. Later this should be
       // replaced by something else, something species-like possibly.
-      return new_heap_instance(runtime);
+      return new_heap_instance(runtime, runtime->roots.empty_instance_species);
     case ofFactory:
       return new_instance_of_factory(runtime, type);
     default:

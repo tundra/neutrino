@@ -103,10 +103,23 @@ void get_species_layout(value_t value, object_layout_t *layout) {
   (behavior->get_species_layout)(value, layout);
 }
 
+
+// --- C o m p a c t   s p e c i e s ---
+
 void get_compact_species_layout(value_t species, object_layout_t *layout) {
   // Compact species have no value fields.
   object_layout_set(layout, kCompactSpeciesSize, kCompactSpeciesSize);
 }
+
+
+// --- I n s t a n c e   s p e c i e s ---
+
+void get_instance_species_layout(value_t species, object_layout_t *layout) {
+  object_layout_set(layout, kInstanceSpeciesSize, kSpeciesHeaderSize);
+}
+
+CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance, Protocol,
+    PrimaryProtocol, primary_protocol);
 
 
 // --- S t r i n g ---
@@ -622,7 +635,6 @@ void bool_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 OBJECT_IDENTITY_IMPL(instance);
 FIXED_SIZE_PURE_VALUE_IMPL(Instance, instance);
-GET_FAMILY_PROTOCOL_IMPL(instance);
 
 CHECKED_ACCESSORS_IMPL(Instance, instance, IdHashMap, Fields, fields);
 
@@ -660,6 +672,10 @@ value_t set_instance_contents(value_t instance, runtime_t *runtime,
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   set_instance_fields(instance, contents);
   return success();
+}
+
+value_t get_instance_protocol(value_t self, runtime_t *runtime) {
+  return get_instance_primary_protocol(self);
 }
 
 
