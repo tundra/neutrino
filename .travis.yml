@@ -7,6 +7,12 @@ compiler:
 script:
   - make MODE=dbg VALGRIND=on test
   - make MODE=opt test
+  - make
 
 install:
   - sudo apt-get install valgrind
+
+matrix:
+  exclude:
+    - compiler: gcc
+      script: make MODE=opt test
