@@ -46,7 +46,8 @@ struct family_behavior_t {
       value_t contents);
 };
 
-// Validates an object.
+// Validates an object. Check fails if validation fails except in soft check
+// failure mode where a ValidationFailed signal is returned.
 value_t object_validate(value_t value);
 
 // Returns the size in bytes of the given object on the heap.
