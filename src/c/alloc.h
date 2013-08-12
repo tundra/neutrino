@@ -44,6 +44,10 @@ value_t new_heap_compact_species_unchecked(runtime_t *runtime,
 // number of elements. The array will be initialized to null.
 value_t new_heap_array(runtime_t *runtime, size_t length);
 
+// Allocates a new heap array buffer in the given runtime with the given
+// initial capacity.
+value_t new_heap_array_buffer(runtime_t *runtime, size_t initial_capacity);
+
 // Creates a new identity hash map with the given initial capacity.
 value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity);
 
@@ -107,5 +111,10 @@ value_t set_id_hash_map_at(runtime_t *runtime, value_t map, value_t key, value_t
 // value if it already exists. Returns a signal on failure.
 value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,
     value_t value);
+
+// Adds an element at the end of the given array buffer, expanding it to a new
+// backing array if necessary. Returns a signal on failure.
+value_t add_to_array_buffer(runtime_t *runtime, value_t buffer, value_t value);
+
 
 #endif // _ALLOC

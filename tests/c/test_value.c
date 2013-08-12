@@ -169,3 +169,31 @@ TEST(value, array_bounds) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+
+TEST(value, array_buffer) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t buf = new_heap_array_buffer(&runtime, 16);
+  ASSERT_SUCCESS(buf);
+  for (size_t i = 0; i < 16; i++) {
+    ASSERT_EQ(i, get_array_buffer_length(buf));
+    ASSERT_TRUE(try_add_to_array_buffer(buf, new_integer(i)));
+    ASSERT_VALEQ(new_integer(i / 2), get_array_buffer_at(buf, i / 2));
+    ASSERT_CHECK_FAILURE(scOutOfBounds, get_array_buffer_at(buf, i + 1));
+  }
+
+  ASSERT_EQ(16, get_array_buffer_length(buf));
+  ASSERT_FALSE(try_add_to_array_buffer(buf, new_integer(16)));
+  ASSERT_EQ(16, get_array_buffer_length(buf));
+
+  for (size_t i = 16; i < 1024; i++) {
+    ASSERT_EQ(i, get_array_buffer_length(buf));
+    ASSERT_SUCCESS(add_to_array_buffer(&runtime, buf, new_integer(i)));
+    ASSERT_VALEQ(new_integer(i / 2), get_array_buffer_at(buf, i / 2));
+    ASSERT_CHECK_FAILURE(scOutOfBounds, get_array_buffer_at(buf, i + 1));
+  }
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
