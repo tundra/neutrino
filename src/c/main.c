@@ -28,7 +28,7 @@ static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
   byte_buffer_flush(&buffer, &data_blob);
   // Create a blob to hold the result and copy the data into it.
   value_t result = new_heap_blob_with_data(runtime, &data_blob);
-//  byte_buffer_dispose(&buffer);
+  byte_buffer_dispose(&buffer);
   return result;
 }
 
