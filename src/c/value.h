@@ -212,6 +212,10 @@ typedef enum {
 
 static const size_t kObjectHeaderOffset = 0;
 
+// Forward declaration of the object behavior structs (see behavior.h).
+FORWARD(family_behavior_t);
+FORWARD(division_behavior_t);
+
 // Converts a pointer to an object into an tagged object value pointer.
 static value_t new_object(address_t addr) {
   CHECK_EQ("unaligned", 0, ((address_arith_t) addr) & kDomainTagMask);
@@ -237,6 +241,9 @@ static value_t *access_object_field(value_t value, size_t index) {
 
 // Returns the object type of the object the given value points to.
 object_family_t get_object_family(value_t value);
+
+// Returns the family behavior for the given object.
+family_behavior_t *get_object_family_behavior(value_t self);
 
 // Sets the species pointer of an object to the specified species value.
 void set_object_species(value_t value, value_t species);
@@ -302,16 +309,11 @@ static const size_t kSpeciesDivisionBehaviorOffset = 3;
 // The object family of instances of this species.
 TYPED_ACCESSORS_DECL(species, object_family_t, instance_family);
 
-// Forward declaration of the object behavior struct (see behavior.h).
-FORWARD(family_behavior_t);
-
 // Returns the object family behavior of this species belongs to.
 family_behavior_t *get_species_family_behavior(value_t species);
 
 // Sets the object family behavior of this species.
 void set_species_family_behavior(value_t species, family_behavior_t *behavior);
-
-FORWARD(division_behavior_t);
 
 // Returns the species division behavior of this species belongs to.
 division_behavior_t *get_species_division_behavior(value_t species);

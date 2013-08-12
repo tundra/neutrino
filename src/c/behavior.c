@@ -11,10 +11,7 @@
 // --- V a l i d a t e ---
 
 value_t object_validate(value_t value) {
-  CHECK_DOMAIN(vdObject, value);
-  value_t species = get_object_species(value);
-  VALIDATE_VALUE_FAMILY(ofSpecies, species);
-  family_behavior_t *behavior = get_species_family_behavior(species);
+  family_behavior_t *behavior = get_object_family_behavior(value);
   return (behavior->validate)(value);
 }
 
@@ -32,6 +29,8 @@ void object_layout_set(object_layout_t *layout, size_t size, size_t value_offset
 }
 
 void get_object_layout(value_t self, object_layout_t *layout_out) {
+  // This has to work during gc so some of the normal behavior checks are
+  // disabled.
   CHECK_DOMAIN(vdObject, self);
   value_t species = get_object_species(self);
   family_behavior_t *behavior = get_species_family_behavior(species);
@@ -47,9 +46,7 @@ static value_t integer_transient_identity_hash(value_t self) {
 }
 
 static value_t object_transient_identity_hash(value_t self) {
-  CHECK_DOMAIN(vdObject, self);
-  value_t species = get_object_species(self);
-  family_behavior_t *behavior = get_species_family_behavior(species);
+  family_behavior_t *behavior = get_object_family_behavior(self);
   return (behavior->transient_identity_hash)(self);
 }
 
@@ -78,8 +75,7 @@ static bool object_are_identical(value_t a, value_t b) {
   object_family_t b_family = get_object_family(b);
   if (a_family != b_family)
     return false;
-  value_t species = get_object_species(a);
-  family_behavior_t *behavior = get_species_family_behavior(species);
+  family_behavior_t *behavior = get_object_family_behavior(a);
   return (behavior->are_identical)(a, b);
 }
 
@@ -116,16 +112,12 @@ static void signal_print_atomic_on(value_t value, string_buffer_t *buf) {
 }
 
 static void object_print_on(value_t value, string_buffer_t *buf) {
-  CHECK_DOMAIN(vdObject, value);
-  value_t species = get_object_species(value);
-  family_behavior_t *behavior = get_species_family_behavior(species);
+  family_behavior_t *behavior = get_object_family_behavior(value);
   (behavior->print_on)(value, buf);
 }
 
 static void object_print_atomic_on(value_t value, string_buffer_t *buf) {
-  CHECK_DOMAIN(vdObject, value);
-  value_t species = get_object_species(value);
-  family_behavior_t *behavior = get_species_family_behavior(species);
+  family_behavior_t *behavior = get_object_family_behavior(value);
   (behavior->print_atomic_on)(value, buf);
 }
 
@@ -196,11 +188,27 @@ value_t new_object_with_type(runtime_t *runtime, value_t type) {
 // --- P a y l o a d ---
 
 value_t set_object_contents(runtime_t *runtime, value_t object, value_t payload) {
-  CHECK_DOMAIN(vdObject, object);
-  value_t species = get_object_species(object);
-  VALIDATE_VALUE_FAMILY(ofSpecies, species);
-  family_behavior_t *behavior = get_species_family_behavior(species);
+  family_behavior_t *behavior = get_object_family_behavior(object);
   return (behavior->set_contents)(object, runtime, payload);
+}
+
+
+// --- P r o t o c o l ---
+
+static value_t get_object_protocol(value_t self, runtime_t *runtime) {
+  family_behavior_t *behavior = get_object_family_behavior(self);
+  return (behavior->get_protocol)(self, runtime);
+}
+
+value_t get_protocol(value_t self, runtime_t *runtime) {
+  switch (get_value_domain(self)) {
+    case vdInteger:
+      return runtime->roots.integer_protocol;
+    case vdObject:
+      return get_object_protocol(self, runtime);
+    default:
+      return new_signal(scUnsupportedBehavior);
+  }
 }
 
 
@@ -217,7 +225,8 @@ family_behavior_t k##Family##Behavior = {                                      \
   &family##_print_on,                                                          \
   &family##_print_atomic_on,                                                   \
   &get_##family##_layout,                                                      \
-  &set_##family##_contents                                                     \
+  &set_##family##_contents,                                                    \
+  &get_##family##_protocol                                                     \
 };
 ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #undef DEFINE_FAMILY_BEHAVIOR

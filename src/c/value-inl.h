@@ -107,7 +107,22 @@ void family##_print_atomic_on(value_t value, string_buffer_t *buf) {           \
 }                                                                              \
 SWALLOW_SEMI(tpo)
 
+// Expands to an implementation of get_protocol that returns the canonical
+// protocol for the value's family.
+#define GET_FAMILY_PROTOCOL_IMPL(family)                                       \
+value_t get_##family##_protocol(value_t self, runtime_t *runtime) {            \
+  return runtime->roots.family##_protocol;                                     \
+}                                                                              \
+SWALLOW_SEMI(gfpi)
 
+
+// Expands to an implementation of get_protocol that returns a signal. Use this
+// for families that are not intended to be available to the surface language.
+#define NO_FAMILY_PROTOCOL_IMPL(family)                                        \
+value_t get_##family##_protocol(value_t self, runtime_t *runtime) {            \
+  return new_signal(scUnsupportedBehavior);                                    \
+}                                                                              \
+SWALLOW_SEMI(nfpi)
 // --- A c c e s s o r s ---
 
 // Expands to a function that sets the given field on the given receiver,
