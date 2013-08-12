@@ -51,7 +51,7 @@ value_t compile_syntax(runtime_t *runtime, value_t program) {
 // --- L i t e r a l ---
 
 OBJECT_IDENTITY_IMPL(literal_ast);
-FIXED_SIZE_PURE_VALUE_IMPL(literal_ast, LiteralAst);
+FIXED_SIZE_PURE_VALUE_IMPL(LiteralAst, literal_ast);
 
 UNCHECKED_ACCESSORS_IMPL(LiteralAst, literal_ast, Value, value);
 
@@ -89,7 +89,7 @@ value_t emit_literal_ast(value_t value, assembler_t *assm) {
 // --- A r r a y ---
 
 OBJECT_IDENTITY_IMPL(array_ast);
-FIXED_SIZE_PURE_VALUE_IMPL(array_ast, ArrayAst);
+FIXED_SIZE_PURE_VALUE_IMPL(ArrayAst, array_ast);
 
 CHECKED_ACCESSORS_IMPL(ArrayAst, array_ast, Array, Elements, elements);
 

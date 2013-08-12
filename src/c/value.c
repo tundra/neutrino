@@ -45,6 +45,7 @@ object_family_t get_object_family(value_t value) {
 
 OBJECT_IDENTITY_IMPL(species);
 CANT_SET_CONTENTS(species);
+TRIVIAL_PRINT_ON_IMPL(Species, species);
 
 void set_species_instance_family(value_t value,
     object_family_t instance_family) {
@@ -96,14 +97,6 @@ void get_species_layout(value_t value, object_layout_t *layout) {
 void get_compact_species_layout(value_t species, object_layout_t *layout) {
   // Compact species have no value fields.
   object_layout_set(layout, kCompactSpeciesSize, kCompactSpeciesSize);
-}
-
-void species_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<species>");
-}
-
-void species_print_on(value_t value, string_buffer_t *buf) {
-  species_print_atomic_on(value, buf);
 }
 
 
@@ -231,6 +224,7 @@ void blob_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 OBJECT_IDENTITY_IMPL(void_p);
 CANT_SET_CONTENTS(void_p);
+TRIVIAL_PRINT_ON_IMPL(VoidP, void_p);
 
 void set_void_p_value(value_t value, void *ptr) {
   CHECK_FAMILY(ofVoidP, value);
@@ -245,15 +239,6 @@ void *get_void_p_value(value_t value) {
 value_t void_p_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofVoidP, value);
   return success();
-}
-
-void void_p_print_on(value_t value, string_buffer_t *buf) {
-  void_p_print_atomic_on(value, buf);
-}
-
-void void_p_print_atomic_on(value_t value, string_buffer_t *buf) {
-  CHECK_FAMILY(ofVoidP, value);
-  string_buffer_printf(buf, "#<void*>");
 }
 
 void get_void_p_layout(value_t value, object_layout_t *layout) {
@@ -322,7 +307,8 @@ void array_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 OBJECT_IDENTITY_IMPL(array_buffer);
 CANT_SET_CONTENTS(array_buffer);
-FIXED_SIZE_PURE_VALUE_IMPL(array_buffer, ArrayBuffer);
+FIXED_SIZE_PURE_VALUE_IMPL(ArrayBuffer, array_buffer);
+TRIVIAL_PRINT_ON_IMPL(ArrayBuffer, array_buffer);
 
 CHECKED_ACCESSORS_IMPL(ArrayBuffer, array_buffer, Array, Elements, elements);
 INTEGER_ACCESSORS_IMPL(ArrayBuffer, array_buffer, Length, length);
@@ -330,15 +316,6 @@ INTEGER_ACCESSORS_IMPL(ArrayBuffer, array_buffer, Length, length);
 value_t array_buffer_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofArrayBuffer, value);
   return success();
-}
-
-void array_buffer_print_on(value_t value, string_buffer_t *buf) {
-  array_buffer_print_atomic_on(value, buf);
-}
-
-void array_buffer_print_atomic_on(value_t value, string_buffer_t *buf) {
-  CHECK_FAMILY(ofArrayBuffer, value);
-  string_buffer_printf(buf, "#<array buffer>");
 }
 
 bool try_add_to_array_buffer(value_t self, value_t value) {
@@ -365,7 +342,7 @@ value_t get_array_buffer_at(value_t self, size_t index) {
 
 OBJECT_IDENTITY_IMPL(id_hash_map);
 CANT_SET_CONTENTS(id_hash_map);
-FIXED_SIZE_PURE_VALUE_IMPL(id_hash_map, IdHashMap);
+FIXED_SIZE_PURE_VALUE_IMPL(IdHashMap, id_hash_map);
 
 CHECKED_ACCESSORS_IMPL(IdHashMap, id_hash_map, Array, EntryArray, entry_array);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Size, size);
@@ -554,7 +531,7 @@ void id_hash_map_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- N u l l ---
 
 CANT_SET_CONTENTS(null);
-FIXED_SIZE_PURE_VALUE_IMPL(null, Null);
+FIXED_SIZE_PURE_VALUE_IMPL(Null, null);
 
 value_t null_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofNull, value);
@@ -585,7 +562,7 @@ void null_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- B o o l ---
 
 CANT_SET_CONTENTS(bool);
-FIXED_SIZE_PURE_VALUE_IMPL(bool, Bool);
+FIXED_SIZE_PURE_VALUE_IMPL(Bool, bool);
 
 void set_bool_value(value_t value, bool truth) {
   CHECK_FAMILY(ofBool, value);
@@ -627,7 +604,7 @@ void bool_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- I n s t a n c e ---
 
 OBJECT_IDENTITY_IMPL(instance);
-FIXED_SIZE_PURE_VALUE_IMPL(instance, Instance);
+FIXED_SIZE_PURE_VALUE_IMPL(Instance, instance);
 
 CHECKED_ACCESSORS_IMPL(Instance, instance, IdHashMap, Fields, fields);
 
@@ -672,7 +649,7 @@ value_t set_instance_contents(value_t instance, runtime_t *runtime,
 
 OBJECT_IDENTITY_IMPL(factory);
 CANT_SET_CONTENTS(factory);
-FIXED_SIZE_PURE_VALUE_IMPL(factory, Factory);
+FIXED_SIZE_PURE_VALUE_IMPL(Factory, factory);
 
 CHECKED_ACCESSORS_IMPL(Factory, factory, VoidP, Constructor, constructor);
 
@@ -700,7 +677,7 @@ void factory_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 OBJECT_IDENTITY_IMPL(code_block);
 CANT_SET_CONTENTS(code_block);
-FIXED_SIZE_PURE_VALUE_IMPL(code_block, CodeBlock);
+FIXED_SIZE_PURE_VALUE_IMPL(CodeBlock, code_block);
 
 CHECKED_ACCESSORS_IMPL(CodeBlock, code_block, Blob, Bytecode, bytecode);
 CHECKED_ACCESSORS_IMPL(CodeBlock, code_block, Array, ValuePool, value_pool);
@@ -730,7 +707,7 @@ void code_block_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 OBJECT_IDENTITY_IMPL(protocol);
 CANT_SET_CONTENTS(protocol);
-FIXED_SIZE_PURE_VALUE_IMPL(protocol, Protocol);
+FIXED_SIZE_PURE_VALUE_IMPL(Protocol, protocol);
 
 UNCHECKED_ACCESSORS_IMPL(Protocol, protocol, DisplayName, display_name);
 

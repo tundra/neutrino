@@ -89,7 +89,7 @@ SWALLOW_SEMI(csc)
 
 // Declares the heap size functions for a fixed-size object that don't have any
 // non-value fields.
-#define FIXED_SIZE_PURE_VALUE_IMPL(family, Family)                             \
+#define FIXED_SIZE_PURE_VALUE_IMPL(Family, family)                             \
 void get_##family##_layout(value_t value, object_layout_t *layout_out) {       \
   object_layout_set(layout_out, k##Family##Size, kValueSize);                  \
 }                                                                              \
