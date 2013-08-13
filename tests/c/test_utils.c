@@ -13,7 +13,7 @@ TEST(utils, string_simple) {
   ASSERT_EQ('!', string_char_at(&str, 12));
 }
 
-TEST(utils, string_equality) {
+TEST(utils, string_comparison) {
   // Use char arrays to ensure that the strings are all stored in different
   // parts of memory.
   char c0[4] = {'f', 'o', 'o', '\0'};
@@ -30,22 +30,43 @@ TEST(utils, string_equality) {
   string_t s3;
   string_init(&s3, c3);
 
+#define ASSERT_STR_COMPARE(A, REL, B)                                          \
+  ASSERT_TRUE(string_compare(&A, &B) REL 0)
+
   ASSERT_TRUE(string_equals(&s0, &s0));
+  ASSERT_STR_COMPARE(s0, ==, s0);
   ASSERT_TRUE(string_equals(&s0, &s1));
+  ASSERT_STR_COMPARE(s0, ==, s1);
   ASSERT_FALSE(string_equals(&s0, &s2));
+  ASSERT_STR_COMPARE(s0, >, s2);
   ASSERT_FALSE(string_equals(&s0, &s3));
+  ASSERT_STR_COMPARE(s0, >, s3);
   ASSERT_TRUE(string_equals(&s1, &s0));
+  ASSERT_STR_COMPARE(s1, ==, s0);
   ASSERT_TRUE(string_equals(&s1, &s1));
+  ASSERT_STR_COMPARE(s1, ==, s1);
   ASSERT_FALSE(string_equals(&s1, &s2));
+  ASSERT_STR_COMPARE(s1, >, s2);
   ASSERT_FALSE(string_equals(&s1, &s3));
+  ASSERT_STR_COMPARE(s1, >, s3);
   ASSERT_FALSE(string_equals(&s2, &s0));
+  ASSERT_STR_COMPARE(s2, <, s0);
   ASSERT_FALSE(string_equals(&s2, &s1));
+  ASSERT_STR_COMPARE(s2, <, s1);
   ASSERT_TRUE(string_equals(&s2, &s2));
+  ASSERT_STR_COMPARE(s2, ==, s2);
   ASSERT_FALSE(string_equals(&s2, &s3));
+  ASSERT_STR_COMPARE(s2, <, s3);
   ASSERT_FALSE(string_equals(&s3, &s0));
+  ASSERT_STR_COMPARE(s3, <, s0);
   ASSERT_FALSE(string_equals(&s3, &s1));
+  ASSERT_STR_COMPARE(s3, <, s1);
   ASSERT_FALSE(string_equals(&s3, &s2));
+  ASSERT_STR_COMPARE(s3, >, s2);
   ASSERT_TRUE(string_equals(&s3, &s3));
+  ASSERT_STR_COMPARE(s3, ==, s3);
+
+#undef ASSERT_STR_COMPARE
 }
 
 TEST(utils, string_buffer_simple) {

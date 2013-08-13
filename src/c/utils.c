@@ -39,6 +39,20 @@ bool string_equals(string_t *a, string_t *b) {
   return true;
 }
 
+int string_compare(string_t *a, string_t *b) {
+  size_t a_length = string_length(a);
+  size_t b_length = string_length(b);
+  if (a_length != b_length)
+    return a_length - b_length;
+  for (size_t i = 0; i < a_length; i++) {
+    char a_char = string_char_at(a, i);
+    char b_char = string_char_at(b, i);
+    if (a_char != b_char)
+      return a_char - b_char;
+  }
+  return 0;
+}
+
 bool string_equals_cstr(string_t *a, const char *str) {
   string_t b;
   string_init(&b, str);

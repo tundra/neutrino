@@ -178,6 +178,16 @@ bool string_are_identical(value_t a, value_t b) {
   return string_equals(&a_contents, &b_contents);
 }
 
+value_t string_ordering_compare(value_t a, value_t b) {
+  CHECK_FAMILY(ofString, a);
+  CHECK_FAMILY(ofString, b);
+  string_t a_contents;
+  get_string_contents(a, &a_contents);
+  string_t b_contents;
+  get_string_contents(b, &b_contents);
+  return int_to_ordering(string_compare(&a_contents, &b_contents));
+}
+
 void string_print_on(value_t value, string_buffer_t *buf) {
   string_print_atomic_on(value, buf);
 }
@@ -771,6 +781,17 @@ void protocol_print_atomic_on(value_t value, string_buffer_t *buf) {
     value_print_atomic_on(display_name, buf);
     string_buffer_printf(buf, ">");
   }
+}
+
+
+// --- O r d e r i n g ---
+
+int ordering_to_int(value_t value) {
+  return get_integer_value(value);
+}
+
+value_t int_to_ordering(int value) {
+  return new_integer(value);
 }
 
 

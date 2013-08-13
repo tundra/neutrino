@@ -102,6 +102,51 @@ bool value_are_identical(value_t a, value_t b) {
 }
 
 
+// --- C o m p a r i n g ---
+
+static value_t integer_ordering_compare(value_t a, value_t b) {
+  // TODO: make this work at the boundaries.
+  return int_to_ordering(get_integer_value(a) - get_integer_value(b));
+}
+
+static value_t object_ordering_compare(value_t a, value_t b) {
+  CHECK_DOMAIN(vdObject, a);
+  CHECK_DOMAIN(vdObject, b);
+  object_family_t a_family = get_object_family(a);
+  object_family_t b_family = get_object_family(b);
+  if (a_family != b_family)
+    // This may cause us to return a valid result even when a and b are not
+    // comparable.
+    return int_to_ordering(a_family - b_family);
+  family_behavior_t *behavior = get_object_family_behavior(a);
+  value_t (*ordering_compare)(value_t a, value_t b) = behavior->ordering_compare;
+  if (ordering_compare == NULL) {
+    return new_signal(scNotComparable);
+  } else {
+    return ordering_compare(a, b);
+  }
+}
+
+value_t value_ordering_compare(value_t a, value_t b) {
+  value_domain_t a_domain = get_value_domain(a);
+  value_domain_t b_domain = get_value_domain(b);
+  if (a_domain != b_domain) {
+    // This may cause us to return a valid result even when a and b are not
+    // comparable.
+    return int_to_ordering(a_domain - b_domain);
+  } else {
+    switch (a_domain) {
+      case vdInteger:
+        return integer_ordering_compare(a, b);
+      case vdObject:
+        return object_ordering_compare(a, b);
+      default:
+        return new_signal(scNotComparable);
+    }
+  }
+}
+
+
 // --- P r i n t i n g ---
 
 static void integer_print_atomic_on(value_t value, string_buffer_t *buf) {
@@ -221,11 +266,12 @@ value_t get_protocol(value_t self, runtime_t *runtime) {
 // Define all the family behaviors in one go. Because of this, as soon as you
 // add a new object type you'll get errors for all the behaviors you need to
 // implement.
-#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family)                          \
+#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, IS_CMP)                  \
 family_behavior_t k##Family##Behavior = {                                      \
   &family##_validate,                                                          \
   &family##_transient_identity_hash,                                           \
   &family##_are_identical,                                                     \
+  IS_CMP(&family##_ordering_compare, NULL),                                    \
   &family##_print_on,                                                          \
   &family##_print_atomic_on,                                                   \
   &get_##family##_layout,                                                      \

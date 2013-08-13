@@ -30,6 +30,7 @@ typedef enum {
   F(InvalidInput)                                                              \
   F(InvalidSyntax)                                                             \
   F(MapFull)                                                                   \
+  F(NotComparable)                                                             \
   F(NotFound)                                                                  \
   F(Nothing)                                                                   \
   F(OutOfBounds)                                                               \
@@ -160,34 +161,42 @@ static value_t new_moved_object(value_t target) {
 
 // --- O b j e c t ---
 
+// Indicates that a family supports a particular behavior.
+#define YES(T, F) T
+
+// Indicates that a family does not support a particular behavior.
+#define NO(T, F) F
+
+// Name                 name                    Cmp?
+
 // Enumerates the special species, the ones that require special handling during
 // startup.
 #define ENUM_SPECIAL_OBJECT_FAMILIES(F)                                        \
-  F(Species,    species)
+  F(Species,            species,                NO)
 
 // Enumerates the syntax tree families.
 #define ENUM_SYNTAX_OBJECT_FAMILIES(F)                                         \
-  F(ArrayAst, array_ast)                                                       \
-  F(LiteralAst, literal_ast)
+  F(ArrayAst,           array_ast,              NO)                            \
+  F(LiteralAst,         literal_ast,            NO)
 
 // Enumerates the compact object species.
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
-  F(Array,              array)                                                 \
-  F(ArrayBuffer,        array_buffer)                                          \
-  F(Blob,               blob)                                                  \
-  F(Bool,               bool)                                                  \
-  F(CodeBlock,          code_block)                                            \
-  F(Factory,            factory)                                               \
-  F(Guard,              guard)                                                 \
-  F(IdHashMap,          id_hash_map)                                           \
-  F(Instance,           instance)                                              \
-  F(MethodSpace,        method_space)                                          \
-  F(Null,               null)                                                  \
-  F(Protocol,           protocol)                                              \
-  F(Stack,              stack)                                                 \
-  F(StackPiece,         stack_piece)                                           \
-  F(String,             string)                                                \
-  F(VoidP,              void_p)                                                \
+  F(Array,              array,                  NO)                            \
+  F(ArrayBuffer,        array_buffer,           NO)                            \
+  F(Blob,               blob,                   NO)                            \
+  F(Bool,               bool,                   NO)                            \
+  F(CodeBlock,          code_block,             NO)                            \
+  F(Factory,            factory,                NO)                            \
+  F(Guard,              guard,                  NO)                            \
+  F(IdHashMap,          id_hash_map,            NO)                            \
+  F(Instance,           instance,               NO)                            \
+  F(MethodSpace,        method_space,           NO)                            \
+  F(Null,               null,                   NO)                            \
+  F(Protocol,           protocol,               NO)                            \
+  F(Stack,              stack,                  NO)                            \
+  F(StackPiece,         stack_piece,            NO)                            \
+  F(String,             string,                 YES)                           \
+  F(VoidP,              void_p,                 NO)                            \
   ENUM_SYNTAX_OBJECT_FAMILIES(F)
 
 // Enumerates all the object families.
@@ -198,9 +207,9 @@ static value_t new_moved_object(value_t target) {
 // Enum identifying the different families of heap objects.
 typedef enum {
   __ofFirst__ = -1
-  #define DECLARE_OBJECT_FAMILY_ENUM(Family, family) , of##Family
-  ENUM_OBJECT_FAMILIES(DECLARE_OBJECT_FAMILY_ENUM)
-  #undef DECLARE_OBJECT_FAMILY_ENUM
+  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, IS_CMP) , of##Family
+  ENUM_OBJECT_FAMILIES(__DECLARE_OBJECT_FAMILY_ENUM__)
+  #undef __DECLARE_OBJECT_FAMILY_ENUM__
 } object_family_t;
 
 // Number of bytes in an object header.
@@ -581,16 +590,13 @@ ACCESSORS_DECL(protocol, display_name);
 
 // --- O r d e r i n g ---
 
-// Expands to a value_t initializer that represents an integer with the given
-// value.
-#define STATIC_INTEGER_INIT(V) {as_integer={vdInteger, (V)}}
+// Returns a value ordering to an integer such that less than becomes -1,
+// greater than becomes 1 and equals becomes 0.
+int ordering_to_int(value_t value);
 
-// Values indicating the relative ordering of values.
-static const value_t kLessThanValue = STATIC_INTEGER_INIT(-1);
-static const value_t kEqualValue = STATIC_INTEGER_INIT(0);
-static const value_t kGreaterThanValue = STATIC_INTEGER_INIT(1);
-
-
+// Returns a non-signal indicating an ordering such that ordering_to_int returns
+// the given value.
+value_t int_to_ordering(int value);
 
 
 // --- D e b u g ---

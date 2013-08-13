@@ -34,6 +34,10 @@ struct family_behavior_t {
   value_t (*transient_identity_hash)(value_t value);
   // Returns true iff the two values are identical.
   bool (*are_identical)(value_t a, value_t b);
+  // Returns a value indicating how a compares relative to b, if this kind of
+  // object supports it. If this type doesn't support comparison this field
+  // is NULL.
+  value_t (*ordering_compare)(value_t a, value_t b);
   // Writes a string representation of the value on a string buffer.
   void (*print_on)(value_t value, string_buffer_t *buf);
   // Writes an atomic (that is, doesn't recurse into contents) string
@@ -65,8 +69,10 @@ value_t value_transient_identity_hash(value_t value);
 bool value_are_identical(value_t a, value_t b);
 
 // Returns a value indicating how a and b relate in the total ordering of
-// (some) values. Returns a signal if the values couldn't be compared.
-value_t compare_values(value_t a, value_t b);
+// comparable values. If the values are not both comparable the result is
+// undefined, it may return a comparison value but it may also return a signal.
+// Don't depend on any particular behavior in that case.
+value_t value_ordering_compare(value_t a, value_t b);
 
 // Prints a human-readable representation of the given value on the given
 // string buffer.
@@ -95,17 +101,18 @@ value_t get_protocol(value_t value, runtime_t *runtime);
 #define OBJ_ADDR_HASH(VAL) new_integer((VAL).encoded)
 
 // Declare the behavior structs for all the families on one fell swoop.
-#define DECLARE_FAMILY_BEHAVIOR(Family, family)                                \
+#define DECLARE_FAMILY_BEHAVIOR(Family, family, IS_CMP)                        \
 extern family_behavior_t k##Family##Behavior;
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 #undef DECLARE_FAMILY_BEHAVIOR
 
 // Declare the functions that implement the behaviors too, that way they can be
 // implemented wherever.
-#define DECLARE_FAMILY_BEHAVIOR_IMPLS(Family, family)                          \
+#define DECLARE_FAMILY_BEHAVIOR_IMPLS(Family, family, IS_CMP)                  \
 value_t family##_validate(value_t value);                                      \
 value_t family##_transient_identity_hash(value_t value);                       \
 bool family##_are_identical(value_t a, value_t b);                             \
+IS_CMP(value_t family##_ordering_compare(value_t a, value_t b);,)              \
 void family##_print_on(value_t value, string_buffer_t *buf);                   \
 void family##_print_atomic_on(value_t value, string_buffer_t *buf);            \
 void get_##family##_layout(value_t value, object_layout_t *layout_out);        \
