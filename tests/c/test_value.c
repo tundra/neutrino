@@ -292,3 +292,28 @@ TEST(value, bool_comparison) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+TEST(value, array_sort) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  static const int kSize = 32;
+  static const int kUnsorted[kSize] = {
+      44, 29, 86, 93, 6, 37, 93, 15, 18, 88, 93, 5, 97, 69, 32, 27, 2, 96, 34,
+      33, 15, 61, 48, 19, 93, 9, 27, 70, 86, 41, 81, 61
+  };
+  static const int kSorted[kSize] = {
+      2, 5, 6, 9, 15, 15, 18, 19, 27, 27, 29, 32, 33, 34, 37, 41, 44, 48, 61,
+      61, 69, 70, 81, 86, 86, 88, 93, 93, 93, 93, 96, 97
+  };
+
+  value_t array = new_heap_array(&runtime, kSize);
+  for (size_t i = 0; i < kSize; i++)
+    set_array_at(array, i, new_integer(kUnsorted[i]));
+  sort_array(array);
+  for (size_t i = 0; i < kSize; i++)
+    ASSERT_EQ(kSorted[i], get_integer_value(get_array_at(array, i)));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+
+}

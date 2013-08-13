@@ -445,6 +445,10 @@ void set_array_at(value_t value, size_t index, value_t element);
 // Returns the underlying array element array.
 value_t *get_array_elements(value_t value);
 
+// Sorts the given array. If there are any errors, for instance if some of the
+// values are not comparable, a signal is returned.
+value_t sort_array(value_t value);
+
 
 // --- A r r a y   b u f f e r ---
 
