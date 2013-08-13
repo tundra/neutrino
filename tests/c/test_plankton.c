@@ -169,9 +169,9 @@ typedef struct {
 // Map values to ints.
 static value_t value_to_int(value_t value, runtime_t *runtime, void *ptr) {
   test_resolver_data_t *data = ptr;
-  if (value_are_identical(value, data->i0)) {
+  if (value_identity_compare(value, data->i0)) {
     return new_integer(0);
-  } else if (value_are_identical(value, data->i1)) {
+  } else if (value_identity_compare(value, data->i1)) {
     return new_integer(1);
   } else {
     return new_signal(scNothing);
@@ -207,11 +207,11 @@ TEST(plankton, env_resolution) {
   value_mapping_init(&access, int_to_value, &data);
 
   value_t d0 = transcode_plankton(&runtime, &resolver, &access, data.i0);
-  ASSERT_TRUE(value_are_identical(data.i0, d0));
+  ASSERT_TRUE(value_identity_compare(data.i0, d0));
   value_t d1 = transcode_plankton(&runtime, &resolver, &access, data.i1);
-  ASSERT_TRUE(value_are_identical(data.i1, d1));
+  ASSERT_TRUE(value_identity_compare(data.i1, d1));
   value_t d2 = transcode_plankton(&runtime, &resolver, &access, i2);
-  ASSERT_FALSE(value_are_identical(i2, d2));
+  ASSERT_FALSE(value_identity_compare(i2, d2));
 
   value_t a0 = new_heap_array(&runtime, 4);
   set_array_at(a0, 0, data.i0);
@@ -219,10 +219,10 @@ TEST(plankton, env_resolution) {
   set_array_at(a0, 2, i2);
   set_array_at(a0, 3, data.i0);
   value_t da0 = transcode_plankton(&runtime, &resolver, &access, a0);
-  ASSERT_TRUE(value_are_identical(data.i0, get_array_at(da0, 0)));
-  ASSERT_TRUE(value_are_identical(data.i1, get_array_at(da0, 1)));
-  ASSERT_FALSE(value_are_identical(i2, get_array_at(da0, 2)));
-  ASSERT_TRUE(value_are_identical(data.i0, get_array_at(da0, 3)));
+  ASSERT_TRUE(value_identity_compare(data.i0, get_array_at(da0, 0)));
+  ASSERT_TRUE(value_identity_compare(data.i1, get_array_at(da0, 1)));
+  ASSERT_FALSE(value_identity_compare(i2, get_array_at(da0, 2)));
+  ASSERT_TRUE(value_identity_compare(data.i0, get_array_at(da0, 3)));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

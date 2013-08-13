@@ -239,8 +239,8 @@ TEST(value, ordering) {
 
 
 TEST(value, integer_comparison) {
-#define ASSERT_INT_COMPARE(A, OP, B)                                           \
-  ASSERT_TRUE(ordering_to_int(value_ordering_compare(new_integer(A), new_integer(B))) OP 0)
+#define ASSERT_INT_COMPARE(A, REL, B)                                          \
+  ASSERT_TRUE(ordering_to_int(value_ordering_compare(new_integer(A), new_integer(B))) REL 0)
 
   ASSERT_INT_COMPARE(0, <, 1);
   ASSERT_INT_COMPARE(0, ==, 0);
@@ -249,18 +249,17 @@ TEST(value, integer_comparison) {
 #undef ASSERT_INT_COMPARE
 }
 
-
 TEST(value, string_comparison) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
   // Checks that the string with contents A compares to B as the given operator.
-#define ASSERT_STR_COMPARE(A, OP, B) do {                                      \
+#define ASSERT_STR_COMPARE(A, REL, B) do {                                     \
   DEF_STR(a_str, A);                                                           \
   value_t a = new_heap_string(&runtime, &a_str);                               \
   DEF_STR(b_str, B);                                                           \
   value_t b = new_heap_string(&runtime, &b_str);                               \
-  ASSERT_TRUE(ordering_to_int(value_ordering_compare(a, b)) OP 0);             \
+  ASSERT_TRUE(ordering_to_int(value_ordering_compare(a, b)) REL 0);            \
 } while (false)
 
   ASSERT_STR_COMPARE("", ==, "");
@@ -275,6 +274,21 @@ TEST(value, string_comparison) {
   ASSERT_STR_COMPARE("wx", >, "x");
 
 #undef ASSERT_STR_COMPARE
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
+
+TEST(value, bool_comparison) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t t = runtime_bool(&runtime, true);
+  value_t f = runtime_bool(&runtime, false);
+
+  ASSERT_TRUE(ordering_to_int(value_ordering_compare(t, t)) == 0);
+  ASSERT_TRUE(ordering_to_int(value_ordering_compare(f, f)) == 0);
+  ASSERT_TRUE(ordering_to_int(value_ordering_compare(t, f)) > 0);
+  ASSERT_TRUE(ordering_to_int(value_ordering_compare(f, t)) < 0);
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

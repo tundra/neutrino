@@ -130,7 +130,7 @@ static bool object_structural_equal(value_t a, value_t b) {
     case ofInstance:
       return instance_structural_equal(a, b);
     default:
-      return value_are_identical(a, b);
+      return value_identity_compare(a, b);
   }
 }
 
@@ -143,7 +143,7 @@ bool value_structural_equal(value_t a, value_t b) {
     case vdObject:
       return object_structural_equal(a, b);
     default:
-      return value_are_identical(a, b);
+      return value_identity_compare(a, b);
   }
 }
 

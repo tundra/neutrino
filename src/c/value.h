@@ -167,7 +167,7 @@ static value_t new_moved_object(value_t target) {
 // Indicates that a family does not support a particular behavior.
 #define NO(T, F) F
 
-// Name                 name                    Cmp?
+// CamelName            underscore_name         Comparable?
 
 // Enumerates the special species, the ones that require special handling during
 // startup.
@@ -184,7 +184,7 @@ static value_t new_moved_object(value_t target) {
   F(Array,              array,                  NO)                            \
   F(ArrayBuffer,        array_buffer,           NO)                            \
   F(Blob,               blob,                   NO)                            \
-  F(Bool,               bool,                   NO)                            \
+  F(Bool,               bool,                   YES)                           \
   F(CodeBlock,          code_block,             NO)                            \
   F(Factory,            factory,                NO)                            \
   F(Guard,              guard,                  NO)                            \

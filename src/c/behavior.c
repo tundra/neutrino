@@ -68,11 +68,11 @@ value_t value_transient_identity_hash(value_t value) {
 
 // --- I d e n t i t y ---
 
-static bool integer_are_identical(value_t a, value_t b) {
+static bool integer_identity_compare(value_t a, value_t b) {
   return (a.encoded == b.encoded);
 }
 
-static bool object_are_identical(value_t a, value_t b) {
+static bool object_identity_compare(value_t a, value_t b) {
   CHECK_DOMAIN(vdObject, a);
   CHECK_DOMAIN(vdObject, b);
   object_family_t a_family = get_object_family(a);
@@ -80,10 +80,10 @@ static bool object_are_identical(value_t a, value_t b) {
   if (a_family != b_family)
     return false;
   family_behavior_t *behavior = get_object_family_behavior(a);
-  return (behavior->are_identical)(a, b);
+  return (behavior->identity_compare)(a, b);
 }
 
-bool value_are_identical(value_t a, value_t b) {
+bool value_identity_compare(value_t a, value_t b) {
   // First check that they even belong to the same domain. Values can be equal
   // across domains.
   value_domain_t a_domain = get_value_domain(a);
@@ -93,9 +93,9 @@ bool value_are_identical(value_t a, value_t b) {
   // Then dispatch to the domain equals functions.
   switch (a_domain) {
     case vdInteger:
-      return integer_are_identical(a, b);
+      return integer_identity_compare(a, b);
     case vdObject:
-      return object_are_identical(a, b);
+      return object_identity_compare(a, b);
     default:
       return false;
   }
@@ -270,7 +270,7 @@ value_t get_protocol(value_t self, runtime_t *runtime) {
 family_behavior_t k##Family##Behavior = {                                      \
   &family##_validate,                                                          \
   &family##_transient_identity_hash,                                           \
-  &family##_are_identical,                                                     \
+  &family##_identity_compare,                                                  \
   IS_CMP(&family##_ordering_compare, NULL),                                    \
   &family##_print_on,                                                          \
   &family##_print_atomic_on,                                                   \

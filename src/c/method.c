@@ -34,7 +34,7 @@ static score_t best_score(score_t a, score_t b) {
 
 static score_t find_best_match(runtime_t *runtime, value_t current,
     value_t target, score_t current_score, value_t space) {
-  if (value_are_identical(current, target)) {
+  if (value_identity_compare(current, target)) {
     return current_score;
   } else {
     value_t parents = get_protocol_parents(runtime, space, current);
@@ -56,7 +56,7 @@ score_t guard_match(runtime_t *runtime, value_t guard, value_t value,
   switch (get_guard_type(guard)) {
     case gtId: {
       value_t guard_value = get_guard_value(guard);
-      bool match = value_are_identical(guard_value, value);
+      bool match = value_identity_compare(guard_value, value);
       return match ? gsIdenticalMatch : gsNoMatch;
     }
     case gtIs: {
