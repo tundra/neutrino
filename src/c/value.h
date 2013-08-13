@@ -583,12 +583,15 @@ ACCESSORS_DECL(protocol, display_name);
 
 // Expands to a value_t initializer that represents an integer with the given
 // value.
-#define STATIC_INTEGER_INIT(V) {.as_integer={vdInteger, (V)}}
+#define STATIC_INTEGER_INIT(V) {as_integer={vdInteger, (V)}}
 
 // Values indicating the relative ordering of values.
 static const value_t kLessThanValue = STATIC_INTEGER_INIT(-1);
 static const value_t kEqualValue = STATIC_INTEGER_INIT(0);
 static const value_t kGreaterThanValue = STATIC_INTEGER_INIT(1);
+
+
+
 
 // --- D e b u g ---
 
