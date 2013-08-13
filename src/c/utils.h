@@ -33,6 +33,11 @@ void string_copy_to(string_t *str, char *dest, size_t count);
 // Returns true iff the two strings are equal.
 bool string_equals(string_t *a, string_t *b);
 
+// Returns an integer indicating how a and b relate in lexical ordering. It
+// holds that (string_compare(a, b) REL 0) when (a REL b) for a relational
+// operator REL.
+int string_compare(string_t *a, string_t *b);
+
 // Returns true iff the given string is equal to the given c-string.
 bool string_equals_cstr(string_t *a, const char *b);
 

@@ -139,7 +139,7 @@ value_t emit_value(value_t value, assembler_t *assm) {
   if (!in_domain(vdObject, value))
     return new_signal(scInvalidSyntax);
   switch (get_object_family(value)) {
-#define __EMIT_SYNTAX_FAMILY_CASE__(Family, family)                            \
+#define __EMIT_SYNTAX_FAMILY_CASE__(Family, family, IS_CMP)                    \
     case of##Family:                                                           \
       return emit_##family(value, assm);
     ENUM_SYNTAX_OBJECT_FAMILIES(__EMIT_SYNTAX_FAMILY_CASE__)

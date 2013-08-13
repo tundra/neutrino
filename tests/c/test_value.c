@@ -227,3 +227,54 @@ TEST(value, instance_division) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+
+TEST(value, ordering) {
+  ASSERT_EQ(0, ordering_to_int(int_to_ordering(0)));
+  ASSERT_EQ(-1, ordering_to_int(int_to_ordering(-1)));
+  ASSERT_EQ(1, ordering_to_int(int_to_ordering(1)));
+  ASSERT_EQ(-65536, ordering_to_int(int_to_ordering(-65536)));
+  ASSERT_EQ(1024, ordering_to_int(int_to_ordering(1024)));
+}
+
+
+TEST(value, integer_comparison) {
+#define ASSERT_INT_COMPARE(A, OP, B)                                           \
+  ASSERT_TRUE(ordering_to_int(value_ordering_compare(new_integer(A), new_integer(B))) OP 0)
+
+  ASSERT_INT_COMPARE(0, <, 1);
+  ASSERT_INT_COMPARE(0, ==, 0);
+  ASSERT_INT_COMPARE(2, >, 1);
+
+#undef ASSERT_INT_COMPARE
+}
+
+
+TEST(value, string_comparison) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  // Checks that the string with contents A compares to B as the given operator.
+#define ASSERT_STR_COMPARE(A, OP, B) do {                                      \
+  DEF_STR(a_str, A);                                                           \
+  value_t a = new_heap_string(&runtime, &a_str);                               \
+  DEF_STR(b_str, B);                                                           \
+  value_t b = new_heap_string(&runtime, &b_str);                               \
+  ASSERT_TRUE(ordering_to_int(value_ordering_compare(a, b)) OP 0);             \
+} while (false)
+
+  ASSERT_STR_COMPARE("", ==, "");
+  ASSERT_STR_COMPARE("", <, "x");
+  ASSERT_STR_COMPARE("", <, "xx");
+  ASSERT_STR_COMPARE("x", <, "xx");
+  ASSERT_STR_COMPARE("xx", ==, "xx");
+  ASSERT_STR_COMPARE("xxx", >, "xx");
+  ASSERT_STR_COMPARE("xy", >, "xx");
+  ASSERT_STR_COMPARE("yx", >, "xx");
+  ASSERT_STR_COMPARE("yx", >, "x");
+  ASSERT_STR_COMPARE("wx", >, "x");
+
+#undef ASSERT_STR_COMPARE
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
