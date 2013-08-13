@@ -58,7 +58,7 @@ value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity);
 value_t new_heap_null(runtime_t *runtime);
 
 // Creates a boolean singleton.
-value_t new_heap_bool(runtime_t *runtime, bool value);
+value_t new_heap_boolean(runtime_t *runtime, bool value);
 
 // Creates a new empty object instance with the given instance species.
 value_t new_heap_instance(runtime_t *runtime, value_t species);
@@ -92,6 +92,10 @@ value_t new_heap_stack(runtime_t *runtime, size_t initial_capacity);
 
 // Creates a new parameter guard.
 value_t new_heap_guard(runtime_t *runtime, guard_type_t type, value_t value);
+
+// Creates a new signature with the specified attributes.
+value_t new_heap_signature(runtime_t *runtime, value_t tags, value_t descriptors,
+    size_t param_count, size_t mandatory_count, bool allow_extra);
 
 // Creates a new empty method space.
 value_t new_heap_method_space(runtime_t *runtime);

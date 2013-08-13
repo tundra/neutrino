@@ -33,10 +33,10 @@ TEST(runtime, singletons) {
   ASSERT_FAMILY(ofNull, null);
   value_t thrue = runtime_bool(&runtime, true);
   value_t fahlse = runtime_bool(&runtime, false);
-  ASSERT_FAMILY(ofBool, thrue);
-  ASSERT_TRUE(get_bool_value(thrue));
-  ASSERT_FAMILY(ofBool, fahlse);
-  ASSERT_FALSE(get_bool_value(fahlse));
+  ASSERT_FAMILY(ofBoolean, thrue);
+  ASSERT_TRUE(get_boolean_value(thrue));
+  ASSERT_FAMILY(ofBoolean, fahlse);
+  ASSERT_FALSE(get_boolean_value(fahlse));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

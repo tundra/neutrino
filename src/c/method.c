@@ -7,9 +7,26 @@
 #include "value-inl.h"
 
 
+// --- S i g n a t u r e ---
+
+TRIVIAL_PRINT_ON_IMPL(Signature, signature);
+
+CHECKED_ACCESSORS_IMPL(Signature, signature, Array, Tags, tags);
+CHECKED_ACCESSORS_IMPL(Signature, signature, Array, Descriptors, descriptors);
+INTEGER_ACCESSORS_IMPL(Signature, signature, ParameterCount, parameter_count);
+INTEGER_ACCESSORS_IMPL(Signature, signature, MandatoryCount, mandatory_count);
+INTEGER_ACCESSORS_IMPL(Signature, signature, AllowExtra, allow_extra);
+
+value_t signature_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofSignature, value);
+  VALIDATE_VALUE_FAMILY(ofArray, get_signature_tags(value));
+  VALIDATE_VALUE_FAMILY(ofArray, get_signature_descriptors(value));
+  return success();
+}
+
+
 // --- G u a r d ---
 
-FIXED_SIZE_PURE_VALUE_IMPL(Guard, guard);
 TRIVIAL_PRINT_ON_IMPL(Guard, guard);
 
 ENUM_ACCESSORS_IMPL(Guard, guard, guard_type_t, Type, type);
@@ -75,7 +92,6 @@ score_t guard_match(runtime_t *runtime, value_t guard, value_t value,
 
 // --- M e t h o d   s p a c e ---
 
-FIXED_SIZE_PURE_VALUE_IMPL(MethodSpace, method_space);
 TRIVIAL_PRINT_ON_IMPL(MethodSpace, method_space);
 
 CHECKED_ACCESSORS_IMPL(MethodSpace, method_space, IdHashMap, InheritanceMap,

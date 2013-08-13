@@ -176,37 +176,40 @@ static value_t new_moved_object(value_t target) {
 //   - Cid: do the values have a custom identity comparison function?
 //   - Cnt: can the contents be set?
 //   - Sur: is this type exposed to the surface language?
+//   - Nol: does this type have a nontrivial layout, either non-value fields or
+//       variable size.
 //
-// CamelName            underscore_name         Cmp Cid Cnt Sur
+// CamelName            underscore_name         Cmp Cid Cnt Sur Nol
 
 // Enumerates the special species, the ones that require special handling during
 // startup.
 #define ENUM_SPECIAL_OBJECT_FAMILIES(F)                                        \
-  F(Species,            species,                _,  _,  _,  _)
+  F(Species,            species,                _,  _,  _,  _,  X)
 
 // Enumerates the syntax tree families.
 #define ENUM_SYNTAX_OBJECT_FAMILIES(F)                                         \
-  F(ArrayAst,           array_ast,              _,  _,  X,  X)                 \
-  F(LiteralAst,         literal_ast,            _,  _,  X,  X)
+  F(ArrayAst,           array_ast,              _,  _,  X,  X,  _)             \
+  F(LiteralAst,         literal_ast,            _,  _,  X,  X,  _)
 
 // Enumerates the compact object species.
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
-  F(Array,              array,                  _,  _,  _,  X)                 \
-  F(ArrayBuffer,        array_buffer,           _,  _,  _,  X)                 \
-  F(Blob,               blob,                   _,  _,  _,  X)                 \
-  F(Bool,               bool,                   X,  X,  _,  X)                 \
-  F(CodeBlock,          code_block,             _,  _,  _,  _)                 \
-  F(Factory,            factory,                _,  _,  _,  _)                 \
-  F(Guard,              guard,                  _,  _,  _,  _)                 \
-  F(IdHashMap,          id_hash_map,            _,  _,  _,  X)                 \
-  F(Instance,           instance,               _,  _,  X,  X)                 \
-  F(MethodSpace,        method_space,           _,  _,  _,  _)                 \
-  F(Null,               null,                   _,  X,  _,  X)                 \
-  F(Protocol,           protocol,               _,  _,  _,  X)                 \
-  F(Stack,              stack,                  _,  _,  _,  _)                 \
-  F(StackPiece,         stack_piece,            _,  _,  _,  _)                 \
-  F(String,             string,                 X,  X,  _,  X)                 \
-  F(VoidP,              void_p,                 _,  _,  _,  _)                 \
+  F(Array,              array,                  _,  _,  _,  X,  X)             \
+  F(ArrayBuffer,        array_buffer,           _,  _,  _,  X,  _)             \
+  F(Blob,               blob,                   _,  _,  _,  X,  X)             \
+  F(Boolean,            boolean,                X,  X,  _,  X,  _)             \
+  F(CodeBlock,          code_block,             _,  _,  _,  _,  _)             \
+  F(Factory,            factory,                _,  _,  _,  _,  _)             \
+  F(Guard,              guard,                  _,  _,  _,  _,  _)             \
+  F(IdHashMap,          id_hash_map,            _,  _,  _,  X,  _)             \
+  F(Instance,           instance,               _,  _,  X,  X,  _)             \
+  F(MethodSpace,        method_space,           _,  _,  _,  _,  _)             \
+  F(Null,               null,                   _,  X,  _,  X,  _)             \
+  F(Protocol,           protocol,               _,  _,  _,  X,  _)             \
+  F(Signature,          signature,              _,  _,  _,  _,  _)             \
+  F(Stack,              stack,                  _,  _,  _,  _,  _)             \
+  F(StackPiece,         stack_piece,            _,  _,  _,  _,  _)             \
+  F(String,             string,                 X,  X,  _,  X,  X)             \
+  F(VoidP,              void_p,                 _,  _,  _,  _,  X)             \
   ENUM_SYNTAX_OBJECT_FAMILIES(F)
 
 // Enumerates all the object families.
@@ -217,7 +220,7 @@ static value_t new_moved_object(value_t target) {
 // Enum identifying the different families of heap objects.
 typedef enum {
   __ofFirst__ = -1
-  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CMP, CID, CNT, SUR) , of##Family
+  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CMP, CID, CNT, SUR, NOL) , of##Family
   ENUM_OBJECT_FAMILIES(__DECLARE_OBJECT_FAMILY_ENUM__)
   #undef __DECLARE_OBJECT_FAMILY_ENUM__
 } object_family_t;
@@ -529,16 +532,16 @@ void id_hash_map_iter_get_current(id_hash_map_iter_t *iter, value_t *key_out,
 static const size_t kNullSize = OBJECT_SIZE(0);
 
 
-// --- B o o l ---
+// --- B o o l e a n ---
 
-static const size_t kBoolSize = OBJECT_SIZE(1);
-static const size_t kBoolValueOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kBooleanSize = OBJECT_SIZE(1);
+static const size_t kBooleanValueOffset = OBJECT_FIELD_OFFSET(0);
 
 // Sets whether the given bool represents true or false.
-void set_bool_value(value_t value, bool truth);
+void set_boolean_value(value_t value, bool truth);
 
 // Returns whether the given bool is true.
-bool get_bool_value(value_t value);
+bool get_boolean_value(value_t value);
 
 
 // --- I n s t a n c e ---

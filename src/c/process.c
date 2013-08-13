@@ -9,8 +9,6 @@
 
 // --- S t a c k   p i e c e ---
 
-FIXED_SIZE_PURE_VALUE_IMPL(StackPiece, stack_piece);
-
 CHECKED_ACCESSORS_IMPL(StackPiece, stack_piece, Array, Storage, storage);
 UNCHECKED_ACCESSORS_IMPL(StackPiece, stack_piece, Previous, previous);
 INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopFramePointer, top_frame_pointer);
@@ -36,8 +34,6 @@ void stack_piece_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 
 // --- S t a c k   ---
-
-FIXED_SIZE_PURE_VALUE_IMPL(Stack, stack);
 
 CHECKED_ACCESSORS_IMPL(Stack, stack, StackPiece, TopPiece, top_piece);
 INTEGER_ACCESSORS_IMPL(Stack, stack, DefaultPieceCapacity, default_piece_capacity);

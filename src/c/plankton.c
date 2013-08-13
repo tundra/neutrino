@@ -194,8 +194,8 @@ static value_t object_serialize(value_t value, serialize_state_t *state) {
   switch (get_object_family(value)) {
     case ofNull:
       return singleton_serialize(pNull, state->buf);
-    case ofBool:
-      return singleton_serialize(get_bool_value(value) ? pTrue : pFalse, state->buf);
+    case ofBoolean:
+      return singleton_serialize(get_boolean_value(value) ? pTrue : pFalse, state->buf);
     case ofArray:
       return array_serialize(value, state);
     case ofIdHashMap:

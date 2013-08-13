@@ -124,11 +124,11 @@ value_t new_heap_null(runtime_t *runtime) {
   return alloc_heap_object(&runtime->heap, size, runtime->roots.null_species);
 }
 
-value_t new_heap_bool(runtime_t *runtime, bool value) {
-  size_t size = kBoolSize;
+value_t new_heap_boolean(runtime_t *runtime, bool value) {
+  size_t size = kBooleanSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.bool_species));
-  set_bool_value(result, value);
+      runtime->roots.boolean_species));
+  set_boolean_value(result, value);
   return post_create_sanity_check(result, size);
 }
 
@@ -214,6 +214,21 @@ value_t new_heap_guard(runtime_t *runtime, guard_type_t type, value_t value) {
       runtime->roots.guard_species));
   set_guard_type(result, type);
   set_guard_value(result, value);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_signature(runtime_t *runtime, value_t tags, value_t descriptors,
+    size_t param_count, size_t mandatory_count, bool allow_extra) {
+  CHECK_FAMILY(ofArray, tags);
+  CHECK_FAMILY(ofArray, descriptors);
+  size_t size = kSignatureSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.signature_species));
+  set_signature_tags(result, tags);
+  set_signature_descriptors(result, descriptors);
+  set_signature_parameter_count(result, param_count);
+  set_signature_mandatory_count(result, mandatory_count);
+  set_signature_allow_extra(result, allow_extra);
   return post_create_sanity_check(result, size);
 }
 
