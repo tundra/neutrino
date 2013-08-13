@@ -15,6 +15,9 @@ MODE=dbg
 # Whether to treat warnings as errors or just warnings.
 STRICT_ERRORS=on
 
+# Whether to execute the CHECK macros or disable them.
+CHECKS=on
+
 -include .$(CONFIG).cfg
 
 ifeq ($(VALGRIND),on)
@@ -65,6 +68,13 @@ else
 endif
 
 
+DEFINES=-DM$(MACHINE)=1
+# Decide whether to define ENABLE_CHECKS based on the CHECKS variable.
+ifeq ($(CHECKS),on)
+  DEFINES := $(DEFINES) -DENABLE_CHECKS=1
+endif
+
+
 # Configuration of the C language dialect to use.
 C_DIALECT_FLAGS=-Wall -Wextra -Wno-unused-parameter -Wno-unused-function -std=c99
 ifeq ($(STRICT_ERRORS),on)
@@ -73,7 +83,7 @@ endif
 
 
 C_ENV_FLAGS=-Isrc/c -I$(BIN)/tests/c
-CFLAGS=$(C_DIALECT_FLAGS) $(C_ENV_FLAGS) $(OPT_FLAGS) -m$(MACHINE) -DM$(MACHINE)=1
+CFLAGS=$(C_DIALECT_FLAGS) $(C_ENV_FLAGS) $(OPT_FLAGS) -m$(MACHINE) $(DEFINES)
 LINKFLAGS=-m$(MACHINE) -rdynamic
 
 

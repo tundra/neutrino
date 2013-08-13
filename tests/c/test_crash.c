@@ -9,6 +9,9 @@ static value_t do_check(bool value, signal_cause_t cause) {
 }
 
 TEST(crash, soft_check_failures) {
+#ifndef CHECKS_ENABLED
+  return;
+#endif
   check_recorder_t recorder;
   install_check_recorder(&recorder);
 
