@@ -297,24 +297,25 @@ TEST(value, array_sort) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
-  static const int kSize = 32;
-  static const int kUnsorted[kSize] = {
+#define kTestArraySize 32
+
+  static const int kUnsorted[kTestArraySize] = {
       44, 29, 86, 93, 6, 37, 93, 15, 18, 88, 93, 5, 97, 69, 32, 27, 2, 96, 34,
       33, 15, 61, 48, 19, 93, 9, 27, 70, 86, 41, 81, 61
   };
-  static const int kSorted[kSize] = {
+  static const int kSorted[kTestArraySize] = {
       2, 5, 6, 9, 15, 15, 18, 19, 27, 27, 29, 32, 33, 34, 37, 41, 44, 48, 61,
       61, 69, 70, 81, 86, 86, 88, 93, 93, 93, 93, 96, 97
   };
 
   ASSERT_TRUE(is_array_sorted(runtime.roots.empty_array));
 
-  value_t array = new_heap_array(&runtime, kSize);
-  for (size_t i = 0; i < kSize; i++)
+  value_t array = new_heap_array(&runtime, kTestArraySize);
+  for (size_t i = 0; i < kTestArraySize; i++)
     set_array_at(array, i, new_integer(kUnsorted[i]));
   ASSERT_FALSE(is_array_sorted(array));
   sort_array(array);
-  for (size_t i = 0; i < kSize; i++)
+  for (size_t i = 0; i < kTestArraySize; i++)
     ASSERT_EQ(kSorted[i], get_integer_value(get_array_at(array, i)));
   ASSERT_TRUE(is_array_sorted(array));
 
