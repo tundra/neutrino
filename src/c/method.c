@@ -27,9 +27,13 @@ bool is_score_match(score_t score) {
   return score != gsNoMatch;
 }
 
+int compare_scores(score_t a, score_t b) {
+  return a < b ? -1 : (a == b ? 0 : 1);
+}
+
 // Given two scores returns the best of them.
 static score_t best_score(score_t a, score_t b) {
-  return (a < b) ? a : b;
+  return (compare_scores(a, b) < 0) ? a : b;
 }
 
 static score_t find_best_match(runtime_t *runtime, value_t current,
