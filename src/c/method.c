@@ -7,6 +7,17 @@
 #include "value-inl.h"
 
 
+// --- S i g n a t u r e ---
+
+FIXED_SIZE_PURE_VALUE_IMPL(Signature, signature);
+TRIVIAL_PRINT_ON_IMPL(Signature, signature);
+
+value_t signature_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofSignature, value);
+  return success();
+}
+
+
 // --- G u a r d ---
 
 FIXED_SIZE_PURE_VALUE_IMPL(Guard, guard);
