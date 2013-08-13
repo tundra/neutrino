@@ -93,6 +93,10 @@ value_t new_heap_stack(runtime_t *runtime, size_t initial_capacity);
 // Creates a new parameter guard.
 value_t new_heap_guard(runtime_t *runtime, guard_type_t type, value_t value);
 
+// Creates a new signature with the specified attributes.
+value_t new_heap_signature(runtime_t *runtime, value_t tags, value_t descriptors,
+    size_t param_count, size_t mandatory_count, bool allow_extra);
+
 // Creates a new empty method space.
 value_t new_heap_method_space(runtime_t *runtime);
 

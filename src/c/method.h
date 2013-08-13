@@ -24,6 +24,15 @@ ACCESSORS_DECL(signature, tags);
 // The matching array of parameter descriptors.
 ACCESSORS_DECL(signature, descriptors);
 
+// The number of parameters defined by this signature.
+INTEGER_ACCESSORS_DECL(signature, parameter_count);
+
+// The number of mandatory parameters required by this signature.
+INTEGER_ACCESSORS_DECL(signature, mandatory_count);
+
+// Are extra arguments allowed?
+INTEGER_ACCESSORS_DECL(signature, allow_extra);
+
 
 // --- P a r a m e t e r ---
 

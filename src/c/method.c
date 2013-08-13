@@ -11,8 +11,16 @@
 
 TRIVIAL_PRINT_ON_IMPL(Signature, signature);
 
+CHECKED_ACCESSORS_IMPL(Signature, signature, Array, Tags, tags);
+CHECKED_ACCESSORS_IMPL(Signature, signature, Array, Descriptors, descriptors);
+INTEGER_ACCESSORS_IMPL(Signature, signature, ParameterCount, parameter_count);
+INTEGER_ACCESSORS_IMPL(Signature, signature, MandatoryCount, mandatory_count);
+INTEGER_ACCESSORS_IMPL(Signature, signature, AllowExtra, allow_extra);
+
 value_t signature_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofSignature, value);
+  VALIDATE_VALUE_FAMILY(ofArray, get_signature_tags(value));
+  VALIDATE_VALUE_FAMILY(ofArray, get_signature_descriptors(value));
   return success();
 }
 

@@ -170,3 +170,15 @@ TEST(method, multi_score) {
 }
 
 #undef ASSERT_COMPARE
+
+TEST(method, signature) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t empty_array = runtime.roots.empty_array;
+  value_t signature = new_heap_signature(&runtime, empty_array, empty_array,
+      0, 0, false);
+  ASSERT_SUCCESS(signature);
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
