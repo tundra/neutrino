@@ -327,6 +327,40 @@ void array_print_atomic_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, "#<array[%i]>", (int) get_array_length(value));
 }
 
+// Compares two values pointed to by two void pointers.
+static int value_compare_function(const void *vp_a, const void *vp_b) {
+  value_t a = *((const value_t*) vp_a);
+  value_t b = *((const value_t*) vp_b);
+  value_t comparison = value_ordering_compare(a, b);
+  CHECK_FALSE("not comparable", in_domain(vdSignal, comparison));
+  return ordering_to_int(comparison);
+}
+
+value_t sort_array(value_t value) {
+  CHECK_FAMILY(ofArray, value);
+  size_t length = get_array_length(value);
+  value_t *elements = get_array_elements(value);
+  // Just use qsort. This means that we can't propagate signals from the compare
+  // functions back out but that shouldn't be a huge issue. We'll check on them
+  // for now and later on this will have to be rewritten in n anyway.
+  qsort(elements, length, sizeof(value_t), &value_compare_function);
+  return success();
+}
+
+bool is_array_sorted(value_t value) {
+  CHECK_FAMILY(ofArray, value);
+  size_t length = get_array_length(value);
+  for (size_t i = 1; i < length; i++) {
+    value_t a = get_array_at(value, i - 1);
+    value_t b = get_array_at(value, i);
+    value_t comparison = value_ordering_compare(a, b);
+    CHECK_FALSE("not comparable", in_domain(vdSignal, comparison));
+    if (ordering_to_int(comparison) > 0)
+      return false;
+  }
+  return true;
+}
+
 
 // --- A r r a y   b u f f e r ---
 
