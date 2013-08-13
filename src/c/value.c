@@ -51,10 +51,7 @@ family_behavior_t *get_object_family_behavior(value_t self) {
 
 // --- S p e c i e s ---
 
-OBJECT_IDENTITY_IMPL(species);
-CANT_SET_CONTENTS(species);
 TRIVIAL_PRINT_ON_IMPL(Species, species);
-NO_FAMILY_PROTOCOL_IMPL(species);
 
 void set_species_instance_family(value_t value,
     object_family_t instance_family) {
@@ -124,7 +121,6 @@ CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance, Protocol,
 
 // --- S t r i n g ---
 
-CANT_SET_CONTENTS(string);
 GET_FAMILY_PROTOCOL_IMPL(string);
 
 size_t calc_string_size(size_t char_count) {
@@ -202,8 +198,6 @@ void string_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- B l o b ---
 
-OBJECT_IDENTITY_IMPL(blob);
-CANT_SET_CONTENTS(blob);
 GET_FAMILY_PROTOCOL_IMPL(blob);
 
 size_t calc_blob_size(size_t size) {
@@ -256,10 +250,7 @@ void blob_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- V o i d   P ---
 
-OBJECT_IDENTITY_IMPL(void_p);
-CANT_SET_CONTENTS(void_p);
 TRIVIAL_PRINT_ON_IMPL(VoidP, void_p);
-NO_FAMILY_PROTOCOL_IMPL(void_p);
 
 void set_void_p_value(value_t value, void *ptr) {
   CHECK_FAMILY(ofVoidP, value);
@@ -284,8 +275,6 @@ void get_void_p_layout(value_t value, object_layout_t *layout) {
 
 // --- A r r a y ---
 
-OBJECT_IDENTITY_IMPL(array);
-CANT_SET_CONTENTS(array);
 GET_FAMILY_PROTOCOL_IMPL(array);
 
 size_t calc_array_size(size_t length) {
@@ -341,8 +330,6 @@ void array_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- A r r a y   b u f f e r ---
 
-OBJECT_IDENTITY_IMPL(array_buffer);
-CANT_SET_CONTENTS(array_buffer);
 FIXED_SIZE_PURE_VALUE_IMPL(ArrayBuffer, array_buffer);
 TRIVIAL_PRINT_ON_IMPL(ArrayBuffer, array_buffer);
 GET_FAMILY_PROTOCOL_IMPL(array_buffer);
@@ -377,8 +364,6 @@ value_t get_array_buffer_at(value_t self, size_t index) {
 
 // --- I d e n t i t y   h a s h   m a p ---
 
-OBJECT_IDENTITY_IMPL(id_hash_map);
-CANT_SET_CONTENTS(id_hash_map);
 FIXED_SIZE_PURE_VALUE_IMPL(IdHashMap, id_hash_map);
 GET_FAMILY_PROTOCOL_IMPL(id_hash_map);
 
@@ -568,7 +553,6 @@ void id_hash_map_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- N u l l ---
 
-CANT_SET_CONTENTS(null);
 FIXED_SIZE_PURE_VALUE_IMPL(Null, null);
 GET_FAMILY_PROTOCOL_IMPL(null);
 
@@ -600,7 +584,6 @@ void null_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- B o o l ---
 
-CANT_SET_CONTENTS(bool);
 FIXED_SIZE_PURE_VALUE_IMPL(Bool, bool);
 GET_FAMILY_PROTOCOL_IMPL(bool);
 
@@ -649,7 +632,6 @@ void bool_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- I n s t a n c e ---
 
-OBJECT_IDENTITY_IMPL(instance);
 FIXED_SIZE_PURE_VALUE_IMPL(Instance, instance);
 
 CHECKED_ACCESSORS_IMPL(Instance, instance, IdHashMap, Fields, fields);
@@ -697,10 +679,7 @@ value_t get_instance_protocol(value_t self, runtime_t *runtime) {
 
 // --- F a c t o r y ---
 
-OBJECT_IDENTITY_IMPL(factory);
-CANT_SET_CONTENTS(factory);
 FIXED_SIZE_PURE_VALUE_IMPL(Factory, factory);
-NO_FAMILY_PROTOCOL_IMPL(factory);
 
 CHECKED_ACCESSORS_IMPL(Factory, factory, VoidP, Constructor, constructor);
 
@@ -726,10 +705,7 @@ void factory_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- C o d e   b l o c k ---
 
-OBJECT_IDENTITY_IMPL(code_block);
-CANT_SET_CONTENTS(code_block);
 FIXED_SIZE_PURE_VALUE_IMPL(CodeBlock, code_block);
-NO_FAMILY_PROTOCOL_IMPL(code_block);
 
 CHECKED_ACCESSORS_IMPL(CodeBlock, code_block, Blob, Bytecode, bytecode);
 CHECKED_ACCESSORS_IMPL(CodeBlock, code_block, Array, ValuePool, value_pool);
@@ -757,8 +733,6 @@ void code_block_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- P r o t o c o l ---
 
-OBJECT_IDENTITY_IMPL(protocol);
-CANT_SET_CONTENTS(protocol);
 FIXED_SIZE_PURE_VALUE_IMPL(Protocol, protocol);
 GET_FAMILY_PROTOCOL_IMPL(protocol);
 

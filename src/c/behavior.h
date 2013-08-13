@@ -101,24 +101,24 @@ value_t get_protocol(value_t value, runtime_t *runtime);
 #define OBJ_ADDR_HASH(VAL) new_integer((VAL).encoded)
 
 // Declare the behavior structs for all the families on one fell swoop.
-#define DECLARE_FAMILY_BEHAVIOR(Family, family, IS_CMP)                        \
+#define DECLARE_FAMILY_BEHAVIOR(Family, family, CMP, CID, CNT, SUR)            \
 extern family_behavior_t k##Family##Behavior;
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 #undef DECLARE_FAMILY_BEHAVIOR
 
 // Declare the functions that implement the behaviors too, that way they can be
 // implemented wherever.
-#define DECLARE_FAMILY_BEHAVIOR_IMPLS(Family, family, IS_CMP)                  \
+#define DECLARE_FAMILY_BEHAVIOR_IMPLS(Family, family, CMP, CID, CNT, SUR)      \
 value_t family##_validate(value_t value);                                      \
-value_t family##_transient_identity_hash(value_t value);                       \
-bool family##_identity_compare(value_t a, value_t b);                          \
-IS_CMP(value_t family##_ordering_compare(value_t a, value_t b);,)              \
+CID(value_t family##_transient_identity_hash(value_t value);,)                 \
+CID(bool family##_identity_compare(value_t a, value_t b);,)                    \
+CMP(value_t family##_ordering_compare(value_t a, value_t b);,)                 \
 void family##_print_on(value_t value, string_buffer_t *buf);                   \
 void family##_print_atomic_on(value_t value, string_buffer_t *buf);            \
 void get_##family##_layout(value_t value, object_layout_t *layout_out);        \
-value_t set_##family##_contents(value_t value, runtime_t *runtime,             \
-    value_t contents);                                                         \
-value_t get_##family##_protocol(value_t value, runtime_t *runtime);
+CNT(value_t set_##family##_contents(value_t value, runtime_t *runtime,         \
+    value_t contents);,)                                                       \
+SUR(value_t get_##family##_protocol(value_t value, runtime_t *runtime);,)
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR_IMPLS)
 #undef DECLARE_FAMILY_BEHAVIOR_IMPLS
 

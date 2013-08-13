@@ -17,7 +17,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   roots->species_species = meta;
 
   // Generate initialization for the other compact species.
-#define __CREATE_COMPACT_SPECIES__(Family, family, IS_CMP)                     \
+#define __CREATE_COMPACT_SPECIES__(Family, family, CMP, CID, CNT, SUR)         \
   TRY_SET(roots->family##_species, new_heap_compact_species(runtime, of##Family, &k##Family##Behavior));
   ENUM_COMPACT_OBJECT_FAMILIES(__CREATE_COMPACT_SPECIES__)
 #undef __CREATE_COMPACT_SPECIES__
@@ -36,8 +36,8 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
       new_heap_instance_species(runtime, empty_protocol));
 
   // Generate initialization for the per-family protocols.
-#define __CREATE_FAMILY_PROTOCOL__(Family, family, IS_CMP)                     \
-  TRY_SET(roots->family##_protocol, new_heap_protocol(runtime, roots->null));
+#define __CREATE_FAMILY_PROTOCOL__(Family, family, CMP, CID, CNT, SUR)         \
+  SUR(TRY_SET(roots->family##_protocol, new_heap_protocol(runtime, roots->null));,)
   ENUM_OBJECT_FAMILIES(__CREATE_FAMILY_PROTOCOL__)
 #undef __CREATE_FAMILY_PROTOCOL__
 
@@ -95,9 +95,9 @@ value_t roots_validate(roots_t *roots) {
   } while (false)
 
   // Generate validation for species.
-#define __VALIDATE_PER_FAMILY_FIELDS__(Family, family, IS_CMP)                 \
+#define __VALIDATE_PER_FAMILY_FIELDS__(Family, family, CMP, CID, CNT, SUR)     \
   VALIDATE_SPECIES(of##Family, roots->family##_species);                       \
-  VALIDATE_OBJECT(ofProtocol, roots->family##_protocol);
+  SUR(VALIDATE_OBJECT(ofProtocol, roots->family##_protocol);,)
   ENUM_OBJECT_FAMILIES(__VALIDATE_PER_FAMILY_FIELDS__)
 #undef __VALIDATE_PER_FAMILY_FIELDS__
 
@@ -124,9 +124,9 @@ value_t roots_validate(roots_t *roots) {
 
 value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
   // Generate code for visiting the species.
-#define __VISIT_PER_FAMILY_FIELDS__(Family, family, IS_CMP)                    \
+#define __VISIT_PER_FAMILY_FIELDS__(Family, family, CMP, CID, CNT, SUR)        \
   TRY(field_callback_call(callback, &roots->family##_species));                \
-  TRY(field_callback_call(callback, &roots->family##_protocol));
+  SUR(TRY(field_callback_call(callback, &roots->family##_protocol));,)
   ENUM_OBJECT_FAMILIES(__VISIT_PER_FAMILY_FIELDS__)
 #undef __VISIT_PER_FAMILY_FIELDS__
 

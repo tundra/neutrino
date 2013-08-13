@@ -49,6 +49,10 @@ static value_t integer_transient_identity_hash(value_t self) {
   return self;
 }
 
+static value_t default_object_transient_identity_hash(value_t value) {
+  return OBJ_ADDR_HASH(value);
+}
+
 static value_t object_transient_identity_hash(value_t self) {
   family_behavior_t *behavior = get_object_family_behavior(self);
   return (behavior->transient_identity_hash)(self);
@@ -69,6 +73,10 @@ value_t value_transient_identity_hash(value_t value) {
 // --- I d e n t i t y ---
 
 static bool integer_identity_compare(value_t a, value_t b) {
+  return (a.encoded == b.encoded);
+}
+
+static bool default_object_identity_compare(value_t a, value_t b) {
   return (a.encoded == b.encoded);
 }
 
@@ -241,6 +249,12 @@ value_t set_object_contents(runtime_t *runtime, value_t object, value_t payload)
   return (behavior->set_contents)(object, runtime, payload);
 }
 
+// A function compatible with set_contents that always returns unsupported.
+static value_t set_contents_unsupported(value_t value, runtime_t *runtime,
+    value_t contents) {
+  return new_signal(scUnsupportedBehavior);
+}
+
 
 // --- P r o t o c o l ---
 
@@ -260,23 +274,27 @@ value_t get_protocol(value_t self, runtime_t *runtime) {
   }
 }
 
+static value_t get_internal_object_protocol(value_t self, runtime_t *runtime) {
+  return new_signal(scInternalFamily);
+}
+
 
 // --- F r a m e w o r k ---
 
 // Define all the family behaviors in one go. Because of this, as soon as you
 // add a new object type you'll get errors for all the behaviors you need to
 // implement.
-#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, IS_CMP)                  \
+#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, CMP, CID, CNT, SUR)      \
 family_behavior_t k##Family##Behavior = {                                      \
   &family##_validate,                                                          \
-  &family##_transient_identity_hash,                                           \
-  &family##_identity_compare,                                                  \
-  IS_CMP(&family##_ordering_compare, NULL),                                    \
+  CID(&family##_transient_identity_hash, default_object_transient_identity_hash), \
+  CID(&family##_identity_compare, &default_object_identity_compare),           \
+  CMP(&family##_ordering_compare, NULL),                                       \
   &family##_print_on,                                                          \
   &family##_print_atomic_on,                                                   \
   &get_##family##_layout,                                                      \
-  &set_##family##_contents,                                                    \
-  &get_##family##_protocol                                                     \
+  CNT(&set_##family##_contents, &set_contents_unsupported),                    \
+  SUR(&get_##family##_protocol, &get_internal_object_protocol)                 \
 };
 ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #undef DEFINE_FAMILY_BEHAVIOR

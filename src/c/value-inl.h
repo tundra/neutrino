@@ -67,26 +67,6 @@ VALIDATE(in_family(ofFamily, EXPR))
 
 // --- B e h a v i o r ---
 
-// Declares the identity and identity hash functions for a value family that
-// uses object identity.
-#define OBJECT_IDENTITY_IMPL(family)                                           \
-value_t family##_transient_identity_hash(value_t value) {                      \
-  return OBJ_ADDR_HASH(value);                                                 \
-}                                                                              \
-bool family##_identity_compare(value_t a, value_t b) {                         \
-  return (a.encoded == b.encoded);                                             \
-}                                                                              \
-SWALLOW_SEMI(oii)
-
-// Declares a set_contents function that returns a signal indicating that this
-// family doesn't support setting contents.
-#define CANT_SET_CONTENTS(family)                                              \
-value_t set_##family##_contents(value_t value, runtime_t *runtime,             \
-    value_t contents) {                                                        \
-  return new_signal(scUnsupportedBehavior);                                    \
-}                                                                              \
-SWALLOW_SEMI(csc)
-
 // Declares the heap size functions for a fixed-size object that don't have any
 // non-value fields.
 #define FIXED_SIZE_PURE_VALUE_IMPL(Family, family)                             \
@@ -114,15 +94,6 @@ value_t get_##family##_protocol(value_t self, runtime_t *runtime) {            \
   return runtime->roots.family##_protocol;                                     \
 }                                                                              \
 SWALLOW_SEMI(gfpi)
-
-
-// Expands to an implementation of get_protocol that returns a signal. Use this
-// for families that are not intended to be available to the surface language.
-#define NO_FAMILY_PROTOCOL_IMPL(family)                                        \
-value_t get_##family##_protocol(value_t self, runtime_t *runtime) {            \
-  return new_signal(scUnsupportedBehavior);                                    \
-}                                                                              \
-SWALLOW_SEMI(nfpi)
 
 
 // --- P l a i n   a c c e s s o r s ---
