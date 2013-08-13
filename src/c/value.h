@@ -175,7 +175,7 @@ static value_t new_moved_object(value_t target) {
 //   - Cmp: do the values support ordered comparison?
 //   - Cid: do the values have a custom identity comparison function?
 //   - Cnt: can the contents be set?
-//   - Int: is this type exposed to the surface language?
+//   - Sur: is this type exposed to the surface language?
 //
 // CamelName            underscore_name         Cmp Cid Cnt Sur
 
