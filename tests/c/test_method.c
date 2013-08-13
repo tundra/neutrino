@@ -113,6 +113,12 @@ TEST(method, simple_is) {
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
+// Compare the score of matching guard GA against VA with the score of
+// matching GB against VB.
+#define ASSERT_COMPARE(GA, VA, REL, GB, VB)                                    \
+ASSERT_TRUE(compare_scores(guard_match(&runtime, GA, VA, space),             \
+    guard_match(&runtime, GB, VB, space)) REL 0)
+
 TEST(method, is_score) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
@@ -134,18 +140,33 @@ TEST(method, is_score) {
   value_t is_str = new_heap_guard(&runtime, gtIs, str_p);
   value_t is_s_str = new_heap_guard(&runtime, gtIs, s_str_p);
 
-  // Compare the score of matching guard GA against VA with the score of
-  // matching GB against VB.
-#define ASSERT_COMPARE(GA, VA, REL, GB, VB)                                    \
-  ASSERT_TRUE(compare_scores(guard_match(&runtime, GA, VA, space),             \
-      guard_match(&runtime, GB, VB, space)) REL 0)
-
   ASSERT_COMPARE(is_str, x, <, is_obj, x);
   ASSERT_COMPARE(is_x, x, <, is_str, x);
   ASSERT_COMPARE(is_str, s_str, <, is_obj, s_str);
   ASSERT_COMPARE(is_s_str, s_str, <, is_str, s_str);
 
-#undef ASSERT_COMPARE
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
+
+TEST(method, multi_score) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t int_str_p = new_heap_protocol(&runtime, runtime_null(&runtime));
+  value_t int_p = runtime.roots.integer_protocol;
+  value_t str_p = runtime.roots.string_protocol;
+  value_t space = new_heap_method_space(&runtime);
+  value_t is_str = new_heap_guard(&runtime, gtIs, str_p);
+  value_t is_int = new_heap_guard(&runtime, gtIs, int_p);
+  // int-str <: int, str
+  ASSERT_SUCCESS(add_method_space_inheritance(&runtime, space, int_str_p, int_p));
+  ASSERT_SUCCESS(add_method_space_inheritance(&runtime, space, int_str_p, str_p));
+
+  value_t int_str = new_instance_of(&runtime, int_str_p);
+
+  ASSERT_COMPARE(is_str, int_str, ==, is_int, int_str);
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+#undef ASSERT_COMPARE
