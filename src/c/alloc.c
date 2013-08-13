@@ -124,11 +124,11 @@ value_t new_heap_null(runtime_t *runtime) {
   return alloc_heap_object(&runtime->heap, size, runtime->roots.null_species);
 }
 
-value_t new_heap_bool(runtime_t *runtime, bool value) {
-  size_t size = kBoolSize;
+value_t new_heap_boolean(runtime_t *runtime, bool value) {
+  size_t size = kBooleanSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.bool_species));
-  set_bool_value(result, value);
+      runtime->roots.boolean_species));
+  set_boolean_value(result, value);
   return post_create_sanity_check(result, size);
 }
 

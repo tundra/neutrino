@@ -330,7 +330,6 @@ void array_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- A r r a y   b u f f e r ---
 
-FIXED_SIZE_PURE_VALUE_IMPL(ArrayBuffer, array_buffer);
 TRIVIAL_PRINT_ON_IMPL(ArrayBuffer, array_buffer);
 GET_FAMILY_PROTOCOL_IMPL(array_buffer);
 
@@ -364,7 +363,6 @@ value_t get_array_buffer_at(value_t self, size_t index) {
 
 // --- I d e n t i t y   h a s h   m a p ---
 
-FIXED_SIZE_PURE_VALUE_IMPL(IdHashMap, id_hash_map);
 GET_FAMILY_PROTOCOL_IMPL(id_hash_map);
 
 CHECKED_ACCESSORS_IMPL(IdHashMap, id_hash_map, Array, EntryArray, entry_array);
@@ -553,7 +551,6 @@ void id_hash_map_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- N u l l ---
 
-FIXED_SIZE_PURE_VALUE_IMPL(Null, null);
 GET_FAMILY_PROTOCOL_IMPL(null);
 
 value_t null_validate(value_t value) {
@@ -584,55 +581,52 @@ void null_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- B o o l ---
 
-FIXED_SIZE_PURE_VALUE_IMPL(Bool, bool);
-GET_FAMILY_PROTOCOL_IMPL(bool);
+GET_FAMILY_PROTOCOL_IMPL(boolean);
 
-void set_bool_value(value_t value, bool truth) {
-  CHECK_FAMILY(ofBool, value);
-  *access_object_field(value, kBoolValueOffset) = new_integer(truth ? 1 : 0);
+void set_boolean_value(value_t value, bool truth) {
+  CHECK_FAMILY(ofBoolean, value);
+  *access_object_field(value, kBooleanValueOffset) = new_integer(truth ? 1 : 0);
 }
 
-bool get_bool_value(value_t value) {
-  CHECK_FAMILY(ofBool, value);
-  return get_integer_value(*access_object_field(value, kBoolValueOffset));
+bool get_boolean_value(value_t value) {
+  CHECK_FAMILY(ofBoolean, value);
+  return get_integer_value(*access_object_field(value, kBooleanValueOffset));
 }
 
-value_t bool_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofBool, value);
-  bool which = get_bool_value(value);
+value_t boolean_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofBoolean, value);
+  bool which = get_boolean_value(value);
   VALIDATE((which == true) || (which == false));
   return success();
 }
 
-value_t bool_transient_identity_hash(value_t value) {
+value_t boolean_transient_identity_hash(value_t value) {
   static const size_t kTrueHash = 0x3213;
   static const size_t kFalseHash = 0x5423;
-  return new_integer(get_bool_value(value) ? kTrueHash : kFalseHash);
+  return new_integer(get_boolean_value(value) ? kTrueHash : kFalseHash);
 }
 
-bool bool_identity_compare(value_t a, value_t b) {
+bool boolean_identity_compare(value_t a, value_t b) {
   // There is only one true and false which are both only equal to themselves.
   return (a.encoded == b.encoded);
 }
 
-value_t bool_ordering_compare(value_t a, value_t b) {
-  CHECK_FAMILY(ofBool, a);
-  CHECK_FAMILY(ofBool, b);
-  return new_integer(get_bool_value(a) - get_bool_value(b));
+value_t boolean_ordering_compare(value_t a, value_t b) {
+  CHECK_FAMILY(ofBoolean, a);
+  CHECK_FAMILY(ofBoolean, b);
+  return new_integer(get_boolean_value(a) - get_boolean_value(b));
 }
 
-void bool_print_on(value_t value, string_buffer_t *buf) {
-  bool_print_atomic_on(value, buf);
+void boolean_print_on(value_t value, string_buffer_t *buf) {
+  boolean_print_atomic_on(value, buf);
 }
 
-void bool_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, get_bool_value(value) ? "true" : "false");
+void boolean_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, get_boolean_value(value) ? "true" : "false");
 }
 
 
 // --- I n s t a n c e ---
-
-FIXED_SIZE_PURE_VALUE_IMPL(Instance, instance);
 
 CHECKED_ACCESSORS_IMPL(Instance, instance, IdHashMap, Fields, fields);
 
@@ -679,8 +673,6 @@ value_t get_instance_protocol(value_t self, runtime_t *runtime) {
 
 // --- F a c t o r y ---
 
-FIXED_SIZE_PURE_VALUE_IMPL(Factory, factory);
-
 CHECKED_ACCESSORS_IMPL(Factory, factory, VoidP, Constructor, constructor);
 
 value_t factory_validate(value_t value) {
@@ -704,8 +696,6 @@ void factory_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 
 // --- C o d e   b l o c k ---
-
-FIXED_SIZE_PURE_VALUE_IMPL(CodeBlock, code_block);
 
 CHECKED_ACCESSORS_IMPL(CodeBlock, code_block, Blob, Bytecode, bytecode);
 CHECKED_ACCESSORS_IMPL(CodeBlock, code_block, Array, ValuePool, value_pool);
@@ -733,7 +723,6 @@ void code_block_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- P r o t o c o l ---
 
-FIXED_SIZE_PURE_VALUE_IMPL(Protocol, protocol);
 GET_FAMILY_PROTOCOL_IMPL(protocol);
 
 UNCHECKED_ACCESSORS_IMPL(Protocol, protocol, DisplayName, display_name);

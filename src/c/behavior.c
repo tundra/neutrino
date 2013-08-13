@@ -41,6 +41,20 @@ void get_object_layout(value_t self, object_layout_t *layout_out) {
   (behavior->get_object_layout)(self, layout_out);
 }
 
+// Declares the heap size functions for a fixed-size object that don't have any
+// non-value fields.
+#define __TRIVIAL_LAYOUT_FUNCTION__(Family, family)                            \
+static void get_##family##_layout(value_t value, object_layout_t *layout_out) {\
+  object_layout_set(layout_out, k##Family##Size, kObjectHeaderSize);           \
+}
+
+// Generate all the trivial layout functions since we know what they'll look
+// like.
+#define __DEFINE_TRIVIAL_LAYOUT_FUNCTION__(Family, family, CMP, CID, CNT, SUR, NOL) \
+NOL(,__TRIVIAL_LAYOUT_FUNCTION__(Family, family))
+  ENUM_OBJECT_FAMILIES(__DEFINE_TRIVIAL_LAYOUT_FUNCTION__)
+#undef __DEFINE_TRIVIAL_LAYOUT_FUNCTION__
+#undef __TRIVIAL_LAYOUT_FUNCTION__
 
 // --- I d e n t i t y   h a s h ---
 
@@ -284,7 +298,7 @@ static value_t get_internal_object_protocol(value_t self, runtime_t *runtime) {
 // Define all the family behaviors in one go. Because of this, as soon as you
 // add a new object type you'll get errors for all the behaviors you need to
 // implement.
-#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, CMP, CID, CNT, SUR)      \
+#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, CMP, CID, CNT, SUR, NOL) \
 family_behavior_t k##Family##Behavior = {                                      \
   &family##_validate,                                                          \
   CID(&family##_transient_identity_hash, default_object_transient_identity_hash), \

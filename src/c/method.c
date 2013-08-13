@@ -9,7 +9,6 @@
 
 // --- S i g n a t u r e ---
 
-FIXED_SIZE_PURE_VALUE_IMPL(Signature, signature);
 TRIVIAL_PRINT_ON_IMPL(Signature, signature);
 
 value_t signature_validate(value_t value) {
@@ -20,7 +19,6 @@ value_t signature_validate(value_t value) {
 
 // --- G u a r d ---
 
-FIXED_SIZE_PURE_VALUE_IMPL(Guard, guard);
 TRIVIAL_PRINT_ON_IMPL(Guard, guard);
 
 ENUM_ACCESSORS_IMPL(Guard, guard, guard_type_t, Type, type);
@@ -86,7 +84,6 @@ score_t guard_match(runtime_t *runtime, value_t guard, value_t value,
 
 // --- M e t h o d   s p a c e ---
 
-FIXED_SIZE_PURE_VALUE_IMPL(MethodSpace, method_space);
 TRIVIAL_PRINT_ON_IMPL(MethodSpace, method_space);
 
 CHECKED_ACCESSORS_IMPL(MethodSpace, method_space, IdHashMap, InheritanceMap,

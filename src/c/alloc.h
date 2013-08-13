@@ -58,7 +58,7 @@ value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity);
 value_t new_heap_null(runtime_t *runtime);
 
 // Creates a boolean singleton.
-value_t new_heap_bool(runtime_t *runtime, bool value);
+value_t new_heap_boolean(runtime_t *runtime, bool value);
 
 // Creates a new empty object instance with the given instance species.
 value_t new_heap_instance(runtime_t *runtime, value_t species);
