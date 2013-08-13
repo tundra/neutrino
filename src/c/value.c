@@ -347,6 +347,20 @@ value_t sort_array(value_t value) {
   return success();
 }
 
+bool is_array_sorted(value_t value) {
+  CHECK_FAMILY(ofArray, value);
+  size_t length = get_array_length(value);
+  for (size_t i = 1; i < length; i++) {
+    value_t a = get_array_at(value, i - 1);
+    value_t b = get_array_at(value, i);
+    value_t comparison = value_ordering_compare(a, b);
+    CHECK_FALSE("not comparable", in_domain(vdSignal, comparison));
+    if (ordering_to_int(comparison) > 0)
+      return false;
+  }
+  return true;
+}
+
 
 // --- A r r a y   b u f f e r ---
 

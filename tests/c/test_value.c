@@ -307,12 +307,16 @@ TEST(value, array_sort) {
       61, 69, 70, 81, 86, 86, 88, 93, 93, 93, 93, 96, 97
   };
 
+  ASSERT_TRUE(is_array_sorted(runtime.roots.empty_array));
+
   value_t array = new_heap_array(&runtime, kSize);
   for (size_t i = 0; i < kSize; i++)
     set_array_at(array, i, new_integer(kUnsorted[i]));
+  ASSERT_FALSE(is_array_sorted(array));
   sort_array(array);
   for (size_t i = 0; i < kSize; i++)
     ASSERT_EQ(kSorted[i], get_integer_value(get_array_at(array, i)));
+  ASSERT_TRUE(is_array_sorted(array));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 

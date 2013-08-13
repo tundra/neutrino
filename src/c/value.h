@@ -449,6 +449,9 @@ value_t *get_array_elements(value_t value);
 // values are not comparable, a signal is returned.
 value_t sort_array(value_t value);
 
+// Returns true if the given array is sorted.
+bool is_array_sorted(value_t value);
+
 
 // --- A r r a y   b u f f e r ---
 
