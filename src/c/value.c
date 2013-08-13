@@ -168,7 +168,7 @@ value_t string_transient_identity_hash(value_t value) {
   return new_integer(hash);
 }
 
-bool string_are_identical(value_t a, value_t b) {
+bool string_identity_compare(value_t a, value_t b) {
   CHECK_FAMILY(ofString, a);
   CHECK_FAMILY(ofString, b);
   string_t a_contents;
@@ -455,7 +455,7 @@ static bool find_id_hash_map_entry(value_t map, value_t key, size_t hash,
     size_t entry_hash = get_id_hash_map_entry_hash(entry);
     if (entry_hash == hash) {
       value_t entry_key = get_id_hash_map_entry_key(entry);
-      if (value_are_identical(key, entry_key)) {
+      if (value_identity_compare(key, entry_key)) {
         // Found the key; just return it.
         *entry_out = entry;
         return true;
@@ -582,7 +582,7 @@ value_t null_transient_identity_hash(value_t value) {
   return new_integer(kNullHash);
 }
 
-bool null_are_identical(value_t a, value_t b) {
+bool null_identity_compare(value_t a, value_t b) {
   // There is only one null so you should never end up comparing two different
   // ones.
   CHECK_EQ("multiple nulls", a.encoded, b.encoded);
@@ -627,9 +627,15 @@ value_t bool_transient_identity_hash(value_t value) {
   return new_integer(get_bool_value(value) ? kTrueHash : kFalseHash);
 }
 
-bool bool_are_identical(value_t a, value_t b) {
+bool bool_identity_compare(value_t a, value_t b) {
   // There is only one true and false which are both only equal to themselves.
   return (a.encoded == b.encoded);
+}
+
+value_t bool_ordering_compare(value_t a, value_t b) {
+  CHECK_FAMILY(ofBool, a);
+  CHECK_FAMILY(ofBool, b);
+  return new_integer(get_bool_value(a) - get_bool_value(b));
 }
 
 void bool_print_on(value_t value, string_buffer_t *buf) {

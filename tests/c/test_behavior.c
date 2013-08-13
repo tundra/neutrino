@@ -30,7 +30,7 @@ TEST(behavior, identity) {
 
   // Convenient shorthands.
   value_t (*hash)(value_t value) = value_transient_identity_hash;
-  bool (*equal)(value_t a, value_t b) = value_are_identical;
+  bool (*equal)(value_t a, value_t b) = value_identity_compare;
 
   // Integers
   ASSERT_SUCCESS(hash(new_integer(0)));

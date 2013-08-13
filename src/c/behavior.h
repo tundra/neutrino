@@ -33,7 +33,7 @@ struct family_behavior_t {
   // Calculates the transient identity hash.
   value_t (*transient_identity_hash)(value_t value);
   // Returns true iff the two values are identical.
-  bool (*are_identical)(value_t a, value_t b);
+  bool (*identity_compare)(value_t a, value_t b);
   // Returns a value indicating how a compares relative to b, if this kind of
   // object supports it. If this type doesn't support comparison this field
   // is NULL.
@@ -66,7 +66,7 @@ void get_object_layout(value_t value, object_layout_t *layout_out);
 value_t value_transient_identity_hash(value_t value);
 
 // Returns true iff the two values are identical.
-bool value_are_identical(value_t a, value_t b);
+bool value_identity_compare(value_t a, value_t b);
 
 // Returns a value indicating how a and b relate in the total ordering of
 // comparable values. If the values are not both comparable the result is
@@ -111,7 +111,7 @@ ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 #define DECLARE_FAMILY_BEHAVIOR_IMPLS(Family, family, IS_CMP)                  \
 value_t family##_validate(value_t value);                                      \
 value_t family##_transient_identity_hash(value_t value);                       \
-bool family##_are_identical(value_t a, value_t b);                             \
+bool family##_identity_compare(value_t a, value_t b);                          \
 IS_CMP(value_t family##_ordering_compare(value_t a, value_t b);,)              \
 void family##_print_on(value_t value, string_buffer_t *buf);                   \
 void family##_print_atomic_on(value_t value, string_buffer_t *buf);            \

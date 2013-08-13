@@ -73,7 +73,7 @@ VALIDATE(in_family(ofFamily, EXPR))
 value_t family##_transient_identity_hash(value_t value) {                      \
   return OBJ_ADDR_HASH(value);                                                 \
 }                                                                              \
-bool family##_are_identical(value_t a, value_t b) {                            \
+bool family##_identity_compare(value_t a, value_t b) {                         \
   return (a.encoded == b.encoded);                                             \
 }                                                                              \
 SWALLOW_SEMI(oii)
