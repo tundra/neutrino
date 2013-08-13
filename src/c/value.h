@@ -27,6 +27,7 @@ typedef enum {
 // Invokes the given macro for each signal cause.
 #define ENUM_SIGNAL_CAUSES(F)                                                  \
   F(HeapExhausted)                                                             \
+  F(InternalFamily)                                                            \
   F(InvalidInput)                                                              \
   F(InvalidSyntax)                                                             \
   F(MapFull)                                                                   \
@@ -161,42 +162,51 @@ static value_t new_moved_object(value_t target) {
 
 // --- O b j e c t ---
 
-// Indicates that a family supports a particular behavior.
-#define YES(T, F) T
+// Indicates that a family has a particular attribute.
+#define X(T, F) T
 
-// Indicates that a family does not support a particular behavior.
-#define NO(T, F) F
+// Indicates that a family does not have a particular attribute.
+#define _(T, F) F
 
-// CamelName            underscore_name         Comparable?
+// The columns are,
+//
+//   - CamelName: the name of the family in upper camel case.
+//   - underscore_name: the name of the family in lower underscore case.
+//   - Cmp: do the values support ordered comparison?
+//   - Cid: do the values have a custom identity comparison function?
+//   - Cnt: can the contents be set?
+//   - Int: is this type exposed to the surface language?
+//
+// CamelName            underscore_name         Cmp Cid Cnt Sur
 
 // Enumerates the special species, the ones that require special handling during
 // startup.
 #define ENUM_SPECIAL_OBJECT_FAMILIES(F)                                        \
-  F(Species,            species,                NO)
+  F(Species,            species,                _,  _,  _,  _)
 
 // Enumerates the syntax tree families.
 #define ENUM_SYNTAX_OBJECT_FAMILIES(F)                                         \
-  F(ArrayAst,           array_ast,              NO)                            \
-  F(LiteralAst,         literal_ast,            NO)
+  F(ArrayAst,           array_ast,              _,  _,  X,  X)                 \
+  F(LiteralAst,         literal_ast,            _,  _,  X,  X)
 
 // Enumerates the compact object species.
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
-  F(Array,              array,                  NO)                            \
-  F(ArrayBuffer,        array_buffer,           NO)                            \
-  F(Blob,               blob,                   NO)                            \
-  F(Bool,               bool,                   YES)                           \
-  F(CodeBlock,          code_block,             NO)                            \
-  F(Factory,            factory,                NO)                            \
-  F(Guard,              guard,                  NO)                            \
-  F(IdHashMap,          id_hash_map,            NO)                            \
-  F(Instance,           instance,               NO)                            \
-  F(MethodSpace,        method_space,           NO)                            \
-  F(Null,               null,                   NO)                            \
-  F(Protocol,           protocol,               NO)                            \
-  F(Stack,              stack,                  NO)                            \
-  F(StackPiece,         stack_piece,            NO)                            \
-  F(String,             string,                 YES)                           \
-  F(VoidP,              void_p,                 NO)                            \
+  F(Array,              array,                  _,  _,  _,  X)                 \
+  F(ArrayBuffer,        array_buffer,           _,  _,  _,  X)                 \
+  F(Blob,               blob,                   _,  _,  _,  X)                 \
+  F(Bool,               bool,                   X,  X,  _,  X)                 \
+  F(CodeBlock,          code_block,             _,  _,  _,  _)                 \
+  F(Factory,            factory,                _,  _,  _,  _)                 \
+  F(Guard,              guard,                  _,  _,  _,  _)                 \
+  F(IdHashMap,          id_hash_map,            _,  _,  _,  X)                 \
+  F(Instance,           instance,               _,  _,  X,  X)                 \
+  F(MethodSpace,        method_space,           _,  _,  _,  _)                 \
+  F(Null,               null,                   _,  X,  _,  X)                 \
+  F(Protocol,           protocol,               _,  _,  _,  X)                 \
+  F(Stack,              stack,                  _,  _,  _,  _)                 \
+  F(StackPiece,         stack_piece,            _,  _,  _,  _)                 \
+  F(String,             string,                 X,  X,  _,  X)                 \
+  F(VoidP,              void_p,                 _,  _,  _,  _)                 \
   ENUM_SYNTAX_OBJECT_FAMILIES(F)
 
 // Enumerates all the object families.
@@ -207,7 +217,7 @@ static value_t new_moved_object(value_t target) {
 // Enum identifying the different families of heap objects.
 typedef enum {
   __ofFirst__ = -1
-  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, IS_CMP) , of##Family
+  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CMP, CID, CNT, SUR) , of##Family
   ENUM_OBJECT_FAMILIES(__DECLARE_OBJECT_FAMILY_ENUM__)
   #undef __DECLARE_OBJECT_FAMILY_ENUM__
 } object_family_t;

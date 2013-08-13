@@ -18,9 +18,9 @@
 // A collection of all the root objects.
 typedef struct {
   // Basic family species and protocols
-#define __DECLARE_PER_SPECIES_ROOTS__(Family, family, IS_CMP)                  \
+#define __DECLARE_PER_SPECIES_ROOTS__(Family, family, CMP, CID, CNT, SUR)      \
   value_t family##_species;                                                    \
-  value_t family##_protocol;
+  SUR(value_t family##_protocol;,)
   ENUM_OBJECT_FAMILIES(__DECLARE_PER_SPECIES_ROOTS__)
 #undef __DECLARE_PER_SPECIES_ROOTS__
   // String->factory mapping.
