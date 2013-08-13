@@ -88,6 +88,10 @@ score_t guard_match(runtime_t *runtime, value_t guard, value_t value,
 // Returns true if the given score represents a match.
 bool is_score_match(score_t score);
 
+// Compares which score is best. If a is better than b then it will compare
+// smaller, equally good compares equal, and worse compares greater than.
+int compare_scores(score_t a, score_t b);
+
 
 // --- M e t h o d   s p a c e ---
 

@@ -59,42 +59,12 @@ TEST(method, method_space) {
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
 
-/*
-@Test
-  public void testSimpleIs() {
-    RProtocol sStrP = new RProtocol();
-    IHierarchy hierarchy = newHierarchy(
-        entry(INT_P, OBJ_P), entry(STR_P, OBJ_P), entry(sStrP, STR_P));
-    Guard isInt = Guard.is(INT_P);
-    Guard isObj = Guard.is(OBJ_P);
-    Guard isStr = Guard.is(STR_P);
-    Guard isSStr = Guard.is(sStrP);
-
-    IValue zero = toValue(0);
-    assertTrue(Guard.isMatch(isInt.match(zero, hierarchy)));
-    assertTrue(Guard.isMatch(isObj.match(zero, hierarchy)));
-    assertFalse(Guard.isMatch(isStr.match(zero, hierarchy)));
-    assertFalse(Guard.isMatch(isSStr.match(zero, hierarchy)));
-
-    IValue x = toValue("x");
-    assertFalse(Guard.isMatch(isInt.match(x, hierarchy)));
-    assertTrue(Guard.isMatch(isObj.match(x, hierarchy)));
-    assertTrue(Guard.isMatch(isStr.match(x, hierarchy)));
-    assertFalse(Guard.isMatch(isSStr.match(x, hierarchy)));
-
-    IValue sStr = withProtocol(sStrP);
-    assertFalse(Guard.isMatch(isInt.match(sStr, hierarchy)));
-    assertTrue(Guard.isMatch(isObj.match(sStr, hierarchy)));
-    assertTrue(Guard.isMatch(isStr.match(sStr, hierarchy)));
-    assertTrue(Guard.isMatch(isSStr.match(sStr, hierarchy)));
-
-    IValue nil = toValue(null);
-    assertFalse(Guard.isMatch(isInt.match(nil, hierarchy)));
-    assertFalse(Guard.isMatch(isObj.match(nil, hierarchy)));
-    assertFalse(Guard.isMatch(isStr.match(nil, hierarchy)));
-    assertFalse(Guard.isMatch(isSStr.match(nil, hierarchy)));
-  }
-  */
+// Returns a new instance with the given primary protocol.
+static value_t new_instance_of(runtime_t *runtime, value_t proto) {
+  CHECK_FAMILY(ofProtocol, proto);
+  value_t species = new_heap_instance_species(runtime, proto);
+  return new_heap_instance(runtime, species);
+}
 
 TEST(method, simple_is) {
   runtime_t runtime;
@@ -128,11 +98,54 @@ TEST(method, simple_is) {
   ASSERT_TRUE(is_score_match(guard_match(&runtime, is_str, x, space)));
   ASSERT_FALSE(is_score_match(guard_match(&runtime, is_s_str, x, space)));
 
+  value_t s_str = new_instance_of(&runtime, s_str_p);
+  ASSERT_FALSE(is_score_match(guard_match(&runtime, is_int, s_str, space)));
+  ASSERT_TRUE(is_score_match(guard_match(&runtime, is_obj, s_str, space)));
+  ASSERT_TRUE(is_score_match(guard_match(&runtime, is_str, s_str, space)));
+  ASSERT_TRUE(is_score_match(guard_match(&runtime, is_s_str, s_str, space)));
+
   value_t null = runtime_null(&runtime);
   ASSERT_FALSE(is_score_match(guard_match(&runtime, is_int, null, space)));
   ASSERT_FALSE(is_score_match(guard_match(&runtime, is_obj, null, space)));
   ASSERT_FALSE(is_score_match(guard_match(&runtime, is_str, null, space)));
   ASSERT_FALSE(is_score_match(guard_match(&runtime, is_s_str, null, space)));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
+
+TEST(method, is_score) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t s_str_p = new_heap_protocol(&runtime, runtime_null(&runtime));
+  value_t obj_p = new_heap_protocol(&runtime, runtime_null(&runtime));
+  value_t str_p = runtime.roots.string_protocol;
+  value_t space = new_heap_method_space(&runtime);
+  // s-str <: str <: obj
+  ASSERT_SUCCESS(add_method_space_inheritance(&runtime, space, str_p, obj_p));
+  ASSERT_SUCCESS(add_method_space_inheritance(&runtime, space, s_str_p, str_p));
+
+  DEF_STR(x_str, "x");
+  value_t x = new_heap_string(&runtime, &x_str);
+  value_t s_str = new_instance_of(&runtime, s_str_p);
+
+  value_t is_x = new_heap_guard(&runtime, gtId, x);
+  value_t is_obj = new_heap_guard(&runtime, gtIs, obj_p);
+  value_t is_str = new_heap_guard(&runtime, gtIs, str_p);
+  value_t is_s_str = new_heap_guard(&runtime, gtIs, s_str_p);
+
+  // Compare the score of matching guard GA against VA with the score of
+  // matching GB against VB.
+#define ASSERT_COMPARE(GA, VA, REL, GB, VB)                                    \
+  ASSERT_TRUE(compare_scores(guard_match(&runtime, GA, VA, space),             \
+      guard_match(&runtime, GB, VB, space)) REL 0)
+
+  ASSERT_COMPARE(is_str, x, <, is_obj, x);
+  ASSERT_COMPARE(is_x, x, <, is_str, x);
+  ASSERT_COMPARE(is_str, s_str, <, is_obj, s_str);
+  ASSERT_COMPARE(is_s_str, s_str, <, is_str, s_str);
+
+#undef ASSERT_COMPARE
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
