@@ -64,6 +64,10 @@ value_t value_transient_identity_hash(value_t value);
 // Returns true iff the two values are identical.
 bool value_are_identical(value_t a, value_t b);
 
+// Returns a value indicating how a and b relate in the total ordering of
+// (some) values. Returns a signal if the values couldn't be compared.
+value_t compare_values(value_t a, value_t b);
+
 // Prints a human-readable representation of the given value on the given
 // string buffer.
 void value_print_on(value_t value, string_buffer_t *buf);
