@@ -7,3 +7,13 @@ The runtime structure that represents a method has two parts: a signature which 
  * The total number of parameters. If more arguments are given than this value the signature cannot match.
  * The total number of required parameters. If fewer arguments are given than this value the signature cannot match.
  * Whether all arguments must match a parameter or if extras are allowed.
+
+On the input side an invocation also consists of two parts: an invocation record that gives the static information about the invocation (argument tags, evaluation order) and the concrete arguments on the stack. The invocation is a vector that gives the argument tags in sorted order as well as a map for each argument to the stack offset where the value of the argument will be. So, for instance in this invocation
+
+    .foo(z: ..., y: ..., x: ...)
+
+the invocation record will specify that the argument tags are `"x"`, `"y"`, `"z"` and, since they're evaluated in the opposite order, the corresponding argument offsets will be `2`, `1`, and `0`. This makes the lookup process evaluation-order agnostic, so this invocation,
+
+    .foo(y: ..., z: ..., x: ...)
+
+will evaluate the arguments in a different order but result in exactly the same lookup with an invocation record of `["x": 2, "y": 0, "z": 1]`.

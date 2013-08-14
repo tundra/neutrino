@@ -202,6 +202,7 @@ static value_t new_moved_object(value_t target) {
   F(Guard,              guard,                  _,  _,  _,  _,  _)             \
   F(IdHashMap,          id_hash_map,            _,  _,  _,  X,  _)             \
   F(Instance,           instance,               _,  _,  X,  X,  _)             \
+  F(InvocationRecord,   invocation_record,      _,  _,  _,  _,  _)             \
   F(MethodSpace,        method_space,           _,  _,  _,  _,  _)             \
   F(Null,               null,                   _,  X,  _,  X,  _)             \
   F(Parameter,          parameter,              _,  _,  _,  _,  _)             \

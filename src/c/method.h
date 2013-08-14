@@ -129,4 +129,29 @@ value_t add_method_space_inheritance(runtime_t *runtime, value_t self,
 value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol);
 
 
+// --- I n v o c a t i o n   R e c o r d ---
+
+static const size_t kInvocationRecordSize = OBJECT_SIZE(1);
+static const size_t kInvocationRecordArgumentVectorOffset = OBJECT_FIELD_OFFSET(0);
+
+// The array giving the mapping between tag sort order and argument evaulation
+// order.
+ACCESSORS_DECL(invocation_record, argument_vector);
+
+// Returns the number of argument in this invocation record.
+size_t get_invocation_record_argument_count(value_t self);
+
+// Returns the index'th tag in this invocation record.
+void set_invocation_record_tag_at(value_t self, size_t index, value_t value);
+
+// Returns the index'th tag in this invocation record.
+value_t get_invocation_record_tag_at(value_t self, size_t index);
+
+// Returns the index'th argument offset in this invocation record.
+void set_invocation_record_offset_at(value_t self, size_t index, size_t value);
+
+// Returns the index'th argument offset in this invocation record.
+size_t get_invocation_record_offset_at(value_t self, size_t index);
+
+
 #endif // _METHOD

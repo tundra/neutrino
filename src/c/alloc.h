@@ -104,6 +104,9 @@ value_t new_heap_parameter(runtime_t *runtime, value_t guard, bool is_optional,
 // Creates a new empty method space.
 value_t new_heap_method_space(runtime_t *runtime);
 
+// Creates an invocation record with room for the given number of arguments.
+value_t new_heap_invocation_record(runtime_t *runtime, size_t argument_count);
+
 
 // --- S y n t a x ---
 
