@@ -120,6 +120,7 @@ bool space_is_empty(space_t *space) {
 }
 
 bool space_try_alloc(space_t *space, size_t size, address_t *memory_out) {
+  CHECK_FALSE("allocating in empty space", space_is_empty(space));
   size_t aligned = align_size(kValueSize, size);
   address_t addr = space->next_free;
   address_t next = addr + aligned;

@@ -451,6 +451,10 @@ value_t *get_array_elements(value_t value);
 // values are not comparable, a signal is returned.
 value_t sort_array(value_t value);
 
+// Sorts pairs of array elements by the first element, moving the second element
+// with the first one but not using it for comparison.
+value_t co_sort_array_pairs(value_t value);
+
 // Returns true if the given array is sorted.
 bool is_array_sorted(value_t value);
 

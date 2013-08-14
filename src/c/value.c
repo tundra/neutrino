@@ -343,7 +343,20 @@ value_t sort_array(value_t value) {
   // Just use qsort. This means that we can't propagate signals from the compare
   // functions back out but that shouldn't be a huge issue. We'll check on them
   // for now and later on this will have to be rewritten in n anyway.
-  qsort(elements, length, sizeof(value_t), &value_compare_function);
+  qsort(elements, length, kValueSize, &value_compare_function);
+  return success();
+}
+
+value_t co_sort_array_pairs(value_t value) {
+  CHECK_FAMILY(ofArray, value);
+  size_t length = get_array_length(value);
+  CHECK_EQ("pair sorting odd-length array", 0, length & 1);
+  size_t pair_count = length >> 1;
+  value_t *elements = get_array_elements(value);
+  // The value compare function works in this case too because it'll compare the
+  // first value pointed to by its arguments, it doesn't care if there are more
+  // values after it.
+  qsort(elements, pair_count, kValueSize << 1, &value_compare_function);
   return success();
 }
 

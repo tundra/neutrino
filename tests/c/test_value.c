@@ -308,17 +308,33 @@ TEST(value, array_sort) {
       61, 69, 70, 81, 86, 86, 88, 93, 93, 93, 93, 96, 97
   };
 
+  // Normal sorting
   ASSERT_TRUE(is_array_sorted(runtime.roots.empty_array));
+  value_t a0 = new_heap_array(&runtime, kTestArraySize);
+  for (size_t i = 0; i < kTestArraySize; i++)
+    set_array_at(a0, i, new_integer(kUnsorted[i]));
+  ASSERT_FALSE(is_array_sorted(a0));
+  sort_array(a0);
+  for (size_t i = 0; i < kTestArraySize; i++)
+    ASSERT_EQ(kSorted[i], get_integer_value(get_array_at(a0, i)));
+  ASSERT_TRUE(is_array_sorted(a0));
 
-  value_t array = new_heap_array(&runtime, kTestArraySize);
-  for (size_t i = 0; i < kTestArraySize; i++)
-    set_array_at(array, i, new_integer(kUnsorted[i]));
-  ASSERT_FALSE(is_array_sorted(array));
-  sort_array(array);
-  for (size_t i = 0; i < kTestArraySize; i++)
-    ASSERT_EQ(kSorted[i], get_integer_value(get_array_at(array, i)));
-  ASSERT_TRUE(is_array_sorted(array));
+  // Co-sorting
+  value_t a1 = new_heap_array(&runtime, kTestArraySize << 1);
+  for (size_t i = 0; i < kTestArraySize; i++) {
+    set_array_at(a1, i << 1, new_integer(kUnsorted[i]));
+    set_array_at(a1, (i << 1) + 1, new_integer(i));
+  }
+  co_sort_array_pairs(a1);
+  for (size_t i = 0; i < kTestArraySize; i++) {
+    // The first values are now in sorted order.
+    int value = get_integer_value(get_array_at(a1, i << 1));
+    ASSERT_EQ(kSorted[i], value);
+    // The second value says where in the unsorted order the value was and they
+    // should still match.
+    int order = get_integer_value(get_array_at(a1, (i << 1) + 1));
+    ASSERT_EQ(value, kUnsorted[order]);
+  }
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
-
 }
