@@ -185,6 +185,15 @@ value_t variant_to_value(runtime_t *runtime, variant_t variant) {
       return runtime_bool(runtime, variant.value.as_bool);
     case vtNull:
       return runtime_null(runtime);
+    case vtArray: {
+      size_t length = variant.value.as_array.length;
+      TRY_DEF(result, new_heap_array(runtime, length));
+      for (size_t i = 0; i < length; i++) {
+        TRY_DEF(element, variant_to_value(runtime, variant.value.as_array.elements[i]));
+        set_array_at(result, i, element);
+      }
+      return result;
+    }
     default:
       UNREACHABLE("unknown variant type");
       return new_signal(scWat);

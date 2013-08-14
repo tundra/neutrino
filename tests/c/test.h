@@ -129,17 +129,22 @@ typedef enum {
   vtInteger,
   vtString,
   vtBool,
-  vtNull
+  vtNull,
+  vtArray
 } variant_type_t;
 
 // A variant which can hold various C data types. Used for various convenience
 // functions for working with neutrino data.
-typedef struct {
+typedef struct variant_t {
   variant_type_t type;
   union {
     int64_t as_integer;
     const char *as_string;
     bool as_bool;
+    struct {
+      size_t length;
+      struct variant_t *elements;
+    } as_array;
   } value;
 } variant_t;
 
@@ -154,6 +159,9 @@ typedef struct {
 
 // Creates a variant null with the given value.
 #define vNull() ((variant_t) {vtNull, {.as_integer=0}})
+
+// Creates a variant array with the given length and elements.
+#define vArray(N, ELMS) ((variant_t) {vtArray, {.as_array={N, (variant_t[N]) {ELMS}}}})
 
 // Given a variant, returns a value allocated in the given runtime (if necessary)
 // with the corresponding value.
