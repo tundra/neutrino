@@ -173,7 +173,7 @@ void uninstall_check_recorder(check_recorder_t *recorder) {
 
 // --- V a r i a n t s ---
 
-value_t v2v(runtime_t *runtime, variant_t variant) {
+value_t variant_to_value(runtime_t *runtime, variant_t variant) {
   switch (variant.type) {
     case vtInteger:
       return new_integer(variant.value.as_integer);
@@ -185,5 +185,8 @@ value_t v2v(runtime_t *runtime, variant_t variant) {
       return runtime_bool(runtime, variant.value.as_bool);
     case vtNull:
       return runtime_null(runtime);
+    default:
+      UNREACHABLE("unknown variant type");
+      return new_signal(scWat);
   }
 }

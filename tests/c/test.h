@@ -144,17 +144,17 @@ typedef struct {
 } variant_t;
 
 // Creates an integer variant with the given value.
-#define VI(V) ((variant_t) {vtInteger, {.as_integer=(V)}})
+#define vInt(V) ((variant_t) {vtInteger, {.as_integer=(V)}})
 
 // Creates a variant string with the given value.
-#define VS(V) ((variant_t) {vtString, {.as_string=(V)}})
+#define vStr(V) ((variant_t) {vtString, {.as_string=(V)}})
 
 // Creates a variant bool with the given value.
-#define VB(V) ((variant_t) {vtBool, {.as_bool=(V)}})
+#define vBool(V) ((variant_t) {vtBool, {.as_bool=(V)}})
 
 // Creates a variant null with the given value.
-#define VN() ((variant_t) {vtNull, {.as_integer=0}})
+#define vNull() ((variant_t) {vtNull, {.as_integer=0}})
 
 // Given a variant, returns a value allocated in the given runtime (if necessary)
 // with the corresponding value.
-value_t v2v(runtime_t *runtime, variant_t variant);
+value_t variant_to_value(runtime_t *runtime, variant_t variant);
