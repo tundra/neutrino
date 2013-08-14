@@ -1,6 +1,7 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "alloc.h"
 #include "behavior.h"
 #include "check.h"
 #include "crash.h"
@@ -176,6 +177,10 @@ value_t v2v(runtime_t *runtime, variant_t variant) {
   switch (variant.type) {
     case vtInteger:
       return new_integer(variant.value.as_integer);
+    case vtString: {
+      string_t chars = STR(variant.value.as_string);
+      return new_heap_string(runtime, &chars);
+    }
     case vtBool:
       return runtime_bool(runtime, variant.value.as_bool);
     case vtNull:
