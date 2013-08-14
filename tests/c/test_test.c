@@ -5,8 +5,6 @@
 #include "runtime.h"
 #include "test.h"
 
-#define vArr(N, ELMS) ((variant_t[N]) {ELMS})
-
 TEST(test, variant) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
