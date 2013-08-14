@@ -162,22 +162,10 @@ value_t invocation_record_validate(value_t self) {
   return success();
 }
 
-void set_invocation_record_tag_at(value_t self, size_t index, value_t value) {
-  CHECK_FAMILY(ofInvocationRecord, self);
-  value_t argument_vector = get_invocation_record_argument_vector(self);
-  set_array_at(argument_vector, index << 1, value);
-}
-
 value_t get_invocation_record_tag_at(value_t self, size_t index) {
   CHECK_FAMILY(ofInvocationRecord, self);
   value_t argument_vector = get_invocation_record_argument_vector(self);
   return get_array_at(argument_vector, index << 1);
-}
-
-void set_invocation_record_offset_at(value_t self, size_t index, size_t value) {
-  CHECK_FAMILY(ofInvocationRecord, self);
-  value_t argument_vector = get_invocation_record_argument_vector(self);
-  set_array_at(argument_vector, (index << 1) + 1, new_integer(value));
 }
 
 size_t get_invocation_record_offset_at(value_t self, size_t index) {
@@ -190,4 +178,15 @@ size_t get_invocation_record_argument_count(value_t self) {
   CHECK_FAMILY(ofInvocationRecord, self);
   value_t argument_vector = get_invocation_record_argument_vector(self);
   return get_array_length(argument_vector) >> 1;
+}
+
+value_t build_invocation_record_vector(runtime_t *runtime, value_t tags) {
+  size_t tag_count = get_array_length(tags);
+  TRY_DEF(result, new_heap_array(runtime, tag_count << 1));
+  for (size_t i = 0; i < tag_count; i++) {
+    set_array_at(result, i << 1, get_array_at(tags, i));
+    set_array_at(result, (i << 1) + 1, new_integer(i));
+  }
+  co_sort_array_pairs(result);
+  return result;
 }
