@@ -102,6 +102,11 @@ value_t frame_push_value(frame_t *frame, value_t value);
 // pop and in soft check failure mode returns an OutOfBounds signal if not.
 value_t frame_pop_value(frame_t *frame);
 
+// Returns the index'th value counting from the top of this stack. Bounds checks
+// whether there is a value to return and in soft check failure mode returns an
+// OutOfBounds signal if not.
+value_t frame_peek_value(frame_t *frame, size_t index);
+
 
 // --- S t a c k ---
 

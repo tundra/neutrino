@@ -200,7 +200,7 @@ TEST(method, invocation_record) {
   ASSERT_EQ(kCount, get_invocation_record_argument_count(record));
   for (size_t i = 0; i < kCount; i++) {
     ASSERT_VALEQ(new_integer(i), get_invocation_record_tag_at(record, i));
-    ASSERT_EQ(7 - i, get_invocation_record_offset_at(record, i));
+    ASSERT_EQ(i, get_invocation_record_offset_at(record, i));
   }
 #undef kCount
 
@@ -225,8 +225,27 @@ TEST(method, make_invocation_record) {
   ASSERT_VAREQ(vStr("y"), get_invocation_record_tag_at(record, 1));
   ASSERT_VAREQ(vStr("z"), get_invocation_record_tag_at(record, 2));
   ASSERT_EQ(1, get_invocation_record_offset_at(record, 0));
-  ASSERT_EQ(2, get_invocation_record_offset_at(record, 1));
-  ASSERT_EQ(0, get_invocation_record_offset_at(record, 2));
+  ASSERT_EQ(0, get_invocation_record_offset_at(record, 1));
+  ASSERT_EQ(2, get_invocation_record_offset_at(record, 2));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
+
+TEST(method, invocation_record_with_stack) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t stack = new_heap_stack(&runtime, 16);
+  frame_t frame;
+  ASSERT_SUCCESS(push_stack_frame(&runtime, stack, &frame, 3));
+  value_t record = make_invocation_record(&runtime, vArray(3, vStr("b") o
+      vStr("c") o vStr("a")));
+  frame_push_value(&frame, new_integer(7));
+  frame_push_value(&frame, new_integer(8));
+  frame_push_value(&frame, new_integer(9));
+  ASSERT_VAREQ(vInt(9), get_invocation_record_argument_at(record, &frame, 0));
+  ASSERT_VAREQ(vInt(7), get_invocation_record_argument_at(record, &frame, 1));
+  ASSERT_VAREQ(vInt(8), get_invocation_record_argument_at(record, &frame, 2));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

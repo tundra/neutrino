@@ -247,3 +247,7 @@ value_t frame_pop_value(frame_t *frame) {
   set_stack_piece_top_stack_pointer(frame->stack_piece, frame->stack_pointer);
   return result;
 }
+
+value_t frame_peek_value(frame_t *frame, size_t index) {
+  return *access_frame_field(frame, frame->stack_pointer - index - 1);
+}
