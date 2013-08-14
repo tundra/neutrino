@@ -26,5 +26,4 @@ TEST(test, variant) {
   ASSERT_VALEQ(new_integer(2), get_array_at(arr, 2));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
-
 }
