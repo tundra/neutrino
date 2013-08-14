@@ -163,6 +163,10 @@ typedef struct variant_t {
 // Creates a variant array with the given length and elements.
 #define vArray(N, ELMS) ((variant_t) {vtArray, {.as_array={N, (variant_t[N]) {ELMS}}}})
 
+// Alias for commas to use between elements as arguments to vArray. Commas mess
+// with macros, this fixes that.
+#define o ,
+
 // Given a variant, returns a value allocated in the given runtime (if necessary)
 // with the corresponding value.
 value_t variant_to_value(runtime_t *runtime, variant_t variant);
