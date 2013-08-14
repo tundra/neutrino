@@ -142,16 +142,15 @@ ACCESSORS_DECL(invocation_record, argument_vector);
 size_t get_invocation_record_argument_count(value_t self);
 
 // Returns the index'th tag in this invocation record.
-void set_invocation_record_tag_at(value_t self, size_t index, value_t value);
-
-// Returns the index'th tag in this invocation record.
 value_t get_invocation_record_tag_at(value_t self, size_t index);
 
 // Returns the index'th argument offset in this invocation record.
-void set_invocation_record_offset_at(value_t self, size_t index, size_t value);
-
-// Returns the index'th argument offset in this invocation record.
 size_t get_invocation_record_offset_at(value_t self, size_t index);
+
+// Constructs an argument vector based on the given array of tags. For instance,
+// if given ["c", "a", "b"] returns a vector corresponding to ["a": 1, "b": 2,
+// "c": 0].
+value_t build_invocation_record_vector(runtime_t *runtime, value_t tags);
 
 
 #endif // _METHOD

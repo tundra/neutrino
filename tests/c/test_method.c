@@ -191,17 +191,42 @@ TEST(method, invocation_record) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
-  size_t count = 8;
-  value_t record = new_heap_invocation_record(&runtime, count);
-  for (size_t i = 0; i < count; i++) {
-    set_invocation_record_tag_at(record, i, new_integer(i));
-    set_invocation_record_offset_at(record, i, 10 - i);
-  }
-  ASSERT_EQ(count, get_invocation_record_argument_count(record));
-  for (size_t i = 0; i < count; i++) {
+#define kCount 8
+  variant_t raw_array = vArray(kCount, vInt(7) o vInt(6) o vInt(5) o vInt(4) o
+      vInt(3) o vInt(2) o vInt(1) o vInt(0));
+  value_t argument_vector = build_invocation_record_vector(&runtime,
+      variant_to_value(&runtime, raw_array));
+  value_t record = new_heap_invocation_record(&runtime, argument_vector);
+  ASSERT_EQ(kCount, get_invocation_record_argument_count(record));
+  for (size_t i = 0; i < kCount; i++) {
     ASSERT_VALEQ(new_integer(i), get_invocation_record_tag_at(record, i));
-    ASSERT_EQ(10 - i, get_invocation_record_offset_at(record, i));
+    ASSERT_EQ(7 - i, get_invocation_record_offset_at(record, i));
   }
+#undef kCount
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
+
+// Makes an invocation record for the given array of tags, passed as a variant
+// for convenience.
+static value_t make_invocation_record(runtime_t *runtime, variant_t variant) {
+  TRY_DEF(argument_vector, build_invocation_record_vector(runtime,
+      variant_to_value(runtime, variant)));
+  return new_heap_invocation_record(runtime, argument_vector);
+}
+
+TEST(method, make_invocation_record) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t record = make_invocation_record(&runtime, vArray(3, vStr("z") o
+      vStr("x") o vStr("y")));
+  ASSERT_VAREQ(vStr("x"), get_invocation_record_tag_at(record, 0));
+  ASSERT_VAREQ(vStr("y"), get_invocation_record_tag_at(record, 1));
+  ASSERT_VAREQ(vStr("z"), get_invocation_record_tag_at(record, 2));
+  ASSERT_EQ(1, get_invocation_record_offset_at(record, 0));
+  ASSERT_EQ(2, get_invocation_record_offset_at(record, 1));
+  ASSERT_EQ(0, get_invocation_record_offset_at(record, 2));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

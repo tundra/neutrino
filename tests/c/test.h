@@ -67,6 +67,10 @@ void uninstall_check_recorder(check_recorder_t *recorder);
   }                                                                            \
 } while (false)
 
+// Identical to ASSERT_VALEQ except that the first argument is a variant which
+// is converted to a value using the stack-allocated runtime 'runtime'.
+#define ASSERT_VAREQ(A, B) ASSERT_VALEQ(variant_to_value(&runtime, A), B)
+
 // Checks that A and B are the same object or value.
 #define ASSERT_SAME(A, B) ASSERT_EQ((A).encoded, (B).encoded)
 
