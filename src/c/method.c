@@ -147,3 +147,47 @@ value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol
     return parents;
   }
 }
+
+
+// --- I n v o c a t i o n   r e c o r d ---
+
+TRIVIAL_PRINT_ON_IMPL(InvocationRecord, invocation_record);
+
+CHECKED_ACCESSORS_IMPL(InvocationRecord, invocation_record, Array,
+    ArgumentVector, argument_vector);
+
+value_t invocation_record_validate(value_t self) {
+  VALIDATE_VALUE_FAMILY(ofInvocationRecord, self);
+  VALIDATE_VALUE_FAMILY(ofArray, get_invocation_record_argument_vector(self));
+  return success();
+}
+
+void set_invocation_record_tag_at(value_t self, size_t index, value_t value) {
+  CHECK_FAMILY(ofInvocationRecord, self);
+  value_t argument_vector = get_invocation_record_argument_vector(self);
+  set_array_at(argument_vector, index << 1, value);
+}
+
+value_t get_invocation_record_tag_at(value_t self, size_t index) {
+  CHECK_FAMILY(ofInvocationRecord, self);
+  value_t argument_vector = get_invocation_record_argument_vector(self);
+  return get_array_at(argument_vector, index << 1);
+}
+
+void set_invocation_record_offset_at(value_t self, size_t index, size_t value) {
+  CHECK_FAMILY(ofInvocationRecord, self);
+  value_t argument_vector = get_invocation_record_argument_vector(self);
+  set_array_at(argument_vector, (index << 1) + 1, new_integer(value));
+}
+
+size_t get_invocation_record_offset_at(value_t self, size_t index) {
+  CHECK_FAMILY(ofInvocationRecord, self);
+  value_t argument_vector = get_invocation_record_argument_vector(self);
+  return get_integer_value(get_array_at(argument_vector, (index << 1) + 1));
+}
+
+size_t get_invocation_record_argument_count(value_t self) {
+  CHECK_FAMILY(ofInvocationRecord, self);
+  value_t argument_vector = get_invocation_record_argument_vector(self);
+  return get_array_length(argument_vector) >> 1;
+}

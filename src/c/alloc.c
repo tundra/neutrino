@@ -253,6 +253,15 @@ value_t new_heap_method_space(runtime_t *runtime) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_invocation_record(runtime_t *runtime, size_t argument_count) {
+  size_t size = kInvocationRecordSize;
+  TRY_DEF(argument_vector, new_heap_array(runtime, argument_count << 1));
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.invocation_record_species));
+  set_invocation_record_argument_vector(result, argument_vector);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- S y n t a x ---
 

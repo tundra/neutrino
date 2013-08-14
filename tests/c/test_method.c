@@ -186,3 +186,22 @@ TEST(method, signature) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+TEST(method, invocation_record) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  size_t count = 8;
+  value_t record = new_heap_invocation_record(&runtime, count);
+  for (size_t i = 0; i < count; i++) {
+    set_invocation_record_tag_at(record, i, new_integer(i));
+    set_invocation_record_offset_at(record, i, 10 - i);
+  }
+  ASSERT_EQ(count, get_invocation_record_argument_count(record));
+  for (size_t i = 0; i < count; i++) {
+    ASSERT_VALEQ(new_integer(i), get_invocation_record_tag_at(record, i));
+    ASSERT_EQ(10 - i, get_invocation_record_offset_at(record, i));
+  }
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
