@@ -11,14 +11,12 @@
 
 #ifdef ENABLE_CHECKS
 #define IF_CHECKS_ENABLED(V) V
+#define IF_CHECKS_DISABLED(V) USE(V)
 #else
-// Generate this nonsense to stop the compiler from complaining about variables
-// that are only used in V being unused. It should all be optimized away.
-#define IF_CHECKS_ENABLED(V) do { if (false) { V; } } while (false)
+#define IF_CHECKS_ENABLED(V) USE(V)
+#define IF_CHECKS_DISABLED(V) V
 #endif
 
-// Like CHECK_EQ but doesn't get disabled when checks are disabled. Don't use it
-// directly.
 #define __CHECK_EQ_HELPER__(M, A, B) do {                                      \
   if (!((A) == (B)))                                                           \
     check_fail(__FILE__, __LINE__, "Check failed (" M "): %s == %s.",          \
@@ -29,8 +27,6 @@
 #define CHECK_EQ(M, A, B)                                                      \
 IF_CHECKS_ENABLED(__CHECK_EQ_HELPER__(M, A, B))
 
-// Fails unless the two values are equal under hard check failures, returns the
-// specified signal under soft check failures.
 #define __SIG_CHECK_EQ_HELPER__(M, scCause, A, B) do {                         \
   if (!((A) == (B))) {                                                         \
     sig_check_fail(__FILE__, __LINE__, scCause,                                \
@@ -39,6 +35,8 @@ IF_CHECKS_ENABLED(__CHECK_EQ_HELPER__(M, A, B))
   }                                                                            \
 } while (false)
 
+// Fails unless the two values are equal under hard check failures, returns the
+// specified signal under soft check failures.
 #define SIG_CHECK_EQ(M, scCause, A, B)                                         \
 IF_CHECKS_ENABLED(__SIG_CHECK_EQ_HELPER__(M, scCause, A, B))
 
@@ -73,10 +71,12 @@ IF_CHECKS_ENABLED(__CHECK_CLASS__(value_domain_t, vdDomain, EXPR, get_value_doma
 #define CHECK_FAMILY(ofFamily, EXPR)                                           \
 IF_CHECKS_ENABLED(__CHECK_CLASS__(object_family_t, ofFamily, EXPR, get_object_family))
 
+// Check that fails unless the species is in the specified division.
 #define CHECK_DIVISION(sdDivision, EXPR)                                       \
 IF_CHECKS_ENABLED(__CHECK_CLASS__(species_division_t, sdDivision, EXPR, get_species_division))
 
-// Fails if executed.
+// Fails if executed. These aren't disabled when checks are off since they
+// won't get executed under normal circumstances so they're free.
 #define UNREACHABLE(M) do {                                                    \
   check_fail(__FILE__, __LINE__, "Unreachable (" M ").");                      \
 } while (false)

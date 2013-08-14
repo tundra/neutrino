@@ -51,4 +51,9 @@ static size_t max_size(size_t a, size_t b) {
   return (a < b) ? b : a;
 }
 
+// Ensures that the compiler knows that the expression is used but doesn't cause
+// it to be executed.
+#define USE(E) do { if (false) { E; } } while (false)
+
+
 #endif // _GLOBALS

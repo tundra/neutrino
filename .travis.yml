@@ -1,15 +1,13 @@
 language:
   - c
 
-install:
-  - sudo apt-get install valgrind
-
 matrix:
   include:
     # Test a clang build in debug mode under valgrind.
     - language: c
       compiler: clang
       script: make MODE=dbg VALGRIND=on test
+      install: sudo apt-get install valgrind
     # Test everything using an optimized clang build.
     - language: c
       compiler: clang

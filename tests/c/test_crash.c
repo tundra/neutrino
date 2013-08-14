@@ -9,9 +9,7 @@ static value_t do_check(bool value, signal_cause_t cause) {
 }
 
 TEST(crash, soft_check_failures) {
-#ifndef CHECKS_ENABLED
-  return;
-#endif
+  IF_CHECKS_DISABLED(return);
   check_recorder_t recorder;
   install_check_recorder(&recorder);
 
@@ -42,4 +40,14 @@ TEST(crash, soft_check_failures) {
   ASSERT_EQ(scOutOfBounds, recorder.cause);
 
   uninstall_check_recorder(&recorder);
+}
+
+TEST(crash, checks_disabled) {
+  IF_CHECKS_ENABLED(return);
+  CHECK_TRUE("test", false);
+  CHECK_FALSE("test", true);
+  CHECK_EQ("test", 1, 2);
+  CHECK_FAMILY(ofString, new_integer(0));
+  CHECK_DOMAIN(vdObject, new_integer(0));
+  CHECK_DIVISION(sdCompact, new_integer(0));
 }
