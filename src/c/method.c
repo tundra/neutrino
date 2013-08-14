@@ -25,6 +25,21 @@ value_t signature_validate(value_t value) {
 }
 
 
+// --- P a r a m e t e r ---
+
+TRIVIAL_PRINT_ON_IMPL(Parameter, parameter);
+
+CHECKED_ACCESSORS_IMPL(Parameter, parameter, Guard, Guard, guard);
+INTEGER_ACCESSORS_IMPL(Parameter, parameter, IsOptional, is_optional);
+INTEGER_ACCESSORS_IMPL(Parameter, parameter, Index, index);
+
+value_t parameter_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofParameter, value);
+  VALIDATE_VALUE_FAMILY(ofGuard, get_parameter_guard(value));
+  return success();
+}
+
+
 // --- G u a r d ---
 
 TRIVIAL_PRINT_ON_IMPL(Guard, guard);

@@ -232,6 +232,18 @@ value_t new_heap_signature(runtime_t *runtime, value_t tags, value_t descriptors
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_parameter(runtime_t *runtime, value_t guard, bool is_optional,
+    size_t index) {
+  CHECK_FAMILY(ofGuard, guard);
+  size_t size = kParameterSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.parameter_species));
+  set_parameter_guard(result, guard);
+  set_parameter_is_optional(result, is_optional);
+  set_parameter_index(result, index);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_method_space(runtime_t *runtime) {
   size_t size = kMethodSpaceSize;
   TRY_DEF(inheritance_map, new_heap_id_hash_map(runtime, kInheritanceMapInitialSize));

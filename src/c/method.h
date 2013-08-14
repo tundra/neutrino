@@ -44,6 +44,12 @@ static const size_t kParameterIndexOffset = OBJECT_FIELD_OFFSET(2);
 // This parameter's guard.
 ACCESSORS_DECL(parameter, guard);
 
+// Can this parameter be left empty?
+INTEGER_ACCESSORS_DECL(parameter, is_optional);
+
+// Parameter index.
+INTEGER_ACCESSORS_DECL(parameter, index);
+
 
 // --- G u a r d ---
 
