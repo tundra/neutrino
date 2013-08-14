@@ -76,7 +76,7 @@ TEST(utils, string_buffer_simple) {
   string_buffer_printf(&buf, "[%s: %i]", "test", 8);
   string_t str;
   string_buffer_flush(&buf, &str);
-  DEF_STR(expected, "[test: 8]");
+  string_t expected = STR("[test: 8]");
   ASSERT_STREQ(&expected, &str);
 
   string_buffer_dispose(&buf);
@@ -91,7 +91,7 @@ TEST(utils, string_buffer_concat) {
   string_buffer_printf(&buf, "baz");
   string_t str;
   string_buffer_flush(&buf, &str);
-  DEF_STR(expected, "foobarbaz");
+  string_t expected = STR("foobarbaz");
   ASSERT_STREQ(&expected, &str);
 
   string_buffer_dispose(&buf);

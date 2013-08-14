@@ -3,6 +3,8 @@
 
 #include "value.h"
 
+#include <string.h>
+
 // Declare a unit test method. The suite name must match the file the test
 // case is declared in.
 #define TEST(suite, name) void test_##suite##_##name()
@@ -119,7 +121,40 @@ ASSERT_CLASS(signal_cause_t, scCause, EXPR, get_signal_cause)
 #define ASSERT_CHECK_FAILURE(scCause, E)                                       \
 IF_CHECKS_ENABLED(__ASSERT_CHECK_FAILURE_HELPER__(scCause, E))
 
-// Declares a new string_t variable and initializes it with the given contents.
-#define DEF_STR(name, contents)                                                \
-string_t name;                                                                 \
-string_init(&name, contents)
+// Expands to a string_t with the given contents.
+#define STR(value) ((string_t) {strlen(value), value})
+
+// The type tag of a variant value.
+typedef enum {
+  vtInteger,
+  vtString,
+  vtBool,
+  vtNull
+} variant_type_t;
+
+// A variant which can hold various C data types. Used for various convenience
+// functions for working with neutrino data.
+typedef struct {
+  variant_type_t type;
+  union {
+    int64_t as_integer;
+    const char *as_string;
+    bool as_bool;
+  } value;
+} variant_t;
+
+// Creates an integer variant with the given value.
+#define VI(V) ((variant_t) {vtInteger, {.as_integer=(V)}})
+
+// Creates a variant string with the given value.
+#define VS(V) ((variant_t) {vtString, {.as_string=(V)}})
+
+// Creates a variant bool with the given value.
+#define VB(V) ((variant_t) {vtBool, {.as_bool=(V)}})
+
+// Creates a variant null with the given value.
+#define VN() ((variant_t) {vtNull, {.as_integer=0}})
+
+// Given a variant, returns a value allocated in the given runtime (if necessary)
+// with the corresponding value.
+value_t v2v(runtime_t *runtime, variant_t variant);

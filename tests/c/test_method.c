@@ -91,7 +91,7 @@ TEST(method, simple_is) {
   ASSERT_FALSE(is_score_match(guard_match(&runtime, is_str, zero, space)));
   ASSERT_FALSE(is_score_match(guard_match(&runtime, is_s_str, zero, space)));
 
-  DEF_STR(x_str, "x");
+  string_t x_str = STR("x");
   value_t x = new_heap_string(&runtime, &x_str);
   ASSERT_FALSE(is_score_match(guard_match(&runtime, is_int, x, space)));
   ASSERT_TRUE(is_score_match(guard_match(&runtime, is_obj, x, space)));
@@ -131,7 +131,7 @@ TEST(method, is_score) {
   ASSERT_SUCCESS(add_method_space_inheritance(&runtime, space, str_p, obj_p));
   ASSERT_SUCCESS(add_method_space_inheritance(&runtime, space, s_str_p, str_p));
 
-  DEF_STR(x_str, "x");
+  string_t x_str = STR("x");
   value_t x = new_heap_string(&runtime, &x_str);
   value_t s_str = new_instance_of(&runtime, s_str_p);
 

@@ -72,7 +72,7 @@ TEST(plankton, map) {
 
 // Declares a new variable that holds a heap string with the given contents.
 #define DEF_HEAP_STR(name, value)                                              \
-DEF_STR(name##_chars, value);                                                  \
+string_t name##_chars = STR(value);                                            \
 value_t name = new_heap_string(&runtime, &name##_chars)
 
 TEST(plankton, string) {

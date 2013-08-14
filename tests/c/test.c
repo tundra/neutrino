@@ -4,6 +4,7 @@
 #include "behavior.h"
 #include "check.h"
 #include "crash.h"
+#include "runtime.h"
 #include "test.h"
 #include "utils.h"
 #include "value-inl.h"
@@ -166,4 +167,18 @@ void uninstall_check_recorder(check_recorder_t *recorder) {
   CHECK_TRUE("uninstalling again", recorder->previous != NULL);
   set_abort_callback(recorder->previous);
   recorder->previous = NULL;
+}
+
+
+// --- V a r i a n t s ---
+
+value_t v2v(runtime_t *runtime, variant_t variant) {
+  switch (variant.type) {
+    case vtInteger:
+      return new_integer(variant.value.as_integer);
+    case vtBool:
+      return runtime_bool(runtime, variant.value.as_bool);
+    case vtNull:
+      return runtime_null(runtime);
+  }
 }
