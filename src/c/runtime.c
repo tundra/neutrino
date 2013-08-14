@@ -181,7 +181,8 @@ static value_t migrate_object_shallow(value_t object, space_t *space) {
   // Allocate new room for the object.
   address_t source = get_object_address(object);
   address_t target = NULL;
-  CHECK_TRUE("clone alloc failed", space_try_alloc(space, layout.size, &target));
+  bool alloc_succeeded = space_try_alloc(space, layout.size, &target);
+  CHECK_TRUE("clone alloc failed", alloc_succeeded);
   // Do a raw copy of the object to the target.
   memcpy(target, source, layout.size);
   // Tag the new location as an object and return it.

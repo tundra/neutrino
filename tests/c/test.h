@@ -105,9 +105,7 @@ ASSERT_CLASS(signal_cause_t, scCause, EXPR, get_signal_cause)
   }                                                                            \
 } while (false)
 
-// Fails unless the given expression returns the given failure _and_ CHECK fails
-// with the same cause.
-#define ASSERT_CHECK_FAILURE(scCause, E) do {                                  \
+#define __ASSERT_CHECK_FAILURE_HELPER__(scCause, E) do {                       \
   check_recorder_t __recorder__;                                               \
   install_check_recorder(&__recorder__);                                       \
   ASSERT_SIGNAL(scCause, E);                                                   \
@@ -115,6 +113,11 @@ ASSERT_CLASS(signal_cause_t, scCause, EXPR, get_signal_cause)
   ASSERT_EQ(scCause, __recorder__.cause);                                      \
   uninstall_check_recorder(&__recorder__);                                     \
 } while (false)
+
+// Fails unless the given expression returns the given failure _and_ CHECK fails
+// with the same cause. Only executed when checks are enabled.
+#define ASSERT_CHECK_FAILURE(scCause, E)                                       \
+IF_CHECKS_ENABLED(__ASSERT_CHECK_FAILURE_HELPER__(scCause, E))
 
 // Declares a new string_t variable and initializes it with the given contents.
 #define DEF_STR(name, contents)                                                \
