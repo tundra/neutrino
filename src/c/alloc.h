@@ -97,6 +97,10 @@ value_t new_heap_guard(runtime_t *runtime, guard_type_t type, value_t value);
 value_t new_heap_signature(runtime_t *runtime, value_t tags, value_t descriptors,
     size_t param_count, size_t mandatory_count, bool allow_extra);
 
+// Creates a new parameter with the specified attributes.
+value_t new_heap_parameter(runtime_t *runtime, value_t guard, bool is_optional,
+    size_t index);
+
 // Creates a new empty method space.
 value_t new_heap_method_space(runtime_t *runtime);
 

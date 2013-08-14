@@ -204,6 +204,7 @@ static value_t new_moved_object(value_t target) {
   F(Instance,           instance,               _,  _,  X,  X,  _)             \
   F(MethodSpace,        method_space,           _,  _,  _,  _,  _)             \
   F(Null,               null,                   _,  X,  _,  X,  _)             \
+  F(Parameter,          parameter,              _,  _,  _,  _,  _)             \
   F(Protocol,           protocol,               _,  _,  _,  X,  _)             \
   F(Signature,          signature,              _,  _,  _,  _,  _)             \
   F(Stack,              stack,                  _,  _,  _,  _,  _)             \

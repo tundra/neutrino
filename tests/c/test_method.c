@@ -180,5 +180,9 @@ TEST(method, signature) {
       0, 0, false);
   ASSERT_SUCCESS(signature);
 
+  value_t param = new_heap_parameter(&runtime, runtime.roots.any_guard,
+      true, 0);
+  ASSERT_SUCCESS(param);
+
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
