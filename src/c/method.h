@@ -3,6 +3,7 @@
 
 // Methods and method lookup. See details in method.md.
 
+#include "process.h"
 #include "value-inl.h"
 
 #ifndef _METHOD
@@ -148,9 +149,13 @@ value_t get_invocation_record_tag_at(value_t self, size_t index);
 size_t get_invocation_record_offset_at(value_t self, size_t index);
 
 // Constructs an argument vector based on the given array of tags. For instance,
-// if given ["c", "a", "b"] returns a vector corresponding to ["a": 1, "b": 2,
-// "c": 0].
+// if given ["c", "a", "b"] returns a vector corresponding to ["a": 1, "b": 0,
+// "c": 2] (arguments are counted backwards, 0 being the lasst).
 value_t build_invocation_record_vector(runtime_t *runtime, value_t tags);
+
+// Returns the index'th argument to an invocation using this record in sorted
+// tag order from the given frame.
+value_t get_invocation_record_argument_at(value_t self, frame_t *frame, size_t index);
 
 
 #endif // _METHOD

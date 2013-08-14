@@ -185,8 +185,17 @@ value_t build_invocation_record_vector(runtime_t *runtime, value_t tags) {
   TRY_DEF(result, new_heap_array(runtime, tag_count << 1));
   for (size_t i = 0; i < tag_count; i++) {
     set_array_at(result, i << 1, get_array_at(tags, i));
-    set_array_at(result, (i << 1) + 1, new_integer(i));
+    // The offset is counted backwards because the argument evaluated last will
+    // be at the top of the stack, that is, offset 0, and the first will be at
+    // the bottom so has the highest offset.
+    size_t offset = tag_count - i - 1;
+    set_array_at(result, (i << 1) + 1, new_integer(offset));
   }
   co_sort_array_pairs(result);
   return result;
+}
+
+value_t get_invocation_record_argument_at(value_t self, frame_t *frame, size_t index) {
+  size_t offset = get_invocation_record_offset_at(self, index);
+  return frame_peek_value(frame, offset);
 }
