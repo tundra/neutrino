@@ -394,10 +394,12 @@ TEST(method, simple_matching) {
       ARG(vInt(0), vStr("foo")) o
       ARG(vInt(1), vStr("bar"))));
 
+  /*
   assert_match(&runtime, mrUnexpectedArgument, sig, ARGS(3,
       ARG(vInt(0), vStr("foo")) o
       ARG(vInt(1), vStr("bar")) o
       ARG(vInt(2), vStr("baz"))));
+  */
 
 //      assertMatch(UNEXPECTED_ARGUMENT, sig, arg(0, "foo"), arg(1, "bar"), arg(2, "baz"));
 //      assertMatch(MISSING_ARGUMENT, sig, arg(0, "foo"));
