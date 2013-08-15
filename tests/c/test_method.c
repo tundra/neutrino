@@ -375,7 +375,7 @@ void assert_match(runtime_t *runtime, match_result_t expected, value_t signature
   }
   value_t vector = build_invocation_record_vector(runtime, tags);
   value_t record = new_heap_invocation_record(runtime, vector);
-  match_result_t result = match_signature(signature, record, &frame, NULL);
+  match_result_t result = match_signature(signature, record, &frame, NULL, 0);
   ASSERT_EQ(expected, result);
 }
 
@@ -394,12 +394,10 @@ TEST(method, simple_matching) {
       ARG(vInt(0), vStr("foo")) o
       ARG(vInt(1), vStr("bar"))));
 
-  /*
   assert_match(&runtime, mrUnexpectedArgument, sig, ARGS(3,
       ARG(vInt(0), vStr("foo")) o
       ARG(vInt(1), vStr("bar")) o
       ARG(vInt(2), vStr("baz"))));
-  */
 
 //      assertMatch(UNEXPECTED_ARGUMENT, sig, arg(0, "foo"), arg(1, "bar"), arg(2, "baz"));
 //      assertMatch(MISSING_ARGUMENT, sig, arg(0, "foo"));

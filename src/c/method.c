@@ -33,8 +33,57 @@ value_t get_signature_tag_at(value_t self, size_t index) {
 }
 
 match_result_t match_signature(value_t self, value_t record, frame_t *frame,
-    score_t *scores) {
-  return mrMatch;
+    score_t *scores, size_t score_count) {
+  size_t argument_count = get_invocation_record_argument_count(record);
+  CHECK_TRUE("score array too short", argument_count <= score_count);
+  /*
+   *   public MatchResult match(IInvocation record, IHierarchy hierarchy, int[] scores) {
+    int recordEntryCount = record.getEntryCount();
+    Assert.that(scores.length >= recordEntryCount);
+    BitSet paramsSeen = new BitSet(totalParamCount);
+    int mandatoryArgsSeenCount = 0;
+    MatchResult onMatch = MatchResult.MATCH;
+    for (int i = 0; i < recordEntryCount; i++)
+      scores[i] = Guard.NO_MATCH;
+    // Scan through the arguments and look them up in the signature.
+    for (int i = 0; i < recordEntryCount; i++) {
+      ITagValue tag = record.getTag(i);
+      IValue value = record.getValue(i);
+      int entryIndex = Collections.binarySearch(tags, tag);
+      if (entryIndex < 0) {
+        if (allowExtra) {
+          onMatch = MatchResult.EXTRA_MATCH;
+          scores[i] = Guard.EXTRA_MATCH;
+          continue;
+        } else {
+          // There was no signature entry corresponding to this tag. Fail.
+          return MatchResult.UNEXPECTED_ARGUMENT;
+        }
+      }
+      Entry entry = entries.get(entryIndex);
+      if (paramsSeen.get(entry.index)) {
+        // We've seen this entry before; fail.
+        return MatchResult.REDUNDANT_ARGUMENT;
+      }
+      int score = entry.guard.match(value, hierarchy);
+      if (!Guard.isMatch(score)) {
+        return MatchResult.GUARD_REJECTED;
+      } else {
+        paramsSeen.set(entry.index);
+        scores[i] = score;
+        if (!entry.isOptional)
+          mandatoryArgsSeenCount++;
+      }
+    }
+    if (mandatoryArgsSeenCount < mandatoryParamCount) {
+      // There are some parameters we haven't seen. Fail.
+      return MatchResult.MISSING_ARGUMENT;
+    } else {
+      // We saw all parameters and their guards approved. Match!
+      return onMatch;
+    }
+  }
+   */
 }
 
 

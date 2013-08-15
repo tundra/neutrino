@@ -65,7 +65,7 @@ typedef enum {
 // in the invocation. If the match succeeds it holds the scores, if it fails
 // the state is unspecified.
 match_result_t match_signature(value_t self, value_t record, frame_t *frame,
-    score_t *scores);
+    score_t *scores, size_t score_count);
 
 
 // --- P a r a m e t e r ---
