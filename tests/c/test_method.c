@@ -263,14 +263,7 @@ typedef struct {
 
 // Collects a set of parameters into an array that can be passed to
 // make_signature.
-#define PARAMS(N, values) ((test_param_t[N + 1]) {values, PARAM(new_integer(0), false, vNull())})
-
-/**
- * Signature sig = newSignature(
-        false,
-        param(Guard.any(), false, 0),
-        param(Guard.any(), false, 1));
- */
+#define PARAMS(N, values) ((test_param_t[(N) + 1]) {values, PARAM(new_integer(0), false, vNull())})
 
 // Make a signature object out of the given input.
 static value_t make_signature(runtime_t *runtime, bool allow_extra, test_param_t *params) {
@@ -347,6 +340,70 @@ TEST(method, make_signature) {
   ASSERT_VAREQ(vInt(13), get_signature_tag_at(s2, 3));
   ASSERT_VAREQ(vInt(15), get_signature_tag_at(s2, 4));
   ASSERT_VAREQ(vInt(27), get_signature_tag_at(s2, 5));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
+
+// Description of an argument used in testing.
+typedef struct {
+  variant_t tag;
+  variant_t value;
+  bool is_valid;
+} test_argument_t;
+
+// Packs its arguments into a test_argument_t struct.
+#define ARG(tag, value) ((test_argument_t) {tag, value, true})
+
+// Collects a set of arguments into an array.
+#define ARGS(N, args) ((test_argument_t[(N) + 1]) {args, ((test_argument_t) {vInt(0), vInt(0), false})})
+
+void assert_match(runtime_t *runtime, match_result_t expected, value_t signature,
+    test_argument_t *args) {
+  // Count how many arguments there are.
+  size_t arg_count = 0;
+  for (size_t i = 0; args[i].is_valid; i++)
+    arg_count++;
+  // Build a descriptor from the tags and a stack from the values.
+  value_t tags = new_heap_array(runtime, arg_count);
+  value_t stack = new_heap_stack(runtime, 16);
+  frame_t frame;
+  push_stack_frame(runtime, stack, &frame, arg_count);
+  for (size_t i = 0; i < arg_count; i++) {
+    test_argument_t arg = args[i];
+    set_array_at(tags, i, variant_to_value(runtime, arg.tag));
+    frame_push_value(&frame, variant_to_value(runtime, arg.value));
+  }
+  value_t vector = build_invocation_record_vector(runtime, tags);
+  value_t record = new_heap_invocation_record(runtime, vector);
+  match_result_t result = match_signature(signature, record, &frame, NULL);
+  ASSERT_EQ(expected, result);
+}
+
+TEST(method, simple_matching) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t any_guard = runtime.roots.any_guard;
+  value_t sig = make_signature(&runtime,
+      false,
+      PARAMS(2,
+          PARAM(any_guard, false, vArray(1, vInt(0))) o
+          PARAM(any_guard, false, vArray(1, vInt(1)))));
+
+  assert_match(&runtime, mrMatch, sig, ARGS(2,
+      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(1), vStr("bar"))));
+
+  assert_match(&runtime, mrUnexpectedArgument, sig, ARGS(3,
+      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(1), vStr("bar")) o
+      ARG(vInt(2), vStr("baz"))));
+
+//      assertMatch(UNEXPECTED_ARGUMENT, sig, arg(0, "foo"), arg(1, "bar"), arg(2, "baz"));
+//      assertMatch(MISSING_ARGUMENT, sig, arg(0, "foo"));
+//      assertMatch(MISSING_ARGUMENT, sig, arg(1, "bar"));
+//      assertMatch(UNEXPECTED_ARGUMENT, sig, arg(2, "baz"));
+//      assertMatch(MISSING_ARGUMENT, sig);
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

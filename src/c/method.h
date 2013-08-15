@@ -10,6 +10,10 @@
 #define _METHOD
 
 
+// A guard score against a value.
+typedef uint32_t score_t;
+
+
 // --- S i g n a t u r e ---
 
 static const size_t kSignatureSize = OBJECT_SIZE(4);
@@ -36,6 +40,32 @@ size_t get_signature_tag_count(value_t self);
 
 // Returns the index'th tag in this signature in the sorted tag order.
 value_t get_signature_tag_at(value_t self, size_t index);
+
+// The status of a match -- whether it succeeded and if not why.
+typedef enum {
+  // There was an argument we didn't expect.
+  mrUnexpectedArgument,
+  // Multiple arguments were passed for the same parameter.
+  mrRedundantArgument,
+  // This signature expected more arguments than were passed.
+  mrMissingArgument,
+  // A guard rejected an argument.
+  mrGuardRejected,
+  // The invocation matched.
+  mrMatch,
+  //  The invocation matched and had extra arguments which this signature allows.
+  mrExtraMatch
+} match_result_t;
+
+// Matches the given invocation against this signature. You should not base
+// behavior on the exact failure type returned since there can be multiple
+// failures and the choice of which one gets returned is arbitrary.
+//
+// The scores array must be long enough to hold a score for each argument
+// in the invocation. If the match succeeds it holds the scores, if it fails
+// the state is unspecified.
+match_result_t match_signature(value_t self, value_t record, frame_t *frame,
+    score_t *scores);
 
 
 // --- P a r a m e t e r ---
@@ -78,9 +108,6 @@ ACCESSORS_DECL(guard, value);
 
 // The type of match to perform for this guard.
 TYPED_ACCESSORS_DECL(guard, guard_type_t, type);
-
-// A guard score against a value.
-typedef uint32_t score_t;
 
 // This guard matched perfectly.
 static const score_t gsIdenticalMatch = 0;

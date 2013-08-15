@@ -32,6 +32,11 @@ value_t get_signature_tag_at(value_t self, size_t index) {
   return get_pair_array_first_at(get_signature_tags(self), index);
 }
 
+match_result_t match_signature(value_t self, value_t record, frame_t *frame,
+    score_t *scores) {
+  return mrMatch;
+}
+
 
 // --- P a r a m e t e r ---
 
