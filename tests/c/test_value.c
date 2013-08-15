@@ -320,19 +320,19 @@ TEST(value, array_sort) {
   ASSERT_TRUE(is_array_sorted(a0));
 
   // Co-sorting
-  value_t a1 = new_heap_array(&runtime, kTestArraySize << 1);
+  value_t a1 = new_heap_pair_array(&runtime, kTestArraySize);
   for (size_t i = 0; i < kTestArraySize; i++) {
-    set_array_at(a1, i << 1, new_integer(kUnsorted[i]));
-    set_array_at(a1, (i << 1) + 1, new_integer(i));
+    set_pair_array_first_at(a1, i, new_integer(kUnsorted[i]));
+    set_pair_array_second_at(a1, i, new_integer(i));
   }
-  co_sort_array_pairs(a1);
+  co_sort_pair_array(a1);
   for (size_t i = 0; i < kTestArraySize; i++) {
     // The first values are now in sorted order.
-    int value = get_integer_value(get_array_at(a1, i << 1));
+    int value = get_integer_value(get_pair_array_first_at(a1, i));
     ASSERT_EQ(kSorted[i], value);
     // The second value says where in the unsorted order the value was and they
     // should still match.
-    int order = get_integer_value(get_array_at(a1, (i << 1) + 1));
+    int order = get_integer_value(get_pair_array_second_at(a1, i));
     ASSERT_EQ(value, kUnsorted[order]);
   }
 

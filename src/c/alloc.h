@@ -47,6 +47,10 @@ value_t new_heap_instance_species(runtime_t *runtime, value_t primary);
 // number of elements. The array will be initialized to null.
 value_t new_heap_array(runtime_t *runtime, size_t length);
 
+// Allocates a new array that is going to be used as a pair array containing
+// the given number of pairs.
+value_t new_heap_pair_array(runtime_t *runtime, size_t length);
+
 // Allocates a new heap array buffer in the given runtime with the given
 // initial capacity.
 value_t new_heap_array_buffer(runtime_t *runtime, size_t initial_capacity);
@@ -94,8 +98,8 @@ value_t new_heap_stack(runtime_t *runtime, size_t initial_capacity);
 value_t new_heap_guard(runtime_t *runtime, guard_type_t type, value_t value);
 
 // Creates a new signature with the specified attributes.
-value_t new_heap_signature(runtime_t *runtime, value_t tags, value_t descriptors,
-    size_t param_count, size_t mandatory_count, bool allow_extra);
+value_t new_heap_signature(runtime_t *runtime, value_t tags, size_t param_count,
+    size_t mandatory_count, bool allow_extra);
 
 // Creates a new parameter with the specified attributes.
 value_t new_heap_parameter(runtime_t *runtime, value_t guard, bool is_optional,

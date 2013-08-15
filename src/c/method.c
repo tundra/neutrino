@@ -12,22 +12,28 @@
 TRIVIAL_PRINT_ON_IMPL(Signature, signature);
 
 CHECKED_ACCESSORS_IMPL(Signature, signature, Array, Tags, tags);
-CHECKED_ACCESSORS_IMPL(Signature, signature, Array, Descriptors, descriptors);
 INTEGER_ACCESSORS_IMPL(Signature, signature, ParameterCount, parameter_count);
 INTEGER_ACCESSORS_IMPL(Signature, signature, MandatoryCount, mandatory_count);
 INTEGER_ACCESSORS_IMPL(Signature, signature, AllowExtra, allow_extra);
 
-value_t signature_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofSignature, value);
-  VALIDATE_VALUE_FAMILY(ofArray, get_signature_tags(value));
-  VALIDATE_VALUE_FAMILY(ofArray, get_signature_descriptors(value));
+value_t signature_validate(value_t self) {
+  VALIDATE_VALUE_FAMILY(ofSignature, self);
+  VALIDATE_VALUE_FAMILY(ofArray, get_signature_tags(self));
   return success();
+}
+
+size_t get_signature_tag_count(value_t self) {
+  CHECK_FAMILY(ofSignature, self);
+  return get_pair_array_length(get_signature_tags(self));
+}
+
+value_t get_signature_tag_at(value_t self, size_t index) {
+  CHECK_FAMILY(ofSignature, self);
+  return get_pair_array_first_at(get_signature_tags(self), index);
 }
 
 
 // --- P a r a m e t e r ---
-
-TRIVIAL_PRINT_ON_IMPL(Parameter, parameter);
 
 CHECKED_ACCESSORS_IMPL(Parameter, parameter, Guard, Guard, guard);
 INTEGER_ACCESSORS_IMPL(Parameter, parameter, IsOptional, is_optional);
@@ -39,10 +45,21 @@ value_t parameter_validate(value_t value) {
   return success();
 }
 
+void parameter_print_on(value_t self, string_buffer_t *buf) {
+  parameter_print_atomic_on(self, buf);
+}
+
+void parameter_print_atomic_on(value_t self, string_buffer_t *buf) {
+  CHECK_FAMILY(ofParameter, self);
+  string_buffer_printf(buf, "#<parameter: gd@");
+  // We know the guard is a guard, not a parameter, so this can't cause a cycle.
+  guard_print_atomic_on(get_parameter_guard(self), buf);
+  string_buffer_printf(buf, ", op@%i, ix@%i>",
+      get_parameter_is_optional(self), get_parameter_index(self));
+}
+
 
 // --- G u a r d ---
-
-TRIVIAL_PRINT_ON_IMPL(Guard, guard);
 
 ENUM_ACCESSORS_IMPL(Guard, guard, guard_type_t, Type, type);
 UNCHECKED_ACCESSORS_IMPL(Guard, guard, Value, value);
@@ -87,7 +104,7 @@ score_t guard_match(runtime_t *runtime, value_t guard, value_t value,
     value_t space) {
   CHECK_FAMILY(ofGuard, guard);
   switch (get_guard_type(guard)) {
-    case gtId: {
+    case gtEq: {
       value_t guard_value = get_guard_value(guard);
       bool match = value_identity_compare(guard_value, value);
       return match ? gsIdenticalMatch : gsNoMatch;
@@ -102,6 +119,31 @@ score_t guard_match(runtime_t *runtime, value_t guard, value_t value,
     default:
       return gsNoMatch;
   }
+}
+
+void guard_print_on(value_t self, string_buffer_t *buf) {
+  guard_print_atomic_on(self, buf);
+}
+
+void guard_print_atomic_on(value_t self, string_buffer_t *buf) {
+  CHECK_FAMILY(ofGuard, self);
+  string_buffer_printf(buf, "#<guard: ");
+  switch (get_guard_type(self)) {
+    case gtEq:
+      string_buffer_printf(buf, "eq(");
+      value_print_atomic_on(get_guard_value(self), buf);
+      string_buffer_printf(buf, ")");
+      break;
+    case gtIs:
+      string_buffer_printf(buf, "is(");
+      value_print_atomic_on(get_guard_value(self), buf);
+      string_buffer_printf(buf, ")");
+      break;
+    case gtAny:
+      string_buffer_printf(buf, "*");
+      break;
+  }
+  string_buffer_printf(buf, ">");
 }
 
 
@@ -165,13 +207,13 @@ value_t invocation_record_validate(value_t self) {
 value_t get_invocation_record_tag_at(value_t self, size_t index) {
   CHECK_FAMILY(ofInvocationRecord, self);
   value_t argument_vector = get_invocation_record_argument_vector(self);
-  return get_array_at(argument_vector, index << 1);
+  return get_pair_array_first_at(argument_vector, index);
 }
 
 size_t get_invocation_record_offset_at(value_t self, size_t index) {
   CHECK_FAMILY(ofInvocationRecord, self);
   value_t argument_vector = get_invocation_record_argument_vector(self);
-  return get_integer_value(get_array_at(argument_vector, (index << 1) + 1));
+  return get_integer_value(get_pair_array_second_at(argument_vector, index));
 }
 
 size_t get_invocation_record_argument_count(value_t self) {
@@ -182,16 +224,16 @@ size_t get_invocation_record_argument_count(value_t self) {
 
 value_t build_invocation_record_vector(runtime_t *runtime, value_t tags) {
   size_t tag_count = get_array_length(tags);
-  TRY_DEF(result, new_heap_array(runtime, tag_count << 1));
+  TRY_DEF(result, new_heap_pair_array(runtime, tag_count));
   for (size_t i = 0; i < tag_count; i++) {
-    set_array_at(result, i << 1, get_array_at(tags, i));
+    set_pair_array_first_at(result, i, get_array_at(tags, i));
     // The offset is counted backwards because the argument evaluated last will
     // be at the top of the stack, that is, offset 0, and the first will be at
     // the bottom so has the highest offset.
     size_t offset = tag_count - i - 1;
-    set_array_at(result, (i << 1) + 1, new_integer(offset));
+    set_pair_array_second_at(result, i, new_integer(offset));
   }
-  co_sort_array_pairs(result);
+  co_sort_pair_array(result);
   return result;
 }
 
