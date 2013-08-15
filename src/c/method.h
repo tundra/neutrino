@@ -12,18 +12,14 @@
 
 // --- S i g n a t u r e ---
 
-static const size_t kSignatureSize = OBJECT_SIZE(5);
+static const size_t kSignatureSize = OBJECT_SIZE(4);
 static const size_t kSignatureTagsOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kSignatureDescriptorsOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kSignatureParameterCountOffset = OBJECT_FIELD_OFFSET(2);
-static const size_t kSignatureMandatoryCountOffset = OBJECT_FIELD_OFFSET(3);
-static const size_t kSignatureAllowExtraOffset = OBJECT_FIELD_OFFSET(4);
+static const size_t kSignatureParameterCountOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kSignatureMandatoryCountOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kSignatureAllowExtraOffset = OBJECT_FIELD_OFFSET(3);
 
-// The sorted array of signature tags.
+// The sorted array of signature tags and parameters.
 ACCESSORS_DECL(signature, tags);
-
-// The matching array of parameter descriptors.
-ACCESSORS_DECL(signature, descriptors);
 
 // The number of parameters defined by this signature.
 INTEGER_ACCESSORS_DECL(signature, parameter_count);
@@ -33,6 +29,13 @@ INTEGER_ACCESSORS_DECL(signature, mandatory_count);
 
 // Are extra arguments allowed?
 INTEGER_ACCESSORS_DECL(signature, allow_extra);
+
+// Returns the number of tags defined by this signature, including optional
+// ones.
+size_t get_signature_tag_count(value_t self);
+
+// Returns the index'th tag in this signature in the sorted tag order.
+value_t get_signature_tag_at(value_t self, size_t index);
 
 
 // --- P a r a m e t e r ---
@@ -59,7 +62,7 @@ INTEGER_ACCESSORS_DECL(parameter, index);
 // How this guard matches.
 typedef enum {
   // Match by value identity.
-  gtId,
+  gtEq,
   // Match by 'instanceof'.
   gtIs,
   // Always match.

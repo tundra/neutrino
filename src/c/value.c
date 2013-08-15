@@ -347,19 +347,6 @@ value_t sort_array(value_t value) {
   return success();
 }
 
-value_t co_sort_array_pairs(value_t value) {
-  CHECK_FAMILY(ofArray, value);
-  size_t length = get_array_length(value);
-  CHECK_EQ("pair sorting odd-length array", 0, length & 1);
-  size_t pair_count = length >> 1;
-  value_t *elements = get_array_elements(value);
-  // The value compare function works in this case too because it'll compare the
-  // first value pointed to by its arguments, it doesn't care if there are more
-  // values after it.
-  qsort(elements, pair_count, kValueSize << 1, &value_compare_function);
-  return success();
-}
-
 bool is_array_sorted(value_t value) {
   CHECK_FAMILY(ofArray, value);
   size_t length = get_array_length(value);
@@ -373,6 +360,55 @@ bool is_array_sorted(value_t value) {
   }
   return true;
 }
+
+void set_pair_array_first_at(value_t self, size_t index, value_t value) {
+  set_array_at(self, index << 1, value);
+}
+
+value_t get_pair_array_first_at(value_t self, size_t index) {
+  return get_array_at(self, index << 1);
+}
+
+void set_pair_array_second_at(value_t self, size_t index, value_t value) {
+  set_array_at(self, (index << 1) + 1, value);
+}
+
+value_t get_pair_array_second_at(value_t self, size_t index) {
+  return get_array_at(self, (index << 1) + 1);
+}
+
+size_t get_pair_array_length(value_t self) {
+  return get_array_length(self) >> 1;
+}
+
+value_t co_sort_pair_array(value_t value) {
+  CHECK_FAMILY(ofArray, value);
+  size_t length = get_array_length(value);
+  CHECK_EQ("pair sorting odd-length array", 0, length & 1);
+  size_t pair_count = length >> 1;
+  value_t *elements = get_array_elements(value);
+  // The value compare function works in this case too because it'll compare the
+  // first value pointed to by its arguments, it doesn't care if there are more
+  // values after it.
+  qsort(elements, pair_count, kValueSize << 1, &value_compare_function);
+  return success();
+}
+
+bool is_pair_array_sorted(value_t value) {
+  CHECK_FAMILY(ofArray, value);
+  CHECK_TRUE("not pair array", (get_array_length(value) & 1) == 0);
+  size_t length = get_pair_array_length(value);
+  for (size_t i = 1; i < length; i++) {
+    value_t a = get_pair_array_first_at(value, i - 1);
+    value_t b = get_pair_array_first_at(value, i);
+    value_t comparison = value_ordering_compare(a, b);
+    CHECK_FALSE("not comparable", in_domain(vdSignal, comparison));
+    if (ordering_to_int(comparison) > 0)
+      return false;
+  }
+  return true;
+}
+
 
 
 // --- A r r a y   b u f f e r ---

@@ -451,12 +451,39 @@ value_t *get_array_elements(value_t value);
 // values are not comparable, a signal is returned.
 value_t sort_array(value_t value);
 
-// Sorts pairs of array elements by the first element, moving the second element
-// with the first one but not using it for comparison.
-value_t co_sort_array_pairs(value_t value);
-
 // Returns true if the given array is sorted.
 bool is_array_sorted(value_t value);
+
+// Pair array. An even-sized array can also be viewed as an array of pairs such
+// that [1, 2, 3, 4] is used to represent [(1, 2), (3, 4)]. The pair_array
+// functions help use an array like that.
+
+// Sorts pairs of array elements by the first element, moving the second element
+// with the first one but not using it for comparison.
+value_t co_sort_pair_array(value_t value);
+
+// Returns true if this array, viewed as a pair array, is sorted by the first
+// pair element.
+bool is_pair_array_sorted(value_t value);
+
+// Sets the first entry in the index'th pair in the given array, viewed as a
+// pair array.
+void set_pair_array_first_at(value_t self, size_t index, value_t value);
+
+// Gets the first entry in the index'th pair in the given array, viewed as a
+// pair array.
+value_t get_pair_array_first_at(value_t self, size_t index);
+
+// Sets the second entry in the index'th pair in the given array, viewed as a
+// pair array.
+void set_pair_array_second_at(value_t self, size_t index, value_t value);
+
+// Gets the second entry in the index'th pair in the given array, viewed as a
+// pair array.
+value_t get_pair_array_second_at(value_t self, size_t index);
+
+// Returns the length of this array when viewed as a pair array.
+size_t get_pair_array_length(value_t self);
 
 
 // --- A r r a y   b u f f e r ---
