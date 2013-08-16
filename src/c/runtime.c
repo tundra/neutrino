@@ -7,7 +7,6 @@
 #include "runtime.h"
 #include "value-inl.h"
 
-#include <string.h>
 
 value_t roots_init(roots_t *roots, runtime_t *runtime) {
   // The meta-root is tricky because it is its own species. So we set it up in

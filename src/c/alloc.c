@@ -6,8 +6,6 @@
 #include "process.h"
 #include "value-inl.h"
 
-#include <string.h>
-
 
 // --- B a s i c ---
 

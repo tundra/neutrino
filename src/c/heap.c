@@ -6,8 +6,6 @@
 #include "heap.h"
 #include "value-inl.h"
 
-#include <string.h>
-
 
 // --- M i s c ---
 
