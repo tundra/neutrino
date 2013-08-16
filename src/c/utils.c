@@ -231,3 +231,51 @@ void byte_buffer_append(byte_buffer_t *buf, uint8_t value) {
 void byte_buffer_flush(byte_buffer_t *buf, blob_t *blob_out) {
   blob_init(blob_out, buf->data, buf->length);
 }
+
+
+// --- B i t   v e c t o r ---
+
+static bool bit_vector_is_small(bit_vector_t *vector) {
+  return vector->length < kSmallBitVectorLimit;
+}
+
+value_t bit_vector_init(bit_vector_t *vector, size_t length, bool value) {
+  vector->length = length;
+  if (bit_vector_is_small(vector)) {
+    vector->data = vector->as_small.inline_data;
+    memset(vector->data, value ? 0xFF : 0x00, kBitVectorInlineDataSize);
+  } else {
+    allocator_t alloc;
+    init_system_allocator(&alloc);
+    size_t data_size = (length + 7) / 8;
+    vector->data = vector->as_large.alloced_data = allocator_malloc(&alloc, data_size);
+    memset(vector->data, value ? 0xFF : 0x00, data_size);
+  }
+  return success();
+}
+
+void bit_vector_dispose(bit_vector_t *vector) {
+  if (!bit_vector_is_small(vector)) {
+    allocator_t alloc;
+    init_system_allocator(&alloc);
+    allocator_free(&alloc, vector->as_large.alloced_data);
+  }
+}
+
+void bit_vector_set_at(bit_vector_t *vector, size_t index, bool value) {
+  CHECK_TRUE("set bit vector out of bounds", index < vector->length);
+  size_t segment = index >> 3;
+  size_t offset = (index & 0x7);
+  if (value) {
+    vector->data[segment] |= (1 << offset);
+  } else {
+    vector->data[segment] &= ~(1 << offset);
+  }
+}
+
+bool bit_vector_get_at(bit_vector_t *vector, size_t index) {
+  CHECK_TRUE("get bit vector out of bounds", index < vector->length);
+  size_t segment = index >> 3;
+  size_t offset = (index & 0x7);
+  return (vector->data[segment] >> offset) & 0x1;
+}
