@@ -5,12 +5,14 @@
 
 #include "check.h"
 #include "globals.h"
-#include "utils.h"
 
 #ifndef _VALUE
 #define _VALUE
 
+FORWARD(blob_t);
 FORWARD(runtime_t);
+FORWARD(string_t);
+FORWARD(string_buffer_t);
 
 // Value domain identifiers.
 typedef enum {
