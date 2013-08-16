@@ -127,10 +127,6 @@ value_t space_for_each_object(space_t *space, value_callback_t *callback);
 // aligned to an 'alignment' boundary.
 address_t align_address(address_arith_t alignment, address_t ptr);
 
-// Returns a pointer greater than or equal to the given pointer which is
-// aligned to an 'alignment' boundary.
-size_t align_size(uint32_t alignment, size_t size);
-
 FORWARD(gc_safe_t);
 
 // Opaque datatype that can be used to unpin a pinned value.

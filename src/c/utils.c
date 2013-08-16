@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "check.h"
+#include "globals.h"
 #include "utils.h"
 
 #include <string.h>
@@ -241,16 +242,16 @@ static bool bit_vector_is_small(bit_vector_t *vector) {
 
 value_t bit_vector_init(bit_vector_t *vector, size_t length, bool value) {
   vector->length = length;
+  size_t byte_size = align_size(8, length) >> 3;
   if (bit_vector_is_small(vector)) {
     vector->data = vector->as_small.inline_data;
-    memset(vector->data, value ? 0xFF : 0x00, kBitVectorInlineDataSize);
   } else {
     allocator_t alloc;
     init_system_allocator(&alloc);
-    size_t data_size = (length + 7) / 8;
-    vector->data = vector->as_large.alloced_data = allocator_malloc(&alloc, data_size);
-    memset(vector->data, value ? 0xFF : 0x00, data_size);
+    uint8_t *data = allocator_malloc(&alloc, byte_size);
+    vector->data = vector->as_large.alloced_data = data;
   }
+  memset(vector->data, value ? 0xFF : 0x00, byte_size);
   return success();
 }
 

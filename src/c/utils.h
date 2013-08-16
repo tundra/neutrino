@@ -10,6 +10,15 @@
 #include <stdarg.h>
 
 
+// --- M i s c ---
+
+// Returns a pointer greater than or equal to the given pointer which is
+// aligned to an 'alignment' boundary.
+static size_t align_size(uint32_t alignment, size_t size) {
+  return (size + (alignment - 1)) & ~(alignment - 1);
+}
+
+
 // --- S t r i n g ---
 
 // A C string with a length.
