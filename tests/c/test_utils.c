@@ -114,3 +114,41 @@ TEST(utils, string_buffer_long) {
 
   string_buffer_dispose(&buf);
 }
+
+// Runs a test of a bit vector of the given size.
+static void test_bit_vector(size_t size) {
+  bit_vector_t false_bits;
+  ASSERT_SUCCESS(bit_vector_init(&false_bits, size, false));
+  bit_vector_t true_bits;
+  ASSERT_SUCCESS(bit_vector_init(&true_bits, size, true));
+
+  // Check that the vectors have been initialized as expected.
+  for (size_t i = 0; i < size; i++) {
+    ASSERT_FALSE(bit_vector_get_at(&false_bits, i));
+    ASSERT_TRUE(bit_vector_get_at(&true_bits, i));
+  }
+
+  // Check that setting and getting works as expected.
+  for (size_t i = 0; i < size; i++) {
+    bit_vector_set_at(&false_bits, i, (i % 7) == 3);
+    bit_vector_set_at(&true_bits, i, (i % 5) != 1);
+  }
+  for (size_t i = 0; i < size; i++) {
+    ASSERT_EQ((i % 7) == 3, bit_vector_get_at(&false_bits, i));
+    ASSERT_EQ((i % 5) != 1, bit_vector_get_at(&true_bits, i));
+  }
+
+  bit_vector_dispose(&false_bits);
+  bit_vector_dispose(&true_bits);
+
+}
+
+TEST(utils, bit_vectors) {
+  test_bit_vector(8);
+  test_bit_vector(62);
+  test_bit_vector(64);
+  test_bit_vector(66);
+  test_bit_vector(1022);
+  test_bit_vector(1024);
+  test_bit_vector(1026);
+}

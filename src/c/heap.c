@@ -47,10 +47,6 @@ address_t align_address(address_arith_t alignment, address_t ptr) {
   return (address_t) ((addr + (alignment - 1)) & ~(alignment - 1));
 }
 
-size_t align_size(uint32_t alignment, size_t size) {
-  return (size + (alignment - 1)) & ~(alignment - 1);
-}
-
 // Returns true if the given size value is aligned to the given boundary.
 static size_t is_size_aligned(uint32_t alignment, size_t size) {
   return (size & (alignment - 1)) == 0;
