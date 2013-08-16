@@ -115,6 +115,7 @@ TEST(utils, string_buffer_long) {
   string_buffer_dispose(&buf);
 }
 
+// Runs a test of a bit vector of the given size.
 static void test_bit_vector(size_t size) {
   bit_vector_t false_bits;
   ASSERT_SUCCESS(bit_vector_init(&false_bits, size, false));
@@ -142,7 +143,7 @@ static void test_bit_vector(size_t size) {
 
 }
 
-TEST(utils, small_bit_vector) {
+TEST(utils, bit_vectors) {
   test_bit_vector(8);
   test_bit_vector(62);
   test_bit_vector(64);
