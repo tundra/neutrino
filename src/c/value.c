@@ -64,26 +64,27 @@ object_family_t get_species_instance_family(value_t value) {
   return (object_family_t) get_integer_value(family);
 }
 
-// Casts a pointer to a value_t.
-#define PTR_TO_VAL(EXPR) ((encoded_value_t) (address_arith_t) (EXPR))
-
-// Casts a value_t to a void*.
-#define VAL_TO_PTR(EXPR) ((void*) (address_arith_t) (EXPR))
+// Bit cast a value to a void*.
+static void *value_to_pointer_bit_cast(value_t value) {
+  void *result = 0;
+  memcpy(&result, &value.encoded, sizeof(void*));
+  return result;
+}
 
 void set_species_family_behavior(value_t value, family_behavior_t *behavior) {
-  access_object_field(value, kSpeciesFamilyBehaviorOffset)->encoded = PTR_TO_VAL(behavior);
+  *access_object_field(value, kSpeciesFamilyBehaviorOffset) = pointer_to_value_bit_cast(behavior);
 }
 
 family_behavior_t *get_species_family_behavior(value_t value) {
-  return VAL_TO_PTR(access_object_field(value, kSpeciesFamilyBehaviorOffset)->encoded);
+  return value_to_pointer_bit_cast(*access_object_field(value, kSpeciesFamilyBehaviorOffset));
 }
 
 void set_species_division_behavior(value_t value, division_behavior_t *behavior) {
-  access_object_field(value, kSpeciesDivisionBehaviorOffset)->encoded = PTR_TO_VAL(behavior);
+  *access_object_field(value, kSpeciesDivisionBehaviorOffset) = pointer_to_value_bit_cast(behavior);
 }
 
 division_behavior_t *get_species_division_behavior(value_t value) {
-  return VAL_TO_PTR(access_object_field(value, kSpeciesDivisionBehaviorOffset)->encoded);
+  return value_to_pointer_bit_cast(*access_object_field(value, kSpeciesDivisionBehaviorOffset));
 }
 
 species_division_t get_species_division(value_t value) {
@@ -254,12 +255,12 @@ TRIVIAL_PRINT_ON_IMPL(VoidP, void_p);
 
 void set_void_p_value(value_t value, void *ptr) {
   CHECK_FAMILY(ofVoidP, value);
-  access_object_field(value, kVoidPValueOffset)->encoded = PTR_TO_VAL(ptr);
+  *access_object_field(value, kVoidPValueOffset) = pointer_to_value_bit_cast(ptr);
 }
 
 void *get_void_p_value(value_t value) {
   CHECK_FAMILY(ofVoidP, value);
-  return VAL_TO_PTR(access_object_field(value, kVoidPValueOffset)->encoded);
+  return value_to_pointer_bit_cast(*access_object_field(value, kVoidPValueOffset));
 }
 
 value_t void_p_validate(value_t value) {

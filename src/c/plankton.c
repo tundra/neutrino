@@ -5,7 +5,6 @@
 #include "plankton.h"
 #include "value-inl.h"
 
-#include <string.h>
 
 // --- B y t e   s t r e a m ---
 

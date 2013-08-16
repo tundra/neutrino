@@ -5,8 +5,8 @@
 #include "globals.h"
 #include "utils.h"
 
-#include <string.h>
 #include <stdarg.h>
+
 
 void string_init(string_t *str, const char *chars) {
   str->chars = chars;
