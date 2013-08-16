@@ -144,6 +144,10 @@ static void test_bit_vector(size_t size) {
 
 TEST(utils, small_bit_vector) {
   test_bit_vector(8);
+  test_bit_vector(62);
   test_bit_vector(64);
-  test_bit_vector(65536);
+  test_bit_vector(66);
+  test_bit_vector(1022);
+  test_bit_vector(1024);
+  test_bit_vector(1026);
 }
