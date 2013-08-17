@@ -410,6 +410,59 @@ bool is_pair_array_sorted(value_t value) {
   return true;
 }
 
+/*
+ * int binary_search(int A[], int key, int imin, int imax)
+{
+  // continue searching while [imin,imax] is not empty
+  while (imax >= imin)
+    {
+      / calculate the midpoint for roughly equal partition /
+      int imid = midpoint(imin, imax);
+
+      // determine which subarray to search
+      if (A[imid] < key)
+        // change min index to search upper subarray
+        imin = imid + 1;
+      else if (A[imid] > key)
+        // change max index to search lower subarray
+        imax = imid - 1;
+      else
+        // key found at index imid
+        return imid;
+    }
+  // key not found
+  return KEY_NOT_FOUND;
+}
+ */
+
+value_t binary_search_pair_array(value_t self, value_t key) {
+  CHECK_FAMILY(ofArray, self);
+  CHECK_TRUE("not pair array", (get_array_length(self) & 1) == 0);
+  // Using signed values allows the max to go negative which simplifies the
+  // logic. It does in principle narrow the range we can represent but the
+  // longest possible pair array is half the length of the longest possible
+  // array, which gives us the sign bit WLOG.
+  int64_t min = 0;
+  int64_t max = get_pair_array_length(self) - 1;
+  while (min <= max) {
+    int64_t mid = ((max - min) >> 1) + min;
+    value_t current_key = get_pair_array_first_at(self, mid);
+    TRY_DEF(ordering_value, value_ordering_compare(current_key, key));
+    int ordering = ordering_to_int(ordering_value);
+    if (ordering < 0) {
+      // The current key is smaller than the key we're looking for. Advance the
+      // min past it.
+      min = mid + 1;
+    } else if (ordering > 0) {
+      // The current key is larger than the key we're looking for. Move the max
+      // below it.
+      max = mid - 1;
+    } else {
+      return get_pair_array_second_at(self, mid);
+    }
+  }
+  return new_signal(scNotFound);
+}
 
 
 // --- A r r a y   b u f f e r ---

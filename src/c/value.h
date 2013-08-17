@@ -475,6 +475,10 @@ value_t co_sort_pair_array(value_t value);
 // pair element.
 bool is_pair_array_sorted(value_t value);
 
+// Binary searches for a pair whose first component is the given key in the
+// given sorted pair array, returning the second component.
+value_t binary_search_pair_array(value_t self, value_t key);
+
 // Sets the first entry in the index'th pair in the given array, viewed as a
 // pair array.
 void set_pair_array_first_at(value_t self, size_t index, value_t value);
