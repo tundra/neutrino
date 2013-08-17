@@ -410,31 +410,6 @@ bool is_pair_array_sorted(value_t value) {
   return true;
 }
 
-/*
- * int binary_search(int A[], int key, int imin, int imax)
-{
-  // continue searching while [imin,imax] is not empty
-  while (imax >= imin)
-    {
-      / calculate the midpoint for roughly equal partition /
-      int imid = midpoint(imin, imax);
-
-      // determine which subarray to search
-      if (A[imid] < key)
-        // change min index to search upper subarray
-        imin = imid + 1;
-      else if (A[imid] > key)
-        // change max index to search lower subarray
-        imax = imid - 1;
-      else
-        // key found at index imid
-        return imid;
-    }
-  // key not found
-  return KEY_NOT_FOUND;
-}
- */
-
 value_t binary_search_pair_array(value_t self, value_t key) {
   CHECK_FAMILY(ofArray, self);
   CHECK_TRUE("not pair array", (get_array_length(self) & 1) == 0);
