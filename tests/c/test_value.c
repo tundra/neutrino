@@ -340,5 +340,22 @@ TEST(value, array_sort) {
     ASSERT_EQ(value, kUnsorted[order]);
   }
 
+  // Binary search.
+  for (int i = 0; i < 100; i++) {
+    // Check if 'i' is in the array.
+    bool is_present = false;
+    for (size_t j = 0; j < kTestArraySize && !is_present; j++) {
+      if (kUnsorted[j] == i)
+        is_present = true;
+    }
+    value_t found = binary_search_pair_array(a1, new_integer(i));
+    if (is_present) {
+      ASSERT_SUCCESS(found);
+      ASSERT_EQ(i, kUnsorted[get_integer_value(found)]);
+    } else {
+      ASSERT_SIGNAL(scNotFound, found);
+    }
+  }
+
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
