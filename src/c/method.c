@@ -36,6 +36,24 @@ match_result_t match_signature(value_t self, value_t record, frame_t *frame,
     score_t *scores, size_t score_count) {
   size_t argument_count = get_invocation_record_argument_count(record);
   CHECK_TRUE("score array too short", argument_count <= score_count);
+  // Vector of parameters seen. This is used to ensure that we only see each
+  // parameter once.
+  size_t param_count = get_signature_parameter_count(self);
+  bit_vector_t params_seen;
+  bit_vector_init(&params_seen, param_count, false);
+  // Count how many mandatory parameters we see so we can check that we see all
+  // of them.
+  size_t mandatory_seen_count = 0;
+  // The value to return if there is a match.
+  match_result_t on_match = mrMatch;
+  // Clear the score vector.
+  for (size_t i = 0; i < argument_count; i++)
+    scores[i] = gsNoMatch;
+  // Scan through the arguments and look them up in the signature.
+  for (size_t i = 0; i < argument_count; i++) {
+    value_t tag = get_invocation_record_tag_at(record, i);
+    value_t value = get_invocation_record_argument_at(record, frame, i);
+  }
   /*
    *   public MatchResult match(IInvocation record, IHierarchy hierarchy, int[] scores) {
     int recordEntryCount = record.getEntryCount();

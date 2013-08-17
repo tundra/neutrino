@@ -375,7 +375,8 @@ void assert_match(runtime_t *runtime, match_result_t expected, value_t signature
   }
   value_t vector = build_invocation_record_vector(runtime, tags);
   value_t record = new_heap_invocation_record(runtime, vector);
-  match_result_t result = match_signature(signature, record, &frame, NULL, 0);
+  score_t scores[16];
+  match_result_t result = match_signature(signature, record, &frame, scores, 16);
   ASSERT_EQ(expected, result);
 }
 
