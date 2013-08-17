@@ -13,6 +13,10 @@ TEST(value, encoding) {
   ASSERT_EQ(vdInteger, v0.encoded & 0x7);
 }
 
+TEST(value, sizes) {
+  ASSERT_TRUE(sizeof(void*) <= sizeof(encoded_value_t));
+}
+
 // Really simple value tagging stuff.
 TEST(value, tagged_integers) {
   value_t v0 = new_integer(10);

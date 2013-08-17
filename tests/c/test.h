@@ -3,12 +3,9 @@
 
 #include "value.h"
 
-#include <string.h>
-
 // Declare a unit test method. The suite name must match the file the test
 // case is declared in.
 #define TEST(suite, name) void test_##suite##_##name()
-
 
 // Aborts exception, signalling an error.
 void fail(const char *file, int line, const char *fmt, ...);

@@ -247,12 +247,19 @@ static const size_t kObjectHeaderOffset = 0;
 FORWARD(family_behavior_t);
 FORWARD(division_behavior_t);
 
+// Bit cast a void* to a value. This is similar to making a new object except
+// that the pointer is allowed to be unaligned.
+static value_t pointer_to_value_bit_cast(void *ptr) {
+  // See the sizes test in test_value.
+  encoded_value_t encoded = 0;
+  memcpy(&encoded, &ptr, sizeof(void*));
+  return (value_t) {.encoded=encoded};
+}
+
 // Converts a pointer to an object into an tagged object value pointer.
 static value_t new_object(address_t addr) {
   CHECK_EQ("unaligned", 0, ((address_arith_t) addr) & kDomainTagMask);
-  value_t result;
-  result.encoded = ((address_arith_t) addr);
-  return result;
+  return pointer_to_value_bit_cast(addr);
 }
 
 // Returns the address of the object pointed to by a tagged object value

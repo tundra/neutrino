@@ -9,7 +9,6 @@
 #include "value-inl.h"
 
 #include <unistd.h>
-#include <string.h>
 
 static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
   // Read the complete file into a byte buffer.
