@@ -38,8 +38,11 @@ void uninstall_check_recorder(check_recorder_t *recorder);
 
 // Fails unless the two values are equal.
 #define ASSERT_EQ(A, B) do {                                                   \
-  if (!((A) == (B)))                                                           \
-    fail(__FILE__, __LINE__, "Assertion failed: %s == %s.", #A, #B);           \
+  int64_t __a__ = (int64_t) (A);                                               \
+  int64_t __b__ = (int64_t) (B);                                               \
+  if (__a__ != __b__)                                                          \
+    fail(__FILE__, __LINE__, "Assertion failed: %s == %s.\n  Expected: %lli\n  Found: %lli", \
+        #A, #B, __a__, __b__);                                                 \
 } while (false)
 
 // Fails unless the two values are different.

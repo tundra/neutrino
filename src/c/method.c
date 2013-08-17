@@ -32,6 +32,75 @@ value_t get_signature_tag_at(value_t self, size_t index) {
   return get_pair_array_first_at(get_signature_tags(self), index);
 }
 
+match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
+    frame_t *frame, value_t space, score_t *scores, size_t score_count) {
+  size_t argument_count = get_invocation_record_argument_count(record);
+  CHECK_TRUE("score array too short", argument_count <= score_count);
+  // Vector of parameters seen. This is used to ensure that we only see each
+  // parameter once.
+  size_t param_count = get_signature_parameter_count(self);
+  bit_vector_t params_seen;
+  bit_vector_init(&params_seen, param_count, false);
+  // Count how many mandatory parameters we see so we can check that we see all
+  // of them.
+  size_t mandatory_seen_count = 0;
+  // The value to return if there is a match.
+  match_result_t on_match = mrMatch;
+  // Clear the score vector.
+  for (size_t i = 0; i < argument_count; i++)
+    scores[i] = gsNoMatch;
+  // Scan through the arguments and look them up in the signature.
+  value_t tags = get_signature_tags(self);
+  for (size_t i = 0; i < argument_count; i++) {
+    value_t tag = get_invocation_record_tag_at(record, i);
+    // TODO: propagate any errors caused by this.
+    value_t param = binary_search_pair_array(tags, tag);
+    if (is_signal(scNotFound, param)) {
+      // The tag wasn't found in this signature.
+      if (get_signature_allow_extra(self)) {
+        // It's fine, this signature allows extra arguments.
+        on_match = mrExtraMatch;
+        scores[i] = gsExtraMatch;
+        continue;
+      } else {
+        // This signature doesn't allow extra arguments so we bail out.
+        bit_vector_dispose(&params_seen);
+        return mrUnexpectedArgument;
+      }
+    }
+    CHECK_FALSE("binary search failed", get_value_domain(tags) == vdSignal);
+    // The tag matched one in this signature.
+    size_t index = get_parameter_index(param);
+    if (bit_vector_get_at(&params_seen, index)) {
+      // We've now seen two tags that match the same parameter. Bail out.
+      bit_vector_dispose(&params_seen);
+      return mrRedundantArgument;
+    }
+    value_t value = get_invocation_record_argument_at(record, frame, i);
+    score_t score = guard_match(runtime, get_parameter_guard(param), value,
+        space);
+    if (!is_score_match(score)) {
+      // The guard says the argument doesn't match. Bail out.
+      bit_vector_dispose(&params_seen);
+      return mrGuardRejected;
+    }
+    // We got a match! Record the result and move on to the next.
+    bit_vector_set_at(&params_seen, index, true);
+    scores[i] = score;
+    if (!get_parameter_is_optional(param))
+      mandatory_seen_count++;
+  }
+  bit_vector_dispose(&params_seen);
+  if (mandatory_seen_count < get_signature_mandatory_count(self)) {
+    // All arguments matched but there were mandatory arguments missing so it's
+    // no good.
+    return mrMissingArgument;
+  } else {
+    // Everything matched including all mandatories. We're golden.
+    return on_match;
+  }
+}
+
 
 // --- P a r a m e t e r ---
 
