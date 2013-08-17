@@ -32,8 +32,8 @@ value_t get_signature_tag_at(value_t self, size_t index) {
   return get_pair_array_first_at(get_signature_tags(self), index);
 }
 
-match_result_t match_signature(value_t self, value_t record, frame_t *frame,
-    score_t *scores, size_t score_count) {
+match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
+    frame_t *frame, value_t space, score_t *scores, size_t score_count) {
   size_t argument_count = get_invocation_record_argument_count(record);
   CHECK_TRUE("score array too short", argument_count <= score_count);
   // Vector of parameters seen. This is used to ensure that we only see each
@@ -50,58 +50,52 @@ match_result_t match_signature(value_t self, value_t record, frame_t *frame,
   for (size_t i = 0; i < argument_count; i++)
     scores[i] = gsNoMatch;
   // Scan through the arguments and look them up in the signature.
+  value_t tags = get_signature_tags(self);
   for (size_t i = 0; i < argument_count; i++) {
     value_t tag = get_invocation_record_tag_at(record, i);
-    value_t value = get_invocation_record_argument_at(record, frame, i);
-  }
-  /*
-   *   public MatchResult match(IInvocation record, IHierarchy hierarchy, int[] scores) {
-    int recordEntryCount = record.getEntryCount();
-    Assert.that(scores.length >= recordEntryCount);
-    BitSet paramsSeen = new BitSet(totalParamCount);
-    int mandatoryArgsSeenCount = 0;
-    MatchResult onMatch = MatchResult.MATCH;
-    for (int i = 0; i < recordEntryCount; i++)
-      scores[i] = Guard.NO_MATCH;
-    // Scan through the arguments and look them up in the signature.
-    for (int i = 0; i < recordEntryCount; i++) {
-      ITagValue tag = record.getTag(i);
-      IValue value = record.getValue(i);
-      int entryIndex = Collections.binarySearch(tags, tag);
-      if (entryIndex < 0) {
-        if (allowExtra) {
-          onMatch = MatchResult.EXTRA_MATCH;
-          scores[i] = Guard.EXTRA_MATCH;
-          continue;
-        } else {
-          // There was no signature entry corresponding to this tag. Fail.
-          return MatchResult.UNEXPECTED_ARGUMENT;
-        }
-      }
-      Entry entry = entries.get(entryIndex);
-      if (paramsSeen.get(entry.index)) {
-        // We've seen this entry before; fail.
-        return MatchResult.REDUNDANT_ARGUMENT;
-      }
-      int score = entry.guard.match(value, hierarchy);
-      if (!Guard.isMatch(score)) {
-        return MatchResult.GUARD_REJECTED;
+    value_t param = binary_search_pair_array(tags, tag);
+    if (is_signal(scNotFound, param)) {
+      // The tag wasn't found in this signature.
+      if (get_signature_allow_extra(self)) {
+        // It's fine, this signature allows extra arguments.
+        on_match = mrExtraMatch;
+        scores[i] = gsExtraMatch;
+        continue;
       } else {
-        paramsSeen.set(entry.index);
-        scores[i] = score;
-        if (!entry.isOptional)
-          mandatoryArgsSeenCount++;
+        // This signature doesn't allow extra arguments so we bail out.
+        bit_vector_dispose(&params_seen);
+        return mrUnexpectedArgument;
       }
     }
-    if (mandatoryArgsSeenCount < mandatoryParamCount) {
-      // There are some parameters we haven't seen. Fail.
-      return MatchResult.MISSING_ARGUMENT;
-    } else {
-      // We saw all parameters and their guards approved. Match!
-      return onMatch;
+    // The tag matched one in this signature.
+    size_t index = get_parameter_index(param);
+    if (bit_vector_get_at(&params_seen, index)) {
+      // We've now seen two tags that match the same parameter. Bail out.
+      bit_vector_dispose(&params_seen);
+      return mrRedundantArgument;
     }
+    value_t value = get_invocation_record_argument_at(record, frame, i);
+    score_t score = guard_match(runtime, get_parameter_guard(param), value,
+        space);
+    if (!is_score_match(score)) {
+      // The guard says the argument doesn't match. Bail out.
+      bit_vector_dispose(&params_seen);
+      return mrGuardRejected;
+    }
+    // We got a match! Record the result and move on to the next.
+    bit_vector_set_at(&params_seen, index, true);
+    scores[i] = score;
+    if (!get_parameter_is_optional(param))
+      mandatory_seen_count++;
   }
-   */
+  bit_vector_dispose(&params_seen);
+  if (mandatory_seen_count < get_signature_mandatory_count(self))
+    // All arguments matched but there were mandatory arguments missing so it's
+    // no good.
+    return mrMissingArgument;
+  else
+    // Everything matched including all mandatories. We're golden.
+    return on_match;
 }
 
 

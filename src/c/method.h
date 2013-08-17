@@ -64,8 +64,8 @@ typedef enum {
 // The scores array must be long enough to hold a score for each argument
 // in the invocation. If the match succeeds it holds the scores, if it fails
 // the state is unspecified.
-match_result_t match_signature(value_t self, value_t record, frame_t *frame,
-    score_t *scores, size_t score_count);
+match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
+    frame_t *frame, value_t space, score_t *scores, size_t score_count);
 
 
 // --- P a r a m e t e r ---

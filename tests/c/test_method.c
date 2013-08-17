@@ -376,7 +376,8 @@ void assert_match(runtime_t *runtime, match_result_t expected, value_t signature
   value_t vector = build_invocation_record_vector(runtime, tags);
   value_t record = new_heap_invocation_record(runtime, vector);
   score_t scores[16];
-  match_result_t result = match_signature(signature, record, &frame, scores, 16);
+  match_result_t result = match_signature(runtime, signature, record, &frame,
+      new_integer(0), scores, 16);
   ASSERT_EQ(expected, result);
 }
 
@@ -394,17 +395,130 @@ TEST(method, simple_matching) {
   assert_match(&runtime, mrMatch, sig, ARGS(2,
       ARG(vInt(0), vStr("foo")) o
       ARG(vInt(1), vStr("bar"))));
-
   assert_match(&runtime, mrUnexpectedArgument, sig, ARGS(3,
       ARG(vInt(0), vStr("foo")) o
       ARG(vInt(1), vStr("bar")) o
       ARG(vInt(2), vStr("baz"))));
+  assert_match(&runtime, mrMissingArgument, sig, ARGS(1,
+      ARG(vInt(0), vStr("foo"))));
+  assert_match(&runtime, mrMissingArgument, sig, ARGS(1,
+      ARG(vInt(1), vStr("bar"))));
+  assert_match(&runtime, mrUnexpectedArgument, sig, ARGS(1,
+      ARG(vInt(2), vStr("baz"))));
+  assert_match(&runtime, mrMissingArgument, sig, ARGS(1,
+      // The macro won't accept 0 arguments to pass an end marker.
+      ((test_argument_t) {vInt(0), vInt(0), false})));
 
-//      assertMatch(UNEXPECTED_ARGUMENT, sig, arg(0, "foo"), arg(1, "bar"), arg(2, "baz"));
-//      assertMatch(MISSING_ARGUMENT, sig, arg(0, "foo"));
-//      assertMatch(MISSING_ARGUMENT, sig, arg(1, "bar"));
-//      assertMatch(UNEXPECTED_ARGUMENT, sig, arg(2, "baz"));
-//      assertMatch(MISSING_ARGUMENT, sig);
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
+
+TEST(method, simple_guard_matching) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t any_guard = runtime.roots.any_guard;
+  value_t foo = variant_to_value(&runtime, vStr("foo"));
+  value_t guard = new_heap_guard(&runtime, gtEq, foo);
+  value_t sig = make_signature(&runtime,
+      false,
+      PARAMS(2,
+          PARAM(guard, false, vArray(1, vInt(0))) o
+          PARAM(any_guard, false, vArray(1, vInt(1)))));
+
+  assert_match(&runtime, mrMatch, sig, ARGS(2,
+      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(1), vStr("bar"))));
+  assert_match(&runtime, mrMatch, sig, ARGS(2,
+      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(1), vStr("boo"))));
+  assert_match(&runtime, mrGuardRejected, sig, ARGS(2,
+      ARG(vInt(0), vStr("fop")) o
+      ARG(vInt(1), vStr("boo"))));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
+
+TEST(method, multi_tag_matching) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t any_guard = runtime.roots.any_guard;
+  value_t sig = make_signature(&runtime,
+      false,
+      PARAMS(2,
+          PARAM(any_guard, false, vArray(2, vInt(0) o vStr("x"))) o
+          PARAM(any_guard, false, vArray(2, vInt(1) o vStr("y")))));
+
+  assert_match(&runtime, mrMatch, sig, ARGS(2,
+      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(1), vStr("bar"))));
+  assert_match(&runtime, mrMatch, sig, ARGS(2,
+      ARG(vInt(0), vStr("foo")) o
+      ARG(vStr("y"), vStr("bar"))));
+  assert_match(&runtime, mrMatch, sig, ARGS(2,
+      ARG(vInt(1), vStr("bar")) o
+      ARG(vStr("x"), vStr("foo"))));
+  assert_match(&runtime, mrMatch, sig, ARGS(2,
+      ARG(vStr("x"), vStr("foo")) o
+      ARG(vStr("y"), vStr("bar"))));
+  assert_match(&runtime, mrRedundantArgument, sig, ARGS(2,
+      ARG(vInt(0), vStr("foo")) o
+      ARG(vStr("x"), vStr("foo"))));
+  assert_match(&runtime, mrRedundantArgument, sig, ARGS(2,
+      ARG(vInt(1), vStr("bar")) o
+      ARG(vStr("y"), vStr("bar"))));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
+
+TEST(method, extra_args) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t any_guard = runtime.roots.any_guard;
+  value_t sig = make_signature(&runtime,
+      true,
+      PARAMS(2,
+          PARAM(any_guard, false, vArray(2, vInt(0) o vStr("x"))) o
+          PARAM(any_guard, false, vArray(2, vInt(1) o vStr("y")))));
+
+  assert_match(&runtime, mrMatch, sig, ARGS(2,
+      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(1), vStr("bar"))));
+  assert_match(&runtime, mrMatch, sig, ARGS(2,
+      ARG(vInt(0), vStr("foo")) o
+      ARG(vStr("y"), vStr("bar"))));
+  assert_match(&runtime, mrMatch, sig, ARGS(2,
+      ARG(vInt(1), vStr("bar")) o
+      ARG(vStr("x"), vStr("foo"))));
+  assert_match(&runtime, mrMatch, sig, ARGS(2,
+      ARG(vStr("x"), vStr("foo")) o
+      ARG(vStr("y"), vStr("bar"))));
+  assert_match(&runtime, mrRedundantArgument, sig, ARGS(2,
+      ARG(vInt(0), vStr("foo")) o
+      ARG(vStr("x"), vStr("foo"))));
+  assert_match(&runtime, mrRedundantArgument, sig, ARGS(2,
+      ARG(vInt(1), vStr("bar")) o
+      ARG(vStr("y"), vStr("bar"))));
+  assert_match(&runtime, mrExtraMatch, sig, ARGS(3,
+      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(1), vStr("bar")) o
+      ARG(vInt(2), vStr("baz"))));
+  assert_match(&runtime, mrExtraMatch, sig, ARGS(4,
+      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(1), vStr("bar")) o
+      ARG(vInt(2), vStr("baz")) o
+      ARG(vInt(3), vStr("quux"))));
+  assert_match(&runtime, mrMissingArgument, sig, ARGS(2,
+      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(2), vStr("baz"))));
+  assert_match(&runtime, mrMissingArgument, sig, ARGS(2,
+      ARG(vInt(1), vStr("foo")) o
+      ARG(vInt(2), vStr("baz"))));
+  assert_match(&runtime, mrExtraMatch, sig, ARGS(3,
+      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(1), vStr("bar")) o
+      ARG(vStr("z"), vStr("baz"))));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
