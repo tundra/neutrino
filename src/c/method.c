@@ -53,6 +53,7 @@ match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
   value_t tags = get_signature_tags(self);
   for (size_t i = 0; i < argument_count; i++) {
     value_t tag = get_invocation_record_tag_at(record, i);
+    // TODO: propagate any errors caused by this.
     value_t param = binary_search_pair_array(tags, tag);
     if (is_signal(scNotFound, param)) {
       // The tag wasn't found in this signature.
@@ -67,6 +68,7 @@ match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
         return mrUnexpectedArgument;
       }
     }
+    CHECK_FALSE("binary search failed", get_value_domain(tags) == vdSignal);
     // The tag matched one in this signature.
     size_t index = get_parameter_index(param);
     if (bit_vector_get_at(&params_seen, index)) {
@@ -89,13 +91,14 @@ match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
       mandatory_seen_count++;
   }
   bit_vector_dispose(&params_seen);
-  if (mandatory_seen_count < get_signature_mandatory_count(self))
+  if (mandatory_seen_count < get_signature_mandatory_count(self)) {
     // All arguments matched but there were mandatory arguments missing so it's
     // no good.
     return mrMissingArgument;
-  else
+  } else {
     // Everything matched including all mandatories. We're golden.
     return on_match;
+  }
 }
 
 
