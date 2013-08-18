@@ -248,9 +248,11 @@ value_t new_heap_parameter(runtime_t *runtime, value_t guard, bool is_optional,
 value_t new_heap_method_space(runtime_t *runtime) {
   size_t size = kMethodSpaceSize;
   TRY_DEF(inheritance_map, new_heap_id_hash_map(runtime, kInheritanceMapInitialSize));
+  TRY_DEF(methods, new_heap_array_buffer(runtime, kMethodArrayInitialSize));
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.method_space_species));
   set_method_space_inheritance_map(result, inheritance_map);
+  set_method_space_methods(result, methods);
   return post_create_sanity_check(result, size);
 }
 

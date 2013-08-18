@@ -590,7 +590,10 @@ TEST(method, join) {
 
 TEST(method, dense_perfect_lookup) {
   runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  space_config_t config;
+  space_config_init_defaults(&config);
+  config.size_bytes = 1 * kMB;
+  ASSERT_SUCCESS(runtime_init(&runtime, &config));
   value_t null = runtime_null(&runtime);
 
   // Protocols and inheritance hierarchy.
@@ -618,17 +621,31 @@ TEST(method, dense_perfect_lookup) {
   value_t d = new_instance_of(&runtime, d_p);
   value_t values[4] = {a, b, c, d};
 
+  value_t dummy_code = new_heap_code_block(&runtime,
+      new_heap_blob(&runtime, 0),
+      runtime.roots.empty_array,
+      0);
   // Build a method for each combination of parameter types.
+  value_t methods[4][4][4];
   for (size_t first = 0; first < 4; first++) {
     for (size_t second = 0; second < 4; second++) {
       for (size_t third = 0; third < 4; third++) {
-        char name[4] = {first + 'a', second + 'a', third + 'a', '\0'};
-        value_t str = variant_to_value(&runtime, vStr(name));
         value_t signature = make_signature(&runtime, false, PARAMS(3,
             PARAM(guards[first], false, vArray(1, vInt(0))) o
             PARAM(guards[second], false, vArray(1, vInt(1))) o
             PARAM(guards[third], false, vArray(1, vInt(2)))));
+        value_t method = new_heap_method(&runtime, signature, dummy_code);
+        add_method_space_method(&runtime, space, method);
+        methods[first][second][third] = method;
+      }
+    }
+  }
 
+  for (size_t first = 0; first < 4; first++) {
+    for (size_t second = 0; second < 4; second++) {
+      for (size_t third = 0; third < 4; third++) {
+        value_t expected = methods[first][second][third];
+        test_lookup(values[first], values[second], values[third], space);
       }
     }
   }

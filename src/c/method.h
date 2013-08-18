@@ -172,23 +172,35 @@ ACCESSORS_DECL(method, code);
 
 // --- M e t h o d   s p a c e ---
 
-static const size_t kMethodSpaceSize = OBJECT_SIZE(1);
+static const size_t kMethodSpaceSize = OBJECT_SIZE(2);
 static const size_t kMethodSpaceInheritanceMapOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kMethodSpaceMethodsOffset = OBJECT_FIELD_OFFSET(1);
 
 // The size of the inheritance map in an empty method space.
 static const size_t kInheritanceMapInitialSize = 16;
 
+// The size of the method arra in the empty method space
+static const size_t kMethodArrayInitialSize = 16;
+
 // The mapping that defines the inheritance hierarchy within this method space.
 ACCESSORS_DECL(method_space, inheritance_map);
 
+// The methods defined within this method space.
+ACCESSORS_DECL(method_space, methods);
+
 // Records in the given method space that the subtype inherits directly from
-// the supertype. Returns a signal if adding fails, for instance of we run
+// the supertype. Returns a signal if adding fails, for instance if we run
 // out of memory to increase the size of the map.
 value_t add_method_space_inheritance(runtime_t *runtime, value_t self,
     value_t subtype, value_t supertype);
 
 // Returns the array buffer of parents of the given protocol.
 value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol);
+
+// Add a method to this metod space. Returns a signal if adding fails, for
+// instance if we run out of memory to increase the size of the map.
+value_t add_method_space_method(runtime_t *runtime, value_t self,
+    value_t method);
 
 
 // --- I n v o c a t i o n   R e c o r d ---

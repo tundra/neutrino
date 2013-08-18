@@ -254,6 +254,8 @@ TRIVIAL_PRINT_ON_IMPL(MethodSpace, method_space);
 
 CHECKED_ACCESSORS_IMPL(MethodSpace, method_space, IdHashMap, InheritanceMap,
     inheritance_map);
+CHECKED_ACCESSORS_IMPL(MethodSpace, method_space, ArrayBuffer, Methods,
+    methods);
 
 value_t method_space_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofMethodSpace, value);
@@ -279,6 +281,13 @@ value_t add_method_space_inheritance(runtime_t *runtime, value_t self,
   // If this fails we may have set the parents array of the subtype to an empty
   // array which is awkward but okay.
   return add_to_array_buffer(runtime, parents, supertype);
+}
+
+value_t add_method_space_method(runtime_t *runtime, value_t self,
+    value_t method) {
+  CHECK_FAMILY(ofMethodSpace, self);
+  CHECK_FAMILY(ofMethod, method);
+  return add_to_array_buffer(runtime, get_method_space_methods(self), method);
 }
 
 value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol) {
