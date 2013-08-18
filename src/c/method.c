@@ -233,6 +233,21 @@ void guard_print_atomic_on(value_t self, string_buffer_t *buf) {
 }
 
 
+// --- M e t h o d ---
+
+TRIVIAL_PRINT_ON_IMPL(Method, method);
+
+CHECKED_ACCESSORS_IMPL(Method, method, Signature, Signature, signature);
+CHECKED_ACCESSORS_IMPL(Method, method, CodeBlock, Code, code);
+
+value_t method_validate(value_t self) {
+  VALIDATE_VALUE_FAMILY(ofMethod, self);
+  VALIDATE_VALUE_FAMILY(ofSignature, get_method_signature(self));
+  VALIDATE_VALUE_FAMILY(ofCodeBlock, get_method_code(self));
+  return success();
+}
+
+
 // --- M e t h o d   s p a c e ---
 
 TRIVIAL_PRINT_ON_IMPL(MethodSpace, method_space);

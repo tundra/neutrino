@@ -157,6 +157,19 @@ bool is_score_match(score_t score);
 int compare_scores(score_t a, score_t b);
 
 
+// --- M e t h o d ---
+
+static const size_t kMethodSize = OBJECT_SIZE(2);
+static const size_t kMethodSignatureOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kMethodCodeOffset = OBJECT_FIELD_OFFSET(1);
+
+// The method's signature, the arguments it matches.
+ACCESSORS_DECL(method, signature);
+
+// The implementation of the method.
+ACCESSORS_DECL(method, code);
+
+
 // --- M e t h o d   s p a c e ---
 
 static const size_t kMethodSpaceSize = OBJECT_SIZE(1);
