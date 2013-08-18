@@ -392,6 +392,7 @@ TEST(method, simple_matching) {
           PARAM(any_guard, false, vArray(1, vInt(0))) o
           PARAM(any_guard, false, vArray(1, vInt(1)))));
 
+  test_argument_t empty[1] = {{vInt(0), vInt(0), false}};
   assert_match(&runtime, mrMatch, sig, ARGS(2,
       ARG(vInt(0), vStr("foo")) o
       ARG(vInt(1), vStr("bar"))));
@@ -405,9 +406,7 @@ TEST(method, simple_matching) {
       ARG(vInt(1), vStr("bar"))));
   assert_match(&runtime, mrUnexpectedArgument, sig, ARGS(1,
       ARG(vInt(2), vStr("baz"))));
-  assert_match(&runtime, mrMissingArgument, sig, ARGS(1,
-      // The macro won't accept 0 arguments to pass an end marker.
-      ((test_argument_t) {vInt(0), vInt(0), false})));
+  assert_match(&runtime, mrMissingArgument, sig, empty);
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
@@ -521,4 +520,70 @@ TEST(method, extra_args) {
       ARG(vStr("z"), vStr("baz"))));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
+
+// Description of a score used in testing.
+typedef struct {
+  score_t value;
+  bool is_valid;
+} test_score_t;
+
+// Expands to a valid test score struct with the given value.
+#define SCORE(V) ((test_score_t) {(V), true})
+
+// Expands to a list of scores with the given values, terminated by a score with
+// the is_valid flag false.
+#define SCORES(N, V) ((test_score_t[(N + 1)]) {V, {0, false}})
+
+// Test that joining the given target and source yield the expected result and
+// scores stored in the target array.
+static void test_join(join_status_t status, test_score_t *expected,
+    test_score_t *test_target, test_score_t *test_source) {
+  score_t source[16];
+  score_t source_before[16];
+  score_t target[16];
+  size_t length = 0;
+  for (size_t i = 0; expected[i].is_valid; i++) {
+    source[i] = source_before[i] = test_source[i].value;
+    target[i] = test_target[i].value;
+    length++;
+  }
+  join_status_t found = join_score_vectors(target, source, length);
+  ASSERT_EQ(status, found);
+  for (size_t i = 0; i < length; i++) {
+    ASSERT_EQ(expected[i].value, target[i]);
+    ASSERT_EQ(source_before[i], source[i]);
+  }
+}
+
+TEST(method, join) {
+  test_score_t empty[1] = {{0, false}};
+  test_join(jsEqual,
+      empty,
+      empty,
+      empty);
+  test_join(jsEqual,
+      SCORES(1, SCORE(1)),
+      SCORES(1, SCORE(1)),
+      SCORES(1, SCORE(1)));
+  test_join(jsAmbiguous,
+      SCORES(2, SCORE(0) o SCORE(0)),
+      SCORES(2, SCORE(0) o SCORE(1)),
+      SCORES(2, SCORE(1) o SCORE(0)));
+  test_join(jsBetter,
+      SCORES(2, SCORE(1) o SCORE(2)),
+      SCORES(2, SCORE(2) o SCORE(3)),
+      SCORES(2, SCORE(1) o SCORE(2)));
+  test_join(jsBetter,
+      SCORES(2, SCORE(0) o SCORE(0)),
+      SCORES(2, SCORE(5) o SCORE(5)),
+      SCORES(2, SCORE(0) o SCORE(0)));
+  test_join(jsWorse,
+      SCORES(2, SCORE(1) o SCORE(2)),
+      SCORES(2, SCORE(1) o SCORE(2)),
+      SCORES(2, SCORE(2) o SCORE(3)));
+  test_join(jsWorse,
+      SCORES(2, SCORE(0) o SCORE(0)),
+      SCORES(2, SCORE(0) o SCORE(0)),
+      SCORES(2, SCORE(5) o SCORE(5)));
 }

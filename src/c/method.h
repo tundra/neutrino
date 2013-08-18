@@ -67,6 +67,24 @@ typedef enum {
 match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
     frame_t *frame, value_t space, score_t *scores, size_t score_count);
 
+// The outcome of joining two score vectors. The values encode how they matched:
+// if the first bit is set the target was strictly better at some point, if the
+// second bit is set the source was strictly better at some point.
+typedef enum {
+  // The matches were equal.
+  jsEqual = 0x0,
+  // The target was strictly better than the source.
+  jsWorse = 0x1,
+  // The source was strictly better than the target.
+  jsBetter = 0x2,
+  // Neither was strictly better than the other, but they were different.
+  jsAmbiguous = 0x3
+} join_status_t;
+
+// Joins two score vectors together, writing the result into the target vector.
+// The returned value identifies what the outcome of the join was.
+join_status_t join_score_vectors(score_t *target, score_t *source, size_t length);
+
 
 // --- P a r a m e t e r ---
 
