@@ -254,6 +254,17 @@ value_t new_heap_method_space(runtime_t *runtime) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_method(runtime_t *runtime, value_t signature, value_t code) {
+  CHECK_FAMILY(ofSignature, signature);
+  CHECK_FAMILY(ofCodeBlock, code);
+  size_t size = kMethodSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.method_species));
+  set_method_signature(result, signature);
+  set_method_code(result, code);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_invocation_record(runtime_t *runtime, value_t argument_vector) {
   size_t size = kInvocationRecordSize;
   CHECK_TRUE("unsorted argument array", is_pair_array_sorted(argument_vector));
