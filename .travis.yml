@@ -3,20 +3,25 @@ language:
 
 matrix:
   include:
-    # Test a clang build in debug mode under valgrind.
+    # Debug 64-bit clang build under valgrind.
     - language: c
       compiler: clang
       script: make MODE=dbg VALGRIND=on test
       install: sudo apt-get install valgrind
-    # Test everything using an optimized clang build.
+    # Debug 32-bit clang build.
+    - language: c
+      compiler: clang
+      script: make MODE=dbg MACHINE=32 EMULATOR_CMD=qemu-i386 test-c test-golden
+      install: sudo apt-get install qemu
+    # Optimized 64-bit clang build.
     - language: c
       compiler: clang
       script: make MODE=opt test-c test-golden
-    # Test with checks disabled.
+    # Optimized 64-bit clang build, checks disabled.
     - languate: c
       compiler: clang
       script: make MODE=opt CHECKS=off test-c test-golden
-    # Check that the C code compiles using gcc.
+    # Debug 64-bit gcc build.
     - language: c
       compiler: gcc
       script: make MODE=dbg test-c test-golden
