@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "behavior.h"
+#include "log.h"
 #include "syntax.h"
 #include "value-inl.h"
 
@@ -27,7 +28,14 @@ static value_t resolve_syntax_factory(value_t key, runtime_t *runtime, void *dat
   value_t second_obj = get_array_at(key, 1);
   if (get_object_family(second_obj) != ofString)
     return new_signal(scNothing);
-  return get_id_hash_map_at(runtime->roots.syntax_factories, second_obj);
+
+  value_t result = get_id_hash_map_at(runtime->roots.syntax_factories, second_obj);
+  if (is_signal(scNotFound, result)) {
+    value_to_string_t buf;
+    WARN("Syntax factory %s could not be resolved", value_to_string(&buf, key));
+    dispose_value_to_string(&buf);
+  }
+  return result;
 }
 
 // Initialize a value mapping such that it maps syntax constructors to syntax

@@ -3,6 +3,7 @@
 
 #include "crash.h"
 #include "globals.h"
+#include "log.h"
 #include "utils.h"
 #include "value.h"
 
@@ -51,7 +52,7 @@ static abort_callback_t *global_abort_callback = NULL;
 // execution.
 static void default_abort(void *data, const char *file, int line, int signal_cause,
     const char *message) {
-  fprintf(stderr, "%s:%i: %s\n", file, line, message);
+  log_message(llError, file, line, "%s", message);
   fflush(stderr);
   abort();
 }

@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "check.h"
 #include "crash.h"
+#include "log.h"
 #include "runtime.h"
 #include "test.h"
 #include "utils.h"
@@ -72,7 +73,7 @@ void fail(const char *file, int line, const char *fmt, ...) {
   string_t str;
   string_buffer_flush(&buf, &str);
   // Print the formatted error message.
-  printf("%s:%i: %s\n", file, line, str.chars);
+  log_message(llError, file, line, "%s", str.chars);
   string_buffer_dispose(&buf);
   abort();
 }
