@@ -13,7 +13,9 @@
 // roots.
 #define ENUM_STRING_TABLE(F)                                                   \
   F(value, "value")                                                            \
-  F(elements, "elements")
+  F(elements, "elements")                                                      \
+  F(arguments, "arguments")                                                    \
+  F(tag, "tag")
 
 // A collection of all the root objects.
 typedef struct {

@@ -123,6 +123,12 @@ value_t new_heap_literal_ast(runtime_t *runtime, value_t value);
 // Creates a new array syntax tree with the given element array.
 value_t new_heap_array_ast(runtime_t *runtime, value_t elements);
 
+// Creates a new invocation syntax tree with the given arguments.
+value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments);
+
+// Creates a new argument syntax tree with the given tag and value.
+value_t new_heap_argument_ast(runtime_t *runtime, value_t tag, value_t value);
+
 
 // --- U t i l s ---
 

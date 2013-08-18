@@ -44,4 +44,26 @@ static const size_t kArrayAstElementsOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(array_ast, elements);
 
 
+// --- I n v o c a t i o n ---
+
+static const size_t kInvocationAstSize = OBJECT_SIZE(1);
+static const size_t kInvocationAstArgumentsOffset = OBJECT_FIELD_OFFSET(0);
+
+// The array of element expressions.
+ACCESSORS_DECL(invocation_ast, arguments);
+
+
+// --- A r g u m e n t ---
+
+static const size_t kArgumentAstSize = OBJECT_SIZE(2);
+static const size_t kArgumentAstTagOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kArgumentAstValueOffset = OBJECT_FIELD_OFFSET(1);
+
+// The argument tag.
+ACCESSORS_DECL(argument_ast, tag);
+
+// The argument value.
+ACCESSORS_DECL(argument_ast, value);
+
+
 #endif // _SYNTAX

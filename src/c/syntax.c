@@ -106,7 +106,7 @@ value_t emit_array_ast(value_t value, assembler_t *assm) {
   size_t length = get_array_length(elements);
   for (size_t i = 0; i < length; i++)
     TRY(emit_value(get_array_at(elements, i), assm));
-  assembler_emit_new_array(assm, length);
+  TRY(assembler_emit_new_array(assm, length));
   return success();
 }
 
@@ -128,13 +128,93 @@ void array_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 value_t set_array_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(value, get_id_hash_map_at(contents, runtime->roots.string_table.elements));
-  set_array_ast_elements(object, value);
+  TRY_DEF(elements, get_id_hash_map_at(contents, runtime->roots.string_table.elements));
+  set_array_ast_elements(object, elements);
   return success();
 }
 
 static value_t new_array_ast(runtime_t *runtime) {
   return new_heap_array_ast(runtime, runtime->roots.empty_array);
+}
+
+
+// --- I n v o c a t i o n ---
+
+TRIVIAL_PRINT_ON_IMPL(InvocationAst, invocation_ast);
+GET_FAMILY_PROTOCOL_IMPL(invocation_ast);
+
+CHECKED_ACCESSORS_IMPL(InvocationAst, invocation_ast, Array, Arguments, arguments);
+
+value_t emit_invocation_ast(value_t value, assembler_t *assm) {
+  CHECK_FAMILY(ofInvocationAst, value);
+  value_t arguments = get_invocation_ast_arguments(value);
+  size_t arg_count = get_array_length(arguments);
+  // Build the invocation record and emit the values at the same time.
+  TRY_DEF(arg_vector, new_heap_pair_array(assm->runtime, arg_count));
+  for (size_t i = 0; i < arg_count; i++) {
+    value_t argument = get_array_at(arguments, i);
+    // Add the tag to the invocation record.
+    value_t tag = get_argument_ast_tag(argument);
+    set_pair_array_first_at(arg_vector, i, tag);
+    set_pair_array_second_at(arg_vector, i, new_integer(i));
+    // Emit the value.
+    value_t value = get_argument_ast_value(argument);
+    TRY(emit_value(value, assm));
+  }
+  TRY(co_sort_pair_array(arg_vector));
+  TRY_DEF(record, new_heap_invocation_record(assm->runtime, arg_vector));
+  TRY(assembler_emit_invocation(assm, record));
+  return success();
+}
+
+value_t invocation_ast_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofInvocationAst, value);
+  VALIDATE_VALUE_FAMILY(ofArray, get_invocation_ast_arguments(value));
+  return success();
+}
+
+value_t set_invocation_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(arguments, get_id_hash_map_at(contents, runtime->roots.string_table.arguments));
+  set_invocation_ast_arguments(object, arguments);
+  return success();
+}
+
+static value_t new_invocation_ast(runtime_t *runtime) {
+  return new_heap_invocation_ast(runtime, runtime->roots.empty_array);
+}
+
+
+// --- A r g u m e n t ---
+
+TRIVIAL_PRINT_ON_IMPL(ArgumentAst, argument_ast);
+GET_FAMILY_PROTOCOL_IMPL(argument_ast);
+
+UNCHECKED_ACCESSORS_IMPL(ArgumentAst, argument_ast, Tag, tag);
+UNCHECKED_ACCESSORS_IMPL(ArgumentAst, argument_ast, Value, value);
+
+value_t emit_argument_ast(value_t value, assembler_t *assm) {
+  CHECK_FAMILY(ofArgumentAst, value);
+  UNREACHABLE("emitting argument ast");
+  return success();
+}
+
+value_t argument_ast_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofArgumentAst, value);
+  return success();
+}
+
+value_t set_argument_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(tag, get_id_hash_map_at(contents, runtime->roots.string_table.tag));
+  TRY_DEF(value, get_id_hash_map_at(contents, runtime->roots.string_table.value));
+  set_argument_ast_tag(object, tag);
+  set_argument_ast_value(object, value);
+  return success();
+}
+
+static value_t new_argument_ast(runtime_t *runtime) {
+  return new_heap_argument_ast(runtime, runtime_null(runtime), runtime_null(runtime));
 }
 
 
@@ -172,5 +252,7 @@ static value_t add_syntax_factory(value_t map, const char *name,
 value_t init_syntax_factory_map(value_t map, runtime_t *runtime) {
   TRY(add_syntax_factory(map, "Literal", new_literal_ast, runtime));
   TRY(add_syntax_factory(map, "Array", new_array_ast, runtime));
+  TRY(add_syntax_factory(map, "Invocation", new_invocation_ast, runtime));
+  TRY(add_syntax_factory(map, "Argument", new_argument_ast, runtime));
   return success();
 }

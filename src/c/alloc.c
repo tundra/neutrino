@@ -295,6 +295,26 @@ value_t new_heap_array_ast(runtime_t *runtime, value_t elements) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments) {
+  size_t size = kInvocationAstSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.invocation_ast_species));
+  set_invocation_ast_arguments(result, arguments);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_argument_ast(runtime_t *runtime, value_t tag, value_t value) {
+  size_t size = kArgumentAstSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.argument_ast_species));
+  set_argument_ast_tag(result, tag);
+  set_argument_ast_value(result, value);
+  return post_create_sanity_check(result, size);
+}
+
+
+// --- M i s c ---
+
 value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species) {
   address_t addr = NULL;
   if (!heap_try_alloc(heap, bytes, &addr))

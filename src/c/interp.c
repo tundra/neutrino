@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "interp.h"
+#include "log.h"
 #include "process.h"
 #include "value-inl.h"
 
@@ -36,13 +37,18 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         frame_push_value(&frame, array);
         break;
       }
+      case ocInvoke: {
+        size_t index = blob_byte_at(&bytecode_blob, pc++);
+        value_t record = get_array_at(value_pool, index);
+
+      }
       case ocReturn: {
         value_t result = frame_pop_value(&frame);
         return result;
       }
       default:
-        printf("opcode: %i\n", opcode);
-        CHECK_TRUE("unexpected opcode", false);
+        ERROR("Unexpected opcode %i", opcode);
+        UNREACHABLE("unexpected opcode");
         break;
     }
   }
@@ -144,7 +150,7 @@ static void assembler_adjust_stack_height(assembler_t *assm, int delta) {
 
 value_t assembler_emit_push(assembler_t *assm, value_t value) {
   assembler_emit_opcode(assm, ocPush);
-  assembler_emit_value(assm, value);
+  TRY(assembler_emit_value(assm, value));
   assembler_adjust_stack_height(assm, +1);
   return success();
 }
@@ -154,6 +160,15 @@ value_t assembler_emit_new_array(assembler_t *assm, size_t length) {
   assembler_emit_byte(assm, length);
   // Pops off 'length' elements, pushes back an array.
   assembler_adjust_stack_height(assm, -length+1);
+  return success();
+}
+
+value_t assembler_emit_invocation(assembler_t *assm, value_t record) {
+  assembler_emit_opcode(assm, ocInvoke);
+  TRY(assembler_emit_value(assm, record));
+  size_t arg_count = get_invocation_record_argument_count(record);
+  // Pops off all the arguments, pushes back the result.
+  assembler_adjust_stack_height(assm, -arg_count+1);
   return success();
 }
 
