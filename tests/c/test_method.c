@@ -587,3 +587,51 @@ TEST(method, join) {
       SCORES(2, SCORE(0) o SCORE(0)),
       SCORES(2, SCORE(5) o SCORE(5)));
 }
+
+TEST(method, dense_perfect_lookup) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  value_t null = runtime_null(&runtime);
+
+  // Protocols and inheritance hierarchy.
+  value_t a_p = new_heap_protocol(&runtime, null);
+  value_t b_p = new_heap_protocol(&runtime, null);
+  value_t c_p = new_heap_protocol(&runtime, null);
+  value_t d_p = new_heap_protocol(&runtime, null);
+  value_t space = new_heap_method_space(&runtime);
+  // D <: C <: B <: A <: Object
+  ASSERT_SUCCESS(add_method_space_inheritance(&runtime, space, d_p, c_p));
+  ASSERT_SUCCESS(add_method_space_inheritance(&runtime, space, c_p, b_p));
+  ASSERT_SUCCESS(add_method_space_inheritance(&runtime, space, b_p, a_p));
+
+  // Guards.
+  value_t a_g = new_heap_guard(&runtime, gtIs, a_p);
+  value_t b_g = new_heap_guard(&runtime, gtIs, b_p);
+  value_t c_g = new_heap_guard(&runtime, gtIs, c_p);
+  value_t d_g = new_heap_guard(&runtime, gtIs, d_p);
+  value_t guards[4] = {a_g, b_g, c_g, d_g};
+
+  // Instances
+  value_t a = new_instance_of(&runtime, a_p);
+  value_t b = new_instance_of(&runtime, b_p);
+  value_t c = new_instance_of(&runtime, c_p);
+  value_t d = new_instance_of(&runtime, d_p);
+  value_t values[4] = {a, b, c, d};
+
+  // Build a method for each combination of parameter types.
+  for (size_t first = 0; first < 4; first++) {
+    for (size_t second = 0; second < 4; second++) {
+      for (size_t third = 0; third < 4; third++) {
+        char name[4] = {first + 'a', second + 'a', third + 'a', '\0'};
+        value_t str = variant_to_value(&runtime, vStr(name));
+        value_t signature = make_signature(&runtime, false, PARAMS(3,
+            PARAM(guards[first], false, vArray(1, vInt(0))) o
+            PARAM(guards[second], false, vArray(1, vInt(1))) o
+            PARAM(guards[third], false, vArray(1, vInt(2)))));
+
+      }
+    }
+  }
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
