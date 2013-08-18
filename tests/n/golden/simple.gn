@@ -32,3 +32,6 @@ EXPECT: true
 
 INPUT: false
 EXPECT: false
+
+INPUT: 1 + 1
+EXPECT: 2
