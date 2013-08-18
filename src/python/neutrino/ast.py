@@ -29,32 +29,6 @@ class Array(object):
     return "#<array: %s>" % map(str, self.elements)
 
 
-# A multi-method invocation.
-@plankton.serializable(("ast", "Invocation"))
-class Invocation(object):
-
-  @plankton.field("arguments")
-  def __init__(self, arguments=None):
-    self.arguments = arguments
-
-  def __str__(self):
-    return "(! %s)" % " ".join(map(str, self.arguments))
-
-
-# An individual argument to an invocation.
-@plankton.serializable(("ast", "Argument"))
-class Argument(object):
-
-  @plankton.field("tag")
-  @plankton.field("value")
-  def __init__(self, tag=None, value=None):
-    self.tag = tag
-    self.value = value
-
-  def __str__(self):
-    return "(: %s %s)" % (self.tag, self.value)
-
-
 # A reference to an enclosing binding. The name is used before the variable
 # has been resolved, the symbol after.
 @plankton.serializable()
@@ -67,6 +41,32 @@ class Variable(object):
 
   def __str__(self):
     return str(self.name)
+
+
+# A multi-method invocation.
+@plankton.serializable()
+class Invocation(object):
+
+  @plankton.field("arguments")
+  def __init__(self, arguments=None):
+    self.arguments = arguments
+
+  def __str__(self):
+    return "(! %s)" % " ".join(map(str, self.arguments))
+
+
+# An individual argument to an invocation.
+@plankton.serializable()
+class Argument(object):
+
+  @plankton.field("tag")
+  @plankton.field("value")
+  def __init__(self, tag=None, value=None):
+    self.tag = tag
+    self.value = value
+
+  def __str__(self):
+    return "(: %s %s)" % (self.tag, self.value)
 
 
 # A binding from a symbol to a value.
