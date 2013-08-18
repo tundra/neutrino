@@ -58,6 +58,8 @@ static inline bool is_signal(signal_cause_t cause, value_t value) {
 // --- P r i n t i n g ---
 
 // Helper data type for the shorthand for converting a value to a string.
+// Converting to a string generates some data that needs to be disposed, this
+// structure captures that so it can be disposed using dispose_value_to_string.
 typedef struct {
   // The string representation of the value.
   string_t str;
@@ -70,6 +72,7 @@ const char *value_to_string(value_to_string_t *data, value_t value);
 
 // Disposes the data buffer.
 void dispose_value_to_string(value_to_string_t *data);
+
 
 // --- V a l i d a t i o n ---
 

@@ -6,6 +6,7 @@
 
 #include <time.h>
 
+// Returns the initial for the given log level.
 static const char *get_log_level_char(log_level_t level) {
   switch (level) {
 #define __LEVEL_CASE__(Name, C) case ll##Name: return #C;
@@ -16,6 +17,7 @@ static const char *get_log_level_char(log_level_t level) {
   }
 }
 
+// Returns the full name of the given log level.
 static const char *get_log_level_name(log_level_t level) {
   switch (level) {
 #define __LEVEL_CASE__(Name, C) case ll##Name: return #Name;
