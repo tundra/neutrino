@@ -101,6 +101,23 @@ match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
   }
 }
 
+join_status_t join_score_vectors(score_t *target, score_t *source, size_t length) {
+  // The bit fiddling here works because of how the enum values are chosen.
+  join_status_t result = jsEqual;
+  for (size_t i = 0; i < length; i++) {
+    int cmp = compare_scores(target[i], source[i]);
+    if (cmp < 0) {
+      // The target was strictly better than the source.
+      result |= jsWorse;
+    } else if (cmp > 0) {
+      // The source was strictly better than the target; override.
+      result |= jsBetter;
+      target[i] = source[i];
+    }
+  }
+  return result;
+}
+
 
 // --- P a r a m e t e r ---
 
