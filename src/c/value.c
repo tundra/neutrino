@@ -890,3 +890,14 @@ void value_print_ln(value_t value) {
   // Done!
   string_buffer_dispose(&buf);
 }
+
+const char *value_to_string(value_to_string_t *data, value_t value) {
+  string_buffer_init(&data->buf, NULL);
+  value_print_on(value, &data->buf);
+  string_buffer_flush(&data->buf, &data->str);
+  return data->str.chars;
+}
+
+void dispose_value_to_string(value_to_string_t *data) {
+  string_buffer_dispose(&data->buf);
+}

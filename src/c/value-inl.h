@@ -54,6 +54,25 @@ static inline bool is_signal(signal_cause_t cause, value_t value) {
   return in_domain(vdSignal, value) && (get_signal_cause(value) == cause);
 }
 
+
+// --- P r i n t i n g ---
+
+// Helper data type for the shorthand for converting a value to a string.
+typedef struct {
+  // The string representation of the value.
+  string_t str;
+  // The string buffer used to build the result.
+  string_buffer_t buf;
+} value_to_string_t;
+
+// Converts the given value to a string.
+const char *value_to_string(value_to_string_t *data, value_t value);
+
+// Disposes the data buffer.
+void dispose_value_to_string(value_to_string_t *data);
+
+// --- V a l i d a t i o n ---
+
 // Checks whether the expression holds and if not returns a validation failure.
 #define VALIDATE(EXPR) do {                                                    \
   SIG_CHECK_TRUE("validation", scValidationFailed, EXPR);                      \
