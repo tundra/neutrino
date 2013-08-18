@@ -166,7 +166,7 @@ static const size_t kMethodCodeOffset = OBJECT_FIELD_OFFSET(1);
 // The method's signature, the arguments it matches.
 ACCESSORS_DECL(method, signature);
 
-// The implementation of the signature.
+// The implementation of the method.
 ACCESSORS_DECL(method, code);
 
 
