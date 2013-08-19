@@ -16,14 +16,14 @@ FORWARD(string_buffer_t);
 
 // Value domain identifiers.
 typedef enum {
-  // Pointer to a heap object.
-  vdObject = 0,
   // Tagged integer.
-  vdInteger,
+  vdInteger = 0,
+  // Pointer to a heap object.
+  vdObject = 1,
   // A VM-internal signal.
-  vdSignal,
+  vdSignal = 2,
   // An object that has been moved during an in-process garbage collection.
-  vdMovedObject
+  vdMovedObject = 3
 } value_domain_t;
 
 // Invokes the given macro for each signal cause.
@@ -136,7 +136,7 @@ static signal_cause_t get_signal_cause(value_t value) {
 // moved to.
 static value_t get_moved_object_target(value_t value) {
   CHECK_DOMAIN(vdMovedObject, value);
-  value_t target = {.encoded=value.encoded-vdMovedObject};
+  value_t target = {.encoded=value.encoded-(vdMovedObject-vdObject)};
   CHECK_DOMAIN(vdObject, target);
   return target;
 }
@@ -144,7 +144,7 @@ static value_t get_moved_object_target(value_t value) {
 // Creates a new moved object pointer pointing to the given target object.
 static value_t new_moved_object(value_t target) {
   CHECK_DOMAIN(vdObject, target);
-  value_t moved = {.encoded=target.encoded+vdMovedObject};
+  value_t moved = {.encoded=target.encoded+(vdMovedObject-vdObject)};
   CHECK_DOMAIN(vdMovedObject, moved);
   return moved;
 }
@@ -249,7 +249,7 @@ static value_t pointer_to_value_bit_cast(void *ptr) {
 
 // Converts a pointer to an object into an tagged object value pointer.
 static value_t new_object(address_t addr) {
-  value_t result = pointer_to_value_bit_cast(addr);
+  value_t result = pointer_to_value_bit_cast(addr + vdObject);
   CHECK_DOMAIN(vdObject, result);
   return result;
 }
@@ -265,7 +265,7 @@ static void *value_to_pointer_bit_cast(value_t value) {
 // pointer.
 static address_t get_object_address(value_t value) {
   CHECK_DOMAIN(vdObject, value);
-  return value_to_pointer_bit_cast(value);
+  return value_to_pointer_bit_cast(value) - vdObject;
 }
 
 // Returns a pointer to the index'th field in the given heap object. Check
