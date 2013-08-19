@@ -47,7 +47,8 @@ value_t init_syntax_mapping(value_mapping_t *mapping, runtime_t *runtime) {
 
 value_t compile_syntax(runtime_t *runtime, value_t program) {
   assembler_t assm;
-  TRY(assembler_init(&assm, runtime));
+  TRY_DEF(space, new_heap_method_space(runtime));
+  TRY(assembler_init(&assm, runtime, space));
   TRY(emit_value(program, &assm));
   assembler_emit_return(&assm);
   TRY_DEF(code_block, assembler_flush(&assm));
@@ -163,7 +164,7 @@ value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   }
   TRY(co_sort_pair_array(arg_vector));
   TRY_DEF(record, new_heap_invocation_record(assm->runtime, arg_vector));
-  TRY(assembler_emit_invocation(assm, record));
+  TRY(assembler_emit_invocation(assm, assm->space, record));
   return success();
 }
 

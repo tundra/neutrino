@@ -38,9 +38,19 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         break;
       }
       case ocInvoke: {
-        size_t index = blob_byte_at(&bytecode_blob, pc++);
-        value_t record = get_array_at(value_pool, index);
-
+        size_t record_index = blob_byte_at(&bytecode_blob, pc++);
+        value_t record = get_array_at(value_pool, record_index);
+        CHECK_FAMILY(ofInvocationRecord, record);
+        size_t space_index = blob_byte_at(&bytecode_blob, pc++);
+        value_t space = get_array_at(value_pool, space_index);
+        CHECK_FAMILY(ofMethodSpace, space);
+        value_t method = lookup_method_space_method(runtime, space, record, &frame);
+        if (is_signal(scNotFound, method)) {
+          value_to_string_t data;
+          ERROR("Unresolved method for %s.", value_to_string(&data, record));
+          dispose_value_to_string(&data);
+          return method;
+        }
       }
       case ocReturn: {
         value_t result = frame_pop_value(&frame);
@@ -69,9 +79,10 @@ value_t run_code_block(runtime_t *runtime, value_t code) {
 
 // --- A s s e m b l e r ---
 
-value_t assembler_init(assembler_t *assm, runtime_t *runtime) {
+value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t space) {
   TRY_SET(assm->value_pool, new_heap_id_hash_map(runtime, 16));
   assm->runtime = runtime;
+  assm->space = space;
   byte_buffer_init(&assm->code, NULL);
   assm->stack_height = assm->high_water_mark = 0;
   return success();
@@ -163,9 +174,12 @@ value_t assembler_emit_new_array(assembler_t *assm, size_t length) {
   return success();
 }
 
-value_t assembler_emit_invocation(assembler_t *assm, value_t record) {
+value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t record) {
+  CHECK_FAMILY(ofMethodSpace, space);
+  CHECK_FAMILY(ofInvocationRecord, record);
   assembler_emit_opcode(assm, ocInvoke);
   TRY(assembler_emit_value(assm, record));
+  TRY(assembler_emit_value(assm, space));
   size_t arg_count = get_invocation_record_argument_count(record);
   // Pops off all the arguments, pushes back the result.
   assembler_adjust_stack_height(assm, -arg_count+1);
