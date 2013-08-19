@@ -44,7 +44,7 @@ TEST(value, objects) {
   ASSERT_TRUE(heap_try_alloc(&heap, 16, &addr));
   value_t v0 = new_object(addr);
   ASSERT_DOMAIN(vdObject, v0);
-  ASSERT_EQ(addr, get_object_address(v0));
+  ASSERT_PTREQ(addr, get_object_address(v0));
 
   heap_dispose(&heap);
 }

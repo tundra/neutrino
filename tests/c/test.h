@@ -45,6 +45,16 @@ void uninstall_check_recorder(check_recorder_t *recorder);
         #A, #B, __a__, __b__);                                                 \
 } while (false)
 
+// Bit-casts a void* to an integer.
+static int64_t ptr_to_int_bit_cast(void *value) {
+  int64_t result = 0;
+  memcpy(&result, &value, sizeof(value));
+  return result;
+}
+
+// Failus unless the two pointer values are equal.
+#define ASSERT_PTREQ(A, B) ASSERT_EQ(ptr_to_int_bit_cast(A), ptr_to_int_bit_cast(B))
+
 // Fails unless the two values are different.
 #define ASSERT_NEQ(A, B) ASSERT_FALSE((A) == (B))
 

@@ -244,12 +244,12 @@ value_t bit_vector_init(bit_vector_t *vector, size_t length, bool value) {
   vector->length = length;
   size_t byte_size = align_size(8, length) >> 3;
   if (bit_vector_is_small(vector)) {
-    vector->data = vector->as_small.inline_data;
+    vector->data = vector->storage.as_small.inline_data;
   } else {
     allocator_t alloc;
     init_system_allocator(&alloc);
     uint8_t *data = allocator_malloc(&alloc, byte_size);
-    vector->data = vector->as_large.alloced_data = data;
+    vector->data = vector->storage.as_large.alloced_data = data;
   }
   memset(vector->data, value ? 0xFF : 0x00, byte_size);
   return success();
@@ -259,7 +259,7 @@ void bit_vector_dispose(bit_vector_t *vector) {
   if (!bit_vector_is_small(vector)) {
     allocator_t alloc;
     init_system_allocator(&alloc);
-    allocator_free(&alloc, vector->as_large.alloced_data);
+    allocator_free(&alloc, vector->storage.as_large.alloced_data);
   }
 }
 

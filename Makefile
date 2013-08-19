@@ -18,7 +18,10 @@ STRICT_ERRORS=on
 # Whether to execute the CHECK macros or disable them.
 CHECKS=on
 
--include .$(CONFIG).cfg
+# Which flavor of OS we're on.
+OS=posix
+
+-include config/$(CONFIG).cfg
 
 ifeq ($(VALGRIND),on)
   VALGRIND_CMD=valgrind -q --leak-check=full
@@ -26,7 +29,14 @@ else
   VALGRIND_CMD=
 endif
 
-BIN=bin-$(MACHINE)-$(MODE)
+# If there's a config use that as part of the bindir name, otherwise build one
+# based on the settings.
+ifneq ($(CONFIG),)
+  BIN=bin-$(CONFIG)
+else
+  BIN=bin-$(MACHINE)-$(MODE)
+endif
+
 OUT=$(BIN)/out
 
 # Default target.
@@ -69,10 +79,15 @@ endif
 
 
 DEFINES=-DM$(MACHINE)=1
+
 # Decide whether to define ENABLE_CHECKS based on the CHECKS variable.
 ifeq ($(CHECKS),on)
   DEFINES := $(DEFINES) -DENABLE_CHECKS=1
 endif
+
+# Set a define based on os.
+OS_UPPER_CASE=$(shell echo $(OS) | tr a-z A-Z)
+DEFINES := $(DEFINES) -DOS_$(OS_UPPER_CASE)=1
 
 
 # Configuration of the C language dialect to use.
@@ -89,7 +104,7 @@ LINKFLAGS=-m$(MACHINE) -rdynamic
 
 # The library part of ctrino, that is, everything but main.
 C_MAIN_NAME=main.c
-C_LIB_SRCS=$(shell find src/c -name "*.c" -and -not -name $(C_MAIN_NAME) | sort)
+C_LIB_SRCS=$(shell find src/c -name "*.c" -and -not -name $(C_MAIN_NAME) -and -not -name "*-opt.c" | sort)
 C_LIB_HDRS=$(shell find src/c -name "*.h" | sort)
 C_LIB_OBJS=$(patsubst %.c, $(BIN)/%.o, $(C_LIB_SRCS))
 C_LIB_DEPS=$(C_LIB_HDRS) $(GLOBAL_DEPS)
@@ -187,7 +202,7 @@ EXEC_PREFIX=$(VALGRIND_CMD) $(EMULATOR_CMD)
 
 
 # Run a C test and store the result in a file. This is kind of tricky because
-# we want to both store the output and signal an error 
+# we want to both store the output and signal an error
 $(C_TEST_LIB_OUTS):$(OUT)/tests/c/test_%.out:$(C_TEST_MAIN_EXE)
 	@echo Running test_$*
 	@mkdir -p $(shell dirname $@)
@@ -252,8 +267,8 @@ loc:
 
 
 clean:
-	@echo Cleaning $(BIN)
-	@rm -rf $(BIN)
+	@echo Cleaning
+	@rm -rf bin-*
 
 
 .PHONY:	clean tests-c tests-python $(C_TEST_LIB_RUNS) $(PYTHON_TEST_RUNS)

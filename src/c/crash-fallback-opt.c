@@ -1,0 +1,13 @@
+// Copyright 2013 the Neutrino authors (see AUTHORS).
+// Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+// Fallback that doesn't dump anything.
+
+void print_stack_trace(FILE *out, int signum) {
+  fprintf(out, "# Received signal %i\n", signum);
+  fflush(out);
+}
+
+void propagate_signal(int signum) {
+  // nothing to do
+}

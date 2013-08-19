@@ -64,13 +64,6 @@ object_family_t get_species_instance_family(value_t value) {
   return (object_family_t) get_integer_value(family);
 }
 
-// Bit cast a value to a void*.
-static void *value_to_pointer_bit_cast(value_t value) {
-  void *result = 0;
-  memcpy(&result, &value.encoded, sizeof(void*));
-  return result;
-}
-
 void set_species_family_behavior(value_t value, family_behavior_t *behavior) {
   *access_object_field(value, kSpeciesFamilyBehaviorOffset) = pointer_to_value_bit_cast(behavior);
 }

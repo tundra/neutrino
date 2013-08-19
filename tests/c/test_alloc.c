@@ -115,9 +115,9 @@ TEST(alloc, void_p) {
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
   value_t vp = new_heap_void_p(&runtime, NULL);
-  ASSERT_EQ(NULL, get_void_p_value(vp));
+  ASSERT_PTREQ(NULL, get_void_p_value(vp));
   set_void_p_value(vp, &runtime);
-  ASSERT_EQ(&runtime, get_void_p_value(vp));
+  ASSERT_PTREQ(&runtime, get_void_p_value(vp));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

@@ -263,11 +263,18 @@ static value_t new_object(address_t addr) {
   return pointer_to_value_bit_cast(addr);
 }
 
+// Bit cast a value to a void*.
+static void *value_to_pointer_bit_cast(value_t value) {
+  void *result = 0;
+  memcpy(&result, &value.encoded, sizeof(void*));
+  return result;
+}
+
 // Returns the address of the object pointed to by a tagged object value
 // pointer.
 static address_t get_object_address(value_t value) {
   CHECK_DOMAIN(vdObject, value);
-  return (address_t) value.encoded;
+  return value_to_pointer_bit_cast(value);
 }
 
 // Returns a pointer to the index'th field in the given heap object. Check
