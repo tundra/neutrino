@@ -12,7 +12,8 @@
 #define ENUM_OPCODES(F)                                                        \
   F(Push)                                                                      \
   F(Return)                                                                    \
-  F(NewArray)
+  F(NewArray)                                                                  \
+  F(Invoke)
 
 // The enum of all opcodes.
 typedef enum {
@@ -43,10 +44,12 @@ typedef struct {
   size_t stack_height;
   // The highest the stack has been at any point.
   size_t high_water_mark;
+  // The method space being built.
+  value_t space;
 } assembler_t;
 
 // Initializes an assembler.
-value_t assembler_init(assembler_t *assm, runtime_t *runtime);
+value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t space);
 
 // Disposes of an assembler.
 void assembler_dispose(assembler_t *assm);
@@ -60,6 +63,9 @@ value_t assembler_emit_push(assembler_t *assm, value_t value);
 // Emits a new-array instruction that builds an array from the top 'length'
 // elements.
 value_t assembler_emit_new_array(assembler_t *assm, size_t length);
+
+// Emits an invocation using the given record.
+value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t record);
 
 // Emits a return instruction.
 value_t assembler_emit_return(assembler_t *assm);

@@ -12,13 +12,16 @@ TEST(syntax, emitting) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
+  value_t space = new_heap_method_space(&runtime);
   value_t ast = new_heap_literal_ast(&runtime, runtime_bool(&runtime, true));
   assembler_t assm;
-  ASSERT_SUCCESS(assembler_init(&assm, &runtime));
+  ASSERT_SUCCESS(assembler_init(&assm, &runtime, space));
   ASSERT_SUCCESS(emit_value(ast, &assm));
+  assembler_emit_return(&assm);
   value_t code = assembler_flush(&assm);
   ASSERT_SUCCESS(code);
-  // TODO: try executing the code and check that we get the right result.
+  value_t result = run_code_block(&runtime, code);
+  ASSERT_VALEQ(runtime_bool(&runtime, true), result);
   assembler_dispose(&assm);
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));

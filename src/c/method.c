@@ -384,8 +384,6 @@ value_t lookup_method_space_method(runtime_t *runtime, value_t space,
 
 // --- I n v o c a t i o n   r e c o r d ---
 
-TRIVIAL_PRINT_ON_IMPL(InvocationRecord, invocation_record);
-
 CHECKED_ACCESSORS_IMPL(InvocationRecord, invocation_record, Array,
     ArgumentVector, argument_vector);
 
@@ -453,4 +451,22 @@ void print_invocation(value_t record, frame_t *frame) {
   printf("%s\n", str.chars);
   fflush(stdout);
   string_buffer_dispose(&buf);
+}
+
+void invocation_record_print_on(value_t self, string_buffer_t *buf) {
+  string_buffer_printf(buf, "{");
+  size_t arg_count = get_invocation_record_argument_count(self);
+  for (size_t i = 0; i < arg_count; i++) {
+    if (i > 0)
+      string_buffer_printf(buf, ", ");
+    value_t tag = get_invocation_record_tag_at(self, i);
+    size_t offset = get_invocation_record_offset_at(self, i);
+    value_print_atomic_on(tag, buf);
+    string_buffer_printf(buf, "@%i", offset);
+  }
+  string_buffer_printf(buf, "}");
+}
+
+void invocation_record_print_atomic_on(value_t self, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<invocation_record>");
 }
