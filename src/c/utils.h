@@ -198,7 +198,7 @@ typedef struct {
   union {
     small_bit_vector_store_t as_small;
     large_bit_vector_store_t as_large;
-  };
+  } storage;
 } bit_vector_t;
 
 // Initializes a bit vector to the given value. If anything goes wrong, for

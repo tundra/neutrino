@@ -10,31 +10,20 @@
 #define __USE_POSIX
 #include <signal.h>
 #include <unistd.h>
-#include <execinfo.h>
 
 
 // --- S i g n a l   h a n d l i n g ---
 
-static const size_t kMaxStackSize = 128;
+// Print a stack trace if the platform supports it.
+void print_stack_trace(FILE *out, int signum);
 
-// Dump a stack trace to the given file.
-static void print_stack_trace(FILE *out, int signum) {
-  fprintf(out, "# Received signal %i\n", signum);
-  void *raw_frames[kMaxStackSize];
-  size_t size = backtrace(raw_frames, kMaxStackSize);
-  char **frames = backtrace_symbols(raw_frames, size);
-  for (size_t i = 0; i < size; i++) {
-    fprintf(out, "# - %s\n", frames[i]);
-  }
-  free(frames);
-  fflush(out);
-}
+// After handling the signal here, propagate it so that it doesn't get swallowed.
+void propagate_signal(int signum);
 
 // Processes crashes.
 static void crash_handler(int signum) {
   print_stack_trace(stdout, signum);
-  // Propagate the signal when we're done with it.
-  kill(getpid(), signum);
+  propagate_signal(signum);
 }
 
 void install_crash_handler() {
@@ -114,3 +103,10 @@ void sig_check_fail(const char *file, int line, int signal_cause, const char *fm
   va_start(argp, fmt);
   vcheck_fail(file, line, signal_cause, fmt, argp);
 }
+
+
+#ifdef OS_POSIX
+#include "crash-execinfo-opt.c"
+#else
+#include "crash-fallback-opt.c"
+#endif

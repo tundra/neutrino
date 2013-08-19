@@ -1,5 +1,4 @@
 *.pyc
 *.o
 .ash
-*.cfg
 bin-*
