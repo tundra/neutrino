@@ -607,10 +607,7 @@ static void test_lookup(runtime_t *runtime, value_t expected, value_t first,
 
 TEST(method, dense_perfect_lookup) {
   runtime_t runtime;
-  space_config_t config;
-  space_config_init_defaults(&config);
-  config.size_bytes = 1 * kMB;
-  ASSERT_SUCCESS(runtime_init(&runtime, &config));
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
   // Protocols and inheritance hierarchy.
   value_t a_p = new_heap_protocol(&runtime, variant_to_value(&runtime, vStr("A")));

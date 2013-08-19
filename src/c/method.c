@@ -329,33 +329,30 @@ value_t lookup_method_space_method(runtime_t *runtime, value_t space,
   size_t arg_count = get_invocation_record_argument_count(record);
   CHECK_TRUE("too many arguments", arg_count <= kMaxArgCount);
   value_t result = new_signal(scNotFound);
-  bool found_match = false;
-  score_t best_score[kMaxArgCount];
+  // Running argument-wise max over all the methods that have matched.
+  score_t max_score[kMaxArgCount];
   value_t methods = get_method_space_methods(space);
   size_t method_count = get_array_buffer_length(methods);
   size_t current = 0;
-  // First scan until we find the first match, using the best score vector
+  // First scan until we find the first match, using the max score vector
   // to hold the score directly. Until we have at least one match there's no
   // point in doing comparisons.
   for (; current < method_count; current++) {
     value_t method = get_array_buffer_at(methods, current);
     value_t signature = get_method_signature(method);
     match_result_t match = match_signature(runtime, signature, record, frame,
-        space, best_score, kMaxArgCount);
+        space, max_score, kMaxArgCount);
     if (match_result_is_match(match)) {
       result = method;
-      found_match = true;
       current++;
       break;
     }
   }
-  // When comparing matches, do we require a new match to be strictly better
-  // than the current one or is an equal one sufficient? To start off with we
-  // definitely need something better, otherwise there's an ambiguity with the
-  // first match we found.
-  bool accept_equal = false;
-  // Then continue scanning but compare every new match to the existing best
-  // score.
+  // Is the current max score vector synthetic, that is, is it taken over
+  // several ambiguous methods that are each individually smaller than their
+  // max?
+  bool max_is_synthetic = false;
+  // Continue scanning but compare every new match to the existing best score.
   score_t scratch_score[kMaxArgCount];
   for (; current < method_count; current++) {
     value_t method = get_array_buffer_at(methods, current);
@@ -364,25 +361,23 @@ value_t lookup_method_space_method(runtime_t *runtime, value_t space,
         space, scratch_score, kMaxArgCount);
     if (!match_result_is_match(match))
       continue;
-    join_status_t status = join_score_vectors(best_score, scratch_score, arg_count);
-    if (status == jsBetter || (accept_equal && status == jsEqual)) {
-      // This score is better than the best we've seen so far so that makes
-      // it unique.
+    join_status_t status = join_score_vectors(max_score, scratch_score, arg_count);
+    if (status == jsBetter || (max_is_synthetic && status == jsEqual)) {
+      // This score is either better than the previous best, or it is equal to
+      // the max which is itself synthetic and hence better than any of the
+      // methods we've seen so far.
       result = method;
-      // We now need unambiguous improvement to consider something better.
-      accept_equal = false;
+      // Now the max definitely isn't synthetic.
+      max_is_synthetic = false;
     } else if (status != jsWorse) {
       // The next score was not strictly worse than the best we've seen so we
       // don't have a unique best.
       result = new_signal(scNotFound);
-      // If the methods we've seen now have been ambiguous then if we see a
-      // method equal to the current best score that would make it strictly better
-      // than any of the ambiguous ones we've seen so far. The best score is
-      // "synthetic" in the sense that we haven't seen a method with that exact
-      // score, only a number of different ones whose max is that score.
-      accept_equal = (status == jsAmbiguous);
+      // If the result is ambiguous that means the max is now synthetic.
+      max_is_synthetic = (status == jsAmbiguous);
     }
   }
+#undef kMaxArgCount
   return result;
 }
 
