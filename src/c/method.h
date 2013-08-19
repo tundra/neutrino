@@ -41,6 +41,10 @@ size_t get_signature_tag_count(value_t self);
 // Returns the index'th tag in this signature in the sorted tag order.
 value_t get_signature_tag_at(value_t self, size_t index);
 
+// Returns the parameter descriptor for the index'th parameter in sorted tag
+// order.
+value_t get_signature_parameter_at(value_t self, size_t index);
+
 // The status of a match -- whether it succeeded and if not why.
 typedef enum {
   // There was an argument we didn't expect.
@@ -56,6 +60,9 @@ typedef enum {
   //  The invocation matched and had extra arguments which this signature allows.
   mrExtraMatch
 } match_result_t;
+
+// Returns true if the given match result represents a match.
+bool match_result_is_match(match_result_t value);
 
 // Matches the given invocation against this signature. You should not base
 // behavior on the exact failure type returned since there can be multiple
@@ -202,6 +209,11 @@ value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol
 value_t add_method_space_method(runtime_t *runtime, value_t self,
     value_t method);
 
+// Looks up a method in this method space given an invocation record and a stack
+// frame.
+value_t lookup_method_space_method(runtime_t *runtime, value_t space,
+    value_t record, frame_t *frame);
+
 
 // --- I n v o c a t i o n   R e c o r d ---
 
@@ -229,6 +241,9 @@ value_t build_invocation_record_vector(runtime_t *runtime, value_t tags);
 // Returns the index'th argument to an invocation using this record in sorted
 // tag order from the given frame.
 value_t get_invocation_record_argument_at(value_t self, frame_t *frame, size_t index);
+
+// Prints an invocation record with a set of arguments.
+void print_invocation(value_t record, frame_t *frame);
 
 
 #endif // _METHOD

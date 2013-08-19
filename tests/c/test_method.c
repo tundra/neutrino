@@ -588,19 +588,35 @@ TEST(method, join) {
       SCORES(2, SCORE(5) o SCORE(5)));
 }
 
+static void test_lookup(runtime_t *runtime, value_t expected, value_t first,
+    value_t second, value_t third, value_t space) {
+  value_t stack = new_heap_stack(runtime, 16);
+  value_t vector = new_heap_pair_array(runtime, 3);
+  frame_t frame;
+  push_stack_frame(runtime, stack, &frame, 3);
+  value_t values[3] = {first, second, third};
+  for (size_t i = 0; i < 3; i++) {
+    set_pair_array_first_at(vector, i, new_integer(i));
+    set_pair_array_second_at(vector, i, new_integer(2 - i));
+    frame_push_value(&frame, values[i]);
+  }
+  value_t record = new_heap_invocation_record(runtime, vector);
+  value_t method = lookup_method_space_method(runtime, space, record, &frame);
+  ASSERT_VALEQ(expected, method);
+}
+
 TEST(method, dense_perfect_lookup) {
   runtime_t runtime;
   space_config_t config;
   space_config_init_defaults(&config);
   config.size_bytes = 1 * kMB;
   ASSERT_SUCCESS(runtime_init(&runtime, &config));
-  value_t null = runtime_null(&runtime);
 
   // Protocols and inheritance hierarchy.
-  value_t a_p = new_heap_protocol(&runtime, null);
-  value_t b_p = new_heap_protocol(&runtime, null);
-  value_t c_p = new_heap_protocol(&runtime, null);
-  value_t d_p = new_heap_protocol(&runtime, null);
+  value_t a_p = new_heap_protocol(&runtime, variant_to_value(&runtime, vStr("A")));
+  value_t b_p = new_heap_protocol(&runtime, variant_to_value(&runtime, vStr("B")));
+  value_t c_p = new_heap_protocol(&runtime, variant_to_value(&runtime, vStr("C")));
+  value_t d_p = new_heap_protocol(&runtime, variant_to_value(&runtime, vStr("D")));
   value_t space = new_heap_method_space(&runtime);
   // D <: C <: B <: A <: Object
   ASSERT_SUCCESS(add_method_space_inheritance(&runtime, space, d_p, c_p));
@@ -641,11 +657,13 @@ TEST(method, dense_perfect_lookup) {
     }
   }
 
+  // Try a lookup for each type of argument.
   for (size_t first = 0; first < 4; first++) {
     for (size_t second = 0; second < 4; second++) {
       for (size_t third = 0; third < 4; third++) {
         value_t expected = methods[first][second][third];
-        test_lookup(values[first], values[second], values[third], space);
+        test_lookup(&runtime, expected, values[first], values[second],
+            values[third], space);
       }
     }
   }
