@@ -99,7 +99,7 @@ endif
 
 C_ENV_FLAGS=-Isrc/c -I$(BIN)/tests/c
 CFLAGS=$(C_DIALECT_FLAGS) $(C_ENV_FLAGS) $(OPT_FLAGS) -m$(MACHINE) $(DEFINES)
-LINKFLAGS=-m$(MACHINE)
+LINKFLAGS=-m$(MACHINE) -rdynamic
 
 
 # The library part of ctrino, that is, everything but main.
