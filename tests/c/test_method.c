@@ -587,3 +587,83 @@ TEST(method, join) {
       SCORES(2, SCORE(0) o SCORE(0)),
       SCORES(2, SCORE(5) o SCORE(5)));
 }
+
+static void test_lookup(runtime_t *runtime, value_t expected, value_t first,
+    value_t second, value_t third, value_t space) {
+  value_t stack = new_heap_stack(runtime, 16);
+  value_t vector = new_heap_pair_array(runtime, 3);
+  frame_t frame;
+  push_stack_frame(runtime, stack, &frame, 3);
+  value_t values[3] = {first, second, third};
+  for (size_t i = 0; i < 3; i++) {
+    set_pair_array_first_at(vector, i, new_integer(i));
+    set_pair_array_second_at(vector, i, new_integer(2 - i));
+    frame_push_value(&frame, values[i]);
+  }
+  value_t record = new_heap_invocation_record(runtime, vector);
+  value_t method = lookup_method_space_method(runtime, space, record, &frame);
+  ASSERT_VALEQ(expected, method);
+}
+
+TEST(method, dense_perfect_lookup) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  // Protocols and inheritance hierarchy.
+  value_t a_p = new_heap_protocol(&runtime, variant_to_value(&runtime, vStr("A")));
+  value_t b_p = new_heap_protocol(&runtime, variant_to_value(&runtime, vStr("B")));
+  value_t c_p = new_heap_protocol(&runtime, variant_to_value(&runtime, vStr("C")));
+  value_t d_p = new_heap_protocol(&runtime, variant_to_value(&runtime, vStr("D")));
+  value_t space = new_heap_method_space(&runtime);
+  // D <: C <: B <: A <: Object
+  ASSERT_SUCCESS(add_method_space_inheritance(&runtime, space, d_p, c_p));
+  ASSERT_SUCCESS(add_method_space_inheritance(&runtime, space, c_p, b_p));
+  ASSERT_SUCCESS(add_method_space_inheritance(&runtime, space, b_p, a_p));
+
+  // Guards.
+  value_t a_g = new_heap_guard(&runtime, gtIs, a_p);
+  value_t b_g = new_heap_guard(&runtime, gtIs, b_p);
+  value_t c_g = new_heap_guard(&runtime, gtIs, c_p);
+  value_t d_g = new_heap_guard(&runtime, gtIs, d_p);
+  value_t guards[4] = {a_g, b_g, c_g, d_g};
+
+  // Instances
+  value_t a = new_instance_of(&runtime, a_p);
+  value_t b = new_instance_of(&runtime, b_p);
+  value_t c = new_instance_of(&runtime, c_p);
+  value_t d = new_instance_of(&runtime, d_p);
+  value_t values[4] = {a, b, c, d};
+
+  value_t dummy_code = new_heap_code_block(&runtime,
+      new_heap_blob(&runtime, 0),
+      runtime.roots.empty_array,
+      0);
+  // Build a method for each combination of parameter types.
+  value_t methods[4][4][4];
+  for (size_t first = 0; first < 4; first++) {
+    for (size_t second = 0; second < 4; second++) {
+      for (size_t third = 0; third < 4; third++) {
+        value_t signature = make_signature(&runtime, false, PARAMS(3,
+            PARAM(guards[first], false, vArray(1, vInt(0))) o
+            PARAM(guards[second], false, vArray(1, vInt(1))) o
+            PARAM(guards[third], false, vArray(1, vInt(2)))));
+        value_t method = new_heap_method(&runtime, signature, dummy_code);
+        add_method_space_method(&runtime, space, method);
+        methods[first][second][third] = method;
+      }
+    }
+  }
+
+  // Try a lookup for each type of argument.
+  for (size_t first = 0; first < 4; first++) {
+    for (size_t second = 0; second < 4; second++) {
+      for (size_t third = 0; third < 4; third++) {
+        value_t expected = methods[first][second][third];
+        test_lookup(&runtime, expected, values[first], values[second],
+            values[third], space);
+      }
+    }
+  }
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}

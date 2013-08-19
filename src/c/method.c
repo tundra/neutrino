@@ -9,8 +9,6 @@
 
 // --- S i g n a t u r e ---
 
-TRIVIAL_PRINT_ON_IMPL(Signature, signature);
-
 CHECKED_ACCESSORS_IMPL(Signature, signature, Array, Tags, tags);
 INTEGER_ACCESSORS_IMPL(Signature, signature, ParameterCount, parameter_count);
 INTEGER_ACCESSORS_IMPL(Signature, signature, MandatoryCount, mandatory_count);
@@ -30,6 +28,33 @@ size_t get_signature_tag_count(value_t self) {
 value_t get_signature_tag_at(value_t self, size_t index) {
   CHECK_FAMILY(ofSignature, self);
   return get_pair_array_first_at(get_signature_tags(self), index);
+}
+
+value_t get_signature_parameter_at(value_t self, size_t index) {
+  CHECK_FAMILY(ofSignature, self);
+  return get_pair_array_second_at(get_signature_tags(self), index);
+}
+
+void signature_print_on(value_t self, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<signature: ");
+  for (size_t i = 0; i < get_signature_parameter_count(self); i++) {
+    if (i > 0)
+      string_buffer_printf(buf, ", ");
+    value_print_on(get_signature_tag_at(self, i), buf);
+    string_buffer_printf(buf, ":");
+    value_t param = get_signature_parameter_at(self, i);
+    value_print_on(get_parameter_guard(param), buf);
+  }
+  string_buffer_printf(buf, ">");
+}
+
+void signature_print_atomic_on(value_t self, string_buffer_t *buf) {
+  CHECK_FAMILY(ofSignature, self);
+  string_buffer_printf(buf, "#<signature>");
+}
+
+bool match_result_is_match(match_result_t value) {
+  return value >= mrMatch;
 }
 
 match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
@@ -213,7 +238,6 @@ void guard_print_on(value_t self, string_buffer_t *buf) {
 
 void guard_print_atomic_on(value_t self, string_buffer_t *buf) {
   CHECK_FAMILY(ofGuard, self);
-  string_buffer_printf(buf, "#<guard: ");
   switch (get_guard_type(self)) {
     case gtEq:
       string_buffer_printf(buf, "eq(");
@@ -229,7 +253,6 @@ void guard_print_atomic_on(value_t self, string_buffer_t *buf) {
       string_buffer_printf(buf, "*");
       break;
   }
-  string_buffer_printf(buf, ">");
 }
 
 
@@ -254,6 +277,8 @@ TRIVIAL_PRINT_ON_IMPL(MethodSpace, method_space);
 
 CHECKED_ACCESSORS_IMPL(MethodSpace, method_space, IdHashMap, InheritanceMap,
     inheritance_map);
+CHECKED_ACCESSORS_IMPL(MethodSpace, method_space, ArrayBuffer, Methods,
+    methods);
 
 value_t method_space_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofMethodSpace, value);
@@ -281,6 +306,13 @@ value_t add_method_space_inheritance(runtime_t *runtime, value_t self,
   return add_to_array_buffer(runtime, parents, supertype);
 }
 
+value_t add_method_space_method(runtime_t *runtime, value_t self,
+    value_t method) {
+  CHECK_FAMILY(ofMethodSpace, self);
+  CHECK_FAMILY(ofMethod, method);
+  return add_to_array_buffer(runtime, get_method_space_methods(self), method);
+}
+
 value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol) {
   value_t inheritance = get_method_space_inheritance_map(space);
   value_t parents = get_id_hash_map_at(inheritance, protocol);
@@ -289,6 +321,64 @@ value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol
   } else {
     return parents;
   }
+}
+
+value_t lookup_method_space_method(runtime_t *runtime, value_t space,
+    value_t record, frame_t *frame) {
+#define kMaxArgCount 32
+  size_t arg_count = get_invocation_record_argument_count(record);
+  CHECK_TRUE("too many arguments", arg_count <= kMaxArgCount);
+  value_t result = new_signal(scNotFound);
+  // Running argument-wise max over all the methods that have matched.
+  score_t max_score[kMaxArgCount];
+  value_t methods = get_method_space_methods(space);
+  size_t method_count = get_array_buffer_length(methods);
+  size_t current = 0;
+  // First scan until we find the first match, using the max score vector
+  // to hold the score directly. Until we have at least one match there's no
+  // point in doing comparisons.
+  for (; current < method_count; current++) {
+    value_t method = get_array_buffer_at(methods, current);
+    value_t signature = get_method_signature(method);
+    match_result_t match = match_signature(runtime, signature, record, frame,
+        space, max_score, kMaxArgCount);
+    if (match_result_is_match(match)) {
+      result = method;
+      current++;
+      break;
+    }
+  }
+  // Is the current max score vector synthetic, that is, is it taken over
+  // several ambiguous methods that are each individually smaller than their
+  // max?
+  bool max_is_synthetic = false;
+  // Continue scanning but compare every new match to the existing best score.
+  score_t scratch_score[kMaxArgCount];
+  for (; current < method_count; current++) {
+    value_t method = get_array_buffer_at(methods, current);
+    value_t signature = get_method_signature(method);
+    match_result_t match = match_signature(runtime, signature, record, frame,
+        space, scratch_score, kMaxArgCount);
+    if (!match_result_is_match(match))
+      continue;
+    join_status_t status = join_score_vectors(max_score, scratch_score, arg_count);
+    if (status == jsBetter || (max_is_synthetic && status == jsEqual)) {
+      // This score is either better than the previous best, or it is equal to
+      // the max which is itself synthetic and hence better than any of the
+      // methods we've seen so far.
+      result = method;
+      // Now the max definitely isn't synthetic.
+      max_is_synthetic = false;
+    } else if (status != jsWorse) {
+      // The next score was not strictly worse than the best we've seen so we
+      // don't have a unique best.
+      result = new_signal(scNotFound);
+      // If the result is ambiguous that means the max is now synthetic.
+      max_is_synthetic = (status == jsAmbiguous);
+    }
+  }
+#undef kMaxArgCount
+  return result;
 }
 
 
@@ -341,4 +431,26 @@ value_t build_invocation_record_vector(runtime_t *runtime, value_t tags) {
 value_t get_invocation_record_argument_at(value_t self, frame_t *frame, size_t index) {
   size_t offset = get_invocation_record_offset_at(self, index);
   return frame_peek_value(frame, offset);
+}
+
+void print_invocation(value_t record, frame_t *frame) {
+  string_buffer_t buf;
+  string_buffer_init(&buf, NULL);
+  size_t arg_count = get_invocation_record_argument_count(record);
+  string_buffer_printf(&buf, "{");
+  for (size_t i = 0;  i < arg_count; i++) {
+    value_t tag = get_invocation_record_tag_at(record, i);
+    value_t arg = get_invocation_record_argument_at(record, frame, i);
+    if (i > 0)
+      string_buffer_printf(&buf, ", ");
+    value_print_on(tag, &buf);
+    string_buffer_printf(&buf, ": ");
+    value_print_on(arg, &buf);
+  }
+  string_buffer_printf(&buf, "}");
+  string_t str;
+  string_buffer_flush(&buf, &str);
+  printf("%s\n", str.chars);
+  fflush(stdout);
+  string_buffer_dispose(&buf);
 }

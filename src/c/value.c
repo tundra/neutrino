@@ -754,7 +754,9 @@ value_t instance_validate(value_t value) {
 
 void instance_print_on(value_t value, string_buffer_t *buf) {
   CHECK_FAMILY(ofInstance, value);
-  string_buffer_printf(buf, "#<instance: ");
+  string_buffer_printf(buf, "#<instance of ");
+  value_print_atomic_on(get_instance_primary_protocol(value), buf);
+  string_buffer_printf(buf, ": ");
   value_print_on(get_instance_fields(value), buf);
   string_buffer_printf(buf, ">");
 }
@@ -880,6 +882,7 @@ void value_print_ln(value_t value) {
   string_buffer_flush(&buf, &result);
   // Print it on stdout.
   printf("%s\n", result.chars);
+  fflush(stdout);
   // Done!
   string_buffer_dispose(&buf);
 }

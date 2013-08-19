@@ -41,6 +41,10 @@ size_t get_signature_tag_count(value_t self);
 // Returns the index'th tag in this signature in the sorted tag order.
 value_t get_signature_tag_at(value_t self, size_t index);
 
+// Returns the parameter descriptor for the index'th parameter in sorted tag
+// order.
+value_t get_signature_parameter_at(value_t self, size_t index);
+
 // The status of a match -- whether it succeeded and if not why.
 typedef enum {
   // There was an argument we didn't expect.
@@ -56,6 +60,9 @@ typedef enum {
   //  The invocation matched and had extra arguments which this signature allows.
   mrExtraMatch
 } match_result_t;
+
+// Returns true if the given match result represents a match.
+bool match_result_is_match(match_result_t value);
 
 // Matches the given invocation against this signature. You should not base
 // behavior on the exact failure type returned since there can be multiple
@@ -172,23 +179,40 @@ ACCESSORS_DECL(method, code);
 
 // --- M e t h o d   s p a c e ---
 
-static const size_t kMethodSpaceSize = OBJECT_SIZE(1);
+static const size_t kMethodSpaceSize = OBJECT_SIZE(2);
 static const size_t kMethodSpaceInheritanceMapOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kMethodSpaceMethodsOffset = OBJECT_FIELD_OFFSET(1);
 
 // The size of the inheritance map in an empty method space.
 static const size_t kInheritanceMapInitialSize = 16;
 
+// The size of the method arra in the empty method space
+static const size_t kMethodArrayInitialSize = 16;
+
 // The mapping that defines the inheritance hierarchy within this method space.
 ACCESSORS_DECL(method_space, inheritance_map);
 
+// The methods defined within this method space.
+ACCESSORS_DECL(method_space, methods);
+
 // Records in the given method space that the subtype inherits directly from
-// the supertype. Returns a signal if adding fails, for instance of we run
+// the supertype. Returns a signal if adding fails, for instance if we run
 // out of memory to increase the size of the map.
 value_t add_method_space_inheritance(runtime_t *runtime, value_t self,
     value_t subtype, value_t supertype);
 
 // Returns the array buffer of parents of the given protocol.
 value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol);
+
+// Add a method to this metod space. Returns a signal if adding fails, for
+// instance if we run out of memory to increase the size of the map.
+value_t add_method_space_method(runtime_t *runtime, value_t self,
+    value_t method);
+
+// Looks up a method in this method space given an invocation record and a stack
+// frame.
+value_t lookup_method_space_method(runtime_t *runtime, value_t space,
+    value_t record, frame_t *frame);
 
 
 // --- I n v o c a t i o n   R e c o r d ---
@@ -217,6 +241,9 @@ value_t build_invocation_record_vector(runtime_t *runtime, value_t tags);
 // Returns the index'th argument to an invocation using this record in sorted
 // tag order from the given frame.
 value_t get_invocation_record_argument_at(value_t self, frame_t *frame, size_t index);
+
+// Prints an invocation record with a set of arguments.
+void print_invocation(value_t record, frame_t *frame);
 
 
 #endif // _METHOD
