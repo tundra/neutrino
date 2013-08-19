@@ -97,10 +97,7 @@ static value_domain_t get_value_domain(value_t value) {
 
 // Creates a new tagged integer with the given value.
 static value_t new_integer(int64_t value) {
-  value_t result;
-  result.as_integer.value = value;
-  result.as_integer.domain = vdInteger;
-  return result;
+  return (value_t) {.as_integer={vdInteger, value}};
 }
 
 // Returns the integer value stored in a tagged integer.
@@ -121,22 +118,15 @@ static value_t success() {
 // Returns the string name of a signal cause.
 const char *signal_cause_name(signal_cause_t cause);
 
-// How many bits do we need to hold the cause of a signal?
-static const int kSignalCauseSize = 5;
-static const int kSignalCauseMask = 0x1f;
-
 // Creates a new signal with the specified cause.
 static value_t new_signal(signal_cause_t cause) {
-  value_t result;
-  result.as_signal.cause = cause;
-  result.as_signal.domain = vdSignal;
-  return result;
+  return (value_t) {.as_signal={vdSignal, cause}};
 }
 
 // Returns the cause of a signal.
 static signal_cause_t get_signal_cause(value_t value) {
   CHECK_DOMAIN(vdSignal, value);
-  return  value.as_signal.cause;
+  return value.as_signal.cause;
 }
 
 
@@ -146,8 +136,7 @@ static signal_cause_t get_signal_cause(value_t value) {
 // moved to.
 static value_t get_moved_object_target(value_t value) {
   CHECK_DOMAIN(vdMovedObject, value);
-  value_t target;
-  target.encoded = value.encoded - vdMovedObject;
+  value_t target = {.encoded=value.encoded-vdMovedObject};
   CHECK_DOMAIN(vdObject, target);
   return target;
 }
@@ -155,8 +144,7 @@ static value_t get_moved_object_target(value_t value) {
 // Creates a new moved object pointer pointing to the given target object.
 static value_t new_moved_object(value_t target) {
   CHECK_DOMAIN(vdObject, target);
-  value_t moved;
-  moved.encoded = target.encoded + vdMovedObject;
+  value_t moved = {.encoded=target.encoded+vdMovedObject};
   CHECK_DOMAIN(vdMovedObject, moved);
   return moved;
 }
@@ -261,8 +249,9 @@ static value_t pointer_to_value_bit_cast(void *ptr) {
 
 // Converts a pointer to an object into an tagged object value pointer.
 static value_t new_object(address_t addr) {
-  CHECK_EQ("unaligned", 0, ((address_arith_t) addr) & kDomainTagMask);
-  return pointer_to_value_bit_cast(addr);
+  value_t result = pointer_to_value_bit_cast(addr);
+  CHECK_DOMAIN(vdObject, result);
+  return result;
 }
 
 // Bit cast a value to a void*.
