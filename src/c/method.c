@@ -250,7 +250,7 @@ void guard_print_atomic_on(value_t self, string_buffer_t *buf) {
       string_buffer_printf(buf, ")");
       break;
     case gtAny:
-      string_buffer_printf(buf, "*");
+      string_buffer_printf(buf, "any()");
       break;
   }
 }

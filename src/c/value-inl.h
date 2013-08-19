@@ -101,6 +101,13 @@ void family##_print_atomic_on(value_t value, string_buffer_t *buf) {           \
 }                                                                              \
 SWALLOW_SEMI(tpo)
 
+// Expands to an implementation of the built-in method definition function that
+// defines no built-ins.
+#define NO_BUILT_IN_METHODS(family)                                            \
+value_t add_##family##_built_in_methods(runtime_t *runtime, value_t space) {   \
+  return success();                                                            \
+}
+
 // Expands to an implementation of get_protocol that returns the canonical
 // protocol for the value's family.
 #define GET_FAMILY_PROTOCOL_IMPL(family)                                       \

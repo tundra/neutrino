@@ -51,6 +51,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
           dispose_value_to_string(&data);
           return method;
         }
+        break;
       }
       case ocReturn: {
         value_t result = frame_pop_value(&frame);
