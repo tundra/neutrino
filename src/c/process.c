@@ -134,6 +134,8 @@ bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame, size_t fram
   // header.
   set_frame_previous_frame_pointer(frame, old_frame.frame_pointer);
   set_frame_previous_capacity(frame, old_frame.capacity);
+  set_frame_pc(frame, 0);
+  set_frame_code_block(frame, success());
   // Update the stack piece's top frame data to reflect the new top frame.
   set_stack_piece_top_stack_pointer(stack_piece, frame->stack_pointer);
   set_stack_piece_top_frame_pointer(stack_piece, frame->frame_pointer);
@@ -250,4 +252,30 @@ value_t frame_pop_value(frame_t *frame) {
 
 value_t frame_peek_value(frame_t *frame, size_t index) {
   return *access_frame_field(frame, frame->stack_pointer - index - 1);
+}
+
+// Is the given frame at the bottom of a stack piece?
+static bool is_frame_at_bottom_of_piece(frame_t *frame) {
+  return frame->frame_pointer == kFrameHeaderSize;
+}
+
+value_t frame_get_argument(frame_t *frame, size_t index) {
+  size_t stack_pointer;
+  value_t storage;
+  // TODO: This is dumb, it needs to be made more efficient. Maybe we want to
+  // copy the previous piece's arguments onto the next piece to avoid this
+  // conditional?
+  if (is_frame_at_bottom_of_piece(frame)) {
+    // Fetch arguments from the previous stack piece.
+    value_t previous = get_stack_piece_previous(frame->stack_piece);
+    stack_pointer = get_stack_piece_top_stack_pointer(previous);
+    storage = get_stack_piece_storage(previous);
+  } else {
+    // Use the current stack piece.
+    stack_pointer = frame->frame_pointer - kFrameHeaderSize;
+    storage = get_stack_piece_storage(frame->stack_piece);
+  }
+  value_t *elements = get_array_elements(storage);
+  size_t offset = stack_pointer - index - 1;
+  return elements[offset];
 }

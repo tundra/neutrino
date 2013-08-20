@@ -9,26 +9,50 @@
 
 // --- I n t e r p r e t e r ---
 
+// Encapsulates the working state of the interpreter. The assumption is that
+// since this is allocated on the stack and the calls that use it will be
+// inlined this is just a convenient way to work with what are essentially
+// local variables.
+typedef struct {
+  // Current program counter.
+  size_t pc;
+  // The raw bytecode.
+  blob_t bytecode;
+  // The pool of constant values used by the bytecode.
+  value_t value_pool;
+} interpreter_state_t;
+
+// Stores the current interpreter state back into the given frame.
+static void interpreter_state_store(interpreter_state_t *state, frame_t *frame) {
+  set_frame_pc(frame, state->pc);
+}
+
+// Load state from the given frame into the state object such that it can be
+// interpreted.
+static void interpreter_state_load(interpreter_state_t *state, frame_t *frame) {
+  state->pc = get_frame_pc(frame);
+  value_t code_block = get_frame_code_block(frame);
+  value_t bytecode = get_code_block_bytecode(code_block);
+  get_blob_data(bytecode, &state->bytecode);
+  state->value_pool = get_code_block_value_pool(code_block);
+}
+
 value_t run_stack(runtime_t *runtime, value_t stack) {
   frame_t frame;
   get_stack_top_frame(stack, &frame);
-  size_t pc = get_frame_pc(&frame);
-  value_t code_block = get_frame_code_block(&frame);
-  value_t bytecode = get_code_block_bytecode(code_block);
-  blob_t bytecode_blob;
-  get_blob_data(bytecode, &bytecode_blob);
-  value_t value_pool = get_code_block_value_pool(code_block);
+  interpreter_state_t state;
+  interpreter_state_load(&state, &frame);
   while (true) {
-    opcode_t opcode = blob_byte_at(&bytecode_blob, pc++);
+    opcode_t opcode = blob_byte_at(&state.bytecode, state.pc++);
     switch (opcode) {
       case ocPush: {
-        size_t index = blob_byte_at(&bytecode_blob, pc++);
-        value_t value = get_array_at(value_pool, index);
+        size_t index = blob_byte_at(&state.bytecode, state.pc++);
+        value_t value = get_array_at(state.value_pool, index);
         frame_push_value(&frame, value);
         break;
       }
       case ocNewArray: {
-        size_t length = blob_byte_at(&bytecode_blob, pc++);
+        size_t length = blob_byte_at(&state.bytecode, state.pc++);
         TRY_DEF(array, new_heap_array(runtime, length));
         for (size_t i = 0; i < length; i++) {
           value_t element = frame_pop_value(&frame);
@@ -38,11 +62,12 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         break;
       }
       case ocInvoke: {
-        size_t record_index = blob_byte_at(&bytecode_blob, pc++);
-        value_t record = get_array_at(value_pool, record_index);
+        // Look up the method in the method space.
+        size_t record_index = blob_byte_at(&state.bytecode, state.pc++);
+        value_t record = get_array_at(state.value_pool, record_index);
         CHECK_FAMILY(ofInvocationRecord, record);
-        size_t space_index = blob_byte_at(&bytecode_blob, pc++);
-        value_t space = get_array_at(value_pool, space_index);
+        size_t space_index = blob_byte_at(&state.bytecode, state.pc++);
+        value_t space = get_array_at(state.value_pool, space_index);
         CHECK_FAMILY(ofMethodSpace, space);
         value_t method = lookup_method_space_method(runtime, space, record, &frame);
         if (is_signal(scNotFound, method)) {
@@ -51,6 +76,23 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
           dispose_value_to_string(&data);
           return method;
         }
+        // Push a new activation.
+        interpreter_state_store(&state, &frame);
+        value_t code_block = get_method_code(method);
+        push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block));
+        set_frame_code_block(&frame, code_block);
+        interpreter_state_load(&state, &frame);
+        break;
+      }
+      case ocBuiltin: {
+        size_t wrapper_index = blob_byte_at(&state.bytecode, state.pc++);
+        value_t wrapper = get_array_at(state.value_pool, wrapper_index);
+        built_in_method_t impl = get_void_p_value(wrapper);
+        built_in_arguments_t args;
+        built_in_arguments_init(&args, &frame);
+        value_t result = impl(&args);
+        frame_push_value(&frame, result);
+        break;
       }
       case ocReturn: {
         value_t result = frame_pop_value(&frame);
@@ -71,7 +113,6 @@ value_t run_code_block(runtime_t *runtime, value_t code) {
   size_t frame_size = get_code_block_high_water_mark(code);
   push_stack_frame(runtime, stack, &frame, frame_size);
   set_frame_code_block(&frame, code);
-  set_frame_pc(&frame, 0);
   return run_stack(runtime, stack);
 }
 
@@ -183,6 +224,15 @@ value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t reco
   size_t arg_count = get_invocation_record_argument_count(record);
   // Pops off all the arguments, pushes back the result.
   assembler_adjust_stack_height(assm, -arg_count+1);
+  return success();
+}
+
+value_t assembler_emit_builtin(assembler_t *assm, built_in_method_t builtin) {
+  TRY_DEF(wrapper, new_heap_void_p(assm->runtime, builtin));
+  assembler_emit_opcode(assm, ocBuiltin);
+  TRY(assembler_emit_value(assm, wrapper));
+  // Pushes the result.
+  assembler_adjust_stack_height(assm, 1);
   return success();
 }
 

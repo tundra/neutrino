@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "behavior.h"
+#include "log.h"
 #include "runtime.h"
 #include "syntax.h"
 #include "value-inl.h"
@@ -241,8 +242,12 @@ static value_t new_object_with_object_type(runtime_t *runtime, value_t type) {
       return new_heap_instance(runtime, runtime->roots.empty_instance_species);
     case ofFactory:
       return new_instance_of_factory(runtime, type);
-    default:
+    default: {
+      value_to_string_t data;
+      WARN("Invalid type %s", value_to_string(&data, type));
+      dispose_value_to_string(&data);
       return new_signal(scUnsupportedBehavior);
+    }
   }
 }
 

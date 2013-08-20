@@ -32,3 +32,9 @@ EXPECT: true
 
 INPUT: false
 EXPECT: false
+
+INPUT: 1 + 1
+EXPECT: 2
+
+INPUT: 5 - 2
+EXPECT: 3

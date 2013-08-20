@@ -45,9 +45,8 @@ value_t init_syntax_mapping(value_mapping_t *mapping, runtime_t *runtime) {
   return success();
 }
 
-value_t compile_syntax(runtime_t *runtime, value_t program) {
+value_t compile_syntax(runtime_t *runtime, value_t program, value_t space) {
   assembler_t assm;
-  TRY_DEF(space, new_heap_method_space(runtime));
   TRY(assembler_init(&assm, runtime, space));
   TRY(emit_value(program, &assm));
   assembler_emit_return(&assm);
@@ -60,6 +59,7 @@ value_t compile_syntax(runtime_t *runtime, value_t program) {
 // --- L i t e r a l ---
 
 GET_FAMILY_PROTOCOL_IMPL(literal_ast);
+NO_BUILTIN_METHODS(literal_ast);
 
 UNCHECKED_ACCESSORS_IMPL(LiteralAst, literal_ast, Value, value);
 
@@ -98,6 +98,7 @@ value_t emit_literal_ast(value_t value, assembler_t *assm) {
 // --- A r r a y ---
 
 GET_FAMILY_PROTOCOL_IMPL(array_ast);
+NO_BUILTIN_METHODS(array_ast);
 
 CHECKED_ACCESSORS_IMPL(ArrayAst, array_ast, Array, Elements, elements);
 
@@ -143,6 +144,7 @@ static value_t new_array_ast(runtime_t *runtime) {
 
 TRIVIAL_PRINT_ON_IMPL(InvocationAst, invocation_ast);
 GET_FAMILY_PROTOCOL_IMPL(invocation_ast);
+NO_BUILTIN_METHODS(invocation_ast);
 
 CHECKED_ACCESSORS_IMPL(InvocationAst, invocation_ast, Array, Arguments, arguments);
 
@@ -190,6 +192,7 @@ static value_t new_invocation_ast(runtime_t *runtime) {
 
 TRIVIAL_PRINT_ON_IMPL(ArgumentAst, argument_ast);
 GET_FAMILY_PROTOCOL_IMPL(argument_ast);
+NO_BUILTIN_METHODS(argument_ast);
 
 UNCHECKED_ACCESSORS_IMPL(ArgumentAst, argument_ast, Tag, tag);
 UNCHECKED_ACCESSORS_IMPL(ArgumentAst, argument_ast, Value, value);

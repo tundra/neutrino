@@ -15,7 +15,9 @@
   F(value, "value")                                                            \
   F(elements, "elements")                                                      \
   F(arguments, "arguments")                                                    \
-  F(tag, "tag")
+  F(tag, "tag")                                                                \
+  F(this, "this")                                                              \
+  F(name, "name")
 
 // A collection of all the root objects.
 typedef struct {

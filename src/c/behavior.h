@@ -108,7 +108,7 @@ ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 
 // Declare the functions that implement the behaviors too, that way they can be
 // implemented wherever.
-#define DECLARE_FAMILY_BEHAVIOR_IMPLS(Family, family, CMP, CID, CNT, SUR, NOL) \
+#define __DECLARE_FAMILY_FUNCTIONS__(Family, family, CMP, CID, CNT, SUR, NOL)  \
 value_t family##_validate(value_t value);                                      \
 CID(value_t family##_transient_identity_hash(value_t value);,)                 \
 CID(bool family##_identity_compare(value_t a, value_t b);,)                    \
@@ -118,10 +118,14 @@ void family##_print_atomic_on(value_t value, string_buffer_t *buf);            \
 NOL(void get_##family##_layout(value_t value, object_layout_t *layout_out);,)  \
 CNT(value_t set_##family##_contents(value_t value, runtime_t *runtime,         \
     value_t contents);,)                                                       \
-SUR(value_t get_##family##_protocol(value_t value, runtime_t *runtime);,)
-ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR_IMPLS)
-#undef DECLARE_FAMILY_BEHAVIOR_IMPLS
+SUR(value_t get_##family##_protocol(value_t value, runtime_t *runtime);,)      \
+SUR(value_t add_##family##_builtin_methods(runtime_t *runtime,                 \
+    value_t space);,)
+ENUM_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
+#undef __DECLARE_FAMILY_FUNCTIONS__
 
+// Integers don't have a family but have built-in methods too.
+value_t add_integer_builtin_methods(runtime_t *runtime, value_t space);
 
 // Virtual methods that control how the species of a particular division behave.
 struct division_behavior_t {

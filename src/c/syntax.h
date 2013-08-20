@@ -23,7 +23,7 @@ value_t init_syntax_factory_map(value_t map, runtime_t *runtime);
 value_t emit_value(value_t value, assembler_t *assm);
 
 // Compiles the given syntax tree to a code block.
-value_t compile_syntax(runtime_t *runtime, value_t ast);
+value_t compile_syntax(runtime_t *runtime, value_t ast, value_t space);
 
 
 // --- L i t e r a l ---

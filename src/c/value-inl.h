@@ -1,6 +1,7 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "utils.h"
 #include "value.h"
 
 #ifndef _VALUE_INL
@@ -100,6 +101,13 @@ void family##_print_atomic_on(value_t value, string_buffer_t *buf) {           \
   string_buffer_printf(buf, "#<" #family ">");                                 \
 }                                                                              \
 SWALLOW_SEMI(tpo)
+
+// Expands to an implementation of the built-in method definition function that
+// defines no built-ins.
+#define NO_BUILTIN_METHODS(family)                                            \
+value_t add_##family##_builtin_methods(runtime_t *runtime, value_t space) {   \
+  return success();                                                            \
+}
 
 // Expands to an implementation of get_protocol that returns the canonical
 // protocol for the value's family.

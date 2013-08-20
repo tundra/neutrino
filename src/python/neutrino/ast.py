@@ -44,7 +44,7 @@ class Variable(object):
 
 
 # A multi-method invocation.
-@plankton.serializable()
+@plankton.serializable(("ast", "Invocation"))
 class Invocation(object):
 
   @plankton.field("arguments")
@@ -56,7 +56,7 @@ class Invocation(object):
 
 
 # An individual argument to an invocation.
-@plankton.serializable()
+@plankton.serializable(("ast", "Argument"))
 class Argument(object):
 
   @plankton.field("tag")
