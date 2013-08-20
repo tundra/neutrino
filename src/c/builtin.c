@@ -7,8 +7,9 @@
 #include "interp.h"
 #include "value-inl.h"
 
-void built_in_arguments_init(built_in_arguments_t *args, frame_t *frame) {
+void built_in_arguments_init(built_in_arguments_t *args, frame_t *frame, size_t argc) {
   args->frame = frame;
+  args->this_offset = argc - 1;
 }
 
 value_t get_builtin_argument(built_in_arguments_t *args, size_t index) {
@@ -16,9 +17,7 @@ value_t get_builtin_argument(built_in_arguments_t *args, size_t index) {
 }
 
 value_t get_builtin_this(built_in_arguments_t *args) {
-  // TODO: this hardcodes that the builtin takes 1 argument. Should be
-  // generalized.
-  return frame_get_argument(args->frame, 2);
+  return frame_get_argument(args->frame, args->this_offset);
 }
 
 value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
@@ -26,15 +25,16 @@ value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
     built_in_method_t implementation) {
   CHECK_FAMILY(ofMethodSpace, space);
   CHECK_FAMILY(ofProtocol, receiver);
+  size_t argc = positional_count + 2;
   // Build the implementation.
   assembler_t assm;
   TRY(assembler_init(&assm, runtime, space));
-  TRY(assembler_emit_builtin(&assm, implementation));
+  TRY(assembler_emit_builtin(&assm, implementation, argc));
   TRY(assembler_emit_return(&assm));
   TRY_DEF(code_block, assembler_flush(&assm));
   assembler_dispose(&assm);
   // Build the signature.
-  TRY_DEF(vector, new_heap_pair_array(runtime, positional_count + 2));
+  TRY_DEF(vector, new_heap_pair_array(runtime, argc));
   // The "this" parameter.
   TRY_DEF(this_guard, new_heap_guard(runtime, gtIs, receiver));
   TRY_DEF(this_param, new_heap_parameter(runtime, this_guard, false, 0));
@@ -56,8 +56,7 @@ value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
     set_pair_array_second_at(vector, 2 + i, param);
   }
   co_sort_pair_array(vector);
-  TRY_DEF(signature, new_heap_signature(runtime, vector, positional_count + 2,
-      positional_count + 2, false));
+  TRY_DEF(signature, new_heap_signature(runtime, vector, argc, argc, false));
   TRY_DEF(method, new_heap_method(runtime, signature, code_block));
   return add_method_space_method(runtime, space, method);
 }

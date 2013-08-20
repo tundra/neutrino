@@ -174,6 +174,8 @@ typedef struct variant_t {
 // Creates a variant null with the given value.
 #define vNull() ((variant_t) {vtNull, {.as_integer=0}})
 
+#define vEmptyArray() ((variant_t) {vtArray, {.as_array={0, 0}}})
+
 // Creates a variant array with the given length and elements.
 #define vArray(N, ELMS) ((variant_t) {vtArray, {.as_array={N, (variant_t[N]) {ELMS}}}})
 

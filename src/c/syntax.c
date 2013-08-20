@@ -159,7 +159,7 @@ value_t emit_invocation_ast(value_t value, assembler_t *assm) {
     // Add the tag to the invocation record.
     value_t tag = get_argument_ast_tag(argument);
     set_pair_array_first_at(arg_vector, i, tag);
-    set_pair_array_second_at(arg_vector, i, new_integer(i));
+    set_pair_array_second_at(arg_vector, i, new_integer(arg_count - i - 1));
     // Emit the value.
     value_t value = get_argument_ast_value(argument);
     TRY(emit_value(value, assm));
