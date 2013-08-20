@@ -16,6 +16,8 @@ value_t get_builtin_argument(built_in_arguments_t *args, size_t index) {
 }
 
 value_t get_builtin_this(built_in_arguments_t *args) {
+  // TODO: this hardcodes that the builtin takes 1 argument. Should be
+  // generalized.
   return frame_get_argument(args->frame, 2);
 }
 
@@ -30,6 +32,7 @@ value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
   TRY(assembler_emit_builtin(&assm, implementation));
   TRY(assembler_emit_return(&assm));
   TRY_DEF(code_block, assembler_flush(&assm));
+  assembler_dispose(&assm);
   // Build the signature.
   TRY_DEF(vector, new_heap_pair_array(runtime, positional_count + 2));
   // The "this" parameter.
@@ -61,11 +64,9 @@ value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
 
 value_t add_method_space_builtin_methods(runtime_t *runtime, value_t self) {
   TRY(add_integer_builtin_methods(runtime, self));
-#define __TRY_ADD_METHODS__(family)                                            \
-  TRY(add_##family##_builtin_methods(runtime, self));
-#define __EMIT_BASIC_METHODS_CALL__(Family, family, CMP, CID, CNT, SUR, NOL)   \
-  SUR(__TRY_ADD_METHODS__(family),)
-  ENUM_OBJECT_FAMILIES(__EMIT_BASIC_METHODS_CALL__)
-#undef __EMIT_BASIC_METHODS_CALL__
+#define __EMIT_ADD_BUILTINS_CALL__(Family, family, CMP, CID, CNT, SUR, NOL)   \
+  SUR(TRY(add_##family##_builtin_methods(runtime, self));,)
+  ENUM_OBJECT_FAMILIES(__EMIT_ADD_BUILTINS_CALL__)
+#undef __EMIT_ADD_BUILTINS_CALL__
   return success();
 }

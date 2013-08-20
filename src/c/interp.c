@@ -22,6 +22,7 @@ typedef struct {
   value_t value_pool;
 } interpreter_state_t;
 
+// Stores the current interpreter state back into the given frame.
 static void interpreter_state_store(interpreter_state_t *state, frame_t *frame) {
   set_frame_pc(frame, state->pc);
 }
