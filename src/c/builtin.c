@@ -7,22 +7,28 @@
 #include "interp.h"
 #include "value-inl.h"
 
-void built_in_arguments_init(built_in_arguments_t *args, frame_t *frame, size_t argc) {
+void builtin_arguments_init(builtin_arguments_t *args, runtime_t *runtime,
+    frame_t *frame, size_t argc) {
+  args->runtime = runtime;
   args->frame = frame;
   args->this_offset = argc - 1;
 }
 
-value_t get_builtin_argument(built_in_arguments_t *args, size_t index) {
+value_t get_builtin_argument(builtin_arguments_t *args, size_t index) {
   return frame_get_argument(args->frame, index);
 }
 
-value_t get_builtin_this(built_in_arguments_t *args) {
+value_t get_builtin_this(builtin_arguments_t *args) {
   return frame_get_argument(args->frame, args->this_offset);
+}
+
+runtime_t *get_builtin_runtime(builtin_arguments_t *args) {
+  return args->runtime;
 }
 
 value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
     value_t receiver, const char *name_c_str, size_t positional_count,
-    built_in_method_t implementation) {
+    builtin_method_t implementation) {
   CHECK_FAMILY(ofMethodSpace, space);
   CHECK_FAMILY(ofProtocol, receiver);
   size_t argc = positional_count + 2;

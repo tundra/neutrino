@@ -1,6 +1,7 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "alloc.h"
 #include "behavior.h"
 #include "builtin.h"
 #include "heap.h"
@@ -20,7 +21,11 @@ const char *signal_cause_name(signal_cause_t cause) {
 
 // --- I n t e g e r ---
 
-static value_t integer_plus_integer(built_in_arguments_t *args) {
+#define ADD_BUILTIN(family, name, argc, impl)                                  \
+  TRY(add_method_space_builtin_method(runtime, space,                          \
+      runtime->roots.family##_protocol, name, argc, impl))
+
+static value_t integer_plus_integer(builtin_arguments_t *args) {
   value_t this = get_builtin_this(args);
   value_t that = get_builtin_argument(args, 0);
   CHECK_DOMAIN(vdInteger, this);
@@ -28,7 +33,7 @@ static value_t integer_plus_integer(built_in_arguments_t *args) {
   return decode_value(this.encoded + that.encoded);
 }
 
-static value_t integer_minus_integer(built_in_arguments_t *args) {
+static value_t integer_minus_integer(builtin_arguments_t *args) {
   value_t this = get_builtin_this(args);
   value_t that = get_builtin_argument(args, 0);
   CHECK_DOMAIN(vdInteger, this);
@@ -36,19 +41,16 @@ static value_t integer_minus_integer(built_in_arguments_t *args) {
   return decode_value(this.encoded - that.encoded);
 }
 
-static value_t integer_negate(built_in_arguments_t *args) {
+static value_t integer_negate(builtin_arguments_t *args) {
   value_t this = get_builtin_this(args);
   CHECK_DOMAIN(vdInteger, this);
   return decode_value(-this.encoded);
 }
 
 value_t add_integer_builtin_methods(runtime_t *runtime, value_t space) {
-  TRY(add_method_space_builtin_method(runtime, space,
-      runtime->roots.integer_protocol, "+", 1, &integer_plus_integer));
-  TRY(add_method_space_builtin_method(runtime, space,
-      runtime->roots.integer_protocol, "-", 1, &integer_minus_integer));
-  TRY(add_method_space_builtin_method(runtime, space,
-      runtime->roots.integer_protocol, "-", 0, &integer_negate));
+  ADD_BUILTIN(integer, "+", 1, integer_plus_integer);
+  ADD_BUILTIN(integer, "-", 1, integer_minus_integer);
+  ADD_BUILTIN(integer, "-", 0, integer_negate);
   return success();
 }
 
@@ -152,7 +154,6 @@ CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance, Protocol,
 // --- S t r i n g ---
 
 GET_FAMILY_PROTOCOL_IMPL(string);
-NO_BUILTIN_METHODS(string);
 
 size_t calc_string_size(size_t char_count) {
   // We need to fix one extra byte, the terminating null.
@@ -224,6 +225,27 @@ void string_print_atomic_on(value_t value, string_buffer_t *buf) {
   string_t contents;
   get_string_contents(value, &contents);
   string_buffer_printf(buf, "\"%s\"", contents.chars);
+}
+
+static value_t string_plus_string(builtin_arguments_t *args) {
+  value_t this = get_builtin_this(args);
+  value_t that = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofString, this);
+  CHECK_FAMILY(ofString, that);
+  string_buffer_t buf;
+  string_buffer_init(&buf, NULL);
+  string_t str;
+  get_string_contents(this, &str);
+  string_buffer_append(&buf, &str);
+  get_string_contents(that, &str);
+  string_buffer_append(&buf, &str);
+  string_buffer_flush(&buf, &str);
+  return new_heap_string(get_builtin_runtime(args), &str);
+}
+
+value_t add_string_builtin_methods(runtime_t *runtime, value_t space) {
+  ADD_BUILTIN(string, "+", 1, string_plus_string);
+  return success();
 }
 
 
