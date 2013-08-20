@@ -42,8 +42,8 @@ static byte_t read_next_byte(interpreter_state_t *state) {
   return blob_byte_at(&state->bytecode, state->pc++);
 }
 
-// Reads the next value index from the code and returns the associated value
-// pool value.
+// Reads over the next value index from the code and returns the associated
+// value pool value.
 static value_t read_next_value(interpreter_state_t *state) {
   size_t index = read_next_byte(state);
   return get_array_at(state->value_pool, index);
