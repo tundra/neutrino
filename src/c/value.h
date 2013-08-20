@@ -132,11 +132,16 @@ static signal_cause_t get_signal_cause(value_t value) {
 
 // --- M o v e d   o b j e c t ---
 
+// Given an encoded value, returns the corresponding value_t struct.
+static value_t decode_value(encoded_value_t value) {
+  return (value_t) {.encoded=value};
+}
+
 // Given a moved object forward pointer returns the object this object has been
 // moved to.
 static value_t get_moved_object_target(value_t value) {
   CHECK_DOMAIN(vdMovedObject, value);
-  value_t target = {.encoded=value.encoded-(vdMovedObject-vdObject)};
+  value_t target = decode_value(value.encoded - (vdMovedObject-vdObject));
   CHECK_DOMAIN(vdObject, target);
   return target;
 }
@@ -144,7 +149,7 @@ static value_t get_moved_object_target(value_t value) {
 // Creates a new moved object pointer pointing to the given target object.
 static value_t new_moved_object(value_t target) {
   CHECK_DOMAIN(vdObject, target);
-  value_t moved = {.encoded=target.encoded+(vdMovedObject-vdObject)};
+  value_t moved = decode_value(target.encoded + (vdMovedObject-vdObject));
   CHECK_DOMAIN(vdMovedObject, moved);
   return moved;
 }

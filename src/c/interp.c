@@ -37,22 +37,33 @@ static void interpreter_state_load(interpreter_state_t *state, frame_t *frame) {
   state->value_pool = get_code_block_value_pool(code_block);
 }
 
+// Reads over and returns the next byte in the bytecode stream.
+static byte_t read_next_byte(interpreter_state_t *state) {
+  return blob_byte_at(&state->bytecode, state->pc++);
+}
+
+// Reads over the next value index from the code and returns the associated
+// value pool value.
+static value_t read_next_value(interpreter_state_t *state) {
+  size_t index = read_next_byte(state);
+  return get_array_at(state->value_pool, index);
+}
+
 value_t run_stack(runtime_t *runtime, value_t stack) {
   frame_t frame;
   get_stack_top_frame(stack, &frame);
   interpreter_state_t state;
   interpreter_state_load(&state, &frame);
   while (true) {
-    opcode_t opcode = blob_byte_at(&state.bytecode, state.pc++);
+    opcode_t opcode = read_next_byte(&state);
     switch (opcode) {
       case ocPush: {
-        size_t index = blob_byte_at(&state.bytecode, state.pc++);
-        value_t value = get_array_at(state.value_pool, index);
+        value_t value = read_next_value(&state);
         frame_push_value(&frame, value);
         break;
       }
       case ocNewArray: {
-        size_t length = blob_byte_at(&state.bytecode, state.pc++);
+        size_t length = read_next_byte(&state);
         TRY_DEF(array, new_heap_array(runtime, length));
         for (size_t i = 0; i < length; i++) {
           value_t element = frame_pop_value(&frame);
@@ -63,11 +74,9 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
       }
       case ocInvoke: {
         // Look up the method in the method space.
-        size_t record_index = blob_byte_at(&state.bytecode, state.pc++);
-        value_t record = get_array_at(state.value_pool, record_index);
+        value_t record = read_next_value(&state);
         CHECK_FAMILY(ofInvocationRecord, record);
-        size_t space_index = blob_byte_at(&state.bytecode, state.pc++);
-        value_t space = get_array_at(state.value_pool, space_index);
+        value_t space = read_next_value(&state);
         CHECK_FAMILY(ofMethodSpace, space);
         value_t method = lookup_method_space_method(runtime, space, record, &frame);
         if (is_signal(scNotFound, method)) {
@@ -85,11 +94,11 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         break;
       }
       case ocBuiltin: {
-        size_t wrapper_index = blob_byte_at(&state.bytecode, state.pc++);
-        value_t wrapper = get_array_at(state.value_pool, wrapper_index);
+        value_t wrapper = read_next_value(&state);
         built_in_method_t impl = get_void_p_value(wrapper);
+        size_t argc = read_next_byte(&state);
         built_in_arguments_t args;
-        built_in_arguments_init(&args, &frame);
+        built_in_arguments_init(&args, &frame, argc);
         value_t result = impl(&args);
         frame_push_value(&frame, result);
         break;
@@ -115,7 +124,6 @@ value_t run_code_block(runtime_t *runtime, value_t code) {
   set_frame_code_block(&frame, code);
   return run_stack(runtime, stack);
 }
-
 
 
 // --- A s s e m b l e r ---
@@ -227,10 +235,12 @@ value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t reco
   return success();
 }
 
-value_t assembler_emit_builtin(assembler_t *assm, built_in_method_t builtin) {
+value_t assembler_emit_builtin(assembler_t *assm, built_in_method_t builtin,
+    size_t argc) {
   TRY_DEF(wrapper, new_heap_void_p(assm->runtime, builtin));
   assembler_emit_opcode(assm, ocBuiltin);
   TRY(assembler_emit_value(assm, wrapper));
+  assembler_emit_byte(assm, argc);
   // Pushes the result.
   assembler_adjust_stack_height(assm, 1);
   return success();

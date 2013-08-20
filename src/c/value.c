@@ -23,13 +23,23 @@ const char *signal_cause_name(signal_cause_t cause) {
 static value_t integer_plus_integer(built_in_arguments_t *args) {
   value_t this = get_builtin_this(args);
   value_t that = get_builtin_argument(args, 0);
-  return new_integer(get_integer_value(this) + get_integer_value(that));
+  CHECK_DOMAIN(vdInteger, this);
+  CHECK_DOMAIN(vdInteger, that);
+  return decode_value(this.encoded + that.encoded);
 }
 
 static value_t integer_minus_integer(built_in_arguments_t *args) {
   value_t this = get_builtin_this(args);
   value_t that = get_builtin_argument(args, 0);
-  return new_integer(get_integer_value(this) - get_integer_value(that));
+  CHECK_DOMAIN(vdInteger, this);
+  CHECK_DOMAIN(vdInteger, that);
+  return decode_value(this.encoded - that.encoded);
+}
+
+static value_t integer_negate(built_in_arguments_t *args) {
+  value_t this = get_builtin_this(args);
+  CHECK_DOMAIN(vdInteger, this);
+  return decode_value(-this.encoded);
 }
 
 value_t add_integer_builtin_methods(runtime_t *runtime, value_t space) {
@@ -37,6 +47,8 @@ value_t add_integer_builtin_methods(runtime_t *runtime, value_t space) {
       runtime->roots.integer_protocol, "+", 1, &integer_plus_integer));
   TRY(add_method_space_builtin_method(runtime, space,
       runtime->roots.integer_protocol, "-", 1, &integer_minus_integer));
+  TRY(add_method_space_builtin_method(runtime, space,
+      runtime->roots.integer_protocol, "-", 0, &integer_negate));
   return success();
 }
 

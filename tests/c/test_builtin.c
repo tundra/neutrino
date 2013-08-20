@@ -31,7 +31,6 @@ static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
         new_integer(i),
         new_heap_literal_ast(runtime,
             variant_to_value(runtime, var_arg))));
-
   }
   value_t invocation = new_heap_invocation_ast(runtime, args_ast);
 
@@ -45,7 +44,7 @@ TEST(builtin, integers) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
   value_t space = new_heap_method_space(&runtime);
-  add_method_space_builtin_methods(&runtime, space);
+  ASSERT_SUCCESS(add_method_space_builtin_methods(&runtime, space));
 
   test_builtin(&runtime, space, vInt(2), vInt(1), "+", vArray(1, vInt(1)));
   test_builtin(&runtime, space, vInt(3), vInt(2), "+", vArray(1, vInt(1)));
@@ -54,6 +53,8 @@ TEST(builtin, integers) {
   test_builtin(&runtime, space, vInt(0), vInt(1), "-", vArray(1, vInt(1)));
   test_builtin(&runtime, space, vInt(1), vInt(2), "-", vArray(1, vInt(1)));
   test_builtin(&runtime, space, vInt(-1), vInt(2), "-", vArray(1, vInt(3)));
+
+  test_builtin(&runtime, space, vInt(-1), vInt(1), "-", vEmptyArray());
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

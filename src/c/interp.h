@@ -69,8 +69,10 @@ value_t assembler_emit_new_array(assembler_t *assm, size_t length);
 // Emits an invocation using the given record.
 value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t record);
 
-// Emits an invocation using the given record.
-value_t assembler_emit_builtin(assembler_t *assm, built_in_method_t builtin);
+// Emits a raw call to a builtin with the given implementation and number of
+// arguments.
+value_t assembler_emit_builtin(assembler_t *assm, built_in_method_t builtin,
+    size_t argc);
 
 // Emits a return instruction.
 value_t assembler_emit_return(assembler_t *assm);

@@ -11,11 +11,14 @@
 
 // Data that provides access to a built-in's arguments.
 typedef struct {
+  // The current stack frame.
   frame_t *frame;
+  // The offset from the top of the previous frame to the "this" argument.
+  size_t this_offset;
 } built_in_arguments_t;
 
 // Initialize a built_in_arguments appropriately.
-void built_in_arguments_init(built_in_arguments_t *args, frame_t *frame);
+void built_in_arguments_init(built_in_arguments_t *args, frame_t *frame, size_t argc);
 
 // Returns the index'th positional argument to a built-in method.
 value_t get_builtin_argument(built_in_arguments_t *args, size_t index);
