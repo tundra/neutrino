@@ -152,8 +152,7 @@ static void string_buffer_ensure_capacity(string_buffer_t *buf,
   buf->capacity = new_capacity;
 }
 
-// Appends the given string to the string buffer, extending it as necessary.
-static void string_buffer_append(string_buffer_t *buf, string_t *str) {
+void string_buffer_append(string_buffer_t *buf, string_t *str) {
   string_buffer_ensure_capacity(buf, buf->length + string_length(str));
   string_copy_to(str, buf->chars + buf->length, buf->capacity - buf->length);
   buf->length += string_length(str);

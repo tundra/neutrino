@@ -95,17 +95,33 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
       }
       case ocBuiltin: {
         value_t wrapper = read_next_value(&state);
-        built_in_method_t impl = get_void_p_value(wrapper);
+        builtin_method_t impl = get_void_p_value(wrapper);
         size_t argc = read_next_byte(&state);
-        built_in_arguments_t args;
-        built_in_arguments_init(&args, &frame, argc);
+        builtin_arguments_t args;
+        builtin_arguments_init(&args, runtime, &frame, argc);
         value_t result = impl(&args);
         frame_push_value(&frame, result);
         break;
       }
       case ocReturn: {
         value_t result = frame_pop_value(&frame);
-        return result;
+        if (!pop_stack_frame(stack, &frame)) {
+          // TODO: push a bottom frame on a clean stack that does the final
+          //   return rather than make return do both.
+          return result;
+        } else {
+          interpreter_state_load(&state, &frame);
+          frame_push_value(&frame, result);
+          break;
+        }
+      }
+      case ocSlap: {
+        value_t value = frame_pop_value(&frame);
+        size_t argc = read_next_byte(&state);
+        for (size_t i = 0; i < argc; i++)
+          frame_pop_value(&frame);
+        frame_push_value(&frame, value);
+        break;
       }
       default:
         ERROR("Unexpected opcode %i", opcode);
@@ -229,13 +245,17 @@ value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t reco
   assembler_emit_opcode(assm, ocInvoke);
   TRY(assembler_emit_value(assm, record));
   TRY(assembler_emit_value(assm, space));
-  size_t arg_count = get_invocation_record_argument_count(record);
-  // Pops off all the arguments, pushes back the result.
-  assembler_adjust_stack_height(assm, -arg_count+1);
+  // The result will be pushed onto the stack on top of the arguments.
+  assembler_adjust_stack_height(assm, 1);
+  size_t argc = get_invocation_record_argument_count(record);
+  assembler_emit_opcode(assm, ocSlap);
+  assembler_emit_byte(assm, argc);
+  // Pop off all the arguments.
+  assembler_adjust_stack_height(assm, -argc);
   return success();
 }
 
-value_t assembler_emit_builtin(assembler_t *assm, built_in_method_t builtin,
+value_t assembler_emit_builtin(assembler_t *assm, builtin_method_t builtin,
     size_t argc) {
   TRY_DEF(wrapper, new_heap_void_p(assm->runtime, builtin));
   assembler_emit_opcode(assm, ocBuiltin);

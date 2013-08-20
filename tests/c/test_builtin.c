@@ -58,3 +58,15 @@ TEST(builtin, integers) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+TEST(builtin, strings) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  value_t space = new_heap_method_space(&runtime);
+  ASSERT_SUCCESS(add_method_space_builtin_methods(&runtime, space));
+
+  test_builtin(&runtime, space, vStr("abcd"), vStr("ab"), "+", vArray(1, vStr("cd")));
+  test_builtin(&runtime, space, vStr(""), vStr(""), "+", vArray(1, vStr("")));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}

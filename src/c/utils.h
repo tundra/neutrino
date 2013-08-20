@@ -133,6 +133,9 @@ void string_buffer_printf(string_buffer_t *buf, const char *format, ...);
 // Append the given text to the given buffer.
 void string_buffer_vprintf(string_buffer_t *buf, const char *format, va_list argp);
 
+// Append the contents of the string to this buffer.
+void string_buffer_append(string_buffer_t *buf, string_t *str);
+
 // Null-terminates the buffer and stores the result in the given out parameter.
 // The string is still backed by the buffer and so becomes invalid when the
 // buffer is disposed.
