@@ -240,7 +240,9 @@ static value_t string_plus_string(builtin_arguments_t *args) {
   get_string_contents(that, &str);
   string_buffer_append(&buf, &str);
   string_buffer_flush(&buf, &str);
-  return new_heap_string(get_builtin_runtime(args), &str);
+  TRY_DEF(result, new_heap_string(get_builtin_runtime(args), &str));
+  string_buffer_dispose(&buf);
+  return result;
 }
 
 value_t add_string_builtin_methods(runtime_t *runtime, value_t space) {
