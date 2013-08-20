@@ -6,8 +6,8 @@
 #include "method.h"
 #include "test.h"
 
-static void test_builtin(runtime_t *runtime, value_t space, variant_t receiver,
-    const char *name, variant_t args) {
+static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
+    variant_t receiver, const char *name, variant_t args) {
   ASSERT_EQ(vtArray, args.type);
   size_t positional_count = args.value.as_array.length;
   size_t arg_count = 2 + positional_count;
@@ -38,18 +38,22 @@ static void test_builtin(runtime_t *runtime, value_t space, variant_t receiver,
   // Compile and execute the syntax.
   value_t code = compile_syntax(runtime, invocation, space);
   value_t result = run_code_block(runtime, code);
-  value_print_ln(result);
-  ASSERT_SUCCESS(result);
+  ASSERT_VALEQ(variant_to_value(runtime, expected), result);
 }
 
-TEST(builtin, hul_igennem) {
+TEST(builtin, integers) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
-
   value_t space = new_heap_method_space(&runtime);
-  add_method_space_built_in_methods(&runtime, space);
+  add_method_space_builtin_methods(&runtime, space);
 
-  test_builtin(&runtime, space, vInt(1), "+", vArray(1, vInt(1)));
+  test_builtin(&runtime, space, vInt(2), vInt(1), "+", vArray(1, vInt(1)));
+  test_builtin(&runtime, space, vInt(3), vInt(2), "+", vArray(1, vInt(1)));
+  test_builtin(&runtime, space, vInt(5), vInt(2), "+", vArray(1, vInt(3)));
+
+  test_builtin(&runtime, space, vInt(0), vInt(1), "-", vArray(1, vInt(1)));
+  test_builtin(&runtime, space, vInt(1), vInt(2), "-", vArray(1, vInt(1)));
+  test_builtin(&runtime, space, vInt(-1), vInt(2), "-", vArray(1, vInt(3)));
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }

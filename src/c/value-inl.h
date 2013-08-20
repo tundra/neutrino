@@ -1,6 +1,7 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "utils.h"
 #include "value.h"
 
 #ifndef _VALUE_INL
@@ -103,8 +104,8 @@ SWALLOW_SEMI(tpo)
 
 // Expands to an implementation of the built-in method definition function that
 // defines no built-ins.
-#define NO_BUILT_IN_METHODS(family)                                            \
-value_t add_##family##_built_in_methods(runtime_t *runtime, value_t space) {   \
+#define NO_BUILTIN_METHODS(family)                                            \
+value_t add_##family##_builtin_methods(runtime_t *runtime, value_t space) {   \
   return success();                                                            \
 }
 

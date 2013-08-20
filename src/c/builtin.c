@@ -7,7 +7,19 @@
 #include "interp.h"
 #include "value-inl.h"
 
-value_t add_method_space_built_in_method(runtime_t *runtime, value_t space,
+void built_in_arguments_init(built_in_arguments_t *args, frame_t *frame) {
+  args->frame = frame;
+}
+
+value_t get_builtin_argument(built_in_arguments_t *args, size_t index) {
+  return frame_get_argument(args->frame, index);
+}
+
+value_t get_builtin_this(built_in_arguments_t *args) {
+  return frame_get_argument(args->frame, 2);
+}
+
+value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
     value_t receiver, const char *name_c_str, size_t positional_count,
     built_in_method_t implementation) {
   CHECK_FAMILY(ofMethodSpace, space);
@@ -15,7 +27,7 @@ value_t add_method_space_built_in_method(runtime_t *runtime, value_t space,
   // Build the implementation.
   assembler_t assm;
   TRY(assembler_init(&assm, runtime, space));
-  TRY(assembler_emit_push(&assm, new_integer(2)));
+  TRY(assembler_emit_builtin(&assm, implementation));
   TRY(assembler_emit_return(&assm));
   TRY_DEF(code_block, assembler_flush(&assm));
   // Build the signature.
@@ -47,10 +59,10 @@ value_t add_method_space_built_in_method(runtime_t *runtime, value_t space,
   return add_method_space_method(runtime, space, method);
 }
 
-value_t add_method_space_built_in_methods(runtime_t *runtime, value_t self) {
-  TRY(add_integer_built_in_methods(runtime, self));
+value_t add_method_space_builtin_methods(runtime_t *runtime, value_t self) {
+  TRY(add_integer_builtin_methods(runtime, self));
 #define __TRY_ADD_METHODS__(family)                                            \
-  TRY(add_##family##_built_in_methods(runtime, self));
+  TRY(add_##family##_builtin_methods(runtime, self));
 #define __EMIT_BASIC_METHODS_CALL__(Family, family, CMP, CID, CNT, SUR, NOL)   \
   SUR(__TRY_ADD_METHODS__(family),)
   ENUM_OBJECT_FAMILIES(__EMIT_BASIC_METHODS_CALL__)

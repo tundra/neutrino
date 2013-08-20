@@ -209,9 +209,6 @@ value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol
 value_t add_method_space_method(runtime_t *runtime, value_t self,
     value_t method);
 
-// Adds the basic built-in methods to the given space.
-value_t add_method_space_basic_methods(runtime_t *runtime, value_t self);
-
 // Looks up a method in this method space given an invocation record and a stack
 // frame.
 value_t lookup_method_space_method(runtime_t *runtime, value_t space,

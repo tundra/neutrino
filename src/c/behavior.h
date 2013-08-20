@@ -119,13 +119,13 @@ NOL(void get_##family##_layout(value_t value, object_layout_t *layout_out);,)  \
 CNT(value_t set_##family##_contents(value_t value, runtime_t *runtime,         \
     value_t contents);,)                                                       \
 SUR(value_t get_##family##_protocol(value_t value, runtime_t *runtime);,)      \
-SUR(value_t add_##family##_built_in_methods(runtime_t *runtime,                \
+SUR(value_t add_##family##_builtin_methods(runtime_t *runtime,                 \
     value_t space);,)
 ENUM_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
 #undef __DECLARE_FAMILY_FUNCTIONS__
 
 // Integers don't have a family but have built-in methods too.
-value_t add_integer_built_in_methods(runtime_t *runtime, value_t space);
+value_t add_integer_builtin_methods(runtime_t *runtime, value_t space);
 
 // Virtual methods that control how the species of a particular division behave.
 struct division_behavior_t {

@@ -126,3 +126,39 @@ TEST(process, stack_frames) {
 
   ASSERT_SUCCESS(runtime_dispose(&runtime));
 }
+
+TEST(process, get_argument_one_piece) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t stack = new_heap_stack(&runtime, 16);
+  frame_t frame;
+  ASSERT_SUCCESS(push_stack_frame(&runtime, stack, &frame, 3));
+  frame_push_value(&frame, new_integer(6));
+  frame_push_value(&frame, new_integer(5));
+  frame_push_value(&frame, new_integer(4));
+  ASSERT_SUCCESS(push_stack_frame(&runtime, stack, &frame, 0));
+  ASSERT_VALEQ(new_integer(4), frame_get_argument(&frame, 0));
+  ASSERT_VALEQ(new_integer(5), frame_get_argument(&frame, 1));
+  ASSERT_VALEQ(new_integer(6), frame_get_argument(&frame, 2));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}
+
+TEST(process, get_argument_multi_pieces) {
+  runtime_t runtime;
+  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+
+  value_t stack = new_heap_stack(&runtime, 16);
+  frame_t frame;
+  ASSERT_SUCCESS(push_stack_frame(&runtime, stack, &frame, 3));
+  frame_push_value(&frame, new_integer(6));
+  frame_push_value(&frame, new_integer(5));
+  frame_push_value(&frame, new_integer(4));
+  ASSERT_SUCCESS(push_stack_frame(&runtime, stack, &frame, 16));
+  ASSERT_VALEQ(new_integer(4), frame_get_argument(&frame, 0));
+  ASSERT_VALEQ(new_integer(5), frame_get_argument(&frame, 1));
+  ASSERT_VALEQ(new_integer(6), frame_get_argument(&frame, 2));
+
+  ASSERT_SUCCESS(runtime_dispose(&runtime));
+}

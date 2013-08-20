@@ -21,12 +21,22 @@ const char *signal_cause_name(signal_cause_t cause) {
 // --- I n t e g e r ---
 
 value_t integer_plus_integer(built_in_arguments_t *args) {
-  return new_integer(2);
+  value_t this = get_builtin_this(args);
+  value_t that = get_builtin_argument(args, 0);
+  return new_integer(get_integer_value(this) + get_integer_value(that));
 }
 
-value_t add_integer_built_in_methods(runtime_t *runtime, value_t space) {
-  TRY(add_method_space_built_in_method(runtime, space,
+value_t integer_minus_integer(built_in_arguments_t *args) {
+  value_t this = get_builtin_this(args);
+  value_t that = get_builtin_argument(args, 0);
+  return new_integer(get_integer_value(this) - get_integer_value(that));
+}
+
+value_t add_integer_builtin_methods(runtime_t *runtime, value_t space) {
+  TRY(add_method_space_builtin_method(runtime, space,
       runtime->roots.integer_protocol, "+", 1, &integer_plus_integer));
+  TRY(add_method_space_builtin_method(runtime, space,
+      runtime->roots.integer_protocol, "-", 1, &integer_minus_integer));
   return success();
 }
 
@@ -130,7 +140,7 @@ CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance, Protocol,
 // --- S t r i n g ---
 
 GET_FAMILY_PROTOCOL_IMPL(string);
-NO_BUILT_IN_METHODS(string);
+NO_BUILTIN_METHODS(string);
 
 size_t calc_string_size(size_t char_count) {
   // We need to fix one extra byte, the terminating null.
@@ -208,7 +218,7 @@ void string_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- B l o b ---
 
 GET_FAMILY_PROTOCOL_IMPL(blob);
-NO_BUILT_IN_METHODS(blob);
+NO_BUILTIN_METHODS(blob);
 
 size_t calc_blob_size(size_t size) {
   return kObjectHeaderSize              // header
@@ -286,7 +296,7 @@ void get_void_p_layout(value_t value, object_layout_t *layout) {
 // --- A r r a y ---
 
 GET_FAMILY_PROTOCOL_IMPL(array);
-NO_BUILT_IN_METHODS(array);
+NO_BUILTIN_METHODS(array);
 
 size_t calc_array_size(size_t length) {
   return kObjectHeaderSize       // header
@@ -454,7 +464,7 @@ value_t binary_search_pair_array(value_t self, value_t key) {
 
 TRIVIAL_PRINT_ON_IMPL(ArrayBuffer, array_buffer);
 GET_FAMILY_PROTOCOL_IMPL(array_buffer);
-NO_BUILT_IN_METHODS(array_buffer);
+NO_BUILTIN_METHODS(array_buffer);
 
 CHECKED_ACCESSORS_IMPL(ArrayBuffer, array_buffer, Array, Elements, elements);
 INTEGER_ACCESSORS_IMPL(ArrayBuffer, array_buffer, Length, length);
@@ -487,7 +497,7 @@ value_t get_array_buffer_at(value_t self, size_t index) {
 // --- I d e n t i t y   h a s h   m a p ---
 
 GET_FAMILY_PROTOCOL_IMPL(id_hash_map);
-NO_BUILT_IN_METHODS(id_hash_map);
+NO_BUILTIN_METHODS(id_hash_map);
 
 CHECKED_ACCESSORS_IMPL(IdHashMap, id_hash_map, Array, EntryArray, entry_array);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Size, size);
@@ -676,7 +686,7 @@ void id_hash_map_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- N u l l ---
 
 GET_FAMILY_PROTOCOL_IMPL(null);
-NO_BUILT_IN_METHODS(null);
+NO_BUILTIN_METHODS(null);
 
 value_t null_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofNull, value);
@@ -707,7 +717,7 @@ void null_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- B o o l e a n ---
 
 GET_FAMILY_PROTOCOL_IMPL(boolean);
-NO_BUILT_IN_METHODS(boolean);
+NO_BUILTIN_METHODS(boolean);
 
 void set_boolean_value(value_t value, bool truth) {
   CHECK_FAMILY(ofBoolean, value);
@@ -755,7 +765,7 @@ void boolean_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- I n s t a n c e ---
 
 CHECKED_ACCESSORS_IMPL(Instance, instance, IdHashMap, Fields, fields);
-NO_BUILT_IN_METHODS(instance);
+NO_BUILTIN_METHODS(instance);
 
 value_t get_instance_field(value_t value, value_t key) {
   value_t fields = get_instance_fields(value);
@@ -853,7 +863,7 @@ void code_block_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- P r o t o c o l ---
 
 GET_FAMILY_PROTOCOL_IMPL(protocol);
-NO_BUILT_IN_METHODS(protocol);
+NO_BUILTIN_METHODS(protocol);
 
 UNCHECKED_ACCESSORS_IMPL(Protocol, protocol, DisplayName, display_name);
 
