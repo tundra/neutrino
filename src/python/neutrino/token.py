@@ -59,6 +59,15 @@ class Token(object):
   def get_value(self):
     return self.value
 
+  # Returns true iff this token is valid as a statement delimiter.
+  def is_delimiter(self):
+    return self.delimiter['is_delimiter']
+
+  # Returns true iff this statement delimiter token is explicit and should be
+  # consumed when expecting a delimiter.
+  def is_explicit_delimiter(self):
+    return self.delimiter['is_explicit']
+
   # Just for debugging.
   def __str__(self):
     return "%s(%s)" % (self.type, self.value)
@@ -136,7 +145,7 @@ class Tokenizer(object):
   # Is the given character whitespace?
   def is_whitespace(self, c):
     return Tokenizer._WHITESPACE.match(c)
-  
+
   # Is the given character legal as part of an identifier part
   def is_alpha(self, c):
     return c.isalpha() or (c == '_')
