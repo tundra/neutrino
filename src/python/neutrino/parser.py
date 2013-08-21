@@ -135,6 +135,17 @@ class Parser(object):
     self.expect_punctuation(']')
     return ast.Array(elements)
 
+  # Raises an error if the current token is not a valid statement delimiter. If
+  # the delimiter is explicit consumes it.
+  def expect_statement_delimiter(self):
+    if not self.has_more():
+      raise self.new_syntax_error()
+    current = self.current()
+    if not current.is_delimiter():
+      raise self.new_syntax_error()
+    if current.is_explicit_delimiter():
+      self.advance()
+
   # <sequence expression>
   #   -> "{" (<expression> ";")* "}"
   def parse_sequence_expression(self):
@@ -142,7 +153,7 @@ class Parser(object):
     elements = []
     while not self.at_punctuation('}'):
       element = self.parse_expression()
-      self.expect_punctuation(';')
+      self.expect_statement_delimiter()
       elements.append(element)
     self.expect_punctuation('}')
     return ast.Sequence.make(elements)

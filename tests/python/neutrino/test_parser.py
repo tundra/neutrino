@@ -59,6 +59,7 @@ class ParserTest(unittest.TestCase):
     test('{1; 2;}', sq(lt(1), lt(2)))
     test('{1; 2; 3;}', sq(lt(1), lt(2), lt(3)))
     test('{1; 2; 3; 4;}', sq(lt(1), lt(2), lt(3), lt(4)))
+    test('{1; {2;} 3; 4;}', sq(lt(1), lt(2), lt(3), lt(4)))
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)
