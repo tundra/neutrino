@@ -7,6 +7,53 @@
 #include "test.h"
 #include "value-inl.h"
 
+bool slow_fits_as_tagged_integer(int64_t value) {
+  union {
+    int8_t : 3;
+    int64_t payload : 61;
+  } data = {value};
+  return data.payload == value;
+}
+
+bool fits_as_tagged_integer(int64_t value) {
+  uint64_t uvalue = value;
+  uint64_t top = uvalue >> 61;
+  return (top == 0x0) || (top == 0x7);
+}
+
+TEST(value, fits_as_tagged_integer) {
+  struct test_case_t {
+    int64_t value;
+    bool fits;
+  };
+#define kTestCaseCount 17
+  struct test_case_t cases[kTestCaseCount] = {
+      {0, true},
+      {1, true},
+      {-1, true},
+      {0x0000000080000000, true},
+      {0xFFFFFFFF7FFFFFFF, true},
+      {0x7FFFFFFFFFFFFFFF, false},
+      {0x3FFFFFFFFFFFFFFF, false},
+      {0x1FFFFFFFFFFFFFFF, false},
+      {0x1000000000000000, false},
+      {0x0FFFFFFFFFFFFFFF, true},
+      {0x0FFFFFFFFFFFFFFE, true},
+      {0x8000000000000000, false},
+      {0xC000000000000000, false},
+      {0xE000000000000000, false},
+      {0xEFFFFFFFFFFFFFFF, false},
+      {0xF000000000000000, true},
+      {0xF000000000000001, true}
+  };
+  for (size_t i = 0; i < kTestCaseCount; i++) {
+    struct test_case_t test_case = cases[i];
+    printf("%llx %lli %i\n", test_case.value, test_case.value, test_case.fits);
+    ASSERT_EQ(test_case.fits, slow_fits_as_tagged_integer(test_case.value));
+    ASSERT_EQ(test_case.fits, fits_as_tagged_integer(test_case.value));
+  }
+}
+
 TEST(value, encoding) {
   ASSERT_EQ(sizeof(encoded_value_t), sizeof(value_t));
   value_t v0 = new_integer(0);
