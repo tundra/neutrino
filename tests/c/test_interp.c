@@ -19,8 +19,6 @@ TEST(interp, exec) {
   runtime_t runtime;
   ASSERT_SUCCESS(runtime_init(&runtime, NULL));
 
-  value_t space = new_heap_method_space(&runtime);
-
   // Literal
   {
     value_t ast = new_heap_literal_ast(&runtime, new_integer(121));

@@ -55,7 +55,7 @@ class ParserTest(unittest.TestCase):
   def test_sequence(self):
     test = self.check_expression
     test('{}', lt(None))
-    test('{1;}', sq(lt(1)))
+    test('{1;}', lt(1))
     test('{1; 2;}', sq(lt(1), lt(2)))
     test('{1; 2; 3;}', sq(lt(1), lt(2), lt(3)))
     test('{1; 2; 3; 4;}', sq(lt(1), lt(2), lt(3), lt(4)))

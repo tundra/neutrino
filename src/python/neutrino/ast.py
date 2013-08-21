@@ -93,6 +93,8 @@ class Sequence(object):
   def make(values):
     if len(values) == 0:
       return Literal(None)
+    elif len(values) == 1:
+      return values[0]
     else:
       return Sequence(values)
 
