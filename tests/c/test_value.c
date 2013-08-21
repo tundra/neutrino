@@ -411,7 +411,8 @@ static void assert_strings_present(size_t skip_first, gc_safe_t **maps,
       value_t value = get_id_hash_map_at(map, inst);
       if (should_be_present) {
         ASSERT_SAME(inst, value);
-        ASSERT_VALEQ(new_integer(inst_i), get_instance_field(value, new_integer(0)));
+        value_t field = get_instance_field(value, new_integer(0));
+        ASSERT_VALEQ(new_integer(inst_i), field);
       } else {
         ASSERT_SIGNAL(scNotFound, value);
       }
@@ -455,13 +456,17 @@ TEST(value, rehash) {
   runtime_garbage_collect(runtime);
   assert_strings_present(0, maps, insts);
 
-  for (size_t i = 0; i < kMapCount - 1; i++) {
+  for (size_t i = 0; i < kMapCount; i++) {
     // Dispose the maps one at a time and then garbage collect to get them
     // to move around.
     runtime_dispose_gc_safe(runtime, maps[i]);
     runtime_garbage_collect(runtime);
     assert_strings_present(i + 1, maps, insts);
   }
+
+  // Give back the instance handles.
+  for (size_t i = 0; i < kInstanceCount; i++)
+    runtime_dispose_gc_safe(runtime, insts[i]);
 
   DISPOSE_RUNTIME();
 }

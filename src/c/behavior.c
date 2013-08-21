@@ -314,7 +314,7 @@ family_behavior_t k##Family##Behavior = {                                      \
   &get_##family##_layout,                                                      \
   CNT(&set_##family##_contents, &set_contents_unsupported),                    \
   SUR(&get_##family##_protocol, &get_internal_object_protocol),                \
-  FIX(&post_migrate_fixup_##family, NULL)                                      \
+  FIX(&fixup_##family##_post_migrate, NULL)                                    \
 };
 ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #undef DEFINE_FAMILY_BEHAVIOR

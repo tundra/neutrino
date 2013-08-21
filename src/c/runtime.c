@@ -273,9 +273,8 @@ static value_t migrate_object_shallow(value_t object, space_t *space) {
   return new_object(target);
 }
 
-// Returns true if the given object should be put on the list of objects that
-// are given a chance to post-process after the migration is complete.
-static bool needs_post_migration_processing(value_t old_object) {
+// Returns true if the given object needs to apply a fixup after migration.
+static bool needs_post_migrate_fixup(value_t old_object) {
   return get_object_family_behavior_unchecked(old_object)->post_migrate_fixup != NULL;
 }
 
@@ -301,13 +300,14 @@ static value_t migrate_field_shallow(value_t *field, field_callback_t *callback)
     CHECK_DOMAIN(vdObject, old_header);
     garbage_collection_state_t *state = field_callback_get_data(callback);
     // Check with the object whether it needs post processing. This is the last
-    // time the object is intact.
-    bool needs_post_processing = needs_post_migration_processing(old_object);
+    // time the object is intact so it's the last point we can call methods on
+    // it to find out.
+    bool needs_fixup = needs_post_migrate_fixup(old_object);
     new_object = migrate_object_shallow(old_object, &state->runtime->heap.to_space);
     CHECK_DOMAIN(vdObject, new_object);
     // Now that we know where the new object is going to be we can schedule the
     // fixup if necessary.
-    if (needs_post_processing) {
+    if (needs_fixup) {
       pending_fixup_t fixup = {new_object, old_object};
       TRY(pending_fixup_worklist_add(&state->pending_fixups, &fixup));
     }
@@ -356,7 +356,7 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
   // migration.
   TRY(heap_for_each_field(&runtime->heap, &migrate_shallow_callback));
   // At this point everything has been migrated so we can run the fixups and
-  // then we're done with the state and can dispose it.
+  // then we're done with the state.
   runtime_apply_fixups(&state);
   garbage_collection_state_dispose(&state);
   // Now everything has been migrated so we can throw away from-space.

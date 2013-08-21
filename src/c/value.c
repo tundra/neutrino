@@ -670,7 +670,7 @@ value_t get_id_hash_map_at(value_t map, value_t key) {
   }
 }
 
-void post_migrate_fixup_id_hash_map(runtime_t *runtime, value_t new_object,
+void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_object,
     value_t old_object) {
   // In this fixup we rehash the migrated hash map since the hash values are
   // allowed to change during garbage collection. We do it by copying the

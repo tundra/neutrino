@@ -127,7 +127,7 @@ CNT(value_t set_##family##_contents(value_t value, runtime_t *runtime,         \
 SUR(value_t get_##family##_protocol(value_t value, runtime_t *runtime);,)      \
 SUR(value_t add_##family##_builtin_methods(runtime_t *runtime,                 \
     value_t space);,)                                                          \
-FIX(void post_migrate_fixup_##family(runtime_t *runtime, value_t new_object,   \
+FIX(void fixup_##family##_post_migrate(runtime_t *runtime, value_t new_object, \
     value_t old_object);,)
 ENUM_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
 #undef __DECLARE_FAMILY_FUNCTIONS__
