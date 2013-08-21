@@ -17,7 +17,7 @@ def id(phase, *names):
 
 
 class TokenTest(unittest.TestCase):
-  
+
   def run_test(self, input, *expected):
     found = tokenize(input)
     self.assertEquals(list(expected), found)
@@ -42,7 +42,7 @@ class TokenTest(unittest.TestCase):
     test("10 000", lt(10), lt(000))
     test("10:", tg(10))
     test("\"boo\"", lt("boo"))
-    test("def $x := 4 ;", wd("def"), id(0, "x"), op(":="), lt(4),
+    test("def $x := 4 ;", wd("def"), id(0, "x"), pt(":="), lt(4),
         pt(';', Token.EXPLICIT_DELIMITER))
     test("for $i in 0 -> 10", wd("for"), id(0, "i"), wd("in"), lt(0),
         op("->"), lt(10))

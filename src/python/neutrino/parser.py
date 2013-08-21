@@ -64,6 +64,13 @@ class Parser(object):
       raise self.new_syntax_error()
     self.advance()
 
+  # Skips of the current word which must have the specified value, if it's not
+  # a syntax error is raised.
+  def expect_word(self, value):
+    if not self.at_word(value):
+      raise self.new_syntax_error()
+    self.advance()
+
   # <expression>
   #   -> <operator expression>
   def parse_expression(self):
@@ -147,16 +154,35 @@ class Parser(object):
       self.advance()
 
   # <sequence expression>
-  #   -> "{" (<expression> ";")* "}"
+  #   -> "{" (<statement> ";")* "}"
   def parse_sequence_expression(self):
     self.expect_punctuation('{')
-    elements = []
-    while not self.at_punctuation('}'):
-      element = self.parse_expression()
-      self.expect_statement_delimiter()
-      elements.append(element)
+    statements = self.parse_statement_list()
     self.expect_punctuation('}')
-    return ast.Sequence.make(elements)
+    return ast.Sequence.make(statements)
+
+  # Parses a sequence of statements, returning them as a list.
+  def parse_statement_list(self):
+    # If we're at the end
+    if self.at_punctuation('}'):
+      return []
+    elif self.at_word('def'):
+      (name, value) = self.parse_local_declaration()
+      body = ast.Sequence.make(self.parse_statement_list())
+      return [ast.LocalDeclaration(name, value, body)]
+    else:
+      next = self.parse_expression()
+      self.expect_statement_delimiter()
+      tail = self.parse_statement_list()
+      return [next] + tail
+
+  def parse_local_declaration(self):
+    self.expect_word('def')
+    name = self.expect_type(Token.IDENTIFIER)
+    self.expect_punctuation(':=')
+    value = self.parse_expression()
+    self.expect_statement_delimiter()
+    return (name, value)
 
   # Creates a new syntax error at the current token.
   def new_syntax_error(self):

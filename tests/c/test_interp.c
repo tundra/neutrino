@@ -56,5 +56,14 @@ TEST(interp, exec) {
     assert_ast_value(runtime, vInt(87), ast);
   }
 
+  // Local definition
+  {
+    value_t sym = new_heap_symbol_ast(runtime, runtime_null(runtime));
+    value_t var = new_heap_variable_ast(runtime, sym);
+    value_t ast = new_heap_local_declaration_ast(runtime, sym, new_integer(3),
+        var);
+    assert_ast_value(runtime, vInt(3), ast);
+  }
+
   DISPOSE_RUNTIME();
 }

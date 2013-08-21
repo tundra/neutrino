@@ -242,7 +242,10 @@ class Tokenizer(object):
       self.advance()
     end = self.cursor
     value = self.slice(start, end)
-    return Token.operation(value, delim)
+    if value == ':=':
+      return Token.punctuation(value, delim)
+    else:
+      return Token.operation(value, delim)
 
   # Scans over a literal number or a number-valued tag.
   def scan_number_or_tag(self, delim):

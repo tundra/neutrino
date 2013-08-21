@@ -3,7 +3,43 @@
 
 # Neutrino syntax tree definitions
 
+from abc import abstractmethod
 import plankton
+
+# Syntax tree visitor.
+class Visitor(object):
+
+  def __init__(self):
+    pass
+
+  @abstractmethod
+  def visit_literal(self, that):
+    pass
+
+  @abstractmethod
+  def visit_array(self, that):
+    pass
+
+  @abstractmethod
+  def visit_variable(self, that):
+    pass
+
+  @abstractmethod
+  def visit_invocation(self, that):
+    pass
+
+  @abstractmethod
+  def visit_argument(self, that):
+    pass
+
+  @abstractmethod
+  def visit_sequence(self, that):
+    pass
+
+  @abstractmethod
+  def visit_local_declaration(self, that):
+    pass
+
 
 # A constant literal value.
 @plankton.serializable(("ast", "Literal"))
@@ -12,6 +48,9 @@ class Literal(object):
   @plankton.field("value")
   def __init__(self, value=None):
     self.value = value
+
+  def accept(self, visitor):
+    return visitor.visit_literal(self);
 
   def __str__(self):
     return "#<literal: %s>" % self.value
@@ -25,22 +64,29 @@ class Array(object):
   def __init__(self, elements=None):
     self.elements = elements
 
+  def accept(self, visitor):
+    return visitor.visit_array(self);
+
   def __str__(self):
     return "#<array: %s>" % map(str, self.elements)
 
 
 # A reference to an enclosing binding. The name is used before the variable
 # has been resolved, the symbol after.
-@plankton.serializable()
+@plankton.serializable(("ast", "Variable"))
 class Variable(object):
 
+  # We don't need to serialize the name since the symbol holds the name.
   @plankton.field("symbol")
   def __init__(self, name=None, symbol=None):
     self.name = name
     self.symbol = symbol
 
+  def accept(self, visitor):
+    return visitor.visit_variable(self);
+
   def __str__(self):
-    return str(self.name)
+    return "#<var %s>" % str(self.name)
 
 
 # A multi-method invocation.
@@ -50,6 +96,9 @@ class Invocation(object):
   @plankton.field("arguments")
   def __init__(self, arguments=None):
     self.arguments = arguments
+
+  def accept(self, visitor):
+    return visitor.visit_invocation(self);
 
   def __str__(self):
     return "(! %s)" % " ".join(map(str, self.arguments))
@@ -64,6 +113,9 @@ class Argument(object):
   def __init__(self, tag=None, value=None):
     self.tag = tag
     self.value = value
+
+  def accept(self, visitor):
+    return visitor.visit_argument(self)
 
   def __str__(self):
     return "(: %s %s)" % (self.tag, self.value)
@@ -89,6 +141,9 @@ class Sequence(object):
   def __init__(self, values=None):
     self.values = values
 
+  def accept(self, visitor):
+    return visitor.visit_sequence(self)
+
   @staticmethod
   def make(values):
     if len(values) == 0:
@@ -102,13 +157,33 @@ class Sequence(object):
     return "#<sequence: %s>" % map(str, self.values)
 
 
+# A local variable declaration.
+@plankton.serializable(("ast", "LocalDeclaration"))
+class LocalDeclaration(object):
+
+  @plankton.field("symbol")
+  @plankton.field("value")
+  @plankton.field("body")
+  def __init__(self, name=None, value=None, body=None, symbol=None):
+    self.name = name
+    self.value = value
+    self.body = body
+    self.symbol = symbol
+
+  def accept(self, visitor):
+    return visitor.visit_local_declaration(self)
+
+  def __str__(self):
+    return "#<def %s := %s in %s>" % (self.name, self.value, self.body)
+
+
 # A symbol that identifies a scoped binding.
-@plankton.serializable()
+@plankton.serializable(("ast", "Symbol"))
 class Symbol(object):
 
-  @plankton.field("display_name")
-  def __init__(self, display_name=None):
-    self.display_name = display_name
+  @plankton.field("name")
+  def __init__(self, name=None):
+    self.name = str(name)
 
 
 @plankton.serializable()
@@ -117,6 +192,10 @@ class Path(object):
   @plankton.field("parts")
   def __init__(self, parts=None):
     self.parts = parts
+
+  def __eq__(self, that):
+    return (isinstance(that, Path) and
+            self.parts == that.parts)
 
 
 @plankton.serializable()

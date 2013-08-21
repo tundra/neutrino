@@ -7,9 +7,11 @@ import unittest
 lt = ast.Literal
 ar = lambda *e: ast.Array(e)
 sq = lambda *e: ast.Sequence(e)
+df = ast.LocalDefinition
+nm = lambda p, *e: ast.Name(p, e)
 
 def id(phase, *names):
-  name = ast.Name(phase, list(names))
+  name = nm(phase, *names)
   return ast.Variable(name=name)
 
 def bn(left, op, right):
@@ -60,6 +62,13 @@ class ParserTest(unittest.TestCase):
     test('{1; 2; 3;}', sq(lt(1), lt(2), lt(3)))
     test('{1; 2; 3; 4;}', sq(lt(1), lt(2), lt(3), lt(4)))
     test('{1; {2;} 3; 4;}', sq(lt(1), lt(2), lt(3), lt(4)))
+
+  def test_local_definitions(self):
+    test = self.check_expression
+    test('{ def $x := 4; $x; }', df(nm(0, "x"), lt(4), id(0, "x")))
+    test('{ def $x := 4; $x; $y; }', df(nm(0, "x"), lt(4), sq(id(0, "x"), id(0, "y"))))
+    test('{ def $x := 4; }', df(nm(0, "x"), lt(4), lt(None)))
+    test('{ $x; $y; def $x := 4; }', sq(id(0, "x"), id(0, "y"), df(nm(0, "x"), lt(4), lt(None))))
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)

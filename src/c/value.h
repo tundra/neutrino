@@ -211,7 +211,10 @@ static value_t new_moved_object(value_t target) {
   F(ArrayAst,           array_ast,              _,  _,  X,  X,  _,  _)         \
   F(InvocationAst,      invocation_ast,         _,  _,  X,  X,  _,  _)         \
   F(LiteralAst,         literal_ast,            _,  _,  X,  X,  _,  _)         \
-  F(SequenceAst,        sequence_ast,           _,  _,  X,  X,  _,  _)
+  F(LocalDeclarationAst, local_declaration_ast, _,  _,  X,  X,  _,  _)         \
+  F(SequenceAst,        sequence_ast,           _,  _,  X,  X,  _,  _)         \
+  F(VariableAst,         variable_ast,          _,  _,  X,  X,  _,  _)         \
+  F(SymbolAst,           symbol_ast,            _,  _,  X,  X,  _,  _)
 
 // Enumerates the compact object species.
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
