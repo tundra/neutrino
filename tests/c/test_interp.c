@@ -16,46 +16,45 @@ static void assert_ast_value(runtime_t *runtime, variant_t expected, value_t ast
 }
 
 TEST(interp, exec) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
   // Literal
   {
-    value_t ast = new_heap_literal_ast(&runtime, new_integer(121));
-    assert_ast_value(&runtime, vInt(121), ast);
+    value_t ast = new_heap_literal_ast(runtime, new_integer(121));
+    assert_ast_value(runtime, vInt(121), ast);
   }
 
   // Array
   {
-    value_t elements = new_heap_array(&runtime, 2);
-    set_array_at(elements, 0, new_heap_literal_ast(&runtime, new_integer(98)));
-    set_array_at(elements, 1, new_heap_literal_ast(&runtime, new_integer(87)));
-    value_t ast = new_heap_array_ast(&runtime, elements);
-    assert_ast_value(&runtime, vArray(2, vInt(98) o vInt(87)), ast);
+    value_t elements = new_heap_array(runtime, 2);
+    set_array_at(elements, 0, new_heap_literal_ast(runtime, new_integer(98)));
+    set_array_at(elements, 1, new_heap_literal_ast(runtime, new_integer(87)));
+    value_t ast = new_heap_array_ast(runtime, elements);
+    assert_ast_value(runtime, vArray(2, vInt(98) o vInt(87)), ast);
   }
 
   // 0-element sequence
   {
-    value_t ast = new_heap_sequence_ast(&runtime, runtime.roots.empty_array);
-    assert_ast_value(&runtime, vNull(), ast);
+    value_t ast = new_heap_sequence_ast(runtime, runtime->roots.empty_array);
+    assert_ast_value(runtime, vNull(), ast);
   }
 
   // 1-element sequence
   {
-    value_t values = new_heap_array(&runtime, 1);
-    set_array_at(values, 0, new_heap_literal_ast(&runtime, new_integer(98)));
-    value_t ast = new_heap_sequence_ast(&runtime, values);
-    assert_ast_value(&runtime, vInt(98), ast);
+    value_t values = new_heap_array(runtime, 1);
+    set_array_at(values, 0, new_heap_literal_ast(runtime, new_integer(98)));
+    value_t ast = new_heap_sequence_ast(runtime, values);
+    assert_ast_value(runtime, vInt(98), ast);
   }
 
   // 2-element sequence
   {
-    value_t values = new_heap_array(&runtime, 2);
-    set_array_at(values, 0, new_heap_literal_ast(&runtime, new_integer(98)));
-    set_array_at(values, 1, new_heap_literal_ast(&runtime, new_integer(87)));
-    value_t ast = new_heap_sequence_ast(&runtime, values);
-    assert_ast_value(&runtime, vInt(87), ast);
+    value_t values = new_heap_array(runtime, 2);
+    set_array_at(values, 0, new_heap_literal_ast(runtime, new_integer(98)));
+    set_array_at(values, 1, new_heap_literal_ast(runtime, new_integer(87)));
+    value_t ast = new_heap_sequence_ast(runtime, values);
+    assert_ast_value(runtime, vInt(87), ast);
   }
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }

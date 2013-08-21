@@ -94,11 +94,10 @@ TEST(value, objects) {
 }
 
 TEST(value, id_hash_maps_simple) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
   // Create a map.
-  value_t map = new_heap_id_hash_map(&runtime, 4);
+  value_t map = new_heap_id_hash_map(runtime, 4);
   ASSERT_FAMILY(ofIdHashMap, map);
   ASSERT_EQ(0, get_id_hash_map_size(map));
   ASSERT_SIGNAL(scNotFound, get_id_hash_map_at(map, new_integer(0)));
@@ -137,37 +136,35 @@ TEST(value, id_hash_maps_simple) {
   ASSERT_SAME(new_integer(9), get_id_hash_map_at(map, new_integer(1)));
   ASSERT_SAME(new_integer(5), get_id_hash_map_at(map, new_integer(100)));
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 
 TEST(value, id_hash_maps_strings) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
   string_t one_chars;
   string_init(&one_chars, "One");
-  value_t one = new_heap_string(&runtime, &one_chars);
+  value_t one = new_heap_string(runtime, &one_chars);
 
-  value_t map = new_heap_id_hash_map(&runtime, 4);
+  value_t map = new_heap_id_hash_map(runtime, 4);
   ASSERT_EQ(0, get_id_hash_map_size(map));
   ASSERT_SUCCESS(try_set_id_hash_map_at(map, one, new_integer(4)));
   ASSERT_EQ(1, get_id_hash_map_size(map));
   ASSERT_SAME(new_integer(4), get_id_hash_map_at(map, one));
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 
 TEST(value, large_id_hash_maps) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
-  value_t map = new_heap_id_hash_map(&runtime, 4);
+  value_t map = new_heap_id_hash_map(runtime, 4);
   for (size_t i = 0; i < 128; i++) {
     value_t key = new_integer(i);
     value_t value = new_integer(1024 - i);
-    ASSERT_SUCCESS(set_id_hash_map_at(&runtime, map, key, value));
+    ASSERT_SUCCESS(set_id_hash_map_at(runtime, map, key, value));
     ASSERT_SUCCESS(object_validate(map));
     for (size_t j = 0; j <= i; j++) {
       value_t check_key = new_integer(j);
@@ -178,7 +175,7 @@ TEST(value, large_id_hash_maps) {
     }
   }
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 
@@ -186,44 +183,43 @@ TEST(value, exhaust_id_hash_map) {
   space_config_t config;
   space_config_init_defaults(&config);
   config.size_bytes = 8192;
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, &config));
+  runtime_t stack_runtime;
+  runtime_t *runtime = &stack_runtime;
+  ASSERT_SUCCESS(runtime_init(runtime, &config));
 
-  value_t map = new_heap_id_hash_map(&runtime, 4);
+  value_t map = new_heap_id_hash_map(runtime, 4);
   for (size_t i = 0; true; i++) {
     value_t key = new_integer(i);
     value_t value = new_integer(1024 - i);
-    value_t result = set_id_hash_map_at(&runtime, map, key, value);
+    value_t result = set_id_hash_map_at(runtime, map, key, value);
     ASSERT_SUCCESS(object_validate(map));
     if (is_signal(scHeapExhausted, result))
       break;
     ASSERT_SUCCESS(result);
   }
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 
 TEST(value, array_bounds) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
-  value_t arr = new_heap_array(&runtime, 4);
+  value_t arr = new_heap_array(runtime, 4);
   ASSERT_SUCCESS(get_array_at(arr, 0));
   ASSERT_SUCCESS(get_array_at(arr, 1));
   ASSERT_SUCCESS(get_array_at(arr, 2));
   ASSERT_SUCCESS(get_array_at(arr, 3));
   ASSERT_CHECK_FAILURE(scOutOfBounds, get_array_at(arr, 4));
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 
 TEST(value, array_buffer) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
-  value_t buf = new_heap_array_buffer(&runtime, 16);
+  value_t buf = new_heap_array_buffer(runtime, 16);
   ASSERT_SUCCESS(buf);
   for (size_t i = 0; i < 16; i++) {
     ASSERT_EQ(i, get_array_buffer_length(buf));
@@ -238,42 +234,40 @@ TEST(value, array_buffer) {
 
   for (size_t i = 16; i < 1024; i++) {
     ASSERT_EQ(i, get_array_buffer_length(buf));
-    ASSERT_SUCCESS(add_to_array_buffer(&runtime, buf, new_integer(i)));
+    ASSERT_SUCCESS(add_to_array_buffer(runtime, buf, new_integer(i)));
     ASSERT_VALEQ(new_integer(i / 2), get_array_buffer_at(buf, i / 2));
     ASSERT_CHECK_FAILURE(scOutOfBounds, get_array_buffer_at(buf, i + 1));
   }
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 
 TEST(value, get_protocol) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
-  value_t int_proto = get_protocol(new_integer(2), &runtime);
-  ASSERT_VALEQ(int_proto, runtime.roots.integer_protocol);
-  ASSERT_VALEQ(int_proto, get_protocol(new_integer(6), &runtime));
-  value_t null_proto = get_protocol(runtime_null(&runtime), &runtime);
+  value_t int_proto = get_protocol(new_integer(2), runtime);
+  ASSERT_VALEQ(int_proto, runtime->roots.integer_protocol);
+  ASSERT_VALEQ(int_proto, get_protocol(new_integer(6), runtime));
+  value_t null_proto = get_protocol(runtime_null(runtime), runtime);
   ASSERT_FALSE(value_structural_equal(int_proto, null_proto));
-  ASSERT_VALEQ(null_proto, runtime.roots.null_protocol);
+  ASSERT_VALEQ(null_proto, runtime->roots.null_protocol);
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 
 TEST(value, instance_division) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
-  value_t proto = new_heap_protocol(&runtime, runtime_null(&runtime));
-  value_t species = new_heap_instance_species(&runtime, proto);
-  value_t instance = new_heap_instance(&runtime, species);
+  value_t proto = new_heap_protocol(runtime, runtime_null(runtime));
+  value_t species = new_heap_instance_species(runtime, proto);
+  value_t instance = new_heap_instance(runtime, species);
   ASSERT_VALEQ(proto, get_instance_species_primary_protocol(species));
   ASSERT_VALEQ(proto, get_instance_primary_protocol(instance));
-  ASSERT_VALEQ(proto, get_protocol(instance, &runtime));
+  ASSERT_VALEQ(proto, get_protocol(instance, runtime));
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 
@@ -298,15 +292,14 @@ TEST(value, integer_comparison) {
 }
 
 TEST(value, string_comparison) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
   // Checks that the string with contents A compares to B as the given operator.
 #define ASSERT_STR_COMPARE(A, REL, B) do {                                     \
   string_t a_str = STR(A);                                                     \
-  value_t a = new_heap_string(&runtime, &a_str);                               \
+  value_t a = new_heap_string(runtime, &a_str);                               \
   string_t b_str = STR(B);                                                     \
-  value_t b = new_heap_string(&runtime, &b_str);                               \
+  value_t b = new_heap_string(runtime, &b_str);                               \
   ASSERT_TRUE(ordering_to_int(value_ordering_compare(a, b)) REL 0);            \
 } while (false)
 
@@ -323,27 +316,25 @@ TEST(value, string_comparison) {
 
 #undef ASSERT_STR_COMPARE
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 TEST(value, bool_comparison) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
-  value_t t = runtime_bool(&runtime, true);
-  value_t f = runtime_bool(&runtime, false);
+  value_t t = runtime_bool(runtime, true);
+  value_t f = runtime_bool(runtime, false);
 
   ASSERT_TRUE(ordering_to_int(value_ordering_compare(t, t)) == 0);
   ASSERT_TRUE(ordering_to_int(value_ordering_compare(f, f)) == 0);
   ASSERT_TRUE(ordering_to_int(value_ordering_compare(t, f)) > 0);
   ASSERT_TRUE(ordering_to_int(value_ordering_compare(f, t)) < 0);
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 TEST(value, array_sort) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
 #define kTestArraySize 32
 
@@ -357,8 +348,8 @@ TEST(value, array_sort) {
   };
 
   // Normal sorting
-  ASSERT_TRUE(is_array_sorted(runtime.roots.empty_array));
-  value_t a0 = new_heap_array(&runtime, kTestArraySize);
+  ASSERT_TRUE(is_array_sorted(runtime->roots.empty_array));
+  value_t a0 = new_heap_array(runtime, kTestArraySize);
   for (size_t i = 0; i < kTestArraySize; i++)
     set_array_at(a0, i, new_integer(kUnsorted[i]));
   ASSERT_FALSE(is_array_sorted(a0));
@@ -368,7 +359,7 @@ TEST(value, array_sort) {
   ASSERT_TRUE(is_array_sorted(a0));
 
   // Co-sorting
-  value_t a1 = new_heap_pair_array(&runtime, kTestArraySize);
+  value_t a1 = new_heap_pair_array(runtime, kTestArraySize);
   for (size_t i = 0; i < kTestArraySize; i++) {
     set_pair_array_first_at(a1, i, new_integer(kUnsorted[i]));
     set_pair_array_second_at(a1, i, new_integer(i));
@@ -401,5 +392,5 @@ TEST(value, array_sort) {
     }
   }
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }

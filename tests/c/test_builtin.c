@@ -41,32 +41,32 @@ static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
 }
 
 TEST(builtin, integers) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
-  value_t space = new_heap_method_space(&runtime);
-  ASSERT_SUCCESS(add_method_space_builtin_methods(&runtime, space));
+  CREATE_RUNTIME();
 
-  test_builtin(&runtime, space, vInt(2), vInt(1), "+", vArray(1, vInt(1)));
-  test_builtin(&runtime, space, vInt(3), vInt(2), "+", vArray(1, vInt(1)));
-  test_builtin(&runtime, space, vInt(5), vInt(2), "+", vArray(1, vInt(3)));
+  value_t space = new_heap_method_space(runtime);
+  ASSERT_SUCCESS(add_method_space_builtin_methods(runtime, space));
 
-  test_builtin(&runtime, space, vInt(0), vInt(1), "-", vArray(1, vInt(1)));
-  test_builtin(&runtime, space, vInt(1), vInt(2), "-", vArray(1, vInt(1)));
-  test_builtin(&runtime, space, vInt(-1), vInt(2), "-", vArray(1, vInt(3)));
+  test_builtin(runtime, space, vInt(2), vInt(1), "+", vArray(1, vInt(1)));
+  test_builtin(runtime, space, vInt(3), vInt(2), "+", vArray(1, vInt(1)));
+  test_builtin(runtime, space, vInt(5), vInt(2), "+", vArray(1, vInt(3)));
 
-  test_builtin(&runtime, space, vInt(-1), vInt(1), "-", vEmptyArray());
+  test_builtin(runtime, space, vInt(0), vInt(1), "-", vArray(1, vInt(1)));
+  test_builtin(runtime, space, vInt(1), vInt(2), "-", vArray(1, vInt(1)));
+  test_builtin(runtime, space, vInt(-1), vInt(2), "-", vArray(1, vInt(3)));
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  test_builtin(runtime, space, vInt(-1), vInt(1), "-", vEmptyArray());
+
+  DISPOSE_RUNTIME();
 }
 
 TEST(builtin, strings) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
-  value_t space = new_heap_method_space(&runtime);
-  ASSERT_SUCCESS(add_method_space_builtin_methods(&runtime, space));
+  CREATE_RUNTIME();
 
-  test_builtin(&runtime, space, vStr("abcd"), vStr("ab"), "+", vArray(1, vStr("cd")));
-  test_builtin(&runtime, space, vStr(""), vStr(""), "+", vArray(1, vStr("")));
+  value_t space = new_heap_method_space(runtime);
+  ASSERT_SUCCESS(add_method_space_builtin_methods(runtime, space));
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  test_builtin(runtime, space, vStr("abcd"), vStr("ab"), "+", vArray(1, vStr("cd")));
+  test_builtin(runtime, space, vStr(""), vStr(""), "+", vArray(1, vStr("")));
+
+  DISPOSE_RUNTIME();
 }

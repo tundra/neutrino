@@ -7,11 +7,10 @@
 #include "value-inl.h"
 
 TEST(behavior, string_validation) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
   string_t chars = STR("Hut!");
-  value_t str = new_heap_string(&runtime, &chars);
+  value_t str = new_heap_string(runtime, &chars);
 
   // String starts out validating.
   ASSERT_SUCCESS(object_validate(str));
@@ -21,12 +20,11 @@ TEST(behavior, string_validation) {
   ASSERT_CHECK_FAILURE(scValidationFailed, object_validate(str));
   get_string_chars(str)[4] = '\0';
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 TEST(behavior, identity) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
   // Convenient shorthands.
   value_t (*hash)(value_t value) = value_transient_identity_hash;
@@ -41,17 +39,17 @@ TEST(behavior, identity) {
 
   // Strings
   string_t foo_chars = STR("foo");
-  value_t foo = new_heap_string(&runtime, &foo_chars);
+  value_t foo = new_heap_string(runtime, &foo_chars);
   string_t bar_chars = STR("bar");
-  value_t bar = new_heap_string(&runtime, &bar_chars);
+  value_t bar = new_heap_string(runtime, &bar_chars);
   ASSERT_SUCCESS(hash(foo));
   ASSERT_NSAME(hash(foo), hash(bar));
   ASSERT_TRUE(equal(foo, foo));
   ASSERT_FALSE(equal(foo, bar));
 
   // Bools
-  value_t thrue = runtime_bool(&runtime, true);
-  value_t fahlse = runtime_bool(&runtime, false);
+  value_t thrue = runtime_bool(runtime, true);
+  value_t fahlse = runtime_bool(runtime, false);
   ASSERT_SUCCESS(hash(thrue));
   ASSERT_NSAME(hash(thrue), hash(fahlse));
   ASSERT_TRUE(equal(thrue, thrue));
@@ -59,11 +57,11 @@ TEST(behavior, identity) {
   ASSERT_TRUE(equal(fahlse, fahlse));
 
   // Null
-  value_t null = runtime_null(&runtime);
+  value_t null = runtime_null(runtime);
   ASSERT_SUCCESS(hash(null));
   ASSERT_TRUE(equal(null, null));
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 // Check that printing the given value yields the expected string.
@@ -81,8 +79,7 @@ static void check_print_on(const char *expected_chars, value_t value) {
 }
 
 TEST(behavior, print_on) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
   // Integers
   check_print_on("0", new_integer(0));
@@ -90,20 +87,20 @@ TEST(behavior, print_on) {
   check_print_on("-1231", new_integer(-1231));
 
   // Singletons
-  check_print_on("null", runtime_null(&runtime));
-  check_print_on("true", runtime_bool(&runtime, true));
-  check_print_on("false", runtime_bool(&runtime, false));
+  check_print_on("null", runtime_null(runtime));
+  check_print_on("true", runtime_bool(runtime, true));
+  check_print_on("false", runtime_bool(runtime, false));
 
   // Strings
   string_t foo_chars = STR("foo");
-  value_t foo = new_heap_string(&runtime, &foo_chars);
+  value_t foo = new_heap_string(runtime, &foo_chars);
   check_print_on("\"foo\"", foo);
   string_t empty_chars = STR("");
-  value_t empty = new_heap_string(&runtime, &empty_chars);
+  value_t empty = new_heap_string(runtime, &empty_chars);
   check_print_on("\"\"", empty);
 
   // Arrays.
-  value_t arr = new_heap_array(&runtime, 3);
+  value_t arr = new_heap_array(runtime, 3);
   check_print_on("[null, null, null]", arr);
   set_array_at(arr, 1, new_integer(4));
   check_print_on("[null, 4, null]", arr);
@@ -113,7 +110,7 @@ TEST(behavior, print_on) {
   check_print_on("[#<array[3]>, 4, \"foo\"]", arr);
 
   // Maps
-  value_t map = new_heap_id_hash_map(&runtime, 16);
+  value_t map = new_heap_id_hash_map(runtime, 16);
   set_array_at(arr, 0, map);
   check_print_on("{}", map);
   check_print_on("[#<map{0}>, 4, \"foo\"]", arr);
@@ -122,11 +119,11 @@ TEST(behavior, print_on) {
   check_print_on("[#<map{1}>, 4, \"foo\"]", arr);
 
   // Blobs
-  value_t blob = new_heap_blob(&runtime, 9);
+  value_t blob = new_heap_blob(runtime, 9);
   set_array_at(arr, 0, blob);
   check_print_on("[#<blob: [0000000000000000...]>, 4, \"foo\"]", arr);
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 static value_t dummy_constructor(runtime_t *runtime) {
@@ -138,18 +135,17 @@ static value_t signal_constructor(runtime_t *runtime) {
 }
 
 TEST(behavior, new_instance) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
-  value_t dummy_fact = new_heap_factory(&runtime, dummy_constructor);
+  value_t dummy_fact = new_heap_factory(runtime, dummy_constructor);
   ASSERT_SUCCESS(dummy_fact);
-  value_t instance = new_object_with_type(&runtime, dummy_fact);
+  value_t instance = new_object_with_type(runtime, dummy_fact);
   ASSERT_VALEQ(new_integer(434), instance);
 
-  value_t signal_fact = new_heap_factory(&runtime, signal_constructor);
+  value_t signal_fact = new_heap_factory(runtime, signal_constructor);
   ASSERT_SUCCESS(signal_fact);
-  value_t sig = new_object_with_type(&runtime, signal_fact);
+  value_t sig = new_object_with_type(runtime, signal_fact);
   ASSERT_SIGNAL(scNothing, sig);
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
