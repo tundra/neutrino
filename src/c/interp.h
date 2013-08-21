@@ -16,7 +16,8 @@
   F(NewArray)                                                                  \
   F(Invoke)                                                                    \
   F(Builtin)                                                                   \
-  F(Slap)
+  F(Slap)                                                                      \
+  F(Pop)
 
 // The enum of all opcodes.
 typedef enum {
@@ -62,6 +63,9 @@ value_t assembler_flush(assembler_t *assm);
 
 // Emits a push instruction.
 value_t assembler_emit_push(assembler_t *assm, value_t value);
+
+// Emits a pop instruction. Pops count elements off the stack.
+value_t assembler_emit_pop(assembler_t *assm, size_t count);
 
 // Emits a new-array instruction that builds an array from the top 'length'
 // elements.

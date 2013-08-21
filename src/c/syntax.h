@@ -66,4 +66,13 @@ ACCESSORS_DECL(argument_ast, tag);
 ACCESSORS_DECL(argument_ast, value);
 
 
+// --- S e q u e n c e ---
+
+static const size_t kSequenceAstSize = OBJECT_SIZE(1);
+static const size_t kSequenceAstValuesOffset = OBJECT_FIELD_OFFSET(0);
+
+// The array of values to evaluate in sequence.
+ACCESSORS_DECL(sequence_ast, values);
+
+
 #endif // _SYNTAX

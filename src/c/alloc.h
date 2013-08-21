@@ -129,6 +129,9 @@ value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments);
 // Creates a new argument syntax tree with the given tag and value.
 value_t new_heap_argument_ast(runtime_t *runtime, value_t tag, value_t value);
 
+// Creates a new sequence syntax tree with the given values.
+value_t new_heap_sequence_ast(runtime_t *runtime, value_t values);
+
 
 // --- U t i l s ---
 

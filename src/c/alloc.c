@@ -312,6 +312,14 @@ value_t new_heap_argument_ast(runtime_t *runtime, value_t tag, value_t value) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_sequence_ast(runtime_t *runtime, value_t values) {
+  size_t size = kSequenceAstSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.sequence_ast_species));
+  set_sequence_ast_values(result, values);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- M i s c ---
 

@@ -92,6 +92,7 @@ class Parser(object):
   #   -> <literal>
   #   -> "(" <expression> ")"
   #   -> <array expression>
+  #   -> <sequence expression>
   def parse_atomic_expression(self):
     if self.at_type(Token.LITERAL):
       value = self.expect_type(Token.LITERAL)
@@ -106,6 +107,8 @@ class Parser(object):
       return result
     elif self.at_punctuation('['):
       return self.parse_array_expression()
+    elif self.at_punctuation('{'):
+      return self.parse_sequence_expression()
     elif self.at_word('null'):
       return ast.Literal(None)
     elif self.at_word('true'):
@@ -131,6 +134,18 @@ class Parser(object):
         elements.append(next)
     self.expect_punctuation(']')
     return ast.Array(elements)
+
+  # <sequence expression>
+  #   -> "{" (<expression> ";")* "}"
+  def parse_sequence_expression(self):
+    self.expect_punctuation('{')
+    elements = []
+    while not self.at_punctuation('}'):
+      element = self.parse_expression()
+      self.expect_punctuation(';')
+      elements.append(element)
+    self.expect_punctuation('}')
+    return ast.Sequence.make(elements)
 
   # Creates a new syntax error at the current token.
   def new_syntax_error(self):
