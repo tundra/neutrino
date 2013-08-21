@@ -7,18 +7,15 @@
 #include "test.h"
 #include "value-inl.h"
 
-bool slow_fits_as_tagged_integer(int64_t value) {
+// Checks whether the value fits in a tagged integer by actually storing it,
+// getting the value back out, and testing whether it could be restored. This is
+// an extra sanity check.
+static bool try_tagging_as_integer(int64_t value) {
   union {
     int8_t : 3;
     int64_t payload : 61;
   } data = {value};
   return data.payload == value;
-}
-
-bool fits_as_tagged_integer(int64_t value) {
-  uint64_t uvalue = value;
-  uint64_t top = uvalue >> 61;
-  return (top == 0x0) || (top == 0x7);
 }
 
 TEST(value, fits_as_tagged_integer) {
@@ -28,9 +25,9 @@ TEST(value, fits_as_tagged_integer) {
   };
 #define kTestCaseCount 17
   struct test_case_t cases[kTestCaseCount] = {
-      {0, true},
-      {1, true},
-      {-1, true},
+      {0x0000000000000000, true},
+      {0x0000000000000001, true},
+      {0xFFFFFFFFFFFFFFFF, true},
       {0x0000000080000000, true},
       {0xFFFFFFFF7FFFFFFF, true},
       {0x7FFFFFFFFFFFFFFF, false},
@@ -48,10 +45,10 @@ TEST(value, fits_as_tagged_integer) {
   };
   for (size_t i = 0; i < kTestCaseCount; i++) {
     struct test_case_t test_case = cases[i];
-    printf("%llx %lli %i\n", test_case.value, test_case.value, test_case.fits);
-    ASSERT_EQ(test_case.fits, slow_fits_as_tagged_integer(test_case.value));
+    ASSERT_EQ(test_case.fits, try_tagging_as_integer(test_case.value));
     ASSERT_EQ(test_case.fits, fits_as_tagged_integer(test_case.value));
   }
+#undef kTestCaseCount
 }
 
 TEST(value, encoding) {
