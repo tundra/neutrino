@@ -7,6 +7,50 @@
 #include "test.h"
 #include "value-inl.h"
 
+// Checks whether the value fits in a tagged integer by actually storing it,
+// getting the value back out, and testing whether it could be restored. This is
+// an extra sanity check.
+static bool try_tagging_as_integer(int64_t value) {
+  union {
+    int8_t : 3;
+    int64_t payload : 61;
+  } data = {value};
+  return data.payload == value;
+}
+
+TEST(value, fits_as_tagged_integer) {
+  struct test_case_t {
+    int64_t value;
+    bool fits;
+  };
+#define kTestCaseCount 17
+  struct test_case_t cases[kTestCaseCount] = {
+      {0x0000000000000000, true},
+      {0x0000000000000001, true},
+      {0xFFFFFFFFFFFFFFFF, true},
+      {0x0000000080000000, true},
+      {0xFFFFFFFF7FFFFFFF, true},
+      {0x7FFFFFFFFFFFFFFF, false},
+      {0x3FFFFFFFFFFFFFFF, false},
+      {0x1FFFFFFFFFFFFFFF, false},
+      {0x1000000000000000, false},
+      {0x0FFFFFFFFFFFFFFF, true},
+      {0x0FFFFFFFFFFFFFFE, true},
+      {0x8000000000000000, false},
+      {0xC000000000000000, false},
+      {0xE000000000000000, false},
+      {0xEFFFFFFFFFFFFFFF, false},
+      {0xF000000000000000, true},
+      {0xF000000000000001, true}
+  };
+  for (size_t i = 0; i < kTestCaseCount; i++) {
+    struct test_case_t test_case = cases[i];
+    ASSERT_EQ(test_case.fits, try_tagging_as_integer(test_case.value));
+    ASSERT_EQ(test_case.fits, fits_as_tagged_integer(test_case.value));
+  }
+#undef kTestCaseCount
+}
+
 TEST(value, encoding) {
   ASSERT_EQ(sizeof(encoded_value_t), sizeof(value_t));
   value_t v0 = new_integer(0);

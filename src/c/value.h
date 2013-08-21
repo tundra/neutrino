@@ -95,8 +95,27 @@ static value_domain_t get_value_domain(value_t value) {
 
 // --- I n t e g e r ---
 
+// Returns true if the given value can be stored as a tagged integer.
+static bool fits_as_tagged_integer(int64_t value) {
+  // We store signed values as integers by shifting away the three most
+  // significant bits, keeping the sign bit, and restore them by shifting the
+  // other way with sign extension. This only works if the three most significant
+  // bits are the same as the sign bit, in other words only if the four most
+  // significant bits are the same: 0b1111... or 0b0000.... The way we recognize
+  // whether this is the case is to add 0b0001 to the top nibble, which in the
+  // case we want to recognize yields a top nibble of 0b0000 and 0b0001 (that
+  // is, a number of the form 0x0............... and 0x1...............). This
+  // relies on 0b1111+0b0001 overflowing to 0b0000. The largest possible value
+  // of this form is if the following part is all 1s, 0x1FFFFFFFFFFFFFFF, so if
+  // the value is that or smaller then we know the value will fit. We test that
+  // by checking if it's strictly smaller than the next value, 0x2000000000000000.
+  uint64_t uvalue = value;
+  return (uvalue + 0x1000000000000000) < 0x2000000000000000;
+}
+
 // Creates a new tagged integer with the given value.
 static value_t new_integer(int64_t value) {
+  CHECK_TRUE("new integer overflow", fits_as_tagged_integer(value));
   return (value_t) {.as_integer={vdInteger, value}};
 }
 
