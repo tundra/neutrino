@@ -86,6 +86,12 @@ family_behavior_t *get_object_family_behavior(value_t self) {
   return get_species_family_behavior(species);
 }
 
+family_behavior_t *get_object_family_behavior_unchecked(value_t self) {
+  CHECK_DOMAIN(vdObject, self);
+  value_t species = get_object_species(self);
+  return get_species_family_behavior(species);
+}
+
 
 // --- S p e c i e s ---
 
@@ -357,8 +363,13 @@ void set_array_at(value_t value, size_t index, value_t element) {
 
 value_t *get_array_elements(value_t value) {
   CHECK_FAMILY(ofArray, value);
+  return get_array_elements_unchecked(value);
+}
+
+value_t *get_array_elements_unchecked(value_t value) {
   return access_object_field(value, kArrayElementsOffset);
 }
+
 
 value_t array_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofArray, value);
@@ -659,6 +670,51 @@ value_t get_id_hash_map_at(value_t map, value_t key) {
   }
 }
 
+void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_object,
+    value_t old_object) {
+  // In this fixup we rehash the migrated hash map since the hash values are
+  // allowed to change during garbage collection. We do it by copying the
+  // entries currently stored in the object into space that's left over by the
+  // old one, clearing out the new entry array completely, and then re-adding
+  // the entries one by one, reading them from the scratch storage. Dumb but it
+  // works.
+
+  // Get the raw entry array from the new map.
+  value_t new_entry_array = get_id_hash_map_entry_array(new_object);
+  size_t entry_array_length = get_array_length(new_entry_array);
+  value_t *new_entries = get_array_elements(new_entry_array);
+  // Get the raw entry array from the old map. This requires going directly
+  // through the object since the nice accessors do sanity checking and the
+  // state of the object at this point is, well, not sane.
+  value_t old_entry_array = *access_object_field(old_object, kIdHashMapEntryArrayOffset);
+  CHECK_DOMAIN(vdMovedObject, get_object_header(old_entry_array));
+  value_t *old_entries = get_array_elements_unchecked(old_entry_array);
+  // Copy the contents of the new entry array into the old one and clear it as
+  // we go so it's ready to have elements added back.
+  value_t null = runtime_null(runtime);
+  for (size_t i = 0; i < entry_array_length; i++) {
+    old_entries[i] = new_entries[i];
+    new_entries[i] = null;
+  }
+  // Reset the map's fields. It is now empty.
+  set_id_hash_map_size(new_object, 0);
+  // Fake an iterator that scans over the old array.
+  id_hash_map_iter_t iter;
+  iter.entries = old_entries;
+  iter.cursor = 0;
+  iter.capacity = get_id_hash_map_capacity(new_object);
+  iter.current = NULL;
+  // Then simple scan over the entries and add them one at a time. Since they
+  // come from the map originally adding them again must succeed.
+  while (id_hash_map_iter_advance(&iter)) {
+    value_t key;
+    value_t value;
+    id_hash_map_iter_get_current(&iter, &key, &value);
+    value_t added = try_set_id_hash_map_at(new_object, key, value);
+    CHECK_FALSE("rehash failed to set", get_value_domain(added) == vdSignal);
+  }
+}
+
 void id_hash_map_iter_init(id_hash_map_iter_t *iter, value_t map) {
   value_t entry_array = get_id_hash_map_entry_array(map);
   iter->entries = get_array_elements(entry_array);
@@ -703,7 +759,13 @@ void id_hash_map_print_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, "{");
   id_hash_map_iter_t iter;
   id_hash_map_iter_init(&iter, value);
+  bool is_first = true;
   while (id_hash_map_iter_advance(&iter)) {
+    if (is_first) {
+      is_first = false;
+    } else {
+      string_buffer_printf(buf, ", ");
+    }
     value_t key;
     value_t value;
     id_hash_map_iter_get_current(&iter, &key, &value);

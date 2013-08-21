@@ -51,7 +51,7 @@ static void get_##family##_layout(value_t value, object_layout_t *layout_out) {\
 
 // Generate all the trivial layout functions since we know what they'll look
 // like.
-#define __DEFINE_TRIVIAL_LAYOUT_FUNCTION__(Family, family, CMP, CID, CNT, SUR, NOL) \
+#define __DEFINE_TRIVIAL_LAYOUT_FUNCTION__(Family, family, CMP, CID, CNT, SUR, NOL, FIX) \
 NOL(,__TRIVIAL_LAYOUT_FUNCTION__(Family, family))
   ENUM_OBJECT_FAMILIES(__DEFINE_TRIVIAL_LAYOUT_FUNCTION__)
 #undef __DEFINE_TRIVIAL_LAYOUT_FUNCTION__
@@ -303,7 +303,7 @@ static value_t get_internal_object_protocol(value_t self, runtime_t *runtime) {
 // Define all the family behaviors in one go. Because of this, as soon as you
 // add a new object type you'll get errors for all the behaviors you need to
 // implement.
-#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, CMP, CID, CNT, SUR, NOL) \
+#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, CMP, CID, CNT, SUR, NOL, FIX) \
 family_behavior_t k##Family##Behavior = {                                      \
   &family##_validate,                                                          \
   CID(&family##_transient_identity_hash, default_object_transient_identity_hash), \
@@ -313,7 +313,8 @@ family_behavior_t k##Family##Behavior = {                                      \
   &family##_print_atomic_on,                                                   \
   &get_##family##_layout,                                                      \
   CNT(&set_##family##_contents, &set_contents_unsupported),                    \
-  SUR(&get_##family##_protocol, &get_internal_object_protocol)                 \
+  SUR(&get_##family##_protocol, &get_internal_object_protocol),                \
+  FIX(&fixup_##family##_post_migrate, NULL)                                    \
 };
 ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #undef DEFINE_FAMILY_BEHAVIOR

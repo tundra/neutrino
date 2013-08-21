@@ -69,7 +69,7 @@ value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
 
 value_t add_method_space_builtin_methods(runtime_t *runtime, value_t self) {
   TRY(add_integer_builtin_methods(runtime, self));
-#define __EMIT_ADD_BUILTINS_CALL__(Family, family, CMP, CID, CNT, SUR, NOL)   \
+#define __EMIT_ADD_BUILTINS_CALL__(Family, family, CMP, CID, CNT, SUR, NOL, FIX)\
   SUR(TRY(add_##family##_builtin_methods(runtime, self));,)
   ENUM_OBJECT_FAMILIES(__EMIT_ADD_BUILTINS_CALL__)
 #undef __EMIT_ADD_BUILTINS_CALL__

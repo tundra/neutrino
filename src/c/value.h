@@ -192,44 +192,46 @@ static value_t new_moved_object(value_t target) {
 //   - Sur: is this type exposed to the surface language?
 //   - Nol: does this type have a nontrivial layout, either non-value fields or
 //       variable size.
+//   - Fix: does this type require a post-migration fixup during garbage
+//       collection?
 //
-// CamelName            underscore_name         Cmp Cid Cnt Sur Nol
+// CamelName            underscore_name         Cmp Cid Cnt Sur Nol Fix
 
 // Enumerates the special species, the ones that require special handling during
 // startup.
 #define ENUM_SPECIAL_OBJECT_FAMILIES(F)                                        \
-  F(Species,            species,                _,  _,  _,  _,  X)
+  F(Species,            species,                _,  _,  _,  _,  X,  _)
 
 // Enumerates the syntax tree families.
 #define ENUM_SYNTAX_OBJECT_FAMILIES(F)                                         \
-  F(ArgumentAst,        argument_ast,           _,  _,  X,  X,  _)             \
-  F(ArrayAst,           array_ast,              _,  _,  X,  X,  _)             \
-  F(InvocationAst,      invocation_ast,         _,  _,  X,  X,  _)             \
-  F(LiteralAst,         literal_ast,            _,  _,  X,  X,  _)             \
-  F(SequenceAst,        sequence_ast,           _,  _,  X,  X,  _)
+  F(ArgumentAst,        argument_ast,           _,  _,  X,  X,  _,  _)         \
+  F(ArrayAst,           array_ast,              _,  _,  X,  X,  _,  _)         \
+  F(InvocationAst,      invocation_ast,         _,  _,  X,  X,  _,  _)         \
+  F(LiteralAst,         literal_ast,            _,  _,  X,  X,  _,  _)         \
+  F(SequenceAst,        sequence_ast,           _,  _,  X,  X,  _,  _)
 
 // Enumerates the compact object species.
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
-  F(Array,              array,                  _,  _,  _,  X,  X)             \
-  F(ArrayBuffer,        array_buffer,           _,  _,  _,  X,  _)             \
-  F(Blob,               blob,                   _,  _,  _,  X,  X)             \
-  F(Boolean,            boolean,                X,  X,  _,  X,  _)             \
-  F(CodeBlock,          code_block,             _,  _,  _,  _,  _)             \
-  F(Factory,            factory,                _,  _,  _,  _,  _)             \
-  F(Guard,              guard,                  _,  _,  _,  _,  _)             \
-  F(IdHashMap,          id_hash_map,            _,  _,  _,  X,  _)             \
-  F(Instance,           instance,               _,  _,  X,  X,  _)             \
-  F(InvocationRecord,   invocation_record,      _,  _,  _,  _,  _)             \
-  F(Method,             method,                 _,  _,  _,  _,  _)             \
-  F(MethodSpace,        method_space,           _,  _,  _,  _,  _)             \
-  F(Null,               null,                   _,  X,  _,  X,  _)             \
-  F(Parameter,          parameter,              _,  _,  _,  _,  _)             \
-  F(Protocol,           protocol,               _,  _,  _,  X,  _)             \
-  F(Signature,          signature,              _,  _,  _,  _,  _)             \
-  F(Stack,              stack,                  _,  _,  _,  _,  _)             \
-  F(StackPiece,         stack_piece,            _,  _,  _,  _,  _)             \
-  F(String,             string,                 X,  X,  _,  X,  X)             \
-  F(VoidP,              void_p,                 _,  _,  _,  _,  X)             \
+  F(Array,              array,                  _,  _,  _,  X,  X,  _)         \
+  F(ArrayBuffer,        array_buffer,           _,  _,  _,  X,  _,  _)         \
+  F(Blob,               blob,                   _,  _,  _,  X,  X,  _)         \
+  F(Boolean,            boolean,                X,  X,  _,  X,  _,  _)         \
+  F(CodeBlock,          code_block,             _,  _,  _,  _,  _,  _)         \
+  F(Factory,            factory,                _,  _,  _,  _,  _,  _)         \
+  F(Guard,              guard,                  _,  _,  _,  _,  _,  _)         \
+  F(IdHashMap,          id_hash_map,            _,  _,  _,  X,  _,  X)         \
+  F(Instance,           instance,               _,  _,  X,  X,  _,  _)         \
+  F(InvocationRecord,   invocation_record,      _,  _,  _,  _,  _,  _)         \
+  F(Method,             method,                 _,  _,  _,  _,  _,  _)         \
+  F(MethodSpace,        method_space,           _,  _,  _,  _,  _,  _)         \
+  F(Null,               null,                   _,  X,  _,  X,  _,  _)         \
+  F(Parameter,          parameter,              _,  _,  _,  _,  _,  _)         \
+  F(Protocol,           protocol,               _,  _,  _,  X,  _,  _)         \
+  F(Signature,          signature,              _,  _,  _,  _,  _,  _)         \
+  F(Stack,              stack,                  _,  _,  _,  _,  _,  _)         \
+  F(StackPiece,         stack_piece,            _,  _,  _,  _,  _,  _)         \
+  F(String,             string,                 X,  X,  _,  X,  X,  _)         \
+  F(VoidP,              void_p,                 _,  _,  _,  _,  X,  _)         \
   ENUM_SYNTAX_OBJECT_FAMILIES(F)
 
 // Enumerates all the object families.
@@ -240,7 +242,7 @@ static value_t new_moved_object(value_t target) {
 // Enum identifying the different families of heap objects.
 typedef enum {
   __ofFirst__ = -1
-  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CMP, CID, CNT, SUR, NOL) , of##Family
+  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CMP, CID, CNT, SUR, NOL, FIX) , of##Family
   ENUM_OBJECT_FAMILIES(__DECLARE_OBJECT_FAMILY_ENUM__)
   #undef __DECLARE_OBJECT_FAMILY_ENUM__
 } object_family_t;
@@ -306,6 +308,12 @@ object_family_t get_object_family(value_t value);
 
 // Returns the family behavior for the given object.
 family_behavior_t *get_object_family_behavior(value_t self);
+
+// Does the same as get_object_family_behavior but with checks of the species
+// disabled. This allows it to be called during garbage collection on objects
+// whose species have already been migrated. The behavior is still there but
+// the species won't survive any sanity checks.
+family_behavior_t *get_object_family_behavior_unchecked(value_t self);
 
 // Sets the species pointer of an object to the specified species value.
 void set_object_species(value_t value, value_t species);
@@ -479,6 +487,10 @@ void set_array_at(value_t value, size_t index, value_t element);
 
 // Returns the underlying array element array.
 value_t *get_array_elements(value_t value);
+
+// Does the same as get_array_elements but without any sanity checks which means
+// that it can be used during garbage collection. Don't use it anywhere else.
+value_t *get_array_elements_unchecked(value_t value);
 
 // Sorts the given array. If there are any errors, for instance if some of the
 // values are not comparable, a signal is returned.
