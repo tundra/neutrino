@@ -13,6 +13,20 @@ void fail(const char *file, int line, const char *fmt, ...);
 // Returns true iff the two values are structurally equal.
 bool value_structural_equal(value_t a, value_t b);
 
+// Allocates a new runtime object which will be stored in the variable "runtime".
+// This pattern is used *everywhere* and packing it into a macro ensures that it
+// is used consistently and allows other macros to depend on the variables
+// created here.
+#define CREATE_RUNTIME()                                                       \
+runtime_t stack_runtime;                                                       \
+runtime_t *runtime = &stack_runtime;                                           \
+ASSERT_SUCCESS(runtime_init(runtime, NULL))
+
+// Disposes a runtime created using the CREATE_RUNTIME method.
+#define DISPOSE_RUNTIME()                                                      \
+ASSERT_SUCCESS(runtime_dispose(runtime));
+
+
 // Data recorded about check failures.
 typedef struct {
   // How many check failures were triggered?
@@ -79,7 +93,7 @@ static int64_t ptr_to_int_bit_cast(void *value) {
 
 // Identical to ASSERT_VALEQ except that the first argument is a variant which
 // is converted to a value using the stack-allocated runtime 'runtime'.
-#define ASSERT_VAREQ(A, B) ASSERT_VALEQ(variant_to_value(&runtime, A), B)
+#define ASSERT_VAREQ(A, B) ASSERT_VALEQ(variant_to_value(runtime, A), B)
 
 // Checks that A and B are the same object or value.
 #define ASSERT_SAME(A, B) ASSERT_EQ((A).encoded, (B).encoded)

@@ -26,129 +26,122 @@ static value_t check_plankton(runtime_t *runtime, value_t value) {
 }
 
 TEST(plankton, simple) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
   // Integers
-  check_plankton(&runtime, new_integer(0));
-  check_plankton(&runtime, new_integer(1));
-  check_plankton(&runtime, new_integer(-1));
-  check_plankton(&runtime, new_integer(65536));
-  check_plankton(&runtime, new_integer(-65536));
+  check_plankton(runtime, new_integer(0));
+  check_plankton(runtime, new_integer(1));
+  check_plankton(runtime, new_integer(-1));
+  check_plankton(runtime, new_integer(65536));
+  check_plankton(runtime, new_integer(-65536));
 
   // Singletons
-  check_plankton(&runtime, runtime_null(&runtime));
-  check_plankton(&runtime, runtime_bool(&runtime, true));
-  check_plankton(&runtime, runtime_bool(&runtime, false));
+  check_plankton(runtime, runtime_null(runtime));
+  check_plankton(runtime, runtime_bool(runtime, true));
+  check_plankton(runtime, runtime_bool(runtime, false));
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 TEST(plankton, array) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
-  value_t arr = new_heap_array(&runtime, 5);
-  check_plankton(&runtime, arr);
+  value_t arr = new_heap_array(runtime, 5);
+  check_plankton(runtime, arr);
   set_array_at(arr, 0, new_integer(5));
-  check_plankton(&runtime, arr);
+  check_plankton(runtime, arr);
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 TEST(plankton, map) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
-  value_t map = new_heap_id_hash_map(&runtime, 16);
-  check_plankton(&runtime, map);
+  value_t map = new_heap_id_hash_map(runtime, 16);
+  check_plankton(runtime, map);
   for (size_t i = 0; i < 16; i++) {
-    set_id_hash_map_at(&runtime, map, new_integer(i), new_integer(5));
-    check_plankton(&runtime, map);
+    set_id_hash_map_at(runtime, map, new_integer(i), new_integer(5));
+    check_plankton(runtime, map);
   }
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 // Declares a new variable that holds a heap string with the given contents.
 #define DEF_HEAP_STR(name, value)                                              \
 string_t name##_chars = STR(value);                                            \
-value_t name = new_heap_string(&runtime, &name##_chars)
+value_t name = new_heap_string(runtime, &name##_chars)
 
 TEST(plankton, string) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
   DEF_HEAP_STR(foo, "foo");
-  check_plankton(&runtime, foo);
+  check_plankton(runtime, foo);
   DEF_HEAP_STR(empty, "");
-  check_plankton(&runtime, empty);
+  check_plankton(runtime, empty);
   DEF_HEAP_STR(hello, "Hello, World!");
-  check_plankton(&runtime, hello);
+  check_plankton(runtime, hello);
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 TEST(plankton, instance) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
-  value_t instance = new_heap_instance(&runtime, runtime.roots.empty_instance_species);
-  check_plankton(&runtime, instance);
+  value_t instance = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+  check_plankton(runtime, instance);
   DEF_HEAP_STR(x, "x");
   ASSERT_SUCCESS(try_set_instance_field(instance, x, new_integer(8)));
   DEF_HEAP_STR(y, "y");
   ASSERT_SUCCESS(try_set_instance_field(instance, y, new_integer(13)));
-  value_t decoded = check_plankton(&runtime, instance);
+  value_t decoded = check_plankton(runtime, instance);
   ASSERT_SUCCESS(decoded);
   ASSERT_VALEQ(new_integer(8), get_instance_field(decoded, x));
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 TEST(plankton, references) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
-  value_t i0 = new_heap_instance(&runtime, runtime.roots.empty_instance_species);
-  value_t i1 = new_heap_instance(&runtime, runtime.roots.empty_instance_species);
-  value_t i2 = new_heap_instance(&runtime, runtime.roots.empty_instance_species);
-  value_t array = new_heap_array(&runtime, 6);
+  value_t i0 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+  value_t i1 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+  value_t i2 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+  value_t array = new_heap_array(runtime, 6);
   set_array_at(array, 0, i0);
   set_array_at(array, 1, i2);
   set_array_at(array, 2, i0);
   set_array_at(array, 3, i1);
   set_array_at(array, 4, i2);
   set_array_at(array, 5, i1);
-  value_t decoded = check_plankton(&runtime, array);
+  value_t decoded = check_plankton(runtime, array);
   ASSERT_SAME(get_array_at(decoded, 0), get_array_at(decoded, 2));
   ASSERT_NSAME(get_array_at(decoded, 0), get_array_at(decoded, 1));
   ASSERT_SAME(get_array_at(decoded, 1), get_array_at(decoded, 4));
   ASSERT_NSAME(get_array_at(decoded, 1), get_array_at(decoded, 3));
   ASSERT_SAME(get_array_at(decoded, 3), get_array_at(decoded, 5));
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 TEST(plankton, cycles) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
-  value_t i0 = new_heap_instance(&runtime, runtime.roots.empty_instance_species);
+  value_t i0 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
   value_t k0 = new_integer(78);
-  ASSERT_SUCCESS(set_instance_field(&runtime, i0, k0, i0));
-  value_t d0 = transcode_plankton(&runtime, NULL, NULL, i0);
+  ASSERT_SUCCESS(set_instance_field(runtime, i0, k0, i0));
+  value_t d0 = transcode_plankton(runtime, NULL, NULL, i0);
   ASSERT_SAME(d0, get_instance_field(d0, k0));
 
-  value_t i1 = new_heap_instance(&runtime, runtime.roots.empty_instance_species);
-  value_t i2 = new_heap_instance(&runtime, runtime.roots.empty_instance_species);
-  value_t i3 = new_heap_instance(&runtime, runtime.roots.empty_instance_species);
+  value_t i1 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+  value_t i2 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+  value_t i3 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
   value_t k1 = new_integer(79);
-  ASSERT_SUCCESS(set_instance_field(&runtime, i1, k0, i2));
-  ASSERT_SUCCESS(set_instance_field(&runtime, i1, k1, i3));
-  ASSERT_SUCCESS(set_instance_field(&runtime, i2, k1, i3));
-  ASSERT_SUCCESS(set_instance_field(&runtime, i3, k0, i1));
-  value_t d1 = transcode_plankton(&runtime, NULL, NULL, i1);
+  ASSERT_SUCCESS(set_instance_field(runtime, i1, k0, i2));
+  ASSERT_SUCCESS(set_instance_field(runtime, i1, k1, i3));
+  ASSERT_SUCCESS(set_instance_field(runtime, i2, k1, i3));
+  ASSERT_SUCCESS(set_instance_field(runtime, i3, k0, i1));
+  value_t d1 = transcode_plankton(runtime, NULL, NULL, i1);
   value_t d2 = get_instance_field(d1, k0);
   value_t d3 = get_instance_field(d1, k1);
   ASSERT_NSAME(d1, d2);
@@ -157,7 +150,7 @@ TEST(plankton, cycles) {
   ASSERT_SAME(d1, get_instance_field(d3, k0));
 
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 // Struct containing test data for the environment test.
@@ -193,38 +186,37 @@ static value_t int_to_value(value_t value, runtime_t *runtime, void *ptr) {
 }
 
 TEST(plankton, env_resolution) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
   test_resolver_data_t data;
-  data.i0 = new_heap_instance(&runtime, runtime.roots.empty_instance_species);
-  data.i1 = new_heap_instance(&runtime, runtime.roots.empty_instance_species);
-  value_t i2 = new_heap_instance(&runtime, runtime.roots.empty_instance_species);
+  data.i0 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+  data.i1 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+  value_t i2 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
 
   value_mapping_t resolver;
   value_mapping_init(&resolver, value_to_int, &data);
   value_mapping_t access;
   value_mapping_init(&access, int_to_value, &data);
 
-  value_t d0 = transcode_plankton(&runtime, &resolver, &access, data.i0);
+  value_t d0 = transcode_plankton(runtime, &resolver, &access, data.i0);
   ASSERT_TRUE(value_identity_compare(data.i0, d0));
-  value_t d1 = transcode_plankton(&runtime, &resolver, &access, data.i1);
+  value_t d1 = transcode_plankton(runtime, &resolver, &access, data.i1);
   ASSERT_TRUE(value_identity_compare(data.i1, d1));
-  value_t d2 = transcode_plankton(&runtime, &resolver, &access, i2);
+  value_t d2 = transcode_plankton(runtime, &resolver, &access, i2);
   ASSERT_FALSE(value_identity_compare(i2, d2));
 
-  value_t a0 = new_heap_array(&runtime, 4);
+  value_t a0 = new_heap_array(runtime, 4);
   set_array_at(a0, 0, data.i0);
   set_array_at(a0, 1, data.i1);
   set_array_at(a0, 2, i2);
   set_array_at(a0, 3, data.i0);
-  value_t da0 = transcode_plankton(&runtime, &resolver, &access, a0);
+  value_t da0 = transcode_plankton(runtime, &resolver, &access, a0);
   ASSERT_TRUE(value_identity_compare(data.i0, get_array_at(da0, 0)));
   ASSERT_TRUE(value_identity_compare(data.i1, get_array_at(da0, 1)));
   ASSERT_FALSE(value_identity_compare(i2, get_array_at(da0, 2)));
   ASSERT_TRUE(value_identity_compare(data.i0, get_array_at(da0, 3)));
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
 
 // Writes a tagged plankton string to the given buffer.
@@ -257,15 +249,14 @@ static value_t deserialize(runtime_t *runtime, byte_buffer_t *buf) {
 }
 
 TEST(plankton, env_construction) {
-  runtime_t runtime;
-  ASSERT_SUCCESS(runtime_init(&runtime, NULL));
+  CREATE_RUNTIME();
 
   // Environment references resolve correctly to ast factories.
   {
     byte_buffer_t buf;
     byte_buffer_init(&buf, NULL);
     write_ast_factory(&buf, "Literal");
-    value_t value = deserialize(&runtime, &buf);
+    value_t value = deserialize(runtime, &buf);
     ASSERT_FAMILY(ofFactory, value);
     byte_buffer_dispose(&buf);
   }
@@ -280,11 +271,11 @@ TEST(plankton, env_construction) {
     plankton_wire_encode_uint32(&buf, 1);
     write_string(&buf, "value");
     byte_buffer_append(&buf, pTrue);
-    value_t value = deserialize(&runtime, &buf);
+    value_t value = deserialize(runtime, &buf);
     ASSERT_FAMILY(ofLiteralAst, value);
-    ASSERT_VALEQ(runtime_bool(&runtime, true), get_literal_ast_value(value));
+    ASSERT_VALEQ(runtime_bool(runtime, true), get_literal_ast_value(value));
     byte_buffer_dispose(&buf);
   }
 
-  ASSERT_SUCCESS(runtime_dispose(&runtime));
+  DISPOSE_RUNTIME();
 }
