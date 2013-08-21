@@ -23,7 +23,7 @@
 // A collection of all the root objects.
 typedef struct {
   // Basic family species and protocols
-#define __DECLARE_PER_SPECIES_ROOTS__(Family, family, CMP, CID, CNT, SUR, NOL) \
+#define __DECLARE_PER_SPECIES_ROOTS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX) \
   value_t family##_species;                                                    \
   SUR(value_t family##_protocol;,)
   ENUM_OBJECT_FAMILIES(__DECLARE_PER_SPECIES_ROOTS__)

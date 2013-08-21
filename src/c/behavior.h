@@ -50,6 +50,12 @@ struct family_behavior_t {
       value_t contents);
   // Returns the protocol object for the given object.
   value_t (*get_protocol)(value_t value, runtime_t *runtime);
+  // If non-NULL, performs a fixup step to the new object optionally using the
+  // old object which is still intact except for a forward-pointer instead of
+  // a header. The old object will not be used again so it can also just be
+  // used as a block of memory.
+  void (*post_migrate_fixup)(runtime_t *runtime, value_t new_object,
+      value_t old_object);
 };
 
 // Validates an object. Check fails if validation fails except in soft check
@@ -101,14 +107,14 @@ value_t get_protocol(value_t value, runtime_t *runtime);
 #define OBJ_ADDR_HASH(VAL) new_integer((VAL).encoded)
 
 // Declare the behavior structs for all the families on one fell swoop.
-#define DECLARE_FAMILY_BEHAVIOR(Family, family, CMP, CID, CNT, SUR, NOL)       \
+#define DECLARE_FAMILY_BEHAVIOR(Family, family, CMP, CID, CNT, SUR, NOL, FIX)  \
 extern family_behavior_t k##Family##Behavior;
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 #undef DECLARE_FAMILY_BEHAVIOR
 
 // Declare the functions that implement the behaviors too, that way they can be
 // implemented wherever.
-#define __DECLARE_FAMILY_FUNCTIONS__(Family, family, CMP, CID, CNT, SUR, NOL)  \
+#define __DECLARE_FAMILY_FUNCTIONS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX)  \
 value_t family##_validate(value_t value);                                      \
 CID(value_t family##_transient_identity_hash(value_t value);,)                 \
 CID(bool family##_identity_compare(value_t a, value_t b);,)                    \
@@ -120,7 +126,9 @@ CNT(value_t set_##family##_contents(value_t value, runtime_t *runtime,         \
     value_t contents);,)                                                       \
 SUR(value_t get_##family##_protocol(value_t value, runtime_t *runtime);,)      \
 SUR(value_t add_##family##_builtin_methods(runtime_t *runtime,                 \
-    value_t space);,)
+    value_t space);,)                                                          \
+FIX(void post_migrate_fixup_##family(runtime_t *runtime, value_t new_object,   \
+    value_t old_object);,)
 ENUM_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
 #undef __DECLARE_FAMILY_FUNCTIONS__
 

@@ -394,3 +394,74 @@ TEST(value, array_sort) {
 
   DISPOSE_RUNTIME();
 }
+
+static const size_t kMapCount = 8;
+static const size_t kInstanceCount = 256;
+
+// Checks that the instances are present in the maps as expected, skipping the
+// first skip_first entries. This is such that we can gradually dispose the
+// maps.
+static void assert_strings_present(size_t skip_first, gc_safe_t **maps,
+    gc_safe_t **insts) {
+  for (size_t inst_i = 0; inst_i < kInstanceCount; inst_i++) {
+    value_t inst = gc_safe_get_value(insts[inst_i]);
+    for (size_t map_i = skip_first; map_i < kMapCount; map_i++) {
+      value_t map = gc_safe_get_value(maps[map_i]);
+      bool should_be_present = ((inst_i % (map_i + 1)) == 0);
+      value_t value = get_id_hash_map_at(map, inst);
+      if (should_be_present) {
+        ASSERT_SAME(inst, value);
+        ASSERT_VALEQ(new_integer(inst_i), get_instance_field(value, new_integer(0)));
+      } else {
+        ASSERT_SIGNAL(scNotFound, value);
+      }
+    }
+  }
+}
+
+TEST(value, rehash) {
+  CREATE_RUNTIME();
+
+  // Create and retain a number of maps.
+  gc_safe_t *maps[8];
+  for (size_t i = 0; i < kMapCount; i++) {
+    value_t map = new_heap_id_hash_map(runtime, 16);
+    maps[i] = runtime_new_gc_safe(runtime, map);
+  }
+
+  // Build and retain a number of strings. We'll use these as keys.
+  gc_safe_t *insts[256];
+  for (size_t i = 0; i < kInstanceCount; i++) {
+    value_t inst = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+    ASSERT_SUCCESS(set_instance_field(runtime, inst, new_integer(0), new_integer(i)));
+    insts[i] = runtime_new_gc_safe(runtime, inst);
+  }
+
+  // Store the strings sort-of randomly in the maps.
+  for (size_t inst_i = 0; inst_i < kInstanceCount; inst_i++) {
+    value_t inst = gc_safe_get_value(insts[inst_i]);
+    for (size_t map_i = 0; map_i < kMapCount; map_i++) {
+      if ((inst_i % (map_i + 1)) == 0) {
+        // If the map's index (plus 1 to avoid 0) is a divisor in the string's
+        // index we add it to the map. This means that the 0th map gets all
+        // strings whereas the 15th get 1/15.
+        value_t map = gc_safe_get_value(maps[map_i]);
+        ASSERT_SUCCESS(set_id_hash_map_at(runtime, map, inst, inst));
+      }
+    }
+  }
+
+  assert_strings_present(0, maps, insts);
+  runtime_garbage_collect(runtime);
+  assert_strings_present(0, maps, insts);
+
+  for (size_t i = 0; i < kMapCount - 1; i++) {
+    // Dispose the maps one at a time and then garbage collect to get them
+    // to move around.
+    runtime_dispose_gc_safe(runtime, maps[i]);
+    runtime_garbage_collect(runtime);
+    assert_strings_present(i + 1, maps, insts);
+  }
+
+  DISPOSE_RUNTIME();
+}
