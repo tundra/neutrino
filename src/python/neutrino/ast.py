@@ -82,12 +82,22 @@ class Binding(object):
 
 # A sequence of expressions to execute in order, yielding the value of the last
 # expression.
-@plankton.serializable()
+@plankton.serializable(("ast", "Sequence"))
 class Sequence(object):
 
   @plankton.field("values")
   def __init__(self, values=None):
     self.values = values
+
+  @staticmethod
+  def make(values):
+    if len(values) == 0:
+      return Literal(None)
+    else:
+      return Sequence(values)
+
+  def __str__(self):
+    return "#<sequence: %s>" % map(str, self.values)
 
 
 # A symbol that identifies a scoped binding.

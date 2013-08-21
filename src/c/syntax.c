@@ -222,6 +222,64 @@ static value_t new_argument_ast(runtime_t *runtime) {
 }
 
 
+// --- S e q u e n c e ---
+
+GET_FAMILY_PROTOCOL_IMPL(sequence_ast);
+NO_BUILTIN_METHODS(sequence_ast);
+
+CHECKED_ACCESSORS_IMPL(SequenceAst, sequence_ast, Array, Values, values);
+
+value_t emit_sequence_ast(value_t value, assembler_t *assm) {
+  CHECK_FAMILY(ofSequenceAst, value);
+  value_t values = get_sequence_ast_values(value);
+  size_t length = get_array_length(values);
+  if (length == 0) {
+    // A no-element sequence has value null.
+    TRY(assembler_emit_push(assm, runtime_null(assm->runtime)));
+  } else if (length == 1) {
+    // A one-element sequence is equivalent to the value of the one element.
+    TRY(emit_value(get_array_at(values, 0), assm));
+  } else {
+    for (size_t i = 0; i < length; i++) {
+      if (i > 0) {
+        // For all subsequent expressions we need to pop the previous value
+        // first.
+        TRY(assembler_emit_pop(assm, 1));
+      }
+      TRY(emit_value(get_array_at(values, i), assm));
+    }
+  }
+  return success();
+}
+
+value_t sequence_ast_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofSequenceAst, value);
+  VALIDATE_VALUE_FAMILY(ofArray, get_sequence_ast_values(value));
+  return success();
+}
+
+void sequence_ast_print_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<sequence ast: ");
+  value_print_atomic_on(get_sequence_ast_values(value), buf);
+  string_buffer_printf(buf, ">");
+}
+
+void sequence_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<sequence ast>");
+}
+
+value_t set_sequence_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(elements, get_id_hash_map_at(contents, runtime->roots.string_table.values));
+  set_sequence_ast_values(object, elements);
+  return success();
+}
+
+static value_t new_sequence_ast(runtime_t *runtime) {
+  return new_heap_sequence_ast(runtime, runtime->roots.empty_array);
+}
+
+
 // --- C o d e   g e n e r a t i o n ---
 
 value_t emit_value(value_t value, assembler_t *assm) {
@@ -258,5 +316,6 @@ value_t init_syntax_factory_map(value_t map, runtime_t *runtime) {
   TRY(add_syntax_factory(map, "Array", new_array_ast, runtime));
   TRY(add_syntax_factory(map, "Invocation", new_invocation_ast, runtime));
   TRY(add_syntax_factory(map, "Argument", new_argument_ast, runtime));
+  TRY(add_syntax_factory(map, "Sequence", new_sequence_ast, runtime));
   return success();
 }

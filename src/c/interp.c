@@ -62,6 +62,12 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         frame_push_value(&frame, value);
         break;
       }
+      case ocPop: {
+        size_t count = read_next_byte(&state);
+        for (size_t i = 0; i < count; i++)
+          frame_pop_value(&frame);
+        break;
+      }
       case ocNewArray: {
         size_t length = read_next_byte(&state);
         TRY_DEF(array, new_heap_array(runtime, length));
@@ -228,6 +234,13 @@ value_t assembler_emit_push(assembler_t *assm, value_t value) {
   assembler_emit_opcode(assm, ocPush);
   TRY(assembler_emit_value(assm, value));
   assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
+value_t assembler_emit_pop(assembler_t *assm, size_t count) {
+  assembler_emit_opcode(assm, ocPop);
+  assembler_emit_byte(assm, count);
+  assembler_adjust_stack_height(assm, -count);
   return success();
 }
 
