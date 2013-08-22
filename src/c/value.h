@@ -224,6 +224,7 @@ static value_t new_moved_object(value_t target) {
   F(InvocationRecord,   invocation_record,      _,  _,  _,  _,  _,  _)         \
   F(Method,             method,                 _,  _,  _,  _,  _,  _)         \
   F(MethodSpace,        method_space,           _,  _,  _,  _,  _,  _)         \
+  F(Nothing,            nothing,                _,  _,  _,  _,  _,  _)         \
   F(Null,               null,                   _,  X,  _,  X,  _,  _)         \
   F(Parameter,          parameter,              _,  _,  _,  _,  _,  _)         \
   F(Protocol,           protocol,               _,  _,  _,  X,  _,  _)         \
@@ -561,10 +562,11 @@ bool try_add_to_array_buffer(value_t self, value_t value);
 
 // --- I d e n t i t y   h a s h   m a p ---
 
-static const size_t kIdHashMapSize = OBJECT_SIZE(3);
+static const size_t kIdHashMapSize = OBJECT_SIZE(4);
 static const size_t kIdHashMapSizeOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kIdHashMapCapacityOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kIdHashMapEntryArrayOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kIdHashMapOccupiedCountOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kIdHashMapEntryArrayOffset = OBJECT_FIELD_OFFSET(3);
 
 static const size_t kIdHashMapEntryFieldCount = 3;
 static const size_t kIdHashMapEntryKeyOffset = 0;
@@ -580,6 +582,10 @@ INTEGER_ACCESSORS_DECL(id_hash_map, size);
 // The max capacity of this hash map.
 INTEGER_ACCESSORS_DECL(id_hash_map, capacity);
 
+// The number of occupied entries, that is, entries that are either non-empty
+// or deleted.
+INTEGER_ACCESSORS_DECL(id_hash_map, occupied_count);
+
 // Adds a binding from the given key to the given value to this map, replacing
 // the existing one if it already exists. Returns a signal on failure, either
 // if the key cannot be hashed or the map is full.
@@ -588,6 +594,10 @@ value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value);
 // Returns the binding for the given key or, if no binding is present, an
 // appropriate signal.
 value_t get_id_hash_map_at(value_t map, value_t key);
+
+// Removes the mapping for the given key from the map if it exists. Returns
+// a NotFound signal if that is the case, otherwise a non-signal.
+value_t delete_id_hash_map_at(runtime_t *runtime, value_t map, value_t key);
 
 // Data associated with iterating through a map. The iterator grabs the fields
 // it needs from the map on initialization so it's safe to overwrite map fields
@@ -619,6 +629,11 @@ void id_hash_map_iter_get_current(id_hash_map_iter_t *iter, value_t *key_out,
 // --- N u l l ---
 
 static const size_t kNullSize = OBJECT_SIZE(0);
+
+
+// --- N o t h i n g ---
+
+static const size_t kNothingSize = OBJECT_SIZE(0);
 
 
 // --- B o o l e a n ---

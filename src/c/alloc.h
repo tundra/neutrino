@@ -61,6 +61,9 @@ value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity);
 // Creates the singleton null value.
 value_t new_heap_null(runtime_t *runtime);
 
+// Creates the singleton nothing value.
+value_t new_heap_nothing(runtime_t *runtime);
+
 // Creates a boolean singleton.
 value_t new_heap_boolean(runtime_t *runtime, bool value);
 

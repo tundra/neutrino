@@ -118,12 +118,18 @@ value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity) {
   set_id_hash_map_entry_array(result, entries);
   set_id_hash_map_size(result, 0);
   set_id_hash_map_capacity(result, init_capacity);
+  set_id_hash_map_occupied_count(result, 0);
   return post_create_sanity_check(result, size);
 }
 
 value_t new_heap_null(runtime_t *runtime) {
   size_t size = kNullSize;
   return alloc_heap_object(&runtime->heap, size, runtime->roots.null_species);
+}
+
+value_t new_heap_nothing(runtime_t *runtime) {
+  size_t size = kNothingSize;
+  return alloc_heap_object(&runtime->heap, size, runtime->roots.nothing_species);
 }
 
 value_t new_heap_boolean(runtime_t *runtime, bool value) {
@@ -343,6 +349,7 @@ static value_t extend_id_hash_map(runtime_t *runtime, value_t map) {
   // Reset the map.
   set_id_hash_map_capacity(map, new_capacity);
   set_id_hash_map_size(map, 0);
+  set_id_hash_map_occupied_count(map, 0);
   set_id_hash_map_entry_array(map, new_entry_array);
   // Scan through and add the old data.
   while (id_hash_map_iter_advance(&iter)) {

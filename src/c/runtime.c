@@ -24,6 +24,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   // Initialize singletons first since we need those to create more complex
   // values below.
   TRY_SET(roots->null, new_heap_null(runtime));
+  TRY_SET(roots->nothing, new_heap_nothing(runtime));
   TRY_SET(roots->thrue, new_heap_boolean(runtime, true));
   TRY_SET(roots->fahlse, new_heap_boolean(runtime, false));
   TRY_SET(roots->empty_array, new_heap_array(runtime, 0));
@@ -102,6 +103,7 @@ value_t roots_validate(roots_t *roots) {
 
   // Validate singletons manually.
   VALIDATE_OBJECT(ofNull, roots->null);
+  VALIDATE_OBJECT(ofNothing, roots->nothing);
   VALIDATE_OBJECT(ofBoolean, roots->thrue);
   VALIDATE_OBJECT(ofBoolean, roots->fahlse);
   VALIDATE_OBJECT(ofArray, roots->empty_array);
@@ -132,6 +134,7 @@ value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
   // Clear the singletons manually.
   TRY(field_callback_call(callback, &roots->syntax_factories));
   TRY(field_callback_call(callback, &roots->null));
+  TRY(field_callback_call(callback, &roots->nothing));
   TRY(field_callback_call(callback, &roots->thrue));
   TRY(field_callback_call(callback, &roots->fahlse));
   TRY(field_callback_call(callback, &roots->empty_array));
@@ -377,6 +380,10 @@ value_t runtime_dispose(runtime_t *runtime) {
 
 value_t runtime_null(runtime_t *runtime) {
   return runtime->roots.null;
+}
+
+value_t runtime_nothing(runtime_t *runtime) {
+  return runtime->roots.nothing;
 }
 
 value_t runtime_bool(runtime_t *runtime, bool which) {

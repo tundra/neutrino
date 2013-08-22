@@ -45,6 +45,11 @@ static inline bool is_null(value_t value) {
   return in_family(ofNull, value);
 }
 
+// Returns true iff the given value is some runtime's nothing.
+static inline bool is_nothing(value_t value) {
+  return in_family(ofNothing, value);
+}
+
 // Returns true iff the given species belongs to the given division.
 static inline bool in_division(species_division_t division, value_t value) {
   return in_family(ofSpecies, value) && (get_species_division(value) == division);

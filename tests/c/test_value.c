@@ -470,3 +470,11 @@ TEST(value, rehash_map) {
 
   DISPOSE_RUNTIME();
 }
+
+TEST(value, delete) {
+  CREATE_RUNTIME();
+
+
+
+  DISPOSE_RUNTIME();
+}
