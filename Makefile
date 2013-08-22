@@ -191,7 +191,8 @@ $(C_TEST_MAIN_OBJS): $(BIN)/%.o: %.c $(C_TEST_MAIN_DEPS)
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 
-# Build all the tests into one executable.
+# Build all the tests into one executable. For obscure reasons the flags
+# have to come after the objects.
 $(C_TEST_MAIN_EXE): $(C_TEST_MAIN_OBJS) $(C_TEST_LIB_OBJS) $(C_LIB_OBJS)
 	@mkdir -p $(shell dirname $@)
 	@echo Building $@
