@@ -99,7 +99,7 @@ endif
 
 C_ENV_FLAGS=-Isrc/c -I$(BIN)/tests/c
 CFLAGS=$(C_DIALECT_FLAGS) $(C_ENV_FLAGS) $(OPT_FLAGS) -m$(MACHINE) $(DEFINES)
-LINKFLAGS=-m$(MACHINE) -rdynamic
+LINKFLAGS=-m$(MACHINE) -rdynamic -lrt
 
 
 # The library part of ctrino, that is, everything but main.
@@ -135,7 +135,7 @@ $(C_MAIN_OBJS): $(BIN)/%.o: %.c $(C_MAIN_DEPS)
 $(C_MAIN_EXE): $(C_MAIN_OBJS) $(C_LIB_OBJS)
 	@mkdir -p $(shell dirname $@)
 	@echo Building $@
-	@$(CC) $(LINKFLAGS) $^ -o $@
+	@$(CC) $^ $(LINKFLAGS) -o $@
 
 
 # The library parts of the tests, that it, everything but the test main.
@@ -195,7 +195,7 @@ $(C_TEST_MAIN_OBJS): $(BIN)/%.o: %.c $(C_TEST_MAIN_DEPS)
 $(C_TEST_MAIN_EXE): $(C_TEST_MAIN_OBJS) $(C_TEST_LIB_OBJS) $(C_LIB_OBJS)
 	@mkdir -p $(shell dirname $@)
 	@echo Building $@
-	@$(CC) $(LINKFLAGS) $^ -o $@
+	@$(CC) $^ $(LINKFLAGS) -o $@
 
 
 EXEC_PREFIX=$(VALGRIND_CMD) $(EMULATOR_CMD)
