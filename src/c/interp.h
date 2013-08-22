@@ -17,7 +17,8 @@
   F(Invoke)                                                                    \
   F(Builtin)                                                                   \
   F(Slap)                                                                      \
-  F(Pop)
+  F(Pop)                                                                       \
+  F(LoadLocal)
 
 // The enum of all opcodes.
 typedef enum {
@@ -50,6 +51,8 @@ typedef struct {
   size_t high_water_mark;
   // The method space being built.
   value_t space;
+  // The map from local symbols to stack indexes.
+  value_t local_variable_map;
 } assembler_t;
 
 // Initializes an assembler.
@@ -81,5 +84,27 @@ value_t assembler_emit_builtin(assembler_t *assm, builtin_method_t builtin,
 
 // Emits a return instruction.
 value_t assembler_emit_return(assembler_t *assm);
+
+// Emits a local variable load of the local with the given index.
+value_t assembler_emit_load_local(assembler_t *assm, size_t index);
+
+// Adds a binding to the local variable map that records that the value of the
+// given symbol can be found at the given stack index. The symbol must not
+// already be bound so it's the caller's responsibility to ensure before calling
+// that it isn't.
+value_t assembler_bind_local_variable(assembler_t *assm, value_t symbol,
+    size_t index);
+
+// Removes the binding in the local variable map for the given symbol.
+value_t assembler_unbind_local_variable(assembler_t *assm, value_t symbol);
+
+// Returns true if this assembler currently has a binding for the given local
+// variable symbol.
+bool assembler_is_local_variable_bound(assembler_t *assm, value_t symbol);
+
+// Returns the stack index of the local variable with the given symbol. The
+// variable must be bound, it is the caller's responsibility to ensure that it
+// is before calling this.
+size_t assembler_get_local_variable_binding(assembler_t *assm, value_t symbol);
 
 #endif // _INTERP

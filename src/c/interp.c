@@ -129,6 +129,12 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         frame_push_value(&frame, value);
         break;
       }
+      case ocLoadLocal: {
+        size_t index = read_next_byte(&state);
+        value_t value = frame_get_local(&frame, index);
+        frame_push_value(&frame, value);
+        break;
+      }
       default:
         ERROR("Unexpected opcode %i", opcode);
         UNREACHABLE("unexpected opcode");
@@ -152,6 +158,7 @@ value_t run_code_block(runtime_t *runtime, value_t code) {
 
 value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t space) {
   TRY_SET(assm->value_pool, new_heap_id_hash_map(runtime, 16));
+  TRY_SET(assm->local_variable_map, new_heap_id_hash_map(runtime, 16));
   assm->runtime = runtime;
   assm->space = space;
   byte_buffer_init(&assm->code, NULL);
@@ -282,4 +289,35 @@ value_t assembler_emit_builtin(assembler_t *assm, builtin_method_t builtin,
 value_t assembler_emit_return(assembler_t *assm) {
   assembler_emit_opcode(assm, ocReturn);
   return success();
+}
+
+value_t assembler_emit_load_local(assembler_t *assm, size_t index) {
+  assembler_emit_opcode(assm, ocLoadLocal);
+  assembler_emit_byte(assm, index);
+  assembler_adjust_stack_height(assm, 1);
+  return success();
+}
+
+value_t assembler_bind_local_variable(assembler_t *assm, value_t symbol,
+    size_t index) {
+  CHECK_FALSE("symbol already bound",
+      has_id_hash_map_at(assm->local_variable_map, symbol));
+  return set_id_hash_map_at(assm->runtime, assm->local_variable_map, symbol,
+      new_integer(index));
+}
+
+value_t assembler_unbind_local_variable(assembler_t *assm, value_t symbol) {
+  value_t deleted = delete_id_hash_map_at(assm->runtime, assm->local_variable_map,
+      symbol);
+  CHECK_FALSE("delete local failed", is_signal(scNotFound, deleted));
+  return deleted;
+}
+
+bool assembler_is_local_variable_bound(assembler_t *assm, value_t symbol) {
+  return has_id_hash_map_at(assm->local_variable_map, symbol);
+}
+
+size_t assembler_get_local_variable_binding(assembler_t *assm, value_t symbol) {
+  CHECK_TRUE("no symbol binding", assembler_is_local_variable_bound(assm, symbol));
+  return get_integer_value(get_id_hash_map_at(assm->local_variable_map, symbol));
 }

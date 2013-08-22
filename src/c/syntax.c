@@ -289,10 +289,21 @@ UNCHECKED_ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, Symbol, sym
 UNCHECKED_ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, Value, value);
 UNCHECKED_ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, Body, body);
 
-value_t emit_local_declaration_ast(value_t value, assembler_t *assm) {
-  CHECK_FAMILY(ofLocalDeclarationAst, value);
-  UNREACHABLE("emitting local declaration");
-  return new_signal(scUnsupportedBehavior);
+value_t emit_local_declaration_ast(value_t self, assembler_t *assm) {
+  CHECK_FAMILY(ofLocalDeclarationAst, self);
+  size_t offset = assm->stack_height;
+  value_t value = get_local_declaration_ast_value(self);
+  TRY(emit_value(value, assm));
+  value_t symbol = get_local_declaration_ast_symbol(self);
+  CHECK_FAMILY(ofSymbolAst, symbol);
+  if (assembler_is_local_variable_bound(assm, symbol))
+    // We're trying to redefine an already defined symbol. That's not valid.
+    return new_signal(scInvalidSyntax);
+  TRY(assembler_bind_local_variable(assm, symbol, offset));
+  value_t body = get_local_declaration_ast_body(self);
+  TRY(emit_value(body, assm));
+  TRY(assembler_unbind_local_variable(assm, symbol));
+  return success();
 }
 
 value_t local_declaration_ast_validate(value_t value) {
@@ -338,10 +349,17 @@ NO_BUILTIN_METHODS(variable_ast);
 
 UNCHECKED_ACCESSORS_IMPL(VariableAst, variable_ast, Symbol, symbol);
 
-value_t emit_variable_ast(value_t value, assembler_t *assm) {
-  CHECK_FAMILY(ofVariableAst, value);
-  UNREACHABLE("emitting variable ast");
-  return new_signal(scUnsupportedBehavior);
+value_t emit_variable_ast(value_t self, assembler_t *assm) {
+  CHECK_FAMILY(ofVariableAst, self);
+  value_t symbol = get_variable_ast_symbol(self);
+  CHECK_FAMILY(ofSymbolAst, symbol);
+  if (!assembler_is_local_variable_bound(assm, symbol))
+    // We're trying to access a symbol that hasn't been defined here. That's
+    // not valid.
+    return new_signal(scInvalidSyntax);
+  size_t index = assembler_get_local_variable_binding(assm, symbol);
+  assembler_emit_load_local(assm, index);
+  return success();
 }
 
 value_t variable_ast_validate(value_t value) {

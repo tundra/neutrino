@@ -747,6 +747,11 @@ value_t get_id_hash_map_at(value_t map, value_t key) {
   }
 }
 
+bool has_id_hash_map_at(value_t map, value_t key) {
+  return !is_signal(scNotFound, get_id_hash_map_at(map, key));
+}
+
+
 value_t delete_id_hash_map_at(runtime_t *runtime, value_t map, value_t key) {
   CHECK_FAMILY(ofIdHashMap, map);
   TRY_DEF(hash_value, value_transient_identity_hash(key));

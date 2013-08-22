@@ -213,8 +213,8 @@ static value_t new_moved_object(value_t target) {
   F(LiteralAst,         literal_ast,            _,  _,  X,  X,  _,  _)         \
   F(LocalDeclarationAst, local_declaration_ast, _,  _,  X,  X,  _,  _)         \
   F(SequenceAst,        sequence_ast,           _,  _,  X,  X,  _,  _)         \
-  F(VariableAst,         variable_ast,          _,  _,  X,  X,  _,  _)         \
-  F(SymbolAst,           symbol_ast,            _,  _,  X,  X,  _,  _)
+  F(VariableAst,        variable_ast,           _,  _,  X,  X,  _,  _)         \
+  F(SymbolAst,          symbol_ast,             _,  _,  X,  X,  _,  _)
 
 // Enumerates the compact object species.
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
@@ -603,6 +603,9 @@ value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value);
 // Returns the binding for the given key or, if no binding is present, an
 // appropriate signal.
 value_t get_id_hash_map_at(value_t map, value_t key);
+
+// Returns true iff the given map has a binding for the given key.
+bool has_id_hash_map_at(value_t map, value_t key);
 
 // Removes the mapping for the given key from the map if it exists. Returns
 // a NotFound signal if that is the case, otherwise a non-signal.
