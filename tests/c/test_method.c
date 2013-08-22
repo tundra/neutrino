@@ -221,7 +221,7 @@ TEST(method, make_invocation_record) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, invocation_record_with_stack) {
+TEST(method, record_with_stack) {
   CREATE_RUNTIME();
 
   value_t stack = new_heap_stack(runtime, 16);

@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#define __USE_POSIX199309
+#include <time.h>
 
 // Data associated with a particular test run.
 typedef struct {
@@ -27,13 +29,27 @@ typedef struct {
 #define ENUMERATE_TEST(suite, name) run_unit_test(#suite, #name, data, test_##suite##_##name)
 #define DECLARE_TEST(suite, name) extern TEST(suite, name)
 
+// Returns the current time since epoch counted in seconds.
+static double get_current_time_seconds() {
+  struct timespec spec;
+  clock_gettime(CLOCK_REALTIME, &spec);
+  return spec.tv_sec + (spec.tv_nsec / 1000000000.0);
+}
 
 // Callback invoked for each test case by the test enumerator.
 void run_unit_test(const char *suite, const char *name, unit_test_data_t *data,
     void (unit_test)()) {
+  static const size_t kTimeColumn = 32;
   if (!data->suite || (strcmp(suite, data->suite) == 0)) {
-    printf("- %s/%s\n", suite, name);
+    printf("- %s/%s", suite, name);
+    fflush(stdout);
+    double start = get_current_time_seconds();
     unit_test();
+    double end = get_current_time_seconds();
+    for (size_t i = strlen(suite) + strlen(name); i < kTimeColumn; i++)
+      putc(' ', stdout);
+    printf(" (%.3fs)\n", (end - start));
+    fflush(stdout);
   }
 }
 

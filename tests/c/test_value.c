@@ -420,7 +420,7 @@ static void assert_strings_present(size_t skip_first, gc_safe_t **maps,
   }
 }
 
-TEST(value, rehash) {
+TEST(value, rehash_map) {
   CREATE_RUNTIME();
 
   // Create and retain a number of maps.
