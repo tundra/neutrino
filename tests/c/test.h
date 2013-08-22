@@ -121,9 +121,11 @@ ASSERT_CLASS(signal_cause_t, scCause, EXPR, get_signal_cause)
 
 #define ASSERT_CLASS(class_t, cExpected, EXPR, get_class) do {                 \
   class_t __class__ = get_class(EXPR);                                         \
-  if (__class__ != cExpected)                                                  \
-    fail(__FILE__, __LINE__, "Assertion failed: %s(%s) == %s.\n  Found: %i",   \
-        #get_class, #EXPR, #cExpected, __class__);                             \
+  if (__class__ != cExpected) {                                                \
+    const char *__class_name__ = get_class##_name(__class__);                  \
+    fail(__FILE__, __LINE__, "Assertion failed: %s(%s) == %s.\n  Found: %s",   \
+        #get_class, #EXPR, #cExpected, __class_name__);                        \
+  }                                                                            \
 } while (false)
 
 // Fails if the given value is a signal.
@@ -131,7 +133,7 @@ ASSERT_CLASS(signal_cause_t, scCause, EXPR, get_signal_cause)
   value_t __value__ = (EXPR);                                                  \
   if (get_value_domain(__value__) == vdSignal) {                               \
     fail(__FILE__, __LINE__, "Assertion failed: is_signal(%s).\n  Was signal: %s",\
-        #EXPR, signal_cause_name(get_signal_cause(__value__)));                \
+        #EXPR, get_signal_cause_name(get_signal_cause(__value__)));            \
   }                                                                            \
 } while (false)
 

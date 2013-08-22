@@ -26,6 +26,9 @@ typedef enum {
   vdMovedObject = 3
 } value_domain_t;
 
+// Returns the string name of the given domain.
+const char *get_value_domain_name(value_domain_t domain);
+
 // Invokes the given macro for each signal cause.
 #define ENUM_SIGNAL_CAUSES(F)                                                  \
   F(HeapExhausted)                                                             \
@@ -135,7 +138,7 @@ static value_t success() {
 // --- S i g n a l ---
 
 // Returns the string name of a signal cause.
-const char *signal_cause_name(signal_cause_t cause);
+const char *get_signal_cause_name(signal_cause_t cause);
 
 // Creates a new signal with the specified cause.
 static value_t new_signal(signal_cause_t cause) {
@@ -247,6 +250,9 @@ typedef enum {
   ENUM_OBJECT_FAMILIES(__DECLARE_OBJECT_FAMILY_ENUM__)
   #undef __DECLARE_OBJECT_FAMILY_ENUM__
 } object_family_t;
+
+// Returns the string name of the given family.
+const char *get_object_family_name(object_family_t family);
 
 // Number of bytes in an object header.
 #define kObjectHeaderSize kValueSize
