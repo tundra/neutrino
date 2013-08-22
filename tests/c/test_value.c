@@ -471,7 +471,7 @@ TEST(value, rehash_map) {
   DISPOSE_RUNTIME();
 }
 
-TEST(value, delete) {
+TEST(value, map_delete) {
   CREATE_RUNTIME();
 
   // Bit set to keep track of which entries are set in the map.
