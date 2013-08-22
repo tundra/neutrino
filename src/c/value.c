@@ -617,12 +617,14 @@ typedef enum {
 // Finds the appropriate entry to store a mapping for the given key with the
 // given hash. If there is already a binding for the key then this function
 // stores the index in the index out parameter. If there isn't and a non-null
-// was_created parameter is passed then a free index is stored in the out
-// parameter and true is stored in was_created. Otherwise false is returned.
+// create_mode parameter is passed then a free index is stored in the out
+// parameter and the mode of creation is stored in create_mode. Otherwise false
+// is returned.
 static bool find_id_hash_map_entry(value_t map, value_t key, size_t hash,
     value_t **entry_out, id_hash_map_entry_create_mode_t *create_mode) {
   CHECK_FAMILY(ofIdHashMap, map);
-  CHECK_TRUE("was_created not initialized", (create_mode == NULL) || (*create_mode == cmNotCreated));
+  CHECK_TRUE("was_created not initialized", (create_mode == NULL) ||
+      (*create_mode == cmNotCreated));
   size_t capacity = get_id_hash_map_capacity(map);
   CHECK_TRUE("map overfull", get_id_hash_map_size(map) < capacity);
   size_t current_index = hash % capacity;
@@ -687,7 +689,8 @@ value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value) {
   // Locate where the new entry goes in the entry array.
   value_t *entry = NULL;
   id_hash_map_entry_create_mode_t create_mode = cmNotCreated;
-  if (!find_id_hash_map_entry(map, key, hash, &entry, is_full ? NULL : &create_mode)) {
+  if (!find_id_hash_map_entry(map, key, hash, &entry,
+      is_full ? NULL : &create_mode)) {
     // The only way this can return false is if the map is full (since if
     // was_created was non-null we would have created a new entry) and the
     // key couldn't be found. Report this.
@@ -727,6 +730,8 @@ value_t delete_id_hash_map_at(runtime_t *runtime, value_t map, value_t key) {
   if (find_id_hash_map_entry(map, key, hash, &entry, NULL)) {
     // We found the key; mark its entry as deleted.
     delete_id_hash_map_entry(runtime, entry);
+    // We decrement the map size but keep the occupied size the same because
+    // a deleted entry counts as occupied.
     set_id_hash_map_size(map, get_id_hash_map_size(map) - 1);
     return success();
   } else {
