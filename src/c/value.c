@@ -549,6 +549,7 @@ NO_BUILTIN_METHODS(id_hash_map);
 CHECKED_ACCESSORS_IMPL(IdHashMap, id_hash_map, Array, EntryArray, entry_array);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Size, size);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Capacity, capacity);
+INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, OccupiedCount, occupied_count);
 
 // Returns a pointer to the start of the index'th entry in the given map.
 static value_t *get_id_hash_map_entry(value_t map, size_t index) {
@@ -558,6 +559,12 @@ static value_t *get_id_hash_map_entry(value_t map, size_t index) {
 }
 
 // Returns true if the given map entry is not storing a binding.
+static bool is_id_hash_map_entry_deleted(value_t *entry) {
+  return is_nothing(entry[kIdHashMapEntryKeyOffset]);
+}
+
+// Returns true if the given map entry is not storing a binding. Note that a
+// deleted entry is counted as being empty.
 static bool is_id_hash_map_entry_empty(value_t *entry) {
   return !in_domain(vdInteger, entry[kIdHashMapEntryHashOffset]);
 }
@@ -588,31 +595,68 @@ static void set_id_hash_map_entry(value_t *entry, value_t key, size_t hash,
   entry[kIdHashMapEntryValueOffset] = value;
 }
 
+// Sets the full contents of a map entry such that it can be recognized as
+// deleted.
+static void delete_id_hash_map_entry(runtime_t *runtime, value_t *entry) {
+  value_t null = runtime_null(runtime);
+  entry[kIdHashMapEntryKeyOffset] = runtime_nothing(runtime);
+  entry[kIdHashMapEntryHashOffset] = null;
+  entry[kIdHashMapEntryValueOffset] = null;
+}
+
+// Identifies if and how a new hash map entry was allocated.
+typedef enum {
+  // A previously unoccupied entry (empty and not deleted) was claimed.
+  cmUnoccupied,
+  // A deleted entry was reused.
+  cmDeleted,
+  // No new entry was created.
+  cmNotCreated
+} id_hash_map_entry_create_mode_t;
+
 // Finds the appropriate entry to store a mapping for the given key with the
 // given hash. If there is already a binding for the key then this function
 // stores the index in the index out parameter. If there isn't and a non-null
-// was_created parameter is passed then a free index is stored in the out
-// parameter and true is stored in was_created. Otherwise false is returned.
+// create_mode parameter is passed then a free index is stored in the out
+// parameter and the mode of creation is stored in create_mode. Otherwise false
+// is returned.
 static bool find_id_hash_map_entry(value_t map, value_t key, size_t hash,
-    value_t **entry_out, bool *was_created) {
+    value_t **entry_out, id_hash_map_entry_create_mode_t *create_mode) {
   CHECK_FAMILY(ofIdHashMap, map);
-  CHECK_TRUE("was_created not initialized", (was_created == NULL) || !*was_created);
+  CHECK_TRUE("was_created not initialized", (create_mode == NULL) ||
+      (*create_mode == cmNotCreated));
   size_t capacity = get_id_hash_map_capacity(map);
   CHECK_TRUE("map overfull", get_id_hash_map_size(map) < capacity);
   size_t current_index = hash % capacity;
   // Loop around until we find the key or an empty entry. Since we know the
   // capacity is at least one greater than the size there must be at least
   // one empty entry so we know the loop will terminate.
+  value_t *first_deleted_entry = NULL;
   while (true) {
     value_t *entry = get_id_hash_map_entry(map, current_index);
     if (is_id_hash_map_entry_empty(entry)) {
-      if (was_created == NULL) {
+      if (is_id_hash_map_entry_deleted(entry)) {
+        // If this was the first deleted entry we've seen we record it such that
+        // we can use that to create the entry if we don't find a match.
+        if (first_deleted_entry == NULL)
+          first_deleted_entry = entry;
+        // Then we just skip on.
+        goto keep_going;
+      } else if (create_mode == NULL) {
         // Report that we didn't find the entry.
         return false;
       } else {
         // Found an empty entry which the caller wants us to return.
-        *entry_out = entry;
-        *was_created = true;
+        if (first_deleted_entry == NULL) {
+          // We didn't see any deleted entries along the way so return the next
+          // free one.
+          *entry_out = entry;
+          *create_mode = cmUnoccupied;
+        } else {
+          // We did se a deleted entry which we can now reuse.
+          *entry_out = first_deleted_entry;
+          *create_mode = cmDeleted;
+        }
         return true;
       }
     }
@@ -625,6 +669,7 @@ static bool find_id_hash_map_entry(value_t map, value_t key, size_t hash,
         return true;
       }
     }
+   keep_going:
     // Didn't find it here so try the next one.
     current_index = (current_index + 1) % capacity;
   }
@@ -634,16 +679,18 @@ static bool find_id_hash_map_entry(value_t map, value_t key, size_t hash,
 
 value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value) {
   CHECK_FAMILY(ofIdHashMap, map);
+  size_t occupied_count = get_id_hash_map_occupied_count(map);
   size_t size = get_id_hash_map_size(map);
   size_t capacity = get_id_hash_map_capacity(map);
-  bool is_full = (size == (capacity - 1));
+  bool is_full = (occupied_count == (capacity - 1));
   // Calculate the hash.
   TRY_DEF(hash_value, value_transient_identity_hash(key));
   size_t hash = get_integer_value(hash_value);
   // Locate where the new entry goes in the entry array.
   value_t *entry = NULL;
-  bool was_created = false;
-  if (!find_id_hash_map_entry(map, key, hash, &entry, is_full ? NULL : &was_created)) {
+  id_hash_map_entry_create_mode_t create_mode = cmNotCreated;
+  if (!find_id_hash_map_entry(map, key, hash, &entry,
+      is_full ? NULL : &create_mode)) {
     // The only way this can return false is if the map is full (since if
     // was_created was non-null we would have created a new entry) and the
     // key couldn't be found. Report this.
@@ -651,20 +698,42 @@ value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value) {
   }
   set_id_hash_map_entry(entry, key, hash, value);
   // Only increment the size if we created a new entry.
-  if (was_created)
+  if (create_mode != cmNotCreated) {
+    // A new mapping was created.
     set_id_hash_map_size(map, size + 1);
+    if (create_mode == cmUnoccupied)
+      // We claimed a new previously unoccupied entry so increment the occupied
+      // count.
+      set_id_hash_map_occupied_count(map, occupied_count + 1);
+  }
   return success();
 }
 
 value_t get_id_hash_map_at(value_t map, value_t key) {
   CHECK_FAMILY(ofIdHashMap, map);
-  // We need to handle this as a special case otherwise the find loop won't
-  // terminate.
   TRY_DEF(hash_value, value_transient_identity_hash(key));
   size_t hash = get_integer_value(hash_value);
   value_t *entry = NULL;
   if (find_id_hash_map_entry(map, key, hash, &entry, NULL)) {
     return get_id_hash_map_entry_value(entry);
+  } else {
+    return new_signal(scNotFound);
+  }
+}
+
+value_t delete_id_hash_map_at(runtime_t *runtime, value_t map, value_t key) {
+  CHECK_FAMILY(ofIdHashMap, map);
+  TRY_DEF(hash_value, value_transient_identity_hash(key));
+  // Try to find the key in the map.
+  size_t hash = get_integer_value(hash_value);
+  value_t *entry = NULL;
+  if (find_id_hash_map_entry(map, key, hash, &entry, NULL)) {
+    // We found the key; mark its entry as deleted.
+    delete_id_hash_map_entry(runtime, entry);
+    // We decrement the map size but keep the occupied size the same because
+    // a deleted entry counts as occupied.
+    set_id_hash_map_size(map, get_id_hash_map_size(map) - 1);
+    return success();
   } else {
     return new_signal(scNotFound);
   }
@@ -698,6 +767,7 @@ void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_object,
   }
   // Reset the map's fields. It is now empty.
   set_id_hash_map_size(new_object, 0);
+  set_id_hash_map_occupied_count(new_object, 0);
   // Fake an iterator that scans over the old array.
   id_hash_map_iter_t iter;
   iter.entries = old_entries;
@@ -729,7 +799,8 @@ bool id_hash_map_iter_advance(id_hash_map_iter_t *iter) {
     value_t *entry = iter->entries + (iter->cursor * kIdHashMapEntryFieldCount);
     iter->cursor++;
     if (!is_id_hash_map_entry_empty(entry)) {
-      // Found one, store it in current and return success.
+      // Found one, store it in current and return success. Since deleted
+      // entries count as empty this automatically skips over those too.
       iter->current = entry;
       return true;
     }
@@ -809,6 +880,22 @@ void null_print_on(value_t value, string_buffer_t *buf) {
 
 void null_print_atomic_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, "null");
+}
+
+
+// --- N u l l ---
+
+value_t nothing_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofNothing, value);
+  return success();
+}
+
+void nothing_print_on(value_t value, string_buffer_t *buf) {
+  nothing_print_atomic_on(value, buf);
+}
+
+void nothing_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<nothing>");
 }
 
 

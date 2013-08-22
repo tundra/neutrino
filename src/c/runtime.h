@@ -32,6 +32,7 @@ typedef struct {
   value_t syntax_factories;
   // Singletons
   value_t null;
+  value_t nothing;
   value_t thrue;
   value_t fahlse;
   value_t empty_array;
@@ -71,6 +72,11 @@ value_t runtime_dispose(runtime_t *runtime);
 
 // Returns this runtime's null value.
 value_t runtime_null(runtime_t *runtime);
+
+// Returns this runtime's nothing value. The nothing value can be used
+// internally to signify "no value" in situations where null, which would
+// otherwise usually be used for that, is considered to count as a value.
+value_t runtime_nothing(runtime_t *runtime);
 
 // Returns either this runtime's true or false value, depending on 'value'.
 value_t runtime_bool(runtime_t *runtime, bool value);
