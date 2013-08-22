@@ -26,3 +26,32 @@ TEST(test, variant) {
 
   DISPOSE_RUNTIME();
 }
+
+TEST(test, pseudo_random) {
+  pseudo_random_t rand;
+  pseudo_random_init(&rand, 123456);
+  static const size_t kBucketCount = 1027;
+  size_t buckets[1027];
+  for (size_t i = 0; i < kBucketCount; i++)
+    buckets[i] = 0;
+  size_t tries = 8388608;
+  for (size_t i = 0; i < tries; i++) {
+    size_t index = pseudo_random_next(&rand, kBucketCount);
+    ASSERT_TRUE(index < kBucketCount);
+    buckets[index]++;
+  }
+  double mid = tries / kBucketCount;
+  size_t min = tries;
+  size_t max = 0;
+  for (size_t i = 0; i < kBucketCount; i++) {
+    size_t bucket = buckets[i];
+    if (bucket < min)
+      min = bucket;
+    if (bucket > max)
+      max = bucket;
+  }
+  double min_dev = (mid - min) / mid;
+  double max_dev = (max - mid) / mid;
+  ASSERT_TRUE(min_dev <= 0.05);
+  ASSERT_TRUE(max_dev <= 0.05);
+}

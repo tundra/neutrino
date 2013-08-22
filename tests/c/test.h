@@ -200,3 +200,20 @@ typedef struct variant_t {
 // Given a variant, returns a value allocated in the given runtime (if necessary)
 // with the corresponding value.
 value_t variant_to_value(runtime_t *runtime, variant_t variant);
+
+// Data for multiply-with-carry pseudo-random generator.
+// See See http://www.ms.uky.edu/~mai/RandomNumber.
+typedef struct {
+  uint32_t low;
+  uint32_t high;
+} pseudo_random_t;
+
+// Initializes a pseudo-random generator with the given seed.
+void pseudo_random_init(pseudo_random_t *random, uint32_t seed);
+
+// Returns the next pseudo-random uint32.
+uint32_t pseudo_random_next_uint32(pseudo_random_t *random);
+
+// Returns the next pseudo-random number greater than 0 and less than the given
+// max.
+uint32_t pseudo_random_next(pseudo_random_t *random, uint32_t max);

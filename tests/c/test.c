@@ -199,3 +199,28 @@ value_t variant_to_value(runtime_t *runtime, variant_t variant) {
       return new_signal(scWat);
   }
 }
+
+
+// --- R a n d o m ---
+
+void pseudo_random_init(pseudo_random_t *random, uint32_t seed) {
+  random->low = 362436069 + seed;
+  random->high = 521288629 - seed;
+}
+
+uint32_t pseudo_random_next_uint32(pseudo_random_t *random) {
+  uint32_t low = random->low;
+  uint32_t high = random->high;
+  uint32_t new_high = 23163 * (high & 0xFFFF) + (high >> 16);
+  uint32_t new_low = 22965 * (low & 0xFFFF) + (low >> 16);
+  random->low = new_low;
+  random->high = new_high;
+  return ((new_high & 0xFFFF) << 16) | (low & 0xFFFF);
+}
+
+uint32_t pseudo_random_next(pseudo_random_t *random, uint32_t max) {
+  // NOTE: when the max is not a divisor in 2^32 this gives a small bias
+  //   towards the smaller values in the range. For testing that's probably not
+  //   worth worrying about.
+  return pseudo_random_next_uint32(random) % max;
+}
