@@ -474,7 +474,55 @@ TEST(value, rehash_map) {
 TEST(value, delete) {
   CREATE_RUNTIME();
 
+  // Bit set to keep track of which entries are set in the map.
+  static const size_t kRange = 257;
+  bit_vector_t bits;
+  bit_vector_init(&bits, kRange, false);
+  size_t bits_set = 0;
 
+  pseudo_random_t rand;
+  pseudo_random_init(&rand, 35234);
+
+  value_t map = new_heap_id_hash_map(runtime, kRange + 5);
+  for (size_t t = 0; t <= 4096; t++) {
+    ASSERT_EQ(bits_set, get_id_hash_map_size(map));
+    // Pick a random element to change.
+    size_t index = pseudo_random_next(&rand, kRange);
+    value_t key = new_integer(index);
+    if (bit_vector_get_at(&bits, index)) {
+      ASSERT_SUCCESS(delete_id_hash_map_at(runtime, map, key));
+      bit_vector_set_at(&bits, index, false);
+      bits_set--;
+    } else {
+      ASSERT_SIGNAL(scNotFound, delete_id_hash_map_at(runtime, map, key));
+      ASSERT_SUCCESS(try_set_id_hash_map_at(map, key, key));
+      bit_vector_set_at(&bits, index, true);
+      bits_set++;
+    }
+    if ((t % 128) == 0) {
+      // Check that getting the values directly works.
+      for (size_t i = 0; i < kRange; i++) {
+        value_t key = new_integer(i);
+        bool in_map = !is_signal(scNotFound, get_id_hash_map_at(map, key));
+        ASSERT_EQ(bit_vector_get_at(&bits, i), in_map);
+      }
+      // Check that iteration works.
+      id_hash_map_iter_t iter;
+      id_hash_map_iter_init(&iter, map);
+      size_t seen = 0;
+      while (id_hash_map_iter_advance(&iter)) {
+        value_t key;
+        value_t value;
+        id_hash_map_iter_get_current(&iter, &key, &value);
+        ASSERT_TRUE(bit_vector_get_at(&bits, get_integer_value(key)));
+        seen++;
+      }
+      ASSERT_EQ(get_id_hash_map_size(map), seen);
+      ASSERT_EQ(bits_set, seen);
+    }
+  }
+
+  bit_vector_dispose(&bits);
 
   DISPOSE_RUNTIME();
 }
