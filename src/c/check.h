@@ -58,9 +58,11 @@ IF_CHECKS_ENABLED(CHECK_EQ(M, E, false))
 // to use this directly.
 #define __CHECK_CLASS__(class_t, cExpected, EXPR, get_class) do {              \
   class_t __class__ = get_class(EXPR);                                         \
-  if (__class__ != cExpected)                                                  \
-    check_fail(__FILE__, __LINE__, "Check failed: %s(%s) == %s.\n  Found: %i", \
-        #get_class, #EXPR, #cExpected, __class__);                             \
+  if (__class__ != cExpected) {                                                \
+    const char *__class_name__ = get_class##_name(__class__);                  \
+    check_fail(__FILE__, __LINE__, "Check failed: %s(%s) == %s.\n  Found: %s", \
+        #get_class, #EXPR, #cExpected, __class_name__);                        \
+  }                                                                            \
 } while (false)
 
 // Check that fails unless the value is in the specified domain.

@@ -211,7 +211,10 @@ static value_t new_moved_object(value_t target) {
   F(ArrayAst,           array_ast,              _,  _,  X,  X,  _,  _)         \
   F(InvocationAst,      invocation_ast,         _,  _,  X,  X,  _,  _)         \
   F(LiteralAst,         literal_ast,            _,  _,  X,  X,  _,  _)         \
-  F(SequenceAst,        sequence_ast,           _,  _,  X,  X,  _,  _)
+  F(LocalDeclarationAst, local_declaration_ast, _,  _,  X,  X,  _,  _)         \
+  F(SequenceAst,        sequence_ast,           _,  _,  X,  X,  _,  _)         \
+  F(VariableAst,        variable_ast,           _,  _,  X,  X,  _,  _)         \
+  F(SymbolAst,          symbol_ast,             _,  _,  X,  X,  _,  _)
 
 // Enumerates the compact object species.
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
@@ -379,6 +382,9 @@ typedef enum {
 ENUM_SPECIES_DIVISIONS(DECLARE_SPECIES_DIVISION_ENUM)
 #undef DECLARE_SPECIES_DIVISION_ENUM
 } species_division_t;
+
+// Returns the string name of the given division.
+const char *get_species_division_name(species_division_t division);
 
 // The size of the species header, the part that's the same for all species.
 #define kSpeciesHeaderSize OBJECT_SIZE(3)
@@ -600,6 +606,9 @@ value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value);
 // Returns the binding for the given key or, if no binding is present, an
 // appropriate signal.
 value_t get_id_hash_map_at(value_t map, value_t key);
+
+// Returns true iff the given map has a binding for the given key.
+bool has_id_hash_map_at(value_t map, value_t key);
 
 // Removes the mapping for the given key from the map if it exists. Returns
 // a NotFound signal if that is the case, otherwise a non-signal.

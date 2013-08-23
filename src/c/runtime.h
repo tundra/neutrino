@@ -12,13 +12,15 @@
 // Enumerates the string table strings that will be stored as easily accessible
 // roots.
 #define ENUM_STRING_TABLE(F)                                                   \
-  F(value, "value")                                                            \
-  F(elements, "elements")                                                      \
-  F(arguments, "arguments")                                                    \
-  F(tag, "tag")                                                                \
-  F(this, "this")                                                              \
-  F(name, "name")                                                              \
-  F(values, "values")
+  F(arguments,          "arguments")                                           \
+  F(body,               "body")                                                \
+  F(elements,           "elements")                                            \
+  F(name,               "name")                                                \
+  F(symbol,             "symbol")                                              \
+  F(tag,                "tag")                                                 \
+  F(this,               "this")                                                \
+  F(value,              "value")                                               \
+  F(values,             "values")
 
 // A collection of all the root objects.
 typedef struct {

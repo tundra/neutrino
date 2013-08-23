@@ -33,6 +33,8 @@ EXPECT: true
 INPUT: false
 EXPECT: false
 
+# Simple built-in methods
+
 INPUT: 1 + 1
 EXPECT: 2
 
@@ -44,6 +46,8 @@ EXPECT: 3
 
 INPUT: "(" + "foo" + ", " + "bar" + ")"
 EXPECT: "(foo, bar)"
+
+# Sequences
 
 INPUT: {}
 EXPECT: null

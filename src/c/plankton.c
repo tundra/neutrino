@@ -337,12 +337,15 @@ static value_t string_deserialize(deserialize_state_t *state) {
   return result;
 }
 
+// Grabs and returns the next object index.
+static size_t acquire_object_index(deserialize_state_t *state) {
+  return state->object_offset++;
+}
+
 static value_t object_deserialize(deserialize_state_t *state) {
+  size_t offset = acquire_object_index(state);
   // Read the header before creating the instance.
   TRY_DEF(header, value_deserialize(state));
-  // Assign an offset to this object.
-  size_t offset = state->object_offset;
-  state->object_offset++;
   TRY_DEF(result, new_object_with_type(state->runtime, header));
   TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
       result));
@@ -353,9 +356,8 @@ static value_t object_deserialize(deserialize_state_t *state) {
 
 static value_t environment_deserialize(deserialize_state_t *state) {
   TRY_DEF(key, value_deserialize(state));
+  size_t offset = acquire_object_index(state);
   TRY_DEF(result, value_mapping_apply(state->access, key, state->runtime));
-  size_t offset = state->object_offset;
-  state->object_offset++;
   TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
       result));
   return result;

@@ -279,3 +279,10 @@ value_t frame_get_argument(frame_t *frame, size_t index) {
   size_t offset = stack_pointer - index - 1;
   return elements[offset];
 }
+
+value_t frame_get_local(frame_t *frame, size_t index) {
+  size_t location = frame->frame_pointer + index;
+  SIG_CHECK_TRUE("local not defined yet", scOutOfBounds,
+      location < frame->stack_pointer);
+  return *access_frame_field(frame, location);
+}

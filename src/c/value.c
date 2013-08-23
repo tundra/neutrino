@@ -44,6 +44,16 @@ const char *get_object_family_name(object_family_t family) {
   }
 }
 
+const char *get_species_division_name(species_division_t division) {
+  switch (division) {
+#define __GEN_CASE__(Name, name) case sd##Name: return #Name;
+    ENUM_SPECIES_DIVISIONS(__GEN_CASE__)
+#undef __GEN_CASE__
+    default:
+      return "invalid division";
+  }
+}
+
 
 // --- I n t e g e r ---
 
@@ -746,6 +756,11 @@ value_t get_id_hash_map_at(value_t map, value_t key) {
     return new_signal(scNotFound);
   }
 }
+
+bool has_id_hash_map_at(value_t map, value_t key) {
+  return !is_signal(scNotFound, get_id_hash_map_at(map, key));
+}
+
 
 value_t delete_id_hash_map_at(runtime_t *runtime, value_t map, value_t key) {
   CHECK_FAMILY(ofIdHashMap, map);
