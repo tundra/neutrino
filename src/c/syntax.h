@@ -77,7 +77,7 @@ ACCESSORS_DECL(sequence_ast, values);
 
 // --- L o c a l   d e c l a r a t i o n ---
 
-static const size_t kLocalDeclarationAstSize = OBJECT_SIZE(4);
+static const size_t kLocalDeclarationAstSize = OBJECT_SIZE(3);
 static const size_t kLocalDeclarationAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kLocalDeclarationAstValueOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kLocalDeclarationAstBodyOffset = OBJECT_FIELD_OFFSET(2);

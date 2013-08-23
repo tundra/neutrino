@@ -166,9 +166,9 @@ class LocalDeclaration(object):
   @plankton.field("body")
   def __init__(self, name=None, value=None, body=None, symbol=None):
     self.name = name
+    self.symbol = symbol
     self.value = value
     self.body = body
-    self.symbol = symbol
 
   def accept(self, visitor):
     return visitor.visit_local_declaration(self)

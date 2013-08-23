@@ -383,6 +383,9 @@ ENUM_SPECIES_DIVISIONS(DECLARE_SPECIES_DIVISION_ENUM)
 #undef DECLARE_SPECIES_DIVISION_ENUM
 } species_division_t;
 
+// Returns the string name of the given division.
+const char *get_species_division_name(species_division_t division);
+
 // The size of the species header, the part that's the same for all species.
 #define kSpeciesHeaderSize OBJECT_SIZE(3)
 

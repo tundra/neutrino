@@ -44,6 +44,16 @@ const char *get_object_family_name(object_family_t family) {
   }
 }
 
+const char *get_species_division_name(species_division_t division) {
+  switch (division) {
+#define __GEN_CASE__(Name, name) case sd##Name: return #Name;
+    ENUM_SPECIES_DIVISIONS(__GEN_CASE__)
+#undef __GEN_CASE__
+    default:
+      return "invalid division";
+  }
+}
+
 
 // --- I n t e g e r ---
 
