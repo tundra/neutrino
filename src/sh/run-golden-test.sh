@@ -37,22 +37,37 @@ rm -f "$OUTPUT_FILE"
 
 INPUT=
 EXPECT=
+I=0
 while read LINE; do
   # Strip end-of-line comments.
   LINE=$(echo "$LINE" | sed -e s/^\\s*#.*$//g)
-  # Check if this is an input line.
   if echo "$LINE" | grep INPUT: > /dev/null; then
+    # Found an input clause.
     INPUT=$(echo "$LINE" | sed -e s/^INPUT:\\s*//g)
-  fi
-  # Check if this is an expect line.
-  if echo "$LINE" | grep EXPECT: > /dev/null; then
+  elif echo "$LINE" | grep EXPECT: > /dev/null; then
+    # Found an expect clause.
     EXPECT=$(echo "$LINE" | sed -e s/^EXPECT:\\s*//g)
+  elif [ -n "$INPUT" -a ! -n "$EXPECT" ]; then
+    # There's already some input but no expect clause append to the input.
+    INPUT="$INPUT $LINE"
+  elif [ -n "$LINE" ]; then
+    # Any nonempty line that didn't match above is an error; report it.
+    printf "Unexpected line '%s'\\n" "$LINE"
+    exit 1
   fi
   if [ -n "$INPUT" -a -n "$EXPECT" ]; then
+    # Print a progress marker from 0-9 with a space between blocks of 10.
+    echo -n $I
+    I=$((I + 1))
+    if [ "$I" -eq "10" ]; then
+      I=0
+      echo -n " "
+    fi
     # If we now have both an INPUT and an EXPECT line run the test.
     FOUND=$(./src/python/neutrino/main.py --expression "$INPUT" | $EXECUTABLE - 2>&1)
     if [ "$EXPECT" != "$FOUND" ]; then
       # Test failed. Display an error.
+      echo
       printf "Error on input '%s':\\n" "$INPUT"
       printf "  Expected: '%s'\\n" "$EXPECT"
       printf "  Found: '%s'\\n" "$FOUND"
@@ -67,4 +82,5 @@ done < "$TEST_FILE"
 # We completed successfully so we can signal success by touching the output
 # file (as well as implicitly exiting 0).
 
+echo
 touch "$OUTPUT_FILE"
