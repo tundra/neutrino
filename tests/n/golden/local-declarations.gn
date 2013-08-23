@@ -1,0 +1,13 @@
+# Local declarations
+
+INPUT: {def $x := 4; $x;}
+EXPECT: 4
+
+INPUT: {def $x := 4; $x + $x;}
+EXPECT: 8
+
+INPUT: {def $x := 6; def $y := 8; $y - $x;}
+EXPECT: 2
+
+INPUT: {def $x := 7; $x; def $y := 9; $x;}
+EXPECT: 7

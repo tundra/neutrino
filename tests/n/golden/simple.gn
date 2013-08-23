@@ -63,8 +63,3 @@ EXPECT: 8
 
 INPUT: {8; {7; {6; {5; 4;} 3;} 2;} 1;}
 EXPECT: 1
-
-# Local definitions
-
-INPUT: {def $x := 4; $x;}
-EXPECT: 4
