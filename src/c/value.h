@@ -69,7 +69,8 @@ typedef struct {
 // Data for signals.
 typedef struct {
   value_domain_t domain : 3;
-  signal_cause_t cause;
+  signal_cause_t cause : 8;
+  uint32_t details;
 } signal_value_t;
 
 // The data type used to represent a raw encoded value.
@@ -132,23 +133,6 @@ static int64_t get_integer_value(value_t value) {
 // unspecific success.
 static value_t success() {
   return new_integer(0);
-}
-
-
-// --- S i g n a l ---
-
-// Returns the string name of a signal cause.
-const char *get_signal_cause_name(signal_cause_t cause);
-
-// Creates a new signal with the specified cause.
-static value_t new_signal(signal_cause_t cause) {
-  return (value_t) {.as_signal={vdSignal, cause}};
-}
-
-// Returns the cause of a signal.
-static signal_cause_t get_signal_cause(value_t value) {
-  CHECK_DOMAIN(vdSignal, value);
-  return value.as_signal.cause;
 }
 
 

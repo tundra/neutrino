@@ -23,16 +23,6 @@ const char *get_value_domain_name(value_domain_t domain) {
   }
 }
 
-const char *get_signal_cause_name(signal_cause_t cause) {
-  switch (cause) {
-#define __GEN_CASE__(Name) case sc##Name: return #Name;
-    ENUM_SIGNAL_CAUSES(__GEN_CASE__)
-#undef __GEN_CASE__
-    default:
-      return "invalid signal";
-  }
-}
-
 const char *get_object_family_name(object_family_t family) {
   switch (family) {
 #define __GEN_CASE__(Family, family, CMP, CID, CNT, SUR, NOL, FIX)             \
