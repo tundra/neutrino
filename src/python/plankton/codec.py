@@ -304,6 +304,7 @@ class DataInputStream(object):
     self.object_index[index] = value
     return value
 
+  # Acquires the next object index.
   def grab_index(self):
     result = self.object_offset
     self.object_offset += 1
