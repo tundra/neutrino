@@ -185,6 +185,32 @@ class DataInputStream(object):
     else:
       raise Exception(tag)
 
+  def disassemble_object(self, indent=""):
+    tag = self._get_byte()
+    if tag == _INT32_TAG:
+      return "%sint32 %i" % (indent, self._decode_int32())
+    elif tag == _STRING_TAG:
+      return "%sstring '%s'" % (indent, self._decode_string())
+    elif tag == _ARRAY_TAG:
+      return self._disassemble_array(indent)
+    elif tag == _MAP_TAG:
+      return self._disassemble_map(indent)
+    elif tag == _NULL_TAG:
+      return "%snull" % indent
+    elif tag == _TRUE_TAG:
+      return "%strue" % indent
+    elif tag == _FALSE_TAG:
+      return "%sfalse" % indent
+    elif tag == _OBJECT_TAG:
+      return self._disassemble_object(indent)
+    elif tag == _REFERENCE_TAG:
+      return self._disassemble_reference(indent)
+    elif tag == _ENVIRONMENT_TAG:
+      return self._disassemble_environment(indent)
+    else:
+      return str(tag)
+
+
   # Reads a naked unsigned from the stream.
   def _decode_uint32(self):
     current = 0xFF
@@ -217,6 +243,14 @@ class DataInputStream(object):
       result.append(self.read_object())
     return result
 
+  def _disassemble_array(self, indent):
+    length = self._decode_uint32()
+    children = []
+    for i in xrange(0, length):
+      new_indent = "%s%-2i" % (indent, i)
+      children.append(self.disassemble_object(new_indent))
+    return "%sarray %i\n%s" % (indent, length, "\n".join(children))
+
   # Reads a naked map from the stream.
   def _decode_map(self):
     length = self._decode_uint32()
@@ -227,10 +261,18 @@ class DataInputStream(object):
       result[k] = v
     return result
 
+  def _disassemble_map(self, indent):
+    length = self._decode_uint32()
+    children = []
+    for i in xrange(0, length):
+      key = self.disassemble_object(indent + ": ")
+      value = self.disassemble_object(indent + "  ")
+      children.append(key + "\n" + value)
+    return "%smap %i\n%s" % (indent, length, "\n".join(children))
+
   # Reads a naked object from the stream.
   def _decode_object(self):
-    index = self.object_offset
-    self.object_offset += 1
+    index = self.grab_index()
     self.object_index[index] = None
     header = self.read_object()
     desc = self.descriptors.get(header, None)
@@ -242,6 +284,12 @@ class DataInputStream(object):
     desc.apply_payload(instance, payload)
     return instance
 
+  def _disassemble_object(self, indent):
+    index = self.grab_index()
+    header = self.disassemble_object(indent + "^ ")
+    payload = self.disassemble_object(indent + "  ")
+    return "%sobject (@%i)\n%s\n%s" % (indent, index, header, payload)
+
   def access_environment(self, key):
     if (type(key) is list) and not self.descriptors.get(tuple(key), None) is None:
       return EnvironmentPlaceholder(tuple(key))
@@ -249,19 +297,35 @@ class DataInputStream(object):
       return (self.access)(key)
 
   def _decode_environment(self):
-    index = self.object_offset
-    self.object_offset += 1
+    index = self.grab_index()
     self.object_index[index] = None
     key = self.read_object()
     value = self.access_environment(key)
     self.object_index[index] = value
     return value
 
+  # Acquires the next object index.
+  def grab_index(self):
+    result = self.object_offset
+    self.object_offset += 1
+    return result
+
+  def _disassemble_environment(self, indent):
+    index = self.grab_index()
+    key = self.disassemble_object(indent + "  ")
+    return "%senvironment (@%i)\n%s" % (indent, index, key)
+
   # Reads a raw object reference from the stream.
   def _decode_reference(self):
     offset = self._decode_uint32()
     index = self.object_offset - offset - 1
     return self.object_index[index]
+
+  def _disassemble_reference(self, indent):
+    offset = self._decode_uint32()
+    index = self.object_offset - offset - 1
+    return "%sreference %i (=@%i)" % (indent, offset, index)
+
 
   # Reads a single byte from the stream.
   def _get_byte(self):
@@ -424,18 +488,25 @@ def always_throw(key):
 
 class Decoder(object):
 
-  def __init__(self):
-    self.descriptors = _DESCRIPTORS
-    self.access = always_throw
+  def __init__(self, descriptors=_DESCRIPTORS):
+    self.descriptors = descriptors
+    self.access = str
 
   # Decodes a byte array into a plankton object.
   def decode(self, data):
     stream = DataInputStream(data, self.descriptors, self.access)
     return stream.read_object()
 
+  def disassemble(self, data):
+    stream = DataInputStream(data, self.descriptors, self.access)
+    return stream.disassemble_object("")
+
   # Decodes a base64 encoded string into a plankton object.
   def base64decode(self, data):
     return self.decode(bytearray(base64.b64decode(data)))
+
+  def base64disassemble(self, data):
+    return self.disassemble(bytearray(base64.b64decode(data)))
 
   # Sets the function to use to access environment values by key.
   def set_access(self, value):
@@ -465,13 +536,16 @@ class Stringifier(object):
       "%s: %s" % (self.s(k), self.s(v))
         for (k, v)
         in value.iteritems()
-    ])    
+    ])
 
   def visit_string(self, value):
     return '"%s"' % value
 
   def visit_int(self, value):
     return str(value)
+
+  def visit_null(self, value):
+    return "null"
 
 
 # Returns a human-readable string representation of the given data. The result
