@@ -31,6 +31,7 @@ class Main(object):
     parser.add_option('--expression', action='append', default=[])
     parser.add_option('--filter', action='store_true', default=False)
     parser.add_option('--base64', action='store_true', default=False)
+    parser.add_option('--disass', action='store_true', default=False)
     return parser
 
   # Parses the script arguments, storing the values in the appropriate fields.
@@ -43,13 +44,17 @@ class Main(object):
   def run_filter(self):
     if not self.flags.filter:
       return False
-    pattern = re.compile(r'^p64/([a-zA-Z0-9=]+)$')
+    pattern = re.compile(r'^p64/([a-zA-Z0-9=+]+)$')
     for line in sys.stdin:
-      match = pattern.match(line)
+      match = pattern.match(line.strip())
       if match:
         code = match.group(1)
-        data = plankton.base64decode(code, {})
-        print plankton.stringify(data)
+        decoder = plankton.Decoder({})
+        if self.flags.disass:
+          print decoder.base64disassemble(code)
+        else:
+          data = decoder.base64decode(code)
+          print plankton.stringify(data)
       else:
         print line
     return True
