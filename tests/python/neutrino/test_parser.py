@@ -7,7 +7,7 @@ import unittest
 lt = ast.Literal
 ar = lambda *e: ast.Array(e)
 sq = lambda *e: ast.Sequence(e)
-df = ast.LocalDefinition
+df = ast.LocalDeclaration
 nm = lambda p, *e: ast.Name(p, e)
 
 def id(phase, *names):
