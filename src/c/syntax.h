@@ -75,4 +75,39 @@ static const size_t kSequenceAstValuesOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(sequence_ast, values);
 
 
+// --- L o c a l   d e c l a r a t i o n ---
+
+static const size_t kLocalDeclarationAstSize = OBJECT_SIZE(3);
+static const size_t kLocalDeclarationAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kLocalDeclarationAstValueOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kLocalDeclarationAstBodyOffset = OBJECT_FIELD_OFFSET(2);
+
+// The declaration's symbol.
+ACCESSORS_DECL(local_declaration_ast, symbol);
+
+// The variable's value.
+ACCESSORS_DECL(local_declaration_ast, value);
+
+// The expression that's in scope of the variable.
+ACCESSORS_DECL(local_declaration_ast, body);
+
+
+// --- V a r i a b l e ---
+
+static const size_t kVariableAstSize = OBJECT_SIZE(1);
+static const size_t kVariableAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
+
+// The symbol referenced by this variable.
+ACCESSORS_DECL(variable_ast, symbol);
+
+
+// --- S y m b o l ---
+
+static const size_t kSymbolAstSize = OBJECT_SIZE(1);
+static const size_t kSymbolAstNameOffset = OBJECT_FIELD_OFFSET(0);
+
+// The display name of this symbol
+ACCESSORS_DECL(symbol_ast, name);
+
+
 #endif // _SYNTAX

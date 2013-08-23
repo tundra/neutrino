@@ -10,6 +10,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 
 # Remaining imports.
+import analysis
 import optparse
 import parser
 import plankton
@@ -71,6 +72,7 @@ class Main(object):
     for expr in self.flags.expression:
       tokens = token.tokenize(expr)
       ast = parser.Parser(tokens).parse_expression()
+      analysis.analyze(ast)
       self.output_value(ast)
 
   def output_value(self, value):

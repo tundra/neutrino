@@ -155,3 +155,25 @@ TEST(process, get_argument_multi_pieces) {
 
   DISPOSE_RUNTIME();
 }
+
+TEST(process, get_local) {
+  CREATE_RUNTIME();
+
+  value_t stack = new_heap_stack(runtime, 16);
+  frame_t frame;
+  ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3));
+  ASSERT_SUCCESS(frame_push_value(&frame, new_integer(6)));
+  ASSERT_VALEQ(new_integer(6), frame_get_local(&frame, 0));
+  ASSERT_CHECK_FAILURE(scOutOfBounds, frame_get_local(&frame, 1));
+  ASSERT_CHECK_FAILURE(scOutOfBounds, frame_get_local(&frame, 2));
+  ASSERT_SUCCESS(frame_push_value(&frame, new_integer(5)));
+  ASSERT_VALEQ(new_integer(6), frame_get_local(&frame, 0));
+  ASSERT_VALEQ(new_integer(5), frame_get_local(&frame, 1));
+  ASSERT_CHECK_FAILURE(scOutOfBounds, frame_get_local(&frame, 2));
+  ASSERT_SUCCESS(frame_push_value(&frame, new_integer(4)));
+  ASSERT_VALEQ(new_integer(6), frame_get_local(&frame, 0));
+  ASSERT_VALEQ(new_integer(5), frame_get_local(&frame, 1));
+  ASSERT_VALEQ(new_integer(4), frame_get_local(&frame, 2));
+
+  DISPOSE_RUNTIME();
+}

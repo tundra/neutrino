@@ -270,13 +270,162 @@ void sequence_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 value_t set_sequence_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(elements, get_id_hash_map_at(contents, runtime->roots.string_table.values));
-  set_sequence_ast_values(object, elements);
+  TRY_DEF(values, get_id_hash_map_at(contents, runtime->roots.string_table.values));
+  set_sequence_ast_values(object, values);
   return success();
 }
 
 static value_t new_sequence_ast(runtime_t *runtime) {
   return new_heap_sequence_ast(runtime, runtime->roots.empty_array);
+}
+
+
+// --- L o c a l   d e c l a r a t i o n ---
+
+GET_FAMILY_PROTOCOL_IMPL(local_declaration_ast);
+NO_BUILTIN_METHODS(local_declaration_ast);
+
+UNCHECKED_ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, Symbol, symbol);
+UNCHECKED_ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, Value, value);
+UNCHECKED_ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, Body, body);
+
+value_t emit_local_declaration_ast(value_t self, assembler_t *assm) {
+  CHECK_FAMILY(ofLocalDeclarationAst, self);
+  size_t offset = assm->stack_height;
+  value_t value = get_local_declaration_ast_value(self);
+  TRY(emit_value(value, assm));
+  value_t symbol = get_local_declaration_ast_symbol(self);
+  CHECK_FAMILY(ofSymbolAst, symbol);
+  if (assembler_is_local_variable_bound(assm, symbol))
+    // We're trying to redefine an already defined symbol. That's not valid.
+    return new_signal(scInvalidSyntax);
+  TRY(assembler_bind_local_variable(assm, symbol, offset));
+  value_t body = get_local_declaration_ast_body(self);
+  TRY(emit_value(body, assm));
+  TRY(assembler_unbind_local_variable(assm, symbol));
+  return success();
+}
+
+value_t local_declaration_ast_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofLocalDeclarationAst, value);
+  return success();
+}
+
+void local_declaration_ast_print_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<local declaration ast: ");
+  value_print_atomic_on(get_local_declaration_ast_symbol(value), buf);
+  string_buffer_printf(buf, " := ");
+  value_print_atomic_on(get_local_declaration_ast_value(value), buf);
+  string_buffer_printf(buf, " in ");
+  value_print_atomic_on(get_local_declaration_ast_body(value), buf);
+  string_buffer_printf(buf, ">");
+}
+
+void local_declaration_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<local declaration ast>");
+}
+
+value_t set_local_declaration_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(symbol, get_id_hash_map_at(contents, runtime->roots.string_table.symbol));
+  TRY_DEF(value, get_id_hash_map_at(contents, runtime->roots.string_table.value));
+  TRY_DEF(body, get_id_hash_map_at(contents, runtime->roots.string_table.body));
+  set_local_declaration_ast_symbol(object, symbol);
+  set_local_declaration_ast_value(object, value);
+  set_local_declaration_ast_body(object, body);
+  return success();
+}
+
+static value_t new_local_declaration_ast(runtime_t *runtime) {
+  value_t null = runtime_null(runtime);
+  return new_heap_local_declaration_ast(runtime, null, null, null);
+}
+
+
+// --- V a r i a b l e ---
+
+GET_FAMILY_PROTOCOL_IMPL(variable_ast);
+NO_BUILTIN_METHODS(variable_ast);
+
+UNCHECKED_ACCESSORS_IMPL(VariableAst, variable_ast, Symbol, symbol);
+
+value_t emit_variable_ast(value_t self, assembler_t *assm) {
+  CHECK_FAMILY(ofVariableAst, self);
+  value_t symbol = get_variable_ast_symbol(self);
+  CHECK_FAMILY(ofSymbolAst, symbol);
+  if (!assembler_is_local_variable_bound(assm, symbol))
+    // We're trying to access a symbol that hasn't been defined here. That's
+    // not valid.
+    return new_signal(scInvalidSyntax);
+  size_t index = assembler_get_local_variable_binding(assm, symbol);
+  assembler_emit_load_local(assm, index);
+  return success();
+}
+
+value_t variable_ast_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofVariableAst, value);
+  return success();
+}
+
+void variable_ast_print_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<variable ast: ");
+  value_print_atomic_on(get_variable_ast_symbol(value), buf);
+  string_buffer_printf(buf, ">");
+}
+
+void variable_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<variable ast>");
+}
+
+value_t set_variable_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(symbol, get_id_hash_map_at(contents, runtime->roots.string_table.symbol));
+  set_variable_ast_symbol(object, symbol);
+  return success();
+}
+
+static value_t new_variable_ast(runtime_t *runtime) {
+  return new_heap_variable_ast(runtime, runtime_null(runtime));
+}
+
+
+// --- V a r i a b l e ---
+
+GET_FAMILY_PROTOCOL_IMPL(symbol_ast);
+NO_BUILTIN_METHODS(symbol_ast);
+
+UNCHECKED_ACCESSORS_IMPL(SymbolAst, symbol_ast, Name, name);
+
+value_t emit_symbol_ast(value_t value, assembler_t *assm) {
+  CHECK_FAMILY(ofSymbolAst, value);
+  UNREACHABLE("emitting symbol as ast");
+  return new_signal(scUnsupportedBehavior);
+}
+
+value_t symbol_ast_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofSymbolAst, value);
+  return success();
+}
+
+void symbol_ast_print_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<symbol ast: ");
+  value_print_atomic_on(get_symbol_ast_name(value), buf);
+  string_buffer_printf(buf, ">");
+}
+
+void symbol_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<symbol ast>");
+}
+
+value_t set_symbol_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(name, get_id_hash_map_at(contents, runtime->roots.string_table.name));
+  set_symbol_ast_name(object, name);
+  return success();
+}
+
+static value_t new_symbol_ast(runtime_t *runtime) {
+  return new_heap_symbol_ast(runtime, runtime_null(runtime));
 }
 
 
@@ -312,10 +461,13 @@ static value_t add_syntax_factory(value_t map, const char *name,
 }
 
 value_t init_syntax_factory_map(value_t map, runtime_t *runtime) {
-  TRY(add_syntax_factory(map, "Literal", new_literal_ast, runtime));
+  TRY(add_syntax_factory(map, "Argument", new_argument_ast, runtime));
   TRY(add_syntax_factory(map, "Array", new_array_ast, runtime));
   TRY(add_syntax_factory(map, "Invocation", new_invocation_ast, runtime));
-  TRY(add_syntax_factory(map, "Argument", new_argument_ast, runtime));
+  TRY(add_syntax_factory(map, "Literal", new_literal_ast, runtime));
+  TRY(add_syntax_factory(map, "LocalDeclaration", new_local_declaration_ast, runtime));
   TRY(add_syntax_factory(map, "Sequence", new_sequence_ast, runtime));
+  TRY(add_syntax_factory(map, "Symbol", new_symbol_ast, runtime));
+  TRY(add_syntax_factory(map, "Variable", new_variable_ast, runtime));
   return success();
 }

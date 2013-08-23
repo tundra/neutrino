@@ -110,6 +110,9 @@ value_t frame_peek_value(frame_t *frame, size_t index);
 // Returns the index'th argument in evaluation order.
 value_t frame_get_argument(frame_t *frame, size_t index);
 
+// Returns the value of the index'th local variable in this frame.
+value_t frame_get_local(frame_t *frame, size_t index);
+
 
 // --- S t a c k ---
 

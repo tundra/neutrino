@@ -326,6 +326,33 @@ value_t new_heap_sequence_ast(runtime_t *runtime, value_t values) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
+    value_t value, value_t body) {
+  size_t size = kLocalDeclarationAstSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.local_declaration_ast_species));
+  set_local_declaration_ast_symbol(result, symbol);
+  set_local_declaration_ast_value(result, value);
+  set_local_declaration_ast_body(result, body);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_variable_ast(runtime_t *runtime, value_t symbol) {
+  size_t size = kVariableAstSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.variable_ast_species));
+  set_variable_ast_symbol(result, symbol);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_symbol_ast(runtime_t *runtime, value_t name) {
+  size_t size = kSymbolAstSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.symbol_ast_species));
+  set_symbol_ast_name(result, name);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- M i s c ---
 
