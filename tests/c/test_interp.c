@@ -70,10 +70,12 @@ TEST(interp, execution) {
 
 // Tries to compile the given syntax tree and expects it to fail with the
 // specified signal.
-static void assert_compile_failure(runtime_t *runtime, value_t ast) {
+static void assert_compile_failure(runtime_t *runtime, value_t ast,
+    invalid_syntax_cause_t cause) {
   value_t space = new_heap_method_space(runtime);
   value_t result = compile_syntax(runtime, ast, space);
   ASSERT_SIGNAL(scInvalidSyntax, result);
+  ASSERT_EQ(cause, get_invalid_syntax_signal_cause(result));
 }
 
 TEST(interp, compile_errors) {
@@ -86,7 +88,7 @@ TEST(interp, compile_errors) {
     value_t var = new_heap_variable_ast(runtime, sym);
     value_t inner = new_heap_local_declaration_ast(runtime, sym, l3, var);
     value_t outer = new_heap_local_declaration_ast(runtime, sym, l3, inner);
-    assert_compile_failure(runtime, outer);
+    assert_compile_failure(runtime, outer, isSymbolAlreadyBound);
   }
 
   // Accessing an undefined symbol.
@@ -95,7 +97,7 @@ TEST(interp, compile_errors) {
     value_t s1 = new_heap_symbol_ast(runtime, runtime_null(runtime));
     value_t var = new_heap_variable_ast(runtime, s0);
     value_t ast = new_heap_local_declaration_ast(runtime, s1, l3, var);
-    assert_compile_failure(runtime, ast);
+    assert_compile_failure(runtime, ast, isSymbolNotBound);
   }
 
   DISPOSE_RUNTIME();
