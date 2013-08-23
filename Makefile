@@ -249,11 +249,11 @@ $(GOLDEN_RUNS):test-golden-%:$(OUT)/tests/n/golden/%.out
 
 # Run a golden test using the test runner script.
 $(GOLDEN_OUTS):$(OUT)/tests/n/golden/%.out:tests/n/golden/%.gn $(C_MAIN_EXE)
-	@echo Running golden test $*
+	@echo -n Running golden test "$*: "
 	@mkdir -p $(shell dirname $@)
-	@./src/sh/run-golden-test.sh                                          \
-	  -t "$<"                                                             \
-	  -o "$@"                                                              \
+	@./src/sh/run-golden-test.sh                                               \
+	  -t "$<"                                                                  \
+	  -o "$@"                                                                  \
 	  -e "$(EXEC_PREFIX) $(C_MAIN_EXE)"
 
 
@@ -272,4 +272,4 @@ clean:
 	@rm -rf bin-*
 
 
-.PHONY:	clean tests-c tests-python $(C_TEST_LIB_RUNS) $(PYTHON_TEST_RUNS)
+.PHONY:	clean test-c test-python test-golden $(C_TEST_LIB_RUNS) $(PYTHON_TEST_RUNS)
