@@ -396,7 +396,7 @@ TEST(value, array_sort) {
 }
 
 static const size_t kMapCount = 8;
-static const size_t kInstanceCount = 256;
+static const size_t kInstanceCount = 128;
 
 // Checks that the instances are present in the maps as expected, skipping the
 // first skip_first entries. This is such that we can gradually dispose the
@@ -431,7 +431,7 @@ TEST(value, rehash_map) {
   }
 
   // Build and retain a number of strings. We'll use these as keys.
-  gc_safe_t *insts[256];
+  gc_safe_t *insts[128];
   for (size_t i = 0; i < kInstanceCount; i++) {
     value_t inst = new_heap_instance(runtime, runtime->roots.empty_instance_species);
     ASSERT_SUCCESS(set_instance_field(runtime, inst, new_integer(0), new_integer(i)));
@@ -475,7 +475,7 @@ TEST(value, map_delete) {
   CREATE_RUNTIME();
 
   // Bit set to keep track of which entries are set in the map.
-  static const size_t kRange = 257;
+  static const size_t kRange = 129;
   bit_vector_t bits;
   bit_vector_init(&bits, kRange, false);
   size_t bits_set = 0;
@@ -484,7 +484,7 @@ TEST(value, map_delete) {
   pseudo_random_init(&rand, 35234);
 
   value_t map = new_heap_id_hash_map(runtime, kRange + 5);
-  for (size_t t = 0; t <= 4096; t++) {
+  for (size_t t = 0; t <= 1024; t++) {
     ASSERT_EQ(bits_set, get_id_hash_map_size(map));
     // Pick a random element to change.
     size_t index = pseudo_random_next(&rand, kRange);
@@ -499,7 +499,7 @@ TEST(value, map_delete) {
       bit_vector_set_at(&bits, index, true);
       bits_set++;
     }
-    if ((t % 128) == 0) {
+    if ((t % 64) == 0) {
       // Check that getting the values directly works.
       for (size_t i = 0; i < kRange; i++) {
         value_t key = new_integer(i);

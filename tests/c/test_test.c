@@ -30,11 +30,11 @@ TEST(test, variant) {
 TEST(test, pseudo_random) {
   pseudo_random_t rand;
   pseudo_random_init(&rand, 123456);
-  static const size_t kBucketCount = 1027;
+  static const size_t kBucketCount = 257;
   size_t buckets[1027];
   for (size_t i = 0; i < kBucketCount; i++)
     buckets[i] = 0;
-  size_t tries = 8388608;
+  size_t tries = 1048576;
   for (size_t i = 0; i < tries; i++) {
     size_t index = pseudo_random_next(&rand, kBucketCount);
     ASSERT_TRUE(index < kBucketCount);
