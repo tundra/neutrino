@@ -1,7 +1,0 @@
-# Test that multiple-line INPUT clauses work.
-
-INPUT: {
-  def $x := 8;
-  $x;
-}
-EXPECT: 8
