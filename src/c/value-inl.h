@@ -148,6 +148,7 @@ GETTER_IMPL(Receiver, receiver, Field, field)
 #define UNCHECKED_ACCESSORS_IMPL(Receiver, receiver, Field, field)             \
 void set_##receiver##_##field(value_t self, value_t value) {                   \
   CHECK_FAMILY(of##Receiver, self);                                            \
+  CHECK_FALSE("storing signal in heap", in_domain(vdSignal, value));           \
   *access_object_field(self, k##Receiver##Field##Offset) = value;              \
 }                                                                              \
 GETTER_IMPL(Receiver, receiver, Field, field)
