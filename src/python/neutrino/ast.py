@@ -186,6 +186,15 @@ class Symbol(object):
     self.name = str(name)
 
 
+# Instantiate an empty object.
+@plankton.serializable(("ast", "EmptyObject"))
+class EmptyObject(object):
+
+  @plankton.field("name")
+  def __init__(self, name=None):
+    self.name = name
+
+
 @plankton.serializable()
 class Path(object):
 

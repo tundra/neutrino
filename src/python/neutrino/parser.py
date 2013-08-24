@@ -74,7 +74,26 @@ class Parser(object):
   # <expression>
   #   -> <operator expression>
   def parse_expression(self):
-    return self.parse_operator_expression()
+    return self.parse_word_expression()
+
+  # <word expression>
+  #   -> <lambda>
+  def parse_word_expression(self):
+    if self.at_word('fn'):
+      return self.parse_lambda_expression()
+    else:
+      return self.parse_operator_expression()
+
+  # <lambda expression>
+  #   -> "fn" <arguments> "=>" <word expression>
+  def parse_lambda_expression(self):
+    self.expect_word('fn')
+    self.expect_punctuation('(')
+    param = self.expect_type(Token.IDENTIFIER)
+    self.expect_punctuation(')')
+    self.expect_punctuation('=>')
+    value = self.parse_word_expression()
+    return ast.Lambda(param, value)
 
   # <operator expression>
   #   -> <call expression> +: <operation>

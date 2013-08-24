@@ -70,6 +70,10 @@ class ParserTest(unittest.TestCase):
     test('{ def $x := 4; }', df(nm(0, "x"), lt(4), lt(None)))
     test('{ $x; $y; def $x := 4; }', sq(id(0, "x"), id(0, "y"), df(nm(0, "x"), lt(4), lt(None))))
 
+  def test_lambda(self):
+    test = self.check_expression
+    test('fn ($x) => $x', nm(0, "x"))
+
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)
   unittest.main(testRunner=runner)
