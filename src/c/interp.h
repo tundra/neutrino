@@ -18,7 +18,8 @@
   F(Builtin)                                                                   \
   F(Slap)                                                                      \
   F(Pop)                                                                       \
-  F(LoadLocal)
+  F(LoadLocal)                                                                 \
+  F(Lambda)
 
 // The enum of all opcodes.
 typedef enum {
@@ -38,7 +39,7 @@ value_t run_code_block(runtime_t *runtime, value_t code);
 // --- A s s e m b l e r ---
 
 // Bytecode assembler data.
-typedef struct {
+typedef struct assembler_t {
   // The runtime we're generating code within.
   runtime_t *runtime;
   // The buffer that holds the code being built.
@@ -86,6 +87,9 @@ value_t assembler_emit_return(assembler_t *assm);
 
 // Emits a local variable load of the local with the given index.
 value_t assembler_emit_load_local(assembler_t *assm, size_t index);
+
+// Emits a lambda that understands the given methods.
+value_t assembler_emit_lambda(assembler_t *assm, value_t methods);
 
 // Adds a binding to the local variable map that records that the value of the
 // given symbol can be found at the given stack index. The symbol must not

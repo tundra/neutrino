@@ -137,6 +137,13 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         frame_push_value(&frame, value);
         break;
       }
+      case ocLambda: {
+        value_t space = read_next_value(&state);
+        CHECK_FAMILY(ofMethodSpace, space);
+        TRY_DEF(lambda, new_heap_lambda(runtime, space));
+        frame_push_value(&frame, lambda);
+        break;
+      }
       default:
         ERROR("Unexpected opcode %i", opcode);
         UNREACHABLE("unexpected opcode");
@@ -296,6 +303,13 @@ value_t assembler_emit_load_local(assembler_t *assm, size_t index) {
   assembler_emit_opcode(assm, ocLoadLocal);
   assembler_emit_byte(assm, index);
   assembler_adjust_stack_height(assm, 1);
+  return success();
+}
+
+value_t assembler_emit_lambda(assembler_t *assm, value_t methods) {
+  assembler_emit_opcode(assm, ocLambda);
+  TRY(assembler_emit_value(assm, methods));
+  assembler_adjust_stack_height(assm, +1);
   return success();
 }
 

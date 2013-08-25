@@ -10,6 +10,7 @@
 // expected value.
 static void assert_ast_value(runtime_t *runtime, variant_t expected, value_t ast) {
   value_t space = new_heap_method_space(runtime);
+  add_method_space_builtin_methods(runtime, space);
   value_t code_block = compile_syntax(runtime, ast, space);
   value_t result = run_code_block(runtime, code_block);
   ASSERT_VALEQ(variant_to_value(runtime, expected), result);
@@ -63,6 +64,21 @@ TEST(interp, execution) {
     value_t ast = new_heap_local_declaration_ast(runtime, sym,
         new_heap_literal_ast(runtime, new_integer(3)), var);
     assert_ast_value(runtime, vInt(3), ast);
+  }
+
+  // Lambda
+  {
+    value_t lam = new_heap_lambda_ast(runtime, runtime->roots.empty_array,
+        new_heap_literal_ast(runtime, new_integer(13)));
+    value_t this_arg = new_heap_argument_ast(runtime, runtime->roots.string_table.this,
+        lam);
+    value_t name_arg = new_heap_argument_ast(runtime, runtime->roots.string_table.name,
+        new_heap_literal_ast(runtime, runtime->roots.string_table.sausages));
+    value_t args = new_heap_array(runtime, 2);
+    set_array_at(args, 0, this_arg);
+    set_array_at(args, 1, name_arg);
+    value_t ast = new_heap_invocation_ast(runtime, args);
+    assert_ast_value(runtime, vInt(13), ast);
   }
 
   DISPOSE_RUNTIME();

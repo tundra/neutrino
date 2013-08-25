@@ -394,7 +394,7 @@ static value_t new_variable_ast(runtime_t *runtime) {
 }
 
 
-// --- V a r i a b l e ---
+// --- S y m b o l ---
 
 GET_FAMILY_PROTOCOL_IMPL(symbol_ast);
 NO_BUILTIN_METHODS(symbol_ast);
@@ -434,6 +434,91 @@ static value_t new_symbol_ast(runtime_t *runtime) {
 }
 
 
+// --- L a m b d a ---
+
+GET_FAMILY_PROTOCOL_IMPL(lambda_ast);
+NO_BUILTIN_METHODS(lambda_ast);
+TRIVIAL_PRINT_ON_IMPL(LambdaAst, lambda_ast);
+
+UNCHECKED_ACCESSORS_IMPL(LambdaAst, lambda_ast, Parameters, parameters);
+UNCHECKED_ACCESSORS_IMPL(LambdaAst, lambda_ast, Body, body);
+
+value_t emit_lambda_ast(value_t value, assembler_t *assm) {
+  CHECK_FAMILY(ofLambdaAst, value);
+  runtime_t *runtime = assm->runtime;
+  TRY_DEF(vector, new_heap_pair_array(runtime, 2));
+  set_pair_array_first_at(vector, 0, runtime->roots.string_table.this);
+  set_pair_array_second_at(vector, 0,
+      new_heap_parameter(runtime, runtime->roots.any_guard, false, 0));
+  set_pair_array_first_at(vector, 0, runtime->roots.string_table.name);
+  TRY_DEF(name_guard, new_heap_guard(runtime, gtEq, runtime->roots.string_table.sausages));
+  set_pair_array_second_at(vector, 0,
+      new_heap_parameter(runtime, name_guard, false, 1));
+  co_sort_pair_array(vector);
+  TRY_DEF(sig, new_heap_signature(runtime, vector, 2, 2, false));
+  TRY_DEF(space, new_heap_method_space(runtime));
+  value_t body = get_lambda_ast_body(value);
+  TRY_DEF(body_code, compile_syntax(runtime, body, assm->space));
+  TRY_DEF(method, new_heap_method(runtime, sig, body_code));
+  TRY(add_method_space_method(runtime, space, method));
+  assembler_emit_lambda(assm, space);
+  return success();
+}
+
+value_t lambda_ast_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofLambdaAst, value);
+  return success();
+}
+
+value_t set_lambda_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(parameters, get_id_hash_map_at(contents, runtime->roots.string_table.parameters));
+  TRY_DEF(body, get_id_hash_map_at(contents, runtime->roots.string_table.body));
+  set_lambda_ast_parameters(object, parameters);
+  set_lambda_ast_body(object, body);
+  return success();
+}
+
+static value_t new_lambda_ast(runtime_t *runtime) {
+  return new_heap_lambda_ast(runtime, runtime_null(runtime), runtime_null(runtime));
+}
+
+
+// --- P a r a m e t e r ---
+
+GET_FAMILY_PROTOCOL_IMPL(parameter_ast);
+NO_BUILTIN_METHODS(parameter_ast);
+TRIVIAL_PRINT_ON_IMPL(ParameterAst, parameter_ast);
+
+UNCHECKED_ACCESSORS_IMPL(ParameterAst, parameter_ast, Symbol, symbol);
+CHECKED_ACCESSORS_IMPL(ParameterAst, parameter_ast, Array, Tags, tags);
+
+value_t emit_parameter_ast(value_t value, assembler_t *assm) {
+  CHECK_FAMILY(ofParameterAst, value);
+  UNREACHABLE("emitting parameter as ast");
+  return new_signal(scUnsupportedBehavior);
+}
+
+value_t parameter_ast_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofParameterAst, value);
+  return success();
+}
+
+value_t set_parameter_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(symbol, get_id_hash_map_at(contents, runtime->roots.string_table.symbol));
+  TRY_DEF(tags, get_id_hash_map_at(contents, runtime->roots.string_table.tags));
+  set_parameter_ast_symbol(object, symbol);
+  set_parameter_ast_tags(object, tags);
+  return success();
+}
+
+static value_t new_parameter_ast(runtime_t *runtime) {
+  return new_heap_parameter_ast(runtime, runtime_null(runtime),
+      runtime->roots.empty_array);
+}
+
+
 // --- C o d e   g e n e r a t i o n ---
 
 value_t emit_value(value_t value, assembler_t *assm) {
@@ -469,8 +554,10 @@ value_t init_syntax_factory_map(value_t map, runtime_t *runtime) {
   TRY(add_syntax_factory(map, "Argument", new_argument_ast, runtime));
   TRY(add_syntax_factory(map, "Array", new_array_ast, runtime));
   TRY(add_syntax_factory(map, "Invocation", new_invocation_ast, runtime));
+  TRY(add_syntax_factory(map, "Lambda", new_lambda_ast, runtime));
   TRY(add_syntax_factory(map, "Literal", new_literal_ast, runtime));
   TRY(add_syntax_factory(map, "LocalDeclaration", new_local_declaration_ast, runtime));
+  TRY(add_syntax_factory(map, "Parameter", new_parameter_ast, runtime));
   TRY(add_syntax_factory(map, "Sequence", new_sequence_ast, runtime));
   TRY(add_syntax_factory(map, "Symbol", new_symbol_ast, runtime));
   TRY(add_syntax_factory(map, "Variable", new_variable_ast, runtime));

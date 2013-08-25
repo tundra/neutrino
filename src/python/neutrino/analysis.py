@@ -5,16 +5,37 @@
 
 import ast
 
+# A bottom scope that handles variables that don't have a local binding.
+class BottomScope(object):
+
+  def lookup(self, name):
+    return None
+
+
+# A simple scope that contains a map from names to symbols, when you look up a
+# name that's in the map you'll get back they associated symbol.
+class MappedScope(object):
+
+  def __init__(self, bindings, parent):
+    self.parent = parent
+    self.bindings = bindings
+
+  def lookup(self, name):
+    value = self.bindings.get(name, None)
+    if value is None:
+      return self.parent.lookup(name)
+    else:
+      return value
+
+
 class ScopeVisitor(ast.Visitor):
 
   def __init__(self):
     super(ScopeVisitor, self).__init__()
-    self.scope_stack = []
+    self.scope = BottomScope()
 
   def lookup_name(self, name):
-    for (sym_name, sym) in reversed(self.scope_stack):
-      if name == sym_name:
-        return sym
+    return self.scope.lookup(name)
 
   def visit_array(self, that):
     for element in that.elements:
@@ -28,11 +49,14 @@ class ScopeVisitor(ast.Visitor):
     assert that.symbol is None
     that.value.accept(self)
     that.symbol = ast.Symbol(that.name)
-    self.scope_stack.append((that.name, that.symbol))
+    bindings = {}
+    bindings[that.name] = that.symbol
+    outer_scope = self.scope
+    self.scope = MappedScope(bindings, outer_scope)
     try:
       that.body.accept(self)
     finally:
-      self.scope_stack.pop()
+      self.scope = outer_scope
 
   def visit_invocation(self, that):
     for arg in that.arguments:
@@ -47,7 +71,19 @@ class ScopeVisitor(ast.Visitor):
   def visit_argument(self, that):
     that.value.accept(self)
 
+  def visit_lambda(self, that):
+    bindings = {}
+    for param in that.parameters:
+      param.symbol = ast.Symbol(param.name)
+      bindings[param.name] = param.symbol
+    outer_scope = self.scope
+    self.scope = MappedScope(bindings, outer_scope)
+    try:
+      that.body.accept(self)
+    finally:
+      self.scope = outer_scope
 
+import sys
 def analyze(ast):
   visitor = ScopeVisitor()
   ast.accept(visitor)

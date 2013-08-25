@@ -198,7 +198,9 @@ static value_t new_moved_object(value_t target) {
   F(LocalDeclarationAst, local_declaration_ast, _,  _,  X,  X,  _,  _)         \
   F(SequenceAst,        sequence_ast,           _,  _,  X,  X,  _,  _)         \
   F(VariableAst,        variable_ast,           _,  _,  X,  X,  _,  _)         \
-  F(SymbolAst,          symbol_ast,             _,  _,  X,  X,  _,  _)
+  F(SymbolAst,          symbol_ast,             _,  _,  X,  X,  _,  _)         \
+  F(LambdaAst,          lambda_ast,             _,  _,  X,  X,  _,  _)         \
+  F(ParameterAst,       parameter_ast,          _,  _,  X,  X,  _,  _)
 
 // Enumerates the compact object species.
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
@@ -213,6 +215,7 @@ static value_t new_moved_object(value_t target) {
   F(IdHashMap,          id_hash_map,            _,  _,  _,  X,  _,  X)         \
   F(Instance,           instance,               _,  _,  X,  X,  _,  _)         \
   F(InvocationRecord,   invocation_record,      _,  _,  _,  _,  _,  _)         \
+  F(Lambda,             lambda,                 _,  _,  _,  X,  _,  _)         \
   F(Method,             method,                 _,  _,  _,  _,  _,  _)         \
   F(MethodSpace,        method_space,           _,  _,  _,  _,  _,  _)         \
   F(Nothing,            nothing,                _,  _,  _,  _,  _,  _)         \
@@ -629,6 +632,7 @@ bool id_hash_map_iter_advance(id_hash_map_iter_t *iter);
 void id_hash_map_iter_get_current(id_hash_map_iter_t *iter, value_t *key_out,
     value_t *value_out);
 
+
 // --- N u l l ---
 
 static const size_t kNullSize = OBJECT_SIZE(0);
@@ -728,6 +732,15 @@ ACCESSORS_DECL(argument_map_trie, children);
 // as a prefix, followed by the given index. Creates the child if necessary
 // which means that this call may fail.
 value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, size_t index);
+
+
+// --- L a m b d a ---
+
+static const size_t kLambdaSize = OBJECT_SIZE(1);
+static const size_t kLambdaMethodsOffset = OBJECT_FIELD_OFFSET(0);
+
+// Returns the method space where the methods supported by this lambda live.
+ACCESSORS_DECL(lambda, methods);
 
 
 // --- O r d e r i n g ---

@@ -196,6 +196,14 @@ value_t new_heap_argument_map_trie(runtime_t *runtime, value_t value) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_lambda(runtime_t *runtime, value_t methods) {
+  size_t size = kLambdaSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.lambda_species));
+  set_lambda_methods(result, methods);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- P r o c e s s ---
 
@@ -361,6 +369,24 @@ value_t new_heap_symbol_ast(runtime_t *runtime, value_t name) {
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.symbol_ast_species));
   set_symbol_ast_name(result, name);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_lambda_ast(runtime_t *runtime, value_t params, value_t body) {
+  size_t size = kLambdaAstSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.lambda_ast_species));
+  set_lambda_ast_parameters(result, params);
+  set_lambda_ast_body(result, body);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags) {
+  size_t size = kParameterAstSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.parameter_ast_species));
+  set_parameter_ast_symbol(result, symbol);
+  set_parameter_ast_tags(result, tags);
   return post_create_sanity_check(result, size);
 }
 
