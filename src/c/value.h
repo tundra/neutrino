@@ -204,6 +204,7 @@ static value_t new_moved_object(value_t target) {
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
   F(Array,              array,                  _,  _,  _,  X,  X,  _)         \
   F(ArrayBuffer,        array_buffer,           _,  _,  _,  X,  _,  _)         \
+  F(ArgumentMapTrie,    argument_map_trie,      _,  _,  _,  _,  _,  _)         \
   F(Blob,               blob,                   _,  _,  _,  X,  X,  _)         \
   F(Boolean,            boolean,                X,  X,  _,  X,  _,  _)         \
   F(CodeBlock,          code_block,             _,  _,  _,  _,  _,  _)         \
@@ -702,6 +703,23 @@ static const size_t kProtocolDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
 
 // Returns the display (debug) name for this protocol object.
 ACCESSORS_DECL(protocol, display_name);
+
+
+// --- A r g u m e n t   m a p   t r i e ---
+
+// A trie that allows you to construct and reuse argument maps such that there's
+// only one instance of each argument map.
+
+static const size_t kArgumentMapTrieSize = OBJECT_SIZE(2);
+static const size_t kArgumentMapTrieValueOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kArgumentMapTrieChildrenOffset = OBJECT_FIELD_OFFSET(1);
+
+// The value of this argument trie node whose contents match the path taken to
+// reach this node.
+ACCESSORS_DECL(argument_map_trie, value);
+
+// Pointers to the child trie nodes whose prefixes match this one.
+ACCESSORS_DECL(argument_map_trie, children);
 
 
 // --- O r d e r i n g ---

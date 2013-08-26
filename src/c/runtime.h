@@ -40,6 +40,7 @@ typedef struct {
   value_t empty_array;
   value_t empty_array_buffer;
   value_t any_guard;
+  value_t argument_map_trie_root;
   // Special protocols
   value_t integer_protocol;
   value_t empty_instance_species;

@@ -526,3 +526,19 @@ TEST(value, map_delete) {
 
   DISPOSE_RUNTIME();
 }
+
+// The description of an argument map.
+struct {
+  size_t length;
+  size_t *values;
+} test_argument_map_t;
+
+TEST(value, argument_map_tries) {
+  CREATE_RUNTIME();
+
+  value_t root = new_heap_argument_map_trie(runtime, runtime->roots.empty_array);
+  static const size_t kSampleSize = 129;
+
+
+  DISPOSE_RUNTIME();
+}

@@ -1109,6 +1109,22 @@ void protocol_print_atomic_on(value_t value, string_buffer_t *buf) {
 }
 
 
+// --- A r g u m e n t   m a p   t r i e ---
+
+NO_BUILTIN_METHODS(argument_map_trie);
+TRIVIAL_PRINT_ON_IMPL(ArgumentMapTrie, argument_map_trie);
+
+CHECKED_ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, Array, Value, value);
+CHECKED_ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, ArrayBuffer, Children, children);
+
+value_t argument_map_trie_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofArgumentMapTrie, value);
+  VALIDATE_VALUE_FAMILY(ofArray, get_argument_map_trie_value(value));
+  VALIDATE_VALUE_FAMILY(ofArrayBuffer, get_argument_map_trie_children(value));
+  return success();
+}
+
+
 // --- O r d e r i n g ---
 
 int ordering_to_int(value_t value) {
