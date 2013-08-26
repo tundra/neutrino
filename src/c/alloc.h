@@ -76,6 +76,10 @@ value_t new_heap_void_p(runtime_t *runtime, void *value);
 // Creates a new factory object backed by the given constructor function.
 value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr);
 
+// Creates a new argument map trie with the given value and an empty children
+// array.
+value_t new_heap_argument_map_trie(runtime_t *runtime, value_t value);
+
 // Creates a new code block object with the given bytecode blob and value pool
 // array.
 value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,

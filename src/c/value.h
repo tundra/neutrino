@@ -204,6 +204,7 @@ static value_t new_moved_object(value_t target) {
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
   F(Array,              array,                  _,  _,  _,  X,  X,  _)         \
   F(ArrayBuffer,        array_buffer,           _,  _,  _,  X,  _,  _)         \
+  F(ArgumentMapTrie,    argument_map_trie,      _,  _,  _,  _,  _,  _)         \
   F(Blob,               blob,                   _,  _,  _,  X,  X,  _)         \
   F(Boolean,            boolean,                X,  X,  _,  X,  _,  _)         \
   F(CodeBlock,          code_block,             _,  _,  _,  _,  _,  _)         \
@@ -551,6 +552,9 @@ INTEGER_ACCESSORS_DECL(array_buffer, length);
 // index and returns an OutOfBounds signal under soft check failures.
 value_t get_array_buffer_at(value_t self, size_t index);
 
+// Sets the index'th element in this array buffer. Bounds checks the index.
+void set_array_buffer_at(value_t self, size_t index, value_t value);
+
 // Attempts to add an element at the end of this array buffer, increasing its
 // length by 1. Returns true if this succeeds, false if it wasn't possible.
 bool try_add_to_array_buffer(value_t self, value_t value);
@@ -702,6 +706,28 @@ static const size_t kProtocolDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
 
 // Returns the display (debug) name for this protocol object.
 ACCESSORS_DECL(protocol, display_name);
+
+
+// --- A r g u m e n t   m a p   t r i e ---
+
+// A trie that allows you to construct and reuse argument maps such that there's
+// only one instance of each argument map.
+
+static const size_t kArgumentMapTrieSize = OBJECT_SIZE(2);
+static const size_t kArgumentMapTrieValueOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kArgumentMapTrieChildrenOffset = OBJECT_FIELD_OFFSET(1);
+
+// The value of this argument trie node whose contents match the path taken to
+// reach this node.
+ACCESSORS_DECL(argument_map_trie, value);
+
+// Pointers to the child trie nodes whose prefixes match this one.
+ACCESSORS_DECL(argument_map_trie, children);
+
+// Returns an argument map trie whose value has the value of the given trie
+// as a prefix, followed by the given index. Creates the child if necessary
+// which means that this call may fail.
+value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, size_t index);
 
 
 // --- O r d e r i n g ---

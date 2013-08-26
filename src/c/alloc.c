@@ -185,6 +185,17 @@ value_t new_heap_protocol(runtime_t *runtime, value_t display_name) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_argument_map_trie(runtime_t *runtime, value_t value) {
+  CHECK_FAMILY(ofArray, value);
+  TRY_DEF(children, new_heap_array_buffer(runtime, 2));
+  size_t size = kArgumentMapTrieSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.argument_map_trie_species));
+  set_argument_map_trie_value(result, value);
+  set_argument_map_trie_children(result, children);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- P r o c e s s ---
 
