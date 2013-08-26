@@ -240,3 +240,23 @@ uint32_t pseudo_random_next(pseudo_random_t *random, uint32_t max) {
   //   worth worrying about.
   return pseudo_random_next_uint32(random) % max;
 }
+
+void pseudo_random_shuffle(pseudo_random_t *random, void *data,
+    size_t elem_count, size_t elem_size) {
+  // Fisher–Yates shuffle
+  CHECK_TRUE("element size too big", elem_size < 8);
+  byte_t scratch[8];
+  byte_t *start = data;
+  for (size_t i = 0; i < elem_count - 1; i++) {
+    size_t target = elem_count - i - 1;
+    size_t source = pseudo_random_next(random, target + 1);
+    if (source == target)
+      continue;
+    // Move the value currently stored in target into scratch.
+    memcpy(scratch, start + (elem_size * target), elem_size);
+    // Move the source to target.
+    memcpy(start + (elem_size * target), start + (elem_size * source), elem_size);
+    // Move the value that used to be target into source.
+    memcpy(start + (elem_size * source), scratch, elem_size);
+  }
+}
