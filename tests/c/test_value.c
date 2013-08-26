@@ -598,3 +598,37 @@ TEST(value, argument_map_tries) {
 
   DISPOSE_RUNTIME();
 }
+
+typedef struct {
+  bool called;
+} try_finally_data_t;
+
+static value_t try_finally_signal(try_finally_data_t *data) {
+  E_BEGIN_TRY_FINALLY();
+    E_TRY(new_signal(scNothing));
+    E_RETURN(success());
+  E_FINALLY();
+    data->called = true;
+  E_END_TRY_FINALLY();
+}
+
+static value_t try_finally_return(try_finally_data_t *data) {
+  E_BEGIN_TRY_FINALLY();
+    E_TRY(success());
+    E_RETURN(new_integer(4));
+  E_FINALLY();
+    data->called = true;
+  E_END_TRY_FINALLY();
+}
+
+TEST(value, try_finally) {
+  try_finally_data_t data = {false};
+
+  ASSERT_SIGNAL(scNothing, try_finally_signal(&data));
+  ASSERT_TRUE(data.called);
+  data.called = false;
+
+  value_t value = try_finally_return(&data);
+  ASSERT_VALEQ(new_integer(4), value);
+  ASSERT_TRUE(data.called);
+}

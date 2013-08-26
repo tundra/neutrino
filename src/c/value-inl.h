@@ -30,6 +30,59 @@
 value_t name;                                                                  \
 TRY_SET(name, INIT)
 
+
+// Crude exception handling. The E_ macros work like the plain ones but can
+// ensure cleanup on signals.
+
+// Declares that the following code uses the E_ macros to perform cleanup on
+// leaving the method. This is super crude and need refinement but it works okay.
+#define E_BEGIN_TRY_FINALLY() {                                                \
+  value_t __ensure_result__;
+
+// Does the same as a try except makes sure that the function's FINALLY block
+// is executed before bailing out on a signal.
+#define E_TRY(EXPR) do {                                                       \
+  value_t __result__ = (EXPR);                                                 \
+  if (in_domain(vdSignal, __result__))                                         \
+    E_RETURN(__result__);                                                      \
+} while (false)
+
+// Does the same as TRY_SET except makes sure the function's FINALLY block is
+// executed before bailing on a signal.
+#define E_TRY_SET(TARGET, VALUE) do {                                          \
+  value_t __value__ = (VALUE);                                                 \
+  E_TRY(__value__);                                                            \
+  TARGET = __value__;                                                          \
+} while (false)
+
+// Does the same as TRY_DEF except makes sure the function's FINALLY block is
+// executed before bailing on a signal.
+#define E_TRY_DEF(name, INIT)                                                  \
+value_t name;                                                                  \
+E_TRY_SET(name, INIT)
+
+// Does the same as a normal return of the specified value but ensures that the
+// containing function's FINALLY clause is executed.
+#define E_RETURN(V) do {                                                       \
+  __ensure_result__ = V;                                                       \
+  goto finally;                                                                \
+} while (false)
+
+// Marks the end of a try/finally block. This must come at the and of a function,
+// any code following this macro will not be executed.
+#define E_END_TRY_FINALLY()                                                    \
+    }                                                                          \
+    return __ensure_result__;                                                  \
+  }                                                                            \
+  SWALLOW_SEMI(etf)
+
+// Marks the end of the try-part of a try/finally block, the following code is
+// the finally part. The implementation is a bit fiddly in order for a semi to
+// be allowed after this macro, that's what the extra { is for.
+#define E_FINALLY()                                                            \
+  finally: {                                                                   \
+    SWALLOW_SEMI(ef)
+
 // Returns true if the value of the given expression is in the specified
 // domain.
 static inline bool in_domain(value_domain_t domain, value_t value) {

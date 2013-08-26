@@ -47,12 +47,17 @@ value_t init_syntax_mapping(value_mapping_t *mapping, runtime_t *runtime) {
 
 value_t compile_syntax(runtime_t *runtime, value_t program, value_t space) {
   assembler_t assm;
+  // Don't try to execute cleanup if this fails since there'll not be an
+  // assembler to dispose.
   TRY(assembler_init(&assm, runtime, space));
-  TRY(emit_value(program, &assm));
-  assembler_emit_return(&assm);
-  TRY_DEF(code_block, assembler_flush(&assm));
-  assembler_dispose(&assm);
-  return code_block;
+  E_BEGIN_TRY_FINALLY();
+    E_TRY(emit_value(program, &assm));
+    assembler_emit_return(&assm);
+    E_TRY_DEF(code_block, assembler_flush(&assm));
+    E_RETURN(code_block);
+  E_FINALLY();
+    assembler_dispose(&assm);
+  E_END_TRY_FINALLY();
 }
 
 

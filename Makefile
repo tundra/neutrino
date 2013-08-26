@@ -24,7 +24,7 @@ OS=posix
 -include config/$(CONFIG).cfg
 
 ifeq ($(VALGRIND),on)
-  VALGRIND_CMD=valgrind -q --leak-check=full
+  VALGRIND_CMD=valgrind -q --leak-check=full --error-exitcode=1
 else
   VALGRIND_CMD=
 endif
