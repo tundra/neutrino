@@ -220,3 +220,8 @@ uint32_t pseudo_random_next_uint32(pseudo_random_t *random);
 // Returns the next pseudo-random number greater than 0 and less than the given
 // max.
 uint32_t pseudo_random_next(pseudo_random_t *random, uint32_t max);
+
+// Shuffles the given array of 'elem_count' elements, each of which is 'elem_size'
+// wide.
+void pseudo_random_shuffle(pseudo_random_t *random, void *data,
+    size_t elem_count, size_t elem_size);
