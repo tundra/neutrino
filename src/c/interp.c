@@ -84,7 +84,8 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         CHECK_FAMILY(ofInvocationRecord, record);
         value_t space = read_next_value(&state);
         CHECK_FAMILY(ofMethodSpace, space);
-        value_t method = lookup_method_space_method(runtime, space, record, &frame);
+        value_t method = lookup_method_space_method(runtime, space, record,
+            &frame, NULL);
         if (is_signal(scNotFound, method)) {
           value_to_string_t data;
           ERROR("Unresolved method for %s.", value_to_string(&data, record));

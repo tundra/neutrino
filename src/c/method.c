@@ -332,7 +332,7 @@ value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol
 }
 
 value_t lookup_method_space_method(runtime_t *runtime, value_t space,
-    value_t record, frame_t *frame) {
+    value_t record, frame_t *frame, value_t *arg_map_out) {
 #define kMaxArgCount 32
   size_t arg_count = get_invocation_record_argument_count(record);
   CHECK_TRUE("too many arguments", arg_count <= kMaxArgCount);
