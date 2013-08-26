@@ -19,7 +19,8 @@
   F(Slap)                                                                      \
   F(Pop)                                                                       \
   F(LoadLocal)                                                                 \
-  F(Lambda)
+  F(Lambda)                                                                    \
+  F(DelegateToLambda)
 
 // The enum of all opcodes.
 typedef enum {
@@ -90,6 +91,10 @@ value_t assembler_emit_load_local(assembler_t *assm, size_t index);
 
 // Emits a lambda that understands the given methods.
 value_t assembler_emit_lambda(assembler_t *assm, value_t methods);
+
+// Hacky implementation of calling lambdas. Later this should be replaced by a
+// more generate delegate operation.
+value_t assembler_emit_delegate_lambda_call(assembler_t *assm);
 
 // Adds a binding to the local variable map that records that the value of the
 // given symbol can be found at the given stack index. The symbol must not

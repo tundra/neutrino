@@ -102,6 +102,15 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         interpreter_state_load(&state, &frame);
         break;
       }
+      case ocDelegateToLambda: {
+        value_t lambda = frame_get_argument(&frame, 1);
+        CHECK_FAMILY(ofLambda, lambda);
+        value_t space = get_lambda_methods(lambda);
+
+        value_print_ln(lambda);
+        frame_push_value(&frame, lambda);
+        break;
+      }
       case ocBuiltin: {
         value_t wrapper = read_next_value(&state);
         builtin_method_t impl = get_void_p_value(wrapper);
@@ -266,6 +275,12 @@ value_t assembler_emit_new_array(assembler_t *assm, size_t length) {
   assembler_emit_byte(assm, length);
   // Pops off 'length' elements, pushes back an array.
   assembler_adjust_stack_height(assm, -length+1);
+  return success();
+}
+
+value_t assembler_emit_delegate_lambda_call(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocDelegateToLambda);
+  assembler_adjust_stack_height(assm, +1);
   return success();
 }
 

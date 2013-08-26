@@ -1170,7 +1170,7 @@ value_t lambda_validate(value_t value) {
 }
 
 value_t emit_lambda_call_trampoline(assembler_t *assm) {
-  assembler_emit_push(assm, new_integer(13));
+  TRY(assembler_emit_delegate_lambda_call(assm));
   return success();
 }
 
