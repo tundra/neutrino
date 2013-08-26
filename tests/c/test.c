@@ -244,8 +244,8 @@ uint32_t pseudo_random_next(pseudo_random_t *random, uint32_t max) {
 void pseudo_random_shuffle(pseudo_random_t *random, void *data,
     size_t elem_count, size_t elem_size) {
   // Fisher–Yates shuffle
-  CHECK_TRUE("element size too big", elem_size < 8);
-  byte_t scratch[8];
+  CHECK_TRUE("element size too big", elem_size < 16);
+  byte_t scratch[16];
   byte_t *start = data;
   for (size_t i = 0; i < elem_count - 1; i++) {
     size_t target = elem_count - i - 1;
