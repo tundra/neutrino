@@ -566,6 +566,13 @@ value_t get_array_buffer_at(value_t self, size_t index) {
   return get_array_at(get_array_buffer_elements(self), index);
 }
 
+void set_array_buffer_at(value_t self, size_t index, value_t value) {
+  CHECK_FAMILY(ofArrayBuffer, self);
+  CHECK_TRUE("array buffer index out of bounds",
+      index < get_array_buffer_length(self));
+  set_array_at(get_array_buffer_elements(self), index, value);
+}
+
 
 // --- I d e n t i t y   h a s h   m a p ---
 
@@ -1122,6 +1129,30 @@ value_t argument_map_trie_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofArray, get_argument_map_trie_value(value));
   VALIDATE_VALUE_FAMILY(ofArrayBuffer, get_argument_map_trie_children(value));
   return success();
+}
+
+value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, size_t index) {
+  value_t children = get_argument_map_trie_children(self);
+  // Check if we've already build that child.
+  if (index < get_array_buffer_length(children)) {
+    value_t cached = get_array_buffer_at(children, index);
+    if (!is_null(cached))
+      return cached;
+  }
+  // Pad the children buffer if necessary.
+  for (size_t i = get_array_buffer_length(children); i <= index; i++)
+    TRY(add_to_array_buffer(runtime, children, runtime_null(runtime)));
+  // Create the new child.
+  value_t old_value = get_argument_map_trie_value(self);
+  size_t old_length = get_array_length(old_value);
+  size_t new_length = old_length + 1;
+  TRY_DEF(new_value, new_heap_array(runtime, new_length));
+  for (size_t i = 0; i < old_length; i++)
+    set_array_at(new_value, i, get_array_at(old_value, i));
+  set_array_at(new_value, old_length, new_integer(index));
+  TRY_DEF(new_child, new_heap_argument_map_trie(runtime, new_value));
+  set_array_buffer_at(children, index, new_child);
+  return new_child;
 }
 
 

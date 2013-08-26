@@ -528,17 +528,73 @@ TEST(value, map_delete) {
 }
 
 // The description of an argument map.
-struct {
+typedef struct {
   size_t length;
   size_t *values;
 } test_argument_map_t;
 
+// Creates a new random test argument map. Remember to dispose it after use.
+void new_test_argument_map(test_argument_map_t *map, pseudo_random_t *random) {
+  size_t length = map->length = 4 + pseudo_random_next(random, 8);
+  size_t *values = map->values = malloc(length * sizeof(size_t));
+  for (size_t i = 0; i < length; i++)
+    values[i] = i;
+  pseudo_random_shuffle(random, values, length, sizeof(size_t));
+}
+
+// Disposes a test argument map.
+void dispose_test_argument_map(test_argument_map_t *map) {
+  free(map->values);
+}
+
+// Returns an argument map that matches the given test data, looking it up using
+// the given argument trie.
+value_t get_argument_map(runtime_t *runtime, value_t root, test_argument_map_t *data) {
+  value_t current = root;
+  for (size_t i = 0; i < data->length; i++)
+    TRY_SET(current, get_argument_map_trie_child(runtime, current, data->values[i]));
+  return get_argument_map_trie_value(current);
+}
+
 TEST(value, argument_map_tries) {
   CREATE_RUNTIME();
 
+  pseudo_random_t random;
+  pseudo_random_init(&random, 4234523);
   value_t root = new_heap_argument_map_trie(runtime, runtime->roots.empty_array);
-  static const size_t kSampleSize = 129;
 
+  // Build a set of test data.
+  static const size_t kSampleSize = 129;
+  test_argument_map_t test_maps[129];
+  for (size_t i = 0; i < kSampleSize; i++)
+    new_test_argument_map(&test_maps[i], &random);
+
+  // Read out all the maps we're going to test but only test them afterwards to
+  // ensure that they stay valid after more maps have been returned.
+  value_t maps[129];
+  for (size_t i = 0; i < kSampleSize; i++) {
+    value_t map = get_argument_map(runtime, root, &test_maps[i]);
+    ASSERT_SUCCESS(map);
+    maps[i] = map;
+  }
+
+  // Check that we got back the expected results.
+  for (size_t i = 0; i < kSampleSize; i++) {
+    test_argument_map_t *test_map = &test_maps[i];
+    value_t map = maps[i];
+    for (size_t i = 0; i < test_map->length; i++)
+      ASSERT_EQ(test_map->values[i], get_integer_value(get_array_at(map, i)));
+  }
+
+  // Check that calling again gets back the exact same maps.
+  for (size_t i = 0; i < kSampleSize; i++) {
+    value_t map = get_argument_map(runtime, root, &test_maps[i]);
+    ASSERT_SAME(maps[i], map);
+  }
+
+  // Free the test data.
+  for (size_t i = 0; i < kSampleSize; i++)
+    dispose_test_argument_map(&test_maps[i]);
 
   DISPOSE_RUNTIME();
 }

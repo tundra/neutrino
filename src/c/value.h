@@ -552,6 +552,9 @@ INTEGER_ACCESSORS_DECL(array_buffer, length);
 // index and returns an OutOfBounds signal under soft check failures.
 value_t get_array_buffer_at(value_t self, size_t index);
 
+// Sets the index'th element in this array buffer. Bounds checks the index.
+void set_array_buffer_at(value_t self, size_t index, value_t value);
+
 // Attempts to add an element at the end of this array buffer, increasing its
 // length by 1. Returns true if this succeeds, false if it wasn't possible.
 bool try_add_to_array_buffer(value_t self, value_t value);
@@ -720,6 +723,11 @@ ACCESSORS_DECL(argument_map_trie, value);
 
 // Pointers to the child trie nodes whose prefixes match this one.
 ACCESSORS_DECL(argument_map_trie, children);
+
+// Returns an argument map trie whose value has the value of the given trie
+// as a prefix, followed by the given index. Creates the child if necessary
+// which means that this call may fail.
+value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, size_t index);
 
 
 // --- O r d e r i n g ---
