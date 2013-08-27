@@ -79,8 +79,7 @@ value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t reco
 
 // Emits a raw call to a builtin with the given implementation and number of
 // arguments.
-value_t assembler_emit_builtin(assembler_t *assm, builtin_method_t builtin,
-    size_t argc);
+value_t assembler_emit_builtin(assembler_t *assm, builtin_method_t builtin);
 
 // Emits a return instruction.
 value_t assembler_emit_return(assembler_t *assm);

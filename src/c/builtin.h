@@ -15,13 +15,11 @@ typedef struct {
   runtime_t *runtime;
   // The current stack frame.
   frame_t *frame;
-  // The offset from the top of the previous frame to the "this" argument.
-  size_t this_offset;
 } builtin_arguments_t;
 
 // Initialize a built_in_arguments appropriately.
 void builtin_arguments_init(builtin_arguments_t *args, runtime_t *runtime,
-    frame_t *frame, size_t argc);
+    frame_t *frame);
 
 // Returns the index'th positional argument to a built-in method.
 value_t get_builtin_argument(builtin_arguments_t *args, size_t index);

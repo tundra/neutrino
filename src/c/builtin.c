@@ -8,18 +8,17 @@
 #include "value-inl.h"
 
 void builtin_arguments_init(builtin_arguments_t *args, runtime_t *runtime,
-    frame_t *frame, size_t argc) {
+    frame_t *frame) {
   args->runtime = runtime;
   args->frame = frame;
-  args->this_offset = argc - 1;
 }
 
 value_t get_builtin_argument(builtin_arguments_t *args, size_t index) {
-  return frame_get_argument(args->frame, index);
+  return frame_get_argument(args->frame, 2 + index);
 }
 
 value_t get_builtin_this(builtin_arguments_t *args) {
-  return frame_get_argument(args->frame, args->this_offset);
+  return frame_get_argument(args->frame, 0);
 }
 
 runtime_t *get_builtin_runtime(builtin_arguments_t *args) {
@@ -35,7 +34,7 @@ value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
   // Build the implementation.
   assembler_t assm;
   TRY(assembler_init(&assm, runtime, space));
-  TRY(assembler_emit_builtin(&assm, implementation, argc));
+  TRY(assembler_emit_builtin(&assm, implementation));
   TRY(assembler_emit_return(&assm));
   TRY_DEF(code_block, assembler_flush(&assm));
   assembler_dispose(&assm);

@@ -136,6 +136,7 @@ bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame, size_t fram
   set_frame_previous_capacity(frame, old_frame.capacity);
   set_frame_pc(frame, 0);
   set_frame_code_block(frame, success());
+  set_frame_argument_map(frame, success());
   // Update the stack piece's top frame data to reflect the new top frame.
   set_stack_piece_top_stack_pointer(stack_piece, frame->stack_pointer);
   set_stack_piece_top_frame_pointer(stack_piece, frame->frame_pointer);
@@ -218,6 +219,15 @@ value_t get_frame_code_block(frame_t *frame) {
   return *access_frame_header_field(frame, kFrameHeaderCodeBlockOffset);
 }
 
+void set_frame_argument_map(frame_t *frame, value_t argument_map) {
+  *access_frame_header_field(frame, kFrameHeaderArgumentMapOffset) =
+      argument_map;
+}
+
+value_t get_frame_argument_map(frame_t *frame) {
+  return *access_frame_header_field(frame, kFrameHeaderArgumentMapOffset);
+}
+
 void set_frame_pc(frame_t *frame, size_t pc) {
   *access_frame_header_field(frame, kFrameHeaderPcOffset) =
       new_integer(pc);
@@ -259,7 +269,7 @@ static bool is_frame_at_bottom_of_piece(frame_t *frame) {
   return frame->frame_pointer == kFrameHeaderSize;
 }
 
-value_t frame_get_argument(frame_t *frame, size_t index) {
+value_t frame_get_argument(frame_t *frame, size_t param_index) {
   size_t stack_pointer;
   value_t storage;
   // TODO: This is dumb, it needs to be made more efficient. Maybe we want to
@@ -275,9 +285,10 @@ value_t frame_get_argument(frame_t *frame, size_t index) {
     stack_pointer = frame->frame_pointer - kFrameHeaderSize;
     storage = get_stack_piece_storage(frame->stack_piece);
   }
+  value_t arg_map = get_frame_argument_map(frame);
+  size_t offset = get_integer_value(get_array_at(arg_map, param_index));
   value_t *elements = get_array_elements(storage);
-  size_t offset = stack_pointer - index - 1;
-  return elements[offset];
+  return elements[stack_pointer - offset - 1];
 }
 
 value_t frame_get_local(frame_t *frame, size_t index) {

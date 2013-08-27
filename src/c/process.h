@@ -50,13 +50,14 @@ typedef struct {
 } frame_t;
 
 // The number of words in a stack frame header.
-static const size_t kFrameHeaderSize = 4;
+static const size_t kFrameHeaderSize = 5;
 
 // Offsets _down_ from the frame pointer to the header fields.
 static const size_t kFrameHeaderPreviousFramePointerOffset = 0;
 static const size_t kFrameHeaderPreviousCapacityOffset = 1;
 static const size_t kFrameHeaderCodeBlockOffset = 2;
 static const size_t kFrameHeaderPcOffset = 3;
+static const size_t kFrameHeaderArgumentMapOffset = 4;
 
 // Tries to allocate a new frame on the given stack piece of the given capacity.
 // Returns true iff allocation succeeds.
@@ -93,6 +94,12 @@ void set_frame_pc(frame_t *frame, size_t pc);
 // Returns the program counter for this frame.
 size_t get_frame_pc(frame_t *frame);
 
+// Sets the mapping from parameters to argument indices for this frame.
+void set_frame_argument_map(frame_t *frame, value_t map);
+
+// Returns the mapping from parameter to argument indices for this frame.
+value_t get_frame_argument_map(frame_t *frame);
+
 // Pushes a value onto this stack frame. The returned value will always be
 // success except on bounds check failures in soft check failure mode where it
 // will be OutOfBounds.
@@ -107,8 +114,8 @@ value_t frame_pop_value(frame_t *frame);
 // OutOfBounds signal if not.
 value_t frame_peek_value(frame_t *frame, size_t index);
 
-// Returns the index'th argument in evaluation order.
-value_t frame_get_argument(frame_t *frame, size_t index);
+// Returns the value of the index'th parameter.
+value_t frame_get_argument(frame_t *frame, size_t param_index);
 
 // Returns the value of the index'th local variable in this frame.
 value_t frame_get_local(frame_t *frame, size_t index);
