@@ -93,3 +93,37 @@ TEST(test, shuffle) {
   ASSERT_EQ(kElemCount, moved_count);
   bit_vector_dispose(&moved);
 }
+
+// Returns a unique hash of the given permutation.
+int64_t calc_permutation_hash(int64_t *entries, size_t entc) {
+  int64_t result = 0;
+  for (size_t i = 0; i < entc; i++)
+    result = (result * entc) + entries[i];
+  return result;
+}
+
+static int64_t factorial(int64_t n) {
+  return (n == 1) ? 1 : n * factorial(n - 1);
+}
+
+// Tests the permutation generator for 'count' entries.
+static void test_permutations(int64_t *entries, size_t count) {
+  for (size_t i = 0; i < count; i++)
+    entries[i] = i;
+  bit_vector_t seen;
+  bit_vector_init(&seen, (1 << (3 * count)), false);
+  size_t seen_count = 0;
+  do {
+    int64_t hash = calc_permutation_hash(entries, count);
+    ASSERT_FALSE(bit_vector_get_at(&seen, hash));
+    seen_count++;
+    bit_vector_set_at(&seen, hash, true);
+  } while (advance_lexical_permutation(entries, count));
+  ASSERT_EQ(factorial(count), seen_count);
+}
+
+TEST(test, permutations) {
+  int64_t entries[9];
+  for (size_t i = 2; i < 9; i++)
+    test_permutations(entries, i);
+}

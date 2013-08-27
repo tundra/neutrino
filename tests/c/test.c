@@ -294,3 +294,39 @@ void pseudo_random_shuffle(pseudo_random_t *random, void *data,
     memcpy(start + (elem_size * source), scratch, elem_size);
   }
 }
+
+bool advance_lexical_permutation(int64_t *elms, size_t elmc) {
+  // This implementation follows an outline from wikipedia's article on
+  // "Algorithms to generate permutations".
+  bool found_k = false;
+  // Find the largest k such that a[k] < a[k + 1].
+  size_t k = 0;
+  for (size_t k_plus_1 = elmc - 1; k_plus_1 > 0; k_plus_1--) {
+    k = k_plus_1 - 1;
+    if (elms[k] < elms[k + 1]) {
+      found_k = true;
+      break;
+    }
+  }
+  if (!found_k)
+    return false;
+  // Find the largest l such that a[k] < a[l].
+  size_t l;
+  for (size_t l_plus_1 = elmc; l_plus_1 > 0; l_plus_1--) {
+    l = l_plus_1 - 1;
+    if (elms[k] < elms[l])
+      break;
+  }
+  // Swap the value of a[k] with that of a[l].
+  int64_t temp = elms[k];
+  elms[k] = elms[l];
+  elms[l] = temp;
+  // Reverse the sequence from a[k + 1] up to and including the final element
+  // a[n].
+  for (size_t i = 0; (elmc - i - 1) > (k + 1 + i); i++) {
+    int64_t temp = elms[elmc - i - 1];
+    elms[elmc - i - 1] = elms[k + 1 + i];
+    elms[k + 1 + i] = temp;
+  }
+  return true;
+}

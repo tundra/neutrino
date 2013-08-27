@@ -225,3 +225,9 @@ uint32_t pseudo_random_next(pseudo_random_t *random, uint32_t max);
 // wide.
 void pseudo_random_shuffle(pseudo_random_t *random, void *data,
     size_t elem_count, size_t elem_size);
+
+// Given an array of length N that contains a permutation of the numbers from 0
+// to N, advances the numbers to the next permutation such that calling this 2^N
+// times, starting from 0..N, generates all possible permutations. Returns false
+// iff the given array if in descending order, which is the end point.
+bool advance_lexical_permutation(int64_t *elms, size_t elmc);
