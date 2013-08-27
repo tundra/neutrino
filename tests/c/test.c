@@ -15,14 +15,19 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+// ARRRG! Features. Are. Awful!
 #define __USE_POSIX199309
 #include <time.h>
+extern char *strdup(const char*);
+
 
 // Data associated with a particular test run.
 typedef struct {
-  const char *suite;
+  // If non-null, the test suite to run.
+  char *suite;
+  // If non-null, the test case to run.
+  char *test;
 } unit_test_data_t;
-
 
 // Macros used in the generated TOC file.
 #define ENUMERATE_TESTS_HEADER void enumerate_tests(unit_test_data_t *data)
@@ -36,17 +41,29 @@ static double get_current_time_seconds() {
   return spec.tv_sec + (spec.tv_nsec / 1000000000.0);
 }
 
+// Match the given suite and test name against the given unit test data, return
+// true iff the test should be run.
+static bool match_test_data(unit_test_data_t *data, const char *suite, const char *test) {
+  if (data->suite == NULL)
+    return true;
+  if (strcmp(suite, data->suite) != 0)
+    return false;
+  if (data->test == NULL)
+    return true;
+  return strcmp(test, data->test) == 0;
+}
+
 // Callback invoked for each test case by the test enumerator.
-void run_unit_test(const char *suite, const char *name, unit_test_data_t *data,
+void run_unit_test(const char *suite, const char *test, unit_test_data_t *data,
     void (unit_test)()) {
   static const size_t kTimeColumn = 32;
-  if (!data->suite || (strcmp(suite, data->suite) == 0)) {
-    printf("- %s/%s", suite, name);
+  if (match_test_data(data, suite, test)) {
+    printf("- %s/%s", suite, test);
     fflush(stdout);
     double start = get_current_time_seconds();
     unit_test();
     double end = get_current_time_seconds();
-    for (size_t i = strlen(suite) + strlen(name); i < kTimeColumn; i++)
+    for (size_t i = strlen(suite) + strlen(test); i < kTimeColumn; i++)
       putc(' ', stdout);
     printf(" (%.3fs)\n", (end - start));
     fflush(stdout);
@@ -57,6 +74,21 @@ void run_unit_test(const char *suite, const char *name, unit_test_data_t *data,
 // Include the generated TOC.
 #include "toc.c"
 
+static void parse_test_data(const char *str, unit_test_data_t *data) {
+  char *dupped = strdup(str);
+  data->suite = dupped;
+  char *test = strchr(dupped, '/');
+  if (test != NULL) {
+    test[0] = 0;
+    data->test = &test[1];
+  } else {
+    data->test = NULL;
+  }
+}
+
+static void dispose_test_data(unit_test_data_t *data) {
+  free(data->suite);
+}
 
 // Run!
 int main(int argc, char *argv[]) {
@@ -64,13 +96,15 @@ int main(int argc, char *argv[]) {
   if (argc >= 2) {
     // If there are arguments run the relevant test suites.
     for (int i = 1; i < argc; i++) {
-      unit_test_data_t data = {argv[i]};
+      unit_test_data_t data;
+      parse_test_data(argv[i], &data);
       enumerate_tests(&data);
+      dispose_test_data(&data);
     }
     return 0;
   } else {
     // If there are no arguments just run everything.
-    unit_test_data_t data = {NULL};
+    unit_test_data_t data = {NULL, NULL};
     enumerate_tests(&data);
   }
 }
