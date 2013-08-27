@@ -41,27 +41,27 @@ static value_t execute_program(runtime_t *runtime, value_t program) {
 
 // Create a vm and run the program.
 static value_t neutrino_main(int argc, char *argv[]) {
-  runtime_t runtime;
-  TRY(runtime_init(&runtime, NULL));
+  runtime_t *runtime;
+  TRY(new_runtime(NULL, &runtime));
 
   for (int i = 1; i < argc; i++) {
     const char *filename = argv[i];
     value_t input;
     if (strcmp("-", filename) == 0) {
-      TRY_SET(input, read_file_to_blob(&runtime, stdin));
+      TRY_SET(input, read_file_to_blob(runtime, stdin));
     } else {
       FILE *file = fopen(filename, "r");
-      TRY_SET(input, read_file_to_blob(&runtime, file));
+      TRY_SET(input, read_file_to_blob(runtime, file));
       fclose(file);
     }
     value_mapping_t syntax_mapping;
-    TRY(init_syntax_mapping(&syntax_mapping, &runtime));
-    TRY_DEF(program, plankton_deserialize(&runtime, &syntax_mapping, input));
-    TRY_DEF(result, execute_program(&runtime, program));
+    TRY(init_syntax_mapping(&syntax_mapping, runtime));
+    TRY_DEF(program, plankton_deserialize(runtime, &syntax_mapping, input));
+    TRY_DEF(result, execute_program(runtime, program));
     value_print_ln(result);
   }
 
-  TRY(runtime_dispose(&runtime));
+  TRY(delete_runtime(runtime));
   return success();
 }
 
