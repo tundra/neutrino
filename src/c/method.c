@@ -57,10 +57,17 @@ bool match_result_is_match(match_result_t value) {
   return value >= mrMatch;
 }
 
+void match_info_init(match_info_t *info, score_t *scores, size_t *offsets,
+    size_t capacity) {
+  info->scores = scores;
+  info->offsets = offsets;
+  info->capacity = capacity;
+}
+
 match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
-    frame_t *frame, value_t space, score_t *scores, size_t score_count) {
+    frame_t *frame, value_t space, match_info_t *match_info) {
   size_t argument_count = get_invocation_record_argument_count(record);
-  CHECK_TRUE("score array too short", argument_count <= score_count);
+  CHECK_TRUE("score array too short", argument_count <= match_info->capacity);
   // Vector of parameters seen. This is used to ensure that we only see each
   // parameter once.
   size_t param_count = get_signature_parameter_count(self);
@@ -73,7 +80,7 @@ match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
   match_result_t on_match = mrMatch;
   // Clear the score vector.
   for (size_t i = 0; i < argument_count; i++)
-    scores[i] = gsNoMatch;
+    match_info->scores[i] = gsNoMatch;
   // Scan through the arguments and look them up in the signature.
   value_t tags = get_signature_tags(self);
   for (size_t i = 0; i < argument_count; i++) {
@@ -85,7 +92,7 @@ match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
       if (get_signature_allow_extra(self)) {
         // It's fine, this signature allows extra arguments.
         on_match = mrExtraMatch;
-        scores[i] = gsExtraMatch;
+        match_info->scores[i] = gsExtraMatch;
         continue;
       } else {
         // This signature doesn't allow extra arguments so we bail out.
@@ -111,7 +118,8 @@ match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
     }
     // We got a match! Record the result and move on to the next.
     bit_vector_set_at(&params_seen, index, true);
-    scores[i] = score;
+    match_info->scores[i] = score;
+    match_info->offsets[index] = get_invocation_record_offset_at(record, i);
     if (!get_parameter_is_optional(param))
       mandatory_seen_count++;
   }
@@ -331,6 +339,9 @@ value_t lookup_method_space_method(runtime_t *runtime, value_t space,
   value_t result = new_signal(scNotFound);
   // Running argument-wise max over all the methods that have matched.
   score_t max_score[kMaxArgCount];
+  size_t offsets[kMaxArgCount];
+  match_info_t match_info;
+  match_info_init(&match_info, max_score, offsets, kMaxArgCount);
   value_t methods = get_method_space_methods(space);
   size_t method_count = get_array_buffer_length(methods);
   size_t current = 0;
@@ -341,7 +352,7 @@ value_t lookup_method_space_method(runtime_t *runtime, value_t space,
     value_t method = get_array_buffer_at(methods, current);
     value_t signature = get_method_signature(method);
     match_result_t match = match_signature(runtime, signature, record, frame,
-        space, max_score, kMaxArgCount);
+        space, &match_info);
     if (match_result_is_match(match)) {
       result = method;
       current++;
@@ -354,11 +365,12 @@ value_t lookup_method_space_method(runtime_t *runtime, value_t space,
   bool max_is_synthetic = false;
   // Continue scanning but compare every new match to the existing best score.
   score_t scratch_score[kMaxArgCount];
+  match_info_init(&match_info, scratch_score, offsets, kMaxArgCount);
   for (; current < method_count; current++) {
     value_t method = get_array_buffer_at(methods, current);
     value_t signature = get_method_signature(method);
     match_result_t match = match_signature(runtime, signature, record, frame,
-        space, scratch_score, kMaxArgCount);
+        space, &match_info);
     if (!match_result_is_match(match))
       continue;
     join_status_t status = join_score_vectors(max_score, scratch_score, arg_count);

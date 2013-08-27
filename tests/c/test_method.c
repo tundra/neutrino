@@ -346,8 +346,13 @@ typedef struct {
 // Collects a set of arguments into an array.
 #define ARGS(N, args) ((test_argument_t[(N) + 1]) {args, ((test_argument_t) {vInt(0), vInt(0), false})})
 
-void assert_match(runtime_t *runtime, match_result_t expected, value_t signature,
-    test_argument_t *args) {
+// Collects a list of positive ints into an array.
+#define INTS(N, args) ((int64_t[(N) + 1]) {args, -1})
+
+// Attempts to do a match and checks that the outcome is as expected. If the
+// expected offsets are NULL offsets won't be checked.
+void assert_match_with_offsets(runtime_t *runtime, match_result_t expected_result,
+    int64_t *expected_offsets, value_t signature, test_argument_t *args) {
   // Count how many arguments there are.
   size_t arg_count = 0;
   for (size_t i = 0; args[i].is_valid; i++)
@@ -364,10 +369,27 @@ void assert_match(runtime_t *runtime, match_result_t expected, value_t signature
   }
   value_t vector = build_invocation_record_vector(runtime, tags);
   value_t record = new_heap_invocation_record(runtime, vector);
+  static const size_t kLength = 16;
   score_t scores[16];
+  size_t offsets[16];
+  // Reset the offsets to a recognizable value (the size_t max).
+  memset(offsets, 0xFF, kLength * sizeof(size_t));
+  match_info_t match_info;
+  match_info_init(&match_info, scores, offsets, kLength);
   match_result_t result = match_signature(runtime, signature, record, &frame,
-      new_integer(0), scores, 16);
-  ASSERT_EQ(expected, result);
+      new_integer(0), &match_info);
+  ASSERT_EQ(expected_result, result);
+  if (expected_offsets != NULL) {
+    for (size_t i = 0; i < arg_count; i++)
+      ASSERT_EQ(expected_offsets[i], offsets[i]);
+  }
+}
+
+// Attempts to do a match and checks that the result is as expected, ignoring
+// the offsets and scores.
+void assert_match(runtime_t *runtime, match_result_t expected, value_t signature,
+    test_argument_t *args) {
+  assert_match_with_offsets(runtime, expected, NULL, signature, args);
 }
 
 TEST(method, simple_matching) {
@@ -503,6 +525,59 @@ TEST(method, extra_args) {
       ARG(vInt(0), vStr("foo")) o
       ARG(vInt(1), vStr("bar")) o
       ARG(vStr("z"), vStr("baz"))));
+
+  DISPOSE_RUNTIME();
+}
+
+TEST(method, match_argument_map) {
+  CREATE_RUNTIME();
+
+  value_t any_guard = runtime->roots.any_guard;
+  value_t sig = make_signature(runtime,
+      true,
+      PARAMS(4,
+          PARAM(any_guard, false, vArray(2, vInt(0) o vStr("w"))) o
+          PARAM(any_guard, false, vArray(2, vInt(1) o vStr("z"))) o
+          PARAM(any_guard, false, vArray(2, vInt(2) o vStr("y"))) o
+          PARAM(any_guard, false, vArray(2, vInt(3) o vStr("x")))));
+
+  // Evaluation order. We'll cycle through all permutations of this, starting
+  // with the "obvious" order.
+  int64_t es[4];
+  for (size_t i = 0; i < 4; i++)
+    es[i] = i;
+
+  // String tags, to try those as well. THis both tests having multiple tags
+  // for each param and having the tags out of sort order.
+  variant_t ss[4] = {vStr("w"), vStr("z"), vStr("y"), vStr("x")};
+
+  do {
+    // Argument map which is the inverse of the evaluation order (since we're
+    // going from parameters to stack offset) as well as reversed (since the
+    // stack is accessed from the top, the top element at offset 0 having been
+    // evaluated last).
+    int64_t as[4];
+    as[es[3]] = 0;
+    as[es[2]] = 1;
+    as[es[1]] = 2;
+    as[es[0]] = 3;
+    // Integer tags.
+    assert_match_with_offsets(runtime, mrMatch,
+        INTS(4, as[0] o as[1] o as[2] o as[3]), sig,
+        ARGS(4,
+            ARG(vInt(es[0]), vInt(96)) o
+            ARG(vInt(es[1]), vInt(97)) o
+            ARG(vInt(es[2]), vInt(98)) o
+            ARG(vInt(es[3]), vInt(99))));
+    // String tags.
+    assert_match_with_offsets(runtime, mrMatch,
+        INTS(4, as[0] o as[1] o as[2] o as[3]), sig,
+        ARGS(4,
+            ARG(ss[es[0]], vInt(104)) o
+            ARG(ss[es[1]], vInt(103)) o
+            ARG(ss[es[2]], vInt(102)) o
+            ARG(ss[es[3]], vInt(101))));
+  } while (advance_lexical_permutation(es, 4));
 
   DISPOSE_RUNTIME();
 }
