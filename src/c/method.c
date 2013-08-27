@@ -119,6 +119,7 @@ match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
     // We got a match! Record the result and move on to the next.
     bit_vector_set_at(&params_seen, index, true);
     match_info->scores[i] = score;
+    match_info->offsets[index] = i;
     if (!get_parameter_is_optional(param))
       mandatory_seen_count++;
   }

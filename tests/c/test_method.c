@@ -530,7 +530,24 @@ TEST(method, extra_args) {
 }
 
 TEST(method, foobar) {
+  CREATE_RUNTIME();
 
+  value_t any_guard = runtime->roots.any_guard;
+  value_t sig = make_signature(runtime,
+      true,
+      PARAMS(4,
+          PARAM(any_guard, false, vArray(2, vInt(0) o vStr("x"))) o
+          PARAM(any_guard, false, vArray(2, vInt(1) o vStr("y"))) o
+          PARAM(any_guard, false, vArray(2, vInt(2) o vStr("z"))) o
+          PARAM(any_guard, false, vArray(2, vInt(3) o vStr("w")))));
+  assert_match_with_offsets(runtime, mrMatch, INTS(4, 0 o 1 o 2 o 3), sig,
+      ARGS(4,
+          ARG(vInt(0), vInt(96)) o
+          ARG(vInt(1), vInt(97)) o
+          ARG(vInt(2), vInt(98)) o
+          ARG(vInt(3), vInt(99))));
+
+  DISPOSE_RUNTIME();
 }
 
 // Description of a score used in testing.
