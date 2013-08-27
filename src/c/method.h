@@ -225,9 +225,10 @@ value_t add_method_space_method(runtime_t *runtime, value_t self,
     value_t method);
 
 // Looks up a method in this method space given an invocation record and a stack
-// frame.
+// frame. If the match is successful, as a side-effect stores an argument map
+// that maps between the result's parameters and argument offsets on the stack.
 value_t lookup_method_space_method(runtime_t *runtime, value_t space,
-    value_t record, frame_t *frame);
+    value_t record, frame_t *frame, value_t *arg_map_out);
 
 
 // --- I n v o c a t i o n   R e c o r d ---

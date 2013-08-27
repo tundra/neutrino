@@ -84,7 +84,9 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         CHECK_FAMILY(ofInvocationRecord, record);
         value_t space = read_next_value(&state);
         CHECK_FAMILY(ofMethodSpace, space);
-        value_t method = lookup_method_space_method(runtime, space, record, &frame);
+        value_t arg_map;
+        value_t method = lookup_method_space_method(runtime, space, record,
+            &frame, &arg_map);
         if (is_signal(scNotFound, method)) {
           value_to_string_t data;
           ERROR("Unresolved method for %s.", value_to_string(&data, record));
@@ -96,15 +98,15 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         value_t code_block = get_method_code(method);
         push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block));
         set_frame_code_block(&frame, code_block);
+        set_frame_argument_map(&frame, arg_map);
         interpreter_state_load(&state, &frame);
         break;
       }
       case ocBuiltin: {
         value_t wrapper = read_next_value(&state);
         builtin_method_t impl = get_void_p_value(wrapper);
-        size_t argc = read_next_byte(&state);
         builtin_arguments_t args;
-        builtin_arguments_init(&args, runtime, &frame, argc);
+        builtin_arguments_init(&args, runtime, &frame);
         value_t result = impl(&args);
         frame_push_value(&frame, result);
         break;
@@ -150,6 +152,7 @@ value_t run_code_block(runtime_t *runtime, value_t code) {
   size_t frame_size = get_code_block_high_water_mark(code);
   push_stack_frame(runtime, stack, &frame, frame_size);
   set_frame_code_block(&frame, code);
+  set_frame_argument_map(&frame, runtime->roots.empty_array);
   return run_stack(runtime, stack);
 }
 
@@ -275,12 +278,10 @@ value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t reco
   return success();
 }
 
-value_t assembler_emit_builtin(assembler_t *assm, builtin_method_t builtin,
-    size_t argc) {
+value_t assembler_emit_builtin(assembler_t *assm, builtin_method_t builtin) {
   TRY_DEF(wrapper, new_heap_void_p(assm->runtime, builtin));
   assembler_emit_opcode(assm, ocBuiltin);
   TRY(assembler_emit_value(assm, wrapper));
-  assembler_emit_byte(assm, argc);
   // Pushes the result.
   assembler_adjust_stack_height(assm, 1);
   return success();

@@ -661,7 +661,9 @@ static void test_lookup(runtime_t *runtime, value_t expected, value_t first,
     frame_push_value(&frame, values[i]);
   }
   value_t record = new_heap_invocation_record(runtime, vector);
-  value_t method = lookup_method_space_method(runtime, space, record, &frame);
+  value_t arg_map;
+  value_t method = lookup_method_space_method(runtime, space, record, &frame,
+      &arg_map);
   ASSERT_VALEQ(expected, method);
 }
 

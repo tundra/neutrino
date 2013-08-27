@@ -332,16 +332,22 @@ value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol
 }
 
 value_t lookup_method_space_method(runtime_t *runtime, value_t space,
-    value_t record, frame_t *frame) {
+    value_t record, frame_t *frame, value_t *arg_map_out) {
 #define kMaxArgCount 32
   size_t arg_count = get_invocation_record_argument_count(record);
   CHECK_TRUE("too many arguments", arg_count <= kMaxArgCount);
   value_t result = new_signal(scNotFound);
   // Running argument-wise max over all the methods that have matched.
   score_t max_score[kMaxArgCount];
-  size_t offsets[kMaxArgCount];
+  // We use two scratch offsets vectors such that we can keep the best in one
+  // and the other as scratch, swapping them around when a new best one is
+  // found.
+  size_t offsets_one[kMaxArgCount];
+  size_t offsets_two[kMaxArgCount];
+  size_t *result_offsets = offsets_one;
+  size_t *scratch_offsets = offsets_two;
   match_info_t match_info;
-  match_info_init(&match_info, max_score, offsets, kMaxArgCount);
+  match_info_init(&match_info, max_score, result_offsets, kMaxArgCount);
   value_t methods = get_method_space_methods(space);
   size_t method_count = get_array_buffer_length(methods);
   size_t current = 0;
@@ -365,7 +371,7 @@ value_t lookup_method_space_method(runtime_t *runtime, value_t space,
   bool max_is_synthetic = false;
   // Continue scanning but compare every new match to the existing best score.
   score_t scratch_score[kMaxArgCount];
-  match_info_init(&match_info, scratch_score, offsets, kMaxArgCount);
+  match_info_init(&match_info, scratch_score, scratch_offsets, kMaxArgCount);
   for (; current < method_count; current++) {
     value_t method = get_array_buffer_at(methods, current);
     value_t signature = get_method_signature(method);
@@ -381,6 +387,13 @@ value_t lookup_method_space_method(runtime_t *runtime, value_t space,
       result = method;
       // Now the max definitely isn't synthetic.
       max_is_synthetic = false;
+      // The offsets for the result is not stored in scratch_offsets and we have
+      // no more use for the previous result_offsets so we swap them around.
+      size_t *temp = scratch_offsets;
+      scratch_offsets = result_offsets;
+      result_offsets = temp;
+      // And then we have to update the match info with the new scratch offsets.
+      match_info_init(&match_info, scratch_score, scratch_offsets, kMaxArgCount);
     } else if (status != jsWorse) {
       // The next score was not strictly worse than the best we've seen so we
       // don't have a unique best.
@@ -388,6 +401,16 @@ value_t lookup_method_space_method(runtime_t *runtime, value_t space,
       // If the result is ambiguous that means the max is now synthetic.
       max_is_synthetic = (status == jsAmbiguous);
     }
+  }
+  if (!in_domain(vdSignal, result)) {
+    // We have a result so we need to build an argument map that represents the
+    // result's offsets vector.
+    value_t current_node = runtime->roots.argument_map_trie_root;
+    for (size_t i = 0; i < arg_count; i++) {
+      size_t offset = result_offsets[i];
+      TRY_SET(current_node, get_argument_map_trie_child(runtime, current_node, offset));
+    }
+    *arg_map_out = get_argument_map_trie_value(current_node);
   }
 #undef kMaxArgCount
   return result;
