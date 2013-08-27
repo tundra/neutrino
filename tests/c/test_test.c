@@ -120,6 +120,7 @@ static void test_permutations(int64_t *entries, size_t count) {
     bit_vector_set_at(&seen, hash, true);
   } while (advance_lexical_permutation(entries, count));
   ASSERT_EQ(factorial(count), seen_count);
+  bit_vector_dispose(&seen);
 }
 
 TEST(test, permutations) {

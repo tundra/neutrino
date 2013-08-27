@@ -529,23 +529,55 @@ TEST(method, extra_args) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, foobar) {
+TEST(method, match_argument_map) {
   CREATE_RUNTIME();
 
   value_t any_guard = runtime->roots.any_guard;
   value_t sig = make_signature(runtime,
       true,
       PARAMS(4,
-          PARAM(any_guard, false, vArray(2, vInt(0) o vStr("x"))) o
-          PARAM(any_guard, false, vArray(2, vInt(1) o vStr("y"))) o
-          PARAM(any_guard, false, vArray(2, vInt(2) o vStr("z"))) o
-          PARAM(any_guard, false, vArray(2, vInt(3) o vStr("w")))));
-  assert_match_with_offsets(runtime, mrMatch, INTS(4, 0 o 1 o 2 o 3), sig,
-      ARGS(4,
-          ARG(vInt(0), vInt(96)) o
-          ARG(vInt(1), vInt(97)) o
-          ARG(vInt(2), vInt(98)) o
-          ARG(vInt(3), vInt(99))));
+          PARAM(any_guard, false, vArray(2, vInt(0) o vStr("w"))) o
+          PARAM(any_guard, false, vArray(2, vInt(1) o vStr("z"))) o
+          PARAM(any_guard, false, vArray(2, vInt(2) o vStr("y"))) o
+          PARAM(any_guard, false, vArray(2, vInt(3) o vStr("x")))));
+
+  // Evaluation order. We'll cycle through all permutations of this, starting
+  // with the "obvious" order.
+  int64_t es[4];
+  for (size_t i = 0; i < 4; i++)
+    es[i] = i;
+
+  // String tags, to try those as well. THis both tests having multiple tags
+  // for each param and having the tags out of sort order.
+  variant_t ss[4] = {vStr("w"), vStr("z"), vStr("y"), vStr("x")};
+
+  do {
+    // Argument map which is the inverse of the evaluation order (since we're
+    // going from parameters to stack offset) as well as reversed (since the
+    // stack is accessed from the top, the top element at offset 0 having been
+    // evaluated last).
+    int64_t as[4];
+    as[es[3]] = 0;
+    as[es[2]] = 1;
+    as[es[1]] = 2;
+    as[es[0]] = 3;
+    // Integer tags.
+    assert_match_with_offsets(runtime, mrMatch,
+        INTS(4, as[0] o as[1] o as[2] o as[3]), sig,
+        ARGS(4,
+            ARG(vInt(es[0]), vInt(96)) o
+            ARG(vInt(es[1]), vInt(97)) o
+            ARG(vInt(es[2]), vInt(98)) o
+            ARG(vInt(es[3]), vInt(99))));
+    // String tags.
+    assert_match_with_offsets(runtime, mrMatch,
+        INTS(4, as[0] o as[1] o as[2] o as[3]), sig,
+        ARGS(4,
+            ARG(ss[es[0]], vInt(104)) o
+            ARG(ss[es[1]], vInt(103)) o
+            ARG(ss[es[2]], vInt(102)) o
+            ARG(ss[es[3]], vInt(101))));
+  } while (advance_lexical_permutation(es, 4));
 
   DISPOSE_RUNTIME();
 }

@@ -119,7 +119,7 @@ match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
     // We got a match! Record the result and move on to the next.
     bit_vector_set_at(&params_seen, index, true);
     match_info->scores[i] = score;
-    match_info->offsets[index] = i;
+    match_info->offsets[index] = get_invocation_record_offset_at(record, i);
     if (!get_parameter_is_optional(param))
       mandatory_seen_count++;
   }
@@ -339,8 +339,9 @@ value_t lookup_method_space_method(runtime_t *runtime, value_t space,
   value_t result = new_signal(scNotFound);
   // Running argument-wise max over all the methods that have matched.
   score_t max_score[kMaxArgCount];
+  size_t offsets[kMaxArgCount];
   match_info_t match_info;
-  match_info_init(&match_info, max_score, NULL, kMaxArgCount);
+  match_info_init(&match_info, max_score, offsets, kMaxArgCount);
   value_t methods = get_method_space_methods(space);
   size_t method_count = get_array_buffer_length(methods);
   size_t current = 0;
@@ -364,7 +365,7 @@ value_t lookup_method_space_method(runtime_t *runtime, value_t space,
   bool max_is_synthetic = false;
   // Continue scanning but compare every new match to the existing best score.
   score_t scratch_score[kMaxArgCount];
-  match_info_init(&match_info, scratch_score, NULL, kMaxArgCount);
+  match_info_init(&match_info, scratch_score, offsets, kMaxArgCount);
   for (; current < method_count; current++) {
     value_t method = get_array_buffer_at(methods, current);
     value_t signature = get_method_signature(method);
