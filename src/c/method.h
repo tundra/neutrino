@@ -64,15 +64,30 @@ typedef enum {
 // Returns true if the given match result represents a match.
 bool match_result_is_match(match_result_t value);
 
+// Additional info about a match in addition to whether it was successful or not,
+// including the score vector and parameter-argument mapping.
+typedef struct {
+  // On a successful match the scores will be stored here.
+  score_t *scores;
+  // On a successful match the parameter offsets will be stored here.
+  size_t *offsets;
+  // The capacity of the scores and offsets vectors.
+  size_t capacity;
+} match_info_t;
+
+// Initializes a match info struct.
+void match_info_init(match_info_t *info, score_t *scores, size_t *offsets,
+    size_t capacity);
+
 // Matches the given invocation against this signature. You should not base
 // behavior on the exact failure type returned since there can be multiple
 // failures and the choice of which one gets returned is arbitrary.
 //
-// The scores array must be long enough to hold a score for each argument
-// in the invocation. If the match succeeds it holds the scores, if it fails
-// the state is unspecified.
+// The capacity of the match_info argument must be at least large enough to hold
+// info about all the arguments. If the match succeeds it holds the info, if
+// it fails the state is unspecified.
 match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
-    frame_t *frame, value_t space, score_t *scores, size_t score_count);
+    frame_t *frame, value_t space, match_info_t *match_info);
 
 // The outcome of joining two score vectors. The values encode how they matched:
 // if the first bit is set the target was strictly better at some point, if the

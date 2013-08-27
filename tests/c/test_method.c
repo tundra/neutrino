@@ -346,8 +346,13 @@ typedef struct {
 // Collects a set of arguments into an array.
 #define ARGS(N, args) ((test_argument_t[(N) + 1]) {args, ((test_argument_t) {vInt(0), vInt(0), false})})
 
-void assert_match(runtime_t *runtime, match_result_t expected, value_t signature,
-    test_argument_t *args) {
+// Collects a list of positive ints into an array.
+#define INTS(N, args) ((int64_t[(N) + 1]) {args, -1})
+
+// Attempts to do a match and checks that the outcome is as expected. If the
+// expected offsets are NULL offsets won't be checked.
+void assert_match_with_offsets(runtime_t *runtime, match_result_t expected_result,
+    int64_t *expected_offsets, value_t signature, test_argument_t *args) {
   // Count how many arguments there are.
   size_t arg_count = 0;
   for (size_t i = 0; args[i].is_valid; i++)
@@ -364,10 +369,27 @@ void assert_match(runtime_t *runtime, match_result_t expected, value_t signature
   }
   value_t vector = build_invocation_record_vector(runtime, tags);
   value_t record = new_heap_invocation_record(runtime, vector);
+  static const size_t kLength = 16;
   score_t scores[16];
+  size_t offsets[16];
+  // Reset the offsets to a recognizable value (the size_t max).
+  memset(offsets, 0xFF, kLength * sizeof(size_t));
+  match_info_t match_info;
+  match_info_init(&match_info, scores, offsets, kLength);
   match_result_t result = match_signature(runtime, signature, record, &frame,
-      new_integer(0), scores, 16);
-  ASSERT_EQ(expected, result);
+      new_integer(0), &match_info);
+  ASSERT_EQ(expected_result, result);
+  if (expected_offsets != NULL) {
+    for (size_t i = 0; i < arg_count; i++)
+      ASSERT_EQ(expected_offsets[i], offsets[i]);
+  }
+}
+
+// Attempts to do a match and checks that the result is as expected, ignoring
+// the offsets and scores.
+void assert_match(runtime_t *runtime, match_result_t expected, value_t signature,
+    test_argument_t *args) {
+  assert_match_with_offsets(runtime, expected, NULL, signature, args);
 }
 
 TEST(method, simple_matching) {
@@ -505,6 +527,10 @@ TEST(method, extra_args) {
       ARG(vStr("z"), vStr("baz"))));
 
   DISPOSE_RUNTIME();
+}
+
+TEST(method, foobar) {
+
 }
 
 // Description of a score used in testing.
