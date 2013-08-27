@@ -156,6 +156,19 @@ value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
   return success();
 }
 
+value_t new_runtime(space_config_t *config, runtime_t **runtime_out) {
+  runtime_t *runtime = (runtime_t*) malloc(sizeof(runtime_t));
+  TRY(runtime_init(runtime, config));
+  *runtime_out = runtime;
+  return success();
+}
+
+value_t delete_runtime(runtime_t *runtime) {
+  TRY(runtime_dispose(runtime));
+  free(runtime);
+  return success();
+}
+
 value_t runtime_init(runtime_t *runtime, space_config_t *config) {
   // First reset all the fields to a well-defined value.
   runtime_clear(runtime);

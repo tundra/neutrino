@@ -19,13 +19,12 @@ bool value_structural_equal(value_t a, value_t b);
 // is used consistently and allows other macros to depend on the variables
 // created here.
 #define CREATE_RUNTIME()                                                       \
-runtime_t stack_runtime;                                                       \
-runtime_t *runtime = &stack_runtime;                                           \
-ASSERT_SUCCESS(runtime_init(runtime, NULL))
+runtime_t *runtime = NULL;                                                     \
+ASSERT_SUCCESS(new_runtime(NULL, &runtime));
 
 // Disposes a runtime created using the CREATE_RUNTIME method.
 #define DISPOSE_RUNTIME()                                                      \
-ASSERT_SUCCESS(runtime_dispose(runtime));
+ASSERT_SUCCESS(delete_runtime(runtime));
 
 
 // Data recorded about check failures.

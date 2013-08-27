@@ -183,9 +183,8 @@ TEST(value, exhaust_id_hash_map) {
   space_config_t config;
   space_config_init_defaults(&config);
   config.size_bytes = 8192;
-  runtime_t stack_runtime;
-  runtime_t *runtime = &stack_runtime;
-  ASSERT_SUCCESS(runtime_init(runtime, &config));
+  runtime_t *runtime = NULL;
+  ASSERT_SUCCESS(new_runtime(&config, &runtime));
 
   value_t map = new_heap_id_hash_map(runtime, 4);
   for (size_t i = 0; true; i++) {
