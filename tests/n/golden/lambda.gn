@@ -21,3 +21,6 @@ EXPECT: 9
 
 INPUT: (fn ($x, $y) => $y)(9, 10)
 EXPECT: 10
+
+INPUT: (fn ($f, $x) => $f($x))(fn ($x) => ($x + 3), 6)
+EXPECT: 9
