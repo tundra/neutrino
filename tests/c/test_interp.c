@@ -66,7 +66,7 @@ TEST(interp, execution) {
     assert_ast_value(runtime, vInt(3), ast);
   }
 
-  // Lambda
+  // Simple lambda
   {
     value_t lam = new_heap_lambda_ast(runtime, runtime->roots.empty_array,
         new_heap_literal_ast(runtime, new_integer(13)));

@@ -180,7 +180,9 @@ static void integer_print_atomic_on(value_t value, string_buffer_t *buf) {
 static void signal_print_atomic_on(value_t value, string_buffer_t *buf) {
   CHECK_DOMAIN(vdSignal, value);
   signal_cause_t cause = get_signal_cause(value);
-  string_buffer_printf(buf, "%%<signal: %s>", get_signal_cause_name(cause));
+  uint32_t details = get_signal_details(value);
+  string_buffer_printf(buf, "%%<signal: %s dt@%i>", get_signal_cause_name(cause),
+      details);
 }
 
 static void object_print_on(value_t value, string_buffer_t *buf) {

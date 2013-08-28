@@ -50,7 +50,7 @@ typedef struct {
 } frame_t;
 
 // The number of words in a stack frame header.
-static const size_t kFrameHeaderSize = 5;
+static const size_t kFrameHeaderSize = 6;
 
 // Offsets _down_ from the frame pointer to the header fields.
 static const size_t kFrameHeaderPreviousFramePointerOffset = 0;
@@ -58,6 +58,7 @@ static const size_t kFrameHeaderPreviousCapacityOffset = 1;
 static const size_t kFrameHeaderCodeBlockOffset = 2;
 static const size_t kFrameHeaderPcOffset = 3;
 static const size_t kFrameHeaderArgumentMapOffset = 4;
+static const size_t kFrameHeaderInvocationRecordOffset = 5;
 
 // Tries to allocate a new frame on the given stack piece of the given capacity.
 // Returns true iff allocation succeeds.
@@ -99,6 +100,12 @@ void set_frame_argument_map(frame_t *frame, value_t map);
 
 // Returns the mapping from parameter to argument indices for this frame.
 value_t get_frame_argument_map(frame_t *frame);
+
+// Sets the invocation record for the call to this frame.
+void set_frame_invocation_record(frame_t *frame, value_t map);
+
+// Returns the invocation record for this frame.
+value_t get_frame_invocation_record(frame_t *frame);
 
 // Pushes a value onto this stack frame. The returned value will always be
 // success except on bounds check failures in soft check failure mode where it

@@ -446,16 +446,18 @@ UNCHECKED_ACCESSORS_IMPL(LambdaAst, lambda_ast, Body, body);
 value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofLambdaAst, value);
   runtime_t *runtime = assm->runtime;
+  // Build the signature.
   TRY_DEF(vector, new_heap_pair_array(runtime, 2));
   set_pair_array_first_at(vector, 0, runtime->roots.string_table.this);
   set_pair_array_second_at(vector, 0,
       new_heap_parameter(runtime, runtime->roots.any_guard, false, 0));
-  set_pair_array_first_at(vector, 0, runtime->roots.string_table.name);
+  set_pair_array_first_at(vector, 1, runtime->roots.string_table.name);
   TRY_DEF(name_guard, new_heap_guard(runtime, gtEq, runtime->roots.string_table.sausages));
-  set_pair_array_second_at(vector, 0,
+  set_pair_array_second_at(vector, 1,
       new_heap_parameter(runtime, name_guard, false, 1));
   co_sort_pair_array(vector);
   TRY_DEF(sig, new_heap_signature(runtime, vector, 2, 2, false));
+  // Build the method space.
   TRY_DEF(space, new_heap_method_space(runtime));
   value_t body = get_lambda_ast_body(value);
   TRY_DEF(body_code, compile_syntax(runtime, body, assm->space));
@@ -464,6 +466,17 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   assembler_emit_lambda(assm, space);
   return success();
 }
+
+/*
+ *
+ * if (assembler_is_local_variable_bound(assm, symbol))
+    // We're trying to redefine an already defined symbol. That's not valid.
+    return new_invalid_syntax_signal(isSymbolAlreadyBound);
+  TRY(assembler_bind_local_variable(assm, symbol, offset));
+  value_t body = get_local_declaration_ast_body(self);
+  TRY(emit_value(body, assm));
+  TRY(assembler_unbind_local_v
+ */
 
 value_t lambda_ast_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofLambdaAst, value);

@@ -49,6 +49,17 @@ static value_t read_next_value(interpreter_state_t *state) {
   return get_array_at(state->value_pool, index);
 }
 
+static byte_t peek_previous_byte(interpreter_state_t *state, size_t size,
+    size_t offset) {
+  return blob_byte_at(&state->bytecode, state->pc - size + offset);
+}
+
+static value_t peek_previous_value(interpreter_state_t *state, size_t size,
+    size_t offset) {
+  size_t index = peek_previous_byte(state, size, offset);
+  return get_array_at(state->value_pool, index);
+}
+
 value_t run_stack(runtime_t *runtime, value_t stack) {
   frame_t frame;
   get_stack_top_frame(stack, &frame);
@@ -103,12 +114,34 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         break;
       }
       case ocDelegateToLambda: {
-        value_t lambda = frame_get_argument(&frame, 1);
+        // Get the lambda to delegate to.
+        value_t lambda = frame_get_argument(&frame, 0);
         CHECK_FAMILY(ofLambda, lambda);
         value_t space = get_lambda_methods(lambda);
-
-        value_print_ln(lambda);
-        frame_push_value(&frame, lambda);
+        // Pop off the top frame since we're repeating the previous call.
+        bool popped = pop_stack_frame(stack, &frame);
+        CHECK_TRUE("delegating from bottom frame", popped);
+        interpreter_state_load(&state, &frame);
+        // Extract the invocation record from the calling instruction.
+        CHECK_EQ("invalid calling instruction", ocInvoke,
+            peek_previous_byte(&state, 3, 0));
+        value_t record = peek_previous_value(&state, 3, 1);
+        CHECK_FAMILY(ofInvocationRecord, record);
+        // Perform the lookup.
+        value_t arg_map;
+        value_t method = lookup_method_space_method(runtime, space, record,
+            &frame, &arg_map);
+        if (is_signal(scNotFound, method)) {
+          value_to_string_t data;
+          ERROR("Unresolved delegate for %s.", value_to_string(&data, record));
+          dispose_value_to_string(&data);
+          return method;
+        }
+        value_t code_block = get_method_code(method);
+        push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block));
+        set_frame_code_block(&frame, code_block);
+        set_frame_argument_map(&frame, arg_map);
+        interpreter_state_load(&state, &frame);
         break;
       }
       case ocBuiltin: {
