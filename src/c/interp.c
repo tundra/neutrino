@@ -49,11 +49,16 @@ static value_t read_next_value(interpreter_state_t *state) {
   return get_array_at(state->value_pool, index);
 }
 
+// Reads a byte from the previous instruction, assuming that we're currently
+// at the first byte of the next instruction. Size is the size of the
+// instruction, offset is the offset of the byte we want to read.
 static byte_t peek_previous_byte(interpreter_state_t *state, size_t size,
     size_t offset) {
   return blob_byte_at(&state->bytecode, state->pc - size + offset);
 }
 
+// Reads a value pool value from the previous instruction, assuming that we're
+// currently at the first byte of the next instruction.
 static value_t peek_previous_value(interpreter_state_t *state, size_t size,
     size_t offset) {
   size_t index = peek_previous_byte(state, size, offset);
@@ -127,7 +132,8 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
             peek_previous_byte(&state, 3, 0));
         value_t record = peek_previous_value(&state, 3, 1);
         CHECK_FAMILY(ofInvocationRecord, record);
-        // Perform the lookup.
+        // From this point we do the same as invoke except using the space from
+        // the lambda rather than the space from the invoke instruction.
         value_t arg_map;
         value_t method = lookup_method_space_method(runtime, space, record,
             &frame, &arg_map);

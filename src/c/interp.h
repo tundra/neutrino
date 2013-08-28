@@ -93,7 +93,7 @@ value_t assembler_emit_load_local(assembler_t *assm, size_t index);
 value_t assembler_emit_lambda(assembler_t *assm, value_t methods);
 
 // Hacky implementation of calling lambdas. Later this should be replaced by a
-// more generate delegate operation.
+// more general delegate operation.
 value_t assembler_emit_delegate_lambda_call(assembler_t *assm);
 
 // Adds a binding to the local variable map that records that the value of the

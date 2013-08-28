@@ -228,15 +228,6 @@ value_t get_frame_argument_map(frame_t *frame) {
   return *access_frame_header_field(frame, kFrameHeaderArgumentMapOffset);
 }
 
-void set_frame_invocation_record(frame_t *frame, value_t value) {
-  *access_frame_header_field(frame, kFrameHeaderInvocationRecordOffset) =
-      value;
-}
-
-value_t get_frame_invocation_record(frame_t *frame) {
-  return *access_frame_header_field(frame, kFrameHeaderInvocationRecordOffset);
-}
-
 void set_frame_pc(frame_t *frame, size_t pc) {
   *access_frame_header_field(frame, kFrameHeaderPcOffset) =
       new_integer(pc);
