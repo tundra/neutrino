@@ -28,6 +28,15 @@ def bn(left, op, right):
     ast.Argument(0, right)
   ])
 
+def cl(fun, *poss):
+  args = [
+    ast.Argument('this', fun),
+    ast.Argument('name', ast.Literal("()"))
+  ]
+  for i in xrange(len(poss)):
+    args.append(ast.Argument(i, poss[i]))
+  return ast.Invocation(args)
+
 class ParserTest(unittest.TestCase):
 
   def check_expression(self, input, expected):
@@ -59,6 +68,12 @@ class ParserTest(unittest.TestCase):
     test = self.check_expression
     test('1 + 2', bn(lt(1), '+', lt(2)))
     test('1 + 2 + 3', bn(bn(lt(1), '+', lt(2)), '+', lt(3)))
+    test('$a()', cl(id("a")))
+    test('$a()()', cl(cl(id("a"))))
+    test('$a(1)', cl(id("a"), lt(1)))
+    test('$a(1, 2)', cl(id("a"), lt(1), lt(2)))
+    test('$a(1, 2, 3)', cl(id("a"), lt(1), lt(2), lt(3)))
+    test('$a(1)(2)(3)', cl(cl(cl(id("a"), lt(1)), lt(2)), lt(3)))
 
   def test_sequence(self):
     test = self.check_expression

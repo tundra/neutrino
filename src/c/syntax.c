@@ -467,17 +467,6 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   return success();
 }
 
-/*
- *
- * if (assembler_is_local_variable_bound(assm, symbol))
-    // We're trying to redefine an already defined symbol. That's not valid.
-    return new_invalid_syntax_signal(isSymbolAlreadyBound);
-  TRY(assembler_bind_local_variable(assm, symbol, offset));
-  value_t body = get_local_declaration_ast_body(self);
-  TRY(emit_value(body, assm));
-  TRY(assembler_unbind_local_v
- */
-
 value_t lambda_ast_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofLambdaAst, value);
   return success();

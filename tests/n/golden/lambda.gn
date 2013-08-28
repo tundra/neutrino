@@ -1,2 +1,5 @@
-INPUT: (fn ($x) => $x)(4)
+INPUT: (fn => 4)()
 EXPECT: 4
+
+INPUT: (fn => fn => 7)()()
+EXPECT: 7
