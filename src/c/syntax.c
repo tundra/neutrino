@@ -45,11 +45,12 @@ value_t init_syntax_mapping(value_mapping_t *mapping, runtime_t *runtime) {
   return success();
 }
 
-value_t compile_syntax(runtime_t *runtime, value_t program, value_t space) {
+value_t compile_syntax(runtime_t *runtime, value_t program, value_t space,
+    value_t bindings_or_null) {
   assembler_t assm;
   // Don't try to execute cleanup if this fails since there'll not be an
   // assembler to dispose.
-  TRY(assembler_init(&assm, runtime, space));
+  TRY(assembler_init(&assm, runtime, space, bindings_or_null));
   E_BEGIN_TRY_FINALLY();
     E_TRY(emit_value(program, &assm));
     assembler_emit_return(&assm);
@@ -362,6 +363,9 @@ static value_t emit_variable_ast(value_t self, assembler_t *assm) {
     case btLocal:
       TRY(assembler_emit_load_local(assm, binding.data));
       break;
+    case btArgument:
+      TRY(assembler_emit_load_argument(assm, binding.data));
+      break;
     default:
       WARN("Unknown binding type %i", binding.type);
       UNREACHABLE("unknown binding type");
@@ -458,6 +462,7 @@ static value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   TRY_DEF(name_param, new_heap_parameter(runtime, name_guard, false, 1));
   set_pair_array_second_at(vector, 1, name_param);
   for (size_t i = 0; i < explicit_argc; i++) {
+    // Add the parameter to the signature.
     size_t param_index = implicit_argc + i;
     value_t param_ast = get_array_at(params, i);
     value_t tags = get_parameter_ast_tags(param_ast);
@@ -466,13 +471,25 @@ static value_t emit_lambda_ast(value_t value, assembler_t *assm) {
     set_pair_array_first_at(vector, param_index, tag);
     TRY_DEF(param, new_heap_parameter(runtime, any_guard, false, param_index));
     set_pair_array_second_at(vector, param_index, param);
+    // Bind the parameter in the local scope.
+    value_t symbol = get_parameter_ast_symbol(param_ast);
+    if (assembler_is_symbol_bound(assm, symbol))
+      // We're trying to redefine an already defined symbol. That's not valid.
+      return new_invalid_syntax_signal(isSymbolAlreadyBound);
+    TRY(assembler_bind_symbol(assm, symbol, btArgument, param_index));
   }
   co_sort_pair_array(vector);
   TRY_DEF(sig, new_heap_signature(runtime, vector, total_argc, total_argc, false));
   // Build the method space.
   TRY_DEF(space, new_heap_method_space(runtime));
   value_t body = get_lambda_ast_body(value);
-  TRY_DEF(body_code, compile_syntax(runtime, body, assm->space));
+  TRY_DEF(body_code, compile_syntax(runtime, body, assm->space, assm->local_bindings));
+  // Remove the parameter bindings again.
+  for (size_t i = 0; i < explicit_argc; i++) {
+    value_t param_ast = get_array_at(params, i);
+    value_t symbol = get_parameter_ast_symbol(param_ast);
+    assembler_unbind_symbol(assm, symbol);
+  }
   TRY_DEF(method, new_heap_method(runtime, sig, body_code));
   TRY(add_method_space_method(runtime, space, method));
   assembler_emit_lambda(assm, space);
