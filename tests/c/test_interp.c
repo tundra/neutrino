@@ -6,6 +6,10 @@
 #include "syntax.h"
 #include "test.h"
 
+TEST(interp, binding_info_size) {
+  ASSERT_TRUE(sizeof(binding_info_t) <= sizeof(int64_t));
+}
+
 // Evaluates the given syntax tree and checks that the result is the given
 // expected value.
 static void assert_ast_value(runtime_t *runtime, variant_t expected, value_t ast) {
