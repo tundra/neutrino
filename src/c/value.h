@@ -181,53 +181,51 @@ static value_t new_moved_object(value_t target) {
 //       variable size.
 //   - Fix: does this type require a post-migration fixup during garbage
 //       collection?
+//   - Emt: is this family a syntax tree that can be emitted as code? Not all
+//       syntax tree nodes can be emitted.
 //
-// CamelName            underscore_name         Cmp Cid Cnt Sur Nol Fix
+// CamelName            underscore_name         Cmp Cid Cnt Sur Nol Fix Emt
 
 // Enumerates the special species, the ones that require special handling during
 // startup.
 #define ENUM_SPECIAL_OBJECT_FAMILIES(F)                                        \
-  F(Species,            species,                _,  _,  _,  _,  X,  _)
-
-// Enumerates the syntax tree families.
-#define ENUM_SYNTAX_OBJECT_FAMILIES(F)                                         \
-  F(ArgumentAst,        argument_ast,           _,  _,  X,  X,  _,  _)         \
-  F(ArrayAst,           array_ast,              _,  _,  X,  X,  _,  _)         \
-  F(InvocationAst,      invocation_ast,         _,  _,  X,  X,  _,  _)         \
-  F(LiteralAst,         literal_ast,            _,  _,  X,  X,  _,  _)         \
-  F(LocalDeclarationAst, local_declaration_ast, _,  _,  X,  X,  _,  _)         \
-  F(SequenceAst,        sequence_ast,           _,  _,  X,  X,  _,  _)         \
-  F(VariableAst,        variable_ast,           _,  _,  X,  X,  _,  _)         \
-  F(SymbolAst,          symbol_ast,             _,  _,  X,  X,  _,  _)         \
-  F(LambdaAst,          lambda_ast,             _,  _,  X,  X,  _,  _)         \
-  F(ParameterAst,       parameter_ast,          _,  _,  X,  X,  _,  _)
+  F(Species,            species,                _,  _,  _,  _,  X,  _,  _)
 
 // Enumerates the compact object species.
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                        \
-  F(Array,              array,                  _,  _,  _,  X,  X,  _)         \
-  F(ArrayBuffer,        array_buffer,           _,  _,  _,  X,  _,  _)         \
-  F(ArgumentMapTrie,    argument_map_trie,      _,  _,  _,  _,  _,  _)         \
-  F(Blob,               blob,                   _,  _,  _,  X,  X,  _)         \
-  F(Boolean,            boolean,                X,  X,  _,  X,  _,  _)         \
-  F(CodeBlock,          code_block,             _,  _,  _,  _,  _,  _)         \
-  F(Factory,            factory,                _,  _,  _,  _,  _,  _)         \
-  F(Guard,              guard,                  _,  _,  _,  _,  _,  _)         \
-  F(IdHashMap,          id_hash_map,            _,  _,  _,  X,  _,  X)         \
-  F(Instance,           instance,               _,  _,  X,  X,  _,  _)         \
-  F(InvocationRecord,   invocation_record,      _,  _,  _,  _,  _,  _)         \
-  F(Lambda,             lambda,                 _,  _,  _,  X,  _,  _)         \
-  F(Method,             method,                 _,  _,  _,  _,  _,  _)         \
-  F(MethodSpace,        method_space,           _,  _,  _,  _,  _,  _)         \
-  F(Nothing,            nothing,                _,  _,  _,  _,  _,  _)         \
-  F(Null,               null,                   _,  X,  _,  X,  _,  _)         \
-  F(Parameter,          parameter,              _,  _,  _,  _,  _,  _)         \
-  F(Protocol,           protocol,               _,  _,  _,  X,  _,  _)         \
-  F(Signature,          signature,              _,  _,  _,  _,  _,  _)         \
-  F(Stack,              stack,                  _,  _,  _,  _,  _,  _)         \
-  F(StackPiece,         stack_piece,            _,  _,  _,  _,  _,  _)         \
-  F(String,             string,                 X,  X,  _,  X,  X,  _)         \
-  F(VoidP,              void_p,                 _,  _,  _,  _,  X,  _)         \
-  ENUM_SYNTAX_OBJECT_FAMILIES(F)
+  F(ArgumentAst,        argument_ast,           _,  _,  X,  X,  _,  _,  _)     \
+  F(ArgumentMapTrie,    argument_map_trie,      _,  _,  _,  _,  _,  _,  _)     \
+  F(Array,              array,                  _,  _,  _,  X,  X,  _,  _)     \
+  F(ArrayAst,           array_ast,              _,  _,  X,  X,  _,  _,  X)     \
+  F(ArrayBuffer,        array_buffer,           _,  _,  _,  X,  _,  _,  _)     \
+  F(Blob,               blob,                   _,  _,  _,  X,  X,  _,  _)     \
+  F(Boolean,            boolean,                X,  X,  _,  X,  _,  _,  _)     \
+  F(CodeBlock,          code_block,             _,  _,  _,  _,  _,  _,  _)     \
+  F(Factory,            factory,                _,  _,  _,  _,  _,  _,  _)     \
+  F(Guard,              guard,                  _,  _,  _,  _,  _,  _,  _)     \
+  F(IdHashMap,          id_hash_map,            _,  _,  _,  X,  _,  X,  _)     \
+  F(Instance,           instance,               _,  _,  X,  X,  _,  _,  _)     \
+  F(InvocationAst,      invocation_ast,         _,  _,  X,  X,  _,  _,  X)     \
+  F(InvocationRecord,   invocation_record,      _,  _,  _,  _,  _,  _,  _)     \
+  F(Lambda,             lambda,                 _,  _,  _,  X,  _,  _,  _)     \
+  F(LambdaAst,          lambda_ast,             _,  _,  X,  X,  _,  _,  X)     \
+  F(LiteralAst,         literal_ast,            _,  _,  X,  X,  _,  _,  X)     \
+  F(LocalDeclarationAst, local_declaration_ast, _,  _,  X,  X,  _,  _,  X)     \
+  F(Method,             method,                 _,  _,  _,  _,  _,  _,  _)     \
+  F(MethodSpace,        method_space,           _,  _,  _,  _,  _,  _,  _)     \
+  F(Nothing,            nothing,                _,  _,  _,  _,  _,  _,  _)     \
+  F(Null,               null,                   _,  X,  _,  X,  _,  _,  _)     \
+  F(Parameter,          parameter,              _,  _,  _,  _,  _,  _,  _)     \
+  F(ParameterAst,       parameter_ast,          _,  _,  X,  X,  _,  _,  _)     \
+  F(Protocol,           protocol,               _,  _,  _,  X,  _,  _,  _)     \
+  F(SequenceAst,        sequence_ast,           _,  _,  X,  X,  _,  _,  X)     \
+  F(Signature,          signature,              _,  _,  _,  _,  _,  _,  _)     \
+  F(Stack,              stack,                  _,  _,  _,  _,  _,  _,  _)     \
+  F(StackPiece,         stack_piece,            _,  _,  _,  _,  _,  _,  _)     \
+  F(String,             string,                 X,  X,  _,  X,  X,  _,  _)     \
+  F(SymbolAst,          symbol_ast,             _,  _,  X,  X,  _,  _,  _)     \
+  F(VariableAst,        variable_ast,           _,  _,  X,  X,  _,  _,  X)     \
+  F(VoidP,              void_p,                 _,  _,  _,  _,  X,  _,  _)
 
 // Enumerates all the object families.
 #define ENUM_OBJECT_FAMILIES(F)                                                \
@@ -237,7 +235,8 @@ static value_t new_moved_object(value_t target) {
 // Enum identifying the different families of heap objects.
 typedef enum {
   __ofFirst__ = -1
-  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CMP, CID, CNT, SUR, NOL, FIX) , of##Family
+  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CMP, CID, CNT, SUR,   \
+      NOL, FIX, EMT) , of##Family
   ENUM_OBJECT_FAMILIES(__DECLARE_OBJECT_FAMILY_ENUM__)
   #undef __DECLARE_OBJECT_FAMILY_ENUM__
 } object_family_t;
