@@ -444,16 +444,31 @@ static value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofLambdaAst, value);
   runtime_t *runtime = assm->runtime;
   // Build the signature.
-  TRY_DEF(vector, new_heap_pair_array(runtime, 2));
+  value_t params = get_lambda_ast_parameters(value);
+  size_t implicit_argc = 2;
+  size_t explicit_argc = get_array_length(params);
+  size_t total_argc = implicit_argc + explicit_argc;
+  TRY_DEF(vector, new_heap_pair_array(runtime, total_argc));
   set_pair_array_first_at(vector, 0, runtime->roots.string_table.this);
-  set_pair_array_second_at(vector, 0,
-      new_heap_parameter(runtime, runtime->roots.any_guard, false, 0));
+  value_t any_guard = runtime->roots.any_guard;
+  TRY_DEF(this_param, new_heap_parameter(runtime, any_guard, false, 0));
+  set_pair_array_second_at(vector, 0, this_param);
   set_pair_array_first_at(vector, 1, runtime->roots.string_table.name);
   TRY_DEF(name_guard, new_heap_guard(runtime, gtEq, runtime->roots.string_table.sausages));
-  set_pair_array_second_at(vector, 1,
-      new_heap_parameter(runtime, name_guard, false, 1));
+  TRY_DEF(name_param, new_heap_parameter(runtime, name_guard, false, 1));
+  set_pair_array_second_at(vector, 1, name_param);
+  for (size_t i = 0; i < explicit_argc; i++) {
+    size_t param_index = implicit_argc + i;
+    value_t param_ast = get_array_at(params, i);
+    value_t tags = get_parameter_ast_tags(param_ast);
+    CHECK_EQ("multi tags", 1, get_array_length(tags));
+    value_t tag = get_array_at(tags, 0);
+    set_pair_array_first_at(vector, param_index, tag);
+    TRY_DEF(param, new_heap_parameter(runtime, any_guard, false, param_index));
+    set_pair_array_second_at(vector, param_index, param);
+  }
   co_sort_pair_array(vector);
-  TRY_DEF(sig, new_heap_signature(runtime, vector, 2, 2, false));
+  TRY_DEF(sig, new_heap_signature(runtime, vector, total_argc, total_argc, false));
   // Build the method space.
   TRY_DEF(space, new_heap_method_space(runtime));
   value_t body = get_lambda_ast_body(value);

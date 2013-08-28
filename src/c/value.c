@@ -1132,7 +1132,14 @@ value_t argument_map_trie_validate(value_t value) {
   return success();
 }
 
-value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, size_t index) {
+// Converts an argument map key object to a plain integer. Argument map keys
+// can only be nonnegative integers or null.
+static size_t argument_map_key_to_integer(value_t key) {
+  return is_null(key) ? 0 : (1 + get_integer_value(key));
+}
+
+value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, value_t key) {
+  size_t index = argument_map_key_to_integer(key);
   value_t children = get_argument_map_trie_children(self);
   // Check if we've already build that child.
   if (index < get_array_buffer_length(children)) {
@@ -1150,7 +1157,7 @@ value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, size_t ind
   TRY_DEF(new_value, new_heap_array(runtime, new_length));
   for (size_t i = 0; i < old_length; i++)
     set_array_at(new_value, i, get_array_at(old_value, i));
-  set_array_at(new_value, old_length, new_integer(index));
+  set_array_at(new_value, old_length, key);
   TRY_DEF(new_child, new_heap_argument_map_trie(runtime, new_value));
   set_array_buffer_at(children, index, new_child);
   return new_child;
@@ -1176,7 +1183,7 @@ value_t emit_lambda_call_trampoline(assembler_t *assm) {
 
 value_t add_lambda_builtin_methods(runtime_t *runtime, value_t space) {
   TRY(add_method_space_custom_method(runtime, space, runtime->roots.lambda_protocol,
-      "()", 0, emit_lambda_call_trampoline));
+      "()", 0, true, emit_lambda_call_trampoline));
   return success();
 }
 
