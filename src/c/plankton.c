@@ -229,7 +229,7 @@ value_t plankton_serialize(runtime_t *runtime, value_mapping_t *resolver_or_null
     value_t data) {
   // Write the data to a C heap blob.
   byte_buffer_t buf;
-  byte_buffer_init(&buf, NULL);
+  byte_buffer_init(&buf);
   // Use the empty resolver if the resolver pointer is null.
   value_mapping_t resolver;
   if (resolver_or_null == NULL) {
@@ -326,7 +326,7 @@ static value_t map_deserialize(deserialize_state_t *state) {
 
 static value_t string_deserialize(deserialize_state_t *state) {
   string_buffer_t buf;
-  string_buffer_init(&buf, NULL);
+  string_buffer_init(&buf);
   size_t length = uint32_deserialize(state->in);
   for (size_t i = 0; i < length; i++)
     string_buffer_putc(&buf, byte_stream_read(state->in));

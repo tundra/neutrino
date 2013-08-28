@@ -67,7 +67,7 @@ TEST(behavior, identity) {
 // Check that printing the given value yields the expected string.
 static void check_print_on(const char *expected_chars, value_t value) {
   string_buffer_t buf;
-  string_buffer_init(&buf, NULL);
+  string_buffer_init(&buf);
 
   value_print_on(value, &buf);
   string_t result;

@@ -235,7 +235,7 @@ value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t space,
   }
   assm->runtime = runtime;
   assm->space = space;
-  byte_buffer_init(&assm->code, NULL);
+  byte_buffer_init(&assm->code);
   assm->stack_height = assm->high_water_mark = 0;
   return success();
 }

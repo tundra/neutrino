@@ -19,10 +19,11 @@ TEST(runtime, create) {
 
   // Propagating failure correctly when malloc fails during startup.
   runtime_t r1;
-  space_config_t config;
-  space_config_init_defaults(&config);
-  config.allocator.malloc = blocking_malloc;
-  ASSERT_SIGNAL(scSystemError, runtime_init(&r1, &config));
+  allocator_t blocker;
+  blocker.malloc = blocking_malloc;
+  allocator_t *prev_alloc = allocator_set_default(&blocker);
+  ASSERT_SIGNAL(scSystemError, runtime_init(&r1, NULL));
+  allocator_set_default(prev_alloc);
 }
 
 TEST(runtime, singletons) {

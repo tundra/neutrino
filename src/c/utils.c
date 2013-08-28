@@ -115,27 +115,47 @@ void init_system_allocator(allocator_t *alloc) {
   alloc->data = NULL;
 }
 
-address_t allocator_malloc(allocator_t *alloc, size_t size) {
+void *allocator_malloc(allocator_t *alloc, size_t size) {
   return (alloc->malloc)(alloc->data, size);
 }
 
-void allocator_free(allocator_t *alloc, address_t ptr) {
+void allocator_free(allocator_t *alloc, void *ptr) {
   (alloc->free)(alloc->data, ptr);
 }
 
-void string_buffer_init(string_buffer_t *buf, allocator_t *alloc_or_null) {
-  if (alloc_or_null == NULL) {
-    init_system_allocator(&buf->allocator);
-  } else {
-    buf->allocator = *alloc_or_null;
+void *allocator_default_malloc(size_t size) {
+  return allocator_malloc(allocator_get_default(), size);
+}
+
+void allocator_default_free(void *ptr) {
+  allocator_free(allocator_get_default(), ptr);
+}
+
+allocator_t kSystemAllocator;
+allocator_t *allocator_default = NULL;
+
+allocator_t *allocator_get_default() {
+  if (allocator_default == NULL) {
+    init_system_allocator(&kSystemAllocator);
+    allocator_default = &kSystemAllocator;
   }
+  return allocator_default;
+}
+
+allocator_t *allocator_set_default(allocator_t *value) {
+  allocator_t *previous = allocator_get_default();
+  allocator_default = value;
+  return previous;
+}
+
+void string_buffer_init(string_buffer_t *buf) {
   buf->length = 0;
   buf->capacity = 128;
-  buf->chars = (char*) allocator_malloc(&buf->allocator, buf->capacity);
+  buf->chars = allocator_default_malloc(buf->capacity);
 }
 
 void string_buffer_dispose(string_buffer_t *buf) {
-  allocator_free(&buf->allocator, (address_t) buf->chars);
+  allocator_default_free(buf->chars);
 }
 
 // Expands the buffer to make room for 'length' characters if necessary.
@@ -144,10 +164,9 @@ static void string_buffer_ensure_capacity(string_buffer_t *buf,
   if (length < buf->capacity)
     return;
   size_t new_capacity = (length * 2);
-  char *new_chars = (char*) allocator_malloc(&buf->allocator,
-      new_capacity);
+  char *new_chars = allocator_default_malloc(new_capacity);
   memcpy(new_chars, buf->chars, buf->length);
-  allocator_free(&buf->allocator, (address_t) buf->chars);
+  allocator_default_free(buf->chars);
   buf->chars = new_chars;
   buf->capacity = new_capacity;
 }
@@ -195,19 +214,14 @@ void string_buffer_flush(string_buffer_t *buf, string_t *str_out) {
 
 // --- B y t e   b u f f e r ---
 
-void byte_buffer_init(byte_buffer_t *buf, allocator_t *alloc_or_null) {
-  if (alloc_or_null == NULL) {
-    init_system_allocator(&buf->allocator);
-  } else {
-    buf->allocator = *alloc_or_null;
-  }
+void byte_buffer_init(byte_buffer_t *buf) {
   buf->length = 0;
   buf->capacity = 128;
-  buf->data = allocator_malloc(&buf->allocator, buf->capacity);
+  buf->data = allocator_default_malloc(buf->capacity);
 }
 
 void byte_buffer_dispose(byte_buffer_t *buf) {
-  allocator_free(&buf->allocator, (address_t) buf->data);
+  allocator_default_free(buf->data);
 }
 
 // Expands the buffer to make room for 'length' characters if necessary.
@@ -215,9 +229,9 @@ static void byte_buffer_ensure_capacity(byte_buffer_t *buf, size_t length) {
   if (length < buf->capacity)
     return;
   size_t new_capacity = (length * 2);
-  uint8_t *new_data = allocator_malloc(&buf->allocator, new_capacity);
+  uint8_t *new_data = allocator_default_malloc(new_capacity);
   memcpy(new_data, buf->data, buf->length);
-  allocator_free(&buf->allocator, (address_t) buf->data);
+  allocator_default_free(buf->data);
   buf->data = new_data;
   buf->capacity = new_capacity;
 }
@@ -245,9 +259,7 @@ value_t bit_vector_init(bit_vector_t *vector, size_t length, bool value) {
   if (bit_vector_is_small(vector)) {
     vector->data = vector->storage.as_small.inline_data;
   } else {
-    allocator_t alloc;
-    init_system_allocator(&alloc);
-    uint8_t *data = allocator_malloc(&alloc, byte_size);
+    uint8_t *data = allocator_default_malloc(byte_size);
     vector->data = vector->storage.as_large.alloced_data = data;
   }
   memset(vector->data, value ? 0xFF : 0x00, byte_size);
@@ -255,11 +267,8 @@ value_t bit_vector_init(bit_vector_t *vector, size_t length, bool value) {
 }
 
 void bit_vector_dispose(bit_vector_t *vector) {
-  if (!bit_vector_is_small(vector)) {
-    allocator_t alloc;
-    init_system_allocator(&alloc);
-    allocator_free(&alloc, vector->storage.as_large.alloced_data);
-  }
+  if (!bit_vector_is_small(vector))
+    allocator_default_free(vector->storage.as_large.alloced_data);
 }
 
 void bit_vector_set_at(bit_vector_t *vector, size_t index, bool value) {

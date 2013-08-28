@@ -6,8 +6,8 @@
 
 
 TEST(heap, init) {
-  space_config_t config;
-  space_config_init_defaults(&config);
+  runtime_config_t config;
+  runtime_config_init_defaults(&config);
   heap_t heap;
   heap_init(&heap, &config);
   heap_dispose(&heap);
@@ -43,9 +43,9 @@ TEST(heap, align_address) {
 
 TEST(heap, space_alloc) {
   // Configure the space.
-  space_config_t config;
-  space_config_init_defaults(&config);
-  config.size_bytes = kKB;
+  runtime_config_t config;
+  runtime_config_init_defaults(&config);
+  config.semispace_size_bytes = kKB;
   space_t space;
   space_init(&space, &config);
 

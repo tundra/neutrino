@@ -156,8 +156,8 @@ value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
   return success();
 }
 
-value_t new_runtime(space_config_t *config, runtime_t **runtime_out) {
-  runtime_t *runtime = (runtime_t*) malloc(sizeof(runtime_t));
+value_t new_runtime(runtime_config_t *config, runtime_t **runtime_out) {
+  runtime_t *runtime = allocator_default_malloc(sizeof(runtime_t));
   TRY(runtime_init(runtime, config));
   *runtime_out = runtime;
   return success();
@@ -165,11 +165,11 @@ value_t new_runtime(space_config_t *config, runtime_t **runtime_out) {
 
 value_t delete_runtime(runtime_t *runtime) {
   TRY(runtime_dispose(runtime));
-  free(runtime);
+  allocator_default_free(runtime);
   return success();
 }
 
-value_t runtime_init(runtime_t *runtime, space_config_t *config) {
+value_t runtime_init(runtime_t *runtime, runtime_config_t *config) {
   // First reset all the fields to a well-defined value.
   runtime_clear(runtime);
   TRY(heap_init(&runtime->heap, config));
@@ -229,15 +229,13 @@ static value_t pending_fixup_worklist_add(pending_fixup_worklist_t *worklist,
     // There's no room for the new element so increase capacity.
     size_t old_capacity = worklist->capacity;
     size_t new_capacity = (old_capacity == 0) ? 16 : 2 * old_capacity;
-    allocator_t alloc;
-    init_system_allocator(&alloc);
-    pending_fixup_t *new_fixups = (pending_fixup_t*) allocator_malloc(&alloc,
+    pending_fixup_t *new_fixups = allocator_default_malloc(
         new_capacity * sizeof(pending_fixup_t));
     if (old_capacity > 0) {
       // Copy the previous data over to the new backing store.
       memcpy(new_fixups, worklist->fixups, worklist->length * sizeof(pending_fixup_t));
       // Free the old backing store.
-      allocator_free(&alloc, (address_t) worklist->fixups);
+      allocator_default_free(worklist->fixups);
     }
     worklist->fixups = new_fixups;
     worklist->capacity = new_capacity;
@@ -249,9 +247,7 @@ static value_t pending_fixup_worklist_add(pending_fixup_worklist_t *worklist,
 // Dispose the given worklist.
 static void pending_fixup_worklist_dispose(pending_fixup_worklist_t *worklist) {
   if (worklist->capacity > 0) {
-    allocator_t alloc;
-    init_system_allocator(&alloc);
-    allocator_free(&alloc, (address_t) worklist->fixups);
+    allocator_default_free(worklist->fixups);
     worklist->fixups = NULL;
   }
 }

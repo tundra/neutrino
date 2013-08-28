@@ -180,9 +180,9 @@ TEST(value, large_id_hash_maps) {
 
 
 TEST(value, exhaust_id_hash_map) {
-  space_config_t config;
-  space_config_init_defaults(&config);
-  config.size_bytes = 8192;
+  runtime_config_t config;
+  runtime_config_init_defaults(&config);
+  config.semispace_size_bytes = 8192;
   runtime_t *runtime = NULL;
   ASSERT_SUCCESS(new_runtime(&config, &runtime));
 

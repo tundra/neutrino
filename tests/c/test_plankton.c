@@ -254,7 +254,7 @@ TEST(plankton, env_construction) {
   // Environment references resolve correctly to ast factories.
   {
     byte_buffer_t buf;
-    byte_buffer_init(&buf, NULL);
+    byte_buffer_init(&buf);
     write_ast_factory(&buf, "Literal");
     value_t value = deserialize(runtime, &buf);
     ASSERT_FAMILY(ofFactory, value);
@@ -264,7 +264,7 @@ TEST(plankton, env_construction) {
   // Objects with ast factory headers produce asts.
   {
     byte_buffer_t buf;
-    byte_buffer_init(&buf, NULL);
+    byte_buffer_init(&buf);
     byte_buffer_append(&buf, pObject);
     write_ast_factory(&buf, "Literal");
     byte_buffer_append(&buf, pMap);

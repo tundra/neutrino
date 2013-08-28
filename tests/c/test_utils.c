@@ -71,7 +71,7 @@ TEST(utils, string_comparison) {
 
 TEST(utils, string_buffer_simple) {
   string_buffer_t buf;
-  string_buffer_init(&buf, NULL);
+  string_buffer_init(&buf);
 
   string_buffer_printf(&buf, "[%s: %i]", "test", 8);
   string_t str;
@@ -84,7 +84,7 @@ TEST(utils, string_buffer_simple) {
 
 TEST(utils, string_buffer_concat) {
   string_buffer_t buf;
-  string_buffer_init(&buf, NULL);
+  string_buffer_init(&buf);
 
   string_buffer_printf(&buf, "foo");
   string_buffer_printf(&buf, "bar");
@@ -99,7 +99,7 @@ TEST(utils, string_buffer_concat) {
 
 TEST(utils, string_buffer_long) {
   string_buffer_t buf;
-  string_buffer_init(&buf, NULL);
+  string_buffer_init(&buf);
 
   // Cons up a really long string.
   for (size_t i = 0; i < 1024; i++)

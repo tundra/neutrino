@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
 void fail(const char *file, int line, const char *fmt, ...) {
   // Write the error message into a string buffer.
   string_buffer_t buf;
-  string_buffer_init(&buf, NULL);
+  string_buffer_init(&buf);
   va_list argp;
   va_start(argp, fmt);
   string_buffer_vprintf(&buf, fmt, argp);
