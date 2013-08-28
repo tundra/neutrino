@@ -107,14 +107,14 @@ value_t get_protocol(value_t value, runtime_t *runtime);
 #define OBJ_ADDR_HASH(VAL) new_integer((VAL).encoded)
 
 // Declare the behavior structs for all the families on one fell swoop.
-#define DECLARE_FAMILY_BEHAVIOR(Family, family, CMP, CID, CNT, SUR, NOL, FIX)  \
+#define DECLARE_FAMILY_BEHAVIOR(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT) \
 extern family_behavior_t k##Family##Behavior;
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 #undef DECLARE_FAMILY_BEHAVIOR
 
 // Declare the functions that implement the behaviors too, that way they can be
 // implemented wherever.
-#define __DECLARE_FAMILY_FUNCTIONS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX)  \
+#define __DECLARE_FAMILY_FUNCTIONS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT) \
 value_t family##_validate(value_t value);                                      \
 CID(value_t family##_transient_identity_hash(value_t value);,)                 \
 CID(bool family##_identity_compare(value_t a, value_t b);,)                    \

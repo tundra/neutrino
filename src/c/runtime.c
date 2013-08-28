@@ -16,7 +16,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   roots->species_species = meta;
 
   // Generate initialization for the other compact species.
-#define __CREATE_COMPACT_SPECIES__(Family, family, CMP, CID, CNT, SUR, NOL, FIX)\
+#define __CREATE_COMPACT_SPECIES__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
   TRY_SET(roots->family##_species, new_heap_compact_species(runtime, of##Family, &k##Family##Behavior));
   ENUM_COMPACT_OBJECT_FAMILIES(__CREATE_COMPACT_SPECIES__)
 #undef __CREATE_COMPACT_SPECIES__
@@ -38,7 +38,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
       new_heap_argument_map_trie(runtime, roots->empty_array));
 
   // Generate initialization for the per-family protocols.
-#define __CREATE_FAMILY_PROTOCOL__(Family, family, CMP, CID, CNT, SUR, NOL, FIX)\
+#define __CREATE_FAMILY_PROTOCOL__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
   SUR(TRY_SET(roots->family##_protocol, new_heap_protocol(runtime, roots->null));,)
   ENUM_OBJECT_FAMILIES(__CREATE_FAMILY_PROTOCOL__)
 #undef __CREATE_FAMILY_PROTOCOL__
@@ -97,7 +97,7 @@ value_t roots_validate(roots_t *roots) {
   } while (false)
 
   // Generate validation for species.
-#define __VALIDATE_PER_FAMILY_FIELDS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX)\
+#define __VALIDATE_PER_FAMILY_FIELDS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
   VALIDATE_SPECIES(of##Family, roots->family##_species);                       \
   SUR(VALIDATE_OBJECT(ofProtocol, roots->family##_protocol);,)
   ENUM_OBJECT_FAMILIES(__VALIDATE_PER_FAMILY_FIELDS__)
@@ -128,7 +128,7 @@ value_t roots_validate(roots_t *roots) {
 
 value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
   // Generate code for visiting the species.
-#define __VISIT_PER_FAMILY_FIELDS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX)\
+#define __VISIT_PER_FAMILY_FIELDS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
   TRY(field_callback_call(callback, &roots->family##_species));                \
   SUR(TRY(field_callback_call(callback, &roots->family##_protocol));,)
   ENUM_OBJECT_FAMILIES(__VISIT_PER_FAMILY_FIELDS__)

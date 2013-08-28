@@ -94,7 +94,7 @@ value_t set_literal_ast_contents(value_t object, runtime_t *runtime, value_t con
   return success();
 }
 
-value_t emit_literal_ast(value_t value, assembler_t *assm) {
+static value_t emit_literal_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofLiteralAst, value);
   return assembler_emit_push(assm, get_literal_ast_value(value));
 }
@@ -107,7 +107,7 @@ NO_BUILTIN_METHODS(array_ast);
 
 CHECKED_ACCESSORS_IMPL(ArrayAst, array_ast, Array, Elements, elements);
 
-value_t emit_array_ast(value_t value, assembler_t *assm) {
+static value_t emit_array_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofArrayAst, value);
   value_t elements = get_array_ast_elements(value);
   size_t length = get_array_length(elements);
@@ -153,7 +153,7 @@ NO_BUILTIN_METHODS(invocation_ast);
 
 CHECKED_ACCESSORS_IMPL(InvocationAst, invocation_ast, Array, Arguments, arguments);
 
-value_t emit_invocation_ast(value_t value, assembler_t *assm) {
+static value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofInvocationAst, value);
   value_t arguments = get_invocation_ast_arguments(value);
   size_t arg_count = get_array_length(arguments);
@@ -202,12 +202,6 @@ NO_BUILTIN_METHODS(argument_ast);
 UNCHECKED_ACCESSORS_IMPL(ArgumentAst, argument_ast, Tag, tag);
 UNCHECKED_ACCESSORS_IMPL(ArgumentAst, argument_ast, Value, value);
 
-value_t emit_argument_ast(value_t value, assembler_t *assm) {
-  CHECK_FAMILY(ofArgumentAst, value);
-  UNREACHABLE("emitting argument ast");
-  return success();
-}
-
 value_t argument_ast_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofArgumentAst, value);
   return success();
@@ -234,7 +228,7 @@ NO_BUILTIN_METHODS(sequence_ast);
 
 CHECKED_ACCESSORS_IMPL(SequenceAst, sequence_ast, Array, Values, values);
 
-value_t emit_sequence_ast(value_t value, assembler_t *assm) {
+static value_t emit_sequence_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofSequenceAst, value);
   value_t values = get_sequence_ast_values(value);
   size_t length = get_array_length(values);
@@ -294,7 +288,7 @@ UNCHECKED_ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, Symbol, sym
 UNCHECKED_ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, Value, value);
 UNCHECKED_ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, Body, body);
 
-value_t emit_local_declaration_ast(value_t self, assembler_t *assm) {
+static value_t emit_local_declaration_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofLocalDeclarationAst, self);
   size_t offset = assm->stack_height;
   value_t value = get_local_declaration_ast_value(self);
@@ -354,7 +348,7 @@ NO_BUILTIN_METHODS(variable_ast);
 
 UNCHECKED_ACCESSORS_IMPL(VariableAst, variable_ast, Symbol, symbol);
 
-value_t emit_variable_ast(value_t self, assembler_t *assm) {
+static value_t emit_variable_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofVariableAst, self);
   value_t symbol = get_variable_ast_symbol(self);
   CHECK_FAMILY(ofSymbolAst, symbol);
@@ -410,12 +404,6 @@ NO_BUILTIN_METHODS(symbol_ast);
 
 UNCHECKED_ACCESSORS_IMPL(SymbolAst, symbol_ast, Name, name);
 
-value_t emit_symbol_ast(value_t value, assembler_t *assm) {
-  CHECK_FAMILY(ofSymbolAst, value);
-  UNREACHABLE("emitting symbol as ast");
-  return new_signal(scUnsupportedBehavior);
-}
-
 value_t symbol_ast_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofSymbolAst, value);
   return success();
@@ -452,7 +440,7 @@ TRIVIAL_PRINT_ON_IMPL(LambdaAst, lambda_ast);
 UNCHECKED_ACCESSORS_IMPL(LambdaAst, lambda_ast, Parameters, parameters);
 UNCHECKED_ACCESSORS_IMPL(LambdaAst, lambda_ast, Body, body);
 
-value_t emit_lambda_ast(value_t value, assembler_t *assm) {
+static value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofLambdaAst, value);
   runtime_t *runtime = assm->runtime;
   // Build the signature.
@@ -504,12 +492,6 @@ TRIVIAL_PRINT_ON_IMPL(ParameterAst, parameter_ast);
 UNCHECKED_ACCESSORS_IMPL(ParameterAst, parameter_ast, Symbol, symbol);
 CHECKED_ACCESSORS_IMPL(ParameterAst, parameter_ast, Array, Tags, tags);
 
-value_t emit_parameter_ast(value_t value, assembler_t *assm) {
-  CHECK_FAMILY(ofParameterAst, value);
-  UNREACHABLE("emitting parameter as ast");
-  return new_signal(scUnsupportedBehavior);
-}
-
 value_t parameter_ast_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofParameterAst, value);
   return success();
@@ -536,11 +518,14 @@ value_t emit_value(value_t value, assembler_t *assm) {
   if (!in_domain(vdObject, value))
     return new_invalid_syntax_signal(isNotSyntax);
   switch (get_object_family(value)) {
-#define __EMIT_SYNTAX_FAMILY_CASE__(Family, family, CMP, CID, CNT, SUR, NOL, FIX)\
+#define __EMIT_SYNTAX_FAMILY_CASE_HELPER__(Family, family)                     \
     case of##Family:                                                           \
       return emit_##family(value, assm);
-    ENUM_SYNTAX_OBJECT_FAMILIES(__EMIT_SYNTAX_FAMILY_CASE__)
+#define __EMIT_SYNTAX_FAMILY_CASE__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
+    EMT(__EMIT_SYNTAX_FAMILY_CASE_HELPER__(Family, family),)
+    ENUM_OBJECT_FAMILIES(__EMIT_SYNTAX_FAMILY_CASE__)
 #undef __EMIT_SYNTAX_FAMILY_CASE__
+#undef __EMIT_SYNTAX_FAMILy_CASE_HELPER__
     default:
       return new_invalid_syntax_signal(isNotSyntax);
   }
