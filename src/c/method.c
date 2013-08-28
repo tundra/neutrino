@@ -387,7 +387,7 @@ value_t lookup_method_space_method(runtime_t *runtime, value_t space,
       result = method;
       // Now the max definitely isn't synthetic.
       max_is_synthetic = false;
-      // The offsets for the result is not stored in scratch_offsets and we have
+      // The offsets for the result is now stored in scratch_offsets and we have
       // no more use for the previous result_offsets so we swap them around.
       size_t *temp = scratch_offsets;
       scratch_offsets = result_offsets;
