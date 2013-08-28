@@ -186,6 +186,39 @@ class Symbol(object):
     self.name = str(name)
 
 
+# An individual method parameter.
+@plankton.serializable(("ast", "Parameter"))
+class Parameter(object):
+
+  @plankton.field("symbol")
+  @plankton.field("tags")
+  def __init__(self, name=None, tags=None):
+    self.name = name
+    self.symbol = None
+    self.tags = tags
+
+  def __str__(self):
+    return "%s: %s" % (", ".join(map(str, self.tags)), self.name)
+
+
+# An anonymous function. These can be broken down into equivalent new-object
+# and set-property calls but that's for later.
+@plankton.serializable(("ast", "Lambda"))
+class Lambda(object):
+
+  @plankton.field("parameters")
+  @plankton.field("body")
+  def __init__(self, parameters=[], body=None):
+    self.parameters = parameters
+    self.body = body
+
+  def accept(self, visitor):
+    return visitor.visit_lambda(self)
+
+  def __str__(self):
+    return "(fn (%s) => %s)" % (", ".join(map(str, self.parameters)), self.body)
+
+
 @plankton.serializable()
 class Path(object):
 
@@ -206,6 +239,9 @@ class Name(object):
   def __init__(self, phase=None, path=None):
     self.phase = phase
     self.path = path
+
+  def __hash__(self):
+    return hash(self.phase) ^ hash(tuple(self.path))
 
   def __eq__(self, that):
     return (isinstance(that, Name) and

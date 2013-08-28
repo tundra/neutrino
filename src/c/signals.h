@@ -37,7 +37,7 @@ static uint32_t get_signal_details(value_t value) {
 
 // Reasons for syntax to be invalid.
 typedef enum {
-  isSymbolAlreadyBound,
+  isSymbolAlreadyBound = 0,
   isSymbolNotBound,
   isNotSyntax,
 } invalid_syntax_cause_t;

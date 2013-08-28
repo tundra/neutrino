@@ -43,26 +43,27 @@ static value_t execute_program(runtime_t *runtime, value_t program) {
 static value_t neutrino_main(int argc, char *argv[]) {
   runtime_t *runtime;
   TRY(new_runtime(NULL, &runtime));
-
-  for (int i = 1; i < argc; i++) {
-    const char *filename = argv[i];
-    value_t input;
-    if (strcmp("-", filename) == 0) {
-      TRY_SET(input, read_file_to_blob(runtime, stdin));
-    } else {
-      FILE *file = fopen(filename, "r");
-      TRY_SET(input, read_file_to_blob(runtime, file));
-      fclose(file);
+  E_BEGIN_TRY_FINALLY();
+    for (int i = 1; i < argc; i++) {
+      const char *filename = argv[i];
+      value_t input;
+      if (strcmp("-", filename) == 0) {
+        E_TRY_SET(input, read_file_to_blob(runtime, stdin));
+      } else {
+        FILE *file = fopen(filename, "r");
+        E_TRY_SET(input, read_file_to_blob(runtime, file));
+        fclose(file);
+      }
+      value_mapping_t syntax_mapping;
+      E_TRY(init_syntax_mapping(&syntax_mapping, runtime));
+      E_TRY_DEF(program, plankton_deserialize(runtime, &syntax_mapping, input));
+      E_TRY_DEF(result, execute_program(runtime, program));
+      value_print_ln(result);
     }
-    value_mapping_t syntax_mapping;
-    TRY(init_syntax_mapping(&syntax_mapping, runtime));
-    TRY_DEF(program, plankton_deserialize(runtime, &syntax_mapping, input));
-    TRY_DEF(result, execute_program(runtime, program));
-    value_print_ln(result);
-  }
-
-  TRY(delete_runtime(runtime));
-  return success();
+    E_RETURN(success());
+  E_FINALLY();
+    TRY(delete_runtime(runtime));
+  E_END_TRY_FINALLY();
 }
 
 int main(int argc, char *argv[]) {

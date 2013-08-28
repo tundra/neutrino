@@ -74,7 +74,49 @@ class Parser(object):
   # <expression>
   #   -> <operator expression>
   def parse_expression(self):
-    return self.parse_operator_expression()
+    return self.parse_word_expression()
+
+  # <word expression>
+  #   -> <lambda>
+  def parse_word_expression(self):
+    if self.at_word('fn'):
+      return self.parse_lambda_expression()
+    else:
+      return self.parse_operator_expression()
+
+  # <lambda expression>
+  #   -> "fn" <arguments> "=>" <word expression>
+  def parse_lambda_expression(self):
+    self.expect_word('fn')
+    params = self.parse_parameters()
+    self.expect_punctuation('=>')
+    value = self.parse_word_expression()
+    return ast.Lambda(params, value)
+
+  # <parameters>
+  #   -> "(" <parameter> *: "," ")"
+  #   -> .
+  def parse_parameters(self):
+    if not self.at_punctuation('('):
+      return []
+    self.expect_punctuation('(')
+    result = []
+    if not self.at_punctuation(')'):
+      index = 0
+      first = self.parse_parameter(index)
+      index += 1
+      result.append(first)
+      while self.at_punctuation(','):
+        self.expect_punctuation(',')
+        next = self.parse_parameter(index)
+        index += 1
+        result.append(next)
+    self.expect_punctuation(')')
+    return result
+
+  def parse_parameter(self, default_tag):
+    name = self.expect_type(Token.IDENTIFIER)
+    return ast.Parameter(name, [default_tag])
 
   # <operator expression>
   #   -> <call expression> +: <operation>
@@ -93,7 +135,25 @@ class Parser(object):
   # <call expression>
   #   -> <atomic expression>
   def parse_call_expression(self):
-    return self.parse_atomic_expression()
+    recv = self.parse_atomic_expression()
+    while self.at_punctuation('('):
+      args = [
+        ast.Argument('this', recv),
+        ast.Argument('name', ast.Literal('()'))
+      ]
+      self.expect_punctuation('(')
+      if not self.at_punctuation(')'):
+        arg = self.parse_expression()
+        args.append(ast.Argument(0, arg))
+        index = 1
+        while self.at_punctuation(','):
+          self.expect_punctuation(',')
+          arg = self.parse_expression()
+          args.append(ast.Argument(index, arg))
+          index += 1
+      self.expect_punctuation(')')
+      recv = ast.Invocation(args)
+    return recv
 
   # <atomic expression>
   #   -> <literal>

@@ -20,7 +20,10 @@
   F(tag,                "tag")                                                 \
   F(this,               "this")                                                \
   F(value,              "value")                                               \
-  F(values,             "values")
+  F(values,             "values")                                              \
+  F(parameters,         "parameters")                                          \
+  F(tags,               "tags")                                                \
+  F(sausages,           "()")
 
 // A collection of all the root objects.
 typedef struct {

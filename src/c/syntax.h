@@ -110,4 +110,30 @@ static const size_t kSymbolAstNameOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(symbol_ast, name);
 
 
+// --- L a m b d a ---
+
+static const size_t kLambdaAstSize = OBJECT_SIZE(2);
+static const size_t kLambdaAstParametersOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kLambdaAstBodyOffset = OBJECT_FIELD_OFFSET(1);
+
+// The parameter list to this lambda.
+ACCESSORS_DECL(lambda_ast, parameters);
+
+// The body of this lambda.
+ACCESSORS_DECL(lambda_ast, body);
+
+
+// --- P a r a m e t e r ---
+
+static const size_t kParameterAstSize = OBJECT_SIZE(2);
+static const size_t kParameterAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kParameterAstTagsOffset = OBJECT_FIELD_OFFSET(1);
+
+// The symbol that identifies this parameter.
+ACCESSORS_DECL(parameter_ast, symbol);
+
+// The list of tags matched by this parameter.
+ACCESSORS_DECL(parameter_ast, tags);
+
+
 #endif // _SYNTAX

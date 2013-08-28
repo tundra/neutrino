@@ -3,6 +3,7 @@
 
 // Support for built-in methods.
 
+
 #include "method.h"
 #include "runtime.h"
 
@@ -37,6 +38,18 @@ typedef value_t (*builtin_method_t)(builtin_arguments_t *args);
 // name, number of arguments, and implementation.
 value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
     value_t receiver, const char *name, size_t arg_count, builtin_method_t method);
+
+struct assembler_t;
+
+// Signature of a function that implements a built-in method.
+typedef value_t (*custom_method_emitter_t)(struct assembler_t *assm);
+
+// Add a method to the given method space with the given receiver protocol,
+// name, number of arguments, by delegating to the given emitter to generate
+// the code.
+value_t add_method_space_custom_method(runtime_t *runtime, value_t space,
+    value_t receiver, const char *name, size_t arg_count,
+    custom_method_emitter_t emitter);
 
 // Adds all built-in methods to the given method space.
 value_t add_method_space_builtin_methods(runtime_t *runtime, value_t self);

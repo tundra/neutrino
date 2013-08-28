@@ -49,6 +49,22 @@ static value_t read_next_value(interpreter_state_t *state) {
   return get_array_at(state->value_pool, index);
 }
 
+// Reads a byte from the previous instruction, assuming that we're currently
+// at the first byte of the next instruction. Size is the size of the
+// instruction, offset is the offset of the byte we want to read.
+static byte_t peek_previous_byte(interpreter_state_t *state, size_t size,
+    size_t offset) {
+  return blob_byte_at(&state->bytecode, state->pc - size + offset);
+}
+
+// Reads a value pool value from the previous instruction, assuming that we're
+// currently at the first byte of the next instruction.
+static value_t peek_previous_value(interpreter_state_t *state, size_t size,
+    size_t offset) {
+  size_t index = peek_previous_byte(state, size, offset);
+  return get_array_at(state->value_pool, index);
+}
+
 value_t run_stack(runtime_t *runtime, value_t stack) {
   frame_t frame;
   get_stack_top_frame(stack, &frame);
@@ -102,6 +118,38 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         interpreter_state_load(&state, &frame);
         break;
       }
+      case ocDelegateToLambda: {
+        // Get the lambda to delegate to.
+        value_t lambda = frame_get_argument(&frame, 0);
+        CHECK_FAMILY(ofLambda, lambda);
+        value_t space = get_lambda_methods(lambda);
+        // Pop off the top frame since we're repeating the previous call.
+        bool popped = pop_stack_frame(stack, &frame);
+        CHECK_TRUE("delegating from bottom frame", popped);
+        interpreter_state_load(&state, &frame);
+        // Extract the invocation record from the calling instruction.
+        CHECK_EQ("invalid calling instruction", ocInvoke,
+            peek_previous_byte(&state, 3, 0));
+        value_t record = peek_previous_value(&state, 3, 1);
+        CHECK_FAMILY(ofInvocationRecord, record);
+        // From this point we do the same as invoke except using the space from
+        // the lambda rather than the space from the invoke instruction.
+        value_t arg_map;
+        value_t method = lookup_method_space_method(runtime, space, record,
+            &frame, &arg_map);
+        if (is_signal(scNotFound, method)) {
+          value_to_string_t data;
+          ERROR("Unresolved delegate for %s.", value_to_string(&data, record));
+          dispose_value_to_string(&data);
+          return method;
+        }
+        value_t code_block = get_method_code(method);
+        push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block));
+        set_frame_code_block(&frame, code_block);
+        set_frame_argument_map(&frame, arg_map);
+        interpreter_state_load(&state, &frame);
+        break;
+      }
       case ocBuiltin: {
         value_t wrapper = read_next_value(&state);
         builtin_method_t impl = get_void_p_value(wrapper);
@@ -135,6 +183,13 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         size_t index = read_next_byte(&state);
         value_t value = frame_get_local(&frame, index);
         frame_push_value(&frame, value);
+        break;
+      }
+      case ocLambda: {
+        value_t space = read_next_value(&state);
+        CHECK_FAMILY(ofMethodSpace, space);
+        TRY_DEF(lambda, new_heap_lambda(runtime, space));
+        frame_push_value(&frame, lambda);
         break;
       }
       default:
@@ -262,6 +317,12 @@ value_t assembler_emit_new_array(assembler_t *assm, size_t length) {
   return success();
 }
 
+value_t assembler_emit_delegate_lambda_call(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocDelegateToLambda);
+  assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
 value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t record) {
   CHECK_FAMILY(ofMethodSpace, space);
   CHECK_FAMILY(ofInvocationRecord, record);
@@ -296,6 +357,13 @@ value_t assembler_emit_load_local(assembler_t *assm, size_t index) {
   assembler_emit_opcode(assm, ocLoadLocal);
   assembler_emit_byte(assm, index);
   assembler_adjust_stack_height(assm, 1);
+  return success();
+}
+
+value_t assembler_emit_lambda(assembler_t *assm, value_t methods) {
+  assembler_emit_opcode(assm, ocLambda);
+  TRY(assembler_emit_value(assm, methods));
+  assembler_adjust_stack_height(assm, +1);
   return success();
 }
 

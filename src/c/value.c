@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "builtin.h"
 #include "heap.h"
+#include "interp.h"
 #include "runtime.h"
 #include "value-inl.h"
 
@@ -1153,6 +1154,30 @@ value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, size_t ind
   TRY_DEF(new_child, new_heap_argument_map_trie(runtime, new_value));
   set_array_buffer_at(children, index, new_child);
   return new_child;
+}
+
+
+// --- L a m b d a ---
+
+GET_FAMILY_PROTOCOL_IMPL(lambda);
+TRIVIAL_PRINT_ON_IMPL(Lambda, lambda);
+
+UNCHECKED_ACCESSORS_IMPL(Lambda, lambda, Methods, methods);
+
+value_t lambda_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofLambda, value);
+  return success();
+}
+
+value_t emit_lambda_call_trampoline(assembler_t *assm) {
+  TRY(assembler_emit_delegate_lambda_call(assm));
+  return success();
+}
+
+value_t add_lambda_builtin_methods(runtime_t *runtime, value_t space) {
+  TRY(add_method_space_custom_method(runtime, space, runtime->roots.lambda_protocol,
+      "()", 0, emit_lambda_call_trampoline));
+  return success();
 }
 
 

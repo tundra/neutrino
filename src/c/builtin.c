@@ -25,20 +25,11 @@ runtime_t *get_builtin_runtime(builtin_arguments_t *args) {
   return args->runtime;
 }
 
-value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
-    value_t receiver, const char *name_c_str, size_t positional_count,
-    builtin_method_t implementation) {
-  CHECK_FAMILY(ofMethodSpace, space);
-  CHECK_FAMILY(ofProtocol, receiver);
-  size_t argc = positional_count + 2;
-  // Build the implementation.
-  assembler_t assm;
-  TRY(assembler_init(&assm, runtime, space));
-  TRY(assembler_emit_builtin(&assm, implementation));
-  TRY(assembler_emit_return(&assm));
-  TRY_DEF(code_block, assembler_flush(&assm));
-  assembler_dispose(&assm);
-  // Build the signature.
+// Builds a signature for the built-in method with the given receiver, name,
+// and posc positional arguments.
+static value_t build_signature(runtime_t *runtime, value_t receiver,
+    const char *name_c_str, size_t posc) {
+  size_t argc = posc + 2;
   TRY_DEF(vector, new_heap_pair_array(runtime, argc));
   // The "this" parameter.
   TRY_DEF(this_guard, new_heap_guard(runtime, gtIs, receiver));
@@ -54,14 +45,46 @@ value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
   set_pair_array_first_at(vector, 1, runtime->roots.string_table.name);
   set_pair_array_second_at(vector, 1, name_param);
   // The positional parameters.
-  for (size_t i = 0; i < positional_count; i++) {
+  for (size_t i = 0; i < posc; i++) {
     TRY_DEF(param, new_heap_parameter(runtime, runtime->roots.any_guard, false,
         2 + i));
     set_pair_array_first_at(vector, 2 + i, new_integer(i));
     set_pair_array_second_at(vector, 2 + i, param);
   }
   co_sort_pair_array(vector);
-  TRY_DEF(signature, new_heap_signature(runtime, vector, argc, argc, false));
+  return new_heap_signature(runtime, vector, argc, argc, false);
+}
+
+value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
+    value_t receiver, const char *name_c_str, size_t posc,
+    builtin_method_t implementation) {
+  CHECK_FAMILY(ofMethodSpace, space);
+  CHECK_FAMILY(ofProtocol, receiver);
+  // Build the implementation.
+  assembler_t assm;
+  TRY(assembler_init(&assm, runtime, space));
+  TRY(assembler_emit_builtin(&assm, implementation));
+  TRY(assembler_emit_return(&assm));
+  TRY_DEF(code_block, assembler_flush(&assm));
+  assembler_dispose(&assm);
+  TRY_DEF(signature, build_signature(runtime, receiver, name_c_str, posc));
+  TRY_DEF(method, new_heap_method(runtime, signature, code_block));
+  return add_method_space_method(runtime, space, method);
+}
+
+value_t add_method_space_custom_method(runtime_t *runtime, value_t space,
+    value_t receiver, const char *name_c_str, size_t posc,
+    custom_method_emitter_t emitter) {
+  CHECK_FAMILY(ofMethodSpace, space);
+  CHECK_FAMILY(ofProtocol, receiver);
+  // Build the implementation.
+  assembler_t assm;
+  TRY(assembler_init(&assm, runtime, space));
+  TRY(emitter(&assm));
+  TRY(assembler_emit_return(&assm));
+  TRY_DEF(code_block, assembler_flush(&assm));
+  assembler_dispose(&assm);
+  TRY_DEF(signature, build_signature(runtime, receiver, name_c_str, posc));
   TRY_DEF(method, new_heap_method(runtime, signature, code_block));
   return add_method_space_method(runtime, space, method);
 }
