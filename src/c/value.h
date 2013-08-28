@@ -730,7 +730,7 @@ ACCESSORS_DECL(argument_map_trie, children);
 // Returns an argument map trie whose value has the value of the given trie
 // as a prefix, followed by the given index. Creates the child if necessary
 // which means that this call may fail.
-value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, size_t index);
+value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, value_t key);
 
 
 // --- L a m b d a ---

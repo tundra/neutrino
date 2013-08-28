@@ -79,8 +79,10 @@ match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
   // The value to return if there is a match.
   match_result_t on_match = mrMatch;
   // Clear the score vector.
-  for (size_t i = 0; i < argument_count; i++)
+  for (size_t i = 0; i < argument_count; i++) {
     match_info->scores[i] = gsNoMatch;
+    match_info->offsets[i] = kNoOffset;
+  }
   // Scan through the arguments and look them up in the signature.
   value_t tags = get_signature_tags(self);
   for (size_t i = 0; i < argument_count; i++) {
@@ -408,7 +410,8 @@ value_t lookup_method_space_method(runtime_t *runtime, value_t space,
     value_t current_node = runtime->roots.argument_map_trie_root;
     for (size_t i = 0; i < arg_count; i++) {
       size_t offset = result_offsets[i];
-      TRY_SET(current_node, get_argument_map_trie_child(runtime, current_node, offset));
+      value_t value = (offset == kNoOffset) ? runtime_null(runtime) : new_integer(offset);
+      TRY_SET(current_node, get_argument_map_trie_child(runtime, current_node, value));
     }
     *arg_map_out = get_argument_map_trie_value(current_node);
   }

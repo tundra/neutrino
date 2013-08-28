@@ -551,7 +551,8 @@ void dispose_test_argument_map(test_argument_map_t *map) {
 value_t get_argument_map(runtime_t *runtime, value_t root, test_argument_map_t *data) {
   value_t current = root;
   for (size_t i = 0; i < data->length; i++)
-    TRY_SET(current, get_argument_map_trie_child(runtime, current, data->values[i]));
+    TRY_SET(current, get_argument_map_trie_child(runtime, current,
+        new_integer(data->values[i])));
   return get_argument_map_trie_value(current);
 }
 

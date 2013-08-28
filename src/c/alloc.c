@@ -396,7 +396,7 @@ value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags)
 value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species) {
   address_t addr = NULL;
   if (!heap_try_alloc(heap, bytes, &addr))
-    return new_signal(scHeapExhausted);
+    return new_heap_exhausted_signal(bytes);
   value_t result = new_object(addr);
   set_object_header(result, species);
   return result;

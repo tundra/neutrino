@@ -50,4 +50,10 @@ static value_t new_invalid_syntax_signal(invalid_syntax_cause_t cause) {
 // Returns the cause of an invalid syntax signal.
 invalid_syntax_cause_t get_invalid_syntax_signal_cause(value_t signal);
 
+// Creates a new heap exhausted signal where the given amount of memory is
+// requested.
+static value_t new_heap_exhausted_signal(int32_t requested) {
+  return new_signal_with_details(scHeapExhausted, requested);
+}
+
 #endif // _SIGNALS

@@ -109,6 +109,8 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
           dispose_value_to_string(&data);
           return method;
         }
+        TRY(method);
+        CHECK_FAMILY(ofMethod, method);
         // Push a new activation.
         interpreter_state_store(&state, &frame);
         value_t code_block = get_method_code(method);
@@ -143,6 +145,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
           dispose_value_to_string(&data);
           return method;
         }
+        TRY(method);
         value_t code_block = get_method_code(method);
         push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block));
         set_frame_code_block(&frame, code_block);

@@ -48,7 +48,7 @@ typedef value_t (*custom_method_emitter_t)(struct assembler_t *assm);
 // name, number of arguments, by delegating to the given emitter to generate
 // the code.
 value_t add_method_space_custom_method(runtime_t *runtime, value_t space,
-    value_t receiver, const char *name, size_t arg_count,
+    value_t receiver, const char *name, size_t arg_count, bool allow_extra,
     custom_method_emitter_t emitter);
 
 // Adds all built-in methods to the given method space.
