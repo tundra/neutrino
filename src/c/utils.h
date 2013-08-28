@@ -128,8 +128,7 @@ struct string_buffer_t {
   char *chars;
 };
 
-// Initialize a string buffer. If an allocator is passed it will be used for
-// all allocation, otherwise the default system allocator will be used.
+// Initialize a string buffer.
 void string_buffer_init(string_buffer_t *buf);
 
 // Disposes the given string buffer.
