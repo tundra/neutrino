@@ -1135,6 +1135,8 @@ value_t argument_map_trie_validate(value_t value) {
 // Converts an argument map key object to a plain integer. Argument map keys
 // can only be nonnegative integers or null.
 static size_t argument_map_key_to_integer(value_t key) {
+  // This is okay for now but later on if we want to optimize how arg map tries
+  // are built this scheme may have to be replaced by something better.
   return is_null(key) ? 0 : (1 + get_integer_value(key));
 }
 

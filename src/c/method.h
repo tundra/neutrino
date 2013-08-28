@@ -65,7 +65,8 @@ typedef enum {
 bool match_result_is_match(match_result_t value);
 
 // Indicates that no offset was produced for a given argument. This happens if
-// the argument doesn't match a parameter, that is if it's an extra argument.
+// the argument doesn't correspond to a parameter, that is if it's an extra
+// argument.
 static const size_t kNoOffset = ~((size_t) 0);
 
 // Additional info about a match in addition to whether it was successful or not,
@@ -74,7 +75,7 @@ typedef struct {
   // On a successful match the scores will be stored here.
   score_t *scores;
   // On a successful match the parameter offsets will be stored here. Any
-  // arguments that don't match a parameter will be set to kNoOffset.
+  // arguments that don't correspond to a parameter will be set to kNoOffset.
   size_t *offsets;
   // The capacity of the scores and offsets vectors.
   size_t capacity;
