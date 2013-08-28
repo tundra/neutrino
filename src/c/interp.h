@@ -20,7 +20,8 @@
   F(Pop)                                                                       \
   F(LoadLocal)                                                                 \
   F(Lambda)                                                                    \
-  F(DelegateToLambda)
+  F(DelegateToLambda)                                                          \
+  F(LoadArgument)
 
 // The enum of all opcodes.
 typedef enum {
@@ -53,12 +54,13 @@ typedef struct assembler_t {
   size_t high_water_mark;
   // The method space being built.
   value_t space;
-  // The map from local symbols to stack indexes.
-  value_t local_variable_map;
+  // The map from symbols to active bindings.
+  value_t local_bindings;
 } assembler_t;
 
 // Initializes an assembler.
-value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t space);
+value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t space,
+    value_t bindings_or_null);
 
 // Disposes of an assembler.
 void assembler_dispose(assembler_t *assm);
@@ -89,6 +91,9 @@ value_t assembler_emit_return(assembler_t *assm);
 // Emits a local variable load of the local with the given index.
 value_t assembler_emit_load_local(assembler_t *assm, size_t index);
 
+// Emits an argument load of the argument with the given parameter index.
+value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index);
+
 // Emits a lambda that understands the given methods.
 value_t assembler_emit_lambda(assembler_t *assm, value_t methods);
 
@@ -99,7 +104,9 @@ value_t assembler_emit_delegate_lambda_call(assembler_t *assm);
 // Identifies what kind of binding a bound symbol represents.
 typedef enum {
   // A local variable in the current scope.
-  btLocal = 0
+  btLocal = 0,
+  // An argument to the current immediate function.
+  btArgument
 } binding_type_t;
 
 // A collection of information about a binding. This is going to be encoded as

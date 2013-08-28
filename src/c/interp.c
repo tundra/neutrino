@@ -189,6 +189,12 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         frame_push_value(&frame, value);
         break;
       }
+      case ocLoadArgument: {
+        size_t param_index = read_next_byte(&state);
+        value_t value = frame_get_argument(&frame, param_index);
+        frame_push_value(&frame, value);
+        break;
+      }
       case ocLambda: {
         value_t space = read_next_value(&state);
         CHECK_FAMILY(ofMethodSpace, space);
@@ -218,9 +224,15 @@ value_t run_code_block(runtime_t *runtime, value_t code) {
 
 // --- A s s e m b l e r ---
 
-value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t space) {
+value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t space,
+    value_t bindings_or_null) {
   TRY_SET(assm->value_pool, new_heap_id_hash_map(runtime, 16));
-  TRY_SET(assm->local_variable_map, new_heap_id_hash_map(runtime, 16));
+  if (is_null(bindings_or_null)) {
+    TRY_SET(assm->local_bindings, new_heap_id_hash_map(runtime, 16));
+  } else {
+    CHECK_FAMILY(ofIdHashMap, bindings_or_null);
+    assm->local_bindings = bindings_or_null;
+  }
   assm->runtime = runtime;
   assm->space = space;
   byte_buffer_init(&assm->code, NULL);
@@ -364,6 +376,13 @@ value_t assembler_emit_load_local(assembler_t *assm, size_t index) {
   return success();
 }
 
+value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index) {
+  assembler_emit_opcode(assm, ocLoadArgument);
+  assembler_emit_byte(assm, param_index);
+  assembler_adjust_stack_height(assm, 1);
+  return success();
+}
+
 value_t assembler_emit_lambda(assembler_t *assm, value_t methods) {
   assembler_emit_opcode(assm, ocLambda);
   TRY(assembler_emit_value(assm, methods));
@@ -381,27 +400,27 @@ typedef union {
 value_t assembler_bind_symbol(assembler_t *assm, value_t symbol,
     binding_type_t type, uint32_t data) {
   CHECK_FALSE("symbol already bound",
-      has_id_hash_map_at(assm->local_variable_map, symbol));
+      has_id_hash_map_at(assm->local_bindings, symbol));
   binding_info_codec_t codec = {.decoded={type, data}};
-  return set_id_hash_map_at(assm->runtime, assm->local_variable_map, symbol,
+  return set_id_hash_map_at(assm->runtime, assm->local_bindings, symbol,
       new_integer(codec.encoded));
 }
 
 value_t assembler_unbind_symbol(assembler_t *assm, value_t symbol) {
-  value_t deleted = delete_id_hash_map_at(assm->runtime, assm->local_variable_map,
+  value_t deleted = delete_id_hash_map_at(assm->runtime, assm->local_bindings,
       symbol);
   CHECK_FALSE("delete local failed", is_signal(scNotFound, deleted));
   return deleted;
 }
 
 bool assembler_is_symbol_bound(assembler_t *assm, value_t symbol) {
-  return has_id_hash_map_at(assm->local_variable_map, symbol);
+  return has_id_hash_map_at(assm->local_bindings, symbol);
 }
 
 void assembler_get_symbol_binding(assembler_t *assm, value_t symbol,
     binding_info_t *info_out) {
   CHECK_TRUE("no symbol binding", assembler_is_symbol_bound(assm, symbol));
-  value_t binding = get_id_hash_map_at(assm->local_variable_map, symbol);
+  value_t binding = get_id_hash_map_at(assm->local_bindings, symbol);
   binding_info_codec_t codec = {.encoded=get_integer_value(binding)};
   *info_out = codec.decoded;
 }

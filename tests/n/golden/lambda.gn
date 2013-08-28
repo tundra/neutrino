@@ -12,3 +12,12 @@ EXPECT: 5
 
 INPUT: (fn ($x, $y, $z) => 6)(11, 12, 13)
 EXPECT: 6
+
+INPUT: (fn ($x) => $x)(8)
+EXPECT: 8
+
+INPUT: (fn ($x, $y) => $x)(9, 10)
+EXPECT: 9
+
+INPUT: (fn ($x, $y) => $y)(9, 10)
+EXPECT: 10
