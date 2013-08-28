@@ -96,23 +96,37 @@ value_t assembler_emit_lambda(assembler_t *assm, value_t methods);
 // more general delegate operation.
 value_t assembler_emit_delegate_lambda_call(assembler_t *assm);
 
-// Adds a binding to the local variable map that records that the value of the
-// given symbol can be found at the given stack index. The symbol must not
-// already be bound so it's the caller's responsibility to ensure before calling
-// that it isn't.
-value_t assembler_bind_local_variable(assembler_t *assm, value_t symbol,
-    size_t index);
+// Identifies what kind of binding a bound symbol represents.
+typedef enum {
+  // A local variable in the current scope.
+  btLocal = 0
+} binding_type_t;
 
-// Removes the binding in the local variable map for the given symbol.
-value_t assembler_unbind_local_variable(assembler_t *assm, value_t symbol);
+// A collection of information about a binding. This is going to be encoded as
+// an int and stored in a tagged integer so it can't be larger than effectively
+// 61 bits.
+typedef struct {
+  // The type of the binding.
+  binding_type_t type;
+  // Extra data about the binding.
+  uint32_t data;
+} binding_info_t;
 
-// Returns true if this assembler currently has a binding for the given local
-// variable symbol.
-bool assembler_is_local_variable_bound(assembler_t *assm, value_t symbol);
+// Adds a binding to the binding map that records that the symbol represents the
+// given data in this scope. The symbol must not already be bound so it's the
+// caller's responsibility to ensure before calling that it isn't.
+value_t assembler_bind_symbol(assembler_t *assm, value_t symbol,
+    binding_type_t type, uint32_t data);
 
-// Returns the stack index of the local variable with the given symbol. The
-// variable must be bound, it is the caller's responsibility to ensure that it
-// is before calling this.
-size_t assembler_get_local_variable_binding(assembler_t *assm, value_t symbol);
+// Removes the binding in the symbol map for the given symbol.
+value_t assembler_unbind_symbol(assembler_t *assm, value_t symbol);
+
+// Returns true if this assembler currently has a binding for the given symbol.
+bool assembler_is_symbol_bound(assembler_t *assm, value_t symbol);
+
+// Reads the binding info for the given symbol. The symbol must be bound, it is
+// the caller's responsibility to ensure that it is before calling this.
+void assembler_get_symbol_binding(assembler_t *assm, value_t symbol,
+    binding_info_t *info_out);
 
 #endif // _INTERP

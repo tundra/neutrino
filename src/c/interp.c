@@ -367,26 +367,37 @@ value_t assembler_emit_lambda(assembler_t *assm, value_t methods) {
   return success();
 }
 
-value_t assembler_bind_local_variable(assembler_t *assm, value_t symbol,
-    size_t index) {
+// Encoder-decoder union that lets a binding info struct be packed into an int64
+// to be stored in a tagged integer.
+typedef union {
+  binding_info_t decoded;
+  int64_t encoded;
+} binding_info_codec_t;
+
+value_t assembler_bind_symbol(assembler_t *assm, value_t symbol,
+    binding_type_t type, uint32_t data) {
   CHECK_FALSE("symbol already bound",
       has_id_hash_map_at(assm->local_variable_map, symbol));
+  binding_info_codec_t codec = {.decoded={type, data}};
   return set_id_hash_map_at(assm->runtime, assm->local_variable_map, symbol,
-      new_integer(index));
+      new_integer(codec.encoded));
 }
 
-value_t assembler_unbind_local_variable(assembler_t *assm, value_t symbol) {
+value_t assembler_unbind_symbol(assembler_t *assm, value_t symbol) {
   value_t deleted = delete_id_hash_map_at(assm->runtime, assm->local_variable_map,
       symbol);
   CHECK_FALSE("delete local failed", is_signal(scNotFound, deleted));
   return deleted;
 }
 
-bool assembler_is_local_variable_bound(assembler_t *assm, value_t symbol) {
+bool assembler_is_symbol_bound(assembler_t *assm, value_t symbol) {
   return has_id_hash_map_at(assm->local_variable_map, symbol);
 }
 
-size_t assembler_get_local_variable_binding(assembler_t *assm, value_t symbol) {
-  CHECK_TRUE("no symbol binding", assembler_is_local_variable_bound(assm, symbol));
-  return get_integer_value(get_id_hash_map_at(assm->local_variable_map, symbol));
+void assembler_get_symbol_binding(assembler_t *assm, value_t symbol,
+    binding_info_t *info_out) {
+  CHECK_TRUE("no symbol binding", assembler_is_symbol_bound(assm, symbol));
+  value_t binding = get_id_hash_map_at(assm->local_variable_map, symbol);
+  binding_info_codec_t codec = {.encoded=get_integer_value(binding)};
+  *info_out = codec.decoded;
 }
