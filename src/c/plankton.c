@@ -229,7 +229,7 @@ value_t plankton_serialize(runtime_t *runtime, value_mapping_t *resolver_or_null
     value_t data) {
   // Write the data to a C heap blob.
   byte_buffer_t buf;
-  byte_buffer_init(&buf, NULL);
+  byte_buffer_init(&buf);
   // Use the empty resolver if the resolver pointer is null.
   value_mapping_t resolver;
   if (resolver_or_null == NULL) {

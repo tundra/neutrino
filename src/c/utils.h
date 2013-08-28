@@ -97,16 +97,16 @@ typedef struct {
 void init_system_allocator(allocator_t *alloc);
 
 // Allocates a block of memory using the given allocator.
-address_t allocator_malloc(allocator_t *alloc, size_t size);
+void *allocator_malloc(allocator_t *alloc, size_t size);
 
 // Allocates the specified amount of memory using the default allocator.
-address_t allocator_default_malloc(size_t size);
+void *allocator_default_malloc(size_t size);
 
 // Frees the given block of memory using the default allocator.
-void allocator_default_free(address_t ptr);
+void allocator_default_free(void *ptr);
 
 // Frees a block of memory using the given allocator.
-void allocator_free(allocator_t *alloc, address_t ptr);
+void allocator_free(allocator_t *alloc, void *ptr);
 
 // Returns the current default allocator. If none has been explicitly set this
 // will be the system allocator.
@@ -163,13 +163,10 @@ typedef struct {
   size_t capacity;
   // The actual data.
   uint8_t *data;
-  // The allocator to use to grab memory.
-  allocator_t allocator;
 } byte_buffer_t;
 
-// Initialize a byte buffer. If an allocator is passed it will be used for
-// all allocation, otherwise the default system allocator will be used.
-void byte_buffer_init(byte_buffer_t *buf, allocator_t *alloc_or_null);
+// Initialize a byte buffer.
+void byte_buffer_init(byte_buffer_t *buf);
 
 // Disposes the given byte buffer.
 void byte_buffer_dispose(byte_buffer_t *buf);

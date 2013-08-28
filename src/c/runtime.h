@@ -66,13 +66,13 @@ struct runtime_t {
 };
 
 // Creates a new runtime object, storing it in the given runtime out parameter.
-value_t new_runtime(space_config_t *config, runtime_t **runtime);
+value_t new_runtime(runtime_config_t *config, runtime_t **runtime);
 
 // Disposes the given runtime and frees the memory.
 value_t delete_runtime(runtime_t *runtime);
 
 // Initializes the given runtime according to the given config.
-value_t runtime_init(runtime_t *runtime, space_config_t *config);
+value_t runtime_init(runtime_t *runtime, runtime_config_t *config);
 
 // Resets this runtime to a well-defined state such that if anything fails
 // during the subsequent initialization all fields that haven't been

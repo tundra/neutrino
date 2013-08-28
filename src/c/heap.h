@@ -67,15 +67,15 @@ value_t field_callback_call(field_callback_t *callback, value_t *value);
 void *field_callback_get_data(field_callback_t *callback);
 
 
-// Settings to apply when creating a space. This struct gets passed by value
+// Settings to apply when creating a runtime. This struct gets passed by value
 // under some circumstances so be sure it doesn't break anything to do that.
 typedef struct {
   // The size in bytes of the space to create.
-  size_t size_bytes;
-} space_config_t;
+  size_t semispace_size_bytes;
+} runtime_config_t;
 
-// Initializes the fields of this space config to the defaults.
-void space_config_init_defaults(space_config_t *config);
+// Initializes the fields of this runtime config to the defaults.
+void runtime_config_init_defaults(runtime_config_t *config);
 
 // An allocation space. The heap is made up of several of these.
 typedef struct {
@@ -96,7 +96,7 @@ typedef struct {
 
 // Initialize the given space, assumed to be uninitialized. If this fails for
 // whatever reason a signal is returned.
-value_t space_init(space_t *space, space_config_t *config);
+value_t space_init(space_t *space, runtime_config_t *config);
 
 // If necessary, dispose the memory held by this space.
 void space_dispose(space_t *space);
@@ -145,7 +145,7 @@ value_t gc_safe_get_value(gc_safe_t *handle);
 // A full garbage-collectable heap.
 typedef struct {
   // The space configuration this heap gets it settings from.
-  space_config_t config;
+  runtime_config_t config;
   // The space where we allocate new objects.
   space_t to_space;
   // The space that, during gc, holds existing object and from which values are
@@ -160,7 +160,7 @@ typedef struct {
 
 // Initialize the given heap, returning a signal to indicate success or
 // failure. If the config is NULL the default is used.
-value_t heap_init(heap_t *heap, space_config_t *config);
+value_t heap_init(heap_t *heap, runtime_config_t *config);
 
 // Allocate the given number of byte in the given space. The size is not
 // required to be value pointer aligned, this function will take care of

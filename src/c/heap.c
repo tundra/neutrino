@@ -51,23 +51,23 @@ static size_t is_size_aligned(uint32_t alignment, size_t size) {
 }
 
 // The default space config.
-static const space_config_t kDefaultConfig = {
+static const runtime_config_t kDefaultConfig = {
   1 * kMB
 };
 
-void space_config_init_defaults(space_config_t *config) {
+void runtime_config_init_defaults(runtime_config_t *config) {
   *config = kDefaultConfig;
 }
 
-value_t space_init(space_t *space, space_config_t *config_or_null) {
-  const space_config_t *config = (config_or_null
+value_t space_init(space_t *space, runtime_config_t *config_or_null) {
+  const runtime_config_t *config = (config_or_null
       ? config_or_null
       : &kDefaultConfig);
   // Start out by clearing it, just for good measure.
   space_clear(space);
   // Allocate one word more than strictly necessary to account for possible
   // alignment.
-  size_t bytes = config->size_bytes + kValueSize;
+  size_t bytes = config->semispace_size_bytes + kValueSize;
   address_t memory = allocator_default_malloc(bytes);
   if (memory == NULL)
     return new_signal(scSystemError);
@@ -81,7 +81,7 @@ value_t space_init(space_t *space, space_config_t *config_or_null) {
   // wastes the extra word we allocated to make room for alignment. However,
   // making the space size slightly different depending on whether malloc
   // aligns its data or not is a recipe for subtle bugs.
-  space->limit = space->next_free + config->size_bytes;
+  space->limit = space->next_free + config->semispace_size_bytes;
   return success();
 }
 
@@ -176,7 +176,7 @@ value_t gc_safe_get_value(gc_safe_t *handle) {
 }
 
 gc_safe_t *heap_new_gc_safe(heap_t *heap, value_t value) {
-  gc_safe_t *new_gc_safe = (void*) allocator_default_malloc(sizeof(gc_safe_t));
+  gc_safe_t *new_gc_safe = allocator_default_malloc(sizeof(gc_safe_t));
   gc_safe_t *next = heap->root_gc_safe.next;
   gc_safe_t *prev = next->prev;
   new_gc_safe->next = next;
@@ -194,7 +194,7 @@ void heap_dispose_gc_safe(heap_t *heap, gc_safe_t *gc_safe) {
   CHECK_EQ("wrong gc safe prev", gc_safe, prev->next);
   gc_safe_t *next = gc_safe->next;
   CHECK_EQ("wrong gc safe next", gc_safe, next->prev);
-  allocator_default_free((address_t) gc_safe);
+  allocator_default_free(gc_safe);
   prev->next = next;
   next->prev = prev;
   heap->gc_safe_count--;
@@ -221,11 +221,11 @@ value_t heap_validate(heap_t *heap) {
 
 // --- H e a p ---
 
-value_t heap_init(heap_t *heap, space_config_t *config) {
+value_t heap_init(heap_t *heap, runtime_config_t *config) {
   // Initialize new space, leave old space clear; we won't use that until
   // later.
   if (config == NULL) {
-    space_config_init_defaults(&heap->config);
+    runtime_config_init_defaults(&heap->config);
   } else {
     heap->config = *config;
   }

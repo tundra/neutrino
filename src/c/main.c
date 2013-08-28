@@ -13,7 +13,7 @@
 static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
   // Read the complete file into a byte buffer.
   byte_buffer_t buffer;
-  byte_buffer_init(&buffer, NULL);
+  byte_buffer_init(&buffer);
   while (true) {
     static const size_t kBufSize = 1024;
     byte_t raw_buffer[kBufSize];
