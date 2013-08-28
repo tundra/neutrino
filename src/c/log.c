@@ -40,7 +40,7 @@ void vlog_message(log_level_t level, const char *file, int line, const char *fmt
     va_list argp) {
   // Write the error message into a string buffer.
   string_buffer_t buf;
-  string_buffer_init(&buf, NULL);
+  string_buffer_init(&buf);
   string_buffer_vprintf(&buf, fmt, argp);
   va_end(argp);
   // Flush the string buffer.

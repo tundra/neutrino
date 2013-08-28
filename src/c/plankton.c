@@ -326,7 +326,7 @@ static value_t map_deserialize(deserialize_state_t *state) {
 
 static value_t string_deserialize(deserialize_state_t *state) {
   string_buffer_t buf;
-  string_buffer_init(&buf, NULL);
+  string_buffer_init(&buf);
   size_t length = uint32_deserialize(state->in);
   for (size_t i = 0; i < length; i++)
     string_buffer_putc(&buf, byte_stream_read(state->in));

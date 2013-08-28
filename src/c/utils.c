@@ -123,19 +123,39 @@ void allocator_free(allocator_t *alloc, address_t ptr) {
   (alloc->free)(alloc->data, ptr);
 }
 
-void string_buffer_init(string_buffer_t *buf, allocator_t *alloc_or_null) {
-  if (alloc_or_null == NULL) {
-    init_system_allocator(&buf->allocator);
-  } else {
-    buf->allocator = *alloc_or_null;
+address_t allocator_default_malloc(size_t size) {
+  return allocator_malloc(allocator_get_default(), size);
+}
+
+void allocator_default_free(address_t ptr) {
+  allocator_free(allocator_get_default(), ptr);
+}
+
+allocator_t kSystemAllocator;
+allocator_t *allocator_default = NULL;
+
+allocator_t *allocator_get_default() {
+  if (allocator_default == NULL) {
+    init_system_allocator(&kSystemAllocator);
+    allocator_default = &kSystemAllocator;
   }
+  return allocator_default;
+}
+
+allocator_t *allocator_set_default(allocator_t *value) {
+  allocator_t *previous = allocator_get_default();
+  allocator_default = value;
+  return previous;
+}
+
+void string_buffer_init(string_buffer_t *buf) {
   buf->length = 0;
   buf->capacity = 128;
-  buf->chars = (char*) allocator_malloc(&buf->allocator, buf->capacity);
+  buf->chars = (char*) allocator_default_malloc(buf->capacity);
 }
 
 void string_buffer_dispose(string_buffer_t *buf) {
-  allocator_free(&buf->allocator, (address_t) buf->chars);
+  allocator_default_free((address_t) buf->chars);
 }
 
 // Expands the buffer to make room for 'length' characters if necessary.
@@ -144,10 +164,9 @@ static void string_buffer_ensure_capacity(string_buffer_t *buf,
   if (length < buf->capacity)
     return;
   size_t new_capacity = (length * 2);
-  char *new_chars = (char*) allocator_malloc(&buf->allocator,
-      new_capacity);
+  char *new_chars = (char*) allocator_default_malloc(new_capacity);
   memcpy(new_chars, buf->chars, buf->length);
-  allocator_free(&buf->allocator, (address_t) buf->chars);
+  allocator_default_free((address_t) buf->chars);
   buf->chars = new_chars;
   buf->capacity = new_capacity;
 }

@@ -157,7 +157,7 @@ value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
 }
 
 value_t new_runtime(space_config_t *config, runtime_t **runtime_out) {
-  runtime_t *runtime = (runtime_t*) malloc(sizeof(runtime_t));
+  runtime_t *runtime = (runtime_t*) allocator_default_malloc(sizeof(runtime_t));
   TRY(runtime_init(runtime, config));
   *runtime_out = runtime;
   return success();
@@ -165,7 +165,7 @@ value_t new_runtime(space_config_t *config, runtime_t **runtime_out) {
 
 value_t delete_runtime(runtime_t *runtime) {
   TRY(runtime_dispose(runtime));
-  free(runtime);
+  allocator_default_free((address_t) runtime);
   return success();
 }
 

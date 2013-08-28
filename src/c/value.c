@@ -266,7 +266,7 @@ static value_t string_plus_string(builtin_arguments_t *args) {
   CHECK_FAMILY(ofString, this);
   CHECK_FAMILY(ofString, that);
   string_buffer_t buf;
-  string_buffer_init(&buf, NULL);
+  string_buffer_init(&buf);
   string_t str;
   get_string_contents(this, &str);
   string_buffer_append(&buf, &str);
@@ -1206,7 +1206,7 @@ value_t int_to_ordering(int value) {
 void value_print_ln(value_t value) {
   // Write the value on a string buffer.
   string_buffer_t buf;
-  string_buffer_init(&buf, NULL);
+  string_buffer_init(&buf);
   value_print_on(value, &buf);
   string_t result;
   string_buffer_flush(&buf, &result);
@@ -1218,7 +1218,7 @@ void value_print_ln(value_t value) {
 }
 
 const char *value_to_string(value_to_string_t *data, value_t value) {
-  string_buffer_init(&data->buf, NULL);
+  string_buffer_init(&data->buf);
   value_print_on(value, &data->buf);
   string_buffer_flush(&data->buf, &data->str);
   return data->str.chars;

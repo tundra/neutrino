@@ -72,8 +72,6 @@ void *field_callback_get_data(field_callback_t *callback);
 typedef struct {
   // The size in bytes of the space to create.
   size_t size_bytes;
-  // The allocator to use to get memory.
-  allocator_t allocator;
 } space_config_t;
 
 // Initializes the fields of this space config to the defaults.
@@ -94,8 +92,6 @@ typedef struct {
   address_t memory;
   // The size of the allocated memory block.
   size_t memory_size;
-  // The allocator to get memory from and return it to.
-  allocator_t allocator;
 } space_t;
 
 // Initialize the given space, assumed to be uninitialized. If this fails for

@@ -471,7 +471,7 @@ value_t get_invocation_record_argument_at(value_t self, frame_t *frame, size_t i
 
 void print_invocation(value_t record, frame_t *frame) {
   string_buffer_t buf;
-  string_buffer_init(&buf, NULL);
+  string_buffer_init(&buf);
   size_t arg_count = get_invocation_record_argument_count(record);
   string_buffer_printf(&buf, "{");
   for (size_t i = 0;  i < arg_count; i++) {
