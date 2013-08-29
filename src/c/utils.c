@@ -95,18 +95,34 @@ void blob_copy_to(blob_t *src, blob_t *dest) {
 
 static const byte_t kMallocHeapMarker = 0xB0;
 
+memory_block_t memory_block_empty() {
+  return new_memory_block(NULL, 0);
+}
+
+memory_block_t new_memory_block(void *memory, size_t size) {
+  return (memory_block_t) {memory, size};
+}
+
+bool memory_block_is_empty(memory_block_t block) {
+  return block.memory == NULL;
+}
+
 // Throws away the data argument and just calls malloc.
-static void *system_malloc_trampoline(void *data, size_t size) {
+static memory_block_t system_malloc_trampoline(void *data, size_t size) {
   CHECK_EQ("invalid system allocator", NULL, data);
   void *result = malloc(size);
-  memset(result, kMallocHeapMarker, size);
-  return result;
+  if (result == NULL) {
+    return memory_block_empty();
+  } else {
+    memset(result, kMallocHeapMarker, size);
+    return (memory_block_t) {result, size};
+  }
 }
 
 // Throws away the data argument and just calls free.
-static void system_free_trampoline(void *data, void *ptr) {
+static void system_free_trampoline(void *data, memory_block_t memory) {
   CHECK_EQ("invalid system allocator", NULL, data);
-  free(ptr);
+  free(memory.memory);
 }
 
 void init_system_allocator(allocator_t *alloc) {
@@ -115,20 +131,20 @@ void init_system_allocator(allocator_t *alloc) {
   alloc->data = NULL;
 }
 
-void *allocator_malloc(allocator_t *alloc, size_t size) {
+memory_block_t allocator_malloc(allocator_t *alloc, size_t size) {
   return (alloc->malloc)(alloc->data, size);
 }
 
-void allocator_free(allocator_t *alloc, void *ptr) {
-  (alloc->free)(alloc->data, ptr);
+void allocator_free(allocator_t *alloc, memory_block_t memory) {
+  (alloc->free)(alloc->data, memory);
 }
 
-void *allocator_default_malloc(size_t size) {
+memory_block_t allocator_default_malloc(size_t size) {
   return allocator_malloc(allocator_get_default(), size);
 }
 
-void allocator_default_free(void *ptr) {
-  allocator_free(allocator_get_default(), ptr);
+void allocator_default_free(memory_block_t block) {
+  allocator_free(allocator_get_default(), block);
 }
 
 allocator_t kSystemAllocator;
@@ -150,36 +166,36 @@ allocator_t *allocator_set_default(allocator_t *value) {
 
 void string_buffer_init(string_buffer_t *buf) {
   buf->length = 0;
-  buf->capacity = 128;
-  buf->chars = allocator_default_malloc(buf->capacity);
+  buf->memory = allocator_default_malloc(128);
 }
 
 void string_buffer_dispose(string_buffer_t *buf) {
-  allocator_default_free(buf->chars);
+  allocator_default_free(buf->memory);
 }
 
 // Expands the buffer to make room for 'length' characters if necessary.
 static void string_buffer_ensure_capacity(string_buffer_t *buf,
     size_t length) {
-  if (length < buf->capacity)
+  if (length < buf->memory.size)
     return;
   size_t new_capacity = (length * 2);
-  char *new_chars = allocator_default_malloc(new_capacity);
-  memcpy(new_chars, buf->chars, buf->length);
-  allocator_default_free(buf->chars);
-  buf->chars = new_chars;
-  buf->capacity = new_capacity;
+  memory_block_t new_memory = allocator_default_malloc(new_capacity);
+  memcpy(new_memory.memory, buf->memory.memory, buf->length);
+  allocator_default_free(buf->memory);
+  buf->memory = new_memory;
 }
 
 void string_buffer_append(string_buffer_t *buf, string_t *str) {
   string_buffer_ensure_capacity(buf, buf->length + string_length(str));
-  string_copy_to(str, buf->chars + buf->length, buf->capacity - buf->length);
+  char *chars = buf->memory.memory;
+  string_copy_to(str, chars + buf->length, buf->memory.size - buf->length);
   buf->length += string_length(str);
 }
 
 void string_buffer_putc(string_buffer_t *buf, char c) {
   string_buffer_ensure_capacity(buf, buf->length + 1);
-  buf->chars[buf->length] = c;
+  char *chars = buf->memory.memory;
+  chars[buf->length] = c;
   buf->length++;
 }
 
@@ -205,10 +221,11 @@ void string_buffer_vprintf(string_buffer_t *buf, const char *fmt, va_list argp) 
 }
 
 void string_buffer_flush(string_buffer_t *buf, string_t *str_out) {
-  CHECK_TRUE("no room for null terminator", buf->length < buf->capacity);
-  buf->chars[buf->length] = '\0';
+  CHECK_TRUE("no room for null terminator", buf->length < buf->memory.size);
+  char *chars = buf->memory.memory;
+  chars[buf->length] = '\0';
   str_out->length = buf->length;
-  str_out->chars = buf->chars;
+  str_out->chars = chars;
 }
 
 
@@ -216,34 +233,32 @@ void string_buffer_flush(string_buffer_t *buf, string_t *str_out) {
 
 void byte_buffer_init(byte_buffer_t *buf) {
   buf->length = 0;
-  buf->capacity = 128;
-  buf->data = allocator_default_malloc(buf->capacity);
+  buf->memory = allocator_default_malloc(128);
 }
 
 void byte_buffer_dispose(byte_buffer_t *buf) {
-  allocator_default_free(buf->data);
+  allocator_default_free(buf->memory);
 }
 
 // Expands the buffer to make room for 'length' characters if necessary.
 static void byte_buffer_ensure_capacity(byte_buffer_t *buf, size_t length) {
-  if (length < buf->capacity)
+  if (length < buf->memory.size)
     return;
   size_t new_capacity = (length * 2);
-  uint8_t *new_data = allocator_default_malloc(new_capacity);
-  memcpy(new_data, buf->data, buf->length);
-  allocator_default_free(buf->data);
-  buf->data = new_data;
-  buf->capacity = new_capacity;
+  memory_block_t new_memory = allocator_default_malloc(new_capacity);
+  memcpy(new_memory.memory, buf->memory.memory, buf->length);
+  allocator_default_free(buf->memory);
+  buf->memory = new_memory;
 }
 
 void byte_buffer_append(byte_buffer_t *buf, uint8_t value) {
   byte_buffer_ensure_capacity(buf, buf->length + 1);
-  buf->data[buf->length] = value;
+  ((byte_t*) buf->memory.memory)[buf->length] = value;
   buf->length++;
 }
 
 void byte_buffer_flush(byte_buffer_t *buf, blob_t *blob_out) {
-  blob_init(blob_out, buf->data, buf->length);
+  blob_init(blob_out, buf->memory.memory, buf->length);
 }
 
 
@@ -259,8 +274,9 @@ value_t bit_vector_init(bit_vector_t *vector, size_t length, bool value) {
   if (bit_vector_is_small(vector)) {
     vector->data = vector->storage.as_small.inline_data;
   } else {
-    uint8_t *data = allocator_default_malloc(byte_size);
-    vector->data = vector->storage.as_large.alloced_data = data;
+    memory_block_t memory = allocator_default_malloc(byte_size);
+    vector->storage.as_large.memory = memory;
+    vector->data = memory.memory;
   }
   memset(vector->data, value ? 0xFF : 0x00, byte_size);
   return success();
@@ -268,7 +284,7 @@ value_t bit_vector_init(bit_vector_t *vector, size_t length, bool value) {
 
 void bit_vector_dispose(bit_vector_t *vector) {
   if (!bit_vector_is_small(vector))
-    allocator_default_free(vector->storage.as_large.alloced_data);
+    allocator_default_free(vector->storage.as_large.memory);
 }
 
 void bit_vector_set_at(bit_vector_t *vector, size_t index, bool value) {

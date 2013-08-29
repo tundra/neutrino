@@ -72,6 +72,10 @@ void *field_callback_get_data(field_callback_t *callback);
 typedef struct {
   // The size in bytes of the space to create.
   size_t semispace_size_bytes;
+  // The max amount of memory we'll allocate from the system. This is mainly a
+  // failsafe in case a bug causes the runtime to allocate out of control, which
+  // has happened, because the OS doesn't necessarily handle that very well.
+  size_t system_memory_limit;
 } runtime_config_t;
 
 // Initializes the fields of this runtime config to the defaults.
@@ -89,9 +93,7 @@ typedef struct {
   address_t limit;
   // The memory to free when disposing this space. The start address may point
   // somewhere inside this memory so we can't free that directly.
-  address_t memory;
-  // The size of the allocated memory block.
-  size_t memory_size;
+  memory_block_t memory;
 } space_t;
 
 // Initialize the given space, assumed to be uninitialized. If this fails for

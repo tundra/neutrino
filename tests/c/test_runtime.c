@@ -7,8 +7,8 @@
 #include "value-inl.h"
 
 // A malloc that refuses to yield any memory.
-void *blocking_malloc(void *data, size_t size) {
-  return NULL;
+memory_block_t blocking_malloc(void *data, size_t size) {
+  return memory_block_empty();
 }
 
 TEST(runtime, create) {
