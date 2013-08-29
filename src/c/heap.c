@@ -52,7 +52,8 @@ static size_t is_size_aligned(uint32_t alignment, size_t size) {
 
 // The default space config.
 static const runtime_config_t kDefaultConfig = {
-  1 * kMB
+  1 * kMB,
+  100 * kMB
 };
 
 void runtime_config_init_defaults(runtime_config_t *config) {
@@ -68,14 +69,13 @@ value_t space_init(space_t *space, runtime_config_t *config_or_null) {
   // Allocate one word more than strictly necessary to account for possible
   // alignment.
   size_t bytes = config->semispace_size_bytes + kValueSize;
-  address_t memory = allocator_default_malloc(bytes);
-  if (memory == NULL)
+  memory_block_t memory = allocator_default_malloc(bytes);
+  if (memory_block_is_empty(memory))
     return new_signal(scSystemError);
   // Clear the newly allocated memory to a recognizable value.
-  memset(memory, kBlankHeapMarker, bytes);
-  address_t aligned = align_address(kValueSize, memory);
+  memset(memory.memory, kBlankHeapMarker, bytes);
+  address_t aligned = align_address(kValueSize, memory.memory);
   space->memory = memory;
-  space->memory_size = bytes;
   space->next_free = space->start = aligned;
   // If malloc gives us an aligned pointer using only 'size_bytes' of memory
   // wastes the extra word we allocated to make room for alignment. However,
@@ -86,9 +86,9 @@ value_t space_init(space_t *space, runtime_config_t *config_or_null) {
 }
 
 void space_dispose(space_t *space) {
-  if (space->memory == NULL)
+  if (memory_block_is_empty(space->memory))
     return;
-  memset(space->memory, kFreedHeapMarker, space->memory_size);
+  memset(space->memory.memory, kFreedHeapMarker, space->memory.size);
   allocator_default_free(space->memory);
   space_clear(space);
 }
@@ -96,8 +96,7 @@ void space_dispose(space_t *space) {
 void space_clear(space_t *space) {
   space->next_free = NULL;
   space->limit = NULL;
-  space->memory = NULL;
-  space->memory_size = 0;
+  space->memory = memory_block_empty();
 }
 
 bool space_is_empty(space_t *space) {
@@ -176,7 +175,9 @@ value_t gc_safe_get_value(gc_safe_t *handle) {
 }
 
 gc_safe_t *heap_new_gc_safe(heap_t *heap, value_t value) {
-  gc_safe_t *new_gc_safe = allocator_default_malloc(sizeof(gc_safe_t));
+  memory_block_t memory = allocator_default_malloc(sizeof(gc_safe_t));
+  CHECK_EQ("wrong gc_safe_t memory size", sizeof(gc_safe_t), memory.size);
+  gc_safe_t *new_gc_safe = memory.memory;
   gc_safe_t *next = heap->root_gc_safe.next;
   gc_safe_t *prev = next->prev;
   new_gc_safe->next = next;
@@ -194,7 +195,7 @@ void heap_dispose_gc_safe(heap_t *heap, gc_safe_t *gc_safe) {
   CHECK_EQ("wrong gc safe prev", gc_safe, prev->next);
   gc_safe_t *next = gc_safe->next;
   CHECK_EQ("wrong gc safe next", gc_safe, next->prev);
-  allocator_default_free(gc_safe);
+  allocator_default_free(new_memory_block(gc_safe, sizeof(gc_safe_t)));
   prev->next = next;
   next->prev = prev;
   heap->gc_safe_count--;

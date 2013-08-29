@@ -4,6 +4,7 @@
 #include "alloc.h"
 #include "crash.h"
 #include "interp.h"
+#include "log.h"
 #include "plankton.h"
 #include "runtime.h"
 #include "value-inl.h"
@@ -39,10 +40,61 @@ static value_t execute_program(runtime_t *runtime, value_t program) {
   return run_code_block(runtime, code_block);
 }
 
+// Data used by the custom allocator.
+typedef struct {
+  // The default allocator this one is replacing.
+  allocator_t *outer;
+  // The config to use.
+  runtime_config_t *config;
+  // The total amount of live memory.
+  size_t live_memory;
+  // The custom allocator to use.
+  allocator_t allocator;
+} main_allocator_data_t;
+
+void main_free(void *raw_data, memory_block_t memory) {
+  main_allocator_data_t *data = raw_data;
+  data->live_memory -= memory.size;
+  allocator_free(data->outer, memory);
+}
+
+memory_block_t main_malloc(void *raw_data, size_t size) {
+  main_allocator_data_t *data = raw_data;
+  if (data->live_memory + size > data->config->system_memory_limit) {
+    WARN("Tried to allocate more than %i of system memory. At %i, requested %i.",
+        data->config->system_memory_limit, data->live_memory, size);
+    return memory_block_empty();
+  }
+  memory_block_t result = allocator_malloc(data->outer, size);
+  if (!memory_block_is_empty(result))
+    data->live_memory += result.size;
+  return result;
+}
+
+static void main_allocator_data_init(main_allocator_data_t *data, runtime_config_t *config) {
+  data->config = config;
+  data->live_memory = 0;
+  data->allocator.data = data;
+  data->allocator.free = main_free;
+  data->allocator.malloc = main_malloc;
+  data->outer = allocator_set_default(&data->allocator);
+}
+
+static void main_allocator_data_dispose(main_allocator_data_t *data) {
+  allocator_set_default(data->outer);
+  if (data->live_memory > 0)
+    WARN("Disposing with %i of live memory.", data->live_memory);
+}
+
 // Create a vm and run the program.
 static value_t neutrino_main(int argc, char *argv[]) {
+  runtime_config_t config;
+  runtime_config_init_defaults(&config);
+  // Set up a custom allocator we get tighter control over allocation.
+  main_allocator_data_t allocator_data;
+  main_allocator_data_init(&allocator_data, &config);
   runtime_t *runtime;
-  TRY(new_runtime(NULL, &runtime));
+  TRY(new_runtime(&config, &runtime));
   E_BEGIN_TRY_FINALLY();
     for (int i = 1; i < argc; i++) {
       const char *filename = argv[i];
@@ -63,6 +115,7 @@ static value_t neutrino_main(int argc, char *argv[]) {
     E_RETURN(success());
   E_FINALLY();
     TRY(delete_runtime(runtime));
+    main_allocator_data_dispose(&allocator_data);
   E_END_TRY_FINALLY();
 }
 

@@ -157,7 +157,9 @@ value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
 }
 
 value_t new_runtime(runtime_config_t *config, runtime_t **runtime_out) {
-  runtime_t *runtime = allocator_default_malloc(sizeof(runtime_t));
+  memory_block_t memory = allocator_default_malloc(sizeof(runtime_t));
+  CHECK_EQ("wrong runtime_t memory size", sizeof(runtime_t), memory.size);
+  runtime_t *runtime = memory.memory;
   TRY(runtime_init(runtime, config));
   *runtime_out = runtime;
   return success();
@@ -165,7 +167,7 @@ value_t new_runtime(runtime_config_t *config, runtime_t **runtime_out) {
 
 value_t delete_runtime(runtime_t *runtime) {
   TRY(runtime_dispose(runtime));
-  allocator_default_free(runtime);
+  allocator_default_free(new_memory_block(runtime, sizeof(runtime_t)));
   return success();
 }
 
@@ -211,6 +213,8 @@ typedef struct {
   size_t length;
   // The fixups.
   pending_fixup_t *fixups;
+  // The memory where the fixups are stored.
+  memory_block_t memory;
 } pending_fixup_worklist_t;
 
 // Initialize a worklist. This doesn't allocate any storage, that only happens
@@ -219,6 +223,7 @@ static void pending_fixup_worklist_init(pending_fixup_worklist_t *worklist) {
   worklist->capacity = 0;
   worklist->length = 0;
   worklist->fixups = NULL;
+  worklist->memory = memory_block_empty();
 }
 
 // Add a new fixup to the list. This returns a value such that it can return
@@ -229,16 +234,18 @@ static value_t pending_fixup_worklist_add(pending_fixup_worklist_t *worklist,
     // There's no room for the new element so increase capacity.
     size_t old_capacity = worklist->capacity;
     size_t new_capacity = (old_capacity == 0) ? 16 : 2 * old_capacity;
-    pending_fixup_t *new_fixups = allocator_default_malloc(
+    memory_block_t new_memory = allocator_default_malloc(
         new_capacity * sizeof(pending_fixup_t));
+    pending_fixup_t *new_fixups = new_memory.memory;
     if (old_capacity > 0) {
       // Copy the previous data over to the new backing store.
       memcpy(new_fixups, worklist->fixups, worklist->length * sizeof(pending_fixup_t));
       // Free the old backing store.
-      allocator_default_free(worklist->fixups);
+      allocator_default_free(worklist->memory);
     }
     worklist->fixups = new_fixups;
     worklist->capacity = new_capacity;
+    worklist->memory = new_memory;
   }
   worklist->fixups[worklist->length++] = *fixup;
   return success();
@@ -246,8 +253,9 @@ static value_t pending_fixup_worklist_add(pending_fixup_worklist_t *worklist,
 
 // Dispose the given worklist.
 static void pending_fixup_worklist_dispose(pending_fixup_worklist_t *worklist) {
-  if (worklist->capacity > 0) {
-    allocator_default_free(worklist->fixups);
+  if (!memory_block_is_empty(worklist->memory)) {
+    allocator_default_free(worklist->memory);
+    worklist->memory = memory_block_empty();
     worklist->fixups = NULL;
   }
 }
