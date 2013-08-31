@@ -4,4 +4,9 @@ INPUT: {
   def $x := 8;
   $x;
 }
-EXPECT: 8
+VALUE: 8
+
+INPUT: {
+  "foo"();
+}
+OUTPUT: "foo"
