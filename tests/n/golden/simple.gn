@@ -1,65 +1,52 @@
 # Really basic literal expressions.
 
 INPUT: 1
-EXPECT: 1
+VALUE: 1
 
 INPUT: []
-EXPECT: []
+VALUE: []
 
 INPUT: [1]
-EXPECT: [1]
+VALUE: [1]
 
 INPUT: [1, 2]
-EXPECT: [1, 2]
+VALUE: [1, 2]
 
 INPUT: [1, 2, 3]
-EXPECT: [1, 2, 3]
+VALUE: [1, 2, 3]
 
 INPUT: [1, 2, [3]]
-EXPECT: [1, 2, #<array[1]>]
+VALUE: [1, 2, #<array[1]>]
 
 INPUT: ""
-EXPECT: ""
+VALUE: ""
 
 INPUT: "foo"
-EXPECT: "foo"
+VALUE: "foo"
 
 INPUT: null
-EXPECT: null
+VALUE: null
 
 INPUT: true
-EXPECT: true
+VALUE: true
 
 INPUT: false
-EXPECT: false
+VALUE: false
 
-# Simple built-in methods
-
-INPUT: 1 + 1
-EXPECT: 2
-
-INPUT: 5 - 2
-EXPECT: 3
-
-INPUT: 1 + 1 + 1
-EXPECT: 3
-
-INPUT: "(" + "foo" + ", " + "bar" + ")"
-EXPECT: "(foo, bar)"
 
 # Sequences
 
 INPUT: {}
-EXPECT: null
+VALUE: null
 
 INPUT: {1;}
-EXPECT: 1
+VALUE: 1
 
 INPUT: {1; 2;}
-EXPECT: 2
+VALUE: 2
 
 INPUT: {1; 2; 3; 4; 5; 6; 7; 8;}
-EXPECT: 8
+VALUE: 8
 
 INPUT: {8; {7; {6; {5; 4;} 3;} 2;} 1;}
-EXPECT: 1
+VALUE: 1

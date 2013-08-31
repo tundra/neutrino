@@ -86,6 +86,9 @@ static void main_allocator_data_dispose(main_allocator_data_t *data) {
     WARN("Disposing with %i of live memory.", data->live_memory);
 }
 
+// Whether or not to print the output values.
+static bool print_value = false;
+
 // Create a vm and run the program.
 static value_t neutrino_main(int argc, char *argv[]) {
   runtime_config_t config;
@@ -101,6 +104,9 @@ static value_t neutrino_main(int argc, char *argv[]) {
       value_t input;
       if (strcmp("-", filename) == 0) {
         E_TRY_SET(input, read_file_to_blob(runtime, stdin));
+      } else if (strcmp("--print-value", filename) == 0) {
+        print_value = true;
+        continue;
       } else {
         FILE *file = fopen(filename, "r");
         E_TRY_SET(input, read_file_to_blob(runtime, file));
@@ -110,7 +116,8 @@ static value_t neutrino_main(int argc, char *argv[]) {
       E_TRY(init_syntax_mapping(&syntax_mapping, runtime));
       E_TRY_DEF(program, plankton_deserialize(runtime, &syntax_mapping, input));
       E_TRY_DEF(result, execute_program(runtime, program));
-      value_print_ln(result);
+      if (print_value)
+        value_print_ln(result);
     }
     E_RETURN(success());
   E_FINALLY();

@@ -1,26 +1,26 @@
 INPUT: (fn => 4)()
-EXPECT: 4
+VALUE: 4
 
 INPUT: (fn => fn => 7)()()
-EXPECT: 7
+VALUE: 7
 
 INPUT: (fn ($x) => 4)(8)
-EXPECT: 4
+VALUE: 4
 
 INPUT: (fn ($x, $y) => 5)(9, 10)
-EXPECT: 5
+VALUE: 5
 
 INPUT: (fn ($x, $y, $z) => 6)(11, 12, 13)
-EXPECT: 6
+VALUE: 6
 
 INPUT: (fn ($x) => $x)(8)
-EXPECT: 8
+VALUE: 8
 
 INPUT: (fn ($x, $y) => $x)(9, 10)
-EXPECT: 9
+VALUE: 9
 
 INPUT: (fn ($x, $y) => $y)(9, 10)
-EXPECT: 10
+VALUE: 10
 
 INPUT: (fn ($f, $x) => $f($x))(fn ($x) => ($x + 3), 6)
-EXPECT: 9
+VALUE: 9
