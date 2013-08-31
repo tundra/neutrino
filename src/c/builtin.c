@@ -62,7 +62,7 @@ value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
   CHECK_FAMILY(ofProtocol, receiver);
   // Build the implementation.
   assembler_t assm;
-  TRY(assembler_init(&assm, runtime, space, runtime_null(runtime)));
+  TRY(assembler_init(&assm, runtime, space, NULL));
   TRY(assembler_emit_builtin(&assm, implementation));
   TRY(assembler_emit_return(&assm));
   TRY_DEF(code_block, assembler_flush(&assm));
@@ -79,7 +79,7 @@ value_t add_method_space_custom_method(runtime_t *runtime, value_t space,
   CHECK_FAMILY(ofProtocol, receiver);
   // Build the implementation.
   assembler_t assm;
-  TRY(assembler_init(&assm, runtime, space, runtime_null(runtime)));
+  TRY(assembler_init(&assm, runtime, space, NULL));
   TRY(emitter(&assm));
   TRY(assembler_emit_return(&assm));
   TRY_DEF(code_block, assembler_flush(&assm));

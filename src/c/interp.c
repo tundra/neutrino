@@ -222,17 +222,130 @@ value_t run_code_block(runtime_t *runtime, value_t code) {
 }
 
 
+// --- S c o p e s ---
+
+static scope_lookup_callback_t kBottomCallback;
+static scope_lookup_callback_t *bottom_callback = NULL;
+
+// Returns the bottom callback that never finds symbols.
+static scope_lookup_callback_t *get_bottom_callback() {
+  if (bottom_callback == NULL) {
+    scope_lookup_callback_init_bottom(&kBottomCallback);
+    bottom_callback = &kBottomCallback;
+  }
+  return bottom_callback;
+}
+
+void scope_lookup_callback_init(scope_lookup_callback_t *callback,
+    scope_lookup_function_t function, void *data) {
+  callback->function = function;
+  callback->data = data;
+}
+
+static value_t bottom_scope_lookup(value_t symbol, void *data,
+    binding_info_t *info_out) {
+  return new_signal(scNotFound);
+}
+
+void scope_lookup_callback_init_bottom(scope_lookup_callback_t *callback) {
+  scope_lookup_callback_init(callback, bottom_scope_lookup, NULL);
+}
+
+value_t scope_lookup_callback_call(scope_lookup_callback_t *callback,
+    value_t symbol, binding_info_t *info_out) {
+  return (callback->function)(symbol, callback->data, info_out);
+}
+
+// Performs a lookup for a single symbol scope.
+static value_t single_symbol_scope_lookup(value_t symbol, void *data,
+    binding_info_t *info_out) {
+  single_symbol_scope_t *scope = data;
+  if (value_identity_compare(symbol, scope->symbol)) {
+    if (info_out != NULL)
+      *info_out = scope->binding;
+    return success();
+  } else {
+    return scope_lookup_callback_call(scope->outer, symbol, info_out);
+  }
+}
+
+void assembler_push_single_symbol_scope(assembler_t *assm,
+    single_symbol_scope_t *scope, value_t symbol, binding_type_t type,
+    uint32_t data) {
+  scope->symbol = symbol;
+  scope->binding = (binding_info_t) {type, data};
+  scope_lookup_callback_init(&scope->callback, single_symbol_scope_lookup, scope);
+  scope->outer = assembler_set_scope_callback(assm, &scope->callback);
+}
+
+void assembler_pop_single_symbol_scope(assembler_t *assm,
+    single_symbol_scope_t *scope) {
+  CHECK_EQ("scopes out of sync", assm->scope_callback, &scope->callback);
+  assm->scope_callback = scope->outer;
+}
+
+// Encoder-decoder union that lets a binding info struct be packed into an int64
+// to be stored in a tagged integer.
+typedef union {
+  binding_info_t decoded;
+  int64_t encoded;
+} binding_info_codec_t;
+
+// Performs a lookup for a single symbol scope.
+static value_t map_scope_lookup(value_t symbol, void *data,
+    binding_info_t *info_out) {
+  map_scope_t *scope = data;
+  value_t value = get_id_hash_map_at(scope->map, symbol);
+  if (is_signal(scNotFound, value)) {
+    return scope_lookup_callback_call(scope->outer, symbol, info_out);
+  } else {
+    if (info_out != NULL) {
+      binding_info_codec_t codec = {.encoded=get_integer_value(value)};
+      *info_out = codec.decoded;
+    }
+    return success();
+  }
+}
+
+value_t assembler_push_map_scope(assembler_t *assm, map_scope_t *scope) {
+  TRY_SET(scope->map, new_heap_id_hash_map(assm->runtime, 8));
+  scope_lookup_callback_init(&scope->callback, map_scope_lookup, scope);
+  scope->outer = assembler_set_scope_callback(assm, &scope->callback);
+  scope->assembler = assm;
+  return success();
+}
+
+void assembler_pop_map_scope(assembler_t *assm, map_scope_t *scope) {
+  CHECK_EQ("scopes out of sync", assm->scope_callback, &scope->callback);
+  assm->scope_callback = scope->outer;
+}
+
+value_t map_scope_bind(map_scope_t *scope, value_t symbol, binding_type_t type,
+    uint32_t data) {
+  binding_info_codec_t codec = {.decoded={type, data}};
+  value_t value = new_integer(codec.encoded);
+  TRY(set_id_hash_map_at(scope->assembler->runtime, scope->map, symbol, value));
+  return success();
+}
+
+value_t assembler_lookup_symbol(assembler_t *assm, value_t symbol,
+    binding_info_t *info_out) {
+  return scope_lookup_callback_call(assm->scope_callback, symbol, info_out);
+}
+
+bool assembler_is_symbol_bound(assembler_t *assm, value_t symbol) {
+  return !is_signal(scNotFound, assembler_lookup_symbol(assm, symbol, NULL));
+}
+
+
 // --- A s s e m b l e r ---
 
 value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t space,
-    value_t bindings_or_null) {
+    scope_lookup_callback_t *scope_callback) {
+  if (scope_callback == NULL)
+    scope_callback = get_bottom_callback();
   TRY_SET(assm->value_pool, new_heap_id_hash_map(runtime, 16));
-  if (is_null(bindings_or_null)) {
-    TRY_SET(assm->local_bindings, new_heap_id_hash_map(runtime, 16));
-  } else {
-    CHECK_FAMILY(ofIdHashMap, bindings_or_null);
-    assm->local_bindings = bindings_or_null;
-  }
+  assm->scope_callback = scope_callback;
   assm->runtime = runtime;
   assm->space = space;
   byte_buffer_init(&assm->code);
@@ -242,6 +355,13 @@ value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t space,
 
 void assembler_dispose(assembler_t *assm) {
   byte_buffer_dispose(&assm->code);
+}
+
+scope_lookup_callback_t *assembler_set_scope_callback(assembler_t *assm,
+    scope_lookup_callback_t *callback) {
+  scope_lookup_callback_t *result = assm->scope_callback;
+  assm->scope_callback = callback;
+  return result;
 }
 
 value_t assembler_flush(assembler_t *assm) {
@@ -388,39 +508,4 @@ value_t assembler_emit_lambda(assembler_t *assm, value_t methods) {
   TRY(assembler_emit_value(assm, methods));
   assembler_adjust_stack_height(assm, +1);
   return success();
-}
-
-// Encoder-decoder union that lets a binding info struct be packed into an int64
-// to be stored in a tagged integer.
-typedef union {
-  binding_info_t decoded;
-  int64_t encoded;
-} binding_info_codec_t;
-
-value_t assembler_bind_symbol(assembler_t *assm, value_t symbol,
-    binding_type_t type, uint32_t data) {
-  CHECK_FALSE("symbol already bound",
-      has_id_hash_map_at(assm->local_bindings, symbol));
-  binding_info_codec_t codec = {.decoded={type, data}};
-  return set_id_hash_map_at(assm->runtime, assm->local_bindings, symbol,
-      new_integer(codec.encoded));
-}
-
-value_t assembler_unbind_symbol(assembler_t *assm, value_t symbol) {
-  value_t deleted = delete_id_hash_map_at(assm->runtime, assm->local_bindings,
-      symbol);
-  CHECK_FALSE("delete local failed", is_signal(scNotFound, deleted));
-  return deleted;
-}
-
-bool assembler_is_symbol_bound(assembler_t *assm, value_t symbol) {
-  return has_id_hash_map_at(assm->local_bindings, symbol);
-}
-
-void assembler_get_symbol_binding(assembler_t *assm, value_t symbol,
-    binding_info_t *info_out) {
-  CHECK_TRUE("no symbol binding", assembler_is_symbol_bound(assm, symbol));
-  value_t binding = get_id_hash_map_at(assm->local_bindings, symbol);
-  binding_info_codec_t codec = {.encoded=get_integer_value(binding)};
-  *info_out = codec.decoded;
 }
