@@ -23,7 +23,8 @@ value_t init_syntax_factory_map(value_t map, runtime_t *runtime);
 value_t emit_value(value_t value, assembler_t *assm);
 
 // Compiles the given syntax tree to a code block. The scope callback allows
-// this compilation to access symbols defined in an outer scope.
+// this compilation to access symbols defined in an outer scope. If the callback
+// is null it is taken to mean that there is no outer scope.
 value_t compile_syntax(runtime_t *runtime, value_t ast, value_t space,
     scope_lookup_callback_t *scope_callback);
 

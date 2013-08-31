@@ -224,6 +224,18 @@ value_t run_code_block(runtime_t *runtime, value_t code) {
 
 // --- S c o p e s ---
 
+static scope_lookup_callback_t kBottomCallback;
+static scope_lookup_callback_t *bottom_callback = NULL;
+
+// Returns the bottom callback that never finds symbols.
+static scope_lookup_callback_t *get_bottom_callback() {
+  if (bottom_callback == NULL) {
+    scope_lookup_callback_init_bottom(&kBottomCallback);
+    bottom_callback = &kBottomCallback;
+  }
+  return bottom_callback;
+}
+
 void scope_lookup_callback_init(scope_lookup_callback_t *callback,
     scope_lookup_function_t function, void *data) {
   callback->function = function;
@@ -330,6 +342,8 @@ bool assembler_is_symbol_bound(assembler_t *assm, value_t symbol) {
 
 value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t space,
     scope_lookup_callback_t *scope_callback) {
+  if (scope_callback == NULL)
+    scope_callback = get_bottom_callback();
   TRY_SET(assm->value_pool, new_heap_id_hash_map(runtime, 16));
   assm->scope_callback = scope_callback;
   assm->runtime = runtime;

@@ -104,7 +104,8 @@ typedef struct assembler_t {
   scope_lookup_callback_t *scope_callback;
 } assembler_t;
 
-// Initializes an assembler.
+// Initializes an assembler. If the given scope callback is NULL it is taken to
+// mean that there is no enclosing scope.
 value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t space,
     scope_lookup_callback_t *scope_callback);
 

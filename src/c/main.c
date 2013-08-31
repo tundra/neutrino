@@ -36,9 +36,7 @@ static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
 static value_t execute_program(runtime_t *runtime, value_t program) {
   TRY_DEF(space, new_heap_method_space(runtime));
   TRY(add_method_space_builtin_methods(runtime, space));
-  scope_lookup_callback_t scope_callback;
-  scope_lookup_callback_init_bottom(&scope_callback);
-  TRY_DEF(code_block, compile_syntax(runtime, program, space, &scope_callback));
+  TRY_DEF(code_block, compile_syntax(runtime, program, space, NULL));
   return run_code_block(runtime, code_block);
 }
 

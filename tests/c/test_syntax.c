@@ -14,9 +14,7 @@ TEST(syntax, emitting) {
   value_t space = new_heap_method_space(runtime);
   value_t ast = new_heap_literal_ast(runtime, runtime_bool(runtime, true));
   assembler_t assm;
-  scope_lookup_callback_t scope_callback;
-  scope_lookup_callback_init_bottom(&scope_callback);
-  ASSERT_SUCCESS(assembler_init(&assm, runtime, space, &scope_callback));
+  ASSERT_SUCCESS(assembler_init(&assm, runtime, space, NULL));
   ASSERT_SUCCESS(emit_value(ast, &assm));
   assembler_emit_return(&assm);
   value_t code = assembler_flush(&assm);

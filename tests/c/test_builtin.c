@@ -35,9 +35,7 @@ static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
   value_t invocation = new_heap_invocation_ast(runtime, args_ast);
 
   // Compile and execute the syntax.
-  scope_lookup_callback_t scope_callback;
-  scope_lookup_callback_init_bottom(&scope_callback);
-  value_t code = compile_syntax(runtime, invocation, space, &scope_callback);
+  value_t code = compile_syntax(runtime, invocation, space, NULL);
   value_t result = run_code_block(runtime, code);
   ASSERT_VALEQ(variant_to_value(runtime, expected), result);
 }
