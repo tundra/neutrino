@@ -287,6 +287,7 @@ static value_t string_print(builtin_arguments_t *args) {
 
 value_t add_string_builtin_methods(runtime_t *runtime, value_t space) {
   ADD_BUILTIN(string, "+", 1, string_plus_string);
+  // TODO: change this to a more appropriate name -- say ".print".
   ADD_BUILTIN(string, "()", 0, string_print);
   return success();
 }

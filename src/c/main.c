@@ -87,6 +87,7 @@ static void main_allocator_data_dispose(main_allocator_data_t *data) {
 }
 
 // Whether or not to print the output values.
+// TODO: accept flags encoded as plankton instead of this.
 static bool print_value = false;
 
 // Create a vm and run the program.
