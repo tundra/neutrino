@@ -96,7 +96,7 @@ while read LINE; do
   elif [ -n "$INPUT" -a -n "$OUTPUT" ]; then
     # If we now have both an INPUT and an OUTPUT line run the test.
     print_progress
-    FOUND=$(./src/python/neutrino/main.py --expression "$INPUT" | $EXECUTABLE - 2>&1)
+    FOUND=$(./src/python/neutrino/main.py --program "$INPUT" | $EXECUTABLE - 2>&1)
     check_result "$OUTPUT" "$FOUND" "$INPUT"
     INPUT=
     OUTPUT=

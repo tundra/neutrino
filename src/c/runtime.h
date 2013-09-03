@@ -16,6 +16,8 @@
   F(body,               "body")                                                \
   F(elements,           "elements")                                            \
   F(name,               "name")                                                \
+  F(path,               "path")                                                \
+  F(phase,              "phase")                                               \
   F(symbol,             "symbol")                                              \
   F(tag,                "tag")                                                 \
   F(this,               "this")                                                \

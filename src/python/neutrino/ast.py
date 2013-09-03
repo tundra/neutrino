@@ -219,7 +219,7 @@ class Lambda(object):
     return "(fn (%s) => %s)" % (", ".join(map(str, self.parameters)), self.body)
 
 
-@plankton.serializable()
+@plankton.serializable(("ast", "Path"))
 class Path(object):
 
   @plankton.field("parts")
@@ -231,7 +231,7 @@ class Path(object):
             self.parts == that.parts)
 
 
-@plankton.serializable()
+@plankton.serializable(("ast", "Name"))
 class Name(object):
 
   @plankton.field("path")
@@ -254,3 +254,33 @@ class Name(object):
     else:
       prefix = "$" * (self.phase + 1)
     return "#<name: %s%s>" % (prefix, ":".join(self.path))
+
+
+@plankton.serializable(("ast", "Program"))
+class Program(object):
+
+  @plankton.field("elements")
+  def __init__(self, elements=None):
+    self.elements = elements
+
+  def accept(self, visitor):
+    return visitor.visit_program(self)
+
+  def __str__(self):
+    return "(program %s)" % " ".join(map(str, self.elements))
+
+
+@plankton.serializable(("ast", "NamespaceDeclaration"))
+class NamespaceDeclaration(object):
+
+  @plankton.field("name")
+  @plankton.field("value")
+  def __init__(self, name=None, value=None):
+    self.name = name
+    self.value = value
+
+  def accept(self, visitor):
+    return visitor.visit_namespace_declaration(self)
+
+  def __str__(self):
+    return "(namespace-declaration %s %s)" % (self.name, self.value)

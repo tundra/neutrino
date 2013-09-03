@@ -83,6 +83,14 @@ class ScopeVisitor(ast.Visitor):
     finally:
       self.scope = outer_scope
 
+  def visit_program(self, that):
+    for element in that.elements:
+      element.accept(self)
+
+  def visit_namespace_declaration(self, that):
+    that.value.accept(self)
+
+
 import sys
 def analyze(ast):
   visitor = ScopeVisitor()

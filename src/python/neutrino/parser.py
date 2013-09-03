@@ -71,6 +71,16 @@ class Parser(object):
       raise self.new_syntax_error()
     self.advance()
 
+  # <program>
+  #   -> <toplevel statement>*
+  def parse_program(self):
+    elements = []
+    while self.has_more():
+      (name, value) = self.parse_local_declaration()
+      decl = ast.NamespaceDeclaration(name, value)
+      elements.append(decl)
+    return ast.Program(elements)
+
   # <expression>
   #   -> <operator expression>
   def parse_expression(self):
