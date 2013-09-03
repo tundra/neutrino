@@ -4,12 +4,14 @@ from neutrino import parser, token, ast
 import unittest
 
 
-lt = ast.Literal
 ar = lambda *e: ast.Array(e)
-sq = lambda *e: ast.Sequence(e)
 df = ast.LocalDeclaration
 lm = ast.Lambda
+lt = ast.Literal
+nd = ast.NamespaceDeclaration
+pg = lambda *e: ast.Program(e)
 pm = lambda n, *t: ast.Parameter(n, t)
+sq = lambda *e: ast.Sequence(e)
 
 def nm(names, phase=0):
   if isinstance(names, list):
@@ -44,6 +46,10 @@ class ParserTest(unittest.TestCase):
     # Convert the asts to strings because that's just infinitely easier to
     # debug when assertions fail. Of course that requires that ast string
     # conversion is sane, which it is.
+    self.assertEquals(str(expected), str(found))
+
+  def check_program(self, input, expected):
+    found = parser.Parser(token.tokenize(input)).parse_program()
     self.assertEquals(str(expected), str(found))
 
   def test_atomic_expressions(self):
@@ -99,6 +105,12 @@ class ParserTest(unittest.TestCase):
     test('fn ($x, $y) => $x', lm([pm(nm("x"), 0), pm(nm("y"), 1)], id("x")))
     test('fn ($x, $y, $z) => $x', lm([pm(nm("x"), 0), pm(nm("y"), 1), pm(nm("z"), 2)], id("x")))
     test('fn => $x', lm([], id("x")))
+
+  def test_program_toplevel(self):
+    test = self.check_program
+    test('def $x := 5;', pg(nd(nm("x"), lt(5))))
+    test('', pg())
+    test('def $x := 5; def $y := 6;', pg(nd(nm("x"), lt(5)), nd(nm("y"), lt(6))))
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)

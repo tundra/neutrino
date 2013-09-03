@@ -12,5 +12,5 @@ VALUE: 3
 INPUT: "(" + "foo" + ", " + "bar" + ")"
 VALUE: "(foo, bar)"
 
-INPUT: ("a" + "b" + "c")();
-OUTPUT: "abc"
+# INPUT: ("a" + "b" + "c")();
+# OUTPUT: "abc"

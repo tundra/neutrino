@@ -30,6 +30,7 @@ class Main(object):
   def build_option_parser(self):
     parser = optparse.OptionParser()
     parser.add_option('--expression', action='append', default=[])
+    parser.add_option('--program', action='append', default=[])
     parser.add_option('--filter', action='store_true', default=False)
     parser.add_option('--base64', action='store_true', default=False)
     parser.add_option('--disass', action='store_true', default=False)
@@ -66,12 +67,21 @@ class Main(object):
     if self.run_filter():
       return
     self.run_expressions()
+    self.run_programs()
 
   # Processes any --expression arguments.
   def run_expressions(self):
     for expr in self.flags.expression:
       tokens = token.tokenize(expr)
       ast = parser.Parser(tokens).parse_expression()
+      analysis.analyze(ast)
+      self.output_value(ast)
+
+  # Processes any --program arguments.
+  def run_programs(self):
+    for expr in self.flags.program:
+      tokens = token.tokenize(expr)
+      ast = parser.Parser(tokens).parse_program()
       analysis.analyze(ast)
       self.output_value(ast)
 

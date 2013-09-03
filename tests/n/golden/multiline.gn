@@ -6,7 +6,7 @@ INPUT: {
 }
 VALUE: 8
 
-INPUT: {
-  "foo"();
-}
-OUTPUT: "foo"
+# INPUT: {
+#   "foo"();
+# }
+# OUTPUT: "foo"
