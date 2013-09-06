@@ -29,7 +29,7 @@ static value_t resolve_syntax_factory(value_t key, runtime_t *runtime, void *dat
   if (get_object_family(second_obj) != ofString)
     return new_signal(scNothing);
 
-  value_t result = get_id_hash_map_at(runtime->roots.syntax_factories, second_obj);
+  value_t result = get_id_hash_map_at(runtime->roots.plankton_environment, second_obj);
   if (is_signal(scNotFound, result)) {
     value_to_string_t buf;
     WARN("Syntax factory %s could not be resolved", value_to_string(&buf, key));
