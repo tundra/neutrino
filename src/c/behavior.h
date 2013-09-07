@@ -65,7 +65,7 @@ struct family_behavior_t {
 // This is how deep we'll recurse into an object before we assume that we're
 // dealing with a circular object. Some functions like hashing work on circular
 // objects but have a fast case for non-circular ones and use a depth counter
-// to notice circularities. Any type you increase the depth you have to also
+// to notice circularities. Any time you increase the depth you have to also
 // check the current depth against this limit. If you don't increase the depth
 // you don't have to.
 static const size_t kCircularObjectDepthThreshold = 1024;
@@ -98,7 +98,8 @@ value_t value_transient_identity_hash_cycle_protect(value_t value, size_t depth)
 // value_identity_compare_cycle_protect instead for that.
 bool value_identity_compare(value_t a, value_t b);
 
-// Works the same way as value_identity_compare except that it catches cycles.
+// Works the same way as value_identity_compare except that it catches potential
+// cycles.
 value_t value_identity_compare_cycle_protect(value_t a, value_t b, size_t depth);
 
 // Returns a value indicating how a and b relate in the total ordering of
