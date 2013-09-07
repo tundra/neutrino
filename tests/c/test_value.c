@@ -632,3 +632,59 @@ TEST(value, try_finally) {
   ASSERT_VALEQ(new_integer(4), value);
   ASSERT_TRUE(data.called);
 }
+
+// Shorthand for doing variant-to-value.
+#define V2V(V) variant_to_value(runtime, (V))
+
+TEST(value, array_identity) {
+  CREATE_RUNTIME();
+
+  value_t v_nn_0 = V2V(vArray(2, vNull() o vNull()));
+  value_t v_nn_1 = V2V(vArray(2, vNull() o vNull()));
+  ASSERT_TRUE(value_identity_compare(v_nn_0, v_nn_1));
+  size_t h_nn_0 = get_integer_value(value_transient_identity_hash(v_nn_0));
+  size_t h_nn_1 = get_integer_value(value_transient_identity_hash(v_nn_1));
+  ASSERT_EQ(h_nn_0, h_nn_1);
+
+  value_t v_1n = V2V(vArray(2, vInt(1) o vNull()));
+  ASSERT_FALSE(value_identity_compare(v_1n, v_nn_0));
+  size_t h_1n = get_integer_value(value_transient_identity_hash(v_1n));
+  ASSERT_FALSE(h_nn_0 == h_1n);
+
+  value_t v_12 = V2V(vArray(2, vInt(1) o vInt(2)));
+  ASSERT_FALSE(value_identity_compare(v_12, v_nn_0));
+  ASSERT_FALSE(value_identity_compare(v_12, v_1n));
+  size_t h_12 = get_integer_value(value_transient_identity_hash(v_12));
+  ASSERT_FALSE(h_nn_0 == h_12);
+  ASSERT_FALSE(h_1n == h_12);
+
+  value_t v_21_0 = V2V(vArray(2, vInt(2) o vInt(1)));
+  ASSERT_FALSE(value_identity_compare(v_21_0, v_nn_0));
+  ASSERT_FALSE(value_identity_compare(v_21_0, v_1n));
+  ASSERT_FALSE(value_identity_compare(v_21_0, v_12));
+  size_t h_21_0 = get_integer_value(value_transient_identity_hash(v_21_0));
+  ASSERT_FALSE(h_21_0 == h_nn_0);
+  ASSERT_FALSE(h_21_0 == h_1n);
+  ASSERT_FALSE(h_21_0 == h_12);
+
+  value_t v_21_1 = V2V(vArray(2, vInt(2) o vInt(1)));
+  ASSERT_TRUE(value_identity_compare(v_21_1, v_21_0));
+  size_t h_21_1 = get_integer_value(value_transient_identity_hash(v_21_1));
+  ASSERT_EQ(h_21_1, h_21_0);
+
+  value_t v_nv_0 = new_heap_array(runtime, 2);
+  set_array_at(v_nv_0, 1, v_nv_0);
+  ASSERT_SIGNAL(scMaybeCircular, value_transient_identity_hash(v_nv_0));
+  ASSERT_TRUE(value_identity_compare(v_nv_0, v_nv_0));
+
+  value_t v_nv_1 = new_heap_array(runtime, 2);
+  set_array_at(v_nv_1, 1, v_nv_1);
+  ASSERT_SIGNAL(scMaybeCircular, value_transient_identity_hash(v_nv_1));
+  ASSERT_TRUE(value_identity_compare(v_nv_1, v_nv_1));
+
+  ASSERT_FALSE(value_identity_compare(v_nv_0, v_nv_1));
+
+  DISPOSE_RUNTIME();
+}
+
+#undef V2V

@@ -36,6 +36,7 @@ const char *get_value_domain_name(value_domain_t domain);
   F(InvalidInput)                                                              \
   F(InvalidSyntax)                                                             \
   F(MapFull)                                                                   \
+  F(MaybeCircular)                                                             \
   F(NotComparable)                                                             \
   F(NotFound)                                                                  \
   F(Nothing)                                                                   \
@@ -135,6 +136,33 @@ static value_t success() {
   return new_integer(0);
 }
 
+// Creates an internal boolean with the given value. Note that this is purely
+// for runtime internal use and does not yield the true/false boolean values
+// used by the surface language.
+static value_t to_internal_boolean(bool value) {
+  return new_integer(value);
+}
+
+// Returns a non-signal value that can be used to signify "true". Note that this
+// is purely for runtime internal use and not the true boolean value used by the
+// surface language.
+static value_t internal_true_value() {
+  return to_internal_boolean(true);
+}
+
+// Returns a non-signal value that can be used to signify "false". Note that
+// this is purely for runtime internal use and not the false boolean value used
+// by the surface language.
+static value_t internal_false_value() {
+  return to_internal_boolean(false);
+}
+
+// Is the given value the runtime internal true value. This does not identify
+// the surface language boolean true value, this is for internal use.
+static bool is_internal_true_value(value_t value) {
+  return (value.as_unknown.domain == vdInteger) && !!value.as_integer.value;
+}
+
 
 // --- M o v e d   o b j e c t ---
 
@@ -195,7 +223,7 @@ static value_t new_moved_object(value_t target) {
 #define ENUM_COMPACT_OBJECT_FAMILIES(F)                                           \
   F(ArgumentAst,             argument_ast,              _,  _,  X,  X,  _,  _,  _)\
   F(ArgumentMapTrie,         argument_map_trie,         _,  _,  _,  _,  _,  _,  _)\
-  F(Array,                   array,                     _,  _,  _,  X,  X,  _,  _)\
+  F(Array,                   array,                     _,  X,  _,  X,  X,  _,  _)\
   F(ArrayAst,                array_ast,                 _,  _,  X,  X,  _,  _,  X)\
   F(ArrayBuffer,             array_buffer,              _,  _,  _,  X,  _,  _,  _)\
   F(Blob,                    blob,                      _,  _,  _,  X,  X,  _,  _)\
