@@ -13,6 +13,7 @@
 // roots.
 #define ENUM_STRING_TABLE(F)                                                   \
   F(arguments,          "arguments")                                           \
+  F(ast,                "ast")                                                 \
   F(body,               "body")                                                \
   F(elements,           "elements")                                            \
   F(name,               "name")                                                \
