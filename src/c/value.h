@@ -631,6 +631,12 @@ value_t get_id_hash_map_at(value_t map, value_t key);
 // Returns true iff the given map has a binding for the given key.
 bool has_id_hash_map_at(value_t map, value_t key);
 
+// Adds a binding from the given key to the given value to this map, replacing
+// the existing one if it already exists. Returns a signal on failure, either
+// if the key cannot be hashed or there isn't enough memory in the runtime to
+// extend the map.
+value_t set_id_hash_map_at(runtime_t *runtime, value_t map, value_t key, value_t value);
+
 // Removes the mapping for the given key from the map if it exists. Returns
 // a NotFound signal if that is the case, otherwise a non-signal.
 value_t delete_id_hash_map_at(runtime_t *runtime, value_t map, value_t key);

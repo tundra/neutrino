@@ -13,6 +13,7 @@
 // roots.
 #define ENUM_STRING_TABLE(F)                                                   \
   F(arguments,          "arguments")                                           \
+  F(ast,                "ast")                                                 \
   F(body,               "body")                                                \
   F(elements,           "elements")                                            \
   F(name,               "name")                                                \
@@ -35,8 +36,7 @@ typedef struct {
   SUR(value_t family##_protocol;,)
   ENUM_OBJECT_FAMILIES(__DECLARE_PER_SPECIES_ROOTS__)
 #undef __DECLARE_PER_SPECIES_ROOTS__
-  // String->factory mapping.
-  value_t syntax_factories;
+  value_t plankton_environment;
   // Singletons
   value_t null;
   value_t nothing;

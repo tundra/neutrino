@@ -177,12 +177,6 @@ value_t new_heap_name_ast(runtime_t *runtime, value_t path, value_t phase);
 // initialization.
 value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species);
 
-// Adds a binding from the given key to the given value to this map, replacing
-// the existing one if it already exists. Returns a signal on failure, either
-// if the key cannot be hashed or there isn't enough memory in the runtime to
-// extend the map.
-value_t set_id_hash_map_at(runtime_t *runtime, value_t map, value_t key, value_t value);
-
 // Sets the given instance field to the given value, replacing the existing
 // value if it already exists. Returns a signal on failure.
 value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,

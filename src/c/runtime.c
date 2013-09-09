@@ -53,9 +53,9 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   ENUM_STRING_TABLE(__CREATE_STRING_TABLE_ENTRY__)
 #undef __CREATE_STRING_TABLE_ENTRY__
 
-  TRY_DEF(syntax_factories, new_heap_id_hash_map(runtime, 16));
-  init_syntax_factory_map(syntax_factories, runtime);
-  roots->syntax_factories = syntax_factories;
+  TRY_DEF(plankton_environment, new_heap_id_hash_map(runtime, 16));
+  init_syntax_factory_map(plankton_environment, runtime);
+  roots->plankton_environment = plankton_environment;
 
   return success();
 }
@@ -135,7 +135,7 @@ value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
 #undef __VISIT_PER_FAMILY_FIELDS__
 
   // Clear the singletons manually.
-  TRY(field_callback_call(callback, &roots->syntax_factories));
+  TRY(field_callback_call(callback, &roots->plankton_environment));
   TRY(field_callback_call(callback, &roots->null));
   TRY(field_callback_call(callback, &roots->nothing));
   TRY(field_callback_call(callback, &roots->thrue));
