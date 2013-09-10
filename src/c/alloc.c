@@ -204,6 +204,15 @@ value_t new_heap_lambda(runtime_t *runtime, value_t methods) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_namespace(runtime_t *runtime) {
+  TRY_DEF(bindings, new_heap_id_hash_map(runtime, 16));
+  size_t size = kNamespaceSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.namespace_species));
+  set_namespace_bindings(result, bindings);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- P r o c e s s ---
 
@@ -391,12 +400,13 @@ value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags)
 }
 
 value_t new_heap_program_ast(runtime_t *runtime, value_t elements,
-    value_t entry_point) {
+    value_t entry_point, value_t spaces) {
   size_t size = kProgramAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.program_ast_species));
   set_program_ast_elements(result, elements);
   set_program_ast_entry_point(result, entry_point);
+  set_program_ast_spaces(result, spaces);
   return post_create_sanity_check(result, size);
 }
 

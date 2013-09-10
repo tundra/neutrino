@@ -261,9 +261,11 @@ class Program(object):
 
   @plankton.field("elements")
   @plankton.field("entry_point")
-  def __init__(self, elements=None, entry_point=None):
+  @plankton.field("spaces")
+  def __init__(self, elements=None, entry_point=None, spaces=None):
     self.elements = elements
     self.entry_point = entry_point
+    self.spaces = spaces
 
   def accept(self, visitor):
     return visitor.visit_program(self)

@@ -242,6 +242,7 @@ static value_t new_moved_object(value_t target) {
   F(Method,                  method,                    _,  _,  _,  _,  _,  _,  _)\
   F(MethodSpace,             method_space,              _,  _,  _,  _,  _,  _,  _)\
   F(NameAst,                 name_ast,                  _,  _,  X,  _,  _,  _,  _)\
+  F(Namespace,               namespace,                 _,  _,  X,  _,  _,  _,  _)\
   F(NamespaceDeclarationAst, namespace_declaration_ast, _,  _,  X,  _,  _,  _,  _)\
   F(Nothing,                 nothing,                   _,  _,  _,  _,  _,  _,  _)\
   F(Null,                    null,                      _,  X,  _,  X,  _,  _,  _)\
@@ -779,6 +780,15 @@ static const size_t kLambdaMethodsOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(lambda, methods);
 
 
+// --- N a m e s p a c e ---
+
+static const size_t kNamespaceSize = OBJECT_SIZE(1);
+static const size_t kNamespaceBindingsOffset = OBJECT_FIELD_OFFSET(0);
+
+// Returns the bindings map for this namespace.
+ACCESSORS_DECL(namespace, bindings);
+
+
 // --- O r d e r i n g ---
 
 // Returns a value ordering to an integer such that less than becomes -1,
@@ -788,6 +798,17 @@ int ordering_to_int(value_t value);
 // Returns a non-signal indicating an ordering such that ordering_to_int returns
 // the given value.
 value_t int_to_ordering(int value);
+
+
+// --- M i s c ---
+
+// Initialize the map from core type names to the factories themselves.
+value_t init_plankton_core_factories(value_t map, runtime_t *runtime);
+
+// Adds a factory object to the given plankton factory environment map under th
+// given category and name.
+value_t add_plankton_factory(value_t map, value_t category, const char *name,
+    factory_constructor_t constructor, runtime_t *runtime);
 
 
 // --- D e b u g ---

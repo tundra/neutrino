@@ -14,12 +14,15 @@
 #define ENUM_STRING_TABLE(F)                                                   \
   F(arguments,          "arguments")                                           \
   F(ast,                "ast")                                                 \
+  F(bindings,           "bindings")                                            \
   F(body,               "body")                                                \
+  F(core,               "core")                                                \
   F(elements,           "elements")                                            \
   F(entry_point,        "entry_point")                                         \
   F(name,               "name")                                                \
   F(path,               "path")                                                \
   F(phase,              "phase")                                               \
+  F(spaces,             "spaces")                                              \
   F(symbol,             "symbol")                                              \
   F(tag,                "tag")                                                 \
   F(this,               "this")                                                \

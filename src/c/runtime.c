@@ -54,7 +54,8 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
 #undef __CREATE_STRING_TABLE_ENTRY__
 
   TRY_DEF(plankton_environment, new_heap_id_hash_map(runtime, 16));
-  init_syntax_factory_map(plankton_environment, runtime);
+  init_plankton_core_factories(plankton_environment, runtime);
+  init_plankton_syntax_factories(plankton_environment, runtime);
   roots->plankton_environment = plankton_environment;
 
   return success();

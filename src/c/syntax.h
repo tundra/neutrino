@@ -16,7 +16,7 @@
 value_t init_syntax_mapping(value_mapping_t *mapping, runtime_t *runtime);
 
 // Initialize the map from syntax factory names to the factories themselves.
-value_t init_syntax_factory_map(value_t map, runtime_t *runtime);
+value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime);
 
 // Emits bytecode representing the given syntax tree value. If the value is not
 // a syntax tree an InvalidSyntax signal is returned.
@@ -141,15 +141,19 @@ ACCESSORS_DECL(parameter_ast, tags);
 
 // --- P r o g r a m ---
 
-static const size_t kProgramAstSize = OBJECT_SIZE(2);
+static const size_t kProgramAstSize = OBJECT_SIZE(3);
 static const size_t kProgramAstElementsOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kProgramAstEntryPointOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kProgramAstSpacesOffset = OBJECT_FIELD_OFFSET(2);
 
 // The toplevel elements of the program.
 ACCESSORS_DECL(program_ast, elements);
 
 // The program entry-point expression.
 ACCESSORS_DECL(program_ast, entry_point);
+
+// The program's spaces (method- and name-).
+ACCESSORS_DECL(program_ast, spaces);
 
 
 // --- N a m e s p a c e   d e c l a r a t i o n ---
