@@ -13,7 +13,7 @@ static value_t resolve_syntax_factory(value_t key, runtime_t *runtime, void *dat
   value_t result = get_id_hash_map_at(runtime->roots.plankton_environment, key);
   if (is_signal(scNotFound, result)) {
     value_to_string_t buf;
-    WARN("Syntax factory %s could not be resolved", value_to_string(&buf, key));
+    WARN("Environment reference %s could not be resolved", value_to_string(&buf, key));
     dispose_value_to_string(&buf);
   }
   return result;
@@ -434,14 +434,14 @@ static value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   size_t explicit_argc = get_array_length(params);
   size_t total_argc = implicit_argc + explicit_argc;
   TRY_DEF(vector, new_heap_pair_array(runtime, total_argc));
-  set_pair_array_first_at(vector, 0, runtime->roots.string_table.this);
+  set_pair_array_first_at(vector, 0, runtime->roots.subject_key);
   value_t any_guard = runtime->roots.any_guard;
-  TRY_DEF(this_param, new_heap_parameter(runtime, any_guard, false, 0));
-  set_pair_array_second_at(vector, 0, this_param);
-  set_pair_array_first_at(vector, 1, runtime->roots.string_table.name);
-  TRY_DEF(name_guard, new_heap_guard(runtime, gtEq, runtime->roots.string_table.sausages));
-  TRY_DEF(name_param, new_heap_parameter(runtime, name_guard, false, 1));
-  set_pair_array_second_at(vector, 1, name_param);
+  TRY_DEF(subject_param, new_heap_parameter(runtime, any_guard, false, 0));
+  set_pair_array_second_at(vector, 0, subject_param);
+  set_pair_array_first_at(vector, 1, runtime->roots.selector_key);
+  TRY_DEF(selector_guard, new_heap_guard(runtime, gtEq, runtime->roots.string_table.sausages));
+  TRY_DEF(selector_param, new_heap_parameter(runtime, selector_guard, false, 1));
+  set_pair_array_second_at(vector, 1, selector_param);
   map_scope_t scope;
   TRY(assembler_push_map_scope(assm, &scope));
   for (size_t i = 0; i < explicit_argc; i++) {

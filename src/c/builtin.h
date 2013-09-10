@@ -25,8 +25,8 @@ void builtin_arguments_init(builtin_arguments_t *args, runtime_t *runtime,
 // Returns the index'th positional argument to a built-in method.
 value_t get_builtin_argument(builtin_arguments_t *args, size_t index);
 
-// Returns the "this" argument to a built-in method.
-value_t get_builtin_this(builtin_arguments_t *args);
+// Returns the subject argument to a built-in method.
+value_t get_builtin_subject(builtin_arguments_t *args);
 
 // Returns the runtime for this builtin invocation.
 runtime_t *get_builtin_runtime(builtin_arguments_t *args);

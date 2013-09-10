@@ -36,6 +36,8 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
       new_heap_instance_species(runtime, empty_protocol));
   TRY_SET(roots->argument_map_trie_root,
       new_heap_argument_map_trie(runtime, roots->empty_array));
+  TRY_SET(roots->subject_key, new_heap_key(runtime, roots->null));
+  TRY_SET(roots->selector_key, new_heap_key(runtime, roots->null));
 
   // Generate initialization for the per-family protocols.
 #define __CREATE_FAMILY_PROTOCOL__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
@@ -117,6 +119,8 @@ value_t roots_validate(roots_t *roots) {
   VALIDATE_OBJECT(ofProtocol, roots->integer_protocol);
   VALIDATE_OBJECT(ofSpecies, roots->empty_instance_species);
   VALIDATE_OBJECT(ofArgumentMapTrie, roots->argument_map_trie_root);
+  VALIDATE_OBJECT(ofKey, roots->subject_key);
+  VALIDATE_OBJECT(ofKey, roots->selector_key);
 
 #define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_OBJECT(ofString, roots->string_table.name);
   ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)
@@ -147,6 +151,8 @@ value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
   TRY(field_callback_call(callback, &roots->integer_protocol));
   TRY(field_callback_call(callback, &roots->empty_instance_species));
   TRY(field_callback_call(callback, &roots->argument_map_trie_root));
+  TRY(field_callback_call(callback, &roots->subject_key));
+  TRY(field_callback_call(callback, &roots->selector_key));
 
   // Generate code for visiting the string table.
 #define __VISIT_STRING_TABLE_ENTRY__(name, value)                              \
@@ -391,6 +397,7 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
 }
 
 void runtime_clear(runtime_t *runtime) {
+  runtime->next_key_index = 0;
   roots_clear(&runtime->roots);
 }
 

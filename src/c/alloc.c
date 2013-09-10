@@ -140,6 +140,16 @@ value_t new_heap_boolean(runtime_t *runtime, bool value) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_key(runtime_t *runtime, value_t display_name) {
+  size_t size = kKeySize;
+  size_t id = runtime->next_key_index++;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.key_species));
+  set_key_id(result, id);
+  set_key_display_name(result, display_name);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_instance(runtime_t *runtime, value_t species) {
   CHECK_DIVISION(sdInstance, species);
   TRY_DEF(fields, new_heap_id_hash_map(runtime, 16));

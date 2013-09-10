@@ -25,7 +25,6 @@
   F(spaces,             "spaces")                                              \
   F(symbol,             "symbol")                                              \
   F(tag,                "tag")                                                 \
-  F(this,               "this")                                                \
   F(value,              "value")                                               \
   F(values,             "values")                                              \
   F(parameters,         "parameters")                                          \
@@ -50,6 +49,8 @@ typedef struct {
   value_t empty_array_buffer;
   value_t any_guard;
   value_t argument_map_trie_root;
+  value_t subject_key;
+  value_t selector_key;
   // Special protocols
   value_t integer_protocol;
   value_t empty_instance_species;
@@ -69,6 +70,8 @@ struct runtime_t {
   heap_t heap;
   // The root objects.
   roots_t roots;
+  // The next key index.
+  uint64_t next_key_index;
 };
 
 // Creates a new runtime object, storing it in the given runtime out parameter.
