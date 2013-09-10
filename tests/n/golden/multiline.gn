@@ -11,5 +11,5 @@ INPUT:
 VALUE: 2
 
 INPUT:
-entry_point 4;
-OUTPUT: 4
+entry_point "4"();
+OUTPUT: "4"
