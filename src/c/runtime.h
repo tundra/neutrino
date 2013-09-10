@@ -16,6 +16,7 @@
   F(ast,                "ast")                                                 \
   F(body,               "body")                                                \
   F(elements,           "elements")                                            \
+  F(entry_point,        "entry_point")                                         \
   F(name,               "name")                                                \
   F(path,               "path")                                                \
   F(phase,              "phase")                                               \

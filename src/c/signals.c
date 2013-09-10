@@ -7,6 +7,16 @@ invalid_syntax_cause_t get_invalid_syntax_signal_cause(value_t signal) {
   return get_signal_details(signal);
 }
 
+const char *get_invalid_syntax_cause_name(invalid_syntax_cause_t cause) {
+  switch (cause) {
+#define __GEN_CASE__(Name) case is##Name: return #Name;
+    ENUM_INVALID_SYNTAX_CAUSES(__GEN_CASE__)
+#undef __GEN_CASE__
+    default:
+      return "unknown invalid syntax cause";
+  }
+}
+
 const char *get_signal_cause_name(signal_cause_t cause) {
   switch (cause) {
 #define __GEN_CASE__(Name) case sc##Name: return #Name;

@@ -79,12 +79,18 @@ class Parser(object):
       (name, value) = self.parse_local_declaration()
       decl = ast.NamespaceDeclaration(name, value)
       elements.append(decl)
-    return ast.Program(elements)
+    return ast.Program(elements, ast.Literal(None))
 
   # <expression>
   #   -> <operator expression>
   def parse_expression(self):
     return self.parse_word_expression()
+
+  # Parses an expression and wraps it in a program appropriately to make it
+  # executable.
+  def parse_expression_program(self):
+    value = self.parse_word_expression()
+    return ast.Program([], value)
 
   # <word expression>
   #   -> <lambda>

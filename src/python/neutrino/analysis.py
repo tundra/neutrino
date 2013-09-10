@@ -86,6 +86,7 @@ class ScopeVisitor(ast.Visitor):
   def visit_program(self, that):
     for element in that.elements:
       element.accept(self)
+    that.entry_point.accept(self)
 
   def visit_namespace_declaration(self, that):
     that.value.accept(self)

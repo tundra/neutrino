@@ -141,18 +141,22 @@ ACCESSORS_DECL(parameter_ast, tags);
 
 // --- P r o g r a m ---
 
-static const size_t kProgramAstSize = OBJECT_SIZE(1);
+static const size_t kProgramAstSize = OBJECT_SIZE(2);
 static const size_t kProgramAstElementsOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kProgramAstEntryPointOffset = OBJECT_FIELD_OFFSET(1);
 
 // The toplevel elements of the program.
 ACCESSORS_DECL(program_ast, elements);
+
+// The program entry-point expression.
+ACCESSORS_DECL(program_ast, entry_point);
 
 
 // --- N a m e s p a c e   d e c l a r a t i o n ---
 
 static const size_t kNamespaceDeclarationAstSize = OBJECT_SIZE(2);
 static const size_t kNamespaceDeclarationAstNameOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kNamespaceDeclarationAstValueOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kNamespaceDeclarationAstValueOffset = OBJECT_FIELD_OFFSET(1);
 
 // The name defined by this declaration.
 ACCESSORS_DECL(namespace_declaration_ast, name);

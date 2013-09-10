@@ -456,6 +456,8 @@ static value_t emit_lambda_ast(value_t value, assembler_t *assm) {
     set_pair_array_second_at(vector, param_index, param);
     // Bind the parameter in the local scope.
     value_t symbol = get_parameter_ast_symbol(param_ast);
+    if (!in_family(ofSymbolAst, symbol))
+      return new_invalid_syntax_signal(isExpectedSymbol);
     if (assembler_is_symbol_bound(assm, symbol))
       // We're trying to redefine an already defined symbol. That's not valid.
       return new_invalid_syntax_signal(isSymbolAlreadyBound);
@@ -529,6 +531,7 @@ static value_t new_parameter_ast(runtime_t *runtime) {
 TRIVIAL_PRINT_ON_IMPL(ProgramAst, program_ast);
 
 CHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, Array, Elements, elements);
+UNCHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, EntryPoint, entry_point);
 
 value_t program_ast_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofProgramAst, value);
@@ -538,12 +541,15 @@ value_t program_ast_validate(value_t value) {
 value_t set_program_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(elements, get_id_hash_map_at(contents, runtime->roots.string_table.elements));
+  TRY_DEF(entry_point, get_id_hash_map_at(contents, runtime->roots.string_table.entry_point));
   set_program_ast_elements(object, elements);
+  set_program_ast_entry_point(object, entry_point);
   return success();
 }
 
 static value_t new_program_ast(runtime_t *runtime) {
-  return new_heap_program_ast(runtime, runtime->roots.empty_array);
+  return new_heap_program_ast(runtime, runtime->roots.empty_array,
+      runtime->roots.null);
 }
 
 
