@@ -76,12 +76,12 @@ class Parser(object):
   # <program>
   #   -> <toplevel statement>*
   def parse_program(self):
-    elements = [self.namespace]
+    elements = []
     while self.has_more():
       (name, value) = self.parse_local_declaration()
       decl = ast.NamespaceDeclaration(name, value)
       elements.append(decl)
-    return ast.Program(elements, ast.Literal(None))
+    return ast.Program(elements, ast.Literal(None), [self.namespace])
 
   # <expression>
   #   -> <operator expression>
@@ -92,7 +92,7 @@ class Parser(object):
   # executable.
   def parse_expression_program(self):
     value = self.parse_word_expression()
-    return ast.Program([self.namespace], value)
+    return ast.Program([], value, [self.namespace])
 
   # <word expression>
   #   -> <lambda>

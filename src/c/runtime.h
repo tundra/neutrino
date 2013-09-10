@@ -22,6 +22,7 @@
   F(name,               "name")                                                \
   F(path,               "path")                                                \
   F(phase,              "phase")                                               \
+  F(spaces,             "spaces")                                              \
   F(symbol,             "symbol")                                              \
   F(tag,                "tag")                                                 \
   F(this,               "this")                                                \
