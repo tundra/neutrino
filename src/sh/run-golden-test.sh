@@ -36,8 +36,11 @@ rm -f "$OUTPUT_FILE"
 # variables have both been set executes the test and starts over.
 
 INPUT=
+HAS_INPUT=0
 VALUE=
+HAS_VALUE=0
 OUTPUT=
+HAS_OUTPUT=0
 I=0
 
 # Print a progress marker from 0-9 with a space between blocks of 10.
@@ -72,13 +75,16 @@ while read LINE; do
   if echo "$LINE" | grep INPUT: > /dev/null; then
     # Found an input clause.
     INPUT=$(echo "$LINE" | sed -e s/^INPUT:\\s*//g)
+    HAS_INPUT=1
   elif echo "$LINE" | grep VALUE: > /dev/null; then
     # Found a value clause.
     VALUE=$(echo "$LINE" | sed -e s/^VALUE:\\s*//g)
+    HAS_VALUE=1
   elif echo "$LINE" | grep OUTPUT: > /dev/null; then
     # Found an output clause.
     OUTPUT=$(echo "$LINE" | sed -e s/^OUTPUT:\\s*//g)
-  elif [ -n "$INPUT" -a ! -n "$VALUE" -a ! -n "$OUTPUT" ]; then
+    HAS_OUTPUT=1
+  elif [ $HAS_INPUT -eq 1 -a $HAS_VALUE -eq 0 -a $HAS_OUTPUT -eq 0 ]; then
     # There's already some input but no value clause append to the input.
     INPUT="$INPUT $LINE"
   elif [ -n "$LINE" ]; then
@@ -86,20 +92,24 @@ while read LINE; do
     printf "Unexpected line '%s'\\n" "$LINE"
     exit 1
   fi
-  if [ -n "$INPUT" -a -n "$VALUE" ]; then
+  if [ $HAS_INPUT -eq 1 -a $HAS_VALUE -eq 1 ]; then
     # If we now have both an INPUT and a VALUE line run the test.
     print_progress
     FOUND=$(./src/python/neutrino/main.py --expression "$INPUT" | $EXECUTABLE --print-value - 2>&1)
     check_result "$VALUE" "$FOUND" "$INPUT"
     INPUT=
+    HAS_INPUT=0
     VALUE=
-  elif [ -n "$INPUT" -a -n "$OUTPUT" ]; then
+    HAS_VALUE=0
+  elif [ $HAS_INPUT -eq 1 -a $HAS_OUTPUT -eq 1 ]; then
     # If we now have both an INPUT and an OUTPUT line run the test.
     print_progress
     FOUND=$(./src/python/neutrino/main.py --program "$INPUT" | $EXECUTABLE - 2>&1)
     check_result "$OUTPUT" "$FOUND" "$INPUT"
     INPUT=
+    HAS_INPUT=0
     OUTPUT=
+    HAS_OUTPUT=0
   fi
 done < "$TEST_FILE"
 
