@@ -73,7 +73,7 @@ class Main(object):
   def run_expressions(self):
     for expr in self.flags.expression:
       tokens = token.tokenize(expr)
-      ast = parser.Parser(tokens).parse_expression()
+      ast = parser.Parser(tokens).parse_expression_program()
       analysis.analyze(ast)
       self.output_value(ast)
 

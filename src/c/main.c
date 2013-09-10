@@ -32,30 +32,14 @@ static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
   return result;
 }
 
-// Executes an expression within the given runtime.
-// TODO: eventually this should probably be changed into a shorthand for the
-//   program version or maybe removed altogether.
-static value_t execute_expression(runtime_t *runtime, value_t syntax) {
+// Executes the given program syntax tree within the given runtime.
+static value_t execute_syntax(runtime_t *runtime, value_t program) {
+  CHECK_FAMILY(ofProgramAst, program);
   TRY_DEF(space, new_heap_method_space(runtime));
   TRY(add_method_space_builtin_methods(runtime, space));
-  TRY_DEF(code_block, compile_expression(runtime, syntax, space, NULL));
+  value_t entry_point = get_program_ast_entry_point(program);
+  TRY_DEF(code_block, compile_expression(runtime, entry_point, space, NULL));
   return run_code_block(runtime, code_block);
-}
-
-// Executes the given full program in the given runtime.
-static value_t execute_program(runtime_t *runtime, value_t program) {
-  TRY_DEF(space, new_heap_method_space(runtime));
-  TRY(add_method_space_builtin_methods(runtime, space));
-  return program;
-}
-
-// Executes the given syntax tree within the given runtime.
-static value_t execute_syntax(runtime_t *runtime, value_t syntax) {
-  if (in_family(ofProgramAst, syntax)) {
-    return execute_program(runtime, syntax);
-  } else {
-    return execute_expression(runtime, syntax);
-  }
 }
 
 // Data used by the custom allocator.
@@ -134,7 +118,7 @@ static value_t neutrino_main(int argc, char *argv[]) {
       value_mapping_t syntax_mapping;
       E_TRY(init_syntax_mapping(&syntax_mapping, runtime));
       E_TRY_DEF(program, plankton_deserialize(runtime, &syntax_mapping, input));
-      E_TRY_DEF(result, execute_syntax(runtime, program));
+      value_t result = execute_syntax(runtime, program);
       if (print_value)
         value_print_ln(result);
     }

@@ -390,11 +390,13 @@ value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags)
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_program_ast(runtime_t *runtime, value_t elements) {
+value_t new_heap_program_ast(runtime_t *runtime, value_t elements,
+    value_t entry_point) {
   size_t size = kProgramAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.program_ast_species));
   set_program_ast_elements(result, elements);
+  set_program_ast_entry_point(result, entry_point);
   return post_create_sanity_check(result, size);
 }
 

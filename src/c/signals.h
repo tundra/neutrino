@@ -35,11 +35,18 @@ static uint32_t get_signal_details(value_t value) {
   return value.as_signal.details;
 }
 
+#define ENUM_INVALID_SYNTAX_CAUSES(F)                                          \
+  F(ExpectedSymbol)                                                            \
+  F(NotSyntax)                                                                 \
+  F(SymbolAlreadyBound)                                                        \
+  F(SymbolNotBound)
+
 // Reasons for syntax to be invalid.
 typedef enum {
-  isSymbolAlreadyBound = 0,
-  isSymbolNotBound,
-  isNotSyntax,
+  __isFirst__ = -1
+#define __GEN_ENUM__(Name) , is##Name
+  ENUM_INVALID_SYNTAX_CAUSES(__GEN_ENUM__)
+#undef __GEN_ENUM__
 } invalid_syntax_cause_t;
 
 // Creates a new SyntaxInvalid signal with the given cause.
@@ -49,6 +56,9 @@ static value_t new_invalid_syntax_signal(invalid_syntax_cause_t cause) {
 
 // Returns the cause of an invalid syntax signal.
 invalid_syntax_cause_t get_invalid_syntax_signal_cause(value_t signal);
+
+// Returns the string representation of the cause of an invalid syntax signal.
+const char *get_invalid_syntax_cause_name(invalid_syntax_cause_t cause);
 
 // Creates a new heap exhausted signal where the given amount of memory is
 // requested.

@@ -196,9 +196,20 @@ static void integer_print_atomic_on(value_t value, string_buffer_t *buf) {
 static void signal_print_atomic_on(value_t value, string_buffer_t *buf) {
   CHECK_DOMAIN(vdSignal, value);
   signal_cause_t cause = get_signal_cause(value);
+  const char *cause_name = get_signal_cause_name(cause);
+  string_buffer_printf(buf, "%%<signal: %s(", cause_name);
   uint32_t details = get_signal_details(value);
-  string_buffer_printf(buf, "%%<signal: %s dt@%i>", get_signal_cause_name(cause),
-      details);
+  switch (cause) {
+    case scInvalidSyntax: {
+      string_buffer_printf(buf, "%s", get_invalid_syntax_cause_name(details));
+      break;
+    }
+    default: {
+      string_buffer_printf(buf, "dt@%i", details);
+      break;
+    }
+  }
+  string_buffer_printf(buf, ")>");
 }
 
 static void object_print_on(value_t value, string_buffer_t *buf) {
