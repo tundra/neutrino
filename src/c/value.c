@@ -1231,6 +1231,29 @@ value_t add_lambda_builtin_methods(runtime_t *runtime, value_t space) {
 }
 
 
+// --- N a m e s p a c e ---
+
+TRIVIAL_PRINT_ON_IMPL(Namespace, namespace);
+
+UNCHECKED_ACCESSORS_IMPL(Namespace, namespace, Bindings, bindings);
+
+value_t namespace_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofNamespace, value);
+  return success();
+}
+
+value_t set_namespace_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(bindings, get_id_hash_map_at(contents, runtime->roots.string_table.bindings));
+  set_namespace_bindings(object, bindings);
+  return success();
+}
+
+static value_t new_namespace(runtime_t *runtime) {
+  return new_heap_namespace(runtime);
+}
+
+
 // --- O r d e r i n g ---
 
 int ordering_to_int(value_t value) {
@@ -1239,6 +1262,31 @@ int ordering_to_int(value_t value) {
 
 value_t int_to_ordering(int value) {
   return new_integer(value);
+}
+
+
+// --- M i s c ---
+
+value_t add_plankton_factory(value_t map, value_t category, const char *name,
+    factory_constructor_t constructor, runtime_t *runtime) {
+  string_t key_str;
+  string_init(&key_str, name);
+  // Build the key, [category, name].
+  TRY_DEF(name_obj, new_heap_string(runtime, &key_str));
+  TRY_DEF(key_obj, new_heap_array(runtime, 2));
+  set_array_at(key_obj, 0, category);
+  set_array_at(key_obj, 1, name_obj);
+  // Create the factory.
+  TRY_DEF(factory, new_heap_factory(runtime, constructor));
+  // Add the mapping to the environment map.
+  TRY(set_id_hash_map_at(runtime, map, key_obj, factory));
+  return success();
+}
+
+value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
+  value_t core = runtime->roots.string_table.core;
+  TRY(add_plankton_factory(map, core, "Namespace", new_namespace, runtime));
+  return success();
 }
 
 

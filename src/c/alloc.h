@@ -91,6 +91,9 @@ value_t new_heap_protocol(runtime_t *runtime, value_t display_name);
 // Creates a new lambda value that supports the given method space methods.
 value_t new_heap_lambda(runtime_t *runtime, value_t methods);
 
+// Creates a new empty namespace object.
+value_t new_heap_namespace(runtime_t *runtime);
+
 
 // --- P r o c e s s ---
 

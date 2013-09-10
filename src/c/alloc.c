@@ -204,6 +204,15 @@ value_t new_heap_lambda(runtime_t *runtime, value_t methods) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_namespace(runtime_t *runtime) {
+  TRY_DEF(bindings, new_heap_id_hash_map(runtime, 16));
+  size_t size = kNamespaceSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.namespace_species));
+  set_namespace_bindings(result, bindings);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- P r o c e s s ---
 

@@ -16,7 +16,7 @@
 value_t init_syntax_mapping(value_mapping_t *mapping, runtime_t *runtime);
 
 // Initialize the map from syntax factory names to the factories themselves.
-value_t init_syntax_factory_map(value_t map, runtime_t *runtime);
+value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime);
 
 // Emits bytecode representing the given syntax tree value. If the value is not
 // a syntax tree an InvalidSyntax signal is returned.

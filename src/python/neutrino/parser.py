@@ -5,6 +5,7 @@
 
 
 import ast
+import data
 from token import Token
 
 
@@ -14,6 +15,7 @@ class Parser(object):
   def __init__(self, tokens):
     self.tokens = tokens
     self.cursor = 0
+    self.namespace = data.Namespace()
 
   # Does this parser have more tokens to process?
   def has_more(self):
@@ -74,7 +76,7 @@ class Parser(object):
   # <program>
   #   -> <toplevel statement>*
   def parse_program(self):
-    elements = []
+    elements = [self.namespace]
     while self.has_more():
       (name, value) = self.parse_local_declaration()
       decl = ast.NamespaceDeclaration(name, value)
@@ -90,7 +92,7 @@ class Parser(object):
   # executable.
   def parse_expression_program(self):
     value = self.parse_word_expression()
-    return ast.Program([], value)
+    return ast.Program([self.namespace], value)
 
   # <word expression>
   #   -> <lambda>

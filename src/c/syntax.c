@@ -632,38 +632,20 @@ value_t emit_value(value_t value, assembler_t *assm) {
 
 // --- F a c t o r i e s ---
 
-// Adds a syntax factory object to the given syntax factory map under the given
-// name.
-static value_t add_factory(value_t map, value_t category, const char *name,
-    factory_constructor_t constructor, runtime_t *runtime) {
-  string_t key_str;
-  string_init(&key_str, name);
-  // Build the key, [category, name].
-  TRY_DEF(name_obj, new_heap_string(runtime, &key_str));
-  TRY_DEF(key_obj, new_heap_array(runtime, 2));
-  set_array_at(key_obj, 0, category);
-  set_array_at(key_obj, 1, name_obj);
-  // Create the factory.
-  TRY_DEF(factory, new_heap_factory(runtime, constructor));
-  // Add the mapping to the environment map.
-  TRY(set_id_hash_map_at(runtime, map, key_obj, factory));
-  return success();
-}
-
-value_t init_syntax_factory_map(value_t map, runtime_t *runtime) {
+value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   value_t ast = runtime->roots.string_table.ast;
-  TRY(add_factory(map, ast, "Argument", new_argument_ast, runtime));
-  TRY(add_factory(map, ast, "Array", new_array_ast, runtime));
-  TRY(add_factory(map, ast, "Invocation", new_invocation_ast, runtime));
-  TRY(add_factory(map, ast, "Lambda", new_lambda_ast, runtime));
-  TRY(add_factory(map, ast, "Literal", new_literal_ast, runtime));
-  TRY(add_factory(map, ast, "LocalDeclaration", new_local_declaration_ast, runtime));
-  TRY(add_factory(map, ast, "Name", new_name_ast, runtime));
-  TRY(add_factory(map, ast, "NamespaceDeclaration", new_namespace_declaration_ast, runtime));
-  TRY(add_factory(map, ast, "Parameter", new_parameter_ast, runtime));
-  TRY(add_factory(map, ast, "Program", new_program_ast, runtime));
-  TRY(add_factory(map, ast, "Sequence", new_sequence_ast, runtime));
-  TRY(add_factory(map, ast, "Symbol", new_symbol_ast, runtime));
-  TRY(add_factory(map, ast, "Variable", new_variable_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Argument", new_argument_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Array", new_array_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Invocation", new_invocation_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Lambda", new_lambda_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Literal", new_literal_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "LocalDeclaration", new_local_declaration_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Name", new_name_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "NamespaceDeclaration", new_namespace_declaration_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Parameter", new_parameter_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Program", new_program_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Sequence", new_sequence_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Symbol", new_symbol_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Variable", new_variable_ast, runtime));
   return success();
 }
