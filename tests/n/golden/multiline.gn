@@ -10,7 +10,6 @@ INPUT:
 1 + 1
 VALUE: 2
 
-# INPUT: {
-#   "foo"();
-# }
-# OUTPUT: "foo"
+INPUT:
+entry_point 4;
+OUTPUT: 4
