@@ -41,6 +41,12 @@ value_t compile_expression(runtime_t *runtime, value_t program, value_t space,
   E_END_TRY_FINALLY();
 }
 
+// Forward declare all the emit methods.
+#define __EMIT_SYNTAX_FAMILY_EMIT__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
+    EMT(value_t emit_##family(value_t, assembler_t *);,)
+    ENUM_OBJECT_FAMILIES(__EMIT_SYNTAX_FAMILY_EMIT__)
+#undef __EMIT_SYNTAX_FAMILY_EMIT__
+
 
 // --- L i t e r a l ---
 
@@ -75,7 +81,7 @@ value_t set_literal_ast_contents(value_t object, runtime_t *runtime, value_t con
   return success();
 }
 
-static value_t emit_literal_ast(value_t value, assembler_t *assm) {
+value_t emit_literal_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofLiteralAst, value);
   return assembler_emit_push(assm, get_literal_ast_value(value));
 }
@@ -88,7 +94,7 @@ NO_BUILTIN_METHODS(array_ast);
 
 CHECKED_ACCESSORS_IMPL(ArrayAst, array_ast, Array, Elements, elements);
 
-static value_t emit_array_ast(value_t value, assembler_t *assm) {
+value_t emit_array_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofArrayAst, value);
   value_t elements = get_array_ast_elements(value);
   size_t length = get_array_length(elements);
@@ -134,7 +140,7 @@ NO_BUILTIN_METHODS(invocation_ast);
 
 CHECKED_ACCESSORS_IMPL(InvocationAst, invocation_ast, Array, Arguments, arguments);
 
-static value_t emit_invocation_ast(value_t value, assembler_t *assm) {
+value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofInvocationAst, value);
   value_t arguments = get_invocation_ast_arguments(value);
   size_t arg_count = get_array_length(arguments);
@@ -209,7 +215,7 @@ NO_BUILTIN_METHODS(sequence_ast);
 
 CHECKED_ACCESSORS_IMPL(SequenceAst, sequence_ast, Array, Values, values);
 
-static value_t emit_sequence_ast(value_t value, assembler_t *assm) {
+value_t emit_sequence_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofSequenceAst, value);
   value_t values = get_sequence_ast_values(value);
   size_t length = get_array_length(values);
@@ -269,7 +275,7 @@ UNCHECKED_ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, Symbol, sym
 UNCHECKED_ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, Value, value);
 UNCHECKED_ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, Body, body);
 
-static value_t emit_local_declaration_ast(value_t self, assembler_t *assm) {
+value_t emit_local_declaration_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofLocalDeclarationAst, self);
   size_t offset = assm->stack_height;
   value_t value = get_local_declaration_ast_value(self);
@@ -323,16 +329,16 @@ static value_t new_local_declaration_ast(runtime_t *runtime) {
 }
 
 
-// --- V a r i a b l e ---
+// --- L o c a l   v a r i a b l e ---
 
-GET_FAMILY_PROTOCOL_IMPL(variable_ast);
-NO_BUILTIN_METHODS(variable_ast);
+GET_FAMILY_PROTOCOL_IMPL(local_variable_ast);
+NO_BUILTIN_METHODS(local_variable_ast);
 
-UNCHECKED_ACCESSORS_IMPL(VariableAst, variable_ast, Symbol, symbol);
+UNCHECKED_ACCESSORS_IMPL(LocalVariableAst, local_variable_ast, Symbol, symbol);
 
-static value_t emit_variable_ast(value_t self, assembler_t *assm) {
-  CHECK_FAMILY(ofVariableAst, self);
-  value_t symbol = get_variable_ast_symbol(self);
+value_t emit_local_variable_ast(value_t self, assembler_t *assm) {
+  CHECK_FAMILY(ofLocalVariableAst, self);
+  value_t symbol = get_local_variable_ast_symbol(self);
   CHECK_FAMILY(ofSymbolAst, symbol);
   binding_info_t binding;
   if (is_signal(scNotFound, assembler_lookup_symbol(assm, symbol, &binding)))
@@ -354,30 +360,67 @@ static value_t emit_variable_ast(value_t self, assembler_t *assm) {
   return success();
 }
 
-value_t variable_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofVariableAst, value);
+value_t local_variable_ast_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofLocalVariableAst, value);
   return success();
 }
 
-void variable_ast_print_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<variable ast: ");
-  value_print_atomic_on(get_variable_ast_symbol(value), buf);
+void local_variable_ast_print_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<local variable ast: ");
+  value_print_atomic_on(get_local_variable_ast_symbol(value), buf);
   string_buffer_printf(buf, ">");
 }
 
-void variable_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<variable ast>");
+void local_variable_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_printf(buf, "#<local variable ast>");
 }
 
-value_t set_variable_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t set_local_variable_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(symbol, get_id_hash_map_at(contents, runtime->roots.string_table.symbol));
-  set_variable_ast_symbol(object, symbol);
+  set_local_variable_ast_symbol(object, symbol);
   return success();
 }
 
-static value_t new_variable_ast(runtime_t *runtime) {
-  return new_heap_variable_ast(runtime, runtime_null(runtime));
+static value_t new_local_variable_ast(runtime_t *runtime) {
+  return new_heap_local_variable_ast(runtime, runtime_null(runtime));
+}
+
+
+// --- N a m e s p a c e   v a r i a b l e ---
+
+GET_FAMILY_PROTOCOL_IMPL(namespace_variable_ast);
+NO_BUILTIN_METHODS(namespace_variable_ast);
+TRIVIAL_PRINT_ON_IMPL(NamespaceVariableAst, namespace_variable_ast);
+
+UNCHECKED_ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, Name, name);
+UNCHECKED_ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, Namespace, namespace);
+
+value_t emit_namespace_variable_ast(value_t self, assembler_t *assm) {
+  assembler_emit_load_global(assm, get_namespace_variable_ast_name(self),
+      get_namespace_variable_ast_namespace(self));
+  return success();
+}
+
+value_t namespace_variable_ast_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofNamespaceVariableAst, value);
+  return success();
+}
+
+value_t set_namespace_variable_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(name, get_id_hash_map_at(contents, runtime->roots.string_table.name));
+  TRY_DEF(namespace, get_id_hash_map_at(contents, runtime->roots.string_table.namespace));
+  set_namespace_variable_ast_name(object, name);
+  set_namespace_variable_ast_namespace(object, namespace);
+  return success();
+}
+
+static value_t new_namespace_variable_ast(runtime_t *runtime) {
+  return new_heap_namespace_variable_ast(runtime, runtime_null(runtime),
+      runtime_null(runtime));
 }
 
 
@@ -424,7 +467,7 @@ TRIVIAL_PRINT_ON_IMPL(LambdaAst, lambda_ast);
 UNCHECKED_ACCESSORS_IMPL(LambdaAst, lambda_ast, Parameters, parameters);
 UNCHECKED_ACCESSORS_IMPL(LambdaAst, lambda_ast, Body, body);
 
-static value_t emit_lambda_ast(value_t value, assembler_t *assm) {
+value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofLambdaAst, value);
   runtime_t *runtime = assm->runtime;
   // Build the signature.
@@ -625,7 +668,7 @@ value_t emit_value(value_t value, assembler_t *assm) {
     EMT(__EMIT_SYNTAX_FAMILY_CASE_HELPER__(Family, family),)
     ENUM_OBJECT_FAMILIES(__EMIT_SYNTAX_FAMILY_CASE__)
 #undef __EMIT_SYNTAX_FAMILY_CASE__
-#undef __EMIT_SYNTAX_FAMILy_CASE_HELPER__
+#undef __EMIT_SYNTAX_FAMILY_CASE_HELPER__
     default:
       return new_invalid_syntax_signal(isNotSyntax);
   }
@@ -642,12 +685,13 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "Lambda", new_lambda_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Literal", new_literal_ast, runtime));
   TRY(add_plankton_factory(map, ast, "LocalDeclaration", new_local_declaration_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "LocalVariable", new_local_variable_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Name", new_name_ast, runtime));
   TRY(add_plankton_factory(map, ast, "NamespaceDeclaration", new_namespace_declaration_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "NamespaceVariable", new_namespace_variable_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Parameter", new_parameter_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Program", new_program_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Sequence", new_sequence_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Symbol", new_symbol_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "Variable", new_variable_ast, runtime));
   return success();
 }

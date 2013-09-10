@@ -152,8 +152,13 @@ value_t new_heap_sequence_ast(runtime_t *runtime, value_t values);
 value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
     value_t value, value_t body);
 
-// Creates a new variable syntax tree with the given symbol.
-value_t new_heap_variable_ast(runtime_t *runtime, value_t symbol);
+// Creates a new local variable syntax tree with the given symbol.
+value_t new_heap_local_variable_ast(runtime_t *runtime, value_t symbol);
+
+// Creates a new namespace variable syntax tree with the given name from the
+// given namespace.
+value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t name,
+    value_t namespace);
 
 // Creates a new symbol syntax tree with the given name.
 value_t new_heap_symbol_ast(runtime_t *runtime, value_t name);

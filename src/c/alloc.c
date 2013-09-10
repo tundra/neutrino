@@ -375,11 +375,21 @@ value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_variable_ast(runtime_t *runtime, value_t symbol) {
-  size_t size = kVariableAstSize;
+value_t new_heap_local_variable_ast(runtime_t *runtime, value_t symbol) {
+  size_t size = kLocalVariableAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.variable_ast_species));
-  set_variable_ast_symbol(result, symbol);
+      runtime->roots.local_variable_ast_species));
+  set_local_variable_ast_symbol(result, symbol);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t name,
+    value_t namespace) {
+  size_t size = kNamespaceVariableAstSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.namespace_variable_ast_species));
+  set_namespace_variable_ast_name(result, name);
+  set_namespace_variable_ast_namespace(result, namespace);
   return post_create_sanity_check(result, size);
 }
 

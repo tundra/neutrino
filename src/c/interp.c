@@ -189,6 +189,14 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         frame_push_value(&frame, value);
         break;
       }
+      case ocLoadGlobal: {
+        value_t name = read_next_value(&state);
+        value_t namespace = read_next_value(&state);
+        CHECK_FAMILY(ofNamespace, namespace);
+        TRY_DEF(value, get_namespace_binding_at(namespace, name));
+        frame_push_value(&frame, value);
+        break;
+      }
       case ocLoadArgument: {
         size_t param_index = read_next_byte(&state);
         value_t value = frame_get_argument(&frame, param_index);
@@ -480,7 +488,7 @@ value_t assembler_emit_builtin(assembler_t *assm, builtin_method_t builtin) {
   assembler_emit_opcode(assm, ocBuiltin);
   TRY(assembler_emit_value(assm, wrapper));
   // Pushes the result.
-  assembler_adjust_stack_height(assm, 1);
+  assembler_adjust_stack_height(assm, +1);
   return success();
 }
 
@@ -492,14 +500,23 @@ value_t assembler_emit_return(assembler_t *assm) {
 value_t assembler_emit_load_local(assembler_t *assm, size_t index) {
   assembler_emit_opcode(assm, ocLoadLocal);
   assembler_emit_byte(assm, index);
-  assembler_adjust_stack_height(assm, 1);
+  assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
+value_t assembler_emit_load_global(assembler_t *assm, value_t name,
+    value_t namespace) {
+  assembler_emit_opcode(assm, ocLoadGlobal);
+  TRY(assembler_emit_value(assm, name));
+  TRY(assembler_emit_value(assm, namespace));
+  assembler_adjust_stack_height(assm, +1);
   return success();
 }
 
 value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index) {
   assembler_emit_opcode(assm, ocLoadArgument);
   assembler_emit_byte(assm, param_index);
-  assembler_adjust_stack_height(assm, 1);
+  assembler_adjust_stack_height(assm, +1);
   return success();
 }
 

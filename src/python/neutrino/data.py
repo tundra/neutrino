@@ -11,6 +11,9 @@ class Namespace(object):
   def __init__(self, bindings=None):
     self.bindings = bindings
 
+  def add_binding(self, name, value):
+    self.bindings[name] = value
+
 
 # A unique key, matching a neutrino runtime key.
 class Key(plankton.EnvironmentPlaceholder):

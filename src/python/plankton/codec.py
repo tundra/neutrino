@@ -120,9 +120,14 @@ class DataOutputStream(object):
         index = self.acquire_offset()
         self._add_byte(_OBJECT_TAG)
         self.object_index[obj] = -1
-        self.write_object(desc.get_header())
-        self.object_index[obj] = index
-        self.write_object(desc.get_payload(obj))
+        if desc.virtual:
+          self.write_object(obj.get_header())
+          self.object_index[obj] = index
+          self.write_object(obj.get_payload())
+        else:
+          self.write_object(desc.get_header())
+          self.object_index[obj] = index
+          self.write_object(desc.get_payload(obj))
       else:
         index = self.acquire_offset()
         self._add_byte(_ENVIRONMENT_TAG)
@@ -390,6 +395,7 @@ class ObjectDescriptor(object):
     else:
       self.header = EnvironmentPlaceholder(environment)
     self.fields = None
+    self.virtual = False
 
   # Returns the header to use when encoding the given instance
   def get_header(self):
@@ -438,6 +444,14 @@ def serializable(environment=None):
       _DESCRIPTORS[EnvironmentPlaceholder(environment)] = descriptor
     return klass
   return callback
+
+
+# Marks the descriptor as requiring the object to be transformed during
+# serialization.
+def virtual(klass):
+  descriptor = _DESCRIPTORS[klass.__name__]
+  descriptor.virtual = True
+  return klass
 
 
 # When used to decorate __init__ indicates that a serializable class has the

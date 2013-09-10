@@ -64,9 +64,7 @@ class ScopeVisitor(ast.Visitor):
 
   def visit_variable(self, that):
     assert that.symbol is None
-    symbol = self.lookup_name(that.name)
-    assert not symbol is None
-    that.symbol = symbol
+    that.symbol = self.lookup_name(that.name)
 
   def visit_argument(self, that):
     that.value.accept(self)

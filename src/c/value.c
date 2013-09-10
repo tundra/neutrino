@@ -1280,6 +1280,11 @@ static value_t new_namespace(runtime_t *runtime) {
   return new_heap_namespace(runtime);
 }
 
+value_t get_namespace_binding_at(value_t namespace, value_t name) {
+  value_t bindings = get_namespace_bindings(namespace);
+  return get_id_hash_map_at(bindings, name);
+}
+
 
 // --- O r d e r i n g ---
 

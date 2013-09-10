@@ -18,6 +18,7 @@
   F(Builtin)                                                                   \
   F(Slap)                                                                      \
   F(Pop)                                                                       \
+  F(LoadGlobal)                                                                \
   F(LoadLocal)                                                                 \
   F(Lambda)                                                                    \
   F(DelegateToLambda)                                                          \
@@ -142,6 +143,11 @@ value_t assembler_emit_return(assembler_t *assm);
 
 // Emits a local variable load of the local with the given index.
 value_t assembler_emit_load_local(assembler_t *assm, size_t index);
+
+// Emits a global variable load of the local with the given name within the
+// given namespace.
+value_t assembler_emit_load_global(assembler_t *assm, value_t name,
+    value_t namespace);
 
 // Emits an argument load of the argument with the given parameter index.
 value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index);

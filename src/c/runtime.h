@@ -20,6 +20,7 @@
   F(elements,           "elements")                                            \
   F(entry_point,        "entry_point")                                         \
   F(name,               "name")                                                \
+  F(namespace,          "namespace")                                           \
   F(path,               "path")                                                \
   F(phase,              "phase")                                               \
   F(spaces,             "spaces")                                              \

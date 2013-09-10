@@ -16,7 +16,7 @@ class Parser(object):
   def __init__(self, tokens):
     self.tokens = tokens
     self.cursor = 0
-    self.namespace = data.Namespace()
+    self.namespace = data.Namespace({})
     self.entry_point = ast.Literal(None)
 
   # Does this parser have more tokens to process?
@@ -78,18 +78,16 @@ class Parser(object):
   # <program>
   #   -> <toplevel statement>*
   def parse_program(self):
-    elements = []
     while self.has_more():
       entry = self.parse_toplevel_statement()
       if entry:
-        elements.append(entry)
-    return ast.Program(elements, self.entry_point, [self.namespace])
+        (name, value) = entry
+        self.namespace.add_binding(tuple(name.path), value)
+    return ast.Program([], self.entry_point, [self.namespace])
 
   def parse_toplevel_statement(self):
     if self.at_word('def'):
-      (name, value) = self.parse_local_declaration()
-      decl = ast.NamespaceDeclaration(name, value)
-      return decl
+      return self.parse_local_declaration()
     elif self.at_word('entry_point'):
       self.expect_word('entry_point')
       self.entry_point = self.parse_expression()
@@ -200,7 +198,7 @@ class Parser(object):
       return ast.Literal(value)
     elif self.at_type(Token.IDENTIFIER):
       name = self.expect_type(Token.IDENTIFIER)
-      return ast.Variable(name=name)
+      return ast.Variable(name=name, namespace=self.namespace)
     elif self.at_punctuation('('):
       self.expect_punctuation('(')
       result = self.parse_expression()
