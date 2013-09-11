@@ -10,3 +10,18 @@ class Namespace(object):
   @plankton.field("bindings")
   def __init__(self, bindings=None):
     self.bindings = bindings
+
+
+# A unique key, matching a neutrino runtime key.
+class Key(plankton.EnvironmentPlaceholder):
+
+  def __init__(self, display_name, key):
+    self.display_name = display_name
+    self.key = key
+
+  def __str__(self):
+    return "(key %s)" % self.display_name
+
+
+_SUBJECT = Key("subject", ("core", "subject"))
+_SELECTOR = Key("selector", ("core", "selector"))

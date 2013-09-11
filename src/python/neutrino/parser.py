@@ -152,9 +152,6 @@ class Parser(object):
     name = self.expect_type(Token.IDENTIFIER)
     return ast.Parameter(name, [default_tag])
 
-  _SUBJECT = plankton.EnvironmentPlaceholder(('core', 'subject'))
-  _SELECTOR = plankton.EnvironmentPlaceholder(('core', 'selector'))
-
   # <operator expression>
   #   -> <call expression> +: <operation>
   def parse_operator_expression(self):
@@ -163,8 +160,8 @@ class Parser(object):
       name = self.expect_type(Token.OPERATION)
       right = self.parse_call_expression()
       left = ast.Invocation([
-        ast.Argument(Parser._SUBJECT, left),
-        ast.Argument(Parser._SELECTOR, ast.Literal(name)),
+        ast.Argument(data._SUBJECT, left),
+        ast.Argument(data._SELECTOR, ast.Literal(name)),
         ast.Argument(0, right)
       ])
     return left
@@ -175,8 +172,8 @@ class Parser(object):
     recv = self.parse_atomic_expression()
     while self.at_punctuation('('):
       args = [
-        ast.Argument(Parser._SUBJECT, recv),
-        ast.Argument(Parser._SELECTOR, ast.Literal('()'))
+        ast.Argument(data._SUBJECT, recv),
+        ast.Argument(data._SELECTOR, ast.Literal('()'))
       ]
       self.expect_punctuation('(')
       if not self.at_punctuation(')'):
