@@ -244,7 +244,7 @@ static value_t deserialize(runtime_t *runtime, byte_buffer_t *buf) {
   byte_buffer_flush(buf, &raw_blob);
   value_t blob = new_heap_blob_with_data(runtime, &raw_blob);
   value_mapping_t syntax_mapping;
-  TRY(init_syntax_mapping(&syntax_mapping, runtime));
+  TRY(init_plankton_environment_mapping(&syntax_mapping, runtime));
   return plankton_deserialize(runtime, &syntax_mapping, blob);
 }
 

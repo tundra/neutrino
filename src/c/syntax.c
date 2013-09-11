@@ -19,9 +19,8 @@ static value_t resolve_syntax_factory(value_t key, runtime_t *runtime, void *dat
   return result;
 }
 
-// Initialize a value mapping such that it maps syntax constructors to syntax
-// value factories from the given runtime.
-value_t init_syntax_mapping(value_mapping_t *mapping, runtime_t *runtime) {
+value_t init_plankton_environment_mapping(value_mapping_t *mapping,
+    runtime_t *runtime) {
   value_mapping_init(mapping, resolve_syntax_factory, NULL);
   return success();
 }
