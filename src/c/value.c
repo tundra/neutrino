@@ -53,7 +53,7 @@ const char *get_species_division_name(species_division_t division) {
       runtime->roots.family##_protocol, name, argc, impl))
 
 static value_t integer_plus_integer(builtin_arguments_t *args) {
-  value_t this = get_builtin_this(args);
+  value_t this = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
   CHECK_DOMAIN(vdInteger, this);
   CHECK_DOMAIN(vdInteger, that);
@@ -61,7 +61,7 @@ static value_t integer_plus_integer(builtin_arguments_t *args) {
 }
 
 static value_t integer_minus_integer(builtin_arguments_t *args) {
-  value_t this = get_builtin_this(args);
+  value_t this = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
   CHECK_DOMAIN(vdInteger, this);
   CHECK_DOMAIN(vdInteger, that);
@@ -69,7 +69,7 @@ static value_t integer_minus_integer(builtin_arguments_t *args) {
 }
 
 static value_t integer_negate(builtin_arguments_t *args) {
-  value_t this = get_builtin_this(args);
+  value_t this = get_builtin_subject(args);
   CHECK_DOMAIN(vdInteger, this);
   return decode_value(-this.encoded);
 }
@@ -261,7 +261,7 @@ void string_print_atomic_on(value_t value, string_buffer_t *buf) {
 }
 
 static value_t string_plus_string(builtin_arguments_t *args) {
-  value_t this = get_builtin_this(args);
+  value_t this = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofString, this);
   CHECK_FAMILY(ofString, that);
@@ -279,7 +279,7 @@ static value_t string_plus_string(builtin_arguments_t *args) {
 }
 
 static value_t string_print(builtin_arguments_t *args) {
-  value_t this = get_builtin_this(args);
+  value_t this = get_builtin_subject(args);
   CHECK_FAMILY(ofString, this);
   value_print_ln(this);
   return runtime_nothing(args->runtime);
@@ -1027,6 +1027,33 @@ void boolean_print_atomic_on(value_t value, string_buffer_t *buf) {
 }
 
 
+// --- K e y ---
+
+GET_FAMILY_PROTOCOL_IMPL(key);
+NO_BUILTIN_METHODS(key);
+TRIVIAL_PRINT_ON_IMPL(Key, key);
+
+INTEGER_ACCESSORS_IMPL(Key, key, Id, id);
+UNCHECKED_ACCESSORS_IMPL(Key, key, DisplayName, display_name);
+
+value_t key_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofKey, value);
+  return success();
+}
+
+value_t key_identity_compare(value_t a, value_t b, size_t depth) {
+  size_t a_id = get_key_id(a);
+  size_t b_id = get_key_id(b);
+  return to_internal_boolean(a_id == b_id);
+}
+
+value_t key_ordering_compare(value_t a, value_t b) {
+  CHECK_FAMILY(ofKey, a);
+  CHECK_FAMILY(ofKey, b);
+  return new_integer(get_key_id(a) - get_key_id(b));
+}
+
+
 // --- I n s t a n c e ---
 
 CHECKED_ACCESSORS_IMPL(Instance, instance, IdHashMap, Fields, fields);
@@ -1267,8 +1294,9 @@ value_t int_to_ordering(int value) {
 
 // --- M i s c ---
 
-value_t add_plankton_factory(value_t map, value_t category, const char *name,
-    factory_constructor_t constructor, runtime_t *runtime) {
+// Adds a binding to the given plankton environment map.
+static value_t add_plankton_binding(value_t map, value_t category, const char *name,
+    value_t value, runtime_t *runtime) {
   string_t key_str;
   string_init(&key_str, name);
   // Build the key, [category, name].
@@ -1276,16 +1304,24 @@ value_t add_plankton_factory(value_t map, value_t category, const char *name,
   TRY_DEF(key_obj, new_heap_array(runtime, 2));
   set_array_at(key_obj, 0, category);
   set_array_at(key_obj, 1, name_obj);
-  // Create the factory.
-  TRY_DEF(factory, new_heap_factory(runtime, constructor));
   // Add the mapping to the environment map.
-  TRY(set_id_hash_map_at(runtime, map, key_obj, factory));
+  TRY(set_id_hash_map_at(runtime, map, key_obj, value));
   return success();
+}
+
+value_t add_plankton_factory(value_t map, value_t category, const char *name,
+    factory_constructor_t constructor, runtime_t *runtime) {
+  TRY_DEF(factory, new_heap_factory(runtime, constructor));
+  return add_plankton_binding(map, category, name, factory, runtime);
 }
 
 value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   value_t core = runtime->roots.string_table.core;
   TRY(add_plankton_factory(map, core, "Namespace", new_namespace, runtime));
+  TRY(add_plankton_binding(map, core, "subject", runtime->roots.subject_key,
+      runtime));
+  TRY(add_plankton_binding(map, core, "selector", runtime->roots.selector_key,
+      runtime));
   return success();
 }
 

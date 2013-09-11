@@ -67,6 +67,9 @@ value_t new_heap_nothing(runtime_t *runtime);
 // Creates a boolean singleton.
 value_t new_heap_boolean(runtime_t *runtime, bool value);
 
+// Creates a new key with the given display name.
+value_t new_heap_key(runtime_t *runtime, value_t display_name);
+
 // Creates a new empty object instance with the given instance species.
 value_t new_heap_instance(runtime_t *runtime, value_t species);
 

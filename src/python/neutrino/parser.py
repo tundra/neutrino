@@ -6,6 +6,7 @@
 
 import ast
 import data
+import plankton
 from token import Token
 
 
@@ -159,8 +160,8 @@ class Parser(object):
       name = self.expect_type(Token.OPERATION)
       right = self.parse_call_expression()
       left = ast.Invocation([
-        ast.Argument('this', left),
-        ast.Argument('name', ast.Literal(name)),
+        ast.Argument(data._SUBJECT, left),
+        ast.Argument(data._SELECTOR, ast.Literal(name)),
         ast.Argument(0, right)
       ])
     return left
@@ -171,8 +172,8 @@ class Parser(object):
     recv = self.parse_atomic_expression()
     while self.at_punctuation('('):
       args = [
-        ast.Argument('this', recv),
-        ast.Argument('name', ast.Literal('()'))
+        ast.Argument(data._SUBJECT, recv),
+        ast.Argument(data._SELECTOR, ast.Literal('()'))
       ]
       self.expect_punctuation('(')
       if not self.at_punctuation(')'):

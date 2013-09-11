@@ -235,6 +235,7 @@ static value_t new_moved_object(value_t target) {
   F(Instance,                instance,                  _,  _,  X,  X,  _,  _,  _)\
   F(InvocationAst,           invocation_ast,            _,  _,  X,  X,  _,  _,  X)\
   F(InvocationRecord,        invocation_record,         _,  _,  _,  _,  _,  _,  _)\
+  F(Key,                     key,                       X,  _,  _,  X,  _,  _,  _)\
   F(Lambda,                  lambda,                    _,  _,  _,  X,  _,  _,  _)\
   F(LambdaAst,               lambda_ast,                _,  _,  X,  X,  _,  _,  X)\
   F(LiteralAst,              literal_ast,               _,  _,  X,  X,  _,  _,  X)\
@@ -690,6 +691,20 @@ void set_boolean_value(value_t value, bool truth);
 
 // Returns whether the given bool is true.
 bool get_boolean_value(value_t value);
+
+
+// --- K e y ---
+
+static const size_t kKeySize = OBJECT_SIZE(2);
+static const size_t kKeyIdOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kKeyDisplayNameOffset = OBJECT_FIELD_OFFSET(1);
+
+// The unique id for this key (unique across this runtime).
+INTEGER_ACCESSORS_DECL(key, id);
+
+// This key's optional display name. This has no semantic meaning, it's only a
+// debugging aid.
+ACCESSORS_DECL(key, display_name);
 
 
 // --- I n s t a n c e ---

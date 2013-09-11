@@ -116,7 +116,7 @@ static value_t neutrino_main(int argc, char *argv[]) {
         fclose(file);
       }
       value_mapping_t syntax_mapping;
-      E_TRY(init_syntax_mapping(&syntax_mapping, runtime));
+      E_TRY(init_plankton_environment_mapping(&syntax_mapping, runtime));
       E_TRY_DEF(program, plankton_deserialize(runtime, &syntax_mapping, input));
       value_t result = execute_syntax(runtime, program);
       if (print_value)

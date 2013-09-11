@@ -74,13 +74,13 @@ TEST(interp, execution) {
   {
     value_t lam = new_heap_lambda_ast(runtime, runtime->roots.empty_array,
         new_heap_literal_ast(runtime, new_integer(13)));
-    value_t this_arg = new_heap_argument_ast(runtime, runtime->roots.string_table.this,
+    value_t subject_arg = new_heap_argument_ast(runtime, runtime->roots.subject_key,
         lam);
-    value_t name_arg = new_heap_argument_ast(runtime, runtime->roots.string_table.name,
+    value_t selector_arg = new_heap_argument_ast(runtime, runtime->roots.selector_key,
         new_heap_literal_ast(runtime, runtime->roots.string_table.sausages));
     value_t args = new_heap_array(runtime, 2);
-    set_array_at(args, 0, this_arg);
-    set_array_at(args, 1, name_arg);
+    set_array_at(args, 0, subject_arg);
+    set_array_at(args, 1, selector_arg);
     value_t ast = new_heap_invocation_ast(runtime, args);
     assert_ast_value(runtime, vInt(13), ast);
   }

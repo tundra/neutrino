@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from neutrino import parser, token, ast
+from neutrino import parser, token, ast, data
 import unittest
 
 
@@ -25,15 +25,15 @@ def id(names, phase=0):
 
 def bn(left, op, right):
   return ast.Invocation([
-    ast.Argument('this', left),
-    ast.Argument('name', ast.Literal(op)),
+    ast.Argument(data._SUBJECT, left),
+    ast.Argument(data._SELECTOR, ast.Literal(op)),
     ast.Argument(0, right)
   ])
 
 def cl(fun, *poss):
   args = [
-    ast.Argument('this', fun),
-    ast.Argument('name', ast.Literal("()"))
+    ast.Argument(data._SUBJECT, fun),
+    ast.Argument(data._SELECTOR, ast.Literal("()"))
   ]
   for i in xrange(len(poss)):
     args.append(ast.Argument(i, poss[i]))

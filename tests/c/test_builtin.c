@@ -14,14 +14,14 @@ static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
 
   // Build an ast that implements the requested call.
   value_t args_ast = new_heap_array(runtime, arg_count);
-  // The "this" argument.
+  // The subject argument.
   set_array_at(args_ast, 0, new_heap_argument_ast(runtime,
-      variant_to_value(runtime, vStr("this")),
+      runtime->roots.subject_key,
       new_heap_literal_ast(runtime,
           variant_to_value(runtime, receiver))));
-  // The "name" argument.
+  // The selector argument.
   set_array_at(args_ast, 1, new_heap_argument_ast(runtime,
-      variant_to_value(runtime, vStr("name")),
+      runtime->roots.selector_key,
       new_heap_literal_ast(runtime,
           variant_to_value(runtime, vStr(name)))));
   // The positional arguments.
