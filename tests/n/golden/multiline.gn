@@ -1,15 +1,17 @@
 # Test that multiple-line INPUT clauses work.
 
-INPUT: {
+-- INPUT: {
   def $x := 8;
   $x;
 }
-VALUE: 8
+-- VALUE: 8
 
-INPUT:
+-- INPUT:
 1 + 1
-VALUE: 2
+-- VALUE: 2
 
-INPUT:
+-- INPUT:
 entry_point "4"();
-OUTPUT: "4"
+-- OUTPUT:
+"4"
+-- END

@@ -1,16 +1,22 @@
-INPUT:
+-- INPUT:
 def $x := 4;
 entry_point $x();
-OUTPUT: 4
+-- OUTPUT:
+4
+-- END
 
-INPUT:
+-- INPUT:
 def $x := 6;
 def $y := 7;
 entry_point ($x + $y)();
-OUTPUT: 13
+-- OUTPUT:
+13
+-- END
 
-INPUT:
+-- INPUT:
 def $x := "6";
 def $y := "7";
 entry_point ($x + $y)();
-OUTPUT: "67"
+-- OUTPUT:
+"67"
+-- END
