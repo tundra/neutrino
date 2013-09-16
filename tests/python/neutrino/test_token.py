@@ -30,6 +30,7 @@ class TokenTest(unittest.TestCase):
     test("$foo$bar$baz", id(0, "foo"), id(0, "bar"), id(0, "baz"))
     test("foo$bar baz", wd("foo"), id(0, "bar"), wd("baz"))
     test(".foo", op("foo"))
+    test(".+", op("+"))
     test(".foo.bar.baz", op("foo"), op("bar"), op("baz"))
     test("$foo.bar", id(0, "foo"), op("bar"))
     test("+ ++ +++", op("+"), op("++"), op("+++"))

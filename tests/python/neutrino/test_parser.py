@@ -39,6 +39,15 @@ def cl(fun, *poss):
     args.append(ast.Argument(i, poss[i]))
   return ast.Invocation(args)
 
+def mt(fun, name, *poss):
+  args = [
+    ast.Argument(data._SUBJECT, fun),
+    ast.Argument(data._SELECTOR, name)
+  ]
+  for i in xrange(len(poss)):
+    args.append(ast.Argument(i, poss[i]))
+  return ast.Invocation(args)
+
 class ParserTest(unittest.TestCase):
 
   def check_expression(self, input, expected):
@@ -80,6 +89,13 @@ class ParserTest(unittest.TestCase):
     test('$a(1, 2)', cl(id("a"), lt(1), lt(2)))
     test('$a(1, 2, 3)', cl(id("a"), lt(1), lt(2), lt(3)))
     test('$a(1)(2)(3)', cl(cl(cl(id("a"), lt(1)), lt(2)), lt(3)))
+
+  def test_methods(self):
+    test = self.check_expression
+    test('$a.foo(1)', mt(id("a"), lt("foo"), lt(1)))
+    test('$a.foo(1)', mt(id("a"), lt("foo"), lt(1)))
+    test('$a.foo(1, 2)', mt(id("a"), lt("foo"), lt(1), lt(2)))
+    test('$a.foo(1, 2, 3)', mt(id("a"), lt("foo"), lt(1), lt(2), lt(3)))
 
   def test_sequence(self):
     test = self.check_expression
