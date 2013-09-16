@@ -157,13 +157,35 @@ class Parser(object):
     left = self.parse_call_expression()
     while self.at_type(Token.OPERATION):
       name = self.expect_type(Token.OPERATION)
-      right = self.parse_call_expression()
-      left = ast.Invocation([
+      prefix = [
         ast.Argument(data._SUBJECT, left),
-        ast.Argument(data._SELECTOR, ast.Literal(name)),
-        ast.Argument(0, right)
-      ])
+        ast.Argument(data._SELECTOR, ast.Literal(name))
+      ]
+      rest = self.parse_arguments()
+      left = ast.Invocation(prefix + rest)
     return left
+
+  # <arguments>
+  #   -> <call expression>
+  #   -> "(" <expression> *: "," ")"
+  def parse_arguments(self):
+    args = []
+    if self.at_punctuation('('):
+      self.expect_punctuation('(')
+      if not self.at_punctuation(')'):
+        arg = self.parse_expression()
+        args.append(ast.Argument(0, arg))
+        index = 1
+        while self.at_punctuation(','):
+          self.expect_punctuation(',')
+          arg = self.parse_expression()
+          args.append(ast.Argument(index, arg))
+          index += 1
+      self.expect_punctuation(')')
+    else:
+      arg = self.parse_call_expression()
+      args.append(ast.Argument(0, arg))
+    return args
 
   # <call expression>
   #   -> <atomic expression>

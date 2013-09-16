@@ -224,12 +224,15 @@ class Tokenizer(object):
     value = self.slice(start, end).split(':')
     return Token.identifier(ast.Name(phase, value), delim)
 
+  def is_named_operator_char(self, value):
+    return self.is_alpha(value) or self.is_operator(value)
+
   # Scans over the next named operation.
   def scan_named_operation(self, delim):
     assert self.current() == '.'
     self.advance()
     start = self.cursor
-    while self.has_more() and self.is_alpha(self.current()):
+    while self.has_more() and self.is_named_operator_char(self.current()):
       self.advance()
     end = self.cursor
     value = self.slice(start, end)

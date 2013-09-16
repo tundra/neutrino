@@ -382,7 +382,6 @@ void get_void_p_layout(value_t value, object_layout_t *layout) {
 // --- A r r a y ---
 
 GET_FAMILY_PROTOCOL_IMPL(array);
-NO_BUILTIN_METHODS(array);
 
 size_t calc_array_size(size_t length) {
   return kObjectHeaderSize       // header
@@ -580,6 +579,17 @@ value_t array_identity_compare(value_t a, value_t b, size_t depth) {
       return cmp;
   }
   return internal_true_value();
+}
+
+value_t array_length(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofArray, self);
+  return new_integer(get_array_length(self));
+}
+
+value_t add_array_builtin_methods(runtime_t *runtime, value_t space) {
+  ADD_BUILTIN(array, "length", 0, array_length);
+  return success();
 }
 
 
