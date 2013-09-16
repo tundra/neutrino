@@ -427,13 +427,17 @@ class ObjectDescriptor(object):
 
 
 # Marks the given class as serializable.
-def serializable(environment=None):
+def serializable(*environments):
   def callback(klass):
-    descriptor = ObjectDescriptor(klass, environment)
+    if len(environments) == 0:
+      primary_environment = None
+    else:
+      primary_environment = environments[0]
+    descriptor = ObjectDescriptor(klass, primary_environment)
     # We need to be able to access the descriptor through the class' name,
     # that's how we get access to it when serializing an instance.
     _DESCRIPTORS[klass.__name__] = descriptor
-    if not environment is None:
+    for environment in environments:
       # If there is an environment we also key the descriptor under the
       # environment key such that when we meet the key during deserialization
       # we know there's a descriptor.

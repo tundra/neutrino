@@ -88,7 +88,6 @@ class ScopeVisitor(ast.Visitor):
     that.value.accept(self)
 
 
-import sys
 def analyze(ast):
   visitor = ScopeVisitor()
   ast.accept(visitor)

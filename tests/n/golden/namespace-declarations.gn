@@ -1,4 +1,4 @@
 INPUT:
 def $x := 4;
-entry_point $x;
+entry_point $x();
 OUTPUT: 4

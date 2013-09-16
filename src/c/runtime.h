@@ -23,7 +23,6 @@
   F(namespace,          "namespace")                                           \
   F(path,               "path")                                                \
   F(phase,              "phase")                                               \
-  F(spaces,             "spaces")                                              \
   F(symbol,             "symbol")                                              \
   F(tag,                "tag")                                                 \
   F(value,              "value")                                               \

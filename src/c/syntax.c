@@ -574,7 +574,7 @@ TRIVIAL_PRINT_ON_IMPL(ProgramAst, program_ast);
 
 CHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, Array, Elements, elements);
 UNCHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, EntryPoint, entry_point);
-CHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, Array, Spaces, spaces);
+UNCHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, Namespace, namespace);
 
 value_t program_ast_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofProgramAst, value);
@@ -585,10 +585,10 @@ value_t set_program_ast_contents(value_t object, runtime_t *runtime, value_t con
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(elements, get_id_hash_map_at(contents, runtime->roots.string_table.elements));
   TRY_DEF(entry_point, get_id_hash_map_at(contents, runtime->roots.string_table.entry_point));
-  TRY_DEF(spaces, get_id_hash_map_at(contents, runtime->roots.string_table.spaces));
+  TRY_DEF(namespace, get_id_hash_map_at(contents, runtime->roots.string_table.namespace));
   set_program_ast_elements(object, elements);
   set_program_ast_entry_point(object, entry_point);
-  set_program_ast_spaces(object, spaces);
+  set_program_ast_namespace(object, namespace);
   return success();
 }
 

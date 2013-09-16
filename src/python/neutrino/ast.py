@@ -74,7 +74,7 @@ class Array(object):
 # A reference to an enclosing binding. The name is used before the variable
 # has been resolved, the symbol after.
 @plankton.virtual
-@plankton.serializable(("ast", "Variable"))
+@plankton.serializable(("ast", "LocalVariable"), ("ast", "NamespaceVariable"))
 class Variable(object):
 
   _LOCAL_HEADER = plankton.EnvironmentPlaceholder(("ast", "LocalVariable"))
@@ -281,11 +281,11 @@ class Program(object):
 
   @plankton.field("elements")
   @plankton.field("entry_point")
-  @plankton.field("spaces")
-  def __init__(self, elements=None, entry_point=None, spaces=None):
+  @plankton.field("namespace")
+  def __init__(self, elements=None, entry_point=None, namespace=None):
     self.elements = elements
     self.entry_point = entry_point
-    self.spaces = spaces
+    self.namespace = namespace
 
   def accept(self, visitor):
     return visitor.visit_program(self)

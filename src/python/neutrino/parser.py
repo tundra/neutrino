@@ -78,12 +78,13 @@ class Parser(object):
   # <program>
   #   -> <toplevel statement>*
   def parse_program(self):
+    elements = []
     while self.has_more():
       entry = self.parse_toplevel_statement()
       if entry:
         (name, value) = entry
-        self.namespace.add_binding(tuple(name.path), value)
-    return ast.Program([], self.entry_point, [self.namespace])
+        elements.append(ast.NamespaceDeclaration(name, value))
+    return ast.Program(elements, self.entry_point, self.namespace)
 
   def parse_toplevel_statement(self):
     if self.at_word('def'):
@@ -106,7 +107,7 @@ class Parser(object):
   # executable.
   def parse_expression_program(self):
     value = self.parse_word_expression()
-    return ast.Program([], value, [self.namespace])
+    return ast.Program([], value, self.namespace)
 
   # <word expression>
   #   -> <lambda>

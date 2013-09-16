@@ -11,6 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 # Remaining imports.
 import analysis
+import bindings
 import optparse
 import parser
 import plankton
@@ -71,19 +72,22 @@ class Main(object):
 
   # Processes any --expression arguments.
   def run_expressions(self):
-    for expr in self.flags.expression:
-      tokens = token.tokenize(expr)
-      ast = parser.Parser(tokens).parse_expression_program()
-      analysis.analyze(ast)
-      self.output_value(ast)
+    self.run_parse_input(self.flags.expression,
+        lambda tokens: parser.Parser(tokens).parse_expression_program())
 
   # Processes any --program arguments.
   def run_programs(self):
-    for expr in self.flags.program:
+    self.run_parse_input(self.flags.program,
+        lambda tokens: parser.Parser(tokens).parse_program())
+
+  def run_parse_input(self, inputs, parse_thunk):
+    for expr in inputs:
       tokens = token.tokenize(expr)
-      ast = parser.Parser(tokens).parse_program()
+      ast = parse_thunk(tokens)
       analysis.analyze(ast)
+      bindings.bind(ast)
       self.output_value(ast)
+
 
   def output_value(self, value):
     encoder = plankton.Encoder()
