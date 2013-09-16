@@ -192,22 +192,12 @@ class Parser(object):
   def parse_call_expression(self):
     recv = self.parse_atomic_expression()
     while self.at_punctuation('('):
-      args = [
+      prefix = [
         ast.Argument(data._SUBJECT, recv),
         ast.Argument(data._SELECTOR, ast.Literal('()'))
       ]
-      self.expect_punctuation('(')
-      if not self.at_punctuation(')'):
-        arg = self.parse_expression()
-        args.append(ast.Argument(0, arg))
-        index = 1
-        while self.at_punctuation(','):
-          self.expect_punctuation(',')
-          arg = self.parse_expression()
-          args.append(ast.Argument(index, arg))
-          index += 1
-      self.expect_punctuation(')')
-      recv = ast.Invocation(args)
+      rest = self.parse_arguments()
+      recv = ast.Invocation(prefix + rest)
     return recv
 
   # <atomic expression>

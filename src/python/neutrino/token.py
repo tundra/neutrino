@@ -224,6 +224,7 @@ class Tokenizer(object):
     value = self.slice(start, end).split(':')
     return Token.identifier(ast.Name(phase, value), delim)
 
+  # Is this a character that is allowed to follow a .?
   def is_named_operator_char(self, value):
     return self.is_alpha(value) or self.is_operator(value)
 
