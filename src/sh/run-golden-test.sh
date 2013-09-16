@@ -54,6 +54,8 @@ print_progress() {
   fi
 }
 
+# Trims leading and (possibly?) trailing whitespace from a string. This is a bit
+# hacky so if there's an issue with whitespace this might be the cause.
 trim_space() {
   echo -n "$*" | sed -e "s/^\s*\(.*\)\s*$/\1/g"
 }
@@ -127,7 +129,7 @@ done < "$TEST_FILE"
 # We completed successfully so we can signal success by touching the output
 # file (as well as implicitly exiting 0).
 
-if [ $HAS_INPUT -eq 1 -o $HAS_OUTPUT -eq 1 -o -$HAS_END -eq 1 ]; then
+if [ $HAS_INPUT -eq 1 -o $HAS_VALUE -eq 1 -o $HAS_OUTPUT -eq 1 -o -$HAS_END -eq 1 ]; then
   echo
   echo "Incomplete test"
   exit 1
