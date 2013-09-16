@@ -11,7 +11,7 @@
 -- VALUE: 2
 
 -- INPUT:
-entry_point "4"();
+entry_point "4".print();
 -- OUTPUT:
 "4"
 -- END
