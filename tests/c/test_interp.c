@@ -64,7 +64,7 @@ TEST(interp, execution) {
   // Simple local definition
   {
     value_t sym = new_heap_symbol_ast(runtime, runtime_null(runtime));
-    value_t var = new_heap_variable_ast(runtime, sym);
+    value_t var = new_heap_local_variable_ast(runtime, sym);
     value_t ast = new_heap_local_declaration_ast(runtime, sym,
         new_heap_literal_ast(runtime, new_integer(3)), var);
     assert_ast_value(runtime, vInt(3), ast);
@@ -105,7 +105,7 @@ TEST(interp, compile_errors) {
   // Redefinition of a local.
   {
     value_t sym = new_heap_symbol_ast(runtime, runtime_null(runtime));
-    value_t var = new_heap_variable_ast(runtime, sym);
+    value_t var = new_heap_local_variable_ast(runtime, sym);
     value_t inner = new_heap_local_declaration_ast(runtime, sym, l3, var);
     value_t outer = new_heap_local_declaration_ast(runtime, sym, l3, inner);
     assert_compile_failure(runtime, outer, isSymbolAlreadyBound);
@@ -115,7 +115,7 @@ TEST(interp, compile_errors) {
   {
     value_t s0 = new_heap_symbol_ast(runtime, runtime_null(runtime));
     value_t s1 = new_heap_symbol_ast(runtime, runtime_null(runtime));
-    value_t var = new_heap_variable_ast(runtime, s0);
+    value_t var = new_heap_local_variable_ast(runtime, s0);
     value_t ast = new_heap_local_declaration_ast(runtime, s1, l3, var);
     assert_compile_failure(runtime, ast, isSymbolNotBound);
   }

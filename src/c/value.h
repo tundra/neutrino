@@ -245,6 +245,7 @@ static value_t new_moved_object(value_t target) {
   F(NameAst,                 name_ast,                  _,  _,  X,  _,  _,  _,  _)\
   F(Namespace,               namespace,                 _,  _,  X,  _,  _,  _,  _)\
   F(NamespaceDeclarationAst, namespace_declaration_ast, _,  _,  X,  _,  _,  _,  _)\
+  F(NamespaceVariableAst,    namespace_variable_ast,    _,  _,  X,  X,  _,  _,  X)\
   F(Nothing,                 nothing,                   _,  _,  _,  _,  _,  _,  _)\
   F(Null,                    null,                      _,  X,  _,  X,  _,  _,  _)\
   F(Parameter,               parameter,                 _,  _,  _,  _,  _,  _,  _)\
@@ -257,7 +258,7 @@ static value_t new_moved_object(value_t target) {
   F(StackPiece,              stack_piece,               _,  _,  _,  _,  _,  _,  _)\
   F(String,                  string,                    X,  X,  _,  X,  X,  _,  _)\
   F(SymbolAst,               symbol_ast,                _,  _,  X,  X,  _,  _,  _)\
-  F(VariableAst,             variable_ast,              _,  _,  X,  X,  _,  _,  X)\
+  F(LocalVariableAst,        local_variable_ast,        _,  _,  X,  X,  _,  _,  X)\
   F(VoidP,                   void_p,                    _,  _,  _,  _,  X,  _,  _)
 
 // Enumerates all the object families.
@@ -802,6 +803,10 @@ static const size_t kNamespaceBindingsOffset = OBJECT_FIELD_OFFSET(0);
 
 // Returns the bindings map for this namespace.
 ACCESSORS_DECL(namespace, bindings);
+
+// Returns the binding for the given name in the given namespace. If the binding
+// doesn't exist a NotFound signal is returned.
+value_t get_namespace_binding_at(value_t namespace, value_t name);
 
 
 // --- O r d e r i n g ---

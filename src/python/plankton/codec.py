@@ -120,9 +120,14 @@ class DataOutputStream(object):
         index = self.acquire_offset()
         self._add_byte(_OBJECT_TAG)
         self.object_index[obj] = -1
-        self.write_object(desc.get_header())
-        self.object_index[obj] = index
-        self.write_object(desc.get_payload(obj))
+        if desc.virtual:
+          self.write_object(obj.get_header())
+          self.object_index[obj] = index
+          self.write_object(obj.get_payload())
+        else:
+          self.write_object(desc.get_header())
+          self.object_index[obj] = index
+          self.write_object(desc.get_payload(obj))
       else:
         index = self.acquire_offset()
         self._add_byte(_ENVIRONMENT_TAG)
@@ -390,6 +395,7 @@ class ObjectDescriptor(object):
     else:
       self.header = EnvironmentPlaceholder(environment)
     self.fields = None
+    self.virtual = False
 
   # Returns the header to use when encoding the given instance
   def get_header(self):
@@ -421,13 +427,17 @@ class ObjectDescriptor(object):
 
 
 # Marks the given class as serializable.
-def serializable(environment=None):
+def serializable(*environments):
   def callback(klass):
-    descriptor = ObjectDescriptor(klass, environment)
+    if len(environments) == 0:
+      primary_environment = None
+    else:
+      primary_environment = environments[0]
+    descriptor = ObjectDescriptor(klass, primary_environment)
     # We need to be able to access the descriptor through the class' name,
     # that's how we get access to it when serializing an instance.
     _DESCRIPTORS[klass.__name__] = descriptor
-    if not environment is None:
+    for environment in environments:
       # If there is an environment we also key the descriptor under the
       # environment key such that when we meet the key during deserialization
       # we know there's a descriptor.
@@ -438,6 +448,14 @@ def serializable(environment=None):
       _DESCRIPTORS[EnvironmentPlaceholder(environment)] = descriptor
     return klass
   return callback
+
+
+# Marks the descriptor as requiring the object to be transformed during
+# serialization.
+def virtual(klass):
+  descriptor = _DESCRIPTORS[klass.__name__]
+  descriptor.virtual = True
+  return klass
 
 
 # When used to decorate __init__ indicates that a serializable class has the

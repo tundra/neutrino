@@ -74,10 +74,18 @@ static value_t integer_negate(builtin_arguments_t *args) {
   return decode_value(-this.encoded);
 }
 
+static value_t integer_print(builtin_arguments_t *args) {
+  value_t this = get_builtin_subject(args);
+  value_print_ln(this);
+  return runtime_nothing(args->runtime);
+}
+
 value_t add_integer_builtin_methods(runtime_t *runtime, value_t space) {
   ADD_BUILTIN(integer, "+", 1, integer_plus_integer);
   ADD_BUILTIN(integer, "-", 1, integer_minus_integer);
   ADD_BUILTIN(integer, "-", 0, integer_negate);
+  // TODO: change this to a more appropriate name -- say ".print".
+  ADD_BUILTIN(integer, "()", 0, integer_print);
   return success();
 }
 
@@ -1278,6 +1286,11 @@ value_t set_namespace_contents(value_t object, runtime_t *runtime, value_t conte
 
 static value_t new_namespace(runtime_t *runtime) {
   return new_heap_namespace(runtime);
+}
+
+value_t get_namespace_binding_at(value_t namespace, value_t name) {
+  value_t bindings = get_namespace_bindings(namespace);
+  return get_id_hash_map_at(bindings, name);
 }
 
 

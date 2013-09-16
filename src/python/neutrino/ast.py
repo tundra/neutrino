@@ -73,17 +73,37 @@ class Array(object):
 
 # A reference to an enclosing binding. The name is used before the variable
 # has been resolved, the symbol after.
-@plankton.serializable(("ast", "Variable"))
+@plankton.virtual
+@plankton.serializable(("ast", "LocalVariable"), ("ast", "NamespaceVariable"))
 class Variable(object):
+
+  _LOCAL_HEADER = plankton.EnvironmentPlaceholder(("ast", "LocalVariable"))
+  _NAMESPACE_HEADER = plankton.EnvironmentPlaceholder(("ast", "NamespaceVariable"))
 
   # We don't need to serialize the name since the symbol holds the name.
   @plankton.field("symbol")
-  def __init__(self, name=None, symbol=None):
+  def __init__(self, name=None, namespace=None, symbol=None):
     self.name = name
+    self.namespace = namespace
     self.symbol = symbol
 
   def accept(self, visitor):
-    return visitor.visit_variable(self);
+    return visitor.visit_variable(self)
+
+  def get_header(self):
+    if self.symbol is None:
+      return Variable._NAMESPACE_HEADER
+    else:
+      return Variable._LOCAL_HEADER
+
+  def get_payload(self):
+    if self.symbol is None:
+      return {
+        'name': self.name.path,
+        'namespace': self.namespace
+      }
+    else:
+      return {'symbol': self.symbol}
 
   def __str__(self):
     return "#<var %s>" % str(self.name)
@@ -261,11 +281,11 @@ class Program(object):
 
   @plankton.field("elements")
   @plankton.field("entry_point")
-  @plankton.field("spaces")
-  def __init__(self, elements=None, entry_point=None, spaces=None):
+  @plankton.field("namespace")
+  def __init__(self, elements=None, entry_point=None, namespace=None):
     self.elements = elements
     self.entry_point = entry_point
-    self.spaces = spaces
+    self.namespace = namespace
 
   def accept(self, visitor):
     return visitor.visit_program(self)
@@ -285,6 +305,11 @@ class NamespaceDeclaration(object):
 
   def accept(self, visitor):
     return visitor.visit_namespace_declaration(self)
+
+  def apply(self, program, helper):
+    name = tuple(self.name.path)
+    value = helper.evaluate(self.value)
+    program.namespace.bindings[name] = value
 
   def __str__(self):
     return "(namespace-declaration %s %s)" % (self.name, self.value)

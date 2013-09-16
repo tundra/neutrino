@@ -1,0 +1,16 @@
+INPUT:
+def $x := 4;
+entry_point $x();
+OUTPUT: 4
+
+INPUT:
+def $x := 6;
+def $y := 7;
+entry_point ($x + $y)();
+OUTPUT: 13
+
+INPUT:
+def $x := "6";
+def $y := "7";
+entry_point ($x + $y)();
+OUTPUT: "67"

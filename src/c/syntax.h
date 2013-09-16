@@ -96,13 +96,26 @@ ACCESSORS_DECL(local_declaration_ast, value);
 ACCESSORS_DECL(local_declaration_ast, body);
 
 
-// --- V a r i a b l e ---
+// --- L o c a l   v a r i a b l e ---
 
-static const size_t kVariableAstSize = OBJECT_SIZE(1);
-static const size_t kVariableAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kLocalVariableAstSize = OBJECT_SIZE(1);
+static const size_t kLocalVariableAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
 
-// The symbol referenced by this variable.
-ACCESSORS_DECL(variable_ast, symbol);
+// The symbol referenced by this local variable.
+ACCESSORS_DECL(local_variable_ast, symbol);
+
+
+// --- N a m e s p a c e   v a r i a b l e ---
+
+static const size_t kNamespaceVariableAstSize = OBJECT_SIZE(2);
+static const size_t kNamespaceVariableAstNameOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kNamespaceVariableAstNamespaceOffset = OBJECT_FIELD_OFFSET(1);
+
+// The name to look up through this namespace variable.
+ACCESSORS_DECL(namespace_variable_ast, name);
+
+// The namespace to look up within.
+ACCESSORS_DECL(namespace_variable_ast, namespace);
 
 
 // --- S y m b o l ---
@@ -145,7 +158,7 @@ ACCESSORS_DECL(parameter_ast, tags);
 static const size_t kProgramAstSize = OBJECT_SIZE(3);
 static const size_t kProgramAstElementsOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kProgramAstEntryPointOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kProgramAstSpacesOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kProgramAstNamespaceOffset = OBJECT_FIELD_OFFSET(2);
 
 // The toplevel elements of the program.
 ACCESSORS_DECL(program_ast, elements);
@@ -153,8 +166,8 @@ ACCESSORS_DECL(program_ast, elements);
 // The program entry-point expression.
 ACCESSORS_DECL(program_ast, entry_point);
 
-// The program's spaces (method- and name-).
-ACCESSORS_DECL(program_ast, spaces);
+// The program's namespace.
+ACCESSORS_DECL(program_ast, namespace);
 
 
 // --- N a m e s p a c e   d e c l a r a t i o n ---
