@@ -1,6 +1,6 @@
 -- INPUT:
 def $x := 4;
-entry_point $x();
+entry_point $x.print();
 -- OUTPUT:
 4
 -- END
@@ -8,7 +8,7 @@ entry_point $x();
 -- INPUT:
 def $x := 6;
 def $y := 7;
-entry_point ($x + $y)();
+entry_point ($x + $y).print();
 -- OUTPUT:
 13
 -- END
@@ -16,7 +16,7 @@ entry_point ($x + $y)();
 -- INPUT:
 def $x := "6";
 def $y := "7";
-entry_point ($x + $y)();
+entry_point ($x + $y).print();
 -- OUTPUT:
 "67"
 -- END
