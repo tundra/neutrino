@@ -41,6 +41,7 @@ VALUE=
 HAS_VALUE=0
 OUTPUT=
 HAS_OUTPUT=0
+HAS_END=0
 I=0
 
 # Print a progress marker from 0-9 with a space between blocks of 10.
@@ -53,10 +54,14 @@ print_progress() {
   fi
 }
 
+trim_space() {
+  echo -n "$*" | sed -e "s/^\s*\(.*\)\s*$/\1/g"
+}
+
 # Checks that the output from a test was the expected value, otherwise prints
 # an error and bails.
 check_result() {
-  EXPECTED="$1"
+  EXPECTED=$(trim_space "$1")
   FOUND="$2"
   INPUT="$3"
   if [ "$EXPECTED" != "$FOUND" ]; then
@@ -72,21 +77,26 @@ check_result() {
 while read LINE; do
   # Strip end-of-line comments.
   LINE=$(echo "$LINE" | sed -e s/^\\s*#.*$//g)
-  if echo "$LINE" | grep INPUT: > /dev/null; then
+  if echo "$LINE" | grep '\-\- INPUT:' > /dev/null; then
     # Found an input clause.
-    INPUT=$(echo "$LINE" | sed -e s/^INPUT:\\s*//g)
+    INPUT=$(echo "$LINE" | sed -e "s/^-- INPUT:\\s*//g")
     HAS_INPUT=1
-  elif echo "$LINE" | grep VALUE: > /dev/null; then
+  elif echo "$LINE" | grep '\-\- VALUE:' > /dev/null; then
     # Found a value clause.
-    VALUE=$(echo "$LINE" | sed -e s/^VALUE:\\s*//g)
+    VALUE=$(echo "$LINE" | sed -e "s/^-- VALUE:\\s*//g")
     HAS_VALUE=1
-  elif echo "$LINE" | grep OUTPUT: > /dev/null; then
+  elif echo "$LINE" | grep '\-\- OUTPUT:' > /dev/null; then
     # Found an output clause.
-    OUTPUT=$(echo "$LINE" | sed -e s/^OUTPUT:\\s*//g)
+    OUTPUT=$(echo "$LINE" | sed -e "s/^-- OUTPUT:\\s*//g")
     HAS_OUTPUT=1
-  elif [ $HAS_INPUT -eq 1 -a $HAS_VALUE -eq 0 -a $HAS_OUTPUT -eq 0 ]; then
-    # There's already some input but no value clause append to the input.
+  elif echo "$LINE" | grep '\-\- END' > /dev/null; then
+    HAS_END=1
+  elif [ $HAS_INPUT -eq 1 -a $HAS_OUTPUT -eq 0 ]; then
+    # There's already some input but no output clause append to the input.
     INPUT="$INPUT $LINE"
+  elif [ $HAS_INPUT -eq 1 -a $HAS_OUTPUT -eq 1 -a $HAS_END -eq 0 ]; then
+    # There's already some output but no end clause append to the output.
+    OUTPUT="$OUTPUT $LINE"
   elif [ -n "$LINE" ]; then
     # Any nonempty line that didn't match above is an error; report it.
     printf "Unexpected line '%s'\\n" "$LINE"
@@ -101,7 +111,7 @@ while read LINE; do
     HAS_INPUT=0
     VALUE=
     HAS_VALUE=0
-  elif [ $HAS_INPUT -eq 1 -a $HAS_OUTPUT -eq 1 ]; then
+  elif [ $HAS_INPUT -eq 1 -a $HAS_OUTPUT -eq 1 -a $HAS_END -eq 1 ]; then
     # If we now have both an INPUT and an OUTPUT line run the test.
     print_progress
     FOUND=$(./src/python/neutrino/main.py --program "$INPUT" | $EXECUTABLE - 2>&1)
@@ -110,11 +120,18 @@ while read LINE; do
     HAS_INPUT=0
     OUTPUT=
     HAS_OUTPUT=0
+    HAS_END=0
   fi
 done < "$TEST_FILE"
 
 # We completed successfully so we can signal success by touching the output
 # file (as well as implicitly exiting 0).
+
+if [ $HAS_INPUT -eq 1 -o $HAS_OUTPUT -eq 1 -o -$HAS_END -eq 1 ]; then
+  echo
+  echo "Incomplete test"
+  exit 1
+fi
 
 echo
 touch "$OUTPUT_FILE"
