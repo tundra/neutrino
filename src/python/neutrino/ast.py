@@ -306,5 +306,10 @@ class NamespaceDeclaration(object):
   def accept(self, visitor):
     return visitor.visit_namespace_declaration(self)
 
+  def apply(self, program, helper):
+    name = tuple(self.name.path)
+    value = helper.evaluate(self.value)
+    program.namespace.bindings[name] = value
+
   def __str__(self):
     return "(namespace-declaration %s %s)" % (self.name, self.value)
