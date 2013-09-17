@@ -124,15 +124,27 @@ class Parser(object):
   def parse_lambda_expression(self):
     self.expect_word('fn')
     params = self.parse_parameters()
-    self.expect_punctuation('=>')
-    value = self.parse_word_expression()
+    if self.at_punctuation('{'):
+      value = self.parse_sequence_expression()
+    else:
+      self.expect_punctuation('=>')
+      value = self.parse_word_expression()
     return ast.Lambda(params, value)
+
+  # Are we currently at a token that is allowed as the first token of a
+  # parameter?
+  def at_parameter_start(self):
+    return self.at_type(Token.IDENTIFIER)
 
   # <parameters>
   #   -> "(" <parameter> *: "," ")"
+  #   -> <parameter>
   #   -> .
   def parse_parameters(self):
-    if not self.at_punctuation('('):
+    if self.at_parameter_start():
+      param = self.parse_parameter(0)
+      return [param]
+    elif not self.at_punctuation('('):
       return []
     self.expect_punctuation('(')
     result = []
