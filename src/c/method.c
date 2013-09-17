@@ -283,25 +283,25 @@ value_t method_validate(value_t self) {
 
 // --- M e t h o d   s p a c e ---
 
-TRIVIAL_PRINT_ON_IMPL(MethodSpace, method_space);
+TRIVIAL_PRINT_ON_IMPL(Methodspace, methodspace);
 
-CHECKED_ACCESSORS_IMPL(MethodSpace, method_space, IdHashMap, InheritanceMap,
-    inheritance_map);
-CHECKED_ACCESSORS_IMPL(MethodSpace, method_space, ArrayBuffer, Methods,
+CHECKED_ACCESSORS_IMPL(Methodspace, methodspace, IdHashMap, Inheritance,
+    inheritance);
+CHECKED_ACCESSORS_IMPL(Methodspace, methodspace, ArrayBuffer, Methods,
     methods);
 
-value_t method_space_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofMethodSpace, value);
-  VALIDATE_VALUE_FAMILY(ofIdHashMap, get_method_space_inheritance_map(value));
+value_t methodspace_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofMethodspace, value);
+  VALIDATE_VALUE_FAMILY(ofIdHashMap, get_methodspace_inheritance(value));
   return success();
 }
 
-value_t add_method_space_inheritance(runtime_t *runtime, value_t self,
+value_t add_methodspace_inheritance(runtime_t *runtime, value_t self,
     value_t subtype, value_t supertype) {
-  CHECK_FAMILY(ofMethodSpace, self);
+  CHECK_FAMILY(ofMethodspace, self);
   CHECK_FAMILY(ofProtocol, subtype);
   CHECK_FAMILY(ofProtocol, supertype);
-  value_t inheritance = get_method_space_inheritance_map(self);
+  value_t inheritance = get_methodspace_inheritance(self);
   value_t parents = get_id_hash_map_at(inheritance, subtype);
   if (is_signal(scNotFound, parents)) {
     // Make the parents buffer small since most protocols don't have many direct
@@ -316,15 +316,15 @@ value_t add_method_space_inheritance(runtime_t *runtime, value_t self,
   return add_to_array_buffer(runtime, parents, supertype);
 }
 
-value_t add_method_space_method(runtime_t *runtime, value_t self,
+value_t add_methodspace_method(runtime_t *runtime, value_t self,
     value_t method) {
-  CHECK_FAMILY(ofMethodSpace, self);
+  CHECK_FAMILY(ofMethodspace, self);
   CHECK_FAMILY(ofMethod, method);
-  return add_to_array_buffer(runtime, get_method_space_methods(self), method);
+  return add_to_array_buffer(runtime, get_methodspace_methods(self), method);
 }
 
 value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol) {
-  value_t inheritance = get_method_space_inheritance_map(space);
+  value_t inheritance = get_methodspace_inheritance(space);
   value_t parents = get_id_hash_map_at(inheritance, protocol);
   if (is_signal(scNotFound, parents)) {
     return runtime->roots.empty_array_buffer;
@@ -333,7 +333,7 @@ value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol
   }
 }
 
-value_t lookup_method_space_method(runtime_t *runtime, value_t space,
+value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
     value_t record, frame_t *frame, value_t *arg_map_out) {
 #define kMaxArgCount 32
   size_t arg_count = get_invocation_record_argument_count(record);
@@ -350,7 +350,7 @@ value_t lookup_method_space_method(runtime_t *runtime, value_t space,
   size_t *scratch_offsets = offsets_two;
   match_info_t match_info;
   match_info_init(&match_info, max_score, result_offsets, kMaxArgCount);
-  value_t methods = get_method_space_methods(space);
+  value_t methods = get_methodspace_methods(space);
   size_t method_count = get_array_buffer_length(methods);
   size_t current = 0;
   // First scan until we find the first match, using the max score vector
