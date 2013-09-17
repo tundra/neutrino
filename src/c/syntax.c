@@ -550,15 +550,16 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   assembler_pop_map_scope(assm, &param_scope);
   assembler_pop_capture_scope(assm, &capture_scope);
 
-  // Push the captured variables onto the stack so they're ready to be stored in
-  // the lambda.
+  // Push the captured variables onto the stack so they can to be stored in the
+  // lambda.
   value_t captures = capture_scope.captures;
   size_t capture_count = get_array_buffer_length(captures);
   for (size_t i = 0; i < capture_count; i++)
     // Push the captured symbols onto the stack in reverse order just to make
     // it simpler to pop them into the capture array at runtime. It makes no
     // difference, loading a symbol has no side-effects.
-    assembler_load_symbol(get_array_buffer_at(captures, capture_count - i - 1), assm);
+    assembler_load_symbol(get_array_buffer_at(captures, capture_count - i - 1),
+        assm);
   TRY(assembler_emit_lambda(assm, space, capture_count));
 
   return success();

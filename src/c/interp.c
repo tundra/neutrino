@@ -356,8 +356,9 @@ value_t map_scope_bind(map_scope_t *scope, value_t symbol, binding_type_t type,
 static value_t capture_scope_lookup(value_t symbol, void *data,
     binding_info_t *info_out) {
   capture_scope_t *scope = data;
+  size_t capture_count_before = get_array_buffer_length(scope->captures);
   // See if we've captured this variable before.
-  for (size_t i = 0; i < get_array_buffer_length(scope->captures); i++) {
+  for (size_t i = 0; i < capture_count_before; i++) {
     value_t captured = get_array_buffer_at(scope->captures, i);
     if (value_identity_compare(captured, symbol)) {
       // Found it. Record that we did if necessary and return success.
@@ -370,22 +371,19 @@ static value_t capture_scope_lookup(value_t symbol, void *data,
   }
   // We haven't seen this one before so look it up outside.
   value_t value = scope_lookup_callback_call(scope->outer, symbol, info_out);
-  if (info_out == NULL || is_signal(scNotFound, value))
-    // Either we're just querying or we didn't find what we were looking for. In
-    // both cases there's nothing to capture.
-    return value;
-  // We found this outside and it's being read too. Add it to the list of
-  // captures.
-  runtime_t *runtime = scope->assembler->runtime;
-  if (get_array_buffer_length(scope->captures) == 0) {
-    // The first time we add something we have to create a new array buffer
-    // since all empty capture scopes share the singleton empty buffer.
-    TRY_SET(scope->captures, new_heap_array_buffer(runtime, 2));
+  if (info_out != NULL && !is_signal(scNotFound, value)) {
+    // We found something and this is a read. Add it to the list of captures.
+    runtime_t *runtime = scope->assembler->runtime;
+    if (get_array_buffer_length(scope->captures) == 0) {
+      // The first time we add something we have to create a new array buffer
+      // since all empty capture scopes share the singleton empty buffer.
+      TRY_SET(scope->captures, new_heap_array_buffer(runtime, 2));
+    }
+    TRY(add_to_array_buffer(runtime, scope->captures, symbol));
+    info_out->type = btCaptured;
+    info_out->data = capture_count_before;
   }
-  TRY(add_to_array_buffer(runtime, scope->captures, symbol));
-  info_out->type = btCaptured;
-  info_out->data = get_array_buffer_length(scope->captures) - 1;
-  return success();
+  return value;
 }
 
 value_t assembler_push_capture_scope(assembler_t *assm, capture_scope_t *scope) {
