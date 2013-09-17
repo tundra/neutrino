@@ -105,6 +105,16 @@ value_t new_heap_array_buffer(runtime_t *runtime, size_t initial_capacity) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_array_buffer_with_contents(runtime_t *runtime, value_t elements) {
+  CHECK_FAMILY(ofArray, elements);
+  size_t size = kArrayBufferSize;
+  TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
+      runtime->roots.array_buffer_species));
+  set_array_buffer_elements(result, elements);
+  set_array_buffer_length(result, get_array_length(elements));
+  return post_create_sanity_check(result, size);
+}
+
 static value_t new_heap_id_hash_map_entry_array(runtime_t *runtime, size_t capacity) {
   return new_heap_array(runtime, capacity * kIdHashMapEntryFieldCount);
 }
@@ -339,11 +349,13 @@ value_t new_heap_array_ast(runtime_t *runtime, value_t elements) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments) {
+value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments,
+    value_t methodspace) {
   size_t size = kInvocationAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.invocation_ast_species));
   set_invocation_ast_arguments(result, arguments);
+  set_invocation_ast_methodspace(result, methodspace);
   return post_create_sanity_check(result, size);
 }
 
@@ -420,13 +432,14 @@ value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags)
 }
 
 value_t new_heap_program_ast(runtime_t *runtime, value_t elements,
-    value_t entry_point, value_t namespace) {
+    value_t entry_point, value_t namespace, value_t methodspace) {
   size_t size = kProgramAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
       runtime->roots.program_ast_species));
   set_program_ast_elements(result, elements);
   set_program_ast_entry_point(result, entry_point);
   set_program_ast_namespace(result, namespace);
+  set_program_ast_methodspace(result, methodspace);
   return post_create_sanity_check(result, size);
 }
 
@@ -510,7 +523,7 @@ value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,
 value_t extend_array_buffer(runtime_t *runtime, value_t buffer) {
   value_t old_elements = get_array_buffer_elements(buffer);
   size_t old_capacity = get_array_length(old_elements);
-  size_t new_capacity = old_capacity * 2;
+  size_t new_capacity = (old_capacity + 1) * 2;
   TRY_DEF(new_elements, new_heap_array(runtime, new_capacity));
   for (size_t i = 0; i < old_capacity; i++)
     set_array_at(new_elements, i, get_array_at(old_elements, i));

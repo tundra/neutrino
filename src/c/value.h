@@ -241,7 +241,7 @@ static value_t new_moved_object(value_t target) {
   F(LiteralAst,              literal_ast,               _,  _,  X,  X,  _,  _,  X)\
   F(LocalDeclarationAst,     local_declaration_ast,     _,  _,  X,  X,  _,  _,  X)\
   F(Method,                  method,                    _,  _,  _,  _,  _,  _,  _)\
-  F(Methodspace,             methodspace,               _,  _,  _,  _,  _,  _,  _)\
+  F(Methodspace,             methodspace,               _,  _,  X,  _,  _,  _,  _)\
   F(NameAst,                 name_ast,                  _,  _,  X,  _,  _,  _,  _)\
   F(Namespace,               namespace,                 _,  _,  X,  _,  _,  _,  _)\
   F(NamespaceDeclarationAst, namespace_declaration_ast, _,  _,  X,  _,  _,  _,  _)\

@@ -241,6 +241,15 @@ TEST(value, array_buffer) {
   DISPOSE_RUNTIME();
 }
 
+TEST(value, array_buffer_empty) {
+  CREATE_RUNTIME();
+
+  value_t buf = new_heap_array_buffer_with_contents(runtime, runtime->roots.empty_array);
+  ASSERT_SUCCESS(buf);
+  ASSERT_SUCCESS(add_to_array_buffer(runtime, buf, new_integer(9)));
+
+  DISPOSE_RUNTIME();
+}
 
 TEST(value, get_protocol) {
   CREATE_RUNTIME();

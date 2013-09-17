@@ -11,10 +11,9 @@
 TEST(syntax, emitting) {
   CREATE_RUNTIME();
 
-  value_t space = new_heap_methodspace(runtime);
   value_t ast = new_heap_literal_ast(runtime, runtime_bool(runtime, true));
   assembler_t assm;
-  ASSERT_SUCCESS(assembler_init(&assm, runtime, space, NULL));
+  ASSERT_SUCCESS(assembler_init(&assm, runtime, NULL));
   ASSERT_SUCCESS(emit_value(ast, &assm));
   assembler_emit_return(&assm);
   value_t code = assembler_flush(&assm);

@@ -348,14 +348,13 @@ bool assembler_is_symbol_bound(assembler_t *assm, value_t symbol) {
 
 // --- A s s e m b l e r ---
 
-value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t space,
+value_t assembler_init(assembler_t *assm, runtime_t *runtime,
     scope_lookup_callback_t *scope_callback) {
   if (scope_callback == NULL)
     scope_callback = get_bottom_callback();
   TRY_SET(assm->value_pool, new_heap_id_hash_map(runtime, 16));
   assm->scope_callback = scope_callback;
   assm->runtime = runtime;
-  assm->space = space;
   byte_buffer_init(&assm->code);
   assm->stack_height = assm->high_water_mark = 0;
   return success();

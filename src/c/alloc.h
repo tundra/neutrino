@@ -55,6 +55,10 @@ value_t new_heap_pair_array(runtime_t *runtime, size_t length);
 // initial capacity.
 value_t new_heap_array_buffer(runtime_t *runtime, size_t initial_capacity);
 
+// Allocates a new heap array buffer in the given runtime backed by the given
+// array.
+value_t new_heap_array_buffer_with_contents(runtime_t *runtime, value_t array);
+
 // Creates a new identity hash map with the given initial capacity.
 value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity);
 
@@ -139,8 +143,10 @@ value_t new_heap_literal_ast(runtime_t *runtime, value_t value);
 // Creates a new array syntax tree with the given element array.
 value_t new_heap_array_ast(runtime_t *runtime, value_t elements);
 
-// Creates a new invocation syntax tree with the given arguments.
-value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments);
+// Creates a new invocation syntax tree with the given arguments to be performed
+// in the given method space.
+value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments,
+    value_t methodspace);
 
 // Creates a new argument syntax tree with the given tag and value.
 value_t new_heap_argument_ast(runtime_t *runtime, value_t tag, value_t value);
@@ -171,7 +177,7 @@ value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags)
 
 // Creates a new program syntax tree with the given elements.
 value_t new_heap_program_ast(runtime_t *runtime, value_t elements,
-    value_t entry_point, value_t namespace);
+    value_t entry_point, value_t namespace, value_t methodspace);
 
 // Creates a new toplevel namespace declaration syntax tree with the given name
 // and value.

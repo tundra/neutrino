@@ -25,12 +25,12 @@ value_t init_plankton_environment_mapping(value_mapping_t *mapping,
   return success();
 }
 
-value_t compile_expression(runtime_t *runtime, value_t program, value_t space,
+value_t compile_expression(runtime_t *runtime, value_t program,
     scope_lookup_callback_t *scope_callback) {
   assembler_t assm;
   // Don't try to execute cleanup if this fails since there'll not be an
   // assembler to dispose.
-  TRY(assembler_init(&assm, runtime, space, scope_callback));
+  TRY(assembler_init(&assm, runtime, scope_callback));
   E_BEGIN_TRY_FINALLY();
     E_TRY(emit_value(program, &assm));
     assembler_emit_return(&assm);
@@ -139,10 +139,13 @@ GET_FAMILY_PROTOCOL_IMPL(invocation_ast);
 NO_BUILTIN_METHODS(invocation_ast);
 
 CHECKED_ACCESSORS_IMPL(InvocationAst, invocation_ast, Array, Arguments, arguments);
+UNCHECKED_ACCESSORS_IMPL(InvocationAst, invocation_ast, Methodspace, methodspace);
 
 value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofInvocationAst, value);
   value_t arguments = get_invocation_ast_arguments(value);
+  value_t methodspace = get_invocation_ast_methodspace(value);
+  CHECK_FAMILY(ofMethodspace, methodspace);
   size_t arg_count = get_array_length(arguments);
   // Build the invocation record and emit the values at the same time.
   TRY_DEF(arg_vector, new_heap_pair_array(assm->runtime, arg_count));
@@ -158,7 +161,7 @@ value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   }
   TRY(co_sort_pair_array(arg_vector));
   TRY_DEF(record, new_heap_invocation_record(assm->runtime, arg_vector));
-  TRY(assembler_emit_invocation(assm, assm->space, record));
+  TRY(assembler_emit_invocation(assm, methodspace, record));
   return success();
 }
 
@@ -171,12 +174,15 @@ value_t invocation_ast_validate(value_t value) {
 value_t set_invocation_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(arguments, get_id_hash_map_at(contents, runtime->roots.string_table.arguments));
+  TRY_DEF(methodspace, get_id_hash_map_at(contents, runtime->roots.string_table.methodspace));
   set_invocation_ast_arguments(object, arguments);
+  set_invocation_ast_methodspace(object, methodspace);
   return success();
 }
 
 static value_t new_invocation_ast(runtime_t *runtime) {
-  return new_heap_invocation_ast(runtime, runtime->roots.empty_array);
+  return new_heap_invocation_ast(runtime, runtime->roots.empty_array,
+      runtime->roots.null);
 }
 
 
@@ -510,8 +516,7 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   // Build the method space.
   TRY_DEF(space, new_heap_methodspace(runtime));
   value_t body = get_lambda_ast_body(value);
-  TRY_DEF(body_code, compile_expression(runtime, body, assm->space,
-      assm->scope_callback));
+  TRY_DEF(body_code, compile_expression(runtime, body, assm->scope_callback));
   // Remove the parameter bindings again.
   assembler_pop_map_scope(assm, &scope);
   TRY_DEF(method, new_heap_method(runtime, sig, body_code));
@@ -575,6 +580,7 @@ TRIVIAL_PRINT_ON_IMPL(ProgramAst, program_ast);
 CHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, Array, Elements, elements);
 UNCHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, EntryPoint, entry_point);
 UNCHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, Namespace, namespace);
+UNCHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, Methodspace, methodspace);
 
 value_t program_ast_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofProgramAst, value);
@@ -586,15 +592,17 @@ value_t set_program_ast_contents(value_t object, runtime_t *runtime, value_t con
   TRY_DEF(elements, get_id_hash_map_at(contents, runtime->roots.string_table.elements));
   TRY_DEF(entry_point, get_id_hash_map_at(contents, runtime->roots.string_table.entry_point));
   TRY_DEF(namespace, get_id_hash_map_at(contents, runtime->roots.string_table.namespace));
+  TRY_DEF(methodspace, get_id_hash_map_at(contents, runtime->roots.string_table.methodspace));
   set_program_ast_elements(object, elements);
   set_program_ast_entry_point(object, entry_point);
   set_program_ast_namespace(object, namespace);
+  set_program_ast_methodspace(object, methodspace);
   return success();
 }
 
 static value_t new_program_ast(runtime_t *runtime) {
   return new_heap_program_ast(runtime, runtime->roots.empty_array,
-      runtime->roots.null, runtime->roots.empty_array);
+      runtime->roots.null, runtime->roots.empty_array, runtime->roots.null);
 }
 
 

@@ -12,16 +12,18 @@ TEST(interp, binding_info_size) {
 
 // Evaluates the given syntax tree and checks that the result is the given
 // expected value.
-static void assert_ast_value(runtime_t *runtime, variant_t expected, value_t ast) {
-  value_t space = new_heap_methodspace(runtime);
-  add_methodspace_builtin_methods(runtime, space);
-  value_t code_block = compile_expression(runtime, ast, space, NULL);
+static void assert_ast_value(runtime_t *runtime, variant_t expected,
+    value_t ast) {
+  value_t code_block = compile_expression(runtime, ast, NULL);
   value_t result = run_code_block(runtime, code_block);
   ASSERT_VALEQ(variant_to_value(runtime, expected), result);
 }
 
 TEST(interp, execution) {
   CREATE_RUNTIME();
+
+  value_t space = new_heap_methodspace(runtime);
+  add_methodspace_builtin_methods(runtime, space);
 
   // Literal
   {
@@ -81,7 +83,7 @@ TEST(interp, execution) {
     value_t args = new_heap_array(runtime, 2);
     set_array_at(args, 0, subject_arg);
     set_array_at(args, 1, selector_arg);
-    value_t ast = new_heap_invocation_ast(runtime, args);
+    value_t ast = new_heap_invocation_ast(runtime, args, space);
     assert_ast_value(runtime, vInt(13), ast);
   }
 
@@ -92,8 +94,7 @@ TEST(interp, execution) {
 // specified signal.
 static void assert_compile_failure(runtime_t *runtime, value_t ast,
     invalid_syntax_cause_t cause) {
-  value_t space = new_heap_methodspace(runtime);
-  value_t result = compile_expression(runtime, ast, space, NULL);
+  value_t result = compile_expression(runtime, ast, NULL);
   ASSERT_SIGNAL(scInvalidSyntax, result);
   ASSERT_EQ(cause, get_invalid_syntax_signal_cause(result));
 }
