@@ -1,7 +1,7 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-#include "interp.h"
+#include "codegen.h"
 #include "value.h"
 #include "plankton.h"
 
