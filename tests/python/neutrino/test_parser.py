@@ -121,6 +121,13 @@ class ParserTest(unittest.TestCase):
     test('fn ($x, $y) => $x', lm([pm(nm("x"), 0), pm(nm("y"), 1)], id("x")))
     test('fn ($x, $y, $z) => $x', lm([pm(nm("x"), 0), pm(nm("y"), 1), pm(nm("z"), 2)], id("x")))
     test('fn => $x', lm([], id("x")))
+    test('fn $x => $x', lm([pm(nm("x"), 0)], id("x")))
+    test('fn $x { }', lm([pm(nm("x"), 0)], lt(None)))
+    test('fn $x { $x; }', lm([pm(nm("x"), 0)], id("x")))
+    test('fn { }', lm([], lt(None)))
+    test('fn { $x; }', lm([], id("x")))
+    test('fn () { }', lm([], lt(None)))
+    test('fn ($x) { $x; }', lm([pm(nm("x"), 0)], id("x")))
 
   def test_program_toplevel(self):
     test = self.check_program
