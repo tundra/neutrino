@@ -10,7 +10,7 @@ TEST(method, identity_guard) {
 
   value_t space = new_heap_methodspace(runtime);
   value_t zero = new_integer(0);
-  value_t null = runtime_null(runtime);
+  value_t null = ROOT(runtime, null);
   value_t id_zero = new_heap_guard(runtime, gtEq, zero);
   value_t id_null = new_heap_guard(runtime, gtEq, null);
 
@@ -26,11 +26,11 @@ TEST(method, any_guard) {
   CREATE_RUNTIME();
 
   value_t space = new_heap_methodspace(runtime);
-  value_t any_guard = runtime->roots.any_guard;
+  value_t any_guard = ROOT(runtime, any_guard);
 
   ASSERT_TRUE(is_score_match(guard_match(runtime, any_guard, new_integer(0), space)));
   ASSERT_TRUE(is_score_match(guard_match(runtime, any_guard, new_integer(1), space)));
-  ASSERT_TRUE(is_score_match(guard_match(runtime, any_guard, runtime_null(runtime), space)));
+  ASSERT_TRUE(is_score_match(guard_match(runtime, any_guard, ROOT(runtime, null), space)));
 
   DISPOSE_RUNTIME();
 }
@@ -39,7 +39,7 @@ TEST(method, method_space) {
   CREATE_RUNTIME();
 
   value_t space = new_heap_methodspace(runtime);
-  value_t null = runtime_null(runtime);
+  value_t null = ROOT(runtime, null);
   value_t p1 = new_heap_protocol(runtime, null);
   value_t p2 = new_heap_protocol(runtime, null);
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p1, p2));
@@ -66,10 +66,10 @@ static value_t new_instance_of(runtime_t *runtime, value_t proto) {
 TEST(method, simple_is) {
   CREATE_RUNTIME();
 
-  value_t s_str_p = new_heap_protocol(runtime, runtime_null(runtime));
-  value_t obj_p = new_heap_protocol(runtime, runtime_null(runtime));
-  value_t int_p = runtime->roots.integer_protocol;
-  value_t str_p = runtime->roots.string_protocol;
+  value_t s_str_p = new_heap_protocol(runtime, ROOT(runtime, null));
+  value_t obj_p = new_heap_protocol(runtime, ROOT(runtime, null));
+  value_t int_p = ROOT(runtime, integer_protocol);
+  value_t str_p = ROOT(runtime, string_protocol);
   value_t space = new_heap_methodspace(runtime);
   // int <: obj
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, int_p, obj_p));
@@ -100,7 +100,7 @@ TEST(method, simple_is) {
   ASSERT_TRUE(is_score_match(guard_match(runtime, is_str, s_str, space)));
   ASSERT_TRUE(is_score_match(guard_match(runtime, is_s_str, s_str, space)));
 
-  value_t null = runtime_null(runtime);
+  value_t null = ROOT(runtime, null);
   ASSERT_FALSE(is_score_match(guard_match(runtime, is_int, null, space)));
   ASSERT_FALSE(is_score_match(guard_match(runtime, is_obj, null, space)));
   ASSERT_FALSE(is_score_match(guard_match(runtime, is_str, null, space)));
@@ -118,9 +118,9 @@ ASSERT_TRUE(compare_scores(guard_match(runtime, GA, VA, space),             \
 TEST(method, is_score) {
   CREATE_RUNTIME();
 
-  value_t s_str_p = new_heap_protocol(runtime, runtime_null(runtime));
-  value_t obj_p = new_heap_protocol(runtime, runtime_null(runtime));
-  value_t str_p = runtime->roots.string_protocol;
+  value_t s_str_p = new_heap_protocol(runtime, ROOT(runtime, null));
+  value_t obj_p = new_heap_protocol(runtime, ROOT(runtime, null));
+  value_t str_p = ROOT(runtime, string_protocol);
   value_t space = new_heap_methodspace(runtime);
   // s-str <: str <: obj
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, str_p, obj_p));
@@ -146,9 +146,9 @@ TEST(method, is_score) {
 TEST(method, multi_score) {
   CREATE_RUNTIME();
 
-  value_t int_str_p = new_heap_protocol(runtime, runtime_null(runtime));
-  value_t int_p = runtime->roots.integer_protocol;
-  value_t str_p = runtime->roots.string_protocol;
+  value_t int_str_p = new_heap_protocol(runtime, ROOT(runtime, null));
+  value_t int_p = ROOT(runtime, integer_protocol);
+  value_t str_p = ROOT(runtime, string_protocol);
   value_t space = new_heap_methodspace(runtime);
   value_t is_str = new_heap_guard(runtime, gtIs, str_p);
   value_t is_int = new_heap_guard(runtime, gtIs, int_p);
@@ -168,11 +168,11 @@ TEST(method, multi_score) {
 TEST(method, signature) {
   CREATE_RUNTIME();
 
-  value_t empty_array = runtime->roots.empty_array;
+  value_t empty_array = ROOT(runtime, empty_array);
   value_t signature = new_heap_signature(runtime, empty_array, 0, 0, false);
   ASSERT_SUCCESS(signature);
 
-  value_t param = new_heap_parameter(runtime, runtime->roots.any_guard,
+  value_t param = new_heap_parameter(runtime, ROOT(runtime, any_guard),
       true, 0);
   ASSERT_SUCCESS(param);
 
@@ -295,7 +295,7 @@ static value_t make_signature(runtime_t *runtime, bool allow_extra, test_param_t
 TEST(method, make_signature) {
   CREATE_RUNTIME();
 
-  value_t any_guard = runtime->roots.any_guard;
+  value_t any_guard = ROOT(runtime, any_guard);
   value_t s0 = make_signature(runtime,
       false,
       PARAMS(2,
@@ -395,7 +395,7 @@ void assert_match(runtime_t *runtime, match_result_t expected, value_t signature
 TEST(method, simple_matching) {
   CREATE_RUNTIME();
 
-  value_t any_guard = runtime->roots.any_guard;
+  value_t any_guard = ROOT(runtime, any_guard);
   value_t sig = make_signature(runtime,
       false,
       PARAMS(2,
@@ -424,7 +424,7 @@ TEST(method, simple_matching) {
 TEST(method, simple_guard_matching) {
   CREATE_RUNTIME();
 
-  value_t any_guard = runtime->roots.any_guard;
+  value_t any_guard = ROOT(runtime, any_guard);
   value_t foo = variant_to_value(runtime, vStr("foo"));
   value_t guard = new_heap_guard(runtime, gtEq, foo);
   value_t sig = make_signature(runtime,
@@ -449,7 +449,7 @@ TEST(method, simple_guard_matching) {
 TEST(method, multi_tag_matching) {
   CREATE_RUNTIME();
 
-  value_t any_guard = runtime->roots.any_guard;
+  value_t any_guard = ROOT(runtime, any_guard);
   value_t sig = make_signature(runtime,
       false,
       PARAMS(2,
@@ -481,7 +481,7 @@ TEST(method, multi_tag_matching) {
 TEST(method, extra_args) {
   CREATE_RUNTIME();
 
-  value_t any_guard = runtime->roots.any_guard;
+  value_t any_guard = ROOT(runtime, any_guard);
   value_t sig = make_signature(runtime,
       true,
       PARAMS(2,
@@ -532,7 +532,7 @@ TEST(method, extra_args) {
 TEST(method, match_argument_map) {
   CREATE_RUNTIME();
 
-  value_t any_guard = runtime->roots.any_guard;
+  value_t any_guard = ROOT(runtime, any_guard);
   value_t sig = make_signature(runtime,
       true,
       PARAMS(4,
@@ -697,7 +697,7 @@ TEST(method, dense_perfect_lookup) {
 
   value_t dummy_code = new_heap_code_block(runtime,
       new_heap_blob(runtime, 0),
-      runtime->roots.empty_array,
+      ROOT(runtime, empty_array),
       0);
   // Build a method for each combination of parameter types.
   value_t methods[4][4][4];

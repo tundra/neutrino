@@ -13,35 +13,37 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   // two steps.
   TRY_DEF(meta, new_heap_compact_species_unchecked(runtime, ofSpecies, &kSpeciesBehavior));
   set_object_header(meta, meta);
-  roots->species_species = meta;
+  RAW_ROOT(roots, species_species) = meta;
 
   // Generate initialization for the other compact species.
 #define __CREATE_COMPACT_SPECIES__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
-  TRY_SET(roots->family##_species, new_heap_compact_species(runtime, of##Family, &k##Family##Behavior));
+  TRY_SET(RAW_ROOT(roots, family##_species), new_heap_compact_species(runtime, of##Family, &k##Family##Behavior));
   ENUM_COMPACT_OBJECT_FAMILIES(__CREATE_COMPACT_SPECIES__)
 #undef __CREATE_COMPACT_SPECIES__
 
   // Initialize singletons first since we need those to create more complex
   // values below.
-  TRY_SET(roots->null, new_heap_null(runtime));
-  TRY_SET(roots->nothing, new_heap_nothing(runtime));
-  TRY_SET(roots->thrue, new_heap_boolean(runtime, true));
-  TRY_SET(roots->fahlse, new_heap_boolean(runtime, false));
-  TRY_SET(roots->empty_array, new_heap_array(runtime, 0));
-  TRY_SET(roots->empty_array_buffer, new_heap_array_buffer(runtime, 0));
-  TRY_SET(roots->any_guard, new_heap_guard(runtime, gtAny, roots->null));
-  TRY_SET(roots->integer_protocol, new_heap_protocol(runtime, roots->null));
-  TRY_DEF(empty_protocol, new_heap_protocol(runtime, roots->null));
-  TRY_SET(roots->empty_instance_species,
+  TRY_DEF(null, new_heap_null(runtime));
+  RAW_ROOT(roots, null) = null;
+  TRY_SET(RAW_ROOT(roots, nothing), new_heap_nothing(runtime));
+  TRY_SET(RAW_ROOT(roots, thrue), new_heap_boolean(runtime, true));
+  TRY_SET(RAW_ROOT(roots, fahlse), new_heap_boolean(runtime, false));
+  TRY_DEF(empty_array, new_heap_array(runtime, 0));
+  RAW_ROOT(roots, empty_array) = empty_array;
+  TRY_SET(RAW_ROOT(roots, empty_array_buffer), new_heap_array_buffer(runtime, 0));
+  TRY_SET(RAW_ROOT(roots, any_guard), new_heap_guard(runtime, gtAny, null));
+  TRY_SET(RAW_ROOT(roots, integer_protocol), new_heap_protocol(runtime, null));
+  TRY_DEF(empty_protocol, new_heap_protocol(runtime, null));
+  TRY_SET(RAW_ROOT(roots, empty_instance_species),
       new_heap_instance_species(runtime, empty_protocol));
-  TRY_SET(roots->argument_map_trie_root,
-      new_heap_argument_map_trie(runtime, roots->empty_array));
-  TRY_SET(roots->subject_key, new_heap_key(runtime, roots->null));
-  TRY_SET(roots->selector_key, new_heap_key(runtime, roots->null));
+  TRY_SET(RAW_ROOT(roots, argument_map_trie_root),
+      new_heap_argument_map_trie(runtime, empty_array));
+  TRY_SET(RAW_ROOT(roots, subject_key), new_heap_key(runtime, null));
+  TRY_SET(RAW_ROOT(roots, selector_key), new_heap_key(runtime, null));
 
   // Generate initialization for the per-family protocols.
 #define __CREATE_FAMILY_PROTOCOL__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
-  SUR(TRY_SET(roots->family##_protocol, new_heap_protocol(runtime, roots->null));,)
+  SUR(TRY_SET(RAW_ROOT(roots, family##_protocol), new_heap_protocol(runtime, null));,)
   ENUM_OBJECT_FAMILIES(__CREATE_FAMILY_PROTOCOL__)
 #undef __CREATE_FAMILY_PROTOCOL__
 
@@ -50,7 +52,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   do {                                                                         \
     string_t contents;                                                         \
     string_init(&contents, value);                                             \
-    TRY_SET(roots->string_table.name, new_heap_string(runtime, &contents));    \
+    TRY_SET(RAW_RSTR(roots, name), new_heap_string(runtime, &contents));       \
   } while (false);
   ENUM_STRING_TABLE(__CREATE_STRING_TABLE_ENTRY__)
 #undef __CREATE_STRING_TABLE_ENTRY__
@@ -58,7 +60,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   TRY_DEF(plankton_environment, new_heap_id_hash_map(runtime, 16));
   init_plankton_core_factories(plankton_environment, runtime);
   init_plankton_syntax_factories(plankton_environment, runtime);
-  roots->plankton_environment = plankton_environment;
+  RAW_ROOT(roots, plankton_environment) = plankton_environment;
 
   return success();
 }
@@ -101,28 +103,28 @@ value_t roots_validate(roots_t *roots) {
 
   // Generate validation for species.
 #define __VALIDATE_PER_FAMILY_FIELDS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
-  VALIDATE_SPECIES(of##Family, roots->family##_species);                       \
-  SUR(VALIDATE_OBJECT(ofProtocol, roots->family##_protocol);,)
+  VALIDATE_SPECIES(of##Family, RAW_ROOT(roots, family##_species));             \
+  SUR(VALIDATE_OBJECT(ofProtocol, RAW_ROOT(roots, family##_protocol));,)
   ENUM_OBJECT_FAMILIES(__VALIDATE_PER_FAMILY_FIELDS__)
 #undef __VALIDATE_PER_FAMILY_FIELDS__
 
   // Validate singletons manually.
-  VALIDATE_OBJECT(ofNull, roots->null);
-  VALIDATE_OBJECT(ofNothing, roots->nothing);
-  VALIDATE_OBJECT(ofBoolean, roots->thrue);
-  VALIDATE_OBJECT(ofBoolean, roots->fahlse);
-  VALIDATE_OBJECT(ofArray, roots->empty_array);
-  VALIDATE_OBJECT(ofArrayBuffer, roots->empty_array_buffer);
-  VALIDATE_CHECK_EQ(0, get_array_buffer_length(roots->empty_array_buffer));
-  VALIDATE_OBJECT(ofGuard, roots->any_guard);
-  VALIDATE_CHECK_EQ(gtAny, get_guard_type(roots->any_guard));
-  VALIDATE_OBJECT(ofProtocol, roots->integer_protocol);
-  VALIDATE_OBJECT(ofSpecies, roots->empty_instance_species);
-  VALIDATE_OBJECT(ofArgumentMapTrie, roots->argument_map_trie_root);
-  VALIDATE_OBJECT(ofKey, roots->subject_key);
-  VALIDATE_OBJECT(ofKey, roots->selector_key);
+  VALIDATE_OBJECT(ofNull, RAW_ROOT(roots, null));
+  VALIDATE_OBJECT(ofNothing, RAW_ROOT(roots, nothing));
+  VALIDATE_OBJECT(ofBoolean, RAW_ROOT(roots, thrue));
+  VALIDATE_OBJECT(ofBoolean, RAW_ROOT(roots, fahlse));
+  VALIDATE_OBJECT(ofArray, RAW_ROOT(roots, empty_array));
+  VALIDATE_OBJECT(ofArrayBuffer, RAW_ROOT(roots, empty_array_buffer));
+  VALIDATE_CHECK_EQ(0, get_array_buffer_length(RAW_ROOT(roots, empty_array_buffer)));
+  VALIDATE_OBJECT(ofGuard, RAW_ROOT(roots, any_guard));
+  VALIDATE_CHECK_EQ(gtAny, get_guard_type(RAW_ROOT(roots, any_guard)));
+  VALIDATE_OBJECT(ofProtocol, RAW_ROOT(roots, integer_protocol));
+  VALIDATE_OBJECT(ofSpecies, RAW_ROOT(roots, empty_instance_species));
+  VALIDATE_OBJECT(ofArgumentMapTrie, RAW_ROOT(roots, argument_map_trie_root));
+  VALIDATE_OBJECT(ofKey, RAW_ROOT(roots, subject_key));
+  VALIDATE_OBJECT(ofKey, RAW_ROOT(roots, selector_key));
 
-#define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_OBJECT(ofString, roots->string_table.name);
+#define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_OBJECT(ofString, RAW_RSTR(roots, name));
   ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)
 #undef __VALIDATE_STRING_TABLE_ENTRY__
 
@@ -134,29 +136,29 @@ value_t roots_validate(roots_t *roots) {
 value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
   // Generate code for visiting the species.
 #define __VISIT_PER_FAMILY_FIELDS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
-  TRY(field_callback_call(callback, &roots->family##_species));                \
-  SUR(TRY(field_callback_call(callback, &roots->family##_protocol));,)
+  TRY(field_callback_call(callback, &RAW_ROOT(roots, family##_species)));      \
+  SUR(TRY(field_callback_call(callback, &RAW_ROOT(roots, family##_protocol)));,)
   ENUM_OBJECT_FAMILIES(__VISIT_PER_FAMILY_FIELDS__)
 #undef __VISIT_PER_FAMILY_FIELDS__
 
   // Clear the singletons manually.
-  TRY(field_callback_call(callback, &roots->plankton_environment));
-  TRY(field_callback_call(callback, &roots->null));
-  TRY(field_callback_call(callback, &roots->nothing));
-  TRY(field_callback_call(callback, &roots->thrue));
-  TRY(field_callback_call(callback, &roots->fahlse));
-  TRY(field_callback_call(callback, &roots->empty_array));
-  TRY(field_callback_call(callback, &roots->empty_array_buffer));
-  TRY(field_callback_call(callback, &roots->any_guard));
-  TRY(field_callback_call(callback, &roots->integer_protocol));
-  TRY(field_callback_call(callback, &roots->empty_instance_species));
-  TRY(field_callback_call(callback, &roots->argument_map_trie_root));
-  TRY(field_callback_call(callback, &roots->subject_key));
-  TRY(field_callback_call(callback, &roots->selector_key));
+  TRY(field_callback_call(callback, &RAW_ROOT(roots, plankton_environment)));
+  TRY(field_callback_call(callback, &RAW_ROOT(roots, null)));
+  TRY(field_callback_call(callback, &RAW_ROOT(roots, nothing)));
+  TRY(field_callback_call(callback, &RAW_ROOT(roots, thrue)));
+  TRY(field_callback_call(callback, &RAW_ROOT(roots, fahlse)));
+  TRY(field_callback_call(callback, &RAW_ROOT(roots, empty_array)));
+  TRY(field_callback_call(callback, &RAW_ROOT(roots, empty_array_buffer)));
+  TRY(field_callback_call(callback, &RAW_ROOT(roots, any_guard)));
+  TRY(field_callback_call(callback, &RAW_ROOT(roots, integer_protocol)));
+  TRY(field_callback_call(callback, &RAW_ROOT(roots, empty_instance_species)));
+  TRY(field_callback_call(callback, &RAW_ROOT(roots, argument_map_trie_root)));
+  TRY(field_callback_call(callback, &RAW_ROOT(roots, subject_key)));
+  TRY(field_callback_call(callback, &RAW_ROOT(roots, selector_key)));
 
   // Generate code for visiting the string table.
 #define __VISIT_STRING_TABLE_ENTRY__(name, value)                              \
-  TRY(field_callback_call(callback, &roots->string_table.name));
+  TRY(field_callback_call(callback, &RAW_RSTR(roots, name)));
   ENUM_STRING_TABLE(__VISIT_STRING_TABLE_ENTRY__)
 #undef __VISIT_STRING_TABLE_ENTRY__
 
@@ -408,15 +410,15 @@ value_t runtime_dispose(runtime_t *runtime) {
 }
 
 value_t runtime_null(runtime_t *runtime) {
-  return runtime->roots.null;
+  return ROOT(runtime, null);
 }
 
 value_t runtime_nothing(runtime_t *runtime) {
-  return runtime->roots.nothing;
+  return ROOT(runtime, nothing);
 }
 
 value_t runtime_bool(runtime_t *runtime, bool which) {
-  return which ? runtime->roots.thrue : runtime->roots.fahlse;
+  return which ? ROOT(runtime, thrue) : ROOT(runtime, fahlse);
 }
 
 gc_safe_t *runtime_new_gc_safe(runtime_t *runtime, value_t value) {

@@ -64,7 +64,7 @@ TEST(alloc, heap_array) {
   // Check initial state.
   value_t array = new_heap_array(runtime, 3);
   ASSERT_EQ(3, get_array_length(array));
-  value_t null = runtime_null(runtime);
+  value_t null = ROOT(runtime, null);
   ASSERT_SAME(null, get_array_at(array, 0));
   ASSERT_SAME(null, get_array_at(array, 1));
   ASSERT_SAME(null, get_array_at(array, 2));
@@ -94,7 +94,7 @@ TEST(alloc, heap_map) {
 TEST(alloc, instance) {
   CREATE_RUNTIME();
 
-  value_t instance = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+  value_t instance = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
   ASSERT_FAMILY(ofInstance, instance);
   value_t key = new_integer(0);
   ASSERT_SIGNAL(scNotFound, get_instance_field(instance, key));

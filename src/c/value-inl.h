@@ -163,8 +163,8 @@ SWALLOW_SEMI(tpo)
 
 // Expands to an implementation of the built-in method definition function that
 // defines no built-ins.
-#define NO_BUILTIN_METHODS(family)                                            \
-value_t add_##family##_builtin_methods(runtime_t *runtime, value_t space) {   \
+#define NO_BUILTIN_METHODS(family)                                             \
+value_t add_##family##_builtin_methods(runtime_t *runtime, value_t space) {    \
   return success();                                                            \
 }
 
@@ -172,7 +172,7 @@ value_t add_##family##_builtin_methods(runtime_t *runtime, value_t space) {   \
 // protocol for the value's family.
 #define GET_FAMILY_PROTOCOL_IMPL(family)                                       \
 value_t get_##family##_protocol(value_t self, runtime_t *runtime) {            \
-  return runtime->roots.family##_protocol;                                     \
+  return ROOT(runtime, family##_protocol);                                     \
 }                                                                              \
 SWALLOW_SEMI(gfpi)
 

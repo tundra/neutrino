@@ -23,7 +23,7 @@ static value_t post_create_sanity_check(value_t value, size_t size) {
 value_t new_heap_string(runtime_t *runtime, string_t *contents) {
   size_t size = calc_string_size(string_length(contents));
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.string_species));
+      ROOT(runtime, string_species)));
   set_string_length(result, string_length(contents));
   string_copy_to(contents, get_string_chars(result), string_length(contents) + 1);
   return post_create_sanity_check(result, size);
@@ -32,7 +32,7 @@ value_t new_heap_string(runtime_t *runtime, string_t *contents) {
 value_t new_heap_blob(runtime_t *runtime, size_t length) {
   size_t size = calc_blob_size(length);
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.blob_species));
+      ROOT(runtime, blob_species)));
   set_blob_length(result, length);
   blob_t data;
   get_blob_data(result, &data);
@@ -55,7 +55,7 @@ value_t new_heap_compact_species_unchecked(runtime_t *runtime, object_family_t i
     family_behavior_t *family_behavior) {
   size_t bytes = kCompactSpeciesSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, bytes,
-      runtime->roots.species_species));
+      ROOT(runtime, species_species)));
   set_species_instance_family(result, instance_family);
   set_species_family_behavior(result, family_behavior);
   set_species_division_behavior(result, &kCompactSpeciesBehavior);
@@ -66,7 +66,7 @@ value_t new_heap_instance_species(runtime_t *runtime, value_t primary) {
   size_t size = kInstanceSpeciesSize;
   CHECK_FAMILY(ofProtocol, primary);
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.species_species));
+      ROOT(runtime, species_species)));
   set_species_instance_family(result, ofInstance);
   set_species_family_behavior(result, &kInstanceBehavior);
   set_species_division_behavior(result, &kInstanceSpeciesBehavior);
@@ -84,10 +84,10 @@ value_t new_heap_compact_species(runtime_t *runtime, object_family_t instance_fa
 value_t new_heap_array(runtime_t *runtime, size_t length) {
   size_t size = calc_array_size(length);
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.array_species));
+      ROOT(runtime, array_species)));
   set_array_length(result, length);
   for (size_t i = 0; i < length; i++)
-    set_array_at(result, i, runtime->roots.null);
+    set_array_at(result, i, ROOT(runtime, null));
   return post_create_sanity_check(result, size);
 }
 
@@ -99,7 +99,7 @@ value_t new_heap_array_buffer(runtime_t *runtime, size_t initial_capacity) {
   size_t size = kArrayBufferSize;
   TRY_DEF(elements, new_heap_array(runtime, initial_capacity));
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.array_buffer_species));
+      ROOT(runtime, array_buffer_species)));
   set_array_buffer_elements(result, elements);
   set_array_buffer_length(result, 0);
   return post_create_sanity_check(result, size);
@@ -109,7 +109,7 @@ value_t new_heap_array_buffer_with_contents(runtime_t *runtime, value_t elements
   CHECK_FAMILY(ofArray, elements);
   size_t size = kArrayBufferSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.array_buffer_species));
+      ROOT(runtime, array_buffer_species)));
   set_array_buffer_elements(result, elements);
   set_array_buffer_length(result, get_array_length(elements));
   return post_create_sanity_check(result, size);
@@ -124,7 +124,7 @@ value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity) {
   TRY_DEF(entries, new_heap_id_hash_map_entry_array(runtime, init_capacity));
   size_t size = kIdHashMapSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.id_hash_map_species));
+      ROOT(runtime, id_hash_map_species)));
   set_id_hash_map_entry_array(result, entries);
   set_id_hash_map_size(result, 0);
   set_id_hash_map_capacity(result, init_capacity);
@@ -134,18 +134,18 @@ value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity) {
 
 value_t new_heap_null(runtime_t *runtime) {
   size_t size = kNullSize;
-  return alloc_heap_object(&runtime->heap, size, runtime->roots.null_species);
+  return alloc_heap_object(&runtime->heap, size, ROOT(runtime, null_species));
 }
 
 value_t new_heap_nothing(runtime_t *runtime) {
   size_t size = kNothingSize;
-  return alloc_heap_object(&runtime->heap, size, runtime->roots.nothing_species);
+  return alloc_heap_object(&runtime->heap, size, ROOT(runtime, nothing_species));
 }
 
 value_t new_heap_boolean(runtime_t *runtime, bool value) {
   size_t size = kBooleanSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.boolean_species));
+      ROOT(runtime, boolean_species)));
   set_boolean_value(result, value);
   return post_create_sanity_check(result, size);
 }
@@ -154,7 +154,7 @@ value_t new_heap_key(runtime_t *runtime, value_t display_name) {
   size_t size = kKeySize;
   size_t id = runtime->next_key_index++;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.key_species));
+      ROOT(runtime, key_species)));
   set_key_id(result, id);
   set_key_display_name(result, display_name);
   return post_create_sanity_check(result, size);
@@ -172,7 +172,7 @@ value_t new_heap_instance(runtime_t *runtime, value_t species) {
 value_t new_heap_void_p(runtime_t *runtime, void *value) {
   size_t size = kVoidPSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.void_p_species));
+      ROOT(runtime, void_p_species)));
   set_void_p_value(result, value);
   return post_create_sanity_check(result, size);
 }
@@ -181,7 +181,7 @@ value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr) {
   TRY_DEF(constr_wrapper, new_heap_void_p(runtime, (void*) (intptr_t) constr));
   size_t size = kFactorySize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.factory_species));
+      ROOT(runtime, factory_species)));
   set_factory_constructor(result, constr_wrapper);
   return post_create_sanity_check(result, size);
 }
@@ -190,7 +190,7 @@ value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
     value_t value_pool, size_t high_water_mark) {
   size_t size = kCodeBlockSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.code_block_species));
+      ROOT(runtime, code_block_species)));
   set_code_block_bytecode(result, bytecode);
   set_code_block_value_pool(result, value_pool);
   set_code_block_high_water_mark(result, high_water_mark);
@@ -200,7 +200,7 @@ value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
 value_t new_heap_protocol(runtime_t *runtime, value_t display_name) {
   size_t size = kProtocolSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.protocol_species));
+      ROOT(runtime, protocol_species)));
   set_protocol_display_name(result, display_name);
   return post_create_sanity_check(result, size);
 }
@@ -210,7 +210,7 @@ value_t new_heap_argument_map_trie(runtime_t *runtime, value_t value) {
   TRY_DEF(children, new_heap_array_buffer(runtime, 2));
   size_t size = kArgumentMapTrieSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.argument_map_trie_species));
+      ROOT(runtime, argument_map_trie_species)));
   set_argument_map_trie_value(result, value);
   set_argument_map_trie_children(result, children);
   return post_create_sanity_check(result, size);
@@ -219,7 +219,7 @@ value_t new_heap_argument_map_trie(runtime_t *runtime, value_t value) {
 value_t new_heap_lambda(runtime_t *runtime, value_t methods) {
   size_t size = kLambdaSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.lambda_species));
+      ROOT(runtime, lambda_species)));
   set_lambda_methods(result, methods);
   return post_create_sanity_check(result, size);
 }
@@ -228,7 +228,7 @@ value_t new_heap_namespace(runtime_t *runtime) {
   TRY_DEF(bindings, new_heap_id_hash_map(runtime, 16));
   size_t size = kNamespaceSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.namespace_species));
+      ROOT(runtime, namespace_species)));
   set_namespace_bindings(result, bindings);
   return post_create_sanity_check(result, size);
 }
@@ -241,7 +241,7 @@ value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
   size_t size = kStackPieceSize;
   TRY_DEF(storage, new_heap_array(runtime, storage_size));
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.stack_piece_species));
+      ROOT(runtime, stack_piece_species)));
   set_stack_piece_storage(result, storage);
   set_stack_piece_previous(result, previous);
   set_stack_piece_top_frame_pointer(result, 0);
@@ -253,9 +253,9 @@ value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
 value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {
   size_t size = kStackSize;
   TRY_DEF(piece, new_heap_stack_piece(runtime, default_piece_capacity,
-      runtime_null(runtime)));
+      ROOT(runtime, null)));
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.stack_species));
+      ROOT(runtime, stack_species)));
   set_stack_top_piece(result, piece);
   set_stack_default_piece_capacity(result, default_piece_capacity);
   return post_create_sanity_check(result, size);
@@ -267,7 +267,7 @@ value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {
 value_t new_heap_guard(runtime_t *runtime, guard_type_t type, value_t value) {
   size_t size = kGuardSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.guard_species));
+      ROOT(runtime, guard_species)));
   set_guard_type(result, type);
   set_guard_value(result, value);
   return post_create_sanity_check(result, size);
@@ -279,7 +279,7 @@ value_t new_heap_signature(runtime_t *runtime, value_t tags, size_t param_count,
   CHECK_TRUE("unsorted tag array", is_pair_array_sorted(tags));
   size_t size = kSignatureSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.signature_species));
+      ROOT(runtime, signature_species)));
   set_signature_tags(result, tags);
   set_signature_parameter_count(result, param_count);
   set_signature_mandatory_count(result, mandatory_count);
@@ -292,7 +292,7 @@ value_t new_heap_parameter(runtime_t *runtime, value_t guard, bool is_optional,
   CHECK_FAMILY(ofGuard, guard);
   size_t size = kParameterSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.parameter_species));
+      ROOT(runtime, parameter_species)));
   set_parameter_guard(result, guard);
   set_parameter_is_optional(result, is_optional);
   set_parameter_index(result, index);
@@ -304,7 +304,7 @@ value_t new_heap_methodspace(runtime_t *runtime) {
   TRY_DEF(inheritance, new_heap_id_hash_map(runtime, kInheritanceMapInitialSize));
   TRY_DEF(methods, new_heap_array_buffer(runtime, kMethodArrayInitialSize));
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.methodspace_species));
+      ROOT(runtime, methodspace_species)));
   set_methodspace_inheritance(result, inheritance);
   set_methodspace_methods(result, methods);
   return post_create_sanity_check(result, size);
@@ -315,7 +315,7 @@ value_t new_heap_method(runtime_t *runtime, value_t signature, value_t code) {
   CHECK_FAMILY(ofCodeBlock, code);
   size_t size = kMethodSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.method_species));
+      ROOT(runtime, method_species)));
   set_method_signature(result, signature);
   set_method_code(result, code);
   return post_create_sanity_check(result, size);
@@ -325,7 +325,7 @@ value_t new_heap_invocation_record(runtime_t *runtime, value_t argument_vector) 
   size_t size = kInvocationRecordSize;
   CHECK_TRUE("unsorted argument array", is_pair_array_sorted(argument_vector));
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.invocation_record_species));
+      ROOT(runtime, invocation_record_species)));
   set_invocation_record_argument_vector(result, argument_vector);
   return post_create_sanity_check(result, size);
 }
@@ -336,7 +336,7 @@ value_t new_heap_invocation_record(runtime_t *runtime, value_t argument_vector) 
 value_t new_heap_literal_ast(runtime_t *runtime, value_t value) {
   size_t size = kLiteralAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.literal_ast_species));
+      ROOT(runtime, literal_ast_species)));
   set_literal_ast_value(result, value);
   return post_create_sanity_check(result, size);
 }
@@ -344,7 +344,7 @@ value_t new_heap_literal_ast(runtime_t *runtime, value_t value) {
 value_t new_heap_array_ast(runtime_t *runtime, value_t elements) {
   size_t size = kArrayAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.array_ast_species));
+      ROOT(runtime, array_ast_species)));
   set_array_ast_elements(result, elements);
   return post_create_sanity_check(result, size);
 }
@@ -353,7 +353,7 @@ value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments,
     value_t methodspace) {
   size_t size = kInvocationAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.invocation_ast_species));
+      ROOT(runtime, invocation_ast_species)));
   set_invocation_ast_arguments(result, arguments);
   set_invocation_ast_methodspace(result, methodspace);
   return post_create_sanity_check(result, size);
@@ -362,7 +362,7 @@ value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments,
 value_t new_heap_argument_ast(runtime_t *runtime, value_t tag, value_t value) {
   size_t size = kArgumentAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.argument_ast_species));
+      ROOT(runtime, argument_ast_species)));
   set_argument_ast_tag(result, tag);
   set_argument_ast_value(result, value);
   return post_create_sanity_check(result, size);
@@ -371,7 +371,7 @@ value_t new_heap_argument_ast(runtime_t *runtime, value_t tag, value_t value) {
 value_t new_heap_sequence_ast(runtime_t *runtime, value_t values) {
   size_t size = kSequenceAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.sequence_ast_species));
+      ROOT(runtime, sequence_ast_species)));
   set_sequence_ast_values(result, values);
   return post_create_sanity_check(result, size);
 }
@@ -380,7 +380,7 @@ value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
     value_t value, value_t body) {
   size_t size = kLocalDeclarationAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.local_declaration_ast_species));
+      ROOT(runtime, local_declaration_ast_species)));
   set_local_declaration_ast_symbol(result, symbol);
   set_local_declaration_ast_value(result, value);
   set_local_declaration_ast_body(result, body);
@@ -390,7 +390,7 @@ value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
 value_t new_heap_local_variable_ast(runtime_t *runtime, value_t symbol) {
   size_t size = kLocalVariableAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.local_variable_ast_species));
+      ROOT(runtime, local_variable_ast_species)));
   set_local_variable_ast_symbol(result, symbol);
   return post_create_sanity_check(result, size);
 }
@@ -399,7 +399,7 @@ value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t name,
     value_t namespace) {
   size_t size = kNamespaceVariableAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.namespace_variable_ast_species));
+      ROOT(runtime, namespace_variable_ast_species)));
   set_namespace_variable_ast_name(result, name);
   set_namespace_variable_ast_namespace(result, namespace);
   return post_create_sanity_check(result, size);
@@ -408,7 +408,7 @@ value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t name,
 value_t new_heap_symbol_ast(runtime_t *runtime, value_t name) {
   size_t size = kSymbolAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.symbol_ast_species));
+      ROOT(runtime, symbol_ast_species)));
   set_symbol_ast_name(result, name);
   return post_create_sanity_check(result, size);
 }
@@ -416,7 +416,7 @@ value_t new_heap_symbol_ast(runtime_t *runtime, value_t name) {
 value_t new_heap_lambda_ast(runtime_t *runtime, value_t params, value_t body) {
   size_t size = kLambdaAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.lambda_ast_species));
+      ROOT(runtime, lambda_ast_species)));
   set_lambda_ast_parameters(result, params);
   set_lambda_ast_body(result, body);
   return post_create_sanity_check(result, size);
@@ -425,7 +425,7 @@ value_t new_heap_lambda_ast(runtime_t *runtime, value_t params, value_t body) {
 value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags) {
   size_t size = kParameterAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.parameter_ast_species));
+      ROOT(runtime, parameter_ast_species)));
   set_parameter_ast_symbol(result, symbol);
   set_parameter_ast_tags(result, tags);
   return post_create_sanity_check(result, size);
@@ -435,7 +435,7 @@ value_t new_heap_program_ast(runtime_t *runtime, value_t elements,
     value_t entry_point, value_t namespace, value_t methodspace) {
   size_t size = kProgramAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.program_ast_species));
+      ROOT(runtime, program_ast_species)));
   set_program_ast_elements(result, elements);
   set_program_ast_entry_point(result, entry_point);
   set_program_ast_namespace(result, namespace);
@@ -447,7 +447,7 @@ value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t name,
     value_t value) {
   size_t size = kNamespaceDeclarationAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.namespace_declaration_ast_species));
+      ROOT(runtime, namespace_declaration_ast_species)));
   set_namespace_declaration_ast_name(result, name);
   set_namespace_declaration_ast_value(result, value);
   return post_create_sanity_check(result, size);
@@ -456,7 +456,7 @@ value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t name,
 value_t new_heap_name_ast(runtime_t *runtime, value_t path, value_t phase) {
   size_t size = kNameAstSize;
   TRY_DEF(result, alloc_heap_object(&runtime->heap, size,
-      runtime->roots.name_ast_species));
+      ROOT(runtime, name_ast_species)));
   set_name_ast_path(result, path);
   set_name_ast_phase(result, phase);
   return post_create_sanity_check(result, size);

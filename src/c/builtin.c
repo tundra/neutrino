@@ -34,7 +34,7 @@ static value_t build_signature(runtime_t *runtime, value_t receiver,
   // The subject parameter.
   TRY_DEF(subject_guard, new_heap_guard(runtime, gtIs, receiver));
   TRY_DEF(subject_param, new_heap_parameter(runtime, subject_guard, false, 0));
-  set_pair_array_first_at(vector, 0, runtime->roots.subject_key);
+  set_pair_array_first_at(vector, 0, ROOT(runtime, subject_key));
   set_pair_array_second_at(vector, 0, subject_param);
   // The selector parameter.
   string_t name_str;
@@ -42,11 +42,11 @@ static value_t build_signature(runtime_t *runtime, value_t receiver,
   TRY_DEF(name, new_heap_string(runtime, &name_str));
   TRY_DEF(name_guard, new_heap_guard(runtime, gtEq, name));
   TRY_DEF(name_param, new_heap_parameter(runtime, name_guard, false, 1));
-  set_pair_array_first_at(vector, 1, runtime->roots.selector_key);
+  set_pair_array_first_at(vector, 1, ROOT(runtime, selector_key));
   set_pair_array_second_at(vector, 1, name_param);
   // The positional parameters.
   for (size_t i = 0; i < posc; i++) {
-    TRY_DEF(param, new_heap_parameter(runtime, runtime->roots.any_guard, false,
+    TRY_DEF(param, new_heap_parameter(runtime, ROOT(runtime, any_guard), false,
         2 + i));
     set_pair_array_first_at(vector, 2 + i, new_integer(i));
     set_pair_array_second_at(vector, 2 + i, param);

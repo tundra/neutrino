@@ -10,7 +10,7 @@
 // --- M i s c ---
 
 static value_t resolve_syntax_factory(value_t key, runtime_t *runtime, void *data) {
-  value_t result = get_id_hash_map_at(runtime->roots.plankton_environment, key);
+  value_t result = get_id_hash_map_at(ROOT(runtime, plankton_environment), key);
   if (is_signal(scNotFound, result)) {
     value_to_string_t buf;
     WARN("Environment reference %s could not be resolved", value_to_string(&buf, key));
@@ -71,12 +71,12 @@ void literal_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
 }
 
 static value_t new_literal_ast(runtime_t *runtime) {
-  return new_heap_literal_ast(runtime, runtime->roots.null);
+  return new_heap_literal_ast(runtime, ROOT(runtime, null));
 }
 
 value_t set_literal_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(value, get_id_hash_map_at(contents, runtime->roots.string_table.value));
+  TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
   set_literal_ast_value(object, value);
   return success();
 }
@@ -122,13 +122,13 @@ void array_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 value_t set_array_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(elements, get_id_hash_map_at(contents, runtime->roots.string_table.elements));
+  TRY_DEF(elements, get_id_hash_map_at(contents, RSTR(runtime, elements)));
   set_array_ast_elements(object, elements);
   return success();
 }
 
 static value_t new_array_ast(runtime_t *runtime) {
-  return new_heap_array_ast(runtime, runtime->roots.empty_array);
+  return new_heap_array_ast(runtime, ROOT(runtime, empty_array));
 }
 
 
@@ -173,16 +173,16 @@ value_t invocation_ast_validate(value_t value) {
 
 value_t set_invocation_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(arguments, get_id_hash_map_at(contents, runtime->roots.string_table.arguments));
-  TRY_DEF(methodspace, get_id_hash_map_at(contents, runtime->roots.string_table.methodspace));
+  TRY_DEF(arguments, get_id_hash_map_at(contents, RSTR(runtime, arguments)));
+  TRY_DEF(methodspace, get_id_hash_map_at(contents, RSTR(runtime, methodspace)));
   set_invocation_ast_arguments(object, arguments);
   set_invocation_ast_methodspace(object, methodspace);
   return success();
 }
 
 static value_t new_invocation_ast(runtime_t *runtime) {
-  return new_heap_invocation_ast(runtime, runtime->roots.empty_array,
-      runtime->roots.null);
+  return new_heap_invocation_ast(runtime, ROOT(runtime, empty_array),
+      ROOT(runtime, null));
 }
 
 
@@ -202,15 +202,15 @@ value_t argument_ast_validate(value_t value) {
 
 value_t set_argument_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(tag, get_id_hash_map_at(contents, runtime->roots.string_table.tag));
-  TRY_DEF(value, get_id_hash_map_at(contents, runtime->roots.string_table.value));
+  TRY_DEF(tag, get_id_hash_map_at(contents, RSTR(runtime, tag)));
+  TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
   set_argument_ast_tag(object, tag);
   set_argument_ast_value(object, value);
   return success();
 }
 
 static value_t new_argument_ast(runtime_t *runtime) {
-  return new_heap_argument_ast(runtime, runtime_null(runtime), runtime_null(runtime));
+  return new_heap_argument_ast(runtime, ROOT(runtime, null), ROOT(runtime, null));
 }
 
 
@@ -227,7 +227,7 @@ value_t emit_sequence_ast(value_t value, assembler_t *assm) {
   size_t length = get_array_length(values);
   if (length == 0) {
     // A no-element sequence has value null.
-    TRY(assembler_emit_push(assm, runtime_null(assm->runtime)));
+    TRY(assembler_emit_push(assm, ROOT(assm->runtime, null)));
   } else if (length == 1) {
     // A one-element sequence is equivalent to the value of the one element.
     TRY(emit_value(get_array_at(values, 0), assm));
@@ -262,13 +262,13 @@ void sequence_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 value_t set_sequence_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(values, get_id_hash_map_at(contents, runtime->roots.string_table.values));
+  TRY_DEF(values, get_id_hash_map_at(contents, RSTR(runtime, values)));
   set_sequence_ast_values(object, values);
   return success();
 }
 
 static value_t new_sequence_ast(runtime_t *runtime) {
-  return new_heap_sequence_ast(runtime, runtime->roots.empty_array);
+  return new_heap_sequence_ast(runtime, ROOT(runtime, empty_array));
 }
 
 
@@ -320,9 +320,9 @@ void local_declaration_ast_print_atomic_on(value_t value, string_buffer_t *buf) 
 
 value_t set_local_declaration_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(symbol, get_id_hash_map_at(contents, runtime->roots.string_table.symbol));
-  TRY_DEF(value, get_id_hash_map_at(contents, runtime->roots.string_table.value));
-  TRY_DEF(body, get_id_hash_map_at(contents, runtime->roots.string_table.body));
+  TRY_DEF(symbol, get_id_hash_map_at(contents, RSTR(runtime, symbol)));
+  TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
+  TRY_DEF(body, get_id_hash_map_at(contents, RSTR(runtime, body)));
   set_local_declaration_ast_symbol(object, symbol);
   set_local_declaration_ast_value(object, value);
   set_local_declaration_ast_body(object, body);
@@ -330,7 +330,7 @@ value_t set_local_declaration_ast_contents(value_t object, runtime_t *runtime, v
 }
 
 static value_t new_local_declaration_ast(runtime_t *runtime) {
-  value_t null = runtime_null(runtime);
+  value_t null = ROOT(runtime, null);
   return new_heap_local_declaration_ast(runtime, null, null, null);
 }
 
@@ -384,13 +384,13 @@ void local_variable_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
 value_t set_local_variable_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(symbol, get_id_hash_map_at(contents, runtime->roots.string_table.symbol));
+  TRY_DEF(symbol, get_id_hash_map_at(contents, RSTR(runtime, symbol)));
   set_local_variable_ast_symbol(object, symbol);
   return success();
 }
 
 static value_t new_local_variable_ast(runtime_t *runtime) {
-  return new_heap_local_variable_ast(runtime, runtime_null(runtime));
+  return new_heap_local_variable_ast(runtime, ROOT(runtime, null));
 }
 
 
@@ -417,16 +417,16 @@ value_t namespace_variable_ast_validate(value_t value) {
 value_t set_namespace_variable_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(name, get_id_hash_map_at(contents, runtime->roots.string_table.name));
-  TRY_DEF(namespace, get_id_hash_map_at(contents, runtime->roots.string_table.namespace));
+  TRY_DEF(name, get_id_hash_map_at(contents, RSTR(runtime, name)));
+  TRY_DEF(namespace, get_id_hash_map_at(contents, RSTR(runtime, namespace)));
   set_namespace_variable_ast_name(object, name);
   set_namespace_variable_ast_namespace(object, namespace);
   return success();
 }
 
 static value_t new_namespace_variable_ast(runtime_t *runtime) {
-  return new_heap_namespace_variable_ast(runtime, runtime_null(runtime),
-      runtime_null(runtime));
+  return new_heap_namespace_variable_ast(runtime, ROOT(runtime, null),
+      ROOT(runtime, null));
 }
 
 
@@ -454,13 +454,13 @@ void symbol_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 value_t set_symbol_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(name, get_id_hash_map_at(contents, runtime->roots.string_table.name));
+  TRY_DEF(name, get_id_hash_map_at(contents, RSTR(runtime, name)));
   set_symbol_ast_name(object, name);
   return success();
 }
 
 static value_t new_symbol_ast(runtime_t *runtime) {
-  return new_heap_symbol_ast(runtime, runtime_null(runtime));
+  return new_heap_symbol_ast(runtime, ROOT(runtime, null));
 }
 
 
@@ -482,12 +482,12 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   size_t explicit_argc = get_array_length(params);
   size_t total_argc = implicit_argc + explicit_argc;
   TRY_DEF(vector, new_heap_pair_array(runtime, total_argc));
-  set_pair_array_first_at(vector, 0, runtime->roots.subject_key);
-  value_t any_guard = runtime->roots.any_guard;
+  set_pair_array_first_at(vector, 0, ROOT(runtime, subject_key));
+  value_t any_guard = ROOT(runtime, any_guard);
   TRY_DEF(subject_param, new_heap_parameter(runtime, any_guard, false, 0));
   set_pair_array_second_at(vector, 0, subject_param);
-  set_pair_array_first_at(vector, 1, runtime->roots.selector_key);
-  TRY_DEF(selector_guard, new_heap_guard(runtime, gtEq, runtime->roots.string_table.sausages));
+  set_pair_array_first_at(vector, 1, ROOT(runtime, selector_key));
+  TRY_DEF(selector_guard, new_heap_guard(runtime, gtEq, RSTR(runtime, sausages)));
   TRY_DEF(selector_param, new_heap_parameter(runtime, selector_guard, false, 1));
   set_pair_array_second_at(vector, 1, selector_param);
   map_scope_t scope;
@@ -532,15 +532,15 @@ value_t lambda_ast_validate(value_t value) {
 
 value_t set_lambda_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(parameters, get_id_hash_map_at(contents, runtime->roots.string_table.parameters));
-  TRY_DEF(body, get_id_hash_map_at(contents, runtime->roots.string_table.body));
+  TRY_DEF(parameters, get_id_hash_map_at(contents, RSTR(runtime, parameters)));
+  TRY_DEF(body, get_id_hash_map_at(contents, RSTR(runtime, body)));
   set_lambda_ast_parameters(object, parameters);
   set_lambda_ast_body(object, body);
   return success();
 }
 
 static value_t new_lambda_ast(runtime_t *runtime) {
-  return new_heap_lambda_ast(runtime, runtime_null(runtime), runtime_null(runtime));
+  return new_heap_lambda_ast(runtime, ROOT(runtime, null), ROOT(runtime, null));
 }
 
 
@@ -560,16 +560,16 @@ value_t parameter_ast_validate(value_t value) {
 
 value_t set_parameter_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(symbol, get_id_hash_map_at(contents, runtime->roots.string_table.symbol));
-  TRY_DEF(tags, get_id_hash_map_at(contents, runtime->roots.string_table.tags));
+  TRY_DEF(symbol, get_id_hash_map_at(contents, RSTR(runtime, symbol)));
+  TRY_DEF(tags, get_id_hash_map_at(contents, RSTR(runtime, tags)));
   set_parameter_ast_symbol(object, symbol);
   set_parameter_ast_tags(object, tags);
   return success();
 }
 
 static value_t new_parameter_ast(runtime_t *runtime) {
-  return new_heap_parameter_ast(runtime, runtime_null(runtime),
-      runtime->roots.empty_array);
+  return new_heap_parameter_ast(runtime, ROOT(runtime, null),
+      ROOT(runtime, empty_array));
 }
 
 
@@ -589,10 +589,10 @@ value_t program_ast_validate(value_t value) {
 
 value_t set_program_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(elements, get_id_hash_map_at(contents, runtime->roots.string_table.elements));
-  TRY_DEF(entry_point, get_id_hash_map_at(contents, runtime->roots.string_table.entry_point));
-  TRY_DEF(namespace, get_id_hash_map_at(contents, runtime->roots.string_table.namespace));
-  TRY_DEF(methodspace, get_id_hash_map_at(contents, runtime->roots.string_table.methodspace));
+  TRY_DEF(elements, get_id_hash_map_at(contents, RSTR(runtime, elements)));
+  TRY_DEF(entry_point, get_id_hash_map_at(contents, RSTR(runtime, entry_point)));
+  TRY_DEF(namespace, get_id_hash_map_at(contents, RSTR(runtime, namespace)));
+  TRY_DEF(methodspace, get_id_hash_map_at(contents, RSTR(runtime, methodspace)));
   set_program_ast_elements(object, elements);
   set_program_ast_entry_point(object, entry_point);
   set_program_ast_namespace(object, namespace);
@@ -601,8 +601,8 @@ value_t set_program_ast_contents(value_t object, runtime_t *runtime, value_t con
 }
 
 static value_t new_program_ast(runtime_t *runtime) {
-  return new_heap_program_ast(runtime, runtime->roots.empty_array,
-      runtime->roots.null, runtime->roots.empty_array, runtime->roots.null);
+  return new_heap_program_ast(runtime, ROOT(runtime, empty_array),
+      ROOT(runtime, null), ROOT(runtime, empty_array), ROOT(runtime, null));
 }
 
 
@@ -623,15 +623,15 @@ value_t namespace_declaration_ast_validate(value_t value) {
 value_t set_namespace_declaration_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(name, get_id_hash_map_at(contents, runtime->roots.string_table.name));
-  TRY_DEF(value, get_id_hash_map_at(contents, runtime->roots.string_table.value));
+  TRY_DEF(name, get_id_hash_map_at(contents, RSTR(runtime, name)));
+  TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
   set_namespace_declaration_ast_name(object, name);
   set_namespace_declaration_ast_value(object, value);
   return success();
 }
 
 static value_t new_namespace_declaration_ast(runtime_t *runtime) {
-  value_t null = runtime_null(runtime);
+  value_t null = ROOT(runtime, null);
   return new_heap_namespace_declaration_ast(runtime, null, null);
 }
 
@@ -650,15 +650,15 @@ value_t name_ast_validate(value_t value) {
 
 value_t set_name_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(path, get_id_hash_map_at(contents, runtime->roots.string_table.path));
-  TRY_DEF(phase, get_id_hash_map_at(contents, runtime->roots.string_table.phase));
+  TRY_DEF(path, get_id_hash_map_at(contents, RSTR(runtime, path)));
+  TRY_DEF(phase, get_id_hash_map_at(contents, RSTR(runtime, phase)));
   set_name_ast_path(object, path);
   set_name_ast_phase(object, phase);
   return success();
 }
 
 static value_t new_name_ast(runtime_t *runtime) {
-  value_t null = runtime_null(runtime);
+  value_t null = ROOT(runtime, null);
   return new_heap_name_ast(runtime, null, null);
 }
 
@@ -686,7 +686,7 @@ value_t emit_value(value_t value, assembler_t *assm) {
 // --- F a c t o r i e s ---
 
 value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
-  value_t ast = runtime->roots.string_table.ast;
+  value_t ast = RSTR(runtime, ast);
   TRY(add_plankton_factory(map, ast, "Argument", new_argument_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Array", new_array_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Invocation", new_invocation_ast, runtime));

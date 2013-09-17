@@ -268,7 +268,7 @@ static value_t new_object_with_object_type(runtime_t *runtime, value_t type) {
     case ofNull:
       // For now we use null to indicate an instance. Later this should be
       // replaced by something else, something species-like possibly.
-      return new_heap_instance(runtime, runtime->roots.empty_instance_species);
+      return new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
     case ofFactory:
       return new_instance_of_factory(runtime, type);
     default: {
@@ -314,7 +314,7 @@ static value_t get_object_protocol(value_t self, runtime_t *runtime) {
 value_t get_protocol(value_t self, runtime_t *runtime) {
   switch (get_value_domain(self)) {
     case vdInteger:
-      return runtime->roots.integer_protocol;
+      return ROOT(runtime, integer_protocol);
     case vdObject:
       return get_object_protocol(self, runtime);
     default:
