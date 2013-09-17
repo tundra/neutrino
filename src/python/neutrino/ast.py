@@ -114,8 +114,10 @@ class Variable(object):
 class Invocation(object):
 
   @plankton.field("arguments")
-  def __init__(self, arguments=None):
+  @plankton.field("methodspace")
+  def __init__(self, arguments=None, methodspace=None):
     self.arguments = arguments
+    self.methodspace = methodspace
 
   def accept(self, visitor):
     return visitor.visit_invocation(self);
@@ -282,10 +284,13 @@ class Program(object):
   @plankton.field("elements")
   @plankton.field("entry_point")
   @plankton.field("namespace")
-  def __init__(self, elements=None, entry_point=None, namespace=None):
+  @plankton.field("methodspace")
+  def __init__(self, elements=None, entry_point=None, namespace=None,
+      methodspace=None):
     self.elements = elements
     self.entry_point = entry_point
     self.namespace = namespace
+    self.methodspace = methodspace
 
   def accept(self, visitor):
     return visitor.visit_program(self)

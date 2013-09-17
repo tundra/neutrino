@@ -1330,6 +1330,10 @@ static value_t add_plankton_binding(value_t map, value_t category, const char *n
   return success();
 }
 
+static value_t new_methodspace(runtime_t *runtime) {
+  return new_heap_methodspace(runtime);
+}
+
 value_t add_plankton_factory(value_t map, value_t category, const char *name,
     factory_constructor_t constructor, runtime_t *runtime) {
   TRY_DEF(factory, new_heap_factory(runtime, constructor));
@@ -1339,6 +1343,7 @@ value_t add_plankton_factory(value_t map, value_t category, const char *name,
 value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   value_t core = runtime->roots.string_table.core;
   TRY(add_plankton_factory(map, core, "Namespace", new_namespace, runtime));
+  TRY(add_plankton_factory(map, core, "Methodspace", new_methodspace, runtime));
   TRY(add_plankton_binding(map, core, "subject", runtime->roots.subject_key,
       runtime));
   TRY(add_plankton_binding(map, core, "selector", runtime->roots.selector_key,

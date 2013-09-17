@@ -19,17 +19,19 @@
   F(core,               "core")                                                \
   F(elements,           "elements")                                            \
   F(entry_point,        "entry_point")                                         \
+  F(inheritance,        "inheritance")                                         \
+  F(methods,            "methods")                                             \
   F(name,               "name")                                                \
   F(namespace,          "namespace")                                           \
+  F(parameters,         "parameters")                                          \
   F(path,               "path")                                                \
   F(phase,              "phase")                                               \
+  F(sausages,           "()")                                                  \
   F(symbol,             "symbol")                                              \
   F(tag,                "tag")                                                 \
-  F(value,              "value")                                               \
-  F(values,             "values")                                              \
-  F(parameters,         "parameters")                                          \
   F(tags,               "tags")                                                \
-  F(sausages,           "()")
+  F(value,              "value")                                               \
+  F(values,             "values")
 
 // A collection of all the root objects.
 typedef struct {

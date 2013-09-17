@@ -50,11 +50,15 @@ ACCESSORS_DECL(array_ast, elements);
 
 // --- I n v o c a t i o n ---
 
-static const size_t kInvocationAstSize = OBJECT_SIZE(1);
+static const size_t kInvocationAstSize = OBJECT_SIZE(2);
 static const size_t kInvocationAstArgumentsOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kInvocationAstMethodspaceOffset = OBJECT_FIELD_OFFSET(1);
 
 // The array of element expressions.
 ACCESSORS_DECL(invocation_ast, arguments);
+
+// The methodspace to perform the invocation in.
+ACCESSORS_DECL(invocation_ast, methodspace);
 
 
 // --- A r g u m e n t ---

@@ -17,6 +17,7 @@ class Parser(object):
     self.tokens = tokens
     self.cursor = 0
     self.namespace = data.Namespace({})
+    self.methodspace = data.Methodspace({}, [])
     self.entry_point = ast.Literal(None)
 
   # Does this parser have more tokens to process?
@@ -84,7 +85,8 @@ class Parser(object):
       if entry:
         (name, value) = entry
         elements.append(ast.NamespaceDeclaration(name, value))
-    return ast.Program(elements, self.entry_point, self.namespace)
+    return ast.Program(elements, self.entry_point, self.namespace,
+        self.methodspace)
 
   def parse_toplevel_statement(self):
     if self.at_word('def'):
@@ -107,7 +109,7 @@ class Parser(object):
   # executable.
   def parse_expression_program(self):
     value = self.parse_word_expression()
-    return ast.Program([], value, self.namespace)
+    return ast.Program([], value, self.namespace, self.methodspace)
 
   # <word expression>
   #   -> <lambda>
@@ -162,7 +164,7 @@ class Parser(object):
         ast.Argument(data._SELECTOR, ast.Literal(name))
       ]
       rest = self.parse_arguments()
-      left = ast.Invocation(prefix + rest)
+      left = ast.Invocation(prefix + rest, self.methodspace)
     return left
 
   # <arguments>
@@ -197,7 +199,7 @@ class Parser(object):
         ast.Argument(data._SELECTOR, ast.Literal('()'))
       ]
       rest = self.parse_arguments()
-      recv = ast.Invocation(prefix + rest)
+      recv = ast.Invocation(prefix + rest, self.methodspace)
     return recv
 
   # <atomic expression>

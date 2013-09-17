@@ -419,6 +419,16 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
   return result;
 }
 
+value_t set_methodspace_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(raw_methods, get_id_hash_map_at(contents, runtime->roots.string_table.methods));
+  TRY_DEF(methods, new_heap_array_buffer_with_contents(runtime, raw_methods));
+  TRY_DEF(inheritance, get_id_hash_map_at(contents, runtime->roots.string_table.inheritance));
+  set_methodspace_methods(object, methods);
+  set_methodspace_inheritance(object, inheritance);
+  return success();
+}
+
 
 // --- I n v o c a t i o n   r e c o r d ---
 

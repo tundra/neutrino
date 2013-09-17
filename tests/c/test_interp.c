@@ -81,7 +81,7 @@ TEST(interp, execution) {
     value_t args = new_heap_array(runtime, 2);
     set_array_at(args, 0, subject_arg);
     set_array_at(args, 1, selector_arg);
-    value_t ast = new_heap_invocation_ast(runtime, args);
+    value_t ast = new_heap_invocation_ast(runtime, args, runtime->roots.null);
     assert_ast_value(runtime, vInt(13), ast);
   }
 

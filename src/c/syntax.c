@@ -139,6 +139,7 @@ GET_FAMILY_PROTOCOL_IMPL(invocation_ast);
 NO_BUILTIN_METHODS(invocation_ast);
 
 CHECKED_ACCESSORS_IMPL(InvocationAst, invocation_ast, Array, Arguments, arguments);
+UNCHECKED_ACCESSORS_IMPL(InvocationAst, invocation_ast, Methodspace, methodspace);
 
 value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofInvocationAst, value);
@@ -176,7 +177,8 @@ value_t set_invocation_ast_contents(value_t object, runtime_t *runtime, value_t 
 }
 
 static value_t new_invocation_ast(runtime_t *runtime) {
-  return new_heap_invocation_ast(runtime, runtime->roots.empty_array);
+  return new_heap_invocation_ast(runtime, runtime->roots.empty_array,
+      runtime->roots.null);
 }
 
 

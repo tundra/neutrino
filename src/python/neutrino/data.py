@@ -3,7 +3,7 @@
 
 import plankton
 
-# A constant literal value.
+
 @plankton.serializable(("core", "Namespace"))
 class Namespace(object):
 
@@ -13,6 +13,16 @@ class Namespace(object):
 
   def add_binding(self, name, value):
     self.bindings[name] = value
+
+
+@plankton.serializable(("core", "Methodspace"))
+class Methodspace(object):
+
+  @plankton.field("inheritance")
+  @plankton.field("methods")
+  def __init__(self, inheritance=None, methods=None):
+    self.inheritance = inheritance
+    self.methods = methods
 
 
 # A unique key, matching a neutrino runtime key.
