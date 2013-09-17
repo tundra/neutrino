@@ -99,9 +99,9 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         value_t record = read_next_value(&state);
         CHECK_FAMILY(ofInvocationRecord, record);
         value_t space = read_next_value(&state);
-        CHECK_FAMILY(ofMethodSpace, space);
+        CHECK_FAMILY(ofMethodspace, space);
         value_t arg_map;
-        value_t method = lookup_method_space_method(runtime, space, record,
+        value_t method = lookup_methodspace_method(runtime, space, record,
             &frame, &arg_map);
         if (is_signal(scNotFound, method)) {
           value_to_string_t data;
@@ -137,7 +137,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         // From this point we do the same as invoke except using the space from
         // the lambda rather than the space from the invoke instruction.
         value_t arg_map;
-        value_t method = lookup_method_space_method(runtime, space, record,
+        value_t method = lookup_methodspace_method(runtime, space, record,
             &frame, &arg_map);
         if (is_signal(scNotFound, method)) {
           value_to_string_t data;
@@ -197,7 +197,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
       }
       case ocLambda: {
         value_t space = read_next_value(&state);
-        CHECK_FAMILY(ofMethodSpace, space);
+        CHECK_FAMILY(ofMethodspace, space);
         TRY_DEF(lambda, new_heap_lambda(runtime, space));
         frame_push_value(&frame, lambda);
         break;
@@ -460,7 +460,7 @@ value_t assembler_emit_delegate_lambda_call(assembler_t *assm) {
 }
 
 value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t record) {
-  CHECK_FAMILY(ofMethodSpace, space);
+  CHECK_FAMILY(ofMethodspace, space);
   CHECK_FAMILY(ofInvocationRecord, record);
   assembler_emit_opcode(assm, ocInvoke);
   TRY(assembler_emit_value(assm, record));

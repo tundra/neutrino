@@ -465,14 +465,14 @@ static value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   co_sort_pair_array(vector);
   TRY_DEF(sig, new_heap_signature(runtime, vector, total_argc, total_argc, false));
   // Build the method space.
-  TRY_DEF(space, new_heap_method_space(runtime));
+  TRY_DEF(space, new_heap_methodspace(runtime));
   value_t body = get_lambda_ast_body(value);
   TRY_DEF(body_code, compile_expression(runtime, body, assm->space,
       assm->scope_callback));
   // Remove the parameter bindings again.
   assembler_pop_map_scope(assm, &scope);
   TRY_DEF(method, new_heap_method(runtime, sig, body_code));
-  TRY(add_method_space_method(runtime, space, method));
+  TRY(add_methodspace_method(runtime, space, method));
   assembler_emit_lambda(assm, space);
   return success();
 }

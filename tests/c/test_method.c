@@ -8,7 +8,7 @@
 TEST(method, identity_guard) {
   CREATE_RUNTIME();
 
-  value_t space = new_heap_method_space(runtime);
+  value_t space = new_heap_methodspace(runtime);
   value_t zero = new_integer(0);
   value_t null = runtime_null(runtime);
   value_t id_zero = new_heap_guard(runtime, gtEq, zero);
@@ -25,7 +25,7 @@ TEST(method, identity_guard) {
 TEST(method, any_guard) {
   CREATE_RUNTIME();
 
-  value_t space = new_heap_method_space(runtime);
+  value_t space = new_heap_methodspace(runtime);
   value_t any_guard = runtime->roots.any_guard;
 
   ASSERT_TRUE(is_score_match(guard_match(runtime, any_guard, new_integer(0), space)));
@@ -38,15 +38,15 @@ TEST(method, any_guard) {
 TEST(method, method_space) {
   CREATE_RUNTIME();
 
-  value_t space = new_heap_method_space(runtime);
+  value_t space = new_heap_methodspace(runtime);
   value_t null = runtime_null(runtime);
   value_t p1 = new_heap_protocol(runtime, null);
   value_t p2 = new_heap_protocol(runtime, null);
-  ASSERT_SUCCESS(add_method_space_inheritance(runtime, space, p1, p2));
+  ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p1, p2));
   value_t p3 = new_heap_protocol(runtime, null);
-  ASSERT_SUCCESS(add_method_space_inheritance(runtime, space, p2, p3));
+  ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p2, p3));
   value_t p4 = new_heap_protocol(runtime, null);
-  ASSERT_SUCCESS(add_method_space_inheritance(runtime, space, p2, p4));
+  ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p2, p4));
 
   ASSERT_EQ(1, get_array_buffer_length(get_protocol_parents(runtime, space, p1)));
   ASSERT_EQ(2, get_array_buffer_length(get_protocol_parents(runtime, space, p2)));
@@ -70,12 +70,12 @@ TEST(method, simple_is) {
   value_t obj_p = new_heap_protocol(runtime, runtime_null(runtime));
   value_t int_p = runtime->roots.integer_protocol;
   value_t str_p = runtime->roots.string_protocol;
-  value_t space = new_heap_method_space(runtime);
+  value_t space = new_heap_methodspace(runtime);
   // int <: obj
-  ASSERT_SUCCESS(add_method_space_inheritance(runtime, space, int_p, obj_p));
+  ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, int_p, obj_p));
   // s-str <: str <: obj
-  ASSERT_SUCCESS(add_method_space_inheritance(runtime, space, str_p, obj_p));
-  ASSERT_SUCCESS(add_method_space_inheritance(runtime, space, s_str_p, str_p));
+  ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, str_p, obj_p));
+  ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, s_str_p, str_p));
   value_t is_int = new_heap_guard(runtime, gtIs, int_p);
   value_t is_obj = new_heap_guard(runtime, gtIs, obj_p);
   value_t is_str = new_heap_guard(runtime, gtIs, str_p);
@@ -121,10 +121,10 @@ TEST(method, is_score) {
   value_t s_str_p = new_heap_protocol(runtime, runtime_null(runtime));
   value_t obj_p = new_heap_protocol(runtime, runtime_null(runtime));
   value_t str_p = runtime->roots.string_protocol;
-  value_t space = new_heap_method_space(runtime);
+  value_t space = new_heap_methodspace(runtime);
   // s-str <: str <: obj
-  ASSERT_SUCCESS(add_method_space_inheritance(runtime, space, str_p, obj_p));
-  ASSERT_SUCCESS(add_method_space_inheritance(runtime, space, s_str_p, str_p));
+  ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, str_p, obj_p));
+  ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, s_str_p, str_p));
 
   string_t x_str = STR("x");
   value_t x = new_heap_string(runtime, &x_str);
@@ -149,12 +149,12 @@ TEST(method, multi_score) {
   value_t int_str_p = new_heap_protocol(runtime, runtime_null(runtime));
   value_t int_p = runtime->roots.integer_protocol;
   value_t str_p = runtime->roots.string_protocol;
-  value_t space = new_heap_method_space(runtime);
+  value_t space = new_heap_methodspace(runtime);
   value_t is_str = new_heap_guard(runtime, gtIs, str_p);
   value_t is_int = new_heap_guard(runtime, gtIs, int_p);
   // int-str <: int, str
-  ASSERT_SUCCESS(add_method_space_inheritance(runtime, space, int_str_p, int_p));
-  ASSERT_SUCCESS(add_method_space_inheritance(runtime, space, int_str_p, str_p));
+  ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, int_str_p, int_p));
+  ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, int_str_p, str_p));
 
   value_t int_str = new_instance_of(runtime, int_str_p);
 
@@ -662,7 +662,7 @@ static void test_lookup(runtime_t *runtime, value_t expected, value_t first,
   }
   value_t record = new_heap_invocation_record(runtime, vector);
   value_t arg_map;
-  value_t method = lookup_method_space_method(runtime, space, record, &frame,
+  value_t method = lookup_methodspace_method(runtime, space, record, &frame,
       &arg_map);
   ASSERT_VALEQ(expected, method);
 }
@@ -675,11 +675,11 @@ TEST(method, dense_perfect_lookup) {
   value_t b_p = new_heap_protocol(runtime, variant_to_value(runtime, vStr("B")));
   value_t c_p = new_heap_protocol(runtime, variant_to_value(runtime, vStr("C")));
   value_t d_p = new_heap_protocol(runtime, variant_to_value(runtime, vStr("D")));
-  value_t space = new_heap_method_space(runtime);
+  value_t space = new_heap_methodspace(runtime);
   // D <: C <: B <: A <: Object
-  ASSERT_SUCCESS(add_method_space_inheritance(runtime, space, d_p, c_p));
-  ASSERT_SUCCESS(add_method_space_inheritance(runtime, space, c_p, b_p));
-  ASSERT_SUCCESS(add_method_space_inheritance(runtime, space, b_p, a_p));
+  ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, d_p, c_p));
+  ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, c_p, b_p));
+  ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, b_p, a_p));
 
   // Guards.
   value_t a_g = new_heap_guard(runtime, gtIs, a_p);
@@ -709,7 +709,7 @@ TEST(method, dense_perfect_lookup) {
             PARAM(guards[second], false, vArray(1, vInt(1))) o
             PARAM(guards[third], false, vArray(1, vInt(2)))));
         value_t method = new_heap_method(runtime, signature, dummy_code);
-        add_method_space_method(runtime, space, method);
+        add_methodspace_method(runtime, space, method);
         methods[first][second][third] = method;
       }
     }

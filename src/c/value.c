@@ -49,7 +49,7 @@ const char *get_species_division_name(species_division_t division) {
 // --- I n t e g e r ---
 
 #define ADD_BUILTIN(family, name, argc, impl)                                  \
-  TRY(add_method_space_builtin_method(runtime, space,                          \
+  TRY(add_methodspace_builtin_method(runtime, space,                           \
       runtime->roots.family##_protocol, name, argc, impl))
 
 static value_t integer_plus_integer(builtin_arguments_t *args) {
@@ -1252,7 +1252,7 @@ value_t emit_lambda_call_trampoline(assembler_t *assm) {
 }
 
 value_t add_lambda_builtin_methods(runtime_t *runtime, value_t space) {
-  TRY(add_method_space_custom_method(runtime, space, runtime->roots.lambda_protocol,
+  TRY(add_methodspace_custom_method(runtime, space, runtime->roots.lambda_protocol,
       "()", 0, true, emit_lambda_call_trampoline));
   return success();
 }

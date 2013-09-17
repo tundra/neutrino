@@ -175,7 +175,7 @@ static const score_t gsAnyMatch = 0xFFFFFFFD;
 // Matches the given guard against the given value, returning a score for how
 // well it matched within the given method space.
 score_t guard_match(runtime_t *runtime, value_t guard, value_t value,
-    value_t method_space);
+    value_t methodspace);
 
 // Returns true if the given score represents a match.
 bool is_score_match(score_t score);
@@ -200,9 +200,9 @@ ACCESSORS_DECL(method, code);
 
 // --- M e t h o d   s p a c e ---
 
-static const size_t kMethodSpaceSize = OBJECT_SIZE(2);
-static const size_t kMethodSpaceInheritanceMapOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kMethodSpaceMethodsOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kMethodspaceSize = OBJECT_SIZE(2);
+static const size_t kMethodspaceInheritanceOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kMethodspaceMethodsOffset = OBJECT_FIELD_OFFSET(1);
 
 // The size of the inheritance map in an empty method space.
 static const size_t kInheritanceMapInitialSize = 16;
@@ -211,15 +211,15 @@ static const size_t kInheritanceMapInitialSize = 16;
 static const size_t kMethodArrayInitialSize = 16;
 
 // The mapping that defines the inheritance hierarchy within this method space.
-ACCESSORS_DECL(method_space, inheritance_map);
+ACCESSORS_DECL(methodspace, inheritance);
 
 // The methods defined within this method space.
-ACCESSORS_DECL(method_space, methods);
+ACCESSORS_DECL(methodspace, methods);
 
 // Records in the given method space that the subtype inherits directly from
 // the supertype. Returns a signal if adding fails, for instance if we run
 // out of memory to increase the size of the map.
-value_t add_method_space_inheritance(runtime_t *runtime, value_t self,
+value_t add_methodspace_inheritance(runtime_t *runtime, value_t self,
     value_t subtype, value_t supertype);
 
 // Returns the array buffer of parents of the given protocol.
@@ -227,13 +227,13 @@ value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol
 
 // Add a method to this metod space. Returns a signal if adding fails, for
 // instance if we run out of memory to increase the size of the map.
-value_t add_method_space_method(runtime_t *runtime, value_t self,
+value_t add_methodspace_method(runtime_t *runtime, value_t self,
     value_t method);
 
 // Looks up a method in this method space given an invocation record and a stack
 // frame. If the match is successful, as a side-effect stores an argument map
 // that maps between the result's parameters and argument offsets on the stack.
-value_t lookup_method_space_method(runtime_t *runtime, value_t space,
+value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
     value_t record, frame_t *frame, value_t *arg_map_out);
 
 

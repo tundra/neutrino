@@ -13,8 +13,8 @@ TEST(interp, binding_info_size) {
 // Evaluates the given syntax tree and checks that the result is the given
 // expected value.
 static void assert_ast_value(runtime_t *runtime, variant_t expected, value_t ast) {
-  value_t space = new_heap_method_space(runtime);
-  add_method_space_builtin_methods(runtime, space);
+  value_t space = new_heap_methodspace(runtime);
+  add_methodspace_builtin_methods(runtime, space);
   value_t code_block = compile_expression(runtime, ast, space, NULL);
   value_t result = run_code_block(runtime, code_block);
   ASSERT_VALEQ(variant_to_value(runtime, expected), result);
@@ -92,7 +92,7 @@ TEST(interp, execution) {
 // specified signal.
 static void assert_compile_failure(runtime_t *runtime, value_t ast,
     invalid_syntax_cause_t cause) {
-  value_t space = new_heap_method_space(runtime);
+  value_t space = new_heap_methodspace(runtime);
   value_t result = compile_expression(runtime, ast, space, NULL);
   ASSERT_SIGNAL(scInvalidSyntax, result);
   ASSERT_EQ(cause, get_invalid_syntax_signal_cause(result));

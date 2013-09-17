@@ -35,8 +35,8 @@ static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
 // Executes the given program syntax tree within the given runtime.
 static value_t execute_syntax(runtime_t *runtime, value_t program) {
   CHECK_FAMILY(ofProgramAst, program);
-  TRY_DEF(space, new_heap_method_space(runtime));
-  TRY(add_method_space_builtin_methods(runtime, space));
+  TRY_DEF(space, new_heap_methodspace(runtime));
+  TRY(add_methodspace_builtin_methods(runtime, space));
   value_t entry_point = get_program_ast_entry_point(program);
   TRY_DEF(code_block, compile_expression(runtime, entry_point, space, NULL));
   return run_code_block(runtime, code_block);
