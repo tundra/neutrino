@@ -99,15 +99,13 @@ typedef struct assembler_t {
   size_t stack_height;
   // The highest the stack has been at any point.
   size_t high_water_mark;
-  // The method space being built.
-  value_t space;
   // The callback for resolving local symbols.
   scope_lookup_callback_t *scope_callback;
 } assembler_t;
 
 // Initializes an assembler. If the given scope callback is NULL it is taken to
 // mean that there is no enclosing scope.
-value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t space,
+value_t assembler_init(assembler_t *assm, runtime_t *runtime,
     scope_lookup_callback_t *scope_callback);
 
 // Sets the scope callback for the given assembler, returning the previous

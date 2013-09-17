@@ -26,7 +26,7 @@ value_t emit_value(value_t value, assembler_t *assm);
 // Compiles the given expression syntax tree to a code block. The scope callback
 // allows this compilation to access symbols defined in an outer scope. If the
 // callback is null it is taken to mean that there is no outer scope.
-value_t compile_expression(runtime_t *runtime, value_t ast, value_t space,
+value_t compile_expression(runtime_t *runtime, value_t ast,
     scope_lookup_callback_t *scope_callback);
 
 
@@ -159,10 +159,11 @@ ACCESSORS_DECL(parameter_ast, tags);
 
 // --- P r o g r a m ---
 
-static const size_t kProgramAstSize = OBJECT_SIZE(3);
+static const size_t kProgramAstSize = OBJECT_SIZE(4);
 static const size_t kProgramAstElementsOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kProgramAstEntryPointOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kProgramAstNamespaceOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kProgramAstMethodspaceOffset = OBJECT_FIELD_OFFSET(2);
 
 // The toplevel elements of the program.
 ACCESSORS_DECL(program_ast, elements);
@@ -172,6 +173,9 @@ ACCESSORS_DECL(program_ast, entry_point);
 
 // The program's namespace.
 ACCESSORS_DECL(program_ast, namespace);
+
+// The program's methodspace.
+ACCESSORS_DECL(program_ast, methodspace);
 
 
 // --- N a m e s p a c e   d e c l a r a t i o n ---

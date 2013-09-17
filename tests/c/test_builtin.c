@@ -35,7 +35,7 @@ static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
   value_t invocation = new_heap_invocation_ast(runtime, args_ast, space);
 
   // Compile and execute the syntax.
-  value_t code = compile_expression(runtime, invocation, space, NULL);
+  value_t code = compile_expression(runtime, invocation, NULL);
   value_t result = run_code_block(runtime, code);
   ASSERT_VALEQ(variant_to_value(runtime, expected), result);
 }

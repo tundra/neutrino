@@ -21,6 +21,7 @@
   F(entry_point,        "entry_point")                                         \
   F(inheritance,        "inheritance")                                         \
   F(methods,            "methods")                                             \
+  F(methodspace,        "methodspace")                                         \
   F(name,               "name")                                                \
   F(namespace,          "namespace")                                           \
   F(parameters,         "parameters")                                          \

@@ -177,7 +177,7 @@ value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags)
 
 // Creates a new program syntax tree with the given elements.
 value_t new_heap_program_ast(runtime_t *runtime, value_t elements,
-    value_t entry_point, value_t namespace);
+    value_t entry_point, value_t namespace, value_t methodspace);
 
 // Creates a new toplevel namespace declaration syntax tree with the given name
 // and value.
