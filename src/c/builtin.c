@@ -55,10 +55,10 @@ static value_t build_signature(runtime_t *runtime, value_t receiver,
   return new_heap_signature(runtime, vector, argc, argc, allow_extra);
 }
 
-value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
+value_t add_methodspace_builtin_method(runtime_t *runtime, value_t space,
     value_t receiver, const char *name_c_str, size_t posc,
     builtin_method_t implementation) {
-  CHECK_FAMILY(ofMethodSpace, space);
+  CHECK_FAMILY(ofMethodspace, space);
   CHECK_FAMILY(ofProtocol, receiver);
   // Build the implementation.
   assembler_t assm;
@@ -69,13 +69,13 @@ value_t add_method_space_builtin_method(runtime_t *runtime, value_t space,
   assembler_dispose(&assm);
   TRY_DEF(signature, build_signature(runtime, receiver, name_c_str, posc, false));
   TRY_DEF(method, new_heap_method(runtime, signature, code_block));
-  return add_method_space_method(runtime, space, method);
+  return add_methodspace_method(runtime, space, method);
 }
 
-value_t add_method_space_custom_method(runtime_t *runtime, value_t space,
+value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
     value_t receiver, const char *name_c_str, size_t posc, bool allow_extra,
     custom_method_emitter_t emitter) {
-  CHECK_FAMILY(ofMethodSpace, space);
+  CHECK_FAMILY(ofMethodspace, space);
   CHECK_FAMILY(ofProtocol, receiver);
   // Build the implementation.
   assembler_t assm;
@@ -86,10 +86,10 @@ value_t add_method_space_custom_method(runtime_t *runtime, value_t space,
   assembler_dispose(&assm);
   TRY_DEF(signature, build_signature(runtime, receiver, name_c_str, posc, allow_extra));
   TRY_DEF(method, new_heap_method(runtime, signature, code_block));
-  return add_method_space_method(runtime, space, method);
+  return add_methodspace_method(runtime, space, method);
 }
 
-value_t add_method_space_builtin_methods(runtime_t *runtime, value_t self) {
+value_t add_methodspace_builtin_methods(runtime_t *runtime, value_t self) {
   TRY(add_integer_builtin_methods(runtime, self));
 #define __EMIT_ADD_BUILTINS_CALL__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
   SUR(TRY(add_##family##_builtin_methods(runtime, self));,)

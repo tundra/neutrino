@@ -122,7 +122,7 @@ value_t new_heap_parameter(runtime_t *runtime, value_t guard, bool is_optional,
     size_t index);
 
 // Creates a new empty method space.
-value_t new_heap_method_space(runtime_t *runtime);
+value_t new_heap_methodspace(runtime_t *runtime);
 
 // Creates a new method with the given signature and implementation.
 value_t new_heap_method(runtime_t *runtime, value_t signature, value_t code);

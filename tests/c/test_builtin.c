@@ -43,8 +43,8 @@ static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
 TEST(builtin, integers) {
   CREATE_RUNTIME();
 
-  value_t space = new_heap_method_space(runtime);
-  ASSERT_SUCCESS(add_method_space_builtin_methods(runtime, space));
+  value_t space = new_heap_methodspace(runtime);
+  ASSERT_SUCCESS(add_methodspace_builtin_methods(runtime, space));
 
   test_builtin(runtime, space, vInt(2), vInt(1), "+", vArray(1, vInt(1)));
   test_builtin(runtime, space, vInt(3), vInt(2), "+", vArray(1, vInt(1)));
@@ -62,8 +62,8 @@ TEST(builtin, integers) {
 TEST(builtin, strings) {
   CREATE_RUNTIME();
 
-  value_t space = new_heap_method_space(runtime);
-  ASSERT_SUCCESS(add_method_space_builtin_methods(runtime, space));
+  value_t space = new_heap_methodspace(runtime);
+  ASSERT_SUCCESS(add_methodspace_builtin_methods(runtime, space));
 
   test_builtin(runtime, space, vStr("abcd"), vStr("ab"), "+", vArray(1, vStr("cd")));
   test_builtin(runtime, space, vStr(""), vStr(""), "+", vArray(1, vStr("")));
