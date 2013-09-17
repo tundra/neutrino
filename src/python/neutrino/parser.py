@@ -120,7 +120,8 @@ class Parser(object):
       return self.parse_operator_expression()
 
   # <lambda expression>
-  #   -> "fn" <arguments> "=>" <word expression>
+  #   -> "fn" <parameters> "=>" <word expression>
+  #   -> "fn" <parameters> <sequence expression>
   def parse_lambda_expression(self):
     self.expect_word('fn')
     params = self.parse_parameters()
