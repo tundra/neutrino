@@ -95,8 +95,9 @@ value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
 // Creates a new protocol object with the given display name.
 value_t new_heap_protocol(runtime_t *runtime, value_t display_name);
 
-// Creates a new lambda value that supports the given method space methods.
-value_t new_heap_lambda(runtime_t *runtime, value_t methods);
+// Creates a new lambda value that supports the given method space methods and
+// that holds the given captured variables.
+value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t outers);
 
 // Creates a new empty namespace object.
 value_t new_heap_namespace(runtime_t *runtime);

@@ -203,10 +203,27 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         frame_push_value(&frame, value);
         break;
       }
+      case ocLoadOuter: {
+        size_t index = read_next_byte(&state);
+        value_t subject = frame_get_argument(&frame, 0);
+        CHECK_FAMILY(ofLambda, subject);
+        value_t value = get_lambda_outer(subject, index);
+        frame_push_value(&frame, value);
+        break;
+      }
       case ocLambda: {
         value_t space = read_next_value(&state);
         CHECK_FAMILY(ofMethodspace, space);
-        TRY_DEF(lambda, new_heap_lambda(runtime, space));
+        size_t outer_count = read_next_byte(&state);
+        value_t outers;
+        if (outer_count == 0) {
+          outers = ROOT(runtime, empty_array);
+        } else {
+          TRY_SET(outers, new_heap_array(runtime, outer_count));
+          for (size_t i = 0; i < outer_count; i++)
+            set_array_at(outers, i, frame_pop_value(&frame));
+        }
+        TRY_DEF(lambda, new_heap_lambda(runtime, space, outers));
         frame_push_value(&frame, lambda);
         break;
       }
@@ -334,6 +351,52 @@ value_t map_scope_bind(map_scope_t *scope, value_t symbol, binding_type_t type,
   value_t value = new_integer(codec.encoded);
   TRY(set_id_hash_map_at(scope->assembler->runtime, scope->map, symbol, value));
   return success();
+}
+
+static value_t capture_scope_lookup(value_t symbol, void *data,
+    binding_info_t *info_out) {
+  capture_scope_t *scope = data;
+  size_t capture_count_before = get_array_buffer_length(scope->captures);
+  // See if we've captured this variable before.
+  for (size_t i = 0; i < capture_count_before; i++) {
+    value_t captured = get_array_buffer_at(scope->captures, i);
+    if (value_identity_compare(captured, symbol)) {
+      // Found it. Record that we did if necessary and return success.
+      if (info_out != NULL) {
+        info_out->type = btCaptured;
+        info_out->data = i;
+      }
+      return success();
+    }
+  }
+  // We haven't seen this one before so look it up outside.
+  value_t value = scope_lookup_callback_call(scope->outer, symbol, info_out);
+  if (info_out != NULL && !is_signal(scNotFound, value)) {
+    // We found something and this is a read. Add it to the list of captures.
+    runtime_t *runtime = scope->assembler->runtime;
+    if (get_array_buffer_length(scope->captures) == 0) {
+      // The first time we add something we have to create a new array buffer
+      // since all empty capture scopes share the singleton empty buffer.
+      TRY_SET(scope->captures, new_heap_array_buffer(runtime, 2));
+    }
+    TRY(add_to_array_buffer(runtime, scope->captures, symbol));
+    info_out->type = btCaptured;
+    info_out->data = capture_count_before;
+  }
+  return value;
+}
+
+value_t assembler_push_capture_scope(assembler_t *assm, capture_scope_t *scope) {
+  scope_lookup_callback_init(&scope->callback, capture_scope_lookup, scope);
+  scope->outer = assembler_set_scope_callback(assm, &scope->callback);
+  scope->captures = ROOT(assm->runtime, empty_array_buffer);
+  scope->assembler = assm;
+  return success();
+}
+
+void assembler_pop_capture_scope(assembler_t *assm, capture_scope_t *scope) {
+  CHECK_EQ("scopes out of sync", assm->scope_callback, &scope->callback);
+  assm->scope_callback = scope->outer;
 }
 
 value_t assembler_lookup_symbol(assembler_t *assm, value_t symbol,
@@ -519,9 +582,19 @@ value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index) {
   return success();
 }
 
-value_t assembler_emit_lambda(assembler_t *assm, value_t methods) {
+value_t assembler_emit_load_outer(assembler_t *assm, size_t index) {
+  assembler_emit_opcode(assm, ocLoadOuter);
+  assembler_emit_byte(assm, index);
+  assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
+value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
+    size_t outer_count) {
   assembler_emit_opcode(assm, ocLambda);
   TRY(assembler_emit_value(assm, methods));
-  assembler_adjust_stack_height(assm, +1);
+  assembler_emit_byte(assm, outer_count);
+  // Pop off all the outers and push back the lambda.
+  assembler_adjust_stack_height(assm, -outer_count+1);
   return success();
 }

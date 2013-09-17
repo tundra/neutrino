@@ -11,18 +11,19 @@
 
 // Invokes the given macro for each opcode name.
 #define ENUM_OPCODES(F)                                                        \
-  F(Push)                                                                      \
-  F(Return)                                                                    \
-  F(NewArray)                                                                  \
-  F(Invoke)                                                                    \
   F(Builtin)                                                                   \
-  F(Slap)                                                                      \
-  F(Pop)                                                                       \
+  F(DelegateToLambda)                                                          \
+  F(Invoke)                                                                    \
+  F(Lambda)                                                                    \
+  F(LoadArgument)                                                              \
   F(LoadGlobal)                                                                \
   F(LoadLocal)                                                                 \
-  F(Lambda)                                                                    \
-  F(DelegateToLambda)                                                          \
-  F(LoadArgument)
+  F(LoadOuter)                                                                 \
+  F(NewArray)                                                                  \
+  F(Pop)                                                                       \
+  F(Push)                                                                      \
+  F(Return)                                                                    \
+  F(Slap)
 
 // The enum of all opcodes.
 typedef enum {
@@ -46,7 +47,9 @@ typedef enum {
   // A local variable in the current scope.
   btLocal = 0,
   // An argument to the current immediate function.
-  btArgument
+  btArgument,
+  // A symbol captured by an enclosing method.
+  btCaptured
 } binding_type_t;
 
 // A collection of information about a binding. This is going to be encoded as
@@ -150,12 +153,18 @@ value_t assembler_emit_load_global(assembler_t *assm, value_t name,
 // Emits an argument load of the argument with the given parameter index.
 value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index);
 
-// Emits a lambda that understands the given methods.
-value_t assembler_emit_lambda(assembler_t *assm, value_t methods);
+// Emits a load of a captured outer variable in the subject object.
+value_t assembler_emit_load_outer(assembler_t *assm, size_t index);
+
+// Emits a lambda that understands the given methods and which expects the given
+// number of outer variables to be present on the stack.
+value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
+    size_t outer_count);
 
 // Hacky implementation of calling lambdas. Later this should be replaced by a
 // more general delegate operation.
 value_t assembler_emit_delegate_lambda_call(assembler_t *assm);
+
 
 // A scope defining a single symbol.
 typedef struct {
@@ -177,6 +186,7 @@ void assembler_push_single_symbol_scope(assembler_t *assm,
 // Pops a single symbol scope off the scope stack.
 void assembler_pop_single_symbol_scope(assembler_t *assm,
     single_symbol_scope_t *scope);
+
 
 // A scope whose symbols are defined in a hash map.
 typedef struct {
@@ -201,6 +211,27 @@ void assembler_pop_map_scope(assembler_t *assm, map_scope_t *scope);
 // in this scope.
 value_t map_scope_bind(map_scope_t *scope, value_t symbol, binding_type_t type,
     uint32_t data);
+
+
+// A scope that records any variables looked up in an enclosing scope and turns
+// them into captures rather than direct access.
+typedef struct {
+  // The callback that performs lookup in this scope.
+  scope_lookup_callback_t callback;
+  // Then enclosing scope.
+  scope_lookup_callback_t *outer;
+  // The list of captured symbols.
+  value_t captures;
+  // The assembler this scope belongs to.
+  assembler_t *assembler;
+} capture_scope_t;
+
+// Pushes a capture scope onto the scope stack.
+value_t assembler_push_capture_scope(assembler_t *assm, capture_scope_t *scope);
+
+// Pops a map symbol scope off the scope stack.
+void assembler_pop_capture_scope(assembler_t *assm, capture_scope_t *scope);
+
 
 // Looks up a symbol in the current and surrounding scopes. Returns a signal if
 // the symbol is not found, otherwise if the stores the binding in the given out

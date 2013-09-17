@@ -342,9 +342,8 @@ NO_BUILTIN_METHODS(local_variable_ast);
 
 UNCHECKED_ACCESSORS_IMPL(LocalVariableAst, local_variable_ast, Symbol, symbol);
 
-value_t emit_local_variable_ast(value_t self, assembler_t *assm) {
-  CHECK_FAMILY(ofLocalVariableAst, self);
-  value_t symbol = get_local_variable_ast_symbol(self);
+// Pushes the value of a symbol onto the stack.
+static value_t assembler_load_symbol(value_t symbol, assembler_t *assm) {
   CHECK_FAMILY(ofSymbolAst, symbol);
   binding_info_t binding;
   if (is_signal(scNotFound, assembler_lookup_symbol(assm, symbol, &binding)))
@@ -358,11 +357,21 @@ value_t emit_local_variable_ast(value_t self, assembler_t *assm) {
     case btArgument:
       TRY(assembler_emit_load_argument(assm, binding.data));
       break;
+    case btCaptured:
+      TRY(assembler_emit_load_outer(assm, binding.data));
+      break;
     default:
       WARN("Unknown binding type %i", binding.type);
       UNREACHABLE("unknown binding type");
       break;
   }
+  return success();
+}
+
+value_t emit_local_variable_ast(value_t self, assembler_t *assm) {
+  CHECK_FAMILY(ofLocalVariableAst, self);
+  value_t symbol = get_local_variable_ast_symbol(self);
+  TRY(assembler_load_symbol(symbol, assm));
   return success();
 }
 
@@ -474,9 +483,13 @@ UNCHECKED_ACCESSORS_IMPL(LambdaAst, lambda_ast, Parameters, parameters);
 UNCHECKED_ACCESSORS_IMPL(LambdaAst, lambda_ast, Body, body);
 
 value_t emit_lambda_ast(value_t value, assembler_t *assm) {
+  // Emitting a lambda takes a fair amount of code but most of it is
+  // straightforward -- it's more just verbose than actually complex.
   CHECK_FAMILY(ofLambdaAst, value);
   runtime_t *runtime = assm->runtime;
-  // Build the signature.
+
+  // Build the signature. First part is the standard preamble: subject and
+  // selector.
   value_t params = get_lambda_ast_parameters(value);
   size_t implicit_argc = 2;
   size_t explicit_argc = get_array_length(params);
@@ -490,8 +503,20 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   TRY_DEF(selector_guard, new_heap_guard(runtime, gtEq, RSTR(runtime, sausages)));
   TRY_DEF(selector_param, new_heap_parameter(runtime, selector_guard, false, 1));
   set_pair_array_second_at(vector, 1, selector_param);
-  map_scope_t scope;
-  TRY(assembler_push_map_scope(assm, &scope));
+
+  // Push a capture scope that captures any symbols accessed outside the lambda.
+  capture_scope_t capture_scope;
+  TRY(assembler_push_capture_scope(assm, &capture_scope));
+  // Push the scope that holds the parameters. We could in principle use just a
+  // single scope that does both but this way is cleaner and allows the two
+  // parts to be used independently from each other. Also, we don't really need
+  // the scopes until the part where the method space is built but it's
+  // convenient to have the map scope to we can add stuff to it when going
+  // through the parameters.
+  map_scope_t param_scope;
+  TRY(assembler_push_map_scope(assm, &param_scope));
+
+  // Build the positional argument part of the signature.
   for (size_t i = 0; i < explicit_argc; i++) {
     // Add the parameter to the signature.
     size_t param_index = implicit_argc + i;
@@ -509,19 +534,34 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
     if (assembler_is_symbol_bound(assm, symbol))
       // We're trying to redefine an already defined symbol. That's not valid.
       return new_invalid_syntax_signal(isSymbolAlreadyBound);
-    TRY(map_scope_bind(&scope, symbol, btArgument, param_index));
+    TRY(map_scope_bind(&param_scope, symbol, btArgument, param_index));
   }
   co_sort_pair_array(vector);
   TRY_DEF(sig, new_heap_signature(runtime, vector, total_argc, total_argc, false));
+
   // Build the method space.
   TRY_DEF(space, new_heap_methodspace(runtime));
   value_t body = get_lambda_ast_body(value);
   TRY_DEF(body_code, compile_expression(runtime, body, assm->scope_callback));
-  // Remove the parameter bindings again.
-  assembler_pop_map_scope(assm, &scope);
   TRY_DEF(method, new_heap_method(runtime, sig, body_code));
   TRY(add_methodspace_method(runtime, space, method));
-  assembler_emit_lambda(assm, space);
+
+  // Pop the two scopes back off since we're done compiling the body.
+  assembler_pop_map_scope(assm, &param_scope);
+  assembler_pop_capture_scope(assm, &capture_scope);
+
+  // Push the captured variables onto the stack so they can to be stored in the
+  // lambda.
+  value_t captures = capture_scope.captures;
+  size_t capture_count = get_array_buffer_length(captures);
+  for (size_t i = 0; i < capture_count; i++)
+    // Push the captured symbols onto the stack in reverse order just to make
+    // it simpler to pop them into the capture array at runtime. It makes no
+    // difference, loading a symbol has no side-effects.
+    assembler_load_symbol(get_array_buffer_at(captures, capture_count - i - 1),
+        assm);
+  TRY(assembler_emit_lambda(assm, space, capture_count));
+
   return success();
 }
 
