@@ -50,7 +50,7 @@ const char *get_species_division_name(species_division_t division) {
 
 #define ADD_BUILTIN(family, name, argc, impl)                                  \
   TRY(add_methodspace_builtin_method(runtime, space,                           \
-      runtime->roots.family##_protocol, name, argc, impl))
+      ROOT(runtime, family##_protocol), name, argc, impl))
 
 static value_t integer_plus_integer(builtin_arguments_t *args) {
   value_t this = get_builtin_subject(args);
@@ -77,7 +77,7 @@ static value_t integer_negate(builtin_arguments_t *args) {
 static value_t integer_print(builtin_arguments_t *args) {
   value_t this = get_builtin_subject(args);
   value_print_ln(this);
-  return runtime_nothing(args->runtime);
+  return ROOT(args->runtime, nothing);
 }
 
 value_t add_integer_builtin_methods(runtime_t *runtime, value_t space) {
@@ -289,7 +289,7 @@ static value_t string_print(builtin_arguments_t *args) {
   value_t this = get_builtin_subject(args);
   CHECK_FAMILY(ofString, this);
   value_print_ln(this);
-  return runtime_nothing(args->runtime);
+  return ROOT(args->runtime, nothing);
 }
 
 value_t add_string_builtin_methods(runtime_t *runtime, value_t space) {
@@ -689,8 +689,8 @@ static void set_id_hash_map_entry(value_t *entry, value_t key, size_t hash,
 // Sets the full contents of a map entry such that it can be recognized as
 // deleted.
 static void delete_id_hash_map_entry(runtime_t *runtime, value_t *entry) {
-  value_t null = runtime_null(runtime);
-  entry[kIdHashMapEntryKeyOffset] = runtime_nothing(runtime);
+  value_t null = ROOT(runtime, null);
+  entry[kIdHashMapEntryKeyOffset] = ROOT(runtime, nothing);
   entry[kIdHashMapEntryHashOffset] = null;
   entry[kIdHashMapEntryValueOffset] = null;
 }
@@ -856,7 +856,7 @@ void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_object,
   value_t *old_entries = get_array_elements_unchecked(old_entry_array);
   // Copy the contents of the new entry array into the old one and clear it as
   // we go so it's ready to have elements added back.
-  value_t null = runtime_null(runtime);
+  value_t null = ROOT(runtime, null);
   for (size_t i = 0; i < entry_array_length; i++) {
     old_entries[i] = new_entries[i];
     new_entries[i] = null;
@@ -1235,7 +1235,7 @@ value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, value_t ke
   }
   // Pad the children buffer if necessary.
   for (size_t i = get_array_buffer_length(children); i <= index; i++)
-    TRY(add_to_array_buffer(runtime, children, runtime_null(runtime)));
+    TRY(add_to_array_buffer(runtime, children, ROOT(runtime, null)));
   // Create the new child.
   value_t old_value = get_argument_map_trie_value(self);
   size_t old_length = get_array_length(old_value);
@@ -1268,7 +1268,7 @@ value_t emit_lambda_call_trampoline(assembler_t *assm) {
 }
 
 value_t add_lambda_builtin_methods(runtime_t *runtime, value_t space) {
-  TRY(add_methodspace_custom_method(runtime, space, runtime->roots.lambda_protocol,
+  TRY(add_methodspace_custom_method(runtime, space, ROOT(runtime, lambda_protocol),
       "()", 0, true, emit_lambda_call_trampoline));
   return success();
 }
@@ -1287,7 +1287,7 @@ value_t namespace_validate(value_t value) {
 
 value_t set_namespace_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(bindings, get_id_hash_map_at(contents, runtime->roots.string_table.bindings));
+  TRY_DEF(bindings, get_id_hash_map_at(contents, RSTR(runtime, bindings)));
   set_namespace_bindings(object, bindings);
   return success();
 }
@@ -1341,12 +1341,12 @@ value_t add_plankton_factory(value_t map, value_t category, const char *name,
 }
 
 value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
-  value_t core = runtime->roots.string_table.core;
+  value_t core = RSTR(runtime, core);
   TRY(add_plankton_factory(map, core, "Namespace", new_namespace, runtime));
   TRY(add_plankton_factory(map, core, "Methodspace", new_methodspace, runtime));
-  TRY(add_plankton_binding(map, core, "subject", runtime->roots.subject_key,
+  TRY(add_plankton_binding(map, core, "subject", ROOT(runtime, subject_key),
       runtime));
-  TRY(add_plankton_binding(map, core, "selector", runtime->roots.selector_key,
+  TRY(add_plankton_binding(map, core, "selector", ROOT(runtime, selector_key),
       runtime));
   return success();
 }

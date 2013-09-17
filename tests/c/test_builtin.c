@@ -16,12 +16,12 @@ static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
   value_t args_ast = new_heap_array(runtime, arg_count);
   // The subject argument.
   set_array_at(args_ast, 0, new_heap_argument_ast(runtime,
-      runtime->roots.subject_key,
+      ROOT(runtime, subject_key),
       new_heap_literal_ast(runtime,
           variant_to_value(runtime, receiver))));
   // The selector argument.
   set_array_at(args_ast, 1, new_heap_argument_ast(runtime,
-      runtime->roots.selector_key,
+      ROOT(runtime, selector_key),
       new_heap_literal_ast(runtime,
           variant_to_value(runtime, vStr(name)))));
   // The positional arguments.

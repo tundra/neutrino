@@ -36,7 +36,7 @@ TEST(plankton, simple) {
   check_plankton(runtime, new_integer(-65536));
 
   // Singletons
-  check_plankton(runtime, runtime_null(runtime));
+  check_plankton(runtime, ROOT(runtime, null));
   check_plankton(runtime, runtime_bool(runtime, true));
   check_plankton(runtime, runtime_bool(runtime, false));
 
@@ -88,7 +88,7 @@ TEST(plankton, string) {
 TEST(plankton, instance) {
   CREATE_RUNTIME();
 
-  value_t instance = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+  value_t instance = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
   check_plankton(runtime, instance);
   DEF_HEAP_STR(x, "x");
   ASSERT_SUCCESS(try_set_instance_field(instance, x, new_integer(8)));
@@ -104,9 +104,9 @@ TEST(plankton, instance) {
 TEST(plankton, references) {
   CREATE_RUNTIME();
 
-  value_t i0 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
-  value_t i1 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
-  value_t i2 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+  value_t i0 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
+  value_t i1 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
+  value_t i2 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
   value_t array = new_heap_array(runtime, 6);
   set_array_at(array, 0, i0);
   set_array_at(array, 1, i2);
@@ -127,15 +127,15 @@ TEST(plankton, references) {
 TEST(plankton, cycles) {
   CREATE_RUNTIME();
 
-  value_t i0 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+  value_t i0 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
   value_t k0 = new_integer(78);
   ASSERT_SUCCESS(set_instance_field(runtime, i0, k0, i0));
   value_t d0 = transcode_plankton(runtime, NULL, NULL, i0);
   ASSERT_SAME(d0, get_instance_field(d0, k0));
 
-  value_t i1 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
-  value_t i2 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
-  value_t i3 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+  value_t i1 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
+  value_t i2 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
+  value_t i3 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
   value_t k1 = new_integer(79);
   ASSERT_SUCCESS(set_instance_field(runtime, i1, k0, i2));
   ASSERT_SUCCESS(set_instance_field(runtime, i1, k1, i3));
@@ -189,9 +189,9 @@ TEST(plankton, env_resolution) {
   CREATE_RUNTIME();
 
   test_resolver_data_t data;
-  data.i0 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
-  data.i1 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
-  value_t i2 = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+  data.i0 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
+  data.i1 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
+  value_t i2 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
 
   value_mapping_t resolver;
   value_mapping_init(&resolver, value_to_int, &data);

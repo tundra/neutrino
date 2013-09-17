@@ -376,7 +376,7 @@ static value_t value_deserialize(deserialize_state_t *state) {
     case pInt32:
       return int32_deserialize(state->in);
     case pNull:
-      return runtime_null(state->runtime);
+      return ROOT(state->runtime, null);
     case pTrue:
       return runtime_bool(state->runtime, true);
     case pFalse:

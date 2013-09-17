@@ -57,7 +57,7 @@ TEST(behavior, identity) {
   ASSERT_TRUE(equal(fahlse, fahlse));
 
   // Null
-  value_t null = runtime_null(runtime);
+  value_t null = ROOT(runtime, null);
   ASSERT_SUCCESS(hash(null));
   ASSERT_TRUE(equal(null, null));
 
@@ -87,7 +87,7 @@ TEST(behavior, print_on) {
   check_print_on("-1231", new_integer(-1231));
 
   // Singletons
-  check_print_on("null", runtime_null(runtime));
+  check_print_on("null", ROOT(runtime, null));
   check_print_on("true", runtime_bool(runtime, true));
   check_print_on("false", runtime_bool(runtime, false));
 

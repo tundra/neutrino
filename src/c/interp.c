@@ -225,7 +225,7 @@ value_t run_code_block(runtime_t *runtime, value_t code) {
   size_t frame_size = get_code_block_high_water_mark(code);
   push_stack_frame(runtime, stack, &frame, frame_size);
   set_frame_code_block(&frame, code);
-  set_frame_argument_map(&frame, runtime->roots.empty_array);
+  set_frame_argument_map(&frame, ROOT(runtime, empty_array));
   return run_stack(runtime, stack);
 }
 

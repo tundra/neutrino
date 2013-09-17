@@ -244,7 +244,7 @@ TEST(value, array_buffer) {
 TEST(value, array_buffer_empty) {
   CREATE_RUNTIME();
 
-  value_t buf = new_heap_array_buffer_with_contents(runtime, runtime->roots.empty_array);
+  value_t buf = new_heap_array_buffer_with_contents(runtime, ROOT(runtime, empty_array));
   ASSERT_SUCCESS(buf);
   ASSERT_SUCCESS(add_to_array_buffer(runtime, buf, new_integer(9)));
 
@@ -255,11 +255,11 @@ TEST(value, get_protocol) {
   CREATE_RUNTIME();
 
   value_t int_proto = get_protocol(new_integer(2), runtime);
-  ASSERT_VALEQ(int_proto, runtime->roots.integer_protocol);
+  ASSERT_VALEQ(int_proto, ROOT(runtime, integer_protocol));
   ASSERT_VALEQ(int_proto, get_protocol(new_integer(6), runtime));
-  value_t null_proto = get_protocol(runtime_null(runtime), runtime);
+  value_t null_proto = get_protocol(ROOT(runtime, null), runtime);
   ASSERT_FALSE(value_structural_equal(int_proto, null_proto));
-  ASSERT_VALEQ(null_proto, runtime->roots.null_protocol);
+  ASSERT_VALEQ(null_proto, ROOT(runtime, null_protocol));
 
   DISPOSE_RUNTIME();
 }
@@ -268,7 +268,7 @@ TEST(value, get_protocol) {
 TEST(value, instance_division) {
   CREATE_RUNTIME();
 
-  value_t proto = new_heap_protocol(runtime, runtime_null(runtime));
+  value_t proto = new_heap_protocol(runtime, ROOT(runtime, null));
   value_t species = new_heap_instance_species(runtime, proto);
   value_t instance = new_heap_instance(runtime, species);
   ASSERT_VALEQ(proto, get_instance_species_primary_protocol(species));
@@ -356,7 +356,7 @@ TEST(value, array_sort) {
   };
 
   // Normal sorting
-  ASSERT_TRUE(is_array_sorted(runtime->roots.empty_array));
+  ASSERT_TRUE(is_array_sorted(ROOT(runtime, empty_array)));
   value_t a0 = new_heap_array(runtime, kTestArraySize);
   for (size_t i = 0; i < kTestArraySize; i++)
     set_array_at(a0, i, new_integer(kUnsorted[i]));
@@ -441,7 +441,7 @@ TEST(value, rehash_map) {
   // Build and retain a number of strings. We'll use these as keys.
   gc_safe_t *insts[128];
   for (size_t i = 0; i < kInstanceCount; i++) {
-    value_t inst = new_heap_instance(runtime, runtime->roots.empty_instance_species);
+    value_t inst = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
     ASSERT_SUCCESS(set_instance_field(runtime, inst, new_integer(0), new_integer(i)));
     insts[i] = runtime_new_gc_safe(runtime, inst);
   }
@@ -570,7 +570,7 @@ TEST(value, argument_map_tries) {
 
   pseudo_random_t random;
   pseudo_random_init(&random, 4234523);
-  value_t root = new_heap_argument_map_trie(runtime, runtime->roots.empty_array);
+  value_t root = new_heap_argument_map_trie(runtime, ROOT(runtime, empty_array));
 
   // Build a set of test data.
   static const size_t kSampleSize = 129;

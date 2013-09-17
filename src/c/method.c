@@ -327,7 +327,7 @@ value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol
   value_t inheritance = get_methodspace_inheritance(space);
   value_t parents = get_id_hash_map_at(inheritance, protocol);
   if (is_signal(scNotFound, parents)) {
-    return runtime->roots.empty_array_buffer;
+    return ROOT(runtime, empty_array_buffer);
   } else {
     return parents;
   }
@@ -407,10 +407,10 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
   if (!in_domain(vdSignal, result)) {
     // We have a result so we need to build an argument map that represents the
     // result's offsets vector.
-    value_t current_node = runtime->roots.argument_map_trie_root;
+    value_t current_node = ROOT(runtime, argument_map_trie_root);
     for (size_t i = 0; i < arg_count; i++) {
       size_t offset = result_offsets[i];
-      value_t value = (offset == kNoOffset) ? runtime_null(runtime) : new_integer(offset);
+      value_t value = (offset == kNoOffset) ? ROOT(runtime, null) : new_integer(offset);
       TRY_SET(current_node, get_argument_map_trie_child(runtime, current_node, value));
     }
     *arg_map_out = get_argument_map_trie_value(current_node);
@@ -421,9 +421,9 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
 
 value_t set_methodspace_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(raw_methods, get_id_hash_map_at(contents, runtime->roots.string_table.methods));
+  TRY_DEF(raw_methods, get_id_hash_map_at(contents, RSTR(runtime, methods)));
   TRY_DEF(methods, new_heap_array_buffer_with_contents(runtime, raw_methods));
-  TRY_DEF(inheritance, get_id_hash_map_at(contents, runtime->roots.string_table.inheritance));
+  TRY_DEF(inheritance, get_id_hash_map_at(contents, RSTR(runtime, inheritance)));
   set_methodspace_methods(object, methods);
   set_methodspace_inheritance(object, inheritance);
   return success();

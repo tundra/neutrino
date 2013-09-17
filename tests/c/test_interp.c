@@ -42,7 +42,7 @@ TEST(interp, execution) {
 
   // 0-element sequence
   {
-    value_t ast = new_heap_sequence_ast(runtime, runtime->roots.empty_array);
+    value_t ast = new_heap_sequence_ast(runtime, ROOT(runtime, empty_array));
     assert_ast_value(runtime, vNull(), ast);
   }
 
@@ -65,7 +65,7 @@ TEST(interp, execution) {
 
   // Simple local definition
   {
-    value_t sym = new_heap_symbol_ast(runtime, runtime_null(runtime));
+    value_t sym = new_heap_symbol_ast(runtime, ROOT(runtime, null));
     value_t var = new_heap_local_variable_ast(runtime, sym);
     value_t ast = new_heap_local_declaration_ast(runtime, sym,
         new_heap_literal_ast(runtime, new_integer(3)), var);
@@ -74,12 +74,12 @@ TEST(interp, execution) {
 
   // Simple lambda
   {
-    value_t lam = new_heap_lambda_ast(runtime, runtime->roots.empty_array,
+    value_t lam = new_heap_lambda_ast(runtime, ROOT(runtime, empty_array),
         new_heap_literal_ast(runtime, new_integer(13)));
-    value_t subject_arg = new_heap_argument_ast(runtime, runtime->roots.subject_key,
+    value_t subject_arg = new_heap_argument_ast(runtime, ROOT(runtime, subject_key),
         lam);
-    value_t selector_arg = new_heap_argument_ast(runtime, runtime->roots.selector_key,
-        new_heap_literal_ast(runtime, runtime->roots.string_table.sausages));
+    value_t selector_arg = new_heap_argument_ast(runtime, ROOT(runtime, selector_key),
+        new_heap_literal_ast(runtime, RSTR(runtime, sausages)));
     value_t args = new_heap_array(runtime, 2);
     set_array_at(args, 0, subject_arg);
     set_array_at(args, 1, selector_arg);
@@ -105,7 +105,7 @@ TEST(interp, compile_errors) {
   value_t l3 = new_heap_literal_ast(runtime, new_integer(3));
   // Redefinition of a local.
   {
-    value_t sym = new_heap_symbol_ast(runtime, runtime_null(runtime));
+    value_t sym = new_heap_symbol_ast(runtime, ROOT(runtime, null));
     value_t var = new_heap_local_variable_ast(runtime, sym);
     value_t inner = new_heap_local_declaration_ast(runtime, sym, l3, var);
     value_t outer = new_heap_local_declaration_ast(runtime, sym, l3, inner);
@@ -114,8 +114,8 @@ TEST(interp, compile_errors) {
 
   // Accessing an undefined symbol.
   {
-    value_t s0 = new_heap_symbol_ast(runtime, runtime_null(runtime));
-    value_t s1 = new_heap_symbol_ast(runtime, runtime_null(runtime));
+    value_t s0 = new_heap_symbol_ast(runtime, ROOT(runtime, null));
+    value_t s1 = new_heap_symbol_ast(runtime, ROOT(runtime, null));
     value_t var = new_heap_local_variable_ast(runtime, s0);
     value_t ast = new_heap_local_declaration_ast(runtime, s1, l3, var);
     assert_compile_failure(runtime, ast, isSymbolNotBound);

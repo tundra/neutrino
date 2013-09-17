@@ -94,14 +94,6 @@ void runtime_clear(runtime_t *runtime);
 // Disposes of the given runtime. If disposing fails a signal is returned.
 value_t runtime_dispose(runtime_t *runtime);
 
-// Returns this runtime's null value.
-value_t runtime_null(runtime_t *runtime);
-
-// Returns this runtime's nothing value. The nothing value can be used
-// internally to signify "no value" in situations where null, which would
-// otherwise usually be used for that, is considered to count as a value.
-value_t runtime_nothing(runtime_t *runtime);
-
 // Returns either this runtime's true or false value, depending on 'value'.
 value_t runtime_bool(runtime_t *runtime, bool value);
 
@@ -132,5 +124,20 @@ value_t roots_validate(roots_t *roots);
 
 // Invokes the given field callback for each field in the set of roots.
 value_t roots_for_each_field(roots_t *roots, field_callback_t *callback);
+
+// Accesses a named root directly in the given roots struct. Usually you'll want
+// to your ROOT instead.
+#define RAW_ROOT(roots, name) ((roots)->name)
+
+// Macro for accessing a named root in the given runtime. For instance, to get
+// null you would do ROOT(runtime, null). This can be used as an lval.
+#define ROOT(runtime, name) RAW_ROOT(&(runtime)->roots, name)
+
+// Accesses a string table string directly from the roots struct. Usually you'll
+// want to use RSTR instead.
+#define RAW_RSTR(roots, name) ((roots)->string_table.name)
+
+// Macro for accessing a named string table string. This can be used as an lval.
+#define RSTR(runtime, name) RAW_RSTR(&(runtime)->roots, name)
 
 #endif // _RUNTIME
