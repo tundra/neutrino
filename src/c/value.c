@@ -1256,6 +1256,7 @@ GET_FAMILY_PROTOCOL_IMPL(lambda);
 TRIVIAL_PRINT_ON_IMPL(Lambda, lambda);
 
 UNCHECKED_ACCESSORS_IMPL(Lambda, lambda, Methods, methods);
+UNCHECKED_ACCESSORS_IMPL(Lambda, lambda, Outers, outers);
 
 value_t lambda_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofLambda, value);
@@ -1271,6 +1272,12 @@ value_t add_lambda_builtin_methods(runtime_t *runtime, value_t space) {
   TRY(add_methodspace_custom_method(runtime, space, ROOT(runtime, lambda_protocol),
       "()", 0, true, emit_lambda_call_trampoline));
   return success();
+}
+
+value_t get_lambda_outer(value_t self, size_t index) {
+  CHECK_FAMILY(ofLambda, self);
+  value_t outers = get_lambda_outers(self);
+  return get_array_at(outers, index);
 }
 
 

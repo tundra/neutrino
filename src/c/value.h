@@ -789,11 +789,18 @@ value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, value_t ke
 
 // --- L a m b d a ---
 
-static const size_t kLambdaSize = OBJECT_SIZE(1);
+static const size_t kLambdaSize = OBJECT_SIZE(2);
 static const size_t kLambdaMethodsOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kLambdaOutersOffset = OBJECT_FIELD_OFFSET(1);
 
 // Returns the method space where the methods supported by this lambda live.
 ACCESSORS_DECL(lambda, methods);
+
+// Returns the array of outer variables for this lambda.
+ACCESSORS_DECL(lambda, outers);
+
+// Returns the index'th outer value captured by the given lambda.
+value_t get_lambda_outer(value_t self, size_t index);
 
 
 // --- N a m e s p a c e ---
