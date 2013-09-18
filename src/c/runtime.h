@@ -72,21 +72,21 @@ typedef struct {
   // Random number generator to use.
   pseudo_random_t random;
   // The smallest legal interval between allocation failures.
-  size_t min_frequency;
+  size_t min_freq;
   // The range within which to pick random values.
   size_t spread;
   // The number of allocations remaining before the next forced failure.
   size_t remaining;
-} allocation_failure_fuzzer_t;
+} gc_fuzzer_t;
 
-// Initializes an allocation failure fuzzer according to the given runtime
+// Initializes an garbage collection fuzzer according to the given runtime
 // config.
-void allocation_failure_fuzzer_init(allocation_failure_fuzzer_t *fuzzer,
-    size_t min_frequency, size_t mean_frequency, size_t seed);
+void gc_fuzzer_init(gc_fuzzer_t *fuzzer, size_t min_freq, size_t mean_freq,
+    size_t seed);
 
 // Returns true if the next allocation should fail. This also advances the state
 // of the fuzzer.
-bool allocation_failure_fuzzer_tick(allocation_failure_fuzzer_t *fuzzer);
+bool gc_fuzzer_tick(gc_fuzzer_t *fuzzer);
 
 
 // All the data associated with a single VM instance.
@@ -98,7 +98,7 @@ struct runtime_t {
   // The next key index.
   uint64_t next_key_index;
   // Optional allocation failure fuzzer.
-  allocation_failure_fuzzer_t *allocation_failure_fuzzer;
+  gc_fuzzer_t *gc_fuzzer;
 };
 
 // Creates a new runtime object, storing it in the given runtime out parameter.

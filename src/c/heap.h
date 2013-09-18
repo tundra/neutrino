@@ -77,10 +77,10 @@ typedef struct {
   // has happened, because the OS doesn't necessarily handle that very well.
   size_t system_memory_limit;
   // How often, on average, to simulate an allocation failure when fuzzing?
-  size_t allocation_failure_fuzzer_frequency;
+  size_t gc_fuzz_freq;
   // Random seed used to initialize the pseudo random generator used to
-  // determine when to force allocation failures when fuzzing.
-  size_t allocation_failure_fuzzer_seed;
+  // determine when to simulate a failure when fuzzing.
+  size_t gc_fuzz_seed;
 } runtime_config_t;
 
 // Initializes the fields of this runtime config to the defaults.

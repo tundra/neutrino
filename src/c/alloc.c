@@ -468,6 +468,10 @@ value_t new_heap_name_ast(runtime_t *runtime, value_t path, value_t phase) {
 
 value_t alloc_heap_object(runtime_t *runtime, size_t bytes, value_t species) {
   address_t addr = NULL;
+  if (runtime->gc_fuzzer != NULL) {
+    if (gc_fuzzer_tick(runtime->gc_fuzzer))
+      return new_heap_exhausted_signal(bytes);
+  }
   if (!heap_try_alloc(&runtime->heap, bytes, &addr))
     return new_heap_exhausted_signal(bytes);
   value_t result = new_object(addr);

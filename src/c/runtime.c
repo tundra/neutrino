@@ -165,22 +165,22 @@ value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
   return success();
 }
 
-void allocation_failure_fuzzer_init(allocation_failure_fuzzer_t *fuzzer,
-    size_t min_frequency, size_t mean_frequency, size_t seed) {
-  CHECK_TRUE("min frequency must be nonzero", min_frequency > 0);
-  CHECK_TRUE("mean frequency must be nonzero", mean_frequency > 0);
-  if (mean_frequency <= min_frequency)
-    mean_frequency = min_frequency + 1;
+void gc_fuzzer_init(gc_fuzzer_t *fuzzer, size_t min_freq, size_t mean_freq,
+    size_t seed) {
+  CHECK_TRUE("min frequency must be nonzero", min_freq > 0);
+  CHECK_TRUE("mean frequency must be nonzero", mean_freq > 0);
+  if (mean_freq <= min_freq)
+    mean_freq = min_freq + 1;
   pseudo_random_init(&fuzzer->random, seed);
-  fuzzer->min_frequency = min_frequency;
-  fuzzer->spread = (mean_frequency - min_frequency) * 2;
+  fuzzer->min_freq = min_freq;
+  fuzzer->spread = (mean_freq - min_freq) * 2;
   fuzzer->remaining = 0;
-  allocation_failure_fuzzer_tick(fuzzer);
+  gc_fuzzer_tick(fuzzer);
 }
 
-bool allocation_failure_fuzzer_tick(allocation_failure_fuzzer_t *fuzzer) {
+bool gc_fuzzer_tick(gc_fuzzer_t *fuzzer) {
   if (fuzzer->remaining == 0) {
-    size_t min = fuzzer->min_frequency;
+    size_t min = fuzzer->min_freq;
     size_t spread = fuzzer->spread;
     size_t remaining = pseudo_random_next(&fuzzer->random, spread) + min;
     fuzzer->remaining = remaining;
@@ -213,13 +213,12 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
   runtime_clear(runtime);
   TRY(heap_init(&runtime->heap, config));
   TRY(roots_init(&runtime->roots, runtime));
-  if (config->allocation_failure_fuzzer_frequency > 0) {
+  if (config->gc_fuzz_freq > 0) {
     memory_block_t memory = allocator_default_malloc(
-        sizeof(allocation_failure_fuzzer_t));
-    runtime->allocation_failure_fuzzer = memory.memory;
-    allocation_failure_fuzzer_init(runtime->allocation_failure_fuzzer,
-        5, config->allocation_failure_fuzzer_frequency,
-        config->allocation_failure_fuzzer_seed);
+        sizeof(gc_fuzzer_t));
+    runtime->gc_fuzzer = memory.memory;
+    gc_fuzzer_init(runtime->gc_fuzzer, 5, config->gc_fuzz_freq,
+        config->gc_fuzz_seed);
   }
   return runtime_validate(runtime);
 }
@@ -436,17 +435,16 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
 
 void runtime_clear(runtime_t *runtime) {
   runtime->next_key_index = 0;
-  runtime->allocation_failure_fuzzer = NULL;
+  runtime->gc_fuzzer = NULL;
   roots_clear(&runtime->roots);
 }
 
 value_t runtime_dispose(runtime_t *runtime) {
   TRY(runtime_validate(runtime));
   heap_dispose(&runtime->heap);
-  if (runtime->allocation_failure_fuzzer != NULL) {
-    allocator_default_free(new_memory_block(runtime->allocation_failure_fuzzer,
-        sizeof(allocation_failure_fuzzer_t)));
-    runtime->allocation_failure_fuzzer = NULL;
+  if (runtime->gc_fuzzer != NULL) {
+    allocator_default_free(new_memory_block(runtime->gc_fuzzer, sizeof(gc_fuzzer_t)));
+    runtime->gc_fuzzer = NULL;
   }
   return success();
 }

@@ -126,21 +126,23 @@ TEST(runtime, gc_safe_loop) {
 }
 
 TEST(runtime, fuzzer) {
-  allocation_failure_fuzzer_t fuzzer;
-  allocation_failure_fuzzer_init(&fuzzer, 10, 100, 43245);
+  static const size_t kMin = 10;
+  static const size_t kMean = 100;
+  gc_fuzzer_t fuzzer;
+  gc_fuzzer_init(&fuzzer, kMin, kMean, 43245);
   size_t ticks_since_last = 0;
   size_t total_failures = 0;
   for (size_t i = 0; i < 65536; i++) {
-    if (allocation_failure_fuzzer_tick(&fuzzer)) {
+    if (gc_fuzzer_tick(&fuzzer)) {
       total_failures++;
-      ASSERT_TRUE(ticks_since_last >= 10);
+      ASSERT_TRUE(ticks_since_last >= kMin);
       ticks_since_last = 0;
     } else {
       ticks_since_last++;
     }
   }
   double average = 65536.0 / total_failures;
-  double deviation = (average - 100) / 100;
+  double deviation = (average - kMean) / kMean;
   if (deviation < 0)
     deviation = -deviation;
   ASSERT_TRUE(deviation < 0.1);

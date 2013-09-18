@@ -93,12 +93,8 @@ static void main_allocator_data_dispose(main_allocator_data_t *data) {
 typedef struct {
   // Whether or not to print the output values.
   bool print_value;
-  // The mean frequency with which to generate allocation failures to test
-  // garbage collection. Passing 0 means not to fuzz.
-  size_t gc_fuzz_freq;
-  // Random seed used by the pseudo-random generator that decides when to
-  // trigger allocation failures when allocation failure fuzzing.
-  size_t gc_fuzz_seed;
+  // The config to store config-related flags directly into.
+  runtime_config_t *config;
   // The number of positional arguments.
   size_t argc;
   // The values of the positional arguments.
@@ -108,10 +104,9 @@ typedef struct {
 } main_options_t;
 
 // Initializes a options struct.
-static void main_options_init(main_options_t *flags) {
+static void main_options_init(main_options_t *flags, runtime_config_t *config) {
   flags->print_value = false;
-  flags->gc_fuzz_freq = 0;
-  flags->gc_fuzz_seed = 0;
+  flags->config = config;
   flags->argc = 0;
   flags->argv = NULL;
   flags->argv_memory = memory_block_empty();
@@ -159,10 +154,10 @@ static void parse_options(size_t argc, char **argv, main_options_t *flags_out) {
         flags_out->print_value = true;
       } else if (c_str_equals(arg, "--garbage-collect-fuzz-frequency")) {
         CHECK_TRUE("missing flag argument", i < argc);
-        flags_out->gc_fuzz_freq = c_str_as_long_or_die(argv[i++]);
+        flags_out->config->gc_fuzz_freq = c_str_as_long_or_die(argv[i++]);
       } else if (c_str_equals(arg, "--garbage-collect-fuzz-seed")) {
         CHECK_TRUE("missing flag argument", i < argc);
-        flags_out->gc_fuzz_seed = c_str_as_long_or_die(argv[i++]);
+        flags_out->config->gc_fuzz_seed = c_str_as_long_or_die(argv[i++]);
       } else {
         ERROR("Unknown flags '%s'", arg);
         UNREACHABLE("Flag parsing failed");
@@ -183,7 +178,7 @@ static value_t neutrino_main(int argc, char **argv) {
 
   // Parse the options.
   main_options_t options;
-  main_options_init(&options);
+  main_options_init(&options, &config);
   parse_options(argc, argv, &options);
 
   runtime_t *runtime;
