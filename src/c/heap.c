@@ -179,8 +179,10 @@ safe_value_t gc_safe_to_safe_value(gc_safe_t *handle) {
 
 gc_safe_t *safe_value_to_gc_safe(safe_value_t s_value) {
   gc_safe_t *result = (gc_safe_t*) s_value;
+#ifdef ENABLE_CHECKS
   SIG_CHECK_EQ_WITH_VALUE("casting non-gc safe", scInvalidCast, 0,
       kGcSafeMarker, result->gc_safe_marker);
+#endif
   return result;
 }
 
@@ -191,7 +193,9 @@ gc_safe_t *heap_new_gc_safe(heap_t *heap, value_t value) {
   gc_safe_t *next = heap->root_gc_safe.next;
   gc_safe_t *prev = next->prev;
   new_gc_safe->value = value;
+#ifdef ENABLE_CHECKS
   new_gc_safe->gc_safe_marker = kGcSafeMarker;
+#endif
   new_gc_safe->next = next;
   new_gc_safe->prev = prev;
   prev->next = new_gc_safe;
