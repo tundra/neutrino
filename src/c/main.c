@@ -93,6 +93,8 @@ static void main_allocator_data_dispose(main_allocator_data_t *data) {
 typedef struct {
   // Whether or not to print the output values.
   bool print_value;
+  // The config to store config-related flags directly into.
+  runtime_config_t *config;
   // The number of positional arguments.
   size_t argc;
   // The values of the positional arguments.
@@ -102,8 +104,9 @@ typedef struct {
 } main_options_t;
 
 // Initializes a options struct.
-static void main_options_init(main_options_t *flags) {
+static void main_options_init(main_options_t *flags, runtime_config_t *config) {
   flags->print_value = false;
+  flags->config = config;
   flags->argc = 0;
   flags->argv = NULL;
   flags->argv_memory = memory_block_empty();
@@ -125,6 +128,18 @@ static bool c_str_equals(const char *a, const char *b) {
   return strcmp(a, b) == 0;
 }
 
+// Parses the given string as a base-10 long and returns the value. If parsing
+// fails issues an error and aborts execution.
+static size_t c_str_as_long_or_die(const char *str) {
+  char *end = NULL;
+  size_t value = strtol(str, &end, 10);
+  if (*end != '\0') {
+    ERROR("Couldn't parse '%s' as a number", str);
+    UNREACHABLE("c str as long parse error");
+  }
+  return value;
+}
+
 // Parse a set of command-line arguments.
 static void parse_options(size_t argc, char **argv, main_options_t *flags_out) {
   // Allocate an argv array that is definitely large enough to store all the
@@ -137,6 +152,12 @@ static void parse_options(size_t argc, char **argv, main_options_t *flags_out) {
     if (c_str_starts_with(arg, "--")) {
       if (c_str_equals(arg, "--print-value")) {
         flags_out->print_value = true;
+      } else if (c_str_equals(arg, "--garbage-collect-fuzz-frequency")) {
+        CHECK_TRUE("missing flag argument", i < argc);
+        flags_out->config->gc_fuzz_freq = c_str_as_long_or_die(argv[i++]);
+      } else if (c_str_equals(arg, "--garbage-collect-fuzz-seed")) {
+        CHECK_TRUE("missing flag argument", i < argc);
+        flags_out->config->gc_fuzz_seed = c_str_as_long_or_die(argv[i++]);
       } else {
         ERROR("Unknown flags '%s'", arg);
         UNREACHABLE("Flag parsing failed");
@@ -157,7 +178,7 @@ static value_t neutrino_main(int argc, char **argv) {
 
   // Parse the options.
   main_options_t options;
-  main_options_init(&options);
+  main_options_init(&options, &config);
   parse_options(argc, argv, &options);
 
   runtime_t *runtime;

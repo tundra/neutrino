@@ -191,10 +191,10 @@ value_t new_heap_name_ast(runtime_t *runtime, value_t path, value_t phase);
 
 // --- U t i l s ---
 
-// Allocates a new heap object in the given heap of the given size and
+// Allocates a new heap object in the given runtime of the given size and
 // initializes it with the given type but requires the caller to complete
 // initialization.
-value_t alloc_heap_object(heap_t *heap, size_t bytes, value_t species);
+value_t alloc_heap_object(runtime_t *runtime, size_t bytes, value_t species);
 
 // Sets the given instance field to the given value, replacing the existing
 // value if it already exists. Returns a signal on failure.

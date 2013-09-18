@@ -165,6 +165,34 @@ value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
   return success();
 }
 
+void gc_fuzzer_init(gc_fuzzer_t *fuzzer, size_t min_freq, size_t mean_freq,
+    size_t seed) {
+  CHECK_TRUE("min frequency must be nonzero", min_freq > 0);
+  CHECK_TRUE("mean frequency must be nonzero", mean_freq > 0);
+  // It's best if we can vary the min frequency freely without breaking anything
+  // so rather than assert that the mean is larger we just adjust it if we have
+  // to.
+  if (mean_freq <= min_freq)
+    mean_freq = min_freq + 1;
+  pseudo_random_init(&fuzzer->random, seed);
+  fuzzer->min_freq = min_freq;
+  fuzzer->spread = (mean_freq - min_freq) * 2;
+  fuzzer->remaining = 0;
+  gc_fuzzer_tick(fuzzer);
+}
+
+bool gc_fuzzer_tick(gc_fuzzer_t *fuzzer) {
+  if (fuzzer->remaining == 0) {
+    // This is where we fail. First, generate a new remaining tick count.
+    fuzzer->remaining = pseudo_random_next(&fuzzer->random, fuzzer->spread) +
+        fuzzer->min_freq;
+    return true;
+  } else {
+    fuzzer->remaining--;
+    return false;
+  }
+}
+
 value_t new_runtime(runtime_config_t *config, runtime_t **runtime_out) {
   memory_block_t memory = allocator_default_malloc(sizeof(runtime_t));
   CHECK_EQ("wrong runtime_t memory size", sizeof(runtime_t), memory.size);
@@ -180,11 +208,20 @@ value_t delete_runtime(runtime_t *runtime) {
   return success();
 }
 
-value_t runtime_init(runtime_t *runtime, runtime_config_t *config) {
+value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
+  if (config == NULL)
+    config = runtime_config_get_default();
   // First reset all the fields to a well-defined value.
   runtime_clear(runtime);
   TRY(heap_init(&runtime->heap, config));
   TRY(roots_init(&runtime->roots, runtime));
+  if (config->gc_fuzz_freq > 0) {
+    memory_block_t memory = allocator_default_malloc(
+        sizeof(gc_fuzzer_t));
+    runtime->gc_fuzzer = memory.memory;
+    gc_fuzzer_init(runtime->gc_fuzzer, 5, config->gc_fuzz_freq,
+        config->gc_fuzz_seed);
+  }
   return runtime_validate(runtime);
 }
 
@@ -400,12 +437,17 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
 
 void runtime_clear(runtime_t *runtime) {
   runtime->next_key_index = 0;
+  runtime->gc_fuzzer = NULL;
   roots_clear(&runtime->roots);
 }
 
 value_t runtime_dispose(runtime_t *runtime) {
   TRY(runtime_validate(runtime));
   heap_dispose(&runtime->heap);
+  if (runtime->gc_fuzzer != NULL) {
+    allocator_default_free(new_memory_block(runtime->gc_fuzzer, sizeof(gc_fuzzer_t)));
+    runtime->gc_fuzzer = NULL;
+  }
   return success();
 }
 

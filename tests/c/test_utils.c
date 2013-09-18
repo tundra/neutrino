@@ -152,3 +152,70 @@ TEST(utils, bit_vectors) {
   test_bit_vector(1024);
   test_bit_vector(1026);
 }
+
+TEST(utils, pseudo_random) {
+  pseudo_random_t rand;
+  pseudo_random_init(&rand, 123456);
+  static const size_t kBucketCount = 257;
+  size_t buckets[1027];
+  for (size_t i = 0; i < kBucketCount; i++)
+    buckets[i] = 0;
+  size_t tries = 1048576;
+  for (size_t i = 0; i < tries; i++) {
+    size_t index = pseudo_random_next(&rand, kBucketCount);
+    ASSERT_TRUE(index < kBucketCount);
+    buckets[index]++;
+  }
+  double mid = tries / kBucketCount;
+  size_t min = tries;
+  size_t max = 0;
+  for (size_t i = 0; i < kBucketCount; i++) {
+    size_t bucket = buckets[i];
+    if (bucket < min)
+      min = bucket;
+    if (bucket > max)
+      max = bucket;
+  }
+  double min_dev = (mid - min) / mid;
+  double max_dev = (max - mid) / mid;
+  ASSERT_TRUE(min_dev <= 0.05);
+  ASSERT_TRUE(max_dev <= 0.05);
+}
+
+TEST(utils, shuffle) {
+  pseudo_random_t rand;
+  pseudo_random_init(&rand, 654322);
+
+  static const size_t kElemCount = 513;
+  size_t elems[513];
+  for (size_t i = 0; i < kElemCount; i++)
+    elems[i] = i;
+
+  bit_vector_t moved;
+  bit_vector_init(&moved, kElemCount, false);
+  size_t moved_count = 0;
+  for (size_t t = 0; t < 65; t++) {
+    pseudo_random_shuffle(&rand, elems, kElemCount, sizeof(size_t));
+    bit_vector_t seen;
+    bit_vector_init(&seen, kElemCount, false);
+    size_t seen_count = 0;
+    for (size_t i = 0; i < kElemCount; i++) {
+      size_t elem = elems[i];
+      if (elem != i && !bit_vector_get_at(&moved, i)) {
+        bit_vector_set_at(&moved, i, true);
+        moved_count++;
+      }
+      ASSERT_FALSE(bit_vector_get_at(&seen, elem));
+      bit_vector_set_at(&seen, elem, true);
+      seen_count++;
+    }
+    // Check that we saw each element once.
+    ASSERT_EQ(kElemCount, seen_count);
+    bit_vector_dispose(&seen);
+  }
+  // Check that all elements have been moved at least once. This is more of a
+  // sanity check than anything, the distribution might still be awful but it'll
+  // do.
+  ASSERT_EQ(kElemCount, moved_count);
+  bit_vector_dispose(&moved);
+}

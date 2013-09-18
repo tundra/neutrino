@@ -124,3 +124,26 @@ TEST(runtime, gc_safe_loop) {
 
   DISPOSE_RUNTIME();
 }
+
+TEST(runtime, gc_fuzzer) {
+  static const size_t kMin = 10;
+  static const size_t kMean = 100;
+  gc_fuzzer_t fuzzer;
+  gc_fuzzer_init(&fuzzer, kMin, kMean, 43245);
+  size_t ticks_since_last = 0;
+  size_t total_failures = 0;
+  for (size_t i = 0; i < 65536; i++) {
+    if (gc_fuzzer_tick(&fuzzer)) {
+      total_failures++;
+      ASSERT_TRUE(ticks_since_last >= kMin);
+      ticks_since_last = 0;
+    } else {
+      ticks_since_last++;
+    }
+  }
+  double average = 65536.0 / total_failures;
+  double deviation = (average - kMean) / kMean;
+  if (deviation < 0)
+    deviation = -deviation;
+  ASSERT_TRUE(deviation < 0.1);
+}
