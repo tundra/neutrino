@@ -88,28 +88,86 @@ static void main_allocator_data_dispose(main_allocator_data_t *data) {
     WARN("Disposing with %i of live memory.", data->live_memory);
 }
 
-// Whether or not to print the output values.
-// TODO: accept flags encoded as plankton instead of this.
-static bool print_value = false;
+// Holds all the options understood by the main executable.
+// TODO: accept options encoded as plankton instead of this.
+typedef struct {
+  // Whether or not to print the output values.
+  bool print_value;
+  // The number of positional arguments.
+  size_t argc;
+  // The values of the positional arguments.
+  const char **argv;
+  // The memory block that holds the args.
+  memory_block_t argv_memory;
+} main_options_t;
+
+// Initializes a options struct.
+static void main_options_init(main_options_t *flags) {
+  flags->print_value = false;
+  flags->argc = 0;
+  flags->argv = NULL;
+  flags->argv_memory = memory_block_empty();
+}
+
+// Free any memory allocated for the options struct.
+static void main_options_dispose(main_options_t *flags) {
+  allocator_default_free(flags->argv_memory);
+  flags->argv = NULL;
+}
+
+// Returns true iff the given haystack starts with the given prefix.
+static bool c_str_starts_with(const char *haystack, const char *prefix) {
+  return strstr(haystack, prefix) == haystack;
+}
+
+// Returns true iff the two given c strings are equal.
+static bool c_str_equals(const char *a, const char *b) {
+  return strcmp(a, b) == 0;
+}
+
+// Parse a set of command-line arguments.
+static void parse_options(size_t argc, char **argv, main_options_t *flags_out) {
+  // Allocate an argv array that is definitely large enough to store all the
+  // positional arguments.
+  flags_out->argv_memory = allocator_default_malloc(argc * sizeof(char*));
+  flags_out->argv = flags_out->argv_memory.memory;
+  // Scan through the arguments and parse them as flags or arguments.
+  for (size_t i = 1; i < argc;) {
+    const char *arg = argv[i++];
+    if (c_str_starts_with(arg, "--")) {
+      if (c_str_equals(arg, "--print-value")) {
+        flags_out->print_value = true;
+      } else {
+        ERROR("Unknown flags '%s'", arg);
+        UNREACHABLE("Flag parsing failed");
+      }
+    } else {
+      flags_out->argv[flags_out->argc++] = arg;
+    }
+  }
+}
 
 // Create a vm and run the program.
-static value_t neutrino_main(int argc, char *argv[]) {
+static value_t neutrino_main(int argc, char **argv) {
   runtime_config_t config;
   runtime_config_init_defaults(&config);
   // Set up a custom allocator we get tighter control over allocation.
   main_allocator_data_t allocator_data;
   main_allocator_data_init(&allocator_data, &config);
+
+  // Parse the options.
+  main_options_t options;
+  main_options_init(&options);
+  parse_options(argc, argv, &options);
+
   runtime_t *runtime;
   TRY(new_runtime(&config, &runtime));
   E_BEGIN_TRY_FINALLY();
-    for (int i = 1; i < argc; i++) {
-      const char *filename = argv[i];
+    for (size_t i = 0; i < options.argc; i++) {
+      const char *filename = options.argv[i];
       value_t input;
       if (strcmp("-", filename) == 0) {
         E_TRY_SET(input, read_file_to_blob(runtime, stdin));
-      } else if (strcmp("--print-value", filename) == 0) {
-        print_value = true;
-        continue;
       } else {
         FILE *file = fopen(filename, "r");
         E_TRY_SET(input, read_file_to_blob(runtime, file));
@@ -119,12 +177,13 @@ static value_t neutrino_main(int argc, char *argv[]) {
       E_TRY(init_plankton_environment_mapping(&syntax_mapping, runtime));
       E_TRY_DEF(program, plankton_deserialize(runtime, &syntax_mapping, input));
       value_t result = execute_syntax(runtime, program);
-      if (print_value)
+      if (options.print_value)
         value_print_ln(result);
     }
     E_RETURN(success());
   E_FINALLY();
     TRY(delete_runtime(runtime));
+    main_options_dispose(&options);
     main_allocator_data_dispose(&allocator_data);
   E_END_TRY_FINALLY();
 }
