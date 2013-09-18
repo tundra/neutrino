@@ -135,22 +135,45 @@ address_t align_address(address_arith_t alignment, address_t ptr);
 
 FORWARD(gc_safe_t);
 
+// Marker stored in gc safe structs that can be used to check whether a pointer
+// actually points to one or not.
+static const int32_t kGcSafeMarker = 0xFABACEAE;
+
 // Opaque datatype that can be used to unpin a pinned value.
 // Extra data associated with a gc-safe value. These handles form a doubly-linked
 // list such that nodes can add and remove themselves from the chain of all safe
 // values.
 struct gc_safe_t {
+  // The pinned value.
+  value_t value;
+#ifdef ENABLE_CHECKS
+  // In checked mode we store this marker next to the value so that we have at
+  // least some chance of catching the case where we mis-cast something else
+  // to a gc-safe.
+  int32_t gc_safe_marker;
+#endif
   // The next pin descriptor.
   gc_safe_t *next;
   // The previous pin descriptor.
   gc_safe_t *prev;
-  // The pinned value.
-  value_t value;
 };
 
-// Returns the value stored in the given gc-safe handle.
-value_t gc_safe_get_value(gc_safe_t *handle);
+// An alias for a gc-safe value. To get the value stored in a safe_value_t you
+// just dereference it.
+//
+// This relies on a bit of cleverness, mainly to make it as convenient as
+// possible to treat a safe value as a normal one. Because the value stored in
+// the handle is the first field, simply casting a gc safe pointer to a value
+// pointer will do the right thing when dereferencing. Since value pointers are
+// only used a few other places this shouldn't be too confusing (famous last
+// words).
+typedef value_t *safe_value_t;
 
+// "Cast" a gc safe handle struct to a safe-value.
+safe_value_t gc_safe_to_safe_value(gc_safe_t *handle);
+
+// "Cast" a safe-value to a gc safe handle.
+gc_safe_t *safe_value_to_gc_safe(safe_value_t s_value);
 
 // A full garbage-collectable heap.
 typedef struct {
