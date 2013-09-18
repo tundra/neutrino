@@ -251,50 +251,6 @@ value_t variant_to_value(runtime_t *runtime, variant_t variant) {
 }
 
 
-// --- R a n d o m ---
-
-void pseudo_random_init(pseudo_random_t *random, uint32_t seed) {
-  random->low = 362436069 + seed;
-  random->high = 521288629 - seed;
-}
-
-uint32_t pseudo_random_next_uint32(pseudo_random_t *random) {
-  uint32_t low = random->low;
-  uint32_t high = random->high;
-  uint32_t new_high = 23163 * (high & 0xFFFF) + (high >> 16);
-  uint32_t new_low = 22965 * (low & 0xFFFF) + (low >> 16);
-  random->low = new_low;
-  random->high = new_high;
-  return ((new_high & 0xFFFF) << 16) | (low & 0xFFFF);
-}
-
-uint32_t pseudo_random_next(pseudo_random_t *random, uint32_t max) {
-  // NOTE: when the max is not a divisor in 2^32 this gives a small bias
-  //   towards the smaller values in the range. For testing that's probably not
-  //   worth worrying about.
-  return pseudo_random_next_uint32(random) % max;
-}
-
-void pseudo_random_shuffle(pseudo_random_t *random, void *data,
-    size_t elem_count, size_t elem_size) {
-  // Fisher–Yates shuffle
-  CHECK_TRUE("element size too big", elem_size < 16);
-  byte_t scratch[16];
-  byte_t *start = data;
-  for (size_t i = 0; i < elem_count - 1; i++) {
-    size_t target = elem_count - i - 1;
-    size_t source = pseudo_random_next(random, target + 1);
-    if (source == target)
-      continue;
-    // Move the value currently stored in target into scratch.
-    memcpy(scratch, start + (elem_size * target), elem_size);
-    // Move the source to target.
-    memcpy(start + (elem_size * target), start + (elem_size * source), elem_size);
-    // Move the value that used to be target into source.
-    memcpy(start + (elem_size * source), scratch, elem_size);
-  }
-}
-
 bool advance_lexical_permutation(int64_t *elms, size_t elmc) {
   // This implementation follows an outline from wikipedia's article on
   // "Algorithms to generate permutations".

@@ -76,10 +76,18 @@ typedef struct {
   // failsafe in case a bug causes the runtime to allocate out of control, which
   // has happened, because the OS doesn't necessarily handle that very well.
   size_t system_memory_limit;
+  // How often, on average, to simulate an allocation failure when fuzzing?
+  size_t allocation_failure_fuzzer_frequency;
+  // Random seed used to initialize the pseudo random generator used to
+  // determine when to force allocation failures when fuzzing.
+  size_t allocation_failure_fuzzer_seed;
 } runtime_config_t;
 
 // Initializes the fields of this runtime config to the defaults.
 void runtime_config_init_defaults(runtime_config_t *config);
+
+// Returns a pointer to a runtime config that holds the default values.
+const runtime_config_t *runtime_config_get_default();
 
 // An allocation space. The heap is made up of several of these.
 typedef struct {
@@ -98,7 +106,7 @@ typedef struct {
 
 // Initialize the given space, assumed to be uninitialized. If this fails for
 // whatever reason a signal is returned.
-value_t space_init(space_t *space, runtime_config_t *config);
+value_t space_init(space_t *space, const runtime_config_t *config);
 
 // If necessary, dispose the memory held by this space.
 void space_dispose(space_t *space);
@@ -162,7 +170,7 @@ typedef struct {
 
 // Initialize the given heap, returning a signal to indicate success or
 // failure. If the config is NULL the default is used.
-value_t heap_init(heap_t *heap, runtime_config_t *config);
+value_t heap_init(heap_t *heap, const runtime_config_t *config);
 
 // Allocate the given number of byte in the given space. The size is not
 // required to be value pointer aligned, this function will take care of

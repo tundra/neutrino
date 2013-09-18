@@ -52,18 +52,21 @@ static size_t is_size_aligned(uint32_t alignment, size_t size) {
 
 // The default space config.
 static const runtime_config_t kDefaultConfig = {
-  1 * kMB,
-  100 * kMB
+  1 * kMB,      // semispace_size_bytes
+  100 * kMB,    // system_memory_limit
+  0,            // allocation_failure_fuzzer_frequency
+  0             // allocation_failure_fuzzer_seed
 };
 
 void runtime_config_init_defaults(runtime_config_t *config) {
-  *config = kDefaultConfig;
+  *config = *runtime_config_get_default();
 }
 
-value_t space_init(space_t *space, runtime_config_t *config_or_null) {
-  const runtime_config_t *config = (config_or_null
-      ? config_or_null
-      : &kDefaultConfig);
+const runtime_config_t *runtime_config_get_default() {
+  return &kDefaultConfig;
+}
+
+value_t space_init(space_t *space, const runtime_config_t *config) {
   // Start out by clearing it, just for good measure.
   space_clear(space);
   // Allocate one word more than strictly necessary to account for possible
@@ -222,15 +225,13 @@ value_t heap_validate(heap_t *heap) {
 
 // --- H e a p ---
 
-value_t heap_init(heap_t *heap, runtime_config_t *config) {
+value_t heap_init(heap_t *heap, const runtime_config_t *config) {
   // Initialize new space, leave old space clear; we won't use that until
   // later.
-  if (config == NULL) {
-    runtime_config_init_defaults(&heap->config);
-  } else {
-    heap->config = *config;
-  }
-  TRY(space_init(&heap->to_space, &heap->config));
+  if (config == NULL)
+    config = runtime_config_get_default();
+  heap->config = *config;
+  TRY(space_init(&heap->to_space, config));
   space_clear(&heap->from_space);
   // Initialize the gc safe loop using the dummy node.
   heap->root_gc_safe.next = heap->root_gc_safe.prev = &heap->root_gc_safe;

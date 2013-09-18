@@ -203,28 +203,6 @@ typedef struct variant_t {
 // with the corresponding value.
 value_t variant_to_value(runtime_t *runtime, variant_t variant);
 
-// Data for multiply-with-carry pseudo-random generator.
-// See See http://www.ms.uky.edu/~mai/RandomNumber.
-typedef struct {
-  uint32_t low;
-  uint32_t high;
-} pseudo_random_t;
-
-// Initializes a pseudo-random generator with the given seed.
-void pseudo_random_init(pseudo_random_t *random, uint32_t seed);
-
-// Returns the next pseudo-random uint32.
-uint32_t pseudo_random_next_uint32(pseudo_random_t *random);
-
-// Returns the next pseudo-random number greater than 0 and less than the given
-// max.
-uint32_t pseudo_random_next(pseudo_random_t *random, uint32_t max);
-
-// Shuffles the given array of 'elem_count' elements, each of which is 'elem_size'
-// wide.
-void pseudo_random_shuffle(pseudo_random_t *random, void *data,
-    size_t elem_count, size_t elem_size);
-
 // Given an array of length N that contains a permutation of the numbers from 0
 // to N, advances the numbers to the next permutation such that calling this 2^N
 // times, starting from 0..N, generates all possible permutations. Returns false
