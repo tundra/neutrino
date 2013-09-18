@@ -9,6 +9,14 @@
 #ifndef _CHECK
 #define _CHECK
 
+// Define the IF_CHECKS_ENABLED macro appropriately. There is a choice here
+// between whether to completely remove check-related code when checks are
+// disabled which may lead to unused variable warnings (because you're removing
+// the use of variables) or alternatively including the code but ensure that
+// it doesn't get executed, which may lead to illegal code in the case where the
+// code only compiles in checked mode. This does the former, includes the code,
+// because you can always surround a check with an #ifdef if there's a problem
+// whereas there's no simple workaround for unused variables.
 #ifdef ENABLE_CHECKS
 #define IF_CHECKS_ENABLED(V) V
 #define IF_CHECKS_DISABLED(V) USE(V)
