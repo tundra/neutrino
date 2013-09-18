@@ -173,8 +173,15 @@ static void gc_safe_iter_advance(gc_safe_iter_t *iter) {
   iter->current = iter->current->next;
 }
 
-value_t gc_safe_get_value(gc_safe_t *handle) {
-  return handle->value;
+safe_value_t gc_safe_to_safe_value(gc_safe_t *handle) {
+  return (safe_value_t) handle;
+}
+
+gc_safe_t *safe_value_to_gc_safe(safe_value_t s_value) {
+  gc_safe_t *result = (gc_safe_t*) s_value;
+  SIG_CHECK_EQ_WITH_VALUE("casting non-gc safe", scInvalidCast, 0,
+      kGcSafeMarker, result->gc_safe_marker);
+  return result;
 }
 
 gc_safe_t *heap_new_gc_safe(heap_t *heap, value_t value) {
@@ -183,9 +190,10 @@ gc_safe_t *heap_new_gc_safe(heap_t *heap, value_t value) {
   gc_safe_t *new_gc_safe = memory.memory;
   gc_safe_t *next = heap->root_gc_safe.next;
   gc_safe_t *prev = next->prev;
+  new_gc_safe->value = value;
+  new_gc_safe->gc_safe_marker = kGcSafeMarker;
   new_gc_safe->next = next;
   new_gc_safe->prev = prev;
-  new_gc_safe->value = value;
   prev->next = new_gc_safe;
   next->prev = new_gc_safe;
   heap->gc_safe_count++;

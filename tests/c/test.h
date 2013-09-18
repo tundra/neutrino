@@ -137,10 +137,10 @@ ASSERT_CLASS(signal_cause_t, scCause, EXPR, get_signal_cause)
   }                                                                            \
 } while (false)
 
-#define __ASSERT_CHECK_FAILURE_HELPER__(scCause, E) do {                       \
+#define __ASSERT_CHECK_FAILURE_NO_VALUE_HELPER__(scCause, E) do {              \
   check_recorder_t __recorder__;                                               \
   install_check_recorder(&__recorder__);                                       \
-  ASSERT_SIGNAL(scCause, E);                                                   \
+  do { E; } while (false);                                                     \
   ASSERT_EQ(1, __recorder__.count);                                            \
   ASSERT_EQ(scCause, __recorder__.cause);                                      \
   uninstall_check_recorder(&__recorder__);                                     \
@@ -149,7 +149,14 @@ ASSERT_CLASS(signal_cause_t, scCause, EXPR, get_signal_cause)
 // Fails unless the given expression returns the given failure _and_ CHECK fails
 // with the same cause. Only executed when checks are enabled.
 #define ASSERT_CHECK_FAILURE(scCause, E)                                       \
-IF_CHECKS_ENABLED(__ASSERT_CHECK_FAILURE_HELPER__(scCause, E))
+IF_CHECKS_ENABLED(                                                             \
+    __ASSERT_CHECK_FAILURE_NO_VALUE_HELPER__(scCause, ASSERT_SIGNAL(scCause, (E))))
+
+// Fails unless the given expression CHECK fails. Unlike ASSERT_CHECK_FAILURE
+// this makes no assumption about the returned value. Only executed when checks
+// are enabled.
+#define ASSERT_CHECK_FAILURE_NO_VALUE(scCause, E)                              \
+IF_CHECKS_ENABLED(__ASSERT_CHECK_FAILURE_NO_VALUE_HELPER__(scCause, E))
 
 // Expands to a string_t with the given contents.
 #define STR(value) ((string_t) {strlen(value), value})

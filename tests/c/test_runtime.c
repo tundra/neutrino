@@ -84,26 +84,32 @@ TEST(runtime, gc_move_null) {
   DISPOSE_RUNTIME();
 }
 
-TEST(runtime, simple_gc_safe) {
+TEST(runtime, simple_safe_value) {
   CREATE_RUNTIME();
 
   value_t array_before = new_heap_array(runtime, 2);
   set_array_at(array_before, 0, runtime_bool(runtime, true));
   set_array_at(array_before, 1, runtime_bool(runtime, false));
-  gc_safe_t *gc_safe = runtime_new_gc_safe(runtime, array_before);
-  ASSERT_SAME(array_before, gc_safe_get_value(gc_safe));
+  safe_value_t s_array = runtime_new_gc_safe(runtime, array_before);
+  ASSERT_SAME(array_before, *s_array);
   ASSERT_SUCCESS(runtime_garbage_collect(runtime));
-  value_t array_after = gc_safe_get_value(gc_safe);
+  value_t array_after = *s_array;
   ASSERT_NSAME(array_before, array_after);
   ASSERT_VALEQ(runtime_bool(runtime, true), get_array_at(array_after, 0));
   ASSERT_VALEQ(runtime_bool(runtime, false), get_array_at(array_after, 1));
 
-  runtime_dispose_gc_safe(runtime, gc_safe);
+  runtime_dispose_gc_safe(runtime, s_array);
 
   DISPOSE_RUNTIME();
 }
 
-TEST(runtime, gc_safe_loop) {
+TEST(runtime, safe_value_cast) {
+  value_t value = new_integer(0);
+  safe_value_t s_value = &value;
+  ASSERT_CHECK_FAILURE_NO_VALUE(scInvalidCast, safe_value_to_gc_safe(s_value));
+}
+
+TEST(runtime, safe_value_loop) {
   CREATE_RUNTIME();
 
   value_t a0b = new_heap_array(runtime, 2);
@@ -111,16 +117,16 @@ TEST(runtime, gc_safe_loop) {
   set_array_at(a0b, 0, a1b);
   set_array_at(a0b, 1, a1b);
   set_array_at(a1b, 0, a0b);
-  gc_safe_t *sa0 = runtime_new_gc_safe(runtime, a0b);
-  gc_safe_t *sa1 = runtime_new_gc_safe(runtime, a1b);
+  safe_value_t s_a0 = runtime_new_gc_safe(runtime, a0b);
+  safe_value_t s_a1 = runtime_new_gc_safe(runtime, a1b);
   ASSERT_SUCCESS(runtime_garbage_collect(runtime));
-  value_t a0a = gc_safe_get_value(sa0);
-  value_t a1a = gc_safe_get_value(sa1);
+  value_t a0a = *s_a0;
+  value_t a1a = *s_a1;
   ASSERT_SAME(a1a, get_array_at(a0a, 0));
   ASSERT_SAME(a1a, get_array_at(a0a, 1));
   ASSERT_SAME(a0a, get_array_at(a1a, 0));
-  runtime_dispose_gc_safe(runtime, sa0);
-  runtime_dispose_gc_safe(runtime, sa1);
+  runtime_dispose_gc_safe(runtime, s_a0);
+  runtime_dispose_gc_safe(runtime, s_a1);
 
   DISPOSE_RUNTIME();
 }

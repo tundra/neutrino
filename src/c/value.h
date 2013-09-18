@@ -33,6 +33,7 @@ const char *get_value_domain_name(value_domain_t domain);
 #define ENUM_SIGNAL_CAUSES(F)                                                  \
   F(HeapExhausted)                                                             \
   F(InternalFamily)                                                            \
+  F(InvalidCast)                                                               \
   F(InvalidInput)                                                              \
   F(InvalidSyntax)                                                             \
   F(MapFull)                                                                   \

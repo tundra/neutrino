@@ -27,18 +27,25 @@
 #define CHECK_EQ(M, A, B)                                                      \
 IF_CHECKS_ENABLED(__CHECK_EQ_HELPER__(M, A, B))
 
-#define __SIG_CHECK_EQ_HELPER__(M, scCause, A, B) do {                         \
+#define __SIG_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause, VALUE, A, B) do {       \
   if (!((A) == (B))) {                                                         \
     sig_check_fail(__FILE__, __LINE__, scCause,                                \
         "Check failed (" M "): %s == %s.", #A, #B);                            \
-    return new_signal(scCause);                                                \
+    return (VALUE)            ;                                                \
   }                                                                            \
 } while (false)
 
 // Fails unless the two values are equal under hard check failures, returns the
+// specified value under soft check failures. If the value you want to return
+// is a signal with the given cause, which is the common case, it's easier to
+// use SIG_CHECK_EQ.
+#define SIG_CHECK_EQ_WITH_VALUE(M, scCause, VALUE, A, B)                       \
+IF_CHECKS_ENABLED(__SIG_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause, VALUE, A, B))
+
+// Fails unless the two values are equal under hard check failures, returns the
 // specified signal under soft check failures.
 #define SIG_CHECK_EQ(M, scCause, A, B)                                         \
-IF_CHECKS_ENABLED(__SIG_CHECK_EQ_HELPER__(M, scCause, A, B))
+IF_CHECKS_ENABLED(__SIG_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause, new_signal(scCause), A, B))
 
 // Fails if the given expression doesn't evaluate to true.
 #define CHECK_TRUE(M, E)                                                       \

@@ -463,10 +463,10 @@ value_t runtime_bool(runtime_t *runtime, bool which) {
   return which ? ROOT(runtime, thrue) : ROOT(runtime, fahlse);
 }
 
-gc_safe_t *runtime_new_gc_safe(runtime_t *runtime, value_t value) {
-  return heap_new_gc_safe(&runtime->heap, value);
+safe_value_t runtime_new_gc_safe(runtime_t *runtime, value_t value) {
+  return gc_safe_to_safe_value(heap_new_gc_safe(&runtime->heap, value));
 }
 
-void runtime_dispose_gc_safe(runtime_t *runtime, gc_safe_t *gc_safe) {
-  heap_dispose_gc_safe(&runtime->heap, gc_safe);
+void runtime_dispose_gc_safe(runtime_t *runtime, safe_value_t s_value) {
+  heap_dispose_gc_safe(&runtime->heap, safe_value_to_gc_safe(s_value));
 }
