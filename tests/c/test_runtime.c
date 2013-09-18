@@ -125,7 +125,7 @@ TEST(runtime, gc_safe_loop) {
   DISPOSE_RUNTIME();
 }
 
-TEST(runtime, fuzzer) {
+TEST(runtime, gc_fuzzer) {
   static const size_t kMin = 10;
   static const size_t kMean = 100;
   gc_fuzzer_t fuzzer;

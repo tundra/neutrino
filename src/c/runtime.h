@@ -67,7 +67,7 @@ typedef struct {
 } roots_t;
 
 
-// Data associated with fuzzing allocation failures.
+// Data associated with garbage collection fuzzing.
 typedef struct {
   // Random number generator to use.
   pseudo_random_t random;

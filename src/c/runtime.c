@@ -169,6 +169,9 @@ void gc_fuzzer_init(gc_fuzzer_t *fuzzer, size_t min_freq, size_t mean_freq,
     size_t seed) {
   CHECK_TRUE("min frequency must be nonzero", min_freq > 0);
   CHECK_TRUE("mean frequency must be nonzero", mean_freq > 0);
+  // It's best if we can vary the min frequency freely without breaking anything
+  // so rather than assert that the mean is larger we just adjust it if we have
+  // to.
   if (mean_freq <= min_freq)
     mean_freq = min_freq + 1;
   pseudo_random_init(&fuzzer->random, seed);
@@ -180,10 +183,9 @@ void gc_fuzzer_init(gc_fuzzer_t *fuzzer, size_t min_freq, size_t mean_freq,
 
 bool gc_fuzzer_tick(gc_fuzzer_t *fuzzer) {
   if (fuzzer->remaining == 0) {
-    size_t min = fuzzer->min_freq;
-    size_t spread = fuzzer->spread;
-    size_t remaining = pseudo_random_next(&fuzzer->random, spread) + min;
-    fuzzer->remaining = remaining;
+    // This is where we fail. First, generate a new remaining tick count.
+    fuzzer->remaining = pseudo_random_next(&fuzzer->random, fuzzer->spread) +
+        fuzzer->min_freq;
     return true;
   } else {
     fuzzer->remaining--;
