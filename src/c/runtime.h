@@ -77,6 +77,8 @@ typedef struct {
   size_t spread;
   // The number of allocations remaining before the next forced failure.
   size_t remaining;
+  // Is fuzzing currently enabled?
+  bool is_enabled;
 } gc_fuzzer_t;
 
 // Initializes an garbage collection fuzzer according to the given runtime
@@ -135,6 +137,9 @@ safe_value_t runtime_protect_value(runtime_t *runtime, value_t value);
 
 // Disposes a gc-safe reference.
 void dispose_safe_value(runtime_t *runtime, safe_value_t value_s);
+
+// Set whether fuzzing is on or off. If there is no fuzzer this has no effect.
+void runtime_toggle_fuzzing(runtime_t *runtime, bool enable);
 
 
 // Initialize this root set.

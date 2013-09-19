@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "interp.h"
+#include "safe-inl.h"
 #include "syntax.h"
 #include "test.h"
 
@@ -15,15 +16,16 @@ TEST(interp, binding_info_size) {
 static void assert_ast_value(runtime_t *runtime, variant_t expected,
     value_t ast) {
   value_t code_block = compile_expression(runtime, ast, NULL);
-  value_t result = run_code_block(runtime, code_block);
+  value_t result = run_code_block_until_signal(runtime, code_block);
   ASSERT_VALEQ(variant_to_value(runtime, expected), result);
 }
 
 TEST(interp, execution) {
   CREATE_RUNTIME();
+  CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
   value_t space = new_heap_methodspace(runtime);
-  add_methodspace_builtin_methods(runtime, space);
+  add_methodspace_builtin_methods(runtime, protect(pool, space));
 
   // Literal
   {
@@ -87,6 +89,7 @@ TEST(interp, execution) {
     assert_ast_value(runtime, vInt(13), ast);
   }
 
+  DISPOSE_SAFE_VALUE_POOL(pool);
   DISPOSE_RUNTIME();
 }
 

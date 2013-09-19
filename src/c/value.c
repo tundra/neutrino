@@ -50,7 +50,7 @@ const char *get_species_division_name(species_division_t division) {
 // --- I n t e g e r ---
 
 #define ADD_BUILTIN(family, name, argc, impl)                                  \
-  TRY(add_methodspace_builtin_method(runtime, space,                           \
+  TRY(add_methodspace_builtin_method(runtime, deref(s_space),                  \
       ROOT(runtime, family##_protocol), name, argc, impl))
 
 static value_t integer_plus_integer(builtin_arguments_t *args) {
@@ -81,7 +81,7 @@ static value_t integer_print(builtin_arguments_t *args) {
   return ROOT(args->runtime, nothing);
 }
 
-value_t add_integer_builtin_methods(runtime_t *runtime, value_t space) {
+value_t add_integer_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(integer, "+", 1, integer_plus_integer);
   ADD_BUILTIN(integer, "-", 1, integer_minus_integer);
   ADD_BUILTIN(integer, "-", 0, integer_negate);
@@ -293,7 +293,7 @@ static value_t string_print(builtin_arguments_t *args) {
   return ROOT(args->runtime, nothing);
 }
 
-value_t add_string_builtin_methods(runtime_t *runtime, value_t space) {
+value_t add_string_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(string, "+", 1, string_plus_string);
   ADD_BUILTIN(string, "print", 0, string_print);
   return success();
@@ -586,7 +586,7 @@ value_t array_length(builtin_arguments_t *args) {
   return new_integer(get_array_length(self));
 }
 
-value_t add_array_builtin_methods(runtime_t *runtime, value_t space) {
+value_t add_array_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(array, "length", 0, array_length);
   return success();
 }
@@ -1269,8 +1269,8 @@ value_t emit_lambda_call_trampoline(assembler_t *assm) {
   return success();
 }
 
-value_t add_lambda_builtin_methods(runtime_t *runtime, value_t space) {
-  TRY(add_methodspace_custom_method(runtime, space, ROOT(runtime, lambda_protocol),
+value_t add_lambda_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
+  TRY(add_methodspace_custom_method(runtime, deref(s_space), ROOT(runtime, lambda_protocol),
       "()", 0, true, emit_lambda_call_trampoline));
   return success();
 }

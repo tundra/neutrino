@@ -66,4 +66,9 @@ static value_t new_heap_exhausted_signal(int32_t requested) {
   return new_signal_with_details(scHeapExhausted, requested);
 }
 
+// Creates a new out-of-memory signal.
+static value_t new_out_of_memory_signal() {
+  return new_signal(scOutOfMemory);
+}
+
 #endif // _SIGNALS

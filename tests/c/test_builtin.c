@@ -4,6 +4,7 @@
 #include "alloc.h"
 #include "builtin.h"
 #include "method.h"
+#include "safe-inl.h"
 #include "test.h"
 
 static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
@@ -36,15 +37,16 @@ static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
 
   // Compile and execute the syntax.
   value_t code = compile_expression(runtime, invocation, NULL);
-  value_t result = run_code_block(runtime, code);
+  value_t result = run_code_block_until_signal(runtime, code);
   ASSERT_VALEQ(variant_to_value(runtime, expected), result);
 }
 
 TEST(builtin, integers) {
   CREATE_RUNTIME();
+  CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
   value_t space = new_heap_methodspace(runtime);
-  ASSERT_SUCCESS(add_methodspace_builtin_methods(runtime, space));
+  ASSERT_SUCCESS(add_methodspace_builtin_methods(runtime, protect(pool, space)));
 
   test_builtin(runtime, space, vInt(2), vInt(1), "+", vArray(1, vInt(1)));
   test_builtin(runtime, space, vInt(3), vInt(2), "+", vArray(1, vInt(1)));
@@ -56,17 +58,20 @@ TEST(builtin, integers) {
 
   test_builtin(runtime, space, vInt(-1), vInt(1), "-", vEmptyArray());
 
+  DISPOSE_SAFE_VALUE_POOL(pool);
   DISPOSE_RUNTIME();
 }
 
 TEST(builtin, strings) {
   CREATE_RUNTIME();
+  CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
   value_t space = new_heap_methodspace(runtime);
-  ASSERT_SUCCESS(add_methodspace_builtin_methods(runtime, space));
+  ASSERT_SUCCESS(add_methodspace_builtin_methods(runtime, protect(pool, space)));
 
   test_builtin(runtime, space, vStr("abcd"), vStr("ab"), "+", vArray(1, vStr("cd")));
   test_builtin(runtime, space, vStr(""), vStr(""), "+", vArray(1, vStr("")));
 
+  DISPOSE_SAFE_VALUE_POOL(pool);
   DISPOSE_RUNTIME();
 }

@@ -34,8 +34,13 @@ typedef enum {
 } opcode_t;
 
 
-// Executes the given code block object, returning the result.
-value_t run_code_block(runtime_t *runtime, value_t code);
+// Executes the given code block object, returning the result. If any signals
+// occur evaluation is interrupted.
+value_t run_code_block_until_signal(runtime_t *runtime, value_t code);
+
+// Executes the given code block object, returning the result. This may cause
+// the runtime to garbage collect.
+value_t run_code_block(runtime_t *runtime, safe_value_t code);
 
 
 #endif // _INTERP
