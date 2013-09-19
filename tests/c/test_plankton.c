@@ -3,8 +3,9 @@
 
 #include "alloc.h"
 #include "plankton.h"
-#include "value-inl.h"
 #include "test.h"
+#include "value-inl.h"
+#include "try-inl.h"
 
 // Encodes and decodes a plankton value and returns the result.
 static value_t transcode_plankton(runtime_t *runtime, value_mapping_t *resolver,

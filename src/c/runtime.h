@@ -130,11 +130,11 @@ value_t runtime_garbage_collect(runtime_t *runtime);
 // has been initialized successfully.
 value_t runtime_validate(runtime_t *runtime);
 
-// Creates a new gc-safe reference within the given runtime to the given value.
-safe_value_t runtime_new_gc_safe(runtime_t *runtime, value_t value);
+// Creates a gc-safe reference to the given value.
+safe_value_t protect_value(runtime_t *runtime, value_t value);
 
-// Disposes a gc-safe value belonging to the given runtime.
-void runtime_dispose_gc_safe(runtime_t *runtime, safe_value_t value_s);
+// Disposes a gc-safe reference.
+void dispose_safe_value(runtime_t *runtime, safe_value_t value_s);
 
 
 // Initialize this root set.

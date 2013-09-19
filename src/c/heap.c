@@ -4,6 +4,7 @@
 #include "behavior.h"
 #include "check.h"
 #include "heap.h"
+#include "try-inl.h"
 #include "value-inl.h"
 
 
@@ -141,61 +142,46 @@ value_t space_for_each_object(space_t *space, value_callback_t *callback) {
 // --- G C   S a f e ---
 
 // Data used when iterating the gc safe handles within a heap.
-typedef struct gc_safe_iter_t {
+typedef struct protected_reference_iter_t {
   // The current node being visited.
-  gc_safe_t *current;
+  protected_reference_t *current;
   // The node that indicates when we've reached the end.
-  gc_safe_t *limit;
-} gc_safe_iter_t;
+  protected_reference_t *limit;
+} protected_reference_iter_t;
 
 // Initializes a gc safe iterator so that it's ready to iterate through all the
 // handles in the given heap.
-static void gc_safe_iter_init(gc_safe_iter_t *iter, heap_t *heap) {
+static void protected_reference_iter_init(protected_reference_iter_t *iter, heap_t *heap) {
   iter->current = heap->root_gc_safe.next;
   iter->limit = &heap->root_gc_safe;
 }
 
 // Returns true if there is a current node to return, false if we've reached the
 // end.
-static bool gc_safe_iter_has_current(gc_safe_iter_t *iter) {
+static bool protected_reference_iter_has_current(protected_reference_iter_t *iter) {
   return iter->current != iter->limit;
 }
 
 // Returns the current gc safe handle.
-static gc_safe_t *gc_safe_iter_get_current(gc_safe_iter_t *iter) {
-  CHECK_TRUE("gc safe iter get past end", gc_safe_iter_has_current(iter));
+static protected_reference_t *protected_reference_iter_get_current(protected_reference_iter_t *iter) {
+  CHECK_TRUE("gc safe iter get past end", protected_reference_iter_has_current(iter));
   return iter->current;
 }
 
 // Advances the iterator to the next node.
-static void gc_safe_iter_advance(gc_safe_iter_t *iter) {
-  CHECK_TRUE("gc safe iter advance past end", gc_safe_iter_has_current(iter));
+static void protected_reference_iter_advance(protected_reference_iter_t *iter) {
+  CHECK_TRUE("gc safe iter advance past end", protected_reference_iter_has_current(iter));
   iter->current = iter->current->next;
 }
 
-safe_value_t gc_safe_to_safe_value(gc_safe_t *handle) {
-  return (safe_value_t) handle;
-}
-
-gc_safe_t *safe_value_to_gc_safe(safe_value_t s_value) {
-  gc_safe_t *result = (gc_safe_t*) s_value;
-#ifdef ENABLE_CHECKS
-  SIG_CHECK_EQ_WITH_VALUE("casting non-gc safe", scInvalidCast, 0,
-      kGcSafeMarker, result->gc_safe_marker);
-#endif
-  return result;
-}
-
-gc_safe_t *heap_new_gc_safe(heap_t *heap, value_t value) {
-  memory_block_t memory = allocator_default_malloc(sizeof(gc_safe_t));
-  CHECK_EQ("wrong gc_safe_t memory size", sizeof(gc_safe_t), memory.size);
-  gc_safe_t *new_gc_safe = memory.memory;
-  gc_safe_t *next = heap->root_gc_safe.next;
-  gc_safe_t *prev = next->prev;
+protected_reference_t *heap_new_protected_reference(heap_t *heap, value_t value) {
+  CHECK_DOMAIN(vdObject, value);
+  memory_block_t memory = allocator_default_malloc(sizeof(protected_reference_t));
+  CHECK_EQ("wrong gc_safe_t memory size", sizeof(protected_reference_t), memory.size);
+  protected_reference_t *new_gc_safe = memory.memory;
+  protected_reference_t *next = heap->root_gc_safe.next;
+  protected_reference_t *prev = next->prev;
   new_gc_safe->value = value;
-#ifdef ENABLE_CHECKS
-  new_gc_safe->gc_safe_marker = kGcSafeMarker;
-#endif
   new_gc_safe->next = next;
   new_gc_safe->prev = prev;
   prev->next = new_gc_safe;
@@ -204,30 +190,30 @@ gc_safe_t *heap_new_gc_safe(heap_t *heap, value_t value) {
   return new_gc_safe;
 }
 
-void heap_dispose_gc_safe(heap_t *heap, gc_safe_t *gc_safe) {
+void heap_dispose_protected_reference(heap_t *heap, protected_reference_t *gc_safe) {
   CHECK_TRUE("freed too many gc safes", heap->gc_safe_count > 0);
-  gc_safe_t *prev = gc_safe->prev;
+  protected_reference_t *prev = gc_safe->prev;
   CHECK_EQ("wrong gc safe prev", gc_safe, prev->next);
-  gc_safe_t *next = gc_safe->next;
+  protected_reference_t *next = gc_safe->next;
   CHECK_EQ("wrong gc safe next", gc_safe, next->prev);
-  allocator_default_free(new_memory_block(gc_safe, sizeof(gc_safe_t)));
+  allocator_default_free(new_memory_block(gc_safe, sizeof(protected_reference_t)));
   prev->next = next;
   next->prev = prev;
   heap->gc_safe_count--;
 }
 
 value_t heap_validate(heap_t *heap) {
-  gc_safe_iter_t iter;
-  gc_safe_iter_init(&iter, heap);
-  gc_safe_t *prev = &heap->root_gc_safe;
+  protected_reference_iter_t iter;
+  protected_reference_iter_init(&iter, heap);
+  protected_reference_t *prev = &heap->root_gc_safe;
   size_t gc_safes_seen = 0;
-  while (gc_safe_iter_has_current(&iter)) {
-    gc_safe_t *current = gc_safe_iter_get_current(&iter);
+  while (protected_reference_iter_has_current(&iter)) {
+    protected_reference_t *current = protected_reference_iter_get_current(&iter);
     gc_safes_seen++;
     SIG_CHECK_EQ("gc safe validate", scValidationFailed, prev->next, current);
     SIG_CHECK_EQ("gc safe validate", scValidationFailed, current->prev, prev);
     prev = current;
-    gc_safe_iter_advance(&iter);
+    protected_reference_iter_advance(&iter);
   }
   SIG_CHECK_EQ("gc safe validate", scValidationFailed, gc_safes_seen,
       heap->gc_safe_count);
@@ -262,12 +248,12 @@ void heap_dispose(heap_t *heap) {
 
 value_t heap_for_each_object(heap_t *heap, value_callback_t *callback) {
   CHECK_FALSE("traversing empty space", space_is_empty(&heap->to_space));
-  gc_safe_iter_t iter;
-  gc_safe_iter_init(&iter, heap);
-  while (gc_safe_iter_has_current(&iter)) {
-    gc_safe_t *current = gc_safe_iter_get_current(&iter);
+  protected_reference_iter_t iter;
+  protected_reference_iter_init(&iter, heap);
+  while (protected_reference_iter_has_current(&iter)) {
+    protected_reference_t *current = protected_reference_iter_get_current(&iter);
     value_callback_call(callback, current->value);
-    gc_safe_iter_advance(&iter);
+    protected_reference_iter_advance(&iter);
   }
   return space_for_each_object(&heap->to_space, callback);
 }
@@ -301,12 +287,12 @@ static value_t visit_object_fields(value_t object, value_callback_t *value_callb
 }
 
 value_t heap_for_each_field(heap_t *heap, field_callback_t *callback) {
-  gc_safe_iter_t iter;
-  gc_safe_iter_init(&iter, heap);
-  while (gc_safe_iter_has_current(&iter)) {
-    gc_safe_t *current = gc_safe_iter_get_current(&iter);
+  protected_reference_iter_t iter;
+  protected_reference_iter_init(&iter, heap);
+  while (protected_reference_iter_has_current(&iter)) {
+    protected_reference_t *current = protected_reference_iter_get_current(&iter);
     field_callback_call(callback, &current->value);
-    gc_safe_iter_advance(&iter);
+    protected_reference_iter_advance(&iter);
   }
   value_callback_t object_field_visitor;
   value_callback_init(&object_field_visitor, visit_object_fields, callback);

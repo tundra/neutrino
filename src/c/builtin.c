@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "builtin.h"
 #include "interp.h"
+#include "try-inl.h"
 #include "value-inl.h"
 
 void builtin_arguments_init(builtin_arguments_t *args, runtime_t *runtime,

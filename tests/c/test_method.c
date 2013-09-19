@@ -4,6 +4,7 @@
 #include "alloc.h"
 #include "runtime.h"
 #include "test.h"
+#include "try-inl.h"
 
 TEST(method, identity_guard) {
   CREATE_RUNTIME();
