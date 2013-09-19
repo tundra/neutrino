@@ -227,15 +227,16 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
 }
 
 // Adaptor function for passing value validate as a value callback.
-static value_t runtime_validate_value(value_t value, value_callback_t *self) {
-  return in_domain(vdObject, value) ? object_validate(value) : success();
+static value_t runtime_validate_object(value_t value, value_callback_t *self) {
+  CHECK_DOMAIN(vdObject, value);
+  return object_validate(value);
 }
 
 value_t runtime_validate(runtime_t *runtime) {
   TRY(heap_validate(&runtime->heap));
   TRY(roots_validate(&runtime->roots));
   value_callback_t validate_callback;
-  value_callback_init(&validate_callback, runtime_validate_value, NULL);
+  value_callback_init(&validate_callback, runtime_validate_object, NULL);
   TRY(heap_for_each_object(&runtime->heap, &validate_callback));
   return success();
 }
@@ -466,8 +467,8 @@ value_t runtime_bool(runtime_t *runtime, bool which) {
 
 safe_value_t protect_value(runtime_t *runtime, value_t value) {
   if (get_value_domain(value) == vdObject) {
-    protected_reference_t *gc_safe = heap_new_protected_reference(&runtime->heap, value);
-    return protected_reference_to_safe_value(gc_safe);
+    object_tracker_t *gc_safe = heap_new_object_tracker(&runtime->heap, value);
+    return object_tracker_to_safe_value(gc_safe);
   } else {
     return protect_immediate(value);
   }
@@ -475,7 +476,7 @@ safe_value_t protect_value(runtime_t *runtime, value_t value) {
 
 void dispose_safe_value(runtime_t *runtime, safe_value_t s_value) {
   if (!safe_value_is_immediate(s_value)) {
-    protected_reference_t *gc_safe = safe_value_to_protected_reference(s_value);
-    heap_dispose_protected_reference(&runtime->heap, gc_safe);
+    object_tracker_t *gc_safe = safe_value_to_object_tracker(s_value);
+    heap_dispose_object_tracker(&runtime->heap, gc_safe);
   }
 }

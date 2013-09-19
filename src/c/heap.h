@@ -144,11 +144,11 @@ typedef struct {
   // The space that, during gc, holds existing object and from which values are
   // copied into to-space.
   space_t from_space;
-  // A the gc safe nodes are kept in a linked list cycle where this node is
+  // A the object trackers are kept in a linked list cycle where this node is
   // always linked in.
-  protected_reference_t root_gc_safe;
-  // The number of gc safe handles allocated.
-  size_t gc_safe_count;
+  object_tracker_t root_object_tracker;
+  // The number of object trackers allocated.
+  size_t object_tracker_count;
 } heap_t;
 
 // Initialize the given heap, returning a signal to indicate success or
@@ -182,10 +182,10 @@ value_t heap_prepare_garbage_collection(heap_t *heap);
 // Wraps up an in-progress garbage collection by discarding from-space.
 value_t heap_complete_garbage_collection(heap_t *heap);
 
-// Creates a new GC safe handle that holds the specified value.
-protected_reference_t *heap_new_protected_reference(heap_t *heap, value_t value);
+// Creates a new object tracker that holds the specified value.
+object_tracker_t *heap_new_object_tracker(heap_t *heap, value_t value);
 
-// Disposes a GC safe handle.
-void heap_dispose_protected_reference(heap_t *heap, protected_reference_t *gc_safe);
+// Disposes an object tracker.
+void heap_dispose_object_tracker(heap_t *heap, object_tracker_t *gc_safe);
 
 #endif // _HEAP

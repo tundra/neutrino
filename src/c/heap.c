@@ -141,82 +141,83 @@ value_t space_for_each_object(space_t *space, value_callback_t *callback) {
 
 // --- G C   S a f e ---
 
-// Data used when iterating the gc safe handles within a heap.
-typedef struct protected_reference_iter_t {
+// Data used when iterating object trackers within a heap.
+typedef struct object_tracker_iter_t {
   // The current node being visited.
-  protected_reference_t *current;
+  object_tracker_t *current;
   // The node that indicates when we've reached the end.
-  protected_reference_t *limit;
-} protected_reference_iter_t;
+  object_tracker_t *limit;
+} object_tracker_iter_t;
 
-// Initializes a gc safe iterator so that it's ready to iterate through all the
-// handles in the given heap.
-static void protected_reference_iter_init(protected_reference_iter_t *iter, heap_t *heap) {
-  iter->current = heap->root_gc_safe.next;
-  iter->limit = &heap->root_gc_safe;
+// Initializes an object tracker iterator so that it's ready to iterate through
+// all the handles in the given heap.
+static void object_tracker_iter_init(object_tracker_iter_t *iter, heap_t *heap) {
+  iter->current = heap->root_object_tracker.next;
+  iter->limit = &heap->root_object_tracker;
 }
 
 // Returns true if there is a current node to return, false if we've reached the
 // end.
-static bool protected_reference_iter_has_current(protected_reference_iter_t *iter) {
+static bool object_tracker_iter_has_current(object_tracker_iter_t *iter) {
   return iter->current != iter->limit;
 }
 
-// Returns the current gc safe handle.
-static protected_reference_t *protected_reference_iter_get_current(protected_reference_iter_t *iter) {
-  CHECK_TRUE("gc safe iter get past end", protected_reference_iter_has_current(iter));
+// Returns the current object tracker.
+static object_tracker_t *object_tracker_iter_get_current(object_tracker_iter_t *iter) {
+  CHECK_TRUE("object tracker iter get past end",
+      object_tracker_iter_has_current(iter));
   return iter->current;
 }
 
 // Advances the iterator to the next node.
-static void protected_reference_iter_advance(protected_reference_iter_t *iter) {
-  CHECK_TRUE("gc safe iter advance past end", protected_reference_iter_has_current(iter));
+static void object_tracker_iter_advance(object_tracker_iter_t *iter) {
+  CHECK_TRUE("object tracker iter advance past end",
+      object_tracker_iter_has_current(iter));
   iter->current = iter->current->next;
 }
 
-protected_reference_t *heap_new_protected_reference(heap_t *heap, value_t value) {
+object_tracker_t *heap_new_object_tracker(heap_t *heap, value_t value) {
   CHECK_DOMAIN(vdObject, value);
-  memory_block_t memory = allocator_default_malloc(sizeof(protected_reference_t));
-  CHECK_EQ("wrong gc_safe_t memory size", sizeof(protected_reference_t), memory.size);
-  protected_reference_t *new_gc_safe = memory.memory;
-  protected_reference_t *next = heap->root_gc_safe.next;
-  protected_reference_t *prev = next->prev;
-  new_gc_safe->value = value;
-  new_gc_safe->next = next;
-  new_gc_safe->prev = prev;
-  prev->next = new_gc_safe;
-  next->prev = new_gc_safe;
-  heap->gc_safe_count++;
-  return new_gc_safe;
+  memory_block_t memory = allocator_default_malloc(sizeof(object_tracker_t));
+  object_tracker_t *new_tracker = memory.memory;
+  object_tracker_t *next = heap->root_object_tracker.next;
+  object_tracker_t *prev = next->prev;
+  new_tracker->value = value;
+  new_tracker->next = next;
+  new_tracker->prev = prev;
+  prev->next = new_tracker;
+  next->prev = new_tracker;
+  heap->object_tracker_count++;
+  return new_tracker;
 }
 
-void heap_dispose_protected_reference(heap_t *heap, protected_reference_t *gc_safe) {
-  CHECK_TRUE("freed too many gc safes", heap->gc_safe_count > 0);
-  protected_reference_t *prev = gc_safe->prev;
-  CHECK_EQ("wrong gc safe prev", gc_safe, prev->next);
-  protected_reference_t *next = gc_safe->next;
-  CHECK_EQ("wrong gc safe next", gc_safe, next->prev);
-  allocator_default_free(new_memory_block(gc_safe, sizeof(protected_reference_t)));
+void heap_dispose_object_tracker(heap_t *heap, object_tracker_t *tracker) {
+  CHECK_TRUE("freed too many object trackers", heap->object_tracker_count > 0);
+  object_tracker_t *prev = tracker->prev;
+  CHECK_EQ("wrong tracker prev", tracker, prev->next);
+  object_tracker_t *next = tracker->next;
+  CHECK_EQ("wrong tracker next", tracker, next->prev);
+  allocator_default_free(new_memory_block(tracker, sizeof(object_tracker_t)));
   prev->next = next;
   next->prev = prev;
-  heap->gc_safe_count--;
+  heap->object_tracker_count--;
 }
 
 value_t heap_validate(heap_t *heap) {
-  protected_reference_iter_t iter;
-  protected_reference_iter_init(&iter, heap);
-  protected_reference_t *prev = &heap->root_gc_safe;
-  size_t gc_safes_seen = 0;
-  while (protected_reference_iter_has_current(&iter)) {
-    protected_reference_t *current = protected_reference_iter_get_current(&iter);
-    gc_safes_seen++;
-    SIG_CHECK_EQ("gc safe validate", scValidationFailed, prev->next, current);
-    SIG_CHECK_EQ("gc safe validate", scValidationFailed, current->prev, prev);
+  object_tracker_iter_t iter;
+  object_tracker_iter_init(&iter, heap);
+  object_tracker_t *prev = &heap->root_object_tracker;
+  size_t trackers_seen = 0;
+  while (object_tracker_iter_has_current(&iter)) {
+    object_tracker_t *current = object_tracker_iter_get_current(&iter);
+    trackers_seen++;
+    SIG_CHECK_EQ("tracker validate", scValidationFailed, prev->next, current);
+    SIG_CHECK_EQ("tracker validate", scValidationFailed, current->prev, prev);
     prev = current;
-    protected_reference_iter_advance(&iter);
+    object_tracker_iter_advance(&iter);
   }
-  SIG_CHECK_EQ("gc safe validate", scValidationFailed, gc_safes_seen,
-      heap->gc_safe_count);
+  SIG_CHECK_EQ("tracker validate", scValidationFailed, trackers_seen,
+      heap->object_tracker_count);
   return success();
 }
 
@@ -231,9 +232,9 @@ value_t heap_init(heap_t *heap, const runtime_config_t *config) {
   heap->config = *config;
   TRY(space_init(&heap->to_space, config));
   space_clear(&heap->from_space);
-  // Initialize the gc safe loop using the dummy node.
-  heap->root_gc_safe.next = heap->root_gc_safe.prev = &heap->root_gc_safe;
-  heap->gc_safe_count = 0;
+  // Initialize the object tracker loop using the dummy node.
+  heap->root_object_tracker.next = heap->root_object_tracker.prev = &heap->root_object_tracker;
+  heap->object_tracker_count = 0;
   return success();
 }
 
@@ -248,12 +249,12 @@ void heap_dispose(heap_t *heap) {
 
 value_t heap_for_each_object(heap_t *heap, value_callback_t *callback) {
   CHECK_FALSE("traversing empty space", space_is_empty(&heap->to_space));
-  protected_reference_iter_t iter;
-  protected_reference_iter_init(&iter, heap);
-  while (protected_reference_iter_has_current(&iter)) {
-    protected_reference_t *current = protected_reference_iter_get_current(&iter);
+  object_tracker_iter_t iter;
+  object_tracker_iter_init(&iter, heap);
+  while (object_tracker_iter_has_current(&iter)) {
+    object_tracker_t *current = object_tracker_iter_get_current(&iter);
     value_callback_call(callback, current->value);
-    protected_reference_iter_advance(&iter);
+    object_tracker_iter_advance(&iter);
   }
   return space_for_each_object(&heap->to_space, callback);
 }
@@ -287,12 +288,12 @@ static value_t visit_object_fields(value_t object, value_callback_t *value_callb
 }
 
 value_t heap_for_each_field(heap_t *heap, field_callback_t *callback) {
-  protected_reference_iter_t iter;
-  protected_reference_iter_init(&iter, heap);
-  while (protected_reference_iter_has_current(&iter)) {
-    protected_reference_t *current = protected_reference_iter_get_current(&iter);
+  object_tracker_iter_t iter;
+  object_tracker_iter_init(&iter, heap);
+  while (object_tracker_iter_has_current(&iter)) {
+    object_tracker_t *current = object_tracker_iter_get_current(&iter);
     field_callback_call(callback, &current->value);
-    protected_reference_iter_advance(&iter);
+    object_tracker_iter_advance(&iter);
   }
   value_callback_t object_field_visitor;
   value_callback_init(&object_field_visitor, visit_object_fields, callback);
