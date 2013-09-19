@@ -9,6 +9,7 @@
 #include "runtime.h"
 #include "test.h"
 #include "utils.h"
+#include "try-inl.h"
 #include "value-inl.h"
 
 #include <stdio.h>

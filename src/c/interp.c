@@ -5,6 +5,7 @@
 #include "interp.h"
 #include "log.h"
 #include "process.h"
+#include "try-inl.h"
 #include "value-inl.h"
 
 

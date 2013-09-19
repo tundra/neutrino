@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "plankton.h"
+#include "try-inl.h"
 #include "value-inl.h"
 
 

@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "check.h"
 #include "runtime.h"
+#include "try-inl.h"
 #include "value-inl.h"
 
 
@@ -227,6 +228,7 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
 
 // Adaptor function for passing object validate as a value callback.
 static value_t runtime_validate_object(value_t value, value_callback_t *self) {
+  CHECK_DOMAIN(vdObject, value);
   return object_validate(value);
 }
 
@@ -463,10 +465,18 @@ value_t runtime_bool(runtime_t *runtime, bool which) {
   return which ? ROOT(runtime, thrue) : ROOT(runtime, fahlse);
 }
 
-safe_value_t runtime_new_gc_safe(runtime_t *runtime, value_t value) {
-  return gc_safe_to_safe_value(heap_new_gc_safe(&runtime->heap, value));
+safe_value_t protect_value(runtime_t *runtime, value_t value) {
+  if (get_value_domain(value) == vdObject) {
+    object_tracker_t *gc_safe = heap_new_object_tracker(&runtime->heap, value);
+    return object_tracker_to_safe_value(gc_safe);
+  } else {
+    return protect_immediate(value);
+  }
 }
 
-void runtime_dispose_gc_safe(runtime_t *runtime, safe_value_t s_value) {
-  heap_dispose_gc_safe(&runtime->heap, safe_value_to_gc_safe(s_value));
+void dispose_safe_value(runtime_t *runtime, safe_value_t s_value) {
+  if (!safe_value_is_immediate(s_value)) {
+    object_tracker_t *gc_safe = safe_value_to_object_tracker(s_value);
+    heap_dispose_object_tracker(&runtime->heap, gc_safe);
+  }
 }

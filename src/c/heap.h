@@ -4,6 +4,7 @@
 // Memory management infrastructure.
 
 #include "globals.h"
+#include "safe.h"
 #include "utils.h"
 #include "value.h"
 
@@ -133,47 +134,6 @@ value_t space_for_each_object(space_t *space, value_callback_t *callback);
 // aligned to an 'alignment' boundary.
 address_t align_address(address_arith_t alignment, address_t ptr);
 
-FORWARD(gc_safe_t);
-
-// Marker stored in gc safe structs that can be used to check whether a pointer
-// actually points to one or not.
-static const int32_t kGcSafeMarker = 0xFABACEAE;
-
-// Opaque datatype that can be used to unpin a pinned value.
-// Extra data associated with a gc-safe value. These handles form a doubly-linked
-// list such that nodes can add and remove themselves from the chain of all safe
-// values.
-struct gc_safe_t {
-  // The pinned value.
-  value_t value;
-#ifdef ENABLE_CHECKS
-  // In checked mode we store this marker next to the value so that we have at
-  // least some chance of catching the case where we mis-cast something else
-  // to a gc-safe.
-  int32_t gc_safe_marker;
-#endif
-  // The next pin descriptor.
-  gc_safe_t *next;
-  // The previous pin descriptor.
-  gc_safe_t *prev;
-};
-
-// An alias for a gc-safe value. To get the value stored in a safe_value_t you
-// just dereference it.
-//
-// This relies on a bit of cleverness, mainly to make it as convenient as
-// possible to treat a safe value as a normal one. Because the value stored in
-// the handle is the first field, simply casting a gc safe pointer to a value
-// pointer will do the right thing when dereferencing. Since value pointers are
-// only used a few other places this shouldn't be too confusing (famous last
-// words).
-typedef value_t *safe_value_t;
-
-// "Cast" a gc safe handle struct to a safe-value.
-safe_value_t gc_safe_to_safe_value(gc_safe_t *handle);
-
-// "Cast" a safe-value to a gc safe handle.
-gc_safe_t *safe_value_to_gc_safe(safe_value_t s_value);
 
 // A full garbage-collectable heap.
 typedef struct {
@@ -184,11 +144,11 @@ typedef struct {
   // The space that, during gc, holds existing object and from which values are
   // copied into to-space.
   space_t from_space;
-  // A the gc safe nodes are kept in a linked list cycle where this node is
+  // A the object trackers are kept in a linked list cycle where this node is
   // always linked in.
-  gc_safe_t root_gc_safe;
-  // The number of gc safe handles allocated.
-  size_t gc_safe_count;
+  object_tracker_t root_object_tracker;
+  // The number of object trackers allocated.
+  size_t object_tracker_count;
 } heap_t;
 
 // Initialize the given heap, returning a signal to indicate success or
@@ -222,10 +182,10 @@ value_t heap_prepare_garbage_collection(heap_t *heap);
 // Wraps up an in-progress garbage collection by discarding from-space.
 value_t heap_complete_garbage_collection(heap_t *heap);
 
-// Creates a new GC safe handle that holds the specified value.
-gc_safe_t *heap_new_gc_safe(heap_t *heap, value_t value);
+// Creates a new object tracker that holds the specified value.
+object_tracker_t *heap_new_object_tracker(heap_t *heap, value_t value);
 
-// Disposes a GC safe handle.
-void heap_dispose_gc_safe(heap_t *heap, gc_safe_t *gc_safe);
+// Disposes an object tracker.
+void heap_dispose_object_tracker(heap_t *heap, object_tracker_t *gc_safe);
 
 #endif // _HEAP

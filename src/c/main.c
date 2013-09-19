@@ -7,7 +7,8 @@
 #include "log.h"
 #include "plankton.h"
 #include "runtime.h"
-#include "value-inl.h"
+#include "try-inl.h"
+#include "value.h"
 
 #include <unistd.h>
 

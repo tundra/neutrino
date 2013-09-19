@@ -7,6 +7,7 @@
 #include "heap.h"
 #include "interp.h"
 #include "runtime.h"
+#include "try-inl.h"
 #include "value-inl.h"
 
 const char *get_value_domain_name(value_domain_t domain) {

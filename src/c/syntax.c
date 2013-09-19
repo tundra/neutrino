@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "log.h"
 #include "syntax.h"
+#include "try-inl.h"
 #include "value-inl.h"
 
 // --- M i s c ---
