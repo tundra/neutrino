@@ -55,4 +55,30 @@ bool safe_value_is_immediate(safe_value_t s_value);
 // Returns the value stored in a safe value reference.
 value_t deref(safe_value_t s_value);
 
+
+// A pool of safe values that can be disposed together. This is not a scoped
+// value and safe values can be allocated into this in any order.
+typedef struct {
+  // Array that holds this pool's values.
+  safe_value_t *values;
+  // The max number of values this pool can hold.
+  size_t capacity;
+  // The number of values currently held.
+  size_t used;
+  // The runtime this pool belongs to.
+  runtime_t *runtime;
+} safe_value_pool_t;
+
+// Sets up a safe value pool so that it's ready to use. You usually don't
+// want to call this explicitly but use the CREATE_SAFE_VALUE_POOL macro.
+void safe_value_pool_init(safe_value_pool_t *pool, safe_value_t *values,
+    size_t capacity, runtime_t *runtime);
+
+// Disposes any safe values allocated into this safe value pool.
+void safe_value_pool_dispose(safe_value_pool_t *pool);
+
+// Protects the given value and adds it to the pool. Check fails if this pool
+// is already full.
+safe_value_t protect(safe_value_pool_t *pool, value_t value);
+
 #endif // _SAFE

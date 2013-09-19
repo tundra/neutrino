@@ -92,8 +92,8 @@ TEST(runtime, safe_value_loop) {
   set_array_at(a0b, 0, a1b);
   set_array_at(a0b, 1, a1b);
   set_array_at(a1b, 0, a0b);
-  safe_value_t s_a0 = protect_value(runtime, a0b);
-  safe_value_t s_a1 = protect_value(runtime, a1b);
+  safe_value_t s_a0 = runtime_protect_value(runtime, a0b);
+  safe_value_t s_a1 = runtime_protect_value(runtime, a1b);
   ASSERT_SUCCESS(runtime_garbage_collect(runtime));
   value_t a0a = deref(s_a0);
   value_t a1a = deref(s_a1);

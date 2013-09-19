@@ -50,6 +50,10 @@ TRY_SET(name, INIT)
   TARGET = __value__;                                                          \
 } while (false)
 
+// Same as TRY_DEF except works on safe values.
+#define S_TRY_DEF(name, INIT)                                                  \
+safe_value_t name;                                                             \
+S_TRY_SET(name, INIT)
 
 // --- E n s u r e ---
 

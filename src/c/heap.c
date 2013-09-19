@@ -243,6 +243,7 @@ bool heap_try_alloc(heap_t *heap, size_t size, address_t *memory_out) {
 }
 
 void heap_dispose(heap_t *heap) {
+  CHECK_EQ("Leaking undisposed trackers", 0, heap->object_tracker_count);
   space_dispose(&heap->to_space);
   space_dispose(&heap->from_space);
 }

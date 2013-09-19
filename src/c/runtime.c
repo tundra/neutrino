@@ -465,7 +465,7 @@ value_t runtime_bool(runtime_t *runtime, bool which) {
   return which ? ROOT(runtime, thrue) : ROOT(runtime, fahlse);
 }
 
-safe_value_t protect_value(runtime_t *runtime, value_t value) {
+safe_value_t runtime_protect_value(runtime_t *runtime, value_t value) {
   if (get_value_domain(value) == vdObject) {
     object_tracker_t *gc_safe = heap_new_object_tracker(&runtime->heap, value);
     return object_tracker_to_safe_value(gc_safe);

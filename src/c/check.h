@@ -60,6 +60,11 @@ IF_CHECKS_ENABLED(__SIG_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause, new_signal(scCa
 IF_CHECKS_ENABLED(CHECK_EQ(M, E, true))
 
 // Fails if the given expression doesn't evaluate to true under hard check
+// failures, returns the given value under soft check failures.
+#define SIG_CHECK_TRUE_WITH_VALUE(M, scCause, VALUE, E)                        \
+IF_CHECKS_ENABLED(SIG_CHECK_EQ_WITH_VALUE(M, scCause, VALUE, E, true))
+
+// Fails if the given expression doesn't evaluate to true under hard check
 // failures, returns the specified signal under soft check failures.
 #define SIG_CHECK_TRUE(M, scCause, E)                                          \
 IF_CHECKS_ENABLED(SIG_CHECK_EQ(M, scCause, E, true))
