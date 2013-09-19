@@ -7,6 +7,7 @@
 #include "log.h"
 #include "plankton.h"
 #include "runtime-inl.h"
+#include "safe-inl.h"
 #include "try-inl.h"
 #include "value.h"
 
@@ -34,18 +35,14 @@ static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
 }
 
 // Executes the given program syntax tree within the given runtime.
-static value_t execute_syntax(runtime_t *runtime, value_t program) {
+static value_t execute_syntax(runtime_t *runtime, safe_value_t s_program) {
+  value_t program = deref(s_program);
   CHECK_FAMILY(ofProgramAst, program);
   value_t space = get_program_ast_methodspace(program);
   TRY(add_methodspace_builtin_methods(runtime, space));
   value_t entry_point = get_program_ast_entry_point(program);
   TRY_DEF(code_block, compile_expression(runtime, entry_point, NULL));
   return run_code_block(runtime, code_block);
-}
-
-// Retrying version of execute_syntax.
-static value_t safe_execute_syntax(runtime_t *runtime, safe_value_t program) {
-  RETRY_ONCE_IMPL(runtime, execute_syntax(runtime, deref(program)));
 }
 
 // Data used by the custom allocator.
@@ -189,6 +186,7 @@ static value_t neutrino_main(int argc, char **argv) {
 
   runtime_t *runtime;
   TRY(new_runtime(&config, &runtime));
+  CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
     for (size_t i = 0; i < options.argc; i++) {
       const char *filename = options.argv[i];
@@ -203,12 +201,13 @@ static value_t neutrino_main(int argc, char **argv) {
       value_mapping_t syntax_mapping;
       E_TRY(init_plankton_environment_mapping(&syntax_mapping, runtime));
       E_TRY_DEF(program, plankton_deserialize(runtime, &syntax_mapping, input));
-      value_t result = safe_execute_syntax(runtime, runtime_protect_value(runtime, program));
+      value_t result = execute_syntax(runtime, protect(pool, program));
       if (options.print_value)
         value_print_ln(result);
     }
     E_RETURN(success());
   E_FINALLY();
+    DISPOSE_SAFE_VALUE_POOL(pool);
     TRY(delete_runtime(runtime));
     main_options_dispose(&options);
     main_allocator_data_dispose(&allocator_data);
