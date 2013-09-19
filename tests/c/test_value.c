@@ -436,7 +436,7 @@ TEST(value, rehash_map) {
   safe_value_t s_maps[8];
   for (size_t i = 0; i < kMapCount; i++) {
     value_t map = new_heap_id_hash_map(runtime, 16);
-    s_maps[i] = protect_value(runtime, map);
+    s_maps[i] = runtime_protect_value(runtime, map);
   }
 
   // Build and retain a number of strings. We'll use these as keys.
@@ -444,7 +444,7 @@ TEST(value, rehash_map) {
   for (size_t i = 0; i < kInstanceCount; i++) {
     value_t inst = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
     ASSERT_SUCCESS(set_instance_field(runtime, inst, new_integer(0), new_integer(i)));
-    s_insts[i] = protect_value(runtime, inst);
+    s_insts[i] = runtime_protect_value(runtime, inst);
   }
 
   // Store the strings sort-of randomly in the maps.

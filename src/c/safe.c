@@ -1,7 +1,10 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-#include "safe.h"
+#include "runtime.h"
+#include "safe-inl.h"
+#include "signals.h"
+#include "try-inl.h"
 
 
 bool safe_value_is_immediate(safe_value_t s_value) {
@@ -36,4 +39,26 @@ value_t deref(safe_value_t s_value) {
   return safe_value_is_immediate(s_value)
       ? deref_immediate(s_value)
       : safe_value_to_object_tracker(s_value)->value;
+}
+
+void safe_value_pool_init(safe_value_pool_t *pool, safe_value_t *values,
+    size_t capacity, runtime_t *runtime) {
+  pool->values = values;
+  pool->capacity = capacity;
+  pool->used = 0;
+  pool->runtime = runtime;
+}
+
+void safe_value_pool_dispose(safe_value_pool_t *pool) {
+  for (size_t i = 0; i < pool->used; i++)
+    dispose_safe_value(pool->runtime, pool->values[i]);
+}
+
+safe_value_t protect(safe_value_pool_t *pool, value_t value) {
+  SIG_CHECK_TRUE_WITH_VALUE("safe value pool overflow", scSafePoolFull,
+      protect_immediate(new_signal(scSafePoolFull)),
+      pool->used < pool->capacity);
+  S_TRY_DEF(result, runtime_protect_value(pool->runtime, value));
+  pool->values[pool->used++] = result;
+  return result;
 }

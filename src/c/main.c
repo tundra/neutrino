@@ -6,7 +6,7 @@
 #include "interp.h"
 #include "log.h"
 #include "plankton.h"
-#include "runtime.h"
+#include "runtime-inl.h"
 #include "try-inl.h"
 #include "value.h"
 
@@ -41,6 +41,11 @@ static value_t execute_syntax(runtime_t *runtime, value_t program) {
   value_t entry_point = get_program_ast_entry_point(program);
   TRY_DEF(code_block, compile_expression(runtime, entry_point, NULL));
   return run_code_block(runtime, code_block);
+}
+
+// Retrying version of execute_syntax.
+static value_t safe_execute_syntax(runtime_t *runtime, safe_value_t program) {
+  RETRY_ONCE_IMPL(runtime, execute_syntax(runtime, deref(program)));
 }
 
 // Data used by the custom allocator.
@@ -86,7 +91,7 @@ static void main_allocator_data_init(main_allocator_data_t *data, runtime_config
 static void main_allocator_data_dispose(main_allocator_data_t *data) {
   allocator_set_default(data->outer);
   if (data->live_memory > 0)
-    WARN("Disposing with %i of live memory.", data->live_memory);
+    WARN("Disposing with %ib of live memory.", data->live_memory);
 }
 
 // Holds all the options understood by the main executable.
@@ -198,7 +203,7 @@ static value_t neutrino_main(int argc, char **argv) {
       value_mapping_t syntax_mapping;
       E_TRY(init_plankton_environment_mapping(&syntax_mapping, runtime));
       E_TRY_DEF(program, plankton_deserialize(runtime, &syntax_mapping, input));
-      value_t result = execute_syntax(runtime, program);
+      value_t result = safe_execute_syntax(runtime, runtime_protect_value(runtime, program));
       if (options.print_value)
         value_print_ln(result);
     }

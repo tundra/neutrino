@@ -42,9 +42,11 @@ const char *get_value_domain_name(value_domain_t domain);
   F(NotFound)                                                                  \
   F(Nothing)                                                                   \
   F(OutOfBounds)                                                               \
+  F(OutOfMemory)                                                               \
   F(SystemError)                                                               \
   F(UnsupportedBehavior)                                                       \
   F(ValidationFailed)                                                          \
+  F(SafePoolFull)                                                              \
   F(Wat)
 
 // Enum identifying the type of a signal.

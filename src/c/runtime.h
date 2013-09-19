@@ -131,7 +131,7 @@ value_t runtime_garbage_collect(runtime_t *runtime);
 value_t runtime_validate(runtime_t *runtime);
 
 // Creates a gc-safe reference to the given value.
-safe_value_t protect_value(runtime_t *runtime, value_t value);
+safe_value_t runtime_protect_value(runtime_t *runtime, value_t value);
 
 // Disposes a gc-safe reference.
 void dispose_safe_value(runtime_t *runtime, safe_value_t value_s);
