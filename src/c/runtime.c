@@ -226,7 +226,7 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
   return runtime_validate(runtime);
 }
 
-// Adaptor function for passing value validate as a value callback.
+// Adaptor function for passing object validate as a value callback.
 static value_t runtime_validate_object(value_t value, value_callback_t *self) {
   CHECK_DOMAIN(vdObject, value);
   return object_validate(value);

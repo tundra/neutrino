@@ -50,6 +50,7 @@ TRY_SET(name, INIT)
   TARGET = __value__;                                                          \
 } while (false)
 
+
 // --- E n s u r e ---
 
 // Crude exception handling. The E_ macros work like the plain ones but can
