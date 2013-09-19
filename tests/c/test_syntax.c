@@ -18,7 +18,7 @@ TEST(syntax, emitting) {
   assembler_emit_return(&assm);
   value_t code = assembler_flush(&assm);
   ASSERT_SUCCESS(code);
-  value_t result = run_code_block(runtime, code);
+  value_t result = run_code_block_until_signal(runtime, code);
   ASSERT_VALEQ(runtime_bool(runtime, true), result);
   assembler_dispose(&assm);
 

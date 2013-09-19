@@ -52,6 +52,6 @@ value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
     custom_method_emitter_t emitter);
 
 // Adds all built-in methods to the given method space.
-value_t add_methodspace_builtin_methods(runtime_t *runtime, value_t self);
+value_t add_methodspace_builtin_methods(runtime_t *runtime, safe_value_t s_self);
 
 #endif // _BUILTIN

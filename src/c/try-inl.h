@@ -65,12 +65,20 @@ S_TRY_SET(name, INIT)
 #define E_BEGIN_TRY_FINALLY() {                                                \
   value_t __ensure_result__;
 
-// Does the same as a try except makes sure that the function's FINALLY block
+// Does the same as a TRY except makes sure that the function's FINALLY block
 // is executed before bailing out on a signal.
 #define E_TRY(EXPR) do {                                                       \
   value_t __result__ = (EXPR);                                                 \
   if (in_domain(vdSignal, __result__))                                         \
     E_RETURN(__result__);                                                      \
+} while (false)
+
+// Does the same as a S_TRY except makes sure that the function's FINALLY block
+// is executed before bailing out on a signal.
+#define E_S_TRY(EXPR) do {                                                     \
+  safe_value_t __result__ = (EXPR);                                            \
+  if (safe_value_in_domain(vdSignal, __result__))                              \
+    E_RETURN(deref_immediate(__result__));                                     \
 } while (false)
 
 // Does the same as TRY_SET except makes sure the function's FINALLY block is
@@ -81,11 +89,25 @@ S_TRY_SET(name, INIT)
   TARGET = __value__;                                                          \
 } while (false)
 
+// Does the same as S_TRY_SET except makes sure the function's FINALLY block is
+// executed before bailing on a signal.
+#define E_S_TRY_SET(TARGET, VALUE) do {                                        \
+  safe_value_t __value__ = (VALUE);                                            \
+  E_S_TRY(__value__);                                                          \
+  TARGET = __value__;                                                          \
+} while (false)
+
 // Does the same as TRY_DEF except makes sure the function's FINALLY block is
 // executed before bailing on a signal.
 #define E_TRY_DEF(name, INIT)                                                  \
 value_t name;                                                                  \
 E_TRY_SET(name, INIT)
+
+// Does the same as S_TRY_DEF except makes sure the function's FINALLY block is
+// executed before bailing on a signal.
+#define E_S_TRY_DEF(name, INIT)                                                \
+safe_value_t name;                                                             \
+E_S_TRY_SET(name, INIT)
 
 // Does the same as a normal return of the specified value but ensures that the
 // containing function's FINALLY clause is executed.

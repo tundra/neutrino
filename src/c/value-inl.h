@@ -90,7 +90,8 @@ SWALLOW_SEMI(tpo)
 // Expands to an implementation of the built-in method definition function that
 // defines no built-ins.
 #define NO_BUILTIN_METHODS(family)                                             \
-value_t add_##family##_builtin_methods(runtime_t *runtime, value_t space) {    \
+value_t add_##family##_builtin_methods(runtime_t *runtime,                     \
+    safe_value_t s_space) {                                                    \
   return success();                                                            \
 }
 

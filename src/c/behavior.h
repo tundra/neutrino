@@ -4,6 +4,7 @@
 // Behavior specific to each family of objects. It's just like virtual methods
 // except done manually using function pointers.
 
+#include "safe.h"
 #include "value.h"
 
 #ifndef _BEHAVIOR
@@ -154,14 +155,14 @@ CNT(value_t set_##family##_contents(value_t value, runtime_t *runtime,         \
     value_t contents);,)                                                       \
 SUR(value_t get_##family##_protocol(value_t value, runtime_t *runtime);,)      \
 SUR(value_t add_##family##_builtin_methods(runtime_t *runtime,                 \
-    value_t space);,)                                                          \
+    safe_value_t s_space);,)                                                   \
 FIX(void fixup_##family##_post_migrate(runtime_t *runtime, value_t new_object, \
     value_t old_object);,)
 ENUM_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
 #undef __DECLARE_FAMILY_FUNCTIONS__
 
 // Integers don't have a family but have built-in methods too.
-value_t add_integer_builtin_methods(runtime_t *runtime, value_t space);
+value_t add_integer_builtin_methods(runtime_t *runtime, safe_value_t s_space);
 
 // Virtual methods that control how the species of a particular division behave.
 struct division_behavior_t {

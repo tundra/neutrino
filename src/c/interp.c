@@ -5,6 +5,7 @@
 #include "interp.h"
 #include "log.h"
 #include "process.h"
+#include "safe-inl.h"
 #include "try-inl.h"
 #include "value-inl.h"
 
@@ -236,7 +237,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
   return success();
 }
 
-value_t run_code_block(runtime_t *runtime, value_t code) {
+value_t run_code_block_until_signal(runtime_t *runtime, value_t code) {
   TRY_DEF(stack, new_heap_stack(runtime, 1024));
   frame_t frame;
   size_t frame_size = get_code_block_high_water_mark(code);
@@ -244,4 +245,24 @@ value_t run_code_block(runtime_t *runtime, value_t code) {
   set_frame_code_block(&frame, code);
   set_frame_argument_map(&frame, ROOT(runtime, empty_array));
   return run_stack(runtime, stack);
+}
+
+value_t run_code_block(runtime_t *runtime, safe_value_t code) {
+  CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
+  E_BEGIN_TRY_FINALLY();
+    // Build a stack to run the code on.
+    E_S_TRY_DEF(s_stack, protect(pool, new_heap_stack(runtime, 1024)));
+    {
+      // Set up the initial frame.
+      size_t frame_size = get_code_block_high_water_mark(deref(code));
+      frame_t frame;
+      push_stack_frame(runtime, deref(s_stack), &frame, frame_size);
+      set_frame_code_block(&frame, deref(code));
+      set_frame_argument_map(&frame, ROOT(runtime, empty_array));
+    }
+    // Run until completion.
+    E_RETURN(run_stack(runtime, deref(s_stack)));
+  E_FINALLY();
+    DISPOSE_SAFE_VALUE_POOL(pool);
+  E_END_TRY_FINALLY();
 }

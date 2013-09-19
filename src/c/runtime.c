@@ -179,10 +179,13 @@ void gc_fuzzer_init(gc_fuzzer_t *fuzzer, size_t min_freq, size_t mean_freq,
   fuzzer->min_freq = min_freq;
   fuzzer->spread = (mean_freq - min_freq) * 2;
   fuzzer->remaining = 0;
+  fuzzer->is_enabled = true;
   gc_fuzzer_tick(fuzzer);
 }
 
 bool gc_fuzzer_tick(gc_fuzzer_t *fuzzer) {
+  if (!fuzzer->is_enabled)
+    return false;
   if (fuzzer->remaining == 0) {
     // This is where we fail. First, generate a new remaining tick count.
     fuzzer->remaining = pseudo_random_next(&fuzzer->random, fuzzer->spread) +
@@ -209,6 +212,9 @@ value_t delete_runtime(runtime_t *runtime) {
   return success();
 }
 
+// The least number of allocations between forced allocation failures.
+static const size_t kGcFuzzerMinFrequency = 64;
+
 value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
   if (config == NULL)
     config = runtime_config_get_default();
@@ -220,8 +226,8 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
     memory_block_t memory = allocator_default_malloc(
         sizeof(gc_fuzzer_t));
     runtime->gc_fuzzer = memory.memory;
-    gc_fuzzer_init(runtime->gc_fuzzer, 5, config->gc_fuzz_freq,
-        config->gc_fuzz_seed);
+    gc_fuzzer_init(runtime->gc_fuzzer, kGcFuzzerMinFrequency,
+        config->gc_fuzz_freq, config->gc_fuzz_seed);
   }
   return runtime_validate(runtime);
 }
@@ -479,4 +485,12 @@ void dispose_safe_value(runtime_t *runtime, safe_value_t s_value) {
     object_tracker_t *gc_safe = safe_value_to_object_tracker(s_value);
     heap_dispose_object_tracker(&runtime->heap, gc_safe);
   }
+}
+
+void runtime_toggle_fuzzing(runtime_t *runtime, bool enable) {
+  gc_fuzzer_t *fuzzer = runtime->gc_fuzzer;
+  if (fuzzer == NULL)
+    return;
+  CHECK_EQ("invalid fuzz toggle", !enable, fuzzer->is_enabled);
+  fuzzer->is_enabled = enable;
 }

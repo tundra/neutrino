@@ -29,6 +29,10 @@ value_t emit_value(value_t value, assembler_t *assm);
 value_t compile_expression(runtime_t *runtime, value_t ast,
     scope_lookup_callback_t *scope_callback);
 
+// Retrying version of compile_expression.
+value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
+    scope_lookup_callback_t *scope_callback);
+
 
 // --- L i t e r a l ---
 

@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "plankton.h"
+#include "runtime-inl.h"
 #include "safe-inl.h"
 #include "try-inl.h"
 #include "value-inl.h"
@@ -422,4 +423,9 @@ value_t plankton_deserialize(runtime_t *runtime, value_mapping_t *access_or_null
   deserialize_state_t state;
   TRY(deserialize_state_init(&state, runtime, &access, &in));
   return value_deserialize(&state);
+}
+
+value_t safe_plankton_deserialize(runtime_t *runtime,
+    value_mapping_t *access_or_null, safe_value_t blob) {
+  RETRY_ONCE_IMPL(runtime, plankton_deserialize(runtime, access_or_null, deref(blob)));
 }

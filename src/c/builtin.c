@@ -62,15 +62,18 @@ value_t add_methodspace_builtin_method(runtime_t *runtime, value_t space,
   CHECK_FAMILY(ofMethodspace, space);
   CHECK_FAMILY(ofProtocol, receiver);
   // Build the implementation.
-  assembler_t assm;
-  TRY(assembler_init(&assm, runtime, NULL));
-  TRY(assembler_emit_builtin(&assm, implementation));
-  TRY(assembler_emit_return(&assm));
-  TRY_DEF(code_block, assembler_flush(&assm));
-  assembler_dispose(&assm);
-  TRY_DEF(signature, build_signature(runtime, receiver, name_c_str, posc, false));
-  TRY_DEF(method, new_heap_method(runtime, signature, code_block));
-  return add_methodspace_method(runtime, space, method);
+  E_BEGIN_TRY_FINALLY();
+    assembler_t assm;
+    E_TRY(assembler_init(&assm, runtime, NULL));
+    E_TRY(assembler_emit_builtin(&assm, implementation));
+    E_TRY(assembler_emit_return(&assm));
+    E_TRY_DEF(code_block, assembler_flush(&assm));
+    E_TRY_DEF(signature, build_signature(runtime, receiver, name_c_str, posc, false));
+    E_TRY_DEF(method, new_heap_method(runtime, signature, code_block));
+    E_RETURN(add_methodspace_method(runtime, space, method));
+  E_FINALLY();
+    assembler_dispose(&assm);
+  E_END_TRY_FINALLY();
 }
 
 value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
@@ -90,10 +93,10 @@ value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
   return add_methodspace_method(runtime, space, method);
 }
 
-value_t add_methodspace_builtin_methods(runtime_t *runtime, value_t self) {
-  TRY(add_integer_builtin_methods(runtime, self));
+value_t add_methodspace_builtin_methods(runtime_t *runtime, safe_value_t s_self) {
+  TRY(add_integer_builtin_methods(runtime, s_self));
 #define __EMIT_ADD_BUILTINS_CALL__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
-  SUR(TRY(add_##family##_builtin_methods(runtime, self));,)
+  SUR(TRY(add_##family##_builtin_methods(runtime, s_self));,)
   ENUM_OBJECT_FAMILIES(__EMIT_ADD_BUILTINS_CALL__)
 #undef __EMIT_ADD_BUILTINS_CALL__
   return success();

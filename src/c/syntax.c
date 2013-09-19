@@ -4,9 +4,11 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "log.h"
+#include "runtime-inl.h"
 #include "syntax.h"
 #include "try-inl.h"
 #include "value-inl.h"
+
 
 // --- M i s c ---
 
@@ -40,6 +42,11 @@ value_t compile_expression(runtime_t *runtime, value_t program,
   E_FINALLY();
     assembler_dispose(&assm);
   E_END_TRY_FINALLY();
+}
+
+value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
+    scope_lookup_callback_t *scope_callback) {
+  RETRY_ONCE_IMPL(runtime, compile_expression(runtime, deref(ast), scope_callback));
 }
 
 // Forward declare all the emit methods.
