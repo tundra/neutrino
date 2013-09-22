@@ -10,15 +10,16 @@
 
 // --- S t a c k   p i e c e ---
 
-CHECKED_ACCESSORS_IMPL(StackPiece, stack_piece, Array, Storage, storage);
-UNCHECKED_ACCESSORS_IMPL(StackPiece, stack_piece, Previous, previous);
+ACCESSORS_IMPL(StackPiece, stack_piece, acInFamily, Array, Storage, storage);
+ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt, StackPiece, Previous, previous);
 INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopFramePointer, top_frame_pointer);
 INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopStackPointer, top_stack_pointer);
 INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopCapacity, top_capacity);
 
 value_t stack_piece_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofStackPiece, value);
-  VALIDATE_VALUE_FAMILY(ofArray, get_stack_piece_storage(value));
+  VALIDATE_FAMILY(ofStackPiece, value);
+  VALIDATE_FAMILY(ofArray, get_stack_piece_storage(value));
+  VALIDATE_FAMILY_OPT(ofStackPiece, get_stack_piece_previous(value));
   return success();
 }
 
@@ -36,12 +37,12 @@ void stack_piece_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- S t a c k   ---
 
-CHECKED_ACCESSORS_IMPL(Stack, stack, StackPiece, TopPiece, top_piece);
+ACCESSORS_IMPL(Stack, stack, acInFamily, StackPiece, TopPiece, top_piece);
 INTEGER_ACCESSORS_IMPL(Stack, stack, DefaultPieceCapacity, default_piece_capacity);
 
 value_t stack_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofStack, value);
-  VALIDATE_VALUE_FAMILY(ofStackPiece, get_stack_top_piece(value));
+  VALIDATE_FAMILY(ofStack, value);
+  VALIDATE_FAMILY(ofStackPiece, get_stack_top_piece(value));
   return success();
 }
 
@@ -81,7 +82,7 @@ bool pop_stack_frame(value_t stack, frame_t *frame) {
   }
   // The piece was empty so we have to pop down to the previous piece.
   value_t next_piece = get_stack_piece_previous(top_piece);
-  if (is_null(next_piece)) {
+  if (is_nothing(next_piece)) {
     // There are no more pieces. Leave the empty one in place and report that
     // popping failed.
     return false;

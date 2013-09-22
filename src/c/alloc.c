@@ -263,7 +263,7 @@ value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
 value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {
   size_t size = kStackSize;
   TRY_DEF(piece, new_heap_stack_piece(runtime, default_piece_capacity,
-      ROOT(runtime, null)));
+      ROOT(runtime, nothing)));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, stack_species)));
   set_stack_top_piece(result, piece);

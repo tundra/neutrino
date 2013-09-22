@@ -10,14 +10,14 @@
 
 // --- S i g n a t u r e ---
 
-CHECKED_ACCESSORS_IMPL(Signature, signature, Array, Tags, tags);
+ACCESSORS_IMPL(Signature, signature, acInFamily, Array, Tags, tags);
 INTEGER_ACCESSORS_IMPL(Signature, signature, ParameterCount, parameter_count);
 INTEGER_ACCESSORS_IMPL(Signature, signature, MandatoryCount, mandatory_count);
 INTEGER_ACCESSORS_IMPL(Signature, signature, AllowExtra, allow_extra);
 
 value_t signature_validate(value_t self) {
-  VALIDATE_VALUE_FAMILY(ofSignature, self);
-  VALIDATE_VALUE_FAMILY(ofArray, get_signature_tags(self));
+  VALIDATE_FAMILY(ofSignature, self);
+  VALIDATE_FAMILY(ofArray, get_signature_tags(self));
   return success();
 }
 
@@ -157,13 +157,13 @@ join_status_t join_score_vectors(score_t *target, score_t *source, size_t length
 
 // --- P a r a m e t e r ---
 
-CHECKED_ACCESSORS_IMPL(Parameter, parameter, Guard, Guard, guard);
+ACCESSORS_IMPL(Parameter, parameter, acInFamily, Guard, Guard, guard);
 INTEGER_ACCESSORS_IMPL(Parameter, parameter, IsOptional, is_optional);
 INTEGER_ACCESSORS_IMPL(Parameter, parameter, Index, index);
 
 value_t parameter_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofParameter, value);
-  VALIDATE_VALUE_FAMILY(ofGuard, get_parameter_guard(value));
+  VALIDATE_FAMILY(ofParameter, value);
+  VALIDATE_FAMILY(ofGuard, get_parameter_guard(value));
   return success();
 }
 
@@ -184,10 +184,10 @@ void parameter_print_atomic_on(value_t self, string_buffer_t *buf) {
 // --- G u a r d ---
 
 ENUM_ACCESSORS_IMPL(Guard, guard, guard_type_t, Type, type);
-UNCHECKED_ACCESSORS_IMPL(Guard, guard, Value, value);
+ACCESSORS_IMPL(Guard, guard, acNoCheck, 0, Value, value);
 
 value_t guard_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofGuard, value);
+  VALIDATE_FAMILY(ofGuard, value);
   return success();
 }
 
@@ -271,13 +271,13 @@ void guard_print_atomic_on(value_t self, string_buffer_t *buf) {
 
 TRIVIAL_PRINT_ON_IMPL(Method, method);
 
-CHECKED_ACCESSORS_IMPL(Method, method, Signature, Signature, signature);
-CHECKED_ACCESSORS_IMPL(Method, method, CodeBlock, Code, code);
+ACCESSORS_IMPL(Method, method, acInFamily, Signature, Signature, signature);
+ACCESSORS_IMPL(Method, method, acInFamily, CodeBlock, Code, code);
 
 value_t method_validate(value_t self) {
-  VALIDATE_VALUE_FAMILY(ofMethod, self);
-  VALIDATE_VALUE_FAMILY(ofSignature, get_method_signature(self));
-  VALIDATE_VALUE_FAMILY(ofCodeBlock, get_method_code(self));
+  VALIDATE_FAMILY(ofMethod, self);
+  VALIDATE_FAMILY(ofSignature, get_method_signature(self));
+  VALIDATE_FAMILY(ofCodeBlock, get_method_code(self));
   return success();
 }
 
@@ -286,16 +286,16 @@ value_t method_validate(value_t self) {
 
 TRIVIAL_PRINT_ON_IMPL(Methodspace, methodspace);
 
-CHECKED_ACCESSORS_IMPL(Methodspace, methodspace, IdHashMap, Inheritance,
+ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, IdHashMap, Inheritance,
     inheritance);
-CHECKED_ACCESSORS_IMPL(Methodspace, methodspace, ArrayBuffer, Methods,
+ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ArrayBuffer, Methods,
     methods);
-CHECKED_ACCESSORS_IMPL(Methodspace, methodspace, Array, Imports,
+ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, Array, Imports,
     imports);
 
 value_t methodspace_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofMethodspace, value);
-  VALIDATE_VALUE_FAMILY(ofIdHashMap, get_methodspace_inheritance(value));
+  VALIDATE_FAMILY(ofMethodspace, value);
+  VALIDATE_FAMILY(ofIdHashMap, get_methodspace_inheritance(value));
   return success();
 }
 
@@ -492,12 +492,12 @@ value_t set_methodspace_contents(value_t object, runtime_t *runtime, value_t con
 
 // --- I n v o c a t i o n   r e c o r d ---
 
-CHECKED_ACCESSORS_IMPL(InvocationRecord, invocation_record, Array,
+ACCESSORS_IMPL(InvocationRecord, invocation_record, acInFamily, Array,
     ArgumentVector, argument_vector);
 
 value_t invocation_record_validate(value_t self) {
-  VALIDATE_VALUE_FAMILY(ofInvocationRecord, self);
-  VALIDATE_VALUE_FAMILY(ofArray, get_invocation_record_argument_vector(self));
+  VALIDATE_FAMILY(ofInvocationRecord, self);
+  VALIDATE_FAMILY(ofArray, get_invocation_record_argument_vector(self));
   return success();
 }
 

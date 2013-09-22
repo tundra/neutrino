@@ -61,10 +61,10 @@ value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
 GET_FAMILY_PROTOCOL_IMPL(literal_ast);
 NO_BUILTIN_METHODS(literal_ast);
 
-UNCHECKED_ACCESSORS_IMPL(LiteralAst, literal_ast, Value, value);
+ACCESSORS_IMPL(LiteralAst, literal_ast, acNoCheck, 0, Value, value);
 
-value_t literal_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofLiteralAst, value);
+value_t literal_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofLiteralAst, self);
   return success();
 }
 
@@ -100,7 +100,7 @@ value_t emit_literal_ast(value_t value, assembler_t *assm) {
 GET_FAMILY_PROTOCOL_IMPL(array_ast);
 NO_BUILTIN_METHODS(array_ast);
 
-CHECKED_ACCESSORS_IMPL(ArrayAst, array_ast, Array, Elements, elements);
+ACCESSORS_IMPL(ArrayAst, array_ast, acInFamilyOpt, Array, Elements, elements);
 
 value_t emit_array_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofArrayAst, value);
@@ -113,8 +113,8 @@ value_t emit_array_ast(value_t value, assembler_t *assm) {
 }
 
 value_t array_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofArrayAst, value);
-  VALIDATE_VALUE_FAMILY(ofArray, get_array_ast_elements(value));
+  VALIDATE_FAMILY(ofArrayAst, value);
+  VALIDATE_FAMILY_OPT(ofArray, get_array_ast_elements(value));
   return success();
 }
 
@@ -136,7 +136,7 @@ value_t set_array_ast_contents(value_t object, runtime_t *runtime, value_t conte
 }
 
 static value_t new_array_ast(runtime_t *runtime) {
-  return new_heap_array_ast(runtime, ROOT(runtime, empty_array));
+  return new_heap_array_ast(runtime, ROOT(runtime, nothing));
 }
 
 
@@ -146,8 +146,10 @@ TRIVIAL_PRINT_ON_IMPL(InvocationAst, invocation_ast);
 GET_FAMILY_PROTOCOL_IMPL(invocation_ast);
 NO_BUILTIN_METHODS(invocation_ast);
 
-CHECKED_ACCESSORS_IMPL(InvocationAst, invocation_ast, Array, Arguments, arguments);
-UNCHECKED_ACCESSORS_IMPL(InvocationAst, invocation_ast, Methodspace, methodspace);
+ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, Array, Arguments,
+    arguments);
+ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, Methodspace,
+    Methodspace, methodspace);
 
 value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofInvocationAst, value);
@@ -174,8 +176,9 @@ value_t emit_invocation_ast(value_t value, assembler_t *assm) {
 }
 
 value_t invocation_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofInvocationAst, value);
-  VALIDATE_VALUE_FAMILY(ofArray, get_invocation_ast_arguments(value));
+  VALIDATE_FAMILY(ofInvocationAst, value);
+  VALIDATE_FAMILY_OPT(ofArray, get_invocation_ast_arguments(value));
+  VALIDATE_FAMILY_OPT(ofMethodspace, get_invocation_ast_methodspace(value));
   return success();
 }
 
@@ -189,8 +192,8 @@ value_t set_invocation_ast_contents(value_t object, runtime_t *runtime, value_t 
 }
 
 static value_t new_invocation_ast(runtime_t *runtime) {
-  return new_heap_invocation_ast(runtime, ROOT(runtime, empty_array),
-      ROOT(runtime, null));
+  return new_heap_invocation_ast(runtime, ROOT(runtime, nothing),
+      ROOT(runtime, nothing));
 }
 
 
@@ -200,11 +203,11 @@ TRIVIAL_PRINT_ON_IMPL(ArgumentAst, argument_ast);
 GET_FAMILY_PROTOCOL_IMPL(argument_ast);
 NO_BUILTIN_METHODS(argument_ast);
 
-UNCHECKED_ACCESSORS_IMPL(ArgumentAst, argument_ast, Tag, tag);
-UNCHECKED_ACCESSORS_IMPL(ArgumentAst, argument_ast, Value, value);
+ACCESSORS_IMPL(ArgumentAst, argument_ast, acNoCheck, 0, Tag, tag);
+ACCESSORS_IMPL(ArgumentAst, argument_ast, acIsSyntaxOpt, 0, Value, value);
 
 value_t argument_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofArgumentAst, value);
+  VALIDATE_FAMILY(ofArgumentAst, value);
   return success();
 }
 
@@ -218,7 +221,8 @@ value_t set_argument_ast_contents(value_t object, runtime_t *runtime, value_t co
 }
 
 static value_t new_argument_ast(runtime_t *runtime) {
-  return new_heap_argument_ast(runtime, ROOT(runtime, null), ROOT(runtime, null));
+  return new_heap_argument_ast(runtime, ROOT(runtime, nothing),
+      ROOT(runtime, nothing));
 }
 
 
@@ -227,7 +231,7 @@ static value_t new_argument_ast(runtime_t *runtime) {
 GET_FAMILY_PROTOCOL_IMPL(sequence_ast);
 NO_BUILTIN_METHODS(sequence_ast);
 
-CHECKED_ACCESSORS_IMPL(SequenceAst, sequence_ast, Array, Values, values);
+ACCESSORS_IMPL(SequenceAst, sequence_ast, acInFamily, Array, Values, values);
 
 value_t emit_sequence_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofSequenceAst, value);
@@ -253,8 +257,8 @@ value_t emit_sequence_ast(value_t value, assembler_t *assm) {
 }
 
 value_t sequence_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofSequenceAst, value);
-  VALIDATE_VALUE_FAMILY(ofArray, get_sequence_ast_values(value));
+  VALIDATE_FAMILY(ofSequenceAst, value);
+  VALIDATE_FAMILY_OPT(ofArray, get_sequence_ast_values(value));
   return success();
 }
 
@@ -285,9 +289,9 @@ static value_t new_sequence_ast(runtime_t *runtime) {
 GET_FAMILY_PROTOCOL_IMPL(local_declaration_ast);
 NO_BUILTIN_METHODS(local_declaration_ast);
 
-UNCHECKED_ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, Symbol, symbol);
-UNCHECKED_ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, Value, value);
-UNCHECKED_ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, Body, body);
+ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acInFamilyOpt, SymbolAst, Symbol, symbol);
+ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acIsSyntaxOpt, 0, Value, value);
+ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acIsSyntaxOpt, 0, Body, body);
 
 value_t emit_local_declaration_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofLocalDeclarationAst, self);
@@ -307,8 +311,9 @@ value_t emit_local_declaration_ast(value_t self, assembler_t *assm) {
   return success();
 }
 
-value_t local_declaration_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofLocalDeclarationAst, value);
+value_t local_declaration_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofLocalDeclarationAst, self);
+  VALIDATE_FAMILY_OPT(ofSymbolAst, get_local_declaration_ast_symbol(self));
   return success();
 }
 
@@ -338,8 +343,8 @@ value_t set_local_declaration_ast_contents(value_t object, runtime_t *runtime, v
 }
 
 static value_t new_local_declaration_ast(runtime_t *runtime) {
-  value_t null = ROOT(runtime, null);
-  return new_heap_local_declaration_ast(runtime, null, null, null);
+  return new_heap_local_declaration_ast(runtime, ROOT(runtime, nothing),
+      ROOT(runtime, nothing), ROOT(runtime, nothing));
 }
 
 
@@ -348,7 +353,8 @@ static value_t new_local_declaration_ast(runtime_t *runtime) {
 GET_FAMILY_PROTOCOL_IMPL(local_variable_ast);
 NO_BUILTIN_METHODS(local_variable_ast);
 
-UNCHECKED_ACCESSORS_IMPL(LocalVariableAst, local_variable_ast, Symbol, symbol);
+ACCESSORS_IMPL(LocalVariableAst, local_variable_ast, acInFamilyOpt, SymbolAst,
+    Symbol, symbol);
 
 // Pushes the value of a symbol onto the stack.
 static value_t assembler_load_symbol(value_t symbol, assembler_t *assm) {
@@ -383,8 +389,9 @@ value_t emit_local_variable_ast(value_t self, assembler_t *assm) {
   return success();
 }
 
-value_t local_variable_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofLocalVariableAst, value);
+value_t local_variable_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofLocalVariableAst, self);
+  VALIDATE_FAMILY_OPT(ofSymbolAst, get_local_variable_ast_symbol(self));
   return success();
 }
 
@@ -407,7 +414,7 @@ value_t set_local_variable_ast_contents(value_t object, runtime_t *runtime,
 }
 
 static value_t new_local_variable_ast(runtime_t *runtime) {
-  return new_heap_local_variable_ast(runtime, ROOT(runtime, null));
+  return new_heap_local_variable_ast(runtime, ROOT(runtime, nothing));
 }
 
 
@@ -417,8 +424,10 @@ GET_FAMILY_PROTOCOL_IMPL(namespace_variable_ast);
 NO_BUILTIN_METHODS(namespace_variable_ast);
 TRIVIAL_PRINT_ON_IMPL(NamespaceVariableAst, namespace_variable_ast);
 
-UNCHECKED_ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, Name, name);
-UNCHECKED_ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, Namespace, namespace);
+ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acInFamilyOpt, Array,
+    Name, name);
+ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acInFamilyOpt,
+    Namespace, Namespace, namespace);
 
 value_t emit_namespace_variable_ast(value_t self, assembler_t *assm) {
   assembler_emit_load_global(assm, get_namespace_variable_ast_name(self),
@@ -426,8 +435,10 @@ value_t emit_namespace_variable_ast(value_t self, assembler_t *assm) {
   return success();
 }
 
-value_t namespace_variable_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofNamespaceVariableAst, value);
+value_t namespace_variable_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofNamespaceVariableAst, self);
+  VALIDATE_FAMILY_OPT(ofArray, get_namespace_variable_ast_name(self));
+  VALIDATE_FAMILY_OPT(ofNamespace, get_namespace_variable_ast_namespace(self));
   return success();
 }
 
@@ -442,8 +453,8 @@ value_t set_namespace_variable_ast_contents(value_t object, runtime_t *runtime,
 }
 
 static value_t new_namespace_variable_ast(runtime_t *runtime) {
-  return new_heap_namespace_variable_ast(runtime, ROOT(runtime, null),
-      ROOT(runtime, null));
+  return new_heap_namespace_variable_ast(runtime, ROOT(runtime, nothing),
+      ROOT(runtime, nothing));
 }
 
 
@@ -452,10 +463,10 @@ static value_t new_namespace_variable_ast(runtime_t *runtime) {
 GET_FAMILY_PROTOCOL_IMPL(symbol_ast);
 NO_BUILTIN_METHODS(symbol_ast);
 
-UNCHECKED_ACCESSORS_IMPL(SymbolAst, symbol_ast, Name, name);
+ACCESSORS_IMPL(SymbolAst, symbol_ast, acNoCheck, 0, Name, name);
 
-value_t symbol_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofSymbolAst, value);
+value_t symbol_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofSymbolAst, self);
   return success();
 }
 
@@ -477,7 +488,7 @@ value_t set_symbol_ast_contents(value_t object, runtime_t *runtime, value_t cont
 }
 
 static value_t new_symbol_ast(runtime_t *runtime) {
-  return new_heap_symbol_ast(runtime, ROOT(runtime, null));
+  return new_heap_symbol_ast(runtime, ROOT(runtime, nothing));
 }
 
 
@@ -487,8 +498,8 @@ GET_FAMILY_PROTOCOL_IMPL(lambda_ast);
 NO_BUILTIN_METHODS(lambda_ast);
 TRIVIAL_PRINT_ON_IMPL(LambdaAst, lambda_ast);
 
-UNCHECKED_ACCESSORS_IMPL(LambdaAst, lambda_ast, Parameters, parameters);
-UNCHECKED_ACCESSORS_IMPL(LambdaAst, lambda_ast, Body, body);
+ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, Array, Parameters, parameters);
+ACCESSORS_IMPL(LambdaAst, lambda_ast, acIsSyntaxOpt, 0, Body, body);
 
 value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   // Emitting a lambda takes a fair amount of code but most of it is
@@ -573,8 +584,9 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   return success();
 }
 
-value_t lambda_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofLambdaAst, value);
+value_t lambda_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofLambdaAst, self);
+  VALIDATE_FAMILY_OPT(ofArray, get_lambda_ast_parameters(self));
   return success();
 }
 
@@ -588,7 +600,8 @@ value_t set_lambda_ast_contents(value_t object, runtime_t *runtime, value_t cont
 }
 
 static value_t new_lambda_ast(runtime_t *runtime) {
-  return new_heap_lambda_ast(runtime, ROOT(runtime, null), ROOT(runtime, null));
+  return new_heap_lambda_ast(runtime, ROOT(runtime, nothing),
+      ROOT(runtime, nothing));
 }
 
 
@@ -598,11 +611,13 @@ GET_FAMILY_PROTOCOL_IMPL(parameter_ast);
 NO_BUILTIN_METHODS(parameter_ast);
 TRIVIAL_PRINT_ON_IMPL(ParameterAst, parameter_ast);
 
-UNCHECKED_ACCESSORS_IMPL(ParameterAst, parameter_ast, Symbol, symbol);
-CHECKED_ACCESSORS_IMPL(ParameterAst, parameter_ast, Array, Tags, tags);
+ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, SymbolAst, Symbol, symbol);
+ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, Array, Tags, tags);
 
-value_t parameter_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofParameterAst, value);
+value_t parameter_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofParameterAst, self);
+  VALIDATE_FAMILY_OPT(ofSymbolAst, get_parameter_ast_symbol(self));
+  VALIDATE_FAMILY_OPT(ofArray, get_parameter_ast_tags(self));
   return success();
 }
 
@@ -616,8 +631,8 @@ value_t set_parameter_ast_contents(value_t object, runtime_t *runtime, value_t c
 }
 
 static value_t new_parameter_ast(runtime_t *runtime) {
-  return new_heap_parameter_ast(runtime, ROOT(runtime, null),
-      ROOT(runtime, empty_array));
+  return new_heap_parameter_ast(runtime, ROOT(runtime, nothing),
+      ROOT(runtime, nothing));
 }
 
 
@@ -625,11 +640,12 @@ static value_t new_parameter_ast(runtime_t *runtime) {
 
 TRIVIAL_PRINT_ON_IMPL(ProgramAst, program_ast);
 
-UNCHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, EntryPoint, entry_point);
-UNCHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, Module, module);
+ACCESSORS_IMPL(ProgramAst, program_ast, acIsSyntaxOpt, 0, EntryPoint, entry_point);
+ACCESSORS_IMPL(ProgramAst, program_ast, acInFamilyOpt, Module, Module, module);
 
-value_t program_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofProgramAst, value);
+value_t program_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofProgramAst, self);
+  VALIDATE_FAMILY_OPT(ofModule, get_program_ast_module(self));
   return success();
 }
 
@@ -643,7 +659,8 @@ value_t set_program_ast_contents(value_t object, runtime_t *runtime, value_t con
 }
 
 static value_t new_program_ast(runtime_t *runtime) {
-  return new_heap_program_ast(runtime, ROOT(runtime, null), ROOT(runtime, null));
+  return new_heap_program_ast(runtime, ROOT(runtime, nothing),
+      ROOT(runtime, nothing));
 }
 
 
@@ -651,11 +668,12 @@ static value_t new_program_ast(runtime_t *runtime) {
 
 TRIVIAL_PRINT_ON_IMPL(NameAst, name_ast);
 
-UNCHECKED_ACCESSORS_IMPL(NameAst, name_ast, Path, path);
-UNCHECKED_ACCESSORS_IMPL(NameAst, name_ast, Phase, phase);
+ACCESSORS_IMPL(NameAst, name_ast, acInFamilyOpt, Array, Path, path);
+ACCESSORS_IMPL(NameAst, name_ast, acNoCheck, 0, Phase, phase);
 
-value_t name_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofNameAst, value);
+value_t name_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofNameAst, self);
+  VALIDATE_FAMILY(ofArray, get_name_ast_path(self));
   return success();
 }
 
@@ -669,8 +687,7 @@ value_t set_name_ast_contents(value_t object, runtime_t *runtime, value_t conten
 }
 
 static value_t new_name_ast(runtime_t *runtime) {
-  value_t null = ROOT(runtime, null);
-  return new_heap_name_ast(runtime, null, null);
+  return new_heap_name_ast(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing));
 }
 
 

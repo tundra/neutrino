@@ -114,6 +114,23 @@ object_family_t get_object_family(value_t value) {
   return get_species_instance_family(species);
 }
 
+bool in_syntax_family(value_t value) {
+  if (get_value_domain(value) != vdObject)
+    return false;
+  switch (get_object_family(value)) {
+#define __MAKE_CASE__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)       \
+  EMT(case of##Family: return true;,)
+    ENUM_OBJECT_FAMILIES(__MAKE_CASE__)
+#undef __MAKE_CASE__
+    default:
+      return false;
+  }
+}
+
+const char *in_syntax_family_name(bool value) {
+  return value ? "true" : "false";
+}
+
 family_behavior_t *get_object_family_behavior(value_t self) {
   CHECK_DOMAIN(vdObject, self);
   value_t species = get_object_species(self);
@@ -164,7 +181,7 @@ species_division_t get_species_division(value_t value) {
 }
 
 value_t species_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofSpecies, value);
+  VALIDATE_FAMILY(ofSpecies, value);
   return success();
 }
 
@@ -217,7 +234,7 @@ void get_string_contents(value_t value, string_t *out) {
 }
 
 value_t string_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofString, value);
+  VALIDATE_FAMILY(ofString, value);
   // Check that the string is null-terminated.
   size_t length = get_string_length(value);
   VALIDATE(get_string_chars(value)[length] == '\0');
@@ -321,7 +338,7 @@ void get_blob_data(value_t value, blob_t *blob_out) {
 }
 
 value_t blob_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofBlob, value);
+  VALIDATE_FAMILY(ofBlob, value);
   return success();
 }
 
@@ -368,7 +385,7 @@ void *get_void_p_value(value_t value) {
 }
 
 value_t void_p_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofVoidP, value);
+  VALIDATE_FAMILY(ofVoidP, value);
   return success();
 }
 
@@ -414,7 +431,7 @@ value_t *get_array_elements_unchecked(value_t value) {
 
 
 value_t array_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofArray, value);
+  VALIDATE_FAMILY(ofArray, value);
   return success();
 }
 
@@ -598,11 +615,12 @@ TRIVIAL_PRINT_ON_IMPL(ArrayBuffer, array_buffer);
 GET_FAMILY_PROTOCOL_IMPL(array_buffer);
 NO_BUILTIN_METHODS(array_buffer);
 
-CHECKED_ACCESSORS_IMPL(ArrayBuffer, array_buffer, Array, Elements, elements);
+ACCESSORS_IMPL(ArrayBuffer, array_buffer, acInFamily, Array, Elements, elements);
 INTEGER_ACCESSORS_IMPL(ArrayBuffer, array_buffer, Length, length);
 
-value_t array_buffer_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofArrayBuffer, value);
+value_t array_buffer_validate(value_t self) {
+  VALIDATE_FAMILY(ofArrayBuffer, self);
+  VALIDATE_FAMILY(ofArray, get_array_buffer_elements(self));
   return success();
 }
 
@@ -638,7 +656,7 @@ void set_array_buffer_at(value_t self, size_t index, value_t value) {
 GET_FAMILY_PROTOCOL_IMPL(id_hash_map);
 NO_BUILTIN_METHODS(id_hash_map);
 
-CHECKED_ACCESSORS_IMPL(IdHashMap, id_hash_map, Array, EntryArray, entry_array);
+ACCESSORS_IMPL(IdHashMap, id_hash_map, acInFamily, Array, EntryArray, entry_array);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Size, size);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Capacity, capacity);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, OccupiedCount, occupied_count);
@@ -914,9 +932,9 @@ void id_hash_map_iter_get_current(id_hash_map_iter_t *iter, value_t *key_out, va
 }
 
 value_t id_hash_map_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofIdHashMap, value);
+  VALIDATE_FAMILY(ofIdHashMap, value);
   value_t entry_array = get_id_hash_map_entry_array(value);
-  VALIDATE_VALUE_FAMILY(ofArray, entry_array);
+  VALIDATE_FAMILY(ofArray, entry_array);
   size_t capacity = get_id_hash_map_capacity(value);
   VALIDATE(get_id_hash_map_size(value) < capacity);
   VALIDATE(get_array_length(entry_array) == (capacity * kIdHashMapEntryFieldCount));
@@ -955,7 +973,7 @@ GET_FAMILY_PROTOCOL_IMPL(null);
 NO_BUILTIN_METHODS(null);
 
 value_t null_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofNull, value);
+  VALIDATE_FAMILY(ofNull, value);
   return success();
 }
 
@@ -983,7 +1001,7 @@ void null_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- N u l l ---
 
 value_t nothing_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofNothing, value);
+  VALIDATE_FAMILY(ofNothing, value);
   return success();
 }
 
@@ -1012,7 +1030,7 @@ bool get_boolean_value(value_t value) {
 }
 
 value_t boolean_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofBoolean, value);
+  VALIDATE_FAMILY(ofBoolean, value);
   bool which = get_boolean_value(value);
   VALIDATE((which == true) || (which == false));
   return success();
@@ -1051,10 +1069,10 @@ NO_BUILTIN_METHODS(key);
 TRIVIAL_PRINT_ON_IMPL(Key, key);
 
 INTEGER_ACCESSORS_IMPL(Key, key, Id, id);
-UNCHECKED_ACCESSORS_IMPL(Key, key, DisplayName, display_name);
+ACCESSORS_IMPL(Key, key, acNoCheck, 0, DisplayName, display_name);
 
 value_t key_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofKey, value);
+  VALIDATE_FAMILY(ofKey, value);
   return success();
 }
 
@@ -1073,7 +1091,7 @@ value_t key_ordering_compare(value_t a, value_t b) {
 
 // --- I n s t a n c e ---
 
-CHECKED_ACCESSORS_IMPL(Instance, instance, IdHashMap, Fields, fields);
+ACCESSORS_IMPL(Instance, instance, acInFamily, IdHashMap, Fields, fields);
 NO_BUILTIN_METHODS(instance);
 
 value_t get_instance_field(value_t value, value_t key) {
@@ -1087,9 +1105,8 @@ value_t try_set_instance_field(value_t instance, value_t key, value_t value) {
 }
 
 value_t instance_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofInstance, value);
-  value_t fields = get_instance_fields(value);
-  VALIDATE_VALUE_FAMILY(ofIdHashMap, fields);
+  VALIDATE_FAMILY(ofInstance, value);
+  VALIDATE_FAMILY(ofIdHashMap, get_instance_fields(value));
   return success();
 }
 
@@ -1121,12 +1138,11 @@ value_t get_instance_protocol(value_t self, runtime_t *runtime) {
 
 // --- F a c t o r y ---
 
-CHECKED_ACCESSORS_IMPL(Factory, factory, VoidP, Constructor, constructor);
+ACCESSORS_IMPL(Factory, factory, acInFamily, VoidP, Constructor, constructor);
 
 value_t factory_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofFactory, value);
-  value_t constructor = get_factory_constructor(value);
-  VALIDATE_VALUE_FAMILY(ofVoidP, constructor);
+  VALIDATE_FAMILY(ofFactory, value);
+  VALIDATE_FAMILY(ofVoidP, get_factory_constructor(value));
   return success();
 }
 
@@ -1145,14 +1161,14 @@ void factory_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- C o d e   b l o c k ---
 
-CHECKED_ACCESSORS_IMPL(CodeBlock, code_block, Blob, Bytecode, bytecode);
-CHECKED_ACCESSORS_IMPL(CodeBlock, code_block, Array, ValuePool, value_pool);
+ACCESSORS_IMPL(CodeBlock, code_block, acInFamily, Blob, Bytecode, bytecode);
+ACCESSORS_IMPL(CodeBlock, code_block, acInFamily, Array, ValuePool, value_pool);
 INTEGER_ACCESSORS_IMPL(CodeBlock, code_block, HighWaterMark, high_water_mark);
 
 value_t code_block_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofCodeBlock, value);
-  VALIDATE_VALUE_FAMILY(ofBlob, get_code_block_bytecode(value));
-  VALIDATE_VALUE_FAMILY(ofArray, get_code_block_value_pool(value));
+  VALIDATE_FAMILY(ofCodeBlock, value);
+  VALIDATE_FAMILY(ofBlob, get_code_block_bytecode(value));
+  VALIDATE_FAMILY(ofArray, get_code_block_value_pool(value));
   return success();
 }
 
@@ -1174,10 +1190,10 @@ void code_block_print_atomic_on(value_t value, string_buffer_t *buf) {
 GET_FAMILY_PROTOCOL_IMPL(protocol);
 NO_BUILTIN_METHODS(protocol);
 
-UNCHECKED_ACCESSORS_IMPL(Protocol, protocol, DisplayName, display_name);
+ACCESSORS_IMPL(Protocol, protocol, acNoCheck, 0, DisplayName, display_name);
 
 value_t protocol_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofProtocol, value);
+  VALIDATE_FAMILY(ofProtocol, value);
   return success();
 }
 
@@ -1207,13 +1223,13 @@ void protocol_print_atomic_on(value_t value, string_buffer_t *buf) {
 NO_BUILTIN_METHODS(argument_map_trie);
 TRIVIAL_PRINT_ON_IMPL(ArgumentMapTrie, argument_map_trie);
 
-CHECKED_ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, Array, Value, value);
-CHECKED_ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, ArrayBuffer, Children, children);
+ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, acInFamily, Array, Value, value);
+ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, acInFamily, ArrayBuffer, Children, children);
 
 value_t argument_map_trie_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofArgumentMapTrie, value);
-  VALIDATE_VALUE_FAMILY(ofArray, get_argument_map_trie_value(value));
-  VALIDATE_VALUE_FAMILY(ofArrayBuffer, get_argument_map_trie_children(value));
+  VALIDATE_FAMILY(ofArgumentMapTrie, value);
+  VALIDATE_FAMILY(ofArray, get_argument_map_trie_value(value));
+  VALIDATE_FAMILY(ofArrayBuffer, get_argument_map_trie_children(value));
   return success();
 }
 
@@ -1256,11 +1272,13 @@ value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, value_t ke
 GET_FAMILY_PROTOCOL_IMPL(lambda);
 TRIVIAL_PRINT_ON_IMPL(Lambda, lambda);
 
-UNCHECKED_ACCESSORS_IMPL(Lambda, lambda, Methods, methods);
-UNCHECKED_ACCESSORS_IMPL(Lambda, lambda, Outers, outers);
+ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, Methodspace, Methods, methods);
+ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, Array, Outers, outers);
 
-value_t lambda_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofLambda, value);
+value_t lambda_validate(value_t self) {
+  VALIDATE_FAMILY(ofLambda, self);
+  VALIDATE_FAMILY_OPT(ofMethodspace, get_lambda_methods(self));
+  VALIDATE_FAMILY_OPT(ofArray, get_lambda_outers(self));
   return success();
 }
 
@@ -1286,10 +1304,11 @@ value_t get_lambda_outer(value_t self, size_t index) {
 
 TRIVIAL_PRINT_ON_IMPL(Namespace, namespace);
 
-UNCHECKED_ACCESSORS_IMPL(Namespace, namespace, Bindings, bindings);
+ACCESSORS_IMPL(Namespace, namespace, acInFamilyOpt, IdHashMap, Bindings, bindings);
 
-value_t namespace_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofNamespace, value);
+value_t namespace_validate(value_t self) {
+  VALIDATE_FAMILY(ofNamespace, self);
+  VALIDATE_FAMILY(ofIdHashMap, get_namespace_bindings(self));
   return success();
 }
 
@@ -1314,11 +1333,13 @@ value_t get_namespace_binding_at(value_t namespace, value_t name) {
 
 TRIVIAL_PRINT_ON_IMPL(Module, module);
 
-UNCHECKED_ACCESSORS_IMPL(Module, module, Namespace, namespace);
-UNCHECKED_ACCESSORS_IMPL(Module, module, Methodspace, methodspace);
+ACCESSORS_IMPL(Module, module, acInFamilyOpt, Namespace, Namespace, namespace);
+ACCESSORS_IMPL(Module, module, acInFamilyOpt, Methodspace, Methodspace, methodspace);
 
 value_t module_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofModule, value);
+  VALIDATE_FAMILY(ofModule, value);
+  VALIDATE_FAMILY_OPT(ofNamespace, get_module_namespace(value));
+  VALIDATE_FAMILY_OPT(ofMethodspace, get_module_methodspace(value));
   return success();
 }
 
@@ -1332,7 +1353,7 @@ value_t set_module_contents(value_t object, runtime_t *runtime, value_t contents
 }
 
 static value_t new_module(runtime_t *runtime) {
-  return new_heap_module(runtime, ROOT(runtime, null), ROOT(runtime, null));
+  return new_heap_module(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing));
 }
 
 
