@@ -22,6 +22,7 @@
   F(inheritance,        "inheritance")                                         \
   F(methods,            "methods")                                             \
   F(methodspace,        "methodspace")                                         \
+  F(module,             "module")                                              \
   F(name,               "name")                                                \
   F(namespace,          "namespace")                                           \
   F(parameters,         "parameters")                                          \

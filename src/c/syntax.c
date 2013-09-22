@@ -626,8 +626,7 @@ static value_t new_parameter_ast(runtime_t *runtime) {
 TRIVIAL_PRINT_ON_IMPL(ProgramAst, program_ast);
 
 UNCHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, EntryPoint, entry_point);
-UNCHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, Namespace, namespace);
-UNCHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, Methodspace, methodspace);
+UNCHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, Module, module);
 
 value_t program_ast_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofProgramAst, value);
@@ -637,17 +636,14 @@ value_t program_ast_validate(value_t value) {
 value_t set_program_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(entry_point, get_id_hash_map_at(contents, RSTR(runtime, entry_point)));
-  TRY_DEF(namespace, get_id_hash_map_at(contents, RSTR(runtime, namespace)));
-  TRY_DEF(methodspace, get_id_hash_map_at(contents, RSTR(runtime, methodspace)));
+  TRY_DEF(module, get_id_hash_map_at(contents, RSTR(runtime, module)));
   set_program_ast_entry_point(object, entry_point);
-  set_program_ast_namespace(object, namespace);
-  set_program_ast_methodspace(object, methodspace);
+  set_program_ast_module(object, module);
   return success();
 }
 
 static value_t new_program_ast(runtime_t *runtime) {
-  return new_heap_program_ast(runtime, ROOT(runtime, null),
-      ROOT(runtime, empty_array), ROOT(runtime, null));
+  return new_heap_program_ast(runtime, ROOT(runtime, null), ROOT(runtime, null));
 }
 
 

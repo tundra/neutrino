@@ -25,6 +25,16 @@ class Methodspace(object):
     self.methods = methods
 
 
+@plankton.serializable(("core", "Module"))
+class Module(object):
+
+  @plankton.field("namespace")
+  @plankton.field("methodspace")
+  def __init__(self, namespace=None, methodspace=None):
+  	self.namespace = namespace
+  	self.methodspace = methodspace
+
+
 # A unique key, matching a neutrino runtime key.
 class Key(plankton.EnvironmentPlaceholder):
 

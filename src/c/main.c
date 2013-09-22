@@ -39,7 +39,8 @@ static value_t safe_execute_syntax(runtime_t *runtime, safe_value_t s_program) {
   CHECK_FAMILY(ofProgramAst, deref(s_program));
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
-    safe_value_t s_space = protect(pool, get_program_ast_methodspace(deref(s_program)));
+    safe_value_t s_module = protect(pool, get_program_ast_module(deref(s_program)));
+    safe_value_t s_space = protect(pool, get_module_methodspace(deref(s_module)));
     E_TRY(add_methodspace_builtin_methods(runtime, s_space));
     safe_value_t s_entry_point = protect(pool, get_program_ast_entry_point(deref(s_program)));
     E_TRY_DEF(code_block, safe_compile_expression(runtime, s_entry_point, NULL));

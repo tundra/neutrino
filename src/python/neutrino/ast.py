@@ -282,14 +282,11 @@ class Name(object):
 class Program(object):
 
   @plankton.field("entry_point")
-  @plankton.field("namespace")
-  @plankton.field("methodspace")
-  def __init__(self, elements=None, entry_point=None, namespace=None,
-      methodspace=None):
+  @plankton.field("module")
+  def __init__(self, elements=None, entry_point=None, module=None):
     self.elements = elements
     self.entry_point = entry_point
-    self.namespace = namespace
-    self.methodspace = methodspace
+    self.module = module
 
   def accept(self, visitor):
     return visitor.visit_program(self)
@@ -311,7 +308,7 @@ class NamespaceDeclaration(object):
   def apply(self, program, helper):
     name = tuple(self.name.path)
     value = helper.evaluate(self.value)
-    program.namespace.bindings[name] = value
+    program.module.namespace.bindings[name] = value
 
   def __str__(self):
     return "(namespace-declaration %s %s)" % (self.name, self.value)
