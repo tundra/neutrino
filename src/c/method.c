@@ -334,23 +334,42 @@ value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol
   }
 }
 
-value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
-    value_t record, frame_t *frame, value_t *arg_map_out) {
-#define kMaxArgCount 32
-  size_t arg_count = get_invocation_record_argument_count(record);
-  CHECK_TRUE("too many arguments", arg_count <= kMaxArgCount);
-  value_t result = new_signal(scNotFound);
+// The state maintained while doing method space lookup.
+typedef struct {
+  // The resulting method to return, or an appropriate signal.
+  value_t result;
   // Running argument-wise max over all the methods that have matched.
-  score_t max_score[kMaxArgCount];
+  score_t *max_score;
   // We use two scratch offsets vectors such that we can keep the best in one
   // and the other as scratch, swapping them around when a new best one is
   // found.
-  size_t offsets_one[kMaxArgCount];
-  size_t offsets_two[kMaxArgCount];
-  size_t *result_offsets = offsets_one;
-  size_t *scratch_offsets = offsets_two;
+  size_t *result_offsets;
+  size_t *scratch_offsets;
+  // Is the current max score vector synthetic, that is, is it taken over
+  // several ambiguous methods that are each individually smaller than their
+  // max?
+  bool max_is_synthetic;
+} methodspace_lookup_state_t;
+
+// Swaps around the result and scratch offsets.
+static void methodspace_lookup_state_swap_offsets(methodspace_lookup_state_t *state) {
+  size_t *temp = state->result_offsets;
+  state->result_offsets = state->scratch_offsets;
+  state->scratch_offsets = temp;
+}
+
+// The max amount of arguments for which we'll allocate the lookup state on the
+// stack.
+#define kSmallLookupLimit 32
+
+// Continue a search for a method method locally in the given method space, that
+// is, this does not follow imports and only updates the lookup state, it doesn't
+// return the best match.
+static void lookup_methodspace_local_method(methodspace_lookup_state_t *state,
+    runtime_t *runtime, value_t space, value_t record, frame_t *frame) {
   match_info_t match_info;
-  match_info_init(&match_info, max_score, result_offsets, kMaxArgCount);
+  match_info_init(&match_info, state->max_score, state->result_offsets,
+      kSmallLookupLimit);
   value_t methods = get_methodspace_methods(space);
   size_t method_count = get_array_buffer_length(methods);
   size_t current = 0;
@@ -363,18 +382,16 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
     match_result_t match = match_signature(runtime, signature, record, frame,
         space, &match_info);
     if (match_result_is_match(match)) {
-      result = method;
+      state->result = method;
       current++;
       break;
     }
   }
-  // Is the current max score vector synthetic, that is, is it taken over
-  // several ambiguous methods that are each individually smaller than their
-  // max?
-  bool max_is_synthetic = false;
   // Continue scanning but compare every new match to the existing best score.
-  score_t scratch_score[kMaxArgCount];
-  match_info_init(&match_info, scratch_score, scratch_offsets, kMaxArgCount);
+  score_t scratch_score[kSmallLookupLimit];
+  match_info_init(&match_info, scratch_score, state->scratch_offsets,
+      kSmallLookupLimit);
+  size_t arg_count = get_invocation_record_argument_count(record);
   for (; current < method_count; current++) {
     value_t method = get_array_buffer_at(methods, current);
     value_t signature = get_method_signature(method);
@@ -382,43 +399,69 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
         space, &match_info);
     if (!match_result_is_match(match))
       continue;
-    join_status_t status = join_score_vectors(max_score, scratch_score, arg_count);
-    if (status == jsBetter || (max_is_synthetic && status == jsEqual)) {
+    join_status_t status = join_score_vectors(state->max_score, scratch_score,
+        arg_count);
+    if (status == jsBetter || (state->max_is_synthetic && status == jsEqual)) {
       // This score is either better than the previous best, or it is equal to
       // the max which is itself synthetic and hence better than any of the
       // methods we've seen so far.
-      result = method;
+      state->result = method;
       // Now the max definitely isn't synthetic.
-      max_is_synthetic = false;
+      state->max_is_synthetic = false;
       // The offsets for the result is now stored in scratch_offsets and we have
       // no more use for the previous result_offsets so we swap them around.
-      size_t *temp = scratch_offsets;
-      scratch_offsets = result_offsets;
-      result_offsets = temp;
+      methodspace_lookup_state_swap_offsets(state);
       // And then we have to update the match info with the new scratch offsets.
-      match_info_init(&match_info, scratch_score, scratch_offsets, kMaxArgCount);
+      match_info_init(&match_info, scratch_score, state->scratch_offsets,
+          kSmallLookupLimit);
     } else if (status != jsWorse) {
       // The next score was not strictly worse than the best we've seen so we
       // don't have a unique best.
-      result = new_signal(scNotFound);
+      state->result = new_signal(scNotFound);
       // If the result is ambiguous that means the max is now synthetic.
-      max_is_synthetic = (status == jsAmbiguous);
+      state->max_is_synthetic = (status == jsAmbiguous);
     }
   }
-  if (!in_domain(vdSignal, result)) {
+}
+
+// Given an array of offsets, builds and returns an argument map that performs
+// that offset mapping.
+static value_t build_argument_map(runtime_t *runtime, size_t offsetc, size_t *offsets) {
+  value_t current_node = ROOT(runtime, argument_map_trie_root);
+  for (size_t i = 0; i < offsetc; i++) {
+    size_t offset = offsets[i];
+    value_t value = (offset == kNoOffset) ? ROOT(runtime, null) : new_integer(offset);
+    TRY_SET(current_node, get_argument_map_trie_child(runtime, current_node, value));
+  }
+  return get_argument_map_trie_value(current_node);
+}
+
+value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
+    value_t record, frame_t *frame, value_t *arg_map_out) {
+  // Input validation.
+  size_t arg_count = get_invocation_record_argument_count(record);
+  CHECK_TRUE("too many arguments", arg_count <= kSmallLookupLimit);
+  // Initialize the lookup state using stack-allocated space.
+  score_t max_score[kSmallLookupLimit];
+  size_t offsets_one[kSmallLookupLimit];
+  size_t offsets_two[kSmallLookupLimit];
+  methodspace_lookup_state_t state;
+  state.result = new_signal(scNotFound);
+  state.max_is_synthetic = false;
+  state.max_score = max_score;
+  state.result_offsets = offsets_one;
+  state.scratch_offsets = offsets_two;
+  // Perform the lookup.
+  lookup_methodspace_local_method(&state, runtime, space, record, frame);
+  // Post-process the result.
+  if (!in_domain(vdSignal, state.result)) {
     // We have a result so we need to build an argument map that represents the
     // result's offsets vector.
-    value_t current_node = ROOT(runtime, argument_map_trie_root);
-    for (size_t i = 0; i < arg_count; i++) {
-      size_t offset = result_offsets[i];
-      value_t value = (offset == kNoOffset) ? ROOT(runtime, null) : new_integer(offset);
-      TRY_SET(current_node, get_argument_map_trie_child(runtime, current_node, value));
-    }
-    *arg_map_out = get_argument_map_trie_value(current_node);
+    TRY_SET(*arg_map_out, build_argument_map(runtime, arg_count, state.result_offsets));
   }
-#undef kMaxArgCount
-  return result;
+  return state.result;
 }
+
 
 value_t set_methodspace_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
