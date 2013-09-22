@@ -108,6 +108,14 @@ IF_CHECKS_ENABLED(__CHECK_CLASS__(value_domain_t, vdDomain, EXPR, get_value_doma
 #define CHECK_FAMILY(ofFamily, EXPR)                                           \
 IF_CHECKS_ENABLED(__CHECK_CLASS__(object_family_t, ofFamily, EXPR, get_object_family))
 
+#define __CHECK_MODE_HELPER__(vmMode, EXPR)                                    \
+CHECK_TRUE("", vmMode <= get_value_mode(EXPR))
+
+// Check that fails unless the given expression evaluates to a value that is in
+// the given mode (or a stricter one).
+#define CHECK_MODE(vmMode, EXPR)                                               \
+IF_CHECKS_ENABLED(__CHECK_MODE_HELPER__(vmMode, EXPR))
+
 // Check that fails unless the object is in the specified family or nothing.
 #define CHECK_FAMILY_OPT(ofFamily, EXPR)                                       \
 IF_CHECKS_ENABLED(__CHECK_CLASS_OPT__(object_family_t, ofFamily, EXPR, get_object_family))

@@ -10,6 +10,8 @@
 
 // --- S i g n a t u r e ---
 
+FIXED_GET_MODE_IMPL(signature, vmMutable);
+
 ACCESSORS_IMPL(Signature, signature, acInFamily, Array, Tags, tags);
 INTEGER_ACCESSORS_IMPL(Signature, signature, ParameterCount, parameter_count);
 INTEGER_ACCESSORS_IMPL(Signature, signature, MandatoryCount, mandatory_count);
@@ -157,6 +159,8 @@ join_status_t join_score_vectors(score_t *target, score_t *source, size_t length
 
 // --- P a r a m e t e r ---
 
+FIXED_GET_MODE_IMPL(parameter, vmMutable);
+
 ACCESSORS_IMPL(Parameter, parameter, acInFamily, Guard, Guard, guard);
 INTEGER_ACCESSORS_IMPL(Parameter, parameter, IsOptional, is_optional);
 INTEGER_ACCESSORS_IMPL(Parameter, parameter, Index, index);
@@ -182,6 +186,8 @@ void parameter_print_atomic_on(value_t self, string_buffer_t *buf) {
 
 
 // --- G u a r d ---
+
+FIXED_GET_MODE_IMPL(guard, vmMutable);
 
 ENUM_ACCESSORS_IMPL(Guard, guard, guard_type_t, Type, type);
 ACCESSORS_IMPL(Guard, guard, acNoCheck, 0, Value, value);
@@ -270,6 +276,7 @@ void guard_print_atomic_on(value_t self, string_buffer_t *buf) {
 // --- M e t h o d ---
 
 TRIVIAL_PRINT_ON_IMPL(Method, method);
+FIXED_GET_MODE_IMPL(method, vmMutable);
 
 ACCESSORS_IMPL(Method, method, acInFamily, Signature, Signature, signature);
 ACCESSORS_IMPL(Method, method, acInFamily, CodeBlock, Code, code);
@@ -285,6 +292,7 @@ value_t method_validate(value_t self) {
 // --- M e t h o d   s p a c e ---
 
 TRIVIAL_PRINT_ON_IMPL(Methodspace, methodspace);
+FIXED_GET_MODE_IMPL(methodspace, vmMutable);
 
 ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, IdHashMap, Inheritance,
     inheritance);
@@ -491,6 +499,8 @@ value_t set_methodspace_contents(value_t object, runtime_t *runtime, value_t con
 
 
 // --- I n v o c a t i o n   r e c o r d ---
+
+FIXED_GET_MODE_IMPL(invocation_record, vmMutable);
 
 ACCESSORS_IMPL(InvocationRecord, invocation_record, acInFamily, Array,
     ArgumentVector, argument_vector);

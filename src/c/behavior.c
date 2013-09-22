@@ -58,6 +58,19 @@ NOL(,__TRIVIAL_LAYOUT_FUNCTION__(Family, family))
 #undef __DEFINE_TRIVIAL_LAYOUT_FUNCTION__
 #undef __TRIVIAL_LAYOUT_FUNCTION__
 
+
+// --- M o d e ---
+
+value_mode_t get_value_mode(value_t self) {
+  if (get_value_domain(self) == vdObject) {
+    family_behavior_t *behavior = get_object_family_behavior(self);
+    return (behavior->get_mode)(self);
+  } else {
+    return vmDeepFrozen;
+  }
+}
+
+
 // --- I d e n t i t y   h a s h ---
 
 static value_t integer_transient_identity_hash(value_t self) {
@@ -346,7 +359,8 @@ family_behavior_t k##Family##Behavior = {                                      \
   &get_##family##_layout,                                                      \
   CNT(&set_##family##_contents, &set_contents_unsupported),                    \
   SUR(&get_##family##_protocol, &get_internal_object_protocol),                \
-  FIX(&fixup_##family##_post_migrate, NULL)                                    \
+  FIX(&fixup_##family##_post_migrate, NULL),                                   \
+  get_##family##_mode                                                          \
 };
 ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #undef DEFINE_FAMILY_BEHAVIOR
