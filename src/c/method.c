@@ -426,6 +426,18 @@ static void lookup_methodspace_local_method(methodspace_lookup_state_t *state,
   }
 }
 
+// Do a transitive method lookup in the given method space, that is, look up
+// locally and in any imported spaces.
+static void lookup_methodspace_transitive_method(methodspace_lookup_state_t *state,
+    runtime_t *runtime, value_t space, value_t record, frame_t *frame) {
+  lookup_methodspace_local_method(state, runtime, space, record, frame);
+  value_t imports = get_methodspace_imports(space);
+  for (size_t i = 0; i < get_array_length(imports); i++) {
+    value_t import = get_array_at(imports, i);
+    lookup_methodspace_transitive_method(state, runtime, import, record, frame);
+  }
+}
+
 // Given an array of offsets, builds and returns an argument map that performs
 // that offset mapping.
 static value_t build_argument_map(runtime_t *runtime, size_t offsetc, size_t *offsets) {
@@ -454,7 +466,7 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
   state.result_offsets = offsets_one;
   state.scratch_offsets = offsets_two;
   // Perform the lookup.
-  lookup_methodspace_local_method(&state, runtime, space, record, frame);
+  lookup_methodspace_transitive_method(&state, runtime, space, record, frame);
   // Post-process the result.
   if (!in_domain(vdSignal, state.result)) {
     // We have a result so we need to build an argument map that represents the

@@ -45,8 +45,7 @@ TEST(builtin, integers) {
   CREATE_RUNTIME();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
-  value_t space = new_heap_methodspace(runtime);
-  ASSERT_SUCCESS(add_methodspace_builtin_methods(runtime, protect(pool, space)));
+  value_t space = ROOT(runtime, builtin_methodspace);
 
   test_builtin(runtime, space, vInt(2), vInt(1), "+", vArray(1, vInt(1)));
   test_builtin(runtime, space, vInt(3), vInt(2), "+", vArray(1, vInt(1)));
@@ -66,8 +65,7 @@ TEST(builtin, strings) {
   CREATE_RUNTIME();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
-  value_t space = new_heap_methodspace(runtime);
-  ASSERT_SUCCESS(add_methodspace_builtin_methods(runtime, protect(pool, space)));
+  value_t space = ROOT(runtime, builtin_methodspace);
 
   test_builtin(runtime, space, vStr("abcd"), vStr("ab"), "+", vArray(1, vStr("cd")));
   test_builtin(runtime, space, vStr(""), vStr(""), "+", vArray(1, vStr("")));
