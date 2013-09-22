@@ -200,9 +200,10 @@ ACCESSORS_DECL(method, code);
 
 // --- M e t h o d   s p a c e ---
 
-static const size_t kMethodspaceSize = OBJECT_SIZE(2);
+static const size_t kMethodspaceSize = OBJECT_SIZE(3);
 static const size_t kMethodspaceInheritanceOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kMethodspaceMethodsOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kMethodspaceImportsOffset = OBJECT_FIELD_OFFSET(2);
 
 // The size of the inheritance map in an empty method space.
 static const size_t kInheritanceMapInitialSize = 16;
@@ -215,6 +216,9 @@ ACCESSORS_DECL(methodspace, inheritance);
 
 // The methods defined within this method space.
 ACCESSORS_DECL(methodspace, methods);
+
+// The method spaces imported by this one.
+ACCESSORS_DECL(methodspace, imports);
 
 // Records in the given method space that the subtype inherits directly from
 // the supertype. Returns a signal if adding fails, for instance if we run

@@ -19,6 +19,7 @@
   F(core,               "core")                                                \
   F(elements,           "elements")                                            \
   F(entry_point,        "entry_point")                                         \
+  F(imports,            "imports")                                             \
   F(inheritance,        "inheritance")                                         \
   F(methods,            "methods")                                             \
   F(methodspace,        "methodspace")                                         \
@@ -58,6 +59,8 @@ typedef struct {
   // Special protocols
   value_t integer_protocol;
   value_t empty_instance_species;
+  // Methodspace for built-in methods.
+  value_t builtin_methodspace;
   // The string table
   struct {
 #define __DECLARE_STRING_TABLE_ENTRY__(name, value) value_t name;

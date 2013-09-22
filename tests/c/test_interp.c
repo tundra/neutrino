@@ -24,8 +24,7 @@ TEST(interp, execution) {
   CREATE_RUNTIME();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
-  value_t space = new_heap_methodspace(runtime);
-  add_methodspace_builtin_methods(runtime, protect(pool, space));
+  value_t space = ROOT(runtime, builtin_methodspace);
 
   // Literal
   {

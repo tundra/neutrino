@@ -20,9 +20,11 @@ class Methodspace(object):
 
   @plankton.field("inheritance")
   @plankton.field("methods")
-  def __init__(self, inheritance=None, methods=None):
+  @plankton.field("imports")
+  def __init__(self, inheritance=None, methods=None, imports=None):
     self.inheritance = inheritance
     self.methods = methods
+    self.imports = imports
 
 
 @plankton.serializable(("core", "Module"))
