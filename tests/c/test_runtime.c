@@ -45,7 +45,6 @@ TEST(runtime, runtime_validation) {
   CREATE_RUNTIME();
   ASSERT_SUCCESS(runtime_validate(runtime));
 
-
   // Break a root.
   value_t old_null = ROOT(runtime, null);
   ROOT(runtime, null) = new_integer(0);
