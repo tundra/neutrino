@@ -10,6 +10,8 @@
 
 // --- S t a c k   p i e c e ---
 
+FIXED_GET_MODE_IMPL(stack_piece, vmMutable);
+
 ACCESSORS_IMPL(StackPiece, stack_piece, acInFamily, Array, Storage, storage);
 ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt, StackPiece, Previous, previous);
 INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopFramePointer, top_frame_pointer);
@@ -36,6 +38,8 @@ void stack_piece_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 
 // --- S t a c k   ---
+
+FIXED_GET_MODE_IMPL(stack, vmMutable);
 
 ACCESSORS_IMPL(Stack, stack, acInFamily, StackPiece, TopPiece, top_piece);
 INTEGER_ACCESSORS_IMPL(Stack, stack, DefaultPieceCapacity, default_piece_capacity);

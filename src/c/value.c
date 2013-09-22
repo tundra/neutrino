@@ -148,6 +148,7 @@ family_behavior_t *get_object_family_behavior_unchecked(value_t self) {
 // --- S p e c i e s ---
 
 TRIVIAL_PRINT_ON_IMPL(Species, species);
+FIXED_GET_MODE_IMPL(species, vmMutable);
 
 void set_species_instance_family(value_t value,
     object_family_t instance_family) {
@@ -212,6 +213,7 @@ CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance, Protocol,
 // --- S t r i n g ---
 
 GET_FAMILY_PROTOCOL_IMPL(string);
+FIXED_GET_MODE_IMPL(string, vmDeepFrozen);
 
 size_t calc_string_size(size_t char_count) {
   // We need to fix one extra byte, the terminating null.
@@ -321,6 +323,7 @@ value_t add_string_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
 
 GET_FAMILY_PROTOCOL_IMPL(blob);
 NO_BUILTIN_METHODS(blob);
+FIXED_GET_MODE_IMPL(blob, vmDeepFrozen);
 
 size_t calc_blob_size(size_t size) {
   return kObjectHeaderSize              // header
@@ -373,6 +376,7 @@ void blob_print_atomic_on(value_t value, string_buffer_t *buf) {
 // --- V o i d   P ---
 
 TRIVIAL_PRINT_ON_IMPL(VoidP, void_p);
+FIXED_GET_MODE_IMPL(void_p, vmDeepFrozen);
 
 void set_void_p_value(value_t value, void *ptr) {
   CHECK_FAMILY(ofVoidP, value);
@@ -398,6 +402,7 @@ void get_void_p_layout(value_t value, object_layout_t *layout) {
 // --- A r r a y ---
 
 GET_FAMILY_PROTOCOL_IMPL(array);
+FIXED_GET_MODE_IMPL(array, vmMutable);
 
 size_t calc_array_size(size_t length) {
   return kObjectHeaderSize       // header
@@ -416,6 +421,7 @@ value_t get_array_at(value_t value, size_t index) {
 
 void set_array_at(value_t value, size_t index, value_t element) {
   CHECK_FAMILY(ofArray, value);
+  CHECK_MODE(vmMutable, value);
   CHECK_TRUE("array index out of bounds", index < get_array_length(value));
   get_array_elements(value)[index] = element;
 }
@@ -614,6 +620,7 @@ value_t add_array_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
 TRIVIAL_PRINT_ON_IMPL(ArrayBuffer, array_buffer);
 GET_FAMILY_PROTOCOL_IMPL(array_buffer);
 NO_BUILTIN_METHODS(array_buffer);
+FIXED_GET_MODE_IMPL(array_buffer, vmMutable);
 
 ACCESSORS_IMPL(ArrayBuffer, array_buffer, acInFamily, Array, Elements, elements);
 INTEGER_ACCESSORS_IMPL(ArrayBuffer, array_buffer, Length, length);
@@ -655,6 +662,7 @@ void set_array_buffer_at(value_t self, size_t index, value_t value) {
 
 GET_FAMILY_PROTOCOL_IMPL(id_hash_map);
 NO_BUILTIN_METHODS(id_hash_map);
+FIXED_GET_MODE_IMPL(id_hash_map, vmMutable);
 
 ACCESSORS_IMPL(IdHashMap, id_hash_map, acInFamily, Array, EntryArray, entry_array);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Size, size);
@@ -971,6 +979,7 @@ void id_hash_map_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 GET_FAMILY_PROTOCOL_IMPL(null);
 NO_BUILTIN_METHODS(null);
+FIXED_GET_MODE_IMPL(null, vmDeepFrozen);
 
 value_t null_validate(value_t value) {
   VALIDATE_FAMILY(ofNull, value);
@@ -998,7 +1007,9 @@ void null_print_atomic_on(value_t value, string_buffer_t *buf) {
 }
 
 
-// --- N u l l ---
+// --- N o t h i n g ---
+
+FIXED_GET_MODE_IMPL(nothing, vmDeepFrozen);
 
 value_t nothing_validate(value_t value) {
   VALIDATE_FAMILY(ofNothing, value);
@@ -1018,6 +1029,7 @@ void nothing_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 GET_FAMILY_PROTOCOL_IMPL(boolean);
 NO_BUILTIN_METHODS(boolean);
+FIXED_GET_MODE_IMPL(boolean, vmDeepFrozen);
 
 void set_boolean_value(value_t value, bool truth) {
   CHECK_FAMILY(ofBoolean, value);
@@ -1067,6 +1079,7 @@ void boolean_print_atomic_on(value_t value, string_buffer_t *buf) {
 GET_FAMILY_PROTOCOL_IMPL(key);
 NO_BUILTIN_METHODS(key);
 TRIVIAL_PRINT_ON_IMPL(Key, key);
+FIXED_GET_MODE_IMPL(key, vmFrozen);
 
 INTEGER_ACCESSORS_IMPL(Key, key, Id, id);
 ACCESSORS_IMPL(Key, key, acNoCheck, 0, DisplayName, display_name);
@@ -1093,6 +1106,7 @@ value_t key_ordering_compare(value_t a, value_t b) {
 
 ACCESSORS_IMPL(Instance, instance, acInFamily, IdHashMap, Fields, fields);
 NO_BUILTIN_METHODS(instance);
+FIXED_GET_MODE_IMPL(instance, vmMutable);
 
 value_t get_instance_field(value_t value, value_t key) {
   value_t fields = get_instance_fields(value);
@@ -1139,6 +1153,7 @@ value_t get_instance_protocol(value_t self, runtime_t *runtime) {
 // --- F a c t o r y ---
 
 ACCESSORS_IMPL(Factory, factory, acInFamily, VoidP, Constructor, constructor);
+FIXED_GET_MODE_IMPL(factory, vmDeepFrozen);
 
 value_t factory_validate(value_t value) {
   VALIDATE_FAMILY(ofFactory, value);
@@ -1164,6 +1179,7 @@ void factory_print_atomic_on(value_t value, string_buffer_t *buf) {
 ACCESSORS_IMPL(CodeBlock, code_block, acInFamily, Blob, Bytecode, bytecode);
 ACCESSORS_IMPL(CodeBlock, code_block, acInFamily, Array, ValuePool, value_pool);
 INTEGER_ACCESSORS_IMPL(CodeBlock, code_block, HighWaterMark, high_water_mark);
+FIXED_GET_MODE_IMPL(code_block, vmMutable);
 
 value_t code_block_validate(value_t value) {
   VALIDATE_FAMILY(ofCodeBlock, value);
@@ -1189,6 +1205,7 @@ void code_block_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 GET_FAMILY_PROTOCOL_IMPL(protocol);
 NO_BUILTIN_METHODS(protocol);
+FIXED_GET_MODE_IMPL(protocol, vmMutable);
 
 ACCESSORS_IMPL(Protocol, protocol, acNoCheck, 0, DisplayName, display_name);
 
@@ -1222,6 +1239,7 @@ void protocol_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 NO_BUILTIN_METHODS(argument_map_trie);
 TRIVIAL_PRINT_ON_IMPL(ArgumentMapTrie, argument_map_trie);
+FIXED_GET_MODE_IMPL(argument_map_trie, vmMutable);
 
 ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, acInFamily, Array, Value, value);
 ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, acInFamily, ArrayBuffer, Children, children);
@@ -1271,6 +1289,7 @@ value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, value_t ke
 
 GET_FAMILY_PROTOCOL_IMPL(lambda);
 TRIVIAL_PRINT_ON_IMPL(Lambda, lambda);
+FIXED_GET_MODE_IMPL(lambda, vmMutable);
 
 ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, Methodspace, Methods, methods);
 ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, Array, Outers, outers);
@@ -1303,6 +1322,7 @@ value_t get_lambda_outer(value_t self, size_t index) {
 // --- N a m e s p a c e ---
 
 TRIVIAL_PRINT_ON_IMPL(Namespace, namespace);
+FIXED_GET_MODE_IMPL(namespace, vmMutable);
 
 ACCESSORS_IMPL(Namespace, namespace, acInFamilyOpt, IdHashMap, Bindings, bindings);
 
@@ -1332,6 +1352,7 @@ value_t get_namespace_binding_at(value_t namespace, value_t name) {
 // --- M o d u l e ---
 
 TRIVIAL_PRINT_ON_IMPL(Module, module);
+FIXED_GET_MODE_IMPL(module, vmMutable);
 
 ACCESSORS_IMPL(Module, module, acInFamilyOpt, Namespace, Namespace, namespace);
 ACCESSORS_IMPL(Module, module, acInFamilyOpt, Methodspace, Methodspace, methodspace);

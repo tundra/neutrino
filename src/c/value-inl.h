@@ -113,6 +113,14 @@ value_t get_##family##_protocol(value_t self, runtime_t *runtime) {            \
 }                                                                              \
 SWALLOW_SEMI(gfpi)
 
+// Expands to an implementation of get_family_mode that always returns the same
+// value.
+#define FIXED_GET_MODE_IMPL(family, vmMode)                                    \
+value_mode_t get_##family##_mode(value_t self) {                               \
+  return vmMode;                                                               \
+}                                                                              \
+SWALLOW_SEMI(fgmi)
+
 
 // --- P l a i n   a c c e s s o r s ---
 

@@ -60,6 +60,7 @@ value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
 
 GET_FAMILY_PROTOCOL_IMPL(literal_ast);
 NO_BUILTIN_METHODS(literal_ast);
+FIXED_GET_MODE_IMPL(literal_ast, vmMutable);
 
 ACCESSORS_IMPL(LiteralAst, literal_ast, acNoCheck, 0, Value, value);
 
@@ -99,6 +100,7 @@ value_t emit_literal_ast(value_t value, assembler_t *assm) {
 
 GET_FAMILY_PROTOCOL_IMPL(array_ast);
 NO_BUILTIN_METHODS(array_ast);
+FIXED_GET_MODE_IMPL(array_ast, vmMutable);
 
 ACCESSORS_IMPL(ArrayAst, array_ast, acInFamilyOpt, Array, Elements, elements);
 
@@ -145,6 +147,7 @@ static value_t new_array_ast(runtime_t *runtime) {
 TRIVIAL_PRINT_ON_IMPL(InvocationAst, invocation_ast);
 GET_FAMILY_PROTOCOL_IMPL(invocation_ast);
 NO_BUILTIN_METHODS(invocation_ast);
+FIXED_GET_MODE_IMPL(invocation_ast, vmMutable);
 
 ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, Array, Arguments,
     arguments);
@@ -202,6 +205,7 @@ static value_t new_invocation_ast(runtime_t *runtime) {
 TRIVIAL_PRINT_ON_IMPL(ArgumentAst, argument_ast);
 GET_FAMILY_PROTOCOL_IMPL(argument_ast);
 NO_BUILTIN_METHODS(argument_ast);
+FIXED_GET_MODE_IMPL(argument_ast, vmMutable);
 
 ACCESSORS_IMPL(ArgumentAst, argument_ast, acNoCheck, 0, Tag, tag);
 ACCESSORS_IMPL(ArgumentAst, argument_ast, acIsSyntaxOpt, 0, Value, value);
@@ -230,6 +234,7 @@ static value_t new_argument_ast(runtime_t *runtime) {
 
 GET_FAMILY_PROTOCOL_IMPL(sequence_ast);
 NO_BUILTIN_METHODS(sequence_ast);
+FIXED_GET_MODE_IMPL(sequence_ast, vmMutable);
 
 ACCESSORS_IMPL(SequenceAst, sequence_ast, acInFamily, Array, Values, values);
 
@@ -288,6 +293,7 @@ static value_t new_sequence_ast(runtime_t *runtime) {
 
 GET_FAMILY_PROTOCOL_IMPL(local_declaration_ast);
 NO_BUILTIN_METHODS(local_declaration_ast);
+FIXED_GET_MODE_IMPL(local_declaration_ast, vmMutable);
 
 ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acInFamilyOpt, SymbolAst, Symbol, symbol);
 ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acIsSyntaxOpt, 0, Value, value);
@@ -352,6 +358,7 @@ static value_t new_local_declaration_ast(runtime_t *runtime) {
 
 GET_FAMILY_PROTOCOL_IMPL(local_variable_ast);
 NO_BUILTIN_METHODS(local_variable_ast);
+FIXED_GET_MODE_IMPL(local_variable_ast, vmMutable);
 
 ACCESSORS_IMPL(LocalVariableAst, local_variable_ast, acInFamilyOpt, SymbolAst,
     Symbol, symbol);
@@ -423,6 +430,7 @@ static value_t new_local_variable_ast(runtime_t *runtime) {
 GET_FAMILY_PROTOCOL_IMPL(namespace_variable_ast);
 NO_BUILTIN_METHODS(namespace_variable_ast);
 TRIVIAL_PRINT_ON_IMPL(NamespaceVariableAst, namespace_variable_ast);
+FIXED_GET_MODE_IMPL(namespace_variable_ast, vmMutable);
 
 ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acInFamilyOpt, Array,
     Name, name);
@@ -462,6 +470,7 @@ static value_t new_namespace_variable_ast(runtime_t *runtime) {
 
 GET_FAMILY_PROTOCOL_IMPL(symbol_ast);
 NO_BUILTIN_METHODS(symbol_ast);
+FIXED_GET_MODE_IMPL(symbol_ast, vmMutable);
 
 ACCESSORS_IMPL(SymbolAst, symbol_ast, acNoCheck, 0, Name, name);
 
@@ -497,6 +506,7 @@ static value_t new_symbol_ast(runtime_t *runtime) {
 GET_FAMILY_PROTOCOL_IMPL(lambda_ast);
 NO_BUILTIN_METHODS(lambda_ast);
 TRIVIAL_PRINT_ON_IMPL(LambdaAst, lambda_ast);
+FIXED_GET_MODE_IMPL(lambda_ast, vmMutable);
 
 ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, Array, Parameters, parameters);
 ACCESSORS_IMPL(LambdaAst, lambda_ast, acIsSyntaxOpt, 0, Body, body);
@@ -610,6 +620,7 @@ static value_t new_lambda_ast(runtime_t *runtime) {
 GET_FAMILY_PROTOCOL_IMPL(parameter_ast);
 NO_BUILTIN_METHODS(parameter_ast);
 TRIVIAL_PRINT_ON_IMPL(ParameterAst, parameter_ast);
+FIXED_GET_MODE_IMPL(parameter_ast, vmMutable);
 
 ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, SymbolAst, Symbol, symbol);
 ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, Array, Tags, tags);
@@ -639,6 +650,7 @@ static value_t new_parameter_ast(runtime_t *runtime) {
 // --- P r o g r a m ---
 
 TRIVIAL_PRINT_ON_IMPL(ProgramAst, program_ast);
+FIXED_GET_MODE_IMPL(program_ast, vmMutable);
 
 ACCESSORS_IMPL(ProgramAst, program_ast, acIsSyntaxOpt, 0, EntryPoint, entry_point);
 ACCESSORS_IMPL(ProgramAst, program_ast, acInFamilyOpt, Module, Module, module);
@@ -667,6 +679,7 @@ static value_t new_program_ast(runtime_t *runtime) {
 // --- N a m e ---
 
 TRIVIAL_PRINT_ON_IMPL(NameAst, name_ast);
+FIXED_GET_MODE_IMPL(name_ast, vmMutable);
 
 ACCESSORS_IMPL(NameAst, name_ast, acInFamilyOpt, Array, Path, path);
 ACCESSORS_IMPL(NameAst, name_ast, acNoCheck, 0, Phase, phase);
