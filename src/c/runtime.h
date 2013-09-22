@@ -84,9 +84,12 @@ typedef enum {
 // The total number of root entries.
 #define kRootCount __rk_last__
 
-// The roots object is really just an array of values. But you can't tell because
-// it gets accessed through the ROOT macro which encapsulates it.
-typedef value_t roots_t[kRootCount];
+static const size_t kRootsSize = OBJECT_SIZE(kRootCount);
+
+// Returns a pointer to the key'th root value.
+static inline value_t *access_roots_entry_at(value_t roots, root_key_t key) {
+  return access_object_field(roots, OBJECT_FIELD_OFFSET(key));
+}
 
 // Data associated with garbage collection fuzzing.
 typedef struct {
@@ -117,7 +120,7 @@ struct runtime_t {
   // The heap where all the data lives.
   heap_t heap;
   // The root objects.
-  roots_t roots;
+  value_t roots;
   // The next key index.
   uint64_t next_key_index;
   // Optional allocation failure fuzzer.
@@ -164,30 +167,21 @@ void runtime_toggle_fuzzing(runtime_t *runtime, bool enable);
 
 
 // Initialize this root set.
-value_t roots_init(roots_t *roots, runtime_t *runtime);
-
-// Clears all the fields to a well-defined value.
-void roots_clear(roots_t *roots);
-
-// Checks that the roots are correctly initialized.
-value_t roots_validate(roots_t *roots);
-
-// Invokes the given field callback for each field in the set of roots.
-value_t roots_for_each_field(roots_t *roots, field_callback_t *callback);
+value_t roots_init(value_t roots, runtime_t *runtime);
 
 // Accesses a named root directly in the given roots struct. Usually you'll want
 // to your ROOT instead.
-#define RAW_ROOT(roots, name) ((*roots)[rk_##name])
+#define RAW_ROOT(roots, name) (*access_roots_entry_at((roots), rk_##name))
 
 // Macro for accessing a named root in the given runtime. For instance, to get
 // null you would do ROOT(runtime, null). This can be used as an lval.
-#define ROOT(runtime, name) RAW_ROOT(&(runtime)->roots, name)
+#define ROOT(runtime, name) RAW_ROOT((runtime)->roots, name)
 
 // Accesses a string table string directly from the roots struct. Usually you'll
 // want to use RSTR instead.
-#define RAW_RSTR(roots, name) ((*roots)[rk_string_##name])
+#define RAW_RSTR(roots, name) (*access_roots_entry_at((roots), rk_string_##name))
 
 // Macro for accessing a named string table string. This can be used as an lval.
-#define RSTR(runtime, name) RAW_RSTR(&(runtime)->roots, name)
+#define RSTR(runtime, name) RAW_RSTR((runtime)->roots, name)
 
 #endif // _RUNTIME
