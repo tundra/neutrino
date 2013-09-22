@@ -1310,6 +1310,32 @@ value_t get_namespace_binding_at(value_t namespace, value_t name) {
 }
 
 
+// --- M o d u l e ---
+
+TRIVIAL_PRINT_ON_IMPL(Module, module);
+
+UNCHECKED_ACCESSORS_IMPL(Module, module, Namespace, namespace);
+UNCHECKED_ACCESSORS_IMPL(Module, module, Methodspace, methodspace);
+
+value_t module_validate(value_t value) {
+  VALIDATE_VALUE_FAMILY(ofModule, value);
+  return success();
+}
+
+value_t set_module_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(namespace, get_id_hash_map_at(contents, RSTR(runtime, namespace)));
+  TRY_DEF(methodspace, get_id_hash_map_at(contents, RSTR(runtime, methodspace)));
+  set_module_namespace(object, namespace);
+  set_module_methodspace(object, methodspace);
+  return success();
+}
+
+static value_t new_module(runtime_t *runtime) {
+  return new_heap_module(runtime, ROOT(runtime, null), ROOT(runtime, null));
+}
+
+
 // --- O r d e r i n g ---
 
 int ordering_to_int(value_t value) {
@@ -1352,6 +1378,7 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   value_t core = RSTR(runtime, core);
   TRY(add_plankton_factory(map, core, "Namespace", new_namespace, runtime));
   TRY(add_plankton_factory(map, core, "Methodspace", new_methodspace, runtime));
+  TRY(add_plankton_factory(map, core, "Module", new_module, runtime));
   TRY(add_plankton_binding(map, core, "subject", ROOT(runtime, subject_key),
       runtime));
   TRY(add_plankton_binding(map, core, "selector", ROOT(runtime, selector_key),

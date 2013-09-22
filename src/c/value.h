@@ -245,6 +245,7 @@ static value_t new_moved_object(value_t target) {
   F(LocalDeclarationAst,     local_declaration_ast,     _,  _,  X,  X,  _,  _,  X)\
   F(Method,                  method,                    _,  _,  _,  _,  _,  _,  _)\
   F(Methodspace,             methodspace,               _,  _,  X,  _,  _,  _,  _)\
+  F(Module,                  module,                    _,  _,  X,  _,  _,  _,  _)\
   F(NameAst,                 name_ast,                  _,  _,  X,  _,  _,  _,  _)\
   F(Namespace,               namespace,                 _,  _,  X,  _,  _,  _,  _)\
   F(NamespaceVariableAst,    namespace_variable_ast,    _,  _,  X,  X,  _,  _,  X)\
@@ -816,6 +817,19 @@ ACCESSORS_DECL(namespace, bindings);
 // Returns the binding for the given name in the given namespace. If the binding
 // doesn't exist a NotFound signal is returned.
 value_t get_namespace_binding_at(value_t namespace, value_t name);
+
+
+// --- M o d u l e ---
+
+static const size_t kModuleSize = OBJECT_SIZE(2);
+static const size_t kModuleNamespaceOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kModuleMethodspaceOffset = OBJECT_FIELD_OFFSET(1);
+
+// The namespace that holds the module's own bindings.
+ACCESSORS_DECL(module, namespace);
+
+// The method space that holds the module's own methods.
+ACCESSORS_DECL(module, methodspace);
 
 
 // --- O r d e r i n g ---

@@ -163,19 +163,15 @@ ACCESSORS_DECL(parameter_ast, tags);
 
 // --- P r o g r a m ---
 
-static const size_t kProgramAstSize = OBJECT_SIZE(3);
-static const size_t kProgramAstEntryPointOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kProgramAstNamespaceOffset = OBJECT_FIELD_OFFSET(2);
-static const size_t kProgramAstMethodspaceOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kProgramAstSize = OBJECT_SIZE(2);
+static const size_t kProgramAstEntryPointOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kProgramAstModuleOffset = OBJECT_FIELD_OFFSET(1);
 
 // The program entry-point expression.
 ACCESSORS_DECL(program_ast, entry_point);
 
-// The program's namespace.
-ACCESSORS_DECL(program_ast, namespace);
-
-// The program's methodspace.
-ACCESSORS_DECL(program_ast, methodspace);
+// The program's main module.
+ACCESSORS_DECL(program_ast, module);
 
 
 // --- N a m e ---
