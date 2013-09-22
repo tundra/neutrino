@@ -317,6 +317,7 @@ value_t new_heap_methodspace(runtime_t *runtime) {
       ROOT(runtime, methodspace_species)));
   set_methodspace_inheritance(result, inheritance);
   set_methodspace_methods(result, methods);
+  set_methodspace_imports(result, ROOT(runtime, empty_array));
   return post_create_sanity_check(result, size);
 }
 

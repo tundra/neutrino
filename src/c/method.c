@@ -290,6 +290,8 @@ CHECKED_ACCESSORS_IMPL(Methodspace, methodspace, IdHashMap, Inheritance,
     inheritance);
 CHECKED_ACCESSORS_IMPL(Methodspace, methodspace, ArrayBuffer, Methods,
     methods);
+CHECKED_ACCESSORS_IMPL(Methodspace, methodspace, Array, Imports,
+    imports);
 
 value_t methodspace_validate(value_t value) {
   VALIDATE_VALUE_FAMILY(ofMethodspace, value);
@@ -468,8 +470,10 @@ value_t set_methodspace_contents(value_t object, runtime_t *runtime, value_t con
   TRY_DEF(raw_methods, get_id_hash_map_at(contents, RSTR(runtime, methods)));
   TRY_DEF(methods, new_heap_array_buffer_with_contents(runtime, raw_methods));
   TRY_DEF(inheritance, get_id_hash_map_at(contents, RSTR(runtime, inheritance)));
+  TRY_DEF(imports, get_id_hash_map_at(contents, RSTR(runtime, imports)));
   set_methodspace_methods(object, methods);
   set_methodspace_inheritance(object, inheritance);
+  set_methodspace_imports(object, imports);
   return success();
 }
 

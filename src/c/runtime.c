@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "check.h"
 #include "runtime.h"
+#include "safe-inl.h"
 #include "try-inl.h"
 #include "value-inl.h"
 
@@ -41,6 +42,7 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
       new_heap_argument_map_trie(runtime, empty_array));
   TRY_SET(RAW_ROOT(roots, subject_key), new_heap_key(runtime, null));
   TRY_SET(RAW_ROOT(roots, selector_key), new_heap_key(runtime, null));
+  TRY_SET(RAW_ROOT(roots, builtin_methodspace), new_heap_methodspace(runtime));
 
   // Generate initialization for the per-family protocols.
 #define __CREATE_FAMILY_PROTOCOL__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
@@ -124,6 +126,7 @@ value_t roots_validate(roots_t *roots) {
   VALIDATE_OBJECT(ofArgumentMapTrie, RAW_ROOT(roots, argument_map_trie_root));
   VALIDATE_OBJECT(ofKey, RAW_ROOT(roots, subject_key));
   VALIDATE_OBJECT(ofKey, RAW_ROOT(roots, selector_key));
+  VALIDATE_OBJECT(ofMethodspace, RAW_ROOT(roots, builtin_methodspace));
 
 #define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_OBJECT(ofString, RAW_RSTR(roots, name));
   ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)
@@ -153,6 +156,7 @@ value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
   TRY(field_callback_call(callback, &RAW_ROOT(roots, any_guard)));
   TRY(field_callback_call(callback, &RAW_ROOT(roots, integer_protocol)));
   TRY(field_callback_call(callback, &RAW_ROOT(roots, empty_instance_species)));
+  TRY(field_callback_call(callback, &RAW_ROOT(roots, builtin_methodspace)));
   TRY(field_callback_call(callback, &RAW_ROOT(roots, argument_map_trie_root)));
   TRY(field_callback_call(callback, &RAW_ROOT(roots, subject_key)));
   TRY(field_callback_call(callback, &RAW_ROOT(roots, selector_key)));
@@ -215,13 +219,41 @@ value_t delete_runtime(runtime_t *runtime) {
 // The least number of allocations between forced allocation failures.
 static const size_t kGcFuzzerMinFrequency = 64;
 
+// Perform "hard" initialization, the stuff where the runtime isn't fully
+// consistent yet.
+static value_t runtime_hard_init(runtime_t *runtime, const runtime_config_t *config) {
+  // Initialize the heap and roots. After this the runtime is sort-of ready to
+  // be used.
+  TRY(heap_init(&runtime->heap, config));
+  TRY(roots_init(&runtime->roots, runtime));
+  // Check that everything looks sane.
+  return runtime_validate(runtime);
+}
+
+// Perform "soft" initialization, the stuff where we're starting to rely on the
+// runtime being fully functional.
+static value_t runtime_soft_init(runtime_t *runtime) {
+  CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
+  E_BEGIN_TRY_FINALLY();
+    safe_value_t s_builtin_methodspace = protect(pool,
+        ROOT(runtime, builtin_methodspace));
+    E_TRY(add_methodspace_builtin_methods(runtime, s_builtin_methodspace));
+    E_RETURN(runtime_validate(runtime));
+  E_FINALLY();
+    DISPOSE_SAFE_VALUE_POOL(pool);
+  E_END_TRY_FINALLY();
+}
+
 value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
   if (config == NULL)
     config = runtime_config_get_default();
   // First reset all the fields to a well-defined value.
   runtime_clear(runtime);
-  TRY(heap_init(&runtime->heap, config));
-  TRY(roots_init(&runtime->roots, runtime));
+  TRY(runtime_hard_init(runtime, config));
+  TRY(runtime_soft_init(runtime));
+  // Set up gc fuzzing. For now do this after the initialization to exempt that
+  // from being fuzzed. Longer term (probably after this has been rewritten) we
+  // want more of this to be gc safe.
   if (config->gc_fuzz_freq > 0) {
     memory_block_t memory = allocator_default_malloc(
         sizeof(gc_fuzzer_t));
@@ -229,7 +261,7 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
     gc_fuzzer_init(runtime->gc_fuzzer, kGcFuzzerMinFrequency,
         config->gc_fuzz_freq, config->gc_fuzz_seed);
   }
-  return runtime_validate(runtime);
+  return success();
 }
 
 // Adaptor function for passing object validate as a value callback.

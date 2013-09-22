@@ -13,11 +13,14 @@ from token import Token
 # Neutrino parser.
 class Parser(object):
 
+  _BUILTIN_METHODSPACE = data.Key("subject", ("core", "builtin_methodspace"))
+
   def __init__(self, tokens):
     self.tokens = tokens
     self.cursor = 0
+    self.imports = [Parser._BUILTIN_METHODSPACE]
     namespace = data.Namespace({})
-    methodspace = data.Methodspace({}, [])
+    methodspace = data.Methodspace({}, [], self.imports)
     self.module = data.Module(namespace, methodspace)
     self.entry_point = ast.Literal(None)
 

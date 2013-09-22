@@ -1383,6 +1383,8 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
       runtime));
   TRY(add_plankton_binding(map, core, "selector", ROOT(runtime, selector_key),
       runtime));
+  TRY(add_plankton_binding(map, core, "builtin_methodspace",
+      ROOT(runtime, builtin_methodspace), runtime));
   return success();
 }
 
