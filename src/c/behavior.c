@@ -6,6 +6,7 @@
 #include "log.h"
 #include "runtime.h"
 #include "syntax.h"
+#include "try-inl.h"
 #include "value-inl.h"
 
 
@@ -294,7 +295,9 @@ value_t new_object_with_type(runtime_t *runtime, value_t type) {
 
 value_t set_object_contents(runtime_t *runtime, value_t object, value_t payload) {
   family_behavior_t *behavior = get_object_family_behavior(object);
-  return (behavior->set_contents)(object, runtime, payload);
+  TRY((behavior->set_contents)(object, runtime, payload));
+  TRY(object_validate(object));
+  return success();
 }
 
 // A function compatible with set_contents that always returns unsupported.

@@ -85,6 +85,21 @@ IF_CHECKS_ENABLED(CHECK_EQ(M, E, false))
   }                                                                            \
 } while (false)
 
+// Check that a given value is either nothing or belongs to a particular class,
+// where the class is given by calling a particular getter on the value. You
+// generally don't want to use this directly.
+#define __CHECK_CLASS_OPT__(class_t, cExpected, EXPR, get_class) do {          \
+  value_t __value__ = (EXPR);                                                  \
+  if (!is_nothing(__value__)) {                                                \
+    class_t __class__ = get_class(__value__);                                  \
+    if (__class__ != cExpected) {                                              \
+      const char *__class_name__ = get_class##_name(__class__);                \
+      check_fail(__FILE__, __LINE__, "Check failed: %s(%s) == %s.\n  Found: %s", \
+          #get_class, #EXPR, #cExpected, __class_name__);                      \
+    }                                                                          \
+  }                                                                            \
+} while (false)
+
 // Check that fails unless the value is in the specified domain.
 #define CHECK_DOMAIN(vdDomain, EXPR)                                           \
 IF_CHECKS_ENABLED(__CHECK_CLASS__(value_domain_t, vdDomain, EXPR, get_value_domain))
@@ -92,6 +107,14 @@ IF_CHECKS_ENABLED(__CHECK_CLASS__(value_domain_t, vdDomain, EXPR, get_value_doma
 // Check that fails unless the object is in the specified family.
 #define CHECK_FAMILY(ofFamily, EXPR)                                           \
 IF_CHECKS_ENABLED(__CHECK_CLASS__(object_family_t, ofFamily, EXPR, get_object_family))
+
+// Check that fails unless the object is in the specified family or nothing.
+#define CHECK_FAMILY_OPT(ofFamily, EXPR)                                       \
+IF_CHECKS_ENABLED(__CHECK_CLASS_OPT__(object_family_t, ofFamily, EXPR, get_object_family))
+
+// Check that fails unless the object is in a syntax family or nothing.
+#define CHECK_SYNTAX_FAMILY_OPT(EXPR)                                          \
+IF_CHECKS_ENABLED(__CHECK_CLASS_OPT__(bool, true, EXPR, in_syntax_family))
 
 // Check that fails unless the species is in the specified division.
 #define CHECK_DIVISION(sdDivision, EXPR)                                       \

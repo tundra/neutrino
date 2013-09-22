@@ -340,6 +340,13 @@ static value_t *access_object_field(value_t value, size_t index) {
 // Returns the object type of the object the given value points to.
 object_family_t get_object_family(value_t value);
 
+// Returns true iff the given value belongs to a syntax family.
+bool in_syntax_family(value_t value);
+
+// This is for consistency -- any predicate used in a check predicate must have
+// a method for converting the predicate result into a string.
+const char *in_syntax_family_name(bool value);
+
 // Returns the family behavior for the given object.
 family_behavior_t *get_object_family_behavior(value_t self);
 

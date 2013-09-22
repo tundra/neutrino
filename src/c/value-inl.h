@@ -30,6 +30,12 @@ static inline bool is_nothing(value_t value) {
   return in_family(ofNothing, value);
 }
 
+// Returns true iff the given value is either nothing or an object within the
+// given family.
+static inline bool in_family_opt(object_family_t family, value_t value) {
+  return is_nothing(value) || in_family(family, value);
+}
+
 // Returns true iff the given species belongs to the given division.
 static inline bool in_division(species_division_t division, value_t value) {
   return in_family(ofSpecies, value) && (get_species_division(value) == division);
@@ -69,9 +75,13 @@ void dispose_value_to_string(value_to_string_t *data);
 
 // Checks whether the value at the end of the given pointer belongs to the
 // specified family. If not, returns a validation failure.
-#define VALIDATE_VALUE_FAMILY(ofFamily, EXPR)                                  \
+#define VALIDATE_FAMILY(ofFamily, EXPR)                                  \
 VALIDATE(in_family(ofFamily, EXPR))
 
+// Checks whether the value at the end of the given pointer belongs to the
+// specified family. If not, returns a validation failure.
+#define VALIDATE_FAMILY_OPT(ofFamily, EXPR)                              \
+VALIDATE(in_family_opt(ofFamily, EXPR))
 
 // --- B e h a v i o r ---
 
@@ -115,20 +125,32 @@ value_t get_##receiver##_##field(value_t self) {                               \
 }                                                                              \
 SWALLOW_SEMI(gi)
 
-// Expands to a checked setter and a getter for the specified types.
-#define CHECKED_ACCESSORS_IMPL(Receiver, receiver, Family, Field, field)       \
-void set_##receiver##_##field(value_t self, value_t value) {                   \
-  CHECK_FAMILY(of##Receiver, self);                                            \
-  CHECK_FAMILY(of##Family, value);                                             \
-  *access_object_field(self, k##Receiver##Field##Offset) = value;              \
-}                                                                              \
-GETTER_IMPL(Receiver, receiver, Field, field)
+// Accessor check that indicates that no check should be performed. A check that
+// the value is not a signal will be performed in any case since that is a
+// global invariant.
+#define acNoCheck(UNUSED, VALUE)                                               \
+  CHECK_FALSE("storing signal in heap", in_domain(vdSignal, (VALUE)))
+
+// Accessor check that indicates that the argument should belong to the family
+// specified in the argument.
+#define acInFamily(Family, VALUE)                                              \
+  CHECK_FAMILY(of##Family, (VALUE))
+
+// Accessor check that indicates that the argument should either be nothing or
+// belong to the family specified in the argument.
+#define acInFamilyOpt(Family, VALUE)                                           \
+  CHECK_FAMILY_OPT(of##Family, (VALUE))
+
+// Accessor check that indicates that the argument should either be nothing or
+// belong to a syntax family.
+#define acIsSyntaxOpt(UNUSED, VALUE)                                           \
+  CHECK_SYNTAX_FAMILY_OPT(VALUE)
 
 // Expands to an unchecked setter and a getter for the specified types.
-#define UNCHECKED_ACCESSORS_IMPL(Receiver, receiver, Field, field)             \
+#define ACCESSORS_IMPL(Receiver, receiver, acValueCheck, VALUE_CHECK_ARG, Field, field)  \
 void set_##receiver##_##field(value_t self, value_t value) {                   \
   CHECK_FAMILY(of##Receiver, self);                                            \
-  CHECK_FALSE("storing signal in heap", in_domain(vdSignal, value));           \
+  acValueCheck(VALUE_CHECK_ARG, value);                                        \
   *access_object_field(self, k##Receiver##Field##Offset) = value;              \
 }                                                                              \
 GETTER_IMPL(Receiver, receiver, Field, field)
