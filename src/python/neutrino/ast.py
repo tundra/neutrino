@@ -281,7 +281,6 @@ class Name(object):
 @plankton.serializable(("ast", "Program"))
 class Program(object):
 
-  @plankton.field("elements")
   @plankton.field("entry_point")
   @plankton.field("namespace")
   @plankton.field("methodspace")
@@ -299,11 +298,9 @@ class Program(object):
     return "(program %s)" % " ".join(map(str, self.elements))
 
 
-@plankton.serializable(("ast", "NamespaceDeclaration"))
+# A toplevel namespace declaration.
 class NamespaceDeclaration(object):
 
-  @plankton.field("name")
-  @plankton.field("value")
   def __init__(self, name=None, value=None):
     self.name = name
     self.value = value

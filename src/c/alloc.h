@@ -177,13 +177,8 @@ value_t new_heap_lambda_ast(runtime_t *runtime, value_t params, value_t body);
 value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags);
 
 // Creates a new program syntax tree with the given elements.
-value_t new_heap_program_ast(runtime_t *runtime, value_t elements,
-    value_t entry_point, value_t namespace, value_t methodspace);
-
-// Creates a new toplevel namespace declaration syntax tree with the given name
-// and value.
-value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t name,
-    value_t value);
+value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point,
+    value_t namespace, value_t methodspace);
 
 // Creates a new name syntax tree with the given path and phase.
 value_t new_heap_name_ast(runtime_t *runtime, value_t path, value_t phase);
