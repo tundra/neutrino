@@ -141,13 +141,13 @@ SWALLOW_SEMI(gi)
 
 // Accessor check that indicates that the argument should belong to the family
 // specified in the argument.
-#define acInFamily(Family, VALUE)                                              \
-  CHECK_FAMILY(of##Family, (VALUE))
+#define acInFamily(ofFamily, VALUE)                                            \
+  CHECK_FAMILY(ofFamily, (VALUE))
 
 // Accessor check that indicates that the argument should either be nothing or
 // belong to the family specified in the argument.
-#define acInFamilyOpt(Family, VALUE)                                           \
-  CHECK_FAMILY_OPT(of##Family, (VALUE))
+#define acInFamilyOpt(ofFamily, VALUE)                                         \
+  CHECK_FAMILY_OPT(ofFamily, (VALUE))
 
 // Accessor check that indicates that the argument should either be nothing or
 // belong to a syntax family.
