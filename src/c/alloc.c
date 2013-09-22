@@ -21,6 +21,14 @@ static value_t post_create_sanity_check(value_t value, size_t size) {
   return value;
 }
 
+value_t new_heap_uninitialized_roots(runtime_t *runtime) {
+  size_t size = kRootsSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size, new_integer(0)));
+  for (size_t i = 0; i < kRootCount; i++)
+    *access_object_field(result, OBJECT_FIELD_OFFSET(i)) = new_integer(0);
+  return result;
+}
+
 value_t new_heap_string(runtime_t *runtime, string_t *contents) {
   size_t size = calc_string_size(string_length(contents));
   TRY_DEF(result, alloc_heap_object(runtime, size,

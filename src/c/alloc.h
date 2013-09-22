@@ -17,6 +17,12 @@
 #ifndef _ALLOC
 #define _ALLOC
 
+// Creates a new instance of the roots object. The result will have all fields,
+// including the header, set to 0 because it's the very first object to be
+// created and the values we need to complete initialization only exist later
+// on.
+value_t new_heap_uninitialized_roots(runtime_t *runtime);
+
 // Allocates a new heap string in the given runtime, if there is room, otherwise
 // returns a signal to indicate an error.
 value_t new_heap_string(runtime_t *runtime, string_t *contents);

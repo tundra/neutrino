@@ -10,7 +10,12 @@
 #include "value-inl.h"
 
 
-value_t roots_init(roots_t *roots, runtime_t *runtime) {
+// --- R o o t s ---
+
+TRIVIAL_PRINT_ON_IMPL(Roots, roots);
+FIXED_GET_MODE_IMPL(roots, vmMutable);
+
+value_t roots_init(value_t roots, runtime_t *runtime) {
   // The meta-root is tricky because it is its own species. So we set it up in
   // two steps.
   TRY_DEF(meta, new_heap_compact_species_unchecked(runtime, ofSpecies, &kSpeciesBehavior));
@@ -22,6 +27,10 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, family##_species), new_heap_compact_species(runtime, of##Family, &k##Family##Behavior));
   ENUM_COMPACT_OBJECT_FAMILIES(__CREATE_COMPACT_SPECIES__)
 #undef __CREATE_COMPACT_SPECIES__
+
+  // At this point we'll have created the root species so we can set its header.
+  CHECK_EQ("roots already initialized", vdInteger, get_value_domain(get_object_header(roots)));
+  set_object_species(roots, RAW_ROOT(roots, roots_species));
 
   // Initialize singletons first since we need those to create more complex
   // values below.
@@ -68,18 +77,6 @@ value_t roots_init(roots_t *roots, runtime_t *runtime) {
   return success();
 }
 
-// Clears the field argument to a well-defined dummy value.
-static value_t clear_field(value_t *field, field_callback_t *callback) {
-  *field = success();
-  return success();
-}
-
-void roots_clear(roots_t *roots) {
-  field_callback_t clear_callback;
-  field_callback_init(&clear_callback, clear_field, NULL);
-  roots_for_each_field(roots, &clear_callback);
-}
-
 // Check that the condition holds, otherwise check fail with a validation error.
 #define VALIDATE_CHECK_TRUE(EXPR)                                              \
 SIG_CHECK_TRUE("validation", scValidationFailed, EXPR)
@@ -88,7 +85,7 @@ SIG_CHECK_TRUE("validation", scValidationFailed, EXPR)
 #define VALIDATE_CHECK_EQ(A, B)                                                \
 SIG_CHECK_EQ("validation", scValidationFailed, A, B)
 
-value_t roots_validate(roots_t *roots) {
+value_t roots_validate(value_t roots) {
   // Checks whether the argument is within the specified family, otherwise
   // signals a validation failure.
   #define VALIDATE_OBJECT(ofFamily, value) do {                                \
@@ -134,39 +131,6 @@ value_t roots_validate(roots_t *roots) {
 
   #undef VALIDATE_TYPE
   #undef VALIDATE_SPECIES
-  return success();
-}
-
-value_t roots_for_each_field(roots_t *roots, field_callback_t *callback) {
-  // Generate code for visiting the species.
-#define __VISIT_PER_FAMILY_FIELDS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
-  TRY(field_callback_call(callback, &RAW_ROOT(roots, family##_species)));      \
-  SUR(TRY(field_callback_call(callback, &RAW_ROOT(roots, family##_protocol)));,)
-  ENUM_OBJECT_FAMILIES(__VISIT_PER_FAMILY_FIELDS__)
-#undef __VISIT_PER_FAMILY_FIELDS__
-
-  // Clear the singletons manually.
-  TRY(field_callback_call(callback, &RAW_ROOT(roots, plankton_environment)));
-  TRY(field_callback_call(callback, &RAW_ROOT(roots, null)));
-  TRY(field_callback_call(callback, &RAW_ROOT(roots, nothing)));
-  TRY(field_callback_call(callback, &RAW_ROOT(roots, thrue)));
-  TRY(field_callback_call(callback, &RAW_ROOT(roots, fahlse)));
-  TRY(field_callback_call(callback, &RAW_ROOT(roots, empty_array)));
-  TRY(field_callback_call(callback, &RAW_ROOT(roots, empty_array_buffer)));
-  TRY(field_callback_call(callback, &RAW_ROOT(roots, any_guard)));
-  TRY(field_callback_call(callback, &RAW_ROOT(roots, integer_protocol)));
-  TRY(field_callback_call(callback, &RAW_ROOT(roots, empty_instance_species)));
-  TRY(field_callback_call(callback, &RAW_ROOT(roots, builtin_methodspace)));
-  TRY(field_callback_call(callback, &RAW_ROOT(roots, argument_map_trie_root)));
-  TRY(field_callback_call(callback, &RAW_ROOT(roots, subject_key)));
-  TRY(field_callback_call(callback, &RAW_ROOT(roots, selector_key)));
-
-  // Generate code for visiting the string table.
-#define __VISIT_STRING_TABLE_ENTRY__(name, value)                              \
-  TRY(field_callback_call(callback, &RAW_RSTR(roots, name)));
-  ENUM_STRING_TABLE(__VISIT_STRING_TABLE_ENTRY__)
-#undef __VISIT_STRING_TABLE_ENTRY__
-
   return success();
 }
 
@@ -225,7 +189,8 @@ static value_t runtime_hard_init(runtime_t *runtime, const runtime_config_t *con
   // Initialize the heap and roots. After this the runtime is sort-of ready to
   // be used.
   TRY(heap_init(&runtime->heap, config));
-  TRY(roots_init(&runtime->roots, runtime));
+  TRY_SET(runtime->roots, new_heap_uninitialized_roots(runtime));
+  TRY(roots_init(runtime->roots, runtime));
   // Check that everything looks sane.
   return runtime_validate(runtime);
 }
@@ -272,7 +237,6 @@ static value_t runtime_validate_object(value_t value, value_callback_t *self) {
 
 value_t runtime_validate(runtime_t *runtime) {
   TRY(heap_validate(&runtime->heap));
-  TRY(roots_validate(&runtime->roots));
   value_callback_t validate_callback;
   value_callback_init(&validate_callback, runtime_validate_object, NULL);
   TRY(heap_for_each_object(&runtime->heap, &validate_callback));
@@ -460,7 +424,7 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
   field_callback_t migrate_shallow_callback;
   field_callback_init(&migrate_shallow_callback, migrate_field_shallow, &state);
   // Shallow migration of all the roots.
-  TRY(roots_for_each_field(&runtime->roots, &migrate_shallow_callback));
+  TRY(field_callback_call(&migrate_shallow_callback, &runtime->roots));
   // Shallow migration of everything currently stored in to-space which, since
   // we keep going until all objects have been migrated, effectively makes a deep
   // migration.
@@ -478,7 +442,6 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
 void runtime_clear(runtime_t *runtime) {
   runtime->next_key_index = 0;
   runtime->gc_fuzzer = NULL;
-  roots_clear(&runtime->roots);
 }
 
 value_t runtime_dispose(runtime_t *runtime) {
