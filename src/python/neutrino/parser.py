@@ -99,7 +99,6 @@ class Parser(object):
     else:
       raise self.new_syntax_error()
 
-
   # <expression>
   #   -> <operator expression>
   def parse_expression(self):

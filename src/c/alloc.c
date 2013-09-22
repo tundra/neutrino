@@ -433,25 +433,14 @@ value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags)
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_program_ast(runtime_t *runtime, value_t elements,
-    value_t entry_point, value_t namespace, value_t methodspace) {
+value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point,
+    value_t namespace, value_t methodspace) {
   size_t size = kProgramAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, program_ast_species)));
-  set_program_ast_elements(result, elements);
   set_program_ast_entry_point(result, entry_point);
   set_program_ast_namespace(result, namespace);
   set_program_ast_methodspace(result, methodspace);
-  return post_create_sanity_check(result, size);
-}
-
-value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t name,
-    value_t value) {
-  size_t size = kNamespaceDeclarationAstSize;
-  TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, namespace_declaration_ast_species)));
-  set_namespace_declaration_ast_name(result, name);
-  set_namespace_declaration_ast_value(result, value);
   return post_create_sanity_check(result, size);
 }
 

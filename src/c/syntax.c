@@ -625,7 +625,6 @@ static value_t new_parameter_ast(runtime_t *runtime) {
 
 TRIVIAL_PRINT_ON_IMPL(ProgramAst, program_ast);
 
-CHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, Array, Elements, elements);
 UNCHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, EntryPoint, entry_point);
 UNCHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, Namespace, namespace);
 UNCHECKED_ACCESSORS_IMPL(ProgramAst, program_ast, Methodspace, methodspace);
@@ -637,11 +636,9 @@ value_t program_ast_validate(value_t value) {
 
 value_t set_program_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(elements, get_id_hash_map_at(contents, RSTR(runtime, elements)));
   TRY_DEF(entry_point, get_id_hash_map_at(contents, RSTR(runtime, entry_point)));
   TRY_DEF(namespace, get_id_hash_map_at(contents, RSTR(runtime, namespace)));
   TRY_DEF(methodspace, get_id_hash_map_at(contents, RSTR(runtime, methodspace)));
-  set_program_ast_elements(object, elements);
   set_program_ast_entry_point(object, entry_point);
   set_program_ast_namespace(object, namespace);
   set_program_ast_methodspace(object, methodspace);
@@ -649,38 +646,8 @@ value_t set_program_ast_contents(value_t object, runtime_t *runtime, value_t con
 }
 
 static value_t new_program_ast(runtime_t *runtime) {
-  return new_heap_program_ast(runtime, ROOT(runtime, empty_array),
-      ROOT(runtime, null), ROOT(runtime, empty_array), ROOT(runtime, null));
-}
-
-
-// --- N a m e s p a c e   d e c l a r a t i o n ---
-
-TRIVIAL_PRINT_ON_IMPL(NamespaceDeclarationAst, namespace_declaration_ast);
-
-UNCHECKED_ACCESSORS_IMPL(NamespaceDeclarationAst, namespace_declaration_ast,
-    Name, name);
-UNCHECKED_ACCESSORS_IMPL(NamespaceDeclarationAst, namespace_declaration_ast,
-    Value, value);
-
-value_t namespace_declaration_ast_validate(value_t value) {
-  VALIDATE_VALUE_FAMILY(ofNamespaceDeclarationAst, value);
-  return success();
-}
-
-value_t set_namespace_declaration_ast_contents(value_t object, runtime_t *runtime,
-    value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(name, get_id_hash_map_at(contents, RSTR(runtime, name)));
-  TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
-  set_namespace_declaration_ast_name(object, name);
-  set_namespace_declaration_ast_value(object, value);
-  return success();
-}
-
-static value_t new_namespace_declaration_ast(runtime_t *runtime) {
-  value_t null = ROOT(runtime, null);
-  return new_heap_namespace_declaration_ast(runtime, null, null);
+  return new_heap_program_ast(runtime, ROOT(runtime, null),
+      ROOT(runtime, empty_array), ROOT(runtime, null));
 }
 
 
@@ -743,7 +710,6 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "LocalDeclaration", new_local_declaration_ast, runtime));
   TRY(add_plankton_factory(map, ast, "LocalVariable", new_local_variable_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Name", new_name_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "NamespaceDeclaration", new_namespace_declaration_ast, runtime));
   TRY(add_plankton_factory(map, ast, "NamespaceVariable", new_namespace_variable_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Parameter", new_parameter_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Program", new_program_ast, runtime));
