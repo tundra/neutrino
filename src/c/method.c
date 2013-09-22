@@ -424,6 +424,18 @@ static void lookup_methodspace_local_method(methodspace_lookup_state_t *state,
   }
 }
 
+// Given an array of offsets, builds and returns an argument map that performs
+// that offset mapping.
+static value_t build_argument_map(runtime_t *runtime, size_t offsetc, size_t *offsets) {
+  value_t current_node = ROOT(runtime, argument_map_trie_root);
+  for (size_t i = 0; i < offsetc; i++) {
+    size_t offset = offsets[i];
+    value_t value = (offset == kNoOffset) ? ROOT(runtime, null) : new_integer(offset);
+    TRY_SET(current_node, get_argument_map_trie_child(runtime, current_node, value));
+  }
+  return get_argument_map_trie_value(current_node);
+}
+
 value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
     value_t record, frame_t *frame, value_t *arg_map_out) {
   // Input validation.
@@ -445,13 +457,7 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
   if (!in_domain(vdSignal, state.result)) {
     // We have a result so we need to build an argument map that represents the
     // result's offsets vector.
-    value_t current_node = ROOT(runtime, argument_map_trie_root);
-    for (size_t i = 0; i < arg_count; i++) {
-      size_t offset = state.result_offsets[i];
-      value_t value = (offset == kNoOffset) ? ROOT(runtime, null) : new_integer(offset);
-      TRY_SET(current_node, get_argument_map_trie_child(runtime, current_node, value));
-    }
-    *arg_map_out = get_argument_map_trie_value(current_node);
+    TRY_SET(*arg_map_out, build_argument_map(runtime, arg_count, state.result_offsets));
   }
   return state.result;
 }
