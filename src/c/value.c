@@ -622,7 +622,7 @@ GET_FAMILY_PROTOCOL_IMPL(array_buffer);
 NO_BUILTIN_METHODS(array_buffer);
 FIXED_GET_MODE_IMPL(array_buffer, vmMutable);
 
-ACCESSORS_IMPL(ArrayBuffer, array_buffer, acInFamily, Array, Elements, elements);
+ACCESSORS_IMPL(ArrayBuffer, array_buffer, acInFamily, ofArray, Elements, elements);
 INTEGER_ACCESSORS_IMPL(ArrayBuffer, array_buffer, Length, length);
 
 value_t array_buffer_validate(value_t self) {
@@ -664,7 +664,7 @@ GET_FAMILY_PROTOCOL_IMPL(id_hash_map);
 NO_BUILTIN_METHODS(id_hash_map);
 FIXED_GET_MODE_IMPL(id_hash_map, vmMutable);
 
-ACCESSORS_IMPL(IdHashMap, id_hash_map, acInFamily, Array, EntryArray, entry_array);
+ACCESSORS_IMPL(IdHashMap, id_hash_map, acInFamily, ofArray, EntryArray, entry_array);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Size, size);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Capacity, capacity);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, OccupiedCount, occupied_count);
@@ -1104,7 +1104,7 @@ value_t key_ordering_compare(value_t a, value_t b) {
 
 // --- I n s t a n c e ---
 
-ACCESSORS_IMPL(Instance, instance, acInFamily, IdHashMap, Fields, fields);
+ACCESSORS_IMPL(Instance, instance, acInFamily, ofIdHashMap, Fields, fields);
 NO_BUILTIN_METHODS(instance);
 FIXED_GET_MODE_IMPL(instance, vmMutable);
 
@@ -1152,7 +1152,7 @@ value_t get_instance_protocol(value_t self, runtime_t *runtime) {
 
 // --- F a c t o r y ---
 
-ACCESSORS_IMPL(Factory, factory, acInFamily, VoidP, Constructor, constructor);
+ACCESSORS_IMPL(Factory, factory, acInFamily, ofVoidP, Constructor, constructor);
 FIXED_GET_MODE_IMPL(factory, vmDeepFrozen);
 
 value_t factory_validate(value_t value) {
@@ -1176,8 +1176,8 @@ void factory_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 // --- C o d e   b l o c k ---
 
-ACCESSORS_IMPL(CodeBlock, code_block, acInFamily, Blob, Bytecode, bytecode);
-ACCESSORS_IMPL(CodeBlock, code_block, acInFamily, Array, ValuePool, value_pool);
+ACCESSORS_IMPL(CodeBlock, code_block, acInFamily, ofBlob, Bytecode, bytecode);
+ACCESSORS_IMPL(CodeBlock, code_block, acInFamily, ofArray, ValuePool, value_pool);
 INTEGER_ACCESSORS_IMPL(CodeBlock, code_block, HighWaterMark, high_water_mark);
 FIXED_GET_MODE_IMPL(code_block, vmMutable);
 
@@ -1241,8 +1241,9 @@ NO_BUILTIN_METHODS(argument_map_trie);
 TRIVIAL_PRINT_ON_IMPL(ArgumentMapTrie, argument_map_trie);
 FIXED_GET_MODE_IMPL(argument_map_trie, vmMutable);
 
-ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, acInFamily, Array, Value, value);
-ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, acInFamily, ArrayBuffer, Children, children);
+ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, acInFamily, ofArray, Value, value);
+ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, acInFamily, ofArrayBuffer,
+    Children, children);
 
 value_t argument_map_trie_validate(value_t value) {
   VALIDATE_FAMILY(ofArgumentMapTrie, value);
@@ -1291,8 +1292,8 @@ GET_FAMILY_PROTOCOL_IMPL(lambda);
 TRIVIAL_PRINT_ON_IMPL(Lambda, lambda);
 FIXED_GET_MODE_IMPL(lambda, vmMutable);
 
-ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, Methodspace, Methods, methods);
-ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, Array, Outers, outers);
+ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, ofMethodspace, Methods, methods);
+ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, ofArray, Outers, outers);
 
 value_t lambda_validate(value_t self) {
   VALIDATE_FAMILY(ofLambda, self);
@@ -1324,7 +1325,7 @@ value_t get_lambda_outer(value_t self, size_t index) {
 TRIVIAL_PRINT_ON_IMPL(Namespace, namespace);
 FIXED_GET_MODE_IMPL(namespace, vmMutable);
 
-ACCESSORS_IMPL(Namespace, namespace, acInFamilyOpt, IdHashMap, Bindings, bindings);
+ACCESSORS_IMPL(Namespace, namespace, acInFamilyOpt, ofIdHashMap, Bindings, bindings);
 
 value_t namespace_validate(value_t self) {
   VALIDATE_FAMILY(ofNamespace, self);
@@ -1354,8 +1355,8 @@ value_t get_namespace_binding_at(value_t namespace, value_t name) {
 TRIVIAL_PRINT_ON_IMPL(Module, module);
 FIXED_GET_MODE_IMPL(module, vmMutable);
 
-ACCESSORS_IMPL(Module, module, acInFamilyOpt, Namespace, Namespace, namespace);
-ACCESSORS_IMPL(Module, module, acInFamilyOpt, Methodspace, Methodspace, methodspace);
+ACCESSORS_IMPL(Module, module, acInFamilyOpt, ofNamespace, Namespace, namespace);
+ACCESSORS_IMPL(Module, module, acInFamilyOpt, ofMethodspace, Methodspace, methodspace);
 
 value_t module_validate(value_t value) {
   VALIDATE_FAMILY(ofModule, value);

@@ -12,7 +12,7 @@
 
 FIXED_GET_MODE_IMPL(signature, vmMutable);
 
-ACCESSORS_IMPL(Signature, signature, acInFamily, Array, Tags, tags);
+ACCESSORS_IMPL(Signature, signature, acInFamily, ofArray, Tags, tags);
 INTEGER_ACCESSORS_IMPL(Signature, signature, ParameterCount, parameter_count);
 INTEGER_ACCESSORS_IMPL(Signature, signature, MandatoryCount, mandatory_count);
 INTEGER_ACCESSORS_IMPL(Signature, signature, AllowExtra, allow_extra);
@@ -161,7 +161,7 @@ join_status_t join_score_vectors(score_t *target, score_t *source, size_t length
 
 FIXED_GET_MODE_IMPL(parameter, vmMutable);
 
-ACCESSORS_IMPL(Parameter, parameter, acInFamily, Guard, Guard, guard);
+ACCESSORS_IMPL(Parameter, parameter, acInFamily, ofGuard, Guard, guard);
 INTEGER_ACCESSORS_IMPL(Parameter, parameter, IsOptional, is_optional);
 INTEGER_ACCESSORS_IMPL(Parameter, parameter, Index, index);
 
@@ -278,8 +278,8 @@ void guard_print_atomic_on(value_t self, string_buffer_t *buf) {
 TRIVIAL_PRINT_ON_IMPL(Method, method);
 FIXED_GET_MODE_IMPL(method, vmMutable);
 
-ACCESSORS_IMPL(Method, method, acInFamily, Signature, Signature, signature);
-ACCESSORS_IMPL(Method, method, acInFamily, CodeBlock, Code, code);
+ACCESSORS_IMPL(Method, method, acInFamily, ofSignature, Signature, signature);
+ACCESSORS_IMPL(Method, method, acInFamily, ofCodeBlock, Code, code);
 
 value_t method_validate(value_t self) {
   VALIDATE_FAMILY(ofMethod, self);
@@ -294,11 +294,11 @@ value_t method_validate(value_t self) {
 TRIVIAL_PRINT_ON_IMPL(Methodspace, methodspace);
 FIXED_GET_MODE_IMPL(methodspace, vmMutable);
 
-ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, IdHashMap, Inheritance,
+ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofIdHashMap, Inheritance,
     inheritance);
-ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ArrayBuffer, Methods,
+ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofArrayBuffer, Methods,
     methods);
-ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, Array, Imports,
+ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofArray, Imports,
     imports);
 
 value_t methodspace_validate(value_t value) {
@@ -502,7 +502,7 @@ value_t set_methodspace_contents(value_t object, runtime_t *runtime, value_t con
 
 FIXED_GET_MODE_IMPL(invocation_record, vmMutable);
 
-ACCESSORS_IMPL(InvocationRecord, invocation_record, acInFamily, Array,
+ACCESSORS_IMPL(InvocationRecord, invocation_record, acInFamily, ofArray,
     ArgumentVector, argument_vector);
 
 value_t invocation_record_validate(value_t self) {

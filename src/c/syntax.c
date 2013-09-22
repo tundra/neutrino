@@ -102,7 +102,7 @@ GET_FAMILY_PROTOCOL_IMPL(array_ast);
 NO_BUILTIN_METHODS(array_ast);
 FIXED_GET_MODE_IMPL(array_ast, vmMutable);
 
-ACCESSORS_IMPL(ArrayAst, array_ast, acInFamilyOpt, Array, Elements, elements);
+ACCESSORS_IMPL(ArrayAst, array_ast, acInFamilyOpt, ofArray, Elements, elements);
 
 value_t emit_array_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofArrayAst, value);
@@ -149,9 +149,9 @@ GET_FAMILY_PROTOCOL_IMPL(invocation_ast);
 NO_BUILTIN_METHODS(invocation_ast);
 FIXED_GET_MODE_IMPL(invocation_ast, vmMutable);
 
-ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, Array, Arguments,
+ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, ofArray, Arguments,
     arguments);
-ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, Methodspace,
+ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, ofMethodspace,
     Methodspace, methodspace);
 
 value_t emit_invocation_ast(value_t value, assembler_t *assm) {
@@ -236,7 +236,7 @@ GET_FAMILY_PROTOCOL_IMPL(sequence_ast);
 NO_BUILTIN_METHODS(sequence_ast);
 FIXED_GET_MODE_IMPL(sequence_ast, vmMutable);
 
-ACCESSORS_IMPL(SequenceAst, sequence_ast, acInFamily, Array, Values, values);
+ACCESSORS_IMPL(SequenceAst, sequence_ast, acInFamily, ofArray, Values, values);
 
 value_t emit_sequence_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofSequenceAst, value);
@@ -277,7 +277,8 @@ void sequence_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, "#<sequence ast>");
 }
 
-value_t set_sequence_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t set_sequence_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(values, get_id_hash_map_at(contents, RSTR(runtime, values)));
   set_sequence_ast_values(object, values);
@@ -295,9 +296,12 @@ GET_FAMILY_PROTOCOL_IMPL(local_declaration_ast);
 NO_BUILTIN_METHODS(local_declaration_ast);
 FIXED_GET_MODE_IMPL(local_declaration_ast, vmMutable);
 
-ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acInFamilyOpt, SymbolAst, Symbol, symbol);
-ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acIsSyntaxOpt, 0, Value, value);
-ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acIsSyntaxOpt, 0, Body, body);
+ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acInFamilyOpt,
+    ofSymbolAst, Symbol, symbol);
+ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acIsSyntaxOpt,
+    0, Value, value);
+ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acIsSyntaxOpt,
+    0, Body, body);
 
 value_t emit_local_declaration_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofLocalDeclarationAst, self);
@@ -337,7 +341,8 @@ void local_declaration_ast_print_atomic_on(value_t value, string_buffer_t *buf) 
   string_buffer_printf(buf, "#<local declaration ast>");
 }
 
-value_t set_local_declaration_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t set_local_declaration_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(symbol, get_id_hash_map_at(contents, RSTR(runtime, symbol)));
   TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
@@ -360,7 +365,7 @@ GET_FAMILY_PROTOCOL_IMPL(local_variable_ast);
 NO_BUILTIN_METHODS(local_variable_ast);
 FIXED_GET_MODE_IMPL(local_variable_ast, vmMutable);
 
-ACCESSORS_IMPL(LocalVariableAst, local_variable_ast, acInFamilyOpt, SymbolAst,
+ACCESSORS_IMPL(LocalVariableAst, local_variable_ast, acInFamilyOpt, ofSymbolAst,
     Symbol, symbol);
 
 // Pushes the value of a symbol onto the stack.
@@ -432,10 +437,10 @@ NO_BUILTIN_METHODS(namespace_variable_ast);
 TRIVIAL_PRINT_ON_IMPL(NamespaceVariableAst, namespace_variable_ast);
 FIXED_GET_MODE_IMPL(namespace_variable_ast, vmMutable);
 
-ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acInFamilyOpt, Array,
-    Name, name);
 ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acInFamilyOpt,
-    Namespace, Namespace, namespace);
+    ofArray, Name, name);
+ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acInFamilyOpt,
+    ofNamespace, Namespace, namespace);
 
 value_t emit_namespace_variable_ast(value_t self, assembler_t *assm) {
   assembler_emit_load_global(assm, get_namespace_variable_ast_name(self),
@@ -508,7 +513,8 @@ NO_BUILTIN_METHODS(lambda_ast);
 TRIVIAL_PRINT_ON_IMPL(LambdaAst, lambda_ast);
 FIXED_GET_MODE_IMPL(lambda_ast, vmMutable);
 
-ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, Array, Parameters, parameters);
+ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, ofArray, Parameters,
+    parameters);
 ACCESSORS_IMPL(LambdaAst, lambda_ast, acIsSyntaxOpt, 0, Body, body);
 
 value_t emit_lambda_ast(value_t value, assembler_t *assm) {
@@ -622,8 +628,9 @@ NO_BUILTIN_METHODS(parameter_ast);
 TRIVIAL_PRINT_ON_IMPL(ParameterAst, parameter_ast);
 FIXED_GET_MODE_IMPL(parameter_ast, vmMutable);
 
-ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, SymbolAst, Symbol, symbol);
-ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, Array, Tags, tags);
+ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, ofSymbolAst, Symbol,
+    symbol);
+ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, ofArray, Tags, tags);
 
 value_t parameter_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofParameterAst, self);
@@ -653,7 +660,7 @@ TRIVIAL_PRINT_ON_IMPL(ProgramAst, program_ast);
 FIXED_GET_MODE_IMPL(program_ast, vmMutable);
 
 ACCESSORS_IMPL(ProgramAst, program_ast, acIsSyntaxOpt, 0, EntryPoint, entry_point);
-ACCESSORS_IMPL(ProgramAst, program_ast, acInFamilyOpt, Module, Module, module);
+ACCESSORS_IMPL(ProgramAst, program_ast, acInFamilyOpt, ofModule, Module, module);
 
 value_t program_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofProgramAst, self);
@@ -681,7 +688,7 @@ static value_t new_program_ast(runtime_t *runtime) {
 TRIVIAL_PRINT_ON_IMPL(NameAst, name_ast);
 FIXED_GET_MODE_IMPL(name_ast, vmMutable);
 
-ACCESSORS_IMPL(NameAst, name_ast, acInFamilyOpt, Array, Path, path);
+ACCESSORS_IMPL(NameAst, name_ast, acInFamilyOpt, ofArray, Path, path);
 ACCESSORS_IMPL(NameAst, name_ast, acNoCheck, 0, Phase, phase);
 
 value_t name_ast_validate(value_t self) {
