@@ -272,19 +272,11 @@ static value_t visit_object_fields(value_t object, value_callback_t *value_callb
   // us to easily check that.
   CHECK_DOMAIN(vdObject, *header);
   field_callback_call(field_callback, header);
-  // Get the object's layout so we know which fields to visit.
-  object_layout_t layout;
-  get_object_layout(object, &layout);
-  address_t object_start = get_object_address(object);
-  // The first address past this object.
-  address_t object_limit = object_start + layout.size;
-  // The address of the first value field (or, if there are no fields, the
-  // object limit).
-  address_t first_value_field = object_start + layout.value_offset;
-  for (address_t addr = first_value_field; addr < object_limit; addr += kValueSize) {
-    value_t *field = (value_t*) addr;
+  value_field_iter_t iter;
+  value_field_iter_init(&iter, object);
+  value_t *field;
+  while (value_field_iter_next(&iter, &field))
     TRY(field_callback_call(field_callback, field));
-  }
   return success();
 }
 
@@ -317,4 +309,29 @@ value_t heap_complete_garbage_collection(heap_t *heap) {
   CHECK_FALSE("to space empty", space_is_empty(&heap->to_space));
   space_dispose(&heap->from_space);
   return success();
+}
+
+void value_field_iter_init(value_field_iter_t *iter, value_t value) {
+  if (get_value_domain(value) != vdObject) {
+    iter->limit = iter->next = NULL;
+    return;
+  }
+  object_layout_t layout;
+  get_object_layout(value, &layout);
+  address_t object_start = get_object_address(value);
+  // The first address past this object.
+  iter->limit = object_start + layout.size;
+  // The address of the first value field (or, if there are no fields, the
+  // object limit).
+  iter->next = object_start + layout.value_offset;
+}
+
+bool value_field_iter_next(value_field_iter_t *iter, value_t **value_out) {
+  if (iter->limit == iter->next) {
+    return false;
+  } else {
+    *value_out = (value_t*) iter->next;
+    iter->next += kValueSize;
+    return true;
+  }
 }

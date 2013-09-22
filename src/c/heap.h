@@ -188,4 +188,23 @@ object_tracker_t *heap_new_object_tracker(heap_t *heap, value_t value);
 // Disposes an object tracker.
 void heap_dispose_object_tracker(heap_t *heap, object_tracker_t *gc_safe);
 
+
+// --- I t e r a t i o n ---
+
+// Data for iterating through all the value fields in an object.
+typedef struct {
+  // Points to the next field to return.
+  address_t next;
+  // Points immediately past the end of the object's fields.
+  address_t limit;
+} value_field_iter_t;
+
+// Initializes the iterator such that it is ready to scan through the fields
+// of the given object.
+void value_field_iter_init(value_field_iter_t *iter, value_t value);
+
+// If the iterator has more fields stores the next field in the given out
+// argument, advances the iterator, and returns true. Otherwise returns false.
+bool value_field_iter_next(value_field_iter_t *iter, value_t **field_out);
+
 #endif // _HEAP
