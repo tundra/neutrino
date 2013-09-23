@@ -3,11 +3,11 @@
 
 // Objects and functionality related to processes and execution.
 
-#include "value-inl.h"
 
 #ifndef _PROCESS
 #define _PROCESS
 
+#include "value-inl.h"
 
 // --- S t a c k   p i e c e ---
 

@@ -3,10 +3,11 @@
 
 // Gc-safe references.
 
-#include "value.h"
 
 #ifndef _SAFE
 #define _SAFE
+
+#include "value.h"
 
 // An object reference tracked by the runtime. These handles form a
 // doubly-linked list such that nodes can add and remove themselves from the

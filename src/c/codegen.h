@@ -4,11 +4,11 @@
 // Bytecode generation.
 
 
-#include "interp.h"
-#include "value.h"
-
 #ifndef _CODEGEN
 #define _CODEGEN
+
+#include "interp.h"
+#include "value.h"
 
 // Identifies what kind of binding a bound symbol represents.
 typedef enum {

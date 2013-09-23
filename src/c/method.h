@@ -3,12 +3,12 @@
 
 // Methods and method lookup. See details in method.md.
 
-#include "process.h"
-#include "value-inl.h"
 
 #ifndef _METHOD
 #define _METHOD
 
+#include "process.h"
+#include "value-inl.h"
 
 // A guard score against a value.
 typedef uint32_t score_t;

@@ -5,10 +5,11 @@
 // system signals which live in <signal.h>, which is why this file is called
 // signalS, plural.
 
-#include "value.h"
 
 #ifndef _SIGNALS
 #define _SIGNALS
+
+#include "value.h"
 
 // Creates a new signal with the specified cause and details.
 static value_t new_signal_with_details(signal_cause_t cause, uint32_t details) {

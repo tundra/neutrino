@@ -3,11 +3,12 @@
 
 // Runtime assertions.
 
-#include "crash.h"
-#include "globals.h"
 
 #ifndef _CHECK
 #define _CHECK
+
+#include "crash.h"
+#include "globals.h"
 
 // Define the IF_CHECKS_ENABLED macro appropriately. There is a choice here
 // between whether to completely remove check-related code when checks are
