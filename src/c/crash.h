@@ -4,6 +4,7 @@
 // Various utilities related to killing the runtime and handling when the
 // runtime gets killed.
 
+
 #ifndef _CRASH
 #define _CRASH
 

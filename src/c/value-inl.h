@@ -1,13 +1,13 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-#include "signals.h"
-#include "utils.h"
-#include "value.h"
 
 #ifndef _VALUE_INL
 #define _VALUE_INL
 
+#include "signals.h"
+#include "utils.h"
+#include "value.h"
 
 // Returns true if the value of the given expression is in the specified
 // domain.

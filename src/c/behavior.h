@@ -4,11 +4,12 @@
 // Behavior specific to each family of objects. It's just like virtual methods
 // except done manually using function pointers.
 
-#include "safe.h"
-#include "value.h"
 
 #ifndef _BEHAVIOR
 #define _BEHAVIOR
+
+#include "safe.h"
+#include "value.h"
 
 // A description of the layout of an object. See details about object layout in
 // value.md.

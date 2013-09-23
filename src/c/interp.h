@@ -1,13 +1,14 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+
+#ifndef _INTERP
+#define _INTERP
+
 #include "builtin.h"
 #include "runtime.h"
 #include "utils.h"
 #include "value.h"
-
-#ifndef _INTERP
-#define _INTERP
 
 // Invokes the given macro for each opcode name.
 #define ENUM_OPCODES(F)                                                        \

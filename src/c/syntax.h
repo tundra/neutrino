@@ -1,13 +1,13 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-#include "codegen.h"
-#include "value.h"
-#include "plankton.h"
 
 #ifndef _SYNTAX
 #define _SYNTAX
 
+#include "codegen.h"
+#include "value.h"
+#include "plankton.h"
 
 // --- M i s c ---
 

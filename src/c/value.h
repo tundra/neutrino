@@ -3,11 +3,12 @@
 
 // The basic types of values.
 
-#include "check.h"
-#include "globals.h"
 
 #ifndef _VALUE
 #define _VALUE
+
+#include "check.h"
+#include "globals.h"
 
 FORWARD(blob_t);
 FORWARD(runtime_t);

@@ -3,12 +3,13 @@
 
 // Logging framework.
 
-#include "globals.h"
-
-#include <stdarg.h>
 
 #ifndef _LOG
 #define _LOG
+
+#include "globals.h"
+
+#include <stdarg.h>
 
 // Log statements below this level are stripped from the code.
 #define LOG_LEVEL llInfo

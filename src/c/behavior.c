@@ -103,7 +103,6 @@ value_t set_value_mode(runtime_t *runtime, value_t self, value_mode_t mode) {
 }
 
 
-
 // --- I d e n t i t y   h a s h ---
 
 static value_t integer_transient_identity_hash(value_t self) {

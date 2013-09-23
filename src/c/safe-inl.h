@@ -3,12 +3,12 @@
 
 // Inline methods for working with safe values.
 
-#include "safe.h"
-#include "value.h"
-
 
 #ifndef _SAFE_INL
 #define _SAFE_INL
+
+#include "safe.h"
+#include "value.h"
 
 // Returns true if the value of the given safe value protects a value that is in
 // the specified domain.

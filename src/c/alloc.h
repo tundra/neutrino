@@ -4,6 +4,10 @@
 // Higher-level allocation routines that allocate and initialize objects in a
 // given heap.
 
+
+#ifndef _ALLOC
+#define _ALLOC
+
 #include "behavior.h"
 #include "globals.h"
 #include "heap.h"
@@ -13,9 +17,6 @@
 #include "syntax.h"
 #include "utils.h"
 #include "value.h"
-
-#ifndef _ALLOC
-#define _ALLOC
 
 // Creates a new instance of the roots object. The result will have all fields,
 // including the header, set to 0 because it's the very first object to be

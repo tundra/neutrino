@@ -4,10 +4,11 @@
 // The runtime structure which holds all the shared state of a single VM
 // instance.
 
-#include "heap.h"
 
 #ifndef _RUNTIME
 #define _RUNTIME
+
+#include "heap.h"
 
 // Enumerates the string table strings that will be stored as easily accessible
 // roots.

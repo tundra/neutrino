@@ -3,16 +3,16 @@
 
 // Standard includes and definitions available everywhere.
 
+
+#ifndef _GLOBALS
+#define _GLOBALS
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-
-#ifndef _GLOBALS
-#define _GLOBALS
 
 // A single byte.
 typedef uint8_t byte_t;

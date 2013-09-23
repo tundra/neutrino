@@ -4,11 +4,11 @@
 // Support for built-in methods.
 
 
-#include "method.h"
-#include "runtime.h"
-
 #ifndef _BUILTIN
 #define _BUILTIN
+
+#include "method.h"
+#include "runtime.h"
 
 // Data that provides access to a built-in's arguments.
 typedef struct {

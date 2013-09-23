@@ -3,13 +3,15 @@
 
 // Memory management infrastructure.
 
+
+#ifndef _HEAP
+#define _HEAP
+
 #include "globals.h"
 #include "safe.h"
 #include "utils.h"
 #include "value.h"
 
-#ifndef _HEAP
-#define _HEAP
 
 FORWARD(value_callback_t);
 FORWARD(field_callback_t);
