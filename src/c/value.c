@@ -496,7 +496,7 @@ value_t get_array_at(value_t value, size_t index) {
 
 void set_array_at(value_t value, size_t index, value_t element) {
   CHECK_FAMILY(ofArray, value);
-  CHECK_MODE(vmMutable, value);
+  CHECK_MUTABLE(value);
   CHECK_TRUE("array index out of bounds", index < get_array_length(value));
   get_array_elements(value)[index] = element;
 }

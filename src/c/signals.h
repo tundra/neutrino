@@ -71,7 +71,7 @@ static value_t new_out_of_memory_signal() {
   return new_signal(scOutOfMemory);
 }
 
-// Creates a new invlid-mode-change signal whise current mode is the given
+// Creates a new invalid-mode-change signal whose current mode is the given
 // value.
 static value_t new_invalid_mode_change_signal(value_mode_t current_mode) {
   return new_signal_with_details(scInvalidModeChange, current_mode);
