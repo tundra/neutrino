@@ -88,6 +88,21 @@ value_mode_t get_value_mode(value_t self) {
   }
 }
 
+value_t set_value_mode(runtime_t *runtime, value_t self, value_mode_t mode) {
+  if (get_value_domain(self) == vdObject) {
+    family_behavior_t *behavior = get_object_family_behavior(self);
+    return (behavior->set_mode)(runtime, self, mode);
+  } else if (mode < vmFrozen) {
+    // If it's not an object we know it'll be deep frozen. Hence we just need
+    // to catch setting it backwards before frozen.
+    CHECK_EQ("non-object not frozen", vmDeepFrozen, get_value_mode(self));
+    return new_invalid_mode_change_signal(vmDeepFrozen);
+  } else {
+    return success();
+  }
+}
+
+
 
 // --- I d e n t i t y   h a s h ---
 
@@ -393,7 +408,10 @@ family_behavior_t k##Family##Behavior = {                                      \
     NULL),                                                                     \
   MD(                                                                          \
     get_modal_object_mode,                                                     \
-    get_##family##_mode)                                                       \
+    get_##family##_mode),                                                      \
+  MD(                                                                          \
+    set_modal_object_mode,                                                     \
+    set_##family##_mode)                                                       \
 };
 ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #undef DEFINE_FAMILY_BEHAVIOR

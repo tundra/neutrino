@@ -241,6 +241,28 @@ value_mode_t get_modal_object_mode(value_t value) {
   return get_modal_species_mode(species);
 }
 
+value_t set_modal_object_mode(runtime_t *runtime, value_t self, value_mode_t mode) {
+  value_mode_t current_mode = get_modal_object_mode(self);
+  if (mode == current_mode) {
+    // If we're already in the target mode this trivially succeeds.
+    return success();
+  } else if (mode > current_mode) {
+    // It's always okay to set the object to a more restrictive mode. Swap in
+    // the appropriate modal species.
+    value_t old_species = get_object_species(self);
+    value_t new_species = get_modal_species_sibling_with_mode(runtime, old_species,
+        mode);
+    set_object_species(self, new_species);
+    return success();
+  } else if (mode == vmFrozen) {
+    // As a special case, it's okay to try to freeze an object that is already
+    // deep frozen. It's a no-op.
+    return success();
+  } else {
+    return new_invalid_mode_change_signal(current_mode);
+  }
+}
+
 size_t get_modal_species_base_root(value_t value) {
   value_t base_root = *access_object_field(value, kModalSpeciesBaseRootOffset);
   return get_integer_value(base_root);
@@ -248,6 +270,19 @@ size_t get_modal_species_base_root(value_t value) {
 
 void set_modal_species_base_root(value_t value, size_t base_root) {
   *access_object_field(value, kModalSpeciesBaseRootOffset) = new_integer(base_root);
+}
+
+bool is_mutable(value_t value) {
+  return get_value_mode(value) <= vmMutable;
+}
+
+bool is_frozen(value_t value) {
+  return get_value_mode(value) >= vmFrozen;
+}
+
+void ensure_frozen(runtime_t *runtime, value_t value) {
+  value_t result = set_value_mode(runtime, value, vmFrozen);
+  CHECK_FALSE("failed to freeze", get_value_domain(result) == vdSignal);
 }
 
 

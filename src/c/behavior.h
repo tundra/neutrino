@@ -23,6 +23,12 @@ typedef struct {
 // Returns the current mode of the given value.
 value_mode_t get_value_mode(value_t value);
 
+// Sets the object's value mode. Values may do this in any number of ways,
+// some of which may require the runtime which is why it is present. Returns
+// a non-signal if setting succeeded, otherwise an InvalidModeChange which
+// contains the current mode of the value.
+value_t set_value_mode(runtime_t *runtime, value_t self, value_mode_t mode);
+
 // Initializes the fields of an object layout struct.
 void object_layout_init(object_layout_t *layout);
 
@@ -68,6 +74,11 @@ struct family_behavior_t {
       value_t old_object);
   // Returns the current mode of the given value.
   value_mode_t (*get_mode)(value_t self);
+  // Attempt to set the current mode of the given value to the given mode,
+  // possibly using the given runtime. Must return a non-signal on success,
+  // an InvalidModeChange signal on failure, and is not allowed to return any
+  // other signals.
+  value_t (*set_mode)(runtime_t *runtime, value_t self, value_mode_t mode);
 };
 
 // This is how deep we'll recurse into an object before we assume that we're
@@ -181,7 +192,9 @@ FU(                                                                            \
   void fixup_##family##_post_migrate(runtime_t *runtime, value_t new_object,   \
     value_t old_object);,                                                      \
   )                                                                            \
-value_mode_t get_##family##_mode(value_t self);
+MD(,                                                                           \
+  value_mode_t get_##family##_mode(value_t self);                              \
+  value_t set_##family##_mode(runtime_t *runtime, value_t self, value_mode_t mode);)
 ENUM_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
 #undef __DECLARE_FAMILY_FUNCTIONS__
 
