@@ -477,12 +477,6 @@ SPECIES_ACCESSORS_DECL(instance, primary_protocol);
 
 // --- M o d a l    s p e c i e s ---
 
-#define ENUM_VALUE_MODES(F)                                                    \
-  F(Fluid)                                                                     \
-  F(Mutable)                                                                   \
-  F(Frozen)                                                                    \
-  F(DeepFrozen)
-
 // Enum of the modes an object can be in.
 typedef enum {
   // Any changes can be made to this object, including changing which protocol
