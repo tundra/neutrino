@@ -27,7 +27,7 @@ const char *get_value_domain_name(value_domain_t domain) {
 
 const char *get_object_family_name(object_family_t family) {
   switch (family) {
-#define __GEN_CASE__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD)   \
+#define __GEN_CASE__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD)           \
     case of##Family: return #Family;
     ENUM_OBJECT_FAMILIES(__GEN_CASE__)
 #undef __GEN_CASE__
@@ -118,8 +118,10 @@ bool in_syntax_family(value_t value) {
   if (get_value_domain(value) != vdObject)
     return false;
   switch (get_object_family(value)) {
-#define __MAKE_CASE__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD)  \
-  EMT(case of##Family: return true;,)
+#define __MAKE_CASE__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD)          \
+  EM(                                                                          \
+    case of##Family: return true;,                                             \
+    )
     ENUM_OBJECT_FAMILIES(__MAKE_CASE__)
 #undef __MAKE_CASE__
     default:

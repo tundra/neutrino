@@ -70,9 +70,13 @@ typedef enum {
 #define __EMIT_MODAL_SPECIES__(family) , rk_fluid_##family##_species,          \
   rk_mutable_##family##_species, rk_frozen_##family##_species,                 \
   rk_deep_frozen_##family##_species
-#define __EMIT_PER_FAMILY_ENUMS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD) \
-  MOD(__EMIT_MODAL_SPECIES__(family),__EMIT_COMPACT_SPECIES__(family))         \
-  SUR(__EMIT_FAMILY_PROTOCOL__(family),)
+#define __EMIT_PER_FAMILY_ENUMS__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD) \
+  MD(                                                                          \
+    __EMIT_MODAL_SPECIES__(family),                                            \
+    __EMIT_COMPACT_SPECIES__(family))                                          \
+  SR(                                                                          \
+    __EMIT_FAMILY_PROTOCOL__(family),                                          \
+    )
   ENUM_OBJECT_FAMILIES(__EMIT_PER_FAMILY_ENUMS__)
 #undef __EMIT_PER_FAMILY_ENUMS__
 #undef __EMIT_MODAL_SPECIES__

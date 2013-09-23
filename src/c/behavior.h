@@ -143,28 +143,44 @@ value_t get_protocol(value_t value, runtime_t *runtime);
 #define OBJ_ADDR_HASH(VAL) new_integer((VAL).encoded)
 
 // Declare the behavior structs for all the families on one fell swoop.
-#define DECLARE_FAMILY_BEHAVIOR(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD) \
-extern family_behavior_t k##Family##Behavior;
+#define DECLARE_FAMILY_BEHAVIOR(Family, family, CM, ID, CT, SR, NL, FU, EM, MD) \
+family_behavior_t k##Family##Behavior;
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 #undef DECLARE_FAMILY_BEHAVIOR
 
 // Declare the functions that implement the behaviors too, that way they can be
 // implemented wherever.
-#define __DECLARE_FAMILY_FUNCTIONS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD) \
+#define __DECLARE_FAMILY_FUNCTIONS__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD) \
 value_t family##_validate(value_t value);                                      \
-CID(value_t family##_transient_identity_hash(value_t value, size_t depth);,)   \
-CID(value_t family##_identity_compare(value_t a, value_t b, size_t depth);,)   \
-CMP(value_t family##_ordering_compare(value_t a, value_t b);,)                 \
+ID(                                                                            \
+  value_t family##_transient_identity_hash(value_t value, size_t depth);,      \
+  )                                                                            \
+ID(                                                                            \
+  value_t family##_identity_compare(value_t a, value_t b, size_t depth);,      \
+  )                                                                            \
+CM(                                                                            \
+  value_t family##_ordering_compare(value_t a, value_t b);,                    \
+  )                                                                            \
 void family##_print_on(value_t value, string_buffer_t *buf);                   \
 void family##_print_atomic_on(value_t value, string_buffer_t *buf);            \
-NOL(void get_##family##_layout(value_t value, object_layout_t *layout_out);,)  \
-CNT(value_t set_##family##_contents(value_t value, runtime_t *runtime,         \
-    value_t contents);,)                                                       \
-SUR(value_t get_##family##_protocol(value_t value, runtime_t *runtime);,)      \
-SUR(value_t add_##family##_builtin_methods(runtime_t *runtime,                 \
-    safe_value_t s_space);,)                                                   \
-FIX(void fixup_##family##_post_migrate(runtime_t *runtime, value_t new_object, \
-    value_t old_object);,)                                                     \
+NL(                                                                            \
+  void get_##family##_layout(value_t value, object_layout_t *layout_out);,     \
+  )                                                                            \
+CT(                                                                            \
+  value_t set_##family##_contents(value_t value, runtime_t *runtime,           \
+    value_t contents);,                                                        \
+  )                                                                            \
+SR(                                                                            \
+  value_t get_##family##_protocol(value_t value, runtime_t *runtime);,         \
+  )                                                                            \
+SR(                                                                            \
+  value_t add_##family##_builtin_methods(runtime_t *runtime,                   \
+    safe_value_t s_space);,                                                    \
+  )                                                                            \
+FU(                                                                            \
+  void fixup_##family##_post_migrate(runtime_t *runtime, value_t new_object,   \
+    value_t old_object);,                                                      \
+  )                                                                            \
 value_mode_t get_##family##_mode(value_t self);
 ENUM_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
 #undef __DECLARE_FAMILY_FUNCTIONS__
