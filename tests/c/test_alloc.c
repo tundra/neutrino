@@ -50,7 +50,7 @@ TEST(alloc, heap_blob) {
 TEST(alloc, heap_species) {
   CREATE_RUNTIME();
 
-  value_t species = new_heap_compact_species(runtime, ofString, &kStringBehavior);
+  value_t species = new_heap_compact_species(runtime, &kStringBehavior);
   ASSERT_DOMAIN(vdObject, species);
   ASSERT_FAMILY(ofSpecies, species);
   ASSERT_EQ(ofString, get_species_instance_family(species));

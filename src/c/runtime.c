@@ -17,18 +17,18 @@ TRIVIAL_PRINT_ON_IMPL(Roots, roots);
 value_t roots_init(value_t roots, runtime_t *runtime) {
   // The meta-root is tricky because it is its own species. So we set it up in
   // two steps.
-  TRY_DEF(meta, new_heap_compact_species_unchecked(runtime, ofSpecies, &kSpeciesBehavior));
+  TRY_DEF(meta, new_heap_compact_species_unchecked(runtime, &kSpeciesBehavior));
   set_object_header(meta, meta);
   RAW_ROOT(roots, species_species) = meta;
 
   // Generate initialization for the other compact species.
 #define __CREATE_COMPACT_SPECIES__(Family, family) \
-  TRY_SET(RAW_ROOT(roots, family##_species), new_heap_compact_species(runtime, of##Family, &k##Family##Behavior));
-#define __CREATE_MODAL_SPECIES__(Family, family)                                                                                              \
-  TRY_SET(RAW_ROOT(roots, fluid_##family##_species), new_heap_modal_species(runtime, of##Family, &k##Family##Behavior, vmFluid));           \
-  TRY_SET(RAW_ROOT(roots, mutable_##family##_species), new_heap_modal_species(runtime, of##Family, &k##Family##Behavior, vmMutable));       \
-  TRY_SET(RAW_ROOT(roots, frozen_##family##_species), new_heap_modal_species(runtime, of##Family, &k##Family##Behavior, vmFrozen));         \
-  TRY_SET(RAW_ROOT(roots, deep_frozen_##family##_species), new_heap_modal_species(runtime, of##Family, &k##Family##Behavior, vmDeepFrozen));
+  TRY_SET(RAW_ROOT(roots, family##_species), new_heap_compact_species(runtime, &k##Family##Behavior));
+#define __CREATE_MODAL_SPECIES__(Family, family)                                                                                \
+  TRY_SET(RAW_ROOT(roots, fluid_##family##_species), new_heap_modal_species(runtime, &k##Family##Behavior, vmFluid));           \
+  TRY_SET(RAW_ROOT(roots, mutable_##family##_species), new_heap_modal_species(runtime, &k##Family##Behavior, vmMutable));       \
+  TRY_SET(RAW_ROOT(roots, frozen_##family##_species), new_heap_modal_species(runtime, &k##Family##Behavior, vmFrozen));         \
+  TRY_SET(RAW_ROOT(roots, deep_frozen_##family##_species), new_heap_modal_species(runtime, &k##Family##Behavior, vmDeepFrozen));
 #define __CREATE_OTHER_SPECIES__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD)\
   MD(__CREATE_MODAL_SPECIES__(Family, family),__CREATE_COMPACT_SPECIES__(Family, family))
   ENUM_OTHER_OBJECT_FAMILIES(__CREATE_OTHER_SPECIES__)
