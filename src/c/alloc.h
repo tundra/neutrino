@@ -38,18 +38,17 @@ value_t new_heap_blob(runtime_t *runtime, size_t length);
 value_t new_heap_blob_with_data(runtime_t *runtime, blob_t *contents);
 
 // Allocates a new species whose instances have the specified instance family.
-value_t new_heap_compact_species(runtime_t *runtime, object_family_t instance_family,
-    family_behavior_t *behavior);
+value_t new_heap_compact_species(runtime_t *runtime, family_behavior_t *behavior);
 
 // Allocates a new modal species whose instances have the specified instance
 // family which indicates that the instance is currently in the specified mode.
-value_t new_heap_modal_species(runtime_t *runtime, object_family_t instance_family,
-    family_behavior_t *behavior, value_mode_t mode);
+value_t new_heap_modal_species(runtime_t *runtime, family_behavior_t *behavior,
+    value_mode_t mode);
 
 // Allocates a new species whose instances have the specified instance family.
 // The result will not be sanity checked.
 value_t new_heap_compact_species_unchecked(runtime_t *runtime,
-    object_family_t instance_family, family_behavior_t *behavior);
+    family_behavior_t *behavior);
 
 // Creates a new instance species with the specified primary protocol.
 value_t new_heap_instance_species(runtime_t *runtime, value_t primary);
