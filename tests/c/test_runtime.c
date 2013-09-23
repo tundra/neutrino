@@ -127,3 +127,37 @@ TEST(runtime, gc_fuzzer) {
     deviation = -deviation;
   ASSERT_TRUE(deviation < 0.1);
 }
+
+static void check_species_with_mode(runtime_t *runtime, value_t other,
+    value_mode_t target_mode) {
+  value_t target = get_modal_species_sibling_with_mode(runtime, other, target_mode);
+  ASSERT_EQ(target_mode, get_modal_species_mode(target));
+  ASSERT_EQ(get_species_instance_family(other), get_species_instance_family(target));
+}
+
+TEST(runtime, modal_species_change) {
+  CREATE_RUNTIME();
+
+  value_t fluid = ROOT(runtime, fluid_array_species);
+  check_species_with_mode(runtime, fluid, vmFluid);
+  check_species_with_mode(runtime, fluid, vmMutable);
+  check_species_with_mode(runtime, fluid, vmFrozen);
+  check_species_with_mode(runtime, fluid, vmDeepFrozen);
+  value_t mutable = ROOT(runtime, mutable_array_species);
+  check_species_with_mode(runtime, mutable, vmFluid);
+  check_species_with_mode(runtime, mutable, vmMutable);
+  check_species_with_mode(runtime, mutable, vmFrozen);
+  check_species_with_mode(runtime, mutable, vmDeepFrozen);
+  value_t frozen = ROOT(runtime, frozen_array_species);
+  check_species_with_mode(runtime, frozen, vmFluid);
+  check_species_with_mode(runtime, frozen, vmMutable);
+  check_species_with_mode(runtime, frozen, vmFrozen);
+  check_species_with_mode(runtime, frozen, vmDeepFrozen);
+  value_t deep_frozen = ROOT(runtime, deep_frozen_array_species);
+  check_species_with_mode(runtime, deep_frozen, vmFluid);
+  check_species_with_mode(runtime, deep_frozen, vmMutable);
+  check_species_with_mode(runtime, deep_frozen, vmFrozen);
+  check_species_with_mode(runtime, deep_frozen, vmDeepFrozen);
+
+  DISPOSE_RUNTIME();
+}

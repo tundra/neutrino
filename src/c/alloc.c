@@ -88,13 +88,14 @@ value_t new_heap_compact_species(runtime_t *runtime, family_behavior_t *behavior
 }
 
 value_t new_heap_modal_species(runtime_t *runtime, family_behavior_t *behavior,
-    value_mode_t mode) {
+    value_mode_t mode, root_key_t base_root) {
   size_t size = kModalSpeciesSize;
   TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, species_species)));
   set_species_instance_family(result, behavior->family);
   set_species_family_behavior(result, behavior);
   set_species_division_behavior(result, &kModalSpeciesBehavior);
   set_modal_species_mode(result, mode);
+  set_modal_species_base_root(result, base_root);
   return post_create_sanity_check(result, size);
 }
 

@@ -490,8 +490,9 @@ typedef enum {
   vmDeepFrozen
 } value_mode_t;
 
-static const size_t kModalSpeciesSize = SPECIES_SIZE(1);
+static const size_t kModalSpeciesSize = SPECIES_SIZE(2);
 static const size_t kModalSpeciesModeOffset = SPECIES_FIELD_OFFSET(0);
+static const size_t kModalSpeciesBaseRootOffset = SPECIES_FIELD_OFFSET(1);
 
 // Returns the mode this species indicates.
 value_mode_t get_modal_species_mode(value_t value);
@@ -501,6 +502,14 @@ value_mode_t get_modal_object_mode(value_t value);
 
 // Sets the mode this species indicates.
 void set_modal_species_mode(value_t value, value_mode_t mode);
+
+// Returns the root key for the first modal species of the same block of modal
+// species as this one. The result is really a root_key_t but that type is not
+// visible here and it doesn't really matter.
+size_t get_modal_species_base_root(value_t value);
+
+// Sets the root key for the given modal species.
+void set_modal_species_base_root(value_t value, size_t base_root);
 
 
 // --- S t r i n g ---

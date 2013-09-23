@@ -100,6 +100,11 @@ static inline value_t *access_roots_entry_at(value_t roots, root_key_t key) {
   return access_object_field(roots, OBJECT_FIELD_OFFSET(key));
 }
 
+// Returns the specified root.
+static inline value_t get_roots_entry_at(value_t roots, root_key_t key) {
+  return *access_roots_entry_at(roots, key);
+}
+
 // Data associated with garbage collection fuzzing.
 typedef struct {
   // Random number generator to use.
@@ -173,6 +178,14 @@ void dispose_safe_value(runtime_t *runtime, safe_value_t value_s);
 
 // Set whether fuzzing is on or off. If there is no fuzzer this has no effect.
 void runtime_toggle_fuzzing(runtime_t *runtime, bool enable);
+
+// Returns a modal species with the specified mode which is a sibling of the
+// given value, that is, identical except having the specified mode.
+// This will allow you to go from a more restrictive mode to a less restrictive
+// one. If that's logically unsound you should check that it doesn't happen
+// before calling this function.
+value_t get_modal_species_sibling_with_mode(runtime_t *runtime, value_t species,
+    value_mode_t mode);
 
 
 // Initialize this root set.

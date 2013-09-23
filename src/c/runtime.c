@@ -23,12 +23,17 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
 
   // Generate initialization for the other compact species.
 #define __CREATE_COMPACT_SPECIES__(Family, family) \
-  TRY_SET(RAW_ROOT(roots, family##_species), new_heap_compact_species(runtime, &k##Family##Behavior));
-#define __CREATE_MODAL_SPECIES__(Family, family)                                                                                \
-  TRY_SET(RAW_ROOT(roots, fluid_##family##_species), new_heap_modal_species(runtime, &k##Family##Behavior, vmFluid));           \
-  TRY_SET(RAW_ROOT(roots, mutable_##family##_species), new_heap_modal_species(runtime, &k##Family##Behavior, vmMutable));       \
-  TRY_SET(RAW_ROOT(roots, frozen_##family##_species), new_heap_modal_species(runtime, &k##Family##Behavior, vmFrozen));         \
-  TRY_SET(RAW_ROOT(roots, deep_frozen_##family##_species), new_heap_modal_species(runtime, &k##Family##Behavior, vmDeepFrozen));
+  TRY_SET(RAW_ROOT(roots, family##_species), new_heap_compact_species(         \
+      runtime, &k##Family##Behavior));
+#define __CREATE_MODAL_SPECIES__(Family, family)                               \
+  TRY_SET(RAW_ROOT(roots, fluid_##family##_species),new_heap_modal_species(    \
+      runtime, &k##Family##Behavior, vmFluid, rk_fluid_##family##_species));   \
+  TRY_SET(RAW_ROOT(roots, mutable_##family##_species), new_heap_modal_species( \
+      runtime, &k##Family##Behavior, vmMutable, rk_fluid_##family##_species)); \
+  TRY_SET(RAW_ROOT(roots, frozen_##family##_species), new_heap_modal_species(  \
+      runtime, &k##Family##Behavior, vmFrozen, rk_fluid_##family##_species));  \
+  TRY_SET(RAW_ROOT(roots, deep_frozen_##family##_species), new_heap_modal_species(\
+      runtime, &k##Family##Behavior, vmDeepFrozen, rk_fluid_##family##_species));
 #define __CREATE_OTHER_SPECIES__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD)\
   MD(__CREATE_MODAL_SPECIES__(Family, family),__CREATE_COMPACT_SPECIES__(Family, family))
   ENUM_OTHER_OBJECT_FAMILIES(__CREATE_OTHER_SPECIES__)
@@ -517,4 +522,16 @@ void runtime_toggle_fuzzing(runtime_t *runtime, bool enable) {
     return;
   CHECK_EQ("invalid fuzz toggle", !enable, fuzzer->is_enabled);
   fuzzer->is_enabled = enable;
+}
+
+value_t get_modal_species_sibling_with_mode(runtime_t *runtime, value_t species,
+    value_mode_t mode) {
+  CHECK_DIVISION(sdModal, species);
+  root_key_t base_root = get_modal_species_base_root(species);
+  root_key_t mode_root = base_root + mode - vmFluid;
+  value_t result = get_roots_entry_at(runtime->roots, mode_root);
+  CHECK_EQ("incorrect sibling mode", mode, get_modal_species_mode(result));
+  CHECK_EQ("incorrect sibling family", get_species_instance_family(species),
+      get_species_instance_family(result));
+  return result;
 }
