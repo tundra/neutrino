@@ -241,6 +241,15 @@ value_mode_t get_modal_object_mode(value_t value) {
   return get_modal_species_mode(species);
 }
 
+size_t get_modal_species_base_root(value_t value) {
+  value_t base_root = *access_object_field(value, kModalSpeciesBaseRootOffset);
+  return get_integer_value(base_root);
+}
+
+void set_modal_species_base_root(value_t value, size_t base_root) {
+  *access_object_field(value, kModalSpeciesBaseRootOffset) = new_integer(base_root);
+}
+
 
 // --- S t r i n g ---
 

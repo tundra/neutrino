@@ -43,7 +43,7 @@ value_t new_heap_compact_species(runtime_t *runtime, family_behavior_t *behavior
 // Allocates a new modal species whose instances have the specified instance
 // family which indicates that the instance is currently in the specified mode.
 value_t new_heap_modal_species(runtime_t *runtime, family_behavior_t *behavior,
-    value_mode_t mode);
+    value_mode_t mode, root_key_t base_root);
 
 // Allocates a new species whose instances have the specified instance family.
 // The result will not be sanity checked.
