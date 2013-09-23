@@ -30,3 +30,16 @@ Heap objects all have a common layout:
  * After the dumb data comes values that must be updated during GC.
 
 This simplifies handling of objects. You don't have to know the exact type of an object to move it, for instance, you just need to know its size and the offset of the value section and it can be moved correctly.
+
+## Modes
+
+Any value can be in one of four modes. These modes indicate which operations are legal. A value starts out least restricted and can then move towards more restrictions, never fewer. The modes are:
+
+  * **Fluid** Any changes can be made to this object, including changing which protocol it supports and which fields it has.
+  * **Mutable** The object's fields can be set but no changes can be made to which fields exist or which primary protocol the value has.
+  * **Frozen** The object cannot be changed but can reference other objects that can.
+  * **Deep frozen** The object cannot change and neither can any objects it references.
+
+Not all values can be in all states. For instance, integers and strings start out deep frozen so the less restricted states don't apply to them.
+
+You can explicitly move an object to the mutable or frozen mode if you know the object is in a less restricted mode but you can't make it deep frozen, and you don't need to. Being deep frozen is a property of a full object graph so you can ask if an object is deep frozen and the object graph will be traversed for you to determine whether it is. That traversal may cause the object to be marked as deep frozen.

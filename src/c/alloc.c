@@ -74,8 +74,7 @@ value_t new_heap_compact_species_unchecked(runtime_t *runtime, object_family_t i
 value_t new_heap_instance_species(runtime_t *runtime, value_t primary) {
   size_t size = kInstanceSpeciesSize;
   CHECK_FAMILY(ofProtocol, primary);
-  TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, species_species)));
+  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, species_species)));
   set_species_instance_family(result, ofInstance);
   set_species_family_behavior(result, &kInstanceBehavior);
   set_species_division_behavior(result, &kInstanceSpeciesBehavior);
@@ -90,10 +89,21 @@ value_t new_heap_compact_species(runtime_t *runtime, object_family_t instance_fa
   return post_create_sanity_check(result, kCompactSpeciesSize);
 }
 
+value_t new_heap_modal_species(runtime_t *runtime, object_family_t instance_family,
+    family_behavior_t *behavior, value_mode_t mode) {
+  size_t size = kModalSpeciesSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, species_species)));
+  set_species_instance_family(result, instance_family);
+  set_species_family_behavior(result, behavior);
+  set_species_division_behavior(result, &kModalSpeciesBehavior);
+  set_modal_species_mode(result, mode);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_array(runtime_t *runtime, size_t length) {
   size_t size = calc_array_size(length);
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, array_species)));
+      ROOT(runtime, mutable_array_species)));
   set_array_length(result, length);
   for (size_t i = 0; i < length; i++)
     set_array_at(result, i, ROOT(runtime, null));
@@ -108,7 +118,7 @@ value_t new_heap_array_buffer(runtime_t *runtime, size_t initial_capacity) {
   size_t size = kArrayBufferSize;
   TRY_DEF(elements, new_heap_array(runtime, initial_capacity));
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, array_buffer_species)));
+      ROOT(runtime, mutable_array_buffer_species)));
   set_array_buffer_elements(result, elements);
   set_array_buffer_length(result, 0);
   return post_create_sanity_check(result, size);
@@ -118,7 +128,7 @@ value_t new_heap_array_buffer_with_contents(runtime_t *runtime, value_t elements
   CHECK_FAMILY(ofArray, elements);
   size_t size = kArrayBufferSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, array_buffer_species)));
+      ROOT(runtime, mutable_array_buffer_species)));
   set_array_buffer_elements(result, elements);
   set_array_buffer_length(result, get_array_length(elements));
   return post_create_sanity_check(result, size);
@@ -133,7 +143,7 @@ value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity) {
   TRY_DEF(entries, new_heap_id_hash_map_entry_array(runtime, init_capacity));
   size_t size = kIdHashMapSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, id_hash_map_species)));
+      ROOT(runtime, mutable_id_hash_map_species)));
   set_id_hash_map_entry_array(result, entries);
   set_id_hash_map_size(result, 0);
   set_id_hash_map_capacity(result, init_capacity);

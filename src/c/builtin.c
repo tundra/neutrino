@@ -95,7 +95,7 @@ value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
 
 value_t add_methodspace_builtin_methods(runtime_t *runtime, safe_value_t s_self) {
   TRY(add_integer_builtin_methods(runtime, s_self));
-#define __EMIT_ADD_BUILTINS_CALL__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
+#define __EMIT_ADD_BUILTINS_CALL__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD)\
   SUR(TRY(add_##family##_builtin_methods(runtime, s_self));,)
   ENUM_OBJECT_FAMILIES(__EMIT_ADD_BUILTINS_CALL__)
 #undef __EMIT_ADD_BUILTINS_CALL__
