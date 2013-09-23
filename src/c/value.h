@@ -35,6 +35,7 @@ const char *get_value_domain_name(value_domain_t domain);
   F(InternalFamily)                                                            \
   F(InvalidCast)                                                               \
   F(InvalidInput)                                                              \
+  F(InvalidModeChange)                                                         \
   F(InvalidSyntax)                                                             \
   F(MapFull)                                                                   \
   F(MaybeCircular)                                                             \
@@ -500,6 +501,10 @@ value_mode_t get_modal_species_mode(value_t value);
 // Returns the mode for a value in the modal division.
 value_mode_t get_modal_object_mode(value_t value);
 
+// Sets the mode for a modal object by switching to the species with the
+// appropriate mode.
+value_t set_modal_object_mode(runtime_t *runtime, value_t self, value_mode_t mode);
+
 // Sets the mode this species indicates.
 void set_modal_species_mode(value_t value, value_mode_t mode);
 
@@ -510,6 +515,16 @@ size_t get_modal_species_base_root(value_t value);
 
 // Sets the root key for the given modal species.
 void set_modal_species_base_root(value_t value, size_t base_root);
+
+// Returns true iff the given value is in a state where it can be mutated.
+bool is_mutable(value_t value);
+
+// Returns true iff the given value is in a frozen, though not necessarily deep
+// frozen, state.
+bool is_frozen(value_t value);
+
+// Ensures that the value is in a frozen state.
+void ensure_frozen(runtime_t *runtime, value_t value);
 
 
 // --- S t r i n g ---

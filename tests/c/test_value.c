@@ -698,3 +698,35 @@ TEST(value, array_identity) {
 }
 
 #undef V2V
+
+TEST(runtime, set_value_mode) {
+  CREATE_RUNTIME();
+
+  value_t arr = new_heap_array(runtime, 3);
+  ASSERT_TRUE(is_mutable(arr));
+  ASSERT_FALSE(is_frozen(arr));
+  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, arr, vmFluid));
+  ensure_frozen(runtime, arr);
+  ASSERT_TRUE(is_frozen(arr));
+  ASSERT_FALSE(is_mutable(arr));
+  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, arr, vmFluid));
+  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, arr, vmMutable));
+  ensure_frozen(runtime, arr);
+  ASSERT_TRUE(is_frozen(arr));
+
+  value_t null = ROOT(runtime, null);
+  ASSERT_TRUE(is_frozen(null));
+  ASSERT_FALSE(is_mutable(null));
+  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, null, vmFluid));
+  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, null, vmMutable));
+  ensure_frozen(runtime, null);
+
+  value_t zero = new_integer(0);
+  ASSERT_TRUE(is_frozen(zero));
+  ASSERT_FALSE(is_mutable(zero));
+  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, zero, vmFluid));
+  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, zero, vmMutable));
+  ensure_frozen(runtime, zero);
+
+  DISPOSE_RUNTIME();
+}

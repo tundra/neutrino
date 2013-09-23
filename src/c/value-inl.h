@@ -119,6 +119,13 @@ SWALLOW_SEMI(gfpi)
 value_mode_t get_##family##_mode(value_t self) {                               \
   return vmMode;                                                               \
 }                                                                              \
+value_t set_##family##_mode(runtime_t *rt, value_t self, value_mode_t mode) {  \
+  if (mode == vmMode || ((mode == vmFrozen) && (vmMode == vmDeepFrozen))) {    \
+    return success();                                                          \
+  } else {                                                                     \
+    return new_invalid_mode_change_signal(vmMode);                             \
+  }                                                                            \
+}                                                                              \
 SWALLOW_SEMI(fgmi)
 
 
