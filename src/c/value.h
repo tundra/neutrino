@@ -214,67 +214,69 @@ static value_t new_moved_object(value_t target) {
 //       collection?
 //   - Emt: is this family a syntax tree that can be emitted as code? Not all
 //       syntax tree nodes can be emitted.
+//   - Mod: is this family in the modal division, that is, is the mutability
+//       state stored in the species?
 //
-// CamelName            underscore_name                 Cmp Cid Cnt Sur Nol Fix Emt
+// CamelName            underscore_name                 Cmp Cid Cnt Sur Nol Fix Emt Mod
 
 // Enumerates the special species, the ones that require special handling during
 // startup.
-#define ENUM_SPECIAL_OBJECT_FAMILIES(F)                                           \
-  F(Species,                 species,                   _,  _,  _,  _,  X,  _,  _)
+#define ENUM_SPECIAL_OBJECT_FAMILIES(F)                                               \
+  F(Species,                 species,                   _,  _,  _,  _,  X,  _,  _,  _)
 
 // Enumerates the compact object species.
-#define ENUM_COMPACT_OBJECT_FAMILIES(F)                                           \
-  F(ArgumentAst,             argument_ast,              _,  _,  X,  X,  _,  _,  _)\
-  F(ArgumentMapTrie,         argument_map_trie,         _,  _,  _,  _,  _,  _,  _)\
-  F(Array,                   array,                     _,  X,  _,  X,  X,  _,  _)\
-  F(ArrayAst,                array_ast,                 _,  _,  X,  X,  _,  _,  X)\
-  F(ArrayBuffer,             array_buffer,              _,  _,  _,  X,  _,  _,  _)\
-  F(Blob,                    blob,                      _,  _,  _,  X,  X,  _,  _)\
-  F(Boolean,                 boolean,                   X,  X,  _,  X,  _,  _,  _)\
-  F(CodeBlock,               code_block,                _,  _,  _,  _,  _,  _,  _)\
-  F(Factory,                 factory,                   _,  _,  _,  _,  _,  _,  _)\
-  F(Guard,                   guard,                     _,  _,  _,  _,  _,  _,  _)\
-  F(IdHashMap,               id_hash_map,               _,  _,  _,  X,  _,  X,  _)\
-  F(Instance,                instance,                  _,  _,  X,  X,  _,  _,  _)\
-  F(InvocationAst,           invocation_ast,            _,  _,  X,  X,  _,  _,  X)\
-  F(InvocationRecord,        invocation_record,         _,  _,  _,  _,  _,  _,  _)\
-  F(Key,                     key,                       X,  _,  _,  X,  _,  _,  _)\
-  F(Lambda,                  lambda,                    _,  _,  _,  X,  _,  _,  _)\
-  F(LambdaAst,               lambda_ast,                _,  _,  X,  X,  _,  _,  X)\
-  F(LiteralAst,              literal_ast,               _,  _,  X,  X,  _,  _,  X)\
-  F(LocalDeclarationAst,     local_declaration_ast,     _,  _,  X,  X,  _,  _,  X)\
-  F(Method,                  method,                    _,  _,  _,  _,  _,  _,  _)\
-  F(Methodspace,             methodspace,               _,  _,  X,  _,  _,  _,  _)\
-  F(Module,                  module,                    _,  _,  X,  _,  _,  _,  _)\
-  F(NameAst,                 name_ast,                  _,  _,  X,  _,  _,  _,  _)\
-  F(Namespace,               namespace,                 _,  _,  X,  _,  _,  _,  _)\
-  F(NamespaceVariableAst,    namespace_variable_ast,    _,  _,  X,  X,  _,  _,  X)\
-  F(Nothing,                 nothing,                   _,  _,  _,  _,  _,  _,  _)\
-  F(Null,                    null,                      _,  X,  _,  X,  _,  _,  _)\
-  F(Parameter,               parameter,                 _,  _,  _,  _,  _,  _,  _)\
-  F(ParameterAst,            parameter_ast,             _,  _,  X,  X,  _,  _,  _)\
-  F(ProgramAst,              program_ast,               _,  _,  X,  _,  _,  _,  _)\
-  F(Protocol,                protocol,                  _,  _,  _,  X,  _,  _,  _)\
-  F(Roots,                   roots,                     _,  _,  _,  _,  _,  _,  _)\
-  F(SequenceAst,             sequence_ast,              _,  _,  X,  X,  _,  _,  X)\
-  F(Signature,               signature,                 _,  _,  _,  _,  _,  _,  _)\
-  F(Stack,                   stack,                     _,  _,  _,  _,  _,  _,  _)\
-  F(StackPiece,              stack_piece,               _,  _,  _,  _,  _,  _,  _)\
-  F(String,                  string,                    X,  X,  _,  X,  X,  _,  _)\
-  F(SymbolAst,               symbol_ast,                _,  _,  X,  X,  _,  _,  _)\
-  F(LocalVariableAst,        local_variable_ast,        _,  _,  X,  X,  _,  _,  X)\
-  F(VoidP,                   void_p,                    _,  _,  _,  _,  X,  _,  _)
+#define ENUM_OTHER_OBJECT_FAMILIES(F)                                                 \
+  F(ArgumentAst,             argument_ast,              _,  _,  X,  X,  _,  _,  _,  _)\
+  F(ArgumentMapTrie,         argument_map_trie,         _,  _,  _,  _,  _,  _,  _,  _)\
+  F(Array,                   array,                     _,  X,  _,  X,  X,  _,  _,  X)\
+  F(ArrayAst,                array_ast,                 _,  _,  X,  X,  _,  _,  X,  _)\
+  F(ArrayBuffer,             array_buffer,              _,  _,  _,  X,  _,  _,  _,  X)\
+  F(Blob,                    blob,                      _,  _,  _,  X,  X,  _,  _,  _)\
+  F(Boolean,                 boolean,                   X,  X,  _,  X,  _,  _,  _,  _)\
+  F(CodeBlock,               code_block,                _,  _,  _,  _,  _,  _,  _,  _)\
+  F(Factory,                 factory,                   _,  _,  _,  _,  _,  _,  _,  _)\
+  F(Guard,                   guard,                     _,  _,  _,  _,  _,  _,  _,  _)\
+  F(IdHashMap,               id_hash_map,               _,  _,  _,  X,  _,  X,  _,  X)\
+  F(Instance,                instance,                  _,  _,  X,  X,  _,  _,  _,  _)\
+  F(InvocationAst,           invocation_ast,            _,  _,  X,  X,  _,  _,  X,  _)\
+  F(InvocationRecord,        invocation_record,         _,  _,  _,  _,  _,  _,  _,  _)\
+  F(Key,                     key,                       X,  _,  _,  X,  _,  _,  _,  _)\
+  F(Lambda,                  lambda,                    _,  _,  _,  X,  _,  _,  _,  _)\
+  F(LambdaAst,               lambda_ast,                _,  _,  X,  X,  _,  _,  X,  _)\
+  F(LiteralAst,              literal_ast,               _,  _,  X,  X,  _,  _,  X,  _)\
+  F(LocalDeclarationAst,     local_declaration_ast,     _,  _,  X,  X,  _,  _,  X,  _)\
+  F(Method,                  method,                    _,  _,  _,  _,  _,  _,  _,  _)\
+  F(Methodspace,             methodspace,               _,  _,  X,  _,  _,  _,  _,  _)\
+  F(Module,                  module,                    _,  _,  X,  _,  _,  _,  _,  _)\
+  F(NameAst,                 name_ast,                  _,  _,  X,  _,  _,  _,  _,  _)\
+  F(Namespace,               namespace,                 _,  _,  X,  _,  _,  _,  _,  _)\
+  F(NamespaceVariableAst,    namespace_variable_ast,    _,  _,  X,  X,  _,  _,  X,  _)\
+  F(Nothing,                 nothing,                   _,  _,  _,  _,  _,  _,  _,  _)\
+  F(Null,                    null,                      _,  X,  _,  X,  _,  _,  _,  _)\
+  F(Parameter,               parameter,                 _,  _,  _,  _,  _,  _,  _,  _)\
+  F(ParameterAst,            parameter_ast,             _,  _,  X,  X,  _,  _,  _,  _)\
+  F(ProgramAst,              program_ast,               _,  _,  X,  _,  _,  _,  _,  _)\
+  F(Protocol,                protocol,                  _,  _,  _,  X,  _,  _,  _,  _)\
+  F(Roots,                   roots,                     _,  _,  _,  _,  _,  _,  _,  X)\
+  F(SequenceAst,             sequence_ast,              _,  _,  X,  X,  _,  _,  X,  _)\
+  F(Signature,               signature,                 _,  _,  _,  _,  _,  _,  _,  _)\
+  F(Stack,                   stack,                     _,  _,  _,  _,  _,  _,  _,  _)\
+  F(StackPiece,              stack_piece,               _,  _,  _,  _,  _,  _,  _,  _)\
+  F(String,                  string,                    X,  X,  _,  X,  X,  _,  _,  _)\
+  F(SymbolAst,               symbol_ast,                _,  _,  X,  X,  _,  _,  _,  _)\
+  F(LocalVariableAst,        local_variable_ast,        _,  _,  X,  X,  _,  _,  X,  _)\
+  F(VoidP,                   void_p,                    _,  _,  _,  _,  X,  _,  _,  _)
 
 // Enumerates all the object families.
 #define ENUM_OBJECT_FAMILIES(F)                                                \
     ENUM_SPECIAL_OBJECT_FAMILIES(F)                                            \
-    ENUM_COMPACT_OBJECT_FAMILIES(F)
+    ENUM_OTHER_OBJECT_FAMILIES(F)
 
 // Enum identifying the different families of heap objects.
 typedef enum {
   __ofFirst__ = -1
   #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CMP, CID, CNT, SUR,   \
-      NOL, FIX, EMT) , of##Family
+      NOL, FIX, EMT, MOD) , of##Family
   ENUM_OBJECT_FAMILIES(__DECLARE_OBJECT_FAMILY_ENUM__)
   #undef __DECLARE_OBJECT_FAMILY_ENUM__
 } object_family_t;
@@ -405,7 +407,8 @@ ACCESSORS_DECL(object, header);
 
 #define ENUM_SPECIES_DIVISIONS(F)                                              \
   F(Compact, compact)                                                          \
-  F(Instance, instance)
+  F(Instance, instance)                                                        \
+  F(Modal, modal)
 
 // Identifies the division a species belongs to.
 typedef enum {
@@ -421,6 +424,9 @@ const char *get_species_division_name(species_division_t division);
 // The size of the species header, the part that's the same for all species.
 #define kSpeciesHeaderSize OBJECT_SIZE(3)
 
+// The instance family could be stored within the family struct but we need it
+// so often that it's worth the extra space to have it as close at hand as
+// possible.
 static const size_t kSpeciesInstanceFamilyOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kSpeciesFamilyBehaviorOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kSpeciesDivisionBehaviorOffset = OBJECT_FIELD_OFFSET(2);
@@ -451,6 +457,9 @@ void set_species_division_behavior(value_t species, division_behavior_t *behavio
 // Returns the division the given species belongs to.
 species_division_t get_species_division(value_t value);
 
+// Returns the division the given object belongs to.
+species_division_t get_object_division(value_t value);
+
 
 // --- C o m p a c t   s p e c i e s ---
 
@@ -464,6 +473,34 @@ static const size_t kInstanceSpeciesPrimaryProtocolOffset = SPECIES_FIELD_OFFSET
 
 // The primary protocol of the instance.
 SPECIES_ACCESSORS_DECL(instance, primary_protocol);
+
+
+// --- M o d a l    s p e c i e s ---
+
+// Enum of the modes an object can be in.
+typedef enum {
+  // Any changes can be made to this object, including changing which protocol
+  // it supports and which fields it has.
+  vmFluid,
+  // The object's fields can be set.
+  vmMutable,
+  // The object cannot be changed but can reference other objects that can.
+  vmFrozen,
+  // The object cannot change and neither can any objects it references.
+  vmDeepFrozen
+} value_mode_t;
+
+static const size_t kModalSpeciesSize = SPECIES_SIZE(1);
+static const size_t kModalSpeciesModeOffset = SPECIES_FIELD_OFFSET(0);
+
+// Returns the mode this species indicates.
+value_mode_t get_modal_species_mode(value_t value);
+
+// Returns the mode for a value in the modal division.
+value_mode_t get_modal_object_mode(value_t value);
+
+// Sets the mode this species indicates.
+void set_modal_species_mode(value_t value, value_mode_t mode);
 
 
 // --- S t r i n g ---

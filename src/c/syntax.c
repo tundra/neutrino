@@ -50,7 +50,7 @@ value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
 }
 
 // Forward declare all the emit methods.
-#define __EMIT_SYNTAX_FAMILY_EMIT__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
+#define __EMIT_SYNTAX_FAMILY_EMIT__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD)\
     EMT(value_t emit_##family(value_t, assembler_t *);,)
     ENUM_OBJECT_FAMILIES(__EMIT_SYNTAX_FAMILY_EMIT__)
 #undef __EMIT_SYNTAX_FAMILY_EMIT__
@@ -720,7 +720,7 @@ value_t emit_value(value_t value, assembler_t *assm) {
 #define __EMIT_SYNTAX_FAMILY_CASE_HELPER__(Family, family)                     \
     case of##Family:                                                           \
       return emit_##family(value, assm);
-#define __EMIT_SYNTAX_FAMILY_CASE__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
+#define __EMIT_SYNTAX_FAMILY_CASE__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD)\
     EMT(__EMIT_SYNTAX_FAMILY_CASE_HELPER__(Family, family),)
     ENUM_OBJECT_FAMILIES(__EMIT_SYNTAX_FAMILY_CASE__)
 #undef __EMIT_SYNTAX_FAMILY_CASE__

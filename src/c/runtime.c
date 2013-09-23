@@ -13,7 +13,6 @@
 // --- R o o t s ---
 
 TRIVIAL_PRINT_ON_IMPL(Roots, roots);
-FIXED_GET_MODE_IMPL(roots, vmMutable);
 
 value_t roots_init(value_t roots, runtime_t *runtime) {
   // The meta-root is tricky because it is its own species. So we set it up in
@@ -23,14 +22,23 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   RAW_ROOT(roots, species_species) = meta;
 
   // Generate initialization for the other compact species.
-#define __CREATE_COMPACT_SPECIES__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
-  TRY_SET(RAW_ROOT(roots, family##_species), new_heap_compact_species(runtime, of##Family, &k##Family##Behavior));
-  ENUM_COMPACT_OBJECT_FAMILIES(__CREATE_COMPACT_SPECIES__)
+#define __CREATE_COMPACT_SPECIES__(Family, family) \
+    TRY_SET(RAW_ROOT(roots, family##_species), new_heap_compact_species(runtime, of##Family, &k##Family##Behavior));
+#define __CREATE_MODAL_SPECIES__(Family, family)                                                                                              \
+    TRY_SET(RAW_ROOT(roots, fluid_##family##_species), new_heap_modal_species(runtime, of##Family, &k##Family##Behavior, vmFluid));           \
+    TRY_SET(RAW_ROOT(roots, mutable_##family##_species), new_heap_modal_species(runtime, of##Family, &k##Family##Behavior, vmMutable));       \
+    TRY_SET(RAW_ROOT(roots, frozen_##family##_species), new_heap_modal_species(runtime, of##Family, &k##Family##Behavior, vmFrozen));         \
+    TRY_SET(RAW_ROOT(roots, deep_frozen_##family##_species), new_heap_modal_species(runtime, of##Family, &k##Family##Behavior, vmDeepFrozen));
+#define __CREATE_OTHER_SPECIES__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD)\
+  MOD(__CREATE_MODAL_SPECIES__(Family, family),__CREATE_COMPACT_SPECIES__(Family, family))
+  ENUM_OTHER_OBJECT_FAMILIES(__CREATE_OTHER_SPECIES__)
+#undef __CREATE_OTHER_SPECIES__
 #undef __CREATE_COMPACT_SPECIES__
+#undef __CREATE_MODAL_SPECIES__
 
   // At this point we'll have created the root species so we can set its header.
   CHECK_EQ("roots already initialized", vdInteger, get_value_domain(get_object_header(roots)));
-  set_object_species(roots, RAW_ROOT(roots, roots_species));
+  set_object_species(roots, RAW_ROOT(roots, mutable_roots_species));
 
   // Initialize singletons first since we need those to create more complex
   // values below.
@@ -54,7 +62,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, builtin_methodspace), new_heap_methodspace(runtime));
 
   // Generate initialization for the per-family protocols.
-#define __CREATE_FAMILY_PROTOCOL__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
+#define __CREATE_FAMILY_PROTOCOL__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD)\
   SUR(TRY_SET(RAW_ROOT(roots, family##_protocol), new_heap_protocol(runtime, null));,)
   ENUM_OBJECT_FAMILIES(__CREATE_FAMILY_PROTOCOL__)
 #undef __CREATE_FAMILY_PROTOCOL__
@@ -101,9 +109,26 @@ value_t roots_validate(value_t roots) {
     TRY(object_validate(value));                                               \
   } while (false)
 
+  // Checks all the species that belong to the given modal family.
+  #define VALIDATE_ALL_MODAL_SPECIES(ofFamily, family)                                              \
+    VALIDATE_MODAL_SPECIES(ofFamily, vmFluid, RAW_ROOT(roots, fluid_##family##_species));           \
+    VALIDATE_MODAL_SPECIES(ofFamily, vmMutable, RAW_ROOT(roots, mutable_##family##_species));       \
+    VALIDATE_MODAL_SPECIES(ofFamily, vmFrozen, RAW_ROOT(roots, frozen_##family##_species));         \
+    VALIDATE_MODAL_SPECIES(ofFamily, vmDeepFrozen, RAW_ROOT(roots, deep_frozen_##family##_species))
+
+  // Checks that the given value is a modal species for the given family and in
+  // the given mode.
+  #define VALIDATE_MODAL_SPECIES(ofFamily, vmMode, value) do {                 \
+    VALIDATE(get_species_division(value) == sdModal);                          \
+    VALIDATE(get_modal_species_mode(value) == vmMode);                         \
+    VALIDATE_SPECIES(ofFamily, value);                                         \
+  } while (false)
+
   // Generate validation for species.
-#define __VALIDATE_PER_FAMILY_FIELDS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)\
-  VALIDATE_SPECIES(of##Family, RAW_ROOT(roots, family##_species));             \
+#define __VALIDATE_PER_FAMILY_FIELDS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD)\
+  MOD(                                                                         \
+      VALIDATE_ALL_MODAL_SPECIES(of##Family, family),                          \
+      VALIDATE_SPECIES(of##Family, RAW_ROOT(roots, family##_species)));        \
   SUR(VALIDATE_OBJECT(ofProtocol, RAW_ROOT(roots, family##_protocol));,)
   ENUM_OBJECT_FAMILIES(__VALIDATE_PER_FAMILY_FIELDS__)
 #undef __VALIDATE_PER_FAMILY_FIELDS__

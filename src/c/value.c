@@ -27,7 +27,7 @@ const char *get_value_domain_name(value_domain_t domain) {
 
 const char *get_object_family_name(object_family_t family) {
   switch (family) {
-#define __GEN_CASE__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)        \
+#define __GEN_CASE__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD)   \
     case of##Family: return #Family;
     ENUM_OBJECT_FAMILIES(__GEN_CASE__)
 #undef __GEN_CASE__
@@ -118,7 +118,7 @@ bool in_syntax_family(value_t value) {
   if (get_value_domain(value) != vdObject)
     return false;
   switch (get_object_family(value)) {
-#define __MAKE_CASE__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT)       \
+#define __MAKE_CASE__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD)  \
   EMT(case of##Family: return true;,)
     ENUM_OBJECT_FAMILIES(__MAKE_CASE__)
 #undef __MAKE_CASE__
@@ -181,6 +181,10 @@ species_division_t get_species_division(value_t value) {
   return get_species_division_behavior(value)->division;
 }
 
+species_division_t get_object_division(value_t value) {
+  return get_species_division(get_object_species(value));
+}
+
 value_t species_validate(value_t value) {
   VALIDATE_FAMILY(ofSpecies, value);
   return success();
@@ -203,11 +207,37 @@ void get_compact_species_layout(value_t species, object_layout_t *layout) {
 // --- I n s t a n c e   s p e c i e s ---
 
 void get_instance_species_layout(value_t species, object_layout_t *layout) {
+  // The object is kInstanceSpeciesSize large and the values start after the
+  // header.
   object_layout_set(layout, kInstanceSpeciesSize, kSpeciesHeaderSize);
 }
 
 CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance, Protocol,
     PrimaryProtocol, primary_protocol);
+
+
+// --- M o d a l   s p e c i e s ---
+
+void get_modal_species_layout(value_t species, object_layout_t *layout) {
+  // The object is kModalSpeciesSize large and there are no values. Well okay
+  // the mode is stored as a tagged integer but that doesn't count.
+  object_layout_set(layout, kModalSpeciesSize, kModalSpeciesSize);
+}
+
+value_mode_t get_modal_species_mode(value_t value) {
+  value_t mode = *access_object_field(value, kModalSpeciesModeOffset);
+  return (object_family_t) get_integer_value(mode);
+}
+
+void set_modal_species_mode(value_t value, value_mode_t mode) {
+  *access_object_field(value, kModalSpeciesModeOffset) = new_integer(mode);
+}
+
+value_mode_t get_modal_object_mode(value_t value) {
+  value_t species = get_object_species(value);
+  CHECK_DIVISION(sdModal, species);
+  return get_modal_species_mode(species);
+}
 
 
 // --- S t r i n g ---
@@ -402,7 +432,6 @@ void get_void_p_layout(value_t value, object_layout_t *layout) {
 // --- A r r a y ---
 
 GET_FAMILY_PROTOCOL_IMPL(array);
-FIXED_GET_MODE_IMPL(array, vmMutable);
 
 size_t calc_array_size(size_t length) {
   return kObjectHeaderSize       // header
@@ -620,7 +649,6 @@ value_t add_array_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
 TRIVIAL_PRINT_ON_IMPL(ArrayBuffer, array_buffer);
 GET_FAMILY_PROTOCOL_IMPL(array_buffer);
 NO_BUILTIN_METHODS(array_buffer);
-FIXED_GET_MODE_IMPL(array_buffer, vmMutable);
 
 ACCESSORS_IMPL(ArrayBuffer, array_buffer, acInFamily, ofArray, Elements, elements);
 INTEGER_ACCESSORS_IMPL(ArrayBuffer, array_buffer, Length, length);
@@ -662,7 +690,6 @@ void set_array_buffer_at(value_t self, size_t index, value_t value) {
 
 GET_FAMILY_PROTOCOL_IMPL(id_hash_map);
 NO_BUILTIN_METHODS(id_hash_map);
-FIXED_GET_MODE_IMPL(id_hash_map, vmMutable);
 
 ACCESSORS_IMPL(IdHashMap, id_hash_map, acInFamily, ofArray, EntryArray, entry_array);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Size, size);

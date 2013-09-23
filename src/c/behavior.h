@@ -20,19 +20,6 @@ typedef struct {
   size_t value_offset;
 } object_layout_t;
 
-// Enum of the modes an object can be in.
-typedef enum {
-  // Any changes can be made to this object, including changing which protocol
-  // it supports and which fields it has.
-  vmFluid,
-  // The object's fields can be set.
-  vmMutable,
-  // The object cannot be changed but can reference other objects that can.
-  vmFrozen,
-  // The object cannot change and neither can any objects it references.
-  vmDeepFrozen
-} value_mode_t;
-
 // Returns the current mode of the given value.
 value_mode_t get_value_mode(value_t value);
 
@@ -45,6 +32,8 @@ void object_layout_set(object_layout_t *layout, size_t size, size_t value_offset
 // A collection of "virtual" methods that define how a particular family of
 // objects behave.
 struct family_behavior_t {
+  // The family this behavior belongs to.
+  object_family_t family;
   // Function for validating an object.
   value_t (*validate)(value_t value);
   // Calculates the transient identity hash. The depth parameter is used to
@@ -154,14 +143,14 @@ value_t get_protocol(value_t value, runtime_t *runtime);
 #define OBJ_ADDR_HASH(VAL) new_integer((VAL).encoded)
 
 // Declare the behavior structs for all the families on one fell swoop.
-#define DECLARE_FAMILY_BEHAVIOR(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT) \
+#define DECLARE_FAMILY_BEHAVIOR(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD) \
 extern family_behavior_t k##Family##Behavior;
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 #undef DECLARE_FAMILY_BEHAVIOR
 
 // Declare the functions that implement the behaviors too, that way they can be
 // implemented wherever.
-#define __DECLARE_FAMILY_FUNCTIONS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT) \
+#define __DECLARE_FAMILY_FUNCTIONS__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD) \
 value_t family##_validate(value_t value);                                      \
 CID(value_t family##_transient_identity_hash(value_t value, size_t depth);,)   \
 CID(value_t family##_identity_compare(value_t a, value_t b, size_t depth);,)   \

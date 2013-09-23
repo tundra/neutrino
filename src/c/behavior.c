@@ -12,8 +12,22 @@
 
 // --- V a l i d a t e ---
 
+// Is the given family in a modal division?
+static bool in_modal_division(object_family_t family) {
+  switch (family) {
+#define __GEN_CASE__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD) \
+    MOD(case of##Family: return true;,)
+    ENUM_OBJECT_FAMILIES(__GEN_CASE__)
+#undef __GEN_CASE__
+    default:
+      return false;
+  }
+}
+
 value_t object_validate(value_t value) {
   family_behavior_t *behavior = get_object_family_behavior(value);
+  CHECK_FALSE("Modal value with non-modal species",
+      in_modal_division(behavior->family) && get_object_division(value) != sdModal);
   return (behavior->validate)(value);
 }
 
@@ -52,7 +66,7 @@ static void get_##family##_layout(value_t value, object_layout_t *layout_out) {\
 
 // Generate all the trivial layout functions since we know what they'll look
 // like.
-#define __DEFINE_TRIVIAL_LAYOUT_FUNCTION__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT) \
+#define __DEFINE_TRIVIAL_LAYOUT_FUNCTION__(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD) \
 NOL(,__TRIVIAL_LAYOUT_FUNCTION__(Family, family))
   ENUM_OBJECT_FAMILIES(__DEFINE_TRIVIAL_LAYOUT_FUNCTION__)
 #undef __DEFINE_TRIVIAL_LAYOUT_FUNCTION__
@@ -348,8 +362,9 @@ static value_t get_internal_object_protocol(value_t self, runtime_t *runtime) {
 // Define all the family behaviors in one go. Because of this, as soon as you
 // add a new object type you'll get errors for all the behaviors you need to
 // implement.
-#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT) \
+#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, CMP, CID, CNT, SUR, NOL, FIX, EMT, MOD) \
 family_behavior_t k##Family##Behavior = {                                      \
+  of##Family,                                                                  \
   &family##_validate,                                                          \
   CID(&family##_transient_identity_hash, default_object_transient_identity_hash), \
   CID(&family##_identity_compare, &default_object_identity_compare),           \
@@ -360,7 +375,7 @@ family_behavior_t k##Family##Behavior = {                                      \
   CNT(&set_##family##_contents, &set_contents_unsupported),                    \
   SUR(&get_##family##_protocol, &get_internal_object_protocol),                \
   FIX(&fixup_##family##_post_migrate, NULL),                                   \
-  get_##family##_mode                                                          \
+  MOD(get_modal_object_mode, get_##family##_mode)                              \
 };
 ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #undef DEFINE_FAMILY_BEHAVIOR
