@@ -18,11 +18,23 @@
 #include "utils.h"
 #include "value.h"
 
+// A flags enum that indicates how to handle the allocated value.
+typedef enum {
+  // The object should be frozen before being returned.
+  afFreeze,
+  // The value should be left mutable.
+  afMutable
+} alloc_flags_t;
+
 // Creates a new instance of the roots object. The result will have all fields,
 // including the header, set to 0 because it's the very first object to be
 // created and the values we need to complete initialization only exist later
 // on.
 value_t new_heap_uninitialized_roots(runtime_t *runtime);
+
+// Creates a new instance of the mutable roots object. This gets created after
+// the roots object has been initialized so the result is fully initialized.
+value_t new_heap_mutable_roots(runtime_t *runtime);
 
 // Allocates a new heap string in the given runtime, if there is room, otherwise
 // returns a signal to indicate an error.
@@ -105,7 +117,8 @@ value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
     value_t value_pool, size_t high_water_mark);
 
 // Creates a new protocol object with the given display name.
-value_t new_heap_protocol(runtime_t *runtime, value_t display_name);
+value_t new_heap_protocol(runtime_t *runtime, alloc_flags_t flags,
+    value_t display_name);
 
 // Creates a new lambda value that supports the given method space methods and
 // that holds the given captured variables.
@@ -131,21 +144,23 @@ value_t new_heap_stack(runtime_t *runtime, size_t initial_capacity);
 // --- M e t h o d ---
 
 // Creates a new parameter guard.
-value_t new_heap_guard(runtime_t *runtime, guard_type_t type, value_t value);
+value_t new_heap_guard(runtime_t *runtime, alloc_flags_t flags, guard_type_t type,
+    value_t value);
 
 // Creates a new signature with the specified attributes.
-value_t new_heap_signature(runtime_t *runtime, value_t tags, size_t param_count,
-    size_t mandatory_count, bool allow_extra);
+value_t new_heap_signature(runtime_t *runtime, alloc_flags_t flags, value_t tags,
+    size_t param_count, size_t mandatory_count, bool allow_extra);
 
 // Creates a new parameter with the specified attributes.
-value_t new_heap_parameter(runtime_t *runtime, value_t guard, bool is_optional,
-    size_t index);
+value_t new_heap_parameter(runtime_t *runtime, alloc_flags_t flags, value_t guard,
+    bool is_optional, size_t index);
 
 // Creates a new empty method space.
 value_t new_heap_methodspace(runtime_t *runtime);
 
 // Creates a new method with the given signature and implementation.
-value_t new_heap_method(runtime_t *runtime, value_t signature, value_t code);
+value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signature,
+    value_t code);
 
 // Creates an invocation record with the given argument vector.
 value_t new_heap_invocation_record(runtime_t *runtime, value_t argument_vector);

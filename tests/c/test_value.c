@@ -269,7 +269,7 @@ TEST(value, get_protocol) {
 TEST(value, instance_division) {
   CREATE_RUNTIME();
 
-  value_t proto = new_heap_protocol(runtime, ROOT(runtime, null));
+  value_t proto = new_heap_protocol(runtime, afFreeze, ROOT(runtime, null));
   value_t species = new_heap_instance_species(runtime, proto);
   value_t instance = new_heap_instance(runtime, species);
   ASSERT_VALEQ(proto, get_instance_species_primary_protocol(species));

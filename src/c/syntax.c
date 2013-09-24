@@ -534,11 +534,11 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   TRY_DEF(vector, new_heap_pair_array(runtime, total_argc));
   set_pair_array_first_at(vector, 0, ROOT(runtime, subject_key));
   value_t any_guard = ROOT(runtime, any_guard);
-  TRY_DEF(subject_param, new_heap_parameter(runtime, any_guard, false, 0));
+  TRY_DEF(subject_param, new_heap_parameter(runtime, afFreeze, any_guard, false, 0));
   set_pair_array_second_at(vector, 0, subject_param);
   set_pair_array_first_at(vector, 1, ROOT(runtime, selector_key));
-  TRY_DEF(selector_guard, new_heap_guard(runtime, gtEq, RSTR(runtime, sausages)));
-  TRY_DEF(selector_param, new_heap_parameter(runtime, selector_guard, false, 1));
+  TRY_DEF(selector_guard, new_heap_guard(runtime, afFreeze, gtEq, RSTR(runtime, sausages)));
+  TRY_DEF(selector_param, new_heap_parameter(runtime, afFreeze, selector_guard, false, 1));
   set_pair_array_second_at(vector, 1, selector_param);
 
   // Push a capture scope that captures any symbols accessed outside the lambda.
@@ -562,7 +562,7 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
     CHECK_EQ("multi tags", 1, get_array_length(tags));
     value_t tag = get_array_at(tags, 0);
     set_pair_array_first_at(vector, param_index, tag);
-    TRY_DEF(param, new_heap_parameter(runtime, any_guard, false, param_index));
+    TRY_DEF(param, new_heap_parameter(runtime, afFreeze, any_guard, false, param_index));
     set_pair_array_second_at(vector, param_index, param);
     // Bind the parameter in the local scope.
     value_t symbol = get_parameter_ast_symbol(param_ast);
@@ -574,13 +574,14 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
     TRY(map_scope_bind(&param_scope, symbol, btArgument, param_index));
   }
   co_sort_pair_array(vector);
-  TRY_DEF(sig, new_heap_signature(runtime, vector, total_argc, total_argc, false));
+  TRY_DEF(sig, new_heap_signature(runtime, afFreeze, vector, total_argc,
+      total_argc, false));
 
   // Build the method space.
   TRY_DEF(space, new_heap_methodspace(runtime));
   value_t body = get_lambda_ast_body(value);
   TRY_DEF(body_code, compile_expression(runtime, body, assm->scope_callback));
-  TRY_DEF(method, new_heap_method(runtime, sig, body_code));
+  TRY_DEF(method, new_heap_method(runtime, afFreeze, sig, body_code));
   TRY(add_methodspace_method(runtime, space, method));
 
   // Pop the two scopes back off since we're done compiling the body.

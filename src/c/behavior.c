@@ -32,12 +32,8 @@ static void deep_frozen_object_validate(value_t value) {
   value_field_iter_t iter;
   value_field_iter_init(&iter, value);
   value_t *field = NULL;
-  while (value_field_iter_next(&iter, &field)) {
-    if (!peek_deep_frozen(*field)) {
-      value_print_ln(*field);
-    }
+  while (value_field_iter_next(&iter, &field))
     CHECK_TRUE("deep frozen reference not deep frozen", peek_deep_frozen(*field));
-  }
 }
 
 value_t object_validate(value_t value) {

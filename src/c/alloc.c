@@ -21,11 +21,30 @@ static value_t post_create_sanity_check(value_t value, size_t size) {
   return value;
 }
 
+// Post-processes an allocation result appropriately based on the given set of
+// allocation flags.
+static value_t post_process_result(runtime_t *runtime, value_t result,
+    alloc_flags_t flags) {
+  if (flags == afFreeze)
+    TRY(ensure_frozen(runtime, result));
+  return success();
+}
+
 value_t new_heap_uninitialized_roots(runtime_t *runtime) {
   size_t size = kRootsSize;
   TRY_DEF(result, alloc_heap_object(runtime, size, new_integer(0)));
   for (size_t i = 0; i < kRootCount; i++)
     *access_object_field(result, OBJECT_FIELD_OFFSET(i)) = new_integer(0);
+  return result;
+}
+
+value_t new_heap_mutable_roots(runtime_t *runtime) {
+  TRY_DEF(argument_map_trie_root, new_heap_argument_map_trie(runtime,
+      ROOT(runtime, empty_array)));
+  size_t size = kMutableRootsSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_mutable_roots_species)));
+  RAW_MROOT(result, argument_map_trie_root) = argument_map_trie_root;
   return result;
 }
 
@@ -210,18 +229,21 @@ value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
     value_t value_pool, size_t high_water_mark) {
   size_t size = kCodeBlockSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, code_block_species)));
+      ROOT(runtime, mutable_code_block_species)));
   set_code_block_bytecode(result, bytecode);
   set_code_block_value_pool(result, value_pool);
   set_code_block_high_water_mark(result, high_water_mark);
+  TRY(ensure_frozen(runtime, result));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_protocol(runtime_t *runtime, value_t display_name) {
+value_t new_heap_protocol(runtime_t *runtime, alloc_flags_t flags,
+    value_t display_name) {
   size_t size = kProtocolSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_protocol_species)));
   set_protocol_display_name(result, display_name);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
@@ -293,38 +315,42 @@ value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {
 
 // --- M e t h o d ---
 
-value_t new_heap_guard(runtime_t *runtime, guard_type_t type, value_t value) {
+value_t new_heap_guard(runtime_t *runtime, alloc_flags_t flags, guard_type_t type,
+    value_t value) {
   size_t size = kGuardSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_guard_species)));
   set_guard_type(result, type);
   set_guard_value(result, value);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_signature(runtime_t *runtime, value_t tags, size_t param_count,
-    size_t mandatory_count, bool allow_extra) {
+value_t new_heap_signature(runtime_t *runtime, alloc_flags_t flags, value_t tags,
+    size_t param_count, size_t mandatory_count, bool allow_extra) {
   CHECK_FAMILY(ofArray, tags);
   CHECK_TRUE("unsorted tag array", is_pair_array_sorted(tags));
   size_t size = kSignatureSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, signature_species)));
+      ROOT(runtime, mutable_signature_species)));
   set_signature_tags(result, tags);
   set_signature_parameter_count(result, param_count);
   set_signature_mandatory_count(result, mandatory_count);
   set_signature_allow_extra(result, allow_extra);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_parameter(runtime_t *runtime, value_t guard, bool is_optional,
-    size_t index) {
+value_t new_heap_parameter(runtime_t *runtime, alloc_flags_t flags,
+    value_t guard, bool is_optional, size_t index) {
   CHECK_FAMILY(ofGuard, guard);
   size_t size = kParameterSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, parameter_species)));
+      ROOT(runtime, mutable_parameter_species)));
   set_parameter_guard(result, guard);
   set_parameter_is_optional(result, is_optional);
   set_parameter_index(result, index);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
@@ -340,14 +366,16 @@ value_t new_heap_methodspace(runtime_t *runtime) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_method(runtime_t *runtime, value_t signature, value_t code) {
+value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signature,
+    value_t code) {
   CHECK_FAMILY(ofSignature, signature);
   CHECK_FAMILY(ofCodeBlock, code);
   size_t size = kMethodSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, method_species)));
+      ROOT(runtime, mutable_method_species)));
   set_method_signature(result, signature);
   set_method_code(result, code);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
