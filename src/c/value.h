@@ -42,6 +42,7 @@ const char *get_value_domain_name(value_domain_t domain);
   F(MaybeCircular)                                                             \
   F(NotComparable)                                                             \
   F(NotFound)                                                                  \
+  F(NotFrozen)                                                                 \
   F(Nothing)                                                                   \
   F(OutOfBounds)                                                               \
   F(OutOfMemory)                                                               \
@@ -504,7 +505,8 @@ value_mode_t get_modal_object_mode(value_t value);
 
 // Sets the mode for a modal object by switching to the species with the
 // appropriate mode.
-value_t set_modal_object_mode(runtime_t *runtime, value_t self, value_mode_t mode);
+value_t set_modal_object_mode_unchecked(runtime_t *runtime, value_t self,
+    value_mode_t mode);
 
 // Sets the mode this species indicates.
 void set_modal_species_mode(value_t value, value_mode_t mode);
@@ -524,8 +526,31 @@ bool is_mutable(value_t value);
 // frozen, state.
 bool is_frozen(value_t value);
 
-// Ensures that the value is in a frozen state.
-void ensure_frozen(runtime_t *runtime, value_t value);
+// Ensures that the value is in a frozen state. Since being frozen is the most
+// restrictive mode this cannot fail except if freezing an object requires
+// interacting with the runtime (for instance allocating a value) and that
+// interaction fails.
+value_t ensure_frozen(runtime_t *runtime, value_t value);
+
+// If the given value is deep frozen, returns the internal true value. If it is
+// not attempts to make it deep frozen, that it, traverses the objects reachable
+// and checking whether they're all frozen or deep frozen and marking them as
+// deep frozen as we go. If this succeeds returns the internal true value,
+// otherwise the internal false value. Marking the objects as deep frozen may
+// under some circumstances involve allocation; if there is a problem there a
+// signal may be returned.
+//
+// This is the only reliable way to check whether a value is deep frozen since
+// being deep frozen is a property of an object graph, not an individual object,
+// and using marking like this is the only efficient way to reliably determine
+// that property.
+value_t try_ensure_deep_frozen(runtime_t *runtime, value_t value);
+
+// Works the same way as try_ensure_deep_frozen but returns a non-signal instead
+// of true and a signal for false. Doing it this way makes things easier in the
+// implementation (since the cleanup is the same for false and a signal) but is
+// awkward as an interface.
+value_t ensure_deep_frozen_or_signal(runtime_t *runtime, value_t value);
 
 
 // --- S t r i n g ---

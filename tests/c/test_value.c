@@ -706,12 +706,12 @@ TEST(runtime, set_value_mode) {
   ASSERT_TRUE(is_mutable(arr));
   ASSERT_FALSE(is_frozen(arr));
   ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, arr, vmFluid));
-  ensure_frozen(runtime, arr);
+  ASSERT_SUCCESS(ensure_frozen(runtime, arr));
   ASSERT_TRUE(is_frozen(arr));
   ASSERT_FALSE(is_mutable(arr));
   ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, arr, vmFluid));
   ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, arr, vmMutable));
-  ensure_frozen(runtime, arr);
+  ASSERT_SUCCESS(ensure_frozen(runtime, arr));
   ASSERT_TRUE(is_frozen(arr));
 
   value_t null = ROOT(runtime, null);
@@ -719,14 +719,58 @@ TEST(runtime, set_value_mode) {
   ASSERT_FALSE(is_mutable(null));
   ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, null, vmFluid));
   ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, null, vmMutable));
-  ensure_frozen(runtime, null);
+  ASSERT_SUCCESS(ensure_frozen(runtime, null));
 
   value_t zero = new_integer(0);
   ASSERT_TRUE(is_frozen(zero));
   ASSERT_FALSE(is_mutable(zero));
   ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, zero, vmFluid));
   ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, zero, vmMutable));
-  ensure_frozen(runtime, zero);
+  ASSERT_SUCCESS(ensure_frozen(runtime, zero));
+
+  DISPOSE_RUNTIME();
+}
+
+TEST(runtime, deep_freeze) {
+  CREATE_RUNTIME();
+
+  value_t zero = new_integer(0);
+  ASSERT_TRUE(is_frozen(zero));
+  ASSERT_VALEQ(internal_true_value(), try_ensure_deep_frozen(runtime, zero));
+
+  value_t null = ROOT(runtime, null);
+  ASSERT_TRUE(is_frozen(null));
+  ASSERT_VALEQ(internal_true_value(), try_ensure_deep_frozen(runtime, null));
+
+  value_t null_arr = new_heap_array(runtime, 2);
+  ASSERT_TRUE(is_mutable(null_arr));
+  ASSERT_FALSE(is_frozen(null_arr));
+  ASSERT_VALEQ(internal_false_value(), try_ensure_deep_frozen(runtime, null_arr));
+  ASSERT_SUCCESS(ensure_frozen(runtime, null_arr));
+  ASSERT_FALSE(is_mutable(null_arr));
+  ASSERT_TRUE(is_frozen(null_arr));
+  ASSERT_VALEQ(internal_true_value(), try_ensure_deep_frozen(runtime, null_arr));
+
+  value_t mut = new_heap_array(runtime, 2);
+  value_t mut_arr = new_heap_array(runtime, 2);
+  set_array_at(mut_arr, 0, mut);
+  ASSERT_TRUE(is_mutable(mut_arr));
+  ASSERT_VALEQ(internal_false_value(), try_ensure_deep_frozen(runtime, mut_arr));
+  ASSERT_SUCCESS(ensure_frozen(runtime, mut_arr));
+  ASSERT_FALSE(is_mutable(mut_arr));
+  ASSERT_VALEQ(internal_false_value(), try_ensure_deep_frozen(runtime, mut_arr));
+  ASSERT_VALEQ(internal_false_value(), try_ensure_deep_frozen(runtime, mut_arr));
+  ASSERT_SUCCESS(ensure_frozen(runtime, mut));
+  ASSERT_VALEQ(internal_true_value(), try_ensure_deep_frozen(runtime, mut_arr));
+
+  value_t circ_arr = new_heap_array(runtime, 2);
+  set_array_at(circ_arr, 0, circ_arr);
+  set_array_at(circ_arr, 1, circ_arr);
+  ASSERT_TRUE(is_mutable(circ_arr));
+  ASSERT_VALEQ(internal_false_value(), try_ensure_deep_frozen(runtime, circ_arr));
+  ASSERT_SUCCESS(ensure_frozen(runtime, circ_arr));
+  ASSERT_FALSE(is_mutable(circ_arr));
+  ASSERT_VALEQ(internal_true_value(), try_ensure_deep_frozen(runtime, circ_arr));
 
   DISPOSE_RUNTIME();
 }
