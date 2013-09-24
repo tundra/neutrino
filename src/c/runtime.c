@@ -191,6 +191,8 @@ value_t ensure_roots_owned_values_frozen(runtime_t *runtime, value_t self) {
   value_t *field = NULL;
   while (value_field_iter_next(&iter, &field)) {
     value_t value = *field;
+    // HACK: this it to deal with the argument map trie which has to stay
+    //   mutable. It'll be moved out of the roots presently.
     if (value.encoded == ROOT(runtime, argument_map_trie_root).encoded)
       continue;
     TRY(ensure_frozen(runtime, *field));
@@ -284,7 +286,7 @@ static value_t runtime_freeze_shared_state(runtime_t *runtime) {
   //   multiple processes.
   TRY(ensure_frozen(runtime, roots));
 
-  // This is disabled until the argument map trie has been moved.
+  // HACK: This is disabled until the argument map trie has been moved.
   if (false) {
     value_t offender = new_integer(0);
     TRY_DEF(froze, try_validate_deep_frozen(runtime, roots, &offender));

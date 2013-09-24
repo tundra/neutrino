@@ -43,16 +43,14 @@ value_t new_heap_compact_species(runtime_t *runtime, family_behavior_t *behavior
 
 // Allocates a new modal species whose instances have the specified instance
 // family which indicates that the instance is currently in the specified mode.
-value_t new_heap_modal_species_unchecked(runtime_t *runtime,
-    family_behavior_t *behavior, value_mode_t mode, root_key_t base_root);
-
 value_t new_heap_modal_species(runtime_t *runtime, family_behavior_t *behavior,
     value_mode_t mode, root_key_t base_root);
 
-// Allocates a new species whose instances have the specified instance family.
-// The result will not be sanity checked.
-value_t new_heap_compact_species_unchecked(runtime_t *runtime,
-    family_behavior_t *behavior);
+// Similar to new_heap_modal_species except doesn't sanity check the result
+// on the way out. Should only ever be used during initialization since that is
+// the only time there's good reason for sanity checking to fail.
+value_t new_heap_modal_species_unchecked(runtime_t *runtime,
+    family_behavior_t *behavior, value_mode_t mode, root_key_t base_root);
 
 // Creates a new instance species with the specified primary protocol.
 value_t new_heap_instance_species(runtime_t *runtime, value_t primary);

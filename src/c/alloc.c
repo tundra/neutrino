@@ -60,17 +60,6 @@ value_t new_heap_blob_with_data(runtime_t *runtime, blob_t *contents) {
   return blob;
 }
 
-value_t new_heap_compact_species_unchecked(runtime_t *runtime,
-    family_behavior_t *behavior) {
-  size_t bytes = kCompactSpeciesSize;
-  TRY_DEF(result, alloc_heap_object(runtime, bytes,
-      ROOT(runtime, mutable_species_species)));
-  set_species_instance_family(result, behavior->family);
-  set_species_family_behavior(result, behavior);
-  set_species_division_behavior(result, &kCompactSpeciesBehavior);
-  return result;
-}
-
 value_t new_heap_instance_species(runtime_t *runtime, value_t primary) {
   size_t size = kInstanceSpeciesSize;
   CHECK_FAMILY(ofProtocol, primary);
@@ -84,8 +73,13 @@ value_t new_heap_instance_species(runtime_t *runtime, value_t primary) {
 }
 
 value_t new_heap_compact_species(runtime_t *runtime, family_behavior_t *behavior) {
-  TRY_DEF(result, new_heap_compact_species_unchecked(runtime, behavior));
-  return post_create_sanity_check(result, kCompactSpeciesSize);
+  size_t bytes = kCompactSpeciesSize;
+  TRY_DEF(result, alloc_heap_object(runtime, bytes,
+      ROOT(runtime, mutable_species_species)));
+  set_species_instance_family(result, behavior->family);
+  set_species_family_behavior(result, behavior);
+  set_species_division_behavior(result, &kCompactSpeciesBehavior);
+  return post_create_sanity_check(result, bytes);
 }
 
 value_t new_heap_modal_species_unchecked(runtime_t *runtime,
