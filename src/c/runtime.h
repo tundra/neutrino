@@ -37,6 +37,8 @@
   F(value,              "value")                                               \
   F(values,             "values")
 
+// Invokes the argument for each singleton root (that is, roots that are not
+// generated from the family list).
 #define ENUM_ROOT_SINGLETONS(F)                                                \
   F(plankton_environment)                                                      \
   F(null)                                                                      \
@@ -46,7 +48,6 @@
   F(empty_array)                                                               \
   F(empty_array_buffer)                                                        \
   F(any_guard)                                                                 \
-  F(argument_map_trie_root)                                                    \
   F(subject_key)                                                               \
   F(selector_key)                                                              \
   F(integer_protocol)                                                          \
@@ -106,6 +107,32 @@ static inline value_t get_roots_entry_at(value_t roots, root_key_t key) {
   return *access_roots_entry_at(roots, key);
 }
 
+// Invokes the argument for each mutable root.
+#define ENUM_MUTABLE_ROOTS(F)                                                  \
+  F(argument_map_trie_root)
+
+typedef enum {
+  __mk_first__ = -1
+
+  // The singleton values.
+#define __EMIT_MUTABLE_ROOT_ENUM__(name) , mk_##name
+  ENUM_MUTABLE_ROOTS(__EMIT_MUTABLE_ROOT_ENUM__)
+#undef __EMIT_MUTABLE_ROOT_ENUM__
+
+  , __mk_last__
+} mutable_root_key_t;
+
+// The total number of root entries.
+#define kMutableRootCount __mk_last__
+
+static const size_t kMutableRootsSize = OBJECT_SIZE(kMutableRootCount);
+
+// Returns a pointer to the key'th mutable root value.
+static inline value_t *access_mutable_roots_entry_at(value_t roots,
+    mutable_root_key_t key) {
+  return access_object_field(roots, OBJECT_FIELD_OFFSET(key));
+}
+
 // Data associated with garbage collection fuzzing.
 typedef struct {
   // Random number generator to use.
@@ -136,6 +163,8 @@ struct runtime_t {
   heap_t heap;
   // The root objects.
   value_t roots;
+  // The volatile (mutable) roots.
+  value_t mutable_roots;
   // The next key index.
   uint64_t next_key_index;
   // Optional allocation failure fuzzer.
@@ -192,7 +221,7 @@ value_t get_modal_species_sibling_with_mode(runtime_t *runtime, value_t species,
 // Initialize this root set.
 value_t roots_init(value_t roots, runtime_t *runtime);
 
-// Accesses a named root directly in the given roots struct. Usually you'll want
+// Accesses a named root directly in the given roots object. Usually you'll want
 // to your ROOT instead.
 #define RAW_ROOT(roots, name) (*access_roots_entry_at((roots), rk_##name))
 
@@ -206,5 +235,12 @@ value_t roots_init(value_t roots, runtime_t *runtime);
 
 // Macro for accessing a named string table string. This can be used as an lval.
 #define RSTR(runtime, name) RAW_RSTR((runtime)->roots, name)
+
+// Accesses a named mutable root directly in the mutable roots object. Usually
+// you'll want to use MROOT instead.
+#define RAW_MROOT(roots, name) (*access_mutable_roots_entry_at((roots), mk_##name))
+
+// Accesses the given named mutable root in the given runtime.
+#define MROOT(runtime, name) RAW_MROOT((runtime)->mutable_roots, name)
 
 #endif // _RUNTIME

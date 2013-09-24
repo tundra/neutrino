@@ -238,7 +238,7 @@ static value_t new_moved_object(value_t target) {
   F(ArrayBuffer,             array_buffer,              _, _, _, X, _, _, _, X, X)\
   F(Blob,                    blob,                      _, _, _, X, X, _, _, _, _)\
   F(Boolean,                 boolean,                   X, X, _, X, _, _, _, _, _)\
-  F(CodeBlock,               code_block,                _, _, _, _, _, _, _, _, _)\
+  F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X)\
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _)\
   F(Guard,                   guard,                     _, _, _, _, _, _, _, X, _)\
   F(IdHashMap,               id_hash_map,               _, _, _, X, _, X, _, X, X)\
@@ -250,21 +250,22 @@ static value_t new_moved_object(value_t target) {
   F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, _, _)\
   F(LiteralAst,              literal_ast,               _, _, X, X, _, _, X, _, _)\
   F(LocalDeclarationAst,     local_declaration_ast,     _, _, X, X, _, _, X, _, _)\
-  F(Method,                  method,                    _, _, _, _, _, _, _, _, _)\
+  F(Method,                  method,                    _, _, _, _, _, _, _, X, _)\
   F(Methodspace,             methodspace,               _, _, X, _, _, _, _, X, X)\
   F(Module,                  module,                    _, _, X, _, _, _, _, _, _)\
+  F(MutableRoots,            mutable_roots,             _, _, _, _, _, _, _, X, X)\
   F(NameAst,                 name_ast,                  _, _, X, _, _, _, _, _, _)\
   F(Namespace,               namespace,                 _, _, X, _, _, _, _, _, _)\
   F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _)\
   F(Nothing,                 nothing,                   _, _, _, _, _, _, _, _, _)\
   F(Null,                    null,                      _, X, _, X, _, _, _, _, _)\
-  F(Parameter,               parameter,                 _, _, _, _, _, _, _, _, _)\
+  F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _)\
   F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _)\
   F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, _, _)\
   F(Protocol,                protocol,                  _, _, _, X, _, _, _, X, _)\
   F(Roots,                   roots,                     _, _, _, _, _, _, _, X, X)\
   F(SequenceAst,             sequence_ast,              _, _, X, X, _, _, X, _, _)\
-  F(Signature,               signature,                 _, _, _, _, _, _, _, _, _)\
+  F(Signature,               signature,                 _, _, _, _, _, _, _, X, X)\
   F(Stack,                   stack,                     _, _, _, _, _, _, _, _, _)\
   F(StackPiece,              stack_piece,               _, _, _, _, _, _, _, _, _)\
   F(String,                  string,                    X, X, _, X, X, _, _, _, _)\

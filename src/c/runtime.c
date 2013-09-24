@@ -69,15 +69,12 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_DEF(empty_array, new_heap_array(runtime, 0));
   RAW_ROOT(roots, empty_array) = empty_array;
   TRY_SET(RAW_ROOT(roots, empty_array_buffer), new_heap_array_buffer(runtime, 0));
-  TRY_SET(RAW_ROOT(roots, any_guard), new_heap_guard(runtime, gtAny, null));
-  TRY_SET(RAW_ROOT(roots, integer_protocol), new_heap_protocol(runtime, null));
-  TRY_DEF(empty_protocol, new_heap_protocol(runtime, null));
-  TRY(ensure_frozen(runtime, empty_protocol));
+  TRY_SET(RAW_ROOT(roots, any_guard), new_heap_guard(runtime, afFreeze, gtAny, null));
+  TRY_SET(RAW_ROOT(roots, integer_protocol), new_heap_protocol(runtime, afFreeze, null));
+  TRY_DEF(empty_protocol, new_heap_protocol(runtime, afFreeze, null));
   TRY(validate_deep_frozen(runtime, empty_protocol, NULL));
   TRY_SET(RAW_ROOT(roots, empty_instance_species),
       new_heap_instance_species(runtime, empty_protocol));
-  TRY_SET(RAW_ROOT(roots, argument_map_trie_root),
-      new_heap_argument_map_trie(runtime, empty_array));
   TRY_SET(RAW_ROOT(roots, subject_key), new_heap_key(runtime, null));
   TRY_SET(RAW_ROOT(roots, selector_key), new_heap_key(runtime, null));
   TRY_SET(RAW_ROOT(roots, builtin_methodspace), new_heap_methodspace(runtime));
@@ -85,7 +82,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   // Generate initialization for the per-family protocols.
 #define __CREATE_FAMILY_PROTOCOL__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)\
   SR(                                                                          \
-    TRY_SET(RAW_ROOT(roots, family##_protocol), new_heap_protocol(runtime, null));,\
+    TRY_SET(RAW_ROOT(roots, family##_protocol), new_heap_protocol(runtime, afFreeze, null));,\
     )
   ENUM_OBJECT_FAMILIES(__CREATE_FAMILY_PROTOCOL__)
 #undef __CREATE_FAMILY_PROTOCOL__
@@ -170,7 +167,6 @@ value_t roots_validate(value_t roots) {
   VALIDATE_CHECK_EQ(gtAny, get_guard_type(RAW_ROOT(roots, any_guard)));
   VALIDATE_OBJECT(ofProtocol, RAW_ROOT(roots, integer_protocol));
   VALIDATE_OBJECT(ofSpecies, RAW_ROOT(roots, empty_instance_species));
-  VALIDATE_OBJECT(ofArgumentMapTrie, RAW_ROOT(roots, argument_map_trie_root));
   VALIDATE_OBJECT(ofKey, RAW_ROOT(roots, subject_key));
   VALIDATE_OBJECT(ofKey, RAW_ROOT(roots, selector_key));
   VALIDATE_OBJECT(ofMethodspace, RAW_ROOT(roots, builtin_methodspace));
@@ -189,15 +185,26 @@ value_t ensure_roots_owned_values_frozen(runtime_t *runtime, value_t self) {
   value_field_iter_t iter;
   value_field_iter_init(&iter, self);
   value_t *field = NULL;
-  while (value_field_iter_next(&iter, &field)) {
-    value_t value = *field;
-    // HACK: this it to deal with the argument map trie which has to stay
-    //   mutable. It'll be moved out of the roots presently.
-    if (value.encoded == ROOT(runtime, argument_map_trie_root).encoded)
-      continue;
+  while (value_field_iter_next(&iter, &field))
     TRY(ensure_frozen(runtime, *field));
-  }
   return success();
+}
+
+
+// --- M u t a b l e   r o o t s ---
+
+TRIVIAL_PRINT_ON_IMPL(MutableRoots, mutable_roots);
+
+value_t mutable_roots_validate(value_t self) {
+  VALIDATE_FAMILY(ofMutableRoots, self);
+  VALIDATE_OBJECT(ofArgumentMapTrie, RAW_MROOT(self, argument_map_trie_root));
+  return success();
+}
+
+value_t ensure_mutable_roots_owned_values_frozen(runtime_t *runtime, value_t self) {
+  // Why would you freeze the mutable roots -- they're supposed to be mutable!
+  UNREACHABLE("freezing the mutable roots");
+  return new_signal(scWat);
 }
 
 void gc_fuzzer_init(gc_fuzzer_t *fuzzer, size_t min_freq, size_t mean_freq,
@@ -257,6 +264,7 @@ static value_t runtime_hard_init(runtime_t *runtime, const runtime_config_t *con
   TRY(heap_init(&runtime->heap, config));
   TRY_SET(runtime->roots, new_heap_uninitialized_roots(runtime));
   TRY(roots_init(runtime->roots, runtime));
+  TRY_SET(runtime->mutable_roots, new_heap_mutable_roots(runtime));
   // Check that everything looks sane.
   return runtime_validate(runtime);
 }
@@ -280,23 +288,16 @@ static value_t runtime_freeze_shared_state(runtime_t *runtime) {
   value_t roots = runtime->roots;
 
   // The roots object must be deep frozen.
-  // TODO: currently the argument map trie lives in the root object which is
-  //   wrong since it's necessarily mutable. There should be a second level of
-  //   state which allows mutable fields so the runtime can be used across
-  //   multiple processes.
   TRY(ensure_frozen(runtime, roots));
 
-  // HACK: This is disabled until the argument map trie has been moved.
-  if (false) {
-    value_t offender = new_integer(0);
-    TRY_DEF(froze, try_validate_deep_frozen(runtime, roots, &offender));
-    if (!is_internal_true_value(froze)) {
-      value_to_string_t to_string;
-      ERROR("Could not freeze the roots object; offender: %s",
-          value_to_string(&to_string, offender));
-      dispose_value_to_string(&to_string);
-      return new_not_deep_frozen_signal();
-    }
+  value_t offender = new_integer(0);
+  TRY_DEF(froze, try_validate_deep_frozen(runtime, roots, &offender));
+  if (!is_internal_true_value(froze)) {
+    value_to_string_t to_string;
+    ERROR("Could not freeze the roots object; offender: %s",
+        value_to_string(&to_string, offender));
+    dispose_value_to_string(&to_string);
+    return new_not_deep_frozen_signal();
   }
 
   return success();
@@ -519,6 +520,7 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
   field_callback_init(&migrate_shallow_callback, migrate_field_shallow, &state);
   // Shallow migration of all the roots.
   TRY(field_callback_call(&migrate_shallow_callback, &runtime->roots));
+  TRY(field_callback_call(&migrate_shallow_callback, &runtime->mutable_roots));
   // Shallow migration of everything currently stored in to-space which, since
   // we keep going until all objects have been migrated, effectively makes a deep
   // migration.
@@ -536,6 +538,8 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
 void runtime_clear(runtime_t *runtime) {
   runtime->next_key_index = 0;
   runtime->gc_fuzzer = NULL;
+  runtime->roots = success();
+  runtime->mutable_roots = success();
 }
 
 value_t runtime_dispose(runtime_t *runtime) {

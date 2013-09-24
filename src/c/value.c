@@ -1334,7 +1334,6 @@ void factory_print_atomic_on(value_t value, string_buffer_t *buf) {
 ACCESSORS_IMPL(CodeBlock, code_block, acInFamily, ofBlob, Bytecode, bytecode);
 ACCESSORS_IMPL(CodeBlock, code_block, acInFamily, ofArray, ValuePool, value_pool);
 INTEGER_ACCESSORS_IMPL(CodeBlock, code_block, HighWaterMark, high_water_mark);
-FIXED_GET_MODE_IMPL(code_block, vmMutable);
 
 value_t code_block_validate(value_t value) {
   VALIDATE_FAMILY(ofCodeBlock, value);
@@ -1353,6 +1352,11 @@ void code_block_print_on(value_t value, string_buffer_t *buf) {
 void code_block_print_atomic_on(value_t value, string_buffer_t *buf) {
   CHECK_FAMILY(ofCodeBlock, value);
   string_buffer_printf(buf, "#<code block>");
+}
+
+value_t ensure_code_block_owned_values_frozen(runtime_t *runtime, value_t self) {
+  TRY(ensure_frozen(runtime, get_code_block_value_pool(self)));
+  return success();
 }
 
 

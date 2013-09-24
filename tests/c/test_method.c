@@ -12,8 +12,8 @@ TEST(method, identity_guard) {
   value_t space = new_heap_methodspace(runtime);
   value_t zero = new_integer(0);
   value_t null = ROOT(runtime, null);
-  value_t id_zero = new_heap_guard(runtime, gtEq, zero);
-  value_t id_null = new_heap_guard(runtime, gtEq, null);
+  value_t id_zero = new_heap_guard(runtime, afFreeze, gtEq, zero);
+  value_t id_null = new_heap_guard(runtime, afFreeze, gtEq, null);
 
   ASSERT_TRUE(is_score_match(guard_match(runtime, id_zero, zero, space)));
   ASSERT_FALSE(is_score_match(guard_match(runtime, id_zero, null, space)));
@@ -41,12 +41,12 @@ TEST(method, method_space) {
 
   value_t space = new_heap_methodspace(runtime);
   value_t null = ROOT(runtime, null);
-  value_t p1 = new_heap_protocol(runtime, null);
-  value_t p2 = new_heap_protocol(runtime, null);
+  value_t p1 = new_heap_protocol(runtime, afFreeze, null);
+  value_t p2 = new_heap_protocol(runtime, afFreeze, null);
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p1, p2));
-  value_t p3 = new_heap_protocol(runtime, null);
+  value_t p3 = new_heap_protocol(runtime, afFreeze, null);
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p2, p3));
-  value_t p4 = new_heap_protocol(runtime, null);
+  value_t p4 = new_heap_protocol(runtime, afFreeze, null);
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p2, p4));
 
   ASSERT_EQ(1, get_array_buffer_length(get_protocol_parents(runtime, space, p1)));
@@ -67,8 +67,8 @@ static value_t new_instance_of(runtime_t *runtime, value_t proto) {
 TEST(method, simple_is) {
   CREATE_RUNTIME();
 
-  value_t s_str_p = new_heap_protocol(runtime, ROOT(runtime, null));
-  value_t obj_p = new_heap_protocol(runtime, ROOT(runtime, null));
+  value_t s_str_p = new_heap_protocol(runtime, afFreeze, ROOT(runtime, null));
+  value_t obj_p = new_heap_protocol(runtime, afFreeze, ROOT(runtime, null));
   value_t int_p = ROOT(runtime, integer_protocol);
   value_t str_p = ROOT(runtime, string_protocol);
   value_t space = new_heap_methodspace(runtime);
@@ -77,10 +77,10 @@ TEST(method, simple_is) {
   // s-str <: str <: obj
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, str_p, obj_p));
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, s_str_p, str_p));
-  value_t is_int = new_heap_guard(runtime, gtIs, int_p);
-  value_t is_obj = new_heap_guard(runtime, gtIs, obj_p);
-  value_t is_str = new_heap_guard(runtime, gtIs, str_p);
-  value_t is_s_str = new_heap_guard(runtime, gtIs, s_str_p);
+  value_t is_int = new_heap_guard(runtime, afFreeze, gtIs, int_p);
+  value_t is_obj = new_heap_guard(runtime, afFreeze, gtIs, obj_p);
+  value_t is_str = new_heap_guard(runtime, afFreeze, gtIs, str_p);
+  value_t is_s_str = new_heap_guard(runtime, afFreeze, gtIs, s_str_p);
 
   value_t zero = new_integer(0);
   ASSERT_TRUE(is_score_match(guard_match(runtime, is_int, zero, space)));
@@ -119,8 +119,8 @@ ASSERT_TRUE(compare_scores(guard_match(runtime, GA, VA, space),             \
 TEST(method, is_score) {
   CREATE_RUNTIME();
 
-  value_t s_str_p = new_heap_protocol(runtime, ROOT(runtime, null));
-  value_t obj_p = new_heap_protocol(runtime, ROOT(runtime, null));
+  value_t s_str_p = new_heap_protocol(runtime, afFreeze, ROOT(runtime, null));
+  value_t obj_p = new_heap_protocol(runtime, afFreeze, ROOT(runtime, null));
   value_t str_p = ROOT(runtime, string_protocol);
   value_t space = new_heap_methodspace(runtime);
   // s-str <: str <: obj
@@ -131,10 +131,10 @@ TEST(method, is_score) {
   value_t x = new_heap_string(runtime, &x_str);
   value_t s_str = new_instance_of(runtime, s_str_p);
 
-  value_t is_x = new_heap_guard(runtime, gtEq, x);
-  value_t is_obj = new_heap_guard(runtime, gtIs, obj_p);
-  value_t is_str = new_heap_guard(runtime, gtIs, str_p);
-  value_t is_s_str = new_heap_guard(runtime, gtIs, s_str_p);
+  value_t is_x = new_heap_guard(runtime, afFreeze, gtEq, x);
+  value_t is_obj = new_heap_guard(runtime, afFreeze, gtIs, obj_p);
+  value_t is_str = new_heap_guard(runtime, afFreeze, gtIs, str_p);
+  value_t is_s_str = new_heap_guard(runtime, afFreeze, gtIs, s_str_p);
 
   ASSERT_COMPARE(is_str, x, <, is_obj, x);
   ASSERT_COMPARE(is_x, x, <, is_str, x);
@@ -147,12 +147,12 @@ TEST(method, is_score) {
 TEST(method, multi_score) {
   CREATE_RUNTIME();
 
-  value_t int_str_p = new_heap_protocol(runtime, ROOT(runtime, null));
+  value_t int_str_p = new_heap_protocol(runtime, afFreeze, ROOT(runtime, null));
   value_t int_p = ROOT(runtime, integer_protocol);
   value_t str_p = ROOT(runtime, string_protocol);
   value_t space = new_heap_methodspace(runtime);
-  value_t is_str = new_heap_guard(runtime, gtIs, str_p);
-  value_t is_int = new_heap_guard(runtime, gtIs, int_p);
+  value_t is_str = new_heap_guard(runtime, afFreeze, gtIs, str_p);
+  value_t is_int = new_heap_guard(runtime, afFreeze, gtIs, int_p);
   // int-str <: int, str
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, int_str_p, int_p));
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, int_str_p, str_p));
@@ -170,10 +170,11 @@ TEST(method, signature) {
   CREATE_RUNTIME();
 
   value_t empty_array = ROOT(runtime, empty_array);
-  value_t signature = new_heap_signature(runtime, empty_array, 0, 0, false);
+  value_t signature = new_heap_signature(runtime, afFreeze, empty_array, 0, 0,
+      false);
   ASSERT_SUCCESS(signature);
 
-  value_t param = new_heap_parameter(runtime, ROOT(runtime, any_guard),
+  value_t param = new_heap_parameter(runtime, afFreeze, ROOT(runtime, any_guard),
       true, 0);
   ASSERT_SUCCESS(param);
 
@@ -280,8 +281,8 @@ static value_t make_signature(runtime_t *runtime, bool allow_extra, test_param_t
     test_param_t test_param = params[i];
     TRY_DEF(tags_array, variant_to_value(runtime, test_param.tags));
     size_t param_tag_count = get_array_length(tags_array);
-    TRY_DEF(param, new_heap_parameter(runtime, test_param.guard, test_param.is_optional,
-        i));
+    TRY_DEF(param, new_heap_parameter(runtime, afFreeze, test_param.guard,
+        test_param.is_optional, i));
     for (size_t j = 0; j < param_tag_count; j++, t++) {
       TRY_DEF(tag, get_array_at(tags_array, j));
       set_pair_array_first_at(param_vector, t, tag);
@@ -289,8 +290,8 @@ static value_t make_signature(runtime_t *runtime, bool allow_extra, test_param_t
     }
   }
   co_sort_pair_array(param_vector);
-  return new_heap_signature(runtime, param_vector, param_count, mandatory_count,
-      allow_extra);
+  return new_heap_signature(runtime, afFreeze, param_vector, param_count,
+      mandatory_count, allow_extra);
 }
 
 TEST(method, make_signature) {
@@ -427,7 +428,7 @@ TEST(method, simple_guard_matching) {
 
   value_t any_guard = ROOT(runtime, any_guard);
   value_t foo = variant_to_value(runtime, vStr("foo"));
-  value_t guard = new_heap_guard(runtime, gtEq, foo);
+  value_t guard = new_heap_guard(runtime, afFreeze, gtEq, foo);
   value_t sig = make_signature(runtime,
       false,
       PARAMS(2,
@@ -672,10 +673,10 @@ TEST(method, dense_perfect_lookup) {
   CREATE_RUNTIME();
 
   // Protocols and inheritance hierarchy.
-  value_t a_p = new_heap_protocol(runtime, variant_to_value(runtime, vStr("A")));
-  value_t b_p = new_heap_protocol(runtime, variant_to_value(runtime, vStr("B")));
-  value_t c_p = new_heap_protocol(runtime, variant_to_value(runtime, vStr("C")));
-  value_t d_p = new_heap_protocol(runtime, variant_to_value(runtime, vStr("D")));
+  value_t a_p = new_heap_protocol(runtime, afFreeze, variant_to_value(runtime, vStr("A")));
+  value_t b_p = new_heap_protocol(runtime, afFreeze, variant_to_value(runtime, vStr("B")));
+  value_t c_p = new_heap_protocol(runtime, afFreeze, variant_to_value(runtime, vStr("C")));
+  value_t d_p = new_heap_protocol(runtime, afFreeze, variant_to_value(runtime, vStr("D")));
   value_t space = new_heap_methodspace(runtime);
   // D <: C <: B <: A <: Object
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, d_p, c_p));
@@ -683,10 +684,10 @@ TEST(method, dense_perfect_lookup) {
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, b_p, a_p));
 
   // Guards.
-  value_t a_g = new_heap_guard(runtime, gtIs, a_p);
-  value_t b_g = new_heap_guard(runtime, gtIs, b_p);
-  value_t c_g = new_heap_guard(runtime, gtIs, c_p);
-  value_t d_g = new_heap_guard(runtime, gtIs, d_p);
+  value_t a_g = new_heap_guard(runtime, afFreeze, gtIs, a_p);
+  value_t b_g = new_heap_guard(runtime, afFreeze, gtIs, b_p);
+  value_t c_g = new_heap_guard(runtime, afFreeze, gtIs, c_p);
+  value_t d_g = new_heap_guard(runtime, afFreeze, gtIs, d_p);
   value_t guards[4] = {a_g, b_g, c_g, d_g};
 
   // Instances
@@ -709,7 +710,7 @@ TEST(method, dense_perfect_lookup) {
             PARAM(guards[first], false, vArray(1, vInt(0))) o
             PARAM(guards[second], false, vArray(1, vInt(1))) o
             PARAM(guards[third], false, vArray(1, vInt(2)))));
-        value_t method = new_heap_method(runtime, signature, dummy_code);
+        value_t method = new_heap_method(runtime, afFreeze, signature, dummy_code);
         add_methodspace_method(runtime, space, method);
         methods[first][second][third] = method;
       }

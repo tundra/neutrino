@@ -10,8 +10,6 @@
 
 // --- S i g n a t u r e ---
 
-FIXED_GET_MODE_IMPL(signature, vmMutable);
-
 ACCESSORS_IMPL(Signature, signature, acInFamily, ofArray, Tags, tags);
 INTEGER_ACCESSORS_IMPL(Signature, signature, ParameterCount, parameter_count);
 INTEGER_ACCESSORS_IMPL(Signature, signature, MandatoryCount, mandatory_count);
@@ -21,6 +19,10 @@ value_t signature_validate(value_t self) {
   VALIDATE_FAMILY(ofSignature, self);
   VALIDATE_FAMILY(ofArray, get_signature_tags(self));
   return success();
+}
+
+value_t ensure_signature_owned_values_frozen(runtime_t *runtime, value_t self) {
+  return ensure_frozen(runtime, get_signature_tags(self));
 }
 
 size_t get_signature_tag_count(value_t self) {
@@ -159,8 +161,6 @@ join_status_t join_score_vectors(score_t *target, score_t *source, size_t length
 
 // --- P a r a m e t e r ---
 
-FIXED_GET_MODE_IMPL(parameter, vmMutable);
-
 ACCESSORS_IMPL(Parameter, parameter, acInFamily, ofGuard, Guard, guard);
 INTEGER_ACCESSORS_IMPL(Parameter, parameter, IsOptional, is_optional);
 INTEGER_ACCESSORS_IMPL(Parameter, parameter, Index, index);
@@ -274,7 +274,6 @@ void guard_print_atomic_on(value_t self, string_buffer_t *buf) {
 // --- M e t h o d ---
 
 TRIVIAL_PRINT_ON_IMPL(Method, method);
-FIXED_GET_MODE_IMPL(method, vmMutable);
 
 ACCESSORS_IMPL(Method, method, acInFamily, ofSignature, Signature, signature);
 ACCESSORS_IMPL(Method, method, acInFamily, ofCodeBlock, Code, code);
@@ -455,7 +454,7 @@ static void lookup_methodspace_transitive_method(methodspace_lookup_state_t *sta
 // Given an array of offsets, builds and returns an argument map that performs
 // that offset mapping.
 static value_t build_argument_map(runtime_t *runtime, size_t offsetc, size_t *offsets) {
-  value_t current_node = ROOT(runtime, argument_map_trie_root);
+  value_t current_node = MROOT(runtime, argument_map_trie_root);
   for (size_t i = 0; i < offsetc; i++) {
     size_t offset = offsets[i];
     value_t value = (offset == kNoOffset) ? ROOT(runtime, null) : new_integer(offset);
