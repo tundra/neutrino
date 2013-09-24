@@ -4,6 +4,7 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "check.h"
+#include "log.h"
 #include "runtime.h"
 #include "safe-inl.h"
 #include "try-inl.h"
@@ -15,11 +16,24 @@
 TRIVIAL_PRINT_ON_IMPL(Roots, roots);
 
 value_t roots_init(value_t roots, runtime_t *runtime) {
-  // The meta-root is tricky because it is its own species. So we set it up in
-  // two steps.
-  TRY_DEF(meta, new_heap_compact_species_unchecked(runtime, &kSpeciesBehavior));
-  set_object_header(meta, meta);
-  RAW_ROOT(roots, species_species) = meta;
+  // The modal meta-roots are tricky because the species relationship between
+  // them is circular.
+  TRY_DEF(fluid_meta, new_heap_modal_species_unchecked(runtime, &kSpeciesBehavior,
+      vmFluid, rk_fluid_species_species));
+  TRY_DEF(mutable_meta, new_heap_modal_species_unchecked(runtime, &kSpeciesBehavior,
+      vmMutable, rk_fluid_species_species));
+  TRY_DEF(frozen_meta, new_heap_modal_species_unchecked(runtime, &kSpeciesBehavior,
+      vmFrozen, rk_fluid_species_species));
+  TRY_DEF(deep_frozen_meta, new_heap_modal_species_unchecked(runtime, &kSpeciesBehavior,
+      vmDeepFrozen, rk_fluid_species_species));
+  set_object_header(fluid_meta, mutable_meta);
+  set_object_header(mutable_meta, mutable_meta);
+  set_object_header(frozen_meta, mutable_meta);
+  set_object_header(deep_frozen_meta, mutable_meta);
+  RAW_ROOT(roots, fluid_species_species) = fluid_meta;
+  RAW_ROOT(roots, mutable_species_species) = mutable_meta;
+  RAW_ROOT(roots, frozen_species_species) = frozen_meta;
+  RAW_ROOT(roots, deep_frozen_species_species) = deep_frozen_meta;
 
   // Generate initialization for the other compact species.
 #define __CREATE_COMPACT_SPECIES__(Family, family) \
@@ -34,7 +48,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
       runtime, &k##Family##Behavior, vmFrozen, rk_fluid_##family##_species));  \
   TRY_SET(RAW_ROOT(roots, deep_frozen_##family##_species), new_heap_modal_species(\
       runtime, &k##Family##Behavior, vmDeepFrozen, rk_fluid_##family##_species));
-#define __CREATE_OTHER_SPECIES__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD)\
+#define __CREATE_OTHER_SPECIES__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)\
   MD(__CREATE_MODAL_SPECIES__(Family, family),__CREATE_COMPACT_SPECIES__(Family, family))
   ENUM_OTHER_OBJECT_FAMILIES(__CREATE_OTHER_SPECIES__)
 #undef __CREATE_OTHER_SPECIES__
@@ -58,6 +72,8 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, any_guard), new_heap_guard(runtime, gtAny, null));
   TRY_SET(RAW_ROOT(roots, integer_protocol), new_heap_protocol(runtime, null));
   TRY_DEF(empty_protocol, new_heap_protocol(runtime, null));
+  TRY(ensure_frozen(runtime, empty_protocol));
+  TRY(validate_deep_frozen(runtime, empty_protocol, NULL));
   TRY_SET(RAW_ROOT(roots, empty_instance_species),
       new_heap_instance_species(runtime, empty_protocol));
   TRY_SET(RAW_ROOT(roots, argument_map_trie_root),
@@ -67,7 +83,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, builtin_methodspace), new_heap_methodspace(runtime));
 
   // Generate initialization for the per-family protocols.
-#define __CREATE_FAMILY_PROTOCOL__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD)\
+#define __CREATE_FAMILY_PROTOCOL__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)\
   SR(                                                                          \
     TRY_SET(RAW_ROOT(roots, family##_protocol), new_heap_protocol(runtime, null));,\
     )
@@ -132,7 +148,7 @@ value_t roots_validate(value_t roots) {
   } while (false)
 
   // Generate validation for species.
-#define __VALIDATE_PER_FAMILY_FIELDS__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD)\
+#define __VALIDATE_PER_FAMILY_FIELDS__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)\
   MD(                                                                          \
     VALIDATE_ALL_MODAL_SPECIES(of##Family, family),                            \
     VALIDATE_SPECIES(of##Family, RAW_ROOT(roots, family##_species)));          \
@@ -165,6 +181,22 @@ value_t roots_validate(value_t roots) {
 
   #undef VALIDATE_TYPE
   #undef VALIDATE_SPECIES
+  return success();
+}
+
+value_t ensure_roots_owned_values_frozen(runtime_t *runtime, value_t self) {
+  // Freeze *all* the things!
+  value_field_iter_t iter;
+  value_field_iter_init(&iter, self);
+  value_t *field = NULL;
+  while (value_field_iter_next(&iter, &field)) {
+    value_t value = *field;
+    // HACK: this it to deal with the argument map trie which has to stay
+    //   mutable. It'll be moved out of the roots presently.
+    if (value.encoded == ROOT(runtime, argument_map_trie_root).encoded)
+      continue;
+    TRY(ensure_frozen(runtime, *field));
+  }
   return success();
 }
 
@@ -243,6 +275,33 @@ static value_t runtime_soft_init(runtime_t *runtime) {
   E_END_TRY_FINALLY();
 }
 
+// Freeze the runtime such that any state that can be shared is deep frozen.
+static value_t runtime_freeze_shared_state(runtime_t *runtime) {
+  value_t roots = runtime->roots;
+
+  // The roots object must be deep frozen.
+  // TODO: currently the argument map trie lives in the root object which is
+  //   wrong since it's necessarily mutable. There should be a second level of
+  //   state which allows mutable fields so the runtime can be used across
+  //   multiple processes.
+  TRY(ensure_frozen(runtime, roots));
+
+  // HACK: This is disabled until the argument map trie has been moved.
+  if (false) {
+    value_t offender = new_integer(0);
+    TRY_DEF(froze, try_validate_deep_frozen(runtime, roots, &offender));
+    if (!is_internal_true_value(froze)) {
+      value_to_string_t to_string;
+      ERROR("Could not freeze the roots object; offender: %s",
+          value_to_string(&to_string, offender));
+      dispose_value_to_string(&to_string);
+      return new_not_deep_frozen_signal();
+    }
+  }
+
+  return success();
+}
+
 value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
   if (config == NULL)
     config = runtime_config_get_default();
@@ -250,6 +309,7 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
   runtime_clear(runtime);
   TRY(runtime_hard_init(runtime, config));
   TRY(runtime_soft_init(runtime));
+  TRY(runtime_freeze_shared_state(runtime));
   // Set up gc fuzzing. For now do this after the initialization to exempt that
   // from being fuzzed. Longer term (probably after this has been rewritten) we
   // want more of this to be gc safe.

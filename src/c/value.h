@@ -42,7 +42,7 @@ const char *get_value_domain_name(value_domain_t domain);
   F(MaybeCircular)                                                             \
   F(NotComparable)                                                             \
   F(NotFound)                                                                  \
-  F(NotFrozen)                                                                 \
+  F(NotDeepFrozen)                                                             \
   F(Nothing)                                                                   \
   F(OutOfBounds)                                                               \
   F(OutOfMemory)                                                               \
@@ -219,56 +219,58 @@ static value_t new_moved_object(value_t target) {
 //       syntax tree nodes can be emitted.
 //   - Md: is this family in the modal division, that is, is the mutability
 //       state stored in the species?
+//   - Ow: do objects of this family use some other objects in their
+//       implementation that they own?
 //
-// CamelName            underscore_name                 Cm Id Ct Sr Nl Fu Em Md
+// CamelName            underscore_name                 Cm Id Ct Sr Nl Fu Em Md Ow
 
 // Enumerates the special species, the ones that require special handling during
 // startup.
-#define ENUM_SPECIAL_OBJECT_FAMILIES(F)                                        \
-  F(Species,                 species,                   _, _, _, _, X, _, _, _)
+#define ENUM_SPECIAL_OBJECT_FAMILIES(F)                                           \
+  F(Species,                 species,                   _, _, _, _, X, _, _, X, _)
 
 // Enumerates the compact object species.
-#define ENUM_OTHER_OBJECT_FAMILIES(F)                                          \
-  F(ArgumentAst,             argument_ast,              _, _, X, X, _, _, _, _)\
-  F(ArgumentMapTrie,         argument_map_trie,         _, _, _, _, _, _, _, _)\
-  F(Array,                   array,                     _, X, _, X, X, _, _, X)\
-  F(ArrayAst,                array_ast,                 _, _, X, X, _, _, X, _)\
-  F(ArrayBuffer,             array_buffer,              _, _, _, X, _, _, _, X)\
-  F(Blob,                    blob,                      _, _, _, X, X, _, _, _)\
-  F(Boolean,                 boolean,                   X, X, _, X, _, _, _, _)\
-  F(CodeBlock,               code_block,                _, _, _, _, _, _, _, _)\
-  F(Factory,                 factory,                   _, _, _, _, _, _, _, _)\
-  F(Guard,                   guard,                     _, _, _, _, _, _, _, _)\
-  F(IdHashMap,               id_hash_map,               _, _, _, X, _, X, _, X)\
-  F(Instance,                instance,                  _, _, X, X, _, _, _, _)\
-  F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _)\
-  F(InvocationRecord,        invocation_record,         _, _, _, _, _, _, _, _)\
-  F(Key,                     key,                       X, _, _, X, _, _, _, _)\
-  F(Lambda,                  lambda,                    _, _, _, X, _, _, _, _)\
-  F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, _)\
-  F(LiteralAst,              literal_ast,               _, _, X, X, _, _, X, _)\
-  F(LocalDeclarationAst,     local_declaration_ast,     _, _, X, X, _, _, X, _)\
-  F(Method,                  method,                    _, _, _, _, _, _, _, _)\
-  F(Methodspace,             methodspace,               _, _, X, _, _, _, _, _)\
-  F(Module,                  module,                    _, _, X, _, _, _, _, _)\
-  F(NameAst,                 name_ast,                  _, _, X, _, _, _, _, _)\
-  F(Namespace,               namespace,                 _, _, X, _, _, _, _, _)\
-  F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _)\
-  F(Nothing,                 nothing,                   _, _, _, _, _, _, _, _)\
-  F(Null,                    null,                      _, X, _, X, _, _, _, _)\
-  F(Parameter,               parameter,                 _, _, _, _, _, _, _, _)\
-  F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _)\
-  F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, _)\
-  F(Protocol,                protocol,                  _, _, _, X, _, _, _, _)\
-  F(Roots,                   roots,                     _, _, _, _, _, _, _, X)\
-  F(SequenceAst,             sequence_ast,              _, _, X, X, _, _, X, _)\
-  F(Signature,               signature,                 _, _, _, _, _, _, _, _)\
-  F(Stack,                   stack,                     _, _, _, _, _, _, _, _)\
-  F(StackPiece,              stack_piece,               _, _, _, _, _, _, _, _)\
-  F(String,                  string,                    X, X, _, X, X, _, _, _)\
-  F(SymbolAst,               symbol_ast,                _, _, X, X, _, _, _, _)\
-  F(LocalVariableAst,        local_variable_ast,        _, _, X, X, _, _, X, _)\
-  F(VoidP,                   void_p,                    _, _, _, _, X, _, _, _)
+#define ENUM_OTHER_OBJECT_FAMILIES(F)                                             \
+  F(ArgumentAst,             argument_ast,              _, _, X, X, _, _, _, _, _)\
+  F(ArgumentMapTrie,         argument_map_trie,         _, _, _, _, _, _, _, _, _)\
+  F(Array,                   array,                     _, X, _, X, X, _, _, X, _)\
+  F(ArrayAst,                array_ast,                 _, _, X, X, _, _, X, _, _)\
+  F(ArrayBuffer,             array_buffer,              _, _, _, X, _, _, _, X, X)\
+  F(Blob,                    blob,                      _, _, _, X, X, _, _, _, _)\
+  F(Boolean,                 boolean,                   X, X, _, X, _, _, _, _, _)\
+  F(CodeBlock,               code_block,                _, _, _, _, _, _, _, _, _)\
+  F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _)\
+  F(Guard,                   guard,                     _, _, _, _, _, _, _, X, _)\
+  F(IdHashMap,               id_hash_map,               _, _, _, X, _, X, _, X, X)\
+  F(Instance,                instance,                  _, _, X, X, _, _, _, _, _)\
+  F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _, _)\
+  F(InvocationRecord,        invocation_record,         _, _, _, _, _, _, _, _, _)\
+  F(Key,                     key,                       X, _, _, X, _, _, _, X, _)\
+  F(Lambda,                  lambda,                    _, _, _, X, _, _, _, _, _)\
+  F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, _, _)\
+  F(LiteralAst,              literal_ast,               _, _, X, X, _, _, X, _, _)\
+  F(LocalDeclarationAst,     local_declaration_ast,     _, _, X, X, _, _, X, _, _)\
+  F(Method,                  method,                    _, _, _, _, _, _, _, _, _)\
+  F(Methodspace,             methodspace,               _, _, X, _, _, _, _, X, X)\
+  F(Module,                  module,                    _, _, X, _, _, _, _, _, _)\
+  F(NameAst,                 name_ast,                  _, _, X, _, _, _, _, _, _)\
+  F(Namespace,               namespace,                 _, _, X, _, _, _, _, _, _)\
+  F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _)\
+  F(Nothing,                 nothing,                   _, _, _, _, _, _, _, _, _)\
+  F(Null,                    null,                      _, X, _, X, _, _, _, _, _)\
+  F(Parameter,               parameter,                 _, _, _, _, _, _, _, _, _)\
+  F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _)\
+  F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, _, _)\
+  F(Protocol,                protocol,                  _, _, _, X, _, _, _, X, _)\
+  F(Roots,                   roots,                     _, _, _, _, _, _, _, X, X)\
+  F(SequenceAst,             sequence_ast,              _, _, X, X, _, _, X, _, _)\
+  F(Signature,               signature,                 _, _, _, _, _, _, _, _, _)\
+  F(Stack,                   stack,                     _, _, _, _, _, _, _, _, _)\
+  F(StackPiece,              stack_piece,               _, _, _, _, _, _, _, _, _)\
+  F(String,                  string,                    X, X, _, X, X, _, _, _, _)\
+  F(SymbolAst,               symbol_ast,                _, _, X, X, _, _, _, _, _)\
+  F(LocalVariableAst,        local_variable_ast,        _, _, X, X, _, _, X, _, _)\
+  F(VoidP,                   void_p,                    _, _, _, _, X, _, _, _, _)
 
 // Enumerates all the object families.
 #define ENUM_OBJECT_FAMILIES(F)                                                \
@@ -278,7 +280,7 @@ static value_t new_moved_object(value_t target) {
 // Enum identifying the different families of heap objects.
 typedef enum {
   __ofFirst__ = -1
-  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD) \
+  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW) \
   , of##Family
   ENUM_OBJECT_FAMILIES(__DECLARE_OBJECT_FAMILY_ENUM__)
   #undef __DECLARE_OBJECT_FAMILY_ENUM__
@@ -526,10 +528,24 @@ bool is_mutable(value_t value);
 // frozen, state.
 bool is_frozen(value_t value);
 
+// Returns true if the value has already been validated to be deep frozen. Note
+// that this is not for general use, you almost always want to use one of the
+// validate functions if you depend on the result for anything but sanity
+// checking.
+bool peek_deep_frozen(value_t value);
+
 // Ensures that the value is in a frozen state. Since being frozen is the most
 // restrictive mode this cannot fail except if freezing an object requires
 // interacting with the runtime (for instance allocating a value) and that
-// interaction fails.
+// interaction fails. Note that this only freezes the immediate object, if it
+// has any references including owned references (for instance the entry array
+// in an id hash map) they will not be frozen by this.
+value_t ensure_shallow_frozen(runtime_t *runtime, value_t value);
+
+// Ensures that the value as well as any owned references (for instance the
+// entry array in an id hash map) is in a frozen state. This does not mean that
+// the value becomes deep frozen, it may have references to non-owned mutable
+// values. For instance, an array is not considered to own any of its elements.
 value_t ensure_frozen(runtime_t *runtime, value_t value);
 
 // If the given value is deep frozen, returns the internal true value. If it is
@@ -540,17 +556,23 @@ value_t ensure_frozen(runtime_t *runtime, value_t value);
 // under some circumstances involve allocation; if there is a problem there a
 // signal may be returned.
 //
+// If validation fails and the offender_out parameter is non-null, an arbitrary
+// mutable object from the object graph will be stored there. This is a
+// debugging aid, since it's arbitrary which object will be stored you should
+// not depend on the particular value in any way.
+//
 // This is the only reliable way to check whether a value is deep frozen since
 // being deep frozen is a property of an object graph, not an individual object,
 // and using marking like this is the only efficient way to reliably determine
 // that property.
-value_t try_ensure_deep_frozen(runtime_t *runtime, value_t value);
+value_t try_validate_deep_frozen(runtime_t *runtime, value_t value,
+    value_t *offender_out);
 
-// Works the same way as try_ensure_deep_frozen but returns a non-signal instead
-// of true and a signal for false. Doing it this way makes things easier in the
-// implementation (since the cleanup is the same for false and a signal) but is
-// awkward as an interface.
-value_t ensure_deep_frozen_or_signal(runtime_t *runtime, value_t value);
+// Works the same way as try_validate_deep_frozen but returns a non-signal instead
+// of true and a signal for false. Depending on what the most convenient
+// interface is you can use either this or the other, they do the same thing.
+value_t validate_deep_frozen(runtime_t *runtime, value_t value,
+    value_t *offender_out);
 
 
 // --- S t r i n g ---
@@ -723,7 +745,8 @@ INTEGER_ACCESSORS_DECL(id_hash_map, occupied_count);
 // Adds a binding from the given key to the given value to this map, replacing
 // the existing one if it already exists. Returns a signal on failure, either
 // if the key cannot be hashed or the map is full.
-value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value);
+value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value,
+    bool allow_frozen);
 
 // Returns the binding for the given key or, if no binding is present, an
 // appropriate signal.

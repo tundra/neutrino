@@ -50,6 +50,10 @@ typedef enum {
 #undef __GEN_ENUM__
 } invalid_syntax_cause_t;
 
+// Simple signal constructors. They don't really add much except a tiny bit
+// of type checking of details but they're convenient because you can set
+// breakpoints in them and so suspend on a particular signal.
+
 // Creates a new SyntaxInvalid signal with the given cause.
 static value_t new_invalid_syntax_signal(invalid_syntax_cause_t cause) {
   return new_signal_with_details(scInvalidSyntax, cause);
@@ -76,6 +80,11 @@ static value_t new_out_of_memory_signal() {
 // value.
 static value_t new_invalid_mode_change_signal(value_mode_t current_mode) {
   return new_signal_with_details(scInvalidModeChange, current_mode);
+}
+
+// Creates a new not-deep-frozen signal.
+static value_t new_not_deep_frozen_signal() {
+  return new_signal(scNotDeepFrozen);
 }
 
 #endif // _SIGNALS
