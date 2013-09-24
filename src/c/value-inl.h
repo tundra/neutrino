@@ -113,18 +113,16 @@ value_t get_##family##_protocol(value_t self, runtime_t *runtime) {            \
 }                                                                              \
 SWALLOW_SEMI(gfpi)
 
-// Expands to an implementation of get_family_mode that always returns the same
-// value.
+// Expands to an implementation of get and set family_mode for a family with a
+// fixed mode.
 #define FIXED_GET_MODE_IMPL(family, vmMode)                                    \
 value_mode_t get_##family##_mode(value_t self) {                               \
   return vmMode;                                                               \
 }                                                                              \
-value_t set_##family##_mode(runtime_t *rt, value_t self, value_mode_t mode) {  \
-  if (mode == vmMode || ((mode == vmFrozen) && (vmMode == vmDeepFrozen))) {    \
-    return success();                                                          \
-  } else {                                                                     \
-    return new_invalid_mode_change_signal(vmMode);                             \
-  }                                                                            \
+value_t set_##family##_mode_unchecked(runtime_t *rt, value_t self, value_mode_t mode) {  \
+  CHECK_TRUE("invalid mode change",                                            \
+      mode == vmMode || ((mode == vmFrozen) && (vmMode == vmDeepFrozen)));     \
+  return success();                                                            \
 }                                                                              \
 SWALLOW_SEMI(fgmi)
 

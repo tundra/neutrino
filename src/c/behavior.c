@@ -89,15 +89,29 @@ value_mode_t get_value_mode(value_t self) {
 }
 
 value_t set_value_mode(runtime_t *runtime, value_t self, value_mode_t mode) {
+  value_mode_t current_mode = get_value_mode(self);
+  if (mode == current_mode) {
+    // If we're already in the target mode this trivially succeeds.
+    return success();
+  } else if (mode > current_mode) {
+    // It's always okay to set the object to a more restrictive mode.
+    return set_value_mode_unchecked(runtime, self, mode);
+  } else if (mode == vmFrozen) {
+    // As a special case, it's okay to try to freeze an object that is already
+    // deep frozen. It's a no-op.
+    return success();
+  } else {
+    return new_invalid_mode_change_signal(current_mode);
+  }
+}
+
+value_t set_value_mode_unchecked(runtime_t *runtime, value_t self, value_mode_t mode) {
   if (get_value_domain(self) == vdObject) {
     family_behavior_t *behavior = get_object_family_behavior(self);
-    return (behavior->set_mode)(runtime, self, mode);
-  } else if (mode < vmFrozen) {
-    // If it's not an object we know it'll be deep frozen. Hence we just need
-    // to catch setting it backwards before frozen.
-    CHECK_EQ("non-object not frozen", vmDeepFrozen, get_value_mode(self));
-    return new_invalid_mode_change_signal(vmDeepFrozen);
+    return (behavior->set_mode_unchecked)(runtime, self, mode);
   } else {
+    CHECK_EQ("non-object not frozen", vmDeepFrozen, get_value_mode(self));
+    CHECK_TRUE("invalid mode change", mode >= vmFrozen);
     return success();
   }
 }
@@ -409,8 +423,8 @@ family_behavior_t k##Family##Behavior = {                                      \
     get_modal_object_mode,                                                     \
     get_##family##_mode),                                                      \
   MD(                                                                          \
-    set_modal_object_mode,                                                     \
-    set_##family##_mode)                                                       \
+    set_modal_object_mode_unchecked,                                           \
+    set_##family##_mode_unchecked)                                             \
 };
 ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #undef DEFINE_FAMILY_BEHAVIOR

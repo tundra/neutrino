@@ -241,26 +241,13 @@ value_mode_t get_modal_object_mode(value_t value) {
   return get_modal_species_mode(species);
 }
 
-value_t set_modal_object_mode(runtime_t *runtime, value_t self, value_mode_t mode) {
-  value_mode_t current_mode = get_modal_object_mode(self);
-  if (mode == current_mode) {
-    // If we're already in the target mode this trivially succeeds.
-    return success();
-  } else if (mode > current_mode) {
-    // It's always okay to set the object to a more restrictive mode. Swap in
-    // the appropriate modal species.
-    value_t old_species = get_object_species(self);
-    value_t new_species = get_modal_species_sibling_with_mode(runtime, old_species,
-        mode);
-    set_object_species(self, new_species);
-    return success();
-  } else if (mode == vmFrozen) {
-    // As a special case, it's okay to try to freeze an object that is already
-    // deep frozen. It's a no-op.
-    return success();
-  } else {
-    return new_invalid_mode_change_signal(current_mode);
-  }
+value_t set_modal_object_mode_unchecked(runtime_t *runtime, value_t self,
+    value_mode_t mode) {
+  value_t old_species = get_object_species(self);
+  value_t new_species = get_modal_species_sibling_with_mode(runtime, old_species,
+      mode);
+  set_object_species(self, new_species);
+  return success();
 }
 
 size_t get_modal_species_base_root(value_t value) {
@@ -280,9 +267,64 @@ bool is_frozen(value_t value) {
   return get_value_mode(value) >= vmFrozen;
 }
 
-void ensure_frozen(runtime_t *runtime, value_t value) {
-  value_t result = set_value_mode(runtime, value, vmFrozen);
-  CHECK_FALSE("failed to freeze", get_value_domain(result) == vdSignal);
+value_t ensure_frozen(runtime_t *runtime, value_t value) {
+  return set_value_mode(runtime, value, vmFrozen);
+}
+
+// Assume tentatively that the given value is deep frozen and then see if that
+// makes the whole graph deep frozen. If not we'll restore the object, otherwise
+// we can leave it deep frozen.
+value_t transitively_ensure_deep_frozen_or_signal(runtime_t *runtime, value_t value) {
+  CHECK_DOMAIN(vdObject, value);
+  CHECK_EQ("tentatively freezing non-frozen", vmFrozen, get_value_mode(value));
+  // Deep freeze the object.
+  set_value_mode_unchecked(runtime, value, vmDeepFrozen);
+  // Scan through the object's fields.
+  value_field_iter_t iter;
+  value_field_iter_init(&iter, value);
+  value_t *field = NULL;
+  while (value_field_iter_next(&iter, &field)) {
+    // Try to deep freeze the field's value.
+    value_t ensured = ensure_deep_frozen_or_signal(runtime, *field);
+    if (get_value_domain(ensured) == vdSignal) {
+      // Deep freezing failed for some reason. Restore the object to its previous
+      // state and bail.
+      set_value_mode_unchecked(runtime, value, vmFrozen);
+      return ensured;
+    }
+  }
+  // Deep freezing succeeded for all references. Hence we can leave this object
+  // deep frozen and return success.
+  return success();
+}
+
+value_t ensure_deep_frozen_or_signal(runtime_t *runtime, value_t value) {
+  value_mode_t mode = get_value_mode(value);
+  if (mode == vmDeepFrozen) {
+    return success();
+  } else if (mode == vmFrozen) {
+    // The object is frozen. We'll try deep freezing it.
+    return transitively_ensure_deep_frozen_or_signal(runtime, value);
+  } else {
+    return new_signal(scNotFrozen);
+  }
+}
+
+value_t try_ensure_deep_frozen(runtime_t *runtime, value_t value) {
+  value_t ensured = ensure_deep_frozen_or_signal(runtime, value);
+  if (get_value_domain(ensured) == vdSignal) {
+    if (is_signal(scNotFrozen, ensured)) {
+      // A NotFrozen signal indicates that there is something mutable somewhere
+      // in the object graph.
+      return internal_false_value();
+    } else {
+      // We got a different signal; propagate it.
+      return ensured;
+    }
+  } else {
+    // Non-signal so freezing must have succeeded.
+    return internal_true_value();
+  }
 }
 
 
