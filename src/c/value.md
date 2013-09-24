@@ -43,3 +43,9 @@ Any value can be in one of four modes. These modes indicate which operations are
 Not all values can be in all states. For instance, integers and strings start out deep frozen so the less restricted states don't apply to them.
 
 You can explicitly move an object to the mutable or frozen mode if you know the object is in a less restricted mode but you can't make it deep frozen, and you don't need to. Being deep frozen is a property of a full object graph so you can ask if an object is deep frozen and the object graph will be traversed for you to determine whether it is. That traversal may cause the object to be marked as deep frozen.
+
+## Ownership
+
+Some values are considered to logically *own* other values. For instance, an id hash map owns its entry array, an array buffer owns it storage array, and the roots object owns all the roots. Basically, if creating one object requires another object to be created that isn't passed to it from elsewhere then the object is owned. The place you see this is mainly around freezing. If you freeze an object (not shallow-freeze, freeze) then the object is responsible for freezing any objects it owns. You can think of it as a matter of encapsulation. If an object needs some other objects to function which it otherwise doesn't expose to you then that's that object's business and it should be transparent when freezing it that those other objects exist. If freezing it didn't recursively freeze those you could tell they existed because they would prevent it from being deep frozen.
+
+Ownership is strictly linear: if object *a* owns object *b* then *b* may itself own other objects, but it must not be the case that *b* or something transitively owned by *b* considers itself to own *a*.

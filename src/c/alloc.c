@@ -64,7 +64,7 @@ value_t new_heap_compact_species_unchecked(runtime_t *runtime,
     family_behavior_t *behavior) {
   size_t bytes = kCompactSpeciesSize;
   TRY_DEF(result, alloc_heap_object(runtime, bytes,
-      ROOT(runtime, species_species)));
+      ROOT(runtime, mutable_species_species)));
   set_species_instance_family(result, behavior->family);
   set_species_family_behavior(result, behavior);
   set_species_division_behavior(result, &kCompactSpeciesBehavior);
@@ -74,7 +74,8 @@ value_t new_heap_compact_species_unchecked(runtime_t *runtime,
 value_t new_heap_instance_species(runtime_t *runtime, value_t primary) {
   size_t size = kInstanceSpeciesSize;
   CHECK_FAMILY(ofProtocol, primary);
-  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, species_species)));
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_species_species)));
   set_species_instance_family(result, ofInstance);
   set_species_family_behavior(result, &kInstanceBehavior);
   set_species_division_behavior(result, &kInstanceSpeciesBehavior);
@@ -87,16 +88,23 @@ value_t new_heap_compact_species(runtime_t *runtime, family_behavior_t *behavior
   return post_create_sanity_check(result, kCompactSpeciesSize);
 }
 
-value_t new_heap_modal_species(runtime_t *runtime, family_behavior_t *behavior,
-    value_mode_t mode, root_key_t base_root) {
+value_t new_heap_modal_species_unchecked(runtime_t *runtime,
+    family_behavior_t *behavior, value_mode_t mode, root_key_t base_root) {
   size_t size = kModalSpeciesSize;
-  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, species_species)));
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_species_species)));
   set_species_instance_family(result, behavior->family);
   set_species_family_behavior(result, behavior);
   set_species_division_behavior(result, &kModalSpeciesBehavior);
   set_modal_species_mode(result, mode);
   set_modal_species_base_root(result, base_root);
-  return post_create_sanity_check(result, size);
+  return result;
+}
+
+value_t new_heap_modal_species(runtime_t *runtime, family_behavior_t *behavior,
+    value_mode_t mode, root_key_t base_root) {
+  TRY_DEF(result, new_heap_modal_species_unchecked(runtime, behavior, mode, base_root));
+  return post_create_sanity_check(result, kModalSpeciesSize);
 }
 
 value_t new_heap_array(runtime_t *runtime, size_t length) {
@@ -172,7 +180,7 @@ value_t new_heap_key(runtime_t *runtime, value_t display_name) {
   size_t size = kKeySize;
   size_t id = runtime->next_key_index++;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, key_species)));
+      ROOT(runtime, mutable_key_species)));
   set_key_id(result, id);
   set_key_display_name(result, display_name);
   return post_create_sanity_check(result, size);
@@ -218,7 +226,7 @@ value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
 value_t new_heap_protocol(runtime_t *runtime, value_t display_name) {
   size_t size = kProtocolSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, protocol_species)));
+      ROOT(runtime, mutable_protocol_species)));
   set_protocol_display_name(result, display_name);
   return post_create_sanity_check(result, size);
 }
@@ -294,7 +302,7 @@ value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {
 value_t new_heap_guard(runtime_t *runtime, guard_type_t type, value_t value) {
   size_t size = kGuardSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, guard_species)));
+      ROOT(runtime, mutable_guard_species)));
   set_guard_type(result, type);
   set_guard_value(result, value);
   return post_create_sanity_check(result, size);
@@ -331,7 +339,7 @@ value_t new_heap_methodspace(runtime_t *runtime) {
   TRY_DEF(inheritance, new_heap_id_hash_map(runtime, kInheritanceMapInitialSize));
   TRY_DEF(methods, new_heap_array_buffer(runtime, kMethodArrayInitialSize));
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, methodspace_species)));
+      ROOT(runtime, mutable_methodspace_species)));
   set_methodspace_inheritance(result, inheritance);
   set_methodspace_methods(result, methods);
   set_methodspace_imports(result, ROOT(runtime, empty_array));
@@ -511,7 +519,7 @@ static value_t extend_id_hash_map(runtime_t *runtime, value_t map) {
     value_t key;
     value_t value;
     id_hash_map_iter_get_current(&iter, &key, &value);
-    value_t extension = try_set_id_hash_map_at(map, key, value);
+    value_t extension = try_set_id_hash_map_at(map, key, value, false);
     // Since we were able to successfully add these pairs to the old smaller
     // map it can't fail this time around.
     CHECK_TRUE("rehashing failed", get_value_domain(extension) != vdSignal);
@@ -520,10 +528,10 @@ static value_t extend_id_hash_map(runtime_t *runtime, value_t map) {
 }
 
 value_t set_id_hash_map_at(runtime_t *runtime, value_t map, value_t key, value_t value) {
-  value_t first_try = try_set_id_hash_map_at(map, key, value);
+  value_t first_try = try_set_id_hash_map_at(map, key, value, false);
   if (is_signal(scMapFull, first_try)) {
     TRY(extend_id_hash_map(runtime, map));
-    value_t second_try = try_set_id_hash_map_at(map, key, value);
+    value_t second_try = try_set_id_hash_map_at(map, key, value, false);
     // It should be impossible for the second try to fail if the first try could
     // hash the key and extending was successful.
     CHECK_TRUE("second try failure", get_value_domain(second_try) != vdSignal);

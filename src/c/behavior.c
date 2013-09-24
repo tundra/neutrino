@@ -15,7 +15,7 @@
 // Is the given family in a modal division?
 static bool in_modal_division(object_family_t family) {
   switch (family) {
-#define __GEN_CASE__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD)           \
+#define __GEN_CASE__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)       \
     MD(                                                                        \
       case of##Family: return true;,                                           \
       )
@@ -26,10 +26,26 @@ static bool in_modal_division(object_family_t family) {
   }
 }
 
+// Validate that a given deep frozen object only points to other deep frozen
+// objects.
+static void deep_frozen_object_validate(value_t value) {
+  value_field_iter_t iter;
+  value_field_iter_init(&iter, value);
+  value_t *field = NULL;
+  while (value_field_iter_next(&iter, &field)) {
+    if (!peek_deep_frozen(*field)) {
+      value_print_ln(*field);
+    }
+    CHECK_TRUE("deep frozen reference not deep frozen", peek_deep_frozen(*field));
+  }
+}
+
 value_t object_validate(value_t value) {
   family_behavior_t *behavior = get_object_family_behavior(value);
   CHECK_FALSE("Modal value with non-modal species",
       in_modal_division(behavior->family) && get_object_division(value) != sdModal);
+  if (peek_deep_frozen(value))
+    deep_frozen_object_validate(value);
   return (behavior->validate)(value);
 }
 
@@ -68,7 +84,7 @@ static void get_##family##_layout(value_t value, object_layout_t *layout_out) {\
 
 // Generate all the trivial layout functions since we know what they'll look
 // like.
-#define __DEFINE_TRIVIAL_LAYOUT_FUNCTION__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD) \
+#define __DEFINE_TRIVIAL_LAYOUT_FUNCTION__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW) \
 NL(                                                                            \
   ,                                                                            \
   __TRIVIAL_LAYOUT_FUNCTION__(Family, family))
@@ -394,7 +410,7 @@ static value_t get_internal_object_protocol(value_t self, runtime_t *runtime) {
 // Define all the family behaviors in one go. Because of this, as soon as you
 // add a new object type you'll get errors for all the behaviors you need to
 // implement.
-#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, CM, ID, CT, SR, NL, FU, EM, MD) \
+#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW) \
 family_behavior_t k##Family##Behavior = {                                      \
   of##Family,                                                                  \
   &family##_validate,                                                          \
@@ -424,11 +440,13 @@ family_behavior_t k##Family##Behavior = {                                      \
     get_##family##_mode),                                                      \
   MD(                                                                          \
     set_modal_object_mode_unchecked,                                           \
-    set_##family##_mode_unchecked)                                             \
+    set_##family##_mode_unchecked),                                            \
+  OW(                                                                          \
+    ensure_##family##_owned_values_frozen,                                     \
+    NULL)                                                                      \
 };
 ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #undef DEFINE_FAMILY_BEHAVIOR
-
 
 // Define all the division behaviors. Similarly to families, when you add a new
 // division you have to add the methods or this will break.

@@ -27,7 +27,7 @@ const char *get_value_domain_name(value_domain_t domain) {
 
 const char *get_object_family_name(object_family_t family) {
   switch (family) {
-#define __GEN_CASE__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD)           \
+#define __GEN_CASE__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)       \
     case of##Family: return #Family;
     ENUM_OBJECT_FAMILIES(__GEN_CASE__)
 #undef __GEN_CASE__
@@ -118,7 +118,7 @@ bool in_syntax_family(value_t value) {
   if (get_value_domain(value) != vdObject)
     return false;
   switch (get_object_family(value)) {
-#define __MAKE_CASE__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD)          \
+#define __MAKE_CASE__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)      \
   EM(                                                                          \
     case of##Family: return true;,                                             \
     )
@@ -150,7 +150,7 @@ family_behavior_t *get_object_family_behavior_unchecked(value_t self) {
 // --- S p e c i e s ---
 
 TRIVIAL_PRINT_ON_IMPL(Species, species);
-FIXED_GET_MODE_IMPL(species, vmMutable);
+FIXED_GET_MODE_IMPL(species, vmDeepFrozen);
 
 void set_species_instance_family(value_t value,
     object_family_t instance_family) {
@@ -267,14 +267,37 @@ bool is_frozen(value_t value) {
   return get_value_mode(value) >= vmFrozen;
 }
 
-value_t ensure_frozen(runtime_t *runtime, value_t value) {
+bool peek_deep_frozen(value_t value) {
+  return get_value_mode(value) == vmDeepFrozen;
+}
+
+value_t ensure_shallow_frozen(runtime_t *runtime, value_t value) {
   return set_value_mode(runtime, value, vmFrozen);
+}
+
+value_t ensure_frozen(runtime_t *runtime, value_t value) {
+  if (get_value_mode(value) == vmDeepFrozen)
+    return success();
+  if (get_value_domain(value) == vdObject) {
+    TRY(ensure_shallow_frozen(runtime, value));
+    family_behavior_t *behavior = get_object_family_behavior(value);
+    value_t (*freeze_owned)(runtime_t*, value_t) = behavior->ensure_owned_values_frozen;
+    if (freeze_owned == NULL) {
+      return success();
+    } else {
+      return freeze_owned(runtime, value);
+    }
+  } else {
+    UNREACHABLE("non-object not deep frozen");
+    return new_signal(scNotDeepFrozen);
+  }
 }
 
 // Assume tentatively that the given value is deep frozen and then see if that
 // makes the whole graph deep frozen. If not we'll restore the object, otherwise
 // we can leave it deep frozen.
-value_t transitively_ensure_deep_frozen_or_signal(runtime_t *runtime, value_t value) {
+value_t transitively_validate_deep_frozen(runtime_t *runtime, value_t value,
+    value_t *offender_out) {
   CHECK_DOMAIN(vdObject, value);
   CHECK_EQ("tentatively freezing non-frozen", vmFrozen, get_value_mode(value));
   // Deep freeze the object.
@@ -285,7 +308,7 @@ value_t transitively_ensure_deep_frozen_or_signal(runtime_t *runtime, value_t va
   value_t *field = NULL;
   while (value_field_iter_next(&iter, &field)) {
     // Try to deep freeze the field's value.
-    value_t ensured = ensure_deep_frozen_or_signal(runtime, *field);
+    value_t ensured = validate_deep_frozen(runtime, *field, offender_out);
     if (get_value_domain(ensured) == vdSignal) {
       // Deep freezing failed for some reason. Restore the object to its previous
       // state and bail.
@@ -298,22 +321,26 @@ value_t transitively_ensure_deep_frozen_or_signal(runtime_t *runtime, value_t va
   return success();
 }
 
-value_t ensure_deep_frozen_or_signal(runtime_t *runtime, value_t value) {
+value_t validate_deep_frozen(runtime_t *runtime, value_t value,
+    value_t *offender_out) {
   value_mode_t mode = get_value_mode(value);
   if (mode == vmDeepFrozen) {
     return success();
   } else if (mode == vmFrozen) {
     // The object is frozen. We'll try deep freezing it.
-    return transitively_ensure_deep_frozen_or_signal(runtime, value);
+    return transitively_validate_deep_frozen(runtime, value, offender_out);
   } else {
-    return new_signal(scNotFrozen);
+    if (offender_out != NULL)
+      *offender_out = value;
+    return new_not_deep_frozen_signal();
   }
 }
 
-value_t try_ensure_deep_frozen(runtime_t *runtime, value_t value) {
-  value_t ensured = ensure_deep_frozen_or_signal(runtime, value);
+value_t try_validate_deep_frozen(runtime_t *runtime, value_t value,
+    value_t *offender_out) {
+  value_t ensured = validate_deep_frozen(runtime, value, offender_out);
   if (get_value_domain(ensured) == vdSignal) {
-    if (is_signal(scNotFrozen, ensured)) {
+    if (is_signal(scNotDeepFrozen, ensured)) {
       // A NotFrozen signal indicates that there is something mutable somewhere
       // in the object graph.
       return internal_false_value();
@@ -747,6 +774,11 @@ value_t array_buffer_validate(value_t self) {
   return success();
 }
 
+value_t ensure_array_buffer_owned_values_frozen(runtime_t *runtime, value_t self) {
+  TRY(ensure_frozen(runtime, get_array_buffer_elements(self)));
+  return success();
+}
+
 bool try_add_to_array_buffer(value_t self, value_t value) {
   CHECK_FAMILY(ofArrayBuffer, self);
   value_t elements = get_array_buffer_elements(self);
@@ -910,8 +942,10 @@ static bool find_id_hash_map_entry(value_t map, value_t key, size_t hash,
   return false;
 }
 
-value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value) {
+value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value,
+    bool allow_frozen) {
   CHECK_FAMILY(ofIdHashMap, map);
+  CHECK_TRUE("mutating frozen map", allow_frozen || is_mutable(map));
   size_t occupied_count = get_id_hash_map_occupied_count(map);
   size_t size = get_id_hash_map_size(map);
   size_t capacity = get_id_hash_map_capacity(map);
@@ -1018,7 +1052,10 @@ void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_object,
     value_t key;
     value_t value;
     id_hash_map_iter_get_current(&iter, &key, &value);
-    value_t added = try_set_id_hash_map_at(new_object, key, value);
+    // We need to be able to add elements even if the map is frozen and it's
+    // okay because at the end it will be in the same state it was in before
+    // so it's not really mutating it.
+    value_t added = try_set_id_hash_map_at(new_object, key, value, true);
     CHECK_FALSE("rehash failed to set", get_value_domain(added) == vdSignal);
   }
 }
@@ -1062,6 +1099,10 @@ value_t id_hash_map_validate(value_t value) {
   VALIDATE(get_id_hash_map_size(value) < capacity);
   VALIDATE(get_array_length(entry_array) == (capacity * kIdHashMapEntryFieldCount));
   return success();
+}
+
+value_t ensure_id_hash_map_owned_values_frozen(runtime_t *runtime, value_t self) {
+  return ensure_frozen(runtime, get_id_hash_map_entry_array(self));
 }
 
 void id_hash_map_print_on(value_t value, string_buffer_t *buf) {
@@ -1194,7 +1235,6 @@ void boolean_print_atomic_on(value_t value, string_buffer_t *buf) {
 GET_FAMILY_PROTOCOL_IMPL(key);
 NO_BUILTIN_METHODS(key);
 TRIVIAL_PRINT_ON_IMPL(Key, key);
-FIXED_GET_MODE_IMPL(key, vmFrozen);
 
 INTEGER_ACCESSORS_IMPL(Key, key, Id, id);
 ACCESSORS_IMPL(Key, key, acNoCheck, 0, DisplayName, display_name);
@@ -1230,7 +1270,7 @@ value_t get_instance_field(value_t value, value_t key) {
 
 value_t try_set_instance_field(value_t instance, value_t key, value_t value) {
   value_t fields = get_instance_fields(instance);
-  return try_set_id_hash_map_at(fields, key, value);
+  return try_set_id_hash_map_at(fields, key, value, false);
 }
 
 value_t instance_validate(value_t value) {
@@ -1320,7 +1360,6 @@ void code_block_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 GET_FAMILY_PROTOCOL_IMPL(protocol);
 NO_BUILTIN_METHODS(protocol);
-FIXED_GET_MODE_IMPL(protocol, vmMutable);
 
 ACCESSORS_IMPL(Protocol, protocol, acNoCheck, 0, DisplayName, display_name);
 
@@ -1517,6 +1556,7 @@ static value_t add_plankton_binding(value_t map, value_t category, const char *n
   TRY_DEF(key_obj, new_heap_array(runtime, 2));
   set_array_at(key_obj, 0, category);
   set_array_at(key_obj, 1, name_obj);
+  TRY(ensure_frozen(runtime, key_obj));
   // Add the mapping to the environment map.
   TRY(set_id_hash_map_at(runtime, map, key_obj, value));
   return success();

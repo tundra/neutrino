@@ -187,8 +187,6 @@ void parameter_print_atomic_on(value_t self, string_buffer_t *buf) {
 
 // --- G u a r d ---
 
-FIXED_GET_MODE_IMPL(guard, vmMutable);
-
 ENUM_ACCESSORS_IMPL(Guard, guard, guard_type_t, Type, type);
 ACCESSORS_IMPL(Guard, guard, acNoCheck, 0, Value, value);
 
@@ -292,7 +290,6 @@ value_t method_validate(value_t self) {
 // --- M e t h o d   s p a c e ---
 
 TRIVIAL_PRINT_ON_IMPL(Methodspace, methodspace);
-FIXED_GET_MODE_IMPL(methodspace, vmMutable);
 
 ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofIdHashMap, Inheritance,
     inheritance);
@@ -307,9 +304,17 @@ value_t methodspace_validate(value_t value) {
   return success();
 }
 
+value_t ensure_methodspace_owned_values_frozen(runtime_t *runtime, value_t self) {
+  TRY(ensure_frozen(runtime, get_methodspace_inheritance(self)));
+  TRY(ensure_frozen(runtime, get_methodspace_methods(self)));
+  TRY(ensure_frozen(runtime, get_methodspace_imports(self)));
+  return success();
+}
+
 value_t add_methodspace_inheritance(runtime_t *runtime, value_t self,
     value_t subtype, value_t supertype) {
   CHECK_FAMILY(ofMethodspace, self);
+  CHECK_MUTABLE(self);
   CHECK_FAMILY(ofProtocol, subtype);
   CHECK_FAMILY(ofProtocol, supertype);
   value_t inheritance = get_methodspace_inheritance(self);
@@ -330,6 +335,7 @@ value_t add_methodspace_inheritance(runtime_t *runtime, value_t self,
 value_t add_methodspace_method(runtime_t *runtime, value_t self,
     value_t method) {
   CHECK_FAMILY(ofMethodspace, self);
+  CHECK_MUTABLE(self);
   CHECK_FAMILY(ofMethod, method);
   return add_to_array_buffer(runtime, get_methodspace_methods(self), method);
 }

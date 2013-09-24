@@ -103,35 +103,35 @@ TEST(value, id_hash_maps_simple) {
   ASSERT_EQ(0, get_id_hash_map_size(map));
   ASSERT_SIGNAL(scNotFound, get_id_hash_map_at(map, new_integer(0)));
   // Add something to it.
-  ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(0), new_integer(1)));
+  ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(0), new_integer(1), false));
   ASSERT_EQ(1, get_id_hash_map_size(map));
   ASSERT_SAME(new_integer(1), get_id_hash_map_at(map, new_integer(0)));
   ASSERT_SIGNAL(scNotFound, get_id_hash_map_at(map, new_integer(1)));
   // Add some more to it.
-  ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(1), new_integer(2)));
+  ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(1), new_integer(2), false));
   ASSERT_EQ(2, get_id_hash_map_size(map));
   ASSERT_SAME(new_integer(1), get_id_hash_map_at(map, new_integer(0)));
   ASSERT_SAME(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
   // Replace an existing value.
-  ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(0), new_integer(3)));
+  ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(0), new_integer(3), false));
   ASSERT_EQ(2, get_id_hash_map_size(map));
   ASSERT_SAME(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
   ASSERT_SAME(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
   // There's room for one more value.
-  ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(100), new_integer(5)));
+  ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(100), new_integer(5), false));
   ASSERT_EQ(3, get_id_hash_map_size(map));
   ASSERT_SAME(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
   ASSERT_SAME(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
   ASSERT_SAME(new_integer(5), get_id_hash_map_at(map, new_integer(100)));
   // Now the map should refuse to let us add more.
   ASSERT_SIGNAL(scMapFull, try_set_id_hash_map_at(map, new_integer(88),
-      new_integer(79)));
+      new_integer(79), false));
   ASSERT_EQ(3, get_id_hash_map_size(map));
   ASSERT_SAME(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
   ASSERT_SAME(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
   ASSERT_SAME(new_integer(5), get_id_hash_map_at(map, new_integer(100)));
   // However it should still be possible to replace existing mappings.
-  ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(1), new_integer(9)));
+  ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(1), new_integer(9), false));
   ASSERT_EQ(3, get_id_hash_map_size(map));
   ASSERT_SAME(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
   ASSERT_SAME(new_integer(9), get_id_hash_map_at(map, new_integer(1)));
@@ -150,7 +150,7 @@ TEST(value, id_hash_maps_strings) {
 
   value_t map = new_heap_id_hash_map(runtime, 4);
   ASSERT_EQ(0, get_id_hash_map_size(map));
-  ASSERT_SUCCESS(try_set_id_hash_map_at(map, one, new_integer(4)));
+  ASSERT_SUCCESS(try_set_id_hash_map_at(map, one, new_integer(4), false));
   ASSERT_EQ(1, get_id_hash_map_size(map));
   ASSERT_SAME(new_integer(4), get_id_hash_map_at(map, one));
 
@@ -504,7 +504,7 @@ TEST(value, map_delete) {
       bits_set--;
     } else {
       ASSERT_SIGNAL(scNotFound, delete_id_hash_map_at(runtime, map, key));
-      ASSERT_SUCCESS(try_set_id_hash_map_at(map, key, key));
+      ASSERT_SUCCESS(try_set_id_hash_map_at(map, key, key, false));
       bit_vector_set_at(&bits, index, true);
       bits_set++;
     }
@@ -699,19 +699,19 @@ TEST(value, array_identity) {
 
 #undef V2V
 
-TEST(runtime, set_value_mode) {
+TEST(value, set_value_mode) {
   CREATE_RUNTIME();
 
   value_t arr = new_heap_array(runtime, 3);
   ASSERT_TRUE(is_mutable(arr));
   ASSERT_FALSE(is_frozen(arr));
   ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, arr, vmFluid));
-  ASSERT_SUCCESS(ensure_frozen(runtime, arr));
+  ASSERT_SUCCESS(ensure_shallow_frozen(runtime, arr));
   ASSERT_TRUE(is_frozen(arr));
   ASSERT_FALSE(is_mutable(arr));
   ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, arr, vmFluid));
   ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, arr, vmMutable));
-  ASSERT_SUCCESS(ensure_frozen(runtime, arr));
+  ASSERT_SUCCESS(ensure_shallow_frozen(runtime, arr));
   ASSERT_TRUE(is_frozen(arr));
 
   value_t null = ROOT(runtime, null);
@@ -719,58 +719,108 @@ TEST(runtime, set_value_mode) {
   ASSERT_FALSE(is_mutable(null));
   ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, null, vmFluid));
   ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, null, vmMutable));
-  ASSERT_SUCCESS(ensure_frozen(runtime, null));
+  ASSERT_SUCCESS(ensure_shallow_frozen(runtime, null));
 
   value_t zero = new_integer(0);
   ASSERT_TRUE(is_frozen(zero));
   ASSERT_FALSE(is_mutable(zero));
   ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, zero, vmFluid));
   ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, zero, vmMutable));
-  ASSERT_SUCCESS(ensure_frozen(runtime, zero));
+  ASSERT_SUCCESS(ensure_shallow_frozen(runtime, zero));
 
   DISPOSE_RUNTIME();
 }
 
-TEST(runtime, deep_freeze) {
+TEST(value, deep_freeze) {
   CREATE_RUNTIME();
 
   value_t zero = new_integer(0);
   ASSERT_TRUE(is_frozen(zero));
-  ASSERT_VALEQ(internal_true_value(), try_ensure_deep_frozen(runtime, zero));
+  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, zero,
+      NULL));
 
   value_t null = ROOT(runtime, null);
   ASSERT_TRUE(is_frozen(null));
-  ASSERT_VALEQ(internal_true_value(), try_ensure_deep_frozen(runtime, null));
+  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, null,
+      NULL));
 
   value_t null_arr = new_heap_array(runtime, 2);
   ASSERT_TRUE(is_mutable(null_arr));
   ASSERT_FALSE(is_frozen(null_arr));
-  ASSERT_VALEQ(internal_false_value(), try_ensure_deep_frozen(runtime, null_arr));
-  ASSERT_SUCCESS(ensure_frozen(runtime, null_arr));
+  value_t offender = success();
+  ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, null_arr,
+      &offender));
+  ASSERT_SAME(null_arr, offender);
+  ASSERT_SUCCESS(ensure_shallow_frozen(runtime, null_arr));
   ASSERT_FALSE(is_mutable(null_arr));
   ASSERT_TRUE(is_frozen(null_arr));
-  ASSERT_VALEQ(internal_true_value(), try_ensure_deep_frozen(runtime, null_arr));
+  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, null_arr,
+      NULL));
 
   value_t mut = new_heap_array(runtime, 2);
   value_t mut_arr = new_heap_array(runtime, 2);
   set_array_at(mut_arr, 0, mut);
   ASSERT_TRUE(is_mutable(mut_arr));
-  ASSERT_VALEQ(internal_false_value(), try_ensure_deep_frozen(runtime, mut_arr));
-  ASSERT_SUCCESS(ensure_frozen(runtime, mut_arr));
+  offender = success();
+  ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, mut_arr,
+      &offender));
+  ASSERT_VALEQ(mut_arr, offender);
+  ASSERT_SUCCESS(ensure_shallow_frozen(runtime, mut_arr));
   ASSERT_FALSE(is_mutable(mut_arr));
-  ASSERT_VALEQ(internal_false_value(), try_ensure_deep_frozen(runtime, mut_arr));
-  ASSERT_VALEQ(internal_false_value(), try_ensure_deep_frozen(runtime, mut_arr));
-  ASSERT_SUCCESS(ensure_frozen(runtime, mut));
-  ASSERT_VALEQ(internal_true_value(), try_ensure_deep_frozen(runtime, mut_arr));
+  offender = success();
+  ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, mut_arr,
+      &offender));
+  ASSERT_SAME(mut, offender);
+  offender = success();
+  ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, mut_arr,
+      &offender));
+  ASSERT_SAME(mut, offender);
+  ASSERT_SUCCESS(ensure_shallow_frozen(runtime, mut));
+  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, mut_arr,
+      NULL));
 
   value_t circ_arr = new_heap_array(runtime, 2);
   set_array_at(circ_arr, 0, circ_arr);
   set_array_at(circ_arr, 1, circ_arr);
   ASSERT_TRUE(is_mutable(circ_arr));
-  ASSERT_VALEQ(internal_false_value(), try_ensure_deep_frozen(runtime, circ_arr));
-  ASSERT_SUCCESS(ensure_frozen(runtime, circ_arr));
+  offender = success();
+  ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, circ_arr,
+      &offender));
+  ASSERT_SAME(circ_arr, offender);
+  ASSERT_SUCCESS(ensure_shallow_frozen(runtime, circ_arr));
   ASSERT_FALSE(is_mutable(circ_arr));
-  ASSERT_VALEQ(internal_true_value(), try_ensure_deep_frozen(runtime, circ_arr));
+  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, circ_arr,
+      NULL));
+
+  DISPOSE_RUNTIME();
+}
+
+TEST(value, ownership_freezing) {
+  CREATE_RUNTIME();
+
+  value_t empty_map = new_heap_id_hash_map(runtime, 16);
+  ASSERT_TRUE(is_mutable(empty_map));
+  ASSERT_SUCCESS(ensure_shallow_frozen(runtime, empty_map));
+  ASSERT_TRUE(is_frozen(empty_map));
+  ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, empty_map,
+      NULL));
+  ASSERT_SUCCESS(ensure_frozen(runtime, empty_map));
+  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, empty_map,
+      NULL));
+
+  value_t mut = new_heap_array(runtime, 2);
+  value_t mut_map = new_heap_id_hash_map(runtime, 16);
+  ASSERT_SUCCESS(try_set_id_hash_map_at(mut_map, new_integer(0), mut, false));
+  ASSERT_TRUE(is_mutable(mut_map));
+  ASSERT_SUCCESS(ensure_shallow_frozen(runtime, mut_map));
+  ASSERT_SUCCESS(ensure_frozen(runtime, mut_map));
+  value_t offender = new_integer(0);
+  ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, mut_map,
+      &offender));
+  ASSERT_SAME(mut, offender);
+  ASSERT_SUCCESS(ensure_frozen(runtime, mut));
+  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, mut_map,
+      NULL));
 
   DISPOSE_RUNTIME();
 }
