@@ -37,6 +37,37 @@ class Module(object):
   	self.methodspace = methodspace
 
 
+@plankton.serializable(("core", "Method"))
+class Method(object):
+
+	@plankton.field("signature")
+	@plankton.field("implementation")
+	def __init__(self, signature=None, implementation=None):
+		self.signature = signature
+		self.implementation = implementation
+
+
+@plankton.serializable(("core", "Guard"))
+class Guard(object):
+
+	_EQ = "="
+	_IS = "i"
+	_ANY = "*"
+
+	@plankton.field("type")
+	@plankton.field("value")
+	def __init__(self, type=None, value=None):
+		self.type = type
+		self.value = value
+
+	def __str__(self):
+		return "%s(%s)" % (self.type, self.value)
+
+	@staticmethod
+	def any():
+		return Guard(Guard._ANY, None)
+
+
 # A unique key, matching a neutrino runtime key.
 class Key(plankton.EnvironmentPlaceholder):
 

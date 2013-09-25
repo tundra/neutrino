@@ -34,7 +34,7 @@ value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
     scope_lookup_callback_t *scope_callback);
 
 
-// --- L i t e r a l ---
+// --- L i t e r a l   a s t ---
 
 static const size_t kLiteralAstSize = OBJECT_SIZE(1);
 static const size_t kLiteralAstValueOffset = OBJECT_FIELD_OFFSET(0);
@@ -43,7 +43,7 @@ static const size_t kLiteralAstValueOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(literal_ast, value);
 
 
-// --- A r r a y ---
+// --- A r r a y   a s t ---
 
 static const size_t kArrayAstSize = OBJECT_SIZE(1);
 static const size_t kArrayAstElementsOffset = OBJECT_FIELD_OFFSET(0);
@@ -52,7 +52,7 @@ static const size_t kArrayAstElementsOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(array_ast, elements);
 
 
-// --- I n v o c a t i o n ---
+// --- I n v o c a t i o n   a s t ---
 
 static const size_t kInvocationAstSize = OBJECT_SIZE(2);
 static const size_t kInvocationAstArgumentsOffset = OBJECT_FIELD_OFFSET(0);
@@ -65,7 +65,7 @@ ACCESSORS_DECL(invocation_ast, arguments);
 ACCESSORS_DECL(invocation_ast, methodspace);
 
 
-// --- A r g u m e n t ---
+// --- A r g u m e n t   a s t ---
 
 static const size_t kArgumentAstSize = OBJECT_SIZE(2);
 static const size_t kArgumentAstTagOffset = OBJECT_FIELD_OFFSET(0);
@@ -78,7 +78,7 @@ ACCESSORS_DECL(argument_ast, tag);
 ACCESSORS_DECL(argument_ast, value);
 
 
-// --- S e q u e n c e ---
+// --- S e q u e n c e   a s t ---
 
 static const size_t kSequenceAstSize = OBJECT_SIZE(1);
 static const size_t kSequenceAstValuesOffset = OBJECT_FIELD_OFFSET(0);
@@ -87,7 +87,7 @@ static const size_t kSequenceAstValuesOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(sequence_ast, values);
 
 
-// --- L o c a l   d e c l a r a t i o n ---
+// --- L o c a l   d e c l a r a t i o n   a s t ---
 
 static const size_t kLocalDeclarationAstSize = OBJECT_SIZE(3);
 static const size_t kLocalDeclarationAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
@@ -104,7 +104,7 @@ ACCESSORS_DECL(local_declaration_ast, value);
 ACCESSORS_DECL(local_declaration_ast, body);
 
 
-// --- L o c a l   v a r i a b l e ---
+// --- L o c a l   v a r i a b l e   a s t ---
 
 static const size_t kLocalVariableAstSize = OBJECT_SIZE(1);
 static const size_t kLocalVariableAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
@@ -113,7 +113,7 @@ static const size_t kLocalVariableAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(local_variable_ast, symbol);
 
 
-// --- N a m e s p a c e   v a r i a b l e ---
+// --- N a m e s p a c e   v a r i a b l e   a s t ---
 
 static const size_t kNamespaceVariableAstSize = OBJECT_SIZE(2);
 static const size_t kNamespaceVariableAstNameOffset = OBJECT_FIELD_OFFSET(0);
@@ -135,24 +135,25 @@ static const size_t kSymbolAstNameOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(symbol_ast, name);
 
 
-// --- L a m b d a ---
+// --- L a m b d a   a s t ---
 
 static const size_t kLambdaAstSize = OBJECT_SIZE(2);
-static const size_t kLambdaAstParametersOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kLambdaAstSignatureOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kLambdaAstBodyOffset = OBJECT_FIELD_OFFSET(1);
 
-// The parameter list to this lambda.
-ACCESSORS_DECL(lambda_ast, parameters);
+// The signature of this lambda's one method.
+ACCESSORS_DECL(lambda_ast, signature);
 
 // The body of this lambda.
 ACCESSORS_DECL(lambda_ast, body);
 
 
-// --- P a r a m e t e r ---
+// --- P a r a m e t e r   a s t ---
 
-static const size_t kParameterAstSize = OBJECT_SIZE(2);
+static const size_t kParameterAstSize = OBJECT_SIZE(3);
 static const size_t kParameterAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kParameterAstTagsOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kParameterAstGuardOffset = OBJECT_FIELD_OFFSET(2);
 
 // The symbol that identifies this parameter.
 ACCESSORS_DECL(parameter_ast, symbol);
@@ -160,8 +161,19 @@ ACCESSORS_DECL(parameter_ast, symbol);
 // The list of tags matched by this parameter.
 ACCESSORS_DECL(parameter_ast, tags);
 
+// The argument guard.
+ACCESSORS_DECL(parameter_ast, guard);
 
-// --- P r o g r a m ---
+// --- S i g n a t u r e   a s t ---
+
+static const size_t kSignatureAstSize = OBJECT_SIZE(1);
+static const size_t kSignatureAstParametersOffset = OBJECT_FIELD_OFFSET(0);
+
+// The array of parameters for this signature.
+ACCESSORS_DECL(signature_ast, parameters);
+
+
+// --- P r o g r a m -  a s t --
 
 static const size_t kProgramAstSize = OBJECT_SIZE(2);
 static const size_t kProgramAstEntryPointOffset = OBJECT_FIELD_OFFSET(0);

@@ -25,6 +25,7 @@ TEST(interp, execution) {
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
   value_t space = ROOT(runtime, builtin_methodspace);
+  value_t empty_signature = new_heap_signature_ast(runtime, ROOT(runtime, empty_array));
 
   // Literal
   {
@@ -75,7 +76,7 @@ TEST(interp, execution) {
 
   // Simple lambda
   {
-    value_t lam = new_heap_lambda_ast(runtime, ROOT(runtime, empty_array),
+    value_t lam = new_heap_lambda_ast(runtime, empty_signature,
         new_heap_literal_ast(runtime, new_integer(13)));
     value_t subject_arg = new_heap_argument_ast(runtime, ROOT(runtime, subject_key),
         lam);
