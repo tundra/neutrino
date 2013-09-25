@@ -489,7 +489,6 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
   return state.result;
 }
 
-
 value_t set_methodspace_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(raw_methods, get_id_hash_map_at(contents, RSTR(runtime, methods)));
@@ -504,8 +503,6 @@ value_t set_methodspace_contents(value_t object, runtime_t *runtime, value_t con
 
 
 // --- I n v o c a t i o n   r e c o r d ---
-
-FIXED_GET_MODE_IMPL(invocation_record, vmMutable);
 
 ACCESSORS_IMPL(InvocationRecord, invocation_record, acInFamily, ofArray,
     ArgumentVector, argument_vector);
@@ -592,4 +589,10 @@ void invocation_record_print_on(value_t self, string_buffer_t *buf) {
 
 void invocation_record_print_atomic_on(value_t self, string_buffer_t *buf) {
   string_buffer_printf(buf, "#<invocation_record>");
+}
+
+value_t ensure_invocation_record_owned_values_frozen(runtime_t *runtime,
+    value_t self) {
+  TRY(ensure_frozen(runtime, get_invocation_record_argument_vector(self)));
+  return success();
 }

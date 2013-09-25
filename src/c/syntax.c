@@ -175,7 +175,7 @@ value_t emit_invocation_ast(value_t value, assembler_t *assm) {
     TRY(emit_value(value, assm));
   }
   TRY(co_sort_pair_array(arg_vector));
-  TRY_DEF(record, new_heap_invocation_record(assm->runtime, arg_vector));
+  TRY_DEF(record, new_heap_invocation_record(assm->runtime, afFreeze, arg_vector));
   TRY(assembler_emit_invocation(assm, methodspace, record));
   return success();
 }

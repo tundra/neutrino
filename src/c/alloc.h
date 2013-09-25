@@ -163,7 +163,8 @@ value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signatu
     value_t code);
 
 // Creates an invocation record with the given argument vector.
-value_t new_heap_invocation_record(runtime_t *runtime, value_t argument_vector);
+value_t new_heap_invocation_record(runtime_t *runtime, alloc_flags_t flags,
+    value_t argument_vector);
 
 
 // --- S y n t a x ---
