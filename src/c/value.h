@@ -285,6 +285,9 @@ typedef enum {
   , of##Family
   ENUM_OBJECT_FAMILIES(__DECLARE_OBJECT_FAMILY_ENUM__)
   #undef __DECLARE_OBJECT_FAMILY_ENUM__
+  // This is a special value separate from any of the others that can be used
+  // to indicate no family.
+  , __ofUnknown__
 } object_family_t;
 
 // Returns the string name of the given family.

@@ -212,14 +212,16 @@ static value_t object_serialize(value_t value, serialize_state_t *state) {
 }
 
 static value_t value_serialize(value_t data, serialize_state_t *state) {
-  switch (get_value_domain(data)) {
+  value_domain_t domain = get_value_domain(data);
+  switch (domain) {
     case vdInteger:
       return integer_serialize(data, state->buf);
     case vdObject:
       return object_serialize(data, state);
     default:
       UNREACHABLE("value serialize");
-      return new_signal(scUnsupportedBehavior);
+      return new_unsupported_behavior_signal(domain, __ofUnknown__,
+          ubPlanktonSerialize);
   }
 }
 
