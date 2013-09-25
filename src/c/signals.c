@@ -17,6 +17,16 @@ const char *get_invalid_syntax_cause_name(invalid_syntax_cause_t cause) {
   }
 }
 
+const char *get_unsupported_behavior_cause_name(unsupported_behavior_cause_t cause) {
+  switch (cause) {
+#define __GEN_CASE__(Name) case ub##Name: return #Name;
+    ENUM_UNSUPPORTED_BEHAVIOR_TYPES(__GEN_CASE__)
+#undef __GEN_CASE__
+    default:
+      return "unknown unsupported behavior cause";
+  }
+}
+
 const char *get_signal_cause_name(signal_cause_t cause) {
   switch (cause) {
 #define __GEN_CASE__(Name) case sc##Name: return #Name;

@@ -152,13 +152,15 @@ value_t value_transient_identity_hash(value_t value) {
 }
 
 value_t value_transient_identity_hash_cycle_protect(value_t value, size_t depth) {
-  switch (get_value_domain(value)) {
+  value_domain_t domain = get_value_domain(value);
+  switch (domain) {
     case vdInteger:
       return integer_transient_identity_hash(value);
     case vdObject:
       return object_transient_identity_hash(value, depth);
     default:
-      return new_signal(scUnsupportedBehavior);
+      return new_unsupported_behavior_signal(domain, __ofUnknown__,
+          ubTransientIdentityHash);
   }
 }
 
@@ -276,6 +278,18 @@ static void signal_print_atomic_on(value_t value, string_buffer_t *buf) {
       string_buffer_printf(buf, "%s", get_invalid_syntax_cause_name(details));
       break;
     }
+    case scUnsupportedBehavior: {
+      unsupported_behavior_details_codec_t codec;
+      codec.encoded = details;
+      unsupported_behavior_cause_t cause = codec.decoded.cause;
+      string_buffer_printf(buf, "%s", get_unsupported_behavior_cause_name(cause));
+      value_domain_t domain = codec.decoded.domain;
+      string_buffer_printf(buf, " of %s", get_value_domain_name(domain));
+      object_family_t family = codec.decoded.family;
+      if (family != __ofUnknown__)
+        string_buffer_printf(buf, "/%s", get_object_family_name(family));
+      break;
+    }
     default: {
       string_buffer_printf(buf, "dt@%i", details);
       break;
@@ -336,7 +350,8 @@ static value_t new_instance_of_factory(runtime_t *runtime, value_t type) {
 }
 
 static value_t new_object_with_object_type(runtime_t *runtime, value_t type) {
-  switch (get_object_family(type)) {
+  object_family_t family = get_object_family(type);
+  switch (family) {
     case ofNull:
       // For now we use null to indicate an instance. Later this should be
       // replaced by something else, something species-like possibly.
@@ -347,17 +362,19 @@ static value_t new_object_with_object_type(runtime_t *runtime, value_t type) {
       value_to_string_t data;
       WARN("Invalid type %s", value_to_string(&data, type));
       dispose_value_to_string(&data);
-      return new_signal(scUnsupportedBehavior);
+      return new_unsupported_behavior_signal(vdObject, family, ubNewObjectWithType);
     }
   }
 }
 
 value_t new_object_with_type(runtime_t *runtime, value_t type) {
-  switch (get_value_domain(type)) {
+  value_domain_t domain = get_value_domain(type);
+  switch (domain) {
     case vdObject:
       return new_object_with_object_type(runtime, type);
     default:
-      return new_signal(scUnsupportedBehavior);
+      return new_unsupported_behavior_signal(domain, __ofUnknown__,
+          ubNewObjectWithType);
   }
 }
 
@@ -374,7 +391,8 @@ value_t set_object_contents(runtime_t *runtime, value_t object, value_t payload)
 // A function compatible with set_contents that always returns unsupported.
 static value_t set_contents_unsupported(value_t value, runtime_t *runtime,
     value_t contents) {
-  return new_signal(scUnsupportedBehavior);
+  return new_unsupported_behavior_signal(vdObject, get_object_family(value),
+      ubSetContents);
 }
 
 
@@ -386,13 +404,15 @@ static value_t get_object_protocol(value_t self, runtime_t *runtime) {
 }
 
 value_t get_protocol(value_t self, runtime_t *runtime) {
-  switch (get_value_domain(self)) {
+  value_domain_t domain = get_value_domain(self);
+  switch (domain) {
     case vdInteger:
       return ROOT(runtime, integer_protocol);
     case vdObject:
       return get_object_protocol(self, runtime);
     default:
-      return new_signal(scUnsupportedBehavior);
+      return new_unsupported_behavior_signal(domain, __ofUnknown__,
+          ubGetProtocol);
   }
 }
 

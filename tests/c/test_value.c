@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "heap.h"
+#include "log.h"
 #include "runtime.h"
 #include "test.h"
 #include "try-inl.h"
@@ -823,4 +824,24 @@ TEST(value, ownership_freezing) {
       NULL));
 
   DISPOSE_RUNTIME();
+}
+
+#define CHECK_UNSUPPORTED(vdDomain, ofFamily, ubCause, EXPECTED) do {          \
+  value_t signal = new_unsupported_behavior_signal(vdDomain, ofFamily, ubCause);\
+  value_to_string_t to_string;                                                 \
+  const char *found = value_to_string(&to_string, signal);                     \
+  if (strcmp(EXPECTED, found) != 0) {                                          \
+    WARN("Expected %s, found %s.", (EXPECTED), found);                         \
+    ASSERT_TRUE(false);                                                        \
+  }                                                                            \
+  dispose_value_to_string(&to_string);                                         \
+} while (false)
+
+TEST(value, unsupported) {
+  CHECK_UNSUPPORTED(vdInteger, __ofUnknown__, ubUnspecified,
+      "%<signal: UnsupportedBehavior(Unspecified of Integer)>");
+  CHECK_UNSUPPORTED(vdObject, __ofUnknown__, ubSetContents,
+      "%<signal: UnsupportedBehavior(SetContents of Object)>");
+  CHECK_UNSUPPORTED(vdObject, ofArray, ubPlanktonSerialize,
+      "%<signal: UnsupportedBehavior(PlanktonSerialize of Object/Array)>");
 }

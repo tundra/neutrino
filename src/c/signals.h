@@ -36,7 +36,11 @@ static uint32_t get_signal_details(value_t value) {
   return value.as_signal.details;
 }
 
+// Enumerate the causes of invalid syntax. They should be sorted except for the
+// first one, Unspecified, which gets value 0 and hence matches the case where
+// no cause is specified (since it defaults to 0).
 #define ENUM_INVALID_SYNTAX_CAUSES(F)                                          \
+  F(Unspecified)                                                               \
   F(ExpectedSymbol)                                                            \
   F(NotSyntax)                                                                 \
   F(SymbolAlreadyBound)                                                        \
@@ -64,6 +68,46 @@ invalid_syntax_cause_t get_invalid_syntax_signal_cause(value_t signal);
 
 // Returns the string representation of the cause of an invalid syntax signal.
 const char *get_invalid_syntax_cause_name(invalid_syntax_cause_t cause);
+
+// Enumerate the causes of unsupported behavior. See comment for
+// ENUM_INVALID_SYNTAX_CAUSES.
+#define ENUM_UNSUPPORTED_BEHAVIOR_TYPES(F)                                     \
+  F(Unspecified)                                                               \
+  F(GetProtocol)                                                               \
+  F(NewObjectWithType)                                                         \
+  F(PlanktonSerialize)                                                         \
+  F(SetContents)                                                               \
+  F(TransientIdentityHash)
+
+// Behaviors that some objects may not support.
+typedef enum {
+  __ubFirst__ = -1
+#define __GEN_ENUM__(Name) , ub##Name
+  ENUM_UNSUPPORTED_BEHAVIOR_TYPES(__GEN_ENUM__)
+#undef __GEN_ENUM__
+} unsupported_behavior_cause_t;
+
+typedef union {
+  struct {
+    value_domain_t domain : 8;
+    object_family_t family : 8;
+    unsupported_behavior_cause_t cause : 8;
+  } decoded;
+  uint32_t encoded;
+} unsupported_behavior_details_codec_t;
+
+// Creates a new UnsupportedBehavior signal for the given type of behavior.
+static value_t new_unsupported_behavior_signal(value_domain_t domain,
+    object_family_t family, unsupported_behavior_cause_t cause) {
+  unsupported_behavior_details_codec_t codec;
+  codec.decoded.domain = domain;
+  codec.decoded.family = family;
+  codec.decoded.cause = cause;
+  return new_signal_with_details(scUnsupportedBehavior, codec.encoded);
+}
+
+// Returns the string representation of the cause of an unsupported behavior signal.
+const char *get_unsupported_behavior_cause_name(unsupported_behavior_cause_t cause);
 
 // Creates a new heap exhausted signal where the given amount of memory is
 // requested.
