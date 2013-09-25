@@ -842,6 +842,6 @@ TEST(value, unsupported) {
       "%<signal: UnsupportedBehavior(Unspecified of Integer)>");
   CHECK_UNSUPPORTED(vdObject, __ofUnknown__, ubSetContents,
       "%<signal: UnsupportedBehavior(SetContents of Object)>");
-  CHECK_UNSUPPORTED(vdObject, ofArray, ubUnspecified,
-      "%<signal: UnsupportedBehavior(Unspecified of Object/Array)>");
+  CHECK_UNSUPPORTED(vdObject, ofArray, ubPlanktonSerialize,
+      "%<signal: UnsupportedBehavior(PlanktonSerialize of Object/Array)>");
 }
