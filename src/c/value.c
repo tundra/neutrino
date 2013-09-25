@@ -150,7 +150,6 @@ family_behavior_t *get_object_family_behavior_unchecked(value_t self) {
 // --- S p e c i e s ---
 
 TRIVIAL_PRINT_ON_IMPL(Species, species);
-FIXED_GET_MODE_IMPL(species, vmDeepFrozen);
 
 void set_species_instance_family(value_t value,
     object_family_t instance_family) {
@@ -579,7 +578,6 @@ value_t *get_array_elements_unchecked(value_t value) {
   return access_object_field(value, kArrayElementsOffset);
 }
 
-
 value_t array_validate(value_t value) {
   VALIDATE_FAMILY(ofArray, value);
   return success();
@@ -615,6 +613,7 @@ static int value_compare_function(const void *vp_a, const void *vp_b) {
 
 value_t sort_array(value_t value) {
   CHECK_FAMILY(ofArray, value);
+  CHECK_MUTABLE(value);
   size_t length = get_array_length(value);
   value_t *elements = get_array_elements(value);
   // Just use qsort. This means that we can't propagate signals from the compare
@@ -660,6 +659,7 @@ size_t get_pair_array_length(value_t self) {
 
 value_t co_sort_pair_array(value_t value) {
   CHECK_FAMILY(ofArray, value);
+  CHECK_MUTABLE(value);
   size_t length = get_array_length(value);
   CHECK_EQ("pair sorting odd-length array", 0, length & 1);
   size_t pair_count = length >> 1;
@@ -781,6 +781,7 @@ value_t ensure_array_buffer_owned_values_frozen(runtime_t *runtime, value_t self
 
 bool try_add_to_array_buffer(value_t self, value_t value) {
   CHECK_FAMILY(ofArrayBuffer, self);
+  CHECK_MUTABLE(self);
   value_t elements = get_array_buffer_elements(self);
   size_t capacity = get_array_length(elements);
   size_t index = get_array_buffer_length(self);
@@ -800,6 +801,7 @@ value_t get_array_buffer_at(value_t self, size_t index) {
 
 void set_array_buffer_at(value_t self, size_t index, value_t value) {
   CHECK_FAMILY(ofArrayBuffer, self);
+  CHECK_MUTABLE(self);
   CHECK_TRUE("array buffer index out of bounds",
       index < get_array_buffer_length(self));
   set_array_at(get_array_buffer_elements(self), index, value);
@@ -995,6 +997,7 @@ bool has_id_hash_map_at(value_t map, value_t key) {
 
 value_t delete_id_hash_map_at(runtime_t *runtime, value_t map, value_t key) {
   CHECK_FAMILY(ofIdHashMap, map);
+  CHECK_MUTABLE(map);
   TRY_DEF(hash_value, value_transient_identity_hash(key));
   // Try to find the key in the map.
   size_t hash = get_integer_value(hash_value);
@@ -1261,7 +1264,6 @@ value_t key_ordering_compare(value_t a, value_t b) {
 
 ACCESSORS_IMPL(Instance, instance, acInFamily, ofIdHashMap, Fields, fields);
 NO_BUILTIN_METHODS(instance);
-FIXED_GET_MODE_IMPL(instance, vmMutable);
 
 value_t get_instance_field(value_t value, value_t key) {
   value_t fields = get_instance_fields(value);
@@ -1302,6 +1304,17 @@ value_t set_instance_contents(value_t instance, runtime_t *runtime,
 
 value_t get_instance_protocol(value_t self, runtime_t *runtime) {
   return get_instance_primary_protocol(self);
+}
+
+value_mode_t get_instance_mode(value_t self) {
+  return vmMutable;
+}
+
+value_t set_instance_mode_unchecked(runtime_t *runtime, value_t self,
+    value_mode_t mode) {
+  // TODO: implement this.
+  UNREACHABLE("setting instance mode not implemented");
+  return new_invalid_mode_change_signal(get_instance_mode(self));
 }
 
 
@@ -1397,7 +1410,6 @@ void protocol_print_atomic_on(value_t value, string_buffer_t *buf) {
 
 NO_BUILTIN_METHODS(argument_map_trie);
 TRIVIAL_PRINT_ON_IMPL(ArgumentMapTrie, argument_map_trie);
-FIXED_GET_MODE_IMPL(argument_map_trie, vmMutable);
 
 ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, acInFamily, ofArray, Value, value);
 ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, acInFamily, ofArrayBuffer,
@@ -1419,6 +1431,7 @@ static size_t argument_map_key_to_integer(value_t key) {
 }
 
 value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, value_t key) {
+  CHECK_MUTABLE(self);
   size_t index = argument_map_key_to_integer(key);
   value_t children = get_argument_map_trie_children(self);
   // Check if we've already build that child.
@@ -1438,9 +1451,16 @@ value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, value_t ke
   for (size_t i = 0; i < old_length; i++)
     set_array_at(new_value, i, get_array_at(old_value, i));
   set_array_at(new_value, old_length, key);
+  TRY(ensure_frozen(runtime, new_value));
   TRY_DEF(new_child, new_heap_argument_map_trie(runtime, new_value));
   set_array_buffer_at(children, index, new_child);
   return new_child;
+}
+
+value_t ensure_argument_map_trie_owned_values_frozen(runtime_t *runtime,
+    value_t self) {
+  TRY(ensure_frozen(runtime, get_argument_map_trie_children(self)));
+  return success();
 }
 
 
@@ -1448,7 +1468,6 @@ value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, value_t ke
 
 GET_FAMILY_PROTOCOL_IMPL(lambda);
 TRIVIAL_PRINT_ON_IMPL(Lambda, lambda);
-FIXED_GET_MODE_IMPL(lambda, vmMutable);
 
 ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, ofMethodspace, Methods, methods);
 ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, ofArray, Outers, outers);
@@ -1477,11 +1496,15 @@ value_t get_lambda_outer(value_t self, size_t index) {
   return get_array_at(outers, index);
 }
 
+value_t ensure_lambda_owned_values_frozen(runtime_t *runtime, value_t self) {
+  TRY(ensure_frozen(runtime, get_lambda_outers(self)));
+  return success();
+}
+
 
 // --- N a m e s p a c e ---
 
 TRIVIAL_PRINT_ON_IMPL(Namespace, namespace);
-FIXED_GET_MODE_IMPL(namespace, vmMutable);
 
 ACCESSORS_IMPL(Namespace, namespace, acInFamilyOpt, ofIdHashMap, Bindings, bindings);
 
@@ -1507,11 +1530,15 @@ value_t get_namespace_binding_at(value_t namespace, value_t name) {
   return get_id_hash_map_at(bindings, name);
 }
 
+value_t ensure_namespace_owned_values_frozen(runtime_t *runtime, value_t self) {
+  TRY(ensure_frozen(runtime, get_namespace_bindings(self)));
+  return success();
+}
+
 
 // --- M o d u l e ---
 
 TRIVIAL_PRINT_ON_IMPL(Module, module);
-FIXED_GET_MODE_IMPL(module, vmMutable);
 
 ACCESSORS_IMPL(Module, module, acInFamilyOpt, ofNamespace, Namespace, namespace);
 ACCESSORS_IMPL(Module, module, acInFamilyOpt, ofMethodspace, Methodspace, methodspace);

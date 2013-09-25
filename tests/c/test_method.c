@@ -189,7 +189,7 @@ TEST(method, invocation_record) {
       vInt(3) o vInt(2) o vInt(1) o vInt(0));
   value_t argument_vector = build_invocation_record_vector(runtime,
       variant_to_value(runtime, raw_array));
-  value_t record = new_heap_invocation_record(runtime, argument_vector);
+  value_t record = new_heap_invocation_record(runtime, afFreeze, argument_vector);
   ASSERT_EQ(kCount, get_invocation_record_argument_count(record));
   for (size_t i = 0; i < kCount; i++) {
     ASSERT_VALEQ(new_integer(i), get_invocation_record_tag_at(record, i));
@@ -205,7 +205,7 @@ TEST(method, invocation_record) {
 static value_t make_invocation_record(runtime_t *runtime, variant_t variant) {
   TRY_DEF(argument_vector, build_invocation_record_vector(runtime,
       variant_to_value(runtime, variant)));
-  return new_heap_invocation_record(runtime, argument_vector);
+  return new_heap_invocation_record(runtime, afFreeze, argument_vector);
 }
 
 TEST(method, make_invocation_record) {
@@ -370,7 +370,7 @@ void assert_match_with_offsets(runtime_t *runtime, match_result_t expected_resul
     frame_push_value(&frame, variant_to_value(runtime, arg.value));
   }
   value_t vector = build_invocation_record_vector(runtime, tags);
-  value_t record = new_heap_invocation_record(runtime, vector);
+  value_t record = new_heap_invocation_record(runtime, afFreeze, vector);
   static const size_t kLength = 16;
   score_t scores[16];
   size_t offsets[16];
@@ -662,7 +662,7 @@ static void test_lookup(runtime_t *runtime, value_t expected, value_t first,
     set_pair_array_second_at(vector, i, new_integer(2 - i));
     frame_push_value(&frame, values[i]);
   }
-  value_t record = new_heap_invocation_record(runtime, vector);
+  value_t record = new_heap_invocation_record(runtime, afFreeze, vector);
   value_t arg_map;
   value_t method = lookup_methodspace_method(runtime, space, record, &frame,
       &arg_map);

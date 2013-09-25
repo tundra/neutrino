@@ -232,7 +232,7 @@ static value_t new_moved_object(value_t target) {
 // Enumerates the compact object species.
 #define ENUM_OTHER_OBJECT_FAMILIES(F)                                             \
   F(ArgumentAst,             argument_ast,              _, _, X, X, _, _, _, _, _)\
-  F(ArgumentMapTrie,         argument_map_trie,         _, _, _, _, _, _, _, _, _)\
+  F(ArgumentMapTrie,         argument_map_trie,         _, _, _, _, _, _, _, X, X)\
   F(Array,                   array,                     _, X, _, X, X, _, _, X, _)\
   F(ArrayAst,                array_ast,                 _, _, X, X, _, _, X, _, _)\
   F(ArrayBuffer,             array_buffer,              _, _, _, X, _, _, _, X, X)\
@@ -244,18 +244,18 @@ static value_t new_moved_object(value_t target) {
   F(IdHashMap,               id_hash_map,               _, _, _, X, _, X, _, X, X)\
   F(Instance,                instance,                  _, _, X, X, _, _, _, _, _)\
   F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _, _)\
-  F(InvocationRecord,        invocation_record,         _, _, _, _, _, _, _, _, _)\
+  F(InvocationRecord,        invocation_record,         _, _, _, _, _, _, _, X, X)\
   F(Key,                     key,                       X, _, _, X, _, _, _, X, _)\
-  F(Lambda,                  lambda,                    _, _, _, X, _, _, _, _, _)\
+  F(Lambda,                  lambda,                    _, _, _, X, _, _, _, X, X)\
   F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, _, _)\
   F(LiteralAst,              literal_ast,               _, _, X, X, _, _, X, _, _)\
   F(LocalDeclarationAst,     local_declaration_ast,     _, _, X, X, _, _, X, _, _)\
   F(Method,                  method,                    _, _, _, _, _, _, _, X, _)\
   F(Methodspace,             methodspace,               _, _, X, _, _, _, _, X, X)\
-  F(Module,                  module,                    _, _, X, _, _, _, _, _, _)\
+  F(Module,                  module,                    _, _, X, _, _, _, _, X, _)\
   F(MutableRoots,            mutable_roots,             _, _, _, _, _, _, _, X, X)\
   F(NameAst,                 name_ast,                  _, _, X, _, _, _, _, _, _)\
-  F(Namespace,               namespace,                 _, _, X, _, _, _, _, _, _)\
+  F(Namespace,               namespace,                 _, _, X, _, _, _, _, X, X)\
   F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _)\
   F(Nothing,                 nothing,                   _, _, _, _, _, _, _, _, _)\
   F(Null,                    null,                      _, X, _, X, _, _, _, _, _)\

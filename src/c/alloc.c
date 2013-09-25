@@ -252,7 +252,7 @@ value_t new_heap_argument_map_trie(runtime_t *runtime, value_t value) {
   TRY_DEF(children, new_heap_array_buffer(runtime, 2));
   size_t size = kArgumentMapTrieSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, argument_map_trie_species)));
+      ROOT(runtime, mutable_argument_map_trie_species)));
   set_argument_map_trie_value(result, value);
   set_argument_map_trie_children(result, children);
   return post_create_sanity_check(result, size);
@@ -261,7 +261,7 @@ value_t new_heap_argument_map_trie(runtime_t *runtime, value_t value) {
 value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t outers) {
   size_t size = kLambdaSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, lambda_species)));
+      ROOT(runtime, mutable_lambda_species)));
   set_lambda_methods(result, methods);
   set_lambda_outers(result, outers);
   return post_create_sanity_check(result, size);
@@ -271,14 +271,15 @@ value_t new_heap_namespace(runtime_t *runtime) {
   TRY_DEF(bindings, new_heap_id_hash_map(runtime, 16));
   size_t size = kNamespaceSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, namespace_species)));
+      ROOT(runtime, mutable_namespace_species)));
   set_namespace_bindings(result, bindings);
   return post_create_sanity_check(result, size);
 }
 
 value_t new_heap_module(runtime_t *runtime, value_t namespace, value_t methodspace) {
   size_t size = kModuleSize;
-  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, module_species)));
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_module_species)));
   set_module_namespace(result, namespace);
   set_module_methodspace(result, methodspace);
   return post_create_sanity_check(result, size);
@@ -379,12 +380,14 @@ value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signatu
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_invocation_record(runtime_t *runtime, value_t argument_vector) {
+value_t new_heap_invocation_record(runtime_t *runtime, alloc_flags_t flags,
+    value_t argument_vector) {
   size_t size = kInvocationRecordSize;
   CHECK_TRUE("unsorted argument array", is_pair_array_sorted(argument_vector));
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, invocation_record_species)));
+      ROOT(runtime, mutable_invocation_record_species)));
   set_invocation_record_argument_vector(result, argument_vector);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
