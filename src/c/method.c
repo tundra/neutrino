@@ -274,8 +274,10 @@ value_t set_guard_contents(value_t object, runtime_t *runtime, value_t contents)
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(type_str, get_id_hash_map_at(contents, RSTR(runtime, type)));
   TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
-  EXPECT_FAMILY(scInvalidInput, ofString, type_str);
   guard_type_t type;
+  // Maybe passing an integer enum will be good enough? Or does that conflict
+  // with being self-describing?
+  EXPECT_FAMILY(scInvalidInput, ofString, type_str);
   char type_char = get_string_chars(type_str)[0];
   switch (type_char) {
     case '=': type = gtEq; break;

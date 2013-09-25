@@ -534,8 +534,7 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   TRY_DEF(vector, new_heap_pair_array(runtime, total_argc));
   set_pair_array_first_at(vector, 0, ROOT(runtime, subject_key));
   // Since this methodspace belongs to the lambda we don't have to guard the
-  // receiver, we know it'll be the lambda. At least, I think that reasoning
-  // works.
+  // receiver, we know it'll be the lambda.
   TRY_DEF(subject_param, new_heap_parameter(runtime, afFreeze, ROOT(runtime, any_guard),
       false, 0));
   set_pair_array_second_at(vector, 0, subject_param);
