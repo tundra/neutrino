@@ -533,8 +533,11 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   size_t total_argc = implicit_argc + explicit_argc;
   TRY_DEF(vector, new_heap_pair_array(runtime, total_argc));
   set_pair_array_first_at(vector, 0, ROOT(runtime, subject_key));
-  value_t any_guard = ROOT(runtime, any_guard);
-  TRY_DEF(subject_param, new_heap_parameter(runtime, afFreeze, any_guard, false, 0));
+  // Since this methodspace belongs to the lambda we don't have to guard the
+  // receiver, we know it'll be the lambda. At least, I think that reasoning
+  // works.
+  TRY_DEF(subject_param, new_heap_parameter(runtime, afFreeze, ROOT(runtime, any_guard),
+      false, 0));
   set_pair_array_second_at(vector, 0, subject_param);
   set_pair_array_first_at(vector, 1, ROOT(runtime, selector_key));
   TRY_DEF(selector_guard, new_heap_guard(runtime, afFreeze, gtEq, RSTR(runtime, sausages)));
@@ -548,7 +551,7 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   // single scope that does both but this way is cleaner and allows the two
   // parts to be used independently from each other. Also, we don't really need
   // the scopes until the part where the method space is built but it's
-  // convenient to have the map scope to we can add stuff to it when going
+  // convenient to have the map scope so we can add stuff to it when going
   // through the parameters.
   map_scope_t param_scope;
   TRY(assembler_push_map_scope(assm, &param_scope));
@@ -562,7 +565,8 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
     CHECK_EQ("multi tags", 1, get_array_length(tags));
     value_t tag = get_array_at(tags, 0);
     set_pair_array_first_at(vector, param_index, tag);
-    TRY_DEF(param, new_heap_parameter(runtime, afFreeze, any_guard, false, param_index));
+    value_t guard = get_parameter_ast_guard(param_ast);
+    TRY_DEF(param, new_heap_parameter(runtime, afFreeze, guard, false, param_index));
     set_pair_array_second_at(vector, param_index, param);
     // Bind the parameter in the local scope.
     value_t symbol = get_parameter_ast_symbol(param_ast);
@@ -634,11 +638,13 @@ FIXED_GET_MODE_IMPL(parameter_ast, vmMutable);
 ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, ofSymbolAst, Symbol,
     symbol);
 ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, ofArray, Tags, tags);
+ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, ofGuard, Guard, guard);
 
 value_t parameter_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofParameterAst, self);
   VALIDATE_FAMILY_OPT(ofSymbolAst, get_parameter_ast_symbol(self));
   VALIDATE_FAMILY_OPT(ofArray, get_parameter_ast_tags(self));
+  VALIDATE_FAMILY_OPT(ofGuard, get_parameter_ast_guard(self));
   return success();
 }
 
@@ -646,14 +652,16 @@ value_t set_parameter_ast_contents(value_t object, runtime_t *runtime, value_t c
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(symbol, get_id_hash_map_at(contents, RSTR(runtime, symbol)));
   TRY_DEF(tags, get_id_hash_map_at(contents, RSTR(runtime, tags)));
+  TRY_DEF(guard, get_id_hash_map_at(contents, RSTR(runtime, guard)));
   set_parameter_ast_symbol(object, symbol);
   set_parameter_ast_tags(object, tags);
+  set_parameter_ast_guard(object, guard);
   return success();
 }
 
 static value_t new_parameter_ast(runtime_t *runtime) {
   return new_heap_parameter_ast(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
+      ROOT(runtime, nothing), ROOT(runtime, nothing));
 }
 
 

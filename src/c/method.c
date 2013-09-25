@@ -270,6 +270,24 @@ void guard_print_atomic_on(value_t self, string_buffer_t *buf) {
   }
 }
 
+value_t set_guard_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(type_str, get_id_hash_map_at(contents, RSTR(runtime, type)));
+  TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
+  EXPECT_FAMILY(scInvalidInput, ofString, type_str);
+  guard_type_t type;
+  char type_char = get_string_chars(type_str)[0];
+  switch (type_char) {
+    case '=': type = gtEq; break;
+    case 'i': type = gtIs; break;
+    case '*': type = gtAny; break;
+    default: return new_signal(scInvalidInput);
+  }
+  set_guard_type(object, type);
+  set_guard_value(object, value);
+  return success();
+}
+
 
 // --- M e t h o d ---
 

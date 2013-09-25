@@ -483,12 +483,14 @@ value_t new_heap_lambda_ast(runtime_t *runtime, value_t signature, value_t body)
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags) {
+value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags,
+    value_t guard) {
   size_t size = kParameterAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, parameter_ast_species)));
   set_parameter_ast_symbol(result, symbol);
   set_parameter_ast_tags(result, tags);
+  set_parameter_ast_guard(result, guard);
   return post_create_sanity_check(result, size);
 }
 

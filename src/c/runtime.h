@@ -20,6 +20,7 @@
   F(core,               "core")                                                \
   F(elements,           "elements")                                            \
   F(entry_point,        "entry_point")                                         \
+  F(guard,              "guard")                                               \
   F(imports,            "imports")                                             \
   F(inheritance,        "inheritance")                                         \
   F(methods,            "methods")                                             \
@@ -35,6 +36,7 @@
   F(symbol,             "symbol")                                              \
   F(tag,                "tag")                                                 \
   F(tags,               "tags")                                                \
+  F(type,               "type")                                                \
   F(value,              "value")                                               \
   F(values,             "values")
 

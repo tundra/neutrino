@@ -150,9 +150,10 @@ ACCESSORS_DECL(lambda_ast, body);
 
 // --- P a r a m e t e r   a s t ---
 
-static const size_t kParameterAstSize = OBJECT_SIZE(2);
+static const size_t kParameterAstSize = OBJECT_SIZE(3);
 static const size_t kParameterAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kParameterAstTagsOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kParameterAstGuardOffset = OBJECT_FIELD_OFFSET(2);
 
 // The symbol that identifies this parameter.
 ACCESSORS_DECL(parameter_ast, symbol);
@@ -160,6 +161,8 @@ ACCESSORS_DECL(parameter_ast, symbol);
 // The list of tags matched by this parameter.
 ACCESSORS_DECL(parameter_ast, tags);
 
+// The argument guard.
+ACCESSORS_DECL(parameter_ast, guard);
 
 // --- S i g n a t u r e   a s t ---
 
