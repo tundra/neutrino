@@ -71,7 +71,7 @@ class ScopeVisitor(ast.Visitor):
 
   def visit_lambda(self, that):
     bindings = {}
-    for param in that.parameters:
+    for param in that.signature.parameters:
       param.symbol = ast.Symbol(param.name)
       bindings[param.name] = param.symbol
     outer_scope = self.scope

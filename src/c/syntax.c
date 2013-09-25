@@ -508,15 +508,15 @@ static value_t new_symbol_ast(runtime_t *runtime) {
 }
 
 
-// --- L a m b d a ---
+// --- L a m b d a   a s t ---
 
 GET_FAMILY_PROTOCOL_IMPL(lambda_ast);
 NO_BUILTIN_METHODS(lambda_ast);
 TRIVIAL_PRINT_ON_IMPL(LambdaAst, lambda_ast);
 FIXED_GET_MODE_IMPL(lambda_ast, vmMutable);
 
-ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, ofArray, Parameters,
-    parameters);
+ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, ofSignatureAst, Signature,
+    signature);
 ACCESSORS_IMPL(LambdaAst, lambda_ast, acIsSyntaxOpt, 0, Body, body);
 
 value_t emit_lambda_ast(value_t value, assembler_t *assm) {
@@ -527,7 +527,7 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
 
   // Build the signature. First part is the standard preamble: subject and
   // selector.
-  value_t params = get_lambda_ast_parameters(value);
+  value_t params = get_signature_ast_parameters(get_lambda_ast_signature(value));
   size_t implicit_argc = 2;
   size_t explicit_argc = get_array_length(params);
   size_t total_argc = implicit_argc + explicit_argc;
@@ -605,15 +605,15 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
 
 value_t lambda_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofLambdaAst, self);
-  VALIDATE_FAMILY_OPT(ofArray, get_lambda_ast_parameters(self));
+  VALIDATE_FAMILY_OPT(ofSignatureAst, get_lambda_ast_signature(self));
   return success();
 }
 
 value_t set_lambda_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(parameters, get_id_hash_map_at(contents, RSTR(runtime, parameters)));
+  TRY_DEF(signature, get_id_hash_map_at(contents, RSTR(runtime, signature)));
   TRY_DEF(body, get_id_hash_map_at(contents, RSTR(runtime, body)));
-  set_lambda_ast_parameters(object, parameters);
+  set_lambda_ast_signature(object, signature);
   set_lambda_ast_body(object, body);
   return success();
 }
@@ -624,7 +624,7 @@ static value_t new_lambda_ast(runtime_t *runtime) {
 }
 
 
-// --- P a r a m e t e r ---
+// --- P a r a m e t e r   a s t ---
 
 GET_FAMILY_PROTOCOL_IMPL(parameter_ast);
 NO_BUILTIN_METHODS(parameter_ast);
@@ -657,7 +657,35 @@ static value_t new_parameter_ast(runtime_t *runtime) {
 }
 
 
-// --- P r o g r a m ---
+// --- S i g n a t u r e   a s t ---
+
+GET_FAMILY_PROTOCOL_IMPL(signature_ast);
+NO_BUILTIN_METHODS(signature_ast);
+TRIVIAL_PRINT_ON_IMPL(SignatureAst, signature_ast);
+FIXED_GET_MODE_IMPL(signature_ast, vmMutable);
+
+ACCESSORS_IMPL(SignatureAst, signature_ast, acInFamilyOpt, ofArray,
+    Parameters, parameters);
+
+value_t signature_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofSignatureAst, self);
+  VALIDATE_FAMILY_OPT(ofArray, get_signature_ast_parameters(self));
+  return success();
+}
+
+value_t set_signature_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(parameters, get_id_hash_map_at(contents, RSTR(runtime, parameters)));
+  set_signature_ast_parameters(object, parameters);
+  return success();
+}
+
+static value_t new_signature_ast(runtime_t *runtime) {
+  return new_heap_signature_ast(runtime, ROOT(runtime, nothing));
+}
+
+
+// --- P r o g r a m   a s t ---
 
 TRIVIAL_PRINT_ON_IMPL(ProgramAst, program_ast);
 FIXED_GET_MODE_IMPL(program_ast, vmMutable);
@@ -752,6 +780,7 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "Parameter", new_parameter_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Program", new_program_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Sequence", new_sequence_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Signature", new_signature_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Symbol", new_symbol_ast, runtime));
   return success();
 }

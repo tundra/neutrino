@@ -474,11 +474,11 @@ value_t new_heap_symbol_ast(runtime_t *runtime, value_t name) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_lambda_ast(runtime_t *runtime, value_t params, value_t body) {
+value_t new_heap_lambda_ast(runtime_t *runtime, value_t signature, value_t body) {
   size_t size = kLambdaAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, lambda_ast_species)));
-  set_lambda_ast_parameters(result, params);
+  set_lambda_ast_signature(result, signature);
   set_lambda_ast_body(result, body);
   return post_create_sanity_check(result, size);
 }
@@ -489,6 +489,14 @@ value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags)
       ROOT(runtime, parameter_ast_species)));
   set_parameter_ast_symbol(result, symbol);
   set_parameter_ast_tags(result, tags);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_signature_ast(runtime_t *runtime, value_t parameters) {
+  size_t size = kSignatureAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, signature_ast_species)));
+  set_signature_ast_parameters(result, parameters);
   return post_create_sanity_check(result, size);
 }
 

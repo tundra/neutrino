@@ -126,18 +126,22 @@ class Parser(object):
   #   -> "fn" <parameters> <sequence expression>
   def parse_lambda_expression(self):
     self.expect_word('fn')
-    params = self.parse_parameters()
+    signature = self.parse_signature()
     if self.at_punctuation('{'):
       value = self.parse_sequence_expression()
     else:
       self.expect_punctuation('=>')
       value = self.parse_word_expression()
-    return ast.Lambda(params, value)
+    return ast.Lambda(signature, value)
 
   # Are we currently at a token that is allowed as the first token of a
   # parameter?
   def at_parameter_start(self):
     return self.at_type(Token.IDENTIFIER)
+
+  # Same as parse_parameters but returns a full signature.
+  def parse_signature(self):
+    return ast.Signature(self.parse_parameters())
 
   # <parameters>
   #   -> "(" <parameter> *: "," ")"
@@ -166,7 +170,7 @@ class Parser(object):
 
   def parse_parameter(self, default_tag):
     name = self.expect_type(Token.IDENTIFIER)
-    return ast.Parameter(name, [default_tag])
+    return ast.Parameter(name, [default_tag], data.Guard.any())
 
   # <operator expression>
   #   -> <call expression> +: <operation>

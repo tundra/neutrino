@@ -266,6 +266,7 @@ static value_t new_moved_object(value_t target) {
   F(Roots,                   roots,                     _, _, _, _, _, _, _, X, X)\
   F(SequenceAst,             sequence_ast,              _, _, X, X, _, _, X, _, _)\
   F(Signature,               signature,                 _, _, _, _, _, _, _, X, X)\
+  F(SignatureAst,            signature_ast,             _, _, X, X, _, _, _, _, _)\
   F(Stack,                   stack,                     _, _, _, _, _, _, _, _, _)\
   F(StackPiece,              stack_piece,               _, _, _, _, _, _, _, _, _)\
   F(String,                  string,                    X, X, _, X, X, _, _, _, _)\

@@ -31,6 +31,7 @@
   F(path,               "path")                                                \
   F(phase,              "phase")                                               \
   F(sausages,           "()")                                                  \
+  F(signature,          "signature")                                           \
   F(symbol,             "symbol")                                              \
   F(tag,                "tag")                                                 \
   F(tags,               "tags")                                                \

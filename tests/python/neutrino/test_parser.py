@@ -12,6 +12,7 @@ nd = ast.NamespaceDeclaration
 pg = lambda *e: ast.Program(e)
 pm = lambda n, *t: ast.Parameter(n, t)
 sq = lambda *e: ast.Sequence(e)
+sg = lambda *p: ast.Signature(p)
 
 def nm(names, phase=0):
   if isinstance(names, list):
@@ -115,19 +116,19 @@ class ParserTest(unittest.TestCase):
 
   def test_lambda(self):
     test = self.check_expression
-    test('fn () => $x', lm([], id("x")))
-    test('fn ($x) => $x', lm([pm(nm("x"), 0)], id("x")))
-    test('fn ($x, $y, $z) => $x', lm([pm(nm("x"), 0), pm(nm("y"), 1), pm(nm("z"), 2)], id("x")))
-    test('fn ($x, $y) => $x', lm([pm(nm("x"), 0), pm(nm("y"), 1)], id("x")))
-    test('fn ($x, $y, $z) => $x', lm([pm(nm("x"), 0), pm(nm("y"), 1), pm(nm("z"), 2)], id("x")))
-    test('fn => $x', lm([], id("x")))
-    test('fn $x => $x', lm([pm(nm("x"), 0)], id("x")))
-    test('fn $x { }', lm([pm(nm("x"), 0)], lt(None)))
-    test('fn $x { $x; }', lm([pm(nm("x"), 0)], id("x")))
-    test('fn { }', lm([], lt(None)))
-    test('fn { $x; }', lm([], id("x")))
-    test('fn () { }', lm([], lt(None)))
-    test('fn ($x) { $x; }', lm([pm(nm("x"), 0)], id("x")))
+    test('fn () => $x', lm(sg(), id("x")))
+    test('fn ($x) => $x', lm(sg(pm(nm("x"), 0)), id("x")))
+    test('fn ($x, $y, $z) => $x', lm(sg(pm(nm("x"), 0), pm(nm("y"), 1), pm(nm("z"), 2)), id("x")))
+    test('fn ($x, $y) => $x', lm(sg(pm(nm("x"), 0), pm(nm("y"), 1)), id("x")))
+    test('fn ($x, $y, $z) => $x', lm(sg(pm(nm("x"), 0), pm(nm("y"), 1), pm(nm("z"), 2)), id("x")))
+    test('fn => $x', lm(sg(), id("x")))
+    test('fn $x => $x', lm(sg(pm(nm("x"), 0)), id("x")))
+    test('fn $x { }', lm(sg(pm(nm("x"), 0)), lt(None)))
+    test('fn $x { $x; }', lm(sg(pm(nm("x"), 0)), id("x")))
+    test('fn { }', lm(sg(), lt(None)))
+    test('fn { $x; }', lm(sg(), id("x")))
+    test('fn () { }', lm(sg(), lt(None)))
+    test('fn ($x) { $x; }', lm(sg(pm(nm("x"), 0)), id("x")))
 
   def test_program_toplevel(self):
     test = self.check_program
