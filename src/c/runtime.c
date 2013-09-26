@@ -168,7 +168,9 @@ value_t roots_validate(value_t roots) {
   VALIDATE_OBJECT(ofProtocol, RAW_ROOT(roots, integer_protocol));
   VALIDATE_OBJECT(ofSpecies, RAW_ROOT(roots, empty_instance_species));
   VALIDATE_OBJECT(ofKey, RAW_ROOT(roots, subject_key));
+  VALIDATE_CHECK_EQ(0, get_key_id(RAW_ROOT(roots, subject_key)));
   VALIDATE_OBJECT(ofKey, RAW_ROOT(roots, selector_key));
+  VALIDATE_CHECK_EQ(1, get_key_id(RAW_ROOT(roots, selector_key)));
   VALIDATE_OBJECT(ofMethodspace, RAW_ROOT(roots, builtin_methodspace));
 
 #define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_OBJECT(ofString, RAW_RSTR(roots, name));

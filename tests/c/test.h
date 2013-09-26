@@ -167,7 +167,8 @@ typedef enum {
   vtString,
   vtBool,
   vtNull,
-  vtArray
+  vtArray,
+  vtValue
 } variant_type_t;
 
 // A variant which can hold various C data types. Used for various convenience
@@ -182,6 +183,7 @@ typedef struct variant_t {
       size_t length;
       struct variant_t *elements;
     } as_array;
+    value_t as_value;
   } value;
 } variant_t;
 
@@ -194,8 +196,11 @@ typedef struct variant_t {
 // Creates a variant bool with the given value.
 #define vBool(V) ((variant_t) {vtBool, {.as_bool=(V)}})
 
-// Creates a variant null with the given value.
+// Creates a variant null.
 #define vNull() ((variant_t) {vtNull, {.as_integer=0}})
+
+// Creates a variant which represents the given value_t.
+#define vValue(V) ((variant_t) {vtValue, {.as_value=(V)}})
 
 #define vEmptyArray() ((variant_t) {vtArray, {.as_array={0, 0}}})
 

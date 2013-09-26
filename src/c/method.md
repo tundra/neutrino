@@ -41,3 +41,19 @@ Because of all this there are five (!) ways to sort tags and it's important to a
  * Sorted invocation order. This is the order of invocation tags after they've been sorted.
 
 During lookup we're always dealing with the sorted orders. A lookup proceeds by a linear scan, matching the list of invocation tags, which are sorted, against the signature tags which are also sorted. For each match in the signature we check that the parameter hasn't been seen before (so if you pass arguments for tags `"x"` and `0` we'll recognize it) and record how well the argument matches the parameter.
+
+## Parameter ordering
+
+Each parameter has an index which is used to identify the parameter at runtime. To access `this` the code will know the index of that parameter and the argument map will say where the argument is on the stack that corresponds to that parameter.
+
+The indexes can be assigned in any arbitrary ordering, whatever the order the argument map will ensure that you get the right parameter. However, it is best if there is a bias towards using the same argument maps since it saves on argument map allocation. Also, if there is a strong bias it would allow an optimization where a method can be compiled in two modes, one that assumes a canonical argument mapping and hence doesn't need the argument map at all but which can only be used if the arguments are passed in the right order, and one that is fully general which can handle any ordering but is slower.
+
+The approach chosen numbers the parameters according to where they're most likely to appear in evaluation order. The most likely order is,
+
+ * **0**: The subject argument, `this`.
+ * **1**: The selector argument, `selector`.
+ * **2**: The `0`'th positional argument.
+ * **3**: The `1`'th positional argument.
+ * ... and so on ...
+ * Finally arguments whose tags are neither `this`, `selector`, or integer in any order.
+
