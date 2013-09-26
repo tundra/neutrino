@@ -49,6 +49,63 @@ value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
   RETRY_ONCE_IMPL(runtime, compile_expression(runtime, deref(ast), scope_callback));
 }
 
+size_t get_parameter_order_index_for_array(value_t tags) {
+  size_t result = kMaxOrderIndex;
+  for (size_t i = 0; i < get_array_length(tags); i++) {
+    value_t tag = get_array_at(tags, i);
+    if (in_domain(vdInteger, tag)) {
+      result = min_size(result, 2 + get_integer_value(tag));
+    } else if (in_family(ofKey, tag)) {
+      size_t id = get_key_id(tag);
+      if (id < 2)
+        result = min_size(result, id);
+    }
+  }
+  return result;
+}
+
+// Given two pointers to value arrays, compares them according to the parameter
+// ordering for arrays.
+static int compare_parameter_ordering_entries(const void *vp_a, const void *vp_b) {
+  value_t a = *((const value_t*) vp_a);
+  value_t b = *((const value_t*) vp_b);
+  size_t oi_a = get_parameter_order_index_for_array(a);
+  size_t oi_b = get_parameter_order_index_for_array(b);
+  if (oi_a < oi_b) {
+    return -1;
+  } else if (oi_a > oi_b) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+void calc_parameter_ordering(value_t tags, value_t *scratch, size_t scratchc,
+    size_t *ordering, size_t orderingc) {
+  size_t tagc = get_array_length(tags);
+  CHECK_TRUE("not enough scratch", scratchc >= tagc * 2);
+  CHECK_TRUE("not enough ordering", orderingc >= tagc);
+  // First store the tag arrays in the scratch array, each along the the index
+  // it came from in the tag array.
+  for (size_t i = 0; i < tagc; i++) {
+    scratch[i * 2] = get_array_at(tags, i);
+    scratch[(i * 2) + 1] = new_integer(i);
+  }
+  // Sort the entries by parameter ordering. This moves the subject and selector
+  // parameters to the front, followed by the integers, followed by the rest
+  // in some arbitrary order. Note that the *2 means that the integers are
+  // just moved along, they're not included in the sorting.
+  qsort(scratch, tagc, sizeof(value_t) * 2, compare_parameter_ordering_entries);
+  // Transfer the resulting ordering to the output array.
+  for (size_t i = 0; i < tagc; i++) {
+    // This is the original position of the entry that is now the i'th in the
+    // sorted parameter order.
+    value_t origin = scratch[(i * 2) + 1];
+    // Store a reverse mapping from the origin to that position.
+    ordering[get_integer_value(origin)] = i;
+  }
+}
+
 // Forward declare all the emit methods.
 #define __EMIT_SYNTAX_FAMILY_EMIT__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)\
     EM(                                                                            \
@@ -56,7 +113,6 @@ value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
       )
     ENUM_OBJECT_FAMILIES(__EMIT_SYNTAX_FAMILY_EMIT__)
 #undef __EMIT_SYNTAX_FAMILY_EMIT__
-
 
 // --- L i t e r a l ---
 

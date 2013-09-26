@@ -53,6 +53,11 @@ static size_t max_size(size_t a, size_t b) {
   return (a < b) ? b : a;
 }
 
+// Returns the smallest of a and b.
+static size_t min_size(size_t a, size_t b) {
+  return (a < b) ? a : b;
+}
+
 // Ensures that the compiler knows that the expression is used but doesn't cause
 // it to be executed.
 #define USE(E) do { if (false) { E; } } while (false)

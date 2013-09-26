@@ -236,6 +236,8 @@ value_t variant_to_value(runtime_t *runtime, variant_t variant) {
       return runtime_bool(runtime, variant.value.as_bool);
     case vtNull:
       return ROOT(runtime, null);
+    case vtValue:
+      return variant.value.as_value;
     case vtArray: {
       size_t length = variant.value.as_array.length;
       TRY_DEF(result, new_heap_array(runtime, length));

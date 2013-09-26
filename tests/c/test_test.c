@@ -24,6 +24,9 @@ TEST(test, variant) {
   ASSERT_VALEQ(new_integer(1), get_array_at(arr, 1));
   ASSERT_VALEQ(new_integer(2), get_array_at(arr, 2));
 
+  value_t val = variant_to_value(runtime, vValue(ROOT(runtime, empty_array)));
+  ASSERT_SAME(ROOT(runtime, empty_array), val);
+
   DISPOSE_RUNTIME();
 }
 
