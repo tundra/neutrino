@@ -10,6 +10,8 @@
 #include "interp.h"
 #include "value.h"
 
+
+
 // Identifies what kind of binding a bound symbol represents.
 typedef enum {
   // A local variable in the current scope.
@@ -58,6 +60,30 @@ void scope_lookup_callback_init_bottom(scope_lookup_callback_t *callback);
 value_t scope_lookup_callback_call(scope_lookup_callback_t *callback,
     value_t symbol, binding_info_t *info_out);
 
+// A block of reusable scratch memory. It can be used to grab a block of memory
+// of a given size without worrying about releasing it. Just be sure not to
+// have two different users at the same time.
+typedef struct {
+  // The current memory block.
+  memory_block_t memory;
+} reusable_scratch_memory_t;
+
+// Initializes a reusable scratch memory block.
+void reusable_scratch_memory_init(reusable_scratch_memory_t *memory);
+
+// Disposes this scratch memory block, releasing any memory returned from this
+// block. Obviously this invalidates any memory blocks ever returned from this
+// block.
+void reusable_scratch_memory_dispose(reusable_scratch_memory_t *memory);
+
+// Returns a memory block of the given size backed by the given reusable memory
+// block. This invalidates any memory blocks previously returned, so only the
+// last block returned can be used. You don't have to explicitly release this
+// block, it will be disposed along with the reusable memory block whenever
+// it is disposed.
+void *reusable_scratch_memory_alloc(reusable_scratch_memory_t *memory,
+    size_t size);
+
 // Bytecode assembler data.
 typedef struct assembler_t {
   // The runtime we're generating code within.
@@ -72,6 +98,8 @@ typedef struct assembler_t {
   size_t high_water_mark;
   // The callback for resolving local symbols.
   scope_lookup_callback_t *scope_callback;
+  // A reusable memory block.
+  reusable_scratch_memory_t scratch_memory;
 } assembler_t;
 
 // Initializes an assembler. If the given scope callback is NULL it is taken to
@@ -89,6 +117,17 @@ void assembler_dispose(assembler_t *assm);
 
 // Returns a code block object containing the code written to this assembler.
 value_t assembler_flush(assembler_t *assm);
+
+// Allocates a block of scratch memory. Only one scratch block can be used at
+// any given time, the next call will invalidate and/or reuse the block returned
+// by the previous call.
+void *assembler_scratch_malloc(assembler_t *assm, size_t size);
+
+// Similar to assembler_scratch_malloc but allocates two blocks of memory in one
+// go. Really it's just a convenience for allocating one big block and splitting
+// it in two.
+void assembler_scratch_double_malloc(assembler_t *assm, size_t first_size,
+    void **first, size_t second_size, void **second);
 
 // Emits a push instruction.
 value_t assembler_emit_push(assembler_t *assm, value_t value);

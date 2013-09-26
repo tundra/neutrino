@@ -80,15 +80,16 @@ static int compare_parameter_ordering_entries(const void *vp_a, const void *vp_b
   }
 }
 
-void calc_parameter_ordering(value_t tags, value_t *scratch, size_t scratchc,
+void calc_parameter_ordering(value_t params, value_t *scratch, size_t scratchc,
     size_t *ordering, size_t orderingc) {
-  size_t tagc = get_array_length(tags);
+  size_t tagc = get_array_length(params);
   CHECK_TRUE("not enough scratch", scratchc >= tagc * 2);
   CHECK_TRUE("not enough ordering", orderingc >= tagc);
   // First store the tag arrays in the scratch array, each along the the index
   // it came from in the tag array.
   for (size_t i = 0; i < tagc; i++) {
-    scratch[i * 2] = get_array_at(tags, i);
+    value_t param = get_array_at(params, i);
+    scratch[i * 2] = get_parameter_ast_tags(param);
     scratch[(i * 2) + 1] = new_integer(i);
   }
   // Sort the entries by parameter ordering. This moves the subject and selector
@@ -587,6 +588,16 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   size_t implicit_argc = 2;
   size_t explicit_argc = get_array_length(params);
   size_t total_argc = implicit_argc + explicit_argc;
+
+  // Temporary data used to calculate the parameter ordering. Don't do any
+  // recursive emit calls between allocating these and no longer needing them
+  // since it may lead to someone else using or freeing them.
+  value_t *scratch = NULL;
+  size_t *offsets = NULL;
+  assembler_scratch_double_malloc(assm,
+      2 * total_argc * sizeof(value_t), (void**) &scratch,
+      total_argc * sizeof(size_t), (void**) &offsets);
+
   TRY_DEF(vector, new_heap_pair_array(runtime, total_argc));
   set_pair_array_first_at(vector, 0, ROOT(runtime, subject_key));
   // Since this methodspace belongs to the lambda we don't have to guard the
@@ -611,10 +622,12 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   map_scope_t param_scope;
   TRY(assembler_push_map_scope(assm, &param_scope));
 
+  calc_parameter_ordering(params, scratch, 2 * total_argc, offsets, total_argc);
+
   // Build the positional argument part of the signature.
   for (size_t i = 0; i < explicit_argc; i++) {
     // Add the parameter to the signature.
-    size_t param_index = implicit_argc + i;
+    size_t param_index = implicit_argc + offsets[i];
     value_t param_ast = get_array_at(params, i);
     value_t tags = get_parameter_ast_tags(param_ast);
     CHECK_EQ("multi tags", 1, get_array_length(tags));
@@ -635,6 +648,11 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   co_sort_pair_array(vector);
   TRY_DEF(sig, new_heap_signature(runtime, afFreeze, vector, total_argc,
       total_argc, false));
+
+  // We don't need these any more so clear them to ensure that we don't
+  // accidentally access the memory again.
+  scratch = NULL;
+  offsets = NULL;
 
   // Build the method space.
   TRY_DEF(space, new_heap_methodspace(runtime));
