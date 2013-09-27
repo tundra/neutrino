@@ -48,7 +48,7 @@ all:	main
 
 
 # Run all tests.
-test:	test-python test-c test-golden
+test:	lint test-python test-c test-golden
 
 
 # Dependencies for all targets.
@@ -266,6 +266,13 @@ loc:
 	  C: `find . -name \*.[ch] | xargs cat | grep -v -e ^// -e ^$$ | wc -l` \
 	  py: `find . -name \*.py | xargs cat | grep -v -e '^#' -e ^$$ | wc -l`
 
+
+# Linting
+lint-tabs:
+	@echo Linting for tabs
+	@! (find src/ tests/ -type f | grep -v ".*\.pyc" | xargs grep -P '\t')
+
+lint:	lint-tabs
 
 clean:
 	@echo Cleaning
