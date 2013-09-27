@@ -694,7 +694,7 @@ value_t binary_search_pair_array(value_t self, value_t key) {
   // longest possible pair array is half the length of the longest possible
   // array, which gives us the sign bit WLOG.
   int64_t min = 0;
-  int64_t max = get_pair_array_length(self) - 1;
+  int64_t max = ((int64_t) get_pair_array_length(self)) - 1;
   while (min <= max) {
     int64_t mid = ((max - min) >> 1) + min;
     value_t current_key = get_pair_array_first_at(self, mid);

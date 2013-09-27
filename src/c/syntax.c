@@ -582,33 +582,18 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofLambdaAst, value);
   runtime_t *runtime = assm->runtime;
 
-  // Build the signature. First part is the standard preamble: subject and
-  // selector.
   value_t params = get_signature_ast_parameters(get_lambda_ast_signature(value));
-  size_t implicit_argc = 2;
-  size_t explicit_argc = get_array_length(params);
-  size_t total_argc = implicit_argc + explicit_argc;
+  size_t paramc = get_array_length(params);
 
   // Temporary data used to calculate the parameter ordering. Don't do any
   // recursive emit calls between allocating these and no longer needing them
   // since it may lead to someone else using or freeing them.
+  size_t scratchc = 2 * paramc;
   value_t *scratch = NULL;
   size_t *offsets = NULL;
   assembler_scratch_double_malloc(assm,
-      2 * total_argc * sizeof(value_t), (void**) &scratch,
-      total_argc * sizeof(size_t), (void**) &offsets);
-
-  TRY_DEF(vector, new_heap_pair_array(runtime, total_argc));
-  set_pair_array_first_at(vector, 0, ROOT(runtime, subject_key));
-  // Since this methodspace belongs to the lambda we don't have to guard the
-  // receiver, we know it'll be the lambda.
-  TRY_DEF(subject_param, new_heap_parameter(runtime, afFreeze, ROOT(runtime, any_guard),
-      false, 0));
-  set_pair_array_second_at(vector, 0, subject_param);
-  set_pair_array_first_at(vector, 1, ROOT(runtime, selector_key));
-  TRY_DEF(selector_guard, new_heap_guard(runtime, afFreeze, gtEq, RSTR(runtime, sausages)));
-  TRY_DEF(selector_param, new_heap_parameter(runtime, afFreeze, selector_guard, false, 1));
-  set_pair_array_second_at(vector, 1, selector_param);
+      scratchc * sizeof(value_t), (void**) &scratch,
+      paramc * sizeof(size_t), (void**) &offsets);
 
   // Push a capture scope that captures any symbols accessed outside the lambda.
   capture_scope_t capture_scope;
@@ -622,14 +607,16 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   map_scope_t param_scope;
   TRY(assembler_push_map_scope(assm, &param_scope));
 
-  calc_parameter_ordering(params, scratch, 2 * total_argc, offsets, total_argc);
+  calc_parameter_ordering(params, scratch, scratchc, offsets, paramc);
 
+  TRY_DEF(vector, new_heap_pair_array(runtime, paramc));
   // Build the positional argument part of the signature.
-  for (size_t i = 0; i < explicit_argc; i++) {
+  for (size_t i = 0; i < paramc; i++) {
     // Add the parameter to the signature.
-    size_t param_index = implicit_argc + offsets[i];
+    size_t param_index = offsets[i];
     value_t param_ast = get_array_at(params, i);
     value_t tags = get_parameter_ast_tags(param_ast);
+    // TODO: handle multiple parameter tags.
     CHECK_EQ("multi tags", 1, get_array_length(tags));
     value_t tag = get_array_at(tags, 0);
     set_pair_array_first_at(vector, param_index, tag);
@@ -646,8 +633,8 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
     TRY(map_scope_bind(&param_scope, symbol, btArgument, param_index));
   }
   co_sort_pair_array(vector);
-  TRY_DEF(sig, new_heap_signature(runtime, afFreeze, vector, total_argc,
-      total_argc, false));
+  TRY_DEF(sig, new_heap_signature(runtime, afFreeze, vector, paramc,
+      paramc, false));
 
   // We don't need these any more so clear them to ensure that we don't
   // accidentally access the memory again.

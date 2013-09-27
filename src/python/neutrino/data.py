@@ -33,39 +33,43 @@ class Module(object):
   @plankton.field("namespace")
   @plankton.field("methodspace")
   def __init__(self, namespace=None, methodspace=None):
-  	self.namespace = namespace
-  	self.methodspace = methodspace
+    self.namespace = namespace
+    self.methodspace = methodspace
 
 
 @plankton.serializable(("core", "Method"))
 class Method(object):
 
-	@plankton.field("signature")
-	@plankton.field("implementation")
-	def __init__(self, signature=None, implementation=None):
-		self.signature = signature
-		self.implementation = implementation
+  @plankton.field("signature")
+  @plankton.field("implementation")
+  def __init__(self, signature=None, implementation=None):
+    self.signature = signature
+    self.implementation = implementation
 
 
 @plankton.serializable(("core", "Guard"))
 class Guard(object):
 
-	_EQ = "="
-	_IS = "i"
-	_ANY = "*"
+  _EQ = "="
+  _IS = "i"
+  _ANY = "*"
 
-	@plankton.field("type")
-	@plankton.field("value")
-	def __init__(self, type=None, value=None):
-		self.type = type
-		self.value = value
+  @plankton.field("type")
+  @plankton.field("value")
+  def __init__(self, type=None, value=None):
+    self.type = type
+    self.value = value
 
-	def __str__(self):
-		return "%s(%s)" % (self.type, self.value)
+  def __str__(self):
+    return "%s(%s)" % (self.type, self.value)
 
-	@staticmethod
-	def any():
-		return Guard(Guard._ANY, None)
+  @staticmethod
+  def any():
+    return Guard(Guard._ANY, None)
+
+  @staticmethod
+  def eq(value):
+    return Guard(Guard._EQ, value)
 
 
 # A unique key, matching a neutrino runtime key.
