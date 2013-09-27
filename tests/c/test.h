@@ -72,7 +72,7 @@ static int64_t ptr_to_int_bit_cast(void *value) {
 // Fails unless the two values are different.
 #define ASSERT_NEQ(A, B) ASSERT_FALSE((A) == (B))
 
-// Fails unless the two given strings are equal.
+// Fails unless the two given strings (string_t*) are equal.
 #define ASSERT_STREQ(A, B) do {                                                \
   string_t *__a__ = (A);                                                       \
   string_t *__b__ = (B);                                                       \
@@ -81,6 +81,7 @@ static int64_t ptr_to_int_bit_cast(void *value) {
         #A, #B, __a__->chars, __b__->chars);                                   \
 } while (false)
 
+// Fails unless the two given c-strings are equal.
 #define ASSERT_C_STREQ(A, B) do {                                              \
   string_t __sa__;                                                             \
   string_init(&__sa__, (A));                                                   \
@@ -88,7 +89,6 @@ static int64_t ptr_to_int_bit_cast(void *value) {
   string_init(&__sb__, (B));                                                   \
   ASSERT_STREQ(&__sa__, &__sb__);                                              \
 } while (false)
-
 
 // Check that the two values A and B are structurally equivalent. Note that this
 // only handles object trees, not cyclical graphs of objects.

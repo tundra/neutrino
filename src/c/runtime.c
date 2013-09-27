@@ -173,6 +173,8 @@ value_t roots_validate(value_t roots) {
   VALIDATE_OBJECT(ofKey, RAW_ROOT(roots, selector_key));
   VALIDATE_CHECK_EQ(1, get_key_id(RAW_ROOT(roots, selector_key)));
   VALIDATE_OBJECT(ofMethodspace, RAW_ROOT(roots, builtin_methodspace));
+  VALIDATE_OBJECT(ofOperation, RAW_ROOT(roots, op_call));
+  VALIDATE_CHECK_EQ(otCall, get_operation_type(RAW_ROOT(roots, op_call)));
 
 #define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_OBJECT(ofString, RAW_RSTR(roots, name));
   ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)

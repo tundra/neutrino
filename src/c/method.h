@@ -274,22 +274,22 @@ void print_invocation(value_t record, frame_t *frame);
 
 // --- O p e r a t i o n ---
 
-// Invokes the given macro for each operation type.
-#define ENUM_OPERATION_TYPES(F)                                                \
-  F(Assign)                                                                    \
-  F(Call)                                                                      \
-  F(Index)                                                                     \
-  F(Infix)                                                                     \
-  F(Prefix)                                                                    \
-  F(Property)                                                                  \
-  F(Suffix)
-
 // The different types of operations that are possible.
 typedef enum {
-  __otFirst__ = -1
-#define __DECLARE_OPERATION_TYPE_ENUM__(Name) , ot##Name
-  ENUM_OPERATION_TYPES(__DECLARE_OPERATION_TYPE_ENUM__)
-#undef __DECLARE_OPERATION_TYPE_ENUM__
+  // An assignment: $this.foo := 4
+  otAssign,
+  // Function call: $fun(1, 2)
+  otCall,
+  // Collection indexing: $elms[4]
+  otIndex,
+  // Infix operation: $foo.bar(), $a + $b
+  otInfix,
+  // Prefix operation: !$foo
+  otPrefix,
+  // Property access: $p.x
+  otProperty,
+  // Suffix operation: $foo!
+  otSuffix
 } operation_type_t;
 
 static const size_t kOperationSize = OBJECT_SIZE(2);

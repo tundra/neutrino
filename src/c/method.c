@@ -652,7 +652,7 @@ value_t operation_identity_compare(value_t a, value_t b, size_t depth) {
 
 void operation_print_atomic_on(value_t self, string_buffer_t *buf) {
   value_t value = get_operation_value(self);
-  switch ((operation_type_t) get_operation_type(self)) {
+  switch (get_operation_type(self)) {
     case otAssign:
       value_print_atomic_on_unquoted(value, buf);
       string_buffer_printf(buf, ":=");
