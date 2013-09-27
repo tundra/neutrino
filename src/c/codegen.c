@@ -170,6 +170,31 @@ bool assembler_is_symbol_bound(assembler_t *assm, value_t symbol) {
 }
 
 
+// --- S c r a t c h ---
+
+void reusable_scratch_memory_init(reusable_scratch_memory_t *memory) {
+  memory->memory = memory_block_empty();
+}
+
+void reusable_scratch_memory_dispose(reusable_scratch_memory_t *memory) {
+  allocator_default_free(memory->memory);
+  memory->memory = memory_block_empty();
+}
+
+void *reusable_scratch_memory_alloc(reusable_scratch_memory_t *memory,
+    size_t size) {
+  memory_block_t current = memory->memory;
+  if (current.size < size) {
+    // If the current memory block is too small to handle what we're asking
+    // for replace it with a new one with room enough.
+    allocator_default_free(current);
+    current = allocator_default_malloc(size * 2);
+    memory->memory = current;
+  }
+  return current.memory;
+}
+
+
 // --- A s s e m b l e r ---
 
 value_t assembler_init(assembler_t *assm, runtime_t *runtime,
@@ -181,11 +206,13 @@ value_t assembler_init(assembler_t *assm, runtime_t *runtime,
   assm->runtime = runtime;
   byte_buffer_init(&assm->code);
   assm->stack_height = assm->high_water_mark = 0;
+  reusable_scratch_memory_init(&assm->scratch_memory);
   return success();
 }
 
 void assembler_dispose(assembler_t *assm) {
   byte_buffer_dispose(&assm->code);
+  reusable_scratch_memory_dispose(&assm->scratch_memory);
 }
 
 scope_lookup_callback_t *assembler_set_scope_callback(assembler_t *assm,
@@ -221,6 +248,18 @@ value_t assembler_flush(assembler_t *assm) {
   return new_heap_code_block(assm->runtime, bytecode, value_pool,
       assm->high_water_mark);
 }
+
+void *assembler_scratch_malloc(assembler_t *assm, size_t size) {
+  return reusable_scratch_memory_alloc(&assm->scratch_memory, size);
+}
+
+void assembler_scratch_double_malloc(assembler_t *assm, size_t first_size,
+    void **first, size_t second_size, void **second) {
+  void *block = assembler_scratch_malloc(assm, first_size + second_size);
+  *first = block;
+  *second = ((byte_t*) block) + first_size;
+}
+
 
 // Writes a single byte to this assembler.
 static void assembler_emit_byte(assembler_t *assm, size_t value) {

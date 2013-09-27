@@ -29,7 +29,7 @@ TEST(syntax, emitting) {
 #define CHECK_ORDERING_INDEX(N, V)                                             \
   ASSERT_EQ((N), get_parameter_order_index_for_array(variant_to_value(runtime, (V))))
 
-TEST(method, parameter_order_index) {
+TEST(syntax, parameter_order_index) {
   CREATE_RUNTIME();
 
   variant_t subject_key = vValue(ROOT(runtime, subject_key));
@@ -57,14 +57,21 @@ TEST(method, parameter_order_index) {
 
 // Shorthand for running an ordering test.
 #define CHECK_ORDERING(N, PARAMS, EXPECTED) do {                               \
-  value_t tags = variant_to_value(runtime, (PARAMS));                          \
-  calc_parameter_ordering(tags, scratch, kScratchSize, ordering, kOrderingSize);\
+  value_t params = new_heap_array(runtime, (N));                               \
+  variant_t var_params = (PARAMS);                                             \
+  variant_t *elms = var_params.value.as_array.elements;                        \
+  for (size_t i = 0; i < (N); i++) {                                           \
+    value_t tags = variant_to_value(runtime, elms[i]);                         \
+    set_array_at(params, i, new_heap_parameter_ast(runtime,                    \
+        ROOT(runtime, nothing), tags, ROOT(runtime, any_guard)));              \
+  }                                                                            \
+  calc_parameter_ordering(params, scratch, kScratchSize, ordering, kOrderingSize);\
   size_t expected[N] = {EXPECTED};                                             \
   for (size_t i = 0; i < (N); i++)                                             \
     ASSERT_EQ(ordering[i], expected[i]);                                       \
 } while (false)
 
-TEST(method, param_ordering) {
+TEST(syntax, param_ordering) {
   CREATE_RUNTIME();
 
   value_t scratch[kScratchSize];

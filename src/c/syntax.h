@@ -33,8 +33,7 @@ value_t compile_expression(runtime_t *runtime, value_t ast,
 value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
     scope_lookup_callback_t *scope_callback);
 
-// Determines the parameter ordering to use given a set of parameter tags listed
-// in the tags array.
+// Determines the parameter ordering to use given an array of parameters.
 //
 // The scratch array is used during the computation, it must
 // be large enough to hold twice as many elements as there are in the tags array.
@@ -43,9 +42,9 @@ value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
 //
 // The result will be stored in the ordering array which must be large enough
 // to hold an entry for each entry in the tags array. The i'th entry of the
-// ordering array gives the parameter index for the parameter whose tags are
-// stored in the i'th entry in the tags array.
-void calc_parameter_ordering(value_t tags, value_t *scratch, size_t scratchc,
+// ordering array gives the parameter index for the parameter in the i'th entry
+// in the tags array.
+void calc_parameter_ordering(value_t params, value_t *scratch, size_t scratchc,
     size_t *ordering, size_t orderingc);
 
 // The worst possible parameter score used for values where we don't really
