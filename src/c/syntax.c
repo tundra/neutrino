@@ -585,9 +585,7 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   // Build the signature. First part is the standard preamble: subject and
   // selector.
   value_t params = get_signature_ast_parameters(get_lambda_ast_signature(value));
-  size_t implicit_argc = 2;
-  size_t explicit_argc = get_array_length(params);
-  size_t total_argc = implicit_argc + explicit_argc;
+  size_t total_argc = get_array_length(params);
 
   // Temporary data used to calculate the parameter ordering. Don't do any
   // recursive emit calls between allocating these and no longer needing them
@@ -597,18 +595,6 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   assembler_scratch_double_malloc(assm,
       2 * total_argc * sizeof(value_t), (void**) &scratch,
       total_argc * sizeof(size_t), (void**) &offsets);
-
-  TRY_DEF(vector, new_heap_pair_array(runtime, total_argc));
-  set_pair_array_first_at(vector, 0, ROOT(runtime, subject_key));
-  // Since this methodspace belongs to the lambda we don't have to guard the
-  // receiver, we know it'll be the lambda.
-  TRY_DEF(subject_param, new_heap_parameter(runtime, afFreeze, ROOT(runtime, any_guard),
-      false, 0));
-  set_pair_array_second_at(vector, 0, subject_param);
-  set_pair_array_first_at(vector, 1, ROOT(runtime, selector_key));
-  TRY_DEF(selector_guard, new_heap_guard(runtime, afFreeze, gtEq, RSTR(runtime, sausages)));
-  TRY_DEF(selector_param, new_heap_parameter(runtime, afFreeze, selector_guard, false, 1));
-  set_pair_array_second_at(vector, 1, selector_param);
 
   // Push a capture scope that captures any symbols accessed outside the lambda.
   capture_scope_t capture_scope;
@@ -624,10 +610,11 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
 
   calc_parameter_ordering(params, scratch, 2 * total_argc, offsets, total_argc);
 
+  TRY_DEF(vector, new_heap_pair_array(runtime, total_argc));
   // Build the positional argument part of the signature.
-  for (size_t i = 0; i < explicit_argc; i++) {
+  for (size_t i = 0; i < total_argc; i++) {
     // Add the parameter to the signature.
-    size_t param_index = implicit_argc + offsets[i];
+    size_t param_index = offsets[i];
     value_t param_ast = get_array_at(params, i);
     value_t tags = get_parameter_ast_tags(param_ast);
     CHECK_EQ("multi tags", 1, get_array_length(tags));

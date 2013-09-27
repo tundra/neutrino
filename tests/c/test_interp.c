@@ -25,7 +25,20 @@ TEST(interp, execution) {
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
   value_t space = ROOT(runtime, builtin_methodspace);
-  value_t empty_signature = new_heap_signature_ast(runtime, ROOT(runtime, empty_array));
+
+  value_t null = ROOT(runtime, null);
+  value_t subject_array = variant_to_value(runtime,
+      vArray(1, vValue(ROOT(runtime, subject_key))));
+  value_t selector_array = variant_to_value(runtime,
+      vArray(1, vValue(ROOT(runtime, selector_key))));
+  value_t basic_signature_params = new_heap_array(runtime, 2);
+  set_array_at(basic_signature_params, 0, new_heap_parameter_ast(
+      runtime, new_heap_symbol_ast(runtime, null), subject_array,
+      ROOT(runtime, any_guard)));
+  set_array_at(basic_signature_params, 1, new_heap_parameter_ast(
+      runtime, new_heap_symbol_ast(runtime, null), selector_array,
+      new_heap_guard(runtime, afFreeze, gtEq, RSTR(runtime, sausages))));
+  value_t basic_signature = new_heap_signature_ast(runtime, basic_signature_params);
 
   // Literal
   {
@@ -76,7 +89,7 @@ TEST(interp, execution) {
 
   // Simple lambda
   {
-    value_t lam = new_heap_lambda_ast(runtime, empty_signature,
+    value_t lam = new_heap_lambda_ast(runtime, basic_signature,
         new_heap_literal_ast(runtime, new_integer(13)));
     value_t subject_arg = new_heap_argument_ast(runtime, ROOT(runtime, subject_key),
         lam);

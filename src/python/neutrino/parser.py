@@ -14,6 +14,7 @@ from token import Token
 class Parser(object):
 
   _BUILTIN_METHODSPACE = data.Key("subject", ("core", "builtin_methodspace"))
+  _SAUSAGES = '()'
 
   def __init__(self, tokens):
     self.tokens = tokens
@@ -141,7 +142,12 @@ class Parser(object):
 
   # Same as parse_parameters but returns a full signature.
   def parse_signature(self):
-    return ast.Signature(self.parse_parameters())
+    prefix = [
+      ast.Parameter('this', [data._SUBJECT], data.Guard.any()),
+      ast.Parameter('name', [data._SELECTOR], data.Guard.eq(Parser._SAUSAGES))
+    ]
+    params = self.parse_parameters()
+    return ast.Signature(prefix + params)
 
   # <parameters>
   #   -> "(" <parameter> *: "," ")"

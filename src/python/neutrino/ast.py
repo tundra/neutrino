@@ -222,7 +222,10 @@ class Parameter(object):
     self.guard = guard
 
   def __str__(self):
-    return "%s: %s" % (", ".join(map(str, self.tags)), self.name)
+    return "(param (tags %s) (name %s) (guard %s))" % (
+        ", ".join(map(str, self.tags)),
+        self.name,
+        self.guard)
 
 
 @plankton.serializable(("ast", "Signature"))

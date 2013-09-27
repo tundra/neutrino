@@ -3,16 +3,21 @@
 from neutrino import parser, token, ast, data
 import unittest
 
-
 ar = lambda *e: ast.Array(e)
 df = ast.LocalDeclaration
 lm = ast.Lambda
 lt = ast.Literal
 nd = ast.NamespaceDeclaration
 pg = lambda *e: ast.Program(e)
-pm = lambda n, *t: ast.Parameter(n, t)
+pm = lambda n, *t: ast.Parameter(n, t, data.Guard.any())
 sq = lambda *e: ast.Sequence(e)
-sg = lambda *p: ast.Signature(p)
+
+def sg(*params):
+  prefix = [
+    ast.Parameter('this', [data._SUBJECT], data.Guard.any()),
+    ast.Parameter('name', [data._SELECTOR], data.Guard.eq('()'))
+  ]
+  return ast.Signature(prefix + list(params))
 
 def nm(names, phase=0):
   if isinstance(names, list):
