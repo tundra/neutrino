@@ -730,3 +730,43 @@ TEST(method, dense_perfect_lookup) {
 
   DISPOSE_RUNTIME();
 }
+
+// Shorthand for testing how an operation prints.
+#define CHECK_OP_PRINT(EXPECTED, OP) do {                                      \
+  value_t op = (OP);                                                           \
+  value_to_string_t to_string;                                                 \
+  ASSERT_C_STREQ(EXPECTED, value_to_string(&to_string, op));                   \
+  dispose_value_to_string(&to_string);                                         \
+} while (false)
+
+// Shorthand for creating an op with the given type and value.
+#define OP(otType, vValue)                                                     \
+  new_heap_operation(runtime, otType, variant_to_value(runtime, vValue))
+
+TEST(method, operation_printing) {
+  CREATE_RUNTIME();
+
+  CHECK_OP_PRINT("()", OP(otCall, vNull()));
+  CHECK_OP_PRINT("[]", OP(otIndex, vNull()));
+  CHECK_OP_PRINT(".+()", OP(otInfix, vStr("+")));
+  CHECK_OP_PRINT(".foo()", OP(otInfix, vStr("foo")));
+  CHECK_OP_PRINT("!()", OP(otPrefix, vStr("!")));
+  CHECK_OP_PRINT("blah()", OP(otPrefix, vStr("blah")));
+  CHECK_OP_PRINT(".+", OP(otProperty, vStr("+")));
+  CHECK_OP_PRINT(".foo", OP(otProperty, vStr("foo")));
+  CHECK_OP_PRINT("()!", OP(otSuffix, vStr("!")));
+  CHECK_OP_PRINT("()blah", OP(otSuffix, vStr("blah")));
+
+  CHECK_OP_PRINT("():=", OP(otAssign, vValue(OP(otCall, vNull()))));
+  CHECK_OP_PRINT("[]:=", OP(otAssign, vValue(OP(otIndex, vNull()))));
+  CHECK_OP_PRINT(".foo():=", OP(otAssign, vValue(OP(otInfix, vStr("foo")))));
+  CHECK_OP_PRINT("!():=", OP(otAssign, vValue(OP(otPrefix, vStr("!")))));
+  CHECK_OP_PRINT(".foo:=", OP(otAssign, vValue(OP(otProperty, vStr("foo")))));
+  CHECK_OP_PRINT("()!:=", OP(otAssign, vValue(OP(otSuffix, vStr("!")))));
+
+  // Okay this is just ridiculous.
+  CHECK_OP_PRINT(".foo:=:=", OP(otAssign, vValue(OP(otAssign,
+      vValue(OP(otProperty, vStr("foo")))))));
+
+  DISPOSE_RUNTIME();
+}

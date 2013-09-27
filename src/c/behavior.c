@@ -339,6 +339,14 @@ void value_print_atomic_on(value_t value, string_buffer_t *buf) {
   }
 }
 
+void value_print_atomic_on_unquoted(value_t value, string_buffer_t *buf) {
+  if (in_family(ofString, value)) {
+    string_buffer_append_string(buf, value);
+  } else {
+    value_print_atomic_on(value, buf);
+  }
+}
+
 
 // --- N e w   i n s t a n c e ---
 
