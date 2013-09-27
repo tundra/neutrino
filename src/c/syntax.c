@@ -607,22 +607,32 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   map_scope_t param_scope;
   TRY(assembler_push_map_scope(assm, &param_scope));
 
+  size_t tag_count = 0;
+  for (size_t i = 0; i < paramc; i++) {
+    value_t param = get_array_at(params, i);
+    value_t tags = get_parameter_ast_tags(param);
+    tag_count += get_array_length(tags);
+  }
+
   calc_parameter_ordering(params, scratch, scratchc, offsets, paramc);
 
-  TRY_DEF(vector, new_heap_pair_array(runtime, paramc));
-  // Build the positional argument part of the signature.
-  for (size_t i = 0; i < paramc; i++) {
+  TRY_DEF(tag_array, new_heap_pair_array(runtime, tag_count));
+  // Build the positional argument part of the signature. Tag_index counts the
+  // total number of tags seen so far across all parameters.
+  for (size_t i = 0, tag_index = 0; i < paramc; i++) {
     // Add the parameter to the signature.
-    size_t param_index = offsets[i];
     value_t param_ast = get_array_at(params, i);
-    value_t tags = get_parameter_ast_tags(param_ast);
-    // TODO: handle multiple parameter tags.
-    CHECK_EQ("multi tags", 1, get_array_length(tags));
-    value_t tag = get_array_at(tags, 0);
-    set_pair_array_first_at(vector, param_index, tag);
     value_t guard = get_parameter_ast_guard(param_ast);
+    size_t param_index = offsets[i];
     TRY_DEF(param, new_heap_parameter(runtime, afFreeze, guard, false, param_index));
-    set_pair_array_second_at(vector, param_index, param);
+    // Add all this parameter's tags to the tag array.
+    value_t tags = get_parameter_ast_tags(param_ast);
+    size_t tagc = get_array_length(tags);
+    for (size_t j = 0; j < tagc; j++, tag_index++) {
+      value_t tag = get_array_at(tags, j);
+      set_pair_array_first_at(tag_array, tag_index, tag);
+      set_pair_array_second_at(tag_array, tag_index, param);
+    }
     // Bind the parameter in the local scope.
     value_t symbol = get_parameter_ast_symbol(param_ast);
     if (!in_family(ofSymbolAst, symbol))
@@ -632,8 +642,8 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
       return new_invalid_syntax_signal(isSymbolAlreadyBound);
     TRY(map_scope_bind(&param_scope, symbol, btArgument, param_index));
   }
-  co_sort_pair_array(vector);
-  TRY_DEF(sig, new_heap_signature(runtime, afFreeze, vector, paramc,
+  co_sort_pair_array(tag_array);
+  TRY_DEF(sig, new_heap_signature(runtime, afFreeze, tag_array, paramc,
       paramc, false));
 
   // We don't need these any more so clear them to ensure that we don't

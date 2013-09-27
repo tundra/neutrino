@@ -39,6 +39,7 @@ class TokenTest(unittest.TestCase):
     test("$foo + $bar", id(0, "foo"), op("+"), id(0, "bar"))
     test("(){};", pt('('), pt(')'), pt('{'), pt('}'), pt(';', Token.EXPLICIT_DELIMITER))
     test("foo:", tg("foo"))
+    test("0:", tg(0))
     test("10", lt(10))
     test("10 000", lt(10), lt(000))
     test("10:", tg(10))

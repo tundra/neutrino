@@ -138,7 +138,7 @@ class Parser(object):
   # Are we currently at a token that is allowed as the first token of a
   # parameter?
   def at_parameter_start(self):
-    return self.at_type(Token.IDENTIFIER)
+    return self.at_type(Token.IDENTIFIER) or self.at_type(Token.TAG)
 
   # Same as parse_parameters but returns a full signature.
   def parse_signature(self):
@@ -175,8 +175,12 @@ class Parser(object):
     return result
 
   def parse_parameter(self, default_tag):
+    tags = [default_tag]
+    if self.at_type(Token.TAG):
+      tag = self.expect_type(Token.TAG)
+      tags = [tag] + tags
     name = self.expect_type(Token.IDENTIFIER)
-    return ast.Parameter(name, [default_tag], data.Guard.any())
+    return ast.Parameter(name, tags, data.Guard.any())
 
   # <operator expression>
   #   -> <call expression> +: <operation>
@@ -200,19 +204,29 @@ class Parser(object):
     if self.at_punctuation('('):
       self.expect_punctuation('(')
       if not self.at_punctuation(')'):
-        arg = self.parse_expression()
-        args.append(ast.Argument(0, arg))
+        arg = self.parse_argument(0)
+        args.append(arg)
         index = 1
         while self.at_punctuation(','):
           self.expect_punctuation(',')
-          arg = self.parse_expression()
-          args.append(ast.Argument(index, arg))
+          arg = self.parse_argument(index)
+          args.append(arg)
           index += 1
       self.expect_punctuation(')')
     else:
       arg = self.parse_call_expression()
       args.append(ast.Argument(0, arg))
     return args
+
+  # <argument>
+  #   -> <tag>? <expression
+  def parse_argument(self, default_tag):
+    if self.at_type(Token.TAG):
+      tag = self.expect_type(Token.TAG)
+    else:
+      tag = default_tag
+    value = self.parse_expression()
+    return ast.Argument(tag, value)
 
   # <call expression>
   #   -> <atomic expression>

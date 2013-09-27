@@ -51,7 +51,11 @@ def mt(fun, name, *poss):
     ast.Argument(data._SELECTOR, name)
   ]
   for i in xrange(len(poss)):
-    args.append(ast.Argument(i, poss[i]))
+    pos = poss[i]
+    if type(pos) == tuple:
+      args.append(ast.Argument(*pos))
+    else:
+      args.append(ast.Argument(i, pos))
   return ast.Invocation(args)
 
 class ParserTest(unittest.TestCase):
@@ -102,6 +106,9 @@ class ParserTest(unittest.TestCase):
     test('$a.foo(1)', mt(id("a"), lt("foo"), lt(1)))
     test('$a.foo(1, 2)', mt(id("a"), lt("foo"), lt(1), lt(2)))
     test('$a.foo(1, 2, 3)', mt(id("a"), lt("foo"), lt(1), lt(2), lt(3)))
+    test('$a.foo(x: 1)', mt(id("a"), lt("foo"), ("x", lt(1))))
+    test('$a.foo(x: 1, y: 2)', mt(id("a"), lt("foo"), ("x", lt(1)), ("y", lt(2))))
+    test('$a.foo(1: 1, 0: 2)', mt(id("a"), lt("foo"), (1, lt(1)), (0, lt(2))))
 
   def test_sequence(self):
     test = self.check_expression
@@ -134,6 +141,10 @@ class ParserTest(unittest.TestCase):
     test('fn { $x; }', lm(sg(), id("x")))
     test('fn () { }', lm(sg(), lt(None)))
     test('fn ($x) { $x; }', lm(sg(pm(nm("x"), 0)), id("x")))
+    test('fn (x: $x) { }', lm(sg(pm(nm("x"), "x", 0)), lt(None)))
+    test('fn (y: $x) { }', lm(sg(pm(nm("x"), "y", 0)), lt(None)))
+    test('fn (x: $x, y: $y) { }', lm(sg(pm(nm("x"), "x", 0), pm(nm("y"), "y", 1)), lt(None)))
+    test('fn x: $x { }', lm(sg(pm(nm("x"), "x", 0)), lt(None)))
 
   def test_program_toplevel(self):
     test = self.check_program
