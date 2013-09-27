@@ -144,6 +144,10 @@ void value_print_on(value_t value, string_buffer_t *buf);
 // string buffer without descending into objects that may cause cycles.
 void value_print_atomic_on(value_t value, string_buffer_t *buf);
 
+// Does the same as value_print_atomic_on but doesn't print quotes around a
+// string.
+void value_print_atomic_on_unquoted(value_t value, string_buffer_t *buf);
+
 // Creates a new empty instance of the given type. Not all types support this,
 // in which case an unsupported behavior signal is returned.
 value_t new_object_with_type(runtime_t *runtime, value_t type);

@@ -259,6 +259,7 @@ static value_t new_moved_object(value_t target) {
   F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _)\
   F(Nothing,                 nothing,                   _, _, _, _, _, _, _, _, _)\
   F(Null,                    null,                      _, X, _, X, _, _, _, _, _)\
+  F(Operation,               operation,                 _, X, _, _, _, _, _, X, _)\
   F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _)\
   F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _)\
   F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, _, _)\
@@ -596,6 +597,9 @@ char *get_string_chars(value_t value);
 
 // Stores the contents of this string in the given output.
 void get_string_contents(value_t value, string_t *out);
+
+// Writes the raw contents of the given string on the given buffer
+void string_buffer_append_string(string_buffer_t *buf, value_t value);
 
 
 // --- B l o b ---

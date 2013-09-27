@@ -285,6 +285,15 @@ value_t new_heap_module(runtime_t *runtime, value_t namespace, value_t methodspa
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_operation(runtime_t *runtime, operation_type_t type, value_t value) {
+  size_t size = kOperationSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_operation_species)));
+  set_operation_type(result, type);
+  set_operation_value(result, value);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- P r o c e s s ---
 

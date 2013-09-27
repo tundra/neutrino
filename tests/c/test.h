@@ -81,6 +81,15 @@ static int64_t ptr_to_int_bit_cast(void *value) {
         #A, #B, __a__->chars, __b__->chars);                                   \
 } while (false)
 
+#define ASSERT_C_STREQ(A, B) do {                                              \
+  string_t __sa__;                                                             \
+  string_init(&__sa__, (A));                                                   \
+  string_t __sb__;                                                             \
+  string_init(&__sb__, (B));                                                   \
+  ASSERT_STREQ(&__sa__, &__sb__);                                              \
+} while (false)
+
+
 // Check that the two values A and B are structurally equivalent. Note that this
 // only handles object trees, not cyclical graphs of objects.
 #define ASSERT_VALEQ(A, B) do {                                                \

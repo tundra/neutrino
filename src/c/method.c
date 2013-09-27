@@ -616,3 +616,72 @@ value_t ensure_invocation_record_owned_values_frozen(runtime_t *runtime,
   TRY(ensure_frozen(runtime, get_invocation_record_argument_vector(self)));
   return success();
 }
+
+// --- O p e r a t i o n ---
+
+INTEGER_ACCESSORS_IMPL(Operation, operation, Type, type);
+ACCESSORS_IMPL(Operation, operation, acNoCheck, 0, Value, value);
+
+value_t operation_validate(value_t self) {
+  VALIDATE_FAMILY(ofOperation, self);
+  return success();
+}
+
+void operation_print_on(value_t self, string_buffer_t *buf) {
+  operation_print_atomic_on(self, buf);
+}
+
+value_t operation_transient_identity_hash(value_t self, size_t depth) {
+  if (depth > kCircularObjectDepthThreshold)
+    return new_signal(scMaybeCircular);
+  value_t value = get_operation_value(self);
+  operation_type_t type = get_operation_type(self);
+  TRY_DEF(value_hash, value_transient_identity_hash_cycle_protect(value,
+      depth + 1));
+  return new_integer(~(get_integer_value(value_hash) ^ type));
+}
+
+value_t operation_identity_compare(value_t a, value_t b, size_t depth) {
+  if (get_operation_type(a) != get_operation_type(b))
+    return internal_false_value();
+  if (depth > kCircularObjectDepthThreshold)
+    return new_signal(scMaybeCircular);
+  return value_identity_compare_cycle_protect(get_operation_value(a),
+      get_operation_value(b), depth + 1);
+}
+
+void operation_print_atomic_on(value_t self, string_buffer_t *buf) {
+  value_t value = get_operation_value(self);
+  switch ((operation_type_t) get_operation_type(self)) {
+    case otAssign:
+      value_print_atomic_on_unquoted(value, buf);
+      string_buffer_printf(buf, ":=");
+      break;
+    case otCall:
+      string_buffer_printf(buf, "()");
+      break;
+    case otIndex:
+      string_buffer_printf(buf, "[]");
+      break;
+    case otInfix:
+      string_buffer_printf(buf, ".");
+      value_print_atomic_on_unquoted(value, buf);
+      string_buffer_printf(buf, "()");
+      break;
+    case otPrefix:
+      value_print_atomic_on_unquoted(value, buf);
+      string_buffer_printf(buf, "()");
+      break;
+    case otProperty:
+      string_buffer_printf(buf, ".");
+      value_print_atomic_on_unquoted(value, buf);
+      break;
+    case otSuffix:
+      string_buffer_printf(buf, "()");
+      value_print_atomic_on_unquoted(value, buf);
+      break;
+    default:
+      UNREACHABLE("unexpected operation type");
+      break;
+  }
+}

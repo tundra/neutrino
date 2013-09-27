@@ -130,6 +130,9 @@ value_t new_heap_namespace(runtime_t *runtime);
 // Creates a new module object.
 value_t new_heap_module(runtime_t *runtime, value_t namespace, value_t methodspace);
 
+// Creates a new operation object.
+value_t new_heap_operation(runtime_t *runtime, operation_type_t type, value_t value);
+
 
 // --- P r o c e s s ---
 

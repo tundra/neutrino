@@ -43,19 +43,20 @@
 // Invokes the argument for each singleton root (that is, roots that are not
 // generated from the family list).
 #define ENUM_ROOT_SINGLETONS(F)                                                \
-  F(plankton_environment)                                                      \
-  F(null)                                                                      \
-  F(nothing)                                                                   \
-  F(thrue)                                                                     \
-  F(fahlse)                                                                    \
-  F(empty_array)                                                               \
-  F(empty_array_buffer)                                                        \
   F(any_guard)                                                                 \
-  F(subject_key)                                                               \
-  F(selector_key)                                                              \
-  F(integer_protocol)                                                          \
+  F(builtin_methodspace)                                                       \
+  F(op_call)                                                                   \
+  F(empty_array_buffer)                                                        \
+  F(empty_array)                                                               \
   F(empty_instance_species)                                                    \
-  F(builtin_methodspace)
+  F(fahlse)                                                                    \
+  F(integer_protocol)                                                          \
+  F(nothing)                                                                   \
+  F(null)                                                                      \
+  F(plankton_environment)                                                      \
+  F(selector_key)                                                              \
+  F(subject_key)                                                               \
+  F(thrue)
 
 // Enum where each entry corresponds to a field in the roots object. The naming
 // convention is a bit odd, that's because we're going to be using these to name

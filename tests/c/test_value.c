@@ -830,10 +830,7 @@ TEST(value, ownership_freezing) {
   value_t signal = new_unsupported_behavior_signal(vdDomain, ofFamily, ubCause);\
   value_to_string_t to_string;                                                 \
   const char *found = value_to_string(&to_string, signal);                     \
-  if (strcmp(EXPECTED, found) != 0) {                                          \
-    WARN("Expected %s, found %s.", (EXPECTED), found);                         \
-    ASSERT_TRUE(false);                                                        \
-  }                                                                            \
+  ASSERT_C_STREQ(EXPECTED, found);                                             \
   dispose_value_to_string(&to_string);                                         \
 } while (false)
 

@@ -425,10 +425,16 @@ void string_print_on(value_t value, string_buffer_t *buf) {
 }
 
 void string_print_atomic_on(value_t value, string_buffer_t *buf) {
+  string_buffer_putc(buf, '"');
+  string_buffer_append_string(buf, value);
+  string_buffer_putc(buf, '"');
+}
+
+void string_buffer_append_string(string_buffer_t *buf, value_t value) {
   CHECK_FAMILY(ofString, value);
   string_t contents;
   get_string_contents(value, &contents);
-  string_buffer_printf(buf, "\"%s\"", contents.chars);
+  string_buffer_printf(buf, "%s", contents.chars);
 }
 
 static value_t string_plus_string(builtin_arguments_t *args) {

@@ -272,4 +272,35 @@ value_t get_invocation_record_argument_at(value_t self, frame_t *frame, size_t i
 void print_invocation(value_t record, frame_t *frame);
 
 
+// --- O p e r a t i o n ---
+
+// Invokes the given macro for each operation type.
+#define ENUM_OPERATION_TYPES(F)                                                \
+  F(Assign)                                                                    \
+  F(Call)                                                                      \
+  F(Index)                                                                     \
+  F(Infix)                                                                     \
+  F(Prefix)                                                                    \
+  F(Property)                                                                  \
+  F(Suffix)
+
+// The different types of operations that are possible.
+typedef enum {
+  __otFirst__ = -1
+#define __DECLARE_OPERATION_TYPE_ENUM__(Name) , ot##Name
+  ENUM_OPERATION_TYPES(__DECLARE_OPERATION_TYPE_ENUM__)
+#undef __DECLARE_OPERATION_TYPE_ENUM__
+} operation_type_t;
+
+static const size_t kOperationSize = OBJECT_SIZE(2);
+static const size_t kOperationTypeOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kOperationValueOffset = OBJECT_FIELD_OFFSET(1);
+
+// The tag enum that identifies which kind of operation this is.
+INTEGER_ACCESSORS_DECL(operation, type);
+
+// The optional value that provides data for the operation.
+ACCESSORS_DECL(operation, value);
+
+
 #endif // _METHOD
