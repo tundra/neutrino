@@ -53,7 +53,7 @@ class Literal(object):
     return visitor.visit_literal(self);
 
   def __str__(self):
-    return "#<literal: %s>" % self.value
+    return "(literal %s)" % self.value
 
 
 # An array expression.
@@ -68,7 +68,7 @@ class Array(object):
     return visitor.visit_array(self);
 
   def __str__(self):
-    return "#<array: %s>" % map(str, self.elements)
+    return "(array %s)" % map(str, self.elements)
 
 
 # A reference to an enclosing binding. The name is used before the variable
@@ -106,7 +106,7 @@ class Variable(object):
       return {'symbol': self.symbol}
 
   def __str__(self):
-    return "#<var %s>" % str(self.name)
+    return "(var %s)" % str(self.name)
 
 
 # A multi-method invocation.
@@ -123,7 +123,7 @@ class Invocation(object):
     return visitor.visit_invocation(self);
 
   def __str__(self):
-    return "(! %s)" % " ".join(map(str, self.arguments))
+    return "(call %s)" % " ".join(map(str, self.arguments))
 
 
 # An individual argument to an invocation.
@@ -140,7 +140,7 @@ class Argument(object):
     return visitor.visit_argument(self)
 
   def __str__(self):
-    return "(: %s %s)" % (self.tag, self.value)
+    return "(argument %s %s)" % (self.tag, self.value)
 
 
 # A binding from a symbol to a value.
@@ -176,7 +176,7 @@ class Sequence(object):
       return Sequence(values)
 
   def __str__(self):
-    return "#<sequence: %s>" % map(str, self.values)
+    return "(sequence %s)" % map(str, self.values)
 
 
 # A local variable declaration.
@@ -196,7 +196,7 @@ class LocalDeclaration(object):
     return visitor.visit_local_declaration(self)
 
   def __str__(self):
-    return "#<def %s := %s in %s>" % (self.name, self.value, self.body)
+    return "(def %s := %s in %s)" % (self.name, self.value, self.body)
 
 
 # A symbol that identifies a scoped binding.
@@ -291,7 +291,7 @@ class Name(object):
       prefix = "@" * -self.phase
     else:
       prefix = "$" * (self.phase + 1)
-    return "#<name: %s%s>" % (prefix, ":".join(self.path))
+    return "(name %s %s)" % (prefix, ":".join(self.path))
 
 
 @plankton.serializable(("ast", "Program"))
