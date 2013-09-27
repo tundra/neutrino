@@ -18,14 +18,14 @@ size_t string_length(string_t *str) {
 }
 
 char string_char_at(string_t *str, size_t index) {
-  CHECK_TRUE("string index out of bounds", index < string_length(str));
+  CHECK_REL("string index out of bounds", index, <, string_length(str));
   return str->chars[index];
 }
 
 void string_copy_to(string_t *str, char *dest, size_t count) {
   // The count must be strictly greater than the number of chars because we
   // also need to fit the terminating null character.
-  CHECK_TRUE("string copy destination too small", string_length(str) < count);
+  CHECK_REL("string copy destination too small", string_length(str), <, count);
   strncpy(dest, str->chars, string_length(str) + 1);
 }
 
@@ -80,7 +80,7 @@ size_t blob_length(blob_t *blob) {
 }
 
 byte_t blob_byte_at(blob_t *blob, size_t index) {
-  CHECK_TRUE("blob index out of bounds", index < blob_length(blob));
+  CHECK_REL("blob index out of bounds", index, <, blob_length(blob));
   return blob->data[index];
 }
 
@@ -89,7 +89,7 @@ void blob_fill(blob_t *blob, byte_t value) {
 }
 
 void blob_copy_to(blob_t *src, blob_t *dest) {
-  CHECK_TRUE("blob copy destination too small", blob_length(dest) >= blob_length(src));
+  CHECK_REL("blob copy destination too small", blob_length(dest), >=, blob_length(src));
   memcpy(dest->data, src->data, blob_length(src));
 }
 
@@ -214,14 +214,14 @@ void string_buffer_vprintf(string_buffer_t *buf, const char *fmt, va_list argp) 
   buffer[kMaxSize] = '\0';
   size_t written = vsnprintf(buffer, kMaxSize, fmt, argp);
   // TODO: fix this if we ever hit it.
-  CHECK_TRUE("temp buffer too small", written < kMaxSize);
+  CHECK_REL("temp buffer too small", written, <, kMaxSize);
   // Then write the temp string into the string buffer.
   string_t data = {written, buffer};
   string_buffer_append(buf, &data);
 }
 
 void string_buffer_flush(string_buffer_t *buf, string_t *str_out) {
-  CHECK_TRUE("no room for null terminator", buf->length < buf->memory.size);
+  CHECK_REL("no room for null terminator", buf->length, <, buf->memory.size);
   char *chars = buf->memory.memory;
   chars[buf->length] = '\0';
   str_out->length = buf->length;
@@ -288,7 +288,7 @@ void bit_vector_dispose(bit_vector_t *vector) {
 }
 
 void bit_vector_set_at(bit_vector_t *vector, size_t index, bool value) {
-  CHECK_TRUE("set bit vector out of bounds", index < vector->length);
+  CHECK_REL("set bit vector out of bounds", index, <, vector->length);
   size_t segment = index >> 3;
   size_t offset = (index & 0x7);
   if (value) {
@@ -299,7 +299,7 @@ void bit_vector_set_at(bit_vector_t *vector, size_t index, bool value) {
 }
 
 bool bit_vector_get_at(bit_vector_t *vector, size_t index) {
-  CHECK_TRUE("get bit vector out of bounds", index < vector->length);
+  CHECK_REL("get bit vector out of bounds", index, <, vector->length);
   size_t segment = index >> 3;
   size_t offset = (index & 0x7);
   return (vector->data[segment] >> offset) & 0x1;
@@ -333,7 +333,7 @@ uint32_t pseudo_random_next(pseudo_random_t *random, uint32_t max) {
 void pseudo_random_shuffle(pseudo_random_t *random, void *data,
     size_t elem_count, size_t elem_size) {
   // Fisher–Yates shuffle
-  CHECK_TRUE("element size too big", elem_size < 16);
+  CHECK_REL("element size too big", elem_size, <, 16);
   byte_t scratch[16];
   byte_t *start = data;
   for (size_t i = 0; i < elem_count - 1; i++) {

@@ -154,7 +154,7 @@ bool pop_stack_piece_frame(value_t stack_piece, frame_t *frame) {
   // Grab the current top frame.
   frame_t top_frame;
   get_top_stack_piece_frame(stack_piece, &top_frame);
-  CHECK_TRUE("empty stack piece", top_frame.frame_pointer > 0);
+  CHECK_REL("empty stack piece", top_frame.frame_pointer, >, 0);
   // Get the frame pointer and capacity from the top frame's header.
   frame->frame_pointer = get_frame_previous_frame_pointer(&top_frame);
   frame->capacity = get_frame_previous_capacity(&top_frame);
@@ -169,10 +169,10 @@ bool pop_stack_piece_frame(value_t stack_piece, frame_t *frame) {
 // Accesses a frame header field, that is, a bookkeeping field below the frame
 // pointer.
 static value_t *access_frame_header_field(frame_t *frame, size_t offset) {
-  CHECK_TRUE("frame header field out of bounds", offset <= kFrameHeaderSize);
+  CHECK_REL("frame header field out of bounds", offset, <=, kFrameHeaderSize);
   value_t storage = get_stack_piece_storage(frame->stack_piece);
   size_t index = frame->frame_pointer - offset - 1;
-  CHECK_TRUE("frame header out of bounds", index < get_array_length(storage));
+  CHECK_REL("frame header out of bounds", index, <, get_array_length(storage));
   return get_array_elements(storage) + index;
 }
 
@@ -192,7 +192,7 @@ static bool is_top_frame(frame_t *frame) {
 static value_t *access_frame_field(frame_t *frame, size_t offset) {
   CHECK_TRUE("frame field out of bounds", is_offset_within_frame(frame, offset));
   value_t storage = get_stack_piece_storage(frame->stack_piece);
-  CHECK_TRUE("frame field out of bounds", offset < get_array_length(storage));
+  CHECK_REL("frame field out of bounds", offset, <, get_array_length(storage));
   return get_array_elements(storage) + offset;
 }
 

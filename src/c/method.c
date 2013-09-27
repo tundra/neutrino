@@ -72,7 +72,7 @@ void match_info_init(match_info_t *info, score_t *scores, size_t *offsets,
 match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
     frame_t *frame, value_t space, match_info_t *match_info) {
   size_t argument_count = get_invocation_record_argument_count(record);
-  CHECK_TRUE("score array too short", argument_count <= match_info->capacity);
+  CHECK_REL("score array too short", argument_count, <=, match_info->capacity);
   // Vector of parameters seen. This is used to ensure that we only see each
   // parameter once.
   size_t param_count = get_signature_parameter_count(self);
@@ -487,7 +487,7 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
     value_t record, frame_t *frame, value_t *arg_map_out) {
   // Input validation.
   size_t arg_count = get_invocation_record_argument_count(record);
-  CHECK_TRUE("too many arguments", arg_count <= kSmallLookupLimit);
+  CHECK_REL("too many arguments", arg_count, <=, kSmallLookupLimit);
   // Initialize the lookup state using stack-allocated space.
   score_t max_score[kSmallLookupLimit];
   size_t offsets_one[kSmallLookupLimit];

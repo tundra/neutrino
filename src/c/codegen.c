@@ -263,7 +263,7 @@ void assembler_scratch_double_malloc(assembler_t *assm, size_t first_size,
 
 // Writes a single byte to this assembler.
 static void assembler_emit_byte(assembler_t *assm, size_t value) {
-  CHECK_TRUE("large value", value <= 0xFF);
+  CHECK_REL("large value", value, <=, 0xFF);
   byte_buffer_append(&assm->code, (byte_t) value);
 }
 
@@ -288,8 +288,8 @@ static value_t assembler_emit_value(assembler_t *assm, value_t value) {
     index = get_integer_value(prev_index);
   }
   // TODO: handle the case where there's more than 0xFF constants.
-  CHECK_TRUE("negative index", index >= 0);
-  CHECK_TRUE("large index", index <= 0xFF);
+  CHECK_REL("negative index", index, >=, 0);
+  CHECK_REL("large index", index, <=, 0xFF);
   byte_buffer_append(&assm->code, index);
   return success();
 }
