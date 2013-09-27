@@ -257,7 +257,7 @@ void assembler_scratch_double_malloc(assembler_t *assm, size_t first_size,
     void **first, size_t second_size, void **second) {
   void *block = assembler_scratch_malloc(assm, first_size + second_size);
   *first = block;
-  *second = ((byte_t*) block) + second_size;
+  *second = ((byte_t*) block) + first_size;
 }
 
 
