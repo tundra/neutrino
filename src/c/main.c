@@ -158,10 +158,10 @@ static void parse_options(size_t argc, char **argv, main_options_t *flags_out) {
       if (c_str_equals(arg, "--print-value")) {
         flags_out->print_value = true;
       } else if (c_str_equals(arg, "--garbage-collect-fuzz-frequency")) {
-        CHECK_TRUE("missing flag argument", i < argc);
+        CHECK_REL("missing flag argument", i, <, argc);
         flags_out->config->gc_fuzz_freq = c_str_as_long_or_die(argv[i++]);
       } else if (c_str_equals(arg, "--garbage-collect-fuzz-seed")) {
-        CHECK_TRUE("missing flag argument", i < argc);
+        CHECK_REL("missing flag argument", i, <, argc);
         flags_out->config->gc_fuzz_seed = c_str_as_long_or_die(argv[i++]);
       } else {
         ERROR("Unknown flags '%s'", arg);

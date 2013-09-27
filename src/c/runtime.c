@@ -211,8 +211,8 @@ value_t ensure_mutable_roots_owned_values_frozen(runtime_t *runtime, value_t sel
 
 void gc_fuzzer_init(gc_fuzzer_t *fuzzer, size_t min_freq, size_t mean_freq,
     size_t seed) {
-  CHECK_TRUE("min frequency must be nonzero", min_freq > 0);
-  CHECK_TRUE("mean frequency must be nonzero", mean_freq > 0);
+  CHECK_REL("min frequency must be nonzero", min_freq, >, 0);
+  CHECK_REL("mean frequency must be nonzero", mean_freq, >, 0);
   // It's best if we can vary the min frequency freely without breaking anything
   // so rather than assert that the mean is larger we just adjust it if we have
   // to.

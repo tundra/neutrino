@@ -159,7 +159,7 @@ static value_t new_heap_id_hash_map_entry_array(runtime_t *runtime, size_t capac
 }
 
 value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity) {
-  CHECK_TRUE("invalid initial capacity", init_capacity > 0);
+  CHECK_REL("invalid initial capacity", init_capacity, >, 0);
   TRY_DEF(entries, new_heap_id_hash_map_entry_array(runtime, init_capacity));
   size_t size = kIdHashMapSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,

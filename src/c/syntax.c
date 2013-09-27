@@ -83,8 +83,8 @@ static int compare_parameter_ordering_entries(const void *vp_a, const void *vp_b
 void calc_parameter_ordering(value_t tags, value_t *scratch, size_t scratchc,
     size_t *ordering, size_t orderingc) {
   size_t tagc = get_array_length(tags);
-  CHECK_TRUE("not enough scratch", scratchc >= tagc * 2);
-  CHECK_TRUE("not enough ordering", orderingc >= tagc);
+  CHECK_REL("not enough scratch", scratchc, >=, tagc * 2);
+  CHECK_REL("not enough ordering", orderingc, >=, tagc);
   // First store the tag arrays in the scratch array, each along the the index
   // it came from in the tag array.
   for (size_t i = 0; i < tagc; i++) {

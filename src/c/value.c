@@ -565,7 +565,7 @@ value_t get_array_at(value_t value, size_t index) {
 void set_array_at(value_t value, size_t index, value_t element) {
   CHECK_FAMILY(ofArray, value);
   CHECK_MUTABLE(value);
-  CHECK_TRUE("array index out of bounds", index < get_array_length(value));
+  CHECK_REL("array index out of bounds", index, <, get_array_length(value));
   get_array_elements(value)[index] = element;
 }
 
@@ -673,7 +673,7 @@ value_t co_sort_pair_array(value_t value) {
 
 bool is_pair_array_sorted(value_t value) {
   CHECK_FAMILY(ofArray, value);
-  CHECK_TRUE("not pair array", (get_array_length(value) & 1) == 0);
+  CHECK_EQ("not pair array", 0, get_array_length(value) & 1);
   size_t length = get_pair_array_length(value);
   for (size_t i = 1; i < length; i++) {
     value_t a = get_pair_array_first_at(value, i - 1);
@@ -688,7 +688,7 @@ bool is_pair_array_sorted(value_t value) {
 
 value_t binary_search_pair_array(value_t self, value_t key) {
   CHECK_FAMILY(ofArray, self);
-  CHECK_TRUE("not pair array", (get_array_length(self) & 1) == 0);
+  CHECK_EQ("not pair array", 0, get_array_length(self) & 1);
   // Using signed values allows the max to go negative which simplifies the
   // logic. It does in principle narrow the range we can represent but the
   // longest possible pair array is half the length of the longest possible
@@ -820,7 +820,7 @@ INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, OccupiedCount, occupied_count);
 
 // Returns a pointer to the start of the index'th entry in the given map.
 static value_t *get_id_hash_map_entry(value_t map, size_t index) {
-  CHECK_TRUE("map entry out of bounds", index < get_id_hash_map_capacity(map));
+  CHECK_REL("map entry out of bounds", index, <, get_id_hash_map_capacity(map));
   value_t array = get_id_hash_map_entry_array(map);
   return get_array_elements(array) + (index * kIdHashMapEntryFieldCount);
 }
@@ -893,7 +893,7 @@ static bool find_id_hash_map_entry(value_t map, value_t key, size_t hash,
   CHECK_TRUE("was_created not initialized", (create_mode == NULL) ||
       (*create_mode == cmNotCreated));
   size_t capacity = get_id_hash_map_capacity(map);
-  CHECK_TRUE("map overfull", get_id_hash_map_size(map) < capacity);
+  CHECK_REL("map overfull", get_id_hash_map_size(map), <, capacity);
   size_t current_index = hash % capacity;
   // Loop around until we find the key or an empty entry. Since we know the
   // capacity is at least one greater than the size there must be at least
