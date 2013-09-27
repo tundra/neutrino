@@ -624,11 +624,6 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
 
   calc_parameter_ordering(params, scratch, 2 * total_argc, offsets, total_argc);
 
-  for (size_t i = 0; i < explicit_argc; i++) {
-    fprintf(stderr, "%li\n", offsets[i]);
-    fflush(stderr);
-  }
-
   // Build the positional argument part of the signature.
   for (size_t i = 0; i < explicit_argc; i++) {
     // Add the parameter to the signature.
