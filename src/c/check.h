@@ -26,15 +26,9 @@
 #define IF_CHECKS_DISABLED(V) V
 #endif
 
-#define __CHECK_EQ_HELPER__(M, A, B) do {                                      \
-  if (!((A) == (B)))                                                           \
-    check_fail(__FILE__, __LINE__, "Check failed (" M "): %s == %s.",          \
-        #A, #B);                                                               \
-} while (false)
-
 // Fails unless the two values are equal.
 #define CHECK_EQ(M, A, B)                                                      \
-IF_CHECKS_ENABLED(__CHECK_EQ_HELPER__(M, A, B))
+IF_CHECKS_ENABLED(CHECK_REL(M, A, ==, B))
 
 #define __SIG_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause, VALUE, A, B) do {       \
   if (!((A) == (B))) {                                                         \
@@ -59,6 +53,22 @@ IF_CHECKS_ENABLED(__SIG_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause, new_signal(scCa
 // Fails if the given expression doesn't evaluate to true.
 #define CHECK_TRUE(M, E)                                                       \
 IF_CHECKS_ENABLED(CHECK_EQ(M, E, true))
+
+// Used by CHECK_REL. Don't call directly.
+#define __CHECK_REL_HELPER__(M, A, OP, B) do {                                 \
+  int64_t __a__ = (int64_t) (A);                                               \
+  int64_t __b__ = (int64_t) (B);                                               \
+  if (!(__a__ OP __b__))                                                       \
+    check_fail(__FILE__, __LINE__,                                             \
+        "Check failed (" M "): %s %s %s.\n"                                    \
+        "  Left: %lli\n"                                                       \
+        "  Right: %lli",                                                       \
+        #A, #OP, #B, __a__, __b__);                                            \
+} while (false)
+
+// Fail unless A and B are related as OP.
+#define CHECK_REL(M, A, OP, B)                                                 \
+IF_CHECKS_ENABLED(__CHECK_REL_HELPER__(M, A, OP, B))
 
 // Fails if the given expression doesn't evaluate to true under hard check
 // failures, returns the given value under soft check failures.

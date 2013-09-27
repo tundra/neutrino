@@ -192,7 +192,7 @@ object_tracker_t *heap_new_object_tracker(heap_t *heap, value_t value) {
 }
 
 void heap_dispose_object_tracker(heap_t *heap, object_tracker_t *tracker) {
-  CHECK_TRUE("freed too many object trackers", heap->object_tracker_count > 0);
+  CHECK_REL("freed too many object trackers", heap->object_tracker_count, >, 0);
   object_tracker_t *prev = tracker->prev;
   CHECK_EQ("wrong tracker prev", tracker, prev->next);
   object_tracker_t *next = tracker->next;

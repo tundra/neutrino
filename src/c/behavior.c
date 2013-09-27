@@ -123,7 +123,7 @@ value_t set_value_mode_unchecked(runtime_t *runtime, value_t self, value_mode_t 
     return (behavior->set_mode_unchecked)(runtime, self, mode);
   } else {
     CHECK_EQ("non-object not frozen", vmDeepFrozen, get_value_mode(self));
-    CHECK_TRUE("invalid mode change", mode >= vmFrozen);
+    CHECK_REL("invalid mode change", mode, >=, vmFrozen);
     return success();
   }
 }
