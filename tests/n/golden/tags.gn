@@ -1,0 +1,19 @@
+# Tagged invocations
+
+-- INPUT: (fn (x: $x, y: $y) => [$x, $y])(2, 3)
+-- VALUE: [2, 3]
+
+-- INPUT: (fn (x: $x, y: $y) => [$x, $y])(x: 4, y: 5)
+-- VALUE: [4, 5]
+
+-- INPUT: (fn (x: $x, y: $y) => [$x, $y])(y: 6, x: 7)
+-- VALUE: [7, 6]
+
+-- INPUT: (fn (x: $x, y: $y) => [$x, $y])(1: 8, 0: 9)
+-- VALUE: [9, 8]
+
+-- INPUT: (fn ($x, $y) => [$x, $y])(1: 10, 0: 11)
+-- VALUE: [11, 10]
+
+-- INPUT: (fn x: $x => $x)(x: 12)
+-- VALUE: 12
