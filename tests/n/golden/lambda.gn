@@ -27,7 +27,6 @@
 -- INPUT: (fn ($f, $x) => $f($x))(fn ($x) => ($x + 3), 6)
 -- VALUE: 9
 
-
 # Capturing outer variables.
 
 -- INPUT: {
