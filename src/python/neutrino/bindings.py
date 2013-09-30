@@ -4,21 +4,14 @@
 # Namespace bindings.
 
 import ast
-
-
-# Simple visitor that can fake-evaluate simple expressions.
-class EvaluateVisitor(ast.Visitor):
-
-  def visit_literal(self, that):
-    return that.value
+import interp
 
 
 # Utility that can be used by elements to help apply themselves.
 class BindingHelper(object):
 
   def evaluate(self, expr):
-    visitor = EvaluateVisitor()
-    return expr.accept(visitor)
+  	return interp.evaluate(expr)
 
 
 # Apply the various declarations to create the program bindings. This is only

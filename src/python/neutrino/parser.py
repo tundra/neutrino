@@ -19,10 +19,7 @@ class Parser(object):
   def __init__(self, tokens):
     self.tokens = tokens
     self.cursor = 0
-    self.imports = [Parser._BUILTIN_METHODSPACE]
-    namespace = data.Namespace({})
-    methodspace = data.Methodspace({}, [], self.imports)
-    self.module = data.Module(namespace, methodspace)
+    self.present = ast.Stage(0)
     self.entry_point = ast.Literal(None)
 
   # Does this parser have more tokens to process?
@@ -90,7 +87,7 @@ class Parser(object):
       if entry:
         (name, value) = entry
         elements.append(ast.NamespaceDeclaration(name, value))
-    return ast.Program(elements, self.entry_point, self.module)
+    return ast.Program(elements, self.entry_point, self.present.get_module())
 
   def parse_toplevel_statement(self):
     if self.at_word('def'):
@@ -112,7 +109,7 @@ class Parser(object):
   # executable.
   def parse_expression_program(self):
     value = self.parse_word_expression()
-    return ast.Program([], value, self.module)
+    return ast.Program([], value, self.present.get_module())
 
   # <word expression>
   #   -> <lambda>
@@ -193,7 +190,7 @@ class Parser(object):
         ast.Argument(data._SELECTOR, ast.Literal(name))
       ]
       rest = self.parse_arguments()
-      left = ast.Invocation(prefix + rest, self.module.methodspace)
+      left = ast.Invocation(prefix + rest, self.present.get_methodspace())
     return left
 
   # <arguments>
@@ -238,7 +235,7 @@ class Parser(object):
         ast.Argument(data._SELECTOR, ast.Literal('()'))
       ]
       rest = self.parse_arguments()
-      recv = ast.Invocation(prefix + rest, self.module.methodspace)
+      recv = ast.Invocation(prefix + rest, self.present.get_methodspace())
     return recv
 
   # <atomic expression>
@@ -252,7 +249,7 @@ class Parser(object):
       return ast.Literal(value)
     elif self.at_type(Token.IDENTIFIER):
       name = self.expect_type(Token.IDENTIFIER)
-      return ast.Variable(name=name, namespace=self.module.namespace)
+      return ast.Variable(name=name, namespace=self.present.get_namespace())
     elif self.at_punctuation('('):
       self.expect_punctuation('(')
       result = self.parse_expression()

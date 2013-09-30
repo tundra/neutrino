@@ -4,6 +4,7 @@
 # Neutrino syntax tree definitions
 
 from abc import abstractmethod
+import data
 import plankton
 
 # Syntax tree visitor.
@@ -328,3 +329,28 @@ class NamespaceDeclaration(object):
 
   def __str__(self):
     return "(namespace-declaration %s %s)" % (self.name, self.value)
+
+
+# An individual execution stage.
+class Stage(object):
+
+  _BUILTIN_METHODSPACE = data.Key("subject", ("core", "builtin_methodspace"))
+
+  def __init__(self, age):
+    self.age = age
+    self.imports = [Stage._BUILTIN_METHODSPACE]
+    self.namespace = data.Namespace({})
+    self.methodspace = data.Methodspace({}, [], self.imports)
+    self.module = data.Module(self.namespace, self.methodspace)
+
+  def get_imports(self):
+    return self.imports
+
+  def get_namespace(self):
+    return self.namespace
+
+  def get_methodspace(self):
+    return self.methodspace
+
+  def get_module(self):
+    return self.module
