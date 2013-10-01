@@ -66,6 +66,11 @@ class ScopeVisitor(ast.Visitor):
     assert that.symbol is None
     that.symbol = self.lookup_name(that.name)
 
+  def visit_static_binding(self, that):
+    # Static bindings cannot refer to locally scoped bindings. Maybe they should
+    # be able to? Well, not yet.
+    pass
+
   def visit_argument(self, that):
     that.value.accept(self)
 
@@ -81,13 +86,13 @@ class ScopeVisitor(ast.Visitor):
     finally:
       self.scope = outer_scope
 
-  def visit_program(self, that):
+  def visit_unit(self, that):
     that.entry_point.accept(self)
 
   def visit_namespace_declaration(self, that):
     that.value.accept(self)
 
 
-def analyze(ast):
+def analyze(unit):
   visitor = ScopeVisitor()
-  ast.accept(visitor)
+  unit.accept(visitor)

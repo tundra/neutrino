@@ -117,6 +117,13 @@ class DataOutputStream(object):
         desc = _DESCRIPTORS.get(name, None)
         if desc is None:
           raise Exception(obj)
+        if desc.substitute:
+          # If the object can replace itself with a substitute we write that
+          # instead.
+          replacement = obj.get_substitute()
+          if not replacement is None:
+            self.write_object(replacement)
+            return
         index = self.acquire_offset()
         self._add_byte(_OBJECT_TAG)
         self.object_index[obj] = -1
@@ -396,6 +403,7 @@ class ObjectDescriptor(object):
       self.header = EnvironmentPlaceholder(environment)
     self.fields = None
     self.virtual = False
+    self.substitute = False
 
   # Returns the header to use when encoding the given instance
   def get_header(self):
@@ -455,6 +463,14 @@ def serializable(*environments):
 def virtual(klass):
   descriptor = _DESCRIPTORS[klass.__name__]
   descriptor.virtual = True
+  return klass
+
+
+# Marks the descriptor as allowing the object to substitute another value for
+# itself.
+def substitute(klass):
+  descriptor = _DESCRIPTORS[klass.__name__]
+  descriptor.substitute = True
   return klass
 
 

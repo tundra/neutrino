@@ -13,9 +13,13 @@ class EvaluateVisitor(ast.Visitor):
   def visit_literal(self, that):
     return that.value
 
+  def visit_variable(self, that):
+    assert that.resolved_past_value
+    return that.resolved_past_value.accept(self)
+
 
 # Evaluate the given expression. The evaluation will only be approximate so
 # it may fail if there are constructs or operations it can't handle.
 def evaluate(expr):
-	visitor = EvaluateVisitor()
-	return expr.accept(visitor)
+  visitor = EvaluateVisitor()
+  return expr.accept(visitor)

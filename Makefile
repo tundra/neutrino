@@ -55,6 +55,7 @@ test:	lint test-python test-c test-golden
 GLOBAL_DEPS=Makefile
 
 
+PYTHON_SRC_FILES=$(shell find src/python -name "[^_]*.py")
 PYTHON_TEST_FILES=$(shell find tests/python -name "[^_]*.py")
 PYTHON_TEST_RUNS=$(patsubst tests/python/%, test-python-%, $(PYTHON_TEST_FILES))
 
@@ -64,7 +65,7 @@ test-python:	$(PYTHON_TEST_RUNS)
 
 
 # Individual python tests.
-$(PYTHON_TEST_RUNS): test-python-%: tests/python/% $(GLOBAL_DEPS)
+$(PYTHON_TEST_RUNS): test-python-%: tests/python/% $(GLOBAL_DEPS) $(PYTHON_SRC_FILES)
 	@echo Running $<
 	@PYTHONPATH=$(PYTHONPATH):src/python \
 		python $<
@@ -248,7 +249,7 @@ $(GOLDEN_RUNS):test-golden-%:$(OUT)/tests/n/golden/%.out
 
 
 # Run a golden test using the test runner script.
-$(GOLDEN_OUTS):$(OUT)/tests/n/golden/%.out:tests/n/golden/%.gn $(C_MAIN_EXE)
+$(GOLDEN_OUTS):$(OUT)/tests/n/golden/%.out:tests/n/golden/%.gn $(C_MAIN_EXE) $(PYTHON_SRC_FILES)
 	@echo -n Running golden test "$*: "
 	@mkdir -p $(shell dirname $@)
 	@./src/sh/run-golden-test.sh                                               \
