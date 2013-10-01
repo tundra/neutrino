@@ -27,7 +27,7 @@ class PastVariableResolver(ast.Visitor):
 class BindingHelper(object):
 
   def evaluate(self, expr):
-  	return interp.evaluate(expr)
+    return interp.evaluate(expr)
 
 
 def resolve_past_variables(index, elements, unit):
