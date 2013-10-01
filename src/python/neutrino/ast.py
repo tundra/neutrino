@@ -451,5 +451,5 @@ class Unit(object):
 
   def __str__(self):
     stage_list = list(self.get_stages())
-    stage_strs = ["(%s %s)" % (s, " ".join(map(str, elms))) for (s, elms) in stage_list]
+    stage_strs = ["(%s %s)" % (i, " ".join(map(str, s.elements))) for (i, s) in stage_list]
     return "(unit %s)" % " ".join(stage_strs)
