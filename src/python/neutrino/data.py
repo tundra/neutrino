@@ -3,7 +3,6 @@
 
 import plankton
 
-
 @plankton.serializable(("core", "Namespace"))
 class Namespace(object):
 
@@ -15,7 +14,12 @@ class Namespace(object):
     self.bindings[name] = value
 
   def lookup(self, name):
-    return self.bindings.get(name, None)
+    import interp
+    special_binding = interp.lookup_special_binding(name)
+    if special_binding is None:
+      return self.bindings.get(name, None)
+    else:
+      return special_binding
 
 
 @plankton.serializable(("core", "Methodspace"))
@@ -84,6 +88,31 @@ class Key(plankton.EnvironmentPlaceholder):
 
   def __str__(self):
     return "(key %s)" % self.display_name
+
+
+@plankton.serializable(("core", "Protocol"))
+class Protocol(object):
+
+  @plankton.field("name")
+  def __init__(self, name=None):
+    self.name = name
+
+
+# A user-defined object instance.
+@plankton.virtual
+@plankton.serializable()
+class Instance(object):
+
+  _EMPTY_PROTOCOL = Protocol("Empty")
+
+  def __init__(self):
+    pass
+
+  def get_header(self):
+    return Instance._EMPTY_PROTOCOL
+
+  def get_payload(self):
+    return {}
 
 
 _SUBJECT = Key("subject", ("core", "subject"))

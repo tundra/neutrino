@@ -1,0 +1,8 @@
+-- INPUT:
+def @f := @pytrino:new_instance();
+def ($this == @f).print() => "foo";
+entry_point @f.print();
+-- OUTPUT:
+"foo"
+-- END
+

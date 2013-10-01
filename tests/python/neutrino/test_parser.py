@@ -162,6 +162,7 @@ class ParserTest(unittest.TestCase):
     test('def @x := 5;', mu(
       (-1, [nd(nm("x", -1), lt(5))]),
       (0, [])))
+    test('def ($this).id() => $this')
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)

@@ -1411,6 +1411,13 @@ void protocol_print_atomic_on(value_t value, string_buffer_t *buf) {
   }
 }
 
+value_t set_protocol_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(name, get_id_hash_map_at(contents, RSTR(runtime, name)));
+  set_protocol_display_name(object, name);
+  return success();
+}
+
 
 // --- A r g u m e n t   m a p   t r i e ---
 
@@ -1607,6 +1614,10 @@ static value_t new_guard(runtime_t *runtime) {
   return new_heap_guard(runtime, afMutable, gtAny, ROOT(runtime, nothing));
 }
 
+static value_t new_protocol(runtime_t *runtime) {
+  return new_heap_protocol(runtime, afMutable, ROOT(runtime, nothing));
+}
+
 value_t add_plankton_factory(value_t map, value_t category, const char *name,
     factory_constructor_t constructor, runtime_t *runtime) {
   TRY_DEF(factory, new_heap_factory(runtime, constructor));
@@ -1619,6 +1630,7 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, core, "Methodspace", new_methodspace, runtime));
   TRY(add_plankton_factory(map, core, "Module", new_module, runtime));
   TRY(add_plankton_factory(map, core, "Guard", new_guard, runtime));
+  TRY(add_plankton_factory(map, core, "Protocol", new_protocol, runtime));
   TRY(add_plankton_binding(map, core, "subject", ROOT(runtime, subject_key),
       runtime));
   TRY(add_plankton_binding(map, core, "selector", ROOT(runtime, selector_key),
