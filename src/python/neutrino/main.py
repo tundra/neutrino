@@ -80,14 +80,17 @@ class Main(object):
     self.run_parse_input(self.flags.program,
         lambda tokens: parser.Parser(tokens).parse_program())
 
+  # Compiles a unit, returning a program.
+  def compile_unit(self, unit):
+    analysis.analyze(unit)
+    bindings.bind(unit)
+    return unit.get_present_program()
+
   def run_parse_input(self, inputs, parse_thunk):
     for expr in inputs:
       tokens = token.tokenize(expr)
-      ast = parse_thunk(tokens)
-      analysis.analyze(ast)
-      bindings.bind(ast)
-      self.output_value(ast)
-
+      unit = parse_thunk(tokens)
+      self.output_value(self.compile_unit(unit))
 
   def output_value(self, value):
     encoder = plankton.Encoder()

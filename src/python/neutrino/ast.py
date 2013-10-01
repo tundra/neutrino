@@ -4,9 +4,11 @@
 # Neutrino syntax tree definitions
 
 from abc import abstractmethod
+import data
 import plankton
 
-# Syntax tree visitor.
+# Syntax tree visitor. The default behavior of each visit method is to apply
+# the visitor recursively.
 class Visitor(object):
 
   def __init__(self):
@@ -14,31 +16,39 @@ class Visitor(object):
 
   @abstractmethod
   def visit_literal(self, that):
-    pass
+    that.traverse(self)
 
   @abstractmethod
   def visit_array(self, that):
-    pass
+    that.traverse(self)
+
+  @abstractmethod
+  def visit_lambda(self, that):
+    that.traverse(self)
 
   @abstractmethod
   def visit_variable(self, that):
-    pass
+    that.traverse(self)
 
   @abstractmethod
   def visit_invocation(self, that):
-    pass
+    that.traverse(self)
 
   @abstractmethod
   def visit_argument(self, that):
-    pass
+    that.traverse(self)
 
   @abstractmethod
   def visit_sequence(self, that):
-    pass
+    that.traverse(self)
 
   @abstractmethod
   def visit_local_declaration(self, that):
-    pass
+    that.traverse(self)
+
+  @abstractmethod
+  def visit_namespace_declaration(self, that):
+    that.traverse(self)
 
 
 # A constant literal value.
@@ -51,6 +61,9 @@ class Literal(object):
 
   def accept(self, visitor):
     return visitor.visit_literal(self);
+
+  def traverse(self, visitor):
+    pass
 
   def __str__(self):
     return "(literal %s)" % self.value
@@ -65,7 +78,11 @@ class Array(object):
     self.elements = elements
 
   def accept(self, visitor):
-    return visitor.visit_array(self);
+    return visitor.visit_array(self)
+
+  def traverse(self, visitor):
+    for element in self.elements:
+      element.accept(visitor)
 
   def __str__(self):
     return "(array %s)" % map(str, self.elements)
@@ -73,6 +90,7 @@ class Array(object):
 
 # A reference to an enclosing binding. The name is used before the variable
 # has been resolved, the symbol after.
+@plankton.substitute
 @plankton.virtual
 @plankton.serializable(("ast", "LocalVariable"), ("ast", "NamespaceVariable"))
 class Variable(object):
@@ -86,9 +104,13 @@ class Variable(object):
     self.name = name
     self.namespace = namespace
     self.symbol = symbol
+    self.resolved_past_value = None
 
   def accept(self, visitor):
     return visitor.visit_variable(self)
+
+  def traverse(self, visitor):
+    pass
 
   def get_header(self):
     if self.symbol is None:
@@ -105,6 +127,9 @@ class Variable(object):
     else:
       return {'symbol': self.symbol}
 
+  def get_substitute(self):
+    return self.resolved_past_value
+
   def __str__(self):
     return "(var %s)" % str(self.name)
 
@@ -120,7 +145,11 @@ class Invocation(object):
     self.methodspace = methodspace
 
   def accept(self, visitor):
-    return visitor.visit_invocation(self);
+    return visitor.visit_invocation(self)
+
+  def traverse(self, visitor):
+    for argument in self.arguments:
+      argument.accept(visitor)
 
   def __str__(self):
     return "(call %s)" % " ".join(map(str, self.arguments))
@@ -138,6 +167,9 @@ class Argument(object):
 
   def accept(self, visitor):
     return visitor.visit_argument(self)
+
+  def traverse(self, visitor):
+    self.value.accept(visitor)
 
   def __str__(self):
     return "(argument %s %s)" % (self.tag, self.value)
@@ -165,6 +197,10 @@ class Sequence(object):
 
   def accept(self, visitor):
     return visitor.visit_sequence(self)
+
+  def traverse(self, visitor):
+    for value in self.values:
+      value.accept(visitor)
 
   @staticmethod
   def make(values):
@@ -194,6 +230,10 @@ class LocalDeclaration(object):
 
   def accept(self, visitor):
     return visitor.visit_local_declaration(self)
+
+  def traverse(self, visitor):
+    self.value.accept(visitor)
+    self.body.accept(visitor)
 
   def __str__(self):
     return "(def %s := %s in %s)" % (self.name, self.value, self.body)
@@ -253,6 +293,9 @@ class Lambda(object):
   def accept(self, visitor):
     return visitor.visit_lambda(self)
 
+  def traverse(self, visitor):
+    self.body.accept(visitor)
+
   def __str__(self):
     return "(fn (%s) => %s)" % (self.signature, self.body)
 
@@ -273,24 +316,24 @@ class Path(object):
 class Name(object):
 
   @plankton.field("path")
-  @plankton.field("phase")
-  def __init__(self, phase=None, path=None):
-    self.phase = phase
-    self.path = path
+  @plankton.field("stage")
+  def __init__(self, stage=None, path=None):
+    self.stage = stage
+    self.path = tuple(path)
 
   def __hash__(self):
-    return hash(self.phase) ^ hash(tuple(self.path))
+    return hash(self.stage) ^ hash(self.path)
 
   def __eq__(self, that):
     return (isinstance(that, Name) and
-            self.phase == that.phase and
+            self.stage == that.stage and
             self.path == that.path)
 
   def __str__(self):
-    if self.phase < 0:
-      prefix = "@" * -self.phase
+    if self.stage < 0:
+      prefix = "@" * -self.stage
     else:
-      prefix = "$" * (self.phase + 1)
+      prefix = "$" * (self.stage + 1)
     return "(name %s %s)" % (prefix, ":".join(self.path))
 
 
@@ -326,5 +369,87 @@ class NamespaceDeclaration(object):
     value = helper.evaluate(self.value)
     program.module.namespace.bindings[name] = value
 
+  def traverse(self, visitor):
+    self.value.accept(visitor)
+
   def __str__(self):
     return "(namespace-declaration %s %s)" % (self.name, self.value)
+
+
+# An individual execution stage.
+class Stage(object):
+
+  _BUILTIN_METHODSPACE = data.Key("subject", ("core", "builtin_methodspace"))
+
+  def __init__(self, index):
+    self.index = index
+    self.imports = [Stage._BUILTIN_METHODSPACE]
+    self.namespace = data.Namespace({})
+    self.methodspace = data.Methodspace({}, [], self.imports)
+    self.module = data.Module(self.namespace, self.methodspace)
+    self.elements = []
+
+  def __str__(self):
+    return "#<stage %i>" % self.index
+
+  # Returns all the imports for this stage.
+  def get_imports(self):
+    return self.imports
+
+  # Returns this stage's namespace.
+  def get_namespace(self):
+    return self.namespace
+
+  # Returns this stage's methodspace.
+  def get_methodspace(self):
+    return self.methodspace
+
+  # Returns the module that encapsulates this stage's data.
+  def get_module(self):
+    return self.module
+
+
+# A full compilation unit.
+class Unit(object):
+
+  def __init__(self):
+    self.entry_point = None
+    self.stages = {}
+    self.get_or_create_stage(0)
+
+  def add_element(self, stage, *elements):
+    target = self.get_or_create_stage(stage)
+    for element in elements:
+      target.elements.append(element)
+    return self
+
+  def get_stages(self):
+    for index in sorted(self.stages.keys()):
+      yield (index, self.stages[index])
+
+  def set_entry_point(self, value):
+    self.entry_point = value
+    return self
+
+  def get_stage(self, index):
+    return self.stages[index]
+
+  def get_or_create_stage(self, index):
+    if not index in self.stages:
+      self.stages[index] = Stage(index)
+    return self.stages[index]
+
+  def get_present(self):
+    return self.get_or_create_stage(0)
+
+  def get_present_program(self):
+    last_stage = self.get_present()
+    return Program(last_stage.elements, self.entry_point, last_stage.get_module())
+
+  def accept(self, visitor):
+    return visitor.visit_unit(self)
+
+  def __str__(self):
+    stage_list = list(self.get_stages())
+    stage_strs = ["(%s %s)" % (s, " ".join(map(str, elms))) for (s, elms) in stage_list]
+    return "(unit %s)" % " ".join(stage_strs)

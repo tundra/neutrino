@@ -19,11 +19,8 @@ class Parser(object):
   def __init__(self, tokens):
     self.tokens = tokens
     self.cursor = 0
-    self.imports = [Parser._BUILTIN_METHODSPACE]
-    namespace = data.Namespace({})
-    methodspace = data.Methodspace({}, [], self.imports)
-    self.module = data.Module(namespace, methodspace)
-    self.entry_point = ast.Literal(None)
+    self.unit = ast.Unit()
+    self.present = self.unit.get_present()
 
   # Does this parser have more tokens to process?
   def has_more(self):
@@ -84,20 +81,19 @@ class Parser(object):
   # <program>
   #   -> <toplevel statement>*
   def parse_program(self):
-    elements = []
     while self.has_more():
       entry = self.parse_toplevel_statement()
       if entry:
         (name, value) = entry
-        elements.append(ast.NamespaceDeclaration(name, value))
-    return ast.Program(elements, self.entry_point, self.module)
+        self.unit.add_element(name.stage, ast.NamespaceDeclaration(name, value))
+    return self.unit
 
   def parse_toplevel_statement(self):
     if self.at_word('def'):
       return self.parse_local_declaration()
     elif self.at_word('entry_point'):
       self.expect_word('entry_point')
-      self.entry_point = self.parse_expression()
+      self.unit.set_entry_point(self.parse_expression())
       self.expect_statement_delimiter()
       return None
     else:
@@ -111,8 +107,8 @@ class Parser(object):
   # Parses an expression and wraps it in a program appropriately to make it
   # executable.
   def parse_expression_program(self):
-    value = self.parse_word_expression()
-    return ast.Program([], value, self.module)
+    self.unit.set_entry_point(self.parse_word_expression())
+    return self.unit
 
   # <word expression>
   #   -> <lambda>
@@ -193,7 +189,7 @@ class Parser(object):
         ast.Argument(data._SELECTOR, ast.Literal(name))
       ]
       rest = self.parse_arguments()
-      left = ast.Invocation(prefix + rest, self.module.methodspace)
+      left = ast.Invocation(prefix + rest, self.present.get_methodspace())
     return left
 
   # <arguments>
@@ -238,8 +234,15 @@ class Parser(object):
         ast.Argument(data._SELECTOR, ast.Literal('()'))
       ]
       rest = self.parse_arguments()
-      recv = ast.Invocation(prefix + rest, self.module.methodspace)
+      recv = ast.Invocation(prefix + rest, self.present.get_methodspace())
     return recv
+
+  # <variable>
+  #   -> <identifier>
+  def parse_variable(self):
+    name = self.expect_type(Token.IDENTIFIER)
+    return ast.Variable(name=name, namespace=self.present.get_namespace())
+
 
   # <atomic expression>
   #   -> <literal>
@@ -251,8 +254,7 @@ class Parser(object):
       value = self.expect_type(Token.LITERAL)
       return ast.Literal(value)
     elif self.at_type(Token.IDENTIFIER):
-      name = self.expect_type(Token.IDENTIFIER)
-      return ast.Variable(name=name, namespace=self.module.namespace)
+      return self.parse_variable()
     elif self.at_punctuation('('):
       self.expect_punctuation('(')
       result = self.parse_expression()

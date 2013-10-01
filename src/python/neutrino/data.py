@@ -14,6 +14,9 @@ class Namespace(object):
   def add_binding(self, name, value):
     self.bindings[name] = value
 
+  def lookup(self, name):
+    return self.bindings.get(name, None)
+
 
 @plankton.serializable(("core", "Methodspace"))
 class Methodspace(object):

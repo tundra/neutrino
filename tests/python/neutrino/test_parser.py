@@ -8,9 +8,17 @@ df = ast.LocalDeclaration
 lm = ast.Lambda
 lt = ast.Literal
 nd = ast.NamespaceDeclaration
-pg = lambda *e: ast.Program(e)
 pm = lambda n, *t: ast.Parameter(n, t, data.Guard.any())
 sq = lambda *e: ast.Sequence(e)
+
+def ut(phase, *elements):
+  return ast.Unit().add_element(phase, *elements)
+
+def mu(*phases):
+  result = ast.Unit()
+  for (phase, elements) in phases:
+    result.add_element(phase, *elements)
+  return result
 
 def sg(*params):
   prefix = [
@@ -148,9 +156,12 @@ class ParserTest(unittest.TestCase):
 
   def test_program_toplevel(self):
     test = self.check_program
-    test('def $x := 5;', pg(nd(nm("x"), lt(5))))
-    test('', pg())
-    test('def $x := 5; def $y := 6;', pg(nd(nm("x"), lt(5)), nd(nm("y"), lt(6))))
+    test('def $x := 5;', ut(0, nd(nm("x"), lt(5))))
+    test('', ut(0))
+    test('def $x := 5; def $y := 6;', ut(0, nd(nm("x"), lt(5)), nd(nm("y"), lt(6))))
+    test('def @x := 5;', mu(
+      (-1, [nd(nm("x", -1), lt(5))]),
+      (0, [])))
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)

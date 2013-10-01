@@ -1,0 +1,28 @@
+-- INPUT:
+def $x := 4;
+entry_point $x.print();
+-- OUTPUT:
+4
+-- END
+
+-- INPUT:
+def @x := 8;
+entry_point @x.print();
+-- OUTPUT:
+8
+-- END
+
+-- INPUT:
+def @x := 12;
+def $y := @x;
+entry_point ($y).print();
+-- OUTPUT:
+12
+-- END
+
+-- INPUT:
+def @x := 16;
+entry_point ((fn ($y) => (@x + $y))(3)).print();
+-- OUTPUT:
+19
+-- END
