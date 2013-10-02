@@ -45,6 +45,11 @@ value_t get_signature_tag_at(value_t self, size_t index);
 // order.
 value_t get_signature_parameter_at(value_t self, size_t index);
 
+// Sets the attributes of the given signature to the appropriate values given
+// an array of parameter values, including building the sorted tag array etc.
+value_t set_signature_contents_from_parameters(runtime_t *runtime,
+    value_t signature, value_t params);
+
 // The status of a match -- whether it succeeded and if not why.
 typedef enum {
   // There was an argument we didn't expect.
@@ -116,13 +121,17 @@ join_status_t join_score_vectors(score_t *target, score_t *source, size_t length
 
 // --- P a r a m e t e r ---
 
-static const size_t kParameterSize = OBJECT_SIZE(3);
+static const size_t kParameterSize = OBJECT_SIZE(4);
 static const size_t kParameterGuardOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kParameterIsOptionalOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kParameterIndexOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kParameterTagsOffset = OBJECT_FIELD_OFFSET(3);
 
 // This parameter's guard.
 ACCESSORS_DECL(parameter, guard);
+
+// This parameter's tags.
+ACCESSORS_DECL(parameter, tags);
 
 // Can this parameter be left empty?
 INTEGER_ACCESSORS_DECL(parameter, is_optional);

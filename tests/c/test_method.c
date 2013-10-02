@@ -175,7 +175,7 @@ TEST(method, signature) {
   ASSERT_SUCCESS(signature);
 
   value_t param = new_heap_parameter(runtime, afFreeze, ROOT(runtime, any_guard),
-      true, 0);
+      ROOT(runtime, empty_array), true, 0);
   ASSERT_SUCCESS(param);
 
   DISPOSE_RUNTIME();
@@ -258,40 +258,22 @@ typedef struct {
 #define PARAMS(N, values) ((test_param_t[(N) + 1]) {values, PARAM(new_integer(0), false, vNull())})
 
 // Make a signature object out of the given input.
-static value_t make_signature(runtime_t *runtime, bool allow_extra, test_param_t *params) {
+static value_t make_signature(runtime_t *runtime, bool allow_extra,
+    test_param_t *test_params) {
   size_t param_count = 0;
-  size_t mandatory_count = 0;
-  size_t tag_count = 0;
-  // Loop over the parameters, stop at the first non-array which will be the end
-  // marker added by the PARAMS macro. First we just collect some information,
-  // then we'll build the signature.
-  for (size_t i = 0; params[i].tags.type == vtArray; i++) {
-    test_param_t test_param = params[i];
+  for (size_t i = 0; test_params[i].tags.type == vtArray; i++)
     param_count++;
-    if (!test_param.is_optional)
-      mandatory_count++;
-    tag_count += test_param.tags.value.as_array.length;
+  value_t params = new_heap_array(runtime, param_count);
+  for (size_t i = 0; i < param_count; i++) {
+    test_param_t test_param = test_params[i];
+    value_t param = new_heap_parameter(runtime, afFreeze, test_param.guard,
+        variant_to_value(runtime, test_param.tags), test_param.is_optional, i);
+    set_array_at(params, i, param);
   }
-  // Create an array with pairs of values, the first entry of which is the tag
-  // and the second is the parameter.
-  TRY_DEF(param_vector, new_heap_pair_array(runtime, tag_count));
-  // Loop over all the tags, t being the tag index across the whole signature.
-  size_t t = 0;
-  for (size_t i = 0; params[i].tags.type == vtArray; i++) {
-    test_param_t test_param = params[i];
-    TRY_DEF(tags_array, variant_to_value(runtime, test_param.tags));
-    size_t param_tag_count = get_array_length(tags_array);
-    TRY_DEF(param, new_heap_parameter(runtime, afFreeze, test_param.guard,
-        test_param.is_optional, i));
-    for (size_t j = 0; j < param_tag_count; j++, t++) {
-      TRY_DEF(tag, get_array_at(tags_array, j));
-      set_pair_array_first_at(param_vector, t, tag);
-      set_pair_array_second_at(param_vector, t, param);
-    }
-  }
-  co_sort_pair_array(param_vector);
-  return new_heap_signature(runtime, afFreeze, param_vector, param_count,
-      mandatory_count, allow_extra);
+  value_t result = new_heap_signature(runtime, afMutable, ROOT(runtime, nothing),
+      0, 0, allow_extra);
+  set_signature_contents_from_parameters(runtime, result, params);
+  return result;
 }
 
 TEST(method, make_signature) {

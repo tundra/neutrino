@@ -65,7 +65,7 @@ TEST(syntax, parameter_order_index) {
     set_array_at(params, i, new_heap_parameter_ast(runtime,                    \
         ROOT(runtime, nothing), tags, ROOT(runtime, any_guard)));              \
   }                                                                            \
-  calc_parameter_ordering(params, scratch, kScratchSize, ordering, kOrderingSize);\
+  calc_parameter_ast_ordering(params, scratch, kScratchSize, ordering, kOrderingSize);\
   size_t expected[N] = {EXPECTED};                                             \
   for (size_t i = 0; i < (N); i++)                                             \
     ASSERT_EQ(ordering[i], expected[i]);                                       \

@@ -80,8 +80,12 @@ static int compare_parameter_ordering_entries(const void *vp_a, const void *vp_b
   }
 }
 
-void calc_parameter_ordering(value_t params, value_t *scratch, size_t scratchc,
-    size_t *ordering, size_t orderingc) {
+// Abstract implementation of the parameter ordering function that works on
+// any kind of object that has a set of tags. The get_entry_tags function
+// argument is responsible for extracting the tags.
+static void calc_abstract_parameter_ordering(value_t params, value_t *scratch,
+    size_t scratchc, size_t *ordering, size_t orderingc,
+    value_t (get_entry_tags)(value_t param)) {
   size_t tagc = get_array_length(params);
   CHECK_REL("not enough scratch", scratchc, >=, tagc * 2);
   CHECK_REL("not enough ordering", orderingc, >=, tagc);
@@ -89,7 +93,7 @@ void calc_parameter_ordering(value_t params, value_t *scratch, size_t scratchc,
   // it came from in the tag array.
   for (size_t i = 0; i < tagc; i++) {
     value_t param = get_array_at(params, i);
-    scratch[i * 2] = get_parameter_ast_tags(param);
+    scratch[i * 2] = get_entry_tags(param);
     scratch[(i * 2) + 1] = new_integer(i);
   }
   // Sort the entries by parameter ordering. This moves the subject and selector
@@ -105,6 +109,18 @@ void calc_parameter_ordering(value_t params, value_t *scratch, size_t scratchc,
     // Store a reverse mapping from the origin to that position.
     ordering[get_integer_value(origin)] = i;
   }
+}
+
+void calc_parameter_ast_ordering(value_t params, value_t *scratch, size_t scratchc,
+    size_t *ordering, size_t orderingc) {
+  return calc_abstract_parameter_ordering(params, scratch, scratchc, ordering,
+      orderingc, get_parameter_ast_tags);
+}
+
+void calc_parameter_ordering(value_t params, value_t *scratch, size_t scratchc,
+    size_t *ordering, size_t orderingc) {
+  return calc_abstract_parameter_ordering(params, scratch, scratchc, ordering,
+      orderingc, get_parameter_tags);
 }
 
 // Forward declare all the emit methods.
@@ -614,7 +630,7 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
     tag_count += get_array_length(tags);
   }
 
-  calc_parameter_ordering(params, scratch, scratchc, offsets, paramc);
+  calc_parameter_ast_ordering(params, scratch, scratchc, offsets, paramc);
 
   TRY_DEF(tag_array, new_heap_pair_array(runtime, tag_count));
   // Build the positional argument part of the signature. Tag_index counts the
@@ -624,9 +640,9 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
     value_t param_ast = get_array_at(params, i);
     value_t guard = get_parameter_ast_guard(param_ast);
     size_t param_index = offsets[i];
-    TRY_DEF(param, new_heap_parameter(runtime, afFreeze, guard, false, param_index));
-    // Add all this parameter's tags to the tag array.
     value_t tags = get_parameter_ast_tags(param_ast);
+    TRY_DEF(param, new_heap_parameter(runtime, afFreeze, guard, tags, false, param_index));
+    // Add all this parameter's tags to the tag array.
     size_t tagc = get_array_length(tags);
     for (size_t j = 0; j < tagc; j++, tag_index++) {
       value_t tag = get_array_at(tags, j);

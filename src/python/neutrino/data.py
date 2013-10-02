@@ -33,6 +33,9 @@ class Methodspace(object):
     self.methods = methods
     self.imports = imports
 
+  def add_method(self, method):
+    self.methods.append(method)
+
 
 @plankton.serializable(("core", "Module"))
 class Module(object):
@@ -52,6 +55,14 @@ class Method(object):
   def __init__(self, signature=None, implementation=None):
     self.signature = signature
     self.implementation = implementation
+
+
+@plankton.serializable(("core", "Signature"))
+class Signature(object):
+
+  @plankton.field("parameters")
+  def __init__(self, params):
+    self.parameters = params
 
 
 @plankton.serializable(("core", "Guard"))
@@ -77,6 +88,16 @@ class Guard(object):
   @staticmethod
   def eq(value):
     return Guard(Guard._EQ, value)
+
+
+@plankton.serializable(("core", "Parameter"))
+class Parameter(object):
+
+  @plankton.field("tags")
+  @plankton.field("guard")
+  def __init__(self, tags=None, guard=None):
+    self.tags = tags
+    self.guard = guard
 
 
 # A unique key, matching a neutrino runtime key.

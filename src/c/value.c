@@ -1618,6 +1618,21 @@ static value_t new_protocol(runtime_t *runtime) {
   return new_heap_protocol(runtime, afMutable, ROOT(runtime, nothing));
 }
 
+static value_t new_method(runtime_t *runtime) {
+  return new_heap_method(runtime, afMutable, ROOT(runtime, nothing),
+      ROOT(runtime, nothing));
+}
+
+static value_t new_signature(runtime_t *runtime) {
+  return new_heap_signature(runtime, afMutable, ROOT(runtime, nothing),
+      0, 0, false);
+}
+
+static value_t new_parameter(runtime_t *runtime) {
+  return new_heap_parameter(runtime, afMutable, ROOT(runtime, nothing),
+      ROOT(runtime, nothing), false, 0);
+}
+
 value_t add_plankton_factory(value_t map, value_t category, const char *name,
     factory_constructor_t constructor, runtime_t *runtime) {
   TRY_DEF(factory, new_heap_factory(runtime, constructor));
@@ -1626,11 +1641,16 @@ value_t add_plankton_factory(value_t map, value_t category, const char *name,
 
 value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   value_t core = RSTR(runtime, core);
-  TRY(add_plankton_factory(map, core, "Namespace", new_namespace, runtime));
+  // Factories
+  TRY(add_plankton_factory(map, core, "Guard", new_guard, runtime));
+  TRY(add_plankton_factory(map, core, "Method", new_method, runtime));
   TRY(add_plankton_factory(map, core, "Methodspace", new_methodspace, runtime));
   TRY(add_plankton_factory(map, core, "Module", new_module, runtime));
-  TRY(add_plankton_factory(map, core, "Guard", new_guard, runtime));
+  TRY(add_plankton_factory(map, core, "Namespace", new_namespace, runtime));
+  TRY(add_plankton_factory(map, core, "Parameter", new_parameter, runtime));
   TRY(add_plankton_factory(map, core, "Protocol", new_protocol, runtime));
+  TRY(add_plankton_factory(map, core, "Signature", new_signature, runtime));
+  // Singletons
   TRY(add_plankton_binding(map, core, "subject", ROOT(runtime, subject_key),
       runtime));
   TRY(add_plankton_binding(map, core, "selector", ROOT(runtime, selector_key),

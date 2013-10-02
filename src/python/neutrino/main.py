@@ -90,7 +90,8 @@ class Main(object):
     for expr in inputs:
       tokens = token.tokenize(expr)
       unit = parse_thunk(tokens)
-      self.output_value(self.compile_unit(unit))
+      program = self.compile_unit(unit)
+      self.output_value(program)
 
   def output_value(self, value):
     encoder = plankton.Encoder()

@@ -113,7 +113,7 @@ class DataOutputStream(object):
       if resolved is None:
         # This object is not an environment reference so just emit it
         # directly.
-        name = obj.__class__.__name__
+        name = class_name(obj.__class__)
         desc = _DESCRIPTORS.get(name, None)
         if desc is None:
           raise Exception(obj)
@@ -398,7 +398,7 @@ class ObjectDescriptor(object):
   def __init__(self, klass, environment):
     self.klass = klass
     if environment is None:
-      self.header = self.klass.__name__
+      self.header = class_name(self.klass)
     else:
       self.header = EnvironmentPlaceholder(environment)
     self.fields = None
@@ -434,6 +434,11 @@ class ObjectDescriptor(object):
       setattr(instance, name, value)
 
 
+# Returns the fully qualified class name of a class object.
+def class_name(klass):
+  return "%s.%s" % (klass.__module__, klass.__name__)
+
+
 # Marks the given class as serializable.
 def serializable(*environments):
   def callback(klass):
@@ -444,7 +449,7 @@ def serializable(*environments):
     descriptor = ObjectDescriptor(klass, primary_environment)
     # We need to be able to access the descriptor through the class' name,
     # that's how we get access to it when serializing an instance.
-    _DESCRIPTORS[klass.__name__] = descriptor
+    _DESCRIPTORS[class_name(klass)] = descriptor
     for environment in environments:
       # If there is an environment we also key the descriptor under the
       # environment key such that when we meet the key during deserialization
@@ -461,7 +466,7 @@ def serializable(*environments):
 # Marks the descriptor as requiring the object to be transformed during
 # serialization.
 def virtual(klass):
-  descriptor = _DESCRIPTORS[klass.__name__]
+  descriptor = _DESCRIPTORS[class_name(klass)]
   descriptor.virtual = True
   return klass
 
@@ -469,7 +474,7 @@ def virtual(klass):
 # Marks the descriptor as allowing the object to substitute another value for
 # itself.
 def substitute(klass):
-  descriptor = _DESCRIPTORS[klass.__name__]
+  descriptor = _DESCRIPTORS[class_name(klass)]
   descriptor.substitute = True
   return klass
 

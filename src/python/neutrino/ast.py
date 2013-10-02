@@ -50,6 +50,18 @@ class Visitor(object):
   def visit_namespace_declaration(self, that):
     that.traverse(self)
 
+  @abstractmethod
+  def visit_method_declaration(self, that):
+    that.traverse(self)
+
+  @abstractmethod
+  def visit_signature(self, that):
+    that.traverse(self)
+
+  @abstractmethod
+  def visit_parameter(self, that):
+    that.traverse(self)
+
 
 # A constant literal value.
 @plankton.serializable(("ast", "Literal"))
@@ -261,6 +273,15 @@ class Parameter(object):
     self.tags = tags
     self.guard = guard
 
+  def accept(self, visitor):
+    visitor.visit_parameter(self)
+
+  def traverse(self, visitor):
+    pass
+
+  def to_data(self):
+    return data.Parameter(self.tags, self.guard)
+
   def __str__(self):
     return "(param (tags %s) (name %s) (guard %s))" % (
         ", ".join(map(str, self.tags)),
@@ -274,6 +295,17 @@ class Signature(object):
   @plankton.field("parameters")
   def __init__(self, parameters=None):
     self.parameters = parameters
+
+  def accept(self, visitor):
+    visitor.visit_signature(self)
+
+  def traverse(self, visitor):
+    for param in self.parameters:
+      param.accept(visitor)
+
+  def to_data(self):
+    data_params = [param.to_data() for param in self.parameters]
+    return data.Signature(data_params)
 
   def __str__(self):
     return "(signature %s)" % " ".join(map(str, self.parameters))
@@ -361,19 +393,49 @@ class NamespaceDeclaration(object):
     self.name = name
     self.value = value
 
+  # Returns the stage this declaration belongs to.
+  def get_stage(self):
+    return self.name.stage
+
   def accept(self, visitor):
     return visitor.visit_namespace_declaration(self)
 
   def apply(self, program, helper):
     name = tuple(self.name.path)
     value = helper.evaluate(self.value)
-    program.module.namespace.bindings[name] = value
+    program.module.namespace.add_binding(name, value)
 
   def traverse(self, visitor):
     self.value.accept(visitor)
 
   def __str__(self):
     return "(namespace-declaration %s %s)" % (self.name, self.value)
+
+
+# A toplevel method declaration.
+class MethodDeclaration(object):
+
+  def __init__(self, signature, body):
+    self.signature = signature
+    self.body = body
+
+  def get_stage(self):
+    return 0
+
+  def accept(self, visitor):
+    return visitor.visit_method_declaration(self)
+
+  def apply(self, program, helper):
+    signature_data = self.signature.to_data()
+    method = data.Method(signature_data, self.body)
+    program.module.methodspace.add_method(method)
+
+  def traverse(self, visitor):
+    self.signature.accept(visitor)
+    self.body.accept(visitor)
+
+  def __str__(self):
+    return "(method-declaration %s %s)" % (self.signature, self.body)
 
 
 # An individual execution stage.
