@@ -680,20 +680,15 @@ value_t compile_method_body(assembler_t *assm, value_t signature_ast,
   // Build the tag vector of the signature. Tag_index counts the total number of
   // tags seen so far across all parameters.
   for (size_t i = 0; i < param_astc; i++) {
-    // Add the parameter to the signature.
-    value_t param_ast = get_array_at(param_asts, i);
-    value_t guard = get_parameter_ast_guard(param_ast);
-    size_t param_index = offsets[i];
-    value_t tags = get_parameter_ast_tags(param_ast);
-    TRY_DEF(param, new_heap_parameter(runtime, afFreeze, guard, tags, false, param_index));
     // Bind the parameter in the local scope.
+    value_t param_ast = get_array_at(param_asts, i);
     value_t symbol = get_parameter_ast_symbol(param_ast);
     if (!in_family(ofSymbolAst, symbol))
       return new_invalid_syntax_signal(isExpectedSymbol);
     if (assembler_is_symbol_bound(assm, symbol))
       // We're trying to redefine an already defined symbol. That's not valid.
       return new_invalid_syntax_signal(isSymbolAlreadyBound);
-    TRY(map_scope_bind(&param_scope, symbol, btArgument, param_index));
+    TRY(map_scope_bind(&param_scope, symbol, btArgument, offsets[i]));
   }
 
   // We don't need this more so clear it to ensure that we don't accidentally
