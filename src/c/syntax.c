@@ -90,44 +90,53 @@ static int compare_parameter_ordering_entries(const void *vp_a, const void *vp_b
 // Abstract implementation of the parameter ordering function that works on
 // any kind of object that has a set of tags. The get_entry_tags function
 // argument is responsible for extracting the tags.
-static void calc_abstract_parameter_ordering(value_t params, value_t *scratch,
-    size_t scratchc, size_t *ordering, size_t orderingc,
-    value_t (get_entry_tags)(value_t param)) {
+static size_t *calc_abstract_parameter_ordering(reusable_scratch_memory_t *scratch,
+    value_t params, value_t (get_entry_tags)(value_t param)) {
   size_t tagc = get_array_length(params);
-  CHECK_REL("not enough scratch", scratchc, >=, tagc * 2);
-  CHECK_REL("not enough ordering", orderingc, >=, tagc);
-  // First store the tag arrays in the scratch array, each along the the index
+
+  // Allocate the temporary storage and result array.
+  value_t *pairs = NULL;
+  size_t *result = NULL;
+  reusable_scratch_memory_double_alloc(scratch,
+      tagc * 2 * sizeof(value_t), (void**) &pairs,
+      tagc * sizeof(size_t), (void**) &result);
+
+  // First store the tag arrays in the pairs array, each along with the index
   // it came from in the tag array.
   for (size_t i = 0; i < tagc; i++) {
     value_t param = get_array_at(params, i);
-    scratch[i * 2] = get_entry_tags(param);
-    scratch[(i * 2) + 1] = new_integer(i);
+    pairs[i * 2] = get_entry_tags(param);
+    pairs[(i * 2) + 1] = new_integer(i);
   }
   // Sort the entries by parameter ordering. This moves the subject and selector
   // parameters to the front, followed by the integers, followed by the rest
   // in some arbitrary order. Note that the *2 means that the integers are
   // just moved along, they're not included in the sorting.
-  qsort(scratch, tagc, sizeof(value_t) * 2, compare_parameter_ordering_entries);
+  //
+  // This assumes that qsort is consistent, that is, that it sorts two arrays
+  // the same way if compare_parameter_ordering_entries returns the same
+  // comparisons.
+  qsort(pairs, tagc, sizeof(value_t) * 2, compare_parameter_ordering_entries);
   // Transfer the resulting ordering to the output array.
   for (size_t i = 0; i < tagc; i++) {
     // This is the original position of the entry that is now the i'th in the
     // sorted parameter order.
-    value_t origin = scratch[(i * 2) + 1];
+    value_t origin = pairs[(i * 2) + 1];
     // Store a reverse mapping from the origin to that position.
-    ordering[get_integer_value(origin)] = i;
+    result[get_integer_value(origin)] = i;
   }
+
+  return result;
 }
 
-void calc_parameter_ast_ordering(value_t params, value_t *scratch, size_t scratchc,
-    size_t *ordering, size_t orderingc) {
-  return calc_abstract_parameter_ordering(params, scratch, scratchc, ordering,
-      orderingc, get_parameter_ast_tags);
+size_t *calc_parameter_ast_ordering(reusable_scratch_memory_t *scratch,
+    value_t params) {
+  return calc_abstract_parameter_ordering(scratch, params, get_parameter_ast_tags);
 }
 
-void calc_parameter_ordering(value_t params, value_t *scratch, size_t scratchc,
-    size_t *ordering, size_t orderingc) {
-  return calc_abstract_parameter_ordering(params, scratch, scratchc, ordering,
-      orderingc, get_parameter_tags);
+size_t *calc_parameter_ordering(reusable_scratch_memory_t *scratch,
+    value_t params) {
+  return calc_abstract_parameter_ordering(scratch, params, get_parameter_tags);
 }
 
 // Forward declare all the emit methods.
@@ -599,28 +608,14 @@ ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, ofSignatureAst, Signature,
     signature);
 ACCESSORS_IMPL(LambdaAst, lambda_ast, acIsSyntaxOpt, 0, Body, body);
 
-value_t compile_method_body(assembler_t *assm, value_t signature_ast,
-    value_t body_ast, value_t *signature_out) {
-  CHECK_FAMILY(ofSignatureAst, signature_ast);
-  CHECK_SYNTAX_FAMILY_OPT(body_ast);
-
-  runtime_t *runtime = assm->runtime;
+// Builds a method signature based on a signature syntax tree.
+static value_t build_method_signature(runtime_t *runtime,
+    reusable_scratch_memory_t *scratch_memory, value_t signature_ast) {
   value_t param_asts = get_signature_ast_parameters(signature_ast);
   size_t param_astc = get_array_length(param_asts);
 
-  // Temporary data used to calculate the parameter ordering. Don't do any
-  // recursive emit calls between allocating these and no longer needing them
-  // since it may lead to someone else using or freeing them.
-  size_t scratchc = 2 * param_astc;
-  value_t *scratch = NULL;
-  size_t *offsets = NULL;
-  assembler_scratch_double_malloc(assm,
-      scratchc * sizeof(value_t), (void**) &scratch,
-      param_astc * sizeof(size_t), (void**) &offsets);
-
-  // Push the scope that holds the parameters.
-  map_scope_t param_scope;
-  TRY(assembler_push_map_scope(assm, &param_scope));
+  // Calculate the parameter ordering.
+  size_t *offsets = calc_parameter_ast_ordering(scratch_memory, param_asts);
 
   // Count the tags. We'll need those for the compiled method signature's tag
   // vector.
@@ -631,9 +626,8 @@ value_t compile_method_body(assembler_t *assm, value_t signature_ast,
     tag_count += get_array_length(tags);
   }
 
-  calc_parameter_ast_ordering(param_asts, scratch, scratchc, offsets, param_astc);
-
   TRY_DEF(tag_array, new_heap_pair_array(runtime, tag_count));
+
   // Build the tag vector of the signature. Tag_index counts the total number of
   // tags seen so far across all parameters.
   for (size_t i = 0, tag_index = 0; i < param_astc; i++) {
@@ -650,6 +644,44 @@ value_t compile_method_body(assembler_t *assm, value_t signature_ast,
       set_pair_array_first_at(tag_array, tag_index, tag);
       set_pair_array_second_at(tag_array, tag_index, param);
     }
+  }
+  co_sort_pair_array(tag_array);
+
+  // Build the result signature and store it in the out param.
+  TRY_DEF(result, new_heap_signature(runtime, afFreeze, tag_array, param_astc,
+      param_astc, false));
+
+  return result;
+}
+
+value_t compile_method_body(assembler_t *assm, value_t signature_ast,
+    value_t body_ast) {
+  CHECK_FAMILY(ofSignatureAst, signature_ast);
+  CHECK_SYNTAX_FAMILY_OPT(body_ast);
+
+  runtime_t *runtime = assm->runtime;
+  value_t param_asts = get_signature_ast_parameters(signature_ast);
+  size_t param_astc = get_array_length(param_asts);
+
+  // Push the scope that holds the parameters.
+  map_scope_t param_scope;
+  TRY(assembler_push_map_scope(assm, &param_scope));
+
+  // Calculate the parameter ordering. The offsets array will only be valid
+  // until the next ordering call so don't do any recursive emit calls while
+  // using it.
+  size_t *offsets = calc_parameter_ast_ordering(assembler_get_scratch_memory(assm),
+      param_asts);
+
+  // Build the tag vector of the signature. Tag_index counts the total number of
+  // tags seen so far across all parameters.
+  for (size_t i = 0; i < param_astc; i++) {
+    // Add the parameter to the signature.
+    value_t param_ast = get_array_at(param_asts, i);
+    value_t guard = get_parameter_ast_guard(param_ast);
+    size_t param_index = offsets[i];
+    value_t tags = get_parameter_ast_tags(param_ast);
+    TRY_DEF(param, new_heap_parameter(runtime, afFreeze, guard, tags, false, param_index));
     // Bind the parameter in the local scope.
     value_t symbol = get_parameter_ast_symbol(param_ast);
     if (!in_family(ofSymbolAst, symbol))
@@ -659,15 +691,9 @@ value_t compile_method_body(assembler_t *assm, value_t signature_ast,
       return new_invalid_syntax_signal(isSymbolAlreadyBound);
     TRY(map_scope_bind(&param_scope, symbol, btArgument, param_index));
   }
-  co_sort_pair_array(tag_array);
 
-  // Build the result signature and store it in the out param.
-  TRY_SET(*signature_out, new_heap_signature(runtime, afFreeze, tag_array,
-      param_astc, param_astc, false));
-
-  // We don't need these any more so clear them to ensure that we don't
-  // accidentally access the memory again.
-  scratch = NULL;
+  // We don't need this more so clear it to ensure that we don't accidentally
+  // access it memory again.
   offsets = NULL;
 
   // Compile the code.
@@ -686,9 +712,10 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   TRY(assembler_push_capture_scope(assm, &capture_scope));
 
   // Compile the body and signature.
-  value_t signature;
   TRY_DEF(body_code, compile_method_body(assm, get_lambda_ast_signature(value),
-      get_lambda_ast_body(value), &signature));
+      get_lambda_ast_body(value)));
+  TRY_DEF(signature, build_method_signature(assm->runtime,
+      assembler_get_scratch_memory(assm), get_lambda_ast_signature(value)));
 
   // Build a method space in which to store the method.
   runtime_t *runtime = assm->runtime;

@@ -52,9 +52,6 @@ TEST(syntax, parameter_order_index) {
   DISPOSE_RUNTIME();
 }
 
-#define kOrderingSize 4
-#define kScratchSize (kOrderingSize * 2)
-
 // Shorthand for running an ordering test.
 #define CHECK_ORDERING(N, PARAMS, EXPECTED) do {                               \
   value_t params = new_heap_array(runtime, (N));                               \
@@ -65,7 +62,7 @@ TEST(syntax, parameter_order_index) {
     set_array_at(params, i, new_heap_parameter_ast(runtime,                    \
         ROOT(runtime, nothing), tags, ROOT(runtime, any_guard)));              \
   }                                                                            \
-  calc_parameter_ast_ordering(params, scratch, kScratchSize, ordering, kOrderingSize);\
+  size_t *ordering = calc_parameter_ast_ordering(&scratch, params);            \
   size_t expected[N] = {EXPECTED};                                             \
   for (size_t i = 0; i < (N); i++)                                             \
     ASSERT_EQ(ordering[i], expected[i]);                                       \
@@ -74,8 +71,8 @@ TEST(syntax, parameter_order_index) {
 TEST(syntax, param_ordering) {
   CREATE_RUNTIME();
 
-  value_t scratch[kScratchSize];
-  size_t ordering[kOrderingSize];
+  reusable_scratch_memory_t scratch;
+  reusable_scratch_memory_init(&scratch);
 
   variant_t sub = vValue(ROOT(runtime, subject_key));
   variant_t sel = vValue(ROOT(runtime, selector_key));
@@ -99,6 +96,8 @@ TEST(syntax, param_ordering) {
   CHECK_ORDERING(4, vArray(4, just_0 o just_1 o just_2 o just_sel), 1 o 2 o 3 o 0);
   CHECK_ORDERING(4, vArray(4, just_0 o just_sub o just_2 o just_sel), 2 o 0 o 3 o 1);
   CHECK_ORDERING(3, vArray(3, just_0 o vArray(2, sub o sel) o just_3), 1 o 0 o 2);
+
+  reusable_scratch_memory_dispose(&scratch);
 
   DISPOSE_RUNTIME();
 }

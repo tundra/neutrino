@@ -72,9 +72,8 @@ static value_t compile_method(runtime_t *runtime, value_t method) {
   assembler_t assm;
   TRY(assembler_init(&assm, runtime, NULL));
   E_BEGIN_TRY_FINALLY();
-    value_t dummy;
     E_TRY_DEF(code, compile_method_body(&assm, get_lambda_ast_signature(lambda),
-        get_lambda_ast_body(lambda), &dummy));
+        get_lambda_ast_body(lambda)));
     E_RETURN(code);
   E_FINALLY();
     assembler_dispose(&assm);

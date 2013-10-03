@@ -32,12 +32,7 @@ static value_t clone_and_order_parameter_array(runtime_t *runtime,
   reusable_scratch_memory_t scratch;
   reusable_scratch_memory_init(&scratch);
   E_BEGIN_TRY_FINALLY();
-    size_t scratchc = 2 * length;
-    void *memory = reusable_scratch_memory_alloc(&scratch,
-      scratchc * sizeof(value_t) + length * sizeof(size_t));
-    value_t *scratch_values = memory;
-    size_t *offsets = (void*) ((scratchc * sizeof(value_t)) + ((address_t) memory));
-    calc_parameter_ordering(raw_params, scratch_values, scratchc, offsets, length);
+    size_t *offsets = calc_parameter_ordering(&scratch, raw_params);
     for (size_t i = 0; i < length; i++) {
       value_t raw_param = get_array_at(raw_params, i);
       E_TRY_DEF(param, new_heap_parameter(runtime, afFreeze,
