@@ -614,7 +614,11 @@ static value_t build_method_signature(runtime_t *runtime,
   value_t param_asts = get_signature_ast_parameters(signature_ast);
   size_t param_astc = get_array_length(param_asts);
 
-  // Calculate the parameter ordering.
+  // Calculate the parameter ordering. Note that we're assuming that this will
+  // give the same order as the signature, which got its order from a different
+  // call to call_parameter_ast_ordering with the same (though possibly
+  // relocated) parameter array. This seems like a safe assumption though it
+  // does rely on qsort being well-behaved.
   size_t *offsets = calc_parameter_ast_ordering(scratch_memory, param_asts);
 
   // Count the tags. We'll need those for the compiled method signature's tag

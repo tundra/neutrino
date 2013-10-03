@@ -47,7 +47,11 @@ value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
 // Determines the parameter ordering to use given an array of parameter asts.
 //
 // The result will be returned as an array where the i'th entry of the gives the
-// parameter index for the parameter in the i'th entry in the tags array.
+// parameter index for the parameter in the i'th entry in the tags array. It
+// will be allocated using the given scratch memory.
+//
+// Ordering the same parameters twice yields the same ordering, even if the
+// parameters have been relocated in the meantime.
 size_t *calc_parameter_ast_ordering(reusable_scratch_memory_t *scratch,
     value_t params);
 
