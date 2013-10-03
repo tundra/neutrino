@@ -251,6 +251,7 @@ static value_t new_moved_object(value_t target) {
   F(LiteralAst,              literal_ast,               _, _, X, X, _, _, X, _, _)\
   F(LocalDeclarationAst,     local_declaration_ast,     _, _, X, X, _, _, X, _, _)\
   F(Method,                  method,                    _, _, X, _, _, _, _, X, _)\
+  F(MethodAst,               method_ast,                _, _, X, X, _, _, _, X, _)\
   F(Methodspace,             methodspace,               _, _, X, _, _, _, _, X, X)\
   F(Module,                  module,                    _, _, X, _, _, _, _, X, _)\
   F(MutableRoots,            mutable_roots,             _, _, _, _, _, _, _, X, X)\
@@ -260,13 +261,13 @@ static value_t new_moved_object(value_t target) {
   F(Nothing,                 nothing,                   _, _, _, _, _, _, _, _, _)\
   F(Null,                    null,                      _, X, _, X, _, _, _, _, _)\
   F(Operation,               operation,                 _, X, _, _, _, _, _, X, _)\
-  F(Parameter,               parameter,                 _, _, X, _, _, _, _, X, _)\
+  F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _)\
   F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _)\
   F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, _, _)\
   F(Protocol,                protocol,                  _, _, X, X, _, _, _, X, _)\
   F(Roots,                   roots,                     _, _, _, _, _, _, _, X, X)\
   F(SequenceAst,             sequence_ast,              _, _, X, X, _, _, X, _, _)\
-  F(Signature,               signature,                 _, _, X, _, _, _, _, X, X)\
+  F(Signature,               signature,                 _, _, _, _, _, _, _, X, X)\
   F(SignatureAst,            signature_ast,             _, _, X, X, _, _, _, _, _)\
   F(Stack,                   stack,                     _, _, _, _, _, _, _, _, _)\
   F(StackPiece,              stack_piece,               _, _, _, _, _, _, _, _, _)\

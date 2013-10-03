@@ -214,6 +214,9 @@ value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags,
 // Creates a new signature syntax tree with the given parameters.
 value_t new_heap_signature_ast(runtime_t *runtime, value_t parameters);
 
+// Creates a new method ast with the given attributes.
+value_t new_heap_method_ast(runtime_t *runtime, value_t signature, value_t body);
+
 // Creates a new program syntax tree with the given elements.
 value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point,
     value_t module);

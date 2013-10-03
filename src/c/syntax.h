@@ -55,11 +55,6 @@ value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
 size_t *calc_parameter_ast_ordering(reusable_scratch_memory_t *scratch,
     value_t params);
 
-// Works the same way as calc_parameter_ast_ordering but based on an array of
-// parameter objects, not asts.
-size_t *calc_parameter_ordering(reusable_scratch_memory_t *scratch,
-    value_t params);
-
 // The worst possible parameter score used for values where we don't really
 // care about the ordering.
 static const size_t kMaxOrderIndex = ~0L;
@@ -73,6 +68,10 @@ static const size_t kMaxOrderIndex = ~0L;
 //   n+2: the integer n
 //   kMaxOrderIndex: any other value
 size_t get_parameter_order_index_for_array(value_t tags);
+
+// Builds a method signature based on a signature syntax tree.
+value_t build_method_signature(runtime_t *runtime,
+    reusable_scratch_memory_t *scratch, value_t signature_ast);
 
 
 // --- L i t e r a l   a s t ---
@@ -205,6 +204,7 @@ ACCESSORS_DECL(parameter_ast, tags);
 // The argument guard.
 ACCESSORS_DECL(parameter_ast, guard);
 
+
 // --- S i g n a t u r e   a s t ---
 
 static const size_t kSignatureAstSize = OBJECT_SIZE(1);
@@ -212,6 +212,19 @@ static const size_t kSignatureAstParametersOffset = OBJECT_FIELD_OFFSET(0);
 
 // The array of parameters for this signature.
 ACCESSORS_DECL(signature_ast, parameters);
+
+
+// --- M e t h o d   a s t ---
+
+static const size_t kMethodAstSize = OBJECT_SIZE(2);
+static const size_t kMethodAstSignatureOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kMethodAstBodyOffset = OBJECT_FIELD_OFFSET(1);
+
+// The signature ast of this method ast.
+ACCESSORS_DECL(method_ast, signature);
+
+// The implementation (body) of this method.
+ACCESSORS_DECL(method_ast, body);
 
 
 // --- P r o g r a m -  a s t --

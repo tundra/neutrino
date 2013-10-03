@@ -513,6 +513,15 @@ value_t new_heap_signature_ast(runtime_t *runtime, value_t parameters) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_method_ast(runtime_t *runtime, value_t signature, value_t body) {
+  size_t size = kMethodAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_method_ast_species)));
+  set_method_ast_signature(result, signature);
+  set_method_ast_body(result, body);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point,
     value_t module) {
   size_t size = kProgramAstSize;

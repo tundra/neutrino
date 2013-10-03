@@ -75,12 +75,12 @@ void dispose_value_to_string(value_to_string_t *data);
 
 // Checks whether the value at the end of the given pointer belongs to the
 // specified family. If not, returns a validation failure.
-#define VALIDATE_FAMILY(ofFamily, EXPR)                                  \
+#define VALIDATE_FAMILY(ofFamily, EXPR)                                        \
 VALIDATE(in_family(ofFamily, EXPR))
 
 // Checks whether the value at the end of the given pointer belongs to the
 // specified family. If not, returns a validation failure.
-#define VALIDATE_FAMILY_OPT(ofFamily, EXPR)                              \
+#define VALIDATE_FAMILY_OPT(ofFamily, EXPR)                                    \
 VALIDATE(in_family_opt(ofFamily, EXPR))
 
 // --- B e h a v i o r ---

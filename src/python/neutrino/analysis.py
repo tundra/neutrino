@@ -99,7 +99,7 @@ class ScopeVisitor(ast.Visitor):
     that.value.accept(self)
 
   def visit_method_declaration(self, that):
-    self.process_function(that)
+    self.process_function(that.method)
 
 
 def analyze(unit):
