@@ -417,14 +417,10 @@ static void methodspace_lookup_state_swap_offsets(methodspace_lookup_state_t *st
 // return the best match.
 static void lookup_methodspace_local_method(methodspace_lookup_state_t *state,
     runtime_t *runtime, value_t space, value_t record, frame_t *frame) {
-  match_info_t match_info;
-  // We start out writing to the scratch offsets since the result offsets may
-  // be holding a result from a previous match.
-  match_info_init(&match_info, state->max_score, state->scratch_offsets,
-      kSmallLookupLimit);
   value_t methods = get_methodspace_methods(space);
   size_t method_count = get_array_buffer_length(methods);
   score_t scratch_score[kSmallLookupLimit];
+  match_info_t match_info;
   match_info_init(&match_info, scratch_score, state->scratch_offsets,
       kSmallLookupLimit);
   size_t arg_count = get_invocation_record_argument_count(record);
