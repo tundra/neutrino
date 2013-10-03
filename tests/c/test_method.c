@@ -692,7 +692,8 @@ TEST(method, dense_perfect_lookup) {
             PARAM(guards[first], false, vArray(1, vInt(0))) o
             PARAM(guards[second], false, vArray(1, vInt(1))) o
             PARAM(guards[third], false, vArray(1, vInt(2)))));
-        value_t method = new_heap_method(runtime, afFreeze, signature, dummy_code);
+        value_t method = new_heap_method(runtime, afFreeze, signature,
+            ROOT(runtime, nothing), dummy_code);
         add_methodspace_method(runtime, space, method);
         methods[first][second][third] = method;
       }

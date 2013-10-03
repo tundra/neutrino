@@ -427,7 +427,7 @@ class MethodDeclaration(object):
 
   def apply(self, program, helper):
     signature_data = self.signature.to_data()
-    method = data.Method(signature_data, self.body)
+    method = data.Method(signature_data, Lambda(self.signature, self.body))
     program.module.methodspace.add_method(method)
 
   def traverse(self, visitor):

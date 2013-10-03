@@ -71,7 +71,8 @@ value_t add_methodspace_builtin_method(runtime_t *runtime, value_t space,
     E_TRY(assembler_emit_return(&assm));
     E_TRY_DEF(code_block, assembler_flush(&assm));
     E_TRY_DEF(signature, build_signature(runtime, receiver, name_c_str, posc, false));
-    E_TRY_DEF(method, new_heap_method(runtime, afFreeze, signature, code_block));
+    E_TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
+        ROOT(runtime, nothing), code_block));
     E_RETURN(add_methodspace_method(runtime, space, method));
   E_FINALLY();
     assembler_dispose(&assm);
@@ -91,7 +92,8 @@ value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
   TRY_DEF(code_block, assembler_flush(&assm));
   assembler_dispose(&assm);
   TRY_DEF(signature, build_signature(runtime, receiver, name_c_str, posc, allow_extra));
-  TRY_DEF(method, new_heap_method(runtime, afFreeze, signature, code_block));
+  TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
+      ROOT(runtime, nothing), code_block));
   return add_methodspace_method(runtime, space, method);
 }
 

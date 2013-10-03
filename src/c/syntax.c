@@ -35,13 +35,20 @@ value_t compile_expression(runtime_t *runtime, value_t program,
   // assembler to dispose.
   TRY(assembler_init(&assm, runtime, scope_callback));
   E_BEGIN_TRY_FINALLY();
-    E_TRY(emit_value(program, &assm));
-    assembler_emit_return(&assm);
-    E_TRY_DEF(code_block, assembler_flush(&assm));
+    E_TRY_DEF(code_block, compile_expression_with_assembler(runtime, program,
+        &assm));
     E_RETURN(code_block);
   E_FINALLY();
     assembler_dispose(&assm);
   E_END_TRY_FINALLY();
+}
+
+value_t compile_expression_with_assembler(runtime_t *runtime, value_t program,
+    assembler_t *assm) {
+  TRY(emit_value(program, assm));
+  assembler_emit_return(assm);
+  TRY_DEF(code_block, assembler_flush(assm));
+  return code_block;
 }
 
 value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
@@ -592,52 +599,46 @@ ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, ofSignatureAst, Signature,
     signature);
 ACCESSORS_IMPL(LambdaAst, lambda_ast, acIsSyntaxOpt, 0, Body, body);
 
-value_t emit_lambda_ast(value_t value, assembler_t *assm) {
-  // Emitting a lambda takes a fair amount of code but most of it is
-  // straightforward -- it's more just verbose than actually complex.
-  CHECK_FAMILY(ofLambdaAst, value);
-  runtime_t *runtime = assm->runtime;
+value_t compile_method_body(assembler_t *assm, value_t signature_ast,
+    value_t body_ast, value_t *signature_out) {
+  CHECK_FAMILY(ofSignatureAst, signature_ast);
+  CHECK_SYNTAX_FAMILY_OPT(body_ast);
 
-  value_t params = get_signature_ast_parameters(get_lambda_ast_signature(value));
-  size_t paramc = get_array_length(params);
+  runtime_t *runtime = assm->runtime;
+  value_t param_asts = get_signature_ast_parameters(signature_ast);
+  size_t param_astc = get_array_length(param_asts);
 
   // Temporary data used to calculate the parameter ordering. Don't do any
   // recursive emit calls between allocating these and no longer needing them
   // since it may lead to someone else using or freeing them.
-  size_t scratchc = 2 * paramc;
+  size_t scratchc = 2 * param_astc;
   value_t *scratch = NULL;
   size_t *offsets = NULL;
   assembler_scratch_double_malloc(assm,
       scratchc * sizeof(value_t), (void**) &scratch,
-      paramc * sizeof(size_t), (void**) &offsets);
+      param_astc * sizeof(size_t), (void**) &offsets);
 
-  // Push a capture scope that captures any symbols accessed outside the lambda.
-  capture_scope_t capture_scope;
-  TRY(assembler_push_capture_scope(assm, &capture_scope));
-  // Push the scope that holds the parameters. We could in principle use just a
-  // single scope that does both but this way is cleaner and allows the two
-  // parts to be used independently from each other. Also, we don't really need
-  // the scopes until the part where the method space is built but it's
-  // convenient to have the map scope so we can add stuff to it when going
-  // through the parameters.
+  // Push the scope that holds the parameters.
   map_scope_t param_scope;
   TRY(assembler_push_map_scope(assm, &param_scope));
 
+  // Count the tags. We'll need those for the compiled method signature's tag
+  // vector.
   size_t tag_count = 0;
-  for (size_t i = 0; i < paramc; i++) {
-    value_t param = get_array_at(params, i);
+  for (size_t i = 0; i < param_astc; i++) {
+    value_t param = get_array_at(param_asts, i);
     value_t tags = get_parameter_ast_tags(param);
     tag_count += get_array_length(tags);
   }
 
-  calc_parameter_ast_ordering(params, scratch, scratchc, offsets, paramc);
+  calc_parameter_ast_ordering(param_asts, scratch, scratchc, offsets, param_astc);
 
   TRY_DEF(tag_array, new_heap_pair_array(runtime, tag_count));
-  // Build the positional argument part of the signature. Tag_index counts the
-  // total number of tags seen so far across all parameters.
-  for (size_t i = 0, tag_index = 0; i < paramc; i++) {
+  // Build the tag vector of the signature. Tag_index counts the total number of
+  // tags seen so far across all parameters.
+  for (size_t i = 0, tag_index = 0; i < param_astc; i++) {
     // Add the parameter to the signature.
-    value_t param_ast = get_array_at(params, i);
+    value_t param_ast = get_array_at(param_asts, i);
     value_t guard = get_parameter_ast_guard(param_ast);
     size_t param_index = offsets[i];
     value_t tags = get_parameter_ast_tags(param_ast);
@@ -659,23 +660,44 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
     TRY(map_scope_bind(&param_scope, symbol, btArgument, param_index));
   }
   co_sort_pair_array(tag_array);
-  TRY_DEF(sig, new_heap_signature(runtime, afFreeze, tag_array, paramc,
-      paramc, false));
+
+  // Build the result signature and store it in the out param.
+  TRY_SET(*signature_out, new_heap_signature(runtime, afFreeze, tag_array,
+      param_astc, param_astc, false));
 
   // We don't need these any more so clear them to ensure that we don't
   // accidentally access the memory again.
   scratch = NULL;
   offsets = NULL;
 
-  // Build the method space.
+  // Compile the code.
+  TRY_DEF(result, compile_expression(runtime, body_ast, assm->scope_callback));
+  assembler_pop_map_scope(assm, &param_scope);
+  return result;
+}
+
+value_t emit_lambda_ast(value_t value, assembler_t *assm) {
+  // Emitting a lambda takes a fair amount of code but most of it is
+  // straightforward -- it's more just verbose than actually complex.
+  CHECK_FAMILY(ofLambdaAst, value);
+
+  // Push a capture scope that captures any symbols accessed outside the lambda.
+  capture_scope_t capture_scope;
+  TRY(assembler_push_capture_scope(assm, &capture_scope));
+
+  // Compile the body and signature.
+  value_t signature;
+  TRY_DEF(body_code, compile_method_body(assm, get_lambda_ast_signature(value),
+      get_lambda_ast_body(value), &signature));
+
+  // Build a method space in which to store the method.
+  runtime_t *runtime = assm->runtime;
+  TRY_DEF(method, new_heap_method(runtime, afFreeze, signature, ROOT(runtime, nothing),
+      body_code));
   TRY_DEF(space, new_heap_methodspace(runtime));
-  value_t body = get_lambda_ast_body(value);
-  TRY_DEF(body_code, compile_expression(runtime, body, assm->scope_callback));
-  TRY_DEF(method, new_heap_method(runtime, afFreeze, sig, body_code));
   TRY(add_methodspace_method(runtime, space, method));
 
-  // Pop the two scopes back off since we're done compiling the body.
-  assembler_pop_map_scope(assm, &param_scope);
+  // Pop the capturing scope off, we're done capturing.
   assembler_pop_capture_scope(assm, &capture_scope);
 
   // Push the captured variables onto the stack so they can to be stored in the
@@ -688,8 +710,9 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
     // difference, loading a symbol has no side-effects.
     assembler_load_symbol(get_array_buffer_at(captures, capture_count - i - 1),
         assm);
-  TRY(assembler_emit_lambda(assm, space, capture_count));
 
+  // Finally emit the bytecode that will create the lambda.
+  TRY(assembler_emit_lambda(assm, space, capture_count));
   return success();
 }
 

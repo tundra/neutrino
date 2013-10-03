@@ -1620,7 +1620,7 @@ static value_t new_protocol(runtime_t *runtime) {
 
 static value_t new_method(runtime_t *runtime) {
   return new_heap_method(runtime, afMutable, ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
+      ROOT(runtime, nothing), ROOT(runtime, nothing));
 }
 
 static value_t new_signature(runtime_t *runtime) {

@@ -51,10 +51,10 @@ class Module(object):
 class Method(object):
 
   @plankton.field("signature")
-  @plankton.field("implementation")
-  def __init__(self, signature=None, implementation=None):
+  @plankton.field("syntax")
+  def __init__(self, signature=None, syntax=None):
     self.signature = signature
-    self.implementation = implementation
+    self.syntax = syntax
 
 
 @plankton.serializable(("core", "Signature"))

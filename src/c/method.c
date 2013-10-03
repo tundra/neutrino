@@ -24,7 +24,7 @@ value_t signature_validate(value_t self) {
 
 // Given an array of parameters, returns a new array that contains cloned
 // parameters with the same contents but which have been ordered appropriately.
-static value_t ordered_parameter_array_copy(runtime_t *runtime,
+static value_t clone_and_order_parameter_array(runtime_t *runtime,
     value_t raw_params) {
   size_t length = get_array_length(raw_params);
   TRY_DEF(result, new_heap_array(runtime, length));
@@ -56,7 +56,7 @@ static value_t ordered_parameter_array_copy(runtime_t *runtime,
 // objects.
 value_t set_signature_contents_from_parameters(runtime_t *runtime,
     value_t signature, value_t raw_params) {
-  TRY_DEF(params, ordered_parameter_array_copy(runtime, raw_params));
+  TRY_DEF(params, clone_and_order_parameter_array(runtime, raw_params));
   size_t param_count = get_array_length(params);
   size_t mandatory_count = 0;
   size_t tag_count = 0;
@@ -386,6 +386,7 @@ TRIVIAL_PRINT_ON_IMPL(Method, method);
 
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofSignature, Signature, signature);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofCodeBlock, Code, code);
+ACCESSORS_IMPL(Method, method, acIsSyntaxOpt, 0, Syntax, syntax);
 
 value_t method_validate(value_t self) {
   VALIDATE_FAMILY(ofMethod, self);
@@ -397,8 +398,10 @@ value_t method_validate(value_t self) {
 value_t set_method_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(signature, get_id_hash_map_at(contents, RSTR(runtime, signature)));
+  TRY_DEF(syntax, get_id_hash_map_at(contents, RSTR(runtime, syntax)));
   set_method_signature(object, signature);
-  set_method_code(object, ROOT(runtime, null));
+  set_method_code(object, ROOT(runtime, nothing));
+  set_method_syntax(object, syntax);
   return success();
 }
 

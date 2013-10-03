@@ -4,3 +4,10 @@ entry_point "blah".get_some_value().print();
 -- OUTPUT:
 "foo"
 -- END
+
+-- INPUT:
+def ($this).id() => $this;
+entry_point "blah".id().print();
+-- OUTPUT:
+"blah"
+-- END
