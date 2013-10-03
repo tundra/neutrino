@@ -194,6 +194,13 @@ void *reusable_scratch_memory_alloc(reusable_scratch_memory_t *memory,
   return current.memory;
 }
 
+void reusable_scratch_memory_double_alloc(reusable_scratch_memory_t *memory,
+    size_t first_size, void **first, size_t second_size, void **second) {
+  void *block = reusable_scratch_memory_alloc(memory, first_size + second_size);
+  *first = block;
+  *second = ((byte_t*) block) + first_size;
+}
+
 
 // --- A s s e m b l e r ---
 
@@ -249,17 +256,9 @@ value_t assembler_flush(assembler_t *assm) {
       assm->high_water_mark);
 }
 
-void *assembler_scratch_malloc(assembler_t *assm, size_t size) {
-  return reusable_scratch_memory_alloc(&assm->scratch_memory, size);
+reusable_scratch_memory_t *assembler_get_scratch_memory(assembler_t *assm) {
+  return &assm->scratch_memory;
 }
-
-void assembler_scratch_double_malloc(assembler_t *assm, size_t first_size,
-    void **first, size_t second_size, void **second) {
-  void *block = assembler_scratch_malloc(assm, first_size + second_size);
-  *first = block;
-  *second = ((byte_t*) block) + first_size;
-}
-
 
 // Writes a single byte to this assembler.
 static void assembler_emit_byte(assembler_t *assm, size_t value) {

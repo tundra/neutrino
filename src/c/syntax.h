@@ -38,7 +38,7 @@ value_t compile_expression_with_assembler(runtime_t *runtime, value_t ast,
 // implementation. The implementation is returned, the signature is stored in
 // the signature_out argument.
 value_t compile_method_body(assembler_t *assm, value_t signature_ast,
-    value_t body_ast, value_t *signature_out);
+    value_t body_ast);
 
 // Retrying version of compile_expression.
 value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
@@ -46,22 +46,19 @@ value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
 
 // Determines the parameter ordering to use given an array of parameter asts.
 //
-// The scratch array is used during the computation, it must
-// be large enough to hold twice as many elements as there are in the tags array.
-// The state of scratch when this is called is irrelevant, the state after is
-// unspecified.
+// The result will be returned as an array where the i'th entry of the gives the
+// parameter index for the parameter in the i'th entry in the tags array. It
+// will be allocated using the given scratch memory.
 //
-// The result will be stored in the ordering array which must be large enough
-// to hold an entry for each entry in the tags array. The i'th entry of the
-// ordering array gives the parameter index for the parameter in the i'th entry
-// in the tags array.
-void calc_parameter_ast_ordering(value_t params, value_t *scratch,
-    size_t scratchc, size_t *ordering, size_t orderingc);
+// Ordering the same parameters twice yields the same ordering, even if the
+// parameters have been relocated in the meantime.
+size_t *calc_parameter_ast_ordering(reusable_scratch_memory_t *scratch,
+    value_t params);
 
 // Works the same way as calc_parameter_ast_ordering but based on an array of
 // parameter objects, not asts.
-void calc_parameter_ordering(value_t params, value_t *scratch,
-    size_t scratchc, size_t *ordering, size_t orderingc);
+size_t *calc_parameter_ordering(reusable_scratch_memory_t *scratch,
+    value_t params);
 
 // The worst possible parameter score used for values where we don't really
 // care about the ordering.

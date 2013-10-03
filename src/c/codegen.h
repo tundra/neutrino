@@ -84,6 +84,13 @@ void reusable_scratch_memory_dispose(reusable_scratch_memory_t *memory);
 void *reusable_scratch_memory_alloc(reusable_scratch_memory_t *memory,
     size_t size);
 
+// Returns two blocks of memory from a reusable scratch memory block. All the
+// same rules apply as with reusable_scratch_malloc. Really this is just a
+// shorthand for allocating one block and splitting it in two.
+void reusable_scratch_memory_double_alloc(reusable_scratch_memory_t *memory,
+    size_t first_size, void **first, size_t second_size, void **second);
+
+
 // Bytecode assembler data.
 typedef struct assembler_t {
   // The runtime we're generating code within.
@@ -118,16 +125,10 @@ void assembler_dispose(assembler_t *assm);
 // Returns a code block object containing the code written to this assembler.
 value_t assembler_flush(assembler_t *assm);
 
-// Allocates a block of scratch memory. Only one scratch block can be used at
-// any given time, the next call will invalidate and/or reuse the block returned
-// by the previous call.
-void *assembler_scratch_malloc(assembler_t *assm, size_t size);
-
-// Similar to assembler_scratch_malloc but allocates two blocks of memory in one
-// go. Really it's just a convenience for allocating one big block and splitting
-// it in two.
-void assembler_scratch_double_malloc(assembler_t *assm, size_t first_size,
-    void **first, size_t second_size, void **second);
+// Returns the scratch memory block provided by this assembler. Be sure to
+// respect the scratch memory discipline when using this (see the documentation
+// for reusable_scratch_memory_t).
+reusable_scratch_memory_t *assembler_get_scratch_memory(assembler_t *assm);
 
 // Emits a push instruction.
 value_t assembler_emit_push(assembler_t *assm, value_t value);
