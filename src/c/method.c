@@ -418,7 +418,9 @@ static void methodspace_lookup_state_swap_offsets(methodspace_lookup_state_t *st
 static void lookup_methodspace_local_method(methodspace_lookup_state_t *state,
     runtime_t *runtime, value_t space, value_t record, frame_t *frame) {
   match_info_t match_info;
-  match_info_init(&match_info, state->max_score, state->result_offsets,
+  // We start out writing to the scratch offsets since the result offsets may
+  // be holding a result from a previous match.
+  match_info_init(&match_info, state->max_score, state->scratch_offsets,
       kSmallLookupLimit);
   value_t methods = get_methodspace_methods(space);
   size_t method_count = get_array_buffer_length(methods);
@@ -434,6 +436,7 @@ static void lookup_methodspace_local_method(methodspace_lookup_state_t *state,
     if (match_result_is_match(match)) {
       state->result = method;
       current++;
+      methodspace_lookup_state_swap_offsets(state);
       break;
     }
   }
