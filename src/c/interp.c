@@ -66,6 +66,7 @@ static value_t peek_previous_value(interpreter_state_t *state, size_t size,
   return get_array_at(state->value_pool, index);
 }
 
+// Returns the code that implements the given method object.
 static value_t compile_method(runtime_t *runtime, value_t method) {
   value_t lambda = get_method_syntax(method);
   assembler_t assm;

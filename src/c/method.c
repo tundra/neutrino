@@ -24,6 +24,7 @@ value_t signature_validate(value_t self) {
 
 // Given an array of parameters, returns a new array that contains cloned
 // parameters with the same contents but which have been ordered appropriately.
+// TODO: this should really be done based on the parameter asts.
 static value_t clone_and_order_parameter_array(runtime_t *runtime,
     value_t raw_params) {
   size_t length = get_array_length(raw_params);
