@@ -485,12 +485,11 @@ value_t new_heap_symbol_ast(runtime_t *runtime, value_t name) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_lambda_ast(runtime_t *runtime, value_t signature, value_t body) {
+value_t new_heap_lambda_ast(runtime_t *runtime, value_t method) {
   size_t size = kLambdaAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, lambda_ast_species)));
-  set_lambda_ast_signature(result, signature);
-  set_lambda_ast_body(result, body);
+  set_lambda_ast_method(result, method);
   return post_create_sanity_check(result, size);
 }
 

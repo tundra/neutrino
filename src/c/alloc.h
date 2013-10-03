@@ -205,7 +205,7 @@ value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t name,
 value_t new_heap_symbol_ast(runtime_t *runtime, value_t name);
 
 // Creates a new lambda syntax tree with the given attributes.
-value_t new_heap_lambda_ast(runtime_t *runtime, value_t params, value_t body);
+value_t new_heap_lambda_ast(runtime_t *runtime, value_t method);
 
 // Creates a new parameter syntax tree with the given attributes.
 value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags,

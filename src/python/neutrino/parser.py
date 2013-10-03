@@ -165,7 +165,7 @@ class Parser(object):
     else:
       self.expect_punctuation('=>')
       value = self.parse_word_expression()
-    return ast.Lambda(signature, value)
+    return ast.Lambda(ast.Method(signature, value))
 
   # Are we currently at a token that is allowed as the first token of a
   # parameter?

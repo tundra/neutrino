@@ -74,7 +74,7 @@ class ScopeVisitor(ast.Visitor):
   def visit_argument(self, that):
     that.value.accept(self)
 
-  def process_function(self, that):
+  def visit_method(self, that):
     bindings = {}
     for param in that.signature.parameters:
       param.symbol = ast.Symbol(param.name)
@@ -86,9 +86,6 @@ class ScopeVisitor(ast.Visitor):
     finally:
       self.scope = outer_scope
 
-  def visit_lambda(self, that):
-    self.process_function(that)
-
   def visit_unit(self, that):
     that.entry_point.accept(self)
     for (index, stage) in that.get_stages():
@@ -97,9 +94,6 @@ class ScopeVisitor(ast.Visitor):
 
   def visit_namespace_declaration(self, that):
     that.value.accept(self)
-
-  def visit_method_declaration(self, that):
-    self.process_function(that.method)
 
 
 def analyze(unit):
