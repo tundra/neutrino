@@ -156,14 +156,14 @@ value_t new_heap_signature(runtime_t *runtime, alloc_flags_t flags, value_t tags
 
 // Creates a new parameter with the specified attributes.
 value_t new_heap_parameter(runtime_t *runtime, alloc_flags_t flags, value_t guard,
-    bool is_optional, size_t index);
+    value_t tags, bool is_optional, size_t index);
 
 // Creates a new empty method space.
 value_t new_heap_methodspace(runtime_t *runtime);
 
 // Creates a new method with the given signature and implementation.
 value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signature,
-    value_t code);
+    value_t syntax, value_t code);
 
 // Creates an invocation record with the given argument vector.
 value_t new_heap_invocation_record(runtime_t *runtime, alloc_flags_t flags,

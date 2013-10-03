@@ -3,7 +3,6 @@
 
 import plankton
 
-
 @plankton.serializable(("core", "Namespace"))
 class Namespace(object):
 
@@ -15,7 +14,12 @@ class Namespace(object):
     self.bindings[name] = value
 
   def lookup(self, name):
-    return self.bindings.get(name, None)
+    import interp
+    special_binding = interp.lookup_special_binding(name)
+    if special_binding is None:
+      return self.bindings.get(name, None)
+    else:
+      return special_binding
 
 
 @plankton.serializable(("core", "Methodspace"))
@@ -28,6 +32,9 @@ class Methodspace(object):
     self.inheritance = inheritance
     self.methods = methods
     self.imports = imports
+
+  def add_method(self, method):
+    self.methods.append(method)
 
 
 @plankton.serializable(("core", "Module"))
@@ -44,10 +51,18 @@ class Module(object):
 class Method(object):
 
   @plankton.field("signature")
-  @plankton.field("implementation")
-  def __init__(self, signature=None, implementation=None):
+  @plankton.field("syntax")
+  def __init__(self, signature=None, syntax=None):
     self.signature = signature
-    self.implementation = implementation
+    self.syntax = syntax
+
+
+@plankton.serializable(("core", "Signature"))
+class Signature(object):
+
+  @plankton.field("parameters")
+  def __init__(self, params):
+    self.parameters = params
 
 
 @plankton.serializable(("core", "Guard"))
@@ -75,6 +90,16 @@ class Guard(object):
     return Guard(Guard._EQ, value)
 
 
+@plankton.serializable(("core", "Parameter"))
+class Parameter(object):
+
+  @plankton.field("tags")
+  @plankton.field("guard")
+  def __init__(self, tags=None, guard=None):
+    self.tags = tags
+    self.guard = guard
+
+
 # A unique key, matching a neutrino runtime key.
 class Key(plankton.EnvironmentPlaceholder):
 
@@ -84,6 +109,31 @@ class Key(plankton.EnvironmentPlaceholder):
 
   def __str__(self):
     return "(key %s)" % self.display_name
+
+
+@plankton.serializable(("core", "Protocol"))
+class Protocol(object):
+
+  @plankton.field("name")
+  def __init__(self, name=None):
+    self.name = name
+
+
+# A user-defined object instance.
+@plankton.virtual
+@plankton.serializable()
+class Instance(object):
+
+  _EMPTY_PROTOCOL = Protocol("Empty")
+
+  def __init__(self):
+    pass
+
+  def get_header(self):
+    return Instance._EMPTY_PROTOCOL
+
+  def get_payload(self):
+    return {}
 
 
 _SUBJECT = Key("subject", ("core", "subject"))

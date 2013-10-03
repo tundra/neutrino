@@ -29,11 +29,22 @@ value_t emit_value(value_t value, assembler_t *assm);
 value_t compile_expression(runtime_t *runtime, value_t ast,
     scope_lookup_callback_t *scope_callback);
 
+// Does the same a compile_expression but takes an existing assembler rather
+// than create one.
+value_t compile_expression_with_assembler(runtime_t *runtime, value_t ast,
+    assembler_t *assm);
+
+// Compiles signature and body syntax into a compiled signature and a bytecode
+// implementation. The implementation is returned, the signature is stored in
+// the signature_out argument.
+value_t compile_method_body(assembler_t *assm, value_t signature_ast,
+    value_t body_ast, value_t *signature_out);
+
 // Retrying version of compile_expression.
 value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
     scope_lookup_callback_t *scope_callback);
 
-// Determines the parameter ordering to use given an array of parameters.
+// Determines the parameter ordering to use given an array of parameter asts.
 //
 // The scratch array is used during the computation, it must
 // be large enough to hold twice as many elements as there are in the tags array.
@@ -44,8 +55,13 @@ value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
 // to hold an entry for each entry in the tags array. The i'th entry of the
 // ordering array gives the parameter index for the parameter in the i'th entry
 // in the tags array.
-void calc_parameter_ordering(value_t params, value_t *scratch, size_t scratchc,
-    size_t *ordering, size_t orderingc);
+void calc_parameter_ast_ordering(value_t params, value_t *scratch,
+    size_t scratchc, size_t *ordering, size_t orderingc);
+
+// Works the same way as calc_parameter_ast_ordering but based on an array of
+// parameter objects, not asts.
+void calc_parameter_ordering(value_t params, value_t *scratch,
+    size_t scratchc, size_t *ordering, size_t orderingc);
 
 // The worst possible parameter score used for values where we don't really
 // care about the ordering.

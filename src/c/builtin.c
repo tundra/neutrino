@@ -35,7 +35,7 @@ static value_t build_signature(runtime_t *runtime, value_t receiver,
   // The subject parameter.
   TRY_DEF(subject_guard, new_heap_guard(runtime, afFreeze, gtIs, receiver));
   TRY_DEF(subject_param, new_heap_parameter(runtime, afFreeze, subject_guard,
-      false, 0));
+      ROOT(runtime, empty_array), false, 0));
   set_pair_array_first_at(vector, 0, ROOT(runtime, subject_key));
   set_pair_array_second_at(vector, 0, subject_param);
   // The selector parameter.
@@ -43,14 +43,14 @@ static value_t build_signature(runtime_t *runtime, value_t receiver,
   string_init(&name_str, name_c_str);
   TRY_DEF(name, new_heap_string(runtime, &name_str));
   TRY_DEF(name_guard, new_heap_guard(runtime, afFreeze, gtEq, name));
-  TRY_DEF(name_param, new_heap_parameter(runtime, afFreeze, name_guard, false,
-      1));
+  TRY_DEF(name_param, new_heap_parameter(runtime, afFreeze, name_guard,
+      ROOT(runtime, empty_array), false, 1));
   set_pair_array_first_at(vector, 1, ROOT(runtime, selector_key));
   set_pair_array_second_at(vector, 1, name_param);
   // The positional parameters.
   for (size_t i = 0; i < posc; i++) {
     TRY_DEF(param, new_heap_parameter(runtime, afFreeze, ROOT(runtime, any_guard),
-        false, 2 + i));
+        ROOT(runtime, empty_array), false, 2 + i));
     set_pair_array_first_at(vector, 2 + i, new_integer(i));
     set_pair_array_second_at(vector, 2 + i, param);
   }
@@ -71,7 +71,8 @@ value_t add_methodspace_builtin_method(runtime_t *runtime, value_t space,
     E_TRY(assembler_emit_return(&assm));
     E_TRY_DEF(code_block, assembler_flush(&assm));
     E_TRY_DEF(signature, build_signature(runtime, receiver, name_c_str, posc, false));
-    E_TRY_DEF(method, new_heap_method(runtime, afFreeze, signature, code_block));
+    E_TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
+        ROOT(runtime, nothing), code_block));
     E_RETURN(add_methodspace_method(runtime, space, method));
   E_FINALLY();
     assembler_dispose(&assm);
@@ -91,7 +92,8 @@ value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
   TRY_DEF(code_block, assembler_flush(&assm));
   assembler_dispose(&assm);
   TRY_DEF(signature, build_signature(runtime, receiver, name_c_str, posc, allow_extra));
-  TRY_DEF(method, new_heap_method(runtime, afFreeze, signature, code_block));
+  TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
+      ROOT(runtime, nothing), code_block));
   return add_methodspace_method(runtime, space, method);
 }
 

@@ -357,6 +357,12 @@ static value_t new_instance_of_factory(runtime_t *runtime, value_t type) {
   return constr(runtime);
 }
 
+static value_t new_instance_of_protocol(runtime_t *runtime, value_t protocol) {
+  TRY_DEF(species, new_heap_instance_species(runtime, protocol));
+  TRY_DEF(result, new_heap_instance(runtime, species));
+  return result;
+}
+
 static value_t new_object_with_object_type(runtime_t *runtime, value_t type) {
   object_family_t family = get_object_family(type);
   switch (family) {
@@ -364,6 +370,8 @@ static value_t new_object_with_object_type(runtime_t *runtime, value_t type) {
       // For now we use null to indicate an instance. Later this should be
       // replaced by something else, something species-like possibly.
       return new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
+    case ofProtocol:
+      return new_instance_of_protocol(runtime, type);
     case ofFactory:
       return new_instance_of_factory(runtime, type);
     default: {

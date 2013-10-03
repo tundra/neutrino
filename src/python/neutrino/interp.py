@@ -6,6 +6,8 @@
 # testing and bootstrapping.
 
 import ast
+import data
+import types
 
 # Simple visitor that can fake-evaluate simple expressions.
 class EvaluateVisitor(ast.Visitor):
@@ -14,9 +16,35 @@ class EvaluateVisitor(ast.Visitor):
     return that.value
 
   def visit_variable(self, that):
-    assert that.resolved_past_value
+    assert not that.resolved_past_value is None
     return that.resolved_past_value.accept(self)
 
+  def visit_invocation(self, that):
+    subject = None
+    selector = None
+    args = []
+    for arg in that.arguments:
+      if arg.tag == data._SUBJECT:
+        subject = arg.value.accept(self)
+      elif arg.tag == data._SELECTOR:
+        selector = arg.value.accept(self)
+      else:
+        assert False
+    assert type(subject) == types.FunctionType
+    assert selector == "()"
+    return subject(*args)
+
+# Creates a new empty neutrino object.
+def new_neutrino_instance():
+  return data.Instance()
+
+# Looks up a name that is magically available when doing static evaluation. It's
+# a hack until we get imports working properly.
+def lookup_special_binding(name):
+  if name == ('pytrino', 'new_instance'):
+    return new_neutrino_instance
+  else:
+    return None
 
 # Evaluate the given expression. The evaluation will only be approximate so
 # it may fail if there are constructs or operations it can't handle.

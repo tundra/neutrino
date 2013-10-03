@@ -8,6 +8,7 @@ df = ast.LocalDeclaration
 lm = ast.Lambda
 lt = ast.Literal
 nd = ast.NamespaceDeclaration
+md = ast.MethodDeclaration
 pm = lambda n, *t: ast.Parameter(n, t, data.Guard.any())
 sq = lambda *e: ast.Sequence(e)
 
@@ -20,10 +21,17 @@ def mu(*phases):
     result.add_element(phase, *elements)
   return result
 
-def sg(*params):
+def ls(*params):
   prefix = [
-    ast.Parameter('this', [data._SUBJECT], data.Guard.any()),
-    ast.Parameter('name', [data._SELECTOR], data.Guard.eq('()'))
+    ast.Parameter(nm(['this']), [data._SUBJECT], data.Guard.any()),
+    ast.Parameter(nm(['name']), [data._SELECTOR], data.Guard.eq('()'))
+  ]
+  return ast.Signature(prefix + list(params))
+
+def ms(this, name, *params):
+  prefix = [
+    ast.Parameter(this, [data._SUBJECT], data.Guard.any()),
+    ast.Parameter(nm(['name']), [data._SELECTOR], data.Guard.eq(name))
   ]
   return ast.Signature(prefix + list(params))
 
@@ -68,6 +76,9 @@ def mt(fun, name, *poss):
 
 class ParserTest(unittest.TestCase):
 
+  def setUp(self):
+    self.maxDiff = None
+
   def check_expression(self, input, expected):
     found = parser.Parser(token.tokenize(input)).parse_expression()
     # Convert the asts to strings because that's just infinitely easier to
@@ -77,7 +88,7 @@ class ParserTest(unittest.TestCase):
 
   def check_program(self, input, expected):
     found = parser.Parser(token.tokenize(input)).parse_program()
-    self.assertEquals(str(expected), str(found))
+    self.assertEquals(unicode(expected), unicode(found))
 
   def test_atomic_expressions(self):
     test = self.check_expression
@@ -136,23 +147,23 @@ class ParserTest(unittest.TestCase):
 
   def test_lambda(self):
     test = self.check_expression
-    test('fn () => $x', lm(sg(), id("x")))
-    test('fn ($x) => $x', lm(sg(pm(nm("x"), 0)), id("x")))
-    test('fn ($x, $y, $z) => $x', lm(sg(pm(nm("x"), 0), pm(nm("y"), 1), pm(nm("z"), 2)), id("x")))
-    test('fn ($x, $y) => $x', lm(sg(pm(nm("x"), 0), pm(nm("y"), 1)), id("x")))
-    test('fn ($x, $y, $z) => $x', lm(sg(pm(nm("x"), 0), pm(nm("y"), 1), pm(nm("z"), 2)), id("x")))
-    test('fn => $x', lm(sg(), id("x")))
-    test('fn $x => $x', lm(sg(pm(nm("x"), 0)), id("x")))
-    test('fn $x { }', lm(sg(pm(nm("x"), 0)), lt(None)))
-    test('fn $x { $x; }', lm(sg(pm(nm("x"), 0)), id("x")))
-    test('fn { }', lm(sg(), lt(None)))
-    test('fn { $x; }', lm(sg(), id("x")))
-    test('fn () { }', lm(sg(), lt(None)))
-    test('fn ($x) { $x; }', lm(sg(pm(nm("x"), 0)), id("x")))
-    test('fn (x: $x) { }', lm(sg(pm(nm("x"), "x", 0)), lt(None)))
-    test('fn (y: $x) { }', lm(sg(pm(nm("x"), "y", 0)), lt(None)))
-    test('fn (x: $x, y: $y) { }', lm(sg(pm(nm("x"), "x", 0), pm(nm("y"), "y", 1)), lt(None)))
-    test('fn x: $x { }', lm(sg(pm(nm("x"), "x", 0)), lt(None)))
+    test('fn () => $x', lm(ls(), id("x")))
+    test('fn ($x) => $x', lm(ls(pm(nm("x"), 0)), id("x")))
+    test('fn ($x, $y, $z) => $x', lm(ls(pm(nm("x"), 0), pm(nm("y"), 1), pm(nm("z"), 2)), id("x")))
+    test('fn ($x, $y) => $x', lm(ls(pm(nm("x"), 0), pm(nm("y"), 1)), id("x")))
+    test('fn ($x, $y, $z) => $x', lm(ls(pm(nm("x"), 0), pm(nm("y"), 1), pm(nm("z"), 2)), id("x")))
+    test('fn => $x', lm(ls(), id("x")))
+    test('fn $x => $x', lm(ls(pm(nm("x"), 0)), id("x")))
+    test('fn $x { }', lm(ls(pm(nm("x"), 0)), lt(None)))
+    test('fn $x { $x; }', lm(ls(pm(nm("x"), 0)), id("x")))
+    test('fn { }', lm(ls(), lt(None)))
+    test('fn { $x; }', lm(ls(), id("x")))
+    test('fn () { }', lm(ls(), lt(None)))
+    test('fn ($x) { $x; }', lm(ls(pm(nm("x"), 0)), id("x")))
+    test('fn (x: $x) { }', lm(ls(pm(nm("x"), "x", 0)), lt(None)))
+    test('fn (y: $x) { }', lm(ls(pm(nm("x"), "y", 0)), lt(None)))
+    test('fn (x: $x, y: $y) { }', lm(ls(pm(nm("x"), "x", 0), pm(nm("y"), "y", 1)), lt(None)))
+    test('fn x: $x { }', lm(ls(pm(nm("x"), "x", 0)), lt(None)))
 
   def test_program_toplevel(self):
     test = self.check_program
@@ -162,6 +173,14 @@ class ParserTest(unittest.TestCase):
     test('def @x := 5;', mu(
       (-1, [nd(nm("x", -1), lt(5))]),
       (0, [])))
+    test('def ($this).foo() => 4;', ut(0, md(ms(nm("this"), "foo"), lt(4))))
+    test('def ($that).bar() => 5;', ut(0, md(ms(nm("that"), "bar"), lt(5))))
+    test('def $this.bar() => 6;', ut(0, md(ms(nm("this"), "bar"), lt(6))))
+    test('def $this+() => 7;', ut(0, md(ms(nm("this"), "+"), lt(7))))
+    test('def $this+($that) => 8;', ut(0, md(ms(nm("this"), "+", pm(nm("that"), 0)), lt(8))))
+    test('def $this+$that => 9;', ut(0, md(ms(nm("this"), "+", pm(nm("that"), 0)), lt(9))))
+    test('def $this.foo($a, $b) => 10;', ut(0, md(ms(nm("this"), "foo", pm(nm("a"), 0),
+      pm(nm("b"), 1)), lt(10))))
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)

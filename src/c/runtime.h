@@ -34,6 +34,7 @@
   F(sausages,           "()")                                                  \
   F(signature,          "signature")                                           \
   F(symbol,             "symbol")                                              \
+  F(syntax,             "syntax")                                              \
   F(tag,                "tag")                                                 \
   F(tags,               "tags")                                                \
   F(type,               "type")                                                \

@@ -66,6 +66,31 @@ static value_t peek_previous_value(interpreter_state_t *state, size_t size,
   return get_array_at(state->value_pool, index);
 }
 
+// Returns the code that implements the given method object.
+static value_t compile_method(runtime_t *runtime, value_t method) {
+  value_t lambda = get_method_syntax(method);
+  assembler_t assm;
+  TRY(assembler_init(&assm, runtime, NULL));
+  E_BEGIN_TRY_FINALLY();
+    value_t dummy;
+    E_TRY_DEF(code, compile_method_body(&assm, get_lambda_ast_signature(lambda),
+        get_lambda_ast_body(lambda), &dummy));
+    E_RETURN(code);
+  E_FINALLY();
+    assembler_dispose(&assm);
+  E_END_TRY_FINALLY();
+}
+
+// Gets the code from a method object, compiling the method if necessary.
+static value_t ensure_method_code(runtime_t *runtime, value_t method) {
+  value_t code = get_method_code(method);
+  if (is_nothing(code)) {
+    TRY_SET(code, compile_method(runtime, method));
+    set_method_code(method, code);
+  }
+  return code;
+}
+
 value_t run_stack(runtime_t *runtime, value_t stack) {
   frame_t frame;
   get_stack_top_frame(stack, &frame);
@@ -114,7 +139,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         TRY(method);
         // Push a new activation.
         interpreter_state_store(&state, &frame);
-        value_t code_block = get_method_code(method);
+        TRY_DEF(code_block, ensure_method_code(runtime, method));
         push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block));
         set_frame_code_block(&frame, code_block);
         set_frame_argument_map(&frame, arg_map);
@@ -148,7 +173,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         }
         // The lookup may have failed with a different signal. Check for that.
         TRY(method);
-        value_t code_block = get_method_code(method);
+        TRY_DEF(code_block, ensure_method_code(runtime, method));
         push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block));
         set_frame_code_block(&frame, code_block);
         set_frame_argument_map(&frame, arg_map);

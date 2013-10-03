@@ -338,8 +338,7 @@ value_t new_heap_guard(runtime_t *runtime, alloc_flags_t flags, guard_type_t typ
 
 value_t new_heap_signature(runtime_t *runtime, alloc_flags_t flags, value_t tags,
     size_t param_count, size_t mandatory_count, bool allow_extra) {
-  CHECK_FAMILY(ofArray, tags);
-  CHECK_TRUE("unsorted tag array", is_pair_array_sorted(tags));
+  CHECK_FAMILY_OPT(ofArray, tags);
   size_t size = kSignatureSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_signature_species)));
@@ -351,13 +350,15 @@ value_t new_heap_signature(runtime_t *runtime, alloc_flags_t flags, value_t tags
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_parameter(runtime_t *runtime, alloc_flags_t flags,
-    value_t guard, bool is_optional, size_t index) {
-  CHECK_FAMILY(ofGuard, guard);
+value_t new_heap_parameter(runtime_t *runtime, alloc_flags_t flags, value_t guard,
+    value_t tags, bool is_optional, size_t index) {
+  CHECK_FAMILY_OPT(ofGuard, guard);
+  CHECK_FAMILY_OPT(ofArray, tags);
   size_t size = kParameterSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_parameter_species)));
   set_parameter_guard(result, guard);
+  set_parameter_tags(result, tags);
   set_parameter_is_optional(result, is_optional);
   set_parameter_index(result, index);
   TRY(post_process_result(runtime, result, flags));
@@ -377,14 +378,15 @@ value_t new_heap_methodspace(runtime_t *runtime) {
 }
 
 value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signature,
-    value_t code) {
-  CHECK_FAMILY(ofSignature, signature);
-  CHECK_FAMILY(ofCodeBlock, code);
+    value_t syntax, value_t code) {
+  CHECK_FAMILY_OPT(ofSignature, signature);
+  CHECK_FAMILY_OPT(ofCodeBlock, code);
   size_t size = kMethodSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_method_species)));
   set_method_signature(result, signature);
   set_method_code(result, code);
+  set_method_syntax(result, syntax);
   TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }

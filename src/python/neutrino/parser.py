@@ -84,13 +84,49 @@ class Parser(object):
     while self.has_more():
       entry = self.parse_toplevel_statement()
       if entry:
-        (name, value) = entry
-        self.unit.add_element(name.stage, ast.NamespaceDeclaration(name, value))
+        self.unit.add_element(entry.get_stage(), entry)
     return self.unit
+
+  # <subject>
+  #   -> <identifier>
+  #   -> "(" <parameter> ")"
+  def parse_subject(self):
+    if self.at_punctuation('('):
+      self.expect_punctuation('(')
+      result = self.parse_parameter(data._SUBJECT)
+      self.expect_punctuation(')')
+      return result
+    else:
+      return self.expect_type(Token.IDENTIFIER)
+
+  # <toplevel-declaration>
+  #   -> "def" <ident> ":=" <value> ";"
+  #   -> "def" <subject> <operation> <parameters> "=>" <value> ";"
+  def parse_toplevel_declaration(self):
+    self.expect_word('def')
+    subject = None
+    if self.at_type(Token.IDENTIFIER):
+      name = self.expect_type(Token.IDENTIFIER)
+      if self.at_punctuation(':='):
+        self.expect_punctuation(':=')
+        value = self.parse_expression()
+        self.expect_statement_delimiter()
+        return ast.NamespaceDeclaration(name, value)
+      else:
+        subject = self.name_as_subject(name)
+    else:
+      subject = self.parse_subject()
+    name = self.name_as_selector(self.expect_type(Token.OPERATION))
+    params = self.parse_parameters()
+    self.expect_punctuation('=>')
+    body = self.parse_expression()
+    self.expect_statement_delimiter()
+    signature = ast.Signature([subject, name] + params)
+    return ast.MethodDeclaration(signature, body)
 
   def parse_toplevel_statement(self):
     if self.at_word('def'):
-      return self.parse_local_declaration()
+      return self.parse_toplevel_declaration()
     elif self.at_word('entry_point'):
       self.expect_word('entry_point')
       self.unit.set_entry_point(self.parse_expression())
@@ -136,11 +172,18 @@ class Parser(object):
   def at_parameter_start(self):
     return self.at_type(Token.IDENTIFIER) or self.at_type(Token.TAG)
 
+  # Given a string operation name returns the corresponding selector parameter.
+  def name_as_selector(self, name):
+    return ast.Parameter(ast.Name(0, ['name']), [data._SELECTOR], data.Guard.eq(name))
+
+  def name_as_subject(self, name):
+    return ast.Parameter(name, [data._SUBJECT], data.Guard.any())
+
   # Same as parse_parameters but returns a full signature.
   def parse_signature(self):
     prefix = [
-      ast.Parameter('this', [data._SUBJECT], data.Guard.any()),
-      ast.Parameter('name', [data._SELECTOR], data.Guard.eq(Parser._SAUSAGES))
+      self.name_as_subject(ast.Name(0, ['this'])),
+      self.name_as_selector(Parser._SAUSAGES)
     ]
     params = self.parse_parameters()
     return ast.Signature(prefix + params)
