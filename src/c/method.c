@@ -417,32 +417,14 @@ static void methodspace_lookup_state_swap_offsets(methodspace_lookup_state_t *st
 // return the best match.
 static void lookup_methodspace_local_method(methodspace_lookup_state_t *state,
     runtime_t *runtime, value_t space, value_t record, frame_t *frame) {
-  match_info_t match_info;
-  match_info_init(&match_info, state->max_score, state->result_offsets,
-      kSmallLookupLimit);
   value_t methods = get_methodspace_methods(space);
   size_t method_count = get_array_buffer_length(methods);
-  size_t current = 0;
-  // First scan until we find the first match, using the max score vector
-  // to hold the score directly. Until we have at least one match there's no
-  // point in doing comparisons.
-  for (; current < method_count; current++) {
-    value_t method = get_array_buffer_at(methods, current);
-    value_t signature = get_method_signature(method);
-    match_result_t match = match_signature(runtime, signature, record, frame,
-        space, &match_info);
-    if (match_result_is_match(match)) {
-      state->result = method;
-      current++;
-      break;
-    }
-  }
-  // Continue scanning but compare every new match to the existing best score.
   score_t scratch_score[kSmallLookupLimit];
+  match_info_t match_info;
   match_info_init(&match_info, scratch_score, state->scratch_offsets,
       kSmallLookupLimit);
   size_t arg_count = get_invocation_record_argument_count(record);
-  for (; current < method_count; current++) {
+  for (size_t current = 0; current < method_count; current++) {
     value_t method = get_array_buffer_at(methods, current);
     value_t signature = get_method_signature(method);
     match_result_t match = match_signature(runtime, signature, record, frame,
@@ -505,6 +487,10 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
   CHECK_REL("too many arguments", arg_count, <=, kSmallLookupLimit);
   // Initialize the lookup state using stack-allocated space.
   score_t max_score[kSmallLookupLimit];
+  // The following code will assume the max score has a meaningful value so
+  // reset it explicitly.
+  for (size_t i = 0; i < arg_count; i++)
+    max_score[i] = gsNoMatch;
   size_t offsets_one[kSmallLookupLimit];
   size_t offsets_two[kSmallLookupLimit];
   methodspace_lookup_state_t state;

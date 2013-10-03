@@ -11,3 +11,40 @@ entry_point "blah".id().print();
 -- OUTPUT:
 "blah"
 -- END
+
+-- INPUT:
+def ($this).first($a) => $a;
+entry_point "blah".first(4).print();
+-- OUTPUT:
+4
+-- END
+
+-- INPUT:
+def ($this).first($a, $b) => $a;
+entry_point "blah".first(5, 6).print();
+-- OUTPUT:
+5
+-- END
+
+-- INPUT:
+def ($this).second($a, $b) => $b;
+entry_point "blah".second(7, 8).print();
+-- OUTPUT:
+8
+-- END
+
+-- INPUT:
+def ($this).foo() => "foo";
+def ($this).bar() => "bar";
+entry_point "blah".foo().print();
+-- OUTPUT:
+"foo"
+-- END
+
+-- INPUT:
+def ($this).foo() => "foo";
+def ($this).bar() => "bar";
+entry_point "blah".bar().print();
+-- OUTPUT:
+"bar"
+-- END
