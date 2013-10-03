@@ -34,11 +34,8 @@ value_t compile_expression(runtime_t *runtime, value_t ast,
 value_t compile_expression_with_assembler(runtime_t *runtime, value_t ast,
     assembler_t *assm);
 
-// Compiles signature and body syntax into a compiled signature and a bytecode
-// implementation. The implementation is returned, the signature is stored in
-// the signature_out argument.
-value_t compile_method_body(assembler_t *assm, value_t signature_ast,
-    value_t body_ast);
+// Compiles a method into a bytecode implementation.
+value_t compile_method_body(assembler_t *assm, value_t method_ast);
 
 // Retrying version of compile_expression.
 value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
@@ -177,15 +174,11 @@ ACCESSORS_DECL(symbol_ast, name);
 
 // --- L a m b d a   a s t ---
 
-static const size_t kLambdaAstSize = OBJECT_SIZE(2);
-static const size_t kLambdaAstSignatureOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kLambdaAstBodyOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kLambdaAstSize = OBJECT_SIZE(1);
+static const size_t kLambdaAstMethodOffset = OBJECT_FIELD_OFFSET(0);
 
-// The signature of this lambda's one method.
-ACCESSORS_DECL(lambda_ast, signature);
-
-// The body of this lambda.
-ACCESSORS_DECL(lambda_ast, body);
+// The method that implements this lambda.
+ACCESSORS_DECL(lambda_ast, method);
 
 
 // --- P a r a m e t e r   a s t ---

@@ -594,9 +594,8 @@ NO_BUILTIN_METHODS(lambda_ast);
 TRIVIAL_PRINT_ON_IMPL(LambdaAst, lambda_ast);
 FIXED_GET_MODE_IMPL(lambda_ast, vmMutable);
 
-ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, ofSignatureAst, Signature,
-    signature);
-ACCESSORS_IMPL(LambdaAst, lambda_ast, acIsSyntaxOpt, 0, Body, body);
+ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, ofMethodAst, Method,
+    method);
 
 value_t build_method_signature(runtime_t *runtime,
     reusable_scratch_memory_t *scratch, value_t signature_ast) {
@@ -647,11 +646,10 @@ value_t build_method_signature(runtime_t *runtime,
   return result;
 }
 
-value_t compile_method_body(assembler_t *assm, value_t signature_ast,
-    value_t body_ast) {
-  CHECK_FAMILY(ofSignatureAst, signature_ast);
-  CHECK_SYNTAX_FAMILY_OPT(body_ast);
+value_t compile_method_body(assembler_t *assm, value_t method_ast) {
+  CHECK_FAMILY(ofMethodAst, method_ast);
 
+  value_t signature_ast = get_method_ast_signature(method_ast);
   runtime_t *runtime = assm->runtime;
   value_t param_asts = get_signature_ast_parameters(signature_ast);
   size_t param_astc = get_array_length(param_asts);
@@ -685,6 +683,7 @@ value_t compile_method_body(assembler_t *assm, value_t signature_ast,
   offsets = NULL;
 
   // Compile the code.
+  value_t body_ast = get_method_ast_body(method_ast);
   TRY_DEF(result, compile_expression(runtime, body_ast, assm->scope_callback));
   assembler_pop_map_scope(assm, &param_scope);
   return result;
@@ -700,10 +699,10 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   TRY(assembler_push_capture_scope(assm, &capture_scope));
 
   // Compile the body and signature.
-  TRY_DEF(body_code, compile_method_body(assm, get_lambda_ast_signature(value),
-      get_lambda_ast_body(value)));
+  value_t method_ast = get_lambda_ast_method(value);
+  TRY_DEF(body_code, compile_method_body(assm, method_ast));
   TRY_DEF(signature, build_method_signature(assm->runtime,
-      assembler_get_scratch_memory(assm), get_lambda_ast_signature(value)));
+      assembler_get_scratch_memory(assm), get_method_ast_signature(method_ast)));
 
   // Build a method space in which to store the method.
   runtime_t *runtime = assm->runtime;
@@ -733,22 +732,19 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
 
 value_t lambda_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofLambdaAst, self);
-  VALIDATE_FAMILY_OPT(ofSignatureAst, get_lambda_ast_signature(self));
+  VALIDATE_FAMILY_OPT(ofMethodAst, get_lambda_ast_method(self));
   return success();
 }
 
 value_t set_lambda_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(signature, get_id_hash_map_at(contents, RSTR(runtime, signature)));
-  TRY_DEF(body, get_id_hash_map_at(contents, RSTR(runtime, body)));
-  set_lambda_ast_signature(object, signature);
-  set_lambda_ast_body(object, body);
+  TRY_DEF(method, get_id_hash_map_at(contents, RSTR(runtime, method)));
+  set_lambda_ast_method(object, method);
   return success();
 }
 
 static value_t new_lambda_ast(runtime_t *runtime) {
-  return new_heap_lambda_ast(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
+  return new_heap_lambda_ast(runtime, ROOT(runtime, nothing));
 }
 
 

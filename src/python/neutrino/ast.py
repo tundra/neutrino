@@ -320,20 +320,18 @@ class Signature(object):
 @plankton.serializable(("ast", "Lambda"))
 class Lambda(object):
 
-  @plankton.field("signature")
-  @plankton.field("body")
-  def __init__(self, signature=[], body=None):
-    self.signature = signature
-    self.body = body
+  @plankton.field("method")
+  def __init__(self, method=None):
+    self.method = method
 
   def accept(self, visitor):
     return visitor.visit_lambda(self)
 
   def traverse(self, visitor):
-    self.body.accept(visitor)
+    self.method.accept(visitor)
 
   def __str__(self):
-    return "(fn (%s) => %s)" % (self.signature, self.body)
+    return "(fn (%s) => %s)" % (self.method.signature, self.method.body)
 
 
 @plankton.serializable(("ast", "Path"))

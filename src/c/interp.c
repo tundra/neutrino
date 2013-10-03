@@ -68,12 +68,11 @@ static value_t peek_previous_value(interpreter_state_t *state, size_t size,
 
 // Returns the code that implements the given method object.
 static value_t compile_method(runtime_t *runtime, value_t method) {
-  value_t lambda = get_method_syntax(method);
+  value_t method_ast = get_method_syntax(method);
   assembler_t assm;
   TRY(assembler_init(&assm, runtime, NULL));
   E_BEGIN_TRY_FINALLY();
-    E_TRY_DEF(code, compile_method_body(&assm, get_method_ast_signature(lambda),
-        get_method_ast_body(lambda)));
+    E_TRY_DEF(code, compile_method_body(&assm, method_ast));
     E_RETURN(code);
   E_FINALLY();
     assembler_dispose(&assm);

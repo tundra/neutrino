@@ -23,6 +23,7 @@
   F(guard,              "guard")                                               \
   F(imports,            "imports")                                             \
   F(inheritance,        "inheritance")                                         \
+  F(method,             "method")                                              \
   F(methods,            "methods")                                             \
   F(methodspace,        "methodspace")                                         \
   F(module,             "module")                                              \
