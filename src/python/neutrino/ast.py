@@ -62,6 +62,10 @@ class Visitor(object):
   def visit_parameter(self, that):
     that.traverse(self)
 
+  @abstractmethod
+  def visit_method(self, that):
+    that.traverse(self)
+
 
 # A constant literal value.
 @plankton.serializable(("ast", "Literal"))
@@ -412,12 +416,29 @@ class NamespaceDeclaration(object):
     return "(namespace-declaration %s %s)" % (self.name, self.value)
 
 
-# A toplevel method declaration.
-class MethodDeclaration(object):
+# Syntax of a method.
+@plankton.serializable(("ast", "Method"))
+class Method(object):
 
+  @plankton.field("signature")
+  @plankton.field("body")
   def __init__(self, signature, body):
     self.signature = signature
     self.body = body
+
+  def accept(self, visitor):
+    visitor.visit_method(self)
+
+  def traverse(self, visitor):
+    self.signature.accept(visitor)
+    self.body.accept(visitor)
+
+
+# A toplevel method declaration.
+class MethodDeclaration(object):
+
+  def __init__(self, method):
+    self.method = method
 
   def get_stage(self):
     return 0
@@ -426,16 +447,13 @@ class MethodDeclaration(object):
     return visitor.visit_method_declaration(self)
 
   def apply(self, program, helper):
-    signature_data = self.signature.to_data()
-    method = data.Method(signature_data, Lambda(self.signature, self.body))
-    program.module.methodspace.add_method(method)
+    program.module.methodspace.add_method(self.method)
 
   def traverse(self, visitor):
-    self.signature.accept(visitor)
-    self.body.accept(visitor)
+    self.method.accept(visitor)
 
   def __str__(self):
-    return "(method-declaration %s %s)" % (self.signature, self.body)
+    return "(method-declaration %s %s)" % (self.method.signature, self.method.body)
 
 
 # An individual execution stage.

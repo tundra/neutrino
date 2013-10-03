@@ -8,7 +8,7 @@ df = ast.LocalDeclaration
 lm = ast.Lambda
 lt = ast.Literal
 nd = ast.NamespaceDeclaration
-md = ast.MethodDeclaration
+md = lambda s, b: ast.MethodDeclaration(ast.Method(s, b))
 pm = lambda n, *t: ast.Parameter(n, t, data.Guard.any())
 sq = lambda *e: ast.Sequence(e)
 

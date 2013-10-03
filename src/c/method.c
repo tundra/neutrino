@@ -22,77 +22,6 @@ value_t signature_validate(value_t self) {
   return success();
 }
 
-// Given an array of parameters, returns a new array that contains cloned
-// parameters with the same contents but which have been ordered appropriately.
-// TODO: this should really be done based on the parameter asts.
-static value_t clone_and_order_parameter_array(runtime_t *runtime,
-    value_t raw_params) {
-  size_t length = get_array_length(raw_params);
-  TRY_DEF(result, new_heap_array(runtime, length));
-  reusable_scratch_memory_t scratch;
-  reusable_scratch_memory_init(&scratch);
-  E_BEGIN_TRY_FINALLY();
-    size_t *offsets = calc_parameter_ordering(&scratch, raw_params);
-    for (size_t i = 0; i < length; i++) {
-      value_t raw_param = get_array_at(raw_params, i);
-      E_TRY_DEF(param, new_heap_parameter(runtime, afFreeze,
-          get_parameter_guard(raw_param),
-          get_parameter_tags(raw_param),
-          get_parameter_is_optional(raw_param),
-          offsets[i]));
-      set_array_at(result, i, param);
-    }
-    E_RETURN(result);
-  E_FINALLY();
-    reusable_scratch_memory_dispose(&scratch);
-  E_END_TRY_FINALLY();
-}
-
-// Extract the attributes for a signature object from an array of parameter
-// objects.
-value_t set_signature_contents_from_parameters(runtime_t *runtime,
-    value_t signature, value_t raw_params) {
-  TRY_DEF(params, clone_and_order_parameter_array(runtime, raw_params));
-  size_t param_count = get_array_length(params);
-  size_t mandatory_count = 0;
-  size_t tag_count = 0;
-  // Count how many tags there are and how many of the params are mandatory.
-  for (size_t i = 0; i < param_count; i++) {
-    value_t param = get_array_at(params, i);
-    if (!get_parameter_is_optional(param))
-      mandatory_count++;
-    tag_count += get_array_length(get_parameter_tags(param));
-  }
-  // Create an array with pairs of values, the first entry of which is the tag
-  // and the second is the parameter.
-  TRY_DEF(param_vector, new_heap_pair_array(runtime, tag_count));
-  // Loop over all the tags, t being the tag index across the whole signature.
-  size_t t = 0;
-  for (size_t i = 0; i < param_count; i++) {
-    value_t param = get_array_at(params, i);
-    value_t tags = get_parameter_tags(param);
-    size_t param_tag_count = get_array_length(tags);
-    for (size_t j = 0; j < param_tag_count; j++, t++) {
-      TRY_DEF(tag, get_array_at(tags, j));
-      set_pair_array_first_at(param_vector, t, tag);
-      set_pair_array_second_at(param_vector, t, param);
-    }
-  }
-  co_sort_pair_array(param_vector);
-  set_signature_parameter_count(signature, param_count);
-  set_signature_mandatory_count(signature, mandatory_count);
-  set_signature_tags(signature, param_vector);
-  return success();
-}
-
-value_t set_signature_contents(value_t object, runtime_t *runtime, value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(params, get_id_hash_map_at(contents, RSTR(runtime, parameters)));
-  set_signature_contents_from_parameters(runtime, object, params);
-  set_signature_allow_extra(object, false);
-  return success();
-}
-
 value_t ensure_signature_owned_values_frozen(runtime_t *runtime, value_t self) {
   return ensure_frozen(runtime, get_signature_tags(self));
 }
@@ -238,17 +167,6 @@ ACCESSORS_IMPL(Parameter, parameter, acInFamilyOpt, ofArray, Tags, tags);
 INTEGER_ACCESSORS_IMPL(Parameter, parameter, IsOptional, is_optional);
 INTEGER_ACCESSORS_IMPL(Parameter, parameter, Index, index);
 
-value_t set_parameter_contents(value_t object, runtime_t *runtime, value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(tags, get_id_hash_map_at(contents, RSTR(runtime, tags)));
-  TRY_DEF(guard, get_id_hash_map_at(contents, RSTR(runtime, guard)));
-  set_parameter_tags(object, tags);
-  set_parameter_guard(object, guard);
-  set_parameter_index(object, 0);
-  set_parameter_is_optional(object, false);
-  return success();
-}
-
 value_t parameter_validate(value_t value) {
   VALIDATE_FAMILY(ofParameter, value);
   VALIDATE_FAMILY_OPT(ofGuard, get_parameter_guard(value));
@@ -382,12 +300,13 @@ TRIVIAL_PRINT_ON_IMPL(Method, method);
 
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofSignature, Signature, signature);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofCodeBlock, Code, code);
-ACCESSORS_IMPL(Method, method, acIsSyntaxOpt, 0, Syntax, syntax);
+ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofMethodAst, Syntax, syntax);
 
 value_t method_validate(value_t self) {
   VALIDATE_FAMILY(ofMethod, self);
   VALIDATE_FAMILY_OPT(ofSignature, get_method_signature(self));
   VALIDATE_FAMILY_OPT(ofCodeBlock, get_method_code(self));
+  VALIDATE_FAMILY_OPT(ofMethodAst, get_method_syntax(self));
   return success();
 }
 
@@ -605,10 +524,33 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
   return state.result;
 }
 
+// Given an array of method asts, returns a corresponding array of method
+// objects.
+static value_t method_asts_to_methods(runtime_t *runtime, value_t method_asts) {
+  size_t count = get_array_length(method_asts);
+  TRY_DEF(methods, new_heap_array(runtime, count));
+  reusable_scratch_memory_t scratch;
+  reusable_scratch_memory_init(&scratch);
+  E_BEGIN_TRY_FINALLY();
+    for (size_t i = 0; i < count; i++) {
+      value_t method_ast = get_array_at(method_asts, i);
+      E_TRY_DEF(signature, build_method_signature(runtime, &scratch,
+          get_method_ast_signature(method_ast)));
+      E_TRY_DEF(method, new_heap_method(runtime, afMutable, signature, method_ast,
+          ROOT(runtime, nothing)));
+      set_array_at(methods, i, method);
+    }
+    E_TRY_DEF(result, new_heap_array_buffer_with_contents(runtime, methods));
+    E_RETURN(result);
+  E_FINALLY();
+    reusable_scratch_memory_dispose(&scratch);
+  E_END_TRY_FINALLY();
+}
+
 value_t set_methodspace_contents(value_t object, runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(raw_methods, get_id_hash_map_at(contents, RSTR(runtime, methods)));
-  TRY_DEF(methods, new_heap_array_buffer_with_contents(runtime, raw_methods));
+  TRY_DEF(raw_method_asts, get_id_hash_map_at(contents, RSTR(runtime, methods)));
+  TRY_DEF(methods, method_asts_to_methods(runtime, raw_method_asts));
   TRY_DEF(inheritance, get_id_hash_map_at(contents, RSTR(runtime, inheritance)));
   TRY_DEF(imports, get_id_hash_map_at(contents, RSTR(runtime, imports)));
   set_methodspace_methods(object, methods);

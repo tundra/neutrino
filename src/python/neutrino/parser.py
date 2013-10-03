@@ -122,7 +122,7 @@ class Parser(object):
     body = self.parse_expression()
     self.expect_statement_delimiter()
     signature = ast.Signature([subject, name] + params)
-    return ast.MethodDeclaration(signature, body)
+    return ast.MethodDeclaration(ast.Method(signature, body))
 
   def parse_toplevel_statement(self):
     if self.at_word('def'):

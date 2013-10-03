@@ -90,8 +90,8 @@ static int compare_parameter_ordering_entries(const void *vp_a, const void *vp_b
 // Abstract implementation of the parameter ordering function that works on
 // any kind of object that has a set of tags. The get_entry_tags function
 // argument is responsible for extracting the tags.
-static size_t *calc_abstract_parameter_ordering(reusable_scratch_memory_t *scratch,
-    value_t params, value_t (get_entry_tags)(value_t param)) {
+size_t *calc_parameter_ast_ordering(reusable_scratch_memory_t *scratch,
+    value_t params) {
   size_t tagc = get_array_length(params);
 
   // Allocate the temporary storage and result array.
@@ -105,7 +105,7 @@ static size_t *calc_abstract_parameter_ordering(reusable_scratch_memory_t *scrat
   // it came from in the tag array.
   for (size_t i = 0; i < tagc; i++) {
     value_t param = get_array_at(params, i);
-    pairs[i * 2] = get_entry_tags(param);
+    pairs[i * 2] = get_parameter_ast_tags(param);
     pairs[(i * 2) + 1] = new_integer(i);
   }
   // Sort the entries by parameter ordering. This moves the subject and selector
@@ -127,16 +127,6 @@ static size_t *calc_abstract_parameter_ordering(reusable_scratch_memory_t *scrat
   }
 
   return result;
-}
-
-size_t *calc_parameter_ast_ordering(reusable_scratch_memory_t *scratch,
-    value_t params) {
-  return calc_abstract_parameter_ordering(scratch, params, get_parameter_ast_tags);
-}
-
-size_t *calc_parameter_ordering(reusable_scratch_memory_t *scratch,
-    value_t params) {
-  return calc_abstract_parameter_ordering(scratch, params, get_parameter_tags);
 }
 
 // Forward declare all the emit methods.
@@ -608,9 +598,8 @@ ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, ofSignatureAst, Signature,
     signature);
 ACCESSORS_IMPL(LambdaAst, lambda_ast, acIsSyntaxOpt, 0, Body, body);
 
-// Builds a method signature based on a signature syntax tree.
-static value_t build_method_signature(runtime_t *runtime,
-    reusable_scratch_memory_t *scratch_memory, value_t signature_ast) {
+value_t build_method_signature(runtime_t *runtime,
+    reusable_scratch_memory_t *scratch, value_t signature_ast) {
   value_t param_asts = get_signature_ast_parameters(signature_ast);
   size_t param_astc = get_array_length(param_asts);
 
@@ -619,7 +608,7 @@ static value_t build_method_signature(runtime_t *runtime,
   // call to call_parameter_ast_ordering with the same (though possibly
   // relocated) parameter array. This seems like a safe assumption though it
   // does rely on qsort being well-behaved.
-  size_t *offsets = calc_parameter_ast_ordering(scratch_memory, param_asts);
+  size_t *offsets = calc_parameter_ast_ordering(scratch, param_asts);
 
   // Count the tags. We'll need those for the compiled method signature's tag
   // vector.
@@ -828,6 +817,37 @@ static value_t new_signature_ast(runtime_t *runtime) {
 }
 
 
+// --- M e t h o d   a s t ---
+
+GET_FAMILY_PROTOCOL_IMPL(method_ast);
+NO_BUILTIN_METHODS(method_ast);
+TRIVIAL_PRINT_ON_IMPL(MethodAst, method_ast);
+
+ACCESSORS_IMPL(MethodAst, method_ast, acInFamilyOpt, ofSignatureAst, Signature,
+    signature);
+ACCESSORS_IMPL(MethodAst, method_ast, acIsSyntaxOpt, 0, Body, body);
+
+value_t method_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofMethodAst, self);
+  VALIDATE_FAMILY_OPT(ofSignatureAst, get_method_ast_signature(self));
+  return success();
+}
+
+value_t set_method_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(signature, get_id_hash_map_at(contents, RSTR(runtime, signature)));
+  TRY_DEF(body, get_id_hash_map_at(contents, RSTR(runtime, body)));
+  set_method_ast_signature(object, signature);
+  set_method_ast_body(object, body);
+  return success();
+}
+
+static value_t new_method_ast(runtime_t *runtime) {
+  return new_heap_method_ast(runtime, ROOT(runtime, nothing),
+      ROOT(runtime, nothing));
+}
+
+
 // --- P r o g r a m   a s t ---
 
 TRIVIAL_PRINT_ON_IMPL(ProgramAst, program_ast);
@@ -918,6 +938,7 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "Literal", new_literal_ast, runtime));
   TRY(add_plankton_factory(map, ast, "LocalDeclaration", new_local_declaration_ast, runtime));
   TRY(add_plankton_factory(map, ast, "LocalVariable", new_local_variable_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Method", new_method_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Name", new_name_ast, runtime));
   TRY(add_plankton_factory(map, ast, "NamespaceVariable", new_namespace_variable_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Parameter", new_parameter_ast, runtime));

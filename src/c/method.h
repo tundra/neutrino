@@ -45,11 +45,6 @@ value_t get_signature_tag_at(value_t self, size_t index);
 // order.
 value_t get_signature_parameter_at(value_t self, size_t index);
 
-// Sets the attributes of the given signature to the appropriate values given
-// an array of parameter values, including building the sorted tag array etc.
-value_t set_signature_contents_from_parameters(runtime_t *runtime,
-    value_t signature, value_t params);
-
 // The status of a match -- whether it succeeded and if not why.
 typedef enum {
   // There was an argument we didn't expect.
