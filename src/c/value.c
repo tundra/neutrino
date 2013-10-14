@@ -1610,17 +1610,8 @@ static value_t new_methodspace(runtime_t *runtime) {
   return new_heap_methodspace(runtime);
 }
 
-static value_t new_guard(runtime_t *runtime) {
-  return new_heap_guard(runtime, afMutable, gtAny, ROOT(runtime, nothing));
-}
-
 static value_t new_protocol(runtime_t *runtime) {
   return new_heap_protocol(runtime, afMutable, ROOT(runtime, nothing));
-}
-
-static value_t new_method(runtime_t *runtime) {
-  return new_heap_method(runtime, afMutable, ROOT(runtime, nothing),
-      ROOT(runtime, nothing), ROOT(runtime, nothing));
 }
 
 value_t add_plankton_factory(value_t map, value_t category, const char *name,
@@ -1632,8 +1623,6 @@ value_t add_plankton_factory(value_t map, value_t category, const char *name,
 value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   value_t core = RSTR(runtime, core);
   // Factories
-  TRY(add_plankton_factory(map, core, "Guard", new_guard, runtime));
-  TRY(add_plankton_factory(map, core, "Method", new_method, runtime));
   TRY(add_plankton_factory(map, core, "Methodspace", new_methodspace, runtime));
   TRY(add_plankton_factory(map, core, "Module", new_module, runtime));
   TRY(add_plankton_factory(map, core, "Namespace", new_namespace, runtime));

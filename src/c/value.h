@@ -240,7 +240,7 @@ static value_t new_moved_object(value_t target) {
   F(Boolean,                 boolean,                   X, X, _, X, _, _, _, _, _)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X)\
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _)\
-  F(Guard,                   guard,                     _, _, X, _, _, _, _, X, _)\
+  F(Guard,                   guard,                     _, _, _, _, _, _, _, X, _)\
   F(GuardAst,                guard_ast,                 _, _, X, X, _, _, _, _, _)\
   F(IdHashMap,               id_hash_map,               _, _, _, X, _, X, _, X, X)\
   F(Instance,                instance,                  _, _, X, X, _, _, _, _, _)\
@@ -251,7 +251,7 @@ static value_t new_moved_object(value_t target) {
   F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, _, _)\
   F(LiteralAst,              literal_ast,               _, _, X, X, _, _, X, _, _)\
   F(LocalDeclarationAst,     local_declaration_ast,     _, _, X, X, _, _, X, _, _)\
-  F(Method,                  method,                    _, _, X, _, _, _, _, X, _)\
+  F(Method,                  method,                    _, _, _, _, _, _, _, X, _)\
   F(MethodAst,               method_ast,                _, _, X, X, _, _, _, X, _)\
   F(Methodspace,             methodspace,               _, _, X, _, _, _, _, X, X)\
   F(Module,                  module,                    _, _, X, _, _, _, _, X, _)\

@@ -47,33 +47,25 @@ class Module(object):
     self.methodspace = methodspace
 
 
-@plankton.serializable(("core", "Method"))
 class Method(object):
 
-  @plankton.field("signature")
-  @plankton.field("syntax")
   def __init__(self, signature=None, syntax=None):
     self.signature = signature
     self.syntax = syntax
 
 
-@plankton.serializable(("core", "Signature"))
 class Signature(object):
 
-  @plankton.field("parameters")
   def __init__(self, params):
     self.parameters = params
 
 
-@plankton.serializable(("core", "Guard"))
 class Guard(object):
 
   _EQ = "="
   _IS = "i"
   _ANY = "*"
 
-  @plankton.field("type")
-  @plankton.field("value")
   def __init__(self, type=None, value=None):
     self.type = type
     self.value = value
@@ -90,11 +82,8 @@ class Guard(object):
     return Guard(Guard._EQ, value)
 
 
-@plankton.serializable(("core", "Parameter"))
 class Parameter(object):
 
-  @plankton.field("tags")
-  @plankton.field("guard")
   def __init__(self, tags=None, guard=None):
     self.tags = tags
     self.guard = guard
