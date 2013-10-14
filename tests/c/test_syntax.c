@@ -11,7 +11,7 @@
 TEST(syntax, emitting) {
   CREATE_RUNTIME();
 
-  value_t ast = new_heap_literal_ast(runtime, runtime_bool(runtime, false));
+  value_t ast = new_heap_literal_ast(runtime, runtime_bool(runtime, true));
   assembler_t assm;
   ASSERT_SUCCESS(assembler_init(&assm, runtime, NULL));
   ASSERT_SUCCESS(emit_value(ast, &assm));
