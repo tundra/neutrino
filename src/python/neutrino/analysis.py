@@ -87,10 +87,10 @@ class ScopeVisitor(ast.Visitor):
       self.scope = outer_scope
 
   def visit_unit(self, that):
-    that.entry_point.accept(self)
     for (index, stage) in that.get_stages():
       for element in stage.elements:
         element.accept(self)
+    that.entry_point.accept(self)
 
   def visit_namespace_declaration(self, that):
     that.value.accept(self)

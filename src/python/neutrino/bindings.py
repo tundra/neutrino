@@ -28,19 +28,14 @@ class BindingHelper(object):
     return interp.evaluate(expr)
 
 
-def resolve_past_variables(index, elements, unit):
-  resolver = PastVariableResolver(unit)
-  for element in elements:
-    element.accept(resolver)
-
-
 # Apply the various declarations to create the program bindings. This is only
 # an approximation of the proper program element semantics but it'll do for
 # now, possibly until the source compiler is rewritten in neutrino.
 def bind(unit):
   helper = BindingHelper()
+  resolver = PastVariableResolver(unit)
   for (index, stage) in unit.get_stages():
-    resolve_past_variables(index, stage.elements, unit)
     for element in stage.elements:
+      element.accept(resolver)
       element.apply(stage, helper)
-  resolve_past_variables(0, [unit.entry_point], unit)
+  unit.entry_point.accept(resolver)

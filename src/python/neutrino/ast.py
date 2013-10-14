@@ -14,65 +14,53 @@ class Visitor(object):
   def __init__(self):
     pass
 
-  @abstractmethod
+  def visit_ast(self, that):
+    that.traverse(self)
+
   def visit_literal(self, that):
-    that.traverse(self)
+    self.visit_ast(that)
 
-  @abstractmethod
   def visit_array(self, that):
-    that.traverse(self)
+    self.visit_ast(that)
 
-  @abstractmethod
   def visit_lambda(self, that):
-    that.traverse(self)
+    self.visit_ast(that)
 
-  @abstractmethod
   def visit_variable(self, that):
-    that.traverse(self)
+    self.visit_ast(that)
 
-  @abstractmethod
   def visit_invocation(self, that):
-    that.traverse(self)
+    self.visit_ast(that)
 
-  @abstractmethod
   def visit_argument(self, that):
-    that.traverse(self)
+    self.visit_ast(that)
 
-  @abstractmethod
   def visit_sequence(self, that):
-    that.traverse(self)
+    self.visit_ast(that)
 
-  @abstractmethod
   def visit_local_declaration(self, that):
-    that.traverse(self)
+    self.visit_ast(that)
 
-  @abstractmethod
   def visit_namespace_declaration(self, that):
-    that.traverse(self)
+    self.visit_ast(that)
 
-  @abstractmethod
   def visit_method_declaration(self, that):
-    that.traverse(self)
+    self.visit_ast(that)
 
-  @abstractmethod
   def visit_signature(self, that):
-    that.traverse(self)
+    self.visit_ast(that)
 
-  @abstractmethod
   def visit_parameter(self, that):
-    that.traverse(self)
+    self.visit_ast(that)
 
-  @abstractmethod
   def visit_method(self, that):
-    that.traverse(self)
+    self.visit_ast(that)
 
-  @abstractmethod
   def visit_guard(self, that):
-    that.traverse(self)
+    self.visit_ast(that)
 
-  @abstractmethod
   def visit_past_unquote(self, that):
-    that.traverse(self)
+    self.visit_ast(that)
 
 
 # A constant literal value.
@@ -324,6 +312,8 @@ class Guard(object):
     self.type = type
     if value is None:
       self.value = None
+    elif isinstance(value, PastUnquote):
+      self.value = value
     else:
       self.value = PastUnquote(-1, value)
 
@@ -344,6 +334,11 @@ class Guard(object):
   @staticmethod
   def eq(value):
     return Guard(data.Guard._EQ, value)
+
+  # 'is' is a reserved word in python. T t t.
+  @staticmethod
+  def is_(value):
+    return Guard(data.Guard._IS, value)
 
 
 # An anonymous function. These can be broken down into equivalent new-object

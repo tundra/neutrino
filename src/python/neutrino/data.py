@@ -104,8 +104,8 @@ class Key(plankton.EnvironmentPlaceholder):
 class Protocol(object):
 
   @plankton.field("name")
-  def __init__(self, name=None):
-    self.name = name
+  def __init__(self, display_name=None):
+    self.name = display_name
 
 
 # A user-defined object instance.
@@ -113,13 +113,11 @@ class Protocol(object):
 @plankton.serializable()
 class Instance(object):
 
-  _EMPTY_PROTOCOL = Protocol("Empty")
-
-  def __init__(self):
-    pass
+  def __init__(self, protocol=None):
+    self.protocol = protocol
 
   def get_header(self):
-    return Instance._EMPTY_PROTOCOL
+    return self.protocol
 
   def get_payload(self):
     return {}

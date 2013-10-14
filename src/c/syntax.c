@@ -828,7 +828,7 @@ value_t set_guard_ast_contents(value_t object, runtime_t *runtime,
     case '=': type = gtEq; break;
     case 'i': type = gtIs; break;
     case '*': type = gtAny; break;
-    default: return new_signal(scInvalidInput);
+    default: return new_invalid_input_signal();
   }
   set_guard_ast_type(object, type);
   set_guard_ast_value(object, value);

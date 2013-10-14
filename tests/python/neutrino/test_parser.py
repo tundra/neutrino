@@ -14,6 +14,7 @@ pm = lambda n, *t: fpm(n, ast.Guard.any(), *t)
 sq = lambda *e: ast.Sequence(e)
 pu = ast.PastUnquote
 eq = ast.Guard.eq
+is_ = ast.Guard.is_
 any = ast.Guard.any
 ST = data._SUBJECT
 SL = data._SELECTOR
@@ -194,7 +195,7 @@ class ParserTest(unittest.TestCase):
     test('def $this.foo($a, $b) => 10;', ut(0, md(ms(nm("this"), "foo", pm(nm("a"), 0),
       pm(nm("b"), 1)), lt(10))))
 
-  def test_program_equals_method_definition(self):
+  def test_program_restricted_method_definition(self):
     test = self.check_program
     test('def ($this == 8).foo() => 4;', ut(0, md(fms(
         fpm(nm("this"), eq(lt(8)), ST),
@@ -205,6 +206,12 @@ class ParserTest(unittest.TestCase):
         fpm(nm("name"), eq(lt("foo")), SL),
         fpm(nm("that"), eq(lt(9)), 0)),
       lt(4))))
+    test('def ($this is @This).foo() => 4;', mu(
+      (0, [md(fms(
+              fpm(nm("this"), is_(id("This", -1)), ST),
+              fpm(nm("name"), eq(lt("foo")), SL)),
+            lt(4))]),
+      (-1, [])))
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)
