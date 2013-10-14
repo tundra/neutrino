@@ -209,7 +209,7 @@ $(C_TEST_LIB_OUTS):$(OUT)/tests/c/test_%.out:$(C_TEST_MAIN_EXE)
 	@echo Running test_$*
 	@mkdir -p $(shell dirname $@)
 	@$(EXEC_PREFIX) ./$(C_TEST_MAIN_EXE) $* > $@ || touch $@.fail
-	@cat $@ | ./src/sh/filter-backtrace.sh
+	@cat $@ | ./src/sh/filter-backtrace.py
 	@if [ -f $@.fail ]; then rm $@ $@.fail; false; else true; fi
 
 
