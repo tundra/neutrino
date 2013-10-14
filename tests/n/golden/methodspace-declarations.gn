@@ -72,3 +72,34 @@ entry_point (9).foo().print();
 -- OUTPUT:
 4
 -- END
+
+-- INPUT:
+def ($this).foo($bar) => $bar;
+entry_point (9).foo(6).print();
+-- OUTPUT:
+6
+-- END
+
+-- INPUT:
+def ($this).foo($bar) => $bar;
+def ($this).foo($bar == 18) => $bar + 5;
+entry_point (1).foo(17).print();
+-- OUTPUT:
+17
+-- END
+
+-- INPUT:
+def ($this).foo($bar) => $bar;
+def ($this).foo($bar == 18) => $bar + 5;
+entry_point (1).foo(18).print();
+-- OUTPUT:
+23
+-- END
+
+-- INPUT:
+def ($this).foo($bar) => $bar;
+def ($this).foo($bar == 18) => $bar + 5;
+entry_point (1).foo(19).print();
+-- OUTPUT:
+19
+-- END
