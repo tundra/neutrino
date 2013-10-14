@@ -16,8 +16,7 @@ class EvaluateVisitor(ast.Visitor):
     return that.value
 
   def visit_variable(self, that):
-    assert not that.resolved_past_value is None
-    return that.resolved_past_value.accept(self)
+    return that.namespace.lookup(that.name.path)
 
   def visit_invocation(self, that):
     subject = None
@@ -33,6 +32,9 @@ class EvaluateVisitor(ast.Visitor):
     assert type(subject) == types.FunctionType
     assert selector == "()"
     return subject(*args)
+
+  def visit_past_unquote(self, that):
+    return that.value
 
 # Creates a new empty neutrino object.
 def new_neutrino_instance():

@@ -198,6 +198,19 @@ ACCESSORS_DECL(parameter_ast, tags);
 ACCESSORS_DECL(parameter_ast, guard);
 
 
+// --- G u a r d   a s t ---
+
+static const size_t kGuardAstSize = OBJECT_SIZE(2);
+static const size_t kGuardAstTypeOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kGuardAstValueOffset = OBJECT_FIELD_OFFSET(1);
+
+// The value of this guard used to match by gtId and gtIs and unused for gtAny.
+ACCESSORS_DECL(guard_ast, value);
+
+// The type of match to perform for this guard.
+TYPED_ACCESSORS_DECL(guard_ast, guard_type_t, type);
+
+
 // --- S i g n a t u r e   a s t ---
 
 static const size_t kSignatureAstSize = OBJECT_SIZE(1);

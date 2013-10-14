@@ -13,14 +13,12 @@ class PastVariableResolver(ast.Visitor):
   def __init__(self, unit):
     self.unit = unit
 
-  def visit_variable(self, that):
-    name = that.name
-    if name.stage >= 0:
-      # If the variable is not in the past there's nothing to do.
+  def visit_past_unquote(self, that):
+    if that.stage >= 0:
+      # If the unquote is not in the past there's nothing to do.
       return
-    stage = self.unit.get_or_create_stage(name.stage)
-    value = stage.namespace.lookup(name.path)
-    that.resolved_past_value = ast.Literal(value)
+    value = interp.evaluate(that.ast)
+    that.value = value
 
 
 # Utility that can be used by elements to help apply themselves.
