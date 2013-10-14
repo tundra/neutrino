@@ -698,16 +698,20 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   capture_scope_t capture_scope;
   TRY(assembler_push_capture_scope(assm, &capture_scope));
 
-  // Compile the body and signature.
+  runtime_t *runtime = assm->runtime;
+
+  // Compile the signature and, if we're in a nontrivial inner scope, the
+  // body of the lambda.
   value_t method_ast = get_lambda_ast_method(value);
-  TRY_DEF(body_code, compile_method_body(assm, method_ast));
+  value_t body_code = ROOT(runtime, nothing);
+  if (assm->scope_callback != scope_lookup_callback_get_bottom())
+    TRY_SET(body_code, compile_method_body(assm, method_ast));
   TRY_DEF(signature, build_method_signature(assm->runtime,
       assembler_get_scratch_memory(assm), get_method_ast_signature(method_ast)));
 
   // Build a method space in which to store the method.
-  runtime_t *runtime = assm->runtime;
-  TRY_DEF(method, new_heap_method(runtime, afFreeze, signature, ROOT(runtime, nothing),
-      body_code));
+  TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
+      ROOT(runtime, nothing), body_code));
   TRY_DEF(space, new_heap_methodspace(runtime));
   TRY(add_methodspace_method(runtime, space, method));
 

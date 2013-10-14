@@ -112,7 +112,8 @@ TEST(interp, execution) {
 // specified signal.
 static void assert_compile_failure(runtime_t *runtime, value_t ast,
     invalid_syntax_cause_t cause) {
-  value_t result = compile_expression(runtime, ast, NULL);
+  value_t result = compile_expression(runtime, ast,
+      scope_lookup_callback_get_bottom());
   ASSERT_SIGNAL(scInvalidSyntax, result);
   ASSERT_EQ(cause, get_invalid_syntax_signal_cause(result));
 }
