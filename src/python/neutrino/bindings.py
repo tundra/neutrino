@@ -36,6 +36,8 @@ def bind(unit):
   resolver = PastVariableResolver(unit)
   for (index, stage) in unit.get_stages():
     for element in stage.elements:
+      # Resolve expressions as we go so that earlier bindings (lexically) are
+      # visible to later bindings.
       element.accept(resolver)
       element.apply(stage, helper)
   unit.entry_point.accept(resolver)

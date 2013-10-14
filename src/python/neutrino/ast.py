@@ -310,6 +310,8 @@ class Guard(object):
   @plankton.field("value")
   def __init__(self, type=None, value=None):
     self.type = type
+    # TODO: this is just me not being clear on how quoting should work with
+    #   guard values. I should really sort that out.
     if value is None:
       self.value = None
     elif isinstance(value, PastUnquote):
