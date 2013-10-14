@@ -64,6 +64,10 @@ class Parser(object):
   def at_word(self, value):
     return self.at_token(Token.WORD, value)
 
+  # Returns true if the next token is the specified operation token
+  def at_operation(self, value):
+    return self.at_token(Token.OPERATION, value)
+
   # Skips over the current punctuation which must have the specified value,
   # if it's not it raises a syntax error.
   def expect_punctuation(self, value):
@@ -75,6 +79,13 @@ class Parser(object):
   # a syntax error is raised.
   def expect_word(self, value):
     if not self.at_word(value):
+      raise self.new_syntax_error()
+    self.advance()
+
+  # Skips over the current operation which must have the specified value, if
+  # not a syntax error is raised.
+  def expect_operation(self, value):
+    if not self.at_operation(value):
       raise self.new_syntax_error()
     self.advance()
 
@@ -174,10 +185,11 @@ class Parser(object):
 
   # Given a string operation name returns the corresponding selector parameter.
   def name_as_selector(self, name):
-    return ast.Parameter(ast.Name(0, ['name']), [data._SELECTOR], data.Guard.eq(name))
+    return ast.Parameter(ast.Name(0, ['name']), [data._SELECTOR],
+      ast.Guard.eq(ast.Literal(name)))
 
   def name_as_subject(self, name):
-    return ast.Parameter(name, [data._SUBJECT], data.Guard.any())
+    return ast.Parameter(name, [data._SUBJECT], ast.Guard.any())
 
   # Same as parse_parameters but returns a full signature.
   def parse_signature(self):
@@ -219,7 +231,13 @@ class Parser(object):
       tag = self.expect_type(Token.TAG)
       tags = [tag] + tags
     name = self.expect_type(Token.IDENTIFIER)
-    return ast.Parameter(name, tags, data.Guard.any())
+    guard = ast.Guard.any()
+    if self.at_operation('=='):
+      self.expect_operation('==')
+      guard_value = self.parse_atomic_expression()
+      guard = ast.Guard.eq(guard_value)
+    result = ast.Parameter(name, tags, guard)
+    return result
 
   # <operator expression>
   #   -> <call expression> +: <operation>
@@ -284,7 +302,14 @@ class Parser(object):
   #   -> <identifier>
   def parse_variable(self):
     name = self.expect_type(Token.IDENTIFIER)
-    return ast.Variable(name=name, namespace=self.present.get_namespace())
+    stage_index = name.stage
+    stage = self.unit.get_or_create_stage(stage_index)
+    namespace = stage.get_namespace()
+    variable = ast.Variable(name=name, namespace=namespace)
+    if name.stage < 0:
+      return ast.PastUnquote(stage_index, variable)
+    else:
+      return variable
 
 
   # <atomic expression>

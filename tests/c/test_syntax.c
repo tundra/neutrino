@@ -60,7 +60,7 @@ TEST(syntax, parameter_order_index) {
   for (size_t i = 0; i < (N); i++) {                                           \
     value_t tags = variant_to_value(runtime, elms[i]);                         \
     set_array_at(params, i, new_heap_parameter_ast(runtime,                    \
-        ROOT(runtime, nothing), tags, ROOT(runtime, any_guard)));              \
+        ROOT(runtime, nothing), tags, any_guard_ast));                         \
   }                                                                            \
   size_t *ordering = calc_parameter_ast_ordering(&scratch, params);            \
   size_t expected[N] = {EXPECTED};                                             \
@@ -70,6 +70,8 @@ TEST(syntax, parameter_order_index) {
 
 TEST(syntax, param_ordering) {
   CREATE_RUNTIME();
+
+  value_t any_guard_ast = new_heap_guard_ast(runtime, gtAny, ROOT(runtime, null));
 
   reusable_scratch_memory_t scratch;
   reusable_scratch_memory_init(&scratch);

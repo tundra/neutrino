@@ -241,6 +241,7 @@ static value_t new_moved_object(value_t target) {
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X)\
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _)\
   F(Guard,                   guard,                     _, _, X, _, _, _, _, X, _)\
+  F(GuardAst,                guard_ast,                 _, _, X, X, _, _, _, _, _)\
   F(IdHashMap,               id_hash_map,               _, _, _, X, _, X, _, X, X)\
   F(Instance,                instance,                  _, _, X, X, _, _, _, _, _)\
   F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _, _)\

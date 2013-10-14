@@ -504,6 +504,15 @@ value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags,
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_guard_ast(runtime_t *runtime, guard_type_t type, value_t value) {
+  size_t size = kGuardAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, guard_ast_species)));
+  set_guard_ast_type(result, type);
+  set_guard_ast_value(result, value);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_signature_ast(runtime_t *runtime, value_t parameters) {
   size_t size = kSignatureAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,

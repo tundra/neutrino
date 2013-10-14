@@ -48,3 +48,27 @@ entry_point "blah".bar().print();
 -- OUTPUT:
 "bar"
 -- END
+
+-- INPUT:
+def ($this).foo() => 4;
+def ($this == 8).foo() => 5;
+entry_point (7).foo().print();
+-- OUTPUT:
+4
+-- END
+
+-- INPUT:
+def ($this).foo() => 4;
+def ($this == 8).foo() => 5;
+entry_point (8).foo().print();
+-- OUTPUT:
+5
+-- END
+
+-- INPUT:
+def ($this).foo() => 4;
+def ($this == 8).foo() => 5;
+entry_point (9).foo().print();
+-- OUTPUT:
+4
+-- END

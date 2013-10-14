@@ -9,8 +9,14 @@ lm = lambda s, b: ast.Lambda(ast.Method(s, b))
 lt = ast.Literal
 nd = ast.NamespaceDeclaration
 md = lambda s, b: ast.MethodDeclaration(ast.Method(s, b))
-pm = lambda n, *t: ast.Parameter(n, t, data.Guard.any())
+fpm = lambda n, g, *t: ast.Parameter(n, t, g)
+pm = lambda n, *t: fpm(n, ast.Guard.any(), *t)
 sq = lambda *e: ast.Sequence(e)
+pu = ast.PastUnquote
+eq = ast.Guard.eq
+any = ast.Guard.any
+ST = data._SUBJECT
+SL = data._SELECTOR
 
 def ut(phase, *elements):
   return ast.Unit().add_element(phase, *elements)
@@ -23,17 +29,20 @@ def mu(*phases):
 
 def ls(*params):
   prefix = [
-    ast.Parameter(nm(['this']), [data._SUBJECT], data.Guard.any()),
-    ast.Parameter(nm(['name']), [data._SELECTOR], data.Guard.eq('()'))
+    fpm(nm(['this']), any(), ST),
+    fpm(nm(['name']), eq(lt('()')), SL)
   ]
   return ast.Signature(prefix + list(params))
 
 def ms(this, name, *params):
   prefix = [
-    ast.Parameter(this, [data._SUBJECT], data.Guard.any()),
-    ast.Parameter(nm(['name']), [data._SELECTOR], data.Guard.eq(name))
+    fpm(this, any(), ST),
+    fpm(nm(['name']), eq(lt(name)), SL)
   ]
   return ast.Signature(prefix + list(params))
+
+def fms(*params):
+  return ast.Signature(list(params))
 
 def nm(names, phase=0):
   if isinstance(names, list):
@@ -47,15 +56,15 @@ def id(names, phase=0):
 
 def bn(left, op, right):
   return ast.Invocation([
-    ast.Argument(data._SUBJECT, left),
-    ast.Argument(data._SELECTOR, ast.Literal(op)),
+    ast.Argument(ST, left),
+    ast.Argument(SL, ast.Literal(op)),
     ast.Argument(0, right)
   ])
 
 def cl(fun, *poss):
   args = [
-    ast.Argument(data._SUBJECT, fun),
-    ast.Argument(data._SELECTOR, ast.Literal("()"))
+    ast.Argument(ST, fun),
+    ast.Argument(SL, ast.Literal("()"))
   ]
   for i in xrange(len(poss)):
     args.append(ast.Argument(i, poss[i]))
@@ -63,8 +72,8 @@ def cl(fun, *poss):
 
 def mt(fun, name, *poss):
   args = [
-    ast.Argument(data._SUBJECT, fun),
-    ast.Argument(data._SELECTOR, name)
+    ast.Argument(ST, fun),
+    ast.Argument(SL, name)
   ]
   for i in xrange(len(poss)):
     pos = poss[i]
@@ -95,8 +104,8 @@ class ParserTest(unittest.TestCase):
     test('1', lt(1))
     test('"foo"', lt('foo'))
     test('$foo', id('foo'))
-    test('@foo', id('foo', -1))
-    test('@foo:bar', id(['foo', 'bar'], -1))
+    test('@foo', pu(-1, id('foo', -1)))
+    test('@foo:bar', pu(-1, id(['foo', 'bar'], -1)))
     test('(1)', lt(1))
     test('((($foo)))', id('foo'))
     test('[]', ar())
@@ -165,7 +174,7 @@ class ParserTest(unittest.TestCase):
     test('fn (x: $x, y: $y) { }', lm(ls(pm(nm("x"), "x", 0), pm(nm("y"), "y", 1)), lt(None)))
     test('fn x: $x { }', lm(ls(pm(nm("x"), "x", 0)), lt(None)))
 
-  def test_program_toplevel(self):
+  def test_program_toplevel_definition(self):
     test = self.check_program
     test('def $x := 5;', ut(0, nd(nm("x"), lt(5))))
     test('', ut(0))
@@ -173,6 +182,9 @@ class ParserTest(unittest.TestCase):
     test('def @x := 5;', mu(
       (-1, [nd(nm("x", -1), lt(5))]),
       (0, [])))
+
+  def test_program_unrestricted_method_definition(self):
+    test = self.check_program
     test('def ($this).foo() => 4;', ut(0, md(ms(nm("this"), "foo"), lt(4))))
     test('def ($that).bar() => 5;', ut(0, md(ms(nm("that"), "bar"), lt(5))))
     test('def $this.bar() => 6;', ut(0, md(ms(nm("this"), "bar"), lt(6))))
@@ -181,6 +193,13 @@ class ParserTest(unittest.TestCase):
     test('def $this+$that => 9;', ut(0, md(ms(nm("this"), "+", pm(nm("that"), 0)), lt(9))))
     test('def $this.foo($a, $b) => 10;', ut(0, md(ms(nm("this"), "foo", pm(nm("a"), 0),
       pm(nm("b"), 1)), lt(10))))
+
+  def test_program_equals_method_definition(self):
+    test = self.check_program
+    test('def ($this == 8).foo() => 4;', ut(0, md(fms(
+        fpm(nm("this"), eq(lt(8)), ST),
+        fpm(nm("name"), eq(lt("foo")), SL)),
+      lt(4))))
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)

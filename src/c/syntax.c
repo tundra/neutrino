@@ -625,7 +625,17 @@ value_t build_method_signature(runtime_t *runtime,
   for (size_t i = 0, tag_index = 0; i < param_astc; i++) {
     // Add the parameter to the signature.
     value_t param_ast = get_array_at(param_asts, i);
-    value_t guard = get_parameter_ast_guard(param_ast);
+    value_t guard_ast = get_parameter_ast_guard(param_ast);
+    guard_type_t guard_type = get_guard_ast_type(guard_ast);
+    value_t guard;
+    if (guard_type == gtAny) {
+      guard = ROOT(runtime, any_guard);
+    } else {
+      value_t guard_value_ast = get_guard_ast_value(guard_ast);
+      value_t guard_value = get_literal_ast_value(guard_value_ast);
+      TRY_SET(guard, new_heap_guard(runtime, afFreeze, guard_type,
+          guard_value));
+    }
     size_t param_index = offsets[i];
     value_t tags = get_parameter_ast_tags(param_ast);
     TRY_DEF(param, new_heap_parameter(runtime, afFreeze, guard, tags, false, param_index));
@@ -762,13 +772,13 @@ FIXED_GET_MODE_IMPL(parameter_ast, vmMutable);
 ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, ofSymbolAst, Symbol,
     symbol);
 ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, ofArray, Tags, tags);
-ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, ofGuard, Guard, guard);
+ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, ofGuardAst, Guard, guard);
 
 value_t parameter_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofParameterAst, self);
   VALIDATE_FAMILY_OPT(ofSymbolAst, get_parameter_ast_symbol(self));
   VALIDATE_FAMILY_OPT(ofArray, get_parameter_ast_tags(self));
-  VALIDATE_FAMILY_OPT(ofGuard, get_parameter_ast_guard(self));
+  VALIDATE_FAMILY_OPT(ofGuardAst, get_parameter_ast_guard(self));
   return success();
 }
 
@@ -786,6 +796,47 @@ value_t set_parameter_ast_contents(value_t object, runtime_t *runtime, value_t c
 static value_t new_parameter_ast(runtime_t *runtime) {
   return new_heap_parameter_ast(runtime, ROOT(runtime, nothing),
       ROOT(runtime, nothing), ROOT(runtime, nothing));
+}
+
+
+// --- G u a r d   a s t ---
+
+GET_FAMILY_PROTOCOL_IMPL(guard_ast);
+NO_BUILTIN_METHODS(guard_ast);
+TRIVIAL_PRINT_ON_IMPL(GuardAst, guard_ast);
+FIXED_GET_MODE_IMPL(guard_ast, vmMutable);
+
+ENUM_ACCESSORS_IMPL(GuardAst, guard_ast, guard_type_t, Type, type);
+ACCESSORS_IMPL(GuardAst, guard_ast, acNoCheck, 0, Value, value);
+
+value_t guard_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofGuardAst, self);
+  return success();
+}
+
+value_t set_guard_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(type_str, get_id_hash_map_at(contents, RSTR(runtime, type)));
+  TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
+  guard_type_t type;
+  // Maybe passing an integer enum will be good enough? Or does that conflict
+  // with being self-describing?
+  EXPECT_FAMILY(scInvalidInput, ofString, type_str);
+  char type_char = get_string_chars(type_str)[0];
+  switch (type_char) {
+    case '=': type = gtEq; break;
+    case 'i': type = gtIs; break;
+    case '*': type = gtAny; break;
+    default: return new_signal(scInvalidInput);
+  }
+  set_guard_ast_type(object, type);
+  set_guard_ast_value(object, value);
+  return success();
+}
+
+static value_t new_guard_ast(runtime_t *runtime) {
+  return new_heap_guard_ast(runtime, gtAny, ROOT(runtime, nothing));
 }
 
 
@@ -933,6 +984,7 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   value_t ast = RSTR(runtime, ast);
   TRY(add_plankton_factory(map, ast, "Argument", new_argument_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Array", new_array_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Guard", new_guard_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Invocation", new_invocation_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Lambda", new_lambda_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Literal", new_literal_ast, runtime));

@@ -35,10 +35,11 @@ TEST(interp, execution) {
   value_t basic_signature_params = new_heap_array(runtime, 2);
   set_array_at(basic_signature_params, 0, new_heap_parameter_ast(
       runtime, new_heap_symbol_ast(runtime, null), subject_array,
-      ROOT(runtime, any_guard)));
+      new_heap_guard_ast(runtime, gtAny, ROOT(runtime, null))));
   set_array_at(basic_signature_params, 1, new_heap_parameter_ast(
       runtime, new_heap_symbol_ast(runtime, null), selector_array,
-      new_heap_guard(runtime, afFreeze, gtEq, RSTR(runtime, sausages))));
+      new_heap_guard_ast(runtime, gtEq,
+          new_heap_literal_ast(runtime, RSTR(runtime, sausages)))));
   value_t basic_signature = new_heap_signature_ast(runtime, basic_signature_params);
 
   // Literal

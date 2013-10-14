@@ -66,6 +66,14 @@ class Visitor(object):
   def visit_method(self, that):
     that.traverse(self)
 
+  @abstractmethod
+  def visit_guard(self, that):
+    that.traverse(self)
+
+  @abstractmethod
+  def visit_past_unquote(self, that):
+    that.traverse(self)
+
 
 # A constant literal value.
 @plankton.serializable(("ast", "Literal"))
@@ -106,7 +114,6 @@ class Array(object):
 
 # A reference to an enclosing binding. The name is used before the variable
 # has been resolved, the symbol after.
-@plankton.substitute
 @plankton.virtual
 @plankton.serializable(("ast", "LocalVariable"), ("ast", "NamespaceVariable"))
 class Variable(object):
@@ -120,7 +127,6 @@ class Variable(object):
     self.name = name
     self.namespace = namespace
     self.symbol = symbol
-    self.resolved_past_value = None
 
   def accept(self, visitor):
     return visitor.visit_variable(self)
@@ -142,9 +148,6 @@ class Variable(object):
       }
     else:
       return {'symbol': self.symbol}
-
-  def get_substitute(self):
-    return self.resolved_past_value
 
   def __str__(self):
     return "(var %s)" % str(self.name)
@@ -281,10 +284,7 @@ class Parameter(object):
     visitor.visit_parameter(self)
 
   def traverse(self, visitor):
-    pass
-
-  def to_data(self):
-    return data.Parameter(self.tags, self.guard)
+    self.guard.accept(visitor)
 
   def __str__(self):
     return "(param (tags %s) (name %s) (guard %s))" % (
@@ -313,6 +313,37 @@ class Signature(object):
 
   def __str__(self):
     return "(signature %s)" % " ".join(map(str, self.parameters))
+
+
+@plankton.serializable(("ast", "Guard"))
+class Guard(object):
+
+  @plankton.field("type")
+  @plankton.field("value")
+  def __init__(self, type=None, value=None):
+    self.type = type
+    if value is None:
+      self.value = None
+    else:
+      self.value = PastUnquote(-1, value)
+
+  def accept(self, visitor):
+    visitor.visit_guard(self)
+
+  def traverse(self, visitor):
+    if not self.value is None:
+      self.value.accept(visitor)
+
+  def __str__(self):
+    return "%s(%s)" % (self.type, self.value)
+
+  @staticmethod
+  def any():
+    return Guard(data.Guard._ANY, None)
+
+  @staticmethod
+  def eq(value):
+    return Guard(data.Guard._EQ, value)
 
 
 # An anonymous function. These can be broken down into equivalent new-object
@@ -531,3 +562,25 @@ class Unit(object):
     stage_list = list(self.get_stages())
     stage_strs = ["(%s %s)" % (i, " ".join(map(str, s.elements))) for (i, s) in stage_list]
     return "(unit %s)" % " ".join(stage_strs)
+
+
+@plankton.substitute
+@plankton.serializable()
+class PastUnquote(object):
+
+  def __init__(self, stage=None, ast=None):
+    self.stage = stage
+    self.ast = ast
+    self.value = None
+
+  def accept(self, visitor):
+    return visitor.visit_past_unquote(self)
+
+  def traverse(self, visitor):
+    self.ast.accept(visitor)
+
+  def get_substitute(self):
+    return Literal(self.value)
+
+  def __str__(self):
+    return "(@ %s)" % self.ast

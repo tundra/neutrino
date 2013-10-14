@@ -211,6 +211,9 @@ value_t new_heap_lambda_ast(runtime_t *runtime, value_t method);
 value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags,
     value_t guard);
 
+// Creates a new guard syntax tree with the given attributes.
+value_t new_heap_guard_ast(runtime_t *runtime, guard_type_t type, value_t value);
+
 // Creates a new signature syntax tree with the given parameters.
 value_t new_heap_signature_ast(runtime_t *runtime, value_t parameters);
 
