@@ -131,4 +131,9 @@ static value_t new_not_deep_frozen_signal() {
   return new_signal(scNotDeepFrozen);
 }
 
+// Creates a new invalid input signal.
+static value_t new_invalid_input_signal() {
+  return new_signal(scInvalidInput);
+}
+
 #endif // _SIGNALS

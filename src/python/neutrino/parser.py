@@ -236,6 +236,10 @@ class Parser(object):
       self.expect_operation('==')
       guard_value = self.parse_atomic_expression()
       guard = ast.Guard.eq(guard_value)
+    elif self.at_word('is'):
+      self.expect_word('is')
+      guard_value = self.parse_atomic_expression()
+      guard = ast.Guard.is_(guard_value)
     result = ast.Parameter(name, tags, guard)
     return result
 

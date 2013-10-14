@@ -103,3 +103,22 @@ entry_point (1).foo(19).print();
 -- OUTPUT:
 19
 -- END
+
+-- INPUT:
+def @This := @pytrino:new_protocol("This");
+def ($this).foo() => 6;
+def ($this is @This).foo() => 7;
+entry_point (1).foo().print();
+-- OUTPUT:
+6
+-- END
+
+-- INPUT:
+def @This := @pytrino:new_protocol("This");
+def @obj := @pytrino:new_instance(@This);
+def ($this).foo() => 6;
+def ($this is @This).foo() => 7;
+entry_point @obj.foo().print();
+-- OUTPUT:
+7
+-- END

@@ -207,7 +207,7 @@ static value_t object_serialize(value_t value, serialize_state_t *state) {
     case ofInstance:
       return instance_serialize(value, state);
     default:
-      return new_signal(scInvalidInput);
+      return new_invalid_input_signal();
   }
 }
 
@@ -377,7 +377,8 @@ static value_t reference_deserialize(deserialize_state_t *state) {
 }
 
 static value_t value_deserialize(deserialize_state_t *state) {
-  switch (byte_stream_read(state->in)) {
+  byte_t op = byte_stream_read(state->in);
+  switch (op) {
     case pInt32:
       return int32_deserialize(state->in);
     case pNull:
@@ -399,13 +400,13 @@ static value_t value_deserialize(deserialize_state_t *state) {
     case pEnvironment:
       return environment_deserialize(state);
     default:
-      return new_signal(scInvalidInput);
+      return new_invalid_input_signal();
   }
 }
 
 // Always report invalid input.
 static value_t invalid_input_mapping(value_t value, runtime_t *runtime, void *data) {
-  return new_signal(scInvalidInput);
+  return new_invalid_input_signal();
 }
 
 value_t plankton_deserialize(runtime_t *runtime, value_mapping_t *access_or_null,

@@ -1402,9 +1402,7 @@ void protocol_print_atomic_on(value_t value, string_buffer_t *buf) {
     string_buffer_printf(buf, "#<protocol>");
   } else {
     // We print the display name even though it's strictly against the rules
-    // for an atomic print function, but since we've checked that it isn't
-    // a protocol itself it shouldn't be possible to end up in a cycle and it
-    // makes debugging easier.
+    // for an atomic print function.
     string_buffer_printf(buf, "#<protocol: ");
     value_print_atomic_on(display_name, buf);
     string_buffer_printf(buf, ">");

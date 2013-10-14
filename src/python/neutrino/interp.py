@@ -9,14 +9,25 @@ import ast
 import data
 import types
 
+
+class EvaluateError(Exception):
+
+  def __init__(self, expr):
+    self.expr = expr
+
+
 # Simple visitor that can fake-evaluate simple expressions.
 class EvaluateVisitor(ast.Visitor):
+
+  def visit_ast(self, that):
+    raise EvaluateError(that)
 
   def visit_literal(self, that):
     return that.value
 
   def visit_variable(self, that):
-    return that.namespace.lookup(that.name.path)
+    value = that.namespace.lookup(that.name.path)
+    return value
 
   def visit_invocation(self, that):
     subject = None
@@ -28,7 +39,8 @@ class EvaluateVisitor(ast.Visitor):
       elif arg.tag == data._SELECTOR:
         selector = arg.value.accept(self)
       else:
-        assert False
+        value = arg.value.accept(self)
+        args.append(value)
     assert type(subject) == types.FunctionType
     assert selector == "()"
     return subject(*args)
@@ -37,14 +49,20 @@ class EvaluateVisitor(ast.Visitor):
     return that.value
 
 # Creates a new empty neutrino object.
-def new_neutrino_instance():
-  return data.Instance()
+def new_neutrino_instance(protocol):
+  return data.Instance(protocol)
+
+# Creates a new neutrino protocol.
+def new_neutrino_protocol(display_name):
+  return data.Protocol(display_name)
 
 # Looks up a name that is magically available when doing static evaluation. It's
 # a hack until we get imports working properly.
 def lookup_special_binding(name):
   if name == ('pytrino', 'new_instance'):
     return new_neutrino_instance
+  elif name == ('pytrino', 'new_protocol'):
+    return new_neutrino_protocol
   else:
     return None
 
