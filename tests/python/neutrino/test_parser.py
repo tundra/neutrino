@@ -200,6 +200,11 @@ class ParserTest(unittest.TestCase):
         fpm(nm("this"), eq(lt(8)), ST),
         fpm(nm("name"), eq(lt("foo")), SL)),
       lt(4))))
+    test('def ($this == 8).foo($that == 9) => 4;', ut(0, md(fms(
+        fpm(nm("this"), eq(lt(8)), ST),
+        fpm(nm("name"), eq(lt("foo")), SL),
+        fpm(nm("that"), eq(lt(9)), 0)),
+      lt(4))))
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)
