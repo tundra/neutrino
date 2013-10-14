@@ -13,10 +13,15 @@
 static scope_lookup_callback_t kBottomCallback;
 static scope_lookup_callback_t *bottom_callback = NULL;
 
+static value_t bottom_scope_lookup(value_t symbol, void *data,
+    binding_info_t *info_out) {
+  return new_signal(scNotFound);
+}
+
 // Returns the bottom callback that never finds symbols.
-static scope_lookup_callback_t *get_bottom_callback() {
+scope_lookup_callback_t *scope_lookup_callback_get_bottom() {
   if (bottom_callback == NULL) {
-    scope_lookup_callback_init_bottom(&kBottomCallback);
+    scope_lookup_callback_init(&kBottomCallback, bottom_scope_lookup, NULL);
     bottom_callback = &kBottomCallback;
   }
   return bottom_callback;
@@ -26,15 +31,6 @@ void scope_lookup_callback_init(scope_lookup_callback_t *callback,
     scope_lookup_function_t function, void *data) {
   callback->function = function;
   callback->data = data;
-}
-
-static value_t bottom_scope_lookup(value_t symbol, void *data,
-    binding_info_t *info_out) {
-  return new_signal(scNotFound);
-}
-
-void scope_lookup_callback_init_bottom(scope_lookup_callback_t *callback) {
-  scope_lookup_callback_init(callback, bottom_scope_lookup, NULL);
 }
 
 value_t scope_lookup_callback_call(scope_lookup_callback_t *callback,
@@ -206,8 +202,7 @@ void reusable_scratch_memory_double_alloc(reusable_scratch_memory_t *memory,
 
 value_t assembler_init(assembler_t *assm, runtime_t *runtime,
     scope_lookup_callback_t *scope_callback) {
-  if (scope_callback == NULL)
-    scope_callback = get_bottom_callback();
+  CHECK_FALSE("no scope callback", scope_callback == NULL);
   TRY_SET(assm->value_pool, new_heap_id_hash_map(runtime, 16));
   assm->scope_callback = scope_callback;
   assm->runtime = runtime;

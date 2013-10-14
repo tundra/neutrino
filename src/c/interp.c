@@ -70,7 +70,7 @@ static value_t peek_previous_value(interpreter_state_t *state, size_t size,
 static value_t compile_method(runtime_t *runtime, value_t method) {
   value_t method_ast = get_method_syntax(method);
   assembler_t assm;
-  TRY(assembler_init(&assm, runtime, NULL));
+  TRY(assembler_init(&assm, runtime, scope_lookup_callback_get_bottom()));
   E_BEGIN_TRY_FINALLY();
     E_TRY_DEF(code, compile_method_body(&assm, method_ast));
     E_RETURN(code);

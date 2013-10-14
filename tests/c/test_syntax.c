@@ -13,7 +13,7 @@ TEST(syntax, emitting) {
 
   value_t ast = new_heap_literal_ast(runtime, runtime_bool(runtime, true));
   assembler_t assm;
-  ASSERT_SUCCESS(assembler_init(&assm, runtime, NULL));
+  ASSERT_SUCCESS(assembler_init(&assm, runtime, scope_lookup_callback_get_bottom()));
   ASSERT_SUCCESS(emit_value(ast, &assm));
   assembler_emit_return(&assm);
   value_t code = assembler_flush(&assm);

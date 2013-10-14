@@ -15,7 +15,8 @@ TEST(interp, binding_info_size) {
 // expected value.
 static void assert_ast_value(runtime_t *runtime, variant_t expected,
     value_t ast) {
-  value_t code_block = compile_expression(runtime, ast, NULL);
+  value_t code_block = compile_expression(runtime, ast,
+      scope_lookup_callback_get_bottom());
   value_t result = run_code_block_until_signal(runtime, code_block);
   ASSERT_VALEQ(variant_to_value(runtime, expected), result);
 }
@@ -111,7 +112,8 @@ TEST(interp, execution) {
 // specified signal.
 static void assert_compile_failure(runtime_t *runtime, value_t ast,
     invalid_syntax_cause_t cause) {
-  value_t result = compile_expression(runtime, ast, NULL);
+  value_t result = compile_expression(runtime, ast,
+      scope_lookup_callback_get_bottom());
   ASSERT_SIGNAL(scInvalidSyntax, result);
   ASSERT_EQ(cause, get_invalid_syntax_signal_cause(result));
 }
