@@ -66,7 +66,7 @@ value_t add_methodspace_builtin_method(runtime_t *runtime, value_t space,
   // Build the implementation.
   E_BEGIN_TRY_FINALLY();
     assembler_t assm;
-    E_TRY(assembler_init(&assm, runtime, NULL));
+    E_TRY(assembler_init(&assm, runtime, scope_lookup_callback_get_bottom()));
     E_TRY(assembler_emit_builtin(&assm, implementation));
     E_TRY(assembler_emit_return(&assm));
     E_TRY_DEF(code_block, assembler_flush(&assm));
@@ -86,7 +86,7 @@ value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
   CHECK_FAMILY(ofProtocol, receiver);
   // Build the implementation.
   assembler_t assm;
-  TRY(assembler_init(&assm, runtime, NULL));
+  TRY(assembler_init(&assm, runtime, scope_lookup_callback_get_bottom()));
   TRY(emitter(&assm));
   TRY(assembler_emit_return(&assm));
   TRY_DEF(code_block, assembler_flush(&assm));

@@ -51,14 +51,14 @@ typedef struct {
 void scope_lookup_callback_init(scope_lookup_callback_t *callback,
     scope_lookup_function_t function, void *data);
 
-// Initializes a scope lookup callback to be the bottom scope which has no
-// symbols.
-void scope_lookup_callback_init_bottom(scope_lookup_callback_t *callback);
-
 // Invokes a scope lookup callback with a symbol. The result will be stored in
 // the info-out parameter. If there's any problem the result will be a signal.
 value_t scope_lookup_callback_call(scope_lookup_callback_t *callback,
     value_t symbol, binding_info_t *info_out);
+
+// Returns a "bottom" scope lookup callback that is always empty. This will
+// always return the same value.
+scope_lookup_callback_t *scope_lookup_callback_get_bottom();
 
 // A block of reusable scratch memory. It can be used to grab a block of memory
 // of a given size without worrying about releasing it. Just be sure not to
