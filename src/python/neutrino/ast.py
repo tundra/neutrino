@@ -59,7 +59,7 @@ class Visitor(object):
   def visit_guard(self, that):
     self.visit_ast(that)
 
-  def visit_past_unquote(self, that):
+  def visit_quote(self, that):
     self.visit_ast(that)
 
 
@@ -313,7 +313,7 @@ class Guard(object):
     if value is None:
       self.value = None
     else:
-      self.value = PastUnquote(-1, value)
+      self.value = Quote(-1, value)
 
   def accept(self, visitor):
     visitor.visit_guard(self)
@@ -562,7 +562,7 @@ class Unit(object):
 
 @plankton.substitute
 @plankton.serializable()
-class PastUnquote(object):
+class Quote(object):
 
   def __init__(self, stage=None, ast=None):
     self.stage = stage
@@ -570,7 +570,7 @@ class PastUnquote(object):
     self.value = None
 
   def accept(self, visitor):
-    return visitor.visit_past_unquote(self)
+    return visitor.visit_quote(self)
 
   def traverse(self, visitor):
     self.ast.accept(visitor)

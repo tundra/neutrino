@@ -40,6 +40,9 @@ class Token(object):
   # End-of-input marker.
   END = 'end'
 
+  # Quote/unquote marker
+  QUOTE = 'quote'
+
   # This token does not act as a delimiter in any way.
   NO_DELIMITER = {'is_delimiter': False, 'is_explicit': False}
 
@@ -109,6 +112,10 @@ class Token(object):
   @staticmethod
   def end(delimiter=NO_DELIMITER):
     return Token(Token.END, None, delimiter)
+
+  @staticmethod
+  def quote(delta, delimiter=NO_DELIMITER):
+    return Token(Token.QUOTE, delta, delimiter)
 
 
 # Keeps track of state while parsing input.
@@ -212,24 +219,28 @@ class Tokenizer(object):
   # Scans over the next structured identifier, semis and all.
   def scan_identifier(self, delim):
     if self.current() == '$':
-      phase = 0
+      stage = 0
       direction = 1
       char = '$'
     else:
       assert self.current() == '@'
-      phase = -1
+      stage = -1
       direction = -1
       char = '@'
     self.advance()
-    while self.current() == char:
-      phase += direction
+    while self.has_more() and self.current() == char:
+      stage += direction
       self.advance()
     start = self.cursor
     while self.has_more() and (self.is_alpha(self.current()) or self.current() == ':'):
       self.advance()
     end = self.cursor
-    value = self.slice(start, end).split(':')
-    return Token.identifier(ast.Name(phase, value), delim)
+    combined = self.slice(start, end)
+    if len(combined) == 0:
+      return Token.quote(stage, delim)
+    else:
+      value = combined.split(':')
+      return Token.identifier(ast.Name(stage, value), delim)
 
   # Is this a character that is allowed to follow a .?
   def is_named_operator_char(self, value):

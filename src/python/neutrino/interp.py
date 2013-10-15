@@ -45,7 +45,7 @@ class EvaluateVisitor(ast.Visitor):
     assert selector == "()"
     return subject(*args)
 
-  def visit_past_unquote(self, that):
+  def visit_quote(self, that):
     return that.value
 
 # Creates a new empty neutrino object.

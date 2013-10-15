@@ -13,7 +13,7 @@ class PastVariableResolver(ast.Visitor):
   def __init__(self, unit):
     self.unit = unit
 
-  def visit_past_unquote(self, that):
+  def visit_quote(self, that):
     that.ast.accept(self)
     if that.stage >= 0:
       # If the unquote is not in the past there's nothing to do.

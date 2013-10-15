@@ -12,6 +12,7 @@ op = Token.operation
 tg = Token.tag
 lt = Token.literal
 ed = Token.end
+qt = Token.quote
 
 def id(phase, *names):
   return Token.identifier(ast.Name(phase, list(names)))
@@ -84,6 +85,15 @@ class TokenTest(unittest.TestCase):
     test("@@foo:bar", nm(-2, "foo", "bar"));
     test("@@foo", nm(-2, "foo"));
 
+  def test_quote(self):
+    test = self.run_test
+    test("@ foo", qt(-1), wd("foo"))
+    test("@", qt(-1))
+    test("@@", qt(-2))
+    test("@@@", qt(-3))
+    test("$", qt(0))
+    test("$$", qt(1))
+    test("$$$", qt(2))
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)

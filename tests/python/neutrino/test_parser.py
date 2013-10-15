@@ -12,7 +12,7 @@ md = lambda s, b: ast.MethodDeclaration(ast.Method(s, b))
 fpm = lambda n, g, *t: ast.Parameter(n, t, g)
 pm = lambda n, *t: fpm(n, ast.Guard.any(), *t)
 sq = lambda *e: ast.Sequence(e)
-pu = ast.PastUnquote
+qt = ast.Quote
 eq = ast.Guard.eq
 is_ = ast.Guard.is_
 any = ast.Guard.any
@@ -105,8 +105,8 @@ class ParserTest(unittest.TestCase):
     test('1', lt(1))
     test('"foo"', lt('foo'))
     test('$foo', id('foo'))
-    test('@foo', pu(-1, id('foo', -1)))
-    test('@foo:bar', pu(-1, id(['foo', 'bar'], -1)))
+    test('@foo', qt(-1, id('foo', -1)))
+    test('@foo:bar', qt(-1, id(['foo', 'bar'], -1)))
     test('(1)', lt(1))
     test('((($foo)))', id('foo'))
     test('[]', ar())
@@ -208,10 +208,18 @@ class ParserTest(unittest.TestCase):
       lt(4))))
     test('def ($this is @This).foo() => 4;', mu(
       (0, [md(fms(
-              fpm(nm("this"), is_(pu(-1, id("This", -1))), ST),
+              fpm(nm("this"), is_(qt(-1, id("This", -1))), ST),
               fpm(nm("name"), eq(lt("foo")), SL)),
             lt(4))]),
       (-1, [])))
+
+  def test_quote(self):
+    test = self.check_expression
+    test('@(1)', qt(-1, lt(1)))
+    test('@(1 + 2)', qt(-1, bn(lt(1), '+', lt(2))))
+    test('@@(1 + 2)', qt(-2, bn(lt(1), '+', lt(2))))
+    test('@@@(1 + 2)', qt(-3, bn(lt(1), '+', lt(2))))
+    test('@(1 + @(2))', qt(-1, bn(lt(1), '+', qt(-1, lt(2)))))
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)
