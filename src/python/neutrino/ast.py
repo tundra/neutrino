@@ -310,12 +310,8 @@ class Guard(object):
   @plankton.field("value")
   def __init__(self, type=None, value=None):
     self.type = type
-    # TODO: this is just me not being clear on how quoting should work with
-    #   guard values. I should really sort that out.
     if value is None:
       self.value = None
-    elif isinstance(value, PastUnquote):
-      self.value = value
     else:
       self.value = PastUnquote(-1, value)
 
@@ -327,7 +323,10 @@ class Guard(object):
       self.value.accept(visitor)
 
   def __str__(self):
-    return "%s(%s)" % (self.type, self.value)
+    if self.value is None:
+      return "%s()" % self.type
+    else:
+      return "%s(%s)" % (self.type, self.value.ast)
 
   @staticmethod
   def any():
