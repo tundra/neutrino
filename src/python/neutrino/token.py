@@ -37,6 +37,9 @@ class Token(object):
   # Unexpected input.
   ERROR = 'error'
 
+  # End-of-input marker.
+  END = 'end'
+
   # This token does not act as a delimiter in any way.
   NO_DELIMITER = {'is_delimiter': False, 'is_explicit': False}
 
@@ -102,6 +105,10 @@ class Token(object):
   @staticmethod
   def error(value, delimiter=NO_DELIMITER):
     return Token(Token.ERROR, value, delimiter)
+
+  @staticmethod
+  def end(delimiter=NO_DELIMITER):
+    return Token(Token.END, None, delimiter)
 
 
 # Keeps track of state while parsing input.
@@ -295,4 +302,5 @@ def tokenize(input):
   result = []
   while tokenizer.has_more():
     result.append(tokenizer.scan_token())
+  result.append(Token.end(tokenizer.next_delimiter))
   return result
