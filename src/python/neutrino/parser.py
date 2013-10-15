@@ -24,7 +24,7 @@ class Parser(object):
 
   # Does this parser have more tokens to process?
   def has_more(self):
-    return self.cursor < len(self.tokens)
+    return not self.current().has_type(Token.END)
 
   # Advances to the next token.
   def advance(self):
@@ -365,12 +365,13 @@ class Parser(object):
   # Raises an error if the current token is not a valid statement delimiter. If
   # the delimiter is explicit consumes it.
   def expect_statement_delimiter(self):
-    if not self.has_more():
-      raise self.new_syntax_error()
+    # Don't check explicitly for has-more since we may be at the end where the
+    # end token is an implicit delimiter.
     current = self.current()
     if not current.is_delimiter():
       raise self.new_syntax_error()
-    if current.is_explicit_delimiter():
+    # Advance over any explicit delimiters but only if it's not the end marker.
+    if self.has_more() and current.is_explicit_delimiter():
       self.advance()
 
   # <sequence expression>

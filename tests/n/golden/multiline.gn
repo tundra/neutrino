@@ -15,3 +15,14 @@ entry_point "4".print();
 -- OUTPUT:
 "4"
 -- END
+
+-- INPUT:
+def $x := 4;
+entry_point {
+  $x.print();
+  $x.print();
+}
+-- OUTPUT:
+4
+4
+-- END

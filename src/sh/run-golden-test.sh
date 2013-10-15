@@ -97,8 +97,12 @@ while read LINE; do
     # There's already some input but no output clause append to the input.
     INPUT="$INPUT $LINE"
   elif [ $HAS_INPUT -eq 1 -a $HAS_OUTPUT -eq 1 -a $HAS_END -eq 0 ]; then
-    # There's already some output but no end clause append to the output.
-    OUTPUT="$OUTPUT $LINE"
+    # There's already some output but no end clause; append to the output.
+    if [ "$OUTPUT" != "" ]; then
+      # Separate output lines by newline, except don't add leading newlines.
+      OUTPUT="$OUTPUT\n"
+    fi
+    OUTPUT="$OUTPUT$LINE"
   elif [ -n "$LINE" ]; then
     # Any nonempty line that didn't match above is an error; report it.
     printf "Unexpected line '%s'\\n" "$LINE"

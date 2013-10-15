@@ -11,6 +11,7 @@ pt = Token.punctuation
 op = Token.operation
 tg = Token.tag
 lt = Token.literal
+ed = Token.end
 
 def id(phase, *names):
   return Token.identifier(ast.Name(phase, list(names)))
@@ -20,7 +21,10 @@ class TokenTest(unittest.TestCase):
 
   def run_test(self, input, *expected):
     found = tokenize(input)
-    self.assertEquals(list(expected), found)
+    extended = list(expected)
+    if not extended[-1].has_type(Token.END):
+      extended.append(Token.end())
+    self.assertEquals(extended, found)
 
   def test_simple_tokens(self):
     test = self.run_test
@@ -37,7 +41,8 @@ class TokenTest(unittest.TestCase):
     test("+ - * / % < > =", op("+"), op("-"), op("*"), op("/"), op("%"),
         op("<"), op(">"), op("="))
     test("$foo + $bar", id(0, "foo"), op("+"), id(0, "bar"))
-    test("(){};", pt('('), pt(')'), pt('{'), pt('}'), pt(';', Token.EXPLICIT_DELIMITER))
+    test("(){};", pt('('), pt(')'), pt('{'), pt('}'), pt(';', Token.EXPLICIT_DELIMITER),
+        ed(Token.IMPLICIT_DELIMITER))
     test("foo:", tg("foo"))
     test("0:", tg(0))
     test("10", lt(10))
@@ -45,7 +50,7 @@ class TokenTest(unittest.TestCase):
     test("10:", tg(10))
     test("\"boo\"", lt("boo"))
     test("def $x := 4 ;", wd("def"), id(0, "x"), pt(":="), lt(4),
-        pt(';', Token.EXPLICIT_DELIMITER))
+        pt(';', Token.EXPLICIT_DELIMITER), ed(Token.IMPLICIT_DELIMITER))
     test("for $i in 0 -> 10", wd("for"), id(0, "i"), wd("in"), lt(0),
         op("->"), lt(10))
     test("+ - * /", op("+"), op("-"), op("*"), op("/"))
@@ -58,8 +63,9 @@ class TokenTest(unittest.TestCase):
 
   def check_name(self, input, expected):
     tokens = tokenize(input)
-    self.assertEquals(1, len(tokens))
+    self.assertEquals(2, len(tokens))
     self.assertEquals(expected, tokens[0].value)
+    self.assertTrue(tokens[1].has_type(Token.END))
 
   def test_name(self):
     test = self.check_name
