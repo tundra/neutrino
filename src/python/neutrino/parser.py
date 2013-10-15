@@ -311,7 +311,7 @@ class Parser(object):
     namespace = stage.get_namespace()
     variable = ast.Variable(name=name, namespace=namespace)
     if name.stage < 0:
-      return ast.PastUnquote(stage_index, variable)
+      return ast.Quote(stage_index, variable)
     else:
       return variable
 
@@ -342,8 +342,17 @@ class Parser(object):
       return ast.Literal(True)
     elif self.at_word('false'):
       return ast.Literal(False)
+    elif self.at_type(Token.QUOTE):
+      return self.parse_quote()
     else:
       raise self.new_syntax_error()
+
+  def parse_quote(self):
+    stage = self.expect_type(Token.QUOTE)
+    self.expect_punctuation('(')
+    value = self.parse_expression()
+    self.expect_punctuation(')')
+    return ast.Quote(stage, value)
 
   # <array expression>
   #   -> "[" <expression> *: "," "]"
