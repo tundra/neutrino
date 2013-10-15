@@ -1,0 +1,15 @@
+-- INPUT:
+entry_point {
+  @(1 + 1).print();
+  @("a" + "b").print();
+  @(1 - 2).print();
+  @(2 * 3).print();
+  @(15 / 3).print();
+}
+-- OUTPUT:
+2
+"ab"
+-1
+6
+5
+-- END

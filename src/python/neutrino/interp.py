@@ -7,6 +7,7 @@
 
 import ast
 import data
+import operator
 import types
 
 
@@ -29,6 +30,14 @@ class EvaluateVisitor(ast.Visitor):
     value = that.namespace.lookup(that.name.path)
     return value
 
+  # Map from neutrino operator names to the python implementations
+  OPERATOR_MAP = {
+    "+": operator.add,
+    "-": operator.sub,
+    "*": operator.mul,
+    "/": operator.div
+  }
+
   def visit_invocation(self, that):
     subject = None
     selector = None
@@ -41,9 +50,14 @@ class EvaluateVisitor(ast.Visitor):
       else:
         value = arg.value.accept(self)
         args.append(value)
-    assert type(subject) == types.FunctionType
-    assert selector == "()"
-    return subject(*args)
+    if isinstance(subject, types.FunctionType):
+      assert selector == "()"
+      return subject(*args)
+    elif selector in EvaluateVisitor.OPERATOR_MAP:
+      op = EvaluateVisitor.OPERATOR_MAP[selector]
+      return op(subject, *args)
+    else:
+      assert False
 
   def visit_quote(self, that):
     return that.value
