@@ -5,12 +5,14 @@ entry_point $x.print();
 4
 -- END
 
+
 -- INPUT:
 def @x := 8;
 entry_point @x.print();
 -- OUTPUT:
 8
 -- END
+
 
 -- INPUT:
 def @x := 12;
@@ -20,9 +22,131 @@ entry_point ($y).print();
 12
 -- END
 
+
 -- INPUT:
 def @x := 16;
 entry_point ((fn ($y) => (@x + $y))(3)).print();
 -- OUTPUT:
 19
+-- END
+
+
+-- INPUT:
+def @@ppx := 12;
+def @@ppy := @@ppx;
+def @@ppz := @@ppy;
+def @px := @@ppx;
+def @py := @px;
+def @pz := @py;
+def $x := @px;
+def $y := $x;
+def $z := $y;
+entry_point {
+  @@ppx.print();
+  @@ppy.print();
+  @@ppz.print();
+  @px.print();
+  @py.print();
+  @pz.print();
+  $x.print();
+  $y.print();
+  $z.print();
+}
+-- OUTPUT:
+12
+12
+12
+12
+12
+12
+12
+12
+12
+-- END
+
+
+-- INPUT:
+def @@x := 12;
+def @@y := 13;
+def @@z := 14;
+def @x := 15;
+def @y := 16;
+def @z := 17;
+def $x := 18;
+def $y := 19;
+def $z := 20;
+entry_point {
+  @@x.print();
+  @@y.print();
+  @@z.print();
+  @x.print();
+  @y.print();
+  @z.print();
+  $x.print();
+  $y.print();
+  $z.print();
+}
+-- OUTPUT:
+12
+13
+14
+15
+16
+17
+18
+19
+20
+-- END
+
+
+-- INPUT:
+def $x := "a";
+def $y := "b";
+def $z := "c";
+def @x := "d";
+def @y := "e";
+def @z := "f";
+def @@x := "g";
+def @@y := "h";
+def @@z := "i";
+entry_point {
+  @@x.print();
+  @@y.print();
+  @@z.print();
+  @x.print();
+  @y.print();
+  @z.print();
+  $x.print();
+  $y.print();
+  $z.print();
+}
+-- OUTPUT:
+"g"
+"h"
+"i"
+"d"
+"e"
+"f"
+"a"
+"b"
+"c"
+-- END
+
+
+-- INPUT:
+def $a := @b;
+def @b := @@c;
+def @@c := @@@d;
+def @@@d := 8;
+entry_point {
+  $a.print();
+  @b.print();
+  @@c.print();
+  @@@d.print();
+}
+-- OUTPUT:
+8
+8
+8
+8
 -- END
