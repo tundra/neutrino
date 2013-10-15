@@ -560,6 +560,8 @@ class Unit(object):
     return "(unit %s)" % " ".join(stage_strs)
 
 
+# A quote/unquote. The stage indicates which direction to quote in -- less than
+# 0 means unquote, greater than means quote.
 @plankton.substitute
 @plankton.serializable()
 class Quote(object):
