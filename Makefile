@@ -21,6 +21,7 @@ CHECKS=on
 # Which flavor of OS we're on.
 OS=posix
 
+-include .default.cfg
 -include config/$(CONFIG).cfg
 
 ifeq ($(VALGRIND),on)
