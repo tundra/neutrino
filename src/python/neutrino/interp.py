@@ -54,6 +54,8 @@ class EvaluateVisitor(ast.Visitor):
       assert selector == "()"
       return subject(*args)
     elif selector in EvaluateVisitor.OPERATOR_MAP:
+      # This bleeds python semantics into how the operators work. Don't (don't!)
+      # depend on anything that's not certain to also work in neutrino.
       op = EvaluateVisitor.OPERATOR_MAP[selector]
       return op(subject, *args)
     else:
