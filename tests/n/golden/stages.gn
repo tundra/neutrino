@@ -33,14 +33,14 @@ entry_point ((fn ($y) => (@x + $y))(3)).print();
 
 -- INPUT:
 def @@ppx := 12;
-def @@ppy := @@ppx;
-def @@ppz := @@ppy;
-def @px := @@ppx;
-def @py := @px;
-def @pz := @py;
-def $x := @px;
-def $y := $x;
-def $z := $y;
+def @@ppy := @@ppx + 1;
+def @@ppz := @@ppy + 2;
+def @px := @@ppx + 3;
+def @py := @px + 4;
+def @pz := @py + 5;
+def $x := @px + 6;
+def $y := $x + 7;
+def $z := $y + 8;
 entry_point {
   @@ppx.print();
   @@ppy.print();
@@ -54,14 +54,14 @@ entry_point {
 }
 -- OUTPUT:
 12
-12
-12
-12
-12
-12
-12
-12
-12
+13
+15
+15
+19
+24
+21
+28
+36
 -- END
 
 
@@ -100,12 +100,12 @@ entry_point {
 
 
 -- INPUT:
-def $x := "a";
-def $y := "b";
-def $z := "c";
-def @x := "d";
-def @y := "e";
-def @z := "f";
+def $x := @x + "a";
+def $y := @y + "b";
+def $z := @z + "c";
+def @x := @@x + "d";
+def @y := @@y + "e";
+def @z := @@z + "f";
 def @@x := "g";
 def @@y := "h";
 def @@z := "i";
@@ -124,12 +124,12 @@ entry_point {
 "g"
 "h"
 "i"
-"d"
-"e"
-"f"
-"a"
-"b"
-"c"
+"gd"
+"he"
+"if"
+"gda"
+"heb"
+"ifc"
 -- END
 
 
