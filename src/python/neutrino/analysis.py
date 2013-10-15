@@ -90,7 +90,8 @@ class ScopeVisitor(ast.Visitor):
     for (index, stage) in that.get_stages():
       for element in stage.elements:
         element.accept(self)
-    that.entry_point.accept(self)
+    if not that.entry_point is None:
+      that.entry_point.accept(self)
 
   def visit_namespace_declaration(self, that):
     that.value.accept(self)

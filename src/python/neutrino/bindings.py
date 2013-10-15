@@ -41,4 +41,5 @@ def bind(unit):
       # visible to later bindings.
       element.accept(resolver)
       element.apply(stage, helper)
-  unit.entry_point.accept(resolver)
+  if not unit.entry_point is None:
+    unit.entry_point.accept(resolver)

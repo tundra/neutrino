@@ -25,6 +25,7 @@ class Main(object):
   def __init__(self):
     self.args = None
     self.flags = None
+    self.modules = {}
 
   # Builds and returns a new option parser for the flags understood by this
   # script.
@@ -35,6 +36,7 @@ class Main(object):
     parser.add_option('--filter', action='store_true', default=False)
     parser.add_option('--base64', action='store_true', default=False)
     parser.add_option('--disass', action='store_true', default=False)
+    parser.add_option('--module', action='append', default=[])
     return parser
 
   # Parses the script arguments, storing the values in the appropriate fields.
@@ -65,10 +67,24 @@ class Main(object):
   # Main entry-point.
   def run(self):
     self.parse_arguments()
+    self.load_modules()
     if self.run_filter():
       return
     self.run_expressions()
     self.run_programs()
+
+  # Load any referenced modules.
+  def load_modules(self):
+    for arg in self.flags.module:
+      filename = os.path.basename(arg)
+      (name, ext) = os.path.splitext(filename)
+      contents = None
+      with open(arg, "rt") as stream:
+        contents = stream.read()
+      tokens = token.tokenize(contents)
+      unit = parser.Parser(tokens).parse_program()
+      module = self.compile_unit(unit)
+      self.modules[name] = module
 
   # Processes any --expression arguments.
   def run_expressions(self):
