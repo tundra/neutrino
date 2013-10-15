@@ -65,13 +65,15 @@ trim_space() {
 check_result() {
   EXPECTED=$(trim_space "$1")
   FOUND="$2"
-  INPUT="$3"
+  INPUT=$(trim_space "$3")
   if [ "$EXPECTED" != "$FOUND" ]; then
     # Test failed. Display an error.
     echo
     printf "Error on input '%s':\\n" "$INPUT"
     printf "  Expected: '%s'\\n" "$EXPECTED"
     printf "  Found: '%s'\\n" "$FOUND"
+    COMMAND="$4"
+    printf "  Compile: $COMMAND '$INPUT' --base64\\n"
     exit 1
   fi
 }
@@ -111,8 +113,9 @@ while read LINE; do
   if [ $HAS_INPUT -eq 1 -a $HAS_VALUE -eq 1 ]; then
     # If we now have both an INPUT and a VALUE line run the test.
     print_progress
-    FOUND=$(./src/python/neutrino/main.py --expression "$INPUT" | $EXECUTABLE --print-value - 2>&1)
-    check_result "$VALUE" "$FOUND" "$INPUT"
+    COMMAND="./src/python/neutrino/main.py --expression"
+    FOUND=$($COMMAND "$INPUT" | $EXECUTABLE --print-value - 2>&1)
+    check_result "$VALUE" "$FOUND" "$INPUT" "$COMMAND"
     INPUT=
     HAS_INPUT=0
     VALUE=
@@ -120,8 +123,9 @@ while read LINE; do
   elif [ $HAS_INPUT -eq 1 -a $HAS_OUTPUT -eq 1 -a $HAS_END -eq 1 ]; then
     # If we now have both an INPUT and an OUTPUT line run the test.
     print_progress
-    FOUND=$(./src/python/neutrino/main.py --program "$INPUT" | $EXECUTABLE - 2>&1)
-    check_result "$OUTPUT" "$FOUND" "$INPUT"
+    COMMAND="./src/python/neutrino/main.py --program"
+    FOUND=$($COMMAND "$INPUT" | $EXECUTABLE - 2>&1)
+    check_result "$OUTPUT" "$FOUND" "$INPUT" "$COMMAND"
     INPUT=
     HAS_INPUT=0
     OUTPUT=

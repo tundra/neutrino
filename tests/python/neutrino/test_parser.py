@@ -208,7 +208,7 @@ class ParserTest(unittest.TestCase):
       lt(4))))
     test('def ($this is @This).foo() => 4;', mu(
       (0, [md(fms(
-              fpm(nm("this"), is_(id("This", -1)), ST),
+              fpm(nm("this"), is_(pu(-1, id("This", -1))), ST),
               fpm(nm("name"), eq(lt("foo")), SL)),
             lt(4))]),
       (-1, [])))
