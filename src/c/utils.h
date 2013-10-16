@@ -277,10 +277,11 @@ void pseudo_random_shuffle(pseudo_random_t *random, void *data,
 // at certain depths check whether any object occur earlier in the chain. This
 // is expensive in the case of very large object structures but the uses there
 // are for this (printing, hashing, etc.) aren't places where you'd generally
-// see those anyway.
+// see those anyway. For shallow objects it should be pretty low overhead.
 struct cycle_detector_t {
-  // Recursion depth.
-  size_t depth;
+  // How many levels of recursion do we have left before we'll do another cycle
+  // check?
+  size_t remaining_before_check;
   // The entered object.
   value_t value;
   // The enclosing cycle detector.
@@ -296,5 +297,13 @@ void cycle_detector_init_bottom(cycle_detector_t *detector);
 // success.
 value_t cycle_detector_enter(cycle_detector_t *outer, cycle_detector_t *inner,
     value_t value);
+
+// This is how deep we'll recurse into an object before we assume that we're
+// maybe dealing with a circular object.
+static const size_t kCircularObjectDepthThreshold = 16;
+
+// At which depths will we check for circles when looking at a possibly circular
+// object.
+static const size_t kCircularObjectCheckInterval = 8;
 
 #endif // _UTILS

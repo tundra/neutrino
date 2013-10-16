@@ -1,7 +1,6 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-#include "behavior.h"
 #include "check.h"
 #include "globals.h"
 #include "utils.h"
@@ -356,7 +355,7 @@ void pseudo_random_shuffle(pseudo_random_t *random, void *data,
 // --- C y c l e   d e t e c t o r ---
 
 void cycle_detector_init_bottom(cycle_detector_t *detector) {
-  detector->depth = 0;
+  detector->remaining_before_check = kCircularObjectDepthThreshold;
   detector->value = new_signal(scNothing);
   detector->outer = NULL;
 }
@@ -376,12 +375,14 @@ static value_t check_for_circles(cycle_detector_t *detector, value_t value) {
 
 value_t cycle_detector_enter(cycle_detector_t *outer, cycle_detector_t *inner,
     value_t value) {
-  inner->depth = outer->depth + 1;
+  CHECK_REL("invalid outer in cycle check", outer->remaining_before_check, >, 0);
+  inner->remaining_before_check = outer->remaining_before_check - 1;
   inner->value = value;
   inner->outer = outer;
-  if (inner->depth > kCircularObjectDepthThreshold) {
-    if ((outer->depth % kCircularObjectCheckInterval) == 0)
-      return check_for_circles(outer, value);
+  if (inner->remaining_before_check == 0) {
+    inner->remaining_before_check = kCircularObjectCheckInterval;
+    return check_for_circles(outer, value);
+  } else {
+    return success();
   }
-  return success();
 }

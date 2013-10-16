@@ -86,18 +86,6 @@ struct family_behavior_t {
   value_t (*ensure_owned_values_frozen)(runtime_t *runtime, value_t self);
 };
 
-// This is how deep we'll recurse into an object before we assume that we're
-// dealing with a circular object. Some functions like hashing work on circular
-// objects but have a fast case for non-circular ones and use a depth counter
-// to notice circularities. Any time you increase the depth you have to also
-// check the current depth against this limit. If you don't increase the depth
-// you don't have to.
-static const size_t kCircularObjectDepthThreshold = 16;
-
-// At which depths will we check for circles when looking at a possibly circular
-// object.
-static const size_t kCircularObjectCheckInterval = 8;
-
 // Validates an object. Check fails if validation fails except in soft check
 // failure mode where a ValidationFailed signal is returned.
 value_t object_validate(value_t value);
