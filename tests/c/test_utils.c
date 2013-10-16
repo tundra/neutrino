@@ -1,6 +1,7 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "runtime.h"
 #include "test.h"
 #include "utils.h"
 #include "value-inl.h"
@@ -218,4 +219,42 @@ TEST(utils, shuffle) {
   // do.
   ASSERT_EQ(kElemCount, moved_count);
   bit_vector_dispose(&moved);
+}
+
+// Enter values to the given depth.
+static void test_deep_entering(cycle_detector_t *outer, size_t depth) {
+  if (depth == 0)
+    return;
+  cycle_detector_t inner;
+  ASSERT_SUCCESS(cycle_detector_enter(outer, &inner, new_integer(depth)));
+  test_deep_entering(&inner, depth - 1);
+}
+
+// Enter values to the given depth and return whether a cycle was ever detected.
+static bool test_eventual_detection(cycle_detector_t *outer, size_t depth) {
+  if (depth == 0)
+    return false;
+  cycle_detector_t inner;
+  value_t entered = cycle_detector_enter(outer, &inner, new_integer(depth % 17));
+  if (get_value_domain(entered) == vdSignal)
+    return true;
+  return test_eventual_detection(&inner, depth - 1);
+}
+
+TEST(utils, cycle_detector) {
+  CREATE_RUNTIME();
+
+  {
+    cycle_detector_t outer;
+    cycle_detector_init_bottom(&outer);
+    test_deep_entering(&outer, 1024);
+  }
+
+  {
+    cycle_detector_t outer;
+    cycle_detector_init_bottom(&outer);
+    ASSERT_TRUE(test_eventual_detection(&outer, 1024));
+  }
+
+  DISPOSE_RUNTIME();
 }

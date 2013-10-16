@@ -641,23 +641,24 @@ void operation_print_on(value_t self, string_buffer_t *buf) {
   operation_print_atomic_on(self, buf);
 }
 
-value_t operation_transient_identity_hash(value_t self, size_t depth) {
-  if (depth > kCircularObjectDepthThreshold)
-    return new_signal(scMaybeCircular);
+value_t operation_transient_identity_hash(value_t self, cycle_detector_t *outer) {
   value_t value = get_operation_value(self);
   operation_type_t type = get_operation_type(self);
+  cycle_detector_t inner;
+  TRY(cycle_detector_enter(outer, &inner, self));
   TRY_DEF(value_hash, value_transient_identity_hash_cycle_protect(value,
-      depth + 1));
+      &inner));
   return new_integer(~(get_integer_value(value_hash) ^ type));
 }
 
-value_t operation_identity_compare(value_t a, value_t b, size_t depth) {
+value_t operation_identity_compare(value_t a, value_t b,
+    cycle_detector_t *outer) {
   if (get_operation_type(a) != get_operation_type(b))
     return internal_false_value();
-  if (depth > kCircularObjectDepthThreshold)
-    return new_signal(scMaybeCircular);
+  cycle_detector_t inner;
+  TRY(cycle_detector_enter(outer, &inner, a));
   return value_identity_compare_cycle_protect(get_operation_value(a),
-      get_operation_value(b), depth + 1);
+      get_operation_value(b), &inner);
 }
 
 void operation_print_atomic_on(value_t self, string_buffer_t *buf) {

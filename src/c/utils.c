@@ -1,9 +1,11 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "behavior.h"
 #include "check.h"
 #include "globals.h"
 #include "utils.h"
+#include "value-inl.h"
 
 #include <stdarg.h>
 
@@ -348,4 +350,38 @@ void pseudo_random_shuffle(pseudo_random_t *random, void *data,
     // Move the value that used to be target into source.
     memcpy(start + (elem_size * source), scratch, elem_size);
   }
+}
+
+
+// --- C y c l e   d e t e c t o r ---
+
+void cycle_detector_init_bottom(cycle_detector_t *detector) {
+  detector->depth = 0;
+  detector->value = new_signal(scNothing);
+  detector->outer = NULL;
+}
+
+// Check whether the given cycle detector chain contains a cycle the given
+// value is part of.
+static value_t check_for_circles(cycle_detector_t *detector, value_t value) {
+  cycle_detector_t *current = detector;
+  while (current != NULL) {
+    value_t level = current->value;
+    if (level.encoded == value.encoded)
+      return new_signal(scCircular);
+    current = current->outer;
+  }
+  return success();
+}
+
+value_t cycle_detector_enter(cycle_detector_t *outer, cycle_detector_t *inner,
+    value_t value) {
+  inner->depth = outer->depth + 1;
+  inner->value = value;
+  inner->outer = outer;
+  if (inner->depth > kCircularObjectDepthThreshold) {
+    if ((outer->depth % kCircularObjectCheckInterval) == 0)
+      return check_for_circles(outer, value);
+  }
+  return success();
 }

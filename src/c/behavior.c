@@ -136,28 +136,31 @@ static value_t integer_transient_identity_hash(value_t self) {
   return self;
 }
 
-static value_t default_object_transient_identity_hash(value_t value, size_t depth) {
+static value_t default_object_transient_identity_hash(value_t value,
+    cycle_detector_t *detector) {
   return OBJ_ADDR_HASH(value);
 }
 
-static value_t object_transient_identity_hash(value_t self, size_t depth) {
+static value_t object_transient_identity_hash(value_t self,
+    cycle_detector_t *detector) {
   family_behavior_t *behavior = get_object_family_behavior(self);
-  return (behavior->transient_identity_hash)(self, depth);
+  return (behavior->transient_identity_hash)(self, detector);
 }
 
 value_t value_transient_identity_hash(value_t value) {
-  // TODO: catch MaybeCircular signals and calculate the hash in a way that is
-  //   robust against circularities.
-  return value_transient_identity_hash_cycle_protect(value, 0);
+  cycle_detector_t detector;
+  cycle_detector_init_bottom(&detector);
+  return value_transient_identity_hash_cycle_protect(value, &detector);
 }
 
-value_t value_transient_identity_hash_cycle_protect(value_t value, size_t depth) {
+value_t value_transient_identity_hash_cycle_protect(value_t value,
+    cycle_detector_t *detector) {
   value_domain_t domain = get_value_domain(value);
   switch (domain) {
     case vdInteger:
       return integer_transient_identity_hash(value);
     case vdObject:
-      return object_transient_identity_hash(value, depth);
+      return object_transient_identity_hash(value, detector);
     default:
       return new_unsupported_behavior_signal(domain, __ofUnknown__,
           ubTransientIdentityHash);
@@ -171,11 +174,13 @@ static value_t integer_identity_compare(value_t a, value_t b) {
   return to_internal_boolean(a.encoded == b.encoded);
 }
 
-static value_t default_object_identity_compare(value_t a, value_t b, size_t depth) {
+static value_t default_object_identity_compare(value_t a, value_t b,
+    cycle_detector_t *detector) {
   return to_internal_boolean(a.encoded == b.encoded);
 }
 
-static value_t object_identity_compare(value_t a, value_t b, size_t depth) {
+static value_t object_identity_compare(value_t a, value_t b,
+    cycle_detector_t *detector) {
   CHECK_DOMAIN(vdObject, a);
   CHECK_DOMAIN(vdObject, b);
   // Fast case when a and b are the same object.
@@ -186,17 +191,18 @@ static value_t object_identity_compare(value_t a, value_t b, size_t depth) {
   if (a_family != b_family)
     return internal_false_value();
   family_behavior_t *behavior = get_object_family_behavior(a);
-  return (behavior->identity_compare)(a, b, depth);
+  return (behavior->identity_compare)(a, b, detector);
 }
 
 bool value_identity_compare(value_t a, value_t b) {
-  value_t protected = value_identity_compare_cycle_protect(a, b, 0);
-  // TODO: catch MaybeCircular and use an identity that is robust against
-  //   circularities.
+  cycle_detector_t detector;
+  cycle_detector_init_bottom(&detector);
+  value_t protected = value_identity_compare_cycle_protect(a, b, &detector);
   return is_internal_true_value(protected);
 }
 
-value_t value_identity_compare_cycle_protect(value_t a, value_t b, size_t depth) {
+value_t value_identity_compare_cycle_protect(value_t a, value_t b,
+    cycle_detector_t *detector) {
   // First check that they even belong to the same domain. Values can be equal
   // across domains.
   value_domain_t a_domain = get_value_domain(a);
@@ -208,7 +214,7 @@ value_t value_identity_compare_cycle_protect(value_t a, value_t b, size_t depth)
     case vdInteger:
       return integer_identity_compare(a, b);
     case vdObject:
-      return object_identity_compare(a, b, depth);
+      return object_identity_compare(a, b, detector);
     default:
       return internal_false_value();
   }

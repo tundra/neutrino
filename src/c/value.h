@@ -11,6 +11,7 @@
 #include "globals.h"
 
 FORWARD(blob_t);
+FORWARD(cycle_detector_t);
 FORWARD(runtime_t);
 FORWARD(string_t);
 FORWARD(string_buffer_t);
@@ -32,6 +33,7 @@ const char *get_value_domain_name(value_domain_t domain);
 
 // Invokes the given macro for each signal cause.
 #define ENUM_SIGNAL_CAUSES(F)                                                  \
+  F(Circular)                                                                  \
   F(HeapExhausted)                                                             \
   F(InternalFamily)                                                            \
   F(InvalidCast)                                                               \
@@ -39,7 +41,6 @@ const char *get_value_domain_name(value_domain_t domain);
   F(InvalidModeChange)                                                         \
   F(InvalidSyntax)                                                             \
   F(MapFull)                                                                   \
-  F(MaybeCircular)                                                             \
   F(NotComparable)                                                             \
   F(NotFound)                                                                  \
   F(NotDeepFrozen)                                                             \
