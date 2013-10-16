@@ -685,15 +685,25 @@ TEST(value, array_identity) {
 
   value_t v_nv_0 = new_heap_array(runtime, 2);
   set_array_at(v_nv_0, 1, v_nv_0);
-  ASSERT_SIGNAL(scMaybeCircular, value_transient_identity_hash(v_nv_0));
+  ASSERT_SIGNAL(scCircular, value_transient_identity_hash(v_nv_0));
   ASSERT_TRUE(value_identity_compare(v_nv_0, v_nv_0));
 
   value_t v_nv_1 = new_heap_array(runtime, 2);
   set_array_at(v_nv_1, 1, v_nv_1);
-  ASSERT_SIGNAL(scMaybeCircular, value_transient_identity_hash(v_nv_1));
+  ASSERT_SIGNAL(scCircular, value_transient_identity_hash(v_nv_1));
   ASSERT_TRUE(value_identity_compare(v_nv_1, v_nv_1));
 
   ASSERT_FALSE(value_identity_compare(v_nv_0, v_nv_1));
+
+  value_t deep = new_heap_array(runtime, 1);
+  for (size_t i = 0; i < 1024; i++) {
+    value_t new_deep = new_heap_array(runtime, 1);
+    set_array_at(new_deep, 0, deep);
+    deep = new_deep;
+  }
+  ASSERT_TRUE(value_identity_compare(deep, deep));
+  value_t hdeep = value_transient_identity_hash(deep);
+  ASSERT_SUCCESS(hdeep);
 
   DISPOSE_RUNTIME();
 }

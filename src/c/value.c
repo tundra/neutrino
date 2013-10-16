@@ -393,14 +393,14 @@ void get_string_layout(value_t value, object_layout_t *layout) {
   object_layout_set(layout, size, size);
 }
 
-value_t string_transient_identity_hash(value_t value, size_t depth) {
+value_t string_transient_identity_hash(value_t value, cycle_detector_t *outer) {
   string_t contents;
   get_string_contents(value, &contents);
   size_t hash = string_hash(&contents);
   return new_integer(hash);
 }
 
-value_t string_identity_compare(value_t a, value_t b, size_t depth) {
+value_t string_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
   CHECK_FAMILY(ofString, a);
   CHECK_FAMILY(ofString, b);
   string_t a_contents;
@@ -721,32 +721,30 @@ value_t binary_search_pair_array(value_t self, value_t key) {
   return new_signal(scNotFound);
 }
 
-value_t array_transient_identity_hash(value_t value, size_t depth) {
-  if (depth > kCircularObjectDepthThreshold)
-    return new_signal(scMaybeCircular);
+value_t array_transient_identity_hash(value_t value, cycle_detector_t *outer) {
   size_t length = get_array_length(value);
   int64_t result = length;
+  cycle_detector_t inner;
+  TRY(cycle_detector_enter(outer, &inner, value));
   for (size_t i = 0; i < length; i++) {
     value_t elm = get_array_at(value, i);
-    TRY_DEF(hash, value_transient_identity_hash_cycle_protect(elm, depth + 1));
+    TRY_DEF(hash, value_transient_identity_hash_cycle_protect(elm, &inner));
     result = (result << 8) | (result >> 24) | get_integer_value(hash);
   }
   return new_integer(result & ((1LL << 61) - 1LL));
 }
 
-value_t array_identity_compare(value_t a, value_t b, size_t depth) {
+value_t array_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
   size_t length = get_array_length(a);
   size_t b_length = get_array_length(b);
   if (length != b_length)
     return internal_false_value();
-  // Wait as long as possible before doing this check since it's the uncommon
-  // case.
-  if (depth > kCircularObjectDepthThreshold)
-    return new_signal(scMaybeCircular);
+  cycle_detector_t inner;
+  TRY(cycle_detector_enter(outer, &inner, a));
   for (size_t i = 0; i < length; i++) {
     value_t a_elm = get_array_at(a, i);
     value_t b_elm = get_array_at(b, i);
-    TRY_DEF(cmp, value_identity_compare_cycle_protect(a_elm, b_elm, depth + 1));
+    TRY_DEF(cmp, value_identity_compare_cycle_protect(a_elm, b_elm, &inner));
     if (!is_internal_true_value(cmp))
       return cmp;
   }
@@ -1151,12 +1149,12 @@ value_t null_validate(value_t value) {
   return success();
 }
 
-value_t null_transient_identity_hash(value_t value, size_t depth) {
+value_t null_transient_identity_hash(value_t value, cycle_detector_t *outer) {
   static const size_t kNullHash = 0x4323;
   return new_integer(kNullHash);
 }
 
-value_t null_identity_compare(value_t a, value_t b, size_t depth) {
+value_t null_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
   // There is only one null so you should never end up comparing two different
   // ones.
   CHECK_EQ("multiple nulls", a.encoded, b.encoded);
@@ -1213,13 +1211,13 @@ value_t boolean_validate(value_t value) {
   return success();
 }
 
-value_t boolean_transient_identity_hash(value_t value, size_t depth) {
+value_t boolean_transient_identity_hash(value_t value, cycle_detector_t *outer) {
   static const size_t kTrueHash = 0x3213;
   static const size_t kFalseHash = 0x5423;
   return new_integer(get_boolean_value(value) ? kTrueHash : kFalseHash);
 }
 
-value_t boolean_identity_compare(value_t a, value_t b, size_t depth) {
+value_t boolean_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
   // There is only one true and false which are both only equal to themselves.
   return to_internal_boolean(a.encoded == b.encoded);
 }

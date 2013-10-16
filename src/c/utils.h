@@ -269,4 +269,41 @@ void pseudo_random_shuffle(pseudo_random_t *random, void *data,
     size_t elem_count, size_t elem_size);
 
 
+// --- Utility for detecting object cycles ---
+
+// Data used for cycle detection in recursive operations that act on possibly
+// circular data structures. The way circle detection works is to keep the
+// path from the root to the current object on a stack-allocated chain and then
+// at certain depths check whether any object occur earlier in the chain. This
+// is expensive in the case of very large object structures but the uses there
+// are for this (printing, hashing, etc.) aren't places where you'd generally
+// see those anyway. For shallow objects it should be pretty low overhead.
+struct cycle_detector_t {
+  // How many levels of recursion do we have left before we'll do another cycle
+  // check?
+  size_t remaining_before_check;
+  // The entered object.
+  value_t value;
+  // The enclosing cycle detector.
+  cycle_detector_t *outer;
+};
+
+// Initializes the "bottom" cycle detector that has no parents.
+void cycle_detector_init_bottom(cycle_detector_t *detector);
+
+// Checks for cycles using the given outer cycle detector and initialies the
+// given inner cycle detector such that it can be passed along to the children
+// of the given value. If a cycle is detected returns a signal, otherwise
+// success.
+value_t cycle_detector_enter(cycle_detector_t *outer, cycle_detector_t *inner,
+    value_t value);
+
+// This is how deep we'll recurse into an object before we assume that we're
+// maybe dealing with a circular object.
+static const size_t kCircularObjectDepthThreshold = 16;
+
+// At which depths will we check for circles when looking at a possibly circular
+// object.
+static const size_t kCircularObjectCheckInterval = 8;
+
 #endif // _UTILS

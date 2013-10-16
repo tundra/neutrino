@@ -48,14 +48,10 @@ struct family_behavior_t {
   object_family_t family;
   // Function for validating an object.
   value_t (*validate)(value_t value);
-  // Calculates the transient identity hash. The depth parameter is used to
-  // catch cycles -- it is incremented for each recursive call and if recursion
-  // becomes too deep we assume the object may be circular.
-  value_t (*transient_identity_hash)(value_t value, size_t depth);
-  // Returns true iff the two values are identical. The depth parameter is used
-  // to catch cycles -- it is incremented for each recursive call and if
-  // recursion becomes too deep we assume the object may be circular.
-  value_t (*identity_compare)(value_t a, value_t b, size_t depth);
+  // Calculates the transient identity hash.
+  value_t (*transient_identity_hash)(value_t value, cycle_detector_t *detector);
+  // Returns true iff the two values are identical.
+  value_t (*identity_compare)(value_t a, value_t b, cycle_detector_t *detector);
   // Returns a value indicating how a compares relative to b, if this kind of
   // object supports it. If this type doesn't support comparison this field
   // is NULL.
@@ -90,14 +86,6 @@ struct family_behavior_t {
   value_t (*ensure_owned_values_frozen)(runtime_t *runtime, value_t self);
 };
 
-// This is how deep we'll recurse into an object before we assume that we're
-// dealing with a circular object. Some functions like hashing work on circular
-// objects but have a fast case for non-circular ones and use a depth counter
-// to notice circularities. Any time you increase the depth you have to also
-// check the current depth against this limit. If you don't increase the depth
-// you don't have to.
-static const size_t kCircularObjectDepthThreshold = 1024;
-
 // Validates an object. Check fails if validation fails except in soft check
 // failure mode where a ValidationFailed signal is returned.
 value_t object_validate(value_t value);
@@ -118,7 +106,8 @@ value_t value_transient_identity_hash(value_t value);
 // cycles. If the hash of one object is calculated in terms of the hashes of
 // others it must obtain those hashes by calling this, not
 // value_transient_identity_hash.
-value_t value_transient_identity_hash_cycle_protect(value_t value, size_t depth);
+value_t value_transient_identity_hash_cycle_protect(value_t value,
+    cycle_detector_t *detector);
 
 // Returns true iff the two values are identical.
 //
@@ -128,7 +117,8 @@ bool value_identity_compare(value_t a, value_t b);
 
 // Works the same way as value_identity_compare except that it catches potential
 // cycles.
-value_t value_identity_compare_cycle_protect(value_t a, value_t b, size_t depth);
+value_t value_identity_compare_cycle_protect(value_t a, value_t b,
+    cycle_detector_t *detector);
 
 // Returns a value indicating how a and b relate in the total ordering of
 // comparable values. If the values are not both comparable the result is
@@ -177,10 +167,12 @@ ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 #define __DECLARE_FAMILY_FUNCTIONS__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW) \
 value_t family##_validate(value_t value);                                      \
 ID(                                                                            \
-  value_t family##_transient_identity_hash(value_t value, size_t depth);,      \
+  value_t family##_transient_identity_hash(value_t value,                      \
+    cycle_detector_t *detector);,                                              \
   )                                                                            \
 ID(                                                                            \
-  value_t family##_identity_compare(value_t a, value_t b, size_t depth);,      \
+  value_t family##_identity_compare(value_t a, value_t b,                      \
+    cycle_detector_t *detector);,                                              \
   )                                                                            \
 CM(                                                                            \
   value_t family##_ordering_compare(value_t a, value_t b);,                    \
