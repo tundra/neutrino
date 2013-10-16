@@ -6,10 +6,11 @@
 #include "test.h"
 #include "try-inl.h"
 
-#define CHECK_MATCH(is_score, guard, value) do {                               \
+// Checks that scoring value against guard gives a match iff is_match is true.
+#define ASSERT_MATCH(is_match, guard, value) do {                              \
   score_t match;                                                               \
   ASSERT_SUCCESS(guard_match(runtime, guard, value, space, &match));           \
-  ASSERT_EQ(is_score, is_score_match(match));                                  \
+  ASSERT_EQ(is_match, is_score_match(match));                                  \
 } while (false)
 
 TEST(method, identity_guard) {
@@ -21,10 +22,10 @@ TEST(method, identity_guard) {
   value_t id_zero = new_heap_guard(runtime, afFreeze, gtEq, zero);
   value_t id_null = new_heap_guard(runtime, afFreeze, gtEq, null);
 
-  CHECK_MATCH(true, id_zero, zero);
-  CHECK_MATCH(false, id_zero, null);
-  CHECK_MATCH(false, id_null, zero);
-  CHECK_MATCH(true, id_null, null);
+  ASSERT_MATCH(true, id_zero, zero);
+  ASSERT_MATCH(false, id_zero, null);
+  ASSERT_MATCH(false, id_null, zero);
+  ASSERT_MATCH(true, id_null, null);
 
   DISPOSE_RUNTIME();
 }
@@ -35,9 +36,9 @@ TEST(method, any_guard) {
   value_t space = new_heap_methodspace(runtime);
   value_t any_guard = ROOT(runtime, any_guard);
 
-  CHECK_MATCH(true, any_guard, new_integer(0));
-  CHECK_MATCH(true, any_guard, new_integer(1));
-  CHECK_MATCH(true, any_guard, ROOT(runtime, null));
+  ASSERT_MATCH(true, any_guard, new_integer(0));
+  ASSERT_MATCH(true, any_guard, new_integer(1));
+  ASSERT_MATCH(true, any_guard, ROOT(runtime, null));
 
   DISPOSE_RUNTIME();
 }
@@ -89,29 +90,29 @@ TEST(method, simple_is) {
   value_t is_s_str = new_heap_guard(runtime, afFreeze, gtIs, s_str_p);
 
   value_t zero = new_integer(0);
-  CHECK_MATCH(true, is_int, zero);
-  CHECK_MATCH(true, is_obj, zero);
-  CHECK_MATCH(false, is_str, zero);
-  CHECK_MATCH(false, is_s_str, zero);
+  ASSERT_MATCH(true, is_int, zero);
+  ASSERT_MATCH(true, is_obj, zero);
+  ASSERT_MATCH(false, is_str, zero);
+  ASSERT_MATCH(false, is_s_str, zero);
 
   string_t x_str = STR("x");
   value_t x = new_heap_string(runtime, &x_str);
-  CHECK_MATCH(false, is_int, x);
-  CHECK_MATCH(true, is_obj, x);
-  CHECK_MATCH(true, is_str, x);
-  CHECK_MATCH(false, is_s_str, x);
+  ASSERT_MATCH(false, is_int, x);
+  ASSERT_MATCH(true, is_obj, x);
+  ASSERT_MATCH(true, is_str, x);
+  ASSERT_MATCH(false, is_s_str, x);
 
   value_t s_str = new_instance_of(runtime, s_str_p);
-  CHECK_MATCH(false, is_int, s_str);
-  CHECK_MATCH(true, is_obj, s_str);
-  CHECK_MATCH(true, is_str, s_str);
-  CHECK_MATCH(true, is_s_str, s_str);
+  ASSERT_MATCH(false, is_int, s_str);
+  ASSERT_MATCH(true, is_obj, s_str);
+  ASSERT_MATCH(true, is_str, s_str);
+  ASSERT_MATCH(true, is_s_str, s_str);
 
   value_t null = ROOT(runtime, null);
-  CHECK_MATCH(false, is_int, null);
-  CHECK_MATCH(false, is_obj, null);
-  CHECK_MATCH(false, is_str, null);
-  CHECK_MATCH(false, is_s_str, null);
+  ASSERT_MATCH(false, is_int, null);
+  ASSERT_MATCH(false, is_obj, null);
+  ASSERT_MATCH(false, is_str, null);
+  ASSERT_MATCH(false, is_s_str, null);
 
   DISPOSE_RUNTIME();
 }
