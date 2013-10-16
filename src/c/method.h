@@ -92,8 +92,9 @@ void match_info_init(match_info_t *info, score_t *scores, size_t *offsets,
 // The capacity of the match_info argument must be at least large enough to hold
 // info about all the arguments. If the match succeeds it holds the info, if
 // it fails the state is unspecified.
-match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
-    frame_t *frame, value_t space, match_info_t *match_info);
+value_t match_signature(runtime_t *runtime, value_t self, value_t record,
+    frame_t *frame, value_t space, match_info_t *match_info,
+    match_result_t *match_out);
 
 // The outcome of joining two score vectors. The values encode how they matched:
 // if the first bit is set the target was strictly better at some point, if the
@@ -176,10 +177,11 @@ static const score_t gsExtraMatch = 0xFFFFFFFE;
 // anything more specific would match better.
 static const score_t gsAnyMatch = 0xFFFFFFFD;
 
-// Matches the given guard against the given value, returning a score for how
-// well it matched within the given method space.
-score_t guard_match(runtime_t *runtime, value_t guard, value_t value,
-    value_t methodspace);
+// Matches the given guard against the given value, returning a signal that
+// indicates whether the match was successful and, if it was, storing the score
+// in the out argument for how well it matched within the given method space.
+value_t guard_match(runtime_t *runtime, value_t guard, value_t value,
+    value_t methodspace, score_t *score_out);
 
 // Returns true if the given score represents a match.
 bool is_score_match(score_t score);

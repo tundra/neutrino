@@ -25,15 +25,24 @@ class PastVariableResolver(ast.Visitor):
 # Utility that can be used by elements to help apply themselves.
 class BindingHelper(object):
 
+  def __init__(self, modules):
+    self.modules = modules
+
   def evaluate(self, expr):
     return interp.evaluate(expr)
+
+  def lookup_import(self, path):
+    # For now just single-name imports will be good enough.
+    assert len(path) == 1
+    name = path[0]
+    return self.modules[name].module
 
 
 # Apply the various declarations to create the program bindings. This is only
 # an approximation of the proper program element semantics but it'll do for
 # now, possibly until the source compiler is rewritten in neutrino.
-def bind(unit):
-  helper = BindingHelper()
+def bind(unit, modules):
+  helper = BindingHelper(modules)
   resolver = PastVariableResolver(unit)
   for (index, stage) in unit.get_stages():
     for element in stage.elements:

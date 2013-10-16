@@ -99,7 +99,7 @@ class Main(object):
   # Compiles a unit, returning a program.
   def compile_unit(self, unit):
     analysis.analyze(unit)
-    bindings.bind(unit)
+    bindings.bind(unit, self.modules)
     return unit.get_present_program()
 
   def run_parse_input(self, inputs, parse_thunk):

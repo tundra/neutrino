@@ -13,6 +13,7 @@ fpm = lambda n, g, *t: ast.Parameter(n, t, g)
 pm = lambda n, *t: fpm(n, ast.Guard.any(), *t)
 sq = lambda *e: ast.Sequence(e)
 qt = ast.Quote
+im = ast.Import
 eq = ast.Guard.eq
 is_ = ast.Guard.is_
 any = ast.Guard.any
@@ -212,6 +213,13 @@ class ParserTest(unittest.TestCase):
               fpm(nm("name"), eq(lt("foo")), SL)),
             lt(4))]),
       (-1, [])))
+
+  def test_program_imports(self):
+    test = self.check_program
+    test('import $foo;', ut(0, im(nm("foo"))))
+    test('import $foo:bar;', ut(0, im(nm(["foo", "bar"]))))
+    test('import @foo;', ut(-1, im(nm("foo", -1))))
+    test('import @@foo;', ut(-2, im(nm("foo", -2))))
 
   def test_quote(self):
     test = self.check_expression

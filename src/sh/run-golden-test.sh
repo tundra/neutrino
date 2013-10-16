@@ -73,9 +73,26 @@ check_result() {
     printf "  Expected: '%s'\\n" "$EXPECTED"
     printf "  Found: '%s'\\n" "$FOUND"
     COMMAND="$4"
-    printf "  Compile: $COMMAND '$INPUT' --base64\\n"
+    MODULES="$5"
+    printf "  Compile: $COMMAND '$INPUT' $MODULES --base64\\n"
     exit 1
   fi
+}
+
+# Run an individual golden test.
+run_test() {
+  # Load all files in src/n as modules.
+  MODULES=""
+  for FILE in src/n/*.n; do
+    MODULES="$MODULES --module $FILE"
+  done
+  print_progress
+  COMPILE="$1"
+  INPUT="$2"
+  OUTPUT="$3"
+  RUN="$4"
+  FOUND=$($COMPILE "$INPUT" $MODULES | $RUN - 2>&1)
+  check_result "$OUTPUT" "$FOUND" "$INPUT" "$COMPILE" "$MODULES"
 }
 
 while read LINE; do
@@ -112,20 +129,17 @@ while read LINE; do
   fi
   if [ $HAS_INPUT -eq 1 -a $HAS_VALUE -eq 1 ]; then
     # If we now have both an INPUT and a VALUE line run the test.
-    print_progress
     COMMAND="./src/python/neutrino/main.py --expression"
-    FOUND=$($COMMAND "$INPUT" | $EXECUTABLE --print-value - 2>&1)
-    check_result "$VALUE" "$FOUND" "$INPUT" "$COMMAND"
+    run_test "$COMMAND" "$INPUT" "$VALUE" "$EXECUTABLE --print-value"
     INPUT=
     HAS_INPUT=0
     VALUE=
     HAS_VALUE=0
   elif [ $HAS_INPUT -eq 1 -a $HAS_OUTPUT -eq 1 -a $HAS_END -eq 1 ]; then
     # If we now have both an INPUT and an OUTPUT line run the test.
-    print_progress
     COMMAND="./src/python/neutrino/main.py --program"
-    FOUND=$($COMMAND "$INPUT" | $EXECUTABLE - 2>&1)
-    check_result "$OUTPUT" "$FOUND" "$INPUT" "$COMMAND"
+    print_progress
+    run_test "$COMMAND" "$INPUT" "$OUTPUT" "$EXECUTABLE"
     INPUT=
     HAS_INPUT=0
     OUTPUT=

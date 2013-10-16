@@ -62,6 +62,9 @@ class Visitor(object):
   def visit_quote(self, that):
     self.visit_ast(that)
 
+  def visit_import(self, that):
+    self.visit_ast(that)
+
 
 # A constant literal value.
 @plankton.serializable(("ast", "Literal"))
@@ -582,3 +585,26 @@ class Quote(object):
 
   def __str__(self):
     return "(@ %s)" % self.ast
+
+
+class Import(object):
+
+  def __init__(self, name=None):
+    self.name = name
+
+  def get_stage(self):
+    return self.name.stage
+
+  def accept(self, visitor):
+    visitor.visit_import(self)
+
+  def traverse(self, visitor):
+    pass
+
+  def apply(self, program, helper):
+    name = tuple(self.name.path)
+    value = helper.lookup_import(name)
+    program.module.namespace.add_binding(name, value)
+
+  def __str__(self):
+    return "(import %s)" % self.name

@@ -70,8 +70,9 @@ void match_info_init(match_info_t *info, score_t *scores, size_t *offsets,
   info->capacity = capacity;
 }
 
-match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
-    frame_t *frame, value_t space, match_info_t *match_info) {
+value_t match_signature(runtime_t *runtime, value_t self, value_t record,
+    frame_t *frame, value_t space, match_info_t *match_info,
+    match_result_t *result_out) {
   size_t argument_count = get_invocation_record_argument_count(record);
   CHECK_REL("score array too short", argument_count, <=, match_info->capacity);
   // Vector of parameters seen. This is used to ensure that we only see each
@@ -105,7 +106,8 @@ match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
       } else {
         // This signature doesn't allow extra arguments so we bail out.
         bit_vector_dispose(&params_seen);
-        return mrUnexpectedArgument;
+        *result_out = mrUnexpectedArgument;
+        return success();
       }
     }
     CHECK_FALSE("binary search failed", get_value_domain(tags) == vdSignal);
@@ -114,15 +116,17 @@ match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
     if (bit_vector_get_at(&params_seen, index)) {
       // We've now seen two tags that match the same parameter. Bail out.
       bit_vector_dispose(&params_seen);
-      return mrRedundantArgument;
+      *result_out = mrRedundantArgument;
+      return success();
     }
     value_t value = get_invocation_record_argument_at(record, frame, i);
-    score_t score = guard_match(runtime, get_parameter_guard(param), value,
-        space);
+    score_t score;
+    TRY(guard_match(runtime, get_parameter_guard(param), value, space, &score));
     if (!is_score_match(score)) {
       // The guard says the argument doesn't match. Bail out.
       bit_vector_dispose(&params_seen);
-      return mrGuardRejected;
+      *result_out = mrGuardRejected;
+      return success();
     }
     // We got a match! Record the result and move on to the next.
     bit_vector_set_at(&params_seen, index, true);
@@ -135,10 +139,12 @@ match_result_t match_signature(runtime_t *runtime, value_t self, value_t record,
   if (mandatory_seen_count < get_signature_mandatory_count(self)) {
     // All arguments matched but there were mandatory arguments missing so it's
     // no good.
-    return mrMissingArgument;
+    *result_out = mrMissingArgument;
+    return success();
   } else {
     // Everything matched including all mandatories. We're golden.
-    return on_match;
+    *result_out = on_match;
+    return success();
   }
 }
 
@@ -211,42 +217,49 @@ static score_t best_score(score_t a, score_t b) {
   return (compare_scores(a, b) < 0) ? a : b;
 }
 
-static score_t find_best_match(runtime_t *runtime, value_t current,
-    value_t target, score_t current_score, value_t space) {
+static value_t find_best_match(runtime_t *runtime, value_t current,
+    value_t target, score_t current_score, value_t space, score_t *score_out) {
   if (value_identity_compare(current, target)) {
-    return current_score;
+    *score_out = current_score;
+    return success();
   } else {
-    value_t parents = get_protocol_parents(runtime, space, current);
+    TRY_DEF(parents, get_protocol_parents(runtime, space, current));
     size_t length = get_array_buffer_length(parents);
     score_t score = gsNoMatch;
     for (size_t i = 0; i < length; i++) {
       value_t parent = get_array_buffer_at(parents, i);
-      score_t next_score = find_best_match(runtime, parent, target,
-          current_score + 1, space);
+      score_t next_score;
+      TRY(find_best_match(runtime, parent, target, current_score + 1, space,
+          &next_score));
       score = best_score(score, next_score);
     }
-    return score;
+    *score_out = score;
+    return success();
   }
 }
 
-score_t guard_match(runtime_t *runtime, value_t guard, value_t value,
-    value_t space) {
+value_t guard_match(runtime_t *runtime, value_t guard, value_t value,
+    value_t space, score_t *score_out) {
   CHECK_FAMILY(ofGuard, guard);
   switch (get_guard_type(guard)) {
     case gtEq: {
       value_t guard_value = get_guard_value(guard);
       bool match = value_identity_compare(guard_value, value);
-      return match ? gsIdenticalMatch : gsNoMatch;
+      *score_out = (match ? gsIdenticalMatch : gsNoMatch);
+      return success();
     }
     case gtIs: {
-      value_t primary = get_protocol(value, runtime);
+      TRY_DEF(primary, get_protocol(value, runtime));
       value_t target = get_guard_value(guard);
-      return find_best_match(runtime, primary, target, gsPerfectIsMatch, space);
+      return find_best_match(runtime, primary, target, gsPerfectIsMatch, space,
+          score_out);
     }
     case gtAny:
-      return gsAnyMatch;
+      *score_out = gsAnyMatch;
+      return success();
     default:
-      return gsNoMatch;
+      UNREACHABLE("Unknown guard type");
+      return new_signal(scWat);
   }
 }
 
@@ -385,7 +398,7 @@ static void methodspace_lookup_state_swap_offsets(methodspace_lookup_state_t *st
 // Continue a search for a method method locally in the given method space, that
 // is, this does not follow imports and only updates the lookup state, it doesn't
 // return the best match.
-static void lookup_methodspace_local_method(methodspace_lookup_state_t *state,
+static value_t lookup_methodspace_local_method(methodspace_lookup_state_t *state,
     runtime_t *runtime, value_t space, value_t record, frame_t *frame) {
   value_t methods = get_methodspace_methods(space);
   size_t method_count = get_array_buffer_length(methods);
@@ -397,8 +410,9 @@ static void lookup_methodspace_local_method(methodspace_lookup_state_t *state,
   for (size_t current = 0; current < method_count; current++) {
     value_t method = get_array_buffer_at(methods, current);
     value_t signature = get_method_signature(method);
-    match_result_t match = match_signature(runtime, signature, record, frame,
-        space, &match_info);
+    match_result_t match;
+    TRY(match_signature(runtime, signature, record, frame, space, &match_info,
+        &match));
     if (!match_result_is_match(match))
       continue;
     join_status_t status = join_score_vectors(state->max_score, scratch_score,
@@ -424,18 +438,20 @@ static void lookup_methodspace_local_method(methodspace_lookup_state_t *state,
       state->max_is_synthetic = (status == jsAmbiguous);
     }
   }
+  return success();
 }
 
 // Do a transitive method lookup in the given method space, that is, look up
 // locally and in any imported spaces.
-static void lookup_methodspace_transitive_method(methodspace_lookup_state_t *state,
+static value_t lookup_methodspace_transitive_method(methodspace_lookup_state_t *state,
     runtime_t *runtime, value_t space, value_t record, frame_t *frame) {
-  lookup_methodspace_local_method(state, runtime, space, record, frame);
+  TRY(lookup_methodspace_local_method(state, runtime, space, record, frame));
   value_t imports = get_methodspace_imports(space);
   for (size_t i = 0; i < get_array_length(imports); i++) {
     value_t import = get_array_at(imports, i);
-    lookup_methodspace_transitive_method(state, runtime, import, record, frame);
+    TRY(lookup_methodspace_transitive_method(state, runtime, import, record, frame));
   }
+  return success();
 }
 
 // Given an array of offsets, builds and returns an argument map that performs
@@ -470,7 +486,7 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
   state.result_offsets = offsets_one;
   state.scratch_offsets = offsets_two;
   // Perform the lookup.
-  lookup_methodspace_transitive_method(&state, runtime, space, record, frame);
+  TRY(lookup_methodspace_transitive_method(&state, runtime, space, record, frame));
   // Post-process the result.
   if (!in_domain(vdSignal, state.result)) {
     // We have a result so we need to build an argument map that represents the

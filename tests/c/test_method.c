@@ -6,6 +6,12 @@
 #include "test.h"
 #include "try-inl.h"
 
+#define CHECK_MATCH(is_score, guard, value) do {                               \
+  score_t match;                                                               \
+  ASSERT_SUCCESS(guard_match(runtime, guard, value, space, &match));           \
+  ASSERT_EQ(is_score, is_score_match(match));                                  \
+} while (false)
+
 TEST(method, identity_guard) {
   CREATE_RUNTIME();
 
@@ -15,10 +21,10 @@ TEST(method, identity_guard) {
   value_t id_zero = new_heap_guard(runtime, afFreeze, gtEq, zero);
   value_t id_null = new_heap_guard(runtime, afFreeze, gtEq, null);
 
-  ASSERT_TRUE(is_score_match(guard_match(runtime, id_zero, zero, space)));
-  ASSERT_FALSE(is_score_match(guard_match(runtime, id_zero, null, space)));
-  ASSERT_FALSE(is_score_match(guard_match(runtime, id_null, zero, space)));
-  ASSERT_TRUE(is_score_match(guard_match(runtime, id_null, null, space)));
+  CHECK_MATCH(true, id_zero, zero);
+  CHECK_MATCH(false, id_zero, null);
+  CHECK_MATCH(false, id_null, zero);
+  CHECK_MATCH(true, id_null, null);
 
   DISPOSE_RUNTIME();
 }
@@ -29,9 +35,9 @@ TEST(method, any_guard) {
   value_t space = new_heap_methodspace(runtime);
   value_t any_guard = ROOT(runtime, any_guard);
 
-  ASSERT_TRUE(is_score_match(guard_match(runtime, any_guard, new_integer(0), space)));
-  ASSERT_TRUE(is_score_match(guard_match(runtime, any_guard, new_integer(1), space)));
-  ASSERT_TRUE(is_score_match(guard_match(runtime, any_guard, ROOT(runtime, null), space)));
+  CHECK_MATCH(true, any_guard, new_integer(0));
+  CHECK_MATCH(true, any_guard, new_integer(1));
+  CHECK_MATCH(true, any_guard, ROOT(runtime, null));
 
   DISPOSE_RUNTIME();
 }
@@ -83,38 +89,42 @@ TEST(method, simple_is) {
   value_t is_s_str = new_heap_guard(runtime, afFreeze, gtIs, s_str_p);
 
   value_t zero = new_integer(0);
-  ASSERT_TRUE(is_score_match(guard_match(runtime, is_int, zero, space)));
-  ASSERT_TRUE(is_score_match(guard_match(runtime, is_obj, zero, space)));
-  ASSERT_FALSE(is_score_match(guard_match(runtime, is_str, zero, space)));
-  ASSERT_FALSE(is_score_match(guard_match(runtime, is_s_str, zero, space)));
+  CHECK_MATCH(true, is_int, zero);
+  CHECK_MATCH(true, is_obj, zero);
+  CHECK_MATCH(false, is_str, zero);
+  CHECK_MATCH(false, is_s_str, zero);
 
   string_t x_str = STR("x");
   value_t x = new_heap_string(runtime, &x_str);
-  ASSERT_FALSE(is_score_match(guard_match(runtime, is_int, x, space)));
-  ASSERT_TRUE(is_score_match(guard_match(runtime, is_obj, x, space)));
-  ASSERT_TRUE(is_score_match(guard_match(runtime, is_str, x, space)));
-  ASSERT_FALSE(is_score_match(guard_match(runtime, is_s_str, x, space)));
+  CHECK_MATCH(false, is_int, x);
+  CHECK_MATCH(true, is_obj, x);
+  CHECK_MATCH(true, is_str, x);
+  CHECK_MATCH(false, is_s_str, x);
 
   value_t s_str = new_instance_of(runtime, s_str_p);
-  ASSERT_FALSE(is_score_match(guard_match(runtime, is_int, s_str, space)));
-  ASSERT_TRUE(is_score_match(guard_match(runtime, is_obj, s_str, space)));
-  ASSERT_TRUE(is_score_match(guard_match(runtime, is_str, s_str, space)));
-  ASSERT_TRUE(is_score_match(guard_match(runtime, is_s_str, s_str, space)));
+  CHECK_MATCH(false, is_int, s_str);
+  CHECK_MATCH(true, is_obj, s_str);
+  CHECK_MATCH(true, is_str, s_str);
+  CHECK_MATCH(true, is_s_str, s_str);
 
   value_t null = ROOT(runtime, null);
-  ASSERT_FALSE(is_score_match(guard_match(runtime, is_int, null, space)));
-  ASSERT_FALSE(is_score_match(guard_match(runtime, is_obj, null, space)));
-  ASSERT_FALSE(is_score_match(guard_match(runtime, is_str, null, space)));
-  ASSERT_FALSE(is_score_match(guard_match(runtime, is_s_str, null, space)));
+  CHECK_MATCH(false, is_int, null);
+  CHECK_MATCH(false, is_obj, null);
+  CHECK_MATCH(false, is_str, null);
+  CHECK_MATCH(false, is_s_str, null);
 
   DISPOSE_RUNTIME();
 }
 
 // Compare the score of matching guard GA against VA with the score of
 // matching GB against VB.
-#define ASSERT_COMPARE(GA, VA, REL, GB, VB)                                    \
-ASSERT_TRUE(compare_scores(guard_match(runtime, GA, VA, space),             \
-    guard_match(runtime, GB, VB, space)) REL 0)
+#define ASSERT_COMPARE(GA, VA, REL, GB, VB) do {                               \
+  score_t score_a;                                                             \
+  ASSERT_SUCCESS(guard_match(runtime, GA, VA, space, &score_a));               \
+  score_t score_b;                                                             \
+  ASSERT_SUCCESS(guard_match(runtime, GB, VB, space, &score_b));               \
+  ASSERT_TRUE(compare_scores(score_a, score_b) REL 0);                         \
+} while (false)
 
 TEST(method, is_score) {
   CREATE_RUNTIME();
@@ -378,8 +388,9 @@ void assert_match_with_offsets(runtime_t *runtime, match_result_t expected_resul
   memset(offsets, 0xFF, kLength * sizeof(size_t));
   match_info_t match_info;
   match_info_init(&match_info, scores, offsets, kLength);
-  match_result_t result = match_signature(runtime, signature, record, &frame,
-      new_integer(0), &match_info);
+  match_result_t result;
+  ASSERT_SUCCESS(match_signature(runtime, signature, record, &frame,
+      new_integer(0), &match_info, &result));
   ASSERT_EQ(expected_result, result);
   if (expected_offsets != NULL) {
     for (size_t i = 0; i < arg_count; i++)

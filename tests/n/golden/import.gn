@@ -1,0 +1,6 @@
+-- INPUT:
+import @assert;
+entry_point @assert.print();
+-- OUTPUT:
+<a module>
+-- END

@@ -254,7 +254,7 @@ static value_t new_moved_object(value_t target) {
   F(Method,                  method,                    _, _, _, _, _, _, _, X, _)\
   F(MethodAst,               method_ast,                _, _, X, X, _, _, _, X, _)\
   F(Methodspace,             methodspace,               _, _, X, _, _, _, _, X, X)\
-  F(Module,                  module,                    _, _, X, _, _, _, _, X, _)\
+  F(Module,                  module,                    _, _, X, X, _, _, _, X, _)\
   F(MutableRoots,            mutable_roots,             _, _, _, _, _, _, _, X, X)\
   F(NameAst,                 name_ast,                  _, _, X, _, _, _, _, _, _)\
   F(Namespace,               namespace,                 _, _, X, _, _, _, _, X, X)\
