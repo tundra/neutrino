@@ -39,6 +39,7 @@ static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
   value_t code = compile_expression(runtime, invocation,
       scope_lookup_callback_get_bottom());
   value_t result = run_code_block_until_signal(runtime, code);
+  ASSERT_SUCCESS(result);
   ASSERT_VALEQ(variant_to_value(runtime, expected), result);
 }
 

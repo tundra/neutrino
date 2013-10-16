@@ -1549,7 +1549,7 @@ value_t ensure_namespace_owned_values_frozen(runtime_t *runtime, value_t self) {
 
 // --- M o d u l e ---
 
-TRIVIAL_PRINT_ON_IMPL(Module, module);
+GET_FAMILY_PROTOCOL_IMPL(module);
 
 ACCESSORS_IMPL(Module, module, acInFamilyOpt, ofNamespace, Namespace, namespace);
 ACCESSORS_IMPL(Module, module, acInFamilyOpt, ofMethodspace, Methodspace, methodspace);
@@ -1572,6 +1572,26 @@ value_t set_module_contents(value_t object, runtime_t *runtime, value_t contents
 
 static value_t new_module(runtime_t *runtime) {
   return new_heap_module(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing));
+}
+
+void module_print_on(value_t value, string_buffer_t *buf) {
+  module_print_atomic_on(value, buf);
+}
+
+void module_print_atomic_on(value_t value, string_buffer_t *buf) {
+  CHECK_FAMILY(ofModule, value);
+  string_buffer_printf(buf, "<a module>");
+}
+
+static value_t module_print(builtin_arguments_t *args) {
+  value_t this = get_builtin_subject(args);
+  value_print_ln(this);
+  return ROOT(args->runtime, nothing);
+}
+
+value_t add_module_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
+  ADD_BUILTIN(module, "print", 0, module_print);
+  return success();
 }
 
 

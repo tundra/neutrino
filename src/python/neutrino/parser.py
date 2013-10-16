@@ -135,9 +135,22 @@ class Parser(object):
     signature = ast.Signature([subject, name] + params)
     return ast.MethodDeclaration(ast.Method(signature, body))
 
+  # <toplevel-import>
+  #   -> "import" <name> ";"
+  def parse_toplevel_import(self):
+    self.expect_word('import')
+    name = self.expect_type(Token.IDENTIFIER)
+    self.expect_statement_delimiter()
+    return ast.Import(name)
+
+  # <toplevel-statement>
+  #   -> <toplevel-declaration>
+  #   -> <toplevel-import>
   def parse_toplevel_statement(self):
     if self.at_word('def'):
       return self.parse_toplevel_declaration()
+    elif self.at_word('import'):
+      return self.parse_toplevel_import()
     elif self.at_word('entry_point'):
       self.expect_word('entry_point')
       self.unit.set_entry_point(self.parse_expression())
