@@ -128,7 +128,8 @@ value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t outers);
 value_t new_heap_namespace(runtime_t *runtime);
 
 // Creates a new module object.
-value_t new_heap_module(runtime_t *runtime, value_t namespace, value_t methodspace);
+value_t new_heap_module(runtime_t *runtime, value_t namespace, value_t methodspace,
+    value_t display_name);
 
 // Creates a new operation object.
 value_t new_heap_operation(runtime_t *runtime, operation_type_t type, value_t value);

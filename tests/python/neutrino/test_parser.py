@@ -21,10 +21,10 @@ ST = data._SUBJECT
 SL = data._SELECTOR
 
 def ut(phase, *elements):
-  return ast.Unit().add_element(phase, *elements)
+  return ast.Unit(None).add_element(phase, *elements)
 
 def mu(*phases):
-  result = ast.Unit()
+  result = ast.Unit(None)
   for (phase, elements) in phases:
     result.add_element(phase, *elements)
   return result

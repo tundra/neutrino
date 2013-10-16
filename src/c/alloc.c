@@ -276,12 +276,14 @@ value_t new_heap_namespace(runtime_t *runtime) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_module(runtime_t *runtime, value_t namespace, value_t methodspace) {
+value_t new_heap_module(runtime_t *runtime, value_t namespace, value_t methodspace,
+    value_t display_name) {
   size_t size = kModuleSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_module_species)));
   set_module_namespace(result, namespace);
   set_module_methodspace(result, methodspace);
+  set_module_display_name(result, display_name);
   return post_create_sanity_check(result, size);
 }
 

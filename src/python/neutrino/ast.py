@@ -489,12 +489,12 @@ class Stage(object):
 
   _BUILTIN_METHODSPACE = data.Key("subject", ("core", "builtin_methodspace"))
 
-  def __init__(self, index):
+  def __init__(self, index, module_name):
     self.index = index
     self.imports = [Stage._BUILTIN_METHODSPACE]
     self.namespace = data.Namespace({})
     self.methodspace = data.Methodspace({}, [], self.imports)
-    self.module = data.Module(self.namespace, self.methodspace)
+    self.module = data.Module(self.namespace, self.methodspace, module_name)
     self.elements = []
 
   def __str__(self):
@@ -520,7 +520,8 @@ class Stage(object):
 # A full compilation unit.
 class Unit(object):
 
-  def __init__(self):
+  def __init__(self, module_name):
+    self.module_name = module_name
     self.entry_point = None
     self.stages = {}
     self.get_or_create_stage(0)
@@ -544,7 +545,7 @@ class Unit(object):
 
   def get_or_create_stage(self, index):
     if not index in self.stages:
-      self.stages[index] = Stage(index)
+      self.stages[index] = Stage(index, self.module_name)
     return self.stages[index]
 
   def get_present(self):
