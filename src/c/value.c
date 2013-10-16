@@ -420,14 +420,13 @@ value_t string_ordering_compare(value_t a, value_t b) {
   return int_to_ordering(string_compare(&a_contents, &b_contents));
 }
 
-void string_print_on(value_t value, string_buffer_t *buf) {
-  string_print_atomic_on(value, buf);
-}
-
-void string_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_putc(buf, '"');
+void string_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  if ((flags & pfUnquote) == 0)
+    string_buffer_putc(buf, '"');
   string_buffer_append_string(buf, value);
-  string_buffer_putc(buf, '"');
+  if ((flags & pfUnquote) == 0)
+    string_buffer_putc(buf, '"');
 }
 
 void string_buffer_append_string(string_buffer_t *buf, value_t value) {
@@ -501,11 +500,8 @@ void get_blob_layout(value_t value, object_layout_t *layout) {
   object_layout_set(layout, size, size);
 }
 
-void blob_print_on(value_t value, string_buffer_t *buf) {
-  blob_print_atomic_on(value, buf);
-}
-
-void blob_print_atomic_on(value_t value, string_buffer_t *buf) {
+void blob_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
   CHECK_FAMILY(ofBlob, value);
   string_buffer_printf(buf, "#<blob: [");
   blob_t blob;
@@ -594,18 +590,21 @@ void get_array_layout(value_t value, object_layout_t *layout) {
   object_layout_set(layout, size, kArrayElementsOffset);
 }
 
-void array_print_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "[");
-  for (size_t i = 0; i < get_array_length(value); i++) {
-    if (i > 0)
-      string_buffer_printf(buf, ", ");
-    value_print_atomic_on(get_array_at(value, i), buf);
+void array_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  if (depth == 1) {
+    // If we can't print the elements anyway we might as well just show the
+    // count.
+    string_buffer_printf(buf, "#<array[%i]>", (int) get_array_length(value));
+  } else {
+    string_buffer_printf(buf, "[");
+    for (size_t i = 0; i < get_array_length(value); i++) {
+      if (i > 0)
+        string_buffer_printf(buf, ", ");
+      value_print_inner_on(get_array_at(value, i), buf, flags, depth - 1);
+    }
+    string_buffer_printf(buf, "]");
   }
-  string_buffer_printf(buf, "]");
-}
-
-void array_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<array[%i]>", (int) get_array_length(value));
 }
 
 // Compares two values pointed to by two void pointers.
@@ -1112,29 +1111,30 @@ value_t ensure_id_hash_map_owned_values_frozen(runtime_t *runtime, value_t self)
   return ensure_frozen(runtime, get_id_hash_map_entry_array(self));
 }
 
-void id_hash_map_print_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "{");
-  id_hash_map_iter_t iter;
-  id_hash_map_iter_init(&iter, value);
-  bool is_first = true;
-  while (id_hash_map_iter_advance(&iter)) {
-    if (is_first) {
-      is_first = false;
-    } else {
-      string_buffer_printf(buf, ", ");
+void id_hash_map_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
+  if (depth == 1) {
+    string_buffer_printf(buf, "#<map{%i}>", get_id_hash_map_size(value));
+  } else {
+    string_buffer_printf(buf, "{");
+    id_hash_map_iter_t iter;
+    id_hash_map_iter_init(&iter, value);
+    bool is_first = true;
+    while (id_hash_map_iter_advance(&iter)) {
+      if (is_first) {
+        is_first = false;
+      } else {
+        string_buffer_printf(buf, ", ");
+      }
+      value_t key;
+      value_t value;
+      id_hash_map_iter_get_current(&iter, &key, &value);
+      value_print_inner_on(key, buf, flags, depth - 1);
+      string_buffer_printf(buf, ": ");
+      value_print_inner_on(value, buf, flags, depth - 1);
     }
-    value_t key;
-    value_t value;
-    id_hash_map_iter_get_current(&iter, &key, &value);
-    value_print_on(key, buf);
-    string_buffer_printf(buf, ": ");
-    value_print_on(value, buf);
+    string_buffer_printf(buf, "}");
   }
-  string_buffer_printf(buf, "}");
-}
-
-void id_hash_map_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<map{%i}>", (int) get_id_hash_map_size(value));
 }
 
 
@@ -1161,11 +1161,8 @@ value_t null_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
   return internal_true_value();
 }
 
-void null_print_on(value_t value, string_buffer_t *buf) {
-  null_print_atomic_on(value, buf);
-}
-
-void null_print_atomic_on(value_t value, string_buffer_t *buf) {
+void null_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
   string_buffer_printf(buf, "null");
 }
 
@@ -1179,11 +1176,8 @@ value_t nothing_validate(value_t value) {
   return success();
 }
 
-void nothing_print_on(value_t value, string_buffer_t *buf) {
-  nothing_print_atomic_on(value, buf);
-}
-
-void nothing_print_atomic_on(value_t value, string_buffer_t *buf) {
+void nothing_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
   string_buffer_printf(buf, "#<nothing>");
 }
 
@@ -1228,11 +1222,8 @@ value_t boolean_ordering_compare(value_t a, value_t b) {
   return new_integer(get_boolean_value(a) - get_boolean_value(b));
 }
 
-void boolean_print_on(value_t value, string_buffer_t *buf) {
-  boolean_print_atomic_on(value, buf);
-}
-
-void boolean_print_atomic_on(value_t value, string_buffer_t *buf) {
+void boolean_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
   string_buffer_printf(buf, get_boolean_value(value) ? "true" : "false");
 }
 
@@ -1285,18 +1276,15 @@ value_t instance_validate(value_t value) {
   return success();
 }
 
-void instance_print_on(value_t value, string_buffer_t *buf) {
+void instance_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
   CHECK_FAMILY(ofInstance, value);
   string_buffer_printf(buf, "#<instance of ");
-  value_print_atomic_on(get_instance_primary_protocol(value), buf);
+  value_print_inner_on(get_instance_primary_protocol(value), buf, flags,
+      depth - 1);
   string_buffer_printf(buf, ": ");
-  value_print_on(get_instance_fields(value), buf);
+  value_print_inner_on(get_instance_fields(value), buf, flags, depth - 1);
   string_buffer_printf(buf, ">");
-}
-
-void instance_print_atomic_on(value_t value, string_buffer_t *buf) {
-  CHECK_FAMILY(ofInstance, value);
-  string_buffer_printf(buf, "#<instance>");
 }
 
 value_t set_instance_contents(value_t instance, runtime_t *runtime,
@@ -1333,16 +1321,12 @@ value_t factory_validate(value_t value) {
   return success();
 }
 
-void factory_print_on(value_t value, string_buffer_t *buf) {
+void factory_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
   CHECK_FAMILY(ofFactory, value);
   string_buffer_printf(buf, "#<factory: ");
-  value_print_on(get_factory_constructor(value), buf);
+  value_print_inner_on(get_factory_constructor(value), buf, flags, depth - 1);
   string_buffer_printf(buf, ">");
-}
-
-void factory_print_atomic_on(value_t value, string_buffer_t *buf) {
-  CHECK_FAMILY(ofFactory, value);
-  string_buffer_printf(buf, "#<factory>");
 }
 
 
@@ -1359,16 +1343,12 @@ value_t code_block_validate(value_t value) {
   return success();
 }
 
-void code_block_print_on(value_t value, string_buffer_t *buf) {
+void code_block_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
   CHECK_FAMILY(ofCodeBlock, value);
   string_buffer_printf(buf, "#<code block: bc@%i, vp@%i>",
       get_blob_length(get_code_block_bytecode(value)),
       get_array_length(get_code_block_value_pool(value)));
-}
-
-void code_block_print_atomic_on(value_t value, string_buffer_t *buf) {
-  CHECK_FAMILY(ofCodeBlock, value);
-  string_buffer_printf(buf, "#<code block>");
 }
 
 value_t ensure_code_block_owned_values_frozen(runtime_t *runtime, value_t self) {
@@ -1389,22 +1369,16 @@ value_t protocol_validate(value_t value) {
   return success();
 }
 
-void protocol_print_on(value_t value, string_buffer_t *buf) {
-  protocol_print_atomic_on(value, buf);
-}
-
-void protocol_print_atomic_on(value_t value, string_buffer_t *buf) {
+void protocol_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
   CHECK_FAMILY(ofProtocol, value);
   value_t display_name = get_protocol_display_name(value);
-  if (is_null(display_name) || in_family(ofProtocol, display_name)) {
-    string_buffer_printf(buf, "#<protocol>");
-  } else {
-    // We print the display name even though it's strictly against the rules
-    // for an atomic print function.
-    string_buffer_printf(buf, "#<protocol: ");
-    value_print_atomic_on(display_name, buf);
-    string_buffer_printf(buf, ">");
+  string_buffer_printf(buf, "#<protocol");
+  if (!is_null(display_name)) {
+    string_buffer_printf(buf, " ");
+    value_print_inner_on(display_name, buf, flags | pfUnquote, depth - 1);
   }
+  string_buffer_printf(buf, ">");
 }
 
 value_t set_protocol_contents(value_t object, runtime_t *runtime, value_t contents) {
@@ -1576,17 +1550,15 @@ static value_t new_module(runtime_t *runtime) {
       ROOT(runtime, nothing));
 }
 
-void module_print_on(value_t value, string_buffer_t *buf) {
-  module_print_atomic_on(value, buf);
-}
-
-void module_print_atomic_on(value_t value, string_buffer_t *buf) {
+void module_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
   CHECK_FAMILY(ofModule, value);
   string_buffer_printf(buf, "<module");
   value_t display_name = get_module_display_name(value);
   if (!is_null(display_name)) {
     string_buffer_printf(buf, " ");
-    value_print_atomic_on_unquoted(get_module_display_name(value), buf);
+    value_print_inner_on(get_module_display_name(value), buf,
+        flags | pfUnquote, depth);
   }
   string_buffer_printf(buf, ">");
 }

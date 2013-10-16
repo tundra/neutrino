@@ -41,22 +41,18 @@ value_t get_signature_parameter_at(value_t self, size_t index) {
   return get_pair_array_second_at(get_signature_tags(self), index);
 }
 
-void signature_print_on(value_t self, string_buffer_t *buf) {
+void signature_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
   string_buffer_printf(buf, "#<signature: ");
   for (size_t i = 0; i < get_signature_parameter_count(self); i++) {
     if (i > 0)
       string_buffer_printf(buf, ", ");
-    value_print_on(get_signature_tag_at(self, i), buf);
+    value_print_inner_on(get_signature_tag_at(self, i), buf, flags, depth - 1);
     string_buffer_printf(buf, ":");
     value_t param = get_signature_parameter_at(self, i);
-    value_print_on(get_parameter_guard(param), buf);
+    value_print_inner_on(get_parameter_guard(param), buf, flags, depth - 1);
   }
   string_buffer_printf(buf, ">");
-}
-
-void signature_print_atomic_on(value_t self, string_buffer_t *buf) {
-  CHECK_FAMILY(ofSignature, self);
-  string_buffer_printf(buf, "#<signature>");
 }
 
 bool match_result_is_match(match_result_t value) {
@@ -180,15 +176,12 @@ value_t parameter_validate(value_t value) {
   return success();
 }
 
-void parameter_print_on(value_t self, string_buffer_t *buf) {
-  parameter_print_atomic_on(self, buf);
-}
-
-void parameter_print_atomic_on(value_t self, string_buffer_t *buf) {
+void parameter_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
   CHECK_FAMILY(ofParameter, self);
   string_buffer_printf(buf, "#<parameter: gd@");
   // We know the guard is a guard, not a parameter, so this can't cause a cycle.
-  guard_print_atomic_on(get_parameter_guard(self), buf);
+  value_print_inner_on(get_parameter_guard(self), buf, flags, depth - 1);
   string_buffer_printf(buf, ", op@%i, ix@%i>",
       get_parameter_is_optional(self), get_parameter_index(self));
 }
@@ -263,21 +256,18 @@ value_t guard_match(runtime_t *runtime, value_t guard, value_t value,
   }
 }
 
-void guard_print_on(value_t self, string_buffer_t *buf) {
-  guard_print_atomic_on(self, buf);
-}
-
-void guard_print_atomic_on(value_t self, string_buffer_t *buf) {
+void guard_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
   CHECK_FAMILY(ofGuard, self);
   switch (get_guard_type(self)) {
     case gtEq:
       string_buffer_printf(buf, "eq(");
-      value_print_atomic_on(get_guard_value(self), buf);
+      value_print_inner_on(get_guard_value(self), buf, flags, depth - 1);
       string_buffer_printf(buf, ")");
       break;
     case gtIs:
       string_buffer_printf(buf, "is(");
-      value_print_atomic_on(get_guard_value(self), buf);
+      value_print_inner_on(get_guard_value(self), buf, flags, depth - 1);
       string_buffer_printf(buf, ")");
       break;
     case gtAny:
@@ -603,7 +593,8 @@ void print_invocation(value_t record, frame_t *frame) {
   string_buffer_dispose(&buf);
 }
 
-void invocation_record_print_on(value_t self, string_buffer_t *buf) {
+void invocation_record_print_on(value_t self, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
   string_buffer_printf(buf, "{");
   size_t arg_count = get_invocation_record_argument_count(self);
   for (size_t i = 0; i < arg_count; i++) {
@@ -611,14 +602,10 @@ void invocation_record_print_on(value_t self, string_buffer_t *buf) {
       string_buffer_printf(buf, ", ");
     value_t tag = get_invocation_record_tag_at(self, i);
     size_t offset = get_invocation_record_offset_at(self, i);
-    value_print_atomic_on(tag, buf);
+    value_print_inner_on(tag, buf, flags, depth - 1);
     string_buffer_printf(buf, "@%i", offset);
   }
   string_buffer_printf(buf, "}");
-}
-
-void invocation_record_print_atomic_on(value_t self, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<invocation_record>");
 }
 
 value_t ensure_invocation_record_owned_values_frozen(runtime_t *runtime,
@@ -635,10 +622,6 @@ ACCESSORS_IMPL(Operation, operation, acNoCheck, 0, Value, value);
 value_t operation_validate(value_t self) {
   VALIDATE_FAMILY(ofOperation, self);
   return success();
-}
-
-void operation_print_on(value_t self, string_buffer_t *buf) {
-  operation_print_atomic_on(self, buf);
 }
 
 value_t operation_transient_identity_hash(value_t self, cycle_detector_t *outer) {
@@ -661,11 +644,16 @@ value_t operation_identity_compare(value_t a, value_t b,
       get_operation_value(b), &inner);
 }
 
-void operation_print_atomic_on(value_t self, string_buffer_t *buf) {
+void operation_print_on(value_t self, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
   value_t value = get_operation_value(self);
   switch (get_operation_type(self)) {
     case otAssign:
-      value_print_atomic_on_unquoted(value, buf);
+      // Since the operator for the assignment is kind of sort of part of the
+      // operator let's not decrease depth. If you make an assignment whose
+      // operator is the assignment itself then 1) this will fail and 2) I hate
+      // you.
+      value_print_inner_on(value, buf, flags | pfUnquote, depth);
       string_buffer_printf(buf, ":=");
       break;
     case otCall:
@@ -676,20 +664,20 @@ void operation_print_atomic_on(value_t self, string_buffer_t *buf) {
       break;
     case otInfix:
       string_buffer_printf(buf, ".");
-      value_print_atomic_on_unquoted(value, buf);
+      value_print_inner_on(value, buf, flags | pfUnquote, depth - 1);
       string_buffer_printf(buf, "()");
       break;
     case otPrefix:
-      value_print_atomic_on_unquoted(value, buf);
+      value_print_inner_on(value, buf, flags | pfUnquote, depth - 1);
       string_buffer_printf(buf, "()");
       break;
     case otProperty:
       string_buffer_printf(buf, ".");
-      value_print_atomic_on_unquoted(value, buf);
+      value_print_inner_on(value, buf, flags | pfUnquote, depth - 1);
       break;
     case otSuffix:
       string_buffer_printf(buf, "()");
-      value_print_atomic_on_unquoted(value, buf);
+      value_print_inner_on(value, buf, flags | pfUnquote, depth - 1);
       break;
     default:
       UNREACHABLE("unexpected operation type");

@@ -268,12 +268,12 @@ value_t value_ordering_compare(value_t a, value_t b) {
 
 // --- P r i n t i n g ---
 
-static void integer_print_atomic_on(value_t value, string_buffer_t *buf) {
+static void integer_print_on(value_t value, string_buffer_t *buf) {
   CHECK_DOMAIN(vdInteger, value);
   string_buffer_printf(buf, "%lli", get_integer_value(value));
 }
 
-static void signal_print_atomic_on(value_t value, string_buffer_t *buf) {
+static void signal_print_on(value_t value, string_buffer_t *buf) {
   CHECK_DOMAIN(vdSignal, value);
   signal_cause_t cause = get_signal_cause(value);
   const char *cause_name = get_signal_cause_name(cause);
@@ -304,26 +304,23 @@ static void signal_print_atomic_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, ")>");
 }
 
-static void object_print_on(value_t value, string_buffer_t *buf) {
+static void object_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
   family_behavior_t *behavior = get_object_family_behavior(value);
-  (behavior->print_on)(value, buf);
+  (behavior->print_on)(value, buf, flags, depth);
 }
 
-static void object_print_atomic_on(value_t value, string_buffer_t *buf) {
-  family_behavior_t *behavior = get_object_family_behavior(value);
-  (behavior->print_atomic_on)(value, buf);
-}
-
-void value_print_on(value_t value, string_buffer_t *buf) {
+void value_print_on_cycle_detect(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
   switch (get_value_domain(value)) {
     case vdInteger:
-      integer_print_atomic_on(value, buf);
+      integer_print_on(value, buf);
       break;
     case vdObject:
-      object_print_on(value, buf);
+      object_print_on(value, buf, flags, depth);
       break;
     case vdSignal:
-      signal_print_atomic_on(value, buf);
+      signal_print_on(value, buf);
       break;
     default:
       UNREACHABLE("value print on");
@@ -331,25 +328,20 @@ void value_print_on(value_t value, string_buffer_t *buf) {
   }
 }
 
-void value_print_atomic_on(value_t value, string_buffer_t *buf) {
-  switch (get_value_domain(value)) {
-    case vdInteger:
-      integer_print_atomic_on(value, buf);
-      break;
-    case vdObject:
-      object_print_atomic_on(value, buf);
-      break;
-    default:
-      UNREACHABLE("value print atomic on");
-      break;
-  }
+void value_print_on(value_t value, string_buffer_t *buf) {
+  value_print_on_cycle_detect(value, buf, pfNone, 2);
 }
 
-void value_print_atomic_on_unquoted(value_t value, string_buffer_t *buf) {
-  if (in_family(ofString, value)) {
-    string_buffer_append_string(buf, value);
+void value_print_on_unquoted(value_t value, string_buffer_t *buf) {
+  value_print_on_cycle_detect(value, buf, pfUnquote, 2);
+}
+
+void value_print_inner_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
+  if (depth == 0) {
+    string_buffer_printf(buf, "-");
   } else {
-    value_print_atomic_on(value, buf);
+    value_print_on_cycle_detect(value, buf, flags, depth);
   }
 }
 
@@ -462,7 +454,6 @@ family_behavior_t k##Family##Behavior = {                                      \
     &family##_ordering_compare,                                                \
     NULL),                                                                     \
   &family##_print_on,                                                          \
-  &family##_print_atomic_on,                                                   \
   &get_##family##_layout,                                                      \
   CT(                                                                          \
     &set_##family##_contents,                                                  \

@@ -41,6 +41,12 @@ void object_layout_init(object_layout_t *layout);
 // Sets the fields of an object layout struct.
 void object_layout_set(object_layout_t *layout, size_t size, size_t value_offset);
 
+// Flags that control how values are printed. These can be or'ed together.
+typedef enum {
+  pfNone = 0x0,
+  pfUnquote = 0x1
+} print_flags_t;
+
 // A collection of "virtual" methods that define how a particular family of
 // objects behave.
 struct family_behavior_t {
@@ -56,11 +62,11 @@ struct family_behavior_t {
   // object supports it. If this type doesn't support comparison this field
   // is NULL.
   value_t (*ordering_compare)(value_t a, value_t b);
-  // Writes a string representation of the value on a string buffer.
-  void (*print_on)(value_t value, string_buffer_t *buf);
-  // Writes an atomic (that is, doesn't recurse into contents) string
-  // representation on a string buffer.
-  void (*print_atomic_on)(value_t value, string_buffer_t *buf);
+  // Writes a string representation of the value on a string buffer. If the
+  // depth is 0 you're not allowed to print other objects recursively, otherwise
+  // it's fine as long as you decrease the depth by 1 when you do.
+  void (*print_on)(value_t value, string_buffer_t *buf, print_flags_t flags,
+      size_t depth);
   // Stores the layout of the given object in the output layout struct.
   void (*get_object_layout)(value_t value, object_layout_t *layout_out);
   // Sets the contents of the given value from the given serialized contents.
@@ -130,13 +136,19 @@ value_t value_ordering_compare(value_t a, value_t b);
 // string buffer.
 void value_print_on(value_t value, string_buffer_t *buf);
 
-// Prints a human-readable representation of the given value on the given
-// string buffer without descending into objects that may cause cycles.
-void value_print_atomic_on(value_t value, string_buffer_t *buf);
-
-// Does the same as value_print_atomic_on but doesn't print quotes around a
+// Does the same as value_print_on but doesn't print quotes around a
 // string.
-void value_print_atomic_on_unquoted(value_t value, string_buffer_t *buf);
+void value_print_on_unquoted(value_t value, string_buffer_t *buf);
+
+// Works the same as value_print_on but keeps track of recursion depth such
+// that we can print subobjects without worrying about cycles.
+void value_print_on_cycle_protect(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth);
+
+// A shorthand for printing an inner value if the depth allows it and otherwise
+// a marker, "-".
+void value_print_inner_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth);
 
 // Creates a new empty instance of the given type. Not all types support this,
 // in which case an unsupported behavior signal is returned.
@@ -177,8 +189,8 @@ ID(                                                                            \
 CM(                                                                            \
   value_t family##_ordering_compare(value_t a, value_t b);,                    \
   )                                                                            \
-void family##_print_on(value_t value, string_buffer_t *buf);                   \
-void family##_print_atomic_on(value_t value, string_buffer_t *buf);            \
+void family##_print_on(value_t value, string_buffer_t *buf,                    \
+    print_flags_t flags, size_t depth);                                        \
 NL(                                                                            \
   void get_##family##_layout(value_t value, object_layout_t *layout_out);,     \
   )                                                                            \

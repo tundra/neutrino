@@ -25,21 +25,18 @@ value_t stack_piece_validate(value_t value) {
   return success();
 }
 
-void stack_piece_print_on(value_t value, string_buffer_t *buf) {
+void stack_piece_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
   CHECK_FAMILY(ofStackPiece, value);
   string_buffer_printf(buf, "#<stack piece: st@%i>",
       get_blob_length(get_stack_piece_storage(value)));
-}
-
-void stack_piece_print_atomic_on(value_t value, string_buffer_t *buf) {
-  CHECK_FAMILY(ofStackPiece, value);
-  string_buffer_printf(buf, "#<stack piece>");
 }
 
 
 // --- S t a c k   ---
 
 FIXED_GET_MODE_IMPL(stack, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(Stack, stack);
 
 ACCESSORS_IMPL(Stack, stack, acInFamily, ofStackPiece, TopPiece, top_piece);
 INTEGER_ACCESSORS_IMPL(Stack, stack, DefaultPieceCapacity, default_piece_capacity);
@@ -48,15 +45,6 @@ value_t stack_validate(value_t value) {
   VALIDATE_FAMILY(ofStack, value);
   VALIDATE_FAMILY(ofStackPiece, get_stack_top_piece(value));
   return success();
-}
-
-void stack_print_on(value_t value, string_buffer_t *buf) {
-  stack_print_atomic_on(value, buf);
-}
-
-void stack_print_atomic_on(value_t value, string_buffer_t *buf) {
-  CHECK_FAMILY(ofStack, value);
-  string_buffer_printf(buf, "#<stack>");
 }
 
 value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
