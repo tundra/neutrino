@@ -42,9 +42,11 @@ class Module(object):
 
   @plankton.field("namespace")
   @plankton.field("methodspace")
-  def __init__(self, namespace=None, methodspace=None):
+  @plankton.field("display_name")
+  def __init__(self, namespace=None, methodspace=None, display_name=None):
     self.namespace = namespace
     self.methodspace = methodspace
+    self.display_name = display_name
 
 
 class Method(object):

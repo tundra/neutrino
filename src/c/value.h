@@ -950,15 +950,19 @@ value_t get_namespace_binding_at(value_t namespace, value_t name);
 
 // --- M o d u l e ---
 
-static const size_t kModuleSize = OBJECT_SIZE(2);
+static const size_t kModuleSize = OBJECT_SIZE(3);
 static const size_t kModuleNamespaceOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kModuleMethodspaceOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kModuleDisplayNameOffset = OBJECT_FIELD_OFFSET(2);
 
 // The namespace that holds the module's own bindings.
 ACCESSORS_DECL(module, namespace);
 
 // The method space that holds the module's own methods.
 ACCESSORS_DECL(module, methodspace);
+
+// This display name to show when inspecting/printing the module.
+ACCESSORS_DECL(module, display_name);
 
 
 // --- O r d e r i n g ---

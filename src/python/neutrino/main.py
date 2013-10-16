@@ -77,14 +77,14 @@ class Main(object):
   def load_modules(self):
     for arg in self.flags.module:
       filename = os.path.basename(arg)
-      (name, ext) = os.path.splitext(filename)
+      (module_name, ext) = os.path.splitext(filename)
       contents = None
       with open(arg, "rt") as stream:
         contents = stream.read()
       tokens = token.tokenize(contents)
-      unit = parser.Parser(tokens).parse_program()
+      unit = parser.Parser(tokens, module_name).parse_program()
       module = self.compile_unit(unit)
-      self.modules[name] = module
+      self.modules[module_name] = module
 
   # Processes any --expression arguments.
   def run_expressions(self):

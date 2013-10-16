@@ -18,6 +18,7 @@
   F(bindings,           "bindings")                                            \
   F(body,               "body")                                                \
   F(core,               "core")                                                \
+  F(display_name,       "display_name")                                        \
   F(elements,           "elements")                                            \
   F(entry_point,        "entry_point")                                         \
   F(guard,              "guard")                                               \

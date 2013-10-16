@@ -1553,6 +1553,7 @@ GET_FAMILY_PROTOCOL_IMPL(module);
 
 ACCESSORS_IMPL(Module, module, acInFamilyOpt, ofNamespace, Namespace, namespace);
 ACCESSORS_IMPL(Module, module, acInFamilyOpt, ofMethodspace, Methodspace, methodspace);
+ACCESSORS_IMPL(Module, module, acNoCheck, 0, DisplayName, display_name);
 
 value_t module_validate(value_t value) {
   VALIDATE_FAMILY(ofModule, value);
@@ -1565,13 +1566,16 @@ value_t set_module_contents(value_t object, runtime_t *runtime, value_t contents
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(namespace, get_id_hash_map_at(contents, RSTR(runtime, namespace)));
   TRY_DEF(methodspace, get_id_hash_map_at(contents, RSTR(runtime, methodspace)));
+  TRY_DEF(display_name, get_id_hash_map_at(contents, RSTR(runtime, display_name)));
   set_module_namespace(object, namespace);
   set_module_methodspace(object, methodspace);
+  set_module_display_name(object, display_name);
   return success();
 }
 
 static value_t new_module(runtime_t *runtime) {
-  return new_heap_module(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing));
+  return new_heap_module(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing),
+      ROOT(runtime, nothing));
 }
 
 void module_print_on(value_t value, string_buffer_t *buf) {
@@ -1580,7 +1584,13 @@ void module_print_on(value_t value, string_buffer_t *buf) {
 
 void module_print_atomic_on(value_t value, string_buffer_t *buf) {
   CHECK_FAMILY(ofModule, value);
-  string_buffer_printf(buf, "<a module>");
+  string_buffer_printf(buf, "<module");
+  value_t display_name = get_module_display_name(value);
+  if (!is_null(display_name)) {
+    string_buffer_printf(buf, " ");
+    value_print_atomic_on_unquoted(get_module_display_name(value), buf);
+  }
+  string_buffer_printf(buf, ">");
 }
 
 static value_t module_print(builtin_arguments_t *args) {

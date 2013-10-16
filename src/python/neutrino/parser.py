@@ -16,10 +16,10 @@ class Parser(object):
   _BUILTIN_METHODSPACE = data.Key("subject", ("core", "builtin_methodspace"))
   _SAUSAGES = '()'
 
-  def __init__(self, tokens):
+  def __init__(self, tokens, module_name=None):
     self.tokens = tokens
     self.cursor = 0
-    self.unit = ast.Unit()
+    self.unit = ast.Unit(module_name)
     self.present = self.unit.get_present()
 
   # Does this parser have more tokens to process?
