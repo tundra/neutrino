@@ -55,7 +55,8 @@ struct family_behavior_t {
   // Function for validating an object.
   value_t (*validate)(value_t value);
   // Calculates the transient identity hash.
-  value_t (*transient_identity_hash)(value_t value, cycle_detector_t *detector);
+  value_t (*transient_identity_hash)(value_t value, hash_stream_t *stream,
+      cycle_detector_t *detector);
   // Returns true iff the two values are identical.
   value_t (*identity_compare)(value_t a, value_t b, cycle_detector_t *detector);
   // Returns a value indicating how a compares relative to b, if this kind of
@@ -113,7 +114,7 @@ value_t value_transient_identity_hash(value_t value);
 // others it must obtain those hashes by calling this, not
 // value_transient_identity_hash.
 value_t value_transient_identity_hash_cycle_protect(value_t value,
-    cycle_detector_t *detector);
+    hash_stream_t *stream, cycle_detector_t *detector);
 
 // Returns true iff the two values are identical.
 //
@@ -180,7 +181,7 @@ ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 value_t family##_validate(value_t value);                                      \
 ID(                                                                            \
   value_t family##_transient_identity_hash(value_t value,                      \
-    cycle_detector_t *detector);,                                              \
+    hash_stream_t *stream, cycle_detector_t *detector);,                       \
   )                                                                            \
 ID(                                                                            \
   value_t family##_identity_compare(value_t a, value_t b,                      \

@@ -131,36 +131,49 @@ value_t set_value_mode_unchecked(runtime_t *runtime, value_t self, value_mode_t 
 
 // --- I d e n t i t y   h a s h ---
 
-static value_t integer_transient_identity_hash(value_t self) {
+static value_t integer_transient_identity_hash(value_t self,
+    hash_stream_t *stream) {
   CHECK_DOMAIN(vdInteger, self);
-  return self;
+  hash_stream_write_tags(stream, vdInteger, __ofUnknown__);
+  hash_stream_write_int64(stream, get_integer_value(self));
+  return success();
 }
 
 static value_t default_object_transient_identity_hash(value_t value,
-    cycle_detector_t *detector) {
-  return OBJ_ADDR_HASH(value);
+    hash_stream_t *stream, cycle_detector_t *detector) {
+  // object_transient_identity_hash has already written the tags.
+  hash_stream_write_int64(stream, value.encoded);
+  return success();
 }
 
 static value_t object_transient_identity_hash(value_t self,
-    cycle_detector_t *detector) {
+    hash_stream_t *stream, cycle_detector_t *detector) {
+  // The toplevel delegator functions are responsible for writing the tags,
+  // that way the individual hashing functions don't all have to do that.
   family_behavior_t *behavior = get_object_family_behavior(self);
-  return (behavior->transient_identity_hash)(self, detector);
+  hash_stream_write_tags(stream, vdObject, behavior->family);
+  return (behavior->transient_identity_hash)(self, stream, detector);
 }
 
 value_t value_transient_identity_hash(value_t value) {
+  hash_stream_t stream;
+  hash_stream_init(&stream);
   cycle_detector_t detector;
   cycle_detector_init_bottom(&detector);
-  return value_transient_identity_hash_cycle_protect(value, &detector);
+  TRY(value_transient_identity_hash_cycle_protect(value, &stream, &detector));
+  int64_t hash = hash_stream_flush(&stream);
+  // Discard the top three bits to make it fit in a tagged integer.
+  return new_integer(hash >> 3);
 }
 
 value_t value_transient_identity_hash_cycle_protect(value_t value,
-    cycle_detector_t *detector) {
+    hash_stream_t *stream, cycle_detector_t *detector) {
   value_domain_t domain = get_value_domain(value);
   switch (domain) {
     case vdInteger:
-      return integer_transient_identity_hash(value);
+      return integer_transient_identity_hash(value, stream);
     case vdObject:
-      return object_transient_identity_hash(value, detector);
+      return object_transient_identity_hash(value, stream, detector);
     default:
       return new_unsupported_behavior_signal(domain, __ofUnknown__,
           ubTransientIdentityHash);

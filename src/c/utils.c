@@ -61,15 +61,6 @@ bool string_equals_cstr(string_t *a, const char *str) {
   return string_equals(a, &b);
 }
 
-size_t string_hash(string_t *str) {
-  // This is a dreadful hash but it has the right properties. Improve later.
-  size_t length = string_length(str);
-  size_t result = length;
-  for (size_t i = 0; i < length; i++)
-    result = (result << 1) ^ (string_char_at(str, i));
-  return result;
-}
-
 
 void blob_init(blob_t *blob, byte_t *data, size_t length) {
   blob->length = length;
@@ -418,8 +409,8 @@ void hash_stream_write_int64(hash_stream_t *stream, int64_t value) {
 ;
 }
 
-void hash_stream_write_data(hash_stream_t *stream, void *ptr, size_t size) {
-  uint8_t *bytes = ptr;
+void hash_stream_write_data(hash_stream_t *stream, const void *ptr, size_t size) {
+  const uint8_t *bytes = ptr;
   // Look away, it's hideous!
   // TODO: It should be possible to do this block-by-block, the tricky part is
   //   making sure that identical chunks of data hash the same whether they're

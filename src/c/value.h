@@ -12,6 +12,7 @@
 
 FORWARD(blob_t);
 FORWARD(cycle_detector_t);
+FORWARD(hash_stream_t);
 FORWARD(runtime_t);
 FORWARD(string_t);
 FORWARD(string_buffer_t);
@@ -239,7 +240,7 @@ static value_t new_moved_object(value_t target) {
   F(ArrayAst,                array_ast,                 _, _, X, X, _, _, X, _, _)\
   F(ArrayBuffer,             array_buffer,              _, _, _, X, _, _, _, X, X)\
   F(Blob,                    blob,                      _, _, _, X, X, _, _, _, _)\
-  F(Boolean,                 boolean,                   X, X, _, X, _, _, _, _, _)\
+  F(Boolean,                 boolean,                   X, _, _, X, _, _, _, _, _)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X)\
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _)\
   F(Guard,                   guard,                     _, _, _, _, _, _, _, X, _)\
@@ -262,7 +263,7 @@ static value_t new_moved_object(value_t target) {
   F(Namespace,               namespace,                 _, _, X, _, _, _, _, X, X)\
   F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _)\
   F(Nothing,                 nothing,                   _, _, _, _, _, _, _, _, _)\
-  F(Null,                    null,                      _, X, _, X, _, _, _, _, _)\
+  F(Null,                    null,                      _, _, _, X, _, _, _, _, _)\
   F(Operation,               operation,                 _, X, _, _, _, _, _, X, _)\
   F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _)\
   F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _)\
