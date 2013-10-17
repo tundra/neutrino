@@ -85,13 +85,10 @@ VALIDATE(in_family_opt(ofFamily, EXPR))
 
 // --- B e h a v i o r ---
 
-// Expands to a trivial implementation of print_on and print_atomic_on that just
-// prints the family's name within brackets.
+// Expands to a trivial implementation of print_on.
 #define TRIVIAL_PRINT_ON_IMPL(Family, family)                                  \
-void family##_print_on(value_t value, string_buffer_t *buf) {                  \
-  family##_print_atomic_on(value, buf);                                        \
-}                                                                              \
-void family##_print_atomic_on(value_t value, string_buffer_t *buf) {           \
+void family##_print_on(value_t value, string_buffer_t *buf,                    \
+    print_flags_t flags, size_t depth) {                                       \
   CHECK_FAMILY(of##Family, value);                                             \
   string_buffer_printf(buf, "#<" #family ">");                                 \
 }                                                                              \

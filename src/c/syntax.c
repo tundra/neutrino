@@ -150,14 +150,11 @@ value_t literal_ast_validate(value_t self) {
   return success();
 }
 
-void literal_ast_print_on(value_t value, string_buffer_t *buf) {
+void literal_ast_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
   string_buffer_printf(buf, "#<literal ast: ");
-  value_print_atomic_on(get_literal_ast_value(value), buf);
+  value_print_inner_on(get_literal_ast_value(value), buf, flags, depth - 1);
   string_buffer_printf(buf, ">");
-}
-
-void literal_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<literal ast>");
 }
 
 static value_t new_literal_ast(runtime_t *runtime) {
@@ -201,14 +198,11 @@ value_t array_ast_validate(value_t value) {
   return success();
 }
 
-void array_ast_print_on(value_t value, string_buffer_t *buf) {
+void array_ast_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
   string_buffer_printf(buf, "#<array ast: ");
-  value_print_atomic_on(get_array_ast_elements(value), buf);
+  value_print_inner_on(get_array_ast_elements(value), buf, flags, depth - 1);
   string_buffer_printf(buf, ">");
-}
-
-void array_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<array ast>");
 }
 
 value_t set_array_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
@@ -348,14 +342,11 @@ value_t sequence_ast_validate(value_t value) {
   return success();
 }
 
-void sequence_ast_print_on(value_t value, string_buffer_t *buf) {
+void sequence_ast_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
   string_buffer_printf(buf, "#<sequence ast: ");
-  value_print_atomic_on(get_sequence_ast_values(value), buf);
+  value_print_inner_on(get_sequence_ast_values(value), buf, flags, depth - 1);
   string_buffer_printf(buf, ">");
-}
-
-void sequence_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<sequence ast>");
 }
 
 value_t set_sequence_ast_contents(value_t object, runtime_t *runtime,
@@ -408,18 +399,18 @@ value_t local_declaration_ast_validate(value_t self) {
   return success();
 }
 
-void local_declaration_ast_print_on(value_t value, string_buffer_t *buf) {
+void local_declaration_ast_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
   string_buffer_printf(buf, "#<local declaration ast: ");
-  value_print_atomic_on(get_local_declaration_ast_symbol(value), buf);
+  value_print_inner_on(get_local_declaration_ast_symbol(value), buf, flags,
+      depth - 1);
   string_buffer_printf(buf, " := ");
-  value_print_atomic_on(get_local_declaration_ast_value(value), buf);
+  value_print_inner_on(get_local_declaration_ast_value(value), buf, flags,
+      depth - 1);
   string_buffer_printf(buf, " in ");
-  value_print_atomic_on(get_local_declaration_ast_body(value), buf);
+  value_print_inner_on(get_local_declaration_ast_body(value), buf, flags,
+      depth - 1);
   string_buffer_printf(buf, ">");
-}
-
-void local_declaration_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<local declaration ast>");
 }
 
 value_t set_local_declaration_ast_contents(value_t object, runtime_t *runtime,
@@ -488,14 +479,12 @@ value_t local_variable_ast_validate(value_t self) {
   return success();
 }
 
-void local_variable_ast_print_on(value_t value, string_buffer_t *buf) {
+void local_variable_ast_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
   string_buffer_printf(buf, "#<local variable ast: ");
-  value_print_atomic_on(get_local_variable_ast_symbol(value), buf);
+  value_print_inner_on(get_local_variable_ast_symbol(value), buf, flags,
+      depth - 1);
   string_buffer_printf(buf, ">");
-}
-
-void local_variable_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<local variable ast>");
 }
 
 value_t set_local_variable_ast_contents(value_t object, runtime_t *runtime,
@@ -565,14 +554,11 @@ value_t symbol_ast_validate(value_t self) {
   return success();
 }
 
-void symbol_ast_print_on(value_t value, string_buffer_t *buf) {
+void symbol_ast_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
   string_buffer_printf(buf, "#<symbol ast: ");
-  value_print_atomic_on(get_symbol_ast_name(value), buf);
+  value_print_inner_on(get_symbol_ast_name(value), buf, flags, depth - 1);
   string_buffer_printf(buf, ">");
-}
-
-void symbol_ast_print_atomic_on(value_t value, string_buffer_t *buf) {
-  string_buffer_printf(buf, "#<symbol ast>");
 }
 
 value_t set_symbol_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
