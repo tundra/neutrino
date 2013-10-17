@@ -269,7 +269,7 @@ void pseudo_random_shuffle(pseudo_random_t *random, void *data,
     size_t elem_count, size_t elem_size);
 
 
-// --- Utility for detecting object cycles ---
+// --- C y c l e   d e t e c t o r ---
 
 // Data used for cycle detection in recursive operations that act on possibly
 // circular data structures. The way circle detection works is to keep the
@@ -305,5 +305,36 @@ static const size_t kCircularObjectDepthThreshold = 16;
 // At which depths will we check for circles when looking at a possibly circular
 // object.
 static const size_t kCircularObjectCheckInterval = 8;
+
+
+// --- H a s h   S t r e a m ---
+
+// An accumulator that you can write data to and extract a hash value from. The
+// actual implementation is pretty awful but it's hard to tune before the
+// implementation is further along.
+typedef struct {
+  // The current accumulated hash value.
+  int64_t hash;
+} hash_stream_t;
+
+// Initialize a hash stream.
+void hash_stream_init(hash_stream_t *stream);
+
+// Writes a domain/family tag pair. By including this in the hash you'll get
+// different hash values for different types of objects even when their contents
+// are the same.
+void hash_stream_write_tags(hash_stream_t *stream, value_domain_t domain,
+    object_family_t family);
+
+// Writes a 64-bit integer into the hash.
+void hash_stream_write_int64(hash_stream_t *stream, int64_t value);
+
+// Writes a block of data of the given size (in bytes) to the hash.
+void hash_stream_write_data(hash_stream_t *stream, void *ptr, size_t size);
+
+// Completes the hash computation and returns the hash value. This can only
+// be called once since it clobbers the internal state of the stream.
+int64_t hash_stream_flush(hash_stream_t *stream);
+
 
 #endif // _UTILS
