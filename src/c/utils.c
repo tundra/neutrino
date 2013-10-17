@@ -391,3 +391,42 @@ value_t cycle_detector_enter(cycle_detector_t *outer, cycle_detector_t *inner,
     return success();
   }
 }
+
+
+// --- H a s h   s t r e a m ---
+
+void hash_stream_init(hash_stream_t *stream) {
+  stream->hash = 0;
+}
+
+void hash_stream_write_tags(hash_stream_t *stream, value_domain_t domain,
+    object_family_t family) {
+  hash_stream_write_int64(stream, (family << 8) | domain);
+}
+
+static inline uint64_t rotate(uint64_t value, uint8_t rotation) {
+  return (value << rotation) | (value >> (64 - rotation));
+}
+
+void hash_stream_write_int64(hash_stream_t *stream, int64_t value) {
+  // TODO: I bet this is actually more expensive than a proper implementation
+  //   would be. But this isn't the time to look into that.
+  uint64_t hash_before = stream->hash;
+  uint8_t rotation = (hash_before ^ value) & 0x3F;
+  uint64_t rotated = rotate(hash_before, rotation);
+  stream->hash = rotated ^ value ^ 0xA90F0F60EB3D4C56LL;
+;
+}
+
+void hash_stream_write_data(hash_stream_t *stream, void *ptr, size_t size) {
+  uint8_t *bytes = ptr;
+  // Look away, it's hideous!
+  for (size_t i = 0; i < size; i++) {
+    hash_stream_write_int64(stream, bytes[i] ^ rotate(i, i & 0x3F));
+  }
+}
+
+int64_t hash_stream_flush(hash_stream_t *stream) {
+  hash_stream_write_int64(stream, 0x048812362BDB451ELL);
+  return stream->hash;
+}

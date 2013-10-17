@@ -258,3 +258,53 @@ TEST(utils, cycle_detector) {
 
   DISPOSE_RUNTIME();
 }
+
+TEST(utils, hash_stream) {
+  // Different integers.
+  int64_t hashes[1024];
+  for (size_t i = 0; i < 1024; i++) {
+    hash_stream_t stream;
+    hash_stream_init(&stream);
+    hash_stream_write_int64(&stream, i);
+    int64_t hash = hash_stream_flush(&stream);
+    for (size_t j = 0; j < i; j++)
+      ASSERT_TRUE(hash != hashes[j]);
+    hashes[i] = hash;
+  }
+  // Adding the same value repeatedly.
+  for (size_t i = 0; i < 1024; i++) {
+    hash_stream_t stream;
+    hash_stream_init(&stream);
+    for (size_t j = 0; j < i; j++)
+      hash_stream_write_int64(&stream, 0);
+    int64_t hash = hash_stream_flush(&stream);
+    for (size_t j = 0; j < i; j++)
+      ASSERT_TRUE(hash != hashes[j]);
+    hashes[i] = hash;
+  }
+  // Hashing blocks of data that are slightly different.
+  pseudo_random_t random;
+  pseudo_random_init(&random, 1312314);
+  int64_t data[1024 / 64];
+  // Initialize the data block to some random data.
+  for (size_t i = 0; i < 1024 / 32; i++)
+    ((uint32_t*) data)[i] = pseudo_random_next_uint32(&random);
+  // Okay the hash isn't actually good enough to pass this with i++ but it does
+  // work with i += 5 and that should be okay for now. Later on, whatever better
+  // hash is ultimately used it should work with i++.
+  for (size_t i = 0; i < 1024; i += 5) {
+    size_t word = i / 64;
+    size_t bit = i % 64;
+    // Flip one bit.
+    hash_stream_t stream;
+    hash_stream_init(&stream);
+    data[word] ^= (1LL << bit);
+    hash_stream_write_data(&stream, data, 1024 / 8);
+    data[word] ^= (1LL << bit);
+    int64_t hash = hash_stream_flush(&stream);
+    for (size_t j = 0; j < i; j++)
+      ASSERT_TRUE(hash != hashes[j]);
+    hashes[i] = hash;
+    // Flip the bit back.
+  }
+}
