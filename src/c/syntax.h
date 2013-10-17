@@ -255,10 +255,4 @@ ACCESSORS_DECL(name_ast, path);
 ACCESSORS_DECL(name_ast, phase);
 
 
-// --- P a t h ---
-
-static const size_t kPathAstSize = OBJECT_SIZE(1);
-static const size_t kPathAstPartsOffset = OBJECT_FIELD_OFFSET(0);
-
-
 #endif // _SYNTAX

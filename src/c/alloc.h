@@ -134,6 +134,14 @@ value_t new_heap_module(runtime_t *runtime, value_t namespace, value_t methodspa
 // Creates a new operation object.
 value_t new_heap_operation(runtime_t *runtime, operation_type_t type, value_t value);
 
+// Creates a new path with the given head and tail.
+value_t new_heap_path(runtime_t *runtime, alloc_flags_t flags, value_t head,
+    value_t tail);
+
+// Creates a new path with segments taken from the given array of names,
+// starting from the given offset.
+value_t new_heap_path_with_names(runtime_t *runtime, value_t names, size_t offset);
+
 
 // --- P r o c e s s ---
 

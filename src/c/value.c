@@ -1575,6 +1575,68 @@ value_t add_module_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
 }
 
 
+// --- P a t h ---
+
+GET_FAMILY_PROTOCOL_IMPL(path);
+NO_BUILTIN_METHODS(path);
+
+ACCESSORS_IMPL(Path, path, acNoCheck, 0, RawHead, raw_head);
+ACCESSORS_IMPL(Path, path, acInFamilyOpt, ofPath, RawTail, raw_tail);
+
+value_t path_validate(value_t self) {
+  VALIDATE_FAMILY(ofPath, self);
+  VALIDATE_FAMILY_OPT(ofPath, get_path_raw_tail(self));
+  return success();
+}
+
+bool is_path_empty(value_t value) {
+  CHECK_FAMILY(ofPath, value);
+  return is_nothing(get_path_raw_head(value));
+}
+
+value_t set_path_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(names, get_id_hash_map_at(contents, RSTR(runtime, names)));
+  if (get_array_length(names) == 0) {
+    CHECK_TRUE("new path was non-empty", is_path_empty(object));
+  } else {
+    value_t head = get_array_at(names, 0);
+    TRY_DEF(tail, new_heap_path_with_names(runtime, names, 1));
+    set_path_raw_head(object, head);
+    set_path_raw_tail(object, tail);
+  }
+  return success();
+}
+
+value_t get_path_head(value_t path) {
+  value_t raw_head = get_path_raw_head(path);
+  SIG_CHECK_TRUE("head of empty path", scEmptyPath, !is_nothing(raw_head));
+  return raw_head;
+}
+
+value_t get_path_tail(value_t path) {
+  value_t raw_tail = get_path_raw_tail(path);
+  SIG_CHECK_TRUE("tail of empty path", scEmptyPath, !is_nothing(raw_tail));
+  return raw_tail;
+}
+
+void path_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  CHECK_FAMILY(ofPath, value);
+  if (is_path_empty(value)) {
+    string_buffer_printf(buf, "#<empty path>");
+  } else {
+    value_t current = value;
+    while (!is_path_empty(current)) {
+      string_buffer_printf(buf, ":");
+      value_print_inner_on(get_path_head(current), buf, flags | pfUnquote,
+          depth - 1);
+      current = get_path_tail(current);
+    }
+  }
+}
+
+
 // --- O r d e r i n g ---
 
 int ordering_to_int(value_t value) {
@@ -1612,6 +1674,11 @@ static value_t new_protocol(runtime_t *runtime) {
   return new_heap_protocol(runtime, afMutable, ROOT(runtime, nothing));
 }
 
+static value_t new_path(runtime_t *runtime) {
+  return new_heap_path(runtime, afMutable, ROOT(runtime, nothing),
+      ROOT(runtime, nothing));
+}
+
 value_t add_plankton_factory(value_t map, value_t category, const char *name,
     factory_constructor_t constructor, runtime_t *runtime) {
   TRY_DEF(factory, new_heap_factory(runtime, constructor));
@@ -1624,6 +1691,7 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, core, "Methodspace", new_methodspace, runtime));
   TRY(add_plankton_factory(map, core, "Module", new_module, runtime));
   TRY(add_plankton_factory(map, core, "Namespace", new_namespace, runtime));
+  TRY(add_plankton_factory(map, core, "Path", new_path, runtime));
   TRY(add_plankton_factory(map, core, "Protocol", new_protocol, runtime));
   // Singletons
   TRY(add_plankton_binding(map, core, "subject", ROOT(runtime, subject_key),

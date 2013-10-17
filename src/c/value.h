@@ -34,6 +34,7 @@ const char *get_value_domain_name(value_domain_t domain);
 // Invokes the given macro for each signal cause.
 #define ENUM_SIGNAL_CAUSES(F)                                                  \
   F(Circular)                                                                  \
+  F(EmptyPath)                                                                 \
   F(HeapExhausted)                                                             \
   F(InternalFamily)                                                            \
   F(InvalidCast)                                                               \
@@ -265,6 +266,7 @@ static value_t new_moved_object(value_t target) {
   F(Operation,               operation,                 _, X, _, _, _, _, _, X, _)\
   F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _)\
   F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _)\
+  F(Path,                    path,                      _, _, _, X, _, _, _, X, _)\
   F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, _, _)\
   F(Protocol,                protocol,                  _, _, X, X, _, _, _, X, _)\
   F(Roots,                   roots,                     _, _, _, _, _, _, _, X, X)\
@@ -964,6 +966,36 @@ ACCESSORS_DECL(module, methodspace);
 
 // This display name to show when inspecting/printing the module.
 ACCESSORS_DECL(module, display_name);
+
+
+// --- P a t h ---
+
+static const size_t kPathSize = OBJECT_SIZE(2);
+static const size_t kPathRawHeadOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kPathRawTailOffset = OBJECT_FIELD_OFFSET(1);
+
+// The first part of the path. For instance, the head of a:b:c is a. This can
+// be safely called on any path; for the empty path the nothing object will
+// be returned.
+ACCESSORS_DECL(path, raw_head);
+
+// The end of the path. For instance, the tail of a:b:c is b:c. This can
+// be safely called on any path; for the empty path the nothing object will
+// be returned.
+ACCESSORS_DECL(path, raw_tail);
+
+// Returns the head of the given non-empty path. If the path is empty a signal
+// will be returned in soft check mode, otherwise the nothing object will be
+// returned.
+value_t get_path_head(value_t path);
+
+// Returns the tail of the given non-empty path. If the path is empty a signal
+// will be returned in soft check mode, otherwise the nothing object will be
+// returned.
+value_t get_path_tail(value_t path);
+
+// Returns true iff the given path is empty.
+bool is_path_empty(value_t path);
 
 
 // --- O r d e r i n g ---

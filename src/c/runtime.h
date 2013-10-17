@@ -28,6 +28,7 @@
   F(methods,            "methods")                                             \
   F(methodspace,        "methodspace")                                         \
   F(name,               "name")                                                \
+  F(names,              "names")                                               \
   F(namespace,          "namespace")                                           \
   F(parameters,         "parameters")                                          \
   F(path,               "path")                                                \
@@ -51,6 +52,7 @@
   F(empty_array_buffer)                                                        \
   F(empty_array)                                                               \
   F(empty_instance_species)                                                    \
+  F(empty_path)                                                                \
   F(fahlse)                                                                    \
   F(integer_protocol)                                                          \
   F(nothing)                                                                   \
