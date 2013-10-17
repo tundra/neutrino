@@ -235,15 +235,11 @@ ACCESSORS_DECL(method_ast, body);
 
 // --- P r o g r a m -  a s t --
 
-static const size_t kProgramAstSize = OBJECT_SIZE(2);
+static const size_t kProgramAstSize = OBJECT_SIZE(1);
 static const size_t kProgramAstEntryPointOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kProgramAstModuleOffset = OBJECT_FIELD_OFFSET(1);
 
 // The program entry-point expression.
 ACCESSORS_DECL(program_ast, entry_point);
-
-// The program's main module.
-ACCESSORS_DECL(program_ast, module);
 
 
 // --- N a m e ---

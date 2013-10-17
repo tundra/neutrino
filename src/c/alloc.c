@@ -532,12 +532,10 @@ value_t new_heap_method_ast(runtime_t *runtime, value_t signature, value_t body)
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point,
-    value_t module) {
+value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point) {
   size_t size = kProgramAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, program_ast_species)));
   set_program_ast_entry_point(result, entry_point);
-  set_program_ast_module(result, module);
   return post_create_sanity_check(result, size);
 }
 
