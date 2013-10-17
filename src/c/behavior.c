@@ -141,13 +141,15 @@ static value_t integer_transient_identity_hash(value_t self,
 
 static value_t default_object_transient_identity_hash(value_t value,
     hash_stream_t *stream, cycle_detector_t *detector) {
-  hash_stream_write_tags(stream, vdObject, get_object_family(value));
+  // object_transient_identity_hash has already written the tags.
   hash_stream_write_int64(stream, value.encoded);
   return success();
 }
 
 static value_t object_transient_identity_hash(value_t self,
     hash_stream_t *stream, cycle_detector_t *detector) {
+  // The toplevel delegator functions are responsible for writing the tags,
+  // that way the individual hashing functions don't all have to do that.
   family_behavior_t *behavior = get_object_family_behavior(self);
   hash_stream_write_tags(stream, vdObject, behavior->family);
   return (behavior->transient_identity_hash)(self, stream, detector);
