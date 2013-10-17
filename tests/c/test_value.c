@@ -54,6 +54,9 @@ TEST(value, fits_as_tagged_integer) {
 }
 
 TEST(value, encoding) {
+  ASSERT_EQ(sizeof(unknown_value_t), sizeof(value_t));
+  ASSERT_EQ(sizeof(integer_value_t), sizeof(value_t));
+  ASSERT_EQ(sizeof(signal_value_t), sizeof(value_t));
   ASSERT_EQ(sizeof(encoded_value_t), sizeof(value_t));
   value_t v0 = new_integer(0);
   ASSERT_EQ(vdInteger, v0.encoded & 0x7);
