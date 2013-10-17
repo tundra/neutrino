@@ -310,16 +310,17 @@ static const size_t kCircularObjectCheckInterval = 8;
 // --- H a s h   S t r e a m ---
 
 // An accumulator that you can write data to and extract a hash value from. The
-// actual implementation is awful (probably) but it's hard to tune before the
+// actual implementation is pretty awful but it's hard to tune before the
 // implementation is further along.
 typedef struct {
+  // The current accumulated hash value.
   int64_t hash;
 } hash_stream_t;
 
 // Initialize a hash stream.
 void hash_stream_init(hash_stream_t *stream);
 
-// Writes a domain/family pair. By including this in the hash you'll get
+// Writes a domain/family tag pair. By including this in the hash you'll get
 // different hash values for different types of objects even when their contents
 // are the same.
 void hash_stream_write_tags(hash_stream_t *stream, value_domain_t domain,
@@ -328,7 +329,7 @@ void hash_stream_write_tags(hash_stream_t *stream, value_domain_t domain,
 // Writes a 64-bit integer into the hash.
 void hash_stream_write_int64(hash_stream_t *stream, int64_t value);
 
-// Writes a block of data of the given size (in bytes) to the stream.
+// Writes a block of data of the given size (in bytes) to the hash.
 void hash_stream_write_data(hash_stream_t *stream, void *ptr, size_t size);
 
 // Completes the hash computation and returns the hash value. This can only

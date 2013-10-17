@@ -291,7 +291,7 @@ TEST(utils, hash_stream) {
     ((uint32_t*) data)[i] = pseudo_random_next_uint32(&random);
   // Okay the hash isn't actually good enough to pass this with i++ but it does
   // work with i += 5 and that should be okay for now. Later on, whatever better
-  // hash is ultimately used it should work with i++.
+  // hash is ultimately used it should definitely pass with i++.
   for (size_t i = 0; i < 1024; i += 5) {
     size_t word = i / 64;
     size_t bit = i % 64;

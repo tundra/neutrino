@@ -421,6 +421,10 @@ void hash_stream_write_int64(hash_stream_t *stream, int64_t value) {
 void hash_stream_write_data(hash_stream_t *stream, void *ptr, size_t size) {
   uint8_t *bytes = ptr;
   // Look away, it's hideous!
+  // TODO: It should be possible to do this block-by-block, the tricky part is
+  //   making sure that identical chunks of data hash the same whether they're
+  //   aligned or not. Or ensuring that all blocks of data will be 64-bit
+  //   aligned.
   for (size_t i = 0; i < size; i++) {
     hash_stream_write_int64(stream, bytes[i] ^ rotate(i, i & 0x3F));
   }
