@@ -63,12 +63,15 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   // values below.
   TRY_DEF(null, new_heap_null(runtime));
   RAW_ROOT(roots, null) = null;
-  TRY_SET(RAW_ROOT(roots, nothing), new_heap_nothing(runtime));
+  TRY_DEF(nothing, new_heap_nothing(runtime));
+  RAW_ROOT(roots, nothing) = nothing;
   TRY_SET(RAW_ROOT(roots, thrue), new_heap_boolean(runtime, true));
   TRY_SET(RAW_ROOT(roots, fahlse), new_heap_boolean(runtime, false));
   TRY_DEF(empty_array, new_heap_array(runtime, 0));
   RAW_ROOT(roots, empty_array) = empty_array;
   TRY_SET(RAW_ROOT(roots, empty_array_buffer), new_heap_array_buffer(runtime, 0));
+  TRY_SET(RAW_ROOT(roots, empty_path), new_heap_path(runtime, afFreeze, nothing,
+      nothing));
   TRY_SET(RAW_ROOT(roots, any_guard), new_heap_guard(runtime, afFreeze, gtAny, null));
   TRY_SET(RAW_ROOT(roots, integer_protocol), new_heap_protocol(runtime, afFreeze, null));
   TRY_DEF(empty_protocol, new_heap_protocol(runtime, afFreeze, null));
@@ -164,6 +167,8 @@ value_t roots_validate(value_t roots) {
   VALIDATE_OBJECT(ofArray, RAW_ROOT(roots, empty_array));
   VALIDATE_OBJECT(ofArrayBuffer, RAW_ROOT(roots, empty_array_buffer));
   VALIDATE_CHECK_EQ(0, get_array_buffer_length(RAW_ROOT(roots, empty_array_buffer)));
+  VALIDATE_OBJECT(ofPath, RAW_ROOT(roots, empty_path));
+  VALIDATE_CHECK_TRUE(is_path_empty(RAW_ROOT(roots, empty_path)));
   VALIDATE_OBJECT(ofGuard, RAW_ROOT(roots, any_guard));
   VALIDATE_CHECK_EQ(gtAny, get_guard_type(RAW_ROOT(roots, any_guard)));
   VALIDATE_OBJECT(ofProtocol, RAW_ROOT(roots, integer_protocol));

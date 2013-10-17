@@ -855,3 +855,29 @@ TEST(value, unsupported) {
   CHECK_UNSUPPORTED(vdObject, ofArray, ubPlanktonSerialize,
       "%<signal: UnsupportedBehavior(PlanktonSerialize of Object/Array)>");
 }
+
+
+TEST(value, paths) {
+  CREATE_RUNTIME();
+
+  value_t empty = ROOT(runtime, empty_path);
+  ASSERT_CHECK_FAILURE(scEmptyPath, get_path_head(empty));
+  ASSERT_CHECK_FAILURE(scEmptyPath, get_path_tail(empty));
+  ASSERT_FAMILY(ofNothing, get_path_raw_head(empty));
+  ASSERT_FAMILY(ofNothing, get_path_raw_tail(empty));
+
+  value_t segments = variant_to_value(runtime, vArray(3,
+      vStr("a") o vStr("b") o vStr("c")));
+  value_t path = new_heap_path_with_names(runtime, segments, 0);
+  ASSERT_VAREQ(vStr("a"), get_path_head(path));
+  ASSERT_VAREQ(vStr("b"), get_path_head(get_path_tail(path)));
+  ASSERT_VAREQ(vStr("c"), get_path_head(get_path_tail(get_path_tail(path))));
+  ASSERT_TRUE(is_path_empty(get_path_tail(get_path_tail(get_path_tail(path)))));
+
+  value_to_string_t to_string;
+  const char *found = value_to_string(&to_string, path);
+  ASSERT_C_STREQ(":a:b:c", found);
+  dispose_value_to_string(&to_string);
+
+  DISPOSE_RUNTIME();
+}

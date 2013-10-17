@@ -296,6 +296,27 @@ value_t new_heap_operation(runtime_t *runtime, operation_type_t type, value_t va
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_path(runtime_t *runtime, alloc_flags_t flags, value_t head,
+    value_t tail) {
+  size_t size = kPathSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_path_species)));
+  set_path_raw_head(result, head);
+  set_path_raw_tail(result, tail);
+  TRY(post_process_result(runtime, result, flags));
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_path_with_names(runtime_t *runtime, value_t names,
+    size_t offset) {
+  size_t length = get_array_length(names);
+  if (offset == length)
+    return ROOT(runtime, empty_path);
+  TRY_DEF(tail, new_heap_path_with_names(runtime, names, offset + 1));
+  value_t head = get_array_at(names, offset);
+  return new_heap_path(runtime, afMutable, head, tail);
+}
+
 
 // --- P r o c e s s ---
 
