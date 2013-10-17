@@ -52,9 +52,6 @@ int string_compare(string_t *a, string_t *b);
 // Returns true iff the given string is equal to the given c-string.
 bool string_equals_cstr(string_t *a, const char *b);
 
-// Calculates a hash code for the given string.
-size_t string_hash(string_t *str);
-
 
 // --- B l o b ---
 
@@ -312,10 +309,10 @@ static const size_t kCircularObjectCheckInterval = 8;
 // An accumulator that you can write data to and extract a hash value from. The
 // actual implementation is pretty awful but it's hard to tune before the
 // implementation is further along.
-typedef struct {
+struct hash_stream_t {
   // The current accumulated hash value.
   int64_t hash;
-} hash_stream_t;
+};
 
 // Initialize a hash stream.
 void hash_stream_init(hash_stream_t *stream);
@@ -330,7 +327,7 @@ void hash_stream_write_tags(hash_stream_t *stream, value_domain_t domain,
 void hash_stream_write_int64(hash_stream_t *stream, int64_t value);
 
 // Writes a block of data of the given size (in bytes) to the hash.
-void hash_stream_write_data(hash_stream_t *stream, void *ptr, size_t size);
+void hash_stream_write_data(hash_stream_t *stream, const void *ptr, size_t size);
 
 // Completes the hash computation and returns the hash value. This can only
 // be called once since it clobbers the internal state of the stream.

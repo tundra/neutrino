@@ -262,7 +262,7 @@ TEST(utils, cycle_detector) {
 TEST(utils, hash_stream) {
   // Different integers.
   int64_t hashes[1024];
-  for (size_t i = 0; i < 1024; i++) {
+  for (size_t i = 0; i < 256; i++) {
     hash_stream_t stream;
     hash_stream_init(&stream);
     hash_stream_write_int64(&stream, i);

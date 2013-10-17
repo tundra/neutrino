@@ -393,11 +393,12 @@ void get_string_layout(value_t value, object_layout_t *layout) {
   object_layout_set(layout, size, size);
 }
 
-value_t string_transient_identity_hash(value_t value, cycle_detector_t *outer) {
+value_t string_transient_identity_hash(value_t value, hash_stream_t *stream,
+    cycle_detector_t *outer) {
   string_t contents;
   get_string_contents(value, &contents);
-  size_t hash = string_hash(&contents);
-  return new_integer(hash);
+  hash_stream_write_data(stream, contents.chars, contents.length);
+  return success();
 }
 
 value_t string_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
@@ -720,17 +721,17 @@ value_t binary_search_pair_array(value_t self, value_t key) {
   return new_signal(scNotFound);
 }
 
-value_t array_transient_identity_hash(value_t value, cycle_detector_t *outer) {
+value_t array_transient_identity_hash(value_t value, hash_stream_t *stream,
+    cycle_detector_t *outer) {
   size_t length = get_array_length(value);
-  int64_t result = length;
+  hash_stream_write_int64(stream, length);
   cycle_detector_t inner;
   TRY(cycle_detector_enter(outer, &inner, value));
   for (size_t i = 0; i < length; i++) {
     value_t elm = get_array_at(value, i);
-    TRY_DEF(hash, value_transient_identity_hash_cycle_protect(elm, &inner));
-    result = (result << 8) | (result >> 24) | get_integer_value(hash);
+    TRY(value_transient_identity_hash_cycle_protect(elm, stream, &inner));
   }
-  return new_integer(result & ((1LL << 61) - 1LL));
+  return success();
 }
 
 value_t array_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
@@ -1149,18 +1150,6 @@ value_t null_validate(value_t value) {
   return success();
 }
 
-value_t null_transient_identity_hash(value_t value, cycle_detector_t *outer) {
-  static const size_t kNullHash = 0x4323;
-  return new_integer(kNullHash);
-}
-
-value_t null_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
-  // There is only one null so you should never end up comparing two different
-  // ones.
-  CHECK_EQ("multiple nulls", a.encoded, b.encoded);
-  return internal_true_value();
-}
-
 void null_print_on(value_t value, string_buffer_t *buf,
     print_flags_t flags, size_t depth) {
   string_buffer_printf(buf, "null");
@@ -1203,17 +1192,6 @@ value_t boolean_validate(value_t value) {
   bool which = get_boolean_value(value);
   VALIDATE((which == true) || (which == false));
   return success();
-}
-
-value_t boolean_transient_identity_hash(value_t value, cycle_detector_t *outer) {
-  static const size_t kTrueHash = 0x3213;
-  static const size_t kFalseHash = 0x5423;
-  return new_integer(get_boolean_value(value) ? kTrueHash : kFalseHash);
-}
-
-value_t boolean_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
-  // There is only one true and false which are both only equal to themselves.
-  return to_internal_boolean(a.encoded == b.encoded);
 }
 
 value_t boolean_ordering_compare(value_t a, value_t b) {

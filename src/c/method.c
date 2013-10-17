@@ -624,14 +624,15 @@ value_t operation_validate(value_t self) {
   return success();
 }
 
-value_t operation_transient_identity_hash(value_t self, cycle_detector_t *outer) {
+value_t operation_transient_identity_hash(value_t self, hash_stream_t *stream,
+    cycle_detector_t *outer) {
   value_t value = get_operation_value(self);
   operation_type_t type = get_operation_type(self);
   cycle_detector_t inner;
   TRY(cycle_detector_enter(outer, &inner, self));
-  TRY_DEF(value_hash, value_transient_identity_hash_cycle_protect(value,
-      &inner));
-  return new_integer(~(get_integer_value(value_hash) ^ type));
+  hash_stream_write_int64(stream, type);
+  TRY(value_transient_identity_hash_cycle_protect(value, stream, &inner));
+  return success();
 }
 
 value_t operation_identity_compare(value_t a, value_t b,
