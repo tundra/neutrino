@@ -405,11 +405,9 @@ class Name(object):
 class Program(object):
 
   @plankton.field("entry_point")
-  @plankton.field("module")
-  def __init__(self, elements=None, entry_point=None, module=None):
+  def __init__(self, elements=None, entry_point=None):
     self.elements = elements
     self.entry_point = entry_point
-    self.module = module
 
   def accept(self, visitor):
     return visitor.visit_program(self)
@@ -553,7 +551,11 @@ class Unit(object):
 
   def get_present_program(self):
     last_stage = self.get_present()
-    return Program(last_stage.elements, self.entry_point, last_stage.get_module())
+    return Program(last_stage.elements, self.entry_point)
+
+  def get_present_module(self):
+    last_stage = self.get_present()
+    return last_stage.get_module()
 
   def accept(self, visitor):
     return visitor.visit_unit(self)

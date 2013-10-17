@@ -35,7 +35,7 @@ class BindingHelper(object):
     # For now just single-name imports will be good enough.
     assert len(path) == 1
     name = path[0]
-    return self.modules[name].module
+    return self.modules[name]
 
 
 # Apply the various declarations to create the program bindings. This is only

@@ -83,8 +83,8 @@ class Main(object):
         contents = stream.read()
       tokens = token.tokenize(contents)
       unit = parser.Parser(tokens, module_name).parse_program()
-      module = self.compile_unit(unit)
-      self.modules[module_name] = module
+      self.compile_unit(unit)
+      self.modules[module_name] = unit.get_present_module()
 
   # Processes any --expression arguments.
   def run_expressions(self):
