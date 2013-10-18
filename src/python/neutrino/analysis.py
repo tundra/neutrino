@@ -64,7 +64,9 @@ class ScopeVisitor(ast.Visitor):
 
   def visit_variable(self, that):
     assert that.symbol is None
-    that.symbol = self.lookup_name(that.get_name())
+    path = that.ident.path
+    if path.is_singular():
+      that.symbol = self.lookup_name(path.get_head())
 
   def visit_static_binding(self, that):
     # Static bindings cannot refer to locally scoped bindings. Maybe they should

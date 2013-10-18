@@ -80,17 +80,16 @@ entry_point {
 19
 -- END
 
-# TODO: fix multi-level lookup
-# -- INPUT:
-# def @This := @pytrino:new_protocol("This");
-# def @obj := @pytrino:new_instance(@This);
-# def ($this).foo() => 6;
-# def ($this is @This).foo() => 7;
-# entry_point {
-#   (1).foo().print();
-#   @obj.foo().print();
-# }
-# -- OUTPUT:
-# 6
-# 7
-# -- END
+-- INPUT:
+def @This := @pytrino:new_protocol("This");
+def @obj := @pytrino:new_instance(@This);
+def ($this).foo() => 6;
+def ($this is @This).foo() => 7;
+entry_point {
+  (1).foo().print();
+  @obj.foo().print();
+}
+-- OUTPUT:
+6
+7
+-- END

@@ -27,8 +27,10 @@ class EvaluateVisitor(ast.Visitor):
     return that.value
 
   def visit_variable(self, that):
-    value = that.namespace.lookup(that.get_name())
-    return value
+    current = that.namespace
+    for part in that.ident.get_path_parts():
+      current = current.lookup(part)
+    return current
 
   # Map from neutrino operator names to the python implementations
   OPERATOR_MAP = {
@@ -72,15 +74,21 @@ def new_neutrino_instance(protocol):
 def new_neutrino_protocol(display_name):
   return data.Protocol(display_name)
 
+class PytrinoProxy(object):
+
+  def lookup(self, name):
+    if name == 'new_instance':
+      return new_neutrino_instance
+    elif name == 'new_protocol':
+      return new_neutrino_protocol
+
+_PYTRINO = PytrinoProxy()
+
 # Looks up a name that is magically available when doing static evaluation. It's
 # a hack until we get imports working properly.
 def lookup_special_binding(name):
-  if name == ('pytrino', 'new_instance'):
-    return new_neutrino_instance
-  elif name == ('pytrino', 'new_protocol'):
-    return new_neutrino_protocol
-  else:
-    return None
+  if name == 'pytrino':
+    return _PYTRINO
 
 # Evaluate the given expression. The evaluation will only be approximate so
 # it may fail if there are constructs or operations it can't handle.

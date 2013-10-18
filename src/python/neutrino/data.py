@@ -141,6 +141,12 @@ class Path(object):
     assert self.is_singular()
     return self.names[0]
 
+  def get_head(self):
+    return self.names[0]
+
+  def get_path_parts(self):
+    return self.names
+
   def __hash__(self):
     return hash(tuple(self.names))
 
@@ -173,6 +179,9 @@ class Identifier(object):
   # name an error is reported.
   def get_name(self):
     return self.path.get_name()
+
+  def get_path_parts(self):
+    return self.path.get_path_parts()
 
   def __str__(self):
     if self.stage < 0:
