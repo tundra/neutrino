@@ -1614,6 +1614,34 @@ void path_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
   }
 }
 
+value_t path_transient_identity_hash(value_t value, hash_stream_t *stream,
+    cycle_detector_t *outer) {
+  cycle_detector_t inner;
+  cycle_detector_enter(outer, &inner, value);
+  // TODO: This should really be done iteratively since this gives a huge
+  //   pointless overhead per segment. Alternatively it makes sense to
+  //   canonicalize paths and then the address works as a hash.
+  value_t head = get_path_raw_head(value);
+  value_t tail = get_path_raw_tail(value);
+  TRY(value_transient_identity_hash_cycle_protect(head, stream, &inner));
+  TRY(value_transient_identity_hash_cycle_protect(tail, stream, &inner));
+  return success();
+}
+
+value_t path_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
+  cycle_detector_t inner;
+  TRY(cycle_detector_enter(outer, &inner, a));
+  value_t a_head = get_path_raw_head(a);
+  value_t b_head = get_path_raw_head(b);
+  TRY_DEF(cmp_head, value_identity_compare_cycle_protect(a_head, b_head, &inner));
+  if (!is_internal_true_value(cmp_head))
+    return cmp_head;
+  // TODO: As above, this should be done iteratively.
+  value_t a_tail = get_path_raw_tail(a);
+  value_t b_tail = get_path_raw_tail(b);
+  return value_identity_compare_cycle_protect(a_tail, b_tail, &inner);
+}
+
 
 // --- O r d e r i n g ---
 
