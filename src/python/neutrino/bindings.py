@@ -31,10 +31,8 @@ class BindingHelper(object):
   def evaluate(self, expr):
     return interp.evaluate(expr)
 
-  def lookup_import(self, path):
+  def lookup_import(self, name):
     # For now just single-name imports will be good enough.
-    assert len(path) == 1
-    name = path[0]
     return self.modules[name]
 
 

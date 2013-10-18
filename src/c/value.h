@@ -245,6 +245,7 @@ static value_t new_moved_object(value_t target) {
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _)\
   F(Guard,                   guard,                     _, _, _, _, _, _, _, X, _)\
   F(GuardAst,                guard_ast,                 _, _, X, X, _, _, _, _, _)\
+  F(Identifier,              identifier,                _, _, X, _, _, _, _, _, _)\
   F(IdHashMap,               id_hash_map,               _, _, _, X, _, X, _, X, X)\
   F(Instance,                instance,                  _, _, X, X, _, _, _, _, _)\
   F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _, _)\
@@ -259,7 +260,6 @@ static value_t new_moved_object(value_t target) {
   F(Methodspace,             methodspace,               _, _, X, _, _, _, _, X, X)\
   F(Module,                  module,                    _, _, X, X, _, _, _, X, _)\
   F(MutableRoots,            mutable_roots,             _, _, _, _, _, _, _, X, X)\
-  F(NameAst,                 name_ast,                  _, _, X, _, _, _, _, _, _)\
   F(Namespace,               namespace,                 _, _, X, _, _, _, _, X, X)\
   F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _)\
   F(Nothing,                 nothing,                   _, _, _, _, _, _, _, _, _)\
@@ -267,7 +267,7 @@ static value_t new_moved_object(value_t target) {
   F(Operation,               operation,                 _, X, _, _, _, _, _, X, _)\
   F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _)\
   F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _)\
-  F(Path,                    path,                      _, X, _, X, _, _, _, X, _)\
+  F(Path,                    path,                      _, X, X, X, _, _, _, X, _)\
   F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, _, _)\
   F(Protocol,                protocol,                  _, _, X, X, _, _, _, X, _)\
   F(Roots,                   roots,                     _, _, _, _, _, _, _, X, X)\
@@ -997,6 +997,19 @@ value_t get_path_tail(value_t path);
 
 // Returns true iff the given path is empty.
 bool is_path_empty(value_t path);
+
+
+// --- I d e n t i f i e r ---
+
+static const size_t kIdentifierSize = OBJECT_SIZE(2);
+static const size_t kIdentifierPathOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kIdentifierStageOffset = OBJECT_FIELD_OFFSET(1);
+
+// The path (ie. x:y:z etc.) of this identifier.
+ACCESSORS_DECL(identifier, path);
+
+// The stage (ie. $..., @..., etc) of this identifier.
+ACCESSORS_DECL(identifier, stage);
 
 
 // --- O r d e r i n g ---

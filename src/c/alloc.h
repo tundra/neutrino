@@ -232,8 +232,8 @@ value_t new_heap_method_ast(runtime_t *runtime, value_t signature, value_t body)
 // Creates a new program syntax tree with the given elements.
 value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point);
 
-// Creates a new name syntax tree with the given path and phase.
-value_t new_heap_name_ast(runtime_t *runtime, value_t path, value_t phase);
+// Creates a new identifier with the given path and stage.
+value_t new_heap_identifier(runtime_t *runtime, value_t path, value_t stage);
 
 
 // --- U t i l s ---

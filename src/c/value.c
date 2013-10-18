@@ -1643,6 +1643,30 @@ value_t path_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
 }
 
 
+// --- I d e n t i f i e r ---
+
+TRIVIAL_PRINT_ON_IMPL(Identifier, identifier);
+FIXED_GET_MODE_IMPL(identifier, vmMutable);
+
+ACCESSORS_IMPL(Identifier, identifier, acInFamilyOpt, ofPath, Path, path);
+ACCESSORS_IMPL(Identifier, identifier, acNoCheck, 0, Stage, stage);
+
+value_t identifier_validate(value_t self) {
+  VALIDATE_FAMILY(ofIdentifier, self);
+  VALIDATE_FAMILY_OPT(ofPath, get_identifier_path(self));
+  return success();
+}
+
+value_t set_identifier_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(path, get_id_hash_map_at(contents, RSTR(runtime, path)));
+  TRY_DEF(stage, get_id_hash_map_at(contents, RSTR(runtime, stage)));
+  set_identifier_path(object, path);
+  set_identifier_stage(object, stage);
+  return success();
+}
+
+
 // --- O r d e r i n g ---
 
 int ordering_to_int(value_t value) {
@@ -1685,6 +1709,10 @@ static value_t new_path(runtime_t *runtime) {
       ROOT(runtime, nothing));
 }
 
+static value_t new_identifier(runtime_t *runtime) {
+  return new_heap_identifier(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing));
+}
+
 value_t add_plankton_factory(value_t map, value_t category, const char *name,
     factory_constructor_t constructor, runtime_t *runtime) {
   TRY_DEF(factory, new_heap_factory(runtime, constructor));
@@ -1694,6 +1722,7 @@ value_t add_plankton_factory(value_t map, value_t category, const char *name,
 value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   value_t core = RSTR(runtime, core);
   // Factories
+  TRY(add_plankton_factory(map, core, "Identifier", new_identifier, runtime));
   TRY(add_plankton_factory(map, core, "Methodspace", new_methodspace, runtime));
   TRY(add_plankton_factory(map, core, "Module", new_module, runtime));
   TRY(add_plankton_factory(map, core, "Namespace", new_namespace, runtime));

@@ -117,6 +117,9 @@ class Parser(object):
     self.expect_word('def')
     subject = None
     if self.at_type(Token.IDENTIFIER):
+      ident = self.current().value
+      if not ident.path.is_singular():
+        raise self.new_syntax_error()
       name = self.expect_type(Token.IDENTIFIER)
       if self.at_punctuation(':='):
         self.expect_punctuation(':=')
@@ -198,7 +201,7 @@ class Parser(object):
 
   # Given a string operation name returns the corresponding selector parameter.
   def name_as_selector(self, name):
-    return ast.Parameter(ast.Name(0, ['name']), [data._SELECTOR],
+    return ast.Parameter(data.Identifier(0, data.Path(['name'])), [data._SELECTOR],
       ast.Guard.eq(ast.Literal(name)))
 
   def name_as_subject(self, name):
@@ -207,7 +210,7 @@ class Parser(object):
   # Same as parse_parameters but returns a full signature.
   def parse_signature(self):
     prefix = [
-      self.name_as_subject(ast.Name(0, ['this'])),
+      self.name_as_subject(data.Identifier(0, data.Path(['this']))),
       self.name_as_selector(Parser._SAUSAGES)
     ]
     params = self.parse_parameters()
@@ -318,12 +321,12 @@ class Parser(object):
   # <variable>
   #   -> <identifier>
   def parse_variable(self):
-    name = self.expect_type(Token.IDENTIFIER)
-    stage_index = name.stage
+    ident = self.expect_type(Token.IDENTIFIER)
+    stage_index = ident.stage
     stage = self.unit.get_or_create_stage(stage_index)
     namespace = stage.get_namespace()
-    variable = ast.Variable(name=name, namespace=namespace)
-    if name.stage < 0:
+    variable = ast.Variable(ident=ident, namespace=namespace)
+    if ident.stage < 0:
       return ast.Quote(stage_index, variable)
     else:
       return variable

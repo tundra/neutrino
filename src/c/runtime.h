@@ -32,9 +32,9 @@
   F(namespace,          "namespace")                                           \
   F(parameters,         "parameters")                                          \
   F(path,               "path")                                                \
-  F(phase,              "phase")                                               \
   F(sausages,           "()")                                                  \
   F(signature,          "signature")                                           \
+  F(stage,              "stage")                                               \
   F(symbol,             "symbol")                                              \
   F(syntax,             "syntax")                                              \
   F(tag,                "tag")                                                 \

@@ -27,7 +27,7 @@ class EvaluateVisitor(ast.Visitor):
     return that.value
 
   def visit_variable(self, that):
-    value = that.namespace.lookup(that.name.path)
+    value = that.namespace.lookup(that.get_name())
     return value
 
   # Map from neutrino operator names to the python implementations

@@ -48,9 +48,9 @@ class ScopeVisitor(ast.Visitor):
   def visit_local_declaration(self, that):
     assert that.symbol is None
     that.value.accept(self)
-    that.symbol = ast.Symbol(that.name)
+    that.symbol = ast.Symbol(that.get_name())
     bindings = {}
-    bindings[that.name] = that.symbol
+    bindings[that.get_name()] = that.symbol
     outer_scope = self.scope
     self.scope = MappedScope(bindings, outer_scope)
     try:
@@ -64,7 +64,7 @@ class ScopeVisitor(ast.Visitor):
 
   def visit_variable(self, that):
     assert that.symbol is None
-    that.symbol = self.lookup_name(that.name)
+    that.symbol = self.lookup_name(that.get_name())
 
   def visit_static_binding(self, that):
     # Static bindings cannot refer to locally scoped bindings. Maybe they should
@@ -77,8 +77,8 @@ class ScopeVisitor(ast.Visitor):
   def visit_method(self, that):
     bindings = {}
     for param in that.signature.parameters:
-      param.symbol = ast.Symbol(param.name)
-      bindings[param.name] = param.symbol
+      param.symbol = ast.Symbol(param.get_name())
+      bindings[param.get_name()] = param.symbol
     outer_scope = self.scope
     self.scope = MappedScope(bindings, outer_scope)
     try:
