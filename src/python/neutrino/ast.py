@@ -137,7 +137,7 @@ class Variable(object):
   def get_payload(self):
     if self.symbol is None:
       return {
-        'name': self.get_name(),
+        'name': self.ident.path,
         'namespace': self.namespace
       }
     else:
