@@ -48,6 +48,9 @@ class Module(object):
     self.methodspace = methodspace
     self.display_name = display_name
 
+  def lookup(self, name):
+    return self.namespace.lookup(name)
+
 
 class Method(object):
 
