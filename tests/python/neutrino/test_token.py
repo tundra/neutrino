@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from neutrino import ast
+from neutrino import ast, data
 from neutrino.token import Token, tokenize
 import unittest
 
@@ -15,7 +15,7 @@ ed = Token.end
 qt = Token.quote
 
 def id(phase, *names):
-  return Token.identifier(ast.Name(phase, list(names)))
+  return Token.identifier(data.Identifier(phase, data.Path(list(names))))
 
 
 class TokenTest(unittest.TestCase):
@@ -71,7 +71,7 @@ class TokenTest(unittest.TestCase):
   def test_name(self):
     test = self.check_name
     def nm(phase, *parts):
-      return ast.Name(phase, list(parts))
+      return data.Identifier(phase, data.Path(list(parts)))
     test("$foo:bar:baz", nm(0, "foo", "bar", "baz"))
     test("$foo:bar", nm(0, "foo", "bar"));
     test("$foo", nm(0, "foo"));

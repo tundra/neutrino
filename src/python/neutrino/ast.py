@@ -115,7 +115,6 @@ class Variable(object):
   # We don't need to serialize the name since the symbol holds the name.
   @plankton.field("symbol")
   def __init__(self, ident=None, namespace=None, symbol=None):
-    assert isinstance(ident, data.Identifier)
     self.ident = ident
     self.namespace = namespace
     self.symbol = symbol
@@ -583,4 +582,4 @@ class Import(object):
     program.module.namespace.add_binding(name, value)
 
   def __str__(self):
-    return "(import %s)" % self.name
+    return "(import %s)" % self.ident
