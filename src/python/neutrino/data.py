@@ -137,7 +137,7 @@ class Path(object):
     return len(self.names) == 1
 
   # Assumes this path is a single name and returns that name.
-  def as_singular(self):
+  def get_name(self):
     assert self.is_singular()
     return self.names[0]
 
@@ -150,6 +150,7 @@ class Path(object):
 
   def __str__(self):
     return "".join([":%s" % name for name in self.names])
+
 
 @plankton.serializable(("core", "Identifier"))
 class Identifier(object):
@@ -167,6 +168,11 @@ class Identifier(object):
     return (isinstance(that, Identifier) and
             self.stage == that.stage and
             self.path == that.path)
+
+  # Returns the unique name this identifier is made of. If it is not a single
+  # name an error is reported.
+  def get_name(self):
+    return self.path.get_name()
 
   def __str__(self):
     if self.stage < 0:

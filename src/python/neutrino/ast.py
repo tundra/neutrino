@@ -132,7 +132,7 @@ class Variable(object):
       return Variable._LOCAL_HEADER
 
   def get_name(self):
-    return self.ident.path.as_singular()
+    return self.ident.get_name()
 
   def get_payload(self):
     if self.symbol is None:
@@ -249,7 +249,7 @@ class LocalDeclaration(object):
     self.body.accept(visitor)
 
   def get_name(self):
-    return self.ident.path.as_singular()
+    return self.ident.get_name()
 
   def __str__(self):
     return "(def %s := %s in %s)" % (self.ident, self.value, self.body)
@@ -284,7 +284,7 @@ class Parameter(object):
     self.guard.accept(visitor)
 
   def get_name(self):
-    return self.ident.path.as_singular()
+    return self.ident.get_name()
 
   def __str__(self):
     return "(param (tags %s) (name %s) (guard %s))" % (
@@ -403,7 +403,7 @@ class NamespaceDeclaration(object):
     return visitor.visit_namespace_declaration(self)
 
   def apply(self, program, helper):
-    name = self.ident.path.as_singular()
+    name = self.ident.get_name()
     value = helper.evaluate(self.value)
     program.module.namespace.add_binding(name, value)
 
@@ -577,7 +577,7 @@ class Import(object):
     pass
 
   def apply(self, program, helper):
-    name = self.ident.path.as_singular()
+    name = self.ident.get_name()
     value = helper.lookup_import(name)
     program.module.namespace.add_binding(name, value)
 

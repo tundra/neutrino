@@ -520,10 +520,6 @@ value_t emit_namespace_variable_ast(value_t self, assembler_t *assm) {
 
 value_t namespace_variable_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofNamespaceVariableAst, self);
-  // XXX: remove
-  object_family_t family = get_object_family(get_namespace_variable_ast_name(self));
-  CHECK_FALSE("", family == ofArray);
-  CHECK_FALSE("", family == ofPath);
   VALIDATE_FAMILY_OPT(ofNamespace, get_namespace_variable_ast_namespace(self));
   return success();
 }
