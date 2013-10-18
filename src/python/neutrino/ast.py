@@ -114,8 +114,8 @@ class Variable(object):
 
   # We don't need to serialize the name since the symbol holds the name.
   @plankton.field("symbol")
-  def __init__(self, name=None, namespace=None, symbol=None):
-    self.name = name
+  def __init__(self, ident=None, namespace=None, symbol=None):
+    self.ident = ident
     self.namespace = namespace
     self.symbol = symbol
 
@@ -131,17 +131,20 @@ class Variable(object):
     else:
       return Variable._LOCAL_HEADER
 
+  def get_name(self):
+    return self.ident.get_name()
+
   def get_payload(self):
     if self.symbol is None:
       return {
-        'name': self.name.path,
+        'name': self.get_name(),
         'namespace': self.namespace
       }
     else:
       return {'symbol': self.symbol}
 
   def __str__(self):
-    return "(var %s)" % str(self.name)
+    return "(var %s)" % str(self.ident)
 
 
 # A multi-method invocation.
@@ -232,8 +235,8 @@ class LocalDeclaration(object):
   @plankton.field("symbol")
   @plankton.field("value")
   @plankton.field("body")
-  def __init__(self, name=None, value=None, body=None, symbol=None):
-    self.name = name
+  def __init__(self, ident=None, value=None, body=None, symbol=None):
+    self.ident = ident
     self.symbol = symbol
     self.value = value
     self.body = body
@@ -245,8 +248,11 @@ class LocalDeclaration(object):
     self.value.accept(visitor)
     self.body.accept(visitor)
 
+  def get_name(self):
+    return self.ident.get_name()
+
   def __str__(self):
-    return "(def %s := %s in %s)" % (self.name, self.value, self.body)
+    return "(def %s := %s in %s)" % (self.ident, self.value, self.body)
 
 
 # A symbol that identifies a scoped binding.
@@ -255,7 +261,7 @@ class Symbol(object):
 
   @plankton.field("name")
   def __init__(self, name=None):
-    self.name = str(name)
+    self.name = name
 
 
 # An individual method parameter.
@@ -265,8 +271,8 @@ class Parameter(object):
   @plankton.field("symbol")
   @plankton.field("tags")
   @plankton.field("guard")
-  def __init__(self, name=None, tags=None, guard=None):
-    self.name = name
+  def __init__(self, ident=None, tags=None, guard=None):
+    self.ident = ident
     self.symbol = None
     self.tags = tags
     self.guard = guard
@@ -277,10 +283,13 @@ class Parameter(object):
   def traverse(self, visitor):
     self.guard.accept(visitor)
 
+  def get_name(self):
+    return self.ident.get_name()
+
   def __str__(self):
     return "(param (tags %s) (name %s) (guard %s))" % (
         ", ".join(map(str, self.tags)),
-        self.name,
+        self.ident,
         self.guard)
 
 
@@ -364,43 +373,6 @@ class Lambda(object):
     return "(fn (%s) => %s)" % (self.method.signature, self.method.body)
 
 
-@plankton.serializable(("ast", "Path"))
-class Path(object):
-
-  @plankton.field("parts")
-  def __init__(self, parts=None):
-    self.parts = parts
-
-  def __eq__(self, that):
-    return (isinstance(that, Path) and
-            self.parts == that.parts)
-
-
-@plankton.serializable(("ast", "Name"))
-class Name(object):
-
-  @plankton.field("path")
-  @plankton.field("stage")
-  def __init__(self, stage=None, path=None):
-    self.stage = stage
-    self.path = tuple(path)
-
-  def __hash__(self):
-    return hash(self.stage) ^ hash(self.path)
-
-  def __eq__(self, that):
-    return (isinstance(that, Name) and
-            self.stage == that.stage and
-            self.path == that.path)
-
-  def __str__(self):
-    if self.stage < 0:
-      prefix = "@" * -self.stage
-    else:
-      prefix = "$" * (self.stage + 1)
-    return "(name %s %s)" % (prefix, ":".join(self.path))
-
-
 @plankton.serializable(("ast", "Program"))
 class Program(object):
 
@@ -419,19 +391,19 @@ class Program(object):
 # A toplevel namespace declaration.
 class NamespaceDeclaration(object):
 
-  def __init__(self, name=None, value=None):
-    self.name = name
+  def __init__(self, ident=None, value=None):
+    self.ident = ident
     self.value = value
 
   # Returns the stage this declaration belongs to.
   def get_stage(self):
-    return self.name.stage
+    return self.ident.stage
 
   def accept(self, visitor):
     return visitor.visit_namespace_declaration(self)
 
   def apply(self, program, helper):
-    name = tuple(self.name.path)
+    name = self.ident.get_name()
     value = helper.evaluate(self.value)
     program.module.namespace.add_binding(name, value)
 
@@ -439,7 +411,7 @@ class NamespaceDeclaration(object):
     self.value.accept(visitor)
 
   def __str__(self):
-    return "(namespace-declaration %s %s)" % (self.name, self.value)
+    return "(namespace-declaration %s %s)" % (self.ident, self.value)
 
 
 # Syntax of a method.
@@ -592,11 +564,11 @@ class Quote(object):
 
 class Import(object):
 
-  def __init__(self, name=None):
-    self.name = name
+  def __init__(self, ident=None):
+    self.ident = ident
 
   def get_stage(self):
-    return self.name.stage
+    return self.ident.stage
 
   def accept(self, visitor):
     visitor.visit_import(self)
@@ -605,9 +577,9 @@ class Import(object):
     pass
 
   def apply(self, program, helper):
-    name = tuple(self.name.path)
+    name = self.ident.get_name()
     value = helper.lookup_import(name)
     program.module.namespace.add_binding(name, value)
 
   def __str__(self):
-    return "(import %s)" % self.name
+    return "(import %s)" % self.ident

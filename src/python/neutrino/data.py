@@ -125,5 +125,62 @@ class Instance(object):
     return {}
 
 
+@plankton.serializable(("core", "Path"))
+class Path(object):
+
+  @plankton.field("names")
+  def __init__(self, names=None):
+    self.names = names
+
+  # Is this path a single name?
+  def is_singular(self):
+    return len(self.names) == 1
+
+  # Assumes this path is a single name and returns that name.
+  def get_name(self):
+    assert self.is_singular()
+    return self.names[0]
+
+  def __hash__(self):
+    return hash(tuple(self.names))
+
+  def __eq__(self, that):
+    return (isinstance(that, Path) and
+            self.names == that.names)
+
+  def __str__(self):
+    return "".join([":%s" % name for name in self.names])
+
+
+@plankton.serializable(("core", "Identifier"))
+class Identifier(object):
+
+  @plankton.field("path")
+  @plankton.field("stage")
+  def __init__(self, stage=None, path=None):
+    self.stage = stage
+    self.path = path
+
+  def __hash__(self):
+    return hash(self.stage) ^ hash(self.path)
+
+  def __eq__(self, that):
+    return (isinstance(that, Identifier) and
+            self.stage == that.stage and
+            self.path == that.path)
+
+  # Returns the unique name this identifier is made of. If it is not a single
+  # name an error is reported.
+  def get_name(self):
+    return self.path.get_name()
+
+  def __str__(self):
+    if self.stage < 0:
+      prefix = "@" * -self.stage
+    else:
+      prefix = "$" * (self.stage + 1)
+    return "(name %s %s)" % (prefix, self.path)
+
+
 _SUBJECT = Key("subject", ("core", "subject"))
 _SELECTOR = Key("selector", ("core", "selector"))

@@ -48,13 +48,13 @@ def fms(*params):
 
 def nm(names, phase=0):
   if isinstance(names, list):
-    return ast.Name(phase, names)
+    return data.Identifier(phase, data.Path(names))
   else:
-    return ast.Name(phase, [names])
+    return data.Identifier(phase, data.Path([names]))
 
 def id(names, phase=0):
   name = nm(names, phase)
-  return ast.Variable(name=name)
+  return ast.Variable(ident=name)
 
 def bn(left, op, right):
   return ast.Invocation([

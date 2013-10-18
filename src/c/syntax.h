@@ -242,17 +242,4 @@ static const size_t kProgramAstEntryPointOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(program_ast, entry_point);
 
 
-// --- N a m e ---
-
-static const size_t kNameAstSize = OBJECT_SIZE(2);
-static const size_t kNameAstPathOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kNameAstPhaseOffset = OBJECT_FIELD_OFFSET(1);
-
-// The path (ie. x:y:z etc.) of this name.
-ACCESSORS_DECL(name_ast, path);
-
-// The phase (ie. $..., @..., etc) of this name.
-ACCESSORS_DECL(name_ast, phase);
-
-
 #endif // _SYNTAX

@@ -4,7 +4,7 @@
 # Tokens and tokenization.
 
 
-import ast
+import data
 import re
 
 
@@ -239,8 +239,8 @@ class Tokenizer(object):
     if len(combined) == 0:
       return Token.quote(stage, delim)
     else:
-      value = combined.split(':')
-      return Token.identifier(ast.Name(stage, value), delim)
+      value = data.Path(combined.split(':'))
+      return Token.identifier(data.Identifier(stage, value), delim)
 
   # Is this a character that is allowed to follow a .?
   def is_named_operator_char(self, value):

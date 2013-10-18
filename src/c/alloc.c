@@ -560,12 +560,12 @@ value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_name_ast(runtime_t *runtime, value_t path, value_t phase) {
-  size_t size = kNameAstSize;
+value_t new_heap_identifier(runtime_t *runtime, value_t path, value_t stage) {
+  size_t size = kIdentifierSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, name_ast_species)));
-  set_name_ast_path(result, path);
-  set_name_ast_phase(result, phase);
+      ROOT(runtime, identifier_species)));
+  set_identifier_path(result, path);
+  set_identifier_stage(result, stage);
   return post_create_sanity_check(result, size);
 }
 

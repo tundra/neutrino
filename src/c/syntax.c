@@ -507,8 +507,8 @@ NO_BUILTIN_METHODS(namespace_variable_ast);
 TRIVIAL_PRINT_ON_IMPL(NamespaceVariableAst, namespace_variable_ast);
 FIXED_GET_MODE_IMPL(namespace_variable_ast, vmMutable);
 
-ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acInFamilyOpt,
-    ofArray, Name, name);
+ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acNoCheck, 0,
+    Name, name);
 ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acInFamilyOpt,
     ofNamespace, Namespace, namespace);
 
@@ -520,7 +520,6 @@ value_t emit_namespace_variable_ast(value_t self, assembler_t *assm) {
 
 value_t namespace_variable_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofNamespaceVariableAst, self);
-  VALIDATE_FAMILY_OPT(ofArray, get_namespace_variable_ast_name(self));
   VALIDATE_FAMILY_OPT(ofNamespace, get_namespace_variable_ast_namespace(self));
   return success();
 }
@@ -909,34 +908,6 @@ static value_t new_program_ast(runtime_t *runtime) {
 }
 
 
-// --- N a m e ---
-
-TRIVIAL_PRINT_ON_IMPL(NameAst, name_ast);
-FIXED_GET_MODE_IMPL(name_ast, vmMutable);
-
-ACCESSORS_IMPL(NameAst, name_ast, acInFamilyOpt, ofArray, Path, path);
-ACCESSORS_IMPL(NameAst, name_ast, acNoCheck, 0, Phase, phase);
-
-value_t name_ast_validate(value_t self) {
-  VALIDATE_FAMILY(ofNameAst, self);
-  VALIDATE_FAMILY(ofArray, get_name_ast_path(self));
-  return success();
-}
-
-value_t set_name_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(path, get_id_hash_map_at(contents, RSTR(runtime, path)));
-  TRY_DEF(phase, get_id_hash_map_at(contents, RSTR(runtime, phase)));
-  set_name_ast_path(object, path);
-  set_name_ast_phase(object, phase);
-  return success();
-}
-
-static value_t new_name_ast(runtime_t *runtime) {
-  return new_heap_name_ast(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing));
-}
-
-
 // --- C o d e   g e n e r a t i o n ---
 
 value_t emit_value(value_t value, assembler_t *assm) {
@@ -972,7 +943,6 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "LocalDeclaration", new_local_declaration_ast, runtime));
   TRY(add_plankton_factory(map, ast, "LocalVariable", new_local_variable_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Method", new_method_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "Name", new_name_ast, runtime));
   TRY(add_plankton_factory(map, ast, "NamespaceVariable", new_namespace_variable_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Parameter", new_parameter_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Program", new_program_ast, runtime));
