@@ -36,6 +36,9 @@ class Methodspace(object):
   def add_method(self, method):
     self.methods.append(method)
 
+  def add_import(self, other):
+    self.imports.append(other)
+
 
 @plankton.serializable(("core", "Module"))
 class Module(object):

@@ -4,3 +4,10 @@ entry_point @assert:that.print();
 -- OUTPUT:
 6
 -- END
+
+-- INPUT:
+import @assert;
+entry_point (8).method_import_test();
+-- OUTPUT:
+...
+-- END
