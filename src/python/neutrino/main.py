@@ -100,14 +100,13 @@ class Main(object):
   def compile_unit(self, unit):
     analysis.analyze(unit)
     bindings.bind(unit, self.modules)
-    return unit.get_present_program()
 
   def run_parse_input(self, inputs, parse_thunk):
     for expr in inputs:
       tokens = token.tokenize(expr)
       unit = parse_thunk(tokens)
-      program = self.compile_unit(unit)
-      self.output_value(program)
+      self.compile_unit(unit)
+      self.output_value(unit.get_present_program())
 
   def output_value(self, value):
     encoder = plankton.Encoder()

@@ -7,7 +7,7 @@ entry_point @assert:that.print();
 
 -- INPUT:
 import @assert;
-entry_point (8).method_import_test();
+entry_point (8).method_import_test().print();
 -- OUTPUT:
-...
+"found it!"
 -- END

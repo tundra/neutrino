@@ -550,7 +550,6 @@ class Unit(object):
       self.get_stage(self.min_stage).get_methodspace().add_import(Stage._BUILTIN_METHODSPACE)
 
   def get_present_module(self):
-    self.flush()
     last_stage = self.get_present()
     return last_stage.get_module()
 

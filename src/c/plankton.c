@@ -337,9 +337,12 @@ static value_t string_deserialize(deserialize_state_t *state) {
     string_buffer_putc(&buf, byte_stream_read(state->in));
   string_t contents;
   string_buffer_flush(&buf, &contents);
-  TRY_DEF(result, new_heap_string(state->runtime, &contents));
-  string_buffer_dispose(&buf);
-  return result;
+  E_BEGIN_TRY_FINALLY();
+    E_TRY_DEF(result, new_heap_string(state->runtime, &contents));
+    E_RETURN(result);
+  E_FINALLY();
+    string_buffer_dispose(&buf);
+  E_END_TRY_FINALLY();
 }
 
 // Grabs and returns the next object index.
