@@ -8,6 +8,7 @@
 #define _LOG
 
 #include "globals.h"
+#include "utils.h"
 
 #include <stdarg.h>
 
@@ -35,6 +36,39 @@ void log_message(log_level_t level, const char *file, int line, const char *fmt,
 // Va_list version of log message.
 void vlog_message(log_level_t level, const char *file, int line, const char *fmt,
     va_list argp);
+
+// The data that makes up an entry in the log.
+typedef struct {
+  const char *file;
+  int line;
+  log_level_t level;
+  string_t *message;
+  string_t *timestamp;
+} log_entry_t;
+
+// Sets all the required fields in a log entry struct.
+void log_entry_init(log_entry_t *entry, const char *file, int line,
+    log_level_t level, string_t *message, string_t *timestamp);
+
+// Type of log functions.
+typedef void (log_function_t)(void *data, log_entry_t *entry);
+
+// A callback used to issue log messages.
+typedef struct {
+  // The function to call on logging.
+  log_function_t *function;
+  // Additional data to pass to the function.
+  void *data;
+} log_callback_t;
+
+// Initializes a log callback.
+void init_log_callback(log_callback_t *callback, log_function_t *function,
+    void *data);
+
+// Sets the log callback to use across this process. This should only be used
+// for testing. Returns the previous value such that it can be restored if
+// necessary.
+log_callback_t *set_log_callback(log_callback_t *value);
 
 // Emits a warning if the static log level is at least warning, otherwise does
 // nothing (including doesn't evaluate arguments).

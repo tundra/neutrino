@@ -42,6 +42,7 @@ const char *get_value_domain_name(value_domain_t domain);
   F(InvalidInput)                                                              \
   F(InvalidModeChange)                                                         \
   F(InvalidSyntax)                                                             \
+  F(LookupError)                                                               \
   F(MapFull)                                                                   \
   F(NotComparable)                                                             \
   F(NotFound)                                                                  \

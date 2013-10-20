@@ -59,6 +59,16 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   CHECK_EQ("roots already initialized", vdInteger, get_value_domain(get_object_header(roots)));
   set_object_species(roots, RAW_ROOT(roots, mutable_roots_species));
 
+  // Generates code for initializing a string table entry.
+#define __CREATE_STRING_TABLE_ENTRY__(name, value)                             \
+  do {                                                                         \
+    string_t contents;                                                         \
+    string_init(&contents, value);                                             \
+    TRY_SET(RAW_RSTR(roots, name), new_heap_string(runtime, &contents));       \
+  } while (false);
+  ENUM_STRING_TABLE(__CREATE_STRING_TABLE_ENTRY__)
+#undef __CREATE_STRING_TABLE_ENTRY__
+
   // Initialize singletons first since we need those to create more complex
   // values below.
   TRY_DEF(null, new_heap_null(runtime));
@@ -78,8 +88,8 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY(validate_deep_frozen(runtime, empty_protocol, NULL));
   TRY_SET(RAW_ROOT(roots, empty_instance_species),
       new_heap_instance_species(runtime, empty_protocol));
-  TRY_SET(RAW_ROOT(roots, subject_key), new_heap_key(runtime, null));
-  TRY_SET(RAW_ROOT(roots, selector_key), new_heap_key(runtime, null));
+  TRY_SET(RAW_ROOT(roots, subject_key), new_heap_key(runtime, RAW_RSTR(roots, subject)));
+  TRY_SET(RAW_ROOT(roots, selector_key), new_heap_key(runtime, RAW_RSTR(roots, selector)));
   TRY_SET(RAW_ROOT(roots, builtin_methodspace), new_heap_methodspace(runtime));
   TRY_SET(RAW_ROOT(roots, op_call), new_heap_operation(runtime, otCall, null));
 
@@ -90,16 +100,6 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
     )
   ENUM_OBJECT_FAMILIES(__CREATE_FAMILY_PROTOCOL__)
 #undef __CREATE_FAMILY_PROTOCOL__
-
-  // Generates code for initializing a string table entry.
-#define __CREATE_STRING_TABLE_ENTRY__(name, value)                             \
-  do {                                                                         \
-    string_t contents;                                                         \
-    string_init(&contents, value);                                             \
-    TRY_SET(RAW_RSTR(roots, name), new_heap_string(runtime, &contents));       \
-  } while (false);
-  ENUM_STRING_TABLE(__CREATE_STRING_TABLE_ENTRY__)
-#undef __CREATE_STRING_TABLE_ENTRY__
 
   TRY_DEF(plankton_environment, new_heap_id_hash_map(runtime, 16));
   init_plankton_core_factories(plankton_environment, runtime);

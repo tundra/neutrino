@@ -36,6 +36,48 @@ void log_message(log_level_t level, const char *file, int line, const char *fmt,
   va_end(argp);
 }
 
+static log_callback_t kDefaultLogCallback;
+static log_callback_t *global_log_callback = NULL;
+
+// The default abort handler which prints the message to stderr and aborts
+// execution.
+static void default_log(void *data, log_entry_t *entry) {
+  fprintf(stderr, "%s:%i: %s: %s [%s%s]\n", entry->file, entry->line,
+      get_log_level_name(entry->level), entry->message->chars,
+      get_log_level_char(entry->level), entry->timestamp->chars);
+}
+
+// Returns the current global abort callback.
+static log_callback_t *get_global_log_callback() {
+  if (global_log_callback == NULL) {
+    init_log_callback(&kDefaultLogCallback, default_log, NULL);
+    global_log_callback = &kDefaultLogCallback;
+  }
+  return global_log_callback;
+}
+
+void init_log_callback(log_callback_t *callback, log_function_t *function,
+    void *data) {
+  callback->function = function;
+  callback->data = data;
+}
+
+log_callback_t *set_log_callback(log_callback_t *value) {
+  log_callback_t *result = get_global_log_callback();
+  global_log_callback = value;
+  return result;
+}
+
+void log_entry_init(log_entry_t *entry, const char *file, int line,
+    log_level_t level, string_t *message, string_t *timestamp) {
+  entry->file = file;
+  entry->line = line;
+  entry->level = level;
+  entry->message = message;
+  entry->timestamp = timestamp;
+}
+
+
 void vlog_message(log_level_t level, const char *file, int line, const char *fmt,
     va_list argp) {
   // Write the error message into a string buffer.
@@ -44,16 +86,19 @@ void vlog_message(log_level_t level, const char *file, int line, const char *fmt
   string_buffer_vprintf(&buf, fmt, argp);
   va_end(argp);
   // Flush the string buffer.
-  string_t str;
-  string_buffer_flush(&buf, &str);
+  string_t message_str;
+  string_buffer_flush(&buf, &message_str);
   // Format the timestamp.
   time_t current_time;
   time(&current_time);
   struct tm local_time = *localtime(&current_time);
   char timestamp[128];
-  strftime(timestamp, 128, "%d%m%H%M%S", &local_time);
+  size_t timestamp_chars = strftime(timestamp, 128, "%d%m%H%M%S", &local_time);
+  string_t timestamp_str = {timestamp_chars, timestamp};
   // Print the result.
-  fprintf(stderr, "%s:%i: %s: %s [%s%s]\n", file, line, get_log_level_name(level),
-      str.chars, get_log_level_char(level), timestamp);
+  log_entry_t entry;
+  log_entry_init(&entry, file, line, level, &message_str, &timestamp_str);
+  log_callback_t *callback = get_global_log_callback();
+  (callback->function)(callback->data, &entry);
   string_buffer_dispose(&buf);
 }

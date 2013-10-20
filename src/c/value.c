@@ -1210,7 +1210,6 @@ void boolean_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
 
 GET_FAMILY_PROTOCOL_IMPL(key);
 NO_BUILTIN_METHODS(key);
-TRIVIAL_PRINT_ON_IMPL(Key, key);
 
 INTEGER_ACCESSORS_IMPL(Key, key, Id, id);
 ACCESSORS_IMPL(Key, key, acNoCheck, 0, DisplayName, display_name);
@@ -1230,6 +1229,15 @@ value_t key_ordering_compare(value_t a, value_t b) {
   CHECK_FAMILY(ofKey, a);
   CHECK_FAMILY(ofKey, b);
   return new_integer(get_key_id(a) - get_key_id(b));
+}
+
+void key_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  value_t display_name = get_key_display_name(value);
+  if (is_nothing(display_name))
+    display_name = new_integer(get_key_id(value));
+  string_buffer_printf(buf, "%%");
+  value_print_inner_on(display_name, buf, flags | pfUnquote, depth - 1);
 }
 
 

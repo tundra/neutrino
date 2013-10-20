@@ -36,3 +36,13 @@ const char *get_signal_cause_name(signal_cause_t cause) {
       return "invalid signal";
   }
 }
+
+const char *get_lookup_error_cause_name(lookup_error_cause_t cause) {
+  switch (cause) {
+#define __GEN_CASE__(Name) case lc##Name: return #Name;
+    ENUM_LOOKUP_ERROR_CAUSES(__GEN_CASE__)
+#undef __GEN_CASE__
+    default:
+      return "unknown lookup error cause";
+  }
+}
