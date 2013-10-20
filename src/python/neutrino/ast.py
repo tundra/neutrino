@@ -520,8 +520,11 @@ class Unit(object):
     if not index in self.stages:
       assert not self.has_flushed
       self.stages[index] = self.create_stage(index, self.module_name)
+      # If there are stages before or after this make sure this one is properly
+      # chained into them, that is, methods from this stage are visible to
+      # future stages.
       if self.min_stage < index:
-        self.chain_imports(index, index - 1)
+        self.chain_imports(index - 1, index)
       if self.max_stage > index:
         self.chain_imports(index, index + 1)
       self.min_stage = min(self.min_stage, index)
@@ -531,6 +534,8 @@ class Unit(object):
   def create_stage(self, index, module_name):
     return Stage(index, module_name)
 
+  # Ensures that the stage with source_index is imported into the one with
+  # the given target index.
   def chain_imports(self, source_index, target_index):
     source = self.get_stage(source_index)
     target = self.get_or_create_stage(target_index)
@@ -544,6 +549,9 @@ class Unit(object):
     last_stage = self.get_present()
     return Program(last_stage.elements, self.entry_point)
 
+  # Ensure that the oldest stage imports the builtins. This is kind of a hack,
+  # there needs to be a better way to ensure that some methodspaces are visible
+  # everywhere without creating ambiguities by importing them more than once.
   def flush(self):
     if not self.has_flushed:
       self.has_flushed = True
