@@ -225,7 +225,7 @@ void validator_log_callback(void *data, log_entry_t *entry) {
   log_validator_t *validator = data;
   validator->count++;
   // Temporarily restore the previous log callback in case validation wants to
-  // log (which it typically will);
+  // log (which it typically will on validation failure).
   set_log_callback(validator->previous);
   (validator->validate_callback)(validator->validate_data, entry);
   set_log_callback(&validator->callback);

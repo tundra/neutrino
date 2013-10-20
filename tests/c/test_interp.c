@@ -148,7 +148,8 @@ TEST(interp, compile_errors) {
 
 static void validate_lookup_error(void *unused, log_entry_t *entry) {
   string_t expected;
-  string_init(&expected, "%<signal: LookupError(NoMatch)>: {%subject: #<lambda>, %selector: 0}");
+  string_init(&expected,
+      "%<signal: LookupError(NoMatch)>: {%subject: #<lambda>, %selector: 0}");
   ASSERT_STREQ(&expected, entry->message);
 }
 

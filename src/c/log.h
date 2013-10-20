@@ -37,7 +37,7 @@ void log_message(log_level_t level, const char *file, int line, const char *fmt,
 void vlog_message(log_level_t level, const char *file, int line, const char *fmt,
     va_list argp);
 
-// All the data that makes up a log message.
+// The data that makes up an entry in the log.
 typedef struct {
   const char *file;
   int line;
@@ -50,7 +50,7 @@ typedef struct {
 void log_entry_init(log_entry_t *entry, const char *file, int line,
     log_level_t level, string_t *message, string_t *timestamp);
 
-// Type of abort functions.
+// Type of log functions.
 typedef void (log_function_t)(void *data, log_entry_t *entry);
 
 // A callback used to issue log messages.
