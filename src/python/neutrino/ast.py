@@ -461,7 +461,7 @@ class Stage(object):
 
   def __init__(self, index, module_name):
     self.index = index
-    self.imports = [Stage._BUILTIN_METHODSPACE]
+    self.imports = []
     self.namespace = data.Namespace({})
     self.methodspace = data.Methodspace({}, [], self.imports)
     self.module = data.Module(self.namespace, self.methodspace, module_name)
@@ -494,6 +494,9 @@ class Unit(object):
     self.module_name = module_name
     self.entry_point = None
     self.stages = {}
+    self.min_stage = 0
+    self.max_stage = 0
+    self.has_flushed = False
     self.get_or_create_stage(0)
 
   def add_element(self, stage, *elements):
@@ -515,15 +518,44 @@ class Unit(object):
 
   def get_or_create_stage(self, index):
     if not index in self.stages:
-      self.stages[index] = Stage(index, self.module_name)
+      assert not self.has_flushed
+      self.stages[index] = self.create_stage(index, self.module_name)
+      # If there are stages before or after this make sure this one is properly
+      # chained into them, that is, methods from this stage are visible to
+      # future stages.
+      if self.min_stage < index:
+        self.chain_imports(index - 1, index)
+      if self.max_stage > index:
+        self.chain_imports(index, index + 1)
+      self.min_stage = min(self.min_stage, index)
+      self.max_stage = max(self.max_stage, index)
     return self.stages[index]
+
+  def create_stage(self, index, module_name):
+    return Stage(index, module_name)
+
+  # Ensures that the stage with source_index is imported into the one with
+  # the given target index.
+  def chain_imports(self, source_index, target_index):
+    source = self.get_stage(source_index)
+    target = self.get_or_create_stage(target_index)
+    target.get_methodspace().add_import(source.get_methodspace())
 
   def get_present(self):
     return self.get_or_create_stage(0)
 
   def get_present_program(self):
+    self.flush()
     last_stage = self.get_present()
     return Program(last_stage.elements, self.entry_point)
+
+  # Ensure that the oldest stage imports the builtins. This is kind of a hack,
+  # there needs to be a better way to ensure that some methodspaces are visible
+  # everywhere without creating ambiguities by importing them more than once.
+  def flush(self):
+    if not self.has_flushed:
+      self.has_flushed = True
+      self.get_stage(self.min_stage).get_methodspace().add_import(Stage._BUILTIN_METHODSPACE)
 
   def get_present_module(self):
     last_stage = self.get_present()
@@ -580,6 +612,7 @@ class Import(object):
     name = self.ident.get_name()
     value = helper.lookup_import(name)
     program.module.namespace.add_binding(name, value)
+    program.module.methodspace.add_import(value.methodspace)
 
   def __str__(self):
     return "(import %s)" % self.ident
