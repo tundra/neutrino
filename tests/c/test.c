@@ -200,16 +200,16 @@ bool value_structural_equal(value_t a, value_t b) {
   }
 }
 
-void recorder_abort_callback(void *data, const char *file, int line,
+static void recorder_abort_callback(void *data, const char *file, int line,
     int signal_cause, const char *message) {
   check_recorder_t *recorder = data;
   recorder->count++;
-  recorder->cause = signal_cause;
+  recorder->last_cause = signal_cause;
 }
 
 void install_check_recorder(check_recorder_t *recorder) {
   recorder->count = 0;
-  recorder->cause = __scFirst__;
+  recorder->last_cause = __scFirst__;
   init_abort_callback(&recorder->callback, recorder_abort_callback, recorder);
   recorder->previous = set_abort_callback(&recorder->callback);
   CHECK_TRUE("no previous abort callback", recorder->previous != NULL);
@@ -219,6 +219,32 @@ void uninstall_check_recorder(check_recorder_t *recorder) {
   CHECK_TRUE("uninstalling again", recorder->previous != NULL);
   set_abort_callback(recorder->previous);
   recorder->previous = NULL;
+}
+
+void validator_log_callback(void *data, log_entry_t *entry) {
+  log_validator_t *validator = data;
+  validator->count++;
+  // Temporarily restore the previous log callback in case validation wants to
+  // log (which it typically will);
+  set_log_callback(validator->previous);
+  (validator->validate_callback)(validator->validate_data, entry);
+  set_log_callback(&validator->callback);
+}
+
+void install_log_validator(log_validator_t *validator, log_function_t *callback,
+    void *data) {
+  validator->count = 0;
+  validator->validate_callback = callback;
+  validator->validate_data = data;
+  init_log_callback(&validator->callback, validator_log_callback, validator);
+  validator->previous = set_log_callback(&validator->callback);
+  CHECK_TRUE("no previous log callback", validator->previous != NULL);
+}
+
+void uninstall_log_validator(log_validator_t *validator) {
+  CHECK_TRUE("uninstalling again", validator->previous != NULL);
+  set_log_callback(validator->previous);
+  validator->previous = NULL;
 }
 
 

@@ -136,4 +136,27 @@ static value_t new_invalid_input_signal() {
   return new_signal(scInvalidInput);
 }
 
+// Enumerate the causes of lookup errors. See comment for
+// ENUM_INVALID_SYNTAX_CAUSES.
+#define ENUM_LOOKUP_ERROR_CAUSES(F)                                            \
+  F(Unspecified)                                                               \
+  F(NoMatch)                                                                   \
+  F(Ambiguity)
+
+// Reasons why method lookup may fail.
+typedef enum {
+  __lcFirst__ = -1
+#define __GEN_ENUM__(Name) , lc##Name
+  ENUM_LOOKUP_ERROR_CAUSES(__GEN_ENUM__)
+#undef __GEN_ENUM__
+} lookup_error_cause_t;
+
+// Returns the string representation of the cause of a lookup error signal.
+const char *get_lookup_error_cause_name(lookup_error_cause_t cause);
+
+// Creates a new lookup error signal.
+static value_t new_lookup_error_signal(lookup_error_cause_t cause) {
+  return new_signal_with_details(scLookupError, cause);
+}
+
 #endif // _SIGNALS

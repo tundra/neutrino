@@ -33,8 +33,10 @@
   F(parameters,         "parameters")                                          \
   F(path,               "path")                                                \
   F(sausages,           "()")                                                  \
+  F(selector,           "selector")                                            \
   F(signature,          "signature")                                           \
   F(stage,              "stage")                                               \
+  F(subject,            "subject")                                             \
   F(symbol,             "symbol")                                              \
   F(syntax,             "syntax")                                              \
   F(tag,                "tag")                                                 \

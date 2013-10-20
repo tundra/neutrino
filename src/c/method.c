@@ -423,7 +423,7 @@ static value_t lookup_methodspace_local_method(methodspace_lookup_state_t *state
     } else if (status != jsWorse) {
       // The next score was not strictly worse than the best we've seen so we
       // don't have a unique best.
-      state->result = new_signal(scNotFound);
+      state->result = new_lookup_error_signal(lcAmbiguity);
       // If the result is ambiguous that means the max is now synthetic.
       state->max_is_synthetic = (status == jsAmbiguous);
     }
@@ -470,7 +470,7 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
   size_t offsets_one[kSmallLookupLimit];
   size_t offsets_two[kSmallLookupLimit];
   methodspace_lookup_state_t state;
-  state.result = new_signal(scNotFound);
+  state.result = new_lookup_error_signal(lcNoMatch);
   state.max_is_synthetic = false;
   state.max_score = max_score;
   state.result_offsets = offsets_one;

@@ -1,6 +1,7 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "log.h"
 #include "signals.h"
 #include "value.h"
 
@@ -32,7 +33,7 @@ typedef struct {
   // How many check failures were triggered?
   size_t count;
   // What was the cause of the last check failure triggered?
-  signal_cause_t cause;
+  signal_cause_t last_cause;
   // The abort callback to restore when we're done recording checks.
   abort_callback_t *previous;
   // This recorder's callback.
@@ -49,6 +50,36 @@ void install_check_recorder(check_recorder_t *recorder);
 // and restores checks to the same state as before it was installed. The state
 // of the recorder is otherwise left undefined.
 void uninstall_check_recorder(check_recorder_t *recorder);
+
+
+// Data associated with validating log messages. Unlike the check recorder we
+// don't record log messages since there are some complicated issues around
+// ownership and installing/uninstalling -- you want to uninstall the recorder
+// before checking the log entries so that assertion failures are logged
+// correctly but on the other hand you want the data you're going to check to
+// stay alive so uninstalling can't dispose data. Anyway, this seems simpler,
+// do the validation immediately.
+typedef struct {
+  // The number of entries that were logged.
+  size_t count;
+  // The abort callback to restore when we're done validating log messages.
+  log_callback_t *previous;
+  // This validator's callback.
+  log_callback_t callback;
+  // The pointers used to trampoline to the validate function.
+  log_function_t *validate_callback;
+  void *validate_data;
+} log_validator_t;
+
+// Installs a log validator. The struct stores data that can be used to
+// uninstall it again, the callback will be invoked for each log entry issued.
+void install_log_validator(log_validator_t *validator,
+    log_function_t *validate_callback, void *data);
+
+// Uninstalls the given log validator, which must be the currently active one,
+// and restores logging to the same state as before it was installed.
+void uninstall_log_validator(log_validator_t *validator);
+
 
 // Fails unless the two values are equal.
 #define ASSERT_EQ(A, B) do {                                                   \
@@ -151,7 +182,7 @@ ASSERT_CLASS(signal_cause_t, scCause, EXPR, get_signal_cause)
   install_check_recorder(&__recorder__);                                       \
   do { E; } while (false);                                                     \
   ASSERT_EQ(1, __recorder__.count);                                            \
-  ASSERT_EQ(scCause, __recorder__.cause);                                      \
+  ASSERT_EQ(scCause, __recorder__.last_cause);                                 \
   uninstall_check_recorder(&__recorder__);                                     \
 } while (false)
 

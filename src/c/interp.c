@@ -89,6 +89,28 @@ static value_t ensure_method_code(runtime_t *runtime, value_t method) {
   return code;
 }
 
+static void log_lookup_error(value_t signal, value_t record, frame_t *frame) {
+  size_t arg_count = get_invocation_record_argument_count(record);
+  string_buffer_t buf;
+  string_buffer_init(&buf);
+  value_print_on(signal, &buf);
+  string_buffer_printf(&buf, ": {");
+  for (size_t i = 0; i < arg_count; i++) {
+    if (i > 0)
+      string_buffer_printf(&buf, ", ");
+    value_t tag = get_invocation_record_tag_at(record, i);
+    value_print_on(tag, &buf);
+    string_buffer_printf(&buf, ": ");
+    value_t value = get_invocation_record_argument_at(record, frame, i);
+    value_print_on(value, &buf);
+  }
+  string_buffer_printf(&buf, "}");
+  string_t str;
+  string_buffer_flush(&buf, &str);
+  ERROR("%s", str.chars);
+  string_buffer_dispose(&buf);
+}
+
 value_t run_stack(runtime_t *runtime, value_t stack) {
   frame_t frame;
   get_stack_top_frame(stack, &frame);
@@ -127,10 +149,8 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         value_t arg_map;
         value_t method = lookup_methodspace_method(runtime, space, record,
             &frame, &arg_map);
-        if (is_signal(scNotFound, method)) {
-          value_to_string_t data;
-          ERROR("Unresolved method for %s.", value_to_string(&data, record));
-          dispose_value_to_string(&data);
+        if (is_signal(scLookupError, method)) {
+          log_lookup_error(method, record, &frame);
           return method;
         }
         // The lookup may have failed with a different signal. Check for that.
@@ -163,10 +183,8 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         value_t arg_map;
         value_t method = lookup_methodspace_method(runtime, space, record,
             &frame, &arg_map);
-        if (is_signal(scNotFound, method)) {
-          value_to_string_t data;
-          ERROR("Unresolved delegate for %s.", value_to_string(&data, record));
-          dispose_value_to_string(&data);
+        if (is_signal(scLookupError, method)) {
+          log_lookup_error(method, record, &frame);
           return method;
         }
         // The lookup may have failed with a different signal. Check for that.
