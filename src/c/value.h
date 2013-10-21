@@ -107,6 +107,13 @@ static value_domain_t get_value_domain(value_t value) {
   return value.as_unknown.domain;
 }
 
+// Are the two given values identically the same. This is stronger than object
+// identity, for instance two different strings with the same contents would be
+// object identical but not the same value.
+static bool is_same_value(value_t a, value_t b) {
+  return a.encoded == b.encoded;
+}
+
 
 // --- I n t e g e r ---
 
