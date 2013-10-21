@@ -69,6 +69,15 @@ static value_t integer_minus_integer(builtin_arguments_t *args) {
   return decode_value(this.encoded - that.encoded);
 }
 
+static value_t integer_equals_integer(builtin_arguments_t *args) {
+  value_t this = get_builtin_subject(args);
+  value_t that = get_builtin_argument(args, 0);
+  CHECK_DOMAIN(vdInteger, this);
+  CHECK_DOMAIN(vdInteger, that);
+  runtime_t *runtime = get_builtin_runtime(args);
+  return runtime_bool(runtime, is_same_value(this, that));
+}
+
 static value_t integer_negate(builtin_arguments_t *args) {
   value_t this = get_builtin_subject(args);
   CHECK_DOMAIN(vdInteger, this);
@@ -84,6 +93,7 @@ static value_t integer_print(builtin_arguments_t *args) {
 value_t add_integer_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(integer, "+", 1, integer_plus_integer);
   ADD_BUILTIN(integer, "-", 1, integer_minus_integer);
+  ADD_BUILTIN(integer, "==", 1, integer_equals_integer);
   ADD_BUILTIN(integer, "-", 0, integer_negate);
   ADD_BUILTIN(integer, "print", 0, integer_print);
   return success();
