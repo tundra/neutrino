@@ -1,5 +1,11 @@
 -- INPUT:
 import @assert;
+entry_point @assert:that(true);
+-- OUTPUT:
+-- END
+
+-- INPUT:
+import @assert;
 entry_point @assert:that(false);
 -- OUTPUT:
 Error: @ctrino.fail()
