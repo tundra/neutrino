@@ -184,12 +184,12 @@ value_t value_transient_identity_hash_cycle_protect(value_t value,
 // --- I d e n t i t y ---
 
 static value_t integer_identity_compare(value_t a, value_t b) {
-  return to_internal_boolean(a.encoded == b.encoded);
+  return to_internal_boolean(is_same_value(a, b));
 }
 
 static value_t default_object_identity_compare(value_t a, value_t b,
     cycle_detector_t *detector) {
-  return to_internal_boolean(a.encoded == b.encoded);
+  return to_internal_boolean(is_same_value(a, b));
 }
 
 static value_t object_identity_compare(value_t a, value_t b,
@@ -197,7 +197,7 @@ static value_t object_identity_compare(value_t a, value_t b,
   CHECK_DOMAIN(vdObject, a);
   CHECK_DOMAIN(vdObject, b);
   // Fast case when a and b are the same object.
-  if (a.encoded == b.encoded)
+  if (is_same_value(a, b))
     return internal_true_value();
   object_family_t a_family = get_object_family(a);
   object_family_t b_family = get_object_family(b);

@@ -362,7 +362,7 @@ static value_t check_for_cycles(cycle_detector_t *detector, value_t value) {
   cycle_detector_t *current = detector;
   while (current != NULL) {
     value_t level = current->value;
-    if (level.encoded == value.encoded)
+    if (is_same_value(level, value))
       return new_signal(scCircular);
     current = current->outer;
   }
