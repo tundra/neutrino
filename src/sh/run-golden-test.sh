@@ -91,7 +91,7 @@ run_test() {
   INPUT="$2"
   OUTPUT="$3"
   RUN="$4"
-  FOUND=$($COMPILE "$INPUT" $MODULES | $RUN - 2>&1)
+  FOUND=$($COMPILE "$INPUT" $MODULES | $RUN - 2>&1 | grep "^[^#]")
   check_result "$OUTPUT" "$FOUND" "$INPUT" "$COMPILE" "$MODULES"
 }
 

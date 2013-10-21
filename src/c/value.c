@@ -1707,13 +1707,10 @@ value_t ctrino_validate(value_t self) {
   return success();
 }
 
-value_t set_ctrino_contents(value_t object, runtime_t *runtime, value_t contents) {
-  return success();
-}
-
 value_t ctrino_fail(builtin_arguments_t *args) {
+  check_fail(NULL, 0, "@ctrino.fail()");
   runtime_t *runtime = get_builtin_runtime(args);
-  return ROOT(runtime, null);
+  return ROOT(runtime, nothing);
 }
 
 value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {

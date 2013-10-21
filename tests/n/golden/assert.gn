@@ -2,5 +2,5 @@
 import @assert;
 entry_point @assert:that(false);
 -- OUTPUT:
-6
+Error: @ctrino.fail()
 -- END

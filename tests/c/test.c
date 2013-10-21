@@ -200,11 +200,10 @@ bool value_structural_equal(value_t a, value_t b) {
   }
 }
 
-static void recorder_abort_callback(void *data, const char *file, int line,
-    int signal_cause, const char *message) {
+static void recorder_abort_callback(void *data, abort_message_t *message) {
   check_recorder_t *recorder = data;
   recorder->count++;
-  recorder->last_cause = signal_cause;
+  recorder->last_cause = message->signal_cause;
 }
 
 void install_check_recorder(check_recorder_t *recorder) {
