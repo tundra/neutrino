@@ -83,7 +83,7 @@ check_result() {
 run_test() {
   # Load all files in src/n as modules.
   MODULES=""
-  for FILE in src/n/*.n; do
+  for FILE in src/n/*.n tests/n/golden/*.n; do
     MODULES="$MODULES --module $FILE"
   done
   print_progress
