@@ -247,6 +247,16 @@ value_t new_heap_protocol(runtime_t *runtime, alloc_flags_t flags,
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_function(runtime_t *runtime, alloc_flags_t flags,
+    value_t display_name) {
+  size_t size = kFunctionSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_function_species)));
+  set_function_display_name(result, display_name);
+  TRY(post_process_result(runtime, result, flags));
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_argument_map_trie(runtime_t *runtime, value_t value) {
   CHECK_FAMILY(ofArray, value);
   TRY_DEF(children, new_heap_array_buffer(runtime, 2));

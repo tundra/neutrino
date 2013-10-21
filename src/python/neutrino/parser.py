@@ -122,12 +122,22 @@ class Parser(object):
         raise self.new_syntax_error()
       name = self.expect_type(Token.IDENTIFIER)
       if self.at_punctuation(':='):
+        # Plain definition
         self.expect_punctuation(':=')
         value = self.parse_expression()
         self.expect_statement_delimiter()
         return ast.NamespaceDeclaration(name, value)
       else:
+        # First argument to a method
         subject = self.name_as_subject(name)
+        if self.at_punctuation('('):
+          params = self.parse_parameters()
+          self.expect_punctuation('=>')
+          body = self.parse_expression()
+          self.expect_statement_delimiter()
+          selector = self.name_as_selector(Parser._SAUSAGES)
+          signature = ast.Signature([subject, selector] + params)
+          return ast.FunctionDeclaration(ast.Method(signature, body))
     else:
       subject = self.parse_subject()
     name = self.name_as_selector(self.expect_type(Token.OPERATION))

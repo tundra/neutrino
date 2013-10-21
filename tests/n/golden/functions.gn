@@ -1,0 +1,43 @@
+-- INPUT:
+def $myfun($x) => "[" + $x + "]";
+entry_point $myfun("-").print();
+-- OUTPUT:
+"[-]"
+-- END
+
+
+-- INPUT:
+def $foo($x) => "[" + $x + "]";
+def $bar($x) => "{" + $x + "}";
+entry_point $foo($bar("X")).print();
+-- OUTPUT:
+"[{X}]"
+-- END
+
+
+-- INPUT:
+def $foo($x) => "<" + $x + ">";
+def $foo($x == "y") => "{" + $x + "}";
+entry_point {
+  $foo("x").print();
+  $foo("y").print();
+  $foo("z").print();
+}
+-- OUTPUT:
+"<x>"
+"{y}"
+"<z>"
+-- END
+
+
+-- INPUT:
+def $foo($x) => "<" + $x + ">";
+def $foo($x, $y) => "{" + $x + ", " + $y + "}";
+entry_point {
+  $foo("x").print();
+  $foo("y", "z").print();
+}
+-- OUTPUT:
+"<x>"
+"{y, z}"
+-- END

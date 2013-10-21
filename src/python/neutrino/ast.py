@@ -47,6 +47,9 @@ class Visitor(object):
   def visit_method_declaration(self, that):
     self.visit_ast(that)
 
+  def visit_function_declaration(self, that):
+    self.visit_ast(that)
+
   def visit_signature(self, that):
     self.visit_ast(that)
 
@@ -348,6 +351,12 @@ class Guard(object):
   def eq(value):
     return Guard(data.Guard._EQ, value)
 
+  @staticmethod
+  def bound_eq(value):
+    result = Guard(data.Guard._EQ, value)
+    result.value.value = value
+    return result
+
   # 'is' is a reserved word in python. T t t.
   @staticmethod
   def is_(value):
@@ -452,6 +461,37 @@ class MethodDeclaration(object):
 
   def __str__(self):
     return "(method-declaration %s %s)" % (self.method.signature, self.method.body)
+
+
+# A toplevel function declaration.
+class FunctionDeclaration(object):
+
+  def __init__(self, method):
+    self.method = method
+
+  def get_stage(self):
+    return 0
+
+  def accept(self, visitor):
+    return visitor.visit_function_declaration(self)
+
+  def apply(self, program, helper):
+    subject = self.method.signature.parameters[0]
+    name = subject.ident.get_name()
+    namespace = program.module.namespace
+    if namespace.has_binding(name):
+      value = namespace.lookup(name)
+    else:
+      value = data.Function(name)
+      namespace.add_binding(name, value)
+    subject.guard = Guard.bound_eq(value)
+    program.module.methodspace.add_method(self.method)
+
+  def traverse(self, visitor):
+    self.method.accept(visitor)
+
+  def __str__(self):
+    return "(function-declaration %s %s)" % (self.method.signature, self.method.body)
 
 
 # An individual execution stage.

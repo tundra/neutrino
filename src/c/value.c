@@ -1675,6 +1675,27 @@ value_t set_identifier_contents(value_t object, runtime_t *runtime, value_t cont
 }
 
 
+// --- F u n c t i o n ---
+
+TRIVIAL_PRINT_ON_IMPL(Function, function);
+GET_FAMILY_PROTOCOL_IMPL(function);
+NO_BUILTIN_METHODS(function);
+
+ACCESSORS_IMPL(Function, function, acNoCheck, 0, DisplayName, display_name);
+
+value_t function_validate(value_t self) {
+  VALIDATE_FAMILY(ofFunction, self);
+  return success();
+}
+
+value_t set_function_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(display_name, get_id_hash_map_at(contents, RSTR(runtime, display_name)));
+  set_function_display_name(object, display_name);
+  return success();
+}
+
+
 // --- O r d e r i n g ---
 
 int ordering_to_int(value_t value) {
@@ -1712,6 +1733,10 @@ static value_t new_protocol(runtime_t *runtime) {
   return new_heap_protocol(runtime, afMutable, ROOT(runtime, nothing));
 }
 
+static value_t new_function(runtime_t *runtime) {
+  return new_heap_function(runtime, afMutable, ROOT(runtime, nothing));
+}
+
 static value_t new_path(runtime_t *runtime) {
   return new_heap_path(runtime, afMutable, ROOT(runtime, nothing),
       ROOT(runtime, nothing));
@@ -1730,6 +1755,7 @@ value_t add_plankton_factory(value_t map, value_t category, const char *name,
 value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   value_t core = RSTR(runtime, core);
   // Factories
+  TRY(add_plankton_factory(map, core, "Function", new_function, runtime));
   TRY(add_plankton_factory(map, core, "Identifier", new_identifier, runtime));
   TRY(add_plankton_factory(map, core, "Methodspace", new_methodspace, runtime));
   TRY(add_plankton_factory(map, core, "Module", new_module, runtime));

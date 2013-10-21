@@ -244,6 +244,7 @@ static value_t new_moved_object(value_t target) {
   F(Boolean,                 boolean,                   X, _, _, X, _, _, _, _, _)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X)\
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _)\
+  F(Function,                function,                  _, _, X, X, _, _, _, X, _)\
   F(Guard,                   guard,                     _, _, _, _, _, _, _, X, _)\
   F(GuardAst,                guard_ast,                 _, _, X, X, _, _, _, _, _)\
   F(Identifier,              identifier,                _, _, X, _, _, _, _, _, _)\
@@ -1011,6 +1012,15 @@ ACCESSORS_DECL(identifier, path);
 
 // The stage (ie. $..., @..., etc) of this identifier.
 ACCESSORS_DECL(identifier, stage);
+
+
+// --- F u n c t i o n ---
+
+static const size_t kFunctionSize = OBJECT_SIZE(1);
+static const size_t kFunctionDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
+
+// The display name of this function.
+ACCESSORS_DECL(function, display_name);
 
 
 // --- O r d e r i n g ---
