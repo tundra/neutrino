@@ -421,6 +421,11 @@ static value_t lookup_methodspace_local_method(methodspace_lookup_state_t *state
       match_info_init(&match_info, scratch_score, state->scratch_offsets,
           kSmallLookupLimit);
     } else if (status != jsWorse) {
+      // If we hit the exact same method more than once, which can happen if
+      // the same methodspace is imported more than once, that's okay we just
+      // skip.
+      if (method.encoded == state->result.encoded)
+        continue;
       // The next score was not strictly worse than the best we've seen so we
       // don't have a unique best.
       state->result = new_lookup_error_signal(lcAmbiguity);
