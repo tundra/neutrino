@@ -50,7 +50,7 @@
 #define ENUM_ROOT_SINGLETONS(F)                                                \
   F(any_guard)                                                                 \
   F(builtin_methodspace)                                                       \
-  F(op_call)                                                                   \
+  F(ctrino)                                                                    \
   F(empty_array_buffer)                                                        \
   F(empty_array)                                                               \
   F(empty_instance_species)                                                    \
@@ -59,6 +59,7 @@
   F(integer_protocol)                                                          \
   F(nothing)                                                                   \
   F(null)                                                                      \
+  F(op_call)                                                                   \
   F(plankton_environment)                                                      \
   F(selector_key)                                                              \
   F(subject_key)                                                               \

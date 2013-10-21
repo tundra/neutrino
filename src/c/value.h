@@ -243,6 +243,7 @@ static value_t new_moved_object(value_t target) {
   F(Blob,                    blob,                      _, _, _, X, X, _, _, _, _)\
   F(Boolean,                 boolean,                   X, _, _, X, _, _, _, _, _)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X)\
+  F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _)\
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _)\
   F(Function,                function,                  _, _, X, X, _, _, _, X, _)\
   F(Guard,                   guard,                     _, _, _, _, _, _, _, X, _)\
@@ -1021,6 +1022,13 @@ static const size_t kFunctionDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
 
 // The display name of this function.
 ACCESSORS_DECL(function, display_name);
+
+
+// --- C t r i n o ---
+
+// Ctrino is a proxy object that gives source code access to calling into the C
+// runtime.
+static const size_t kCtrinoSize = OBJECT_SIZE(1);
 
 
 // --- O r d e r i n g ---

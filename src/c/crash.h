@@ -8,9 +8,20 @@
 #ifndef _CRASH
 #define _CRASH
 
+// Data used to construct the message displayed when the runtime aborts.
+typedef struct {
+  const char *file;
+  int line;
+  int signal_cause;
+  const char *text;
+} abort_message_t;
+
+// Initializes the fields of an abort message.
+void abort_message_init(abort_message_t *message, const char *file, int line,
+    int signal_cause, const char *text);
+
 // Type of abort functions.
-typedef void (abort_function_t)(void *data, const char *file, int line,
-    int signal_cause, const char *message);
+typedef void (abort_function_t)(void *data, abort_message_t *message);
 
 // A callback used to abort execution.
 typedef struct {

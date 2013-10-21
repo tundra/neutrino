@@ -42,9 +42,16 @@ static log_callback_t *global_log_callback = NULL;
 // The default abort handler which prints the message to stderr and aborts
 // execution.
 static void default_log(void *data, log_entry_t *entry) {
-  fprintf(stderr, "%s:%i: %s: %s [%s%s]\n", entry->file, entry->line,
-      get_log_level_name(entry->level), entry->message->chars,
-      get_log_level_char(entry->level), entry->timestamp->chars);
+  if (entry->file == NULL) {
+    // This is typically used for testing where including the filename and line
+    // makes the output unpredictable.
+    fprintf(stderr, "%s: %s\n",
+        get_log_level_name(entry->level), entry->message->chars);
+  } else {
+    fprintf(stderr, "%s:%i: %s: %s [%s%s]\n", entry->file, entry->line,
+        get_log_level_name(entry->level), entry->message->chars,
+        get_log_level_char(entry->level), entry->timestamp->chars);
+  }
 }
 
 // Returns the current global abort callback.

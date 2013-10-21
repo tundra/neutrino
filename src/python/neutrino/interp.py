@@ -83,12 +83,15 @@ class PytrinoProxy(object):
       return new_neutrino_protocol
 
 _PYTRINO = PytrinoProxy()
+_CTRINO = data.Key("ctrino", ("core", "ctrino"))
 
 # Looks up a name that is magically available when doing static evaluation. It's
 # a hack until we get imports working properly.
 def lookup_special_binding(name):
   if name == 'pytrino':
     return _PYTRINO
+  elif name == 'ctrino':
+    return _CTRINO
 
 # Evaluate the given expression. The evaluation will only be approximate so
 # it may fail if there are constructs or operations it can't handle.

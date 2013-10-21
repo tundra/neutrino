@@ -92,6 +92,9 @@ value_t new_heap_null(runtime_t *runtime);
 // Creates the singleton nothing value.
 value_t new_heap_nothing(runtime_t *runtime);
 
+// Creates the singleton ctrino value.
+value_t new_heap_ctrino(runtime_t *runtime);
+
 // Creates a boolean singleton.
 value_t new_heap_boolean(runtime_t *runtime, bool value);
 

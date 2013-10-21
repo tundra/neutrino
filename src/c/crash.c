@@ -39,9 +39,8 @@ static abort_callback_t *global_abort_callback = NULL;
 
 // The default abort handler which prints the message to stderr and aborts
 // execution.
-static void default_abort(void *data, const char *file, int line, int signal_cause,
-    const char *message) {
-  log_message(llError, file, line, "%s", message);
+static void default_abort(void *data, abort_message_t *message) {
+  log_message(llError, message->file, message->line, "%s", message->text);
   fflush(stderr);
   abort();
 }
@@ -62,15 +61,23 @@ void init_abort_callback(abort_callback_t *callback, abort_function_t *function,
 }
 
 // Invokes the given callback with the given arguments.
-static void call_abort_callback(abort_callback_t *callback, const char *file,
-    int line, int signal_cause, const char *message) {
-  (callback->function)(callback->data, file, line, signal_cause, message);
+static void call_abort_callback(abort_callback_t *callback,
+    abort_message_t *message) {
+  (callback->function)(callback->data, message);
 }
 
 abort_callback_t *set_abort_callback(abort_callback_t *value) {
   abort_callback_t *result = get_global_abort_callback();
   global_abort_callback = value;
   return result;
+}
+
+void abort_message_init(abort_message_t *message, const char *file, int line,
+    int signal_cause, const char *text) {
+  message->file = file;
+  message->line = line;
+  message->signal_cause = signal_cause;
+  message->text = text;
 }
 
 
@@ -88,7 +95,9 @@ static void vcheck_fail(const char *file, int line, int signal_cause,
   string_t str;
   string_buffer_flush(&buf, &str);
   // Print the formatted error message.
-  call_abort_callback(get_global_abort_callback(), file, line, signal_cause, str.chars);
+  abort_message_t message;
+  abort_message_init(&message, file, line, signal_cause, str.chars);
+  call_abort_callback(get_global_abort_callback(), &message);
   string_buffer_dispose(&buf);
 }
 

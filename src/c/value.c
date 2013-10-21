@@ -1696,6 +1696,29 @@ value_t set_function_contents(value_t object, runtime_t *runtime, value_t conten
 }
 
 
+// --- C t r i n o ---
+
+TRIVIAL_PRINT_ON_IMPL(Ctrino, ctrino);
+GET_FAMILY_PROTOCOL_IMPL(ctrino);
+FIXED_GET_MODE_IMPL(ctrino, vmDeepFrozen);
+
+value_t ctrino_validate(value_t self) {
+  VALIDATE_FAMILY(ofCtrino, self);
+  return success();
+}
+
+value_t ctrino_fail(builtin_arguments_t *args) {
+  check_fail(NULL, 0, "@ctrino.fail()");
+  runtime_t *runtime = get_builtin_runtime(args);
+  return ROOT(runtime, nothing);
+}
+
+value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
+  ADD_BUILTIN(ctrino, "fail", 0, ctrino_fail);
+  return success();
+}
+
+
 // --- O r d e r i n g ---
 
 int ordering_to_int(value_t value) {
@@ -1763,6 +1786,7 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, core, "Path", new_path, runtime));
   TRY(add_plankton_factory(map, core, "Protocol", new_protocol, runtime));
   // Singletons
+  TRY(add_plankton_binding(map, core, "ctrino", ROOT(runtime, ctrino), runtime));
   TRY(add_plankton_binding(map, core, "subject", ROOT(runtime, subject_key),
       runtime));
   TRY(add_plankton_binding(map, core, "selector", ROOT(runtime, selector_key),
