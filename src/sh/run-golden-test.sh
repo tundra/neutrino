@@ -138,7 +138,6 @@ while read LINE; do
   elif [ $HAS_INPUT -eq 1 -a $HAS_OUTPUT -eq 1 -a $HAS_END -eq 1 ]; then
     # If we now have both an INPUT and an OUTPUT line run the test.
     COMMAND="./src/python/neutrino/main.py --program"
-    print_progress
     run_test "$COMMAND" "$INPUT" "$OUTPUT" "$EXECUTABLE"
     INPUT=
     HAS_INPUT=0
