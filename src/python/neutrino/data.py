@@ -13,6 +13,9 @@ class Namespace(object):
   def add_binding(self, name, value):
     self.bindings[name] = value
 
+  def has_binding(self, name):
+    return name in self.bindings
+
   def lookup(self, name):
     import interp
     special_binding = interp.lookup_special_binding(name)
@@ -195,6 +198,14 @@ class Identifier(object):
     else:
       prefix = "$" * (self.stage + 1)
     return "(name %s %s)" % (prefix, self.path)
+
+
+@plankton.serializable(("core", "Function"))
+class Function(object):
+
+  @plankton.field("display_name")
+  def __init__(self, display_name=None):
+    self.display_name = display_name
 
 
 _SUBJECT = Key("subject", ("core", "subject"))

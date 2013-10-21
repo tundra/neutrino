@@ -9,6 +9,7 @@ lm = lambda s, b: ast.Lambda(ast.Method(s, b))
 lt = ast.Literal
 nd = ast.NamespaceDeclaration
 md = lambda s, b: ast.MethodDeclaration(ast.Method(s, b))
+fd = lambda s, b: ast.FunctionDeclaration(ast.Method(s, b))
 fpm = lambda n, g, *t: ast.Parameter(n, t, g)
 pm = lambda n, *t: fpm(n, ast.Guard.any(), *t)
 sq = lambda *e: ast.Sequence(e)
@@ -228,6 +229,10 @@ class ParserTest(unittest.TestCase):
     test('@@(1 + 2)', qt(-2, bn(lt(1), '+', lt(2))))
     test('@@@(1 + 2)', qt(-3, bn(lt(1), '+', lt(2))))
     test('@(1 + @(2))', qt(-1, bn(lt(1), '+', qt(-1, lt(2)))))
+
+  def test_program_toplevel_methods(self):
+    test = self.check_program
+    test('def $fun($x) => 5;', ut(0, fd(ms(nm("fun"), "()", pm(nm("x"), 0)), lt(5))))
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)
