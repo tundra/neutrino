@@ -363,10 +363,13 @@ class Parser(object):
     elif self.at_punctuation('{'):
       return self.parse_sequence_expression()
     elif self.at_word('null'):
+      self.expect_word('null')
       return ast.Literal(None)
     elif self.at_word('true'):
+      self.expect_word('true')
       return ast.Literal(True)
     elif self.at_word('false'):
+      self.expect_word('false')
       return ast.Literal(False)
     elif self.at_type(Token.QUOTE):
       return self.parse_quote()

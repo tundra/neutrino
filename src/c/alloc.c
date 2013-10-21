@@ -181,6 +181,11 @@ value_t new_heap_nothing(runtime_t *runtime) {
   return alloc_heap_object(runtime, size, ROOT(runtime, nothing_species));
 }
 
+value_t new_heap_ctrino(runtime_t *runtime) {
+  size_t size = kCtrinoSize;
+  return alloc_heap_object(runtime, size, ROOT(runtime, ctrino_species));
+}
+
 value_t new_heap_boolean(runtime_t *runtime, bool value) {
   size_t size = kBooleanSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,

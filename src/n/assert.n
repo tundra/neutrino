@@ -1,3 +1,9 @@
-def $that := 6;
+def $some_value := 6;
 
 def ($this).method_import_test() => "found it!";
+
+def $that($value) => $value.fail_if_false();
+
+def ($that == true).fail_if_false() => null;
+
+def ($that == false).fail_if_false() => @ctrino.fail();

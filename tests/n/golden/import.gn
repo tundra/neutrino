@@ -1,6 +1,6 @@
 -- INPUT:
 import @assert;
-entry_point @assert:that.print();
+entry_point @assert:some_value.print();
 -- OUTPUT:
 6
 -- END

@@ -1,0 +1,6 @@
+-- INPUT:
+import @assert;
+entry_point @assert:that(false);
+-- OUTPUT:
+6
+-- END
