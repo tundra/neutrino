@@ -6,6 +6,7 @@
 #include "builtin.h"
 #include "heap.h"
 #include "interp.h"
+#include "log.h"
 #include "runtime.h"
 #include "try-inl.h"
 #include "value-inl.h"
@@ -1716,8 +1717,6 @@ value_t ctrino_validate(value_t self) {
   VALIDATE_FAMILY(ofCtrino, self);
   return success();
 }
-
-#include "log.h"
 
 value_t ctrino_fail(builtin_arguments_t *args) {
   log_message(llError, NULL, 0, "@ctrino.fail()");
