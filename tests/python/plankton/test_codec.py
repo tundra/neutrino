@@ -20,11 +20,6 @@ class Pair(object):
   def __str__(self):
     return "(%s, %s)" % (self.first, self.second)
 
-  @plankton.factory
-  @staticmethod
-  def new_instance():
-    return Pair(None, None)
-
 
 @plankton.serializable()
 class Key(object):
