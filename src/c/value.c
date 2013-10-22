@@ -1683,7 +1683,6 @@ value_t set_identifier_contents(value_t object, runtime_t *runtime, value_t cont
 
 // --- F u n c t i o n ---
 
-TRIVIAL_PRINT_ON_IMPL(Function, function);
 GET_FAMILY_PROTOCOL_IMPL(function);
 NO_BUILTIN_METHODS(function);
 
@@ -1699,6 +1698,17 @@ value_t set_function_contents(value_t object, runtime_t *runtime, value_t conten
   TRY_DEF(display_name, get_id_hash_map_at(contents, RSTR(runtime, display_name)));
   set_function_display_name(object, display_name);
   return success();
+}
+
+void function_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<function");
+  value_t display_name = get_function_display_name(value);
+  if (!is_nothing(display_name)) {
+    string_buffer_printf(buf, " ");
+    value_print_inner_on(display_name, buf, flags | pfUnquote, depth - 1);
+  }
+  string_buffer_printf(buf, ">");
 }
 
 
