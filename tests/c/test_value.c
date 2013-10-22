@@ -68,7 +68,7 @@ TEST(value, sizes) {
 
 // Really simple value tagging stuff.
 TEST(value, tagged_integers) {
-  value_t v0 = new_integer(11);
+  value_t v0 = new_integer(10);
   ASSERT_DOMAIN(vdInteger, v0);
   ASSERT_EQ(10, get_integer_value(v0));
   value_t v1 = new_integer(-10);

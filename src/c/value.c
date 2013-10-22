@@ -1717,8 +1717,11 @@ value_t ctrino_validate(value_t self) {
   return success();
 }
 
+#include "log.h"
+
 value_t ctrino_fail(builtin_arguments_t *args) {
-  check_fail(NULL, 0, "@ctrino.fail()");
+  log_message(llError, NULL, 0, "");
+  exit(1);
   runtime_t *runtime = get_builtin_runtime(args);
   return ROOT(runtime, nothing);
 }
