@@ -1,0 +1,35 @@
+{ "name": "Neutrino",
+  "scopeName": "source.neutrino",
+  "fileTypes": ["n", "gn"],
+  "patterns": [
+      { "name": "string.quoted.double.neutrino",
+        "begin": "\"",
+         "end": "\""
+      },
+      { "name": "comment.line.number-sign.neutrino",
+        "match": "#.*"
+      },
+      { "match": "[$@]+([A-Za-z][A-Za-z0-9_:]*)?",
+        "name": "variable.neutrino"
+      },
+      { "match": "(=>|:=)",
+        "name": "punctuation.neutrino"
+      },
+      { "match": "[A-Za-z0-9_]*:",
+        "name": "keyword.other.neutrino"
+      },
+      { "match": "\\.[A-Za-z][A-Za-z0-9_]*",
+        "name": "entity.name.function.neutrino"
+      },
+      { "match": "\\.?[+=<>/*-]+",
+        "name": "entity.name.function.neutrino"
+      },
+      { "match": "[A-Za-z][A-Za-z0-9_]*",
+        "name": "storage.type.function.neutrino"
+      },
+      { "match": "[0-9]+",
+        "name": "constant.numeric.neutrino"
+      }
+  ],
+  "uuid": "9e501b8c-eb6a-4c1e-b60a-11f4bc81cf0d"
+}

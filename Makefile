@@ -263,6 +263,23 @@ $(GOLDEN_OUTS):$(OUT)/tests/n/golden/%.out:tests/n/golden/%.gn $(C_MAIN_EXE) $(P
 test-golden:	$(GOLDEN_RUNS)
 
 
+TMLANGUAGE=$(BIN)/sublime/Neutrino.tmLanguage
+SUBLIME_PACKAGE=$(BIN)/Neutrino.sublime-package
+
+
+sublime: $(SUBLIME_PACKAGE)
+
+
+$(SUBLIME_PACKAGE):	$(TMLANGUAGE)
+	@echo Creating $@
+	@cd $(BIN)/sublime && zip "../../$@" *
+
+
+$(TMLANGUAGE):	misc/sublime/Neutrino.json
+	@echo Generating "$@"
+	@mkdir -p $(BIN)/sublime
+	@./src/sh/json-to-plist.py "$<" "$@"
+
 loc:
 	@echo LOC \
 	  C: `find . -name \*.[ch] | xargs cat | grep -v -e ^// -e ^$$ | wc -l` \
