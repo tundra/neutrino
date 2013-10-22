@@ -1720,7 +1720,7 @@ value_t ctrino_validate(value_t self) {
 #include "log.h"
 
 value_t ctrino_fail(builtin_arguments_t *args) {
-  log_message(llError, NULL, 0, "");
+  log_message(llError, NULL, 0, "@ctrino.fail()");
   exit(1);
   runtime_t *runtime = get_builtin_runtime(args);
   return ROOT(runtime, nothing);
