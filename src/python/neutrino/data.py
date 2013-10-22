@@ -3,11 +3,11 @@
 
 import plankton
 
-@plankton.new_serializable(plankton.EnvironmentReference("core", "Namespace"))
+@plankton.serializable(plankton.EnvironmentReference("core", "Namespace"))
 class Namespace(object):
 
-  @plankton.new_field("bindings")
-  def __init__(self, bindings=None):
+  @plankton.field("bindings")
+  def __init__(self, bindings):
     self.bindings = bindings
 
   def add_binding(self, name, value):
@@ -25,13 +25,13 @@ class Namespace(object):
       return special_binding
 
 
-@plankton.new_serializable(plankton.EnvironmentReference("core", "Methodspace"))
+@plankton.serializable(plankton.EnvironmentReference("core", "Methodspace"))
 class Methodspace(object):
 
-  @plankton.new_field("inheritance")
-  @plankton.new_field("methods")
-  @plankton.new_field("imports")
-  def __init__(self, inheritance=None, methods=None, imports=None):
+  @plankton.field("inheritance")
+  @plankton.field("methods")
+  @plankton.field("imports")
+  def __init__(self, inheritance, methods, imports):
     self.inheritance = inheritance
     self.methods = methods
     self.imports = imports
@@ -43,13 +43,13 @@ class Methodspace(object):
     self.imports.append(other)
 
 
-@plankton.new_serializable(plankton.EnvironmentReference("core", "Module"))
+@plankton.serializable(plankton.EnvironmentReference("core", "Module"))
 class Module(object):
 
-  @plankton.new_field("namespace")
-  @plankton.new_field("methodspace")
-  @plankton.new_field("display_name")
-  def __init__(self, namespace=None, methodspace=None, display_name=None):
+  @plankton.field("namespace")
+  @plankton.field("methodspace")
+  @plankton.field("display_name")
+  def __init__(self, namespace, methodspace, display_name):
     self.namespace = namespace
     self.methodspace = methodspace
     self.display_name = display_name
@@ -60,7 +60,7 @@ class Module(object):
 
 class Method(object):
 
-  def __init__(self, signature=None, syntax=None):
+  def __init__(self, signature, syntax):
     self.signature = signature
     self.syntax = syntax
 
@@ -77,7 +77,7 @@ class Guard(object):
   _IS = "i"
   _ANY = "*"
 
-  def __init__(self, type=None, value=None):
+  def __init__(self, type, value):
     self.type = type
     self.value = value
 
@@ -95,7 +95,7 @@ class Guard(object):
 
 class Parameter(object):
 
-  def __init__(self, tags=None, guard=None):
+  def __init__(self, tags, guard):
     self.tags = tags
     self.guard = guard
 
@@ -111,19 +111,19 @@ class Key(plankton.EnvironmentReference):
     return "(key %s)" % self.display_name
 
 
-@plankton.new_serializable(plankton.EnvironmentReference("core", "Protocol"))
+@plankton.serializable(plankton.EnvironmentReference("core", "Protocol"))
 class Protocol(object):
 
-  @plankton.new_field("name")
-  def __init__(self, display_name=None):
+  @plankton.field("name")
+  def __init__(self, display_name):
     self.name = display_name
 
 
 # A user-defined object instance.
-@plankton.new_serializable()
+@plankton.serializable()
 class Instance(object):
 
-  def __init__(self, protocol=None):
+  def __init__(self, protocol):
     self.protocol = protocol
 
   @plankton.header
@@ -135,11 +135,11 @@ class Instance(object):
     return {}
 
 
-@plankton.new_serializable(plankton.EnvironmentReference("core", "Path"))
+@plankton.serializable(plankton.EnvironmentReference("core", "Path"))
 class Path(object):
 
-  @plankton.new_field("names")
-  def __init__(self, names=None):
+  @plankton.field("names")
+  def __init__(self, names):
     self.names = names
 
   # Is this path a single name?
@@ -168,12 +168,12 @@ class Path(object):
     return "".join([":%s" % name for name in self.names])
 
 
-@plankton.new_serializable(plankton.EnvironmentReference("core", "Identifier"))
+@plankton.serializable(plankton.EnvironmentReference("core", "Identifier"))
 class Identifier(object):
 
-  @plankton.new_field("path")
-  @plankton.new_field("stage")
-  def __init__(self, stage=None, path=None):
+  @plankton.field("path")
+  @plankton.field("stage")
+  def __init__(self, stage, path):
     self.stage = stage
     self.path = path
 
@@ -201,11 +201,11 @@ class Identifier(object):
     return "(name %s %s)" % (prefix, self.path)
 
 
-@plankton.new_serializable(plankton.EnvironmentReference("core", "Function"))
+@plankton.serializable(plankton.EnvironmentReference("core", "Function"))
 class Function(object):
 
-  @plankton.new_field("display_name")
-  def __init__(self, display_name=None):
+  @plankton.field("display_name")
+  def __init__(self, display_name):
     self.display_name = display_name
 
 

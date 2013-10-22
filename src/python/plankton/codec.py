@@ -653,7 +653,7 @@ _EMPTY_METHOD_ATTRIBUTES = MethodAttributes()
 
 
 # Marks a type as being serializable
-def new_serializable(header=None):
+def serializable(header=None):
   if type(header) == type:
     _CLASS_REGISTRY.ensure_meta_info(header)
     return header
@@ -702,7 +702,7 @@ def factory(method):
 
 
 # Records a field to serialize by default
-def new_field(name):
+def field(name):
   def add_fields(method):
     attribs = MethodAttributes.ensure(method)
     attribs.fields.append(name)

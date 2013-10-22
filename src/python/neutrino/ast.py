@@ -70,11 +70,11 @@ class Visitor(object):
 
 
 # A constant literal value.
-@plankton.new_serializable(plankton.EnvironmentReference("ast", "Literal"))
+@plankton.serializable(plankton.EnvironmentReference("ast", "Literal"))
 class Literal(object):
 
-  @plankton.new_field("value")
-  def __init__(self, value=None):
+  @plankton.field("value")
+  def __init__(self, value):
     self.value = value
 
   def accept(self, visitor):
@@ -88,11 +88,11 @@ class Literal(object):
 
 
 # An array expression.
-@plankton.new_serializable(plankton.EnvironmentReference("ast", "Array"))
+@plankton.serializable(plankton.EnvironmentReference("ast", "Array"))
 class Array(object):
 
-  @plankton.new_field("elements")
-  def __init__(self, elements=None):
+  @plankton.field("elements")
+  def __init__(self, elements):
     self.elements = elements
 
   def accept(self, visitor):
@@ -108,13 +108,13 @@ class Array(object):
 
 # A reference to an enclosing binding. The name is used before the variable
 # has been resolved, the symbol after.
-@plankton.new_serializable()
+@plankton.serializable()
 class Variable(object):
 
   _LOCAL_HEADER = plankton.EnvironmentReference("ast", "LocalVariable")
   _NAMESPACE_HEADER = plankton.EnvironmentReference("ast", "NamespaceVariable")
 
-  def __init__(self, ident=None, namespace=None, symbol=None):
+  def __init__(self, ident, namespace=None, symbol=None):
     self.ident = ident
     self.namespace = namespace
     self.symbol = symbol
@@ -152,12 +152,12 @@ class Variable(object):
 
 
 # A multi-method invocation.
-@plankton.new_serializable(plankton.EnvironmentReference("ast", "Invocation"))
+@plankton.serializable(plankton.EnvironmentReference("ast", "Invocation"))
 class Invocation(object):
 
-  @plankton.new_field("arguments")
-  @plankton.new_field("methodspace")
-  def __init__(self, arguments=None, methodspace=None):
+  @plankton.field("arguments")
+  @plankton.field("methodspace")
+  def __init__(self, arguments, methodspace=None):
     self.arguments = arguments
     self.methodspace = methodspace
 
@@ -173,12 +173,12 @@ class Invocation(object):
 
 
 # An individual argument to an invocation.
-@plankton.new_serializable(plankton.EnvironmentReference("ast", "Argument"))
+@plankton.serializable(plankton.EnvironmentReference("ast", "Argument"))
 class Argument(object):
 
-  @plankton.new_field("tag")
-  @plankton.new_field("value")
-  def __init__(self, tag=None, value=None):
+  @plankton.field("tag")
+  @plankton.field("value")
+  def __init__(self, tag, value):
     self.tag = tag
     self.value = value
 
@@ -193,23 +193,23 @@ class Argument(object):
 
 
 # A binding from a symbol to a value.
-@plankton.new_serializable()
+@plankton.serializable()
 class Binding(object):
 
-  @plankton.new_field("symbol")
-  @plankton.new_field("value")
-  def __init__(self, symbol=None, value=None):
+  @plankton.field("symbol")
+  @plankton.field("value")
+  def __init__(self, symbol, value):
     self.symbol = symbol
     self.value = value
 
 
 # A sequence of expressions to execute in order, yielding the value of the last
 # expression.
-@plankton.new_serializable(plankton.EnvironmentReference("ast", "Sequence"))
+@plankton.serializable(plankton.EnvironmentReference("ast", "Sequence"))
 class Sequence(object):
 
-  @plankton.new_field("values")
-  def __init__(self, values=None):
+  @plankton.field("values")
+  def __init__(self, values):
     self.values = values
 
   def accept(self, visitor):
@@ -233,13 +233,13 @@ class Sequence(object):
 
 
 # A local variable declaration.
-@plankton.new_serializable(plankton.EnvironmentReference("ast", "LocalDeclaration"))
+@plankton.serializable(plankton.EnvironmentReference("ast", "LocalDeclaration"))
 class LocalDeclaration(object):
 
-  @plankton.new_field("symbol")
-  @plankton.new_field("value")
-  @plankton.new_field("body")
-  def __init__(self, ident=None, value=None, body=None, symbol=None):
+  @plankton.field("symbol")
+  @plankton.field("value")
+  @plankton.field("body")
+  def __init__(self, ident, value, body, symbol=None):
     self.ident = ident
     self.symbol = symbol
     self.value = value
@@ -260,22 +260,22 @@ class LocalDeclaration(object):
 
 
 # A symbol that identifies a scoped binding.
-@plankton.new_serializable(plankton.EnvironmentReference("ast", "Symbol"))
+@plankton.serializable(plankton.EnvironmentReference("ast", "Symbol"))
 class Symbol(object):
 
-  @plankton.new_field("name")
-  def __init__(self, name=None):
+  @plankton.field("name")
+  def __init__(self, name):
     self.name = name
 
 
 # An individual method parameter.
-@plankton.new_serializable(plankton.EnvironmentReference("ast", "Parameter"))
+@plankton.serializable(plankton.EnvironmentReference("ast", "Parameter"))
 class Parameter(object):
 
-  @plankton.new_field("symbol")
-  @plankton.new_field("tags")
-  @plankton.new_field("guard")
-  def __init__(self, ident=None, tags=None, guard=None):
+  @plankton.field("symbol")
+  @plankton.field("tags")
+  @plankton.field("guard")
+  def __init__(self, ident, tags, guard):
     self.ident = ident
     self.symbol = None
     self.tags = tags
@@ -297,11 +297,11 @@ class Parameter(object):
         self.guard)
 
 
-@plankton.new_serializable(plankton.EnvironmentReference("ast", "Signature"))
+@plankton.serializable(plankton.EnvironmentReference("ast", "Signature"))
 class Signature(object):
 
-  @plankton.new_field("parameters")
-  def __init__(self, parameters=None):
+  @plankton.field("parameters")
+  def __init__(self, parameters):
     self.parameters = parameters
 
   def accept(self, visitor):
@@ -319,12 +319,12 @@ class Signature(object):
     return "(signature %s)" % " ".join(map(str, self.parameters))
 
 
-@plankton.new_serializable(plankton.EnvironmentReference("ast", "Guard"))
+@plankton.serializable(plankton.EnvironmentReference("ast", "Guard"))
 class Guard(object):
 
-  @plankton.new_field("type")
-  @plankton.new_field("value")
-  def __init__(self, type=None, value=None):
+  @plankton.field("type")
+  @plankton.field("value")
+  def __init__(self, type, value):
     self.type = type
     if value is None:
       self.value = None
@@ -366,11 +366,11 @@ class Guard(object):
 
 # An anonymous function. These can be broken down into equivalent new-object
 # and set-property calls but that's for later.
-@plankton.new_serializable(plankton.EnvironmentReference("ast", "Lambda"))
+@plankton.serializable(plankton.EnvironmentReference("ast", "Lambda"))
 class Lambda(object):
 
-  @plankton.new_field("method")
-  def __init__(self, method=None):
+  @plankton.field("method")
+  def __init__(self, method):
     self.method = method
 
   def accept(self, visitor):
@@ -383,11 +383,11 @@ class Lambda(object):
     return "(fn (%s) => %s)" % (self.method.signature, self.method.body)
 
 
-@plankton.new_serializable(plankton.EnvironmentReference("ast", "Program"))
+@plankton.serializable(plankton.EnvironmentReference("ast", "Program"))
 class Program(object):
 
-  @plankton.new_field("entry_point")
-  def __init__(self, elements=None, entry_point=None):
+  @plankton.field("entry_point")
+  def __init__(self, elements, entry_point):
     self.elements = elements
     self.entry_point = entry_point
 
@@ -401,7 +401,7 @@ class Program(object):
 # A toplevel namespace declaration.
 class NamespaceDeclaration(object):
 
-  def __init__(self, ident=None, value=None):
+  def __init__(self, ident, value):
     self.ident = ident
     self.value = value
 
@@ -425,11 +425,11 @@ class NamespaceDeclaration(object):
 
 
 # Syntax of a method.
-@plankton.new_serializable(plankton.EnvironmentReference("ast", "Method"))
+@plankton.serializable(plankton.EnvironmentReference("ast", "Method"))
 class Method(object):
 
-  @plankton.new_field("signature")
-  @plankton.new_field("body")
+  @plankton.field("signature")
+  @plankton.field("body")
   def __init__(self, signature, body):
     self.signature = signature
     self.body = body
@@ -614,10 +614,10 @@ class Unit(object):
 
 # A quote/unquote. The stage indicates which direction to quote in -- less than
 # 0 means unquote, greater than means quote.
-@plankton.new_serializable()
+@plankton.serializable()
 class Quote(object):
 
-  def __init__(self, stage=None, ast=None):
+  def __init__(self, stage, ast):
     self.stage = stage
     self.ast = ast
     self.value = None

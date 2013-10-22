@@ -5,11 +5,11 @@ import plankton
 import unittest
 
 
-@plankton.new_serializable()
+@plankton.serializable()
 class Pair(object):
 
-  @plankton.new_field("first")
-  @plankton.new_field("second")
+  @plankton.field("first")
+  @plankton.field("second")
   def __init__(self, first, second):
     self.first = first
     self.second = second
@@ -26,10 +26,10 @@ class Pair(object):
     return Pair(None, None)
 
 
-@plankton.new_serializable()
+@plankton.serializable()
 class Key(object):
 
-  @plankton.new_field("id")
+  @plankton.field("id")
   def __init__(self, id=None):
     self.id = id
 
