@@ -6,6 +6,7 @@
 #define _VALUE_INL
 
 #include "signals.h"
+#include "try-inl.h"
 #include "utils.h"
 #include "value.h"
 
@@ -229,5 +230,13 @@ void set_##receiver_species##_species_##field(value_t self, value_t value) {   \
 }                                                                              \
 SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
     Field, field)
+
+
+// --- B u i l t i n s ---
+
+#define ADD_BUILTIN(family, name, argc, impl)                                  \
+  TRY(add_methodspace_builtin_method(runtime, deref(s_space),                  \
+      ROOT(runtime, family##_protocol), name, argc, impl))
+
 
 #endif // _VALUE_INL
