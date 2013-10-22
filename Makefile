@@ -80,7 +80,7 @@ else
 endif
 
 
-DEFINES=$(EXTRA_DEFINES) -DM$(MACHINE)=1
+DEFINES=-DM$(MACHINE)=1
 
 # Decide whether to define ENABLE_CHECKS based on the CHECKS variable.
 ifeq ($(CHECKS),on)
