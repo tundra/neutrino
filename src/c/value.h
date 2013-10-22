@@ -1031,13 +1031,6 @@ static const size_t kFunctionDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(function, display_name);
 
 
-// --- C t r i n o ---
-
-// Ctrino is a proxy object that gives source code access to calling into the C
-// runtime.
-static const size_t kCtrinoSize = OBJECT_SIZE(1);
-
-
 // --- O r d e r i n g ---
 
 // Returns a value ordering to an integer such that less than becomes -1,

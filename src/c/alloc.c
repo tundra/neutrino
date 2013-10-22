@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "behavior.h"
+#include "ctrino.h"
 #include "process.h"
 #include "try-inl.h"
 #include "value-inl.h"

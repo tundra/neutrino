@@ -6,7 +6,6 @@
 #include "builtin.h"
 #include "heap.h"
 #include "interp.h"
-#include "log.h"
 #include "runtime.h"
 #include "try-inl.h"
 #include "value-inl.h"
@@ -49,10 +48,6 @@ const char *get_species_division_name(species_division_t division) {
 
 
 // --- I n t e g e r ---
-
-#define ADD_BUILTIN(family, name, argc, impl)                                  \
-  TRY(add_methodspace_builtin_method(runtime, deref(s_space),                  \
-      ROOT(runtime, family##_protocol), name, argc, impl))
 
 static value_t integer_plus_integer(builtin_arguments_t *args) {
   value_t this = get_builtin_subject(args);
@@ -1703,30 +1698,6 @@ value_t set_function_contents(value_t object, runtime_t *runtime, value_t conten
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(display_name, get_id_hash_map_at(contents, RSTR(runtime, display_name)));
   set_function_display_name(object, display_name);
-  return success();
-}
-
-
-// --- C t r i n o ---
-
-TRIVIAL_PRINT_ON_IMPL(Ctrino, ctrino);
-GET_FAMILY_PROTOCOL_IMPL(ctrino);
-FIXED_GET_MODE_IMPL(ctrino, vmDeepFrozen);
-
-value_t ctrino_validate(value_t self) {
-  VALIDATE_FAMILY(ofCtrino, self);
-  return success();
-}
-
-value_t ctrino_fail(builtin_arguments_t *args) {
-  log_message(llError, NULL, 0, "@ctrino.fail()");
-  exit(1);
-  runtime_t *runtime = get_builtin_runtime(args);
-  return ROOT(runtime, nothing);
-}
-
-value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(ctrino, "fail", 0, ctrino_fail);
   return success();
 }
 
