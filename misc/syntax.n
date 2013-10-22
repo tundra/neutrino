@@ -1,0 +1,125 @@
+import $ctrino;
+import $math;
+
+## Default hashing implementation which uses the built-in object identity hash
+## function. Specialize this to provide custom hashing.
+def @HashMap:hash($value) => $ctrino.hash($value)
+
+## A simple hash map.
+type @HashMap {
+
+  ## Shorthand for hashing a value. The result will always be positive.
+  def $this.hash($value) => $math:abs(@HashMap:hash($value));
+
+  ## The number of mappings in this hash map.
+  def $this.capacity => $this.entries.length;
+
+  ## Returns the mapping for the given key or, if there is none, null.
+  def $this[$key] {
+    def $hash := $this.hash($key);
+    def $entry := $this.find_entry($key, $hash, create_if_missing: false);
+    if $entry == null
+      then null;
+      else $entry.value;
+  }
+
+  ## Is there a mapping for the given key in this map?
+  def $this.contains($key) {
+    def $hash := $this.hash($key);
+    def $entry := $this.find_entry($key, $hash, create_if_missing: false);
+    $entry != null;
+  }
+
+  ## Returns an iterator that scans over all the values in this hash.
+  def $this.values => fn .for($fun) {
+    for ($key, $value) in $this do
+      $fun($value);
+  }
+
+  ## Returns an iterator that scans over all the keys in this hash.
+  def $this.keys => fn .for($fun) {
+    for ($key, $value) in $this do
+      $fun($key);
+  }
+
+  ## Iterates over all (key, value) pairs in this map.
+  def $this.for($fun) {
+    for $entry in $this.entries do {
+      if $entry != null then
+        $fun($entry.key, $entry.value);
+    }
+  }
+
+  ## Creates a mapping from the given key to the given value. If a mapping
+  ## already exists it is overridden.
+  def $this[$key]:=($value)
+   => $this.insert($key, $this.hash($key), $value);
+
+  ## Works the same way as []:= but takes an explicit hash value.
+  def $this.insert($key, $hash, $value) {
+    def $entry := $this.find_entry($key, $hash, create_if_missing: true);
+    $entry.value := $value;
+  }
+
+  ## Extends the entry array to hold $new_capacity entries.
+  def $this.extend_capacity($new_capacity) {
+    def $new_entries := new @PrimitiveArray($new_capacity);
+    def $old_entries := $this.entries;
+    $this.entries := $new_entries;
+    $this.size := 0;
+    $this.max_load := ($new_capacity * 3) / 4;
+    for $entry in $old_entries do {
+      if $entry != null then
+        $this.insert($entry.key, $entry.hash, $entry.value);
+    }
+  }
+
+  ## Looks up the entry with the given key and hash.
+  def $this.find_entry($key, $hash, create_if_missing: $create) {
+    var $offset := $hash % $this.capacity;
+    # Scan through the entries starting from the start offset, bailing out using
+    # the escape when we reach the entry or the place it should have been.
+    while true do {
+      def $entry := $this.entries[$offset];
+      if $entry == null then {
+        if $create then {
+          if $this.size < $this.max_load then {
+            # We found a spot and there's room to add the new entry. Do it.
+            def $result := new @HashMapEntry($key, $hash);
+            $this.entries[$offset] := $result;
+            $this.size := $this.size + 1;
+            break $result;
+          } else {
+            # We found a spot but we don't have room to add the entry. Extend
+            # the map and then try again since rehashing means we'll have to
+            # repeat the search for a spot.
+            $this.extend_capacity($this.capacity * 2);
+            $escape($this.find_entry($key, $hash, create_if_missing: $create));
+          }
+        } else {
+          break null;
+        }
+      } else if $entry.hash == $hash and $entry.key == $key then {
+        break $entry;
+      } else {
+        $offset := ($offset + 1) % $this.capacity;
+      }
+    }
+  }
+
+  ## Convert this map to a flat string. Beware of cycles!
+  def $this.to_string() {
+    def $result := new @StringStream();
+    $result.add("#<a HashMap: {");
+    var $first := true;
+    for ($key, $value) in $this do {
+      if $first
+        then $first := false;
+        else $result.add(", ");
+      $result.add("${key}: ${value}");
+    }
+    $result.add("}>");
+    $result.to_string();
+  }
+
+}
