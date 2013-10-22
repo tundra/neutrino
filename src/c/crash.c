@@ -27,8 +27,10 @@ static void crash_handler(int signum) {
 }
 
 void install_crash_handler() {
+#ifndef NO_STACK_TRACES
   signal(SIGSEGV, crash_handler);
   signal(SIGABRT, crash_handler);
+#endif
 }
 
 
