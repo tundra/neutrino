@@ -10,7 +10,7 @@ class Pair(object):
 
   @plankton.field("first")
   @plankton.field("second")
-  def __init__(self, first=None, second=None):
+  def __init__(self, first, second):
     self.first = first
     self.second = second
 
@@ -79,7 +79,7 @@ class PlanktonTest(unittest.TestCase):
     test = self.check_transcoding
     test(Pair(1, 2))
     test(Pair(Pair(1, 2), Pair(3, 4)))
-    pb = Pair("foo")
+    pb = Pair("foo", None)
     pb.second = pb
     pa = self.transcode(pb)
     self.assertEquals("foo", pa.first)
@@ -107,6 +107,7 @@ class PlanktonTest(unittest.TestCase):
     add_object(obj0, 0)
     dec0p = self.transcode(obj0, resolve, access)
     self.assertTrue(obj0 is dec0p)
+
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)

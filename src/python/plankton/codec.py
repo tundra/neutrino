@@ -95,7 +95,7 @@ class DataOutputStream(object):
     return index
 
   def resolve_object(self, obj):
-    if isinstance(obj, EnvironmentPlaceholder):
+    if isinstance(obj, EnvironmentReference):
       return obj.key
     else:
       return (self.resolver)(obj)
@@ -111,30 +111,24 @@ class DataOutputStream(object):
     else:
       resolved = self.resolve_object(obj)
       if resolved is None:
-        # This object is not an environment reference so just emit it
-        # directly.
-        name = class_name(obj.__class__)
-        desc = _DESCRIPTORS.get(name, None)
-        if desc is None:
-          raise Exception(obj)
-        if desc.substitute:
-          # If the object can replace itself with a substitute we write that
-          # instead.
-          replacement = obj.get_substitute()
-          if not replacement is None:
-            self.write_object(replacement)
-            return
+        # Find the appropriate meta info and, if necessary, replacement
+        # object.
+        meta_info = None
+        last_obj = obj
+        while meta_info is None:
+          meta_info = _CLASS_REGISTRY.get_nearest_meta_info(last_obj.__class__)
+          if meta_info is None:
+            raise Exception(last_obj.__class__)
+          replacement = meta_info.get_replacement(last_obj)
+          if not replacement is last_obj:
+            meta_info = None
+            last_obj = replacement
         index = self.acquire_offset()
         self._add_byte(_OBJECT_TAG)
         self.object_index[obj] = -1
-        if desc.virtual:
-          self.write_object(obj.get_header())
-          self.object_index[obj] = index
-          self.write_object(obj.get_payload())
-        else:
-          self.write_object(desc.get_header())
-          self.object_index[obj] = index
-          self.write_object(desc.get_payload(obj))
+        self.write_object(meta_info.get_header(obj))
+        self.object_index[obj] = index
+        self.write_object(meta_info.get_payload(obj))
       else:
         index = self.acquire_offset()
         self._add_byte(_ENVIRONMENT_TAG)
@@ -163,12 +157,11 @@ class DataOutputStream(object):
 # Encapsulates state relevant to reading plankton data.
 class DataInputStream(object):
 
-  def __init__(self, bytes, descriptors, access):
+  def __init__(self, bytes, access):
     self.bytes = bytes
     self.cursor = 0
     self.object_index = {}
     self.object_offset = 0
-    self.descriptors = descriptors
     self.access = access
 
   # Reads the next value from the stream.
@@ -287,13 +280,11 @@ class DataInputStream(object):
     index = self.grab_index()
     self.object_index[index] = None
     header = self.read_object()
-    desc = self.descriptors.get(header, None)
-    if desc is None:
-      desc = _DEFAULT_DESCRIPTOR
-    instance = desc.new_instance(header)
+    meta_info = _CLASS_REGISTRY.get_meta_info_by_header(header)
+    instance = meta_info.new_empty_instance(header)
     self.object_index[index] = instance
     payload = self.read_object()
-    desc.apply_payload(instance, payload)
+    meta_info.set_instance_contents(instance, payload)
     return instance
 
   def _disassemble_object(self, indent):
@@ -303,8 +294,8 @@ class DataInputStream(object):
     return "%sobject (@%i)\n%s\n%s" % (indent, index, header, payload)
 
   def access_environment(self, key):
-    if (type(key) is list) and not self.descriptors.get(tuple(key), None) is None:
-      return EnvironmentPlaceholder(tuple(key))
+    if type(key) is list:
+      return EnvironmentReference(tuple(key))
     else:
       return (self.access)(key)
 
@@ -346,148 +337,9 @@ class DataInputStream(object):
     return result
 
 
-# A parsed object of an unknown type.
-class UnknownObject(object):
-
-  def __init__(self, header):
-    self.header = header
-    self.payload = None
-
-  def set_payload(self, payload):
-    self.payload = payload
-
-  def __str__(self):
-    return "#<%s: %s>" % (self.header, self.payload)
-
-
-# The default object descriptor which is used if no more specific descriptor
-# can be found.
-class DefaultDescriptor(object):
-
-  def new_instance(self, header):
-    return UnknownObject(header)
-
-  def apply_payload(self, instance, payload):
-    instance.set_payload(payload)
-
-
-_DESCRIPTORS = {}
-_DEFAULT_DESCRIPTOR = DefaultDescriptor()
-
-
-# An object that will always be resolved as an environment reference.
-class EnvironmentPlaceholder(object):
-
-  def __init__(self, key):
-    self.key = key
-
-  def __hash__(self):
-    return ~hash(self.key)
-
-  def __eq__(self, that):
-    if not isinstance(that, EnvironmentPlaceholder):
-      return False
-    else:
-      return self.key == that.key
-
-
-# A description of how to serialize and deserialize values of a particular
-# type.
-class ObjectDescriptor(object):
-
-  def __init__(self, klass, environment):
-    self.klass = klass
-    if environment is None:
-      self.header = class_name(self.klass)
-    else:
-      self.header = EnvironmentPlaceholder(environment)
-    self.fields = None
-    self.virtual = False
-    self.substitute = False
-
-  # Returns the header to use when encoding the given instance
-  def get_header(self):
-    return self.header
-
-  # Returns the data payload to use when encoding the given instance.
-  def get_payload(self, instance):
-    fields = {}
-    for field in self._field_names():
-      fields[field] = getattr(instance, field)
-    return fields
-
-  # Returns the list of names of serializable instance fields.
-  def _field_names(self):
-    if self.fields is None:
-      init = self.klass.__init__
-      self.fields = list(init._plankton_fields_)
-      self.fields.reverse()
-    return self.fields
-
-  # Creates a new empty instance of this type of object.
-  def new_instance(self, header):
-    return (self.klass)()
-
-  # Sets the data in the given instance based on the given payload.
-  def apply_payload(self, instance, payload):
-    for (name, value) in payload.iteritems():
-      setattr(instance, name, value)
-
-
 # Returns the fully qualified class name of a class object.
 def class_name(klass):
   return "%s.%s" % (klass.__module__, klass.__name__)
-
-
-# Marks the given class as serializable.
-def serializable(*environments):
-  def callback(klass):
-    if len(environments) == 0:
-      primary_environment = None
-    else:
-      primary_environment = environments[0]
-    descriptor = ObjectDescriptor(klass, primary_environment)
-    # We need to be able to access the descriptor through the class' name,
-    # that's how we get access to it when serializing an instance.
-    _DESCRIPTORS[class_name(klass)] = descriptor
-    for environment in environments:
-      # If there is an environment we also key the descriptor under the
-      # environment key such that when we meet the key during deserialization
-      # we know there's a descriptor.
-      _DESCRIPTORS[environment] = descriptor
-      # Finally we key it under the environment placeholder such that once
-      # the header has been read as an environment placeholder the object
-      # construction code can get it that way.
-      _DESCRIPTORS[EnvironmentPlaceholder(environment)] = descriptor
-    return klass
-  return callback
-
-
-# Marks the descriptor as requiring the object to be transformed during
-# serialization.
-def virtual(klass):
-  descriptor = _DESCRIPTORS[class_name(klass)]
-  descriptor.virtual = True
-  return klass
-
-
-# Marks the descriptor as allowing the object to substitute another value for
-# itself.
-def substitute(klass):
-  descriptor = _DESCRIPTORS[class_name(klass)]
-  descriptor.substitute = True
-  return klass
-
-
-# When used to decorate __init__ indicates that a serializable class has the
-# given field.
-def field(name):
-  def callback(fun):
-    if not hasattr(fun, '_plankton_fields_'):
-      fun._plankton_fields_ = []
-    fun._plankton_fields_.append(name)
-    return fun
-  return callback
 
 
 # Function that always returns none. Easy.
@@ -500,7 +352,6 @@ class Encoder(object):
 
   def __init__(self):
     self.resolver = always_none
-    self.descriptors = _DESCRIPTORS
 
   # Encodes the given object into a byte array.
   def encode(self, obj):
@@ -527,17 +378,16 @@ def always_throw(key):
 
 class Decoder(object):
 
-  def __init__(self, descriptors=_DESCRIPTORS):
-    self.descriptors = descriptors
+  def __init__(self):
     self.access = str
 
   # Decodes a byte array into a plankton object.
   def decode(self, data):
-    stream = DataInputStream(data, self.descriptors, self.access)
+    stream = DataInputStream(data, self.access)
     return stream.read_object()
 
   def disassemble(self, data):
-    stream = DataInputStream(data, self.descriptors, self.access)
+    stream = DataInputStream(data, self.access)
     return stream.disassemble_object("")
 
   # Decodes a base64 encoded string into a plankton object.
@@ -592,3 +442,273 @@ class Stringifier(object):
 # parser, don't.
 def stringify(data):
   return visit_data(data, Stringifier())
+
+
+# An empty object type used to create new class instances without calling init.
+# Hacky, granted.
+class Empty(object):
+  pass
+
+
+# A collection of information about how to serialize a python object.
+class ClassMetaInfo(object):
+
+  def __init__(self, klass):
+    self.klass = klass
+    self.has_analyzed_class = False
+    self.default_header = None
+    self.header_getter = None
+    self.payload_getter = None
+    self.replacer = None
+    self.fields = []
+    self.instance_factory = None
+
+  # Ensure that we have scanned through the class members and stored the
+  # handlers appropriately.
+  def ensure_analyzed(self):
+    if not self.has_analyzed_class:
+      self.has_analyzed_class = True
+      self.analyze()
+
+  # Scan through the class members and store the handlers appropriately
+  def analyze(self):
+    for (name, value) in self.klass.__dict__.iteritems():
+      value = peel_method_wrappers(value)
+      attribs = MethodAttributes.get(value)
+      if attribs.is_header_getter:
+        self.header_getter = value
+      if attribs.is_payload_getter:
+        self.payload_getter = value
+      if attribs.is_replacer:
+        self.replacer = value
+      if attribs.is_instance_factory:
+        self.instance_factory = value
+      if len(attribs.fields) > 0:
+        # The fields have been added in reverse order of how they appear in the
+        # source code because the decorators are applied from the inside out.
+        self.fields = list(reversed(attribs.fields))
+
+  # Returns the header to use for the given value.
+  def get_header(self, value):
+    self.ensure_analyzed()
+    if not self.header_getter is None:
+      return (self.header_getter)(value)
+    else:
+      return self.default_header
+
+  # Returns the payload to use for the given value.
+  def get_payload(self, value):
+    self.ensure_analyzed()
+    if self.payload_getter is None:
+      return self.get_default_payload(value)
+    else:
+      return (self.payload_getter)(value)
+
+  # Builds and returns the default payload for the given value, based on the
+  # field decorations.
+  def get_default_payload(self, value):
+    self.ensure_analyzed()
+    result = {}
+    for field in self.fields:
+      field_value = getattr(value, field)
+      result[field] = field_value
+    return result
+
+  # Returns the replacement object to use for the given value, if replacement
+  # is used. Otherwise returns the object itself.
+  def get_replacement(self, value):
+    self.ensure_analyzed()
+    if self.replacer is None:
+      return value
+    else:
+      return self.replacer(value)
+
+  # Sets the value to use as the fixed header object.
+  def set_default_header(self, value):
+    self.default_header = value
+
+  # Returns the default header value.
+  def get_default_header(self):
+    return self.default_header
+
+  # Creates a new empty instance of the type of class described by this meta
+  # info.
+  def new_empty_instance(self, header):
+    if self.instance_factory is None:
+      result = Empty()
+      result.__class__ = self.klass
+      return result
+    else:
+      return (self.instance_factory)()
+
+  def set_instance_contents(self, instance, payload):
+    for (name, value) in payload.iteritems():
+      setattr(instance, name, value)
+
+  def __str__(self):
+    return "class meta info %s" % self.klass
+
+
+# The mapping between python classes and plankton meta-info.
+class ClassRegistry(object):
+
+  def __init__(self):
+    self.class_to_info = {}
+    self.name_to_info = {}
+    self.nearest_cache = {}
+
+  def ensure_meta_info(self, klass):
+    if not klass in self.class_to_info:
+      self.class_to_info[klass] = ClassMetaInfo(klass)
+    return self.class_to_info[klass]
+
+  def ensure_name_to_info(self):
+    for meta_info in self.class_to_info.values():
+      default_header = meta_info.get_default_header()
+      self.name_to_info[default_header] = meta_info
+
+  def get_meta_info_by_header(self, header):
+    self.ensure_name_to_info()
+    return self.name_to_info.get(header, None)
+
+  def get_nearest_meta_info(self, klass):
+    if not klass in self.nearest_cache:
+      if klass in self.class_to_info:
+        self.nearest_cache[klass] = self.class_to_info[klass]
+      else:
+        self.nearest_cache[klass] = None
+        for base in klass.__bases__:
+          nearest = self.get_nearest_meta_info(base)
+          if not nearest is None:
+            self.nearest_cache[klass] = nearest
+            break
+    return self.nearest_cache[klass]
+
+
+# An object that will always be resolved as an environment reference.
+class EnvironmentReference(object):
+
+  def __init__(self, *key):
+    if isinstance(key, tuple):
+      self.key = key
+    else:
+      self.key = key[0]
+
+  def __hash__(self):
+    return ~hash(self.key)
+
+  def __eq__(self, that):
+    if not isinstance(that, EnvironmentReference):
+      return False
+    else:
+      return self.key == that.key
+
+
+# Peel off any method wrappers (i.e. staticmethod) and return the naked
+# underlying function. Safe to call on non-functions, the value is just returned
+# directly.
+def peel_method_wrappers(fun):
+  if isinstance(fun, staticmethod):
+    return fun.__func__
+  else:
+    return fun
+
+
+# A set of attributes that can be set by plankton on a given method. This is
+# later pulled into the class meta info but there's a while between method
+# and class definition time where there's no meta info so in the meantime this
+# if where it gets stored.
+class MethodAttributes(object):
+
+  def __init__(self):
+    self.is_header_getter = False
+    self.is_payload_getter = False
+    self.is_replacer = False
+    self.is_instance_factory = False
+    self.fields = []
+
+  # Returns the method attributes of the given function (which corresponds to
+  # a method). If it doesn't have attributes a set is created, hence the result
+  # can safely be modified.
+  @staticmethod
+  def ensure(fun):
+    fun = peel_method_wrappers(fun)
+    if not hasattr(fun, '_plankton_method_attributes_'):
+      fun._plankton_method_attributes_ = MethodAttributes()
+    return fun._plankton_method_attributes_
+
+  # Returns the method attributes of the given function. If it has none the
+  # empty attributes will be returned. Hence it's _not_ safe to modify the
+  # result.
+  @staticmethod
+  def get(fun):
+    fun = peel_method_wrappers(fun)
+    if hasattr(fun, '_plankton_method_attributes_'):
+      return fun._plankton_method_attributes_
+    else:
+      return _EMPTY_METHOD_ATTRIBUTES
+
+
+_EMPTY_METHOD_ATTRIBUTES = MethodAttributes()
+
+
+# Marks a type as being serializable
+def serializable(header=None):
+  if type(header) == type:
+    _CLASS_REGISTRY.ensure_meta_info(header)
+    return header
+  else:
+    def add_meta_info(klass):
+      resolved_header = header
+      if resolved_header is None:
+        resolved_header = class_name(klass)
+      meta_info = _CLASS_REGISTRY.ensure_meta_info(klass)
+      meta_info.set_default_header(resolved_header)
+      return klass
+    return add_meta_info
+
+
+# Decorates a method that will be called to produce the plankton header when
+# serializing objects it belongs to.
+def header(method):
+  attribs = MethodAttributes.ensure(method)
+  attribs.is_header_getter = True
+  return method
+
+
+# Decorates a method that will be called to produce the plankton payload when
+# serializing objects it belongs to.
+def payload(method):
+  attribs = MethodAttributes.ensure(method)
+  attribs.is_payload_getter = True
+  return method
+
+
+# Decorates a method that will be called to produce a replacement object when
+# serializing the holding object.
+def replacement(method):
+  attribs = MethodAttributes.ensure(method)
+  attribs.is_replacer = True
+  return method
+
+
+# Decorates a method that will be called to produce new instances of a class
+# during deserialization. If none is specified new instances will be created
+# by foul hackery.
+def factory(method):
+  attribs = MethodAttributes.ensure(method)
+  attribs.is_instance_factory = True
+  return method
+
+
+# Records a field to serialize by default
+def field(name):
+  def add_fields(method):
+    attribs = MethodAttributes.ensure(method)
+    attribs.fields.append(name)
+    return method
+  return add_fields
+
+
+# The singleton class registry that holds all the meta info used by plankton.
+_CLASS_REGISTRY = ClassRegistry()

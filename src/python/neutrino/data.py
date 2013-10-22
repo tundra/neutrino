@@ -3,11 +3,11 @@
 
 import plankton
 
-@plankton.serializable(("core", "Namespace"))
+@plankton.serializable(plankton.EnvironmentReference("core", "Namespace"))
 class Namespace(object):
 
   @plankton.field("bindings")
-  def __init__(self, bindings=None):
+  def __init__(self, bindings):
     self.bindings = bindings
 
   def add_binding(self, name, value):
@@ -25,13 +25,13 @@ class Namespace(object):
       return special_binding
 
 
-@plankton.serializable(("core", "Methodspace"))
+@plankton.serializable(plankton.EnvironmentReference("core", "Methodspace"))
 class Methodspace(object):
 
   @plankton.field("inheritance")
   @plankton.field("methods")
   @plankton.field("imports")
-  def __init__(self, inheritance=None, methods=None, imports=None):
+  def __init__(self, inheritance, methods, imports):
     self.inheritance = inheritance
     self.methods = methods
     self.imports = imports
@@ -43,13 +43,13 @@ class Methodspace(object):
     self.imports.append(other)
 
 
-@plankton.serializable(("core", "Module"))
+@plankton.serializable(plankton.EnvironmentReference("core", "Module"))
 class Module(object):
 
   @plankton.field("namespace")
   @plankton.field("methodspace")
   @plankton.field("display_name")
-  def __init__(self, namespace=None, methodspace=None, display_name=None):
+  def __init__(self, namespace, methodspace, display_name):
     self.namespace = namespace
     self.methodspace = methodspace
     self.display_name = display_name
@@ -60,7 +60,7 @@ class Module(object):
 
 class Method(object):
 
-  def __init__(self, signature=None, syntax=None):
+  def __init__(self, signature, syntax):
     self.signature = signature
     self.syntax = syntax
 
@@ -77,7 +77,7 @@ class Guard(object):
   _IS = "i"
   _ANY = "*"
 
-  def __init__(self, type=None, value=None):
+  def __init__(self, type, value):
     self.type = type
     self.value = value
 
@@ -95,13 +95,13 @@ class Guard(object):
 
 class Parameter(object):
 
-  def __init__(self, tags=None, guard=None):
+  def __init__(self, tags, guard):
     self.tags = tags
     self.guard = guard
 
 
 # A unique key, matching a neutrino runtime key.
-class Key(plankton.EnvironmentPlaceholder):
+class Key(plankton.EnvironmentReference):
 
   def __init__(self, display_name, key):
     self.display_name = display_name
@@ -111,34 +111,35 @@ class Key(plankton.EnvironmentPlaceholder):
     return "(key %s)" % self.display_name
 
 
-@plankton.serializable(("core", "Protocol"))
+@plankton.serializable(plankton.EnvironmentReference("core", "Protocol"))
 class Protocol(object):
 
   @plankton.field("name")
-  def __init__(self, display_name=None):
+  def __init__(self, display_name):
     self.name = display_name
 
 
 # A user-defined object instance.
-@plankton.virtual
 @plankton.serializable()
 class Instance(object):
 
-  def __init__(self, protocol=None):
+  def __init__(self, protocol):
     self.protocol = protocol
 
+  @plankton.header
   def get_header(self):
     return self.protocol
 
+  @plankton.payload
   def get_payload(self):
     return {}
 
 
-@plankton.serializable(("core", "Path"))
+@plankton.serializable(plankton.EnvironmentReference("core", "Path"))
 class Path(object):
 
   @plankton.field("names")
-  def __init__(self, names=None):
+  def __init__(self, names):
     self.names = names
 
   # Is this path a single name?
@@ -167,12 +168,12 @@ class Path(object):
     return "".join([":%s" % name for name in self.names])
 
 
-@plankton.serializable(("core", "Identifier"))
+@plankton.serializable(plankton.EnvironmentReference("core", "Identifier"))
 class Identifier(object):
 
   @plankton.field("path")
   @plankton.field("stage")
-  def __init__(self, stage=None, path=None):
+  def __init__(self, stage, path):
     self.stage = stage
     self.path = path
 
@@ -200,11 +201,11 @@ class Identifier(object):
     return "(name %s %s)" % (prefix, self.path)
 
 
-@plankton.serializable(("core", "Function"))
+@plankton.serializable(plankton.EnvironmentReference("core", "Function"))
 class Function(object):
 
   @plankton.field("display_name")
-  def __init__(self, display_name=None):
+  def __init__(self, display_name):
     self.display_name = display_name
 
 
