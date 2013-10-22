@@ -3,3 +3,5 @@ def $that($value) => $value.fail_if_false();
 def ($that == true).fail_if_false() => null;
 
 def ($that == false).fail_if_false() => @ctrino.fail();
+
+def $equals($a, $b) => $that($a == $b);

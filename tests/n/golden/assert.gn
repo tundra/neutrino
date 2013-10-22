@@ -10,3 +10,16 @@ entry_point @assert:that(false);
 -- OUTPUT:
 Error: @ctrino.fail()
 -- END
+
+-- INPUT:
+import @assert;
+entry_point @assert:equals(1, 1);
+-- OUTPUT:
+-- END
+
+-- INPUT:
+import @assert;
+entry_point @assert:equals(1, 2);
+-- OUTPUT:
+Error: @ctrino.fail()
+-- END
