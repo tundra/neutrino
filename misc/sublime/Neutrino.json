@@ -1,0 +1,52 @@
+{ "name": "Neutrino",
+  "scopeName": "source.neutrino",
+  "fileTypes": ["n", "gn"],
+  "patterns": [
+      { "name": "string.quoted.double.neutrino",
+        "begin": "\"",
+        "end": "\""
+      },
+      { "match": "##.*",
+        "name": "comment.block.documentation.neutrino",
+        "comment": "Match doc blocks before plain comments."
+      },
+      { "match": "#.*",
+        "name": "comment.line.number-sign.neutrino"
+      },
+      { "match": "[$@]+([A-Za-z][A-Za-z0-9_:]*)?",
+        "name": "variable.neutrino",
+        "comment": "We recognize a stage indicator with no name as a variable"
+      },
+      { "match": "(=>|:=)",
+        "name": "punctuation.neutrino"
+      },
+      { "match": "[A-Za-z0-9_]+:",
+        "name": "variable.parameter.neutrino"
+      },
+      { "match": "\\.([A-Za-z][A-Za-z0-9_]*)",
+        "captures": {
+          "1": {"name": "entity.name.function.neutrino"}
+        },
+        "comment": "Don't highlight the dot, just the name"
+      },
+      { "match": "\\.?([!+=<>/*-]+)",
+        "captures": {
+          "1": {"name": "keyword.operator.neutrino"}
+        },
+        "comment": "Ditto, don't highlight the dot"
+      },
+      { "match": "\\b(true|false|null)\\b",
+        "name": "constant.language.neutrino"
+      },
+      { "match": "\\b(type|def|var|import)\\b",
+        "name": "storage.type.neutrino"
+      },
+      { "match": "[A-Za-z][A-Za-z0-9_]*",
+        "name": "keyword.control.neutrino"
+      },
+      { "match": "[0-9]+",
+        "name": "constant.numeric.neutrino"
+      }
+  ],
+  "uuid": "9e501b8c-eb6a-4c1e-b60a-11f4bc81cf0d"
+}
