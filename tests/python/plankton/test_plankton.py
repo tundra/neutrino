@@ -105,6 +105,16 @@ class PlanktonTests(planktontest.TestCase):
     assemble = lambda assm: assm.tag(0).int32(-1)
     self.run_test(input, assemble)
   
+  def test_mixed_repeated_array_repetition(self):
+    ctx = self.new_context()
+    input = [(ctx.new_object(id=3)
+      .set_header(None)
+      .set_payload(None)), ctx.get_ref(3), ctx.new_env_ref("x", id=4), ctx.get_ref(3), ctx.get_ref(4), (ctx.new_object(id=5)
+      .set_header(None)
+      .set_payload(None)), ctx.get_ref(3), ctx.get_ref(4), ctx.get_ref(5)]
+    assemble = lambda assm: assm.tag(2).uint32(9).tag(7).tag(4).tag(4).tag(8).uint32(0).tag(9).tag(1).uint32(1).blob(bytearray([120])).tag(8).uint32(1).tag(8).uint32(0).tag(7).tag(4).tag(4).tag(8).uint32(2).tag(8).uint32(1).tag(8).uint32(0)
+    self.run_test(input, assemble)
+  
   def test_nested_array(self):
     ctx = self.new_context()
     input = [1, [2, [3, [4, [5, [6]]]]]]
@@ -131,23 +141,23 @@ class PlanktonTests(planktontest.TestCase):
   
   def test_pair_close_cycle(self):
     ctx = self.new_context()
-    input = (ctx.new_object(id=3)
+    input = (ctx.new_object(id=6)
       .set_header(None)
-      .set_payload(ctx.get_ref(3)))
+      .set_payload(ctx.get_ref(6)))
     assemble = lambda assm: assm.tag(7).tag(4).tag(8).uint32(0)
     self.run_test(input, assemble)
   
   def test_pair_nested(self):
     ctx = self.new_context()
-    input = (ctx.new_object(id=4)
+    input = (ctx.new_object(id=7)
       .set_header(None)
       .set_payload({
-        "x": (ctx.new_object(id=5)
+        "x": (ctx.new_object(id=8)
           .set_header(None)
           .set_payload({
             "x": 1,
             "y": 2})),
-        "y": (ctx.new_object(id=6)
+        "y": (ctx.new_object(id=9)
           .set_header(None)
           .set_payload({
             "x": 3,
@@ -157,7 +167,7 @@ class PlanktonTests(planktontest.TestCase):
   
   def test_pair_one(self):
     ctx = self.new_context()
-    input = (ctx.new_object(id=7)
+    input = (ctx.new_object(id=10)
       .set_header(None)
       .set_payload({
         "x": 1,
@@ -165,15 +175,21 @@ class PlanktonTests(planktontest.TestCase):
     assemble = lambda assm: assm.tag(7).tag(4).tag(3).uint32(2).tag(1).uint32(1).blob(bytearray([120])).tag(0).int32(1).tag(1).uint32(1).blob(bytearray([121])).tag(0).int32(2)
     self.run_test(input, assemble)
   
+  def test_repeated_array_env(self):
+    ctx = self.new_context()
+    input = [ctx.new_env_ref(0, id=11), ctx.get_ref(11), ctx.get_ref(11)]
+    assemble = lambda assm: assm.tag(2).uint32(3).tag(9).tag(0).int32(0).tag(8).uint32(0).tag(8).uint32(0)
+    self.run_test(input, assemble)
+  
   def test_repeated_array_repetition(self):
     ctx = self.new_context()
-    input = [(ctx.new_object(id=8)
+    input = [(ctx.new_object(id=12)
       .set_header(None)
-      .set_payload(None)), ctx.get_ref(8), (ctx.new_object(id=9)
+      .set_payload(None)), ctx.get_ref(12), (ctx.new_object(id=13)
       .set_header(None)
-      .set_payload(None)), ctx.get_ref(8), ctx.get_ref(9), (ctx.new_object(id=10)
+      .set_payload(None)), ctx.get_ref(12), ctx.get_ref(13), (ctx.new_object(id=14)
       .set_header(None)
-      .set_payload(None)), ctx.get_ref(8), ctx.get_ref(9), ctx.get_ref(10)]
+      .set_payload(None)), ctx.get_ref(12), ctx.get_ref(13), ctx.get_ref(14)]
     assemble = lambda assm: assm.tag(2).uint32(9).tag(7).tag(4).tag(4).tag(8).uint32(0).tag(7).tag(4).tag(4).tag(8).uint32(1).tag(8).uint32(0).tag(7).tag(4).tag(4).tag(8).uint32(2).tag(8).uint32(1).tag(8).uint32(0)
     self.run_test(input, assemble)
   
@@ -235,20 +251,26 @@ class PlanktonTests(planktontest.TestCase):
   
   def test_shorthand_pair_close_cycle(self):
     ctx = self.new_context()
-    input = (ctx.new_object(id=11)
+    input = (ctx.new_object(id=15)
       .set_header(None)
-      .set_payload(ctx.get_ref(11)))
+      .set_payload(ctx.get_ref(15)))
     assemble = lambda assm: assm.tag(7).tag(4).tag(8).uint32(0)
     self.run_test(input, assemble)
   
   def test_shorthand_pair_one(self):
     ctx = self.new_context()
-    input = (ctx.new_object(id=12)
+    input = (ctx.new_object(id=16)
       .set_header(None)
       .set_payload({
         "x": 1,
         "y": 2}))
     assemble = lambda assm: assm.tag(7).tag(4).tag(3).uint32(2).tag(1).uint32(1).blob(bytearray([120])).tag(0).int32(1).tag(1).uint32(1).blob(bytearray([121])).tag(0).int32(2)
+    self.run_test(input, assemble)
+  
+  def test_shorthand_simple_env(self):
+    ctx = self.new_context()
+    input = ctx.new_env_ref(0, id=17)
+    assemble = lambda assm: assm.tag(9).tag(0).int32(0)
     self.run_test(input, assemble)
   
   def test_shorthand_small_map(self):
@@ -265,9 +287,15 @@ class PlanktonTests(planktontest.TestCase):
     assemble = lambda assm: assm.tag(5)
     self.run_test(input, assemble)
   
+  def test_simple_env(self):
+    ctx = self.new_context()
+    input = ctx.new_env_ref(0, id=18)
+    assemble = lambda assm: assm.tag(9).tag(0).int32(0)
+    self.run_test(input, assemble)
+  
   def test_simple_object(self):
     ctx = self.new_context()
-    input = (ctx.new_object(id=13)
+    input = (ctx.new_object(id=19)
       .set_header("a")
       .set_payload("b"))
     assemble = lambda assm: assm.tag(7).tag(1).uint32(1).blob(bytearray([97])).tag(1).uint32(1).blob(bytearray([98]))
@@ -275,7 +303,7 @@ class PlanktonTests(planktontest.TestCase):
   
   def test_slightly_less_simple_object(self):
     ctx = self.new_context()
-    input = (ctx.new_object(id=14)
+    input = (ctx.new_object(id=20)
       .set_header("a")
       .set_payload({
         "x": None,
@@ -289,6 +317,12 @@ class PlanktonTests(planktontest.TestCase):
       "a": 1,
       "b": 2}
     assemble = lambda assm: assm.tag(3).uint32(2).tag(1).uint32(1).blob(bytearray([97])).tag(0).int32(1).tag(1).uint32(1).blob(bytearray([98])).tag(0).int32(2)
+    self.run_test(input, assemble)
+  
+  def test_string_env(self):
+    ctx = self.new_context()
+    input = ctx.new_env_ref("hey", id=21)
+    assemble = lambda assm: assm.tag(9).tag(1).uint32(3).blob(bytearray([104, 101, 121]))
     self.run_test(input, assemble)
   
   def test_true(self):

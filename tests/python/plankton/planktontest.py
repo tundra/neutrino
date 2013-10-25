@@ -34,6 +34,20 @@ class Object(object):
     return self.payload
 
 
+# An environment reference. This is kind of cheating -- in reality the
+# references would be resolved to real objects but for simplicity we stick with
+# these placeholders.
+class EnvRef(object):
+
+  def __init__(self, key):
+    self.key = key
+
+  def __eq__(self, that):
+    assert isinstance(that, EnvRef)
+    return self.key == that.key
+
+
+
 class Context(object):
 
   def __init__(self):
@@ -47,6 +61,12 @@ class Context(object):
 
   def get_ref(self, id):
     return self.refs[id]
+
+  def new_env_ref(self, key, id=None):
+    result = EnvRef(key)
+    if not id is None:
+      self.refs[id] = result
+    return result
 
 
 class RecordingAssembler(object):
@@ -87,7 +107,7 @@ class TestCase(unittest.TestCase):
     assemble(assm)
     bytes = assm.bytes
     # Then try decoding the bytes.
-    decoder = plankton.Decoder(default_object=Object)
+    decoder = plankton.Decoder(self.access, default_object=Object)
     decoded = decoder.decode(bytes)
     self.check_equals(input, decoded)
 
@@ -96,9 +116,17 @@ class TestCase(unittest.TestCase):
     assemble(expected_assm)
     expected = expected_assm.entries
     found_assm = RecordingAssembler()
-    plankton.Encoder().write(input, assembler=found_assm)
+    plankton.Encoder().set_resolver(self.resolve).write(input, assembler=found_assm)
     found = found_assm.entries
     self.assertEquals(expected, found)
+
+  def resolve(self, value):
+    if isinstance(value, EnvRef):
+      return value.key
+    return None
+
+  def access(self, key):
+    return EnvRef(key)
 
   def are_equal(self, a, b, seen):
     if isinstance(a, Object) and isinstance(b, Object):

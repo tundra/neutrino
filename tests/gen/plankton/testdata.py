@@ -254,6 +254,37 @@ class Tests(TestAssembler):
           .ref(1)
           .ref(0))
 
+  def gen_simple_env(self):
+    self.set_input(env(0))
+    self.get_assembly().tag(tENV).int(0)
+
+  def gen_shorthand_simple_env(self):
+    self.set_input(env(0))
+    self.get_assembly().env().int(0)
+
+  def gen_string_env(self):
+    self.set_input(env("hey"))
+    self.get_assembly().env().string("hey")
+
+  def gen_repeated_array_env(self):
+    self.set_input([env(0, id="x"), ref("x"), ref("x")])
+    (self.get_assembly()
+      .array(3)
+        .env().int(0)
+        .ref(0)
+        .ref(0))
+
+  def gen_mixed_repeated_array_repetition(self):
+    self.set_input([
+      new_object(id=0), ref(0),
+      env("x", id=1), ref(0), ref(1),
+      new_object(id=2), ref(0), ref(1), ref(2)])
+    (self.get_assembly()
+      .array(9)
+        .object().null().null().ref(0)
+        .env().string("x").ref(1).ref(0)
+        .object().null().null().ref(2).ref(1).ref(0))
+
 
 if __name__ == '__main__':
   main()

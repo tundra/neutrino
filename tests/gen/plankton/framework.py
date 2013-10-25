@@ -37,6 +37,13 @@ class Object(object):
     return "Object(#%i)" % self.serial
 
 
+class EnvironmentReference(object):
+
+  def __init__(self, key):
+    self.key = key
+    self.serial = get_next_serial()
+
+
 # Creates a new, initially empty, object and if an id is specified registers it
 # under that id.
 def new_object(id=None):
@@ -49,6 +56,14 @@ def new_object(id=None):
 # Returns the object registered under the given id.
 def ref(id):
   return get_active().get_ref(id)
+
+
+# Creates a new environment reference that resolves to the given value.
+def env(key, id=None):
+  result = EnvironmentReference(key)
+  if not id is None:
+    get_active().add_ref(id, result)
+  return result
 
 
 ACTIVE = None
@@ -191,6 +206,9 @@ class AbstractAssembly(object):
   def false(self):
     return self.tag(tFALSE)
 
+  def env(self):
+    return self.tag(tENV)
+
 
 # Tag values.
 tINT32 = codec._INT32_TAG
@@ -202,3 +220,4 @@ tARRAY = codec._ARRAY_TAG
 tMAP = codec._MAP_TAG
 tOBJECT = codec._OBJECT_TAG
 tREF = codec._REFERENCE_TAG
+tENV = codec._ENVIRONMENT_TAG
