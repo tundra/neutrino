@@ -47,22 +47,6 @@ class PlanktonTest(unittest.TestCase):
     base64_decoded = plankton.Decoder().base64decode(base64_encoded)
     self.assertEquals(value, base64_decoded)
 
-  def test_object_encoding(self):
-    test = self.check_transcoding
-    test(Pair(1, 2))
-    test(Pair(Pair(1, 2), Pair(3, 4)))
-    pb = Pair("foo", None)
-    pb.second = pb
-    pa = self.transcode(pb)
-    self.assertEquals("foo", pa.first)
-    self.assertTrue(pa is pa.second)
-    ab = [pb, pb, pb]
-    aa = self.transcode(ab)
-    self.assertEquals("foo", aa[0].first)
-    self.assertTrue(aa[0] is aa[0].second)
-    self.assertTrue(aa[0] is aa[1])
-    self.assertTrue(aa[0] is aa[2])
-
   def test_environment(self):
     val_to_int = {}
     int_to_val = {}
