@@ -84,6 +84,7 @@ class PythonGenerator(object):
           .indent(-1))
 
   def emit_test(self, test, out):
+    out.refs = {}
     (out
       .append('\ndef test_%s(self):\n' % test.name)
       .indent(+1)

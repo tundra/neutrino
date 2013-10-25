@@ -8,22 +8,13 @@
 from plankton import codec
 
 
-_next_serial = 0
-# Returns the next in a sequence of serial numbers.
-def get_next_serial():
-  global _next_serial
-  result = _next_serial
-  _next_serial += 1
-  return result
-
-
 # A generic object.
 class Object(object):
 
-  def __init__(self):
+  def __init__(self, serial):
     self.header = None
     self.payload = None
-    self.serial = get_next_serial()
+    self.serial = serial
 
   def set_header(self, value):
     self.header = value
@@ -39,18 +30,15 @@ class Object(object):
 
 class EnvironmentReference(object):
 
-  def __init__(self, key):
+  def __init__(self, key, serial):
     self.key = key
-    self.serial = get_next_serial()
+    self.serial = serial
 
 
 # Creates a new, initially empty, object and if an id is specified registers it
 # under that id.
 def new_object(id=None):
-  result = Object()
-  if not id is None:
-    get_active().add_ref(id, result)
-  return result
+  return get_active().new_object(id)
 
 
 # Returns the object registered under the given id.
@@ -60,10 +48,7 @@ def ref(id):
 
 # Creates a new environment reference that resolves to the given value.
 def env(key, id=None):
-  result = EnvironmentReference(key)
-  if not id is None:
-    get_active().add_ref(id, result)
-  return result
+  return get_active().new_env(key, id)
 
 
 ACTIVE = None
@@ -90,6 +75,7 @@ class TestAssembler(object):
     self.input = None
     self.assembly = None
     self.generator = generator
+    self.next_serial = 0
 
   # Sets the descriptive name of this test
   def set_name(self, value):
@@ -103,6 +89,23 @@ class TestAssembler(object):
   # Returns the value with the given id.
   def get_ref(self, id):
     return self.refs[id]
+
+  def get_next_serial(self):
+    result = self.next_serial
+    self.next_serial += 1
+    return result
+
+  def new_object(self, id):
+    result = Object(self.get_next_serial())
+    if not id is None:
+      self.add_ref(id, result)
+    return result
+
+  def new_env(self, key, id):
+    result = EnvironmentReference(key, self.get_next_serial())
+    if not id is None:
+      self.add_ref(id, result)
+    return result
 
   # Sets the input to check for.
   def set_input(self, value):
