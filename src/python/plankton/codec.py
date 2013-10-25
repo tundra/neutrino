@@ -411,8 +411,8 @@ def always_throw(key):
 
 class Decoder(object):
 
-  def __init__(self, default_object=None):
-    self.access = str
+  def __init__(self, access=str, default_object=None):
+    self.access = access
     self.default_object = default_object
 
   # Decodes a byte array into a plankton object.

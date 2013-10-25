@@ -4,7 +4,7 @@
 # Test case generator for python
 
 
-from framework import AbstractAssembly, E, Object
+from framework import *
 
 
 class PythonAssembly(AbstractAssembly):
@@ -62,6 +62,13 @@ class PythonGenerator(object):
           out.append(',\n')
         out.append(E(key), ': ', E(value[key]))
       out.indent(-1).append('}')
+    elif isinstance(value, EnvironmentReference):
+      serial = value.serial
+      if serial in out.refs:
+        out.append('ctx.get_ref(%i)' % serial)
+      else:
+        out.refs[serial] = value
+        out.append('ctx.new_env_ref(', E(value.key), ', id=%i)' % serial)
     else:
       assert isinstance(value, Object)
       serial = value.serial
@@ -77,6 +84,7 @@ class PythonGenerator(object):
           .indent(-1))
 
   def emit_test(self, test, out):
+    out.refs = {}
     (out
       .append('\ndef test_%s(self):\n' % test.name)
       .indent(+1)
