@@ -39,11 +39,50 @@ def visit_data(data, visitor):
     return visitor.visit_object(data)
 
 
+class EncodingAssembler(object):
+
+  def __init__(self):
+    self.bytes = bytearray()
+
+  # Writes a value tag.
+  def tag(self, value):
+    self._add_byte(value)
+    return self
+
+  # Writes a naked unsigned int32.
+  def uint32(self, value):
+    self._encode_uint32(value)
+    return self
+
+  # Writes a naked signed int32.
+  def int32(self, value):
+    self._encode_uint32((value << 1) ^ (value >> 31))
+    return self
+
+  # Writes a raw blob of data.
+  def blob(self, value):
+    self.bytes.extend(value)
+    return self
+
+  # Adds a single byte to the stream.
+  def _add_byte(self, byte):
+    self.bytes.append(byte)
+
+    # Writes a naked unsigned int32.
+  def _encode_uint32(self, value):
+    assert value >= 0
+    while value > 0x7F:
+      part = value & 0x7F
+      self._add_byte(part | 0x80)
+      value = value >> 7
+    self._add_byte(value)
+
+
 # Encapsulates state relevant to writing plankton data.
 class DataOutputStream(object):
 
-  def __init__(self, resolver):
-    self.bytes = bytearray()
+  def __init__(self, assembler, resolver):
+    self.assm = assembler
     self.object_index = {}
     self.object_offset = 0
     self.resolver = resolver
@@ -54,40 +93,40 @@ class DataOutputStream(object):
 
   # Emit a tagged integer.
   def visit_int(self, obj):
-    self._add_byte(_INT32_TAG)
-    self._encode_int32(obj)
+    self.assm.tag(_INT32_TAG)
+    self.assm.int32(obj)
 
   # Emit a tagged string.
   def visit_string(self, value):
-    self._add_byte(_STRING_TAG)
-    self._encode_uint32(len(value))
-    self.bytes.extend(value)
+    self.assm.tag(_STRING_TAG)
+    self.assm.uint32(len(value))
+    self.assm.blob(value)
 
   # Emit a tagged array.
   def visit_array(self, value):
-    self._add_byte(_ARRAY_TAG)
-    self._encode_uint32(len(value))
+    self.assm.tag(_ARRAY_TAG)
+    self.assm.uint32(len(value))
     for elm in value:
       self.write_object(elm)
 
   # Emit a tagged map.
   def visit_map(self, value):
-    self._add_byte(_MAP_TAG)
-    self._encode_uint32(len(value))
-    for (k, v) in value.items():
+    self.assm.tag(_MAP_TAG)
+    self.assm.uint32(len(value))
+    for k in sorted(value.keys()):
       self.write_object(k)
-      self.write_object(v)
+      self.write_object(value[k])
 
   # Emit a tagged null.
   def visit_null(self, obj):
-    self._add_byte(_NULL_TAG)
+    self.assm.tag(_NULL_TAG)
 
   # Emit a tagged boolean.
   def visit_bool(self, obj):
     if obj:
-      self._add_byte(_TRUE_TAG)
+      self.assm.tag(_TRUE_TAG)
     else:
-      self._add_byte(_FALSE_TAG)
+      self.assm.tag(_FALSE_TAG)
 
   def acquire_offset(self):
     index = self.object_offset
@@ -105,9 +144,9 @@ class DataOutputStream(object):
     if obj in self.object_index:
       # We've already emitted this object so just reference the previous
       # instance.
-      self._add_byte(_REFERENCE_TAG)
+      self.assm.tag(_REFERENCE_TAG)
       offset = self.object_offset - self.object_index[obj] - 1
-      self._encode_uint32(offset)
+      self.assm.uint32(offset)
     else:
       resolved = self.resolve_object(obj)
       if resolved is None:
@@ -124,45 +163,29 @@ class DataOutputStream(object):
             meta_info = None
             last_obj = replacement
         index = self.acquire_offset()
-        self._add_byte(_OBJECT_TAG)
+        self.assm.tag(_OBJECT_TAG)
         self.object_index[obj] = -1
         self.write_object(meta_info.get_header(obj))
         self.object_index[obj] = index
         self.write_object(meta_info.get_payload(obj))
       else:
         index = self.acquire_offset()
-        self._add_byte(_ENVIRONMENT_TAG)
+        self.assm.tag(_ENVIRONMENT_TAG)
         self.object_index[obj] = -1
         self.write_object(resolved)
         self.object_index[obj] = index
-
-  # Writes a naked unsigned int32.
-  def _encode_uint32(self, value):
-    assert value >= 0
-    while value > 0x7F:
-      part = value & 0x7F
-      self._add_byte(part | 0x80)
-      value = value >> 7
-    self._add_byte(value)
-
-  # Writes a naked signed int32.
-  def _encode_int32(self, value):
-    self._encode_uint32((value << 1) ^ (value >> 31))
-
-  # Adds a single byte to the stream.
-  def _add_byte(self, byte):
-    self.bytes.append(byte)
 
 
 # Encapsulates state relevant to reading plankton data.
 class DataInputStream(object):
 
-  def __init__(self, bytes, access):
+  def __init__(self, bytes, access, default_object):
     self.bytes = bytes
     self.cursor = 0
     self.object_index = {}
     self.object_offset = 0
     self.access = access
+    self.default_object = default_object
 
   # Reads the next value from the stream.
   def read_object(self):
@@ -281,10 +304,16 @@ class DataInputStream(object):
     self.object_index[index] = None
     header = self.read_object()
     meta_info = _CLASS_REGISTRY.get_meta_info_by_header(header)
-    instance = meta_info.new_empty_instance(header)
+    if not meta_info is None:
+      instance = meta_info.new_empty_instance(header)
+    else:
+      instance = (self.default_object)(header)
     self.object_index[index] = instance
     payload = self.read_object()
-    meta_info.set_instance_contents(instance, payload)
+    if not meta_info is None:
+      meta_info.set_instance_contents(instance, payload)
+    else:
+      instance.set_contents(payload)
     return instance
 
   def _disassemble_object(self, indent):
@@ -355,9 +384,13 @@ class Encoder(object):
 
   # Encodes the given object into a byte array.
   def encode(self, obj):
-    stream = DataOutputStream(self.resolver)
+    assembler = EncodingAssembler()
+    self.write(obj, assembler)
+    return assembler.bytes
+
+  def write(self, obj, assembler):
+    stream = DataOutputStream(assembler, self.resolver)
     stream.write_object(obj)
-    return stream.bytes
 
   # Encodes the given object into a base64 string.
   def base64encode(self, obj):
@@ -378,16 +411,17 @@ def always_throw(key):
 
 class Decoder(object):
 
-  def __init__(self):
+  def __init__(self, default_object=None):
     self.access = str
+    self.default_object = default_object
 
   # Decodes a byte array into a plankton object.
   def decode(self, data):
-    stream = DataInputStream(data, self.access)
+    stream = DataInputStream(data, self.access, self.default_object)
     return stream.read_object()
 
   def disassemble(self, data):
-    stream = DataInputStream(data, self.access)
+    stream = DataInputStream(data, self.access, None)
     return stream.disassemble_object("")
 
   # Decodes a base64 encoded string into a plankton object.
@@ -565,7 +599,8 @@ class ClassRegistry(object):
   def ensure_name_to_info(self):
     for meta_info in self.class_to_info.values():
       default_header = meta_info.get_default_header()
-      self.name_to_info[default_header] = meta_info
+      if not default_header is None:
+        self.name_to_info[default_header] = meta_info
 
   def get_meta_info_by_header(self, header):
     self.ensure_name_to_info()

@@ -56,8 +56,17 @@ test:	lint test-python test-c test-golden
 GLOBAL_DEPS=Makefile
 
 
+PYTHON_GEN_TEST_FILE=tests/python/plankton/test_plankton.py
+
+
+$(PYTHON_GEN_TEST_FILE):	tests/gen/plankton/*.py
+	@echo Generating $@
+	@mkdir -p $(shell dirname $@)
+	@PYTHONPATH=$(PYTHONPATH):src/python python tests/gen/plankton/main.py python > "$@"
+
+
 PYTHON_SRC_FILES=$(shell find src/python -name "[^_]*.py")
-PYTHON_TEST_FILES=$(shell find tests/python -name "[^_]*.py")
+PYTHON_TEST_FILES=$(shell find tests/python -name "test_*.py" -and -not -wholename $(PYTHON_GEN_TEST_FILE)) $(PYTHON_GEN_TEST_FILE)
 PYTHON_TEST_RUNS=$(patsubst tests/python/%, test-python-%, $(PYTHON_TEST_FILES))
 
 
@@ -267,23 +276,29 @@ TMLANGUAGE=$(BIN)/sublime/Neutrino.tmLanguage
 SUBLIME_PACKAGE=$(BIN)/Neutrino.sublime-package
 
 
+# Shorthand for building the sublime package.
 sublime: $(SUBLIME_PACKAGE)
 
 
+# Build the neutrino language sublime package.
 $(SUBLIME_PACKAGE):	$(TMLANGUAGE)
 	@echo Creating $@
 	@cd $(BIN)/sublime && zip "../../$@" *
 
 
+# Generate the plist syntax definition.
 $(TMLANGUAGE):	misc/sublime/Neutrino.json
 	@echo Generating "$@"
 	@mkdir -p $(BIN)/sublime
 	@./src/sh/json-to-plist.py "$<" "$@"
 
+
+# Print the number of source lines
 loc:
 	@echo LOC \
 	  C: `find . -name \*.[ch] | xargs cat | grep -v -e ^// -e ^$$ | wc -l` \
-	  py: `find . -name \*.py | xargs cat | grep -v -e '^#' -e ^$$ | wc -l`
+	  py: `find . -name \*.py | xargs cat | grep -v -e '^#' -e ^$$ | wc -l` \
+	  n: `find . -name \*.n | xargs cat | grep -v -e '^#' -e ^$$ | wc -l`
 
 
 # Linting
@@ -291,7 +306,9 @@ lint-tabs:
 	@echo Linting for tabs
 	@! (find src/ tests/ -type f | grep -v ".*\.pyc" | xargs grep -P '\t')
 
+
 lint:	lint-tabs
+
 
 clean:
 	@echo Cleaning
