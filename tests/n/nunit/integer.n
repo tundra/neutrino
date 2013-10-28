@@ -1,0 +1,24 @@
+import @assert;
+
+def $test_simple_arithmetic() => {
+  @assert:equals(3, 1 + 2);
+  @assert:equals(7, 3 + 4);
+
+  @assert:equals(1, 6 - 5);
+  @assert:equals(2, 9 - 7);
+
+  @assert:equals(72, 8 * 9);
+  @assert:equals(110, 10 * 11);
+
+  @assert:equals(10, 54 / 5);
+  @assert:equals(3, 22 / 7);
+
+  @assert:equals(4, 54 % 5);
+  @assert:equals(1, 22 % 7);
+}
+
+def $main() => {
+  $test_simple_arithmetic();
+}
+
+entry_point $main();
