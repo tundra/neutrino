@@ -25,6 +25,6 @@ value_t ctrino_fail(builtin_arguments_t *args) {
 }
 
 value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(ctrino, INFIX_BUILTIN("fail"), 0, ctrino_fail);
+  ADD_BUILTIN(ctrino, INFIX("fail"), 0, ctrino_fail);
   return success();
 }

@@ -49,21 +49,15 @@ TEST(builtin, integers) {
 
   value_t space = ROOT(runtime, builtin_methodspace);
 
-  test_builtin(runtime, space, vInt(2), vInt(1), INFIX_BUILTIN("+"),
-      vArray(1, vInt(1)));
-  test_builtin(runtime, space, vInt(3), vInt(2), INFIX_BUILTIN("+"),
-      vArray(1, vInt(1)));
-  test_builtin(runtime, space, vInt(5), vInt(2), INFIX_BUILTIN("+"),
-      vArray(1, vInt(3)));
+  test_builtin(runtime, space, vInt(2), vInt(1), INFIX("+"), vArray(1, vInt(1)));
+  test_builtin(runtime, space, vInt(3), vInt(2), INFIX("+"), vArray(1, vInt(1)));
+  test_builtin(runtime, space, vInt(5), vInt(2), INFIX("+"), vArray(1, vInt(3)));
 
-  test_builtin(runtime, space, vInt(0), vInt(1), INFIX_BUILTIN("-"),
-      vArray(1, vInt(1)));
-  test_builtin(runtime, space, vInt(1), vInt(2), INFIX_BUILTIN("-"),
-      vArray(1, vInt(1)));
-  test_builtin(runtime, space, vInt(-1), vInt(2), INFIX_BUILTIN("-"),
-      vArray(1, vInt(3)));
+  test_builtin(runtime, space, vInt(0), vInt(1), INFIX("-"), vArray(1, vInt(1)));
+  test_builtin(runtime, space, vInt(1), vInt(2), INFIX("-"), vArray(1, vInt(1)));
+  test_builtin(runtime, space, vInt(-1), vInt(2), INFIX("-"), vArray(1, vInt(3)));
 
-  test_builtin(runtime, space, vInt(-1), vInt(1), SUFFIX_BUILTIN("-"), vEmptyArray());
+  test_builtin(runtime, space, vInt(-1), vInt(1), SUFFIX("-"), vEmptyArray());
 
   DISPOSE_SAFE_VALUE_POOL(pool);
   DISPOSE_RUNTIME();
@@ -75,9 +69,9 @@ TEST(builtin, strings) {
 
   value_t space = ROOT(runtime, builtin_methodspace);
 
-  test_builtin(runtime, space, vStr("abcd"), vStr("ab"), INFIX_BUILTIN("+"),
+  test_builtin(runtime, space, vStr("abcd"), vStr("ab"), INFIX("+"),
       vArray(1, vStr("cd")));
-  test_builtin(runtime, space, vStr(""), vStr(""), INFIX_BUILTIN("+"),
+  test_builtin(runtime, space, vStr(""), vStr(""), INFIX("+"),
       vArray(1, vStr("")));
 
   DISPOSE_SAFE_VALUE_POOL(pool);

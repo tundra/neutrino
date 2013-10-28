@@ -42,13 +42,14 @@ typedef struct {
   const char *value;
 } builtin_operation_t;
 
-// Macro that produces a builtin_operation_t.
-#define INFIX_BUILTIN(value) BUILTIN(otInfix, value)
+// Macro that produces an infix builtin_operation_t.
+#define INFIX(value) OPERATION(otInfix, value)
+
+// Macro that produces a suffix builtin_operation_t.
+#define SUFFIX(value) OPERATION(otSuffix, value)
 
 // Macro that produces a builtin_operation_t.
-#define SUFFIX_BUILTIN(value) BUILTIN(otSuffix, value)
-
-#define BUILTIN(type, value) ((builtin_operation_t) {(type), (value)})
+#define OPERATION(type, value) ((builtin_operation_t) {(type), (value)})
 
 // Returns an operation value based on the given description.
 value_t builtin_operation_to_value(runtime_t *runtime, builtin_operation_t

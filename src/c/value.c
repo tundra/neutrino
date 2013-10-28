@@ -114,14 +114,14 @@ static value_t integer_print(builtin_arguments_t *args) {
 }
 
 value_t add_integer_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(integer, INFIX_BUILTIN("+"), 1, integer_plus_integer);
-  ADD_BUILTIN(integer, INFIX_BUILTIN("-"), 1, integer_minus_integer);
-  ADD_BUILTIN(integer, INFIX_BUILTIN("*"), 1, integer_times_integer);
-  ADD_BUILTIN(integer, INFIX_BUILTIN("/"), 1, integer_divide_integer);
-  ADD_BUILTIN(integer, INFIX_BUILTIN("%"), 1, integer_modulo_integer);
-  ADD_BUILTIN(integer, INFIX_BUILTIN("=="), 1, integer_equals_integer);
-  ADD_BUILTIN(integer, SUFFIX_BUILTIN("-"), 0, integer_negate);
-  ADD_BUILTIN(integer, INFIX_BUILTIN("print"), 0, integer_print);
+  ADD_BUILTIN(integer, INFIX("+"), 1, integer_plus_integer);
+  ADD_BUILTIN(integer, INFIX("-"), 1, integer_minus_integer);
+  ADD_BUILTIN(integer, INFIX("*"), 1, integer_times_integer);
+  ADD_BUILTIN(integer, INFIX("/"), 1, integer_divide_integer);
+  ADD_BUILTIN(integer, INFIX("%"), 1, integer_modulo_integer);
+  ADD_BUILTIN(integer, INFIX("=="), 1, integer_equals_integer);
+  ADD_BUILTIN(integer, SUFFIX("-"), 0, integer_negate);
+  ADD_BUILTIN(integer, INFIX("print"), 0, integer_print);
   return success();
 }
 
@@ -499,8 +499,8 @@ static value_t string_print(builtin_arguments_t *args) {
 }
 
 value_t add_string_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(string, INFIX_BUILTIN("+"), 1, string_plus_string);
-  ADD_BUILTIN(string, INFIX_BUILTIN("print"), 0, string_print);
+  ADD_BUILTIN(string, INFIX("+"), 1, string_plus_string);
+  ADD_BUILTIN(string, INFIX("print"), 0, string_print);
   return success();
 }
 
@@ -794,7 +794,7 @@ value_t array_length(builtin_arguments_t *args) {
 }
 
 value_t add_array_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(array, INFIX_BUILTIN("length"), 0, array_length);
+  ADD_BUILTIN(array, INFIX("length"), 0, array_length);
   return success();
 }
 
@@ -1491,7 +1491,7 @@ value_t emit_lambda_call_trampoline(assembler_t *assm) {
 
 value_t add_lambda_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   TRY(add_methodspace_custom_method(runtime, deref(s_space),
-      ROOT(runtime, lambda_protocol), BUILTIN(otCall, NULL), 0, true,
+      ROOT(runtime, lambda_protocol), OPERATION(otCall, NULL), 0, true,
       emit_lambda_call_trampoline));
   return success();
 }
@@ -1593,7 +1593,7 @@ static value_t module_print(builtin_arguments_t *args) {
 }
 
 value_t add_module_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(module, INFIX_BUILTIN("print"), 0, module_print);
+  ADD_BUILTIN(module, INFIX("print"), 0, module_print);
   return success();
 }
 
