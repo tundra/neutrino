@@ -61,7 +61,7 @@ def id(names, phase=0):
 def bn(left, op, right):
   return ast.Invocation([
     ast.Argument(ST, left),
-    ast.Argument(SL, ast.Literal(op)),
+    ast.Argument(SL, ast.Literal(data.Operation.infix(op))),
     ast.Argument(0, right)
   ])
 
@@ -134,13 +134,12 @@ class ParserTest(unittest.TestCase):
 
   def test_methods(self):
     test = self.check_expression
-    test('$a.foo(1)', mt(id("a"), lt("foo"), lt(1)))
-    test('$a.foo(1)', mt(id("a"), lt("foo"), lt(1)))
-    test('$a.foo(1, 2)', mt(id("a"), lt("foo"), lt(1), lt(2)))
-    test('$a.foo(1, 2, 3)', mt(id("a"), lt("foo"), lt(1), lt(2), lt(3)))
-    test('$a.foo(x: 1)', mt(id("a"), lt("foo"), ("x", lt(1))))
-    test('$a.foo(x: 1, y: 2)', mt(id("a"), lt("foo"), ("x", lt(1)), ("y", lt(2))))
-    test('$a.foo(1: 1, 0: 2)', mt(id("a"), lt("foo"), (1, lt(1)), (0, lt(2))))
+    test('$a.foo(1)', mt(id("a"), lt(ix("foo")), lt(1)))
+    test('$a.foo(1, 2)', mt(id("a"), lt(ix("foo")), lt(1), lt(2)))
+    test('$a.foo(1, 2, 3)', mt(id("a"), lt(ix("foo")), lt(1), lt(2), lt(3)))
+    test('$a.foo(x: 1)', mt(id("a"), lt(ix("foo")), ("x", lt(1))))
+    test('$a.foo(x: 1, y: 2)', mt(id("a"), lt(ix("foo")), ("x", lt(1)), ("y", lt(2))))
+    test('$a.foo(1: 1, 0: 2)', mt(id("a"), lt(ix("foo")), (1, lt(1)), (0, lt(2))))
 
   def test_sequence(self):
     test = self.check_expression
