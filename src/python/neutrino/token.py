@@ -154,6 +154,10 @@ class Tokenizer(object):
   def skip_whitespace(self):
     while self.has_more() and self.is_whitespace(self.current()):
       self.advance()
+    if self.has_more() and self.current() == '#':
+      while self.has_more() and self.current() != '\n':
+        self.advance()
+      self.skip_whitespace()
 
   _WHITESPACE = re.compile(r'\s')
   # Is the given character whitespace?

@@ -1,5 +1,6 @@
 import @assert;
 
+## Test of the most basic integer operations.
 def $test_simple_arithmetic() => {
   @assert:equals(0 - 1, -1);
 
