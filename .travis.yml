@@ -7,7 +7,7 @@ matrix:
     - language: c
       compiler: clang
       script: make MODE=dbg VALGRIND=on test
-      install: sudo apt-get install valgrind
+      install: sudo apt-get update && sudo apt-get install valgrind
     # Test everything using an optimized clang build.
     - language: c
       compiler: clang
