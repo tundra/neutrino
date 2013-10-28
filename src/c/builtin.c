@@ -26,10 +26,23 @@ runtime_t *get_builtin_runtime(builtin_arguments_t *args) {
   return args->runtime;
 }
 
+value_t builtin_operation_to_value(runtime_t *runtime, builtin_operation_t
+    *operation) {
+  value_t name;
+  if (operation->value == NULL) {
+    name = ROOT(runtime, null);
+  } else {
+    string_t name_str;
+    string_init(&name_str, operation->value);
+    TRY_SET(name, new_heap_string(runtime, &name_str));
+  }
+  return new_heap_operation(runtime, afFreeze, operation->type, name);
+}
+
 // Builds a signature for the built-in method with the given receiver, name,
 // and posc positional arguments.
 static value_t build_signature(runtime_t *runtime, value_t receiver,
-    const char *name_c_str, size_t posc, bool allow_extra) {
+    builtin_operation_t *operation, size_t posc, bool allow_extra) {
   size_t argc = posc + 2;
   TRY_DEF(vector, new_heap_pair_array(runtime, argc));
   // The subject parameter.
@@ -39,10 +52,8 @@ static value_t build_signature(runtime_t *runtime, value_t receiver,
   set_pair_array_first_at(vector, 0, ROOT(runtime, subject_key));
   set_pair_array_second_at(vector, 0, subject_param);
   // The selector parameter.
-  string_t name_str;
-  string_init(&name_str, name_c_str);
-  TRY_DEF(name, new_heap_string(runtime, &name_str));
-  TRY_DEF(name_guard, new_heap_guard(runtime, afFreeze, gtEq, name));
+  TRY_DEF(selector, builtin_operation_to_value(runtime, operation));
+  TRY_DEF(name_guard, new_heap_guard(runtime, afFreeze, gtEq, selector));
   TRY_DEF(name_param, new_heap_parameter(runtime, afFreeze, name_guard,
       ROOT(runtime, empty_array), false, 1));
   set_pair_array_first_at(vector, 1, ROOT(runtime, selector_key));
@@ -59,7 +70,7 @@ static value_t build_signature(runtime_t *runtime, value_t receiver,
 }
 
 value_t add_methodspace_builtin_method(runtime_t *runtime, value_t space,
-    value_t receiver, const char *name_c_str, size_t posc,
+    value_t receiver, builtin_operation_t operation, size_t posc,
     builtin_method_t implementation) {
   CHECK_FAMILY(ofMethodspace, space);
   CHECK_FAMILY(ofProtocol, receiver);
@@ -70,7 +81,7 @@ value_t add_methodspace_builtin_method(runtime_t *runtime, value_t space,
     E_TRY(assembler_emit_builtin(&assm, implementation));
     E_TRY(assembler_emit_return(&assm));
     E_TRY_DEF(code_block, assembler_flush(&assm));
-    E_TRY_DEF(signature, build_signature(runtime, receiver, name_c_str, posc, false));
+    E_TRY_DEF(signature, build_signature(runtime, receiver, &operation, posc, false));
     E_TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
         ROOT(runtime, nothing), code_block));
     E_RETURN(add_methodspace_method(runtime, space, method));
@@ -80,7 +91,7 @@ value_t add_methodspace_builtin_method(runtime_t *runtime, value_t space,
 }
 
 value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
-    value_t receiver, const char *name_c_str, size_t posc, bool allow_extra,
+    value_t receiver, builtin_operation_t operation, size_t posc, bool allow_extra,
     custom_method_emitter_t emitter) {
   CHECK_FAMILY(ofMethodspace, space);
   CHECK_FAMILY(ofProtocol, receiver);
@@ -91,7 +102,7 @@ value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
   TRY(assembler_emit_return(&assm));
   TRY_DEF(code_block, assembler_flush(&assm));
   assembler_dispose(&assm);
-  TRY_DEF(signature, build_signature(runtime, receiver, name_c_str, posc, allow_extra));
+  TRY_DEF(signature, build_signature(runtime, receiver, &operation, posc, allow_extra));
   TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
       ROOT(runtime, nothing), code_block));
   return add_methodspace_method(runtime, space, method);

@@ -274,7 +274,7 @@ static value_t new_moved_object(value_t target) {
   F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _)\
   F(Nothing,                 nothing,                   _, _, _, _, _, _, _, _, _)\
   F(Null,                    null,                      _, _, _, X, _, _, _, _, _)\
-  F(Operation,               operation,                 _, X, _, _, _, _, _, X, _)\
+  F(Operation,               operation,                 _, X, X, _, _, _, _, X, _)\
   F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _)\
   F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _)\
   F(Path,                    path,                      _, X, X, X, _, _, _, X, _)\

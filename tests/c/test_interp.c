@@ -41,7 +41,7 @@ TEST(interp, execution) {
   set_array_at(basic_signature_params, 1, new_heap_parameter_ast(
       runtime, new_heap_symbol_ast(runtime, null), selector_array,
       new_heap_guard_ast(runtime, gtEq,
-          new_heap_literal_ast(runtime, RSTR(runtime, sausages)))));
+          new_heap_literal_ast(runtime, ROOT(runtime, op_call)))));
   value_t basic_signature = new_heap_signature_ast(runtime, basic_signature_params);
 
   // Literal
@@ -99,7 +99,7 @@ TEST(interp, execution) {
     value_t subject_arg = new_heap_argument_ast(runtime, ROOT(runtime, subject_key),
         lam);
     value_t selector_arg = new_heap_argument_ast(runtime, ROOT(runtime, selector_key),
-        new_heap_literal_ast(runtime, RSTR(runtime, sausages)));
+        new_heap_literal_ast(runtime, ROOT(runtime, op_call)));
     value_t args = new_heap_array(runtime, 2);
     set_array_at(args, 0, subject_arg);
     set_array_at(args, 1, selector_arg);
@@ -169,7 +169,7 @@ TEST(interp, lookup_error) {
   set_array_at(basic_signature_params, 1, new_heap_parameter_ast(
       runtime, new_heap_symbol_ast(runtime, null), selector_array,
       new_heap_guard_ast(runtime, gtEq,
-          new_heap_literal_ast(runtime, RSTR(runtime, sausages)))));
+          new_heap_literal_ast(runtime, ROOT(runtime, op_call)))));
   value_t basic_signature = new_heap_signature_ast(runtime, basic_signature_params);
 
   value_t lam = new_heap_lambda_ast(runtime,

@@ -91,7 +91,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, subject_key), new_heap_key(runtime, RAW_RSTR(roots, subject)));
   TRY_SET(RAW_ROOT(roots, selector_key), new_heap_key(runtime, RAW_RSTR(roots, selector)));
   TRY_SET(RAW_ROOT(roots, builtin_methodspace), new_heap_methodspace(runtime));
-  TRY_SET(RAW_ROOT(roots, op_call), new_heap_operation(runtime, otCall, null));
+  TRY_SET(RAW_ROOT(roots, op_call), new_heap_operation(runtime, afFreeze, otCall, null));
   TRY_SET(RAW_ROOT(roots, ctrino), new_heap_ctrino(runtime));
 
   // Generate initialization for the per-family protocols.

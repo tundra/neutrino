@@ -100,6 +100,45 @@ class Parameter(object):
     self.guard = guard
 
 
+@plankton.serializable(plankton.EnvironmentReference("core", "Operation"))
+class Operation(object):
+
+  _CALL = 2
+  _INFIX = 4
+
+  @plankton.field("type")
+  @plankton.field("value")
+  def __init__(self, type, value):
+    self.type = type
+    self.value = value
+
+  @staticmethod
+  def call():
+    return Operation(Operation._CALL, None)
+
+  @staticmethod
+  def infix(value):
+    return Operation(Operation._INFIX, value)
+
+  def __hash__(self):
+    return hash(self.type) ^ hash(self.value)
+
+  def __eq__(self, that):
+    return isinstance(that, Operation) and (self.value == that.value) and (self.type == that.type)
+
+  def get_name(self):
+    if self.type == Operation._CALL:
+      assert self.value is None
+      return "()"
+    elif self.type == Operation._INFIX:
+      return ".%s" % self.value
+    else:
+      return repr(self)
+
+  def __str__(self):
+    return "(operation %s)" % self.get_name()
+
+
 # A unique key, matching a neutrino runtime key.
 class Key(plankton.EnvironmentReference):
 

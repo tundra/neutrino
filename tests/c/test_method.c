@@ -754,7 +754,7 @@ TEST(method, dense_perfect_lookup) {
 
 // Shorthand for creating an op with the given type and value.
 #define OP(otType, vValue)                                                     \
-  new_heap_operation(runtime, otType, variant_to_value(runtime, vValue))
+  new_heap_operation(runtime, afFreeze, otType, variant_to_value(runtime, vValue))
 
 TEST(method, operation_printing) {
   CREATE_RUNTIME();

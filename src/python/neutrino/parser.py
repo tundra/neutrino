@@ -14,7 +14,7 @@ from token import Token
 class Parser(object):
 
   _BUILTIN_METHODSPACE = data.Key("subject", ("core", "builtin_methodspace"))
-  _SAUSAGES = '()'
+  _SAUSAGES = data.Operation.call()
 
   def __init__(self, tokens, module_name=None):
     self.tokens = tokens
@@ -140,12 +140,13 @@ class Parser(object):
           return ast.FunctionDeclaration(ast.Method(signature, body))
     else:
       subject = self.parse_subject()
-    name = self.name_as_selector(self.expect_type(Token.OPERATION))
+    name = self.expect_type(Token.OPERATION)
+    selector = self.name_as_selector(data.Operation.infix(name))
     params = self.parse_parameters()
     self.expect_punctuation('=>')
     body = self.parse_expression()
     self.expect_statement_delimiter()
-    signature = ast.Signature([subject, name] + params)
+    signature = ast.Signature([subject, selector] + params)
     return ast.MethodDeclaration(ast.Method(signature, body))
 
   # <toplevel-import>
@@ -211,6 +212,7 @@ class Parser(object):
 
   # Given a string operation name returns the corresponding selector parameter.
   def name_as_selector(self, name):
+    assert isinstance(name, data.Operation)
     return ast.Parameter(data.Identifier(0, data.Path(['name'])), [data._SELECTOR],
       ast.Guard.eq(ast.Literal(name)))
 
@@ -275,9 +277,10 @@ class Parser(object):
     left = self.parse_call_expression()
     while self.at_type(Token.OPERATION):
       name = self.expect_type(Token.OPERATION)
+      selector = data.Operation.infix(name)
       prefix = [
         ast.Argument(data._SUBJECT, left),
-        ast.Argument(data._SELECTOR, ast.Literal(name))
+        ast.Argument(data._SELECTOR, ast.Literal(selector))
       ]
       rest = self.parse_arguments()
       left = ast.Invocation(prefix + rest, self.present.get_methodspace())
@@ -322,7 +325,7 @@ class Parser(object):
     while self.at_punctuation('('):
       prefix = [
         ast.Argument(data._SUBJECT, recv),
-        ast.Argument(data._SELECTOR, ast.Literal('()'))
+        ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES))
       ]
       rest = self.parse_arguments()
       recv = ast.Invocation(prefix + rest, self.present.get_methodspace())

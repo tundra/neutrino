@@ -287,19 +287,19 @@ void print_invocation(value_t record, frame_t *frame);
 // The different types of operations that are possible.
 typedef enum {
   // An assignment: $this.foo := 4
-  otAssign,
+  otAssign = 1,
   // Function call: $fun(1, 2)
-  otCall,
+  otCall = 2,
   // Collection indexing: $elms[4]
-  otIndex,
+  otIndex = 3,
   // Infix operation: $foo.bar(), $a + $b
-  otInfix,
+  otInfix = 4,
   // Prefix operation: !$foo
-  otPrefix,
+  otPrefix = 5,
   // Property access: $p.x
-  otProperty,
+  otProperty = 6,
   // Suffix operation: $foo!
-  otSuffix
+  otSuffix = 7
 } operation_type_t;
 
 static const size_t kOperationSize = OBJECT_SIZE(2);
