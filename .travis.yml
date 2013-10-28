@@ -7,16 +7,16 @@ matrix:
     - language: c
       compiler: clang
       script: make MODE=dbg VALGRIND=on test
-      install: sudo apt-get install valgrind
+      install: sudo apt-get update && sudo apt-get install valgrind
     # Test everything using an optimized clang build.
     - language: c
       compiler: clang
-      script: make MODE=opt test-c test-golden
+      script: make MODE=opt test-ctrino
     # Test with checks disabled.
     - languate: c
       compiler: clang
-      script: make MODE=opt CHECKS=off test-c test-golden
+      script: make MODE=opt CHECKS=off test-ctrino
     # Check that the C code compiles using gcc.
     - language: c
       compiler: gcc
-      script: make MODE=dbg test-c test-golden
+      script: make MODE=dbg test-ctrino
