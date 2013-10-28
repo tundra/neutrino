@@ -690,3 +690,12 @@ void operation_print_on(value_t self, string_buffer_t *buf,
       break;
   }
 }
+
+value_t set_operation_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(type, get_id_hash_map_at(contents, RSTR(runtime, type)));
+  TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
+  set_operation_type(object, get_integer_value(type));
+  set_operation_value(object, value);
+  return success();
+}

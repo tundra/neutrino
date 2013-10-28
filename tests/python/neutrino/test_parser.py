@@ -20,6 +20,7 @@ is_ = ast.Guard.is_
 any = ast.Guard.any
 ST = data._SUBJECT
 SL = data._SELECTOR
+ix = data.Operation.infix
 
 def ut(phase, *elements):
   return ast.Unit(None).add_element(phase, *elements)
@@ -33,7 +34,7 @@ def mu(*phases):
 def ls(*params):
   prefix = [
     fpm(nm(['this']), any(), ST),
-    fpm(nm(['name']), eq(lt('()')), SL)
+    fpm(nm(['name']), eq(lt(data.Operation.call())), SL)
   ]
   return ast.Signature(prefix + list(params))
 
@@ -60,14 +61,14 @@ def id(names, phase=0):
 def bn(left, op, right):
   return ast.Invocation([
     ast.Argument(ST, left),
-    ast.Argument(SL, ast.Literal(op)),
+    ast.Argument(SL, ast.Literal(data.Operation.infix(op))),
     ast.Argument(0, right)
   ])
 
 def cl(fun, *poss):
   args = [
     ast.Argument(ST, fun),
-    ast.Argument(SL, ast.Literal("()"))
+    ast.Argument(SL, ast.Literal(data.Operation.call()))
   ]
   for i in xrange(len(poss)):
     args.append(ast.Argument(i, poss[i]))
@@ -133,13 +134,12 @@ class ParserTest(unittest.TestCase):
 
   def test_methods(self):
     test = self.check_expression
-    test('$a.foo(1)', mt(id("a"), lt("foo"), lt(1)))
-    test('$a.foo(1)', mt(id("a"), lt("foo"), lt(1)))
-    test('$a.foo(1, 2)', mt(id("a"), lt("foo"), lt(1), lt(2)))
-    test('$a.foo(1, 2, 3)', mt(id("a"), lt("foo"), lt(1), lt(2), lt(3)))
-    test('$a.foo(x: 1)', mt(id("a"), lt("foo"), ("x", lt(1))))
-    test('$a.foo(x: 1, y: 2)', mt(id("a"), lt("foo"), ("x", lt(1)), ("y", lt(2))))
-    test('$a.foo(1: 1, 0: 2)', mt(id("a"), lt("foo"), (1, lt(1)), (0, lt(2))))
+    test('$a.foo(1)', mt(id("a"), lt(ix("foo")), lt(1)))
+    test('$a.foo(1, 2)', mt(id("a"), lt(ix("foo")), lt(1), lt(2)))
+    test('$a.foo(1, 2, 3)', mt(id("a"), lt(ix("foo")), lt(1), lt(2), lt(3)))
+    test('$a.foo(x: 1)', mt(id("a"), lt(ix("foo")), ("x", lt(1))))
+    test('$a.foo(x: 1, y: 2)', mt(id("a"), lt(ix("foo")), ("x", lt(1)), ("y", lt(2))))
+    test('$a.foo(1: 1, 0: 2)', mt(id("a"), lt(ix("foo")), (1, lt(1)), (0, lt(2))))
 
   def test_sequence(self):
     test = self.check_expression
@@ -188,30 +188,30 @@ class ParserTest(unittest.TestCase):
 
   def test_program_unrestricted_method_definition(self):
     test = self.check_program
-    test('def ($this).foo() => 4;', ut(0, md(ms(nm("this"), "foo"), lt(4))))
-    test('def ($that).bar() => 5;', ut(0, md(ms(nm("that"), "bar"), lt(5))))
-    test('def $this.bar() => 6;', ut(0, md(ms(nm("this"), "bar"), lt(6))))
-    test('def $this+() => 7;', ut(0, md(ms(nm("this"), "+"), lt(7))))
-    test('def $this+($that) => 8;', ut(0, md(ms(nm("this"), "+", pm(nm("that"), 0)), lt(8))))
-    test('def $this+$that => 9;', ut(0, md(ms(nm("this"), "+", pm(nm("that"), 0)), lt(9))))
-    test('def $this.foo($a, $b) => 10;', ut(0, md(ms(nm("this"), "foo", pm(nm("a"), 0),
+    test('def ($this).foo() => 4;', ut(0, md(ms(nm("this"), ix("foo")), lt(4))))
+    test('def ($that).bar() => 5;', ut(0, md(ms(nm("that"), ix("bar")), lt(5))))
+    test('def $this.bar() => 6;', ut(0, md(ms(nm("this"), ix("bar")), lt(6))))
+    test('def $this+() => 7;', ut(0, md(ms(nm("this"), ix("+")), lt(7))))
+    test('def $this+($that) => 8;', ut(0, md(ms(nm("this"), ix("+"), pm(nm("that"), 0)), lt(8))))
+    test('def $this+$that => 9;', ut(0, md(ms(nm("this"), ix("+"), pm(nm("that"), 0)), lt(9))))
+    test('def $this.foo($a, $b) => 10;', ut(0, md(ms(nm("this"), ix("foo"), pm(nm("a"), 0),
       pm(nm("b"), 1)), lt(10))))
 
   def test_program_restricted_method_definition(self):
     test = self.check_program
     test('def ($this == 8).foo() => 4;', ut(0, md(fms(
         fpm(nm("this"), eq(lt(8)), ST),
-        fpm(nm("name"), eq(lt("foo")), SL)),
+        fpm(nm("name"), eq(lt(ix("foo"))), SL)),
       lt(4))))
     test('def ($this == 8).foo($that == 9) => 4;', ut(0, md(fms(
         fpm(nm("this"), eq(lt(8)), ST),
-        fpm(nm("name"), eq(lt("foo")), SL),
+        fpm(nm("name"), eq(lt(ix("foo"))), SL),
         fpm(nm("that"), eq(lt(9)), 0)),
       lt(4))))
     test('def ($this is @This).foo() => 4;', mu(
       (0, [md(fms(
               fpm(nm("this"), is_(qt(-1, id("This", -1))), ST),
-              fpm(nm("name"), eq(lt("foo")), SL)),
+              fpm(nm("name"), eq(lt(ix("foo"))), SL)),
             lt(4))]),
       (-1, [])))
 
@@ -232,7 +232,8 @@ class ParserTest(unittest.TestCase):
 
   def test_program_toplevel_methods(self):
     test = self.check_program
-    test('def $fun($x) => 5;', ut(0, fd(ms(nm("fun"), "()", pm(nm("x"), 0)), lt(5))))
+    test('def $fun($x) => 5;', ut(0, fd(ms(nm("fun"), data.Operation.call(),
+      pm(nm("x"), 0)), lt(5))))
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)

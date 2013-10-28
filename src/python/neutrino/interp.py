@@ -34,10 +34,10 @@ class EvaluateVisitor(ast.Visitor):
 
   # Map from neutrino operator names to the python implementations
   OPERATOR_MAP = {
-    "+": operator.add,
-    "-": operator.sub,
-    "*": operator.mul,
-    "/": operator.div
+    data.Operation.infix("+"): operator.add,
+    data.Operation.infix("-"): operator.sub,
+    data.Operation.infix("*"): operator.mul,
+    data.Operation.infix("/"): operator.div
   }
 
   def visit_invocation(self, that):
@@ -53,7 +53,7 @@ class EvaluateVisitor(ast.Visitor):
         value = arg.value.accept(self)
         args.append(value)
     if isinstance(subject, types.FunctionType):
-      assert selector == "()"
+      assert selector == data.Operation.call()
       return subject(*args)
     elif selector in EvaluateVisitor.OPERATOR_MAP:
       # This bleeds python semantics into how the operators work. Don't (don't!)

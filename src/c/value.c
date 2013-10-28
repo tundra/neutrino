@@ -114,14 +114,14 @@ static value_t integer_print(builtin_arguments_t *args) {
 }
 
 value_t add_integer_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(integer, "+", 1, integer_plus_integer);
-  ADD_BUILTIN(integer, "-", 1, integer_minus_integer);
-  ADD_BUILTIN(integer, "*", 1, integer_times_integer);
-  ADD_BUILTIN(integer, "/", 1, integer_divide_integer);
-  ADD_BUILTIN(integer, "%", 1, integer_modulo_integer);
-  ADD_BUILTIN(integer, "==", 1, integer_equals_integer);
-  ADD_BUILTIN(integer, "-", 0, integer_negate);
-  ADD_BUILTIN(integer, "print", 0, integer_print);
+  ADD_BUILTIN(integer, INFIX("+"), 1, integer_plus_integer);
+  ADD_BUILTIN(integer, INFIX("-"), 1, integer_minus_integer);
+  ADD_BUILTIN(integer, INFIX("*"), 1, integer_times_integer);
+  ADD_BUILTIN(integer, INFIX("/"), 1, integer_divide_integer);
+  ADD_BUILTIN(integer, INFIX("%"), 1, integer_modulo_integer);
+  ADD_BUILTIN(integer, INFIX("=="), 1, integer_equals_integer);
+  ADD_BUILTIN(integer, SUFFIX("-"), 0, integer_negate);
+  ADD_BUILTIN(integer, INFIX("print"), 0, integer_print);
   return success();
 }
 
@@ -499,8 +499,8 @@ static value_t string_print(builtin_arguments_t *args) {
 }
 
 value_t add_string_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(string, "+", 1, string_plus_string);
-  ADD_BUILTIN(string, "print", 0, string_print);
+  ADD_BUILTIN(string, INFIX("+"), 1, string_plus_string);
+  ADD_BUILTIN(string, INFIX("print"), 0, string_print);
   return success();
 }
 
@@ -794,7 +794,7 @@ value_t array_length(builtin_arguments_t *args) {
 }
 
 value_t add_array_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(array, "length", 0, array_length);
+  ADD_BUILTIN(array, INFIX("length"), 0, array_length);
   return success();
 }
 
@@ -1490,8 +1490,9 @@ value_t emit_lambda_call_trampoline(assembler_t *assm) {
 }
 
 value_t add_lambda_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  TRY(add_methodspace_custom_method(runtime, deref(s_space), ROOT(runtime, lambda_protocol),
-      "()", 0, true, emit_lambda_call_trampoline));
+  TRY(add_methodspace_custom_method(runtime, deref(s_space),
+      ROOT(runtime, lambda_protocol), OPERATION(otCall, NULL), 0, true,
+      emit_lambda_call_trampoline));
   return success();
 }
 
@@ -1592,7 +1593,7 @@ static value_t module_print(builtin_arguments_t *args) {
 }
 
 value_t add_module_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(module, "print", 0, module_print);
+  ADD_BUILTIN(module, INFIX("print"), 0, module_print);
   return success();
 }
 
@@ -1779,6 +1780,10 @@ static value_t new_protocol(runtime_t *runtime) {
   return new_heap_protocol(runtime, afMutable, ROOT(runtime, nothing));
 }
 
+static value_t new_operation(runtime_t *runtime) {
+  return new_heap_operation(runtime, afMutable, otCall, ROOT(runtime, nothing));
+}
+
 static value_t new_function(runtime_t *runtime) {
   return new_heap_function(runtime, afMutable, ROOT(runtime, nothing));
 }
@@ -1806,6 +1811,7 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, core, "Methodspace", new_methodspace, runtime));
   TRY(add_plankton_factory(map, core, "Module", new_module, runtime));
   TRY(add_plankton_factory(map, core, "Namespace", new_namespace, runtime));
+  TRY(add_plankton_factory(map, core, "Operation", new_operation, runtime));
   TRY(add_plankton_factory(map, core, "Path", new_path, runtime));
   TRY(add_plankton_factory(map, core, "Protocol", new_protocol, runtime));
   // Singletons
