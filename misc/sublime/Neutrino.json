@@ -29,7 +29,7 @@
         },
         "comment": "Don't highlight the dot, just the name"
       },
-      { "match": "\\.?([!+=<>/*-]+)",
+      { "match": "\\.?([!+=<>/*%-]+)",
         "captures": {
           "1": {"name": "keyword.operator.neutrino"}
         },
