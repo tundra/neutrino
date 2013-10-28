@@ -95,6 +95,12 @@ class TokenTest(unittest.TestCase):
     test("$$", qt(1))
     test("$$$", qt(2))
 
+  def test_comment(self):
+    test = self.run_test
+    test("# foo\na\n# bar", wd("a"))
+    test("# foo\n a \n# bar", wd("a"))
+    test("# foo\n# bar\na \n# baz", wd("a"))
+
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)
   unittest.main(testRunner=runner)
