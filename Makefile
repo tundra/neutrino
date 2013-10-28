@@ -272,6 +272,25 @@ $(GOLDEN_OUTS):$(OUT)/tests/n/golden/%.out:tests/n/golden/%.gn $(C_MAIN_EXE) $(P
 test-golden:	$(GOLDEN_RUNS)
 
 
+NUNIT_SRCS=$(shell find tests/n/nunit -name "*.n" | sort)
+NUNIT_OUTS=$(patsubst tests/n/nunit/%.n, $(OUT)/tests/n/nunit/%.out, $(NUNIT_SRCS))
+NUNIT_RUNS=$(patsubst tests/n/nunit/%.n, test-nunit-%, $(NUNIT_SRCS))
+
+
+# Shorthand for running individual nunit tests.
+$(NUNIT_RUNS):test-nunit-%:$(OUT)/tests/n/nunit/%.out
+
+
+$(NUNIT_OUTS):$(OUT)/tests/n/nunit/%.out:tests/n/nunit/%.n $(C_MAIN_EXE) $(PYTHON_SRC_FILES)
+	@echo Running nunit test "$*.n"
+	@mkdir -p $(shell dirname $@)
+	@./src/sh/run-nunit-test.py -t "$<" -o "$@" -r "$(EXEC_PREFIX) $(C_MAIN_EXE)"
+
+
+# Run all the nunit tests.
+test-nunit:	$(NUNIT_RUNS)
+
+
 TMLANGUAGE=$(BIN)/sublime/Neutrino.tmLanguage
 SUBLIME_PACKAGE=$(BIN)/Neutrino.sublime-package
 

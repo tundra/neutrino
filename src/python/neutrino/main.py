@@ -33,6 +33,7 @@ class Main(object):
     parser = optparse.OptionParser()
     parser.add_option('--expression', action='append', default=[])
     parser.add_option('--program', action='append', default=[])
+    parser.add_option('--file', action='append', default=[])
     parser.add_option('--filter', action='store_true', default=False)
     parser.add_option('--base64', action='store_true', default=False)
     parser.add_option('--disass', action='store_true', default=False)
@@ -72,6 +73,7 @@ class Main(object):
       return
     self.run_expressions()
     self.run_programs()
+    self.run_files()
 
   # Load any referenced modules.
   def load_modules(self):
@@ -96,6 +98,19 @@ class Main(object):
     self.run_parse_input(self.flags.program,
         lambda tokens: parser.Parser(tokens).parse_program())
 
+  # Processes any --file arguments.
+  def run_files(self):
+    for filename in self.flags.file:
+      source = open(filename, "rt").read()
+      tokens = token.tokenize(source)
+      unit = parser.Parser(tokens).parse_program()
+      self.compile_and_output(unit)
+
+  # Compiles a unit and emits the result on stdout.
+  def compile_and_output(self, unit):
+    self.compile_unit(unit)
+    self.output_value(unit.get_present_program())
+
   # Compiles a unit, returning a program.
   def compile_unit(self, unit):
     analysis.analyze(unit)
@@ -105,8 +120,7 @@ class Main(object):
     for expr in inputs:
       tokens = token.tokenize(expr)
       unit = parse_thunk(tokens)
-      self.compile_unit(unit)
-      self.output_value(unit.get_present_program())
+      self.compile_and_output(unit)
 
   def output_value(self, value):
     encoder = plankton.Encoder()
