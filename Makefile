@@ -49,7 +49,11 @@ all:	main
 
 
 # Run all tests.
-test:	lint test-python test-c test-golden
+test:	lint test-python test-c test-golden test-nunit
+
+
+# Run the tests that test just ctrino. It's most of them.
+test-ctrino:	test-c test-golden test-nunit
 
 
 # Dependencies for all targets.
