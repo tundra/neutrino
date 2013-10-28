@@ -105,6 +105,7 @@ class Operation(object):
 
   _CALL = 2
   _INFIX = 4
+  _PREFIX = 5
 
   @plankton.field("type")
   @plankton.field("value")
@@ -119,6 +120,10 @@ class Operation(object):
   @staticmethod
   def infix(value):
     return Operation(Operation._INFIX, value)
+
+  @staticmethod
+  def prefix(value):
+    return Operation(Operation._PREFIX, value)
 
   def __hash__(self):
     return hash(self.type) ^ hash(self.value)
