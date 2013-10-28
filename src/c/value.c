@@ -120,7 +120,7 @@ value_t add_integer_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(integer, INFIX("/"), 1, integer_divide_integer);
   ADD_BUILTIN(integer, INFIX("%"), 1, integer_modulo_integer);
   ADD_BUILTIN(integer, INFIX("=="), 1, integer_equals_integer);
-  ADD_BUILTIN(integer, SUFFIX("-"), 0, integer_negate);
+  ADD_BUILTIN(integer, PREFIX("-"), 0, integer_negate);
   ADD_BUILTIN(integer, INFIX("print"), 0, integer_print);
   return success();
 }

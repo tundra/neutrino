@@ -48,6 +48,9 @@ typedef struct {
 // Macro that produces a suffix builtin_operation_t.
 #define SUFFIX(value) OPERATION(otSuffix, value)
 
+// Macro that produces a prefix builtin_operation_t.
+#define PREFIX(value) OPERATION(otPrefix, value)
+
 // Macro that produces a builtin_operation_t.
 #define OPERATION(type, value) ((builtin_operation_t) {(type), (value)})
 

@@ -57,7 +57,7 @@ TEST(builtin, integers) {
   test_builtin(runtime, space, vInt(1), vInt(2), INFIX("-"), vArray(1, vInt(1)));
   test_builtin(runtime, space, vInt(-1), vInt(2), INFIX("-"), vArray(1, vInt(3)));
 
-  test_builtin(runtime, space, vInt(-1), vInt(1), SUFFIX("-"), vEmptyArray());
+  test_builtin(runtime, space, vInt(-1), vInt(1), PREFIX("-"), vEmptyArray());
 
   DISPOSE_SAFE_VALUE_POOL(pool);
   DISPOSE_RUNTIME();

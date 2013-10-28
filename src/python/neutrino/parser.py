@@ -274,7 +274,7 @@ class Parser(object):
   # <operator expression>
   #   -> <call expression> +: <operation>
   def parse_operator_expression(self):
-    left = self.parse_call_expression()
+    left = self.parse_unary_expression()
     while self.at_type(Token.OPERATION):
       name = self.expect_type(Token.OPERATION)
       selector = data.Operation.infix(name)
@@ -304,7 +304,7 @@ class Parser(object):
           index += 1
       self.expect_punctuation(')')
     else:
-      arg = self.parse_call_expression()
+      arg = self.parse_unary_expression()
       args.append(ast.Argument(0, arg))
     return args
 
@@ -317,6 +317,21 @@ class Parser(object):
       tag = default_tag
     value = self.parse_expression()
     return ast.Argument(tag, value)
+
+  # <unary expression>
+  #   -> <prefix>* <atomic expression>
+  def parse_unary_expression(self):
+    if self.at_type(Token.OPERATION):
+      name = self.expect_type(Token.OPERATION)
+      selector = data.Operation.prefix(name)
+      subject = self.parse_unary_expression()
+      args = [
+        ast.Argument(data._SUBJECT, subject),
+        ast.Argument(data._SELECTOR, ast.Literal(selector))
+      ]
+      return ast.Invocation(args, self.present.get_methodspace())
+    else:
+      return self.parse_call_expression()
 
   # <call expression>
   #   -> <atomic expression>
