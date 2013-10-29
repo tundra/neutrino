@@ -11,6 +11,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 # Remaining imports.
 import analysis
+import ast
 import bindings
 import optparse
 import parser
@@ -25,7 +26,7 @@ class Main(object):
   def __init__(self):
     self.args = None
     self.flags = None
-    self.modules = {}
+    self.units = {}
 
   # Builds and returns a new option parser for the flags understood by this
   # script.
@@ -77,6 +78,12 @@ class Main(object):
 
   # Load any referenced modules.
   def load_modules(self):
+    # Create the module objects but don't compile them yet.
+    for arg in self.flags.module:
+      filename = os.path.basename(arg)
+      (module_name, ext) = os.path.splitext(filename)
+      self.units[module_name] = ast.Unit(module_name)
+    # ...okay now compile them.
     for arg in self.flags.module:
       filename = os.path.basename(arg)
       (module_name, ext) = os.path.splitext(filename)
@@ -84,9 +91,8 @@ class Main(object):
       with open(arg, "rt") as stream:
         contents = stream.read()
       tokens = token.tokenize(contents)
-      unit = parser.Parser(tokens, module_name).parse_program()
+      unit = parser.Parser(tokens, unit=self.units[module_name]).parse_program()
       self.compile_unit(unit)
-      self.modules[module_name] = unit.get_present_module()
 
   # Processes any --expression arguments.
   def run_expressions(self):
@@ -114,7 +120,8 @@ class Main(object):
   # Compiles a unit, returning a program.
   def compile_unit(self, unit):
     analysis.analyze(unit)
-    bindings.bind(unit, self.modules)
+    bindings.bind(unit, self.units)
+    unit.flush()
 
   def run_parse_input(self, inputs, parse_thunk):
     for expr in inputs:

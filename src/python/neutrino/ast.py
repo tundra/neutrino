@@ -586,7 +586,6 @@ class Unit(object):
     return self.get_or_create_stage(0)
 
   def get_present_program(self):
-    self.flush()
     last_stage = self.get_present()
     return Program(last_stage.elements, self.entry_point)
 
@@ -599,7 +598,6 @@ class Unit(object):
       self.get_stage(self.min_stage).get_methodspace().add_import(Stage._BUILTIN_METHODSPACE)
 
   def get_present_module(self):
-    self.flush()
     last_stage = self.get_present()
     return last_stage.get_module()
 

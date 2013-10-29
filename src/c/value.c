@@ -1822,6 +1822,10 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
       runtime));
   TRY(add_plankton_binding(map, core, "builtin_methodspace",
       ROOT(runtime, builtin_methodspace), runtime));
+  // Protocols
+  value_t protocol = RSTR(runtime, protocol);
+  TRY(add_plankton_binding(map, protocol, "Integer", ROOT(runtime, integer_protocol),
+      runtime));
   return success();
 }
 

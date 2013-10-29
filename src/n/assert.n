@@ -1,7 +1,14 @@
-def $that($value) => $value.fail_if_false();
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-def ($that == true).fail_if_false() => null;
+## Primitive assertion library.
 
-def ($that == false).fail_if_false() => @ctrino.fail();
+import @core;
 
-def $equals($a, $b) => $that($a == $b);
+## Does nothing if the given value is 'true', fails if the value is 'false'.
+def $that($value) => $that($value.is_truthy());
+def $that($value == false) => @ctrino.fail();
+def $that($value == true) => null;
+
+## Does nothing if the two given values are equal, fails otherwise.
+def $equals(expected: $a, found: $b) => $that($a == $b);

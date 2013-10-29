@@ -347,11 +347,11 @@ void value_print_on_cycle_detect(value_t value, string_buffer_t *buf,
 }
 
 void value_print_on(value_t value, string_buffer_t *buf) {
-  value_print_on_cycle_detect(value, buf, pfNone, 2);
+  value_print_on_cycle_detect(value, buf, pfNone, 3);
 }
 
 void value_print_on_unquoted(value_t value, string_buffer_t *buf) {
-  value_print_on_cycle_detect(value, buf, pfUnquote, 2);
+  value_print_on_cycle_detect(value, buf, pfUnquote, 3);
 }
 
 void value_print_inner_on(value_t value, string_buffer_t *buf,
