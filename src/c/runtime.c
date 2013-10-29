@@ -304,10 +304,7 @@ static value_t runtime_freeze_shared_state(runtime_t *runtime) {
   value_t offender = new_integer(0);
   TRY_DEF(froze, try_validate_deep_frozen(runtime, roots, &offender));
   if (!is_internal_true_value(froze)) {
-    value_to_string_t to_string;
-    ERROR("Could not freeze the roots object; offender: %s",
-        value_to_string(&to_string, offender));
-    dispose_value_to_string(&to_string);
+    ERROR("Could not freeze the roots object; offender: %v", offender);
     return new_not_deep_frozen_signal();
   }
 

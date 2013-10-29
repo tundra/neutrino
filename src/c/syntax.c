@@ -15,9 +15,7 @@
 static value_t resolve_syntax_factory(value_t key, runtime_t *runtime, void *data) {
   value_t result = get_id_hash_map_at(ROOT(runtime, plankton_environment), key);
   if (is_signal(scNotFound, result)) {
-    value_to_string_t buf;
-    WARN("Environment reference %s could not be resolved", value_to_string(&buf, key));
-    dispose_value_to_string(&buf);
+    WARN("Environment reference %v could not be resolved", key);
   }
   return result;
 }

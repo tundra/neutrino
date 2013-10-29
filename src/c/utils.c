@@ -198,18 +198,104 @@ void string_buffer_printf(string_buffer_t *buf, const char *fmt, ...) {
   va_end(argp);
 }
 
-void string_buffer_vprintf(string_buffer_t *buf, const char *fmt, va_list argp) {
+static void string_buffer_native_printf(string_buffer_t *buf, const char *fmt, ...) {
   // Write the formatted string into a temporary buffer.
   static const size_t kMaxSize = 1024;
   char buffer[kMaxSize + 1];
   // Null terminate explicitly just to be on the safe side.
   buffer[kMaxSize] = '\0';
+  va_list argp;
+  va_start(argp, fmt);
   size_t written = vsnprintf(buffer, kMaxSize, fmt, argp);
+  va_end(argp);
   // TODO: fix this if we ever hit it.
   CHECK_REL("temp buffer too small", written, <, kMaxSize);
   // Then write the temp string into the string buffer.
   string_t data = {written, buffer};
   string_buffer_append(buf, &data);
+}
+
+void string_buffer_vprintf(string_buffer_t *buf, const char *fmt, va_list argp) {
+  // This is incredibly tedious code but in the absence of a reliable way to
+  // introduce new format types this seems like the best way to allow custom
+  // format types in a way that localizes the complexity here rather than
+  // spreading it everywhere this is used.
+  for (const char *p = fmt; *p != '\0'; p++) {
+    if (*p == '%') {
+      p++;
+      char c = *p;
+      // Count leading 'l's.
+      size_t l_count = 0;
+      while (c == 'l') {
+        l_count++;
+        p++;
+        c = *p;
+      }
+      switch (c) {
+        case 's': {
+          // Ideally the string's length would be given somehow but alas that's
+          // not really possibly through var args.
+          const char *c_str = va_arg(argp, const char *);
+          string_t str;
+          string_init(&str, c_str);
+          string_buffer_append(buf, &str);
+          break;
+        }
+        case 'i':
+          switch (l_count) {
+            case 0: {
+              int value = va_arg(argp, int);
+              string_buffer_native_printf(buf, "%i", value);
+              break;
+            }
+            case 1: {
+              long value = va_arg(argp, long);
+              string_buffer_native_printf(buf, "%li", value);
+              break;
+            }
+            case 2: {
+              long long value = va_arg(argp, long long);
+              string_buffer_native_printf(buf, "%lli", value);
+              break;
+            }
+            default:
+              // Emit what we just read since we couldn't make sense of it.
+              string_buffer_putc(buf, '%');
+              for (size_t i = 0; i < l_count; i++)
+                string_buffer_putc(buf, 'l');
+              string_buffer_putc(buf, 'i');
+              break;
+          }
+          break;
+        case 'c': {
+          // Assume the char has been fully promoted to an int.
+          char value = (char) va_arg(argp, int);
+          string_buffer_native_printf(buf, "%c", value);
+          break;
+        }
+        case '%':
+          string_buffer_putc(buf, '%');
+          break;
+        case 'v': {
+          // Format a value. Since value_t and encoded_value_t should be
+          // synonymous at the native level it should be possible to pass values
+          // directly. However if that ever fails just grab the encoded value
+          // where the value is passed.
+          encoded_value_t encoded = va_arg(argp, encoded_value_t);
+          value_t value = {.encoded=encoded};
+          value_to_string_t to_string;
+          string_buffer_native_printf(buf, "%s", value_to_string(&to_string, value));
+          dispose_value_to_string(&to_string);
+          break;
+        }
+        default:
+          string_buffer_native_printf(buf, "%%%c", c);
+          break;
+      }
+    } else {
+      string_buffer_putc(buf, *p);
+    }
+  }
 }
 
 void string_buffer_flush(string_buffer_t *buf, string_t *str_out) {
