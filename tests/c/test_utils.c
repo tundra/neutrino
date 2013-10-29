@@ -124,6 +124,7 @@ TEST(utils, string_buffer_long) {
   string_buffer_flush(&buf, &found);                                           \
   string_t str = STR(expected);                                                \
   ASSERT_STREQ(&str, &found);                                                  \
+  string_buffer_dispose(&buf);                                                 \
 } while (false)
 
 TEST(utils, string_buffer_value_printf) {
@@ -134,8 +135,6 @@ TEST(utils, string_buffer_value_printf) {
   CHECK_PRINTF("--- null ---", "--- %v ---", ROOT(runtime, null));
   CHECK_PRINTF("--- true ---", "--- %v ---", ROOT(runtime, thrue));
   CHECK_PRINTF("--- [] ---", "--- %v ---", ROOT(runtime, empty_array));
-
-//  CHECK_PRINTF("--- 0 ---", "--- %p ---", new_integer(0));
 
   DISPOSE_RUNTIME();
 }
