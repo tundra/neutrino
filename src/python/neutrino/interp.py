@@ -74,6 +74,10 @@ def new_neutrino_instance(protocol):
 def new_neutrino_protocol(display_name):
   return data.Protocol(display_name)
 
+# Returns a reference to the given built-in protocol.
+def get_neutrino_builtin_protocol(name):
+  return data.Key(name, ("protocol", name))
+
 class PytrinoProxy(object):
 
   def lookup(self, name):
@@ -81,6 +85,8 @@ class PytrinoProxy(object):
       return new_neutrino_instance
     elif name == 'new_protocol':
       return new_neutrino_protocol
+    elif name == 'get_builtin_protocol':
+      return get_neutrino_builtin_protocol
 
 _PYTRINO = PytrinoProxy()
 _CTRINO = data.Key("ctrino", ("core", "ctrino"))

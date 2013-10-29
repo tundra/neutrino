@@ -32,6 +32,7 @@
   F(namespace,          "namespace")                                           \
   F(parameters,         "parameters")                                          \
   F(path,               "path")                                                \
+  F(protocol,           "protocol")                                            \
   F(selector,           "selector")                                            \
   F(signature,          "signature")                                           \
   F(stage,              "stage")                                               \
@@ -96,7 +97,7 @@ typedef enum {
 #undef __EMIT_FAMILY_PROTOCOL__
 
   // The string table
-#define __EMIT_STRING_TABLE_ENUM__(name, value) , rk_string_##name
+#define __EMIT_STRING_TABLE_ENUM__(name, value) , rk_string_table_##name
   ENUM_STRING_TABLE(__EMIT_STRING_TABLE_ENUM__)
 #undef __EMIT_STRING_TABLE_ENUM__
   , __rk_last__
@@ -241,7 +242,7 @@ value_t roots_init(value_t roots, runtime_t *runtime);
 
 // Accesses a string table string directly from the roots struct. Usually you'll
 // want to use RSTR instead.
-#define RAW_RSTR(roots, name) (*access_roots_entry_at((roots), rk_string_##name))
+#define RAW_RSTR(roots, name) (*access_roots_entry_at((roots), rk_string_table_##name))
 
 // Macro for accessing a named string table string. This can be used as an lval.
 #define RSTR(runtime, name) RAW_RSTR((runtime)->roots, name)

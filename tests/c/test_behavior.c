@@ -107,16 +107,16 @@ TEST(behavior, print_on) {
   set_array_at(arr, 2, foo);
   check_print_on("[null, 4, \"foo\"]", arr);
   set_array_at(arr, 0, arr);
-  check_print_on("[#<array[3]>, 4, \"foo\"]", arr);
+  check_print_on("[[#<array[3]>, 4, \"foo\"], 4, \"foo\"]", arr);
 
   // Maps
   value_t map = new_heap_id_hash_map(runtime, 16);
   set_array_at(arr, 0, map);
   check_print_on("{}", map);
-  check_print_on("[#<map{0}>, 4, \"foo\"]", arr);
+  check_print_on("[{}, 4, \"foo\"]", arr);
   ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(3), new_integer(5), false));
   check_print_on("{3: 5}", map);
-  check_print_on("[#<map{1}>, 4, \"foo\"]", arr);
+  check_print_on("[{3: 5}, 4, \"foo\"]", arr);
 
   // Blobs
   value_t blob = new_heap_blob(runtime, 9);
