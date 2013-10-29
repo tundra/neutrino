@@ -132,9 +132,7 @@ class Parser(object):
         subject = self.name_as_subject(name)
         if self.at_punctuation('('):
           params = self.parse_parameters()
-          self.expect_punctuation('=>')
-          body = self.parse_expression()
-          self.expect_statement_delimiter()
+          body = self.parse_method_tail()
           selector = self.name_as_selector(Parser._SAUSAGES)
           signature = ast.Signature([subject, selector] + params)
           return ast.FunctionDeclaration(ast.Method(signature, body))
@@ -143,11 +141,22 @@ class Parser(object):
     name = self.expect_type(Token.OPERATION)
     selector = self.name_as_selector(data.Operation.infix(name))
     params = self.parse_parameters()
-    self.expect_punctuation('=>')
-    body = self.parse_expression()
-    self.expect_statement_delimiter()
+    body = self.parse_method_tail()
     signature = ast.Signature([subject, selector] + params)
     return ast.MethodDeclaration(ast.Method(signature, body))
+
+  # Parse the tail of a method, the part after the parameters.
+  def parse_method_tail(self):
+    if self.at_punctuation('=>'):
+      self.expect_punctuation('=>')
+      body = self.parse_expression()
+      self.expect_statement_delimiter()
+      return body
+    elif self.at_punctuation('{'):
+      return self.parse_sequence_expression()
+    else:
+      raise self.new_syntax_error()
+
 
   # <toplevel-import>
   #   -> "import" <name> ";"

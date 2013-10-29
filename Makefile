@@ -167,7 +167,7 @@ C_TEST_LIB_DEPS=$(C_LIB_DEPS) $(C_TEST_LIB_HDRS)
 $(C_TEST_LIB_OBJS): $(BIN)/%.o: %.c $(C_TEST_LIB_DEPS)
 	@mkdir -p $(shell dirname $@)
 	@echo Compiling $<
-	@$(CC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c "$<" -o "$@"
 
 
 # The generated table of contents
