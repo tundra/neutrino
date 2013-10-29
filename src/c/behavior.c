@@ -391,9 +391,7 @@ static value_t new_object_with_object_type(runtime_t *runtime, value_t type) {
     case ofFactory:
       return new_instance_of_factory(runtime, type);
     default: {
-      value_to_string_t data;
-      WARN("Invalid type %s", value_to_string(&data, type));
-      dispose_value_to_string(&data);
+      WARN("Invalid type %v", type);
       return new_unsupported_behavior_signal(vdObject, family, ubNewObjectWithType);
     }
   }

@@ -116,6 +116,29 @@ TEST(utils, string_buffer_long) {
   string_buffer_dispose(&buf);
 }
 
+#define CHECK_PRINTF(expected, format, ...) do {                               \
+  string_buffer_t buf;                                                         \
+  string_buffer_init(&buf);                                                    \
+  string_buffer_printf(&buf, format, __VA_ARGS__);                             \
+  string_t found;                                                              \
+  string_buffer_flush(&buf, &found);                                           \
+  string_t str = STR(expected);                                                \
+  ASSERT_STREQ(&str, &found);                                                  \
+  string_buffer_dispose(&buf);                                                 \
+} while (false)
+
+TEST(utils, string_buffer_value_printf) {
+  CREATE_RUNTIME();
+
+  CHECK_PRINTF("--- 0 ---", "--- %v ---", new_integer(0));
+  CHECK_PRINTF("--- %<signal: Wat(dt@0)> ---", "--- %v ---", new_signal(scWat));
+  CHECK_PRINTF("--- null ---", "--- %v ---", ROOT(runtime, null));
+  CHECK_PRINTF("--- true ---", "--- %v ---", ROOT(runtime, thrue));
+  CHECK_PRINTF("--- [] ---", "--- %v ---", ROOT(runtime, empty_array));
+
+  DISPOSE_RUNTIME();
+}
+
 // Runs a test of a bit vector of the given size.
 static void test_bit_vector(size_t size) {
   bit_vector_t false_bits;
