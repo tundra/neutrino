@@ -17,6 +17,7 @@ import optparse
 import parser
 import plankton
 import re
+import schedule
 import token
 
 
@@ -27,6 +28,8 @@ class Main(object):
     self.args = None
     self.flags = None
     self.units = {}
+    self.scheduler = schedule.TaskScheduler()
+    self.binder = bindings.Binder(self.units)
 
   # Builds and returns a new option parser for the flags understood by this
   # script.
@@ -72,18 +75,18 @@ class Main(object):
     self.load_modules()
     if self.run_filter():
       return
-    self.run_expressions()
-    self.run_programs()
-    self.run_files()
+    # First load the units to compile without actually doing it.
+    self.schedule_expressions()
+    self.schedule_programs()
+    self.schedule_files()
+    # Then compile everything in the right order.
+    self.scheduler.run()
 
   # Load any referenced modules.
   def load_modules(self):
-    # Create the module objects but don't compile them yet.
-    for arg in self.flags.module:
-      filename = os.path.basename(arg)
-      (module_name, ext) = os.path.splitext(filename)
-      self.units[module_name] = ast.Unit(module_name)
-    # ...okay now compile them.
+    # Load the modules before scheduling them since they all have to be
+    # available, though not necessarily compiled, before we can set them up to
+    # be compiled in the right order.
     for arg in self.flags.module:
       filename = os.path.basename(arg)
       (module_name, ext) = os.path.splitext(filename)
@@ -91,43 +94,58 @@ class Main(object):
       with open(arg, "rt") as stream:
         contents = stream.read()
       tokens = token.tokenize(contents)
-      unit = parser.Parser(tokens, unit=self.units[module_name]).parse_program()
-      self.compile_unit(unit)
+      unit = parser.Parser(tokens, module_name).parse_program()
+      self.units[module_name] = unit
+    # Then schedule them to be compiled.
+    for unit in self.units.values():
+      self.schedule_for_compile(unit)
 
   # Processes any --expression arguments.
-  def run_expressions(self):
+  def schedule_expressions(self):
     self.run_parse_input(self.flags.expression,
-        lambda tokens: parser.Parser(tokens).parse_expression_program())
+        lambda tokens: parser.Parser(tokens, "expression").parse_expression_program())
 
   # Processes any --program arguments.
-  def run_programs(self):
+  def schedule_programs(self):
     self.run_parse_input(self.flags.program,
-        lambda tokens: parser.Parser(tokens).parse_program())
+        lambda tokens: parser.Parser(tokens, "program").parse_program())
 
   # Processes any --file arguments.
-  def run_files(self):
+  def schedule_files(self):
     for filename in self.flags.file:
       source = open(filename, "rt").read()
       tokens = token.tokenize(source)
-      unit = parser.Parser(tokens).parse_program()
-      self.compile_and_output(unit)
+      unit = parser.Parser(tokens, filename).parse_program()
+      self.schedule_for_compile(unit)
+      self.schedule_for_output(unit)
 
-  # Compiles a unit and emits the result on stdout.
-  def compile_and_output(self, unit):
-    self.compile_unit(unit)
-    self.output_value(unit.get_present_program())
+  # Schedules a unit for compilation at the appropriate time relative to any
+  # of its dependencies.
+  def schedule_for_compile(self, unit):
+    # Analysis doesn't depend on anything else so we can just go ahead and get
+    # that out of the way.
+    analysis.scope_analyze(unit)
+    for (index, stage) in unit.get_stages():
+      self.scheduler.add_task(self.binder.new_task(unit, stage))
 
-  # Compiles a unit, returning a program.
-  def compile_unit(self, unit):
-    analysis.analyze(unit)
-    bindings.bind(unit, self.units)
-    unit.flush()
+  # Schedules the present program of the given unit to be output to stdout when
+  # all the prerequisites for doing so have been run.
+  def schedule_for_output(self, unit):
+    def output_unit():
+      program = unit.get_present_program()
+      self.binder.bind_program(program)
+      self.output_value(program)
+    self.scheduler.add_task(schedule.SimpleTask(
+      schedule.ActionId("output program"),
+      [unit.get_present().get_bind_action()],
+      output_unit))
 
   def run_parse_input(self, inputs, parse_thunk):
     for expr in inputs:
       tokens = token.tokenize(expr)
       unit = parse_thunk(tokens)
-      self.compile_and_output(unit)
+      self.schedule_for_compile(unit)
+      self.schedule_for_output(unit)
 
   def output_value(self, value):
     encoder = plankton.Encoder()

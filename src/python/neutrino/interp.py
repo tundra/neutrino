@@ -30,6 +30,8 @@ class EvaluateVisitor(ast.Visitor):
     current = that.namespace
     for part in that.ident.get_path_parts():
       current = current.lookup(part)
+      if current is None:
+        raise Exception("Couldn't resolve %s" % that.ident)
     return current
 
   # Map from neutrino operator names to the python implementations
