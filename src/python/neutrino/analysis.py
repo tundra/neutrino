@@ -30,9 +30,10 @@ class MappedScope(object):
 
 class ScopeVisitor(ast.Visitor):
 
-  def __init__(self):
+  def __init__(self, unit):
     super(ScopeVisitor, self).__init__()
     self.scope = BottomScope()
+    self.unit = unit
 
   def lookup_name(self, name):
     return self.scope.lookup(name)
@@ -98,7 +99,14 @@ class ScopeVisitor(ast.Visitor):
   def visit_namespace_declaration(self, that):
     that.value.accept(self)
 
+  def visit_import(self, that):
+    ident = that.ident
+    stage = self.unit.get_or_create_stage(ident.stage)
+    stage.add_import(ident.path)
 
-def analyze(unit):
-  visitor = ScopeVisitor()
+
+# Do scope analysis, bind variables to their enclosing definitions and register
+# imports appropriately.
+def scope_analyze(unit):
+  visitor = ScopeVisitor(unit)
   unit.accept(visitor)

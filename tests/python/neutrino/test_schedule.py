@@ -38,7 +38,7 @@ class ScheduleTest(unittest.TestCase):
     scheduler = schedule.TaskScheduler()
     scheduler.add_task(TestTask(0, [1]))
     scheduler.add_task(TestTask(1, [0]))
-    self.assertRaises(schedule.CyclicalSchedule, lambda: scheduler.run())
+    self.assertRaises(schedule.CyclicalScheduleError, lambda: scheduler.run())
 
   def test_tiebreaker(self):
     scheduler = schedule.TaskScheduler()
