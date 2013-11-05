@@ -13,8 +13,9 @@ PLOPT=src/python/plankton/options.py
 TEST_FILE=
 OUTPUT_FILE=
 EXECUTABLE=
+MODULES=
 
-while getopts "t:o:e:" OPT; do
+while getopts "t:o:e:m:" OPT; do
   case "$OPT" in
     t)
       TEST_FILE="$OPTARG"
@@ -24,6 +25,9 @@ while getopts "t:o:e:" OPT; do
       ;;
     e)
       EXECUTABLE="$OPTARG"
+      ;;
+    m)
+      MODULES="$OPTARG"
       ;;
   esac
 done
@@ -74,8 +78,7 @@ check_result() {
     printf "  Expected: '%s'\\n" "$EXPECTED"
     printf "  Found: '%s'\\n" "$FOUND"
     COMMAND="$4"
-    MODULES="$5"
-    printf "  Compile: $COMMAND '$INPUT' $MODULES --base64\\n"
+    printf "  Compile: $COMMAND '$INPUT' --compile `$PLOPT --modules [ $MODULES ]` --base64\\n"
     exit 1
   fi
 }
@@ -83,17 +86,13 @@ check_result() {
 # Run an individual golden test.
 run_test() {
   # Load all files in src/n as modules.
-  MODULES=""
-  for FILE in src/n/*.n tests/n/golden/*.n; do
-    MODULES="$MODULES --module $FILE"
-  done
   print_progress
   COMPILE="$1"
   INPUT="$2"
   OUTPUT="$3"
   RUN="$4"
-  FOUND=$($COMPILE "$INPUT" $MODULES | $RUN - 2>&1 | grep "^[^#]")
-  check_result "$OUTPUT" "$FOUND" "$INPUT" "$COMPILE" "$MODULES"
+  FOUND=$($COMPILE "$INPUT" --compile `$PLOPT --modules [ $MODULES ]` | $RUN - 2>&1 | grep "^[^#]")
+  check_result "$OUTPUT" "$FOUND" "$INPUT" "$COMPILE"
 }
 
 while read LINE; do

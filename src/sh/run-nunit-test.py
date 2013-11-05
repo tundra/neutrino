@@ -28,12 +28,15 @@ class Main(object):
 
   # Runs the test.
   def run_test(self):
+    opts = options.Options()
+    opts.add_flag('modules', self.flags.modules)
     modules = self.find_modules()
     # Compile the test file. If compilation fails this will throw an exception,
     data = subprocess.check_output([
       "./src/python/neutrino/main.py",
-      "--file", self.flags.test
-    ] + modules)
+      "--file", self.flags.test,
+      "--compile", opts.base64_encode()
+    ])
     # Write the compiled output to a temporary file so it gets a file descriptor
     # and can be passed to the executable.
     tmp = SpooledTemporaryFile()
@@ -59,7 +62,7 @@ class Main(object):
     return modules
 
   def parse_flags(self):
-    parsed = options.base64_to_options(sys.argv[1])
+    parsed = options.Options.base64_decode(sys.argv[1])
     self.flags = parsed.get_flags()
 
 

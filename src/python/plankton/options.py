@@ -273,6 +273,20 @@ class Options(object):
     for element in self.elements:
       element.apply(self)
 
+  # Encodes this option set as base64 plankton.
+  def base64_encode(self):
+    encoder = codec.Encoder()
+    return "p64/%s" % encoder.base64encode(self)
+
+  # Parses a base64 string into an options object.
+  @staticmethod
+  def base64_decode(string):
+    if string.startswith('p64/'):
+      decoder = codec.Decoder()
+      return decoder.base64decode(string[4:])
+    else:
+      return string
+
   def __str__(self):
     return '{{%s}}' % " ".join(map(str, self.elements))
 
@@ -430,15 +444,6 @@ def tokenize_arguments(args):
 def parse(args):
   tokens = tokenize_arguments(args)
   return Parser(tokens).parse_options()
-
-
-# Parses a base64 string into an options object.
-def base64_to_options(string):
-  if string.startswith('p64/'):
-    decoder = codec.Decoder()
-    return decoder.base64decode(string[4:])
-  else:
-    return string
 
 
 def main():

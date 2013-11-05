@@ -56,6 +56,7 @@ class Main(object):
   def parse_arguments(self):
     parser = self.build_option_parser()
     (self.flags, self.args) = parser.parse_args()
+    self.compile_flags = self.flags.compile.get_flags()
 
   # If the filter option is set, filters input and return True. Otherwise
   # returns False.
@@ -95,7 +96,7 @@ class Main(object):
     # Load the modules before scheduling them since they all have to be
     # available, though not necessarily compiled, before we can set them up to
     # be compiled in the right order.
-    for arg in self.flags.module:
+    for arg in self.compile_flags.modules:
       filename = os.path.basename(arg)
       (module_name, ext) = os.path.splitext(filename)
       contents = None
