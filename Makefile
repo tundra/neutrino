@@ -302,6 +302,13 @@ $(NUNIT_OUTS):$(OUT)/tests/n/nunit/%.out:tests/n/nunit/%.n $(C_MAIN_EXE) $(PYTHO
 test-nunit:	$(NUNIT_RUNS)
 
 
+LIBRARY_SRCS=$(shell find src/n/ -name "*.n" | sort)
+
+
+library:
+	echo $(LIBRARY_SRCS)
+
+
 TMLANGUAGE=$(BIN)/sublime/Neutrino.tmLanguage
 SUBLIME_PACKAGE=$(BIN)/Neutrino.sublime-package
 

@@ -50,6 +50,7 @@ class Main(object):
     parser.add_option('--disass', action='store_true', default=False)
     parser.add_option('--module', action='append', default=[])
     parser.add_option('--compile', action='callback', type='string', callback=parse_plankton_option)
+    parser.add_option('--library-out', default=None)
     return parser
 
   # Parses the script arguments, storing the values in the appropriate fields.
