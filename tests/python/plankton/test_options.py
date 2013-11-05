@@ -9,7 +9,7 @@ import unittest
 
 a = options.ArgumentElement
 f = options.FlagElement
-N = options.NOTHING
+N = None
 
 
 def o(*elms):

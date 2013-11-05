@@ -11,6 +11,7 @@ import re
 import sys
 
 
+# Parsing failed.
 class OptionSyntaxError(Exception):
 
   def __init__(self, token):
@@ -70,14 +71,6 @@ class AbstractScanner(object):
   # Returns a subset of the elements from 'start' to 'end'.
   def slice(self, start, end):
     return self.elements[start:end]
-
-
-class Nothing(object):
-  def __str__(self):
-    return 'Nothing'
-
-
-NOTHING = Nothing()
 
 
 # Tokenizer that chops raw command-line source code (individual options and
@@ -225,7 +218,7 @@ class FlagElement(object):
     return (self.key == that.key) and (self.value == that.value)
 
   def __str__(self):
-    if self.value == NOTHING:
+    if self.value is None:
       return '--%s' % value_to_string(self.key)
     else:
       return '--%s %s' % (value_to_string(self.key), value_to_string(self.value))
@@ -298,7 +291,7 @@ class Parser(AbstractScanner):
 
   # <option>
   #   -> <expression>
-  #   -> <key> <atomic expression>
+  #   -> <map entry>
   def parse_option(self, options):
     current = self.current()
     if current.is_punctuation('--'):
@@ -312,6 +305,7 @@ class Parser(AbstractScanner):
   def parse_expression(self):
     return self.parse_atomic_expression()
 
+  # Are we at the beginning of an atomic expression?
   def at_atomic_expression(self):
     current = self.current()
     if current.is_value():
@@ -323,6 +317,7 @@ class Parser(AbstractScanner):
   # <atomic expression>
   #   -> <value>
   #   -> <list>
+  #   -> <nested options>
   #   -> "(" <expression> ")"
   def parse_atomic_expression(self):
     current = self.current()
@@ -372,13 +367,13 @@ class Parser(AbstractScanner):
     return result
 
   # <map entry>
-  #   -> <key> <atomic expression>
+  #   -> <key> <atomic expression>?
   def parse_map_entry(self):
     key = self.parse_key()
     if self.at_atomic_expression():
       value = self.parse_atomic_expression()
     else:
-      value = NOTHING
+      value = None
     return (key, value)
 
   # <key>
