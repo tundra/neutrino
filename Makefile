@@ -257,19 +257,21 @@ docs:	$(MD_OBJS)
 GOLDEN_SRCS=$(shell find tests/n/golden -name "*.gn" | sort)
 GOLDEN_OUTS=$(patsubst tests/n/golden/%.gn, $(OUT)/tests/n/golden/%.out, $(GOLDEN_SRCS))
 GOLDEN_RUNS=$(patsubst tests/n/golden/%.gn, test-golden-%, $(GOLDEN_SRCS))
+GOLDEN_MODULES=$(NEUTRINO_MODULES) $(shell find tests/n/golden -name "*.n" | sort)
 
 # Shorthand for running individual golden tests.
 $(GOLDEN_RUNS):test-golden-%:$(OUT)/tests/n/golden/%.out
 
 
 # Run a golden test using the test runner script.
-$(GOLDEN_OUTS):$(OUT)/tests/n/golden/%.out:tests/n/golden/%.gn $(C_MAIN_EXE) $(PYTHON_SRC_FILES)
+$(GOLDEN_OUTS):$(OUT)/tests/n/golden/%.out:tests/n/golden/%.gn $(C_MAIN_EXE) $(PYTHON_SRC_FILES) $(GOLDEN_MODULES)
 	@echo -n Running golden test "$*: "
 	@mkdir -p $(shell dirname $@)
 	@./src/sh/run-golden-test.sh                                               \
 	  -t "$<"                                                                  \
 	  -o "$@"                                                                  \
-	  -e "$(EXEC_PREFIX) $(C_MAIN_EXE)"
+	  -e "$(EXEC_PREFIX) $(C_MAIN_EXE)"																				 \
+	  -m "$(GOLDEN_MODULES)"
 
 
 # Run all the golden tests.
@@ -293,7 +295,7 @@ $(NUNIT_RUNS):test-nunit-%:$(OUT)/tests/n/nunit/%.out
 $(NUNIT_OUTS):$(OUT)/tests/n/nunit/%.out:tests/n/nunit/%.n $(C_MAIN_EXE) $(PYTHON_SRC_FILES) $(NEUTRINO_MODULES)
 	@echo Running nunit test "$*.n"
 	@mkdir -p $(shell dirname $@)
-	@PYTHONPATH=$(PYTHONPATH):src/python ./src/sh/run-nunit-test.py `$(PLOPT) --test "$<" --out "$@" --runner "$(EXEC_PREFIX) $(C_MAIN_EXE)" --modules [ $(NEUTRINO_MODULES) ]`
+	@PYTHONPATH=$(PYTHONPATH):src/python ./src/sh/run-nunit-test.py `$(PLOPT) --test "$<" --out "$@" --runner "\"$(EXEC_PREFIX) $(C_MAIN_EXE)\"" --modules [ $(NEUTRINO_MODULES) ]`
 
 
 # Run all the nunit tests.
