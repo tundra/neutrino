@@ -21,6 +21,13 @@ import schedule
 import token
 
 
+def parse_plankton_option(option, opt_str, value, parser):
+  if value.startswith('p64/'):
+    decoder = plankton.Decoder()
+    value = decoder.base64decode(value[4:])
+  setattr(parser.values, option.dest, value)
+
+
 # Encapsulates stats relating to the main script.
 class Main(object):
 
@@ -42,6 +49,7 @@ class Main(object):
     parser.add_option('--base64', action='store_true', default=False)
     parser.add_option('--disass', action='store_true', default=False)
     parser.add_option('--module', action='append', default=[])
+    parser.add_option('--compile', action='callback', type='string', callback=parse_plankton_option)
     return parser
 
   # Parses the script arguments, storing the values in the appropriate fields.

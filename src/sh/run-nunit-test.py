@@ -10,6 +10,7 @@ import os
 import subprocess
 import sys
 from tempfile import SpooledTemporaryFile
+from plankton import options
 
 
 # Holds state for the main entry-point
@@ -17,7 +18,6 @@ class Main(object):
 
   def __init__(self):
     self.flags = None
-    self.modules = []
 
   def main(self):
     self.parse_flags()
@@ -54,16 +54,13 @@ class Main(object):
   # tests.
   def find_modules(self):
     modules = []
-    for name in glob.glob('src/n/*.n'):
+    for name in self.flags.modules:
       modules += ['--module', name]
     return modules
 
   def parse_flags(self):
-    parser = optparse.OptionParser()
-    parser.add_option('-t', '--test')
-    parser.add_option('-o', '--out')
-    parser.add_option('-r', '--runner')
-    (self.flags, args) = parser.parse_args(sys.argv)
+    parsed = options.base64_to_options(sys.argv[1])
+    self.flags = parsed.get_flags()
 
 
 if __name__ == '__main__':

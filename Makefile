@@ -279,16 +279,21 @@ test-golden:	$(GOLDEN_RUNS)
 NUNIT_SRCS=$(shell find tests/n/nunit -name "*.n" | sort)
 NUNIT_OUTS=$(patsubst tests/n/nunit/%.n, $(OUT)/tests/n/nunit/%.out, $(NUNIT_SRCS))
 NUNIT_RUNS=$(patsubst tests/n/nunit/%.n, test-nunit-%, $(NUNIT_SRCS))
+NEUTRINO_MODULES=$(shell find src/n -name "*.n" | sort)
+
+
+# Path to the plankton option parser
+PLOPT=src/python/plankton/options.py
 
 
 # Shorthand for running individual nunit tests.
 $(NUNIT_RUNS):test-nunit-%:$(OUT)/tests/n/nunit/%.out
 
 
-$(NUNIT_OUTS):$(OUT)/tests/n/nunit/%.out:tests/n/nunit/%.n $(C_MAIN_EXE) $(PYTHON_SRC_FILES)
+$(NUNIT_OUTS):$(OUT)/tests/n/nunit/%.out:tests/n/nunit/%.n $(C_MAIN_EXE) $(PYTHON_SRC_FILES) $(NEUTRINO_MODULES)
 	@echo Running nunit test "$*.n"
 	@mkdir -p $(shell dirname $@)
-	@./src/sh/run-nunit-test.py -t "$<" -o "$@" -r "$(EXEC_PREFIX) $(C_MAIN_EXE)"
+	@PYTHONPATH=$(PYTHONPATH):src/python ./src/sh/run-nunit-test.py `$(PLOPT) --test "$<" --out "$@" --runner "$(EXEC_PREFIX) $(C_MAIN_EXE)" --modules [ $(NEUTRINO_MODULES) ]`
 
 
 # Run all the nunit tests.

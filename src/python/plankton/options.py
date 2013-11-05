@@ -94,8 +94,10 @@ class Tokenizer(AbstractScanner):
   def is_whitespace(self, c):
     return Tokenizer._WHITESPACE.match(c)
 
+  _SYMBOL_EXTRA_CHARS = '_-/.'
+
   def is_symbol(self, c):
-    return c.isalpha() or c.isdigit() or (c == '_') or (c == '-')
+    return c.isalpha() or c.isdigit() or (c in Tokenizer._SYMBOL_EXTRA_CHARS)
 
   # Returns the next token from the input, advancing past it.
   def scan_next_token(self):
@@ -165,6 +167,10 @@ class Tokenizer(AbstractScanner):
     else:
       return Token(Token._PUNCTUATION, c)
 
+  def new_syntax_error(self):
+    current = self.current()
+    return OptionSyntaxError(current)
+
   # Returns a list of the tokens from the given source string.
   @staticmethod
   def tokenize(source):
@@ -194,6 +200,9 @@ class ArgumentElement(object):
   def __init__(self, value):
     self.value = value
 
+  def apply(self, options):
+    options.arguments.append(self.value)
+
   def __eq__(self, that):
     if not isinstance(that, ArgumentElement):
       return False
@@ -211,6 +220,9 @@ class FlagElement(object):
   def __init__(self, key, value):
     self.key = key
     self.value = value
+
+  def apply(self, options):
+    options.flags[self.key] = self.value
 
   def __eq__(self, that):
     if not isinstance(that, FlagElement):
@@ -242,6 +254,24 @@ class Options(object):
 
   def add_flag(self, key, value):
     self.elements.append(FlagElement(key, value))
+
+  def get_flags(self):
+    self.ensure_processed()
+    return self.flags_proxy
+
+  def ensure_processed(self):
+    if hasattr(self, 'has_been_processed') and self.has_been_processed:
+      return
+    self.has_been_processed = True
+    outer = self
+    class FlagsProxy(object):
+      def __getattr__(self, name):
+        return outer.flags[name]
+    self.flags = collections.OrderedDict()
+    self.flags_proxy = FlagsProxy()
+    self.arguments = []
+    for element in self.elements:
+      element.apply(self)
 
   def __str__(self):
     return '{{%s}}' % " ".join(map(str, self.elements))
@@ -400,6 +430,15 @@ def tokenize_arguments(args):
 def parse(args):
   tokens = tokenize_arguments(args)
   return Parser(tokens).parse_options()
+
+
+# Parses a base64 string into an options object.
+def base64_to_options(string):
+  if string.startswith('p64/'):
+    decoder = codec.Decoder()
+    return decoder.base64decode(string[4:])
+  else:
+    return string
 
 
 def main():
