@@ -267,6 +267,13 @@ class Options(object):
     class FlagsProxy(object):
       def __getattr__(self, name):
         return outer.flags[name]
+      def get(self, name, default=None):
+        if name in outer.flags:
+          return outer.flags[name]
+        else:
+          return default
+      def __contains__(self, name):
+        return name in outer.flags
     self.flags = collections.OrderedDict()
     self.flags_proxy = FlagsProxy()
     self.arguments = []

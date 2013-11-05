@@ -303,10 +303,15 @@ test-nunit:	$(NUNIT_RUNS)
 
 
 LIBRARY_SRCS=$(shell find src/n/ -name "*.n" | sort)
+LIBRARY_OUT=$(OUT)/n/library.nl
 
 
-library:
-	echo $(LIBRARY_SRCS)
+$(LIBRARY_OUT): $(LIBRARY_SRCS)
+	@mkdir -p $(shell dirname $@)
+	@./src/python/neutrino/main.py --compile `$(PLOPT) --build-library { --out $@ --modules [ $(LIBRARY_SRCS) ] }`
+
+
+library:	$(LIBRARY_OUT)
 
 
 TMLANGUAGE=$(BIN)/sublime/Neutrino.tmLanguage
