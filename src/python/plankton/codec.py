@@ -5,6 +5,7 @@
 
 
 import base64
+import collections
 
 
 _INT32_TAG = 0
@@ -29,7 +30,7 @@ def visit_data(data, visitor):
     return visitor.visit_string(data)
   elif (t == list) or (t == tuple):
     return visitor.visit_array(data)
-  elif t == dict:
+  elif (t == dict) or (t == collections.OrderedDict):
     return visitor.visit_map(data)
   elif data is None:
     return visitor.visit_null(data)
