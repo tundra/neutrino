@@ -9,6 +9,7 @@
 
 # Parse command-line arguments.
 
+PLOPT=src/python/plankton/options.py
 TEST_FILE=
 OUTPUT_FILE=
 EXECUTABLE=

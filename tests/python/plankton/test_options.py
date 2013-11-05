@@ -45,6 +45,7 @@ class OptionsTest(unittest.TestCase):
     test([a('foo bar baz')], '"foo bar baz"')
     # Symbols
     test([a('foo')], 'foo')
+    test([a('f/o/o.bar')], 'f/o/o.bar')
     test([a('foo'), a('bar'), a('baz')], 'foo bar baz')
     test([a('foo'), a('bar'), a('baz')], 'foo', 'bar', 'baz')
     test([a('foo-bar-baz')], 'foo-bar-baz')
