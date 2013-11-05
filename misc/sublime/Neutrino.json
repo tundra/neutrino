@@ -13,17 +13,17 @@
       { "match": "#.*",
         "name": "comment.line.number-sign.neutrino"
       },
-      { "match": "[$@]+([A-Za-z][A-Za-z0-9_:]*)?",
+      { "match": "[$@]+([\\w_:]*)?",
         "name": "variable.neutrino",
         "comment": "We recognize a stage indicator with no name as a variable"
       },
       { "match": "(=>|:=)",
         "name": "punctuation.neutrino"
       },
-      { "match": "[A-Za-z0-9_]+:",
+      { "match": "[\\w_]+:",
         "name": "variable.parameter.neutrino"
       },
-      { "match": "\\.([A-Za-z][A-Za-z0-9_]*)",
+      { "match": "\\.([\\w_]*)",
         "captures": {
           "1": {"name": "entity.name.function.neutrino"}
         },
@@ -41,11 +41,11 @@
       { "match": "\\b(type|def|var|import)\\b",
         "name": "storage.type.neutrino"
       },
-      { "match": "[A-Za-z][A-Za-z0-9_]*",
-        "name": "keyword.control.neutrino"
-      },
-      { "match": "[0-9]+",
+      { "match": "\\d+",
         "name": "constant.numeric.neutrino"
+      },
+      { "match": "[\\w_]*",
+        "name": "keyword.control.neutrino"
       }
   ],
   "uuid": "9e501b8c-eb6a-4c1e-b60a-11f4bc81cf0d"
