@@ -295,7 +295,7 @@ $(NUNIT_RUNS):test-nunit-%:$(OUT)/tests/n/nunit/%.out
 $(NUNIT_OUTS):$(OUT)/tests/n/nunit/%.out:tests/n/nunit/%.n $(C_MAIN_EXE) $(PYTHON_SRC_FILES) $(NEUTRINO_MODULES)
 	@echo Running nunit test "$*.n"
 	@mkdir -p $(shell dirname $@)
-	@PYTHONPATH=$(PYTHONPATH):src/python ./src/sh/run-nunit-test.py `$(PLOPT) --test "$<" --out "$@" --runner "$(EXEC_PREFIX) $(C_MAIN_EXE)" --modules [ $(NEUTRINO_MODULES) ]`
+	@PYTHONPATH=$(PYTHONPATH):src/python ./src/sh/run-nunit-test.py `$(PLOPT) --test "$<" --out "$@" --runner "\"$(EXEC_PREFIX) $(C_MAIN_EXE)\"" --modules [ $(NEUTRINO_MODULES) ]`
 
 
 # Run all the nunit tests.
