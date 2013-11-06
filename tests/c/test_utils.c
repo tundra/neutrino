@@ -343,7 +343,7 @@ TEST(utils, hash_stream) {
   byte_buffer_flush(&buf, &blob);                                              \
   ASSERT_EQ(N, blob_length(&blob));                                            \
   uint8_t expected[(N == 0) ? 1 : (N)] = {__VA_ARGS__};                        \
-  for (size_t i = 0; i < (N); i++)                                             \
+  for (int i = 0; i < (N); i++)                                                \
     ASSERT_EQ(expected[i], blob_byte_at(&blob, i));                            \
   byte_buffer_dispose(&buf);                                                   \
 } while (false)
