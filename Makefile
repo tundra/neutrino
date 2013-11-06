@@ -264,14 +264,15 @@ $(GOLDEN_RUNS):test-golden-%:$(OUT)/tests/n/golden/%.out
 
 
 # Run a golden test using the test runner script.
-$(GOLDEN_OUTS):$(OUT)/tests/n/golden/%.out:tests/n/golden/%.gn $(C_MAIN_EXE) $(PYTHON_SRC_FILES) $(GOLDEN_MODULES)
+$(GOLDEN_OUTS):$(OUT)/tests/n/golden/%.out:tests/n/golden/%.gn $(C_MAIN_EXE) $(PYTHON_SRC_FILES) $(GOLDEN_MODULES) $(CORE_LIBRARY_OUT)
 	@echo -n Running golden test "$*: "
 	@mkdir -p $(shell dirname $@)
-	@./src/sh/run-golden-test.sh                                               \
-	  -t "$<"                                                                  \
-	  -o "$@"                                                                  \
-	  -e "$(EXEC_PREFIX) $(C_MAIN_EXE)"																				 \
-	  -m "$(GOLDEN_MODULES)"
+	@./src/sh/run-golden-test.sh                                                 \
+	  -t "$<"                                                                    \
+	  -o "$@"                                                                    \
+	  -e "$(EXEC_PREFIX) $(C_MAIN_EXE)"																				   \
+	  -m "$(GOLDEN_MODULES)"																									   \
+	  -l "$(CORE_LIBRARY_OUT)"
 
 
 # Run all the golden tests.
@@ -292,14 +293,40 @@ PLOPT=src/python/plankton/options.py
 $(NUNIT_RUNS):test-nunit-%:$(OUT)/tests/n/nunit/%.out
 
 
-$(NUNIT_OUTS):$(OUT)/tests/n/nunit/%.out:tests/n/nunit/%.n $(C_MAIN_EXE) $(PYTHON_SRC_FILES) $(NEUTRINO_MODULES)
+$(NUNIT_OUTS):$(OUT)/tests/n/nunit/%.out:tests/n/nunit/%.n $(C_MAIN_EXE) $(PYTHON_SRC_FILES) $(NEUTRINO_MODULES) $(CORE_LIBRARY_OUT)
 	@echo Running nunit test "$*.n"
 	@mkdir -p $(shell dirname $@)
-	@PYTHONPATH=$(PYTHONPATH):src/python ./src/sh/run-nunit-test.py `$(PLOPT) --test "$<" --out "$@" --runner "\"$(EXEC_PREFIX) $(C_MAIN_EXE)\"" --modules [ $(NEUTRINO_MODULES) ]`
+	@PYTHONPATH=$(PYTHONPATH):src/python ./src/sh/run-nunit-test.py              \
+	  `$(PLOPT) 					                                                       \
+	    --test "$<" 																														 \
+	    --out "$@" 																															 \
+	    --runner "\"$(EXEC_PREFIX) $(C_MAIN_EXE)\"" 														 \
+	    --modules [ $(NEUTRINO_MODULES) ] 																			 \
+	    --ctrino-main-options {{ 																								 \
+	      --libraries [ $(CORE_LIBRARY_OUT) ] 																	 \
+	    }}`
 
 
 # Run all the nunit tests.
 test-nunit:	$(NUNIT_RUNS)
+
+
+CORE_LIBRARY_SRCS=$(shell find src/n/ -name "*.n" | sort)
+CORE_LIBRARY_OUT=$(OUT)/n/library.nl
+
+
+$(CORE_LIBRARY_OUT): $(CORE_LIBRARY_SRCS)
+	@echo Building library $@
+	@mkdir -p $(shell dirname $@)
+	@./src/python/neutrino/main.py --compile 																		 \
+	  `$(PLOPT) 																																 \
+	    --build-library { 																											 \
+	      --out $@																															 \
+	      --modules [ $(CORE_LIBRARY_SRCS) ]																		 \
+	    }`
+
+
+library:	$(CORE_LIBRARY_OUT)
 
 
 TMLANGUAGE=$(BIN)/sublime/Neutrino.tmLanguage

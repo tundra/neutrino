@@ -1743,6 +1743,35 @@ void function_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
 }
 
 
+// --- U n k n o w n ---
+
+FIXED_GET_MODE_IMPL(unknown, vmMutable);
+
+ACCESSORS_IMPL(Unknown, unknown, acNoCheck, 0, Header, header);
+ACCESSORS_IMPL(Unknown, unknown, acNoCheck, 0, Payload, payload);
+
+value_t unknown_validate(value_t self) {
+  VALIDATE_FAMILY(ofUnknown, self);
+  return success();
+}
+
+value_t set_unknown_contents(value_t object, runtime_t *runtime, value_t contents) {
+  set_unknown_payload(object, contents);
+  return success();
+}
+
+void unknown_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<unknown ");
+  value_t header = get_unknown_header(value);
+  value_print_inner_on(header, buf, flags, depth - 1);
+  string_buffer_printf(buf, " ");
+  value_t payload = get_unknown_payload(value);
+  value_print_inner_on(payload, buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
+
 // --- O r d e r i n g ---
 
 int ordering_to_int(value_t value) {

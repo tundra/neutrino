@@ -34,6 +34,25 @@ static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
   return result;
 }
 
+// Convert a C string containing base64 encoded data to a heap blob with the
+// raw bytes represented by the string.
+static value_t base64_c_str_to_blob(runtime_t *runtime, const char *data) {
+  if ((data == NULL) || (strstr(data, "p64/") != data)) {
+    return ROOT(runtime, null);
+  } else {
+    string_t str;
+    string_init(&str, data + 4);
+    byte_buffer_t buf;
+    byte_buffer_init(&buf);
+    base64_decode(&str, &buf);
+    blob_t blob;
+    byte_buffer_flush(&buf, &blob);
+    value_t result = new_heap_blob_with_data(runtime, &blob);
+    byte_buffer_dispose(&buf);
+    return result;
+  }
+}
+
 // Executes the given program syntax tree within the given runtime.
 static value_t safe_execute_syntax(runtime_t *runtime, safe_value_t s_program) {
   CHECK_FAMILY(ofProgramAst, deref(s_program));
@@ -99,6 +118,8 @@ static void main_allocator_data_dispose(main_allocator_data_t *data) {
 typedef struct {
   // Whether or not to print the output values.
   bool print_value;
+  // Extra arguments to main.
+  const char *main_options;
   // The config to store config-related flags directly into.
   runtime_config_t *config;
   // The number of positional arguments.
@@ -112,6 +133,7 @@ typedef struct {
 // Initializes a options struct.
 static void main_options_init(main_options_t *flags, runtime_config_t *config) {
   flags->print_value = false;
+  flags->main_options = NULL;
   flags->config = config;
   flags->argc = 0;
   flags->argv = NULL;
@@ -122,6 +144,7 @@ static void main_options_init(main_options_t *flags, runtime_config_t *config) {
 static void main_options_dispose(main_options_t *flags) {
   allocator_default_free(flags->argv_memory);
   flags->argv = NULL;
+  flags->main_options = NULL;
 }
 
 // Returns true iff the given haystack starts with the given prefix.
@@ -164,6 +187,9 @@ static void parse_options(size_t argc, char **argv, main_options_t *flags_out) {
       } else if (c_str_equals(arg, "--garbage-collect-fuzz-seed")) {
         CHECK_REL("missing flag argument", i, <, argc);
         flags_out->config->gc_fuzz_seed = c_str_as_long_or_die(argv[i++]);
+      } else if (c_str_equals(arg, "--main-options")) {
+        CHECK_REL("missing flag argument", i, <, argc);
+        flags_out->main_options = argv[i++];
       } else {
         ERROR("Unknown flags '%s'", arg);
         UNREACHABLE("Flag parsing failed");
@@ -172,6 +198,12 @@ static void parse_options(size_t argc, char **argv, main_options_t *flags_out) {
       flags_out->argv[flags_out->argc++] = arg;
     }
   }
+}
+
+static value_t parse_main_options(runtime_t *runtime, const char *value) {
+  TRY_DEF(blob, base64_c_str_to_blob(runtime, value));
+  CHECK_FAMILY(ofBlob, blob);
+  return plankton_deserialize(runtime, NULL, blob);
 }
 
 // Create a vm and run the program.
@@ -191,6 +223,7 @@ static value_t neutrino_main(int argc, char **argv) {
   TRY(new_runtime(&config, &runtime));
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
+    E_TRY(parse_main_options(runtime, options.main_options));
     for (size_t i = 0; i < options.argc; i++) {
       const char *filename = options.argv[i];
       value_t input;

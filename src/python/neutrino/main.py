@@ -13,6 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import analysis
 import ast
 import bindings
+import data
 import optparse
 import parser
 import plankton
@@ -88,6 +89,7 @@ class Main(object):
     self.schedule_expressions()
     self.schedule_programs()
     self.schedule_files()
+    self.schedule_libraries()
     # Then compile everything in the right order.
     self.scheduler.run()
 
@@ -96,7 +98,7 @@ class Main(object):
     # Load the modules before scheduling them since they all have to be
     # available, though not necessarily compiled, before we can set them up to
     # be compiled in the right order.
-    for arg in self.compile_flags.modules:
+    for arg in self.compile_flags.get('modules', []):
       filename = os.path.basename(arg)
       (module_name, ext) = os.path.splitext(filename)
       contents = None
@@ -127,6 +129,18 @@ class Main(object):
       unit = parser.Parser(tokens, filename).parse_program()
       self.schedule_for_compile(unit)
       self.schedule_for_output(unit)
+
+  def schedule_libraries(self):
+    if not 'build-library' in self.compile_flags:
+      return
+    library = data.Library()
+    library_spec = self.compile_flags.get('build-library')
+    for module in library_spec['modules']:
+      pass
+    blob = plankton.Encoder().encode(library)
+    handle = open(library_spec['out'], 'wb')
+    handle.write(blob)
+    handle.close()
 
   # Schedules a unit for compilation at the appropriate time relative to any
   # of its dependencies.

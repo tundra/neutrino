@@ -253,5 +253,17 @@ class Function(object):
     self.display_name = display_name
 
 
+@plankton.serializable(plankton.EnvironmentReference("core", "Library"))
+class Library(object):
+
+  @plankton.field("modules")
+  def __init__(self, modules={}):
+    self.modules = modules
+
+  def add_module(self, path, module):
+    assert not path in self.modules
+    self.modules[path] = module
+
+
 _SUBJECT = Key("subject", ("core", "subject"))
 _SELECTOR = Key("selector", ("core", "selector"))

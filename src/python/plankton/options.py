@@ -266,12 +266,25 @@ class Options(object):
     outer = self
     class FlagsProxy(object):
       def __getattr__(self, name):
-        return outer.flags[name]
+        return self.get(name, None)
+      def get(self, name, default=None):
+        return outer.get_flag_value(name, default)
+      def __contains__(self, name):
+        return name in outer.flags
     self.flags = collections.OrderedDict()
     self.flags_proxy = FlagsProxy()
     self.arguments = []
     for element in self.elements:
       element.apply(self)
+
+  def get_flag_value(self, name, default):
+    if name in self.flags:
+      return self.flags[name]
+    elif ('_' in name):
+      return self.get_flag_value(name.replace('_', '-'), default)
+    else:
+      return default
+
 
   # Encodes this option set as base64 plankton.
   def base64_encode(self):

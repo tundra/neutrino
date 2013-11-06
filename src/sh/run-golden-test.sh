@@ -15,7 +15,7 @@ OUTPUT_FILE=
 EXECUTABLE=
 MODULES=
 
-while getopts "t:o:e:m:" OPT; do
+while getopts "t:o:e:m:l:" OPT; do
   case "$OPT" in
     t)
       TEST_FILE="$OPTARG"
@@ -28,6 +28,9 @@ while getopts "t:o:e:m:" OPT; do
       ;;
     m)
       MODULES="$OPTARG"
+      ;;
+    l)
+      LIBRARY="$OPTARG"
       ;;
   esac
 done
@@ -95,6 +98,8 @@ run_test() {
   check_result "$OUTPUT" "$FOUND" "$INPUT" "$COMPILE"
 }
 
+MAIN_OPTIONS="--main-options `$PLOPT --libraries [ $LIBRARY ]`"
+
 while read LINE; do
   # Strip end-of-line comments.
   LINE=$(echo "$LINE" | sed -e s/^\\s*#.*$//g)
@@ -130,7 +135,7 @@ while read LINE; do
   if [ $HAS_INPUT -eq 1 -a $HAS_VALUE -eq 1 ]; then
     # If we now have both an INPUT and a VALUE line run the test.
     COMMAND="./src/python/neutrino/main.py --expression"
-    run_test "$COMMAND" "$INPUT" "$VALUE" "$EXECUTABLE --print-value"
+    run_test "$COMMAND" "$INPUT" "$VALUE" "$EXECUTABLE --print-value $MAIN_OPTIONS"
     INPUT=
     HAS_INPUT=0
     VALUE=
@@ -138,7 +143,7 @@ while read LINE; do
   elif [ $HAS_INPUT -eq 1 -a $HAS_OUTPUT -eq 1 -a $HAS_END -eq 1 ]; then
     # If we now have both an INPUT and an OUTPUT line run the test.
     COMMAND="./src/python/neutrino/main.py --program"
-    run_test "$COMMAND" "$INPUT" "$OUTPUT" "$EXECUTABLE"
+    run_test "$COMMAND" "$INPUT" "$OUTPUT" "$EXECUTABLE $MAIN_OPTIONS"
     INPUT=
     HAS_INPUT=0
     OUTPUT=

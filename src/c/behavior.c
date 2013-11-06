@@ -373,6 +373,10 @@ static value_t new_instance_of_factory(runtime_t *runtime, value_t type) {
   return constr(runtime);
 }
 
+static value_t new_instance_of_unknown(runtime_t *runtime, value_t type) {
+  return new_heap_unknown(runtime, type, ROOT(runtime, nothing));
+}
+
 static value_t new_instance_of_protocol(runtime_t *runtime, value_t protocol) {
   TRY_DEF(species, new_heap_instance_species(runtime, protocol));
   TRY_DEF(result, new_heap_instance(runtime, species));
@@ -391,8 +395,7 @@ static value_t new_object_with_object_type(runtime_t *runtime, value_t type) {
     case ofFactory:
       return new_instance_of_factory(runtime, type);
     default: {
-      WARN("Invalid type %v", type);
-      return new_unsupported_behavior_signal(vdObject, family, ubNewObjectWithType);
+      return new_instance_of_unknown(runtime, type);
     }
   }
 }
