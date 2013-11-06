@@ -606,6 +606,9 @@ class Unit(object):
   def accept(self, visitor):
     return visitor.visit_unit(self)
 
+  def as_unbound_module(self):
+    return None
+
   def __str__(self):
     stage_list = list(self.get_stages())
     stage_strs = ["(%s %s)" % (i, " ".join(map(str, s.elements))) for (i, s) in stage_list]
@@ -634,6 +637,16 @@ class Quote(object):
 
   def __str__(self):
     return "(@ %s)" % self.ast
+
+
+@plankton.serializable(plankton.EnvironmentReference("ast", "Unquote"))
+class Unquote(object):
+
+  @plankton.field('stage')
+  @plankton.field('')
+  def __init__(self, stage, ast):
+    self.stage = stage
+    self.value = value
 
 
 class Import(object):
