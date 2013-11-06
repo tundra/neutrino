@@ -331,3 +331,55 @@ TEST(utils, hash_stream) {
     // Flip the bit back.
   }
 }
+
+// Check that the input decodes the the given data.
+#define CHECK_BASE64_ENCODE(INPUT, N, ...) do {                                \
+  string_t str;                                                                \
+  string_init(&str, (INPUT));                                                  \
+  byte_buffer_t buf;                                                           \
+  byte_buffer_init(&buf);                                                      \
+  base64_decode(&str, &buf);                                                   \
+  blob_t blob;                                                                 \
+  byte_buffer_flush(&buf, &blob);                                              \
+  ASSERT_EQ(N, blob_length(&blob));                                            \
+  uint8_t expected[(N == 0) ? 1 : (N)] = {__VA_ARGS__};                        \
+  for (int i = 0; i < (N); i++)                                                \
+    ASSERT_EQ(expected[i], blob_byte_at(&blob, i));                            \
+  byte_buffer_dispose(&buf);                                                   \
+} while (false)
+
+TEST(utils, base64_encode) {
+  CHECK_BASE64_ENCODE("", 0, 0);
+  CHECK_BASE64_ENCODE("AA==", 1, 0);
+  CHECK_BASE64_ENCODE("AAA=", 2, 0, 0);
+  CHECK_BASE64_ENCODE("AAAA", 3, 0, 0, 0);
+
+  CHECK_BASE64_ENCODE("Dw==", 1, 15);
+  CHECK_BASE64_ENCODE("DwA=", 2, 15,  0);
+  CHECK_BASE64_ENCODE("DwAA", 3, 15,  0,   0);
+  CHECK_BASE64_ENCODE("GA==", 1, 24);
+  CHECK_BASE64_ENCODE("GAA=", 2, 24,  0);
+  CHECK_BASE64_ENCODE("GAAA", 3, 24,  0,   0);
+  CHECK_BASE64_ENCODE("Jw8=", 2, 39,  15);
+  CHECK_BASE64_ENCODE("Jw8A", 3, 39,  15,  0);
+  CHECK_BASE64_ENCODE("Pxg=", 2, 63,  24);
+  CHECK_BASE64_ENCODE("PxgA", 3, 63,  24,  0);
+  CHECK_BASE64_ENCODE("ZicP", 3, 102, 39,  15);
+  CHECK_BASE64_ENCODE("pj8Y", 3, 166, 63,  24);
+  CHECK_BASE64_ENCODE("pmYn", 3, 166, 102, 39);
+  CHECK_BASE64_ENCODE("pqY/", 3, 166, 166, 63);
+  CHECK_BASE64_ENCODE("pqZm", 3, 166, 166, 102);
+  CHECK_BASE64_ENCODE("pqam", 3, 166, 166, 166);
+
+  CHECK_BASE64_ENCODE("////", 3, 0xFF, 0xFF, 0xFF);
+  CHECK_BASE64_ENCODE("++++", 3, 0xFB, 0xEF, 0xBE);
+
+  CHECK_BASE64_ENCODE("SGVsbG8gd29ybGQ=", 11, 72, 101, 108, 108, 111, 32, 119,
+      111, 114, 108, 100);
+  CHECK_BASE64_ENCODE(
+      "VGhpbmdzIGZhbGwgYXBhcnQ7IHRoZSBjZW50cmUgY2Fubm90IGhvbGQ7",
+      42,
+      84, 104, 105, 110, 103, 115, 32, 102, 97, 108, 108, 32, 97, 112, 97, 114,
+      116, 59, 32, 116, 104, 101, 32, 99, 101, 110, 116, 114, 101, 32, 99, 97,
+      110, 110, 111, 116, 32, 104, 111, 108, 100, 59);
+}
