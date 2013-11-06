@@ -334,4 +334,11 @@ void hash_stream_write_data(hash_stream_t *stream, const void *ptr, size_t size)
 int64_t hash_stream_flush(hash_stream_t *stream);
 
 
+// --- B a s e   6 4 ---
+
+// Decodes a base-64 encoded string as raw bytes which will be written to the
+// given out buffer.
+void base64_decode(string_t *str, byte_buffer_t *out);
+
+
 #endif // _UTILS

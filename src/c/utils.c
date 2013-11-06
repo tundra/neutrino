@@ -511,3 +511,51 @@ int64_t hash_stream_flush(hash_stream_t *stream) {
   hash_stream_write_int64(stream, 0x048812362BDB451ELL);
   return stream->hash;
 }
+
+
+// --- B a s e   6 4 ---
+
+// Generated using python:
+//
+// chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+// for i in xrange(0, 256):
+//   index = chars.find(chr(i))
+//   if index == -1:
+//     index = 255
+//   print ("%s," % index),
+static uint8_t kBase64CharToSextet[256] = {
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 62, 255, 255,
+  255, 63, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 255, 255, 255, 255, 255, 255,
+  255, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+  21, 22, 23, 24, 25, 255, 255, 255, 255, 255, 255, 26, 27, 28, 29, 30, 31, 32,
+  33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51,
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
+};
+
+void base64_decode(string_t *str, byte_buffer_t *out) {
+  size_t str_length = string_length(str);
+  CHECK_EQ("invalid base64 string", 0, str_length & 0x3);
+  for (size_t i = 0; i < str_length; i += 4) {
+    // Read the next block of 4 characters.
+    uint8_t a = kBase64CharToSextet[(uint8_t) string_char_at(str, i)];
+    uint8_t b = kBase64CharToSextet[(uint8_t) string_char_at(str, i + 1)];
+    byte_buffer_append(out, (a << 2) | (b >> 4));
+    uint8_t c = kBase64CharToSextet[(uint8_t) string_char_at(str, i + 2)];
+    if (c != 255) {
+      byte_buffer_append(out, (b << 4) | (c >> 2));
+      uint8_t d = kBase64CharToSextet[(uint8_t) string_char_at(str, i + 3)];
+      if (d != 255)
+        byte_buffer_append(out, (c << 6) | d);
+    }
+  }
+}
