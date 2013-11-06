@@ -34,9 +34,23 @@ static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
   return result;
 }
 
-static value_t parse_plankton_c_str(runtime_t *runtime, const char *data) {
-  blob_t data_blob;
-  blob_init(&data_blob)
+// Convert a C string containing base64 encoded data to a heap blob with the
+// raw bytes represented by the string.
+static value_t base64_c_str_to_blob(runtime_t *runtime, const char *data) {
+  if ((data == NULL) || (strstr(data, "p64/") != data)) {
+    return ROOT(runtime, null);
+  } else {
+    string_t str;
+    string_init(&str, data + 4);
+    byte_buffer_t buf;
+    byte_buffer_init(&buf);
+    base64_decode(&str, &buf);
+    blob_t blob;
+    byte_buffer_flush(&buf, &blob);
+    value_t result = new_heap_blob_with_data(runtime, &blob);
+    byte_buffer_dispose(&buf);
+    return result;
+  }
 }
 
 // Executes the given program syntax tree within the given runtime.
@@ -186,6 +200,11 @@ static void parse_options(size_t argc, char **argv, main_options_t *flags_out) {
   }
 }
 
+static value_t parse_main_options(runtime_t *runtime, const char *value) {
+  TRY_DEF(blob, base64_c_str_to_blob(runtime, value));
+  return plankton_deserialize(runtime, NULL, blob);
+}
+
 // Create a vm and run the program.
 static value_t neutrino_main(int argc, char **argv) {
   runtime_config_t config;
@@ -203,7 +222,8 @@ static value_t neutrino_main(int argc, char **argv) {
   TRY(new_runtime(&config, &runtime));
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
-    E_TRY_DEF(main_options_blob,
+    E_TRY_DEF(main_options, parse_main_options(runtime, options.main_options));
+    value_print_ln(main_options);
     for (size_t i = 0; i < options.argc; i++) {
       const char *filename = options.argv[i];
       value_t input;

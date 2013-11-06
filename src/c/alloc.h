@@ -150,6 +150,9 @@ value_t new_heap_path(runtime_t *runtime, alloc_flags_t flags, value_t head,
 // starting from the given offset.
 value_t new_heap_path_with_names(runtime_t *runtime, value_t names, size_t offset);
 
+// Creates a new unknown object with the given header and payload.
+value_t new_heap_unknown(runtime_t *runtime, value_t header, value_t payload);
+
 
 // --- P r o c e s s ---
 

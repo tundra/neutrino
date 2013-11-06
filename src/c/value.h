@@ -265,6 +265,7 @@ static value_t new_moved_object(value_t target) {
   F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, _, _)\
   F(LiteralAst,              literal_ast,               _, _, X, X, _, _, X, _, _)\
   F(LocalDeclarationAst,     local_declaration_ast,     _, _, X, X, _, _, X, _, _)\
+  F(LocalVariableAst,        local_variable_ast,        _, _, X, X, _, _, X, _, _)\
   F(Method,                  method,                    _, _, _, _, _, _, _, X, _)\
   F(MethodAst,               method_ast,                _, _, X, X, _, _, _, X, _)\
   F(Methodspace,             methodspace,               _, _, X, _, _, _, _, X, X)\
@@ -288,7 +289,7 @@ static value_t new_moved_object(value_t target) {
   F(StackPiece,              stack_piece,               _, _, _, _, _, _, _, _, _)\
   F(String,                  string,                    X, X, _, X, X, _, _, _, _)\
   F(SymbolAst,               symbol_ast,                _, _, X, X, _, _, _, _, _)\
-  F(LocalVariableAst,        local_variable_ast,        _, _, X, X, _, _, X, _, _)\
+  F(Unknown,                 unknown,                   _, _, X, _, _, _, _, _, _)\
   F(VoidP,                   void_p,                    _, _, _, _, X, _, _, _, _)
 
 // Enumerates all the object families.
@@ -1029,6 +1030,19 @@ static const size_t kFunctionDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
 
 // The display name of this function.
 ACCESSORS_DECL(function, display_name);
+
+
+// --- U n k n o w n ---
+
+static const size_t kUnknownSize = OBJECT_SIZE(2);
+static const size_t kUnknownHeaderOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kUnknownPayloadOffset = OBJECT_FIELD_OFFSET(1);
+
+// The header of this object of unknown type.
+ACCESSORS_DECL(unknown, header);
+
+// The payload of this object of unknown type.
+ACCESSORS_DECL(unknown, payload);
 
 
 // --- O r d e r i n g ---

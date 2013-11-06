@@ -335,6 +335,14 @@ value_t new_heap_path_with_names(runtime_t *runtime, value_t names,
   return new_heap_path(runtime, afMutable, head, tail);
 }
 
+value_t new_heap_unknown(runtime_t *runtime, value_t header, value_t payload) {
+  size_t size = kUnknownSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, unknown_species)));
+  set_unknown_header(result, header);
+  set_unknown_payload(result, payload);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- P r o c e s s ---
 
