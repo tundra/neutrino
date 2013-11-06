@@ -206,6 +206,11 @@ static value_t parse_main_options(runtime_t *runtime, const char *value) {
   return plankton_deserialize(runtime, NULL, blob);
 }
 
+static value_t get_main_program(runtime_t *runtime, value_t options) {
+  value_print_ln(options);
+  return success();
+}
+
 // Create a vm and run the program.
 static value_t neutrino_main(int argc, char **argv) {
   runtime_config_t config;
@@ -223,7 +228,8 @@ static value_t neutrino_main(int argc, char **argv) {
   TRY(new_runtime(&config, &runtime));
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
-    E_TRY(parse_main_options(runtime, options.main_options));
+    E_TRY_DEF(main_options, parse_main_options(runtime, options.main_options));
+    get_main_program(runtime, main_options);
     for (size_t i = 0; i < options.argc; i++) {
       const char *filename = options.argv[i];
       value_t input;
