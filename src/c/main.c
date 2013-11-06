@@ -34,6 +34,11 @@ static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
   return result;
 }
 
+static value_t parse_plankton_c_str(runtime_t *runtime, const char *data) {
+  blob_t data_blob;
+  blob_init(&data_blob)
+}
+
 // Executes the given program syntax tree within the given runtime.
 static value_t safe_execute_syntax(runtime_t *runtime, safe_value_t s_program) {
   CHECK_FAMILY(ofProgramAst, deref(s_program));
@@ -99,6 +104,8 @@ static void main_allocator_data_dispose(main_allocator_data_t *data) {
 typedef struct {
   // Whether or not to print the output values.
   bool print_value;
+  // Extra arguments to main.
+  const char *main_options;
   // The config to store config-related flags directly into.
   runtime_config_t *config;
   // The number of positional arguments.
@@ -112,6 +119,7 @@ typedef struct {
 // Initializes a options struct.
 static void main_options_init(main_options_t *flags, runtime_config_t *config) {
   flags->print_value = false;
+  flags->main_options = NULL;
   flags->config = config;
   flags->argc = 0;
   flags->argv = NULL;
@@ -122,6 +130,7 @@ static void main_options_init(main_options_t *flags, runtime_config_t *config) {
 static void main_options_dispose(main_options_t *flags) {
   allocator_default_free(flags->argv_memory);
   flags->argv = NULL;
+  flags->main_options = NULL;
 }
 
 // Returns true iff the given haystack starts with the given prefix.
@@ -164,6 +173,9 @@ static void parse_options(size_t argc, char **argv, main_options_t *flags_out) {
       } else if (c_str_equals(arg, "--garbage-collect-fuzz-seed")) {
         CHECK_REL("missing flag argument", i, <, argc);
         flags_out->config->gc_fuzz_seed = c_str_as_long_or_die(argv[i++]);
+      } else if (c_str_equals(arg, "--main-options")) {
+        CHECK_REL("missing flag argument", i, <, argc);
+        flags_out->main_options = argv[i++];
       } else {
         ERROR("Unknown flags '%s'", arg);
         UNREACHABLE("Flag parsing failed");
@@ -191,6 +203,7 @@ static value_t neutrino_main(int argc, char **argv) {
   TRY(new_runtime(&config, &runtime));
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
+    E_TRY_DEF(main_options_blob,
     for (size_t i = 0; i < options.argc; i++) {
       const char *filename = options.argv[i];
       value_t input;
