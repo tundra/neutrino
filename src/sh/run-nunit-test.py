@@ -43,11 +43,12 @@ class Main(object):
     tmp.write(data)
     tmp.flush()
     tmp.seek(0)
+    ctrino_main_opts = self.flags.ctrino_main_options
     try:
       # Take input from stdin. Better would be to pass the command as a list
       # but the executables seem to see different input when run with a list of
       # arguments than with a space-separated string.
-      command = "%s -" % self.flags.runner
+      command = "%s - --main-options %s" % (self.flags.runner, ctrino_main_opts.base64_encode())
       output = subprocess.check_output(command, shell=True, stdin=tmp)
     finally:
       tmp.close()

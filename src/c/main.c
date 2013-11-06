@@ -202,6 +202,7 @@ static void parse_options(size_t argc, char **argv, main_options_t *flags_out) {
 
 static value_t parse_main_options(runtime_t *runtime, const char *value) {
   TRY_DEF(blob, base64_c_str_to_blob(runtime, value));
+  CHECK_FAMILY(ofBlob, blob);
   return plankton_deserialize(runtime, NULL, blob);
 }
 
@@ -222,8 +223,7 @@ static value_t neutrino_main(int argc, char **argv) {
   TRY(new_runtime(&config, &runtime));
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
-    E_TRY_DEF(main_options, parse_main_options(runtime, options.main_options));
-    value_print_ln(main_options);
+    E_TRY(parse_main_options(runtime, options.main_options));
     for (size_t i = 0; i < options.argc; i++) {
       const char *filename = options.argv[i];
       value_t input;
