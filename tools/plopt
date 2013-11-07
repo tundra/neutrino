@@ -1,0 +1,19 @@
+#!/usr/bin/python
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+
+import sys
+import os.path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src', 'python'))
+import plankton
+
+
+def main():
+  args = sys.argv[1:]
+  options = plankton.options.parse(args)
+  encoder = plankton.Encoder()
+  print 'p64/%s' % encoder.base64encode(options)
+
+if __name__ == '__main__':
+  main()

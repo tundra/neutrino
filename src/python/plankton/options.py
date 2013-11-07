@@ -259,6 +259,14 @@ class Options(object):
     self.ensure_processed()
     return self.flags_proxy
 
+  def get_flag_map(self):
+    self.ensure_processed()
+    return self.flags
+
+  def get_arguments(self):
+    self.ensure_processed()
+    return self.arguments
+
   def ensure_processed(self):
     if hasattr(self, 'has_been_processed') and self.has_been_processed:
       return
@@ -457,14 +465,3 @@ def tokenize_arguments(args):
 def parse(args):
   tokens = tokenize_arguments(args)
   return Parser(tokens).parse_options()
-
-
-def main():
-  args = sys.argv[1:]
-  options = parse(args)
-  encoder = codec.Encoder()
-  print 'p64/%s' % encoder.base64encode(options)
-
-
-if __name__ == '__main__':
-  main()

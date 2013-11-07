@@ -1,0 +1,9 @@
+#!/bin/sh
+
+# Parse the options. Here may be some dragons escaping wise.
+ROOT=$(dirname "$0")/..
+PLOPT=$ROOT/tools/plopt
+OPTIONS=$($PLOPT "$*")
+
+# Call the python script.
+$ROOT/src/sh/libtool.py $OPTIONS

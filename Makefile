@@ -286,7 +286,7 @@ NEUTRINO_MODULES=$(shell find src/n -name "*.n" | sort)
 
 
 # Path to the plankton option parser
-PLOPT=src/python/plankton/options.py
+PLOPT=tools/plopt
 
 
 # Shorthand for running individual nunit tests.
