@@ -1798,7 +1798,8 @@ void options_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
   string_buffer_printf(buf, ">");
 }
 
-value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key, value_t defawlt) {
+value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key,
+    value_t defawlt) {
   // Yeah so the clean way to do this would have been to create families for
   // the different kinds of elements and let the deserialization code sort all
   // this out. But we can get away with this somewhat hacky by simple and

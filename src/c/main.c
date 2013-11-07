@@ -200,12 +200,14 @@ static void parse_options(size_t argc, char **argv, main_options_t *flags_out) {
   }
 }
 
+// Parses the main options as plankton and returns the resulting object.
 static value_t parse_main_options(runtime_t *runtime, const char *value) {
   TRY_DEF(blob, base64_c_str_to_blob(runtime, value));
   CHECK_FAMILY(ofBlob, blob);
   return runtime_plankton_deserialize(runtime, blob);
 }
 
+// Extracts the relevant data from the main options object.
 static value_t get_main_program(runtime_t *runtime, value_t options) {
   value_t libraries = get_options_flag_value(runtime, options, RSTR(runtime, libraries),
       ROOT(runtime, empty_array));

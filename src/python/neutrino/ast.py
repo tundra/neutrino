@@ -639,7 +639,7 @@ class Quote(object):
     return "(@ %s)" % self.ast
 
 
-@plankton.serializable(plankton.EnvironmentReference("ast", "Unquote"))
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Unquote"))
 class Unquote(object):
 
   @plankton.field('stage')
