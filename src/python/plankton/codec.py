@@ -624,11 +624,8 @@ class ClassRegistry(object):
 # An object that will always be resolved as an environment reference.
 class EnvironmentReference(object):
 
-  def __init__(self, *key):
-    if isinstance(key, tuple):
-      self.key = key
-    else:
-      self.key = key[0]
+  def __init__(self, key):
+    self.key = key
 
   def __hash__(self):
     return ~hash(self.key)
@@ -638,6 +635,11 @@ class EnvironmentReference(object):
       return False
     else:
       return self.key == that.key
+
+  # Create an environment reference whose key is the array of the given values.
+  @staticmethod
+  def path(*key):
+    return EnvironmentReference(key)
 
 
 # Peel off any method wrappers (i.e. staticmethod) and return the naked

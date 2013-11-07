@@ -3,7 +3,7 @@
 
 import plankton
 
-@plankton.serializable(plankton.EnvironmentReference("core", "Namespace"))
+@plankton.serializable(plankton.EnvironmentReference.path("core", "Namespace"))
 class Namespace(object):
 
   @plankton.field("bindings")
@@ -25,7 +25,7 @@ class Namespace(object):
       return special_binding
 
 
-@plankton.serializable(plankton.EnvironmentReference("core", "Methodspace"))
+@plankton.serializable(plankton.EnvironmentReference.path("core", "Methodspace"))
 class Methodspace(object):
 
   @plankton.field("inheritance")
@@ -43,7 +43,7 @@ class Methodspace(object):
     self.imports.append(other)
 
 
-@plankton.serializable(plankton.EnvironmentReference("core", "Module"))
+@plankton.serializable(plankton.EnvironmentReference.path("core", "Module"))
 class Module(object):
 
   @plankton.field("namespace")
@@ -100,7 +100,7 @@ class Parameter(object):
     self.guard = guard
 
 
-@plankton.serializable(plankton.EnvironmentReference("core", "Operation"))
+@plankton.serializable(plankton.EnvironmentReference.path("core", "Operation"))
 class Operation(object):
 
   _CALL = 2
@@ -155,7 +155,7 @@ class Key(plankton.EnvironmentReference):
     return "(key %s)" % self.display_name
 
 
-@plankton.serializable(plankton.EnvironmentReference("core", "Protocol"))
+@plankton.serializable(plankton.EnvironmentReference.path("core", "Protocol"))
 class Protocol(object):
 
   @plankton.field("name")
@@ -179,7 +179,7 @@ class Instance(object):
     return {}
 
 
-@plankton.serializable(plankton.EnvironmentReference("core", "Path"))
+@plankton.serializable(plankton.EnvironmentReference.path("core", "Path"))
 class Path(object):
 
   @plankton.field("names")
@@ -212,7 +212,7 @@ class Path(object):
     return "".join([":%s" % name for name in self.names])
 
 
-@plankton.serializable(plankton.EnvironmentReference("core", "Identifier"))
+@plankton.serializable(plankton.EnvironmentReference.path("core", "Identifier"))
 class Identifier(object):
 
   @plankton.field("path")
@@ -245,7 +245,7 @@ class Identifier(object):
     return "(name %s %s)" % (prefix, self.path)
 
 
-@plankton.serializable(plankton.EnvironmentReference("core", "Function"))
+@plankton.serializable(plankton.EnvironmentReference.path("core", "Function"))
 class Function(object):
 
   @plankton.field("display_name")
@@ -253,7 +253,7 @@ class Function(object):
     self.display_name = display_name
 
 
-@plankton.serializable(plankton.EnvironmentReference("core", "Library"))
+@plankton.serializable(plankton.EnvironmentReference.path("core", "Library"))
 class Library(object):
 
   @plankton.field("modules")
