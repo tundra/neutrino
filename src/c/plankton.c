@@ -409,7 +409,7 @@ static value_t value_deserialize(deserialize_state_t *state) {
 
 // Always report invalid input.
 static value_t invalid_input_mapping(value_t value, runtime_t *runtime, void *data) {
-  return new_invalid_input_signal();
+  return new_heap_unknown(runtime, RSTR(runtime, environment_reference), value);
 }
 
 value_t plankton_deserialize(runtime_t *runtime, value_mapping_t *access_or_null,

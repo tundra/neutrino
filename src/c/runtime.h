@@ -13,37 +13,38 @@
 // Enumerates the string table strings that will be stored as easily accessible
 // roots.
 #define ENUM_STRING_TABLE(F)                                                   \
-  F(arguments,          "arguments")                                           \
-  F(ast,                "ast")                                                 \
-  F(bindings,           "bindings")                                            \
-  F(body,               "body")                                                \
-  F(core,               "core")                                                \
-  F(display_name,       "display_name")                                        \
-  F(elements,           "elements")                                            \
-  F(entry_point,        "entry_point")                                         \
-  F(guard,              "guard")                                               \
-  F(imports,            "imports")                                             \
-  F(inheritance,        "inheritance")                                         \
-  F(method,             "method")                                              \
-  F(methods,            "methods")                                             \
-  F(methodspace,        "methodspace")                                         \
-  F(name,               "name")                                                \
-  F(names,              "names")                                               \
-  F(namespace,          "namespace")                                           \
-  F(parameters,         "parameters")                                          \
-  F(path,               "path")                                                \
-  F(protocol,           "protocol")                                            \
-  F(selector,           "selector")                                            \
-  F(signature,          "signature")                                           \
-  F(stage,              "stage")                                               \
-  F(subject,            "subject")                                             \
-  F(symbol,             "symbol")                                              \
-  F(syntax,             "syntax")                                              \
-  F(tag,                "tag")                                                 \
-  F(tags,               "tags")                                                \
-  F(type,               "type")                                                \
-  F(value,              "value")                                               \
-  F(values,             "values")
+  F(arguments,                  "arguments")                                   \
+  F(ast,                        "ast")                                         \
+  F(bindings,                   "bindings")                                    \
+  F(body,                       "body")                                        \
+  F(core,                       "core")                                        \
+  F(display_name,               "display_name")                                \
+  F(elements,                   "elements")                                    \
+  F(entry_point,                "entry_point")                                 \
+  F(environment_reference,      "environment_reference")                       \
+  F(guard,                      "guard")                                       \
+  F(imports,                    "imports")                                     \
+  F(inheritance,                "inheritance")                                 \
+  F(method,                     "method")                                      \
+  F(methods,                    "methods")                                     \
+  F(methodspace,                "methodspace")                                 \
+  F(name,                       "name")                                        \
+  F(names,                      "names")                                       \
+  F(namespace,                  "namespace")                                   \
+  F(parameters,                 "parameters")                                  \
+  F(path,                       "path")                                        \
+  F(protocol,                   "protocol")                                    \
+  F(selector,                   "selector")                                    \
+  F(signature,                  "signature")                                   \
+  F(stage,                      "stage")                                       \
+  F(subject,                    "subject")                                     \
+  F(symbol,                     "symbol")                                      \
+  F(syntax,                     "syntax")                                      \
+  F(tag,                        "tag")                                         \
+  F(tags,                       "tags")                                        \
+  F(type,                       "type")                                        \
+  F(value,                      "value")                                       \
+  F(values,                     "values")
 
 // Invokes the argument for each singleton root (that is, roots that are not
 // generated from the family list).

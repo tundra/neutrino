@@ -71,7 +71,7 @@ class Visitor(object):
 
 
 # A constant literal value.
-@plankton.serializable(plankton.EnvironmentReference("ast", "Literal"))
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Literal"))
 class Literal(object):
 
   @plankton.field("value")
@@ -89,7 +89,7 @@ class Literal(object):
 
 
 # An array expression.
-@plankton.serializable(plankton.EnvironmentReference("ast", "Array"))
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Array"))
 class Array(object):
 
   @plankton.field("elements")
@@ -112,8 +112,8 @@ class Array(object):
 @plankton.serializable()
 class Variable(object):
 
-  _LOCAL_HEADER = plankton.EnvironmentReference("ast", "LocalVariable")
-  _NAMESPACE_HEADER = plankton.EnvironmentReference("ast", "NamespaceVariable")
+  _LOCAL_HEADER = plankton.EnvironmentReference.path("ast", "LocalVariable")
+  _NAMESPACE_HEADER = plankton.EnvironmentReference.path("ast", "NamespaceVariable")
 
   def __init__(self, ident, namespace=None, symbol=None):
     self.ident = ident
@@ -153,7 +153,7 @@ class Variable(object):
 
 
 # A multi-method invocation.
-@plankton.serializable(plankton.EnvironmentReference("ast", "Invocation"))
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Invocation"))
 class Invocation(object):
 
   @plankton.field("arguments")
@@ -174,7 +174,7 @@ class Invocation(object):
 
 
 # An individual argument to an invocation.
-@plankton.serializable(plankton.EnvironmentReference("ast", "Argument"))
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Argument"))
 class Argument(object):
 
   @plankton.field("tag")
@@ -206,7 +206,7 @@ class Binding(object):
 
 # A sequence of expressions to execute in order, yielding the value of the last
 # expression.
-@plankton.serializable(plankton.EnvironmentReference("ast", "Sequence"))
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Sequence"))
 class Sequence(object):
 
   @plankton.field("values")
@@ -234,7 +234,7 @@ class Sequence(object):
 
 
 # A local variable declaration.
-@plankton.serializable(plankton.EnvironmentReference("ast", "LocalDeclaration"))
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "LocalDeclaration"))
 class LocalDeclaration(object):
 
   @plankton.field("symbol")
@@ -261,7 +261,7 @@ class LocalDeclaration(object):
 
 
 # A symbol that identifies a scoped binding.
-@plankton.serializable(plankton.EnvironmentReference("ast", "Symbol"))
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Symbol"))
 class Symbol(object):
 
   @plankton.field("name")
@@ -270,7 +270,7 @@ class Symbol(object):
 
 
 # An individual method parameter.
-@plankton.serializable(plankton.EnvironmentReference("ast", "Parameter"))
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Parameter"))
 class Parameter(object):
 
   @plankton.field("symbol")
@@ -298,7 +298,7 @@ class Parameter(object):
         self.guard)
 
 
-@plankton.serializable(plankton.EnvironmentReference("ast", "Signature"))
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Signature"))
 class Signature(object):
 
   @plankton.field("parameters")
@@ -320,7 +320,7 @@ class Signature(object):
     return "(signature %s)" % " ".join(map(str, self.parameters))
 
 
-@plankton.serializable(plankton.EnvironmentReference("ast", "Guard"))
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Guard"))
 class Guard(object):
 
   @plankton.field("type")
@@ -367,7 +367,7 @@ class Guard(object):
 
 # An anonymous function. These can be broken down into equivalent new-object
 # and set-property calls but that's for later.
-@plankton.serializable(plankton.EnvironmentReference("ast", "Lambda"))
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Lambda"))
 class Lambda(object):
 
   @plankton.field("method")
@@ -384,7 +384,7 @@ class Lambda(object):
     return "(fn (%s) => %s)" % (self.method.signature, self.method.body)
 
 
-@plankton.serializable(plankton.EnvironmentReference("ast", "Program"))
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Program"))
 class Program(object):
 
   @plankton.field("entry_point")
@@ -426,7 +426,7 @@ class NamespaceDeclaration(object):
 
 
 # Syntax of a method.
-@plankton.serializable(plankton.EnvironmentReference("ast", "Method"))
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Method"))
 class Method(object):
 
   @plankton.field("signature")
