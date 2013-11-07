@@ -294,7 +294,7 @@ void string_buffer_vprintf(string_buffer_t *buf, const char *fmt, va_list argp) 
           // where the value is passed.
           encoded_value_t encoded = va_arg(argp, encoded_value_t);
           value_t value = {.encoded=encoded};
-          size_t depth = (int_param == -1) ? kDefaultPrintDepth : int_param;
+          size_t depth = (int_param == -1) ? kDefaultPrintDepth : ((size_t) int_param);
           value_print_on(value, buf, pfNone, depth);
           break;
         }
