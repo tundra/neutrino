@@ -69,7 +69,7 @@ static void check_print_on(const char *expected_chars, value_t value) {
   string_buffer_t buf;
   string_buffer_init(&buf);
 
-  value_print_on(value, &buf);
+  value_print_default_on(value, &buf);
   string_t result;
   string_buffer_flush(&buf, &result);
   string_t expected = STR(expected_chars);

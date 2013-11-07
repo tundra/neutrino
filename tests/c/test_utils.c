@@ -1,6 +1,7 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "alloc.h"
 #include "runtime.h"
 #include "test.h"
 #include "utils.h"
@@ -135,6 +136,15 @@ TEST(utils, string_buffer_value_printf) {
   CHECK_PRINTF("--- null ---", "--- %v ---", ROOT(runtime, null));
   CHECK_PRINTF("--- true ---", "--- %v ---", ROOT(runtime, thrue));
   CHECK_PRINTF("--- [] ---", "--- %v ---", ROOT(runtime, empty_array));
+
+  value_t cycle_array = new_heap_array(runtime, 1);
+  set_array_at(cycle_array, 0, cycle_array);
+  CHECK_PRINTF("--- " kBottomValuePlaceholder " ---", "--- %0v ---", cycle_array);
+  CHECK_PRINTF("--- #<array[1]> ---", "--- %1v ---", cycle_array);
+  CHECK_PRINTF("--- [#<array[1]>] ---", "--- %2v ---", cycle_array);
+  CHECK_PRINTF("--- [[#<array[1]>]] ---", "--- %3v ---", cycle_array);
+  CHECK_PRINTF("--- [[[[[[[[[[#<array[1]>]]]]]]]]]] ---",
+      "--- %11v ---", cycle_array);
 
   DISPOSE_RUNTIME();
 }

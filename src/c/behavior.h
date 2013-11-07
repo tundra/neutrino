@@ -134,12 +134,23 @@ value_t value_identity_compare_cycle_protect(value_t a, value_t b,
 value_t value_ordering_compare(value_t a, value_t b);
 
 // Prints a human-readable representation of the given value on the given
-// string buffer.
-void value_print_on(value_t value, string_buffer_t *buf);
+// string buffer. The flags control how the value is printed, the depth
+// indicates how deep into the object structure we want to go.
+void value_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth);
+
+// Same as value_print_on but passes default values for the flags and depth.
+void value_print_default_on(value_t value, string_buffer_t *buf);
 
 // Does the same as value_print_on but doesn't print quotes around a
 // string.
 void value_print_on_unquoted(value_t value, string_buffer_t *buf);
+
+// The default depth to traverse values when printing.
+static const size_t kDefaultPrintDepth = 3;
+
+// The string printed when there is no depth left to print a value.
+#define kBottomValuePlaceholder "-"
 
 // Works the same as value_print_on but keeps track of recursion depth such
 // that we can print subobjects without worrying about cycles.

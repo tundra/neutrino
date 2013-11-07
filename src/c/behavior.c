@@ -346,18 +346,23 @@ void value_print_on_cycle_detect(value_t value, string_buffer_t *buf,
   }
 }
 
-void value_print_on(value_t value, string_buffer_t *buf) {
-  value_print_on_cycle_detect(value, buf, pfNone, 3);
+void value_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  value_print_inner_on(value, buf, flags, depth);
+}
+
+void value_print_default_on(value_t value, string_buffer_t *buf) {
+  value_print_on(value, buf, pfNone, kDefaultPrintDepth);
 }
 
 void value_print_on_unquoted(value_t value, string_buffer_t *buf) {
-  value_print_on_cycle_detect(value, buf, pfUnquote, 3);
+  value_print_on_cycle_detect(value, buf, pfUnquote, kDefaultPrintDepth);
 }
 
 void value_print_inner_on(value_t value, string_buffer_t *buf,
     print_flags_t flags, size_t depth) {
   if (depth == 0) {
-    string_buffer_printf(buf, "-");
+    string_buffer_printf(buf, kBottomValuePlaceholder);
   } else {
     value_print_on_cycle_detect(value, buf, flags, depth);
   }
