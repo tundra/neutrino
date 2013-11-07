@@ -57,7 +57,10 @@ class Main(object):
   def parse_arguments(self):
     parser = self.build_option_parser()
     (self.flags, self.args) = parser.parse_args()
-    self.compile_flags = self.flags.compile.get_flags()
+    if self.flags.compile:
+      self.compile_flags = self.flags.compile.get_flags()
+    else:
+      self.compile_flags = {}
 
   # If the filter option is set, filters input and return True. Otherwise
   # returns False.

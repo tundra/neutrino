@@ -410,9 +410,37 @@ def always_throw(key):
   raise Exception(key)
 
 
+class DefaultObject(object):
+
+  def __init__(self, header=None):
+    self.header = header
+    self.payload = None
+
+  def set_header(self, value):
+    self.header = value
+    return self
+
+  def get_header(self):
+    return self.header
+
+  def set_payload(self, value):
+    self.payload = value
+    return self
+
+  def set_contents(self, value):
+    return self.set_payload(value)
+
+  def get_payload(self):
+    return self.payload
+
+  def __str__(self):
+    return "#<? %s %s>" % (self.header, self.payload)
+
+
+
 class Decoder(object):
 
-  def __init__(self, access=str, default_object=None):
+  def __init__(self, access=str, default_object=DefaultObject):
     self.access = access
     self.default_object = default_object
 
