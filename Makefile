@@ -315,7 +315,7 @@ CORE_LIBRARY_SRCS=$(shell find src/n/ -name "*.n" | sort)
 CORE_LIBRARY_OUT=$(OUT)/n/library.nl
 
 
-$(CORE_LIBRARY_OUT): $(CORE_LIBRARY_SRCS)
+$(CORE_LIBRARY_OUT): $(CORE_LIBRARY_SRCS) $(PYTHON_SRC_FILES)
 	@echo Building library $@
 	@mkdir -p $(shell dirname $@)
 	@./src/python/neutrino/main.py --compile 																		 \

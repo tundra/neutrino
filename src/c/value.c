@@ -109,7 +109,7 @@ static value_t integer_negate(builtin_arguments_t *args) {
 
 static value_t integer_print(builtin_arguments_t *args) {
   value_t this = get_builtin_subject(args);
-  value_print_ln(this);
+  print_ln("%v", this);
   return ROOT(args->runtime, nothing);
 }
 
@@ -494,7 +494,7 @@ static value_t string_plus_string(builtin_arguments_t *args) {
 static value_t string_print(builtin_arguments_t *args) {
   value_t this = get_builtin_subject(args);
   CHECK_FAMILY(ofString, this);
-  value_print_ln(this);
+  print_ln("%v", this);
   return ROOT(args->runtime, nothing);
 }
 
@@ -1588,7 +1588,7 @@ void module_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
 
 static value_t module_print(builtin_arguments_t *args) {
   value_t this = get_builtin_subject(args);
-  value_print_ln(this);
+  print_ln("%v", this);
   return ROOT(args->runtime, nothing);
 }
 
@@ -1762,13 +1762,74 @@ value_t set_unknown_contents(value_t object, runtime_t *runtime, value_t content
 
 void unknown_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
     size_t depth) {
-  string_buffer_printf(buf, "#<unknown ");
+  string_buffer_printf(buf, "#<? ");
   value_t header = get_unknown_header(value);
   value_print_inner_on(header, buf, flags, depth - 1);
   string_buffer_printf(buf, " ");
   value_t payload = get_unknown_payload(value);
   value_print_inner_on(payload, buf, flags, depth - 1);
   string_buffer_printf(buf, ">");
+}
+
+
+// --- O p t i o n s ---
+
+FIXED_GET_MODE_IMPL(options, vmMutable);
+
+ACCESSORS_IMPL(Options, options, acInFamilyOpt, ofArray, Elements, elements);
+
+value_t set_options_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(elements, get_id_hash_map_at(contents, RSTR(runtime, elements)));
+  set_options_elements(object, elements);
+  return success();
+}
+
+value_t options_validate(value_t self) {
+  VALIDATE_FAMILY(ofOptions, self);
+  return success();
+}
+
+void options_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<options ");
+  value_t elements = get_options_elements(value);
+  value_print_inner_on(elements, buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
+value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key,
+    value_t defawlt) {
+  // Yeah so the clean way to do this would have been to create families for
+  // the different kinds of elements and let the deserialization code sort all
+  // this out. But we can get away with this somewhat hacky by simple and
+  // localized approach.
+  value_t elements = get_options_elements(self);
+  for (size_t i = 0; i < get_array_length(elements); i++) {
+    value_t element = get_array_at(elements, i);
+    if (!in_family(ofUnknown, element))
+      continue;
+    value_t header = get_unknown_header(element);
+    if (!in_family(ofUnknown, header))
+      continue;
+    value_t header_payload = get_unknown_payload(header);
+    if (!in_family(ofArray, header_payload))
+      continue;
+    value_t header_payload_last = get_array_at(header_payload,
+        get_array_length(header_payload) - 1);
+    if (!value_identity_compare(header_payload_last, RSTR(runtime, FlagElement)))
+      continue;
+    value_t payload = get_unknown_payload(element);
+    if (!in_family(ofIdHashMap, payload))
+      continue;
+    value_t element_key = get_id_hash_map_at(payload, RSTR(runtime, key));
+    if (is_signal(scNotFound, element_key) || !value_identity_compare(element_key, key))
+      continue;
+    value_t element_value = get_id_hash_map_at(payload, RSTR(runtime, value));
+    if (!is_signal(scNotFound, element_value))
+      return element_value;
+  }
+  return defawlt;
 }
 
 
@@ -1826,6 +1887,10 @@ static value_t new_identifier(runtime_t *runtime) {
   return new_heap_identifier(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing));
 }
 
+static value_t new_options(runtime_t *runtime) {
+  return new_heap_options(runtime, ROOT(runtime, nothing));
+}
+
 value_t add_plankton_factory(value_t map, value_t category, const char *name,
     factory_constructor_t constructor, runtime_t *runtime) {
   TRY_DEF(factory, new_heap_factory(runtime, constructor));
@@ -1855,21 +1920,27 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   value_t protocol = RSTR(runtime, protocol);
   TRY(add_plankton_binding(map, protocol, "Integer", ROOT(runtime, integer_protocol),
       runtime));
+  // Options
+  value_t options = RSTR(runtime, options);
+  TRY(add_plankton_factory(map, options, "Options", new_options, runtime));
   return success();
 }
 
 
 // --- D e b u g ---
 
-void value_print_ln(value_t value) {
+void print_ln(const char *fmt, ...) {
   // Write the value on a string buffer.
   string_buffer_t buf;
   string_buffer_init(&buf);
-  value_print_default_on(value, &buf);
-  string_t result;
-  string_buffer_flush(&buf, &result);
-  // Print it on stdout.
-  printf("%s\n", result.chars);
+  va_list argp;
+  va_start(argp, fmt);
+  string_buffer_vprintf(&buf, fmt, argp);
+  va_end(argp);
+  // Print the result to stdout.
+  string_t str;
+  string_buffer_flush(&buf, &str);
+  printf("%s\n", str.chars);
   fflush(stdout);
   // Done!
   string_buffer_dispose(&buf);

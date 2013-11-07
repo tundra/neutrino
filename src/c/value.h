@@ -276,6 +276,7 @@ static value_t new_moved_object(value_t target) {
   F(Nothing,                 nothing,                   _, _, _, _, _, _, _, _, _)\
   F(Null,                    null,                      _, _, _, X, _, _, _, _, _)\
   F(Operation,               operation,                 _, X, X, _, _, _, _, X, _)\
+  F(Options,                 options,                   _, _, X, _, _, _, _, _, _)\
   F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _)\
   F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _)\
   F(Path,                    path,                      _, X, X, X, _, _, _, X, _)\
@@ -1045,6 +1046,22 @@ ACCESSORS_DECL(unknown, header);
 ACCESSORS_DECL(unknown, payload);
 
 
+// --- O p t i o n s ---
+
+// This should so be an instance-type object defined in a library. But alas it's
+// currently part of the implementation of libraries so maybe later.
+static const size_t kOptionsSize = OBJECT_SIZE(1);
+static const size_t kOptionsElementsOffset = OBJECT_FIELD_OFFSET(0);
+
+// The elements array of this set of options.
+ACCESSORS_DECL(options, elements);
+
+// Returns the value of the flag with the given key in the given options set.
+// If the key is not available the default is returned.
+value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key,
+    value_t defawlt);
+
+
 // --- O r d e r i n g ---
 
 // Returns a value ordering to an integer such that less than becomes -1,
@@ -1069,8 +1086,8 @@ value_t add_plankton_factory(value_t map, value_t category, const char *name,
 
 // --- D e b u g ---
 
-// Prints the string representation of the given value on stdout.
-void value_print_ln(value_t value);
+// Similar to printf but adds a newline and allows %v to print values.
+void print_ln(const char *fmt, ...);
 
 
 #endif // _VALUE

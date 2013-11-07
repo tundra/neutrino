@@ -3,7 +3,7 @@
 
 #include "alloc.h"
 #include "plankton.h"
-#include "runtime-inl.h"
+#include "runtime.h"
 #include "safe-inl.h"
 #include "try-inl.h"
 #include "value-inl.h"
@@ -408,7 +408,7 @@ static value_t value_deserialize(deserialize_state_t *state) {
 }
 
 // Always report invalid input.
-static value_t invalid_input_mapping(value_t value, runtime_t *runtime, void *data) {
+static value_t unknown_input_mapping(value_t value, runtime_t *runtime, void *data) {
   return new_heap_unknown(runtime, RSTR(runtime, environment_reference), value);
 }
 
@@ -422,16 +422,11 @@ value_t plankton_deserialize(runtime_t *runtime, value_mapping_t *access_or_null
   // Use a failing environment accessor if the access pointer is null.
   value_mapping_t access;
   if (access_or_null == NULL) {
-    value_mapping_init(&access, invalid_input_mapping, NULL);
+    value_mapping_init(&access, unknown_input_mapping, NULL);
   } else {
     access = *access_or_null;
   }
   deserialize_state_t state;
   TRY(deserialize_state_init(&state, runtime, &access, &in));
   return value_deserialize(&state);
-}
-
-value_t safe_plankton_deserialize(runtime_t *runtime,
-    value_mapping_t *access_or_null, safe_value_t blob) {
-  RETRY_ONCE_IMPL(runtime, plankton_deserialize(runtime, access_or_null, deref(blob)));
 }

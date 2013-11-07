@@ -4,6 +4,7 @@
 # Neutrino parser
 
 
+from abc import abstractmethod, ABCMeta
 import ast
 import data
 import plankton
@@ -12,6 +13,7 @@ from token import Token
 
 # Neutrino parser.
 class Parser(object):
+  __metaclass__ = ABCMeta
 
   _BUILTIN_METHODSPACE = data.Key("subject", ("core", "builtin_methodspace"))
   _SAUSAGES = data.Operation.call()
@@ -365,12 +367,11 @@ class Parser(object):
     stage_index = ident.stage
     stage = self.unit.get_or_create_stage(stage_index)
     namespace = stage.get_namespace()
-    variable = ast.Variable(ident=ident, namespace=namespace)
-    if ident.stage < 0:
-      return ast.Quote(stage_index, variable)
-    else:
-      return variable
+    return self.new_variable(ident, namespace)
 
+  @abstractmethod
+  def new_variable(self, ident, namespace):
+    pass
 
   # <atomic expression>
   #   -> <literal>
@@ -476,6 +477,32 @@ class Parser(object):
   # Creates a new syntax error at the current token.
   def new_syntax_error(self):
     return SyntaxError(self.current())
+
+
+# Parser that builds old-style syntax trees.
+class OldParser(Parser):
+
+  def __init__(self, tokens, module_name=None, unit=None):
+    super(OldParser, self).__init__(tokens)
+    if unit is None:
+      self.unit = ast.Unit(module_name)
+    else:
+      self.unit = unit
+    self.present = self.unit.get_present()
+
+  def new_variable(self, ident, namespace):
+    variable = ast.Variable(ident=ident, namespace=namespace)
+    if ident.stage < 0:
+      return ast.Quote(ident.stage, variable)
+    else:
+      return variable
+
+
+# Parser that builds new-style syntax trees.
+class NewParser(Parser):
+
+  def new_variable(self, ident, namespace):
+    return ast.Variable(ident=ident, namespace=namespace)
 
 
 # Exception signalling a syntax error.
