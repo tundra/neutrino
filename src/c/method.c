@@ -586,9 +586,7 @@ void print_invocation(value_t record, frame_t *frame) {
     value_t arg = get_invocation_record_argument_at(record, frame, i);
     if (i > 0)
       string_buffer_printf(&buf, ", ");
-    value_print_on(tag, &buf);
-    string_buffer_printf(&buf, ": ");
-    value_print_on(arg, &buf);
+    string_buffer_printf(&buf, "%v: %v", tag, arg);
   }
   string_buffer_printf(&buf, "}");
   string_t str;

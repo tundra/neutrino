@@ -93,16 +93,13 @@ static void log_lookup_error(value_t signal, value_t record, frame_t *frame) {
   size_t arg_count = get_invocation_record_argument_count(record);
   string_buffer_t buf;
   string_buffer_init(&buf);
-  value_print_on(signal, &buf);
-  string_buffer_printf(&buf, ": {");
+  string_buffer_printf(&buf, "%v: {", signal);
   for (size_t i = 0; i < arg_count; i++) {
     if (i > 0)
       string_buffer_printf(&buf, ", ");
     value_t tag = get_invocation_record_tag_at(record, i);
-    value_print_on(tag, &buf);
-    string_buffer_printf(&buf, ": ");
     value_t value = get_invocation_record_argument_at(record, frame, i);
-    value_print_on(value, &buf);
+    string_buffer_printf(&buf, "%v: %v", tag, value);
   }
   string_buffer_printf(&buf, "}");
   string_t str;

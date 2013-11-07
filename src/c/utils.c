@@ -1,6 +1,7 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "behavior.h"
 #include "check.h"
 #include "globals.h"
 #include "utils.h"
@@ -224,6 +225,16 @@ void string_buffer_vprintf(string_buffer_t *buf, const char *fmt, va_list argp) 
     if (*p == '%') {
       p++;
       char c = *p;
+      // Read any leading integer parameters.
+      int32_t int_param = -1;
+      if ('0' <= c && c <= '9') {
+        int_param = 0;
+        while ('0' <= c && c <= '9') {
+          int_param = (10 * int_param) + (c - '0');
+          p++;
+          c = *p;
+        }
+      }
       // Count leading 'l's.
       size_t l_count = 0;
       while (c == 'l') {
@@ -283,9 +294,8 @@ void string_buffer_vprintf(string_buffer_t *buf, const char *fmt, va_list argp) 
           // where the value is passed.
           encoded_value_t encoded = va_arg(argp, encoded_value_t);
           value_t value = {.encoded=encoded};
-          value_to_string_t to_string;
-          string_buffer_native_printf(buf, "%s", value_to_string(&to_string, value));
-          dispose_value_to_string(&to_string);
+          size_t depth = (int_param == -1) ? kDefaultPrintDepth : ((size_t) int_param);
+          value_print_on(value, buf, pfNone, depth);
           break;
         }
         default:
