@@ -276,6 +276,7 @@ static value_t new_moved_object(value_t target) {
   F(Nothing,                 nothing,                   _, _, _, _, _, _, _, _, _)\
   F(Null,                    null,                      _, _, _, X, _, _, _, _, _)\
   F(Operation,               operation,                 _, X, X, _, _, _, _, X, _)\
+  F(Options,                 options,                   _, _, X, _, _, _, _, _, _)\
   F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _)\
   F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _)\
   F(Path,                    path,                      _, X, X, X, _, _, _, X, _)\
@@ -1043,6 +1044,17 @@ ACCESSORS_DECL(unknown, header);
 
 // The payload of this object of unknown type.
 ACCESSORS_DECL(unknown, payload);
+
+
+// --- O p t i o n s ---
+
+// This should so be an instance-type object defined in a library. But alas it's
+// currently part of the implementation of libraries so maybe later.
+static const size_t kOptionsSize = OBJECT_SIZE(1);
+static const size_t kOptionsElementsOffset = OBJECT_FIELD_OFFSET(0);
+
+// The elements array of this set of options.
+ACCESSORS_DECL(options, elements);
 
 
 // --- O r d e r i n g ---

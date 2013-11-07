@@ -31,6 +31,7 @@
   F(name,                       "name")                                        \
   F(names,                      "names")                                       \
   F(namespace,                  "namespace")                                   \
+  F(options,                    "options")                                     \
   F(parameters,                 "parameters")                                  \
   F(path,                       "path")                                        \
   F(protocol,                   "protocol")                                    \

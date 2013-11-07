@@ -1772,6 +1772,26 @@ void unknown_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
 }
 
 
+// --- O p t i o n s ---
+
+FIXED_GET_MODE_IMPL(options, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(Options, options);
+
+ACCESSORS_IMPL(Options, options, acInFamilyOpt, ofArray, Elements, elements);
+
+value_t set_options_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(elements, get_id_hash_map_at(contents, RSTR(runtime, elements)));
+  set_options_elements(object, elements);
+  return success();
+}
+
+value_t options_validate(value_t self) {
+  VALIDATE_FAMILY(ofOptions, self);
+  return success();
+}
+
+
 // --- O r d e r i n g ---
 
 int ordering_to_int(value_t value) {
@@ -1826,6 +1846,10 @@ static value_t new_identifier(runtime_t *runtime) {
   return new_heap_identifier(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing));
 }
 
+static value_t new_options(runtime_t *runtime) {
+  return new_heap_options(runtime, ROOT(runtime, nothing));
+}
+
 value_t add_plankton_factory(value_t map, value_t category, const char *name,
     factory_constructor_t constructor, runtime_t *runtime) {
   TRY_DEF(factory, new_heap_factory(runtime, constructor));
@@ -1855,6 +1879,9 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   value_t protocol = RSTR(runtime, protocol);
   TRY(add_plankton_binding(map, protocol, "Integer", ROOT(runtime, integer_protocol),
       runtime));
+  // Options
+  value_t options = RSTR(runtime, options);
+  TRY(add_plankton_factory(map, options, "Options", new_options, runtime));
   return success();
 }
 

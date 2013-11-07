@@ -153,6 +153,9 @@ value_t new_heap_path_with_names(runtime_t *runtime, value_t names, size_t offse
 // Creates a new unknown object with the given header and payload.
 value_t new_heap_unknown(runtime_t *runtime, value_t header, value_t payload);
 
+// Creates a new options object with the given elements.
+value_t new_heap_options(runtime_t *runtime, value_t elements);
+
 
 // --- P r o c e s s ---
 
