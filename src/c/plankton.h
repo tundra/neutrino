@@ -5,7 +5,6 @@
 #ifndef _PLANKTON
 #define _PLANKTON
 
-#include "runtime.h"
 #include "value.h"
 
 // The different plankton type tags.
@@ -52,10 +51,6 @@ value_t plankton_serialize(runtime_t *runtime, value_mapping_t *resolver_or_null
 // access mapping is used to acquire values from the environment.
 value_t plankton_deserialize(runtime_t *runtime, value_mapping_t *access_or_null,
     value_t blob);
-
-// Retrying version of plankton deserialization.
-value_t safe_plankton_deserialize(runtime_t *runtime, value_mapping_t *access,
-    safe_value_t blob);
 
 // Encodes an unsigned 32-bit integer in the plankton wire format. This does not
 // emit the tag, only the integer value.

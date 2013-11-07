@@ -9,6 +9,7 @@
 #define _RUNTIME
 
 #include "heap.h"
+#include "plankton.h"
 
 // Enumerates the string table strings that will be stored as easily accessible
 // roots.
@@ -22,9 +23,12 @@
   F(elements,                   "elements")                                    \
   F(entry_point,                "entry_point")                                 \
   F(environment_reference,      "environment_reference")                       \
+  F(FlagElement,                "FlagElement")                                 \
   F(guard,                      "guard")                                       \
   F(imports,                    "imports")                                     \
   F(inheritance,                "inheritance")                                 \
+  F(key,                        "key")                                         \
+  F(libraries,                  "libraries")                                   \
   F(method,                     "method")                                      \
   F(methods,                    "methods")                                     \
   F(methodspace,                "methodspace")                                 \
@@ -182,6 +186,8 @@ struct runtime_t {
   uint64_t next_key_index;
   // Optional allocation failure fuzzer.
   gc_fuzzer_t *gc_fuzzer;
+  // Environment mapping to use when deserializing plankton.
+  value_mapping_t plankton_mapping;
 };
 
 // Creates a new runtime object, storing it in the given runtime out parameter.
@@ -215,6 +221,12 @@ value_t runtime_validate(runtime_t *runtime);
 
 // Creates a gc-safe reference to the given value.
 safe_value_t runtime_protect_value(runtime_t *runtime, value_t value);
+
+// Deserialize the given data using the environment bindings from this runtime.
+value_t runtime_plankton_deserialize(runtime_t *runtime, value_t blob);
+
+// Retrying version of runtime plankton deserialization.
+value_t safe_runtime_plankton_deserialize(runtime_t *runtime, safe_value_t blob);
 
 // Disposes a gc-safe reference.
 void dispose_safe_value(runtime_t *runtime, safe_value_t value_s);

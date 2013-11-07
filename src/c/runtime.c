@@ -5,7 +5,7 @@
 #include "behavior.h"
 #include "check.h"
 #include "log.h"
-#include "runtime.h"
+#include "runtime-inl.h"
 #include "safe-inl.h"
 #include "try-inl.h"
 #include "value-inl.h"
@@ -288,6 +288,7 @@ static value_t runtime_soft_init(runtime_t *runtime) {
     safe_value_t s_builtin_methodspace = protect(pool,
         ROOT(runtime, builtin_methodspace));
     E_TRY(add_methodspace_builtin_methods(runtime, s_builtin_methodspace));
+    E_TRY(init_plankton_environment_mapping(&runtime->plankton_mapping, runtime));
     E_RETURN(runtime_validate(runtime));
   E_FINALLY();
     DISPOSE_SAFE_VALUE_POOL(pool);
@@ -548,6 +549,7 @@ void runtime_clear(runtime_t *runtime) {
   runtime->gc_fuzzer = NULL;
   runtime->roots = success();
   runtime->mutable_roots = success();
+  runtime->plankton_mapping = ((value_mapping_t) {NULL, NULL});
 }
 
 value_t runtime_dispose(runtime_t *runtime) {
@@ -579,6 +581,14 @@ safe_value_t runtime_protect_value(runtime_t *runtime, value_t value) {
   } else {
     return protect_immediate(value);
   }
+}
+
+value_t runtime_plankton_deserialize(runtime_t *runtime, value_t blob) {
+  return plankton_deserialize(runtime, &runtime->plankton_mapping, blob);
+}
+
+value_t safe_runtime_plankton_deserialize(runtime_t *runtime, safe_value_t blob) {
+  RETRY_ONCE_IMPL(runtime, runtime_plankton_deserialize(runtime, deref(blob)));
 }
 
 void dispose_safe_value(runtime_t *runtime, safe_value_t s_value) {

@@ -203,11 +203,13 @@ static void parse_options(size_t argc, char **argv, main_options_t *flags_out) {
 static value_t parse_main_options(runtime_t *runtime, const char *value) {
   TRY_DEF(blob, base64_c_str_to_blob(runtime, value));
   CHECK_FAMILY(ofBlob, blob);
-  return plankton_deserialize(runtime, NULL, blob);
+  return runtime_plankton_deserialize(runtime, blob);
 }
 
 static value_t get_main_program(runtime_t *runtime, value_t options) {
-  value_print_ln(options);
+  value_t libraries = get_options_flag_value(runtime, options, RSTR(runtime, libraries),
+      ROOT(runtime, empty_array));
+  TRY(libraries);
   return success();
 }
 
@@ -240,13 +242,10 @@ static value_t neutrino_main(int argc, char **argv) {
         E_TRY_SET(input, read_file_to_blob(runtime, file));
         fclose(file);
       }
-      value_mapping_t syntax_mapping;
-      E_TRY(init_plankton_environment_mapping(&syntax_mapping, runtime));
-      E_TRY_DEF(program, safe_plankton_deserialize(runtime, &syntax_mapping,
-          protect(pool, input)));
+      E_TRY_DEF(program, safe_runtime_plankton_deserialize(runtime, protect(pool, input)));
       value_t result = safe_execute_syntax(runtime, protect(pool, program));
       if (options.print_value)
-        value_print_ln(result);
+        print_ln("%v", result);
     }
     E_RETURN(success());
   E_FINALLY();
@@ -261,7 +260,7 @@ int main(int argc, char *argv[]) {
   install_crash_handler();
   value_t result = neutrino_main(argc, argv);
   if (get_value_domain(result) == vdSignal) {
-    value_print_ln(result);
+    print_ln("%v", result);
     return 1;
   } else {
     return 0;

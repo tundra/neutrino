@@ -15,9 +15,10 @@
 static value_t resolve_syntax_factory(value_t key, runtime_t *runtime, void *data) {
   value_t result = get_id_hash_map_at(ROOT(runtime, plankton_environment), key);
   if (is_signal(scNotFound, result)) {
-    WARN("Environment reference %v could not be resolved", key);
+    return new_heap_unknown(runtime, RSTR(runtime, environment_reference), key);
+  } else {
+    return result;
   }
-  return result;
 }
 
 value_t init_plankton_environment_mapping(value_mapping_t *mapping,

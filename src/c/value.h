@@ -1056,6 +1056,11 @@ static const size_t kOptionsElementsOffset = OBJECT_FIELD_OFFSET(0);
 // The elements array of this set of options.
 ACCESSORS_DECL(options, elements);
 
+// Returns the value of the flag with the given key in the given options set.
+// If the key is not available the default is returned.
+value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key,
+    value_t defawlt);
+
 
 // --- O r d e r i n g ---
 
@@ -1081,8 +1086,8 @@ value_t add_plankton_factory(value_t map, value_t category, const char *name,
 
 // --- D e b u g ---
 
-// Prints the string representation of the given value on stdout.
-void value_print_ln(value_t value);
+// Similar to printf but adds a newline and allows %v to print values.
+void print_ln(const char *fmt, ...);
 
 
 #endif // _VALUE
