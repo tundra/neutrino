@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "crash.h"
+#include "file.h"
 #include "interp.h"
 #include "log.h"
 #include "plankton.h"
@@ -10,29 +11,6 @@
 #include "safe-inl.h"
 #include "try-inl.h"
 #include "value.h"
-
-#include <unistd.h>
-
-static value_t read_file_to_blob(runtime_t *runtime, FILE *file) {
-  // Read the complete file into a byte buffer.
-  byte_buffer_t buffer;
-  byte_buffer_init(&buffer);
-  while (true) {
-    static const size_t kBufSize = 1024;
-    byte_t raw_buffer[kBufSize];
-    ssize_t was_read = fread(raw_buffer, 1, kBufSize, file);
-    if (was_read <= 0)
-      break;
-    for (ssize_t i = 0; i < was_read; i++)
-      byte_buffer_append(&buffer, raw_buffer[i]);
-  }
-  blob_t data_blob;
-  byte_buffer_flush(&buffer, &data_blob);
-  // Create a blob to hold the result and copy the data into it.
-  value_t result = new_heap_blob_with_data(runtime, &data_blob);
-  byte_buffer_dispose(&buffer);
-  return result;
-}
 
 // Convert a C string containing base64 encoded data to a heap blob with the
 // raw bytes represented by the string.
@@ -207,12 +185,14 @@ static value_t parse_main_options(runtime_t *runtime, const char *value) {
   return runtime_plankton_deserialize(runtime, blob);
 }
 
-// Extracts the relevant data from the main options object.
-static value_t get_main_program(runtime_t *runtime, value_t options) {
-  value_t libraries = get_options_flag_value(runtime, options, RSTR(runtime, libraries),
-      ROOT(runtime, empty_array));
-  TRY(libraries);
-  return success();
+// Constructs a module loader based on the given command-line options.
+static value_t build_module_loader(runtime_t *runtime, value_t options) {
+  TRY_DEF(loader, new_heap_empty_module_loader(runtime));
+  value_t module_loader_options = get_options_flag_value(runtime, options,
+      RSTR(runtime, module_loader), ROOT(runtime, null));
+  if (!is_null(module_loader_options))
+    TRY(module_loader_process_options(runtime, loader, module_loader_options));
+  return loader;
 }
 
 // Create a vm and run the program.
@@ -233,16 +213,16 @@ static value_t neutrino_main(int argc, char **argv) {
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
     E_TRY_DEF(main_options, parse_main_options(runtime, options.main_options));
-    get_main_program(runtime, main_options);
+    E_TRY(build_module_loader(runtime, main_options));
     for (size_t i = 0; i < options.argc; i++) {
       const char *filename = options.argv[i];
       value_t input;
       if (strcmp("-", filename) == 0) {
-        E_TRY_SET(input, read_file_to_blob(runtime, stdin));
+        E_TRY_SET(input, read_handle_to_blob(runtime, stdin));
       } else {
-        FILE *file = fopen(filename, "r");
-        E_TRY_SET(input, read_file_to_blob(runtime, file));
-        fclose(file);
+        string_t filename_str;
+        string_init(&filename_str, filename);
+        E_TRY_SET(input, read_file_to_blob(runtime, &filename_str));
       }
       E_TRY_DEF(program, safe_runtime_plankton_deserialize(runtime, protect(pool, input)));
       value_t result = safe_execute_syntax(runtime, protect(pool, program));

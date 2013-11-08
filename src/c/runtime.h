@@ -24,6 +24,7 @@
   F(entry_point,                "entry_point")                                 \
   F(environment_reference,      "environment_reference")                       \
   F(FlagElement,                "FlagElement")                                 \
+  F(fragments,                  "fragments")                                   \
   F(guard,                      "guard")                                       \
   F(imports,                    "imports")                                     \
   F(inheritance,                "inheritance")                                 \
@@ -32,6 +33,7 @@
   F(method,                     "method")                                      \
   F(methods,                    "methods")                                     \
   F(methodspace,                "methodspace")                                 \
+  F(module_loader,              "module_loader")                               \
   F(name,                       "name")                                        \
   F(names,                      "names")                                       \
   F(namespace,                  "namespace")                                   \

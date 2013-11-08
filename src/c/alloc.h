@@ -9,6 +9,7 @@
 #define _ALLOC
 
 #include "behavior.h"
+#include "bind.h"
 #include "globals.h"
 #include "heap.h"
 #include "method.h"
@@ -157,6 +158,9 @@ value_t new_heap_unknown(runtime_t *runtime, value_t header, value_t payload);
 // an array of unknown objects that match the format produced when deserializing
 // options produced by options.py.
 value_t new_heap_options(runtime_t *runtime, value_t elements);
+
+// Creates a new module loader initialized with an empty module map.
+value_t new_heap_empty_module_loader(runtime_t *runtime);
 
 
 // --- P r o c e s s ---

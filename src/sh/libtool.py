@@ -33,6 +33,10 @@ class LibTool(object):
     for path in sorted(library.modules.keys()):
       module = library.modules[path]
       print "  %s => %s" % (path, module)
+      for fragment in module.fragments:
+        print "    %s: %s" % (fragment.stage, fragment)
+        for require in fragment.imports:
+          print "      import %s" % require
 
   # Reads a library from the file with the given name.
   def load_library(self, filename):

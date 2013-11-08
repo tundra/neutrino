@@ -254,6 +254,24 @@ $(MD_OBJS): $(BIN)/doc/%.html: %.md
 docs:	$(MD_OBJS)
 
 
+CORE_LIBRARY_SRCS=$(shell find src/n/ -name "*.n" | sort)
+CORE_LIBRARY_OUT=$(OUT)/n/library.nl
+
+
+$(CORE_LIBRARY_OUT):	$(CORE_LIBRARY_SRCS) $(PYTHON_SRC_FILES)
+	@echo Building library $@
+	@mkdir -p $(shell dirname $@)
+	@./src/python/neutrino/main.py --compile 																		 \
+	  `$(PLOPT) 																																 \
+	    --build-library { 																											 \
+	      --out $@																															 \
+	      --modules [ $(CORE_LIBRARY_SRCS) ]																		 \
+	    }`
+
+
+library:	$(CORE_LIBRARY_OUT)
+
+
 GOLDEN_SRCS=$(shell find tests/n/golden -name "*.gn" | sort)
 GOLDEN_OUTS=$(patsubst tests/n/golden/%.gn, $(OUT)/tests/n/golden/%.out, $(GOLDEN_SRCS))
 GOLDEN_RUNS=$(patsubst tests/n/golden/%.gn, test-golden-%, $(GOLDEN_SRCS))
@@ -303,30 +321,14 @@ $(NUNIT_OUTS):$(OUT)/tests/n/nunit/%.out:tests/n/nunit/%.n $(C_MAIN_EXE) $(PYTHO
 	    --runner "\"$(EXEC_PREFIX) $(C_MAIN_EXE)\"" 														 \
 	    --modules [ $(NEUTRINO_MODULES) ] 																			 \
 	    --ctrino-main-options {{ 																								 \
-	      --libraries [ $(CORE_LIBRARY_OUT) ] 																	 \
+	      --module_loader {                                                      \
+	        --libraries [ $(CORE_LIBRARY_OUT) ] 																 \
+	      }																																			 \
 	    }}`
 
 
 # Run all the nunit tests.
 test-nunit:	$(NUNIT_RUNS)
-
-
-CORE_LIBRARY_SRCS=$(shell find src/n/ -name "*.n" | sort)
-CORE_LIBRARY_OUT=$(OUT)/n/library.nl
-
-
-$(CORE_LIBRARY_OUT): $(CORE_LIBRARY_SRCS) $(PYTHON_SRC_FILES)
-	@echo Building library $@
-	@mkdir -p $(shell dirname $@)
-	@./src/python/neutrino/main.py --compile 																		 \
-	  `$(PLOPT) 																																 \
-	    --build-library { 																											 \
-	      --out $@																															 \
-	      --modules [ $(CORE_LIBRARY_SRCS) ]																		 \
-	    }`
-
-
-library:	$(CORE_LIBRARY_OUT)
 
 
 TMLANGUAGE=$(BIN)/sublime/Neutrino.tmLanguage
@@ -353,8 +355,8 @@ $(TMLANGUAGE):	misc/sublime/Neutrino.json
 # Print the number of source lines
 loc:
 	@echo LOC \
-	  C: `find . -name \*.[ch] | xargs cat | grep -v -e ^// -e ^$$ | wc -l` \
-	  py: `find . -name \*.py | xargs cat | grep -v -e '^#' -e ^$$ | wc -l` \
+	  C: `find . -name \*.[ch] | xargs cat | grep -v -e ^// -e ^$$ | wc -l`      \
+	  py: `find . -name \*.py | xargs cat | grep -v -e '^#' -e ^$$ | wc -l`      \
 	  n: `find . -name \*.n | xargs cat | grep -v -e '^#' -e ^$$ | wc -l`
 
 
