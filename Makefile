@@ -303,7 +303,9 @@ $(NUNIT_OUTS):$(OUT)/tests/n/nunit/%.out:tests/n/nunit/%.n $(C_MAIN_EXE) $(PYTHO
 	    --runner "\"$(EXEC_PREFIX) $(C_MAIN_EXE)\"" 														 \
 	    --modules [ $(NEUTRINO_MODULES) ] 																			 \
 	    --ctrino-main-options {{ 																								 \
-	      --libraries [ $(CORE_LIBRARY_OUT) ] 																	 \
+	      --module_loader {                                                      \
+	        --libraries [ $(CORE_LIBRARY_OUT) ] 																 \
+	      }																																			 \
 	    }}`
 
 

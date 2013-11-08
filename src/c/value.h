@@ -270,6 +270,7 @@ static value_t new_moved_object(value_t target) {
   F(MethodAst,               method_ast,                _, _, X, X, _, _, _, X, _)\
   F(Methodspace,             methodspace,               _, _, X, _, _, _, _, X, X)\
   F(Module,                  module,                    _, _, X, X, _, _, _, X, _)\
+  F(ModuleLoader,            module_loader,             _, _, _, _, _, _, _, _, _)\
   F(MutableRoots,            mutable_roots,             _, _, _, _, _, _, _, X, X)\
   F(Namespace,               namespace,                 _, _, X, _, _, _, _, X, X)\
   F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _)\
@@ -290,6 +291,7 @@ static value_t new_moved_object(value_t target) {
   F(StackPiece,              stack_piece,               _, _, _, _, _, _, _, _, _)\
   F(String,                  string,                    X, X, _, X, X, _, _, _, _)\
   F(SymbolAst,               symbol_ast,                _, _, X, X, _, _, _, _, _)\
+  F(UnboundModule,           unbound_module,            _, _, X, _, _, _, _, _, _)\
   F(Unknown,                 unknown,                   _, _, X, _, _, _, _, _, _)\
   F(VoidP,                   void_p,                    _, _, _, _, X, _, _, _, _)
 
@@ -778,6 +780,10 @@ value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value,
 // Returns the binding for the given key or, if no binding is present, an
 // appropriate signal.
 value_t get_id_hash_map_at(value_t map, value_t key);
+
+// Returns the binding for the given key or, if no binding is present, the
+// specified default value.
+value_t get_id_hash_map_at_with_default(value_t map, value_t key, value_t defawlt);
 
 // Returns true iff the given map has a binding for the given key.
 bool has_id_hash_map_at(value_t map, value_t key);

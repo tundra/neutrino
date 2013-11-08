@@ -1030,6 +1030,11 @@ value_t get_id_hash_map_at(value_t map, value_t key) {
   }
 }
 
+value_t get_id_hash_map_at_with_default(value_t map, value_t key, value_t defawlt) {
+  value_t result = get_id_hash_map_at(map, key);
+  return is_signal(scNotFound, result) ? defawlt : result;
+}
+
 bool has_id_hash_map_at(value_t map, value_t key) {
   return !is_signal(scNotFound, get_id_hash_map_at(map, key));
 }

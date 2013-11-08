@@ -102,7 +102,7 @@ class ScopeVisitor(ast.Visitor):
   def visit_import(self, that):
     ident = that.ident
     stage = self.unit.get_or_create_stage(ident.stage)
-    stage.add_import(ident.path)
+    stage.add_import(ident.path, ident.path)
 
 
 # Do scope analysis, bind variables to their enclosing definitions and register

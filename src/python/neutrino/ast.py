@@ -496,6 +496,34 @@ class FunctionDeclaration(object):
     return "(function-declaration %s %s)" % (self.method.signature, self.method.body)
 
 
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "UnboundModule"))
+class UnboundModule(object):
+
+  @plankton.field('path')
+  @plankton.field('fragments')
+  def __init__(self, path, fragments):
+    self.path = path
+    self.fragments = fragments
+
+  def __str__(self):
+    return "#<unbound module %s>" % self.path
+
+
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "UnboundModuleFragment"))
+class UnboundModuleFragment(object):
+
+  @plankton.field('stage')
+  @plankton.field('imports')
+  @plankton.field('elements')
+  def __init__(self, stage, imports, elements):
+    self.stage = stage
+    self.imports = imports
+    self.elements = elements
+
+  def __str__(self):
+    return "#<unbound fragment %s>" % self.stage
+
+
 # An individual execution stage.
 class Stage(object):
 
@@ -504,6 +532,7 @@ class Stage(object):
   def __init__(self, index, module_name):
     self.index = index
     self.imports = []
+    self.import_paths = []
     self.namespace = data.Namespace({})
     self.methodspace = data.Methodspace({}, [], [])
     self.module = data.Module(self.namespace, self.methodspace, module_name)
@@ -514,8 +543,10 @@ class Stage(object):
     return "#<stage %i>" % self.index
 
   # Returns all the imports for this stage.
-  def add_import(self, value):
-    return self.imports.append(value)
+  def add_import(self, path, value):
+    if not path is None:
+      self.import_paths.append(path)
+    self.imports.append(value)
 
   # Returns this stage's namespace.
   def get_namespace(self):
@@ -540,6 +571,12 @@ class Stage(object):
       self.methodspace.add_import(Stage._BUILTIN_METHODSPACE)
     else:
       self.methodspace.add_import(previous.methodspace)
+
+  def as_unbound_module_fragment(self):
+    imports = []
+    for path in self.import_paths:
+      imports.append(path)
+    return UnboundModuleFragment(self.index, imports, None)
 
 
 # A full compilation unit.
@@ -607,7 +644,11 @@ class Unit(object):
     return visitor.visit_unit(self)
 
   def as_unbound_module(self):
-    return None
+    fragments = []
+    for (index, stage) in self.stages.iteritems():
+      fragment = stage.as_unbound_module_fragment()
+      fragments.append(fragment)
+    return UnboundModule(data.Path([self.module_name]), fragments)
 
   def __str__(self):
     stage_list = list(self.get_stages())

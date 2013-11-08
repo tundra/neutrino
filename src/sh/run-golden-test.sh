@@ -98,7 +98,7 @@ run_test() {
   check_result "$OUTPUT" "$FOUND" "$INPUT" "$COMPILE"
 }
 
-MAIN_OPTIONS="--main-options `$PLOPT --libraries [ $LIBRARY ]`"
+MAIN_OPTIONS="--main-options `$PLOPT --module_loader { --libraries [ $LIBRARY ] }`"
 
 while read LINE; do
   # Strip end-of-line comments.
