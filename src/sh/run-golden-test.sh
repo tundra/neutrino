@@ -82,6 +82,7 @@ check_result() {
     printf "  Found: '%s'\\n" "$FOUND"
     COMMAND="$4"
     printf "  Compile: $COMMAND '$INPUT' --compile `$PLOPT --modules [ $MODULES ]` --base64\\n"
+    printf "  Run: $RUN\\n"
     exit 1
   fi
 }
@@ -95,7 +96,7 @@ run_test() {
   OUTPUT="$3"
   RUN="$4"
   FOUND=$($COMPILE "$INPUT" --compile `$PLOPT --modules [ $MODULES ]` | $RUN - 2>&1 | grep "^[^#]")
-  check_result "$OUTPUT" "$FOUND" "$INPUT" "$COMPILE"
+  check_result "$OUTPUT" "$FOUND" "$INPUT" "$COMPILE" "$RUN"
 }
 
 MAIN_OPTIONS="--main-options `$PLOPT --module_loader { --libraries [ $LIBRARY ] }`"

@@ -185,7 +185,7 @@ static value_t parse_main_options(runtime_t *runtime, const char *value) {
   return runtime_plankton_deserialize(runtime, blob);
 }
 
-// Extracts the relevant data from the main options object.
+// Constructs a module loader based on the given command-line options.
 static value_t build_module_loader(runtime_t *runtime, value_t options) {
   TRY_DEF(loader, new_heap_empty_module_loader(runtime));
   value_t module_loader_options = get_options_flag_value(runtime, options,

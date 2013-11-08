@@ -19,6 +19,8 @@ value_t module_loader_validate(value_t self) {
   return success();
 }
 
+// Reads a library from the given library path and adds the modules to this
+// loaders set of available modules.
 static value_t module_loader_read_library(runtime_t *runtime, value_t self,
     value_t library_path) {
   string_t library_path_str;
