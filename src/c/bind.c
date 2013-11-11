@@ -27,7 +27,7 @@ static value_t module_loader_read_library(runtime_t *runtime, value_t self,
   get_string_contents(library_path, &library_path_str);
   TRY_DEF(data, read_file_to_blob(runtime, &library_path_str));
   TRY_DEF(library, runtime_plankton_deserialize(runtime, data));
-  if (true)
+  if (false)
     print_ln("library: %9v", library);
   return success();
 }
