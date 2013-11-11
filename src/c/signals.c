@@ -46,3 +46,13 @@ const char *get_lookup_error_cause_name(lookup_error_cause_t cause) {
       return "unknown lookup error cause";
   }
 }
+
+const char *get_system_error_cause_name(system_error_cause_t cause) {
+  switch (cause) {
+#define __GEN_CASE__(Name) case se##Name: return #Name;
+    ENUM_SYSTEM_ERROR_CAUSES(__GEN_CASE__)
+#undef __GEN_CASE__
+    default:
+      return "unknown system error cause";
+  }
+}

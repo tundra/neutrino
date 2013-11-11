@@ -314,6 +314,10 @@ static void signal_print_on(value_t value, string_buffer_t *buf) {
       string_buffer_printf(buf, "%s", get_lookup_error_cause_name(details));
       break;
     }
+    case scSystemError: {
+      string_buffer_printf(buf, "%s", get_system_error_cause_name(details));
+      break;
+    }
     default: {
       string_buffer_printf(buf, "dt@%i", details);
       break;

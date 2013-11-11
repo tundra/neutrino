@@ -159,4 +159,28 @@ static value_t new_lookup_error_signal(lookup_error_cause_t cause) {
   return new_signal_with_details(scLookupError, cause);
 }
 
+// Enumerate the causes of system error. They should be sorted except for the
+// first one, Unspecified, which gets value 0 and hence matches the case where
+// no cause is specified (since it defaults to 0).
+#define ENUM_SYSTEM_ERROR_CAUSES(F)                                            \
+  F(Unspecified)                                                               \
+  F(AllocationFailed)                                                          \
+  F(FileNotFound)
+
+// Reasons for a system error.
+typedef enum {
+  __seFirst__ = -1
+#define __GEN_ENUM__(Name) , se##Name
+  ENUM_SYSTEM_ERROR_CAUSES(__GEN_ENUM__)
+#undef __GEN_ENUM__
+} system_error_cause_t;
+
+// Returns the string representation of the cause of a system error signal.
+const char *get_system_error_cause_name(system_error_cause_t cause);
+
+// Creates a new system error signal.
+static value_t new_system_error_signal(system_error_cause_t cause) {
+  return new_signal_with_details(scSystemError, cause);
+}
+
 #endif // _SIGNALS

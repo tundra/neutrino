@@ -75,7 +75,7 @@ value_t space_init(space_t *space, const runtime_config_t *config) {
   size_t bytes = config->semispace_size_bytes + kValueSize;
   memory_block_t memory = allocator_default_malloc(bytes);
   if (memory_block_is_empty(memory))
-    return new_signal(scSystemError);
+    return new_system_error_signal(seAllocationFailed);
   // Clear the newly allocated memory to a recognizable value.
   memset(memory.memory, kBlankHeapMarker, bytes);
   address_t aligned = align_address(kValueSize, memory.memory);
