@@ -220,7 +220,7 @@ static value_t new_moved_object(value_t target) {
 //   - underscore_name: the name of the family in lower underscore case.
 //   - Cm: do the values support ordered comparison?
 //   - Id: do the values have a custom identity comparison function?
-//   - Ct: can the contents be set?
+//   - Pt: can this be read from plankton?
 //   - Sr: is this type exposed to the surface language?
 //   - Nl: does this type have a nontrivial layout, either non-value fields or
 //       variable size.
@@ -233,7 +233,7 @@ static value_t new_moved_object(value_t target) {
 //   - Ow: do objects of this family use some other objects in their
 //       implementation that they own?
 //
-// CamelName            underscore_name                 Cm Id Ct Sr Nl Fu Em Md Ow
+// CamelName            underscore_name                 Cm Id Pt Sr Nl Fu Em Md Ow
 
 // Enumerates the special species, the ones that require special handling during
 // startup.
@@ -304,7 +304,7 @@ static value_t new_moved_object(value_t target) {
 // Enum identifying the different families of heap objects.
 typedef enum {
   __ofFirst__ = -1
-  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW) \
+  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW) \
   , of##Family
   ENUM_OBJECT_FAMILIES(__DECLARE_OBJECT_FAMILY_ENUM__)
   #undef __DECLARE_OBJECT_FAMILY_ENUM__

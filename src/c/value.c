@@ -27,7 +27,7 @@ const char *get_value_domain_name(value_domain_t domain) {
 
 const char *get_object_family_name(object_family_t family) {
   switch (family) {
-#define __GEN_CASE__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)       \
+#define __GEN_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)       \
     case of##Family: return #Family;
     ENUM_OBJECT_FAMILIES(__GEN_CASE__)
 #undef __GEN_CASE__
@@ -154,7 +154,7 @@ bool in_syntax_family(value_t value) {
   if (get_value_domain(value) != vdObject)
     return false;
   switch (get_object_family(value)) {
-#define __MAKE_CASE__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)      \
+#define __MAKE_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)      \
   EM(                                                                          \
     case of##Family: return true;,                                             \
     )
@@ -1314,7 +1314,7 @@ void instance_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
   string_buffer_printf(buf, ">");
 }
 
-value_t set_instance_contents(value_t instance, runtime_t *runtime,
+value_t plankton_set_instance_contents(value_t instance, runtime_t *runtime,
     value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   set_instance_fields(instance, contents);
@@ -1408,7 +1408,12 @@ void protocol_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
   string_buffer_printf(buf, ">");
 }
 
-value_t set_protocol_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_new_protocol(runtime_t *runtime) {
+  return new_heap_protocol(runtime, afMutable, ROOT(runtime, nothing));
+}
+
+value_t plankton_set_protocol_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(name, get_id_hash_map_at(contents, RSTR(runtime, name)));
   set_protocol_display_name(object, name);
@@ -1525,14 +1530,15 @@ value_t namespace_validate(value_t self) {
   return success();
 }
 
-value_t set_namespace_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_set_namespace_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(bindings, get_id_hash_map_at(contents, RSTR(runtime, bindings)));
   set_namespace_bindings(object, bindings);
   return success();
 }
 
-static value_t new_namespace(runtime_t *runtime) {
+value_t plankton_new_namespace(runtime_t *runtime) {
   return new_heap_namespace(runtime);
 }
 
@@ -1562,7 +1568,8 @@ value_t module_validate(value_t value) {
   return success();
 }
 
-value_t set_module_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_set_module_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(namespace, get_id_hash_map_at(contents, RSTR(runtime, namespace)));
   TRY_DEF(methodspace, get_id_hash_map_at(contents, RSTR(runtime, methodspace)));
@@ -1573,7 +1580,7 @@ value_t set_module_contents(value_t object, runtime_t *runtime, value_t contents
   return success();
 }
 
-static value_t new_module(runtime_t *runtime) {
+value_t plankton_new_module(runtime_t *runtime) {
   return new_heap_module(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing),
       ROOT(runtime, nothing));
 }
@@ -1622,7 +1629,13 @@ bool is_path_empty(value_t value) {
   return is_nothing(get_path_raw_head(value));
 }
 
-value_t set_path_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_new_path(runtime_t *runtime) {
+  return new_heap_path(runtime, afMutable, ROOT(runtime, nothing),
+      ROOT(runtime, nothing));
+}
+
+value_t plankton_set_path_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(names, get_id_hash_map_at(contents, RSTR(runtime, names)));
   if (get_array_length(names) == 0) {
@@ -1707,7 +1720,12 @@ value_t identifier_validate(value_t self) {
   return success();
 }
 
-value_t set_identifier_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_new_identifier(runtime_t *runtime) {
+  return new_heap_identifier(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing));
+}
+
+value_t plankton_set_identifier_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(path, get_id_hash_map_at(contents, RSTR(runtime, path)));
   TRY_DEF(stage, get_id_hash_map_at(contents, RSTR(runtime, stage)));
@@ -1729,7 +1747,12 @@ value_t function_validate(value_t self) {
   return success();
 }
 
-value_t set_function_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_new_function(runtime_t *runtime) {
+  return new_heap_function(runtime, afMutable, ROOT(runtime, nothing));
+}
+
+value_t plankton_set_function_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(display_name, get_id_hash_map_at(contents, RSTR(runtime, display_name)));
   set_function_display_name(object, display_name);
@@ -1760,7 +1783,8 @@ value_t unknown_validate(value_t self) {
   return success();
 }
 
-value_t set_unknown_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_set_unknown_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   set_unknown_payload(object, contents);
   return success();
 }
@@ -1783,7 +1807,12 @@ FIXED_GET_MODE_IMPL(options, vmMutable);
 
 ACCESSORS_IMPL(Options, options, acInFamilyOpt, ofArray, Elements, elements);
 
-value_t set_options_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_new_options(runtime_t *runtime) {
+  return new_heap_options(runtime, ROOT(runtime, nothing));
+}
+
+value_t plankton_set_options_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(elements, get_id_hash_map_at(contents, RSTR(runtime, elements)));
   set_options_elements(object, elements);
@@ -1867,39 +1896,6 @@ static value_t add_plankton_binding(value_t map, value_t category, const char *n
   return success();
 }
 
-static value_t new_methodspace(runtime_t *runtime) {
-  return new_heap_methodspace(runtime);
-}
-
-static value_t new_protocol(runtime_t *runtime) {
-  return new_heap_protocol(runtime, afMutable, ROOT(runtime, nothing));
-}
-
-static value_t new_operation(runtime_t *runtime) {
-  return new_heap_operation(runtime, afMutable, otCall, ROOT(runtime, nothing));
-}
-
-static value_t new_function(runtime_t *runtime) {
-  return new_heap_function(runtime, afMutable, ROOT(runtime, nothing));
-}
-
-static value_t new_path(runtime_t *runtime) {
-  return new_heap_path(runtime, afMutable, ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
-}
-
-static value_t new_identifier(runtime_t *runtime) {
-  return new_heap_identifier(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing));
-}
-
-static value_t new_options(runtime_t *runtime) {
-  return new_heap_options(runtime, ROOT(runtime, nothing));
-}
-
-static value_t new_library(runtime_t *runtime) {
-  return new_heap_library(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing));
-}
-
 value_t add_plankton_factory(value_t map, value_t category, const char *name,
     factory_constructor_t constructor, runtime_t *runtime) {
   TRY_DEF(factory, new_heap_factory(runtime, constructor));
@@ -1909,15 +1905,15 @@ value_t add_plankton_factory(value_t map, value_t category, const char *name,
 value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   value_t core = RSTR(runtime, core);
   // Factories
-  TRY(add_plankton_factory(map, core, "Function", new_function, runtime));
-  TRY(add_plankton_factory(map, core, "Identifier", new_identifier, runtime));
-  TRY(add_plankton_factory(map, core, "Library", new_library, runtime));
-  TRY(add_plankton_factory(map, core, "Methodspace", new_methodspace, runtime));
-  TRY(add_plankton_factory(map, core, "Module", new_module, runtime));
-  TRY(add_plankton_factory(map, core, "Namespace", new_namespace, runtime));
-  TRY(add_plankton_factory(map, core, "Operation", new_operation, runtime));
-  TRY(add_plankton_factory(map, core, "Path", new_path, runtime));
-  TRY(add_plankton_factory(map, core, "Protocol", new_protocol, runtime));
+  TRY(add_plankton_factory(map, core, "Function", plankton_new_function, runtime));
+  TRY(add_plankton_factory(map, core, "Identifier", plankton_new_identifier, runtime));
+  TRY(add_plankton_factory(map, core, "Library", plankton_new_library, runtime));
+  TRY(add_plankton_factory(map, core, "Methodspace", plankton_new_methodspace, runtime));
+  TRY(add_plankton_factory(map, core, "Module", plankton_new_module, runtime));
+  TRY(add_plankton_factory(map, core, "Namespace", plankton_new_namespace, runtime));
+  TRY(add_plankton_factory(map, core, "Operation", plankton_new_operation, runtime));
+  TRY(add_plankton_factory(map, core, "Path", plankton_new_path, runtime));
+  TRY(add_plankton_factory(map, core, "Protocol", plankton_new_protocol, runtime));
   // Singletons
   TRY(add_plankton_binding(map, core, "ctrino", ROOT(runtime, ctrino), runtime));
   TRY(add_plankton_binding(map, core, "subject", ROOT(runtime, subject_key),
@@ -1932,7 +1928,7 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
       runtime));
   // Options
   value_t options = RSTR(runtime, options);
-  TRY(add_plankton_factory(map, options, "Options", new_options, runtime));
+  TRY(add_plankton_factory(map, options, "Options", plankton_new_options, runtime));
   return success();
 }
 

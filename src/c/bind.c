@@ -1,6 +1,7 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "alloc.h"
 #include "behavior.h"
 #include "bind.h"
 #include "file.h"
@@ -57,7 +58,12 @@ value_t library_validate(value_t self) {
   return success();
 }
 
-value_t set_library_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_new_library(runtime_t *runtime) {
+  return new_heap_library(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing));
+}
+
+value_t plankton_set_library_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(modules, get_id_hash_map_at(contents, RSTR(runtime, modules)));
   set_library_modules(object, modules);
@@ -89,7 +95,8 @@ value_t unbound_module_validate(value_t self) {
   return success();
 }
 
-value_t set_unbound_module_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_set_unbound_module_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(path, get_id_hash_map_at(contents, RSTR(runtime, path)));
   TRY_DEF(fragments, get_id_hash_map_at(contents, RSTR(runtime, fragments)));

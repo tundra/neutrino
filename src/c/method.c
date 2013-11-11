@@ -514,7 +514,12 @@ static value_t method_asts_to_methods(runtime_t *runtime, value_t method_asts) {
   E_END_TRY_FINALLY();
 }
 
-value_t set_methodspace_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_new_methodspace(runtime_t *runtime) {
+  return new_heap_methodspace(runtime);
+}
+
+value_t plankton_set_methodspace_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(raw_method_asts, get_id_hash_map_at(contents, RSTR(runtime, methods)));
   TRY_DEF(methods, method_asts_to_methods(runtime, raw_method_asts));
@@ -689,7 +694,12 @@ void operation_print_on(value_t self, string_buffer_t *buf,
   }
 }
 
-value_t set_operation_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_new_operation(runtime_t *runtime) {
+  return new_heap_operation(runtime, afMutable, otCall, ROOT(runtime, nothing));
+}
+
+value_t plankton_set_operation_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(type, get_id_hash_map_at(contents, RSTR(runtime, type)));
   TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));

@@ -181,14 +181,14 @@ value_t get_protocol(value_t value, runtime_t *runtime);
 #define OBJ_ADDR_HASH(VAL) new_integer((VAL).encoded)
 
 // Declare the behavior structs for all the families on one fell swoop.
-#define DECLARE_FAMILY_BEHAVIOR(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW) \
+#define DECLARE_FAMILY_BEHAVIOR(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW) \
 family_behavior_t k##Family##Behavior;
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 #undef DECLARE_FAMILY_BEHAVIOR
 
 // Declare the functions that implement the behaviors too, that way they can be
 // implemented wherever.
-#define __DECLARE_FAMILY_FUNCTIONS__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW) \
+#define __DECLARE_FAMILY_FUNCTIONS__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW) \
 value_t family##_validate(value_t value);                                      \
 ID(                                                                            \
   value_t family##_transient_identity_hash(value_t value,                      \
@@ -206,9 +206,12 @@ void family##_print_on(value_t value, string_buffer_t *buf,                    \
 NL(                                                                            \
   void get_##family##_layout(value_t value, object_layout_t *layout_out);,     \
   )                                                                            \
-CT(                                                                            \
-  value_t set_##family##_contents(value_t value, runtime_t *runtime,           \
+PT(                                                                            \
+  value_t plankton_set_##family##_contents(value_t value, runtime_t *runtime,  \
     value_t contents);,                                                        \
+  )                                                                            \
+PT(                                                                            \
+  value_t plankton_new_##family(runtime_t *runtime);,                          \
   )                                                                            \
 SR(                                                                            \
   value_t get_##family##_protocol(value_t value, runtime_t *runtime);,         \
