@@ -34,6 +34,7 @@
   F(methods,                    "methods")                                     \
   F(methodspace,                "methodspace")                                 \
   F(module_loader,              "module_loader")                               \
+  F(modules,                    "modules")                                     \
   F(name,                       "name")                                        \
   F(names,                      "names")                                       \
   F(namespace,                  "namespace")                                   \

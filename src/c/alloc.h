@@ -162,6 +162,9 @@ value_t new_heap_options(runtime_t *runtime, value_t elements);
 // Creates a new module loader initialized with an empty module map.
 value_t new_heap_empty_module_loader(runtime_t *runtime);
 
+// Creates a new library with the given display name and module map.
+value_t new_heap_library(runtime_t *runtime, value_t display_name, value_t modules);
+
 
 // --- P r o c e s s ---
 

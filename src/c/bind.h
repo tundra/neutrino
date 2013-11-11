@@ -22,6 +22,19 @@ value_t module_loader_process_options(runtime_t *runtime, value_t self,
     value_t options);
 
 
+// --- L i b r a r y ---
+
+static const size_t kLibrarySize = OBJECT_SIZE(2);
+static const size_t kLibraryDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kLibraryModulesOffset = OBJECT_FIELD_OFFSET(1);
+
+// The name used to identify the library in logging etc.
+ACCESSORS_DECL(library, display_name);
+
+// The map from names to unbound modules.
+ACCESSORS_DECL(library, modules);
+
+
 // --- U n b o u n d   m o d u l e ---
 
 static const size_t kUnboundModuleSize = OBJECT_SIZE(2);

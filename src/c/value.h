@@ -263,6 +263,7 @@ static value_t new_moved_object(value_t target) {
   F(Key,                     key,                       X, _, _, X, _, _, _, X, _)\
   F(Lambda,                  lambda,                    _, _, _, X, _, _, _, X, X)\
   F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, _, _)\
+  F(Library,                 library,                   _, _, X, _, _, _, _, _, _)\
   F(LiteralAst,              literal_ast,               _, _, X, X, _, _, X, _, _)\
   F(LocalDeclarationAst,     local_declaration_ast,     _, _, X, X, _, _, X, _, _)\
   F(LocalVariableAst,        local_variable_ast,        _, _, X, X, _, _, X, _, _)\
