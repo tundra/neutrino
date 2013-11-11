@@ -496,7 +496,7 @@ class FunctionDeclaration(object):
     return "(function-declaration %s %s)" % (self.method.signature, self.method.body)
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "UnboundModule"))
+@plankton.serializable(plankton.EnvironmentReference.path("core", "UnboundModule"))
 class UnboundModule(object):
 
   @plankton.field('path')
@@ -509,7 +509,7 @@ class UnboundModule(object):
     return "#<unbound module %s>" % self.path
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "UnboundModuleFragment"))
+@plankton.serializable(plankton.EnvironmentReference.path("core", "UnboundModuleFragment"))
 class UnboundModuleFragment(object):
 
   @plankton.field('stage')
@@ -576,7 +576,7 @@ class Stage(object):
     imports = []
     for path in self.import_paths:
       imports.append(path)
-    return UnboundModuleFragment(self.index, imports, None)
+    return UnboundModuleFragment(self.index, imports, [])
 
 
 # A full compilation unit.

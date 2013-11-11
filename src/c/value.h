@@ -293,6 +293,7 @@ static value_t new_moved_object(value_t target) {
   F(String,                  string,                    X, X, _, X, X, _, _, _, _)\
   F(SymbolAst,               symbol_ast,                _, _, X, X, _, _, _, _, _)\
   F(UnboundModule,           unbound_module,            _, _, X, _, _, _, _, _, _)\
+  F(UnboundModuleFragment,   unbound_module_fragment,   _, _, X, _, _, _, _, _, _)\
   F(Unknown,                 unknown,                   _, _, X, _, _, _, _, _, _)\
   F(VoidP,                   void_p,                    _, _, _, _, X, _, _, _, _)
 
