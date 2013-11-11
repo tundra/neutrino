@@ -28,7 +28,10 @@ static value_t module_loader_read_library(runtime_t *runtime, value_t self,
   get_string_contents(library_path, &library_path_str);
   TRY_DEF(data, read_file_to_blob(runtime, &library_path_str));
   TRY_DEF(library, runtime_plankton_deserialize(runtime, data));
-  if (false)
+  if (!in_family(ofLibrary, library))
+    return new_invalid_input_signal();
+  set_library_display_name(library, library_path);
+  if (true)
     print_ln("library: %9v", library);
   return success();
 }
@@ -85,7 +88,6 @@ void library_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
 // --- U n b o u n d   m o d u l e ---
 
 FIXED_GET_MODE_IMPL(unbound_module, vmMutable);
-TRIVIAL_PRINT_ON_IMPL(UnboundModule, unbound_module);
 
 ACCESSORS_IMPL(UnboundModule, unbound_module, acInFamilyOpt, ofPath, Path, path);
 ACCESSORS_IMPL(UnboundModule, unbound_module, acInFamilyOpt, ofArray, Fragments, fragments);
@@ -93,6 +95,11 @@ ACCESSORS_IMPL(UnboundModule, unbound_module, acInFamilyOpt, ofArray, Fragments,
 value_t unbound_module_validate(value_t self) {
   VALIDATE_FAMILY(ofUnboundModule, self);
   return success();
+}
+
+value_t plankton_new_unbound_module(runtime_t *runtime) {
+  return new_heap_unbound_module(runtime, ROOT(runtime, nothing),
+      ROOT(runtime, nothing));
 }
 
 value_t plankton_set_unbound_module_contents(value_t object, runtime_t *runtime,
@@ -103,4 +110,63 @@ value_t plankton_set_unbound_module_contents(value_t object, runtime_t *runtime,
   set_unbound_module_path(object, path);
   set_unbound_module_fragments(object, fragments);
   return success();
+}
+
+void unbound_module_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<unbound_module(");
+  value_t path = get_unbound_module_path(value);
+  value_print_inner_on(path, buf, flags, depth - 1);
+  string_buffer_printf(buf, ") ");
+  value_t fragments = get_unbound_module_fragments(value);
+  value_print_inner_on(fragments, buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
+
+// --- U n b o u n d   m o d u l e   f r a g m e n t ---
+
+FIXED_GET_MODE_IMPL(unbound_module_fragment, vmMutable);
+
+ACCESSORS_IMPL(UnboundModuleFragment, unbound_module_fragment, acNoCheck, 0,
+    Stage, stage);
+ACCESSORS_IMPL(UnboundModuleFragment, unbound_module_fragment, acInFamilyOpt,
+    ofArray, Imports, imports);
+ACCESSORS_IMPL(UnboundModuleFragment, unbound_module_fragment, acInFamilyOpt,
+    ofArray, Elements, elements);
+
+value_t unbound_module_fragment_validate(value_t self) {
+  VALIDATE_FAMILY(ofUnboundModuleFragment, self);
+  return success();
+}
+
+value_t plankton_new_unbound_module_fragment(runtime_t *runtime) {
+  return new_heap_unbound_module_fragment(runtime, ROOT(runtime, nothing),
+      ROOT(runtime, nothing), ROOT(runtime, nothing));
+}
+
+value_t plankton_set_unbound_module_fragment_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(stage, get_id_hash_map_at(contents, RSTR(runtime, stage)));
+  TRY_DEF(imports, get_id_hash_map_at(contents, RSTR(runtime, imports)));
+  TRY_DEF(elements, get_id_hash_map_at(contents, RSTR(runtime, elements)));
+  set_unbound_module_fragment_stage(object, stage);
+  set_unbound_module_fragment_imports(object, imports);
+  set_unbound_module_fragment_elements(object, elements);
+  return success();
+}
+
+void unbound_module_fragment_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<unbound_module_fragment(");
+  value_t stage = get_unbound_module_fragment_stage(value);
+  value_print_inner_on(stage, buf, flags, depth - 1);
+  string_buffer_printf(buf, ") imports: ");
+  value_t imports = get_unbound_module_fragment_imports(value);
+  value_print_inner_on(imports, buf, flags, depth - 1);
+  string_buffer_printf(buf, ") elements: ");
+  value_t elements = get_unbound_module_fragment_elements(value);
+  value_print_inner_on(elements, buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
 }

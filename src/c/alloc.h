@@ -162,6 +162,13 @@ value_t new_heap_options(runtime_t *runtime, value_t elements);
 // Creates a new module loader initialized with an empty module map.
 value_t new_heap_empty_module_loader(runtime_t *runtime);
 
+// Creates a new unbound module with the given path and fragments.
+value_t new_heap_unbound_module(runtime_t *runtime, value_t path, value_t fragments);
+
+// Creates a new unbound module fragment with the given attributes.
+value_t new_heap_unbound_module_fragment(runtime_t *runtime, value_t stage,
+    value_t imports, value_t elements);
+
 // Creates a new library with the given display name and module map.
 value_t new_heap_library(runtime_t *runtime, value_t display_name, value_t modules);
 

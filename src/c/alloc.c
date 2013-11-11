@@ -359,6 +359,27 @@ value_t new_heap_empty_module_loader(runtime_t *runtime) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_unbound_module(runtime_t *runtime, value_t path, value_t fragments) {
+  size_t size = kUnboundModuleSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, unbound_module_species)));
+  set_unbound_module_path(result, path);
+  set_unbound_module_fragments(result, fragments);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_unbound_module_fragment(runtime_t *runtime, value_t stage,
+    value_t imports, value_t elements) {
+  size_t size = kUnboundModuleFragmentSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, unbound_module_fragment_species)));
+  set_unbound_module_fragment_stage(result, stage);
+  set_unbound_module_fragment_imports(result, imports);
+  set_unbound_module_fragment_elements(result, elements);
+  return post_create_sanity_check(result, size);
+}
+
+
 value_t new_heap_library(runtime_t *runtime, value_t display_name, value_t modules) {
   size_t size = kLibrarySize;
   TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, library_species)));

@@ -1914,6 +1914,8 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, core, "Operation", plankton_new_operation, runtime));
   TRY(add_plankton_factory(map, core, "Path", plankton_new_path, runtime));
   TRY(add_plankton_factory(map, core, "Protocol", plankton_new_protocol, runtime));
+  TRY(add_plankton_factory(map, core, "UnboundModule", plankton_new_unbound_module, runtime));
+  TRY(add_plankton_factory(map, core, "UnboundModuleFragment", plankton_new_unbound_module_fragment, runtime));
   // Singletons
   TRY(add_plankton_binding(map, core, "ctrino", ROOT(runtime, ctrino), runtime));
   TRY(add_plankton_binding(map, core, "subject", ROOT(runtime, subject_key),

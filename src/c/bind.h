@@ -47,4 +47,22 @@ ACCESSORS_DECL(unbound_module, path);
 // The fragments that make up this module
 ACCESSORS_DECL(unbound_module, fragments);
 
+
+// --- U n b o u n d   m o d u l e   f r a g m e n t ---
+
+static const size_t kUnboundModuleFragmentSize = OBJECT_SIZE(3);
+static const size_t kUnboundModuleFragmentStageOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kUnboundModuleFragmentImportsOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kUnboundModuleFragmentElementsOffset = OBJECT_FIELD_OFFSET(2);
+
+// Which stage does this fragment represent?
+ACCESSORS_DECL(unbound_module_fragment, stage);
+
+// List of this fragment's imports.
+ACCESSORS_DECL(unbound_module_fragment, imports);
+
+// The elements/declarations that implement this fragment.
+ACCESSORS_DECL(unbound_module_fragment, elements);
+
+
 #endif // _BIND
