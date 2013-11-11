@@ -129,7 +129,7 @@ size_t *calc_parameter_ast_ordering(reusable_scratch_memory_t *scratch,
 }
 
 // Forward declare all the emit methods.
-#define __EMIT_SYNTAX_FAMILY_EMIT__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)\
+#define __EMIT_SYNTAX_FAMILY_EMIT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\
     EM(                                                                            \
       value_t emit_##family(value_t, assembler_t *);,                              \
       )
@@ -156,11 +156,12 @@ void literal_ast_print_on(value_t value, string_buffer_t *buf,
   string_buffer_printf(buf, ">");
 }
 
-static value_t new_literal_ast(runtime_t *runtime) {
+value_t plankton_new_literal_ast(runtime_t *runtime) {
   return new_heap_literal_ast(runtime, ROOT(runtime, null));
 }
 
-value_t set_literal_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_set_literal_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
   set_literal_ast_value(object, value);
@@ -204,14 +205,15 @@ void array_ast_print_on(value_t value, string_buffer_t *buf,
   string_buffer_printf(buf, ">");
 }
 
-value_t set_array_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_set_array_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(elements, get_id_hash_map_at(contents, RSTR(runtime, elements)));
   set_array_ast_elements(object, elements);
   return success();
 }
 
-static value_t new_array_ast(runtime_t *runtime) {
+value_t plankton_new_array_ast(runtime_t *runtime) {
   return new_heap_array_ast(runtime, ROOT(runtime, nothing));
 }
 
@@ -259,7 +261,8 @@ value_t invocation_ast_validate(value_t value) {
   return success();
 }
 
-value_t set_invocation_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_set_invocation_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(arguments, get_id_hash_map_at(contents, RSTR(runtime, arguments)));
   TRY_DEF(methodspace, get_id_hash_map_at(contents, RSTR(runtime, methodspace)));
@@ -268,7 +271,7 @@ value_t set_invocation_ast_contents(value_t object, runtime_t *runtime, value_t 
   return success();
 }
 
-static value_t new_invocation_ast(runtime_t *runtime) {
+value_t plankton_new_invocation_ast(runtime_t *runtime) {
   return new_heap_invocation_ast(runtime, ROOT(runtime, nothing),
       ROOT(runtime, nothing));
 }
@@ -289,7 +292,8 @@ value_t argument_ast_validate(value_t value) {
   return success();
 }
 
-value_t set_argument_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_set_argument_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(tag, get_id_hash_map_at(contents, RSTR(runtime, tag)));
   TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
@@ -298,7 +302,7 @@ value_t set_argument_ast_contents(value_t object, runtime_t *runtime, value_t co
   return success();
 }
 
-static value_t new_argument_ast(runtime_t *runtime) {
+value_t plankton_new_argument_ast(runtime_t *runtime) {
   return new_heap_argument_ast(runtime, ROOT(runtime, nothing),
       ROOT(runtime, nothing));
 }
@@ -348,7 +352,7 @@ void sequence_ast_print_on(value_t value, string_buffer_t *buf,
   string_buffer_printf(buf, ">");
 }
 
-value_t set_sequence_ast_contents(value_t object, runtime_t *runtime,
+value_t plankton_set_sequence_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(values, get_id_hash_map_at(contents, RSTR(runtime, values)));
@@ -356,7 +360,7 @@ value_t set_sequence_ast_contents(value_t object, runtime_t *runtime,
   return success();
 }
 
-static value_t new_sequence_ast(runtime_t *runtime) {
+value_t plankton_new_sequence_ast(runtime_t *runtime) {
   return new_heap_sequence_ast(runtime, ROOT(runtime, empty_array));
 }
 
@@ -412,8 +416,8 @@ void local_declaration_ast_print_on(value_t value, string_buffer_t *buf,
   string_buffer_printf(buf, ">");
 }
 
-value_t set_local_declaration_ast_contents(value_t object, runtime_t *runtime,
-    value_t contents) {
+value_t plankton_set_local_declaration_ast_contents(value_t object,
+    runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(symbol, get_id_hash_map_at(contents, RSTR(runtime, symbol)));
   TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
@@ -424,7 +428,7 @@ value_t set_local_declaration_ast_contents(value_t object, runtime_t *runtime,
   return success();
 }
 
-static value_t new_local_declaration_ast(runtime_t *runtime) {
+value_t plankton_new_local_declaration_ast(runtime_t *runtime) {
   return new_heap_local_declaration_ast(runtime, ROOT(runtime, nothing),
       ROOT(runtime, nothing), ROOT(runtime, nothing));
 }
@@ -486,15 +490,15 @@ void local_variable_ast_print_on(value_t value, string_buffer_t *buf,
   string_buffer_printf(buf, ">");
 }
 
-value_t set_local_variable_ast_contents(value_t object, runtime_t *runtime,
-    value_t contents) {
+value_t plankton_set_local_variable_ast_contents(value_t object,
+    runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(symbol, get_id_hash_map_at(contents, RSTR(runtime, symbol)));
   set_local_variable_ast_symbol(object, symbol);
   return success();
 }
 
-static value_t new_local_variable_ast(runtime_t *runtime) {
+value_t plankton_new_local_variable_ast(runtime_t *runtime) {
   return new_heap_local_variable_ast(runtime, ROOT(runtime, nothing));
 }
 
@@ -523,8 +527,8 @@ value_t namespace_variable_ast_validate(value_t self) {
   return success();
 }
 
-value_t set_namespace_variable_ast_contents(value_t object, runtime_t *runtime,
-    value_t contents) {
+value_t plankton_set_namespace_variable_ast_contents(value_t object,
+    runtime_t *runtime, value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(name, get_id_hash_map_at(contents, RSTR(runtime, name)));
   TRY_DEF(namespace, get_id_hash_map_at(contents, RSTR(runtime, namespace)));
@@ -559,14 +563,15 @@ void symbol_ast_print_on(value_t value, string_buffer_t *buf,
   string_buffer_printf(buf, ">");
 }
 
-value_t set_symbol_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_set_symbol_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(name, get_id_hash_map_at(contents, RSTR(runtime, name)));
   set_symbol_ast_name(object, name);
   return success();
 }
 
-static value_t new_symbol_ast(runtime_t *runtime) {
+value_t plankton_new_symbol_ast(runtime_t *runtime) {
   return new_heap_symbol_ast(runtime, ROOT(runtime, nothing));
 }
 
@@ -734,14 +739,15 @@ value_t lambda_ast_validate(value_t self) {
   return success();
 }
 
-value_t set_lambda_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_set_lambda_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(method, get_id_hash_map_at(contents, RSTR(runtime, method)));
   set_lambda_ast_method(object, method);
   return success();
 }
 
-static value_t new_lambda_ast(runtime_t *runtime) {
+value_t plankton_new_lambda_ast(runtime_t *runtime) {
   return new_heap_lambda_ast(runtime, ROOT(runtime, nothing));
 }
 
@@ -766,7 +772,8 @@ value_t parameter_ast_validate(value_t self) {
   return success();
 }
 
-value_t set_parameter_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_set_parameter_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(symbol, get_id_hash_map_at(contents, RSTR(runtime, symbol)));
   TRY_DEF(tags, get_id_hash_map_at(contents, RSTR(runtime, tags)));
@@ -777,7 +784,7 @@ value_t set_parameter_ast_contents(value_t object, runtime_t *runtime, value_t c
   return success();
 }
 
-static value_t new_parameter_ast(runtime_t *runtime) {
+value_t plankton_new_parameter_ast(runtime_t *runtime) {
   return new_heap_parameter_ast(runtime, ROOT(runtime, nothing),
       ROOT(runtime, nothing), ROOT(runtime, nothing));
 }
@@ -798,7 +805,7 @@ value_t guard_ast_validate(value_t self) {
   return success();
 }
 
-value_t set_guard_ast_contents(value_t object, runtime_t *runtime,
+value_t plankton_set_guard_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(type_str, get_id_hash_map_at(contents, RSTR(runtime, type)));
@@ -819,7 +826,7 @@ value_t set_guard_ast_contents(value_t object, runtime_t *runtime,
   return success();
 }
 
-static value_t new_guard_ast(runtime_t *runtime) {
+value_t plankton_new_guard_ast(runtime_t *runtime) {
   return new_heap_guard_ast(runtime, gtAny, ROOT(runtime, nothing));
 }
 
@@ -840,14 +847,15 @@ value_t signature_ast_validate(value_t self) {
   return success();
 }
 
-value_t set_signature_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_set_signature_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(parameters, get_id_hash_map_at(contents, RSTR(runtime, parameters)));
   set_signature_ast_parameters(object, parameters);
   return success();
 }
 
-static value_t new_signature_ast(runtime_t *runtime) {
+value_t plankton_new_signature_ast(runtime_t *runtime) {
   return new_heap_signature_ast(runtime, ROOT(runtime, nothing));
 }
 
@@ -868,7 +876,8 @@ value_t method_ast_validate(value_t self) {
   return success();
 }
 
-value_t set_method_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_set_method_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(signature, get_id_hash_map_at(contents, RSTR(runtime, signature)));
   TRY_DEF(body, get_id_hash_map_at(contents, RSTR(runtime, body)));
@@ -877,7 +886,7 @@ value_t set_method_ast_contents(value_t object, runtime_t *runtime, value_t cont
   return success();
 }
 
-static value_t new_method_ast(runtime_t *runtime) {
+value_t plankton_new_method_ast(runtime_t *runtime) {
   return new_heap_method_ast(runtime, ROOT(runtime, nothing),
       ROOT(runtime, nothing));
 }
@@ -895,14 +904,15 @@ value_t program_ast_validate(value_t self) {
   return success();
 }
 
-value_t set_program_ast_contents(value_t object, runtime_t *runtime, value_t contents) {
+value_t plankton_set_program_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(entry_point, get_id_hash_map_at(contents, RSTR(runtime, entry_point)));
   set_program_ast_entry_point(object, entry_point);
   return success();
 }
 
-static value_t new_program_ast(runtime_t *runtime) {
+value_t plankton_new_program_ast(runtime_t *runtime) {
   return new_heap_program_ast(runtime, ROOT(runtime, nothing));
 }
 
@@ -916,7 +926,7 @@ value_t emit_value(value_t value, assembler_t *assm) {
 #define __EMIT_SYNTAX_FAMILY_CASE_HELPER__(Family, family)                     \
     case of##Family:                                                           \
       return emit_##family(value, assm);
-#define __EMIT_SYNTAX_FAMILY_CASE__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)\
+#define __EMIT_SYNTAX_FAMILY_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\
     EM(                                                                        \
       __EMIT_SYNTAX_FAMILY_CASE_HELPER__(Family, family),                      \
       )
@@ -933,20 +943,20 @@ value_t emit_value(value_t value, assembler_t *assm) {
 
 value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   value_t ast = RSTR(runtime, ast);
-  TRY(add_plankton_factory(map, ast, "Argument", new_argument_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "Array", new_array_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "Guard", new_guard_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "Invocation", new_invocation_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "Lambda", new_lambda_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "Literal", new_literal_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "LocalDeclaration", new_local_declaration_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "LocalVariable", new_local_variable_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "Method", new_method_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Argument", plankton_new_argument_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Array", plankton_new_array_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Guard", plankton_new_guard_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Invocation", plankton_new_invocation_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Lambda", plankton_new_lambda_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Literal", plankton_new_literal_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "LocalDeclaration", plankton_new_local_declaration_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "LocalVariable", plankton_new_local_variable_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Method", plankton_new_method_ast, runtime));
   TRY(add_plankton_factory(map, ast, "NamespaceVariable", new_namespace_variable_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "Parameter", new_parameter_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "Program", new_program_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "Sequence", new_sequence_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "Signature", new_signature_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "Symbol", new_symbol_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Parameter", plankton_new_parameter_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Program", plankton_new_program_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Sequence", plankton_new_sequence_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Signature", plankton_new_signature_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Symbol", plankton_new_symbol_ast, runtime));
   return success();
 }

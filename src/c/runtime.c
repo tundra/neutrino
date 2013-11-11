@@ -48,7 +48,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
       runtime, &k##Family##Behavior, vmFrozen, rk_fluid_##family##_species));  \
   TRY_SET(RAW_ROOT(roots, deep_frozen_##family##_species), new_heap_modal_species(\
       runtime, &k##Family##Behavior, vmDeepFrozen, rk_fluid_##family##_species));
-#define __CREATE_OTHER_SPECIES__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)\
+#define __CREATE_OTHER_SPECIES__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\
   MD(__CREATE_MODAL_SPECIES__(Family, family),__CREATE_COMPACT_SPECIES__(Family, family))
   ENUM_OTHER_OBJECT_FAMILIES(__CREATE_OTHER_SPECIES__)
 #undef __CREATE_OTHER_SPECIES__
@@ -95,7 +95,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, ctrino), new_heap_ctrino(runtime));
 
   // Generate initialization for the per-family protocols.
-#define __CREATE_FAMILY_PROTOCOL__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)\
+#define __CREATE_FAMILY_PROTOCOL__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\
   SR(                                                                          \
     TRY_SET(RAW_ROOT(roots, family##_protocol), new_heap_protocol(runtime, afFreeze, null));,\
     )
@@ -150,7 +150,7 @@ value_t roots_validate(value_t roots) {
   } while (false)
 
   // Generate validation for species.
-#define __VALIDATE_PER_FAMILY_FIELDS__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)\
+#define __VALIDATE_PER_FAMILY_FIELDS__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\
   MD(                                                                          \
     VALIDATE_ALL_MODAL_SPECIES(of##Family, family),                            \
     VALIDATE_SPECIES(of##Family, RAW_ROOT(roots, family##_species)));          \

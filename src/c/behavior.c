@@ -16,7 +16,7 @@
 // Is the given family in a modal division?
 static bool in_modal_division(object_family_t family) {
   switch (family) {
-#define __GEN_CASE__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW)       \
+#define __GEN_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)       \
     MD(                                                                        \
       case of##Family: return true;,                                           \
       )
@@ -81,7 +81,7 @@ static void get_##family##_layout(value_t value, object_layout_t *layout_out) {\
 
 // Generate all the trivial layout functions since we know what they'll look
 // like.
-#define __DEFINE_TRIVIAL_LAYOUT_FUNCTION__(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW) \
+#define __DEFINE_TRIVIAL_LAYOUT_FUNCTION__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW) \
 NL(                                                                            \
   ,                                                                            \
   __TRIVIAL_LAYOUT_FUNCTION__(Family, family))
@@ -431,7 +431,7 @@ value_t set_object_contents(runtime_t *runtime, value_t object, value_t payload)
 }
 
 // A function compatible with set_contents that always returns unsupported.
-static value_t set_contents_unsupported(value_t value, runtime_t *runtime,
+static value_t plankton_set_contents_unsupported(value_t value, runtime_t *runtime,
     value_t contents) {
   return new_unsupported_behavior_signal(vdObject, get_object_family(value),
       ubSetContents);
@@ -468,7 +468,7 @@ static value_t get_internal_object_protocol(value_t self, runtime_t *runtime) {
 // Define all the family behaviors in one go. Because of this, as soon as you
 // add a new object type you'll get errors for all the behaviors you need to
 // implement.
-#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, CM, ID, CT, SR, NL, FU, EM, MD, OW) \
+#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW) \
 family_behavior_t k##Family##Behavior = {                                      \
   of##Family,                                                                  \
   &family##_validate,                                                          \
@@ -483,9 +483,9 @@ family_behavior_t k##Family##Behavior = {                                      \
     NULL),                                                                     \
   &family##_print_on,                                                          \
   &get_##family##_layout,                                                      \
-  CT(                                                                          \
-    &set_##family##_contents,                                                  \
-    &set_contents_unsupported),                                                \
+  PT(                                                                          \
+    &plankton_set_##family##_contents,                                         \
+    &plankton_set_contents_unsupported),                                       \
   SR(                                                                          \
     &get_##family##_protocol,                                                  \
     &get_internal_object_protocol),                                            \
