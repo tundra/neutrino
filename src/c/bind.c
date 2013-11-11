@@ -28,7 +28,7 @@ static value_t module_loader_read_library(runtime_t *runtime, value_t self,
   TRY_DEF(data, read_file_to_blob(runtime, &library_path_str));
   TRY_DEF(library, runtime_plankton_deserialize(runtime, data));
   if (false)
-    print_ln("library: %v", library);
+    print_ln("library: %9v", library);
   return success();
 }
 
@@ -42,6 +42,37 @@ value_t module_loader_process_options(runtime_t *runtime, value_t self,
     TRY(module_loader_read_library(runtime, self, library_path));
   }
   return success();
+}
+
+
+// --- L i b r a r y ---
+
+FIXED_GET_MODE_IMPL(library, vmMutable);
+
+ACCESSORS_IMPL(Library, library, acNoCheck, 0, DisplayName, display_name);
+ACCESSORS_IMPL(Library, library, acInFamilyOpt, ofIdHashMap, Modules, modules);
+
+value_t library_validate(value_t self) {
+  VALIDATE_FAMILY(ofLibrary, self);
+  return success();
+}
+
+value_t set_library_contents(value_t object, runtime_t *runtime, value_t contents) {
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  TRY_DEF(modules, get_id_hash_map_at(contents, RSTR(runtime, modules)));
+  set_library_modules(object, modules);
+  return success();
+}
+
+void library_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<library(");
+  value_t display_name = get_library_display_name(value);
+  value_print_inner_on(display_name, buf, flags, depth - 1);
+  string_buffer_printf(buf, ") ");
+  value_t modules = get_library_modules(value);
+  value_print_inner_on(modules, buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
 }
 
 

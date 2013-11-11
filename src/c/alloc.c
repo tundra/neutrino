@@ -359,6 +359,14 @@ value_t new_heap_empty_module_loader(runtime_t *runtime) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_library(runtime_t *runtime, value_t display_name, value_t modules) {
+  size_t size = kLibrarySize;
+  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, library_species)));
+  set_library_display_name(result, display_name);
+  set_library_modules(result, modules);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- P r o c e s s ---
 
