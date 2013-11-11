@@ -31,7 +31,7 @@ static value_t module_loader_read_library(runtime_t *runtime, value_t self,
   if (!in_family(ofLibrary, library))
     return new_invalid_input_signal();
   set_library_display_name(library, library_path);
-  if (true)
+  if (false)
     print_ln("library: %9v", library);
   return success();
 }
