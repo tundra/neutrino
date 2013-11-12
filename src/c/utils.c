@@ -63,6 +63,7 @@ bool string_equals_cstr(string_t *a, const char *str) {
 }
 
 void string_hint_to_c_str(string_hint_t hint, char c_str_out[5]) {
+  // Memcpy, schmemcpy.
   c_str_out[0] = hint.value[0];
   c_str_out[1] = hint.value[1];
   c_str_out[2] = hint.value[2];

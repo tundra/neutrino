@@ -14,9 +14,9 @@
 // Creates a new string hint from a literal C string.
 #define STRING_HINT(str) ((string_hint_t) {{                                   \
   ((__STATIC_STRLEN__(str) == 0) ? '\0' : str[0]),                             \
-  ((__STATIC_STRLEN__(str) <= 0) ? '\0' : str[1]),                             \
-  ((__STATIC_STRLEN__(str) <= 1) ? '\0' : str[2]),                             \
-  ((__STATIC_STRLEN__(str) <= 2) ? '\0' : str[3]),                             \
+  ((__STATIC_STRLEN__(str) <= 1) ? '\0' : str[1]),                             \
+  ((__STATIC_STRLEN__(str) <= 2) ? '\0' : str[2]),                             \
+  ((__STATIC_STRLEN__(str) <= 3) ? '\0' : str[3]),                             \
 }})
 
 

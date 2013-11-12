@@ -198,7 +198,7 @@ static value_t new_system_error_signal(system_error_cause_t cause) {
 
 // Creates a new not-found signal. Not-found is a very generic and
 // non-informative signal so it should be caught and converted quickly while
-// the context gives the information needed to understand. If it indicates an
+// the context gives the information needed to understand it. If it indicates an
 // error that should be propagated it should still be caught and then converted
 // to a more informative signal.
 static value_t new_not_found_signal() {
