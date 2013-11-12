@@ -7,6 +7,7 @@
 #include "runtime-inl.h"
 #include "syntax.h"
 #include "try-inl.h"
+#include "utils-inl.h"
 #include "value-inl.h"
 
 
@@ -162,8 +163,7 @@ value_t plankton_new_literal_ast(runtime_t *runtime) {
 
 value_t plankton_set_literal_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
+  UNPACK_PLANKTON_MAP(contents, value);
   set_literal_ast_value(object, value);
   return success();
 }
@@ -207,8 +207,7 @@ void array_ast_print_on(value_t value, string_buffer_t *buf,
 
 value_t plankton_set_array_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(elements, get_id_hash_map_at(contents, RSTR(runtime, elements)));
+  UNPACK_PLANKTON_MAP(contents, elements);
   set_array_ast_elements(object, elements);
   return success();
 }
@@ -263,9 +262,7 @@ value_t invocation_ast_validate(value_t value) {
 
 value_t plankton_set_invocation_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(arguments, get_id_hash_map_at(contents, RSTR(runtime, arguments)));
-  TRY_DEF(methodspace, get_id_hash_map_at(contents, RSTR(runtime, methodspace)));
+  UNPACK_PLANKTON_MAP(contents, arguments, methodspace);
   set_invocation_ast_arguments(object, arguments);
   set_invocation_ast_methodspace(object, methodspace);
   return success();
@@ -294,9 +291,7 @@ value_t argument_ast_validate(value_t value) {
 
 value_t plankton_set_argument_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(tag, get_id_hash_map_at(contents, RSTR(runtime, tag)));
-  TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
+  UNPACK_PLANKTON_MAP(contents, tag, value);
   set_argument_ast_tag(object, tag);
   set_argument_ast_value(object, value);
   return success();
@@ -354,8 +349,7 @@ void sequence_ast_print_on(value_t value, string_buffer_t *buf,
 
 value_t plankton_set_sequence_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(values, get_id_hash_map_at(contents, RSTR(runtime, values)));
+  UNPACK_PLANKTON_MAP(contents, values);
   set_sequence_ast_values(object, values);
   return success();
 }
@@ -418,10 +412,7 @@ void local_declaration_ast_print_on(value_t value, string_buffer_t *buf,
 
 value_t plankton_set_local_declaration_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(symbol, get_id_hash_map_at(contents, RSTR(runtime, symbol)));
-  TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
-  TRY_DEF(body, get_id_hash_map_at(contents, RSTR(runtime, body)));
+  UNPACK_PLANKTON_MAP(contents, symbol, value, body);
   set_local_declaration_ast_symbol(object, symbol);
   set_local_declaration_ast_value(object, value);
   set_local_declaration_ast_body(object, body);
@@ -492,8 +483,7 @@ void local_variable_ast_print_on(value_t value, string_buffer_t *buf,
 
 value_t plankton_set_local_variable_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(symbol, get_id_hash_map_at(contents, RSTR(runtime, symbol)));
+  UNPACK_PLANKTON_MAP(contents, symbol);
   set_local_variable_ast_symbol(object, symbol);
   return success();
 }
@@ -529,9 +519,7 @@ value_t namespace_variable_ast_validate(value_t self) {
 
 value_t plankton_set_namespace_variable_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(name, get_id_hash_map_at(contents, RSTR(runtime, name)));
-  TRY_DEF(namespace, get_id_hash_map_at(contents, RSTR(runtime, namespace)));
+  UNPACK_PLANKTON_MAP(contents, name, namespace);
   set_namespace_variable_ast_name(object, name);
   set_namespace_variable_ast_namespace(object, namespace);
   return success();
@@ -565,8 +553,7 @@ void symbol_ast_print_on(value_t value, string_buffer_t *buf,
 
 value_t plankton_set_symbol_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(name, get_id_hash_map_at(contents, RSTR(runtime, name)));
+  UNPACK_PLANKTON_MAP(contents, name);
   set_symbol_ast_name(object, name);
   return success();
 }
@@ -741,8 +728,7 @@ value_t lambda_ast_validate(value_t self) {
 
 value_t plankton_set_lambda_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(method, get_id_hash_map_at(contents, RSTR(runtime, method)));
+  UNPACK_PLANKTON_MAP(contents, method);
   set_lambda_ast_method(object, method);
   return success();
 }
@@ -774,10 +760,7 @@ value_t parameter_ast_validate(value_t self) {
 
 value_t plankton_set_parameter_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(symbol, get_id_hash_map_at(contents, RSTR(runtime, symbol)));
-  TRY_DEF(tags, get_id_hash_map_at(contents, RSTR(runtime, tags)));
-  TRY_DEF(guard, get_id_hash_map_at(contents, RSTR(runtime, guard)));
+  UNPACK_PLANKTON_MAP(contents, symbol, tags, guard);
   set_parameter_ast_symbol(object, symbol);
   set_parameter_ast_tags(object, tags);
   set_parameter_ast_guard(object, guard);
@@ -807,21 +790,19 @@ value_t guard_ast_validate(value_t self) {
 
 value_t plankton_set_guard_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(type_str, get_id_hash_map_at(contents, RSTR(runtime, type)));
-  TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
-  guard_type_t type;
+  UNPACK_PLANKTON_MAP(contents, type, value);
+  guard_type_t type_enum;
   // Maybe passing an integer enum will be good enough? Or does that conflict
   // with being self-describing?
-  EXPECT_FAMILY(scInvalidInput, ofString, type_str);
-  char type_char = get_string_chars(type_str)[0];
+  EXPECT_FAMILY(scInvalidInput, ofString, type);
+  char type_char = get_string_chars(type)[0];
   switch (type_char) {
-    case '=': type = gtEq; break;
-    case 'i': type = gtIs; break;
-    case '*': type = gtAny; break;
+    case '=': type_enum = gtEq; break;
+    case 'i': type_enum = gtIs; break;
+    case '*': type_enum = gtAny; break;
     default: return new_invalid_input_signal();
   }
-  set_guard_ast_type(object, type);
+  set_guard_ast_type(object, type_enum);
   set_guard_ast_value(object, value);
   return success();
 }
@@ -849,8 +830,7 @@ value_t signature_ast_validate(value_t self) {
 
 value_t plankton_set_signature_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(parameters, get_id_hash_map_at(contents, RSTR(runtime, parameters)));
+  UNPACK_PLANKTON_MAP(contents, parameters);
   set_signature_ast_parameters(object, parameters);
   return success();
 }
@@ -878,9 +858,7 @@ value_t method_ast_validate(value_t self) {
 
 value_t plankton_set_method_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(signature, get_id_hash_map_at(contents, RSTR(runtime, signature)));
-  TRY_DEF(body, get_id_hash_map_at(contents, RSTR(runtime, body)));
+  UNPACK_PLANKTON_MAP(contents, signature, body);
   set_method_ast_signature(object, signature);
   set_method_ast_body(object, body);
   return success();
@@ -907,9 +885,7 @@ value_t program_ast_validate(value_t self) {
 
 value_t plankton_set_program_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(entry_point, get_id_hash_map_at(contents, RSTR(runtime, entry_point)));
-  TRY_DEF(fragment, get_id_hash_map_at(contents, RSTR(runtime, fragment)));
+  UNPACK_PLANKTON_MAP(contents, entry_point, fragment);
   set_program_ast_entry_point(object, entry_point);
   set_program_ast_fragment(object, fragment);
   return success();

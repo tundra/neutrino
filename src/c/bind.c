@@ -82,8 +82,7 @@ value_t plankton_new_library(runtime_t *runtime) {
 
 value_t plankton_set_library_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(modules, get_id_hash_map_at(contents, RSTR(runtime, modules)));
+  UNPACK_PLANKTON_MAP(contents, modules);
   set_library_modules(object, modules);
   return success();
 }
@@ -119,9 +118,7 @@ value_t plankton_new_unbound_module(runtime_t *runtime) {
 
 value_t plankton_set_unbound_module_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(path, get_id_hash_map_at(contents, RSTR(runtime, path)));
-  TRY_DEF(fragments, get_id_hash_map_at(contents, RSTR(runtime, fragments)));
+  UNPACK_PLANKTON_MAP(contents, path, fragments);
   set_unbound_module_path(object, path);
   set_unbound_module_fragments(object, fragments);
   return success();
@@ -162,10 +159,7 @@ value_t plankton_new_unbound_module_fragment(runtime_t *runtime) {
 
 value_t plankton_set_unbound_module_fragment_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(stage, get_id_hash_map_at(contents, RSTR(runtime, stage)));
-  TRY_DEF(imports, get_id_hash_map_at(contents, RSTR(runtime, imports)));
-  TRY_DEF(elements, get_id_hash_map_at(contents, RSTR(runtime, elements)));
+  UNPACK_PLANKTON_MAP(contents, stage, imports, elements);
   set_unbound_module_fragment_stage(object, stage);
   set_unbound_module_fragment_imports(object, imports);
   set_unbound_module_fragment_elements(object, elements);
