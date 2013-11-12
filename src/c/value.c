@@ -1414,8 +1414,7 @@ value_t plankton_new_protocol(runtime_t *runtime) {
 
 value_t plankton_set_protocol_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(name, get_id_hash_map_at(contents, RSTR(runtime, name)));
+  UNPACK_PLANKTON_MAP(contents, name);
   set_protocol_display_name(object, name);
   return success();
 }
@@ -1532,8 +1531,7 @@ value_t namespace_validate(value_t self) {
 
 value_t plankton_set_namespace_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(bindings, get_id_hash_map_at(contents, RSTR(runtime, bindings)));
+  UNPACK_PLANKTON_MAP(contents, bindings);
   set_namespace_bindings(object, bindings);
   return success();
 }
@@ -1570,10 +1568,7 @@ value_t module_validate(value_t value) {
 
 value_t plankton_set_module_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(namespace, get_id_hash_map_at(contents, RSTR(runtime, namespace)));
-  TRY_DEF(methodspace, get_id_hash_map_at(contents, RSTR(runtime, methodspace)));
-  TRY_DEF(display_name, get_id_hash_map_at(contents, RSTR(runtime, display_name)));
+  UNPACK_PLANKTON_MAP(contents, namespace, methodspace, display_name);
   set_module_namespace(object, namespace);
   set_module_methodspace(object, methodspace);
   set_module_display_name(object, display_name);
@@ -1636,8 +1631,7 @@ value_t plankton_new_path(runtime_t *runtime) {
 
 value_t plankton_set_path_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(names, get_id_hash_map_at(contents, RSTR(runtime, names)));
+  UNPACK_PLANKTON_MAP(contents, names);
   if (get_array_length(names) == 0) {
     CHECK_TRUE("new path was non-empty", is_path_empty(object));
   } else {
@@ -1726,9 +1720,7 @@ value_t plankton_new_identifier(runtime_t *runtime) {
 
 value_t plankton_set_identifier_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(path, get_id_hash_map_at(contents, RSTR(runtime, path)));
-  TRY_DEF(stage, get_id_hash_map_at(contents, RSTR(runtime, stage)));
+  UNPACK_PLANKTON_MAP(contents, path, stage);
   set_identifier_path(object, path);
   set_identifier_stage(object, stage);
   return success();
@@ -1753,8 +1745,7 @@ value_t plankton_new_function(runtime_t *runtime) {
 
 value_t plankton_set_function_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(display_name, get_id_hash_map_at(contents, RSTR(runtime, display_name)));
+  UNPACK_PLANKTON_MAP(contents, display_name);
   set_function_display_name(object, display_name);
   return success();
 }
@@ -1813,8 +1804,7 @@ value_t plankton_new_options(runtime_t *runtime) {
 
 value_t plankton_set_options_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(elements, get_id_hash_map_at(contents, RSTR(runtime, elements)));
+  UNPACK_PLANKTON_MAP(contents, elements);
   set_options_elements(object, elements);
   return success();
 }

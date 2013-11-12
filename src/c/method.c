@@ -520,12 +520,9 @@ value_t plankton_new_methodspace(runtime_t *runtime) {
 
 value_t plankton_set_methodspace_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(raw_method_asts, get_id_hash_map_at(contents, RSTR(runtime, methods)));
-  TRY_DEF(methods, method_asts_to_methods(runtime, raw_method_asts));
-  TRY_DEF(inheritance, get_id_hash_map_at(contents, RSTR(runtime, inheritance)));
-  TRY_DEF(imports, get_id_hash_map_at(contents, RSTR(runtime, imports)));
-  set_methodspace_methods(object, methods);
+  UNPACK_PLANKTON_MAP(contents, methods, inheritance, imports);
+  TRY_DEF(heap_methods, method_asts_to_methods(runtime, methods));
+  set_methodspace_methods(object, heap_methods);
   set_methodspace_inheritance(object, inheritance);
   set_methodspace_imports(object, imports);
   return success();
@@ -700,9 +697,7 @@ value_t plankton_new_operation(runtime_t *runtime) {
 
 value_t plankton_set_operation_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
-  TRY_DEF(type, get_id_hash_map_at(contents, RSTR(runtime, type)));
-  TRY_DEF(value, get_id_hash_map_at(contents, RSTR(runtime, value)));
+  UNPACK_PLANKTON_MAP(contents, type, value);
   set_operation_type(object, get_integer_value(type));
   set_operation_value(object, value);
   return success();

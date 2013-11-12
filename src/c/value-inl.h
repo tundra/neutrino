@@ -7,7 +7,7 @@
 
 #include "signals.h"
 #include "try-inl.h"
-#include "utils.h"
+#include "utils-inl.h"
 #include "value.h"
 
 // Returns true if the value of the given expression is in the specified
@@ -237,6 +237,22 @@ SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
 #define ADD_BUILTIN(family, name, argc, impl)                                  \
   TRY(add_methodspace_builtin_method(runtime, deref(s_space),                  \
       ROOT(runtime, family##_protocol), name, argc, impl))
+
+
+// --- P l a n k t o n ---
+
+// Reads a single entry from a plankton map.
+#define __GET_PLANKTON_MAP_ENTRY__(name)                                       \
+  TRY_DEF(name, get_id_hash_map_at(__source__, RSTR(runtime, name)));
+
+// Reads successive values from a plankton map, storing them in variables with
+// names matching the keys of the values.
+#define UNPACK_PLANKTON_MAP(SOURCE, ...)                                       \
+  value_t __source__ = (SOURCE);                                               \
+  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, __source__);                      \
+  FOR_EACH_VA_ARG(__GET_PLANKTON_MAP_ENTRY__, __VA_ARGS__)                     \
+  SWALLOW_SEMI(upm)
+
 
 
 #endif // _VALUE_INL
