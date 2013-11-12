@@ -235,8 +235,7 @@ value_t new_heap_local_variable_ast(runtime_t *runtime, value_t symbol);
 
 // Creates a new namespace variable syntax tree with the given name from the
 // given namespace.
-value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t name,
-    value_t namespace);
+value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t name);
 
 // Creates a new symbol syntax tree with the given name.
 value_t new_heap_symbol_ast(runtime_t *runtime, value_t name);

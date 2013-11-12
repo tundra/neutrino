@@ -1542,7 +1542,10 @@ value_t plankton_new_namespace(runtime_t *runtime) {
 
 value_t get_namespace_binding_at(value_t namespace, value_t name) {
   value_t bindings = get_namespace_bindings(namespace);
-  return get_id_hash_map_at(bindings, name);
+  value_t result = get_id_hash_map_at(bindings, name);
+  if (is_signal(scNotFound, result))
+    return new_lookup_error_signal(lcNamespace);
+  return result;
 }
 
 value_t ensure_namespace_owned_values_frozen(runtime_t *runtime, value_t self) {

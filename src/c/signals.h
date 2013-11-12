@@ -153,6 +153,7 @@ static value_t new_invalid_input_signal_with_hint(string_hint_t hint) {
 // ENUM_INVALID_SYNTAX_CAUSES.
 #define ENUM_LOOKUP_ERROR_CAUSES(F)                                            \
   F(Unspecified)                                                               \
+  F(Namespace)                                                                 \
   F(NoMatch)                                                                   \
   F(Ambiguity)
 

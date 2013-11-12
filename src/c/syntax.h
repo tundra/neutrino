@@ -148,15 +148,11 @@ ACCESSORS_DECL(local_variable_ast, symbol);
 
 // --- N a m e s p a c e   v a r i a b l e   a s t ---
 
-static const size_t kNamespaceVariableAstSize = OBJECT_SIZE(2);
+static const size_t kNamespaceVariableAstSize = OBJECT_SIZE(1);
 static const size_t kNamespaceVariableAstNameOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kNamespaceVariableAstNamespaceOffset = OBJECT_FIELD_OFFSET(1);
 
 // The name to look up through this namespace variable.
 ACCESSORS_DECL(namespace_variable_ast, name);
-
-// The namespace to look up within.
-ACCESSORS_DECL(namespace_variable_ast, namespace);
 
 
 // --- S y m b o l ---

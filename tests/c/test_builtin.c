@@ -72,11 +72,11 @@ TEST(builtin, strings) {
   CREATE_RUNTIME();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
-  value_t space = ROOT(runtime, builtin_methodspace);
+  value_t module = new_empty_module(runtime);
 
-  test_builtin(runtime, space, vStr("abcd"), vStr("ab"), INFIX("+"),
+  test_builtin(runtime, module, vStr("abcd"), vStr("ab"), INFIX("+"),
       vArray(1, vStr("cd")));
-  test_builtin(runtime, space, vStr(""), vStr(""), INFIX("+"),
+  test_builtin(runtime, module, vStr(""), vStr(""), INFIX("+"),
       vArray(1, vStr("")));
 
   DISPOSE_SAFE_VALUE_POOL(pool);

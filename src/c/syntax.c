@@ -498,32 +498,27 @@ FIXED_GET_MODE_IMPL(namespace_variable_ast, vmMutable);
 
 ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acNoCheck, 0,
     Name, name);
-ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acInFamilyOpt,
-    ofNamespace, Namespace, namespace);
 
 value_t emit_namespace_variable_ast(value_t self, assembler_t *assm) {
   assembler_emit_load_global(assm, get_namespace_variable_ast_name(self),
-      get_namespace_variable_ast_namespace(self));
+      get_module_namespace(assm->module));
   return success();
 }
 
 value_t namespace_variable_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofNamespaceVariableAst, self);
-  VALIDATE_FAMILY_OPT(ofNamespace, get_namespace_variable_ast_namespace(self));
   return success();
 }
 
 value_t plankton_set_namespace_variable_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, name, namespace);
+  UNPACK_PLANKTON_MAP(contents, name);
   set_namespace_variable_ast_name(object, name);
-  set_namespace_variable_ast_namespace(object, namespace);
   return success();
 }
 
-static value_t new_namespace_variable_ast(runtime_t *runtime) {
-  return new_heap_namespace_variable_ast(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
+value_t plankton_new_namespace_variable_ast(runtime_t *runtime) {
+  return new_heap_namespace_variable_ast(runtime, ROOT(runtime, nothing));
 }
 
 
@@ -937,7 +932,7 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "LocalDeclaration", plankton_new_local_declaration_ast, runtime));
   TRY(add_plankton_factory(map, ast, "LocalVariable", plankton_new_local_variable_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Method", plankton_new_method_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "NamespaceVariable", new_namespace_variable_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "NamespaceVariable", plankton_new_namespace_variable_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Parameter", plankton_new_parameter_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Program", plankton_new_program_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Sequence", plankton_new_sequence_ast, runtime));

@@ -34,7 +34,8 @@ static value_t base64_c_str_to_blob(runtime_t *runtime, const char *data) {
 // Assemble a module that can be executed from unbound modules in the module
 // loader.
 static value_t assemble_module(runtime_t *runtime) {
-  value_t result = new_heap_module(runtime, ROOT(runtime, nothing),
+  TRY_DEF(namespace, new_heap_namespace(runtime));
+  value_t result = new_heap_module(runtime, namespace,
       ROOT(runtime, builtin_methodspace), ROOT(runtime, nothing));
   return result;
 }

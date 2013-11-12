@@ -203,6 +203,7 @@ void reusable_scratch_memory_double_alloc(reusable_scratch_memory_t *memory,
 value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t module,
     scope_lookup_callback_t *scope_callback) {
   CHECK_FALSE("no scope callback", scope_callback == NULL);
+  CHECK_FAMILY_OPT(ofModule, module);
   TRY_SET(assm->value_pool, new_heap_id_hash_map(runtime, 16));
   assm->scope_callback = scope_callback;
   assm->runtime = runtime;
