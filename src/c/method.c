@@ -284,12 +284,14 @@ TRIVIAL_PRINT_ON_IMPL(Method, method);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofSignature, Signature, signature);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofCodeBlock, Code, code);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofMethodAst, Syntax, syntax);
+ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofModule, Module, module);
 
 value_t method_validate(value_t self) {
   VALIDATE_FAMILY(ofMethod, self);
   VALIDATE_FAMILY_OPT(ofSignature, get_method_signature(self));
   VALIDATE_FAMILY_OPT(ofCodeBlock, get_method_code(self));
   VALIDATE_FAMILY_OPT(ofMethodAst, get_method_syntax(self));
+  VALIDATE_FAMILY_OPT(ofModule, get_method_module(self));
   return success();
 }
 
@@ -504,7 +506,7 @@ static value_t method_asts_to_methods(runtime_t *runtime, value_t method_asts) {
       E_TRY_DEF(signature, build_method_signature(runtime, &scratch,
           get_method_ast_signature(method_ast)));
       E_TRY_DEF(method, new_heap_method(runtime, afMutable, signature, method_ast,
-          ROOT(runtime, nothing)));
+          ROOT(runtime, nothing), ROOT(runtime, nothing)));
       set_array_at(methods, i, method);
     }
     E_TRY_DEF(result, new_heap_array_buffer_with_contents(runtime, methods));

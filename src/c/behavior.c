@@ -323,9 +323,9 @@ static void signal_print_on(value_t value, string_buffer_t *buf) {
         // If no hint is given (or the hint it the empty string) the details
         // field will be 0.
         invalid_input_details_codec_t codec = {.encoded=details};
-        char hint[5];
+        char hint[7];
         string_hint_to_c_str(codec.decoded, hint);
-        string_buffer_printf(buf, "%s...", hint);
+        string_buffer_printf(buf, "%s", hint);
       }
       break;
     }

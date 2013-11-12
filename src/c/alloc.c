@@ -471,7 +471,7 @@ value_t new_heap_methodspace(runtime_t *runtime) {
 }
 
 value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signature,
-    value_t syntax, value_t code) {
+    value_t syntax, value_t code, value_t module) {
   CHECK_FAMILY_OPT(ofSignature, signature);
   CHECK_FAMILY_OPT(ofCodeBlock, code);
   size_t size = kMethodSize;
@@ -480,6 +480,7 @@ value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signatu
   set_method_signature(result, signature);
   set_method_code(result, code);
   set_method_syntax(result, syntax);
+  set_method_module(result, module);
   TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
@@ -514,13 +515,11 @@ value_t new_heap_array_ast(runtime_t *runtime, value_t elements) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments,
-    value_t methodspace) {
+value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments) {
   size_t size = kInvocationAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, invocation_ast_species)));
   set_invocation_ast_arguments(result, arguments);
-  set_invocation_ast_methodspace(result, methodspace);
   return post_create_sanity_check(result, size);
 }
 

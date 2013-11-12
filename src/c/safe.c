@@ -30,6 +30,10 @@ safe_value_t protect_immediate(value_t value) {
   return s_result;
 }
 
+safe_value_t empty_safe_value() {
+  return protect_immediate(new_integer(0));
+}
+
 value_t deref_immediate(safe_value_t s_value) {
   CHECK_TRUE("using indirect as immediate", safe_value_is_immediate(s_value));
   return s_value.as_value;

@@ -859,7 +859,7 @@ TEST(value, unsupported) {
 TEST(value, invalid_input) {
   value_t signal = new_invalid_input_signal_with_hint(STRING_HINT("halp!"));
   value_to_string_t to_string;
-  ASSERT_C_STREQ("%<signal: InvalidInput(halp...)>", value_to_string(&to_string, signal));
+  ASSERT_C_STREQ("%<signal: InvalidInput(ha..p!)>", value_to_string(&to_string, signal));
   dispose_value_to_string(&to_string);
 }
 

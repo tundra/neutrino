@@ -202,7 +202,7 @@ value_t new_heap_methodspace(runtime_t *runtime);
 
 // Creates a new method with the given signature and implementation.
 value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signature,
-    value_t syntax, value_t code);
+    value_t syntax, value_t code, value_t module);
 
 // Creates an invocation record with the given argument vector.
 value_t new_heap_invocation_record(runtime_t *runtime, alloc_flags_t flags,
@@ -217,10 +217,8 @@ value_t new_heap_literal_ast(runtime_t *runtime, value_t value);
 // Creates a new array syntax tree with the given element array.
 value_t new_heap_array_ast(runtime_t *runtime, value_t elements);
 
-// Creates a new invocation syntax tree with the given arguments to be performed
-// in the given method space.
-value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments,
-    value_t methodspace);
+// Creates a new invocation syntax tree with the given arguments.
+value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments);
 
 // Creates a new argument syntax tree with the given tag and value.
 value_t new_heap_argument_ast(runtime_t *runtime, value_t tag, value_t value);

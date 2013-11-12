@@ -29,11 +29,11 @@ value_t init_plankton_environment_mapping(value_mapping_t *mapping,
 }
 
 value_t compile_expression(runtime_t *runtime, value_t program,
-    scope_lookup_callback_t *scope_callback) {
+    value_t module, scope_lookup_callback_t *scope_callback) {
   assembler_t assm;
   // Don't try to execute cleanup if this fails since there'll not be an
   // assembler to dispose.
-  TRY(assembler_init(&assm, runtime, scope_callback));
+  TRY(assembler_init(&assm, runtime, module, scope_callback));
   E_BEGIN_TRY_FINALLY();
     E_TRY_DEF(code_block, compile_expression_with_assembler(runtime, program,
         &assm));
@@ -52,8 +52,9 @@ value_t compile_expression_with_assembler(runtime_t *runtime, value_t program,
 }
 
 value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
-    scope_lookup_callback_t *scope_callback) {
-  RETRY_ONCE_IMPL(runtime, compile_expression(runtime, deref(ast), scope_callback));
+    safe_value_t module, scope_lookup_callback_t *scope_callback) {
+  RETRY_ONCE_IMPL(runtime, compile_expression(runtime, deref(ast), deref(module),
+      scope_callback));
 }
 
 size_t get_parameter_order_index_for_array(value_t tags) {
@@ -226,13 +227,11 @@ FIXED_GET_MODE_IMPL(invocation_ast, vmMutable);
 
 ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, ofArray, Arguments,
     arguments);
-ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, ofMethodspace,
-    Methodspace, methodspace);
 
 value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofInvocationAst, value);
   value_t arguments = get_invocation_ast_arguments(value);
-  value_t methodspace = get_invocation_ast_methodspace(value);
+  value_t methodspace = get_module_methodspace(assm->module);
   CHECK_FAMILY(ofMethodspace, methodspace);
   size_t arg_count = get_array_length(arguments);
   // Build the invocation record and emit the values at the same time.
@@ -256,21 +255,18 @@ value_t emit_invocation_ast(value_t value, assembler_t *assm) {
 value_t invocation_ast_validate(value_t value) {
   VALIDATE_FAMILY(ofInvocationAst, value);
   VALIDATE_FAMILY_OPT(ofArray, get_invocation_ast_arguments(value));
-  VALIDATE_FAMILY_OPT(ofMethodspace, get_invocation_ast_methodspace(value));
   return success();
 }
 
 value_t plankton_set_invocation_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, arguments, methodspace);
+  UNPACK_PLANKTON_MAP(contents, arguments);
   set_invocation_ast_arguments(object, arguments);
-  set_invocation_ast_methodspace(object, methodspace);
   return success();
 }
 
 value_t plankton_new_invocation_ast(runtime_t *runtime) {
-  return new_heap_invocation_ast(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
+  return new_heap_invocation_ast(runtime, ROOT(runtime, nothing));
 }
 
 
@@ -670,7 +666,8 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
 
   // Compile the code.
   value_t body_ast = get_method_ast_body(method_ast);
-  TRY_DEF(result, compile_expression(runtime, body_ast, assm->scope_callback));
+  TRY_DEF(result, compile_expression(runtime, body_ast, assm->module,
+      assm->scope_callback));
   assembler_pop_map_scope(assm, &param_scope);
   return result;
 }
@@ -697,7 +694,7 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
 
   // Build a method space in which to store the method.
   TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
-      ROOT(runtime, nothing), body_code));
+      ROOT(runtime, nothing), body_code, ROOT(runtime, nothing)));
   TRY_DEF(space, new_heap_methodspace(runtime));
   TRY(add_methodspace_method(runtime, space, method));
 
@@ -872,7 +869,6 @@ value_t plankton_new_method_ast(runtime_t *runtime) {
 
 // --- P r o g r a m   a s t ---
 
-TRIVIAL_PRINT_ON_IMPL(ProgramAst, program_ast);
 FIXED_GET_MODE_IMPL(program_ast, vmMutable);
 
 ACCESSORS_IMPL(ProgramAst, program_ast, acIsSyntaxOpt, 0, EntryPoint, entry_point);
@@ -894,6 +890,15 @@ value_t plankton_set_program_ast_contents(value_t object, runtime_t *runtime,
 value_t plankton_new_program_ast(runtime_t *runtime) {
   return new_heap_program_ast(runtime, ROOT(runtime, nothing),
       ROOT(runtime, nothing));
+}
+
+void program_ast_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
+  string_buffer_printf(buf, "#<program ast: ");
+  value_print_inner_on(get_program_ast_entry_point(value), buf, flags, depth - 1);
+  string_buffer_printf(buf, " ");
+  value_print_inner_on(get_program_ast_fragment(value), buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
 }
 
 

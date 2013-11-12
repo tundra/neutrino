@@ -269,11 +269,11 @@ static value_t new_moved_object(value_t target) {
   F(LocalVariableAst,        local_variable_ast,        _, _, X, X, _, _, X, _, _)\
   F(Method,                  method,                    _, _, _, _, _, _, _, X, _)\
   F(MethodAst,               method_ast,                _, _, X, X, _, _, _, X, _)\
-  F(Methodspace,             methodspace,               _, _, X, _, _, _, _, X, X)\
-  F(Module,                  module,                    _, _, X, X, _, _, _, X, _)\
+  F(Methodspace,             methodspace,               _, _, _, _, _, _, _, X, X)\
+  F(Module,                  module,                    _, _, _, X, _, _, _, X, _)\
   F(ModuleLoader,            module_loader,             _, _, _, _, _, _, _, _, _)\
   F(MutableRoots,            mutable_roots,             _, _, _, _, _, _, _, X, X)\
-  F(Namespace,               namespace,                 _, _, X, _, _, _, _, X, X)\
+  F(Namespace,               namespace,                 _, _, _, _, _, _, _, X, X)\
   F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _)\
   F(Nothing,                 nothing,                   _, _, _, _, _, _, _, _, _)\
   F(Null,                    null,                      _, _, _, X, _, _, _, _, _)\

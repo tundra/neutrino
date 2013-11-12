@@ -193,10 +193,11 @@ int compare_scores(score_t a, score_t b);
 
 // --- M e t h o d ---
 
-static const size_t kMethodSize = OBJECT_SIZE(3);
+static const size_t kMethodSize = OBJECT_SIZE(4);
 static const size_t kMethodSignatureOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kMethodCodeOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kMethodSyntaxOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kMethodModuleOffset = OBJECT_FIELD_OFFSET(3);
 
 // The method's signature, the arguments it matches.
 ACCESSORS_DECL(method, signature);
@@ -206,6 +207,9 @@ ACCESSORS_DECL(method, code);
 
 // The syntax of the implementation of the method.
 ACCESSORS_DECL(method, syntax);
+
+// The module that provides context for this method.
+ACCESSORS_DECL(method, module);
 
 
 // --- M e t h o d   s p a c e ---

@@ -17,7 +17,7 @@ TEST(interp, binding_info_size) {
 static value_t assert_ast_value(runtime_t *runtime, variant_t expected,
     value_t ast) {
   value_t code_block = compile_expression(runtime, ast,
-      scope_lookup_callback_get_bottom());
+      ROOT(runtime, nothing), scope_lookup_callback_get_bottom());
   TRY_DEF(result, run_code_block_until_signal(runtime, code_block));
   ASSERT_VALEQ(variant_to_value(runtime, expected), result);
   return success();
@@ -26,8 +26,6 @@ static value_t assert_ast_value(runtime_t *runtime, variant_t expected,
 TEST(interp, execution) {
   CREATE_RUNTIME();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
-
-  value_t space = ROOT(runtime, builtin_methodspace);
 
   value_t null = ROOT(runtime, null);
   value_t subject_array = variant_to_value(runtime,
@@ -103,7 +101,7 @@ TEST(interp, execution) {
     value_t args = new_heap_array(runtime, 2);
     set_array_at(args, 0, subject_arg);
     set_array_at(args, 1, selector_arg);
-    value_t ast = new_heap_invocation_ast(runtime, args, space);
+    value_t ast = new_heap_invocation_ast(runtime, args);
     assert_ast_value(runtime, vInt(13), ast);
   }
 
@@ -116,7 +114,7 @@ TEST(interp, execution) {
 static void assert_compile_failure(runtime_t *runtime, value_t ast,
     invalid_syntax_cause_t cause) {
   value_t result = compile_expression(runtime, ast,
-      scope_lookup_callback_get_bottom());
+      ROOT(runtime, nothing), scope_lookup_callback_get_bottom());
   ASSERT_SIGNAL(scInvalidSyntax, result);
   ASSERT_EQ(cause, get_invalid_syntax_signal_cause(result));
 }
@@ -156,7 +154,6 @@ static void validate_lookup_error(void *unused, log_entry_t *entry) {
 TEST(interp, lookup_error) {
   CREATE_RUNTIME();
 
-  value_t space = ROOT(runtime, builtin_methodspace);
   value_t null = ROOT(runtime, null);
   value_t subject_array = variant_to_value(runtime,
       vArray(1, vValue(ROOT(runtime, subject_key))));
@@ -182,7 +179,7 @@ TEST(interp, lookup_error) {
   value_t args = new_heap_array(runtime, 2);
   set_array_at(args, 0, subject_arg);
   set_array_at(args, 1, selector_arg);
-  value_t ast = new_heap_invocation_ast(runtime, args, space);
+  value_t ast = new_heap_invocation_ast(runtime, args);
 
   log_validator_t validator;
   install_log_validator(&validator, validate_lookup_error, NULL);

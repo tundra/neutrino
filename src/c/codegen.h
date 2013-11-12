@@ -107,11 +107,13 @@ typedef struct assembler_t {
   scope_lookup_callback_t *scope_callback;
   // A reusable memory block.
   reusable_scratch_memory_t scratch_memory;
+  // The module we're compiling within.
+  value_t module;
 } assembler_t;
 
 // Initializes an assembler. If the given scope callback is NULL it is taken to
 // mean that there is no enclosing scope.
-value_t assembler_init(assembler_t *assm, runtime_t *runtime,
+value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t module,
     scope_lookup_callback_t *scope_callback);
 
 // Sets the scope callback for the given assembler, returning the previous

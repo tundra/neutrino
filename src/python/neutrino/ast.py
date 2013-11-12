@@ -115,9 +115,8 @@ class Variable(object):
   _LOCAL_HEADER = plankton.EnvironmentReference.path("ast", "LocalVariable")
   _NAMESPACE_HEADER = plankton.EnvironmentReference.path("ast", "NamespaceVariable")
 
-  def __init__(self, ident, namespace=None, symbol=None):
+  def __init__(self, ident, symbol=None):
     self.ident = ident
-    self.namespace = namespace
     self.symbol = symbol
 
   def accept(self, visitor):
@@ -140,8 +139,7 @@ class Variable(object):
   def get_payload(self):
     if self.symbol is None:
       return {
-        'name': self.ident.path,
-        'namespace': self.namespace
+        'name': self.ident.path
       }
     else:
       return {

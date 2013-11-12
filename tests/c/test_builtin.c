@@ -7,7 +7,7 @@
 #include "safe-inl.h"
 #include "test.h"
 
-static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
+static void test_builtin(runtime_t *runtime, value_t module, variant_t expected,
     variant_t receiver, builtin_operation_t operation, variant_t args) {
   ASSERT_EQ(vtArray, args.type);
   size_t positional_count = args.value.as_array.length;
@@ -33,31 +33,36 @@ static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
         new_heap_literal_ast(runtime,
             variant_to_value(runtime, var_arg))));
   }
-  value_t invocation = new_heap_invocation_ast(runtime, args_ast, space);
+  value_t invocation = new_heap_invocation_ast(runtime, args_ast);
 
   // Compile and execute the syntax.
-  value_t code = compile_expression(runtime, invocation,
+  value_t code = compile_expression(runtime, invocation, module,
       scope_lookup_callback_get_bottom());
   value_t result = run_code_block_until_signal(runtime, code);
   ASSERT_SUCCESS(result);
   ASSERT_VALEQ(variant_to_value(runtime, expected), result);
 }
 
+static value_t new_empty_module(runtime_t *runtime) {
+  return new_heap_module(runtime, ROOT(runtime, nothing), ROOT(runtime, builtin_methodspace),
+      ROOT(runtime, nothing));
+}
+
 TEST(builtin, integers) {
   CREATE_RUNTIME();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
-  value_t space = ROOT(runtime, builtin_methodspace);
+  value_t module = new_empty_module(runtime);
 
-  test_builtin(runtime, space, vInt(2), vInt(1), INFIX("+"), vArray(1, vInt(1)));
-  test_builtin(runtime, space, vInt(3), vInt(2), INFIX("+"), vArray(1, vInt(1)));
-  test_builtin(runtime, space, vInt(5), vInt(2), INFIX("+"), vArray(1, vInt(3)));
+  test_builtin(runtime, module, vInt(2), vInt(1), INFIX("+"), vArray(1, vInt(1)));
+  test_builtin(runtime, module, vInt(3), vInt(2), INFIX("+"), vArray(1, vInt(1)));
+  test_builtin(runtime, module, vInt(5), vInt(2), INFIX("+"), vArray(1, vInt(3)));
 
-  test_builtin(runtime, space, vInt(0), vInt(1), INFIX("-"), vArray(1, vInt(1)));
-  test_builtin(runtime, space, vInt(1), vInt(2), INFIX("-"), vArray(1, vInt(1)));
-  test_builtin(runtime, space, vInt(-1), vInt(2), INFIX("-"), vArray(1, vInt(3)));
+  test_builtin(runtime, module, vInt(0), vInt(1), INFIX("-"), vArray(1, vInt(1)));
+  test_builtin(runtime, module, vInt(1), vInt(2), INFIX("-"), vArray(1, vInt(1)));
+  test_builtin(runtime, module, vInt(-1), vInt(2), INFIX("-"), vArray(1, vInt(3)));
 
-  test_builtin(runtime, space, vInt(-1), vInt(1), PREFIX("-"), vEmptyArray());
+  test_builtin(runtime, module, vInt(-1), vInt(1), PREFIX("-"), vEmptyArray());
 
   DISPOSE_SAFE_VALUE_POOL(pool);
   DISPOSE_RUNTIME();

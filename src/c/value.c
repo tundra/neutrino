@@ -1566,20 +1566,6 @@ value_t module_validate(value_t value) {
   return success();
 }
 
-value_t plankton_set_module_contents(value_t object, runtime_t *runtime,
-    value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, namespace, methodspace, display_name);
-  set_module_namespace(object, namespace);
-  set_module_methodspace(object, methodspace);
-  set_module_display_name(object, display_name);
-  return success();
-}
-
-value_t plankton_new_module(runtime_t *runtime) {
-  return new_heap_module(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
-}
-
 void module_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
     size_t depth) {
   CHECK_FAMILY(ofModule, value);
@@ -1898,8 +1884,6 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, core, "Function", plankton_new_function, runtime));
   TRY(add_plankton_factory(map, core, "Identifier", plankton_new_identifier, runtime));
   TRY(add_plankton_factory(map, core, "Library", plankton_new_library, runtime));
-  TRY(add_plankton_factory(map, core, "Methodspace", plankton_new_methodspace, runtime));
-  TRY(add_plankton_factory(map, core, "Module", plankton_new_module, runtime));
   TRY(add_plankton_factory(map, core, "Namespace", plankton_new_namespace, runtime));
   TRY(add_plankton_factory(map, core, "Operation", plankton_new_operation, runtime));
   TRY(add_plankton_factory(map, core, "Path", plankton_new_path, runtime));

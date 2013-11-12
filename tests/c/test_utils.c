@@ -420,19 +420,21 @@ TEST(utils, for_each_va_arg) {
   ASSERT_EQ(record[2], 4);
 }
 
+#define CHECK_HINT(HINT, EXPECTED) do {                                        \
+  string_hint_t hint = STRING_HINT(HINT);                                      \
+  char hint_str[7];                                                            \
+  string_hint_to_c_str(hint, hint_str);                                        \
+  ASSERT_C_STREQ(EXPECTED, hint_str);                                          \
+} while (false)
+
 TEST(utils, string_hint) {
   ASSERT_EQ(sizeof(uint32_t), sizeof(string_hint_t));
 
-  string_hint_t foobar_hint = STRING_HINT("foobar");
-  char hint_str[5];
-  string_hint_to_c_str(foobar_hint, hint_str);
-  ASSERT_C_STREQ("foob", hint_str);
-
-  string_hint_t fo_hint = STRING_HINT("fo");
-  string_hint_to_c_str(fo_hint, hint_str);
-  ASSERT_C_STREQ("fo", hint_str);
-
-  string_hint_t empty_hint = STRING_HINT("");
-  string_hint_to_c_str(empty_hint, hint_str);
-  ASSERT_C_STREQ("", hint_str);
+  CHECK_HINT("abcdef", "ab..ef");
+  CHECK_HINT("abcde", "ab..de");
+  CHECK_HINT("abcd", "ab..cd");
+  CHECK_HINT("abc", "abc");
+  CHECK_HINT("ab", "ab");
+  CHECK_HINT("a", "a");
+  CHECK_HINT("", "");
 }

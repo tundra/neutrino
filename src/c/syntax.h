@@ -27,7 +27,7 @@ value_t emit_value(value_t value, assembler_t *assm);
 // allows this compilation to access symbols defined in an outer scope. If the
 // callback is null it is taken to mean that there is no outer scope.
 value_t compile_expression(runtime_t *runtime, value_t ast,
-    scope_lookup_callback_t *scope_callback);
+    value_t module, scope_lookup_callback_t *scope_callback);
 
 // Does the same a compile_expression but takes an existing assembler rather
 // than create one.
@@ -39,7 +39,7 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast);
 
 // Retrying version of compile_expression.
 value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
-    scope_lookup_callback_t *scope_callback);
+    safe_value_t module, scope_lookup_callback_t *scope_callback);
 
 // Determines the parameter ordering to use given an array of parameter asts.
 //
@@ -91,15 +91,11 @@ ACCESSORS_DECL(array_ast, elements);
 
 // --- I n v o c a t i o n   a s t ---
 
-static const size_t kInvocationAstSize = OBJECT_SIZE(2);
+static const size_t kInvocationAstSize = OBJECT_SIZE(1);
 static const size_t kInvocationAstArgumentsOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kInvocationAstMethodspaceOffset = OBJECT_FIELD_OFFSET(1);
 
 // The array of element expressions.
 ACCESSORS_DECL(invocation_ast, arguments);
-
-// The methodspace to perform the invocation in.
-ACCESSORS_DECL(invocation_ast, methodspace);
 
 
 // --- A r g u m e n t   a s t ---

@@ -33,7 +33,6 @@
   F(libraries,                  "libraries")                                   \
   F(method,                     "method")                                      \
   F(methods,                    "methods")                                     \
-  F(methodspace,                "methodspace")                                 \
   F(module_loader,              "module_loader")                               \
   F(modules,                    "modules")                                     \
   F(name,                       "name")                                        \
@@ -192,6 +191,8 @@ struct runtime_t {
   gc_fuzzer_t *gc_fuzzer;
   // Environment mapping to use when deserializing plankton.
   value_mapping_t plankton_mapping;
+  // The module loader used by this runtime.
+  safe_value_t module_loader;
 };
 
 // Creates a new runtime object, storing it in the given runtime out parameter.
