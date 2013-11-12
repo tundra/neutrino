@@ -7,6 +7,20 @@
 
 #include "utils.h"
 
+// --- S t r i n g ---
+
+#define __STATIC_STRLEN__(S) (sizeof(S) / sizeof(char))
+
+// Creates a new string hint from a literal C string.
+#define STRING_HINT(str) ((string_hint_t) {{                                   \
+  ((__STATIC_STRLEN__(str) == 0) ? '\0' : str[0]),                             \
+  ((__STATIC_STRLEN__(str) <= 1) ? '\0' : str[1]),                             \
+  ((__STATIC_STRLEN__(str) <= 2) ? '\0' : str[2]),                             \
+  ((__STATIC_STRLEN__(str) <= 3) ? '\0' : str[3]),                             \
+}})
+
+
+// --- V a r i a d i c   m a c r o s ---
 
 // Expands the given function for each element in the var args. The
 // implementation of this is insane, plus there is a fixed limit on how many

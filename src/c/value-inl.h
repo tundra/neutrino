@@ -241,9 +241,16 @@ SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
 
 // --- P l a n k t o n ---
 
+#define __CHECK_MAP_ENTRY_FOUND__(name) do {                                   \
+  if (is_signal(scNotFound, name)) {                                           \
+    return new_invalid_input_signal_with_hint(STRING_HINT(#name));             \
+  }                                                                            \
+} while (false)
+
 // Reads a single entry from a plankton map.
 #define __GET_PLANKTON_MAP_ENTRY__(name)                                       \
-  TRY_DEF(name, get_id_hash_map_at(__source__, RSTR(runtime, name)));
+  value_t name = get_id_hash_map_at(__source__, RSTR(runtime, name));          \
+  __CHECK_MAP_ENTRY_FOUND__(name);
 
 // Reads successive values from a plankton map, storing them in variables with
 // names matching the keys of the values.

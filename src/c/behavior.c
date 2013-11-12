@@ -318,6 +318,17 @@ static void signal_print_on(value_t value, string_buffer_t *buf) {
       string_buffer_printf(buf, "%s", get_system_error_cause_name(details));
       break;
     }
+    case scInvalidInput: {
+      if (details != 0) {
+        // If no hint is given (or the hint it the empty string) the details
+        // field will be 0.
+        invalid_input_details_codec_t codec = {.encoded=details};
+        char hint[5];
+        string_hint_to_c_str(codec.decoded, hint);
+        string_buffer_printf(buf, "%s...", hint);
+      }
+      break;
+    }
     default: {
       string_buffer_printf(buf, "dt@%i", details);
       break;

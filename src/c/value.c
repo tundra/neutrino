@@ -754,7 +754,7 @@ value_t binary_search_pair_array(value_t self, value_t key) {
       return get_pair_array_second_at(self, mid);
     }
   }
-  return new_signal(scNotFound);
+  return new_not_found_signal();
 }
 
 value_t array_transient_identity_hash(value_t value, hash_stream_t *stream,
@@ -1026,7 +1026,7 @@ value_t get_id_hash_map_at(value_t map, value_t key) {
   if (find_id_hash_map_entry(map, key, hash, &entry, NULL)) {
     return get_id_hash_map_entry_value(entry);
   } else {
-    return new_signal(scNotFound);
+    return new_not_found_signal();
   }
 }
 
@@ -1055,7 +1055,7 @@ value_t delete_id_hash_map_at(runtime_t *runtime, value_t map, value_t key) {
     set_id_hash_map_size(map, get_id_hash_map_size(map) - 1);
     return success();
   } else {
-    return new_signal(scNotFound);
+    return new_not_found_signal();
   }
 }
 

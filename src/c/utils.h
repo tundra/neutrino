@@ -53,6 +53,17 @@ int string_compare(string_t *a, string_t *b);
 bool string_equals_cstr(string_t *a, const char *b);
 
 
+// A small snippet of a string that can be encoded as a 32-bit integer. Create
+// a hint cheaply using the STRING_HINT macro.
+typedef struct {
+  // The characters of this hint.
+  const char value[4];
+} string_hint_t;
+
+// Reads the characters from a string hint, storing them in a plain c-string.
+void string_hint_to_c_str(string_hint_t hint, char c_str_out[5]);
+
+
 // --- B l o b ---
 
 // A block of data with a length.
