@@ -24,6 +24,7 @@
   F(entry_point,                "entry_point")                                 \
   F(environment_reference,      "environment_reference")                       \
   F(FlagElement,                "FlagElement")                                 \
+  F(fragment,                   "fragment")                                    \
   F(fragments,                  "fragments")                                   \
   F(guard,                      "guard")                                       \
   F(imports,                    "imports")                                     \

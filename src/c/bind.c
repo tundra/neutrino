@@ -11,7 +11,6 @@
 // --- M o d u l e   l o a d e r ---
 
 FIXED_GET_MODE_IMPL(module_loader, vmMutable);
-TRIVIAL_PRINT_ON_IMPL(ModuleLoader, module_loader);
 
 ACCESSORS_IMPL(ModuleLoader, module_loader, acInFamilyOpt, ofIdHashMap, Modules, modules);
 
@@ -24,6 +23,7 @@ value_t module_loader_validate(value_t self) {
 // loaders set of available modules.
 static value_t module_loader_read_library(runtime_t *runtime, value_t self,
     value_t library_path) {
+  // Read the library from the file.
   string_t library_path_str;
   get_string_contents(library_path, &library_path_str);
   TRY_DEF(data, read_file_to_blob(runtime, &library_path_str));
@@ -31,8 +31,15 @@ static value_t module_loader_read_library(runtime_t *runtime, value_t self,
   if (!in_family(ofLibrary, library))
     return new_invalid_input_signal();
   set_library_display_name(library, library_path);
-  if (false)
-    print_ln("library: %9v", library);
+  // Load all the modules from the library into this module loader.
+  id_hash_map_iter_t iter;
+  id_hash_map_iter_init(&iter, get_library_modules(library));
+  while (id_hash_map_iter_advance(&iter)) {
+    value_t key;
+    value_t value;
+    id_hash_map_iter_get_current(&iter, &key, &value);
+    TRY(set_id_hash_map_at(runtime, get_module_loader_modules(self), key, value));
+  }
   return success();
 }
 
@@ -46,6 +53,14 @@ value_t module_loader_process_options(runtime_t *runtime, value_t self,
     TRY(module_loader_read_library(runtime, self, library_path));
   }
   return success();
+}
+
+void module_loader_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<module loader ");
+  value_t modules = get_module_loader_modules(value);
+  value_print_inner_on(modules, buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
 }
 
 
