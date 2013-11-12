@@ -419,3 +419,20 @@ TEST(utils, for_each_va_arg) {
   ASSERT_EQ(record[1], 5);
   ASSERT_EQ(record[2], 4);
 }
+
+TEST(utils, string_hint) {
+  ASSERT_EQ(sizeof(uint32_t), sizeof(string_hint_t));
+
+  string_hint_t foobar_hint = STRING_HINT("foobar");
+  char hint_str[5];
+  string_hint_to_c_str(foobar_hint, hint_str);
+  ASSERT_C_STREQ("foob", hint_str);
+
+  string_hint_t fo_hint = STRING_HINT("fo");
+  string_hint_to_c_str(fo_hint, hint_str);
+  ASSERT_C_STREQ("fo", hint_str);
+
+  string_hint_t empty_hint = STRING_HINT("");
+  string_hint_to_c_str(empty_hint, hint_str);
+  ASSERT_C_STREQ("", hint_str);
+}

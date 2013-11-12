@@ -15,7 +15,7 @@ static scope_lookup_callback_t *bottom_callback = NULL;
 
 static value_t bottom_scope_lookup(value_t symbol, void *data,
     binding_info_t *info_out) {
-  return new_signal(scNotFound);
+  return new_not_found_signal();
 }
 
 // Returns the bottom callback that never finds symbols.

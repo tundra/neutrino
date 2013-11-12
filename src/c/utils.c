@@ -62,6 +62,14 @@ bool string_equals_cstr(string_t *a, const char *str) {
   return string_equals(a, &b);
 }
 
+void string_hint_to_c_str(string_hint_t hint, char c_str_out[5]) {
+  c_str_out[0] = hint.value[0];
+  c_str_out[1] = hint.value[1];
+  c_str_out[2] = hint.value[2];
+  c_str_out[3] = hint.value[3];
+  c_str_out[4] = 0;
+}
+
 
 void blob_init(blob_t *blob, byte_t *data, size_t length) {
   blob->length = length;

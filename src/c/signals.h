@@ -9,6 +9,7 @@
 #ifndef _SIGNALS
 #define _SIGNALS
 
+#include "utils.h"
 #include "value.h"
 
 // Creates a new signal with the specified cause and details.
@@ -136,6 +137,18 @@ static value_t new_invalid_input_signal() {
   return new_signal(scInvalidInput);
 }
 
+// Converter to get and set details for invalid input as a uint32_t.
+typedef union {
+  string_hint_t decoded;
+  uint32_t encoded;
+} invalid_input_details_codec_t;
+
+// Creates a new invalid input signal with a hint describing the problem.
+static value_t new_invalid_input_signal_with_hint(string_hint_t hint) {
+  invalid_input_details_codec_t codec = {.decoded = hint};
+  return new_signal_with_details(scInvalidInput, codec.encoded);
+}
+
 // Enumerate the causes of lookup errors. See comment for
 // ENUM_INVALID_SYNTAX_CAUSES.
 #define ENUM_LOOKUP_ERROR_CAUSES(F)                                            \
@@ -181,6 +194,15 @@ const char *get_system_error_cause_name(system_error_cause_t cause);
 // Creates a new system error signal.
 static value_t new_system_error_signal(system_error_cause_t cause) {
   return new_signal_with_details(scSystemError, cause);
+}
+
+// Creates a new not-found signal. Not-found is a very generic and
+// non-informative signal so it should be caught and converted quickly while
+// the context gives the information needed to understand. If it indicates an
+// error that should be propagated it should still be caught and then converted
+// to a more informative signal.
+static value_t new_not_found_signal() {
+  return new_signal(scNotFound);
 }
 
 #endif // _SIGNALS
