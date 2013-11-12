@@ -284,14 +284,15 @@ TRIVIAL_PRINT_ON_IMPL(Method, method);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofSignature, Signature, signature);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofCodeBlock, Code, code);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofMethodAst, Syntax, syntax);
-ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofModule, Module, module);
+ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofModuleFragment, ModuleFragment,
+    module_fragment);
 
 value_t method_validate(value_t self) {
   VALIDATE_FAMILY(ofMethod, self);
   VALIDATE_FAMILY_OPT(ofSignature, get_method_signature(self));
   VALIDATE_FAMILY_OPT(ofCodeBlock, get_method_code(self));
   VALIDATE_FAMILY_OPT(ofMethodAst, get_method_syntax(self));
-  VALIDATE_FAMILY_OPT(ofModule, get_method_module(self));
+  VALIDATE_FAMILY_OPT(ofModuleFragment, get_method_module_fragment(self));
   return success();
 }
 

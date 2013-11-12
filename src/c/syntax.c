@@ -231,7 +231,7 @@ ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, ofArray, Arguments,
 value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofInvocationAst, value);
   value_t arguments = get_invocation_ast_arguments(value);
-  value_t methodspace = get_module_methodspace(assm->module);
+  value_t methodspace = get_module_fragment_methodspace(assm->fragment);
   CHECK_FAMILY(ofMethodspace, methodspace);
   size_t arg_count = get_array_length(arguments);
   // Build the invocation record and emit the values at the same time.
@@ -501,7 +501,7 @@ ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acNoCheck, 0,
 
 value_t emit_namespace_variable_ast(value_t self, assembler_t *assm) {
   assembler_emit_load_global(assm, get_namespace_variable_ast_name(self),
-      get_module_namespace(assm->module));
+      get_module_fragment_namespace(assm->fragment));
   return success();
 }
 
@@ -661,7 +661,7 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
 
   // Compile the code.
   value_t body_ast = get_method_ast_body(method_ast);
-  TRY_DEF(result, compile_expression(runtime, body_ast, assm->module,
+  TRY_DEF(result, compile_expression(runtime, body_ast, assm->fragment,
       assm->scope_callback));
   assembler_pop_map_scope(assm, &param_scope);
   return result;

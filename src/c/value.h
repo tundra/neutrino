@@ -270,7 +270,7 @@ static value_t new_moved_object(value_t target) {
   F(Method,                  method,                    _, _, _, _, _, _, _, X, _)\
   F(MethodAst,               method_ast,                _, _, X, X, _, _, _, X, _)\
   F(Methodspace,             methodspace,               _, _, _, _, _, _, _, X, X)\
-  F(Module,                  module,                    _, _, _, X, _, _, _, X, _)\
+  F(ModuleFragment,          module_fragment,           _, _, _, X, _, _, _, X, _)\
   F(ModuleLoader,            module_loader,             _, _, _, _, _, _, _, _, _)\
   F(MutableRoots,            mutable_roots,             _, _, _, _, _, _, _, X, X)\
   F(Namespace,               namespace,                 _, _, _, _, _, _, _, X, X)\
@@ -974,21 +974,17 @@ ACCESSORS_DECL(namespace, bindings);
 value_t get_namespace_binding_at(value_t namespace, value_t name);
 
 
-// --- M o d u l e ---
+// --- M o d u l e   f r a g m e n t ---
 
-static const size_t kModuleSize = OBJECT_SIZE(3);
-static const size_t kModuleNamespaceOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kModuleMethodspaceOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kModuleDisplayNameOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kModuleFragmentSize = OBJECT_SIZE(2);
+static const size_t kModuleFragmentNamespaceOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kModuleFragmentMethodspaceOffset = OBJECT_FIELD_OFFSET(1);
 
-// The namespace that holds the module's own bindings.
-ACCESSORS_DECL(module, namespace);
+// The namespace that holds the module fragment's own bindings.
+ACCESSORS_DECL(module_fragment, namespace);
 
-// The method space that holds the module's own methods.
-ACCESSORS_DECL(module, methodspace);
-
-// This display name to show when inspecting/printing the module.
-ACCESSORS_DECL(module, display_name);
+// The method space that holds the module fragment's own methods.
+ACCESSORS_DECL(module_fragment, methodspace);
 
 
 // --- P a t h ---

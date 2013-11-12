@@ -43,26 +43,26 @@ static void test_builtin(runtime_t *runtime, value_t module, variant_t expected,
   ASSERT_VALEQ(variant_to_value(runtime, expected), result);
 }
 
-static value_t new_empty_module(runtime_t *runtime) {
-  return new_heap_module(runtime, ROOT(runtime, nothing), ROOT(runtime, builtin_methodspace),
-      ROOT(runtime, nothing));
+static value_t new_empty_module_fragment(runtime_t *runtime) {
+  return new_heap_module_fragment(runtime, ROOT(runtime, nothing),
+      ROOT(runtime, builtin_methodspace));
 }
 
 TEST(builtin, integers) {
   CREATE_RUNTIME();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
-  value_t module = new_empty_module(runtime);
+  value_t fragment = new_empty_module_fragment(runtime);
 
-  test_builtin(runtime, module, vInt(2), vInt(1), INFIX("+"), vArray(1, vInt(1)));
-  test_builtin(runtime, module, vInt(3), vInt(2), INFIX("+"), vArray(1, vInt(1)));
-  test_builtin(runtime, module, vInt(5), vInt(2), INFIX("+"), vArray(1, vInt(3)));
+  test_builtin(runtime, fragment, vInt(2), vInt(1), INFIX("+"), vArray(1, vInt(1)));
+  test_builtin(runtime, fragment, vInt(3), vInt(2), INFIX("+"), vArray(1, vInt(1)));
+  test_builtin(runtime, fragment, vInt(5), vInt(2), INFIX("+"), vArray(1, vInt(3)));
 
-  test_builtin(runtime, module, vInt(0), vInt(1), INFIX("-"), vArray(1, vInt(1)));
-  test_builtin(runtime, module, vInt(1), vInt(2), INFIX("-"), vArray(1, vInt(1)));
-  test_builtin(runtime, module, vInt(-1), vInt(2), INFIX("-"), vArray(1, vInt(3)));
+  test_builtin(runtime, fragment, vInt(0), vInt(1), INFIX("-"), vArray(1, vInt(1)));
+  test_builtin(runtime, fragment, vInt(1), vInt(2), INFIX("-"), vArray(1, vInt(1)));
+  test_builtin(runtime, fragment, vInt(-1), vInt(2), INFIX("-"), vArray(1, vInt(3)));
 
-  test_builtin(runtime, module, vInt(-1), vInt(1), PREFIX("-"), vEmptyArray());
+  test_builtin(runtime, fragment, vInt(-1), vInt(1), PREFIX("-"), vEmptyArray());
 
   DISPOSE_SAFE_VALUE_POOL(pool);
   DISPOSE_RUNTIME();
@@ -72,11 +72,11 @@ TEST(builtin, strings) {
   CREATE_RUNTIME();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
-  value_t module = new_empty_module(runtime);
+  value_t fragment = new_empty_module_fragment(runtime);
 
-  test_builtin(runtime, module, vStr("abcd"), vStr("ab"), INFIX("+"),
+  test_builtin(runtime, fragment, vStr("abcd"), vStr("ab"), INFIX("+"),
       vArray(1, vStr("cd")));
-  test_builtin(runtime, module, vStr(""), vStr(""), INFIX("+"),
+  test_builtin(runtime, fragment, vStr(""), vStr(""), INFIX("+"),
       vArray(1, vStr("")));
 
   DISPOSE_SAFE_VALUE_POOL(pool);

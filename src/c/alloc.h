@@ -135,9 +135,9 @@ value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t outers);
 // Creates a new empty namespace object.
 value_t new_heap_namespace(runtime_t *runtime);
 
-// Creates a new module object.
-value_t new_heap_module(runtime_t *runtime, value_t namespace, value_t methodspace,
-    value_t display_name);
+// Creates a new module fragment object.
+value_t new_heap_module_fragment(runtime_t *runtime, value_t namespace,
+    value_t methodspace);
 
 // Creates a new operation object.
 value_t new_heap_operation(runtime_t *runtime, alloc_flags_t flags,
@@ -202,7 +202,7 @@ value_t new_heap_methodspace(runtime_t *runtime);
 
 // Creates a new method with the given signature and implementation.
 value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signature,
-    value_t syntax, value_t code, value_t module);
+    value_t syntax, value_t code, value_t fragment);
 
 // Creates an invocation record with the given argument vector.
 value_t new_heap_invocation_record(runtime_t *runtime, alloc_flags_t flags,

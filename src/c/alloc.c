@@ -292,14 +292,13 @@ value_t new_heap_namespace(runtime_t *runtime) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_module(runtime_t *runtime, value_t namespace, value_t methodspace,
-    value_t display_name) {
-  size_t size = kModuleSize;
+value_t new_heap_module_fragment(runtime_t *runtime, value_t namespace,
+    value_t methodspace) {
+  size_t size = kModuleFragmentSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, mutable_module_species)));
-  set_module_namespace(result, namespace);
-  set_module_methodspace(result, methodspace);
-  set_module_display_name(result, display_name);
+      ROOT(runtime, mutable_module_fragment_species)));
+  set_module_fragment_namespace(result, namespace);
+  set_module_fragment_methodspace(result, methodspace);
   return post_create_sanity_check(result, size);
 }
 
@@ -471,7 +470,7 @@ value_t new_heap_methodspace(runtime_t *runtime) {
 }
 
 value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signature,
-    value_t syntax, value_t code, value_t module) {
+    value_t syntax, value_t code, value_t fragment) {
   CHECK_FAMILY_OPT(ofSignature, signature);
   CHECK_FAMILY_OPT(ofCodeBlock, code);
   size_t size = kMethodSize;
@@ -480,7 +479,7 @@ value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signatu
   set_method_signature(result, signature);
   set_method_code(result, code);
   set_method_syntax(result, syntax);
-  set_method_module(result, module);
+  set_method_module_fragment(result, fragment);
   TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }

@@ -35,8 +35,8 @@ static value_t base64_c_str_to_blob(runtime_t *runtime, const char *data) {
 // loader.
 static value_t assemble_module(runtime_t *runtime) {
   TRY_DEF(namespace, new_heap_namespace(runtime));
-  value_t result = new_heap_module(runtime, namespace,
-      ROOT(runtime, builtin_methodspace), ROOT(runtime, nothing));
+  value_t result = new_heap_module_fragment(runtime, namespace,
+      ROOT(runtime, builtin_methodspace));
   return result;
 }
 

@@ -16,9 +16,9 @@ TEST(interp, binding_info_size) {
 // expected value.
 static value_t assert_ast_value(runtime_t *runtime, variant_t expected,
     value_t ast) {
-  TRY_DEF(module, new_heap_module(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, builtin_methodspace), ROOT(runtime, nothing)));
-  TRY_DEF(code_block, compile_expression(runtime, ast, module,
+  TRY_DEF(fragment, new_heap_module_fragment(runtime, ROOT(runtime, nothing),
+      ROOT(runtime, builtin_methodspace)));
+  TRY_DEF(code_block, compile_expression(runtime, ast, fragment,
       scope_lookup_callback_get_bottom()));
   TRY_DEF(result, run_code_block_until_signal(runtime, code_block));
   ASSERT_VALEQ(variant_to_value(runtime, expected), result);

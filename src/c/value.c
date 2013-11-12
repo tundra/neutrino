@@ -1554,42 +1554,36 @@ value_t ensure_namespace_owned_values_frozen(runtime_t *runtime, value_t self) {
 }
 
 
-// --- M o d u l e ---
+// --- M o d u l e   f r a g m e n t ---
 
-GET_FAMILY_PROTOCOL_IMPL(module);
+GET_FAMILY_PROTOCOL_IMPL(module_fragment);
 
-ACCESSORS_IMPL(Module, module, acInFamilyOpt, ofNamespace, Namespace, namespace);
-ACCESSORS_IMPL(Module, module, acInFamilyOpt, ofMethodspace, Methodspace, methodspace);
-ACCESSORS_IMPL(Module, module, acNoCheck, 0, DisplayName, display_name);
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofNamespace,
+    Namespace, namespace);
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofMethodspace,
+    Methodspace, methodspace);
 
-value_t module_validate(value_t value) {
-  VALIDATE_FAMILY(ofModule, value);
-  VALIDATE_FAMILY_OPT(ofNamespace, get_module_namespace(value));
-  VALIDATE_FAMILY_OPT(ofMethodspace, get_module_methodspace(value));
+value_t module_fragment_validate(value_t value) {
+  VALIDATE_FAMILY(ofModuleFragment, value);
+  VALIDATE_FAMILY_OPT(ofNamespace, get_module_fragment_namespace(value));
+  VALIDATE_FAMILY_OPT(ofMethodspace, get_module_fragment_methodspace(value));
   return success();
 }
 
-void module_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+void module_fragment_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
     size_t depth) {
-  CHECK_FAMILY(ofModule, value);
-  string_buffer_printf(buf, "<module");
-  value_t display_name = get_module_display_name(value);
-  if (!is_null(display_name)) {
-    string_buffer_printf(buf, " ");
-    value_print_inner_on(get_module_display_name(value), buf,
-        flags | pfUnquote, depth);
-  }
-  string_buffer_printf(buf, ">");
+  CHECK_FAMILY(ofModuleFragment, value);
+  string_buffer_printf(buf, "<module fragment>");
 }
 
-static value_t module_print(builtin_arguments_t *args) {
+static value_t module_fragment_print(builtin_arguments_t *args) {
   value_t this = get_builtin_subject(args);
   print_ln("%v", this);
   return ROOT(args->runtime, nothing);
 }
 
-value_t add_module_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(module, INFIX("print"), 0, module_print);
+value_t add_module_fragment_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
+  ADD_BUILTIN(module_fragment, INFIX("print"), 0, module_fragment_print);
   return success();
 }
 
