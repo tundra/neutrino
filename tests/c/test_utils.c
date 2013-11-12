@@ -4,7 +4,7 @@
 #include "alloc.h"
 #include "runtime.h"
 #include "test.h"
-#include "utils.h"
+#include "utils-inl.h"
 #include "value-inl.h"
 
 TEST(utils, string_simple) {
@@ -392,4 +392,30 @@ TEST(utils, base64_encode) {
       84, 104, 105, 110, 103, 115, 32, 102, 97, 108, 108, 32, 97, 112, 97, 114,
       116, 59, 32, 116, 104, 101, 32, 99, 101, 110, 116, 114, 101, 32, 99, 97,
       110, 110, 111, 116, 32, 104, 111, 108, 100, 59);
+}
+
+// Record that this macro has been invoked with the given argument.
+#define RECORD(N) record[count++] = N;
+
+TEST(utils, for_each_va_arg) {
+  int count = 0;
+  int record[8];
+
+  FOR_EACH_VA_ARG(RECORD, 1, 4, 6, 9, 34, 54, 2, 3);
+  ASSERT_EQ(8, count);
+  ASSERT_EQ(record[0], 1);
+  ASSERT_EQ(record[1], 4);
+  ASSERT_EQ(record[2], 6);
+  ASSERT_EQ(record[3], 9);
+  ASSERT_EQ(record[4], 34);
+  ASSERT_EQ(record[5], 54);
+  ASSERT_EQ(record[6], 2);
+  ASSERT_EQ(record[7], 3);
+
+  count = 0;
+  FOR_EACH_VA_ARG(RECORD, 6, 5, 4);
+  ASSERT_EQ(3, count);
+  ASSERT_EQ(record[0], 6);
+  ASSERT_EQ(record[1], 5);
+  ASSERT_EQ(record[2], 4);
 }
