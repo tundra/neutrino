@@ -15,7 +15,6 @@ from token import Token
 class Parser(object):
   __metaclass__ = ABCMeta
 
-  _BUILTIN_METHODSPACE = data.Key("subject", ("core", "builtin_methodspace"))
   _SAUSAGES = data.Operation.call()
 
   def __init__(self, tokens, module_name=None, unit=None):
@@ -297,7 +296,7 @@ class Parser(object):
         ast.Argument(data._SELECTOR, ast.Literal(selector))
       ]
       rest = self.parse_arguments()
-      left = ast.Invocation(prefix + rest, self.present.get_methodspace())
+      left = ast.Invocation(prefix + rest)
     return left
 
   # <arguments>
@@ -343,7 +342,7 @@ class Parser(object):
         ast.Argument(data._SUBJECT, subject),
         ast.Argument(data._SELECTOR, ast.Literal(selector))
       ]
-      return ast.Invocation(args, self.present.get_methodspace())
+      return ast.Invocation(args)
     else:
       return self.parse_call_expression()
 
@@ -357,7 +356,7 @@ class Parser(object):
         ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES))
       ]
       rest = self.parse_arguments()
-      recv = ast.Invocation(prefix + rest, self.present.get_methodspace())
+      recv = ast.Invocation(prefix + rest)
     return recv
 
   # <variable>
@@ -366,11 +365,10 @@ class Parser(object):
     ident = self.expect_type(Token.IDENTIFIER)
     stage_index = ident.stage
     stage = self.unit.get_or_create_stage(stage_index)
-    namespace = stage.get_namespace()
-    return self.new_variable(ident, namespace)
+    return self.new_variable(ident)
 
   @abstractmethod
-  def new_variable(self, ident, namespace):
+  def new_variable(self, ident):
     pass
 
   # <atomic expression>
@@ -490,8 +488,8 @@ class OldParser(Parser):
       self.unit = unit
     self.present = self.unit.get_present()
 
-  def new_variable(self, ident, namespace):
-    variable = ast.Variable(ident=ident, namespace=namespace)
+  def new_variable(self, ident):
+    variable = ast.Variable(ident=ident)
     if ident.stage < 0:
       return ast.Quote(ident.stage, variable)
     else:
@@ -501,8 +499,8 @@ class OldParser(Parser):
 # Parser that builds new-style syntax trees.
 class NewParser(Parser):
 
-  def new_variable(self, ident, namespace):
-    return ast.Variable(ident=ident, namespace=namespace)
+  def new_variable(self, ident):
+    return ast.Variable(ident=ident)
 
 
 # Exception signalling a syntax error.

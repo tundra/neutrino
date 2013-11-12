@@ -37,7 +37,6 @@ class Main(object):
     self.flags = None
     self.units = {}
     self.scheduler = schedule.TaskScheduler()
-    self.binder = bindings.Binder(self.units)
 
   # Builds and returns a new option parser for the flags understood by this
   # script.
@@ -158,20 +157,12 @@ class Main(object):
     # Analysis doesn't depend on anything else so we can just go ahead and get
     # that out of the way.
     analysis.scope_analyze(unit)
-    for (index, stage) in unit.get_stages():
-      self.scheduler.add_task(self.binder.new_task(unit, stage))
 
   # Schedules the present program of the given unit to be output to stdout when
   # all the prerequisites for doing so have been run.
   def schedule_for_output(self, unit):
-    def output_unit():
-      program = unit.get_present_program()
-      self.binder.bind_program(program)
-      self.output_value(program)
-    self.scheduler.add_task(schedule.SimpleTask(
-      schedule.ActionId("output program"),
-      [unit.get_present().get_bind_action()],
-      output_unit))
+    program = unit.get_present_program()
+    self.output_value(program)
 
   def run_parse_input(self, inputs, parse_thunk):
     for expr in inputs:

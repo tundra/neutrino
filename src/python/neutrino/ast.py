@@ -157,10 +157,8 @@ class Variable(object):
 class Invocation(object):
 
   @plankton.field("arguments")
-  @plankton.field("methodspace")
-  def __init__(self, arguments, methodspace=None):
+  def __init__(self, arguments):
     self.arguments = arguments
-    self.methodspace = methodspace
 
   def accept(self, visitor):
     return visitor.visit_invocation(self)
@@ -457,9 +455,6 @@ class MethodDeclaration(object):
   def accept(self, visitor):
     return visitor.visit_method_declaration(self)
 
-  def apply(self, program, helper):
-    program.module.methodspace.add_method(self.method)
-
   def traverse(self, visitor):
     self.method.accept(visitor)
 
@@ -478,18 +473,6 @@ class FunctionDeclaration(object):
 
   def accept(self, visitor):
     return visitor.visit_function_declaration(self)
-
-  def apply(self, program, helper):
-    subject = self.method.signature.parameters[0]
-    name = subject.ident.get_name()
-    namespace = program.module.namespace
-    if namespace.has_binding(name):
-      value = namespace.lookup(name)
-    else:
-      value = data.Function(name)
-      namespace.add_binding(name, value)
-    subject.guard = Guard.bound_eq(value)
-    program.module.methodspace.add_method(self.method)
 
   def traverse(self, visitor):
     self.method.accept(visitor)
@@ -529,17 +512,11 @@ class UnboundModuleFragment(object):
 # An individual execution stage.
 class Stage(object):
 
-  _BUILTIN_METHODSPACE = data.Key("subject", ("core", "builtin_methodspace"))
-
   def __init__(self, index, module_name):
     self.index = index
     self.imports = []
     self.import_paths = []
-    self.namespace = data.Namespace({})
-    self.methodspace = data.Methodspace({}, [], [])
-    self.module = data.Module(self.namespace, self.methodspace, module_name)
     self.elements = []
-    self.bind_action = schedule.ActionId("bind %s of %s" % (self.index, module_name))
 
   def __str__(self):
     return "#<stage %i>" % self.index
@@ -549,30 +526,6 @@ class Stage(object):
     if not path is None:
       self.import_paths.append(path)
     self.imports.append(value)
-
-  # Returns this stage's namespace.
-  def get_namespace(self):
-    return self.namespace
-
-  # Returns this stage's methodspace.
-  def get_methodspace(self):
-    return self.methodspace
-
-  # Returns the module that encapsulates this stage's data.
-  def get_module(self):
-    return self.module
-
-  # Returns the action id that represents binding this stage.
-  def get_bind_action(self):
-    return self.bind_action
-
-  # Brings bindings from the previous stage into this stage. If this is the
-  # earliest stage previous will be None.
-  def import_previous(self, previous):
-    if previous is None:
-      self.methodspace.add_import(Stage._BUILTIN_METHODSPACE)
-    else:
-      self.methodspace.add_import(previous.methodspace)
 
   def as_unbound_module_fragment(self):
     imports = []
@@ -709,12 +662,6 @@ class Import(object):
 
   def traverse(self, visitor):
     pass
-
-  def apply(self, program, helper):
-    name = self.ident.get_name()
-    value = helper.lookup_import(name)
-    program.module.namespace.add_binding(name, value)
-    program.module.methodspace.add_import(value.methodspace)
 
   def __str__(self):
     return "(import %s)" % self.ident
