@@ -388,9 +388,11 @@ class Lambda(object):
 class Program(object):
 
   @plankton.field("entry_point")
-  def __init__(self, elements, entry_point):
+  @plankton.field("fragment")
+  def __init__(self, elements, entry_point, fragment):
     self.elements = elements
     self.entry_point = entry_point
+    self.fragment = fragment
 
   def accept(self, visitor):
     return visitor.visit_program(self)
@@ -578,6 +580,9 @@ class Stage(object):
       imports.append(path)
     return UnboundModuleFragment(self.index, imports, [])
 
+  def as_program_fragment(self):
+    return None
+
 
 # A full compilation unit.
 class Unit(object):
@@ -634,7 +639,8 @@ class Unit(object):
 
   def get_present_program(self):
     last_stage = self.get_present()
-    return Program(last_stage.elements, self.entry_point)
+    fragment = last_stage.as_program_fragment()
+    return Program(last_stage.elements, self.entry_point, fragment)
 
   def get_present_module(self):
     last_stage = self.get_present()

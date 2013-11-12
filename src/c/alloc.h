@@ -260,7 +260,8 @@ value_t new_heap_signature_ast(runtime_t *runtime, value_t parameters);
 value_t new_heap_method_ast(runtime_t *runtime, value_t signature, value_t body);
 
 // Creates a new program syntax tree with the given elements.
-value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point);
+value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point,
+    value_t fragment);
 
 // Creates a new identifier with the given path and stage.
 value_t new_heap_identifier(runtime_t *runtime, value_t path, value_t stage);

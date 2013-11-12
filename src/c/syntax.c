@@ -898,6 +898,7 @@ TRIVIAL_PRINT_ON_IMPL(ProgramAst, program_ast);
 FIXED_GET_MODE_IMPL(program_ast, vmMutable);
 
 ACCESSORS_IMPL(ProgramAst, program_ast, acIsSyntaxOpt, 0, EntryPoint, entry_point);
+ACCESSORS_IMPL(ProgramAst, program_ast, acNoCheck, 0, Fragment, fragment);
 
 value_t program_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofProgramAst, self);
@@ -908,12 +909,15 @@ value_t plankton_set_program_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
   TRY_DEF(entry_point, get_id_hash_map_at(contents, RSTR(runtime, entry_point)));
+  TRY_DEF(fragment, get_id_hash_map_at(contents, RSTR(runtime, fragment)));
   set_program_ast_entry_point(object, entry_point);
+  set_program_ast_fragment(object, fragment);
   return success();
 }
 
 value_t plankton_new_program_ast(runtime_t *runtime) {
-  return new_heap_program_ast(runtime, ROOT(runtime, nothing));
+  return new_heap_program_ast(runtime, ROOT(runtime, nothing),
+      ROOT(runtime, nothing));
 }
 
 

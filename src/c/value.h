@@ -815,7 +815,9 @@ typedef struct {
   value_t *current;
 } id_hash_map_iter_t;
 
-// Initializes an iterator for iterating the given map.
+// Initializes an iterator for iterating the given map. Once initialized the
+// iterator starts out before the first entry so after the first call to advance
+// you'll have access to the first element.
 void id_hash_map_iter_init(id_hash_map_iter_t *iter, value_t map);
 
 // Advances the iterator to the next element. Returns true iff an element
