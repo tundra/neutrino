@@ -1548,9 +1548,46 @@ value_t get_namespace_binding_at(value_t namespace, value_t name) {
   return result;
 }
 
+value_t set_namespace_binding_at(runtime_t *runtime, value_t namespace,
+    value_t name, value_t value) {
+  value_t bindings = get_namespace_bindings(namespace);
+  return set_id_hash_map_at(runtime, bindings, name, value);
+}
+
 value_t ensure_namespace_owned_values_frozen(runtime_t *runtime, value_t self) {
   TRY(ensure_frozen(runtime, get_namespace_bindings(self)));
   return success();
+}
+
+
+// --- M o d u l e---
+
+FIXED_GET_MODE_IMPL(module, vmMutable);
+
+ACCESSORS_IMPL(Module, module, acInFamily, ofPath, Path, path);
+ACCESSORS_IMPL(Module, module, acInFamily, ofArrayBuffer, Fragments, fragments);
+
+value_t module_validate(value_t self) {
+  VALIDATE_FAMILY(ofModule, self);
+  VALIDATE_FAMILY(ofPath, get_module_path(self));
+  VALIDATE_FAMILY(ofArrayBuffer, get_module_fragments(self));
+  return success();
+}
+
+void module_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  CHECK_FAMILY(ofModule, value);
+  string_buffer_printf(buf, "<module>");
+}
+
+value_t get_module_fragment_at(value_t self, size_t stage) {
+  value_t fragments = get_module_fragments(self);
+  for (size_t i = 0; i < get_array_buffer_length(fragments); i++) {
+    value_t fragment = get_array_buffer_at(fragments, i);
+    if (get_module_fragment_stage(fragment) == stage)
+      return fragment;
+  }
+  return new_not_found_signal();
 }
 
 
@@ -1558,6 +1595,9 @@ value_t ensure_namespace_owned_values_frozen(runtime_t *runtime, value_t self) {
 
 GET_FAMILY_PROTOCOL_IMPL(module_fragment);
 
+INTEGER_ACCESSORS_IMPL(ModuleFragment, module_fragment, Stage, stage);
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofModule,
+    Module, module);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofNamespace,
     Namespace, namespace);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofMethodspace,

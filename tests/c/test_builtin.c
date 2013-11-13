@@ -44,8 +44,8 @@ static void test_builtin(runtime_t *runtime, value_t module, variant_t expected,
 }
 
 static value_t new_empty_module_fragment(runtime_t *runtime) {
-  return new_heap_module_fragment(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, builtin_methodspace));
+  return new_heap_module_fragment(runtime, ROOT(runtime, nothing), 0,
+      ROOT(runtime, nothing), ROOT(runtime, builtin_methodspace));
 }
 
 TEST(builtin, integers) {

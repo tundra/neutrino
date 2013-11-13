@@ -9,6 +9,13 @@
 
 #include "value-inl.h"
 
+// --- B i n d i n g ---
+
+// Given an unbound module creates a bound version, loading and binding
+// dependencies from the runtime's module loader as required.
+value_t build_bound_module(runtime_t *runtime, value_t unbound_module);
+
+
 // --- M o d u l e   L o a d e r ---
 
 static const size_t kModuleLoaderSize = OBJECT_SIZE(1);

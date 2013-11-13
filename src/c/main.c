@@ -33,11 +33,10 @@ static value_t base64_c_str_to_blob(runtime_t *runtime, const char *data) {
 
 // Assemble a module that can be executed from unbound modules in the module
 // loader.
-static value_t assemble_module(runtime_t *runtime) {
-  TRY_DEF(namespace, new_heap_namespace(runtime));
-  value_t result = new_heap_module_fragment(runtime, namespace,
-      ROOT(runtime, builtin_methodspace));
-  return result;
+static value_t assemble_module(runtime_t *runtime, value_t unbound_module) {
+  CHECK_FAMILY(ofUnboundModule, unbound_module);
+  TRY_DEF(module, build_bound_module(runtime, unbound_module));
+  return get_module_fragment_at(module, 0);
 }
 
 // Executes the given program syntax tree within the given runtime.
@@ -45,7 +44,9 @@ static value_t safe_execute_syntax(runtime_t *runtime, safe_value_t s_program) {
   CHECK_FAMILY(ofProgramAst, deref(s_program));
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
-    safe_value_t s_module = protect(pool, assemble_module(runtime));
+    value_t unbound_module = get_program_ast_module(deref(s_program));
+    TRY_DEF(module, assemble_module(runtime, unbound_module));
+    safe_value_t s_module = protect(pool, module);
     safe_value_t s_entry_point = protect(pool, get_program_ast_entry_point(deref(s_program)));
     E_TRY_DEF(code_block, safe_compile_expression(runtime, s_entry_point,
         s_module, scope_lookup_callback_get_bottom()));

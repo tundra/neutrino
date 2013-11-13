@@ -384,11 +384,11 @@ class Lambda(object):
 class Program(object):
 
   @plankton.field("entry_point")
-  @plankton.field("fragment")
-  def __init__(self, elements, entry_point, fragment):
+  @plankton.field("module")
+  def __init__(self, elements, entry_point, module):
     self.elements = elements
     self.entry_point = entry_point
-    self.fragment = fragment
+    self.module = module
 
   def accept(self, visitor):
     return visitor.visit_program(self)
@@ -398,10 +398,14 @@ class Program(object):
 
 
 # A toplevel namespace declaration.
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "NamespaceDeclaration"))
 class NamespaceDeclaration(object):
 
+  @plankton.field("path")
+  @plankton.field("value")
   def __init__(self, ident, value):
     self.ident = ident
+    self.path = ident.path
     self.value = value
 
   # Returns the stage this declaration belongs to.
@@ -513,7 +517,6 @@ class Stage(object):
   def __init__(self, index, module_name):
     self.index = index
     self.imports = []
-    self.import_paths = []
     self.elements = []
 
   def __str__(self):
@@ -522,14 +525,10 @@ class Stage(object):
   # Returns all the imports for this stage.
   def add_import(self, path, value):
     if not path is None:
-      self.import_paths.append(path)
-    self.imports.append(value)
+      self.imports.append(path)
 
   def as_unbound_module_fragment(self):
-    imports = []
-    for path in self.import_paths:
-      imports.append(path)
-    return UnboundModuleFragment(self.index, imports, [])
+    return UnboundModuleFragment(self.index, self.imports, self.elements)
 
   def as_program_fragment(self):
     return None
@@ -590,8 +589,8 @@ class Unit(object):
 
   def get_present_program(self):
     last_stage = self.get_present()
-    fragment = last_stage.as_program_fragment()
-    return Program(last_stage.elements, self.entry_point, fragment)
+    module = self.as_unbound_module()
+    return Program(last_stage.elements, self.entry_point, module)
 
   def get_present_module(self):
     last_stage = self.get_present()

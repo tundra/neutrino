@@ -270,10 +270,12 @@ static value_t new_moved_object(value_t target) {
   F(Method,                  method,                    _, _, _, _, _, _, _, X, _)\
   F(MethodAst,               method_ast,                _, _, X, X, _, _, _, X, _)\
   F(Methodspace,             methodspace,               _, _, _, _, _, _, _, X, X)\
+  F(Module,                  module,                    _, _, _, _, _, _, _, _, _)\
   F(ModuleFragment,          module_fragment,           _, _, _, X, _, _, _, X, _)\
   F(ModuleLoader,            module_loader,             _, _, _, _, _, _, _, _, _)\
   F(MutableRoots,            mutable_roots,             _, _, _, _, _, _, _, X, X)\
   F(Namespace,               namespace,                 _, _, _, _, _, _, _, X, X)\
+  F(NamespaceDeclarationAst, namespace_declaration_ast, _, _, X, _, _, _, _, _, _)\
   F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _)\
   F(Nothing,                 nothing,                   _, _, _, _, _, _, _, _, _)\
   F(Null,                    null,                      _, _, _, X, _, _, _, _, _)\
@@ -973,18 +975,47 @@ ACCESSORS_DECL(namespace, bindings);
 // doesn't exist a NotFound signal is returned.
 value_t get_namespace_binding_at(value_t namespace, value_t name);
 
+// Sets the binding for a given name in the given namespace.
+value_t set_namespace_binding_at(runtime_t *runtime, value_t namespace,
+    value_t name, value_t value);
+
 
 // --- M o d u l e   f r a g m e n t ---
 
-static const size_t kModuleFragmentSize = OBJECT_SIZE(2);
-static const size_t kModuleFragmentNamespaceOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kModuleFragmentMethodspaceOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kModuleFragmentSize = OBJECT_SIZE(4);
+static const size_t kModuleFragmentStageOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kModuleFragmentModuleOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kModuleFragmentNamespaceOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kModuleFragmentMethodspaceOffset = OBJECT_FIELD_OFFSET(3);
+
+// The index of the stage this fragment belongs to.
+INTEGER_ACCESSORS_DECL(module_fragment, stage);
+
+// The module this is a fragment of.
+ACCESSORS_DECL(module_fragment, module);
 
 // The namespace that holds the module fragment's own bindings.
 ACCESSORS_DECL(module_fragment, namespace);
 
 // The method space that holds the module fragment's own methods.
 ACCESSORS_DECL(module_fragment, methodspace);
+
+// Returns the fragment in the given module that corresponds to the specified
+// stage. If there is no such fragment a NotFound signal is returned.
+value_t get_module_fragment_at(value_t self, size_t stage);
+
+
+// --- M o d u l e   ---
+
+static const size_t kModuleSize = OBJECT_SIZE(2);
+static const size_t kModulePathOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kModuleFragmentsOffset = OBJECT_FIELD_OFFSET(1);
+
+// This module's namespace path.
+ACCESSORS_DECL(module, path);
+
+// The fragments that make up this module.
+ACCESSORS_DECL(module, fragments);
 
 
 // --- P a t h ---

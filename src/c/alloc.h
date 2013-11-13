@@ -136,8 +136,11 @@ value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t outers);
 value_t new_heap_namespace(runtime_t *runtime);
 
 // Creates a new module fragment object.
-value_t new_heap_module_fragment(runtime_t *runtime, value_t namespace,
-    value_t methodspace);
+value_t new_heap_module_fragment(runtime_t *runtime, value_t module, size_t stage,
+    value_t namespace, value_t methodspace);
+
+// Creates a new empty bound module with the given path.
+value_t new_heap_empty_module(runtime_t *runtime, value_t path);
 
 // Creates a new operation object.
 value_t new_heap_operation(runtime_t *runtime, alloc_flags_t flags,
@@ -233,8 +236,7 @@ value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
 // Creates a new local variable syntax tree with the given symbol.
 value_t new_heap_local_variable_ast(runtime_t *runtime, value_t symbol);
 
-// Creates a new namespace variable syntax tree with the given name from the
-// given namespace.
+// Creates a new namespace variable syntax tree with the given name.
 value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t name);
 
 // Creates a new symbol syntax tree with the given name.
@@ -258,10 +260,15 @@ value_t new_heap_method_ast(runtime_t *runtime, value_t signature, value_t body)
 
 // Creates a new program syntax tree with the given elements.
 value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point,
-    value_t fragment);
+    value_t module);
 
 // Creates a new identifier with the given path and stage.
 value_t new_heap_identifier(runtime_t *runtime, value_t path, value_t stage);
+
+// Creates a new namespace declaration syntax tree with the given path bound
+// to the given name.
+value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t path,
+    value_t value);
 
 
 // --- U t i l s ---

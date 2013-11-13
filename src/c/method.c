@@ -305,7 +305,7 @@ ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofIdHashMap, Inheritance,
     inheritance);
 ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofArrayBuffer, Methods,
     methods);
-ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofArray, Imports,
+ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofArrayBuffer, Imports,
     imports);
 
 value_t methodspace_validate(value_t value) {
@@ -340,6 +340,14 @@ value_t add_methodspace_inheritance(runtime_t *runtime, value_t self,
   // If this fails we may have set the parents array of the subtype to an empty
   // array which is awkward but okay.
   return add_to_array_buffer(runtime, parents, supertype);
+}
+
+value_t add_methodspace_import(runtime_t *runtime, value_t self, value_t imported) {
+  CHECK_FAMILY(ofMethodspace, self);
+  CHECK_FAMILY(ofMethodspace, imported);
+  CHECK_MUTABLE(self);
+  value_t imports = get_methodspace_imports(self);
+  return add_to_array_buffer(runtime, imports, imported);
 }
 
 value_t add_methodspace_method(runtime_t *runtime, value_t self,
@@ -445,8 +453,8 @@ static value_t lookup_methodspace_transitive_method(methodspace_lookup_state_t *
     runtime_t *runtime, value_t space, value_t record, frame_t *frame) {
   TRY(lookup_methodspace_local_method(state, runtime, space, record, frame));
   value_t imports = get_methodspace_imports(space);
-  for (size_t i = 0; i < get_array_length(imports); i++) {
-    value_t import = get_array_at(imports, i);
+  for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
+    value_t import = get_array_buffer_at(imports, i);
     TRY(lookup_methodspace_transitive_method(state, runtime, import, record, frame));
   }
   return success();

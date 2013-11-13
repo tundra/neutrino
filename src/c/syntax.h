@@ -27,7 +27,7 @@ value_t emit_value(value_t value, assembler_t *assm);
 // allows this compilation to access symbols defined in an outer scope. If the
 // callback is null it is taken to mean that there is no outer scope.
 value_t compile_expression(runtime_t *runtime, value_t ast,
-    value_t module, scope_lookup_callback_t *scope_callback);
+    value_t fragment, scope_lookup_callback_t *scope_callback);
 
 // Does the same a compile_expression but takes an existing assembler rather
 // than create one.
@@ -225,17 +225,30 @@ ACCESSORS_DECL(method_ast, signature);
 ACCESSORS_DECL(method_ast, body);
 
 
+// --- N a m e s p a c e   d e c l a r a t i o n   a s t ---
+
+static const size_t kNamespaceDeclarationAstSize = OBJECT_SIZE(2);
+static const size_t kNamespaceDeclarationAstPathOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kNamespaceDeclarationAstValueOffset = OBJECT_FIELD_OFFSET(1);
+
+// The path this declaration declares.
+ACCESSORS_DECL(namespace_declaration_ast, path);
+
+// The value to be bound by this declaration.
+ACCESSORS_DECL(namespace_declaration_ast, value);
+
+
 // --- P r o g r a m -  a s t --
 
 static const size_t kProgramAstSize = OBJECT_SIZE(2);
 static const size_t kProgramAstEntryPointOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kProgramAstFragmentOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kProgramAstModuleOffset = OBJECT_FIELD_OFFSET(1);
 
 // The program entry-point expression.
 ACCESSORS_DECL(program_ast, entry_point);
 
-// The fragment that provides context for the entry-point.
-ACCESSORS_DECL(program_ast, fragment);
+// The module that provides context for the entry-point.
+ACCESSORS_DECL(program_ast, module);
 
 
 #endif // _SYNTAX

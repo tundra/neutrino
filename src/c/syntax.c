@@ -29,11 +29,11 @@ value_t init_plankton_environment_mapping(value_mapping_t *mapping,
 }
 
 value_t compile_expression(runtime_t *runtime, value_t program,
-    value_t module, scope_lookup_callback_t *scope_callback) {
+    value_t fragment, scope_lookup_callback_t *scope_callback) {
   assembler_t assm;
   // Don't try to execute cleanup if this fails since there'll not be an
   // assembler to dispose.
-  TRY(assembler_init(&assm, runtime, module, scope_callback));
+  TRY(assembler_init(&assm, runtime, fragment, scope_callback));
   E_BEGIN_TRY_FINALLY();
     E_TRY_DEF(code_block, compile_expression_with_assembler(runtime, program,
         &assm));
@@ -153,7 +153,7 @@ value_t literal_ast_validate(value_t self) {
 
 void literal_ast_print_on(value_t value, string_buffer_t *buf,
     print_flags_t flags, size_t depth) {
-  string_buffer_printf(buf, "#<literal ast: ");
+  string_buffer_printf(buf, "#<");
   value_print_inner_on(get_literal_ast_value(value), buf, flags, depth - 1);
   string_buffer_printf(buf, ">");
 }
@@ -862,12 +862,50 @@ value_t plankton_new_method_ast(runtime_t *runtime) {
 }
 
 
+// --- N a m e s p a c e   d e c l a r a t i o n   a s t ---
+
+FIXED_GET_MODE_IMPL(namespace_declaration_ast, vmMutable);
+
+ACCESSORS_IMPL(NamespaceDeclarationAst, namespace_declaration_ast,
+    acInFamilyOpt, ofPath, Path, path);
+ACCESSORS_IMPL(NamespaceDeclarationAst, namespace_declaration_ast,
+    acIsSyntaxOpt, 0, Value, value);
+
+value_t namespace_declaration_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofNamespaceDeclarationAst, self);
+  VALIDATE_FAMILY_OPT(ofPath, get_namespace_declaration_ast_path(self));
+  return success();
+}
+
+value_t plankton_set_namespace_declaration_ast_contents(value_t object,
+    runtime_t *runtime, value_t contents) {
+  UNPACK_PLANKTON_MAP(contents, path, value);
+  set_namespace_declaration_ast_path(object, path);
+  set_namespace_declaration_ast_value(object, value);
+  return success();
+}
+
+value_t plankton_new_namespace_declaration_ast(runtime_t *runtime) {
+  return new_heap_namespace_declaration_ast(runtime, ROOT(runtime, nothing),
+      ROOT(runtime, nothing));
+}
+
+void namespace_declaration_ast_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
+  string_buffer_printf(buf, "#<def ");
+  value_print_inner_on(get_namespace_declaration_ast_path(value), buf, flags, depth - 1);
+  string_buffer_printf(buf, " := ");
+  value_print_inner_on(get_namespace_declaration_ast_value(value), buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
+
 // --- P r o g r a m   a s t ---
 
 FIXED_GET_MODE_IMPL(program_ast, vmMutable);
 
 ACCESSORS_IMPL(ProgramAst, program_ast, acIsSyntaxOpt, 0, EntryPoint, entry_point);
-ACCESSORS_IMPL(ProgramAst, program_ast, acNoCheck, 0, Fragment, fragment);
+ACCESSORS_IMPL(ProgramAst, program_ast, acNoCheck, 0, Module, module);
 
 value_t program_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofProgramAst, self);
@@ -876,9 +914,9 @@ value_t program_ast_validate(value_t self) {
 
 value_t plankton_set_program_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, entry_point, fragment);
+  UNPACK_PLANKTON_MAP(contents, entry_point, module);
   set_program_ast_entry_point(object, entry_point);
-  set_program_ast_fragment(object, fragment);
+  set_program_ast_module(object, module);
   return success();
 }
 
@@ -892,7 +930,7 @@ void program_ast_print_on(value_t value, string_buffer_t *buf,
   string_buffer_printf(buf, "#<program ast: ");
   value_print_inner_on(get_program_ast_entry_point(value), buf, flags, depth - 1);
   string_buffer_printf(buf, " ");
-  value_print_inner_on(get_program_ast_fragment(value), buf, flags, depth - 1);
+  value_print_inner_on(get_program_ast_module(value), buf, flags, depth - 1);
   string_buffer_printf(buf, ">");
 }
 
@@ -932,6 +970,7 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "LocalDeclaration", plankton_new_local_declaration_ast, runtime));
   TRY(add_plankton_factory(map, ast, "LocalVariable", plankton_new_local_variable_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Method", plankton_new_method_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "NamespaceDeclaration", plankton_new_namespace_declaration_ast, runtime));
   TRY(add_plankton_factory(map, ast, "NamespaceVariable", plankton_new_namespace_variable_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Parameter", plankton_new_parameter_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Program", plankton_new_program_ast, runtime));
