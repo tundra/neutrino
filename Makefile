@@ -254,7 +254,7 @@ $(MD_OBJS): $(BIN)/doc/%.html: %.md
 docs:	$(MD_OBJS)
 
 
-CORE_LIBRARY_SRCS=$(shell find src/n/ -name "*.n" | sort)
+CORE_LIBRARY_SRCS=$(shell find src/n/ tests/n/golden -name "*.n" | sort)
 CORE_LIBRARY_OUT=$(OUT)/n/library.nl
 
 

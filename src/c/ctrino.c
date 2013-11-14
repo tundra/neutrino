@@ -42,9 +42,19 @@ value_t ctrino_new_instance(builtin_arguments_t *args) {
   return new_heap_instance(runtime, species);
 }
 
+value_t ctrino_get_builtin_protocol(builtin_arguments_t *args) {
+  runtime_t *runtime = get_builtin_runtime(args);
+  value_t self = get_builtin_subject(args);
+  value_t name = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofCtrino, self);
+  CHECK_FAMILY(ofString, name);
+  return ROOT(runtime, integer_protocol);
+}
+
 value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(ctrino, INFIX("fail"), 0, ctrino_fail);
   ADD_BUILTIN(ctrino, INFIX("new_protocol"), 1, ctrino_new_protocol);
   ADD_BUILTIN(ctrino, INFIX("new_instance"), 1, ctrino_new_instance);
+  ADD_BUILTIN(ctrino, INFIX("get_builtin_protocol"), 1, ctrino_get_builtin_protocol);
   return success();
 }

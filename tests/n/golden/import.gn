@@ -1,12 +1,12 @@
 -- INPUT:
-import @test;
-entry_point @test:some_value.print();
+import $test;
+entry_point $test:some_value.print();
 -- OUTPUT:
 6
 -- END
 
 -- INPUT:
-import @test;
+import $test;
 entry_point (8).method_import_test().print();
 -- OUTPUT:
 "found it!"

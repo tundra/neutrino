@@ -4,4 +4,4 @@
 ## The core module doesn't "do" anything itself, it's just a convenient way to
 ## import the different basic modules together.
 
-import @integer;
+import $integer;

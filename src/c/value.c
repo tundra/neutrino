@@ -1617,22 +1617,36 @@ bool has_module_fragment_at(value_t self, value_t stage) {
   return !is_signal(scNotFound, get_module_fragment_at(self, stage));
 }
 
-value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t ident) {
-  CHECK_FAMILY(ofIdentifier, ident);
-  value_t stage = get_identifier_stage(ident);
+value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage,
+    value_t path) {
+  CHECK_FAMILY(ofPath, path);
   value_t fragments = get_module_fragments(self);
-  value_t path = get_identifier_path(ident);
   value_t head = get_path_head(path);
   if (value_identity_compare(head, RSTR(runtime, ctrino)))
     return ROOT(runtime, ctrino);
+  value_t tail = get_path_tail(path);
   for (size_t i = 0; i < get_array_buffer_length(fragments); i++) {
     value_t fragment = get_array_buffer_at(fragments, i);
     if (is_same_value(get_module_fragment_stage(fragment), stage)) {
       value_t namespace = get_module_fragment_namespace(fragment);
-      return get_namespace_binding_at(namespace, head);
+      TRY_DEF(binding, get_namespace_binding_at(namespace, head));
+      if (is_path_empty(tail)) {
+        // We've found a binding and we're at the end of the path so we're good,
+        // we can just return the binding.
+        return binding;
+      } else {
+        // We found a binding but the path goes on so we have to look up
+        // recursively.
+        CHECK_FAMILY(ofModule, binding);
+        // TODO: Always using the present stage to look up recursively doesn't
+        //   seem quite right but I'll have to add some tests of this to get
+        //   it completely right.
+        return module_lookup_identifier(runtime, binding, present_stage(),
+            tail);
+      }
     }
   }
-  WARN("Couldn't find fragment when looking up %v", ident);
+  WARN("Couldn't find fragment for stage %v when looking up %v", stage, path);
   return new_lookup_error_signal(lcNoSuchStage);
 }
 

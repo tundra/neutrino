@@ -28,6 +28,10 @@ ACCESSORS_DECL(module_loader, modules);
 value_t module_loader_process_options(runtime_t *runtime, value_t self,
     value_t options);
 
+// Looks up a module by path, returning an unbound module. If the loader doesn't
+// know any modules with the given path NotFound is returned.
+value_t module_loader_lookup_module(value_t self, value_t path);
+
 
 // --- L i b r a r y ---
 

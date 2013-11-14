@@ -234,7 +234,8 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         CHECK_FAMILY(ofIdentifier, ident);
         value_t module = read_next_value(&state);
         CHECK_FAMILY(ofModule, module);
-        TRY_DEF(value, module_lookup_identifier(runtime, module, ident));
+        TRY_DEF(value, module_lookup_identifier(runtime, module,
+            get_identifier_stage(ident), get_identifier_path(ident)));
         frame_push_value(&frame, value);
         break;
       }

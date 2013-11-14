@@ -36,7 +36,7 @@ static value_t base64_c_str_to_blob(runtime_t *runtime, const char *data) {
 static value_t assemble_module(runtime_t *runtime, value_t unbound_module) {
   CHECK_FAMILY(ofUnboundModule, unbound_module);
   TRY_DEF(module, build_bound_module(runtime, unbound_module));
-  return get_module_fragment_at(module, new_integer(0));
+  return get_module_fragment_at(module, present_stage());
 }
 
 // Executes the given program syntax tree within the given runtime.

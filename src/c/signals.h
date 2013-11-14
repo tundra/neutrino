@@ -156,7 +156,8 @@ static value_t new_invalid_input_signal_with_hint(string_hint_t hint) {
   F(Ambiguity)                                                                 \
   F(Namespace)                                                                 \
   F(NoMatch)                                                                   \
-  F(NoSuchStage)
+  F(NoSuchStage)                                                               \
+  F(UnresolvedImport)
 
 // Reasons why method lookup may fail.
 typedef enum {

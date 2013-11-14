@@ -81,8 +81,8 @@ entry_point {
 -- END
 
 -- INPUT:
-def @This := @pytrino:new_protocol("This");
-def @obj := @pytrino:new_instance(@This);
+def @This := @ctrino.new_protocol("This");
+def @obj := @ctrino.new_instance(@This);
 def ($this).foo() => 6;
 def ($this is @This).foo() => 7;
 entry_point {

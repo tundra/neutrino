@@ -3,7 +3,7 @@
 
 ## Primitive assertion library.
 
-import @core;
+import $core;
 
 ## Does nothing if the given value is 'true', fails if the value is 'false'.
 def $that($value) => $that($value.is_truthy());

@@ -153,6 +153,22 @@ static value_t success() {
   return new_integer(0);
 }
 
+// An arbitrary non-signal value which can be used instead of success to
+// indicate that the concrete value doesn't matter.
+static value_t whatever() {
+  return new_integer(1);
+}
+
+// Returns a value representing the present stage.
+static value_t present_stage() {
+  return new_integer(0);
+}
+
+// Returns a value representing the past stage.
+static value_t past_stage() {
+  return new_integer(-1);
+}
+
 // Creates an internal boolean with the given value. Note that this is purely
 // for runtime internal use and does not yield the true/false boolean values
 // used by the surface language.
@@ -1034,9 +1050,11 @@ ACCESSORS_DECL(module, fragments);
 
 // Looks up an identifier in the given module by finding the fragment for the
 // appropriate stage and looking the path up in the namespace. If for any reason
-// the binding cannot be found a lookup error signal is returned.
-value_t module_lookup_identifier(runtime_t *runtime, value_t self,
-    value_t ident);
+// the binding cannot be found a lookup error signal is returned. To avoid
+// having to construct new identifiers when shifting between stages this call
+// takes the stage and path of the identifier separately.
+value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage,
+    value_t path);
 
 // Returns the fragment in the given module that corresponds to the specified
 // stage. If there is no such fragment a NotFound signal is returned.

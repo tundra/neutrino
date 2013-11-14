@@ -572,7 +572,8 @@ static value_t quick_and_dirty_evaluate_syntax(runtime_t *runtime,
     case ofNamespaceVariableAst: {
       value_t ident = get_namespace_variable_ast_identifier(value_ast);
       value_t module = get_module_fragment_module(fragment);
-      return module_lookup_identifier(runtime, module, ident);
+      return module_lookup_identifier(runtime, module,
+          get_identifier_stage(ident), get_identifier_path(ident));
     }
     default:
       ERROR("Cannot evaluate guard value %v", value_ast);
