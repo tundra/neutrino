@@ -91,4 +91,10 @@ log_callback_t *set_log_callback(log_callback_t *value);
     log_message(llInfo, __FILE__, __LINE__, FMT, __VA_ARGS__);                 \
 } while (false)
 
+// Works the same as INFO but any occurrences of this macro will cause the
+// linter to choke if you try to submit. If you use this when debugging/tracing
+// by hest the linter will help you remember to get rid of all the debug print
+// statements before submitting.
+#define HEST(FMT, ...) INFO(FMT, __VA_ARGS__)
+
 #endif // _LOG
