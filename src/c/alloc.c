@@ -661,6 +661,14 @@ value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t path,
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_method_declaration_ast(runtime_t *runtime, value_t method) {
+  size_t size = kMethodDeclarationAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, method_declaration_ast_species)));
+  set_method_declaration_ast_method(result, method);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- M i s c ---
 

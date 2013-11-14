@@ -323,10 +323,7 @@ class Guard(object):
   @plankton.field("value")
   def __init__(self, type, value):
     self.type = type
-    if value is None:
-      self.value = None
-    else:
-      self.value = Quote(-1, value)
+    self.value = value
 
   def accept(self, visitor):
     visitor.visit_guard(self)
@@ -339,7 +336,7 @@ class Guard(object):
     if self.value is None:
       return "%s()" % self.type
     else:
-      return "%s(%s)" % (self.type, self.value.ast)
+      return "%s(%s)" % (self.type, self.value)
 
   @staticmethod
   def any():
@@ -347,17 +344,13 @@ class Guard(object):
 
   @staticmethod
   def eq(value):
+    assert not value is None
     return Guard(data.Guard._EQ, value)
-
-  @staticmethod
-  def bound_eq(value):
-    result = Guard(data.Guard._EQ, value)
-    result.value.value = value
-    return result
 
   # 'is' is a reserved word in python. T t t.
   @staticmethod
   def is_(value):
+    assert not value is None
     return Guard(data.Guard._IS, value)
 
 
@@ -415,10 +408,8 @@ class NamespaceDeclaration(object):
   def accept(self, visitor):
     return visitor.visit_namespace_declaration(self)
 
-  def apply(self, program, helper):
-    name = self.ident.get_name()
-    value = helper.evaluate(self.value)
-    program.module.namespace.add_binding(name, value)
+  def apply(self, fragment):
+    fragment.add_element(self)
 
   def traverse(self, visitor):
     self.value.accept(visitor)
@@ -446,8 +437,10 @@ class Method(object):
 
 
 # A toplevel method declaration.
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "MethodDeclaration"))
 class MethodDeclaration(object):
 
+  @plankton.field("method")
   def __init__(self, method):
     self.method = method
 
@@ -459,6 +452,9 @@ class MethodDeclaration(object):
 
   def traverse(self, visitor):
     self.method.accept(visitor)
+
+  def apply(self, fragment):
+    fragment.add_element(self)
 
   def __str__(self):
     return "(method-declaration %s %s)" % (self.method.signature, self.method.body)
@@ -478,6 +474,9 @@ class FunctionDeclaration(object):
 
   def traverse(self, visitor):
     self.method.accept(visitor)
+
+  def apply(self, fragment):
+    pass
 
   def __str__(self):
     return "(function-declaration %s %s)" % (self.method.signature, self.method.body)
@@ -523,9 +522,14 @@ class Stage(object):
     return "#<stage %i>" % self.index
 
   # Returns all the imports for this stage.
-  def add_import(self, path, value):
-    if not path is None:
-      self.imports.append(path)
+  def add_import(self, path):
+    self.imports.append(path)
+
+  def add_element(self, element):
+    self.elements.append(element)
+
+  def apply_element(self, element):
+    element.apply(self)
 
   def as_unbound_module_fragment(self):
     return UnboundModuleFragment(self.index, self.imports, self.elements)
@@ -548,7 +552,7 @@ class Unit(object):
   def add_element(self, stage, *elements):
     target = self.get_or_create_stage(stage)
     for element in elements:
-      target.elements.append(element)
+      target.apply_element(element)
     return self
 
   def get_stages(self):
@@ -656,6 +660,9 @@ class Import(object):
 
   def accept(self, visitor):
     visitor.visit_import(self)
+
+  def apply(self, fragment):
+    fragment.add_import(self.ident.path)
 
   def traverse(self, visitor):
     pass

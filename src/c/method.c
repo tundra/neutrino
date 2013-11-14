@@ -279,8 +279,6 @@ void guard_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
 
 // --- M e t h o d ---
 
-TRIVIAL_PRINT_ON_IMPL(Method, method);
-
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofSignature, Signature, signature);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofCodeBlock, Code, code);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofMethodAst, Syntax, syntax);
@@ -294,6 +292,32 @@ value_t method_validate(value_t self) {
   VALIDATE_FAMILY_OPT(ofMethodAst, get_method_syntax(self));
   VALIDATE_FAMILY_OPT(ofModuleFragment, get_method_module_fragment(self));
   return success();
+}
+
+void method_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<method ");
+  value_t signature = get_method_signature(self);
+  value_print_inner_on(signature, buf, flags, depth - 1);
+  string_buffer_printf(buf, " ");
+  value_t syntax = get_method_syntax(self);
+  value_print_inner_on(syntax, buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
+value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
+    value_t fragment) {
+  reusable_scratch_memory_t scratch;
+  reusable_scratch_memory_init(&scratch);
+  E_BEGIN_TRY_FINALLY();
+    E_TRY_DEF(signature, build_method_signature(runtime, &scratch,
+        get_method_ast_signature(method_ast)));
+    E_TRY_DEF(method, new_heap_method(runtime, afMutable, signature, method_ast,
+        ROOT(runtime, nothing), fragment));
+    E_RETURN(method);
+  E_FINALLY();
+    reusable_scratch_memory_dispose(&scratch);
+  E_END_TRY_FINALLY();
 }
 
 
@@ -410,6 +434,7 @@ static value_t lookup_methodspace_local_method(methodspace_lookup_state_t *state
   size_t arg_count = get_invocation_record_argument_count(record);
   for (size_t current = 0; current < method_count; current++) {
     value_t method = get_array_buffer_at(methods, current);
+    print_ln("%9v", method);
     value_t signature = get_method_signature(method);
     match_result_t match;
     TRY(match_signature(runtime, signature, record, frame, space, &match_info,
@@ -502,29 +527,6 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
   return state.result;
 }
 
-// Given an array of method asts, returns a corresponding array of method
-// objects.
-static value_t method_asts_to_methods(runtime_t *runtime, value_t method_asts) {
-  size_t count = get_array_length(method_asts);
-  TRY_DEF(methods, new_heap_array(runtime, count));
-  reusable_scratch_memory_t scratch;
-  reusable_scratch_memory_init(&scratch);
-  E_BEGIN_TRY_FINALLY();
-    for (size_t i = 0; i < count; i++) {
-      value_t method_ast = get_array_at(method_asts, i);
-      E_TRY_DEF(signature, build_method_signature(runtime, &scratch,
-          get_method_ast_signature(method_ast)));
-      E_TRY_DEF(method, new_heap_method(runtime, afMutable, signature, method_ast,
-          ROOT(runtime, nothing), ROOT(runtime, nothing)));
-      set_array_at(methods, i, method);
-    }
-    E_TRY_DEF(result, new_heap_array_buffer_with_contents(runtime, methods));
-    E_RETURN(result);
-  E_FINALLY();
-    reusable_scratch_memory_dispose(&scratch);
-  E_END_TRY_FINALLY();
-}
-
 value_t plankton_new_methodspace(runtime_t *runtime) {
   return new_heap_methodspace(runtime);
 }
@@ -532,8 +534,7 @@ value_t plankton_new_methodspace(runtime_t *runtime) {
 value_t plankton_set_methodspace_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, methods, inheritance, imports);
-  TRY_DEF(heap_methods, method_asts_to_methods(runtime, methods));
-  set_methodspace_methods(object, heap_methods);
+  set_methodspace_methods(object, methods);
   set_methodspace_inheritance(object, inheritance);
   set_methodspace_imports(object, imports);
   return success();

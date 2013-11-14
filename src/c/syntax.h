@@ -238,6 +238,15 @@ ACCESSORS_DECL(namespace_declaration_ast, path);
 ACCESSORS_DECL(namespace_declaration_ast, value);
 
 
+// --- M e t h o d   d e c l a r a t i o n   a s t ---
+
+static const size_t kMethodDeclarationAstSize = OBJECT_SIZE(1);
+static const size_t kMethodDeclarationAstMethodOffset = OBJECT_FIELD_OFFSET(0);
+
+// The method object describing the method being declared.
+ACCESSORS_DECL(method_declaration_ast, method);
+
+
 // --- P r o g r a m -  a s t --
 
 static const size_t kProgramAstSize = OBJECT_SIZE(2);

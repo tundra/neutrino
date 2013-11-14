@@ -211,6 +211,10 @@ ACCESSORS_DECL(method, syntax);
 // The module fragment that provides context for this method.
 ACCESSORS_DECL(method, module_fragment);
 
+// Compiles a method syntax tree into a method object.
+value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
+    value_t fragment);
+
 
 // --- M e t h o d   s p a c e ---
 

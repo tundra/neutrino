@@ -270,6 +270,9 @@ value_t new_heap_identifier(runtime_t *runtime, value_t path, value_t stage);
 value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t path,
     value_t value);
 
+// Creates a new method declaration that declares the given method.
+value_t new_heap_method_declaration_ast(runtime_t *runtime, value_t method);
+
 
 // --- U t i l s ---
 

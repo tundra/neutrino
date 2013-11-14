@@ -95,6 +95,16 @@ static value_t apply_namespace_declaration(runtime_t *runtime, value_t decl,
   return success();
 }
 
+static value_t apply_method_declaration(runtime_t *runtime, value_t decl,
+    value_t fragment) {
+  value_t method_ast = get_method_declaration_ast_method(decl);
+  print_ln("%9v", method_ast);
+  TRY_DEF(method, compile_method_ast_to_method(runtime, method_ast, fragment));
+  value_t methodspace = get_module_fragment_methodspace(fragment);
+  TRY(add_methodspace_method(runtime, methodspace, method));
+  return success();
+}
+
 // Performs the appropriate action for a fragment element to the given fragment.
 static value_t apply_unbound_fragment_element(runtime_t *runtime, value_t element,
     value_t fragment) {
@@ -102,6 +112,8 @@ static value_t apply_unbound_fragment_element(runtime_t *runtime, value_t elemen
   switch (family) {
     case ofNamespaceDeclarationAst:
       return apply_namespace_declaration(runtime, element, fragment);
+    case ofMethodDeclarationAst:
+      return apply_method_declaration(runtime, element, fragment);
     default:
       ERROR("Invalid toplevel element %s", get_object_family_name(family));
       return success();

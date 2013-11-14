@@ -107,7 +107,7 @@ class Main(object):
       with open(arg, "rt") as stream:
         contents = stream.read()
       tokens = token.tokenize(contents)
-      unit = parser.OldParser(tokens, module_name).parse_program()
+      unit = parser.NewParser(tokens, module_name).parse_program()
       self.units[module_name] = unit
     # Then schedule them to be compiled.
     for unit in self.units.values():
@@ -116,12 +116,12 @@ class Main(object):
   # Processes any --expression arguments.
   def schedule_expressions(self):
     self.run_parse_input(self.flags.expression,
-        lambda tokens: parser.OldParser(tokens, "expression").parse_expression_program())
+        lambda tokens: parser.NewParser(tokens, "expression").parse_expression_program())
 
   # Processes any --program arguments.
   def schedule_programs(self):
     self.run_parse_input(self.flags.program,
-        lambda tokens: parser.OldParser(tokens, "program").parse_program())
+        lambda tokens: parser.NewParser(tokens, "program").parse_program())
 
   # Processes any --file arguments.
   def schedule_files(self):

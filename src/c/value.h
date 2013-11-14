@@ -269,6 +269,7 @@ static value_t new_moved_object(value_t target) {
   F(LocalVariableAst,        local_variable_ast,        _, _, X, X, _, _, X, _, _)\
   F(Method,                  method,                    _, _, _, _, _, _, _, X, _)\
   F(MethodAst,               method_ast,                _, _, X, X, _, _, _, X, _)\
+  F(MethodDeclarationAst,    method_declaration_ast,    _, _, X, _, _, _, _, _, _)\
   F(Methodspace,             methodspace,               _, _, _, _, _, _, _, X, X)\
   F(Module,                  module,                    _, _, _, _, _, _, _, _, _)\
   F(ModuleFragment,          module_fragment,           _, _, _, X, _, _, _, X, _)\
