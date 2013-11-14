@@ -136,7 +136,7 @@ value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t outers);
 value_t new_heap_namespace(runtime_t *runtime);
 
 // Creates a new module fragment object.
-value_t new_heap_module_fragment(runtime_t *runtime, value_t module, size_t stage,
+value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t stage,
     value_t namespace, value_t methodspace);
 
 // Creates a new empty bound module with the given path.
@@ -237,7 +237,7 @@ value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
 value_t new_heap_local_variable_ast(runtime_t *runtime, value_t symbol);
 
 // Creates a new namespace variable syntax tree with the given name.
-value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t name);
+value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t ident);
 
 // Creates a new symbol syntax tree with the given name.
 value_t new_heap_symbol_ast(runtime_t *runtime, value_t name);

@@ -54,6 +54,10 @@ ACCESSORS_DECL(unbound_module, path);
 // The fragments that make up this module
 ACCESSORS_DECL(unbound_module, fragments);
 
+// Returns the most recent fragment before the given stage, if that is well-
+// defined, otherwise a NotFound signal.
+value_t get_unbound_module_fragment_before(value_t self, value_t stage);
+
 
 // --- U n b o u n d   m o d u l e   f r a g m e n t ---
 

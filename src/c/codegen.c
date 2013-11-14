@@ -363,10 +363,11 @@ value_t assembler_emit_load_local(assembler_t *assm, size_t index) {
 }
 
 value_t assembler_emit_load_global(assembler_t *assm, value_t name,
-    value_t namespace) {
+    value_t module) {
+  CHECK_FAMILY(ofModule, module);
   assembler_emit_opcode(assm, ocLoadGlobal);
   TRY(assembler_emit_value(assm, name));
-  TRY(assembler_emit_value(assm, namespace));
+  TRY(assembler_emit_value(assm, module));
   assembler_adjust_stack_height(assm, +1);
   return success();
 }

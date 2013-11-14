@@ -310,7 +310,7 @@ value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
   reusable_scratch_memory_t scratch;
   reusable_scratch_memory_init(&scratch);
   E_BEGIN_TRY_FINALLY();
-    E_TRY_DEF(signature, build_method_signature(runtime, &scratch,
+    E_TRY_DEF(signature, build_method_signature(runtime, fragment, &scratch,
         get_method_ast_signature(method_ast)));
     E_TRY_DEF(method, new_heap_method(runtime, afMutable, signature, method_ast,
         ROOT(runtime, nothing), fragment));
@@ -434,7 +434,6 @@ static value_t lookup_methodspace_local_method(methodspace_lookup_state_t *state
   size_t arg_count = get_invocation_record_argument_count(record);
   for (size_t current = 0; current < method_count; current++) {
     value_t method = get_array_buffer_at(methods, current);
-    print_ln("%9v", method);
     value_t signature = get_method_signature(method);
     match_result_t match;
     TRY(match_signature(runtime, signature, record, frame, space, &match_info,

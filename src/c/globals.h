@@ -62,5 +62,9 @@ static size_t min_size(size_t a, size_t b) {
 // it to be executed.
 #define USE(E) do { if (false) { E; } } while (false)
 
+// The negative int32 with the largest possible magnitude. Beware of implicit
+// conversions to unsigned/wider int types which eagerly mess with this value.
+#define kMostNegativeInt32 ((int32_t) 0x80000000)
+
 
 #endif // _GLOBALS

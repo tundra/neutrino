@@ -7,6 +7,11 @@
 #include "utils-inl.h"
 #include "value-inl.h"
 
+TEST(utils, globals) {
+  ASSERT_TRUE(kMostNegativeInt32 < 0);
+  ASSERT_FALSE((kMostNegativeInt32 - 1) < 0);
+}
+
 TEST(utils, string_simple) {
   string_t str;
   string_init(&str, "Hello, World!");

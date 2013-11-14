@@ -156,9 +156,9 @@ value_t assembler_emit_return(assembler_t *assm);
 value_t assembler_emit_load_local(assembler_t *assm, size_t index);
 
 // Emits a global variable load of the local with the given name within the
-// given namespace.
+// given module.
 value_t assembler_emit_load_global(assembler_t *assm, value_t name,
-    value_t namespace);
+    value_t module);
 
 // Emits an argument load of the argument with the given parameter index.
 value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index);

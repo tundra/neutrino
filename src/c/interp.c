@@ -230,14 +230,11 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         break;
       }
       case ocLoadGlobal: {
-        value_t path = read_next_value(&state);
-        CHECK_FAMILY(ofPath, path);
-        value_t namespace = read_next_value(&state);
-        CHECK_FAMILY(ofNamespace, namespace);
-        // TODO: implement proper lookup of paths in imported namespaces.
-        CHECK_TRUE("nontrivial path", is_path_empty(get_path_tail(path)));
-        value_t name = get_path_head(path);
-        TRY_DEF(value, get_namespace_binding_at(namespace, name));
+        value_t ident = read_next_value(&state);
+        CHECK_FAMILY(ofIdentifier, ident);
+        value_t module = read_next_value(&state);
+        CHECK_FAMILY(ofModule, module);
+        TRY_DEF(value, module_lookup_identifier(runtime, module, ident));
         frame_push_value(&frame, value);
         break;
       }

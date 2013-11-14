@@ -496,12 +496,12 @@ NO_BUILTIN_METHODS(namespace_variable_ast);
 TRIVIAL_PRINT_ON_IMPL(NamespaceVariableAst, namespace_variable_ast);
 FIXED_GET_MODE_IMPL(namespace_variable_ast, vmMutable);
 
-ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acNoCheck, 0,
-    Name, name);
+ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acInFamilyOpt,
+    ofIdentifier, Identifier, identifier);
 
 value_t emit_namespace_variable_ast(value_t self, assembler_t *assm) {
-  assembler_emit_load_global(assm, get_namespace_variable_ast_name(self),
-      get_module_fragment_namespace(assm->fragment));
+  assembler_emit_load_global(assm, get_namespace_variable_ast_identifier(self),
+      get_module_fragment_module(assm->fragment));
   return success();
 }
 
@@ -513,7 +513,7 @@ value_t namespace_variable_ast_validate(value_t self) {
 value_t plankton_set_namespace_variable_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
   UNPACK_PLANKTON_MAP(contents, name);
-  set_namespace_variable_ast_name(object, name);
+  set_namespace_variable_ast_identifier(object, name);
   return success();
 }
 
@@ -564,7 +564,23 @@ FIXED_GET_MODE_IMPL(lambda_ast, vmMutable);
 ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, ofMethodAst, Method,
     method);
 
-value_t build_method_signature(runtime_t *runtime,
+static value_t quick_and_dirty_evaluate_syntax(runtime_t *runtime,
+    value_t fragment, value_t value_ast) {
+  switch (get_object_family(value_ast)) {
+    case ofLiteralAst:
+      return get_literal_ast_value(value_ast);
+    case ofNamespaceVariableAst: {
+      value_t ident = get_namespace_variable_ast_identifier(value_ast);
+      value_t module = get_module_fragment_module(fragment);
+      return module_lookup_identifier(runtime, module, ident);
+    }
+    default:
+      ERROR("Cannot evaluate guard value %v", value_ast);
+      return new_invalid_input_signal();
+  }
+}
+
+value_t build_method_signature(runtime_t *runtime, value_t fragment,
     reusable_scratch_memory_t *scratch, value_t signature_ast) {
   value_t param_asts = get_signature_ast_parameters(signature_ast);
   size_t param_astc = get_array_length(param_asts);
@@ -599,7 +615,8 @@ value_t build_method_signature(runtime_t *runtime,
       guard = ROOT(runtime, any_guard);
     } else {
       value_t guard_value_ast = get_guard_ast_value(guard_ast);
-      value_t guard_value = get_literal_ast_value(guard_value_ast);
+      TRY_DEF(guard_value, quick_and_dirty_evaluate_syntax(runtime, fragment,
+          guard_value_ast));
       TRY_SET(guard, new_heap_guard(runtime, afFreeze, guard_type,
           guard_value));
     }
@@ -684,7 +701,7 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   value_t body_code = ROOT(runtime, nothing);
   if (assm->scope_callback != scope_lookup_callback_get_bottom())
     TRY_SET(body_code, compile_method_body(assm, method_ast));
-  TRY_DEF(signature, build_method_signature(assm->runtime,
+  TRY_DEF(signature, build_method_signature(assm->runtime, assm->fragment,
       assembler_get_scratch_memory(assm), get_method_ast_signature(method_ast)));
 
   // Build a method space in which to store the method.

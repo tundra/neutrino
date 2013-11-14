@@ -983,14 +983,26 @@ value_t set_namespace_binding_at(runtime_t *runtime, value_t namespace,
 
 // --- M o d u l e   f r a g m e n t ---
 
-static const size_t kModuleFragmentSize = OBJECT_SIZE(4);
+// Identifies the phases a module fragment goes through is it's being loaded
+// and bound.
+typedef enum {
+  // The fragment has been created but nothing else has been done.
+  feUnbound,
+  // We're in the process of constructing the contents of this fragment.
+  feBinding,
+  // The construction process is complete.
+  feComplete
+} module_fragment_epoch_t;
+
+static const size_t kModuleFragmentSize = OBJECT_SIZE(5);
 static const size_t kModuleFragmentStageOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kModuleFragmentModuleOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kModuleFragmentNamespaceOffset = OBJECT_FIELD_OFFSET(2);
 static const size_t kModuleFragmentMethodspaceOffset = OBJECT_FIELD_OFFSET(3);
+static const size_t kModuleFragmentEpochOffset = OBJECT_FIELD_OFFSET(4);
 
 // The index of the stage this fragment belongs to.
-INTEGER_ACCESSORS_DECL(module_fragment, stage);
+ACCESSORS_DECL(module_fragment, stage);
 
 // The module this is a fragment of.
 ACCESSORS_DECL(module_fragment, module);
@@ -1001,9 +1013,11 @@ ACCESSORS_DECL(module_fragment, namespace);
 // The method space that holds the module fragment's own methods.
 ACCESSORS_DECL(module_fragment, methodspace);
 
-// Returns the fragment in the given module that corresponds to the specified
-// stage. If there is no such fragment a NotFound signal is returned.
-value_t get_module_fragment_at(value_t self, size_t stage);
+// The current epoch of the given module fragment.
+TYPED_ACCESSORS_DECL(module_fragment, module_fragment_epoch_t, epoch);
+
+// Returns true iff this fragment has been bound.
+bool is_module_fragment_bound(value_t fragment);
 
 
 // --- M o d u l e   ---
@@ -1017,6 +1031,24 @@ ACCESSORS_DECL(module, path);
 
 // The fragments that make up this module.
 ACCESSORS_DECL(module, fragments);
+
+// Looks up an identifier in the given module by finding the fragment for the
+// appropriate stage and looking the path up in the namespace. If for any reason
+// the binding cannot be found a lookup error signal is returned.
+value_t module_lookup_identifier(runtime_t *runtime, value_t self,
+    value_t ident);
+
+// Returns the fragment in the given module that corresponds to the specified
+// stage. If there is no such fragment a NotFound signal is returned.
+value_t get_module_fragment_at(value_t self, value_t stage);
+
+// Returns the fragment in the given module that comes immediately before the
+// given stage.
+value_t get_module_fragment_before(value_t self, value_t stage);
+
+// Returns true iff the given module has a fragment for the given stage. If there
+// is no stage before this one NotFound is returned.
+bool has_module_fragment_at(value_t self, value_t stage);
 
 
 // --- P a t h ---

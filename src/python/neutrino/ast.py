@@ -138,13 +138,9 @@ class Variable(object):
   @plankton.payload
   def get_payload(self):
     if self.symbol is None:
-      return {
-        'name': self.ident.path
-      }
+      return {'name': self.ident}
     else:
-      return {
-        'symbol': self.symbol
-      }
+      return {'symbol': self.symbol}
 
   def __str__(self):
     return "(var %s)" % str(self.ident)

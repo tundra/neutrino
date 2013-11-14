@@ -67,7 +67,7 @@ static const size_t kMaxOrderIndex = ~0L;
 size_t get_parameter_order_index_for_array(value_t tags);
 
 // Builds a method signature based on a signature syntax tree.
-value_t build_method_signature(runtime_t *runtime,
+value_t build_method_signature(runtime_t *runtime, value_t fragment,
     reusable_scratch_memory_t *scratch, value_t signature_ast);
 
 
@@ -149,10 +149,10 @@ ACCESSORS_DECL(local_variable_ast, symbol);
 // --- N a m e s p a c e   v a r i a b l e   a s t ---
 
 static const size_t kNamespaceVariableAstSize = OBJECT_SIZE(1);
-static const size_t kNamespaceVariableAstNameOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kNamespaceVariableAstIdentifierOffset = OBJECT_FIELD_OFFSET(0);
 
-// The name to look up through this namespace variable.
-ACCESSORS_DECL(namespace_variable_ast, name);
+// The identifier to look up through this namespace variable.
+ACCESSORS_DECL(namespace_variable_ast, identifier);
 
 
 // --- S y m b o l ---

@@ -65,6 +65,11 @@ static value_t ensure_unbound_module_scheduled(binding_context_t *context,
   return success();
 }
 
+static bool has_bound_module_fragment(value_t module, value_t stage) {
+  value_t fragment = get_module_fragment_at(module, stage);
+  return !is_signal(scNotFound, fragment) && is_module_fragment_bound(fragment);
+}
+
 // Returns true if the given fragment hasn't already been bound but has all its
 // dependencies bound and hence can be bound itself.
 static bool is_fragment_ready_to_bind(binding_context_t *context,
@@ -72,13 +77,17 @@ static bool is_fragment_ready_to_bind(binding_context_t *context,
   CHECK_FAMILY(ofUnboundModule, unbound_module);
   CHECK_FAMILY(ofUnboundModuleFragment, unbound_fragment);
   // Check whether we've already bound this fragment.
-  value_t path = get_unbound_module_path(unbound_module);
-  size_t stage = get_integer_value(get_unbound_module_fragment_stage(unbound_fragment));
-  value_t module;
-  binding_context_get_module(context, path, NULL, &module);
-  if (!is_signal(scNotFound, get_module_fragment_at(module, stage)))
+  value_t stage = get_unbound_module_fragment_stage(unbound_fragment);
+  value_t bound_module;
+  value_t module_path = get_unbound_module_path(unbound_module);
+  binding_context_get_module(context, module_path, NULL, &bound_module);
+  if (has_bound_module_fragment(bound_module, stage))
     return false;
-  return true;
+  // Check whether there are any stages before this that haven't been bound.
+  // Scan through all the fragment's "sibling" fragments.
+  value_t previous_fragment = get_unbound_module_fragment_before(unbound_module, stage);
+  return is_signal(scNotFound, previous_fragment)
+      || has_bound_module_fragment(bound_module, get_unbound_module_fragment_stage(previous_fragment));
 }
 
 // Adds a namespace binding for the value
@@ -98,7 +107,6 @@ static value_t apply_namespace_declaration(runtime_t *runtime, value_t decl,
 static value_t apply_method_declaration(runtime_t *runtime, value_t decl,
     value_t fragment) {
   value_t method_ast = get_method_declaration_ast_method(decl);
-  print_ln("%9v", method_ast);
   TRY_DEF(method, compile_method_ast_to_method(runtime, method_ast, fragment));
   value_t methodspace = get_module_fragment_methodspace(fragment);
   TRY(add_methodspace_method(runtime, methodspace, method));
@@ -120,31 +128,56 @@ static value_t apply_unbound_fragment_element(runtime_t *runtime, value_t elemen
   }
 }
 
+static value_t new_empty_module_fragment(runtime_t *runtime, value_t stage,
+    value_t module) {
+  TRY_DEF(namespace, new_heap_namespace(runtime));
+  TRY_DEF(methodspace, new_heap_methodspace(runtime));
+  // Prime all methodspaces with the built-in one. This is a temporary hack
+  // (famous last words), longer term the built-ins should be loaded through
+  // the same mechanism as all other methods.
+  TRY(add_methodspace_import(runtime, methodspace, ROOT(runtime, builtin_methodspace)));
+  return new_heap_module_fragment(runtime, module, stage, namespace, methodspace);
+}
+
+// If the given modules has a fragment for the given stage returns it, otherwise
+// creates and returns it. Note that any predecessors of the module must have
+// been bound before this can be called.
+static value_t get_or_create_module_fragment(runtime_t *runtime, value_t stage,
+    value_t module) {
+  if (has_module_fragment_at(module, stage))
+    return get_module_fragment_at(module, stage);
+  TRY_DEF(fragment, new_empty_module_fragment(runtime, stage, module));
+  value_t predecessor = get_module_fragment_before(module, stage);
+  if (!is_signal(scNotFound, predecessor)) {
+    CHECK_TRUE("predecessor not bound", is_module_fragment_bound(predecessor));
+    value_t methodspace = get_module_fragment_methodspace(fragment);
+    TRY(add_methodspace_import(runtime, methodspace,
+        get_module_fragment_methodspace(predecessor)));
+  }
+  TRY(add_to_array_buffer(runtime, get_module_fragments(module), fragment));
+  return fragment;
+}
+
 static value_t bind_module_fragment(binding_context_t *context,
     value_t unbound_module, value_t unbound_fragment) {
   CHECK_FAMILY(ofUnboundModule, unbound_module);
   CHECK_FAMILY(ofUnboundModuleFragment, unbound_fragment);
   // Create the new bound fragment object and add it to the module.
   value_t path = get_unbound_module_path(unbound_module);
-  size_t stage = get_integer_value(get_unbound_module_fragment_stage(unbound_fragment));
+  value_t stage = get_unbound_module_fragment_stage(unbound_fragment);
+  INFO("Binding stage %v of %v", stage, path);
   value_t module;
   binding_context_get_module(context, path, NULL, &module);
-  TRY_DEF(namespace, new_heap_namespace(context->runtime));
-  TRY_DEF(methodspace, new_heap_methodspace(context->runtime));
-  // Prime all methodspaces with the built-in one. This is a temporary hack
-  // (famous last words), longer term the built-ins should be loaded through
-  // the same mechanism as all other methods.
-  TRY(add_methodspace_import(context->runtime, methodspace,
-      ROOT(context->runtime, builtin_methodspace)));
-  TRY_DEF(fragment, new_heap_module_fragment(context->runtime, module, stage,
-      namespace, methodspace));
-  TRY(add_to_array_buffer(context->runtime, get_module_fragments(module), fragment));
+  TRY_DEF(fragment, get_or_create_module_fragment(context->runtime, stage, module));
+  CHECK_EQ("fragment already bound", feUnbound, get_module_fragment_epoch(fragment));
   // Apply all the elements.
+  set_module_fragment_epoch(fragment, feBinding);
   value_t elements = get_unbound_module_fragment_elements(unbound_fragment);
   for (size_t i = 0; i < get_array_length(elements); i++) {
     value_t element = get_array_at(elements, i);
     TRY(apply_unbound_fragment_element(context->runtime, element, fragment));
   }
+  set_module_fragment_epoch(fragment, feComplete);
   return success();
 }
 
@@ -184,6 +217,7 @@ value_t build_bound_module(runtime_t *runtime, value_t unbound_module) {
   value_t path = get_unbound_module_path(unbound_module);
   value_t module;
   TRY(binding_context_get_module(&context, path, NULL, &module));
+  TRY(get_or_create_module_fragment(runtime, new_integer(0), module));
   return module;
 }
 
@@ -314,6 +348,23 @@ void unbound_module_print_on(value_t value, string_buffer_t *buf, print_flags_t 
   value_print_inner_on(fragments, buf, flags, depth - 1);
   string_buffer_printf(buf, ">");
 }
+
+value_t get_unbound_module_fragment_before(value_t self, value_t stage) {
+  int32_t limit = get_integer_value(stage);
+  value_t fragments = get_unbound_module_fragments(self);
+  int32_t best_stage = kMostNegativeInt32;
+  value_t best_fragment = new_not_found_signal();
+  for (size_t i = 0; i < get_array_length(fragments); i++) {
+    value_t fragment = get_array_at(fragments, i);
+    int32_t fragment_stage = get_integer_value(get_unbound_module_fragment_stage(fragment));
+    if (fragment_stage < limit && fragment_stage > best_stage) {
+      best_stage = fragment_stage;
+      best_fragment = fragment;
+    }
+  }
+  return best_fragment;
+}
+
 
 
 // --- U n b o u n d   m o d u l e   f r a g m e n t ---

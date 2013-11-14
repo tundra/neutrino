@@ -6,6 +6,7 @@
 #include "builtin.h"
 #include "heap.h"
 #include "interp.h"
+#include "log.h"
 #include "runtime.h"
 #include "try-inl.h"
 #include "value-inl.h"
@@ -1519,8 +1520,6 @@ value_t ensure_lambda_owned_values_frozen(runtime_t *runtime, value_t self) {
 
 // --- N a m e s p a c e ---
 
-TRIVIAL_PRINT_ON_IMPL(Namespace, namespace);
-
 ACCESSORS_IMPL(Namespace, namespace, acInFamilyOpt, ofIdHashMap, Bindings, bindings);
 
 value_t namespace_validate(value_t self) {
@@ -1559,6 +1558,14 @@ value_t ensure_namespace_owned_values_frozen(runtime_t *runtime, value_t self) {
   return success();
 }
 
+void namespace_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  CHECK_FAMILY(ofNamespace, value);
+  string_buffer_printf(buf, "#<namespace ");
+  value_print_inner_on(get_namespace_bindings(value), buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
 
 // --- M o d u l e---
 
@@ -1580,14 +1587,53 @@ void module_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
   string_buffer_printf(buf, "<module>");
 }
 
-value_t get_module_fragment_at(value_t self, size_t stage) {
+value_t get_module_fragment_at(value_t self, value_t stage) {
   value_t fragments = get_module_fragments(self);
   for (size_t i = 0; i < get_array_buffer_length(fragments); i++) {
     value_t fragment = get_array_buffer_at(fragments, i);
-    if (get_module_fragment_stage(fragment) == stage)
+    if (is_same_value(get_module_fragment_stage(fragment), stage))
       return fragment;
   }
   return new_not_found_signal();
+}
+
+value_t get_module_fragment_before(value_t self, value_t stage) {
+  int32_t limit = get_integer_value(stage);
+  value_t fragments = get_module_fragments(self);
+  int32_t best_stage = kMostNegativeInt32;
+  value_t best_fragment = new_not_found_signal();
+  for (size_t i = 0; i < get_array_buffer_length(fragments); i++) {
+    value_t fragment = get_array_buffer_at(fragments, i);
+    int32_t fragment_stage = get_integer_value(get_module_fragment_stage(fragment));
+    if (fragment_stage < limit && fragment_stage > best_stage) {
+      best_stage = fragment_stage;
+      best_fragment = fragment;
+    }
+  }
+  return best_fragment;
+}
+
+bool has_module_fragment_at(value_t self, value_t stage) {
+  return !is_signal(scNotFound, get_module_fragment_at(self, stage));
+}
+
+value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t ident) {
+  CHECK_FAMILY(ofIdentifier, ident);
+  value_t stage = get_identifier_stage(ident);
+  value_t fragments = get_module_fragments(self);
+  value_t path = get_identifier_path(ident);
+  value_t head = get_path_head(path);
+  if (value_identity_compare(head, RSTR(runtime, ctrino)))
+    return ROOT(runtime, ctrino);
+  for (size_t i = 0; i < get_array_buffer_length(fragments); i++) {
+    value_t fragment = get_array_buffer_at(fragments, i);
+    if (is_same_value(get_module_fragment_stage(fragment), stage)) {
+      value_t namespace = get_module_fragment_namespace(fragment);
+      return get_namespace_binding_at(namespace, head);
+    }
+  }
+  WARN("Couldn't find fragment when looking up %v", ident);
+  return new_lookup_error_signal(lcNoSuchStage);
 }
 
 
@@ -1595,13 +1641,22 @@ value_t get_module_fragment_at(value_t self, size_t stage) {
 
 GET_FAMILY_PROTOCOL_IMPL(module_fragment);
 
-INTEGER_ACCESSORS_IMPL(ModuleFragment, module_fragment, Stage, stage);
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acNoCheck, 0, Stage, stage);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofModule,
     Module, module);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofNamespace,
     Namespace, namespace);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofMethodspace,
     Methodspace, methodspace);
+
+void set_module_fragment_epoch(value_t self, module_fragment_epoch_t value) {
+  *access_object_field(self, kModuleFragmentEpochOffset) = new_integer(value);
+}
+
+module_fragment_epoch_t get_module_fragment_epoch(value_t self) {
+  value_t epoch = *access_object_field(self, kModuleFragmentEpochOffset);
+  return (module_fragment_epoch_t) get_integer_value(epoch);
+}
 
 value_t module_fragment_validate(value_t value) {
   VALIDATE_FAMILY(ofModuleFragment, value);
@@ -1625,6 +1680,10 @@ static value_t module_fragment_print(builtin_arguments_t *args) {
 value_t add_module_fragment_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(module_fragment, INFIX("print"), 0, module_fragment_print);
   return success();
+}
+
+bool is_module_fragment_bound(value_t fragment) {
+  return get_module_fragment_epoch(fragment) == feComplete;
 }
 
 
@@ -1725,7 +1784,6 @@ value_t path_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
 
 // --- I d e n t i f i e r ---
 
-TRIVIAL_PRINT_ON_IMPL(Identifier, identifier);
 FIXED_GET_MODE_IMPL(identifier, vmMutable);
 
 ACCESSORS_IMPL(Identifier, identifier, acInFamilyOpt, ofPath, Path, path);
@@ -1747,6 +1805,20 @@ value_t plankton_set_identifier_contents(value_t object, runtime_t *runtime,
   set_identifier_path(object, path);
   set_identifier_stage(object, stage);
   return success();
+}
+
+void identifier_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  CHECK_FAMILY(ofIdentifier, value);
+  int32_t stage = get_integer_value(get_identifier_stage(value));
+  if (stage < 0) {
+    for (int32_t i = stage; i < 0; i++)
+      string_buffer_putc(buf, '@');
+  } else {
+    for (int32_t i = 0; i <= stage; i++)
+      string_buffer_putc(buf, '$');
+  }
+  value_print_inner_on(get_identifier_path(value), buf, flags, depth - 1);
 }
 
 
