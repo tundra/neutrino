@@ -362,8 +362,8 @@ loc:
 
 # Linting
 lint-tabs:
-	@echo Linting for tabs
-	@! (find src/ tests/ -type f | grep -v ".*\.pyc" | xargs grep -P '\t')
+	@echo Linting
+	@./src/sh/lint.sh
 
 
 lint:	lint-tabs
