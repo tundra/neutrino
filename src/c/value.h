@@ -147,6 +147,18 @@ static int64_t get_integer_value(value_t value) {
   return value.as_integer.value;
 }
 
+// Returns a new tagged integer which is the sum of the two given tagged
+// integers.
+static value_t add_integers(value_t a, value_t b) {
+  return new_integer(get_integer_value(a) + get_integer_value(b));
+}
+
+// Returns a new tagged integer which is the first of the given tagged integers
+// minus the second.
+static value_t sub_integers(value_t a, value_t b) {
+  return new_integer(get_integer_value(a) - get_integer_value(b));
+}
+
 // Returns a value that is _not_ a signal. This can be used to indicate
 // unspecific success.
 static value_t success() {
@@ -167,6 +179,32 @@ static value_t present_stage() {
 // Returns a value representing the past stage.
 static value_t past_stage() {
   return new_integer(-1);
+}
+
+// Returns a value representing the past stage.
+static value_t past_past_stage() {
+  return new_integer(-2);
+}
+
+// Shifts a stage index being looked up through an imported stage index. Going
+// through a non-present import will shift which stage you're looking for and
+// this function tells you what the new stage should be. If, for instance,
+// you're looking up @foo:X through import $foo you want to continue looking for
+// @X in $foo, whereas if you're looking for @foo:X in @foo you want to shift to
+// looking for $X. Hence shifting @ by $ yields @, shifting @ by @ yields $,
+// etc.
+static value_t shift_lookup_through_import(value_t import, value_t stage) {
+  return sub_integers(stage, import);
+}
+
+// Shifts a fragment index through an imported stage index. Importing a module
+// non-presently will shift the dependencies between modules such that, for
+// instance, if you import @x then you'll want to import $x in your past, and
+// @x in your past^2. That's what importing @x means. This function tells you,
+// given the point at which you're importing and a stage being imported, which
+// fragment of yours should the fragment being imported be imported into..
+static value_t shift_fragment_through_import(value_t import, value_t stage) {
+  return add_integers(import, stage);
 }
 
 // Creates an internal boolean with the given value. Note that this is purely
@@ -300,7 +338,7 @@ static value_t new_moved_object(value_t target) {
   F(Options,                 options,                   _, _, X, _, _, _, _, _, _)\
   F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _)\
   F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _)\
-  F(Path,                    path,                      _, X, X, X, _, _, _, X, _)\
+  F(Path,                    path,                      X, X, X, X, _, _, _, X, _)\
   F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, _, _)\
   F(Protocol,                protocol,                  _, _, X, X, _, _, _, X, _)\
   F(Roots,                   roots,                     _, _, _, _, _, _, _, X, X)\
@@ -1010,12 +1048,13 @@ typedef enum {
   feComplete
 } module_fragment_epoch_t;
 
-static const size_t kModuleFragmentSize = OBJECT_SIZE(5);
+static const size_t kModuleFragmentSize = OBJECT_SIZE(6);
 static const size_t kModuleFragmentStageOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kModuleFragmentModuleOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kModuleFragmentNamespaceOffset = OBJECT_FIELD_OFFSET(2);
 static const size_t kModuleFragmentMethodspaceOffset = OBJECT_FIELD_OFFSET(3);
-static const size_t kModuleFragmentEpochOffset = OBJECT_FIELD_OFFSET(4);
+static const size_t kModuleFragmentImportsOffset = OBJECT_FIELD_OFFSET(4);
+static const size_t kModuleFragmentEpochOffset = OBJECT_FIELD_OFFSET(5);
 
 // The index of the stage this fragment belongs to.
 ACCESSORS_DECL(module_fragment, stage);
@@ -1028,6 +1067,12 @@ ACCESSORS_DECL(module_fragment, namespace);
 
 // The method space that holds the module fragment's own methods.
 ACCESSORS_DECL(module_fragment, methodspace);
+
+// The namespace that holds the fragment's imports. Imports work slightly
+// differently than other definitions in that they can be accessed through
+// any stage so they get their own namespace.
+// TODO: consider whether this is really a good design.
+ACCESSORS_DECL(module_fragment, imports);
 
 // The current epoch of the given module fragment.
 TYPED_ACCESSORS_DECL(module_fragment, module_fragment_epoch_t, epoch);

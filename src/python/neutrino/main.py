@@ -12,7 +12,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 # Remaining imports.
 import analysis
 import ast
-import bindings
 import data
 import optparse
 import parser
@@ -66,7 +65,7 @@ class Main(object):
   def run_filter(self):
     if not self.flags.filter:
       return False
-    pattern = re.compile(r'^p64/([a-zA-Z0-9=+]+)$')
+    pattern = re.compile(r'^p64/([a-zA-Z0-9=+/]+)$')
     for line in sys.stdin:
       match = pattern.match(line.strip())
       if match:
@@ -128,7 +127,7 @@ class Main(object):
     for filename in self.flags.file:
       source = open(filename, "rt").read()
       tokens = token.tokenize(source)
-      unit = parser.OldParser(tokens, filename).parse_program()
+      unit = parser.NewParser(tokens, filename).parse_program()
       self.schedule_for_compile(unit)
       self.schedule_for_output(unit)
 

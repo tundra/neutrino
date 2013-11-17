@@ -201,23 +201,31 @@ IF_CHECKS_ENABLED(__ASSERT_CHECK_FAILURE_NO_VALUE_HELPER__(scCause, E))
 // Expands to a string_t with the given contents.
 #define STR(value) ((string_t) {strlen(value), value})
 
-// The type tag of a variant value.
-typedef enum {
-  vtInteger,
-  vtString,
-  vtBool,
-  vtNull,
-  vtArray,
-  vtValue
-} variant_type_t;
+struct variant_t;
 
-// A variant which can hold various C data types. Used for various convenience
-// functions for working with neutrino data.
+// Type of expander functions that turn variants into values.
+typedef value_t (variant_expander_t)(struct runtime_t *runtime, struct variant_t *variant);
+
+// Expanders for the basic types.
+value_t expand_variant_to_integer(struct runtime_t *runtime, struct variant_t *variant);
+value_t expand_variant_to_string(struct runtime_t *runtime, struct variant_t *variant);
+value_t expand_variant_to_bool(struct runtime_t *runtime, struct variant_t *variant);
+value_t expand_variant_to_null(struct runtime_t *runtime, struct variant_t *variant);
+value_t expand_variant_to_value(struct runtime_t *runtime, struct variant_t *variant);
+value_t expand_variant_to_array(struct runtime_t *runtime, struct variant_t *variant);
+value_t expand_variant_to_array_buffer(struct runtime_t *runtime, struct variant_t *variant);
+value_t expand_variant_to_path(struct runtime_t *runtime, struct variant_t *variant);
+
+// A generic variant type which allows heap data structures to be described
+// conveniently inlined (using the macros below) as expressions and then
+// passed around and/or converted together. New variant types can be defined
+// by creating new expander functions.
 typedef struct variant_t {
-  variant_type_t type;
+  // The function to call to expand this variant to a heap value.
+  variant_expander_t *expander;
   union {
-    int64_t as_integer;
-    const char *as_string;
+    int64_t as_int64;
+    const char *as_c_str;
     bool as_bool;
     struct {
       size_t length;
@@ -227,29 +235,60 @@ typedef struct variant_t {
   } value;
 } variant_t;
 
-// Creates an integer variant with the given value.
-#define vInt(V) ((variant_t) {vtInteger, {.as_integer=(V)}})
-
-// Creates a variant string with the given value.
-#define vStr(V) ((variant_t) {vtString, {.as_string=(V)}})
-
-// Creates a variant bool with the given value.
-#define vBool(V) ((variant_t) {vtBool, {.as_bool=(V)}})
-
-// Creates a variant null.
-#define vNull() ((variant_t) {vtNull, {.as_integer=0}})
-
-// Creates a variant which represents the given value_t.
-#define vValue(V) ((variant_t) {vtValue, {.as_value=(V)}})
-
-#define vEmptyArray() ((variant_t) {vtArray, {.as_array={0, 0}}})
-
-// Creates a variant array with the given length and elements.
-#define vArray(N, ELMS) ((variant_t) {vtArray, {.as_array={N, (variant_t[N]) {ELMS}}}})
+// Returns true if the given variant value expands to null.
+static bool variant_is_marker(variant_t *variant) {
+  return variant->expander == NULL;
+}
 
 // Alias for commas to use between elements as arguments to vArray. Commas mess
 // with macros, this fixes that.
 #define o ,
+
+// Expands to an expression that yields a variant with the specified expander
+// and payload.
+#define vBuild(expander, payload) ((variant_t) {expander, {payload}})
+
+// Returns a recognizable marker that can be detected using variant_is_marker.
+#define vMarker vBuild(NULL, .as_bool=0)
+
+// Creates an integer variant with the given value.
+#define vInt(V) vBuild(expand_variant_to_integer, .as_int64=(V))
+
+// Creates a variant string with the given value.
+#define vStr(V) vBuild(expand_variant_to_string, .as_c_str=(V))
+
+// Creates a variant bool with the given value.
+#define vBool(V) vBuild(expand_variant_to_bool, .as_bool=(V))
+
+// Creates a variant null.
+#define vNull() vBuild(expand_variant_to_null, .as_bool=0)
+
+// Creates a variant which represents the given value_t.
+#define vValue(V) vBuild(expand_variant_to_value, .as_value=(V))
+
+// Expands to the empty array. Because of the way the vArray macro works it has
+// to be non-empty.
+#define vEmptyArray() vBuild(expand_variant_to_array, .as_array={0 o 0})
+
+// Expands to a payload value for the vBuild macro that stores all the argument
+// in the as_array field in the value union.
+#define vArrayPayload(...) .as_array={                                         \
+  VA_ARGC(__VA_ARGS__),                                                        \
+  (variant_t[VA_ARGC(__VA_ARGS__)]) { __VA_ARGS__ }                            \
+}
+
+// Creates a variant array with the given length and elements.
+#define vArray(...) vBuild(expand_variant_to_array, vArrayPayload(__VA_ARGS__))
+
+// Creates a variant array with the given length and elements.
+#define vArrayBuffer(...) vBuild(expand_variant_to_array_buffer, vArrayPayload(__VA_ARGS__))
+
+// Expands to a variant representing a path with the given segments. This can
+// not be used to construct the empty path.
+#define vPath(...) vBuild(expand_variant_to_path, vArrayPayload(__VA_ARGS__))
+
+// Instantiates a variant value in the runtime stored in the variable 'runtime'.
+#define C(V) variant_to_value(runtime, (V))
 
 // Given a variant, returns a value allocated in the given runtime (if necessary)
 // with the corresponding value.

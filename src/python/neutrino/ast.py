@@ -459,11 +459,12 @@ class MethodDeclaration(object):
 # A toplevel function declaration.
 class FunctionDeclaration(object):
 
-  def __init__(self, method):
+  def __init__(self, ident, method):
+    self.ident = ident
     self.method = method
 
   def get_stage(self):
-    return 0
+    return self.ident.stage
 
   def accept(self, visitor):
     return visitor.visit_function_declaration(self)
@@ -472,7 +473,8 @@ class FunctionDeclaration(object):
     self.method.accept(visitor)
 
   def apply(self, fragment):
-    pass
+    fragment.ensure_function_declared(self.ident)
+    fragment.add_element(MethodDeclaration(self.method))
 
   def __str__(self):
     return "(function-declaration %s %s)" % (self.method.signature, self.method.body)
@@ -513,6 +515,7 @@ class Stage(object):
     self.index = index
     self.imports = []
     self.elements = []
+    self.functions = set()
 
   def __str__(self):
     return "#<stage %i>" % self.index
@@ -526,6 +529,16 @@ class Stage(object):
 
   def apply_element(self, element):
     element.apply(self)
+
+  def ensure_function_declared(self, name):
+    if name in self.functions:
+      return
+    self.functions.add(name)
+    value = Invocation([
+      Argument(data._SUBJECT, Variable(data.Identifier(-1, data.Path(["ctrino"])))),
+      Argument(data._SELECTOR, Literal(data.Operation.infix("new_function")))
+    ])
+    self.add_element(NamespaceDeclaration(name, value))
 
   def as_unbound_module_fragment(self):
     return UnboundModuleFragment(self.index, self.imports, self.elements)

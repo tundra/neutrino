@@ -17,11 +17,12 @@ TEST(interp, binding_info_size) {
 static value_t assert_ast_value(runtime_t *runtime, variant_t expected,
     value_t ast) {
   TRY_DEF(fragment, new_heap_module_fragment(runtime, ROOT(runtime, nothing),
-      new_integer(0), ROOT(runtime, nothing), ROOT(runtime, builtin_methodspace)));
+      new_integer(0), ROOT(runtime, nothing), ROOT(runtime, builtin_methodspace),
+      ROOT(runtime, nothing)));
   TRY_DEF(code_block, compile_expression(runtime, ast, fragment,
       scope_lookup_callback_get_bottom()));
   TRY_DEF(result, run_code_block_until_signal(runtime, code_block));
-  ASSERT_VALEQ(variant_to_value(runtime, expected), result);
+  ASSERT_VAREQ(expected, result);
   return success();
 }
 
@@ -30,10 +31,8 @@ TEST(interp, execution) {
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
   value_t null = ROOT(runtime, null);
-  value_t subject_array = variant_to_value(runtime,
-      vArray(1, vValue(ROOT(runtime, subject_key))));
-  value_t selector_array = variant_to_value(runtime,
-      vArray(1, vValue(ROOT(runtime, selector_key))));
+  value_t subject_array = C(vArray(vValue(ROOT(runtime, subject_key))));
+  value_t selector_array = C(vArray(vValue(ROOT(runtime, selector_key))));
   value_t basic_signature_params = new_heap_array(runtime, 2);
   set_array_at(basic_signature_params, 0, new_heap_parameter_ast(
       runtime, new_heap_symbol_ast(runtime, null), subject_array,
@@ -56,7 +55,7 @@ TEST(interp, execution) {
     set_array_at(elements, 0, new_heap_literal_ast(runtime, new_integer(98)));
     set_array_at(elements, 1, new_heap_literal_ast(runtime, new_integer(87)));
     value_t ast = new_heap_array_ast(runtime, elements);
-    assert_ast_value(runtime, vArray(2, vInt(98) o vInt(87)), ast);
+    assert_ast_value(runtime, vArray(vInt(98), vInt(87)), ast);
   }
 
   // 0-element sequence
@@ -147,6 +146,9 @@ TEST(interp, compile_errors) {
 }
 
 static void validate_lookup_error(void *unused, log_entry_t *entry) {
+  // Ignore any logging to stdout, we're only interested in the error.
+  if (entry->destination == lsStdout)
+    return;
   string_t expected;
   string_init(&expected,
       "%<signal: LookupError(NoMatch)>: {%subject: #<lambda>, %selector: 0}");
@@ -157,10 +159,8 @@ TEST(interp, lookup_error) {
   CREATE_RUNTIME();
 
   value_t null = ROOT(runtime, null);
-  value_t subject_array = variant_to_value(runtime,
-      vArray(1, vValue(ROOT(runtime, subject_key))));
-  value_t selector_array = variant_to_value(runtime,
-      vArray(1, vValue(ROOT(runtime, selector_key))));
+  value_t subject_array = C(vArray(vValue(ROOT(runtime, subject_key))));
+  value_t selector_array = C(vArray(vValue(ROOT(runtime, selector_key))));
   value_t basic_signature_params = new_heap_array(runtime, 2);
   set_array_at(basic_signature_params, 0, new_heap_parameter_ast(
       runtime, new_heap_symbol_ast(runtime, null), subject_array,

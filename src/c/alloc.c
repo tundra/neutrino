@@ -293,11 +293,12 @@ value_t new_heap_namespace(runtime_t *runtime) {
 }
 
 value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t stage,
-    value_t namespace, value_t methodspace) {
-  CHECK_FAMILY(ofModule, module);
+    value_t namespace, value_t methodspace, value_t imports) {
+  CHECK_FAMILY_OPT(ofModule, module);
   CHECK_DOMAIN(vdInteger, stage);
-  CHECK_FAMILY(ofNamespace, namespace);
-  CHECK_FAMILY(ofMethodspace, methodspace);
+  CHECK_FAMILY_OPT(ofNamespace, namespace);
+  CHECK_FAMILY_OPT(ofMethodspace, methodspace);
+  CHECK_FAMILY_OPT(ofNamespace, imports);
   size_t size = kModuleFragmentSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_module_fragment_species)));
@@ -305,6 +306,7 @@ value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t sta
   set_module_fragment_module(result, module);
   set_module_fragment_namespace(result, namespace);
   set_module_fragment_methodspace(result, methodspace);
+  set_module_fragment_imports(result, imports);
   set_module_fragment_epoch(result, feUnbound);
   return post_create_sanity_check(result, size);
 }

@@ -133,13 +133,13 @@ class Parser(object):
         return ast.NamespaceDeclaration(name, value)
       else:
         # First argument to a method
-        subject = self.name_as_subject(name)
+        subject = ast.Parameter(name, [data._SUBJECT], ast.Guard.eq(ast.Variable(name)))
         if self.at_punctuation('('):
           params = self.parse_parameters()
           body = self.parse_method_tail()
           selector = self.name_as_selector(Parser._SAUSAGES)
           signature = ast.Signature([subject, selector] + params)
-          return ast.FunctionDeclaration(ast.Method(signature, body))
+          return ast.FunctionDeclaration(name, ast.Method(signature, body))
     else:
       subject = self.parse_subject()
     name = self.expect_type(Token.OPERATION)

@@ -8,24 +8,32 @@
 TEST(test, variant) {
   CREATE_RUNTIME();
 
-  ASSERT_VALEQ(new_integer(1), variant_to_value(runtime, vInt(1)));
-  ASSERT_VALEQ(new_integer(-1), variant_to_value(runtime, vInt(-1)));
-  ASSERT_VALEQ(runtime_bool(runtime, true), variant_to_value(runtime, vBool(true)));
-  ASSERT_VALEQ(runtime_bool(runtime, false), variant_to_value(runtime, vBool(false)));
-  ASSERT_VALEQ(ROOT(runtime, null), variant_to_value(runtime, vNull()));
+  ASSERT_VALEQ(new_integer(1), C(vInt(1)));
+  ASSERT_VALEQ(new_integer(-1), C(vInt(-1)));
+  ASSERT_VALEQ(runtime_bool(runtime, true), C(vBool(true)));
+  ASSERT_VALEQ(runtime_bool(runtime, false), C(vBool(false)));
+  ASSERT_VALEQ(ROOT(runtime, null), C(vNull()));
 
   string_t str = STR("blahblahblah");
-  ASSERT_VALEQ(new_heap_string(runtime, &str), variant_to_value(runtime,
-      vStr("blahblahblah")));
+  ASSERT_VALEQ(new_heap_string(runtime, &str), C(vStr("blahblahblah")));
 
-  value_t arr = variant_to_value(runtime, vArray(3, vInt(0) o vInt(1) o vInt(2)));
+  value_t arr = C(vArray(vInt(0), vInt(1), vInt(2)));
   ASSERT_EQ(3, get_array_length(arr));
   ASSERT_VALEQ(new_integer(0), get_array_at(arr, 0));
   ASSERT_VALEQ(new_integer(1), get_array_at(arr, 1));
   ASSERT_VALEQ(new_integer(2), get_array_at(arr, 2));
 
-  value_t val = variant_to_value(runtime, vValue(ROOT(runtime, empty_array)));
+  value_t val = C(vValue(ROOT(runtime, empty_array)));
   ASSERT_SAME(ROOT(runtime, empty_array), val);
+
+  value_t path = C(vPath(vStr("a"), vStr("b")));
+  ASSERT_FALSE(is_path_empty(path));
+  ASSERT_VAREQ(vStr("a"), get_path_head(path));
+  value_t path_tail = get_path_tail(path);
+  ASSERT_FALSE(is_path_empty(path_tail));
+  ASSERT_VAREQ(vStr("b"), get_path_head(path_tail));
+  value_t path_tail_tail = get_path_tail(path_tail);
+  ASSERT_TRUE(is_path_empty(path_tail_tail));
 
   DISPOSE_RUNTIME();
 }

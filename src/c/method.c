@@ -323,8 +323,6 @@ value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
 
 // --- M e t h o d   s p a c e ---
 
-TRIVIAL_PRINT_ON_IMPL(Methodspace, methodspace);
-
 ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofIdHashMap, Inheritance,
     inheritance);
 ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofArrayBuffer, Methods,
@@ -537,6 +535,17 @@ value_t plankton_set_methodspace_contents(value_t object, runtime_t *runtime,
   set_methodspace_inheritance(object, inheritance);
   set_methodspace_imports(object, imports);
   return success();
+}
+
+void methodspace_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<methodspace ");
+  value_t methods = get_methodspace_methods(self);
+  value_print_inner_on(methods, buf, flags, depth - 1);
+  string_buffer_printf(buf, " ");
+  value_t imports = get_methodspace_imports(self);
+  value_print_inner_on(imports, buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
 }
 
 

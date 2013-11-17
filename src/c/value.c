@@ -802,7 +802,6 @@ value_t add_array_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
 
 // --- A r r a y   b u f f e r ---
 
-TRIVIAL_PRINT_ON_IMPL(ArrayBuffer, array_buffer);
 GET_FAMILY_PROTOCOL_IMPL(array_buffer);
 NO_BUILTIN_METHODS(array_buffer);
 
@@ -846,6 +845,17 @@ void set_array_buffer_at(value_t self, size_t index, value_t value) {
   CHECK_TRUE("array buffer index out of bounds",
       index < get_array_buffer_length(self));
   set_array_at(get_array_buffer_elements(self), index, value);
+}
+
+void array_buffer_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
+  string_buffer_printf(buf, "%[");
+  for (size_t i = 0; i < get_array_buffer_length(value); i++) {
+    if (i > 0)
+      string_buffer_printf(buf, ", ");
+    value_print_inner_on(get_array_buffer_at(value, i), buf, flags, depth - 1);
+  }
+  string_buffer_printf(buf, "]");
 }
 
 
@@ -1541,10 +1551,7 @@ value_t plankton_new_namespace(runtime_t *runtime) {
 
 value_t get_namespace_binding_at(value_t namespace, value_t name) {
   value_t bindings = get_namespace_bindings(namespace);
-  value_t result = get_id_hash_map_at(bindings, name);
-  if (is_signal(scNotFound, result))
-    return new_lookup_error_signal(lcNamespace);
-  return result;
+  return get_id_hash_map_at(bindings, name);
 }
 
 value_t set_namespace_binding_at(runtime_t *runtime, value_t namespace,
@@ -1584,7 +1591,9 @@ value_t module_validate(value_t self) {
 void module_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
     size_t depth) {
   CHECK_FAMILY(ofModule, value);
-  string_buffer_printf(buf, "<module>");
+  string_buffer_printf(buf, "#<module ");
+  value_print_inner_on(get_module_path(value), buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
 }
 
 value_t get_module_fragment_at(value_t self, value_t stage) {
@@ -1617,14 +1626,31 @@ bool has_module_fragment_at(value_t self, value_t stage) {
   return !is_signal(scNotFound, get_module_fragment_at(self, stage));
 }
 
-value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage,
-    value_t path) {
-  CHECK_FAMILY(ofPath, path);
-  value_t fragments = get_module_fragments(self);
+// Looks for the given path in the module's imports. If no matching import is
+// found NotFound is returned.
+static value_t module_lookup_identifier_in_imports(runtime_t *runtime,
+    value_t self, value_t stage, value_t path) {
   value_t head = get_path_head(path);
-  if (value_identity_compare(head, RSTR(runtime, ctrino)))
-    return ROOT(runtime, ctrino);
+  value_t fragments = get_module_fragments(self);
+  for (size_t i = 0; i < get_array_buffer_length(fragments); i++) {
+    value_t fragment = get_array_buffer_at(fragments, i);
+    value_t importspace = get_module_fragment_imports(fragment);
+    value_t binding = get_namespace_binding_at(importspace, head);
+    if (is_signal(scNotFound, binding))
+      continue;
+    value_t fragment_stage = get_module_fragment_stage(fragment);
+    value_t new_stage = shift_lookup_through_import(fragment_stage, stage);
+    value_t tail = get_path_tail(path);
+    return module_lookup_identifier(runtime, binding, new_stage, tail);
+  }
+  return new_not_found_signal();
+}
+
+static value_t module_lookup_identifier_in_namespace(runtime_t *runtime,
+    value_t self, value_t stage, value_t path) {
+  value_t head = get_path_head(path);
   value_t tail = get_path_tail(path);
+  value_t fragments = get_module_fragments(self);
   for (size_t i = 0; i < get_array_buffer_length(fragments); i++) {
     value_t fragment = get_array_buffer_at(fragments, i);
     if (is_same_value(get_module_fragment_stage(fragment), stage)) {
@@ -1650,6 +1676,23 @@ value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage
   return new_lookup_error_signal(lcNoSuchStage);
 }
 
+value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage,
+    value_t path) {
+  CHECK_FAMILY(ofPath, path);
+  CHECK_FALSE("looking up empty path", is_path_empty(path));
+  value_t head = get_path_head(path);
+  // Special case for ctrino which is always available.
+  if (value_identity_compare(head, RSTR(runtime, ctrino)))
+    return ROOT(runtime, ctrino);
+  // First check the imports.
+  value_t as_import = module_lookup_identifier_in_imports(runtime, self, stage,
+      path);
+  if (!is_signal(scNotFound, as_import))
+    return as_import;
+  // If not an import try looking up in the appropriate namespace.
+  return module_lookup_identifier_in_namespace(runtime, self, stage, path);
+}
+
 
 // --- M o d u l e   f r a g m e n t ---
 
@@ -1662,6 +1705,8 @@ ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofNamespace,
     Namespace, namespace);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofMethodspace,
     Methodspace, methodspace);
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofNamespace,
+    Imports, imports);
 
 void set_module_fragment_epoch(value_t self, module_fragment_epoch_t value) {
   *access_object_field(self, kModuleFragmentEpochOffset) = new_integer(value);
@@ -1793,6 +1838,19 @@ value_t path_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
   value_t a_tail = get_path_raw_tail(a);
   value_t b_tail = get_path_raw_tail(b);
   return value_identity_compare_cycle_protect(a_tail, b_tail, &inner);
+}
+
+value_t path_ordering_compare(value_t a, value_t b) {
+  CHECK_FAMILY(ofPath, a);
+  CHECK_FAMILY(ofPath, b);
+  value_t a_head = get_path_raw_head(a);
+  value_t b_head = get_path_raw_head(b);
+  value_t cmp_head = value_ordering_compare(a_head, b_head);
+  if (ordering_to_int(cmp_head) != 0)
+    return cmp_head;
+  value_t a_tail = get_path_raw_tail(a);
+  value_t b_tail = get_path_raw_tail(b);
+  return value_ordering_compare(a_tail, b_tail);
 }
 
 

@@ -443,3 +443,14 @@ TEST(utils, string_hint) {
   CHECK_HINT("a", "a");
   CHECK_HINT("", "");
 }
+
+TEST(utils, va_argc) {
+  ASSERT_EQ(1, VA_ARGC(a));
+  ASSERT_EQ(2, VA_ARGC(a, b));
+  ASSERT_EQ(3, VA_ARGC(a, b, c));
+  ASSERT_EQ(4, VA_ARGC(a, b, c, d));
+  ASSERT_EQ(5, VA_ARGC(a, b, c, d, e));
+  ASSERT_EQ(6, VA_ARGC(a, b, c, d, e, f));
+  ASSERT_EQ(7, VA_ARGC(a, b, c, d, e, f, g));
+  ASSERT_EQ(8, VA_ARGC(a, b, c, d, e, f, g, h));
+}

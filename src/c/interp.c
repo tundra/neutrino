@@ -142,12 +142,13 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         // Look up the method in the method space.
         value_t record = read_next_value(&state);
         CHECK_FAMILY(ofInvocationRecord, record);
-        value_t space = read_next_value(&state);
-        CHECK_FAMILY(ofMethodspace, space);
+        value_t methodspace = read_next_value(&state);
+        CHECK_FAMILY(ofMethodspace, methodspace);
         value_t arg_map;
-        value_t method = lookup_methodspace_method(runtime, space, record,
+        value_t method = lookup_methodspace_method(runtime, methodspace, record,
             &frame, &arg_map);
         if (is_signal(scLookupError, method)) {
+          HEST("%4v", methodspace);
           log_lookup_error(method, record, &frame);
           return method;
         }

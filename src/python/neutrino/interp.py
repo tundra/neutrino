@@ -80,26 +80,6 @@ def new_neutrino_protocol(display_name):
 def get_neutrino_builtin_protocol(name):
   return data.Key(name, ("protocol", name))
 
-class PytrinoProxy(object):
-
-  def lookup(self, name):
-    if name == 'new_instance':
-      return new_neutrino_instance
-    elif name == 'new_protocol':
-      return new_neutrino_protocol
-    elif name == 'get_builtin_protocol':
-      return get_neutrino_builtin_protocol
-
-_PYTRINO = PytrinoProxy()
-_CTRINO = data.Key("ctrino", ("core", "ctrino"))
-
-# Looks up a name that is magically available when doing static evaluation. It's
-# a hack until we get imports working properly.
-def lookup_special_binding(name):
-  if name == 'pytrino':
-    return _PYTRINO
-  elif name == 'ctrino':
-    return _CTRINO
 
 # Evaluate the given expression. The evaluation will only be approximate so
 # it may fail if there are constructs or operations it can't handle.

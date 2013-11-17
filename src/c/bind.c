@@ -11,13 +11,6 @@
 
 // --- B i n d i n g ---
 
-// Encapsulates the data maintained during the binding process.
-typedef struct {
-  // Map from module names to bound modules.
-  value_t modules;
-  runtime_t *runtime;
-} binding_context_t;
-
 // Returns true if the given context has an entry for the module with the given
 // path.
 static bool binding_context_has_module(binding_context_t *context, value_t path) {
@@ -164,11 +157,13 @@ static value_t new_empty_module_fragment(runtime_t *runtime, value_t stage,
     value_t module) {
   TRY_DEF(namespace, new_heap_namespace(runtime));
   TRY_DEF(methodspace, new_heap_methodspace(runtime));
+  TRY_DEF(imports, new_heap_namespace(runtime));
   // Prime all methodspaces with the built-in one. This is a temporary hack
   // (famous last words), longer term the built-ins should be loaded through
   // the same mechanism as all other methods.
   TRY(add_methodspace_import(runtime, methodspace, ROOT(runtime, builtin_methodspace)));
-  return new_heap_module_fragment(runtime, module, stage, namespace, methodspace);
+  return new_heap_module_fragment(runtime, module, stage, namespace, methodspace,
+      imports);
 }
 
 // If the given modules has a fragment for the given stage returns it, otherwise
@@ -201,9 +196,9 @@ static value_t bind_module_fragment_imports(binding_context_t *context,
     value_t bound_import_module = whatever();
     TRY(binding_context_get_module(context, import_path, NULL, &bound_import_module));
     // Add a binding to the fragment's namespace.
-    value_t namespace = get_module_fragment_namespace(bound_fragment);
+    value_t importspace = get_module_fragment_imports(bound_fragment);
     value_t import_name = get_path_head(import_path);
-    set_namespace_binding_at(context->runtime, namespace, import_name,
+    set_namespace_binding_at(context->runtime, importspace, import_name,
         bound_import_module);
     // Import the import's methodspace wholesale into the fragment's. At some
     // point we'll probably have to add a filtering mechanism of some sort
@@ -288,6 +283,91 @@ value_t build_bound_module(runtime_t *runtime, value_t unbound_module) {
   TRY(binding_context_get_module(&context, path, NULL, &module));
   TRY(get_or_create_module_fragment(runtime, present_stage(), module));
   return module;
+}
+
+// Ensures that a dependency has been recorded between the from-fragment and
+// the to-fragment. If a dependency already exists this is a no-op.
+static value_t add_fragment_dependency(runtime_t *runtime, value_t all_deps,
+    value_t from_path, value_t from_stage, value_t to_path, value_t to_stage) {
+  // Get the dependency mapping for the source path, creating it if necessary.
+  if (!has_id_hash_map_at(all_deps, from_path)) {
+    TRY_DEF(from_path_deps, new_heap_id_hash_map(runtime, 16));
+    TRY(set_id_hash_map_at(runtime, all_deps, from_path, from_path_deps));
+  }
+  // Get the dependency array for the source stage, creating it if necessary.
+  value_t from_path_deps = get_id_hash_map_at(all_deps, from_path);
+  if (!has_id_hash_map_at(from_path_deps, from_stage)) {
+    TRY_DEF(from_stage_deps, new_heap_array_buffer(runtime, 16));
+    TRY(set_id_hash_map_at(runtime, from_path_deps, from_stage, from_stage_deps));
+  }
+  value_t from_stage_deps = get_id_hash_map_at(from_path_deps, from_stage);
+  // Check if the dependency already exists by scanning through the existing
+  // array.
+  for (size_t i = 0; i < get_array_buffer_length(from_stage_deps); i++) {
+    value_t dep = get_array_buffer_at(from_stage_deps, i);
+    value_t dep_path = get_array_at(dep, 0);
+    value_t dep_stage = get_array_at(dep, 1);
+    if (value_identity_compare(to_path, dep_path)
+        && value_identity_compare(to_stage, dep_stage))
+      // Yup, found it. So we can just bail out without doing anything.
+      return success();
+  }
+  TRY_DEF(dep, new_heap_array(runtime, 2));
+  set_array_at(dep, 0, to_path);
+  set_array_at(dep, 1, to_stage);
+  return add_to_array_buffer(runtime, from_stage_deps, dep);
+}
+
+static value_t find_imported_module(value_t modules, value_t import) {
+  for (size_t i = 0; i < get_array_buffer_length(modules); i++) {
+    value_t module = get_array_buffer_at(modules, i);
+    value_t path = get_unbound_module_path(module);
+    if (value_identity_compare(import, path))
+      return module;
+  }
+  return new_not_found_signal();
+}
+
+value_t build_fragment_dependency_map(runtime_t *runtime, value_t modules) {
+  TRY_DEF(result, new_heap_id_hash_map(runtime, 16));
+  // Scan through the fragments and iteratively add dependencies to the map.
+  for (size_t mi = 0; mi < get_array_buffer_length(modules); mi++) {
+    value_t from_module = get_array_buffer_at(modules, mi);
+    value_t from_module_path = get_unbound_module_path(from_module);
+    value_t from_fragments = get_unbound_module_fragments(from_module);
+    for (size_t fi = 0; fi < get_array_length(from_fragments); fi++) {
+      value_t from_fragment = get_array_at(from_fragments, fi);
+      value_t from_stage = get_unbound_module_fragment_stage(from_fragment);
+      // If this fragment has a predecessor (say, if this is the present stage
+      // and there is a past stage) it is a dependency.
+      value_t to_fragment = get_unbound_module_fragment_before(from_module,
+          from_stage);
+      if (!is_signal(scNotFound, to_fragment)) {
+        value_t to_stage = get_unbound_module_fragment_stage(to_fragment);
+        TRY(add_fragment_dependency(runtime, result, from_module_path, from_stage,
+            from_module_path, to_stage));
+      }
+      // Also, scan through the imports and add them.
+      value_t imports = get_unbound_module_fragment_imports(from_fragment);
+      for (size_t ii = 0; ii < get_array_length(imports); ii++) {
+        value_t import = get_array_at(imports, ii);
+        TRY_DEF(to_module, find_imported_module(modules, import));
+        value_t to_module_path = get_unbound_module_path(to_module);
+        // Scan through the imported module's fragments and add them as deps
+        // on the fragments of this module, shifted by the stage of the fragment
+        // that imports it.
+        value_t import_fragments = get_unbound_module_fragments(to_module);
+        for (size_t si = 0; si < get_array_length(import_fragments); si++) {
+          value_t to_fragment = get_array_at(import_fragments, si);
+          value_t to_stage = get_unbound_module_fragment_stage(to_fragment);
+          value_t dest_stage = shift_fragment_through_import(from_stage, to_stage);
+          TRY(add_fragment_dependency(runtime, result, from_module_path, dest_stage,
+              to_module_path, to_stage));
+        }
+      }
+    }
+  }
+  return result;
 }
 
 

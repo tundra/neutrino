@@ -15,16 +15,24 @@
 // Log statements below this level are stripped from the code.
 #define LOG_LEVEL llInfo
 
-// Call the given callback for each log level and log level character.
+// Which stream should the log entry be reported on?
+typedef enum {
+  lsStdout,
+  lsStderr
+} log_stream_t;
+
+// Call the given callback for each log level, log level character, log level
+// value, and destination log stream. The more serious the error the higher the
+// value will be.
 #define ENUM_LOG_LEVELS(F)                                                     \
-  F(Error,   E)                                                                \
-  F(Warning, W)                                                                \
-  F(Info,    I)
+  F(Info,    I, 1, lsStdout)                                                   \
+  F(Warning, W, 2, lsStderr)                                                   \
+  F(Error,   E, 3, lsStderr)
 
 // Log levels, used to select which logging statements to emit.
 typedef enum {
   __llFirst__ = -1
-#define __DECLARE_LOG_LEVEL__(Name, C) , ll##Name
+#define __DECLARE_LOG_LEVEL__(Name, C, V, S) , ll##Name = V
   ENUM_LOG_LEVELS(__DECLARE_LOG_LEVEL__)
 #undef __DECLARE_LOG_LEVEL__
 } log_level_t;
@@ -39,6 +47,7 @@ void vlog_message(log_level_t level, const char *file, int line, const char *fmt
 
 // The data that makes up an entry in the log.
 typedef struct {
+  log_stream_t destination;
   const char *file;
   int line;
   log_level_t level;
@@ -47,8 +56,8 @@ typedef struct {
 } log_entry_t;
 
 // Sets all the required fields in a log entry struct.
-void log_entry_init(log_entry_t *entry, const char *file, int line,
-    log_level_t level, string_t *message, string_t *timestamp);
+void log_entry_init(log_entry_t *entry, log_stream_t destination, const char *file,
+    int line, log_level_t level, string_t *message, string_t *timestamp);
 
 // Type of log functions.
 typedef void (log_function_t)(void *data, log_entry_t *entry);

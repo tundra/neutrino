@@ -647,32 +647,29 @@ TEST(value, try_finally) {
   ASSERT_TRUE(data.called);
 }
 
-// Shorthand for doing variant-to-value.
-#define V2V(V) variant_to_value(runtime, (V))
-
 TEST(value, array_identity) {
   CREATE_RUNTIME();
 
-  value_t v_nn_0 = V2V(vArray(2, vNull() o vNull()));
-  value_t v_nn_1 = V2V(vArray(2, vNull() o vNull()));
+  value_t v_nn_0 = C(vArray(vNull(), vNull()));
+  value_t v_nn_1 = C(vArray(vNull(), vNull()));
   ASSERT_TRUE(value_identity_compare(v_nn_0, v_nn_1));
   size_t h_nn_0 = get_integer_value(value_transient_identity_hash(v_nn_0));
   size_t h_nn_1 = get_integer_value(value_transient_identity_hash(v_nn_1));
   ASSERT_EQ(h_nn_0, h_nn_1);
 
-  value_t v_1n = V2V(vArray(2, vInt(1) o vNull()));
+  value_t v_1n = C(vArray(vInt(1), vNull()));
   ASSERT_FALSE(value_identity_compare(v_1n, v_nn_0));
   size_t h_1n = get_integer_value(value_transient_identity_hash(v_1n));
   ASSERT_FALSE(h_nn_0 == h_1n);
 
-  value_t v_12 = V2V(vArray(2, vInt(1) o vInt(2)));
+  value_t v_12 = C(vArray(vInt(1), vInt(2)));
   ASSERT_FALSE(value_identity_compare(v_12, v_nn_0));
   ASSERT_FALSE(value_identity_compare(v_12, v_1n));
   size_t h_12 = get_integer_value(value_transient_identity_hash(v_12));
   ASSERT_FALSE(h_nn_0 == h_12);
   ASSERT_FALSE(h_1n == h_12);
 
-  value_t v_21_0 = V2V(vArray(2, vInt(2) o vInt(1)));
+  value_t v_21_0 = C(vArray(vInt(2), vInt(1)));
   ASSERT_FALSE(value_identity_compare(v_21_0, v_nn_0));
   ASSERT_FALSE(value_identity_compare(v_21_0, v_1n));
   ASSERT_FALSE(value_identity_compare(v_21_0, v_12));
@@ -681,7 +678,7 @@ TEST(value, array_identity) {
   ASSERT_FALSE(h_21_0 == h_1n);
   ASSERT_FALSE(h_21_0 == h_12);
 
-  value_t v_21_1 = V2V(vArray(2, vInt(2) o vInt(1)));
+  value_t v_21_1 = C(vArray(vInt(2), vInt(1)));
   ASSERT_TRUE(value_identity_compare(v_21_1, v_21_0));
   size_t h_21_1 = get_integer_value(value_transient_identity_hash(v_21_1));
   ASSERT_EQ(h_21_1, h_21_0);
@@ -873,8 +870,8 @@ TEST(value, paths) {
   ASSERT_FAMILY(ofNothing, get_path_raw_head(empty));
   ASSERT_FAMILY(ofNothing, get_path_raw_tail(empty));
 
-  value_t segments = variant_to_value(runtime, vArray(3,
-      vStr("a") o vStr("b") o vStr("c")));
+  value_t segments = variant_to_value(runtime, vArray(vStr("a"), vStr("b"),
+      vStr("c")));
   value_t path = new_heap_path_with_names(runtime, segments, 0);
   ASSERT_VAREQ(vStr("a"), get_path_head(path));
   ASSERT_VAREQ(vStr("b"), get_path_head(get_path_tail(path)));
@@ -947,4 +944,22 @@ TEST(value, options) {
   ASSERT_VAREQ(vInt(65), get_options_flag_value(runtime, has_xyz, z, new_integer(20)));
 
   DISPOSE_RUNTIME();
+}
+
+TEST(value, stage_shifting) {
+  value_t present = present_stage();
+  value_t past = past_stage();
+  value_t past_past = past_past_stage();
+
+  ASSERT_VALEQ(present, shift_lookup_through_import(present, present));
+  ASSERT_VALEQ(past, shift_lookup_through_import(present, past));
+  ASSERT_VALEQ(past_past, shift_lookup_through_import(present, past_past));
+  ASSERT_VALEQ(present, shift_lookup_through_import(past, past));
+  ASSERT_VALEQ(past, shift_lookup_through_import(past, past_past));
+  ASSERT_VALEQ(present, shift_lookup_through_import(past_past, past_past));
+
+  ASSERT_VALEQ(present, shift_fragment_through_import(present, present));
+  ASSERT_VALEQ(past, shift_fragment_through_import(present, past));
+  ASSERT_VALEQ(past, shift_fragment_through_import(past, present));
+  ASSERT_VALEQ(past_past, shift_fragment_through_import(past, past));
 }

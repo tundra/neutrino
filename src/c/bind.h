@@ -11,9 +11,28 @@
 
 // --- B i n d i n g ---
 
+// Encapsulates the data maintained during the binding process.
+typedef struct {
+  // Map from module names to bound modules.
+  value_t modules;
+  // The runtime.
+  runtime_t *runtime;
+} binding_context_t;
+
 // Given an unbound module creates a bound version, loading and binding
 // dependencies from the runtime's module loader as required.
 value_t build_bound_module(runtime_t *runtime, value_t unbound_module);
+
+// Given an array buffer of modules, returns a map describing the dependencies
+// between the fragments. The keys of the map are the module's paths, the
+// values are maps from fragment stage to a list of (path, stage) pairs that
+// indicate which modules in which stages the fragment depends.
+//
+// The map may contain entries for fragments that don't exist. For instance,
+// if stage 0 of module A imports B which has stages 0 and -1 there will be
+// a dependency from stage -1 of A to -1 of B, even though -1 of A doesn't
+// exist.
+value_t build_fragment_dependency_map(runtime_t *runtime, value_t modules);
 
 
 // --- M o d u l e   L o a d e r ---
