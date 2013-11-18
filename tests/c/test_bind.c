@@ -5,8 +5,8 @@
 #include "bind.h"
 #include "test.h"
 
-value_t expand_variant_to_unbound_module(runtime_t *runtime, variant_t *variant) {
-  TRY_DEF(fields, expand_variant_to_array(runtime, variant));
+value_t expand_variant_to_unbound_module(runtime_t *runtime, variant_value_t *value) {
+  TRY_DEF(fields, expand_variant_to_array(runtime, value));
   value_t path = get_array_at(fields, 0);
   value_t fragments = get_array_at(fields, 1);
   return new_heap_unbound_module(runtime, path, fragments);
@@ -18,8 +18,8 @@ value_t expand_variant_to_unbound_module(runtime_t *runtime, variant_t *variant)
   expand_variant_to_unbound_module,                                            \
   vArrayPayload(path, vArray(__VA_ARGS__)))
 
-value_t expand_variant_to_unbound_fragment(runtime_t *runtime, variant_t *variant) {
-  TRY_DEF(fields, expand_variant_to_array(runtime, variant));
+value_t expand_variant_to_unbound_fragment(runtime_t *runtime, variant_value_t *value) {
+  TRY_DEF(fields, expand_variant_to_array(runtime, value));
   value_t stage = get_array_at(fields, 0);
   value_t imports = get_array_at(fields, 1);
   return new_heap_unbound_module_fragment(runtime, stage, imports,
@@ -36,6 +36,7 @@ value_t expand_variant_to_unbound_fragment(runtime_t *runtime, variant_t *varian
 #define E vEmptyArray()
 #define A(...) vArray(__VA_ARGS__)
 #define B(...) vArrayBuffer(__VA_ARGS__)
+#define I(S, N) vIdentifier(vInt(S), vPath(vStr(#N)))
 
 // Shorthands for creating dependency calculation input.
 #define MOD(N, ...) vUnboundModule(vPath(vStr(#N)), __VA_ARGS__)
@@ -45,7 +46,6 @@ value_t expand_variant_to_unbound_fragment(runtime_t *runtime, variant_t *varian
 // Macros for creating expected dependency calculation output.
 #define MDEP(P, ...) vPath(vStr(#P)), vArray(__VA_ARGS__)
 #define FDEP(S, ...) vInt(S), vArrayBuffer(__VA_ARGS__)
-#define DEP(I, S) vArray(vPath(vStr(#I)), vInt(S))
 
 // Given a map, returns a pair array of the map entries sorted by key.
 static value_t sort_and_flatten_map(runtime_t *runtime, value_t map) {
@@ -83,7 +83,7 @@ TEST(bind, dependency_map) {
   // Two stages, 0 and -1, yield 0 -> -1.
   test_dependency_map(runtime,
       A(MDEP(root,
-          FDEP( 0, DEP(root, -1)))),
+          FDEP( 0, I(-1, root)))),
       B(MOD(root,
           FRG( 0, E),
           FRG(-1, E))));
@@ -91,8 +91,8 @@ TEST(bind, dependency_map) {
   // Three stages, 0, -1, and -2, yield 0 -> -1, -1 -> -2.
   test_dependency_map(runtime,
       A(MDEP(root,
-          FDEP(-1, DEP(root, -2)),
-          FDEP( 0, DEP(root, -1)))),
+          FDEP(-1, I(-2, root)),
+          FDEP( 0, I(-1, root)))),
       B(MOD(root,
           FRG( 0, E),
           FRG(-1, E),
@@ -101,7 +101,7 @@ TEST(bind, dependency_map) {
   // Simple import dependencies.
   test_dependency_map(runtime,
       A(MDEP(root,
-          FDEP( 0, DEP(other, 0)))),
+          FDEP( 0, I(0, other)))),
       B(MOD(root,
           FRG( 0, A(IMP(other)))),
         MOD(other,
@@ -110,10 +110,10 @@ TEST(bind, dependency_map) {
   // Not quite so simple import dependencies.
   test_dependency_map(runtime,
       A(MDEP(root,
-          FDEP(-1, DEP(other, -1)),
-          FDEP( 0, DEP(other, 0))),
+          FDEP(-1, I(-1, other)),
+          FDEP( 0, I( 0, other))),
         MDEP(other,
-          FDEP( 0, DEP(other, -1)))),
+          FDEP( 0, I(-1, other)))),
       B(MOD(root,
           FRG( 0, A(IMP(other)))),
         MOD(other,
@@ -123,15 +123,151 @@ TEST(bind, dependency_map) {
   // Stage shifting imports.
   test_dependency_map(runtime,
       A(MDEP(root,
-          FDEP(-2, DEP(other, -1)),
-          FDEP(-1, DEP(other, 0))),
+          FDEP(-2, I(-1, other)),
+          FDEP(-1, I( 0, other))),
         MDEP(other,
-          FDEP( 0, DEP(other, -1)))),
+          FDEP( 0, I(-1, other)))),
       B(MOD(root,
           FRG(-1, A(IMP(other)))),
         MOD(other,
           FRG( 0, E),
           FRG(-1, E))));
 
+  DISPOSE_RUNTIME();
+}
+
+static void test_load_order(runtime_t *runtime, variant_t expected,
+    variant_t modules) {
+  value_t modules_val = C(modules);
+  value_t deps = build_fragment_dependency_map(runtime, modules_val);
+  value_t schedule = build_bind_schedule(runtime, modules_val, deps);
+  ASSERT_VAREQ(expected, schedule);
+}
+
+TEST(bind, load_order) {
+  CREATE_RUNTIME();
+
+  // Stages within the same module.
+  test_load_order(runtime,
+      B(I(0, root)),
+      B(MOD(root,
+          FRG( 0, E))));
+  test_load_order(runtime,
+      B(I(-1, root), I(0, root)),
+      B(MOD(root,
+          FRG( 0, E),
+          FRG(-1, E))));
+  test_load_order(runtime,
+      B(I(-2, root), I(-1, root), I(0, root)),
+      B(MOD(root,
+          FRG(-1, E),
+          FRG( 0, E),
+          FRG(-2, E))));
+
+  // Present imports. For some of these there's more than one way to resolve
+  // the dependencies and the solution will depend on the otherwise irrelevant
+  // ordering of the modules in the input array buffer.
+  test_load_order(runtime,
+      B(I(0, other), I(0, root)),
+      B(MOD(root,
+          FRG(0, A(IMP(other)))),
+        MOD(other,
+          FRG(0, E))));
+  test_load_order(runtime,
+      B(I(-1, root), I(0, other), I(0, root)),
+      B(MOD(root,
+          FRG(0, A(IMP(other))),
+          FRG(-1, E)),
+        MOD(other,
+          FRG(0, E))));
+  test_load_order(runtime,
+      B(I(-1, other), I(-1, root), I(0, other), I(0, root)),
+      B(MOD(root,
+          FRG(0, A(IMP(other))),
+          FRG(-1, E)),
+        MOD(other,
+          FRG(0, E),
+          FRG(-1, E))));
+  test_load_order(runtime,
+      B(I(-2, other), I(-1, other), I(-1, root), I(0, other), I(0, root)),
+      B(MOD(root,
+          FRG(0, A(IMP(other))),
+          FRG(-1, E)),
+        MOD(other,
+          FRG(0, E),
+          FRG(-1, E),
+          FRG(-2, E))));
+  test_load_order(runtime,
+      B(I(-2, other), I(-2, root), I(-1, other), I(-1, root), I(0, other), I(0, root)),
+      B(MOD(root,
+          FRG(0, A(IMP(other))),
+          FRG(-1, E),
+          FRG(-2, E)),
+        MOD(other,
+          FRG(0, E),
+          FRG(-1, E),
+          FRG(-2, E))));
+  // Here the outcome depends particularly on the input ordering.
+  test_load_order(runtime,
+      B(I(-1, a), I(0, a), I(-1, b), I(-1, root), I(0, b), I(0, root)),
+      B(MOD(root,
+          FRG(0, A(IMP(a), IMP(b))),
+          FRG(-1, E)),
+        MOD(a,
+          FRG(0, E),
+          FRG(-1, E)),
+        MOD(b,
+          FRG(0, E),
+          FRG(-1, E))));
+  test_load_order(runtime,
+      B(I(-1, b), I(-1, a), I(-1, root), I(0, b), I(0, a), I(0, root)),
+      B(MOD(root,
+          FRG(0, A(IMP(a))),
+          FRG(-1, E)),
+        MOD(a,
+          FRG(0, A(IMP(b))),
+          FRG(-1, E)),
+        MOD(b,
+          FRG(0, E),
+          FRG(-1, E))));
+
+  // Past imports
+  test_load_order(runtime,
+      B(I(0, other), I(-1, root), I(0, root)),
+      B(MOD(root,
+          FRG( 0, E),
+          FRG(-1, A(IMP(other)))),
+        MOD(other,
+          FRG(0, E))));
+  test_load_order(runtime,
+      B(I(-1, other), I(0, other), I(-1, root), I(0, root)),
+      B(MOD(root,
+          FRG( 0, E),
+          FRG(-1, A(IMP(other)))),
+        MOD(other,
+          FRG(0, E),
+          FRG(-1, E))));
+  test_load_order(runtime,
+      B(I(-1, b), I(-1, a), I(0, b), I(0, a), I(-1, root), I(0, root)),
+      B(MOD(root,
+          FRG( 0, E),
+          FRG(-1, A(IMP(a)))),
+        MOD(a,
+          FRG(0, A(IMP(b))),
+          FRG(-1, E)),
+        MOD(b,
+          FRG( 0, E),
+          FRG(-1, E))));
+  test_load_order(runtime,
+      B(I(-1, b), I(0, b), I(-1, a), I(0, a), I(-1, root), I(0, root)),
+      B(MOD(root,
+          FRG( 0, E),
+          FRG(-1, A(IMP(a)))),
+        MOD(a,
+          FRG(0, E),
+          FRG(-1, A(IMP(b)))),
+        MOD(b,
+          FRG( 0, E),
+          FRG(-1, E))));
   DISPOSE_RUNTIME();
 }

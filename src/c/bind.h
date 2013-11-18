@@ -34,6 +34,11 @@ value_t build_bound_module(runtime_t *runtime, value_t unbound_module);
 // exist.
 value_t build_fragment_dependency_map(runtime_t *runtime, value_t modules);
 
+// Given a fragment dependency map and an array buffer of modules, returns an
+// array buffer of (path, stage) pairs that specify the load order to apply
+// to satify the dependencies.
+value_t build_bind_schedule(runtime_t *runtime, value_t modules, value_t deps);
+
 
 // --- M o d u l e   L o a d e r ---
 

@@ -265,56 +265,63 @@ void uninstall_log_validator(log_validator_t *validator) {
 
 // --- V a r i a n t s ---
 
-value_t expand_variant_to_integer(runtime_t *runtime, variant_t *variant) {
-  return new_integer(variant->value.as_int64);
+value_t expand_variant_to_integer(runtime_t *runtime, variant_value_t *value) {
+  return new_integer(value->as_int64);
 }
 
-value_t expand_variant_to_string(runtime_t *runtime, variant_t *variant) {
-  string_t chars = STR(variant->value.as_c_str);
+value_t expand_variant_to_string(runtime_t *runtime, variant_value_t *value) {
+  string_t chars = STR(value->as_c_str);
   return new_heap_string(runtime, &chars);
 }
 
-value_t expand_variant_to_bool(runtime_t *runtime, variant_t *variant) {
-  return runtime_bool(runtime, variant->value.as_bool);
+value_t expand_variant_to_bool(runtime_t *runtime, variant_value_t *value) {
+  return runtime_bool(runtime, value->as_bool);
 }
 
-value_t expand_variant_to_null(runtime_t *runtime, variant_t *variant) {
+value_t expand_variant_to_null(runtime_t *runtime, variant_value_t *value) {
   return ROOT(runtime, null);
 }
 
-value_t expand_variant_to_value(runtime_t *runtime, variant_t *variant) {
-  return variant->value.as_value;
+value_t expand_variant_to_value(runtime_t *runtime, variant_value_t *value) {
+  return value->as_value;
 }
 
-value_t expand_variant_to_array(runtime_t *runtime, variant_t *variant) {
-  size_t length = variant->value.as_array.length;
+value_t expand_variant_to_array(runtime_t *runtime, variant_value_t *value) {
+  size_t length = value->as_array.length;
   TRY_DEF(result, new_heap_array(runtime, length));
   for (size_t i = 0; i < length; i++) {
-    TRY_DEF(element, C(variant->value.as_array.elements[i]));
+    TRY_DEF(element, C(value->as_array.elements[i]));
     set_array_at(result, i, element);
   }
   return result;
 }
 
-value_t expand_variant_to_array_buffer(runtime_t *runtime, variant_t *variant) {
-  TRY_DEF(array, expand_variant_to_array(runtime, variant));
+value_t expand_variant_to_array_buffer(runtime_t *runtime, variant_value_t *value) {
+  TRY_DEF(array, expand_variant_to_array(runtime, value));
   return new_heap_array_buffer_with_contents(runtime, array);
 }
 
-value_t expand_variant_to_path(runtime_t *runtime, variant_t *variant) {
-  size_t length = variant->value.as_array.length;
+value_t expand_variant_to_path(runtime_t *runtime, variant_value_t *value) {
+  size_t length = value->as_array.length;
   value_t result = ROOT(runtime, empty_path);
   for (size_t i = 0; i < length; i++) {
     // The path has to be constructed backwards to the first element becomes
     // the head of the result, rather than the head of the end.
-    TRY_DEF(head, C(variant->value.as_array.elements[length - i - 1]));
+    TRY_DEF(head, C(value->as_array.elements[length - i - 1]));
     TRY_SET(result, new_heap_path(runtime, afMutable, head, result));
   }
   return result;
 }
 
+value_t expand_variant_to_identifier(runtime_t *runtime, variant_value_t *value) {
+  CHECK_EQ("invalid identifier variant input", 2, value->as_array.length);
+  TRY_DEF(stage, C(value->as_array.elements[0]));
+  TRY_DEF(path, C(value->as_array.elements[1]));
+  return new_heap_identifier(runtime, stage, path);
+}
+
 value_t variant_to_value(runtime_t *runtime, variant_t variant) {
-  return (variant.expander)(runtime, &variant);
+  return (variant.expander)(runtime, &variant.value);
 }
 
 bool advance_lexical_permutation(int64_t *elms, size_t elmc) {

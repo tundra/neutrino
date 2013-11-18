@@ -131,6 +131,14 @@ value_t new_heap_array(runtime_t *runtime, size_t length) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_pair(runtime_t *runtime, value_t e0, value_t e1) {
+  TRY_DEF(result, new_heap_array(runtime, 2));
+  set_array_at(result, 0, e0);
+  set_array_at(result, 1, e1);
+  TRY(ensure_frozen(runtime, result));
+  return result;
+}
+
 value_t new_heap_pair_array(runtime_t *runtime, size_t length) {
   return new_heap_array(runtime, length << 1);
 }
@@ -649,12 +657,14 @@ value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point,
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_identifier(runtime_t *runtime, value_t path, value_t stage) {
+value_t new_heap_identifier(runtime_t *runtime, value_t stage, value_t path) {
+  CHECK_DOMAIN_OPT(vdInteger, stage);
+  CHECK_FAMILY_OPT(ofPath, path);
   size_t size = kIdentifierSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, identifier_species)));
-  set_identifier_path(result, path);
   set_identifier_stage(result, stage);
+  set_identifier_path(result, path);
   return post_create_sanity_check(result, size);
 }
 

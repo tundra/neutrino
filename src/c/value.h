@@ -309,7 +309,7 @@ static value_t new_moved_object(value_t target) {
   F(Function,                function,                  _, _, X, X, _, _, _, X, _)\
   F(Guard,                   guard,                     _, _, _, _, _, _, _, X, _)\
   F(GuardAst,                guard_ast,                 _, _, X, X, _, _, _, _, _)\
-  F(Identifier,              identifier,                _, _, X, _, _, _, _, _, _)\
+  F(Identifier,              identifier,                _, X, X, _, _, _, _, _, _)\
   F(IdHashMap,               id_hash_map,               _, _, _, X, _, X, _, X, X)\
   F(Instance,                instance,                  _, _, X, X, _, _, _, _, _)\
   F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _, _)\
@@ -777,6 +777,12 @@ value_t get_pair_array_second_at(value_t self, size_t index);
 size_t get_pair_array_length(value_t self);
 
 
+// --- T u p l e ---
+
+// Returns the index'th entry in the given tuple.
+value_t get_tuple_at(value_t self, size_t index);
+
+
 // --- A r r a y   b u f f e r ---
 
 // An array buffer is similar to an array but can grow as elements are added
@@ -1155,6 +1161,9 @@ ACCESSORS_DECL(identifier, path);
 
 // The stage (ie. $..., @..., etc) of this identifier.
 ACCESSORS_DECL(identifier, stage);
+
+// Returns true if the given identifier has the specified stage and path.
+bool is_identifier_identical(value_t self, value_t stage, value_t path);
 
 
 // --- F u n c t i o n ---

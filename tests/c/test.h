@@ -201,39 +201,43 @@ IF_CHECKS_ENABLED(__ASSERT_CHECK_FAILURE_NO_VALUE_HELPER__(scCause, E))
 // Expands to a string_t with the given contents.
 #define STR(value) ((string_t) {strlen(value), value})
 
-struct variant_t;
+FORWARD(variant_t);
 
-// Type of expander functions that turn variants into values.
-typedef value_t (variant_expander_t)(struct runtime_t *runtime, struct variant_t *variant);
+// The payload of a variant value.
+typedef union {
+  int64_t as_int64;
+  const char *as_c_str;
+  bool as_bool;
+  struct {
+    size_t length;
+    variant_t *elements;
+  } as_array;
+  value_t as_value;
+} variant_value_t;
 
 // Expanders for the basic types.
-value_t expand_variant_to_integer(struct runtime_t *runtime, struct variant_t *variant);
-value_t expand_variant_to_string(struct runtime_t *runtime, struct variant_t *variant);
-value_t expand_variant_to_bool(struct runtime_t *runtime, struct variant_t *variant);
-value_t expand_variant_to_null(struct runtime_t *runtime, struct variant_t *variant);
-value_t expand_variant_to_value(struct runtime_t *runtime, struct variant_t *variant);
-value_t expand_variant_to_array(struct runtime_t *runtime, struct variant_t *variant);
-value_t expand_variant_to_array_buffer(struct runtime_t *runtime, struct variant_t *variant);
-value_t expand_variant_to_path(struct runtime_t *runtime, struct variant_t *variant);
+value_t expand_variant_to_integer(runtime_t *runtime, variant_value_t *value);
+value_t expand_variant_to_string(runtime_t *runtime, variant_value_t *value);
+value_t expand_variant_to_bool(runtime_t *runtime, variant_value_t *value);
+value_t expand_variant_to_null(runtime_t *runtime, variant_value_t *value);
+value_t expand_variant_to_value(runtime_t *runtime, variant_value_t *value);
+value_t expand_variant_to_array(runtime_t *runtime, variant_value_t *value);
+value_t expand_variant_to_array_buffer(runtime_t *runtime, variant_value_t *value);
+value_t expand_variant_to_path(runtime_t *runtime, variant_value_t *value);
+value_t expand_variant_to_identifier(runtime_t *runtime, variant_value_t *value);
+
+// Type of expander functions that turn variants into values.
+typedef value_t (variant_expander_t)(runtime_t *runtime, variant_value_t *variant);
 
 // A generic variant type which allows heap data structures to be described
 // conveniently inlined (using the macros below) as expressions and then
 // passed around and/or converted together. New variant types can be defined
 // by creating new expander functions.
-typedef struct variant_t {
+struct variant_t {
   // The function to call to expand this variant to a heap value.
   variant_expander_t *expander;
-  union {
-    int64_t as_int64;
-    const char *as_c_str;
-    bool as_bool;
-    struct {
-      size_t length;
-      struct variant_t *elements;
-    } as_array;
-    value_t as_value;
-  } value;
-} variant_t;
+  variant_value_t value;
+};
 
 // Returns true if the given variant value expands to null.
 static bool variant_is_marker(variant_t *variant) {
@@ -286,6 +290,10 @@ static bool variant_is_marker(variant_t *variant) {
 // Expands to a variant representing a path with the given segments. This can
 // not be used to construct the empty path.
 #define vPath(...) vBuild(expand_variant_to_path, vArrayPayload(__VA_ARGS__))
+
+// Expands to a variant representing an identifier with the given path and
+// stage.
+#define vIdentifier(S, P) vBuild(expand_variant_to_identifier, vArrayPayload(S, P))
 
 // Instantiates a variant value in the runtime stored in the variable 'runtime'.
 #define C(V) variant_to_value(runtime, (V))

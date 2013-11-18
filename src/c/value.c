@@ -800,6 +800,13 @@ value_t add_array_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
 }
 
 
+// --- T u p l e ---
+
+value_t get_tuple_at(value_t self, size_t index) {
+  return get_array_at(self, index);
+}
+
+
 // --- A r r a y   b u f f e r ---
 
 GET_FAMILY_PROTOCOL_IMPL(array_buffer);
@@ -1873,9 +1880,9 @@ value_t plankton_new_identifier(runtime_t *runtime) {
 
 value_t plankton_set_identifier_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, path, stage);
-  set_identifier_path(object, path);
+  UNPACK_PLANKTON_MAP(contents, stage, path);
   set_identifier_stage(object, stage);
+  set_identifier_path(object, path);
   return success();
 }
 
@@ -1891,6 +1898,37 @@ void identifier_print_on(value_t value, string_buffer_t *buf, print_flags_t flag
       string_buffer_putc(buf, '$');
   }
   value_print_inner_on(get_identifier_path(value), buf, flags, depth - 1);
+}
+
+bool is_identifier_identical(value_t self, value_t stage, value_t path) {
+  CHECK_DOMAIN(vdInteger, stage);
+  CHECK_FAMILY(ofPath, path);
+  return value_identity_compare(get_identifier_stage(self), stage)
+      && value_identity_compare(get_identifier_path(self), path);
+}
+
+value_t identifier_transient_identity_hash(value_t value, hash_stream_t *stream,
+    cycle_detector_t *outer) {
+  cycle_detector_t inner;
+  cycle_detector_enter(outer, &inner, value);
+  value_t stage = get_identifier_stage(value);
+  value_t path = get_identifier_path(value);
+  TRY(value_transient_identity_hash_cycle_protect(stage, stream, &inner));
+  TRY(value_transient_identity_hash_cycle_protect(path, stream, &inner));
+  return success();
+}
+
+value_t identifier_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
+  cycle_detector_t inner;
+  TRY(cycle_detector_enter(outer, &inner, a));
+  value_t a_stage = get_identifier_stage(a);
+  value_t b_stage = get_identifier_stage(b);
+  TRY_DEF(cmp_head, value_identity_compare_cycle_protect(a_stage, b_stage, &inner));
+  if (!is_internal_true_value(cmp_head))
+    return cmp_head;
+  value_t a_path = get_identifier_path(a);
+  value_t b_path = get_identifier_path(b);
+  return value_identity_compare_cycle_protect(a_path, b_path, &inner);
 }
 
 
@@ -2044,10 +2082,7 @@ static value_t add_plankton_binding(value_t map, value_t category, const char *n
   string_init(&key_str, name);
   // Build the key, [category, name].
   TRY_DEF(name_obj, new_heap_string(runtime, &key_str));
-  TRY_DEF(key_obj, new_heap_array(runtime, 2));
-  set_array_at(key_obj, 0, category);
-  set_array_at(key_obj, 1, name_obj);
-  TRY(ensure_frozen(runtime, key_obj));
+  TRY_DEF(key_obj, new_heap_pair(runtime, category, name_obj));
   // Add the mapping to the environment map.
   TRY(set_id_hash_map_at(runtime, map, key_obj, value));
   return success();

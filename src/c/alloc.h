@@ -72,6 +72,9 @@ value_t new_heap_instance_species(runtime_t *runtime, value_t primary);
 // number of elements. The array will be initialized to null.
 value_t new_heap_array(runtime_t *runtime, size_t length);
 
+// Creates a new 2-element tuple. Currently backed by an array.
+value_t new_heap_pair(runtime_t *runtime, value_t e0, value_t e1);
+
 // Allocates a new array that is going to be used as a pair array containing
 // the given number of pairs.
 value_t new_heap_pair_array(runtime_t *runtime, size_t length);
@@ -263,7 +266,7 @@ value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point,
     value_t module);
 
 // Creates a new identifier with the given path and stage.
-value_t new_heap_identifier(runtime_t *runtime, value_t path, value_t stage);
+value_t new_heap_identifier(runtime_t *runtime, value_t stage, value_t path);
 
 // Creates a new namespace declaration syntax tree with the given path bound
 // to the given name.

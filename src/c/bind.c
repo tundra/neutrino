@@ -25,9 +25,7 @@ static value_t binding_context_add_module(binding_context_t *context,
   CHECK_FAMILY(ofModule, module);
   value_t path = get_unbound_module_path(unbound_module);
   CHECK_FALSE("already bound", binding_context_has_module(context, path));
-  TRY_DEF(pair, new_heap_array(context->runtime, 2));
-  set_array_at(pair, 0, unbound_module);
-  set_array_at(pair, 1, module);
+  TRY_DEF(pair, new_heap_pair(context->runtime, unbound_module, module));
   TRY(set_id_hash_map_at(context->runtime, context->modules, path, pair));
   return success();
 }
@@ -39,9 +37,9 @@ static value_t binding_context_get_module(binding_context_t *context,
     value_t path, value_t *unbound_module_out, value_t *module_out) {
   TRY_DEF(pair, get_id_hash_map_at(context->modules, path));
   if (unbound_module_out != NULL)
-    *unbound_module_out = get_array_at(pair, 0);
+    *unbound_module_out = get_tuple_first(pair);
   if (module_out != NULL)
-    *module_out = get_array_at(pair, 1);
+    *module_out = get_tuple_second(pair);
   return success();
 }
 
@@ -288,7 +286,11 @@ value_t build_bound_module(runtime_t *runtime, value_t unbound_module) {
 // Ensures that a dependency has been recorded between the from-fragment and
 // the to-fragment. If a dependency already exists this is a no-op.
 static value_t add_fragment_dependency(runtime_t *runtime, value_t all_deps,
-    value_t from_path, value_t from_stage, value_t to_path, value_t to_stage) {
+    value_t from_stage, value_t from_path, value_t to_stage, value_t to_path) {
+  CHECK_DOMAIN(vdInteger, from_stage);
+  CHECK_FAMILY(ofPath, from_path);
+  CHECK_DOMAIN(vdInteger, to_stage);
+  CHECK_FAMILY(ofPath, to_path);
   // Get the dependency mapping for the source path, creating it if necessary.
   if (!has_id_hash_map_at(all_deps, from_path)) {
     TRY_DEF(from_path_deps, new_heap_id_hash_map(runtime, 16));
@@ -305,16 +307,11 @@ static value_t add_fragment_dependency(runtime_t *runtime, value_t all_deps,
   // array.
   for (size_t i = 0; i < get_array_buffer_length(from_stage_deps); i++) {
     value_t dep = get_array_buffer_at(from_stage_deps, i);
-    value_t dep_path = get_array_at(dep, 0);
-    value_t dep_stage = get_array_at(dep, 1);
-    if (value_identity_compare(to_path, dep_path)
-        && value_identity_compare(to_stage, dep_stage))
+    if (is_identifier_identical(dep, to_stage, to_path))
       // Yup, found it. So we can just bail out without doing anything.
       return success();
   }
-  TRY_DEF(dep, new_heap_array(runtime, 2));
-  set_array_at(dep, 0, to_path);
-  set_array_at(dep, 1, to_stage);
+  TRY_DEF(dep, new_heap_identifier(runtime, to_stage, to_path));
   return add_to_array_buffer(runtime, from_stage_deps, dep);
 }
 
@@ -344,8 +341,8 @@ value_t build_fragment_dependency_map(runtime_t *runtime, value_t modules) {
           from_stage);
       if (!is_signal(scNotFound, to_fragment)) {
         value_t to_stage = get_unbound_module_fragment_stage(to_fragment);
-        TRY(add_fragment_dependency(runtime, result, from_module_path, from_stage,
-            from_module_path, to_stage));
+        TRY(add_fragment_dependency(runtime, result, from_stage, from_module_path,
+            to_stage, from_module_path));
       }
       // Also, scan through the imports and add them.
       value_t imports = get_unbound_module_fragment_imports(from_fragment);
@@ -361,12 +358,75 @@ value_t build_fragment_dependency_map(runtime_t *runtime, value_t modules) {
           value_t to_fragment = get_array_at(import_fragments, si);
           value_t to_stage = get_unbound_module_fragment_stage(to_fragment);
           value_t dest_stage = shift_fragment_through_import(from_stage, to_stage);
-          TRY(add_fragment_dependency(runtime, result, from_module_path, dest_stage,
-              to_module_path, to_stage));
+          TRY(add_fragment_dependency(runtime, result, dest_stage, from_module_path,
+              to_stage, to_module_path));
         }
       }
     }
   }
+  return result;
+}
+
+// Returns true if the given path and stage have already been scheduled to be
+// bound in the given schedule.
+static bool is_fragment_scheduled(value_t schedule, value_t stage, value_t path) {
+  for (size_t i = 0; i < get_array_buffer_length(schedule); i++) {
+    value_t entry = get_array_buffer_at(schedule, i);
+    if (is_identifier_identical(entry, stage, path))
+      return true;
+  }
+  return false;
+}
+
+// Returns true if, according to the given schedule, the fragment with the given
+// path and stage, has all its dependencies satisfied and has not been bound
+// yet.
+static bool should_fragment_be_bound(value_t schedule, value_t deps,
+    value_t stage, value_t path) {
+  if (is_fragment_scheduled(schedule, stage, path))
+    // This one is already bound so it shouldn't be bound again.
+    return false;
+  value_t path_deps = get_id_hash_map_at(deps, path);
+  if (is_signal(scNotFound, path_deps))
+    // This module has no dependencies so there's nothing to stop the fragment
+    // from loading.
+    return true;
+  value_t stage_deps = get_id_hash_map_at(path_deps, stage);
+  if (is_signal(scNotFound, stage_deps))
+    // The module has dependencies but not this fragment so, again, there's
+    // nothing to stop it from loading.
+    return true;
+  for (size_t i = 0; i < get_array_buffer_length(stage_deps); i++) {
+    value_t dep = get_array_buffer_at(stage_deps, i);
+    value_t dep_stage = get_identifier_stage(dep);
+    value_t dep_path = get_identifier_path(dep);
+    if (!is_fragment_scheduled(schedule, dep_stage, dep_path))
+      // Found a dependency that hasn't been scheduled yet so this one can't
+      // be scheduled either.
+      return false;
+  }
+  // All clear.
+  return true;
+}
+
+value_t build_bind_schedule(runtime_t *runtime, value_t modules, value_t deps) {
+  TRY_DEF(result, new_heap_array_buffer(runtime, 16));
+  loop: do {
+    for (size_t mi = 0; mi < get_array_buffer_length(modules); mi++) {
+      value_t module = get_array_buffer_at(modules, mi);
+      value_t module_path = get_unbound_module_path(module);
+      value_t fragments = get_unbound_module_fragments(module);
+      for (size_t fi = 0; fi < get_array_length(fragments); fi++) {
+        value_t fragment = get_array_at(fragments, fi);
+        value_t fragment_stage = get_unbound_module_fragment_stage(fragment);
+        if (should_fragment_be_bound(result, deps, fragment_stage, module_path)) {
+          TRY_DEF(entry, new_heap_identifier(runtime, fragment_stage, module_path));
+          TRY(add_to_array_buffer(runtime, result, entry));
+          goto loop;
+        }
+      }
+    }
+  } while (false);
   return result;
 }
 
