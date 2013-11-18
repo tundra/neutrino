@@ -63,7 +63,7 @@ static value_t sort_and_flatten_map(runtime_t *runtime, value_t map) {
   return pairs;
 }
 
-static void test_schedule(runtime_t *runtime, variant_t expected,
+static void test_dependency_map(runtime_t *runtime, variant_t expected,
     variant_t modules) {
   // Flatten the map.
   value_t deps = build_fragment_dependency_map(runtime, C(modules));
@@ -74,16 +74,14 @@ static void test_schedule(runtime_t *runtime, variant_t expected,
     value_t flat_map = sort_and_flatten_map(runtime, map);
     set_pair_array_second_at(flat_deps, i, flat_map);
   }
-  HEST("Expected: %9v", C(expected));
-  HEST("   Found: %9v", flat_deps);
   ASSERT_VAREQ(expected, flat_deps);
 }
 
-TEST(bind, schedule) {
+TEST(bind, dependency_map) {
   CREATE_RUNTIME();
 
   // Two stages, 0 and -1, yield 0 -> -1.
-  test_schedule(runtime,
+  test_dependency_map(runtime,
       A(MDEP(root,
           FDEP( 0, DEP(root, -1)))),
       B(MOD(root,
@@ -91,7 +89,7 @@ TEST(bind, schedule) {
           FRG(-1, E))));
 
   // Three stages, 0, -1, and -2, yield 0 -> -1, -1 -> -2.
-  test_schedule(runtime,
+  test_dependency_map(runtime,
       A(MDEP(root,
           FDEP(-1, DEP(root, -2)),
           FDEP( 0, DEP(root, -1)))),
@@ -101,7 +99,7 @@ TEST(bind, schedule) {
           FRG(-2, E))));
 
   // Simple import dependencies.
-  test_schedule(runtime,
+  test_dependency_map(runtime,
       A(MDEP(root,
           FDEP( 0, DEP(other, 0)))),
       B(MOD(root,
@@ -110,7 +108,7 @@ TEST(bind, schedule) {
           FRG( 0, E))));
 
   // Not quite so simple import dependencies.
-  test_schedule(runtime,
+  test_dependency_map(runtime,
       A(MDEP(root,
           FDEP(-1, DEP(other, -1)),
           FDEP( 0, DEP(other, 0))),
@@ -123,7 +121,7 @@ TEST(bind, schedule) {
           FRG(-1, E))));
 
   // Stage shifting imports.
-  test_schedule(runtime,
+  test_dependency_map(runtime,
       A(MDEP(root,
           FDEP(-2, DEP(other, -1)),
           FDEP(-1, DEP(other, 0))),

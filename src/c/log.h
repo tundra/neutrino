@@ -29,6 +29,11 @@ typedef enum {
   F(Warning, W, 2, lsStderr)                                                   \
   F(Error,   E, 3, lsStderr)
 
+// Expands to a true value if the current log level is the specified value or
+// less severe, implying that log messages to the given level should be
+// reported.
+#define LOG_LEVEL_AT_LEAST(llLevel) (LOG_LEVEL <= llLevel)
+
 // Log levels, used to select which logging statements to emit.
 typedef enum {
   __llFirst__ = -1
@@ -82,21 +87,21 @@ log_callback_t *set_log_callback(log_callback_t *value);
 // Emits a warning if the static log level is at least warning, otherwise does
 // nothing (including doesn't evaluate arguments).
 #define WARN(FMT, ...) do {                                                    \
-  if (LOG_LEVEL >= llWarning)                                                  \
+  if (LOG_LEVEL_AT_LEAST(llWarning))                                           \
     log_message(llWarning, __FILE__, __LINE__, FMT, __VA_ARGS__);              \
 } while (false)
 
 // Emits an error if the static log level is at least error, otherwise does
 // nothing (including doesn't evaluate arguments).
 #define ERROR(FMT, ...) do {                                                   \
-  if (LOG_LEVEL >= llError)                                                    \
+  if (LOG_LEVEL_AT_LEAST(llError))                                             \
     log_message(llError, __FILE__, __LINE__, FMT, __VA_ARGS__);                \
 } while (false)
 
 // Emits an info if the static log level is at least info, otherwise does
 // nothing (including doesn't evaluate arguments).
 #define INFO(FMT, ...) do {                                                    \
-  if (LOG_LEVEL >= llInfo)                                                     \
+  if (LOG_LEVEL_AT_LEAST(llInfo))                                              \
     log_message(llInfo, __FILE__, __LINE__, FMT, __VA_ARGS__);                 \
 } while (false)
 

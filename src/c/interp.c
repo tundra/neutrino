@@ -148,7 +148,6 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         value_t method = lookup_methodspace_method(runtime, methodspace, record,
             &frame, &arg_map);
         if (is_signal(scLookupError, method)) {
-          HEST("%4v", methodspace);
           log_lookup_error(method, record, &frame);
           return method;
         }
