@@ -194,8 +194,6 @@ static value_t instance_serialize(value_t value, serialize_state_t *state) {
 static value_t object_serialize(value_t value, serialize_state_t *state) {
   CHECK_DOMAIN(vdObject, value);
   switch (get_object_family(value)) {
-    case ofBoolean:
-      return singleton_serialize(get_boolean_value(value) ? pTrue : pFalse, state->buf);
     case ofArray:
       return array_serialize(value, state);
     case ofIdHashMap:
@@ -214,6 +212,8 @@ static value_t custom_tagged_serialize(value_t value, serialize_state_t *state) 
   switch (get_custom_tagged_phylum(value)) {
     case tpNull:
       return singleton_serialize(pNull, state->buf);
+    case tpBoolean:
+      return singleton_serialize(get_boolean_value(value) ? pTrue : pFalse, state->buf);
     default:
       return new_invalid_input_signal();
   }
@@ -397,9 +397,9 @@ static value_t value_deserialize(deserialize_state_t *state) {
     case pNull:
       return null();
     case pTrue:
-      return runtime_bool(state->runtime, true);
+      return yes();
     case pFalse:
-      return runtime_bool(state->runtime, false);
+      return no();
     case pArray:
       return array_deserialize(state);
     case pMap:

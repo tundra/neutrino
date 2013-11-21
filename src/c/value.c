@@ -111,8 +111,7 @@ static value_t integer_equals_integer(builtin_arguments_t *args) {
   value_t that = get_builtin_argument(args, 0);
   CHECK_DOMAIN(vdInteger, this);
   CHECK_DOMAIN(vdInteger, that);
-  runtime_t *runtime = get_builtin_runtime(args);
-  return runtime_bool(runtime, is_same_value(this, that));
+  return boolean(is_same_value(this, that));
 }
 
 static value_t integer_negate(builtin_arguments_t *args) {
@@ -392,14 +391,14 @@ value_t try_validate_deep_frozen(runtime_t *runtime, value_t value,
     if (is_signal(scNotDeepFrozen, ensured)) {
       // A NotFrozen signal indicates that there is something mutable somewhere
       // in the object graph.
-      return internal_false_value();
+      return no();
     } else {
       // We got a different signal; propagate it.
       return ensured;
     }
   } else {
     // Non-signal so freezing must have succeeded.
-    return internal_true_value();
+    return yes();
   }
 }
 
@@ -458,7 +457,7 @@ value_t string_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
   get_string_contents(a, &a_contents);
   string_t b_contents;
   get_string_contents(b, &b_contents);
-  return to_internal_boolean(string_equals(&a_contents, &b_contents));
+  return boolean(string_equals(&a_contents, &b_contents));
 }
 
 value_t string_ordering_compare(value_t a, value_t b) {
@@ -792,17 +791,17 @@ value_t array_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
   size_t length = get_array_length(a);
   size_t b_length = get_array_length(b);
   if (length != b_length)
-    return internal_false_value();
+    return no();
   cycle_detector_t inner;
   TRY(cycle_detector_enter(outer, &inner, a));
   for (size_t i = 0; i < length; i++) {
     value_t a_elm = get_array_at(a, i);
     value_t b_elm = get_array_at(b, i);
     TRY_DEF(cmp, value_identity_compare_cycle_protect(a_elm, b_elm, &inner));
-    if (!is_internal_true_value(cmp))
+    if (!get_boolean_value(cmp))
       return cmp;
   }
-  return internal_true_value();
+  return yes();
 }
 
 value_t array_length(builtin_arguments_t *args) {
@@ -1233,41 +1232,6 @@ void id_hash_map_print_on(value_t value, string_buffer_t *buf,
 }
 
 
-// --- B o o l e a n ---
-
-GET_FAMILY_PROTOCOL_IMPL(boolean);
-NO_BUILTIN_METHODS(boolean);
-FIXED_GET_MODE_IMPL(boolean, vmDeepFrozen);
-
-void set_boolean_value(value_t value, bool truth) {
-  CHECK_FAMILY(ofBoolean, value);
-  *access_object_field(value, kBooleanValueOffset) = new_integer(truth ? 1 : 0);
-}
-
-bool get_boolean_value(value_t value) {
-  CHECK_FAMILY(ofBoolean, value);
-  return get_integer_value(*access_object_field(value, kBooleanValueOffset));
-}
-
-value_t boolean_validate(value_t value) {
-  VALIDATE_FAMILY(ofBoolean, value);
-  bool which = get_boolean_value(value);
-  VALIDATE((which == true) || (which == false));
-  return success();
-}
-
-value_t boolean_ordering_compare(value_t a, value_t b) {
-  CHECK_FAMILY(ofBoolean, a);
-  CHECK_FAMILY(ofBoolean, b);
-  return new_integer(get_boolean_value(a) - get_boolean_value(b));
-}
-
-void boolean_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, get_boolean_value(value) ? "true" : "false");
-}
-
-
 // --- K e y ---
 
 GET_FAMILY_PROTOCOL_IMPL(key);
@@ -1284,7 +1248,7 @@ value_t key_validate(value_t value) {
 value_t key_identity_compare(value_t a, value_t b, size_t depth) {
   size_t a_id = get_key_id(a);
   size_t b_id = get_key_id(b);
-  return to_internal_boolean(a_id == b_id);
+  return boolean(a_id == b_id);
 }
 
 value_t key_ordering_compare(value_t a, value_t b) {
@@ -1832,7 +1796,7 @@ value_t path_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
   value_t a_head = get_path_raw_head(a);
   value_t b_head = get_path_raw_head(b);
   TRY_DEF(cmp_head, value_identity_compare_cycle_protect(a_head, b_head, &inner));
-  if (!is_internal_true_value(cmp_head))
+  if (!get_boolean_value(cmp_head))
     return cmp_head;
   // TODO: As above, this should be done iteratively.
   value_t a_tail = get_path_raw_tail(a);
@@ -1903,7 +1867,7 @@ value_t identifier_identity_compare(value_t a, value_t b, cycle_detector_t *oute
   value_t a_stage = get_identifier_stage(a);
   value_t b_stage = get_identifier_stage(b);
   TRY_DEF(cmp_head, value_identity_compare_cycle_protect(a_stage, b_stage, &inner));
-  if (!is_internal_true_value(cmp_head))
+  if (!get_boolean_value(cmp_head))
     return cmp_head;
   value_t a_path = get_identifier_path(a);
   value_t b_path = get_identifier_path(b);

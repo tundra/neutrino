@@ -96,9 +96,6 @@ value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity);
 // Creates the singleton ctrino value.
 value_t new_heap_ctrino(runtime_t *runtime);
 
-// Creates a boolean singleton.
-value_t new_heap_boolean(runtime_t *runtime, bool value);
-
 // Creates a new key with the given display name.
 value_t new_heap_key(runtime_t *runtime, value_t display_name);
 

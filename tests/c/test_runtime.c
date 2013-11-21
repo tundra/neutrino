@@ -29,11 +29,9 @@ TEST(runtime, create) {
 TEST(runtime, singletons) {
   CREATE_RUNTIME();
 
-  value_t thrue = runtime_bool(runtime, true);
-  value_t fahlse = runtime_bool(runtime, false);
-  ASSERT_FAMILY(ofBoolean, thrue);
+  value_t thrue = yes();
+  value_t fahlse = no();
   ASSERT_TRUE(get_boolean_value(thrue));
-  ASSERT_FAMILY(ofBoolean, fahlse);
   ASSERT_FALSE(get_boolean_value(fahlse));
 
   DISPOSE_RUNTIME();

@@ -48,8 +48,8 @@ TEST(behavior, identity) {
   ASSERT_FALSE(equal(foo, bar));
 
   // Bools
-  value_t thrue = runtime_bool(runtime, true);
-  value_t fahlse = runtime_bool(runtime, false);
+  value_t thrue = yes();
+  value_t fahlse = no();
   ASSERT_SUCCESS(hash(thrue));
   ASSERT_NSAME(hash(thrue), hash(fahlse));
   ASSERT_TRUE(equal(thrue, thrue));
@@ -87,8 +87,8 @@ TEST(behavior, print_on) {
 
   // Singletons
   check_print_on("null", null());
-  check_print_on("true", runtime_bool(runtime, true));
-  check_print_on("false", runtime_bool(runtime, false));
+  check_print_on("true", yes());
+  check_print_on("false", no());
 
   // Strings
   string_t foo_chars = STR("foo");

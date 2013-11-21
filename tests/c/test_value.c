@@ -335,8 +335,8 @@ TEST(value, string_comparison) {
 TEST(value, bool_comparison) {
   CREATE_RUNTIME();
 
-  value_t t = runtime_bool(runtime, true);
-  value_t f = runtime_bool(runtime, false);
+  value_t t = yes();
+  value_t f = no();
 
   ASSERT_TRUE(ordering_to_int(value_ordering_compare(t, t)) == 0);
   ASSERT_TRUE(ordering_to_int(value_ordering_compare(f, f)) == 0);
@@ -746,60 +746,50 @@ TEST(value, deep_freeze) {
 
   value_t zero = new_integer(0);
   ASSERT_TRUE(is_frozen(zero));
-  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, zero,
-      NULL));
+  ASSERT_VALEQ(yes(), try_validate_deep_frozen(runtime, zero, NULL));
 
   ASSERT_TRUE(is_frozen(null()));
-  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, null(),
-      NULL));
+  ASSERT_VALEQ(yes(), try_validate_deep_frozen(runtime, null(), NULL));
 
   value_t null_arr = new_heap_array(runtime, 2);
   ASSERT_TRUE(is_mutable(null_arr));
   ASSERT_FALSE(is_frozen(null_arr));
   value_t offender = whatever();
-  ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, null_arr,
-      &offender));
+  ASSERT_VALEQ(no(), try_validate_deep_frozen(runtime, null_arr, &offender));
   ASSERT_SAME(null_arr, offender);
   ASSERT_SUCCESS(ensure_shallow_frozen(runtime, null_arr));
   ASSERT_FALSE(is_mutable(null_arr));
   ASSERT_TRUE(is_frozen(null_arr));
-  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, null_arr,
-      NULL));
+  ASSERT_VALEQ(yes(), try_validate_deep_frozen(runtime, null_arr, NULL));
 
   value_t mut = new_heap_array(runtime, 2);
   value_t mut_arr = new_heap_array(runtime, 2);
   set_array_at(mut_arr, 0, mut);
   ASSERT_TRUE(is_mutable(mut_arr));
   offender = whatever();
-  ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, mut_arr,
-      &offender));
+  ASSERT_VALEQ(no(), try_validate_deep_frozen(runtime, mut_arr, &offender));
   ASSERT_VALEQ(mut_arr, offender);
   ASSERT_SUCCESS(ensure_shallow_frozen(runtime, mut_arr));
   ASSERT_FALSE(is_mutable(mut_arr));
   offender = whatever();
-  ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, mut_arr,
-      &offender));
+  ASSERT_VALEQ(no(), try_validate_deep_frozen(runtime, mut_arr, &offender));
   ASSERT_SAME(mut, offender);
   offender = whatever();
-  ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, mut_arr,
-      &offender));
+  ASSERT_VALEQ(no(), try_validate_deep_frozen(runtime, mut_arr, &offender));
   ASSERT_SAME(mut, offender);
   ASSERT_SUCCESS(ensure_shallow_frozen(runtime, mut));
-  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, mut_arr,
-      NULL));
+  ASSERT_VALEQ(yes(), try_validate_deep_frozen(runtime, mut_arr, NULL));
 
   value_t circ_arr = new_heap_array(runtime, 2);
   set_array_at(circ_arr, 0, circ_arr);
   set_array_at(circ_arr, 1, circ_arr);
   ASSERT_TRUE(is_mutable(circ_arr));
   offender = success();
-  ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, circ_arr,
-      &offender));
+  ASSERT_VALEQ(no(), try_validate_deep_frozen(runtime, circ_arr, &offender));
   ASSERT_SAME(circ_arr, offender);
   ASSERT_SUCCESS(ensure_shallow_frozen(runtime, circ_arr));
   ASSERT_FALSE(is_mutable(circ_arr));
-  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, circ_arr,
-      NULL));
+  ASSERT_VALEQ(yes(), try_validate_deep_frozen(runtime, circ_arr, NULL));
 
   DISPOSE_RUNTIME();
 }
@@ -811,11 +801,9 @@ TEST(value, ownership_freezing) {
   ASSERT_TRUE(is_mutable(empty_map));
   ASSERT_SUCCESS(ensure_shallow_frozen(runtime, empty_map));
   ASSERT_TRUE(is_frozen(empty_map));
-  ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, empty_map,
-      NULL));
+  ASSERT_VALEQ(no(), try_validate_deep_frozen(runtime, empty_map, NULL));
   ASSERT_SUCCESS(ensure_frozen(runtime, empty_map));
-  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, empty_map,
-      NULL));
+  ASSERT_VALEQ(yes(), try_validate_deep_frozen(runtime, empty_map, NULL));
 
   value_t mut = new_heap_array(runtime, 2);
   value_t mut_map = new_heap_id_hash_map(runtime, 16);
@@ -824,12 +812,10 @@ TEST(value, ownership_freezing) {
   ASSERT_SUCCESS(ensure_shallow_frozen(runtime, mut_map));
   ASSERT_SUCCESS(ensure_frozen(runtime, mut_map));
   value_t offender = new_integer(0);
-  ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, mut_map,
-      &offender));
+  ASSERT_VALEQ(no(), try_validate_deep_frozen(runtime, mut_map, &offender));
   ASSERT_SAME(mut, offender);
   ASSERT_SUCCESS(ensure_frozen(runtime, mut));
-  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, mut_map,
-      NULL));
+  ASSERT_VALEQ(yes(), try_validate_deep_frozen(runtime, mut_map, NULL));
 
   DISPOSE_RUNTIME();
 }

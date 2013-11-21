@@ -38,8 +38,8 @@ TEST(plankton, simple) {
 
   // Singletons
   check_plankton(runtime, null());
-  check_plankton(runtime, runtime_bool(runtime, true));
-  check_plankton(runtime, runtime_bool(runtime, false));
+  check_plankton(runtime, yes());
+  check_plankton(runtime, no());
 
   DISPOSE_RUNTIME();
 }
@@ -274,7 +274,7 @@ TEST(plankton, env_construction) {
     byte_buffer_append(&buf, pTrue);
     value_t value = deserialize(runtime, &buf);
     ASSERT_FAMILY(ofLiteralAst, value);
-    ASSERT_VALEQ(runtime_bool(runtime, true), get_literal_ast_value(value));
+    ASSERT_VALEQ(yes(), get_literal_ast_value(value));
     byte_buffer_dispose(&buf);
   }
 

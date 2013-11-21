@@ -71,8 +71,6 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
 
   // Initialize singletons first since we need those to create more complex
   // values below.
-  TRY_SET(RAW_ROOT(roots, thrue), new_heap_boolean(runtime, true));
-  TRY_SET(RAW_ROOT(roots, fahlse), new_heap_boolean(runtime, false));
   TRY_DEF(empty_array, new_heap_array(runtime, 0));
   RAW_ROOT(roots, empty_array) = empty_array;
   TRY_SET(RAW_ROOT(roots, empty_array_buffer), new_heap_array_buffer(runtime, 0));
@@ -157,8 +155,6 @@ value_t roots_validate(value_t roots) {
 #undef __VALIDATE_PER_FAMILY_FIELDS__
 
   // Validate singletons manually.
-  VALIDATE_OBJECT(ofBoolean, RAW_ROOT(roots, thrue));
-  VALIDATE_OBJECT(ofBoolean, RAW_ROOT(roots, fahlse));
   VALIDATE_OBJECT(ofArray, RAW_ROOT(roots, empty_array));
   VALIDATE_OBJECT(ofArrayBuffer, RAW_ROOT(roots, empty_array_buffer));
   VALIDATE_CHECK_EQ(0, get_array_buffer_length(RAW_ROOT(roots, empty_array_buffer)));
@@ -300,7 +296,7 @@ static value_t runtime_freeze_shared_state(runtime_t *runtime) {
 
   value_t offender = whatever();
   TRY_DEF(froze, try_validate_deep_frozen(runtime, roots, &offender));
-  if (!is_internal_true_value(froze)) {
+  if (!get_boolean_value(froze)) {
     ERROR("Could not freeze the roots object; offender: %v", offender);
     return new_not_deep_frozen_signal();
   }
@@ -558,10 +554,6 @@ value_t runtime_dispose(runtime_t *runtime) {
     runtime->gc_fuzzer = NULL;
   }
   return success();
-}
-
-value_t runtime_bool(runtime_t *runtime, bool which) {
-  return which ? ROOT(runtime, thrue) : ROOT(runtime, fahlse);
 }
 
 safe_value_t runtime_protect_value(runtime_t *runtime, value_t value) {

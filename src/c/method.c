@@ -698,7 +698,7 @@ value_t operation_transient_identity_hash(value_t self, hash_stream_t *stream,
 value_t operation_identity_compare(value_t a, value_t b,
     cycle_detector_t *outer) {
   if (get_operation_type(a) != get_operation_type(b))
-    return internal_false_value();
+    return no();
   cycle_detector_t inner;
   TRY(cycle_detector_enter(outer, &inner, a));
   return value_identity_compare_cycle_protect(get_operation_value(a),

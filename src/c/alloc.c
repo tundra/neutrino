@@ -196,14 +196,6 @@ value_t new_heap_ctrino(runtime_t *runtime) {
   return alloc_heap_object(runtime, size, ROOT(runtime, ctrino_species));
 }
 
-value_t new_heap_boolean(runtime_t *runtime, bool value) {
-  size_t size = kBooleanSize;
-  TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, boolean_species)));
-  set_boolean_value(result, value);
-  return post_create_sanity_check(result, size);
-}
-
 value_t new_heap_key(runtime_t *runtime, value_t display_name) {
   size_t size = kKeySize;
   size_t id = runtime->next_key_index++;
