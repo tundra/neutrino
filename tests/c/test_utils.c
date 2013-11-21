@@ -9,7 +9,7 @@
 
 TEST(utils, globals) {
   ASSERT_TRUE(kMostNegativeInt32 < 0);
-  ASSERT_FALSE((kMostNegativeInt32 - 1) < 0);
+  ASSERT_TRUE(-kMostNegativeInt32 < 0);
 }
 
 TEST(utils, string_simple) {
