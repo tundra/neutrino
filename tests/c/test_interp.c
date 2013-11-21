@@ -5,6 +5,7 @@
 #include "interp.h"
 #include "safe-inl.h"
 #include "syntax.h"
+#include "tagged.h"
 #include "test.h"
 #include "try-inl.h"
 
@@ -15,7 +16,7 @@ TEST(interp, binding_info_size) {
 // XXX
 static value_t new_empty_module_fragment(runtime_t *runtime) {
   TRY_DEF(module, new_heap_empty_module(runtime, ROOT(runtime, nothing)));
-  TRY_DEF(fragment, new_heap_module_fragment(runtime, module, new_integer(0),
+  TRY_DEF(fragment, new_heap_module_fragment(runtime, module, present_stage(),
       ROOT(runtime, nothing), ROOT(runtime, builtin_methodspace),
       ROOT(runtime, nothing)));
   TRY(add_to_array_buffer(runtime, get_module_fragments(module), fragment));

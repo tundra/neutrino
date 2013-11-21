@@ -140,6 +140,15 @@ static value_t integer_transient_identity_hash(value_t self,
   return success();
 }
 
+static value_t custom_tagged_transient_identity_hash(value_t self,
+    hash_stream_t *stream) {
+  CHECK_DOMAIN(vdCustomTagged, self);
+  hash_stream_write_tags(stream, vdCustomTagged, __ofUnknown__);
+  hash_stream_write_int64(stream, get_custom_tagged_phylum(self));
+  hash_stream_write_int64(stream, get_custom_tagged_payload(self));
+  return success();
+}
+
 static value_t default_object_transient_identity_hash(value_t value,
     hash_stream_t *stream, cycle_detector_t *detector) {
   // object_transient_identity_hash has already written the tags.
@@ -175,6 +184,8 @@ value_t value_transient_identity_hash_cycle_protect(value_t value,
       return integer_transient_identity_hash(value, stream);
     case vdObject:
       return object_transient_identity_hash(value, stream, detector);
+    case vdCustomTagged:
+      return custom_tagged_transient_identity_hash(value, stream);
     default:
       return new_unsupported_behavior_signal(domain, __ofUnknown__,
           ubTransientIdentityHash);
@@ -183,10 +194,6 @@ value_t value_transient_identity_hash_cycle_protect(value_t value,
 
 
 // --- I d e n t i t y ---
-
-static value_t integer_identity_compare(value_t a, value_t b) {
-  return to_internal_boolean(is_same_value(a, b));
-}
 
 static value_t default_object_identity_compare(value_t a, value_t b,
     cycle_detector_t *detector) {
@@ -226,7 +233,8 @@ value_t value_identity_compare_cycle_protect(value_t a, value_t b,
   // Then dispatch to the domain equals functions.
   switch (a_domain) {
     case vdInteger:
-      return integer_identity_compare(a, b);
+    case vdCustomTagged:
+      return to_internal_boolean(is_same_value(a, b));
     case vdObject:
       return object_identity_compare(a, b, detector);
     default:
@@ -260,6 +268,22 @@ static value_t object_ordering_compare(value_t a, value_t b) {
   }
 }
 
+static value_t custom_tagged_ordering_compare(value_t a, value_t b) {
+  CHECK_DOMAIN(vdCustomTagged, a);
+  CHECK_DOMAIN(vdCustomTagged, b);
+  custom_tagged_phylum_t a_phylum = get_custom_tagged_phylum(a);
+  custom_tagged_phylum_t b_phylum = get_custom_tagged_phylum(b);
+  if (a_phylum != b_phylum)
+    return int_to_ordering(a_phylum - b_phylum);
+  phylum_behavior_t *behavior = get_custom_tagged_phylum_behavior(a_phylum);
+  value_t (*ordering_compare)(value_t a, value_t b) = behavior->ordering_compare;
+  if (ordering_compare == NULL) {
+    return new_signal(scNotComparable);
+  } else {
+    return ordering_compare(a, b);
+  }
+}
+
 value_t value_ordering_compare(value_t a, value_t b) {
   value_domain_t a_domain = get_value_domain(a);
   value_domain_t b_domain = get_value_domain(b);
@@ -273,6 +297,8 @@ value_t value_ordering_compare(value_t a, value_t b) {
         return integer_ordering_compare(a, b);
       case vdObject:
         return object_ordering_compare(a, b);
+      case vdCustomTagged:
+        return custom_tagged_ordering_compare(a, b);
       default:
         return new_signal(scNotComparable);
     }
@@ -343,6 +369,14 @@ static void object_print_on(value_t value, string_buffer_t *buf,
   (behavior->print_on)(value, buf, flags, depth);
 }
 
+static void custom_tagged_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags) {
+  CHECK_DOMAIN(vdCustomTagged, value);
+  custom_tagged_phylum_t phylum = get_custom_tagged_phylum(value);
+  phylum_behavior_t *behavior = get_custom_tagged_phylum_behavior(phylum);
+  (behavior->print_on)(value, buf, flags);
+}
+
 void value_print_on_cycle_detect(value_t value, string_buffer_t *buf,
     print_flags_t flags, size_t depth) {
   switch (get_value_domain(value)) {
@@ -354,6 +388,9 @@ void value_print_on_cycle_detect(value_t value, string_buffer_t *buf,
       break;
     case vdSignal:
       signal_print_on(value, buf);
+      break;
+    case vdCustomTagged:
+      custom_tagged_print_on(value, buf, flags);
       break;
     default:
       UNREACHABLE("value print on");
@@ -525,3 +562,31 @@ division_behavior_t k##Division##SpeciesBehavior = {                           \
 };
 ENUM_SPECIES_DIVISIONS(DEFINE_SPECIES_DIVISION_BEHAVIOR)
 #undef DEFINE_SPECIES_DIVISION_BEHAVIOR
+
+
+// --- P h y l u m s ---
+
+// Define all the division behaviors. Similarly to families, when you add a new
+// division you have to add the methods or this will break.
+#define DEFINE_TAGGED_PHYLUM_BEHAVIOR(Phylum, phylum, CM)                      \
+phylum_behavior_t k##Phylum##PhylumBehavior = {                                \
+  tp##Phylum,                                                                  \
+  &phylum##_print_on,                                                          \
+  CM(                                                                          \
+    &phylum##_ordering_compare,                                                \
+    NULL),                                                                     \
+};
+ENUM_CUSTOM_TAGGED_PHYLUMS(DEFINE_TAGGED_PHYLUM_BEHAVIOR)
+#undef DEFINE_TAGGED_PHYLUM_BEHAVIOR
+
+phylum_behavior_t *kCustomTaggedPhylumBehaviors[kCustomTaggedPhylumCount] = {NULL};
+
+phylum_behavior_t *get_custom_tagged_phylum_behavior(custom_tagged_phylum_t phylum) {
+  if (kCustomTaggedPhylumBehaviors[0] == NULL) {
+#define __SET_PHYLUM_BEHAVIOR__(Phylum, phylum, CM)                            \
+    kCustomTaggedPhylumBehaviors[tp##Phylum] = &k##Phylum##PhylumBehavior;
+  ENUM_CUSTOM_TAGGED_PHYLUMS(__SET_PHYLUM_BEHAVIOR__)
+#undef __SET_PHYLUM_BEHAVIOR__
+  }
+  return kCustomTaggedPhylumBehaviors[phylum];
+}

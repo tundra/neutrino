@@ -119,6 +119,15 @@ IF_CHECKS_ENABLED(__CHECK_CLASS__(value_domain_t, vdDomain, EXPR, get_value_doma
 #define CHECK_DOMAIN_OPT(vdDomain, EXPR)                                       \
 IF_CHECKS_ENABLED(__CHECK_CLASS_OPT__(value_domain_t, vdDomain, EXPR, get_value_domain))
 
+// Check that fails unless the value is a custom tagged value in the given phylum.
+#define CHECK_PHYLUM(tpPhylum, EXPR)                                           \
+IF_CHECKS_ENABLED(__CHECK_CLASS__(custom_tagged_phylum_t, tpPhylum, EXPR, get_custom_tagged_phylum))
+
+// Check that fails unless the value is a custom tagged value in the given phylum
+// or is nothing.
+#define CHECK_PHYLUM_OPT(tpPhylum, EXPR)                                       \
+IF_CHECKS_ENABLED(__CHECK_CLASS_OPT__(custom_tagged_phylum_t, tpPhylum, EXPR, get_custom_tagged_phylum))
+
 // Check that fails unless the object is in the specified family.
 #define CHECK_FAMILY(ofFamily, EXPR)                                           \
 IF_CHECKS_ENABLED(__CHECK_CLASS__(object_family_t, ofFamily, EXPR, get_object_family))

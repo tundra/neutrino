@@ -9,6 +9,7 @@
 #include "plankton.h"
 #include "runtime-inl.h"
 #include "safe-inl.h"
+#include "tagged.h"
 #include "try-inl.h"
 #include "value.h"
 

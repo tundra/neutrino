@@ -8,6 +8,7 @@
 #include "interp.h"
 #include "log.h"
 #include "runtime.h"
+#include "tagged.h"
 
 // --- B i n d i n g ---
 
@@ -36,7 +37,7 @@ static value_t get_fragment_entry_identifier(value_t entry) {
 // and if not creates it.
 static value_t binding_context_ensure_fragment_entry(binding_context_t *context,
     value_t stage, value_t path, value_t fragment, bool *created) {
-  CHECK_DOMAIN(vdInteger, stage);
+  CHECK_PHYLUM(tpStageOffset, stage);
   CHECK_FAMILY(ofPath, path);
   CHECK_FAMILY_OPT(ofUnboundModuleFragment, fragment);
   value_t path_map = context->fragment_entry_map;
@@ -321,7 +322,7 @@ static value_t build_synthetic_fragment_entries(binding_context_t *context) {
             value_t import_entry;
             id_hash_map_iter_get_current(&imported_fragment_iter,
                 &import_stage, &import_entry);
-            value_t target_stage = add_integers(import_stage, stage);
+            value_t target_stage = add_stage_offsets(import_stage, stage);
             // Ensure that there is a target entry to add the import to. If it
             // already exists this is a no-op, if it doesn't a synthetic entry
             // is created.
@@ -389,7 +390,7 @@ static value_t build_fragment_identifier_array(binding_context_t *context) {
 static value_t get_fragment_entry_before(value_t module, value_t stage) {
   // Simply scan through the entries one at a time, keeping track of the closest
   // one before the given stage.
-  int32_t stage_value = get_integer_value(stage);
+  int32_t stage_offset = get_stage_offset_value(stage);
   int32_t closest_stage_value = kMostNegativeInt32;
   value_t closest_stage_entry = new_not_found_signal();
   id_hash_map_iter_t fragment_iter;
@@ -398,13 +399,13 @@ static value_t get_fragment_entry_before(value_t module, value_t stage) {
     value_t fragment_stage;
     value_t fragment_entry;
     id_hash_map_iter_get_current(&fragment_iter, &fragment_stage, &fragment_entry);
-    int32_t fragment_stage_value = get_integer_value(fragment_stage);
-    if (fragment_stage_value >= stage_value)
+    int32_t fragment_stage_offset = get_stage_offset_value(fragment_stage);
+    if (fragment_stage_offset >= stage_offset)
       // This stage isn't before the one we're looking for.
       continue;
-    if (fragment_stage_value > closest_stage_value) {
+    if (fragment_stage_offset > closest_stage_value) {
       // This one is better than the best we've seen so far.
-      closest_stage_value = fragment_stage_value;
+      closest_stage_value = fragment_stage_offset;
       closest_stage_entry = fragment_entry;
     }
   }
@@ -614,7 +615,7 @@ value_t plankton_new_unbound_module_fragment(runtime_t *runtime) {
 value_t plankton_set_unbound_module_fragment_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, stage, imports, elements);
-  set_unbound_module_fragment_stage(object, stage);
+  set_unbound_module_fragment_stage(object, new_stage_offset(get_integer_value(stage)));
   set_unbound_module_fragment_imports(object, imports);
   set_unbound_module_fragment_elements(object, elements);
   return success();
