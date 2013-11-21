@@ -33,9 +33,9 @@ static value_t post_process_result(runtime_t *runtime, value_t result,
 
 value_t new_heap_uninitialized_roots(runtime_t *runtime) {
   size_t size = kRootsSize;
-  TRY_DEF(result, alloc_heap_object(runtime, size, new_integer(0)));
+  TRY_DEF(result, alloc_heap_object(runtime, size, whatever()));
   for (size_t i = 0; i < kRootCount; i++)
-    *access_object_field(result, OBJECT_FIELD_OFFSET(i)) = new_integer(0);
+    *access_object_field(result, OBJECT_FIELD_OFFSET(i)) = whatever();
   return result;
 }
 

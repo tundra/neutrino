@@ -758,7 +758,7 @@ TEST(value, deep_freeze) {
   value_t null_arr = new_heap_array(runtime, 2);
   ASSERT_TRUE(is_mutable(null_arr));
   ASSERT_FALSE(is_frozen(null_arr));
-  value_t offender = success();
+  value_t offender = whatever();
   ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, null_arr,
       &offender));
   ASSERT_SAME(null_arr, offender);
@@ -772,17 +772,17 @@ TEST(value, deep_freeze) {
   value_t mut_arr = new_heap_array(runtime, 2);
   set_array_at(mut_arr, 0, mut);
   ASSERT_TRUE(is_mutable(mut_arr));
-  offender = success();
+  offender = whatever();
   ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, mut_arr,
       &offender));
   ASSERT_VALEQ(mut_arr, offender);
   ASSERT_SUCCESS(ensure_shallow_frozen(runtime, mut_arr));
   ASSERT_FALSE(is_mutable(mut_arr));
-  offender = success();
+  offender = whatever();
   ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, mut_arr,
       &offender));
   ASSERT_SAME(mut, offender);
-  offender = success();
+  offender = whatever();
   ASSERT_VALEQ(internal_false_value(), try_validate_deep_frozen(runtime, mut_arr,
       &offender));
   ASSERT_SAME(mut, offender);
