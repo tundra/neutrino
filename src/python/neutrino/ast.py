@@ -536,7 +536,8 @@ class Stage(object):
     self.functions.add(name)
     value = Invocation([
       Argument(data._SUBJECT, Variable(data.Identifier(-1, data.Path(["ctrino"])))),
-      Argument(data._SELECTOR, Literal(data.Operation.infix("new_function")))
+      Argument(data._SELECTOR, Literal(data.Operation.infix("new_function"))),
+      Argument(0, Literal(name.path))
     ])
     self.add_element(NamespaceDeclaration(name, value))
 

@@ -11,106 +11,48 @@
 
 // --- B i n d i n g ---
 
-// Returns true if the given context has an entry for the module with the given
-// path.
-static bool binding_context_has_module(binding_context_t *context, value_t path) {
-  return has_id_hash_map_at(context->modules, path);
+void binding_context_init(binding_context_t *context, runtime_t *runtime) {
+  context->runtime = runtime;
+  context->bound_module_map = whatever();
+  context->module_map = whatever();
 }
 
-// Adds both versions of a module, bound and unbound, to the set to be loaded
-// by this binding context.
-static value_t binding_context_add_module(binding_context_t *context,
-    value_t unbound_module, value_t module) {
-  CHECK_FAMILY(ofUnboundModule, unbound_module);
-  CHECK_FAMILY(ofModule, module);
-  value_t path = get_unbound_module_path(unbound_module);
-  CHECK_FALSE("already bound", binding_context_has_module(context, path));
-  TRY_DEF(pair, new_heap_pair(context->runtime, unbound_module, module));
-  TRY(set_id_hash_map_at(context->runtime, context->modules, path, pair));
-  return success();
+// Returns the unbound fragment for the given fragment.
+static value_t get_fragment_entry_fragment(value_t entry) {
+  return get_array_at(entry, 0);
 }
 
-// Looks up the bound and unbound versions of the module with the given path
-// in this context. Either out-argument can be NULL in which case no value
-// of that type is stored.
-static value_t binding_context_get_module(binding_context_t *context,
-    value_t path, value_t *unbound_module_out, value_t *module_out) {
-  TRY_DEF(pair, get_id_hash_map_at(context->modules, path));
-  if (unbound_module_out != NULL)
-    *unbound_module_out = get_tuple_first(pair);
-  if (module_out != NULL)
-    *module_out = get_tuple_second(pair);
-  return success();
+// Returns the imports array buffer for the given fragment.
+static value_t get_fragment_entry_imports(value_t entry) {
+  return get_array_at(entry, 1);
 }
 
-// Ensures that the given unbound module has been scheduled to be bound.
-static value_t ensure_unbound_module_scheduled(binding_context_t *context,
-    value_t unbound_module) {
-  CHECK_FAMILY(ofUnboundModule, unbound_module);
-  value_t path = get_unbound_module_path(unbound_module);
-  if (binding_context_has_module(context, path))
-    // Module's already scheduled so nevermind.
-    return success();
-  // Add this module to the set.
-  TRY_DEF(module, new_heap_empty_module(context->runtime, path));
-  TRY(binding_context_add_module(context, unbound_module, module));
-  // Scan through all its imports and ensure those recursively. The ordering
-  // between these is significant but it doesn't matter at this level, we just
-  // pile them all in and then let is_fragment_ready_to_bind sort out the order
-  // in which to load everything.
-  value_t fragments = get_unbound_module_fragments(unbound_module);
-  for (size_t fi = 0; fi < get_array_length(fragments); fi++) {
-    value_t fragment = get_array_at(fragments, fi);
-    value_t imports = get_unbound_module_fragment_imports(fragment);
-    for (size_t ii = 0; ii < get_array_length(imports); ii++) {
-      value_t import = get_array_at(imports, ii);
-      value_t module_loader = deref(context->runtime->module_loader);
-      value_t unbound_import = module_loader_lookup_module(module_loader, import);
-      if (is_signal(scNotFound, unbound_import))
-        return new_lookup_error_signal(lcUnresolvedImport);
-      TRY(ensure_unbound_module_scheduled(context, unbound_import));
-    }
+// Returns the name of the fragment described by the given entry.
+static value_t get_fragment_entry_identifier(value_t entry) {
+  return get_array_at(entry, 2);
+}
+
+static value_t binding_context_ensure_module_map_entry(binding_context_t *context,
+    value_t stage, value_t path, value_t module, value_t fragment, bool *created) {
+  CHECK_DOMAIN(vdInteger, stage);
+  CHECK_FAMILY(ofPath, path);
+  value_t map = context->module_map;
+  if (!has_id_hash_map_at(map, path)) {
+    TRY_DEF(path_map, new_heap_id_hash_map(context->runtime, 16));
+    TRY(set_id_hash_map_at(context->runtime, map, path, path_map));
   }
-  return success();
-}
-
-static bool has_bound_module_fragment(value_t module, value_t stage) {
-  value_t fragment = get_module_fragment_at(module, stage);
-  return !is_signal(scNotFound, fragment) && is_module_fragment_bound(fragment);
-}
-
-// Returns true if the given fragment hasn't already been bound but has all its
-// dependencies bound and hence can be bound itself.
-static bool is_fragment_ready_to_bind(binding_context_t *context,
-    value_t unbound_module, value_t unbound_fragment) {
-  CHECK_FAMILY(ofUnboundModule, unbound_module);
-  CHECK_FAMILY(ofUnboundModuleFragment, unbound_fragment);
-  // Check whether we've already bound this fragment.
-  value_t stage = get_unbound_module_fragment_stage(unbound_fragment);
-  value_t bound_module = whatever();
-  value_t module_path = get_unbound_module_path(unbound_module);
-  binding_context_get_module(context, module_path, NULL, &bound_module);
-  if (has_bound_module_fragment(bound_module, stage))
-    return false;
-  // Check whether there is a fragment preceding this one and if there is
-  // whether it has been bound. If not this one is not ready to bind.
-  value_t previous_fragment = get_unbound_module_fragment_before(unbound_module, stage);
-  if (!is_signal(scNotFound, previous_fragment)) {
-    value_t previous_stage = get_unbound_module_fragment_stage(previous_fragment);
-    if (!has_bound_module_fragment(bound_module, previous_stage))
-      return false;
+  value_t path_map = get_id_hash_map_at(map, path);
+  if (!has_id_hash_map_at(path_map, stage)) {
+    TRY_DEF(entry, new_heap_array(context->runtime, 3));
+    TRY_DEF(imports, new_heap_array_buffer(context->runtime, 4));
+    TRY_DEF(ident, new_heap_identifier(context->runtime, stage, path));
+    set_array_at(entry, 0, fragment);
+    set_array_at(entry, 1, imports);
+    set_array_at(entry, 2, ident);
+    TRY(set_id_hash_map_at(context->runtime, path_map, stage, entry));
+    *created = true;
   }
-  // Check whether all imports have been bound.
-  value_t imports = get_unbound_module_fragment_imports(unbound_fragment);
-  for (size_t i = 0; i < get_array_length(imports); i++) {
-    value_t import_path = get_array_at(imports, i);
-    value_t bound_import_module = whatever();
-    binding_context_get_module(context, import_path, NULL, &bound_import_module);
-    // Found an import
-    if (!has_bound_module_fragment(bound_import_module, present_stage()))
-      return false;
-  }
-  return true;
+  return get_id_hash_map_at(path_map, stage);
 }
 
 // Adds a namespace binding for the value
@@ -151,61 +93,26 @@ static value_t apply_unbound_fragment_element(runtime_t *runtime, value_t elemen
   }
 }
 
-static value_t new_empty_module_fragment(runtime_t *runtime, value_t stage,
-    value_t module) {
-  TRY_DEF(namespace, new_heap_namespace(runtime));
-  TRY_DEF(methodspace, new_heap_methodspace(runtime));
-  TRY_DEF(imports, new_heap_namespace(runtime));
-  // Prime all methodspaces with the built-in one. This is a temporary hack
-  // (famous last words), longer term the built-ins should be loaded through
-  // the same mechanism as all other methods.
-  TRY(add_methodspace_import(runtime, methodspace, ROOT(runtime, builtin_methodspace)));
-  return new_heap_module_fragment(runtime, module, stage, namespace, methodspace,
-      imports);
-}
-
-// If the given modules has a fragment for the given stage returns it, otherwise
-// creates and returns it. Note that any predecessors of the module must have
-// been bound before this can be called.
-static value_t get_or_create_module_fragment(runtime_t *runtime, value_t stage,
-    value_t module) {
-  if (has_module_fragment_at(module, stage))
-    return get_module_fragment_at(module, stage);
-  TRY_DEF(fragment, new_empty_module_fragment(runtime, stage, module));
-  value_t predecessor = get_module_fragment_before(module, stage);
-  if (!is_signal(scNotFound, predecessor)) {
-    CHECK_TRUE("predecessor not bound", is_module_fragment_bound(predecessor));
-    value_t methodspace = get_module_fragment_methodspace(fragment);
-    TRY(add_methodspace_import(runtime, methodspace,
-        get_module_fragment_methodspace(predecessor)));
-  }
-  TRY(add_to_array_buffer(runtime, get_module_fragments(module), fragment));
-  return fragment;
-}
-
 // Adds mappings in the namespace and imports in the methodspace for everything
 // imported by the given fragment.
 static value_t bind_module_fragment_imports(binding_context_t *context,
-    value_t unbound_fragment, value_t bound_fragment) {
-  value_t imports = get_unbound_module_fragment_imports(unbound_fragment);
-  for (size_t i = 0; i < get_array_length(imports); i++) {
+    value_t imports, value_t bound_fragment) {
+  // Import the modules spaces into this fragment and create bindings in the
+  // importspace.
+  value_t methodspace = get_module_fragment_methodspace(bound_fragment);
+  value_t importspace = get_module_fragment_imports(bound_fragment);
+  for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
     // Look up the imported module.
-    value_t import_path = get_array_at(imports, i);
-    value_t bound_import_module = whatever();
-    TRY(binding_context_get_module(context, import_path, NULL, &bound_import_module));
-    // Add a binding to the fragment's namespace.
-    value_t importspace = get_module_fragment_imports(bound_fragment);
+    value_t import_ident = get_array_buffer_at(imports, i);
+    value_t import_path = get_identifier_path(import_ident);
     value_t import_name = get_path_head(import_path);
-    set_namespace_binding_at(context->runtime, importspace, import_name,
-        bound_import_module);
-    // Import the import's methodspace wholesale into the fragment's. At some
-    // point we'll probably have to add a filtering mechanism of some sort
-    // but this'll do for now.
-    value_t methodspace = get_module_fragment_methodspace(bound_fragment);
-    value_t import_present = get_module_fragment_at(bound_import_module,
-        present_stage());
-    value_t import_methodspace = get_module_fragment_methodspace(import_present);
-    TRY(add_methodspace_import(context->runtime, methodspace, import_methodspace));
+    value_t import_stage = get_identifier_stage(import_ident);
+    value_t import_module = get_id_hash_map_at(context->bound_module_map, import_path);
+    value_t import_fragment = get_module_fragment_at(import_module, import_stage);
+    value_t import_methods = get_module_fragment_methodspace(import_fragment);
+    TRY(add_methodspace_import(context->runtime, methodspace, import_methods));
+    TRY(set_namespace_binding_at(context->runtime, importspace, import_name,
+        import_fragment));
   }
   return success();
 }
@@ -223,211 +130,309 @@ static value_t apply_module_fragment_elements(binding_context_t *context,
 }
 
 static value_t bind_module_fragment(binding_context_t *context,
-    value_t unbound_module, value_t unbound_fragment) {
-  CHECK_FAMILY(ofUnboundModule, unbound_module);
-  CHECK_FAMILY(ofUnboundModuleFragment, unbound_fragment);
-  // Create the new bound fragment object and add it to the module.
-  value_t path = get_unbound_module_path(unbound_module);
-  value_t stage = get_unbound_module_fragment_stage(unbound_fragment);
-  value_t bound_module = whatever();
-  binding_context_get_module(context, path, NULL, &bound_module);
-  TRY_DEF(bound_fragment, get_or_create_module_fragment(context->runtime,
-      stage, bound_module));
-  CHECK_EQ("fragment already bound", feUnbound,
-      get_module_fragment_epoch(bound_fragment));
-  // Actually bind the new fragment.
-  set_module_fragment_epoch(bound_fragment, feBinding);
-  TRY(bind_module_fragment_imports(context, unbound_fragment, bound_fragment));
-  TRY(apply_module_fragment_elements(context, unbound_fragment, bound_fragment));
+    value_t imports, value_t unbound_fragment, value_t bound_fragment) {
+  CHECK_FAMILY(ofModuleFragment, bound_fragment);
+  if (!is_nothing(unbound_fragment)) {
+    CHECK_FAMILY(ofUnboundModuleFragment, unbound_fragment);
+    CHECK_EQ("fragment already bound", feUnbound,
+        get_module_fragment_epoch(bound_fragment));
+    set_module_fragment_epoch(bound_fragment, feBinding);
+    TRY(bind_module_fragment_imports(context, imports, bound_fragment));
+    TRY(apply_module_fragment_elements(context, unbound_fragment, bound_fragment));
+  }
   set_module_fragment_epoch(bound_fragment, feComplete);
   return success();
 }
 
-// Iteratively bind modules, for each round in the loop binding the next
-// fragment whose dependencies have all been bound. This is not super efficient
-// but for few modules it should work just fine.
-static value_t run_module_binding_loop(binding_context_t *context) {
-  // Loop around as long as there is work to do. When the work runs out we'll
-  // drop out through the bottom of the loop.
-  loop: do {
-    id_hash_map_iter_t iter;
-    id_hash_map_iter_init(&iter, context->modules);
-    while (id_hash_map_iter_advance(&iter)) {
-      value_t key;
-      value_t pair;
-      id_hash_map_iter_get_current(&iter, &key, &pair);
-      value_t unbound_module = get_array_at(pair, 0);
-      value_t unbound_fragments = get_unbound_module_fragments(unbound_module);
-      for (size_t i = 0; i < get_array_length(unbound_fragments); i++) {
-        value_t unbound_fragment = get_array_at(unbound_fragments, i);
-        if (is_fragment_ready_to_bind(context, unbound_module, unbound_fragment)) {
-          TRY(bind_module_fragment(context, unbound_module, unbound_fragment));
-          goto loop;
-        }
-      }
+static value_t ensure_module_in_array(runtime_t *runtime, value_t array,
+    value_t module) {
+  if (in_array_buffer(array, module))
+    return success();
+  // Add the module.
+  TRY(add_to_array_buffer(runtime, array, module));
+  // Scan through the imports and recursively add imported modules. Which
+  // stage the module is imported into doesn't matter at this point, we just
+  // have to enumerate them.
+  value_t fragments = get_unbound_module_fragments(module);
+  for (size_t fi = 0; fi < get_array_length(fragments); fi++) {
+    value_t fragment = get_array_at(fragments, fi);
+    value_t imports = get_unbound_module_fragment_imports(fragment);
+    for (size_t ii = 0; ii < get_array_length(imports); ii++) {
+      value_t import = get_array_at(imports, ii);
+      TRY_DEF(imported_module, module_loader_lookup_module(
+          deref(runtime->module_loader), import));
+      ensure_module_in_array(runtime, array, imported_module);
     }
-  } while (false);
+  }
+  return success();
+}
+
+// Builds an array buffer containing all the modules that are needed to load
+// the given unbound module (which is itself added to the array too).
+static value_t build_transitive_module_array(runtime_t *runtime,
+    value_t unbound_module) {
+  TRY_DEF(result, new_heap_array_buffer(runtime, 16));
+  TRY(ensure_module_in_array(runtime, result, unbound_module));
+  return result;
+}
+
+// Creates a new empty but suitably initialized bound module fragment.
+static value_t new_empty_module_fragment(runtime_t *runtime, value_t stage,
+    value_t module) {
+  TRY_DEF(namespace, new_heap_namespace(runtime));
+  TRY_DEF(methodspace, new_heap_methodspace(runtime));
+  TRY_DEF(imports, new_heap_namespace(runtime));
+  // Prime all methodspaces with the built-in one. This is a temporary hack
+  // (famous last words), longer term the built-ins should be loaded through
+  // the same mechanism as all other methods.
+  TRY(add_methodspace_import(runtime, methodspace, ROOT(runtime, builtin_methodspace)));
+  return new_heap_module_fragment(runtime, module, stage, namespace, methodspace,
+      imports);
+}
+
+static value_t execute_bind_schedule(binding_context_t *context, value_t schedule) {
+  for (size_t i = 0; i < get_array_buffer_length(schedule); i++) {
+    value_t next = get_array_buffer_at(schedule, i);
+    value_t path = get_identifier_path(next);
+    value_t stage = get_identifier_stage(next);
+    // Grab the pre-created bound fragment.
+    value_t bound_module = get_id_hash_map_at(context->bound_module_map, path);
+    if (is_signal(scNotFound, bound_module)) {
+      TRY_SET(bound_module, new_heap_empty_module(context->runtime, path));
+      TRY(set_id_hash_map_at(context->runtime, context->bound_module_map, path,
+          bound_module));
+    }
+    value_t bound_fragment = new_empty_module_fragment(context->runtime, stage,
+        bound_module);
+    TRY(add_to_array_buffer(context->runtime, get_module_fragments(bound_module),
+        bound_fragment));
+    // Grab the unbound fragment we'll use to create the bound fragment.
+    value_t module_struct = get_id_hash_map_at(context->module_map, path);
+    value_t fragment_entry = get_id_hash_map_at(module_struct, stage);
+    value_t unbound_fragment = get_fragment_entry_fragment(fragment_entry);
+    value_t imports = get_fragment_entry_imports(fragment_entry);
+    TRY(bind_module_fragment(context, imports, unbound_fragment, bound_fragment));
+  }
   return success();
 }
 
 value_t build_bound_module(runtime_t *runtime, value_t unbound_module) {
   binding_context_t context;
-  context.runtime = runtime;
-  TRY_SET(context.modules, new_heap_id_hash_map(runtime, 16));
-  TRY(ensure_unbound_module_scheduled(&context, unbound_module));
-  TRY(run_module_binding_loop(&context));
+  binding_context_init(&context, runtime);
+  TRY_SET(context.bound_module_map, new_heap_id_hash_map(runtime, 16));
+  TRY_DEF(modules, build_transitive_module_array(runtime, unbound_module));
+  TRY(build_fragment_import_map(&context, modules));
+  TRY_DEF(schedule, build_bind_schedule(&context));
+  TRY(execute_bind_schedule(&context, schedule));
   value_t path = get_unbound_module_path(unbound_module);
-  value_t module = whatever();
-  TRY(binding_context_get_module(&context, path, NULL, &module));
-  TRY(get_or_create_module_fragment(runtime, present_stage(), module));
-  return module;
-}
-
-// Ensures that a dependency has been recorded between the from-fragment and
-// the to-fragment. If a dependency already exists this is a no-op.
-static value_t add_fragment_dependency(runtime_t *runtime, value_t all_deps,
-    value_t from_stage, value_t from_path, value_t to_stage, value_t to_path) {
-  CHECK_DOMAIN(vdInteger, from_stage);
-  CHECK_FAMILY(ofPath, from_path);
-  CHECK_DOMAIN(vdInteger, to_stage);
-  CHECK_FAMILY(ofPath, to_path);
-  // Get the dependency mapping for the source path, creating it if necessary.
-  if (!has_id_hash_map_at(all_deps, from_path)) {
-    TRY_DEF(from_path_deps, new_heap_id_hash_map(runtime, 16));
-    TRY(set_id_hash_map_at(runtime, all_deps, from_path, from_path_deps));
-  }
-  // Get the dependency array for the source stage, creating it if necessary.
-  value_t from_path_deps = get_id_hash_map_at(all_deps, from_path);
-  if (!has_id_hash_map_at(from_path_deps, from_stage)) {
-    TRY_DEF(from_stage_deps, new_heap_array_buffer(runtime, 16));
-    TRY(set_id_hash_map_at(runtime, from_path_deps, from_stage, from_stage_deps));
-  }
-  value_t from_stage_deps = get_id_hash_map_at(from_path_deps, from_stage);
-  // Check if the dependency already exists by scanning through the existing
-  // array.
-  for (size_t i = 0; i < get_array_buffer_length(from_stage_deps); i++) {
-    value_t dep = get_array_buffer_at(from_stage_deps, i);
-    if (is_identifier_identical(dep, to_stage, to_path))
-      // Yup, found it. So we can just bail out without doing anything.
-      return success();
-  }
-  TRY_DEF(dep, new_heap_identifier(runtime, to_stage, to_path));
-  return add_to_array_buffer(runtime, from_stage_deps, dep);
-}
-
-static value_t find_imported_module(value_t modules, value_t import) {
-  for (size_t i = 0; i < get_array_buffer_length(modules); i++) {
-    value_t module = get_array_buffer_at(modules, i);
-    value_t path = get_unbound_module_path(module);
-    if (value_identity_compare(import, path))
-      return module;
-  }
-  return new_not_found_signal();
-}
-
-value_t build_fragment_dependency_map(runtime_t *runtime, value_t modules) {
-  TRY_DEF(result, new_heap_id_hash_map(runtime, 16));
-  // Scan through the fragments and iteratively add dependencies to the map.
-  for (size_t mi = 0; mi < get_array_buffer_length(modules); mi++) {
-    value_t from_module = get_array_buffer_at(modules, mi);
-    value_t from_module_path = get_unbound_module_path(from_module);
-    value_t from_fragments = get_unbound_module_fragments(from_module);
-    for (size_t fi = 0; fi < get_array_length(from_fragments); fi++) {
-      value_t from_fragment = get_array_at(from_fragments, fi);
-      value_t from_stage = get_unbound_module_fragment_stage(from_fragment);
-      // If this fragment has a predecessor (say, if this is the present stage
-      // and there is a past stage) it is a dependency.
-      value_t to_fragment = get_unbound_module_fragment_before(from_module,
-          from_stage);
-      if (!is_signal(scNotFound, to_fragment)) {
-        value_t to_stage = get_unbound_module_fragment_stage(to_fragment);
-        TRY(add_fragment_dependency(runtime, result, from_stage, from_module_path,
-            to_stage, from_module_path));
-      }
-      // Also, scan through the imports and add them.
-      value_t imports = get_unbound_module_fragment_imports(from_fragment);
-      for (size_t ii = 0; ii < get_array_length(imports); ii++) {
-        value_t import = get_array_at(imports, ii);
-        TRY_DEF(to_module, find_imported_module(modules, import));
-        value_t to_module_path = get_unbound_module_path(to_module);
-        // Scan through the imported module's fragments and add them as deps
-        // on the fragments of this module, shifted by the stage of the fragment
-        // that imports it.
-        value_t import_fragments = get_unbound_module_fragments(to_module);
-        for (size_t si = 0; si < get_array_length(import_fragments); si++) {
-          value_t to_fragment = get_array_at(import_fragments, si);
-          value_t to_stage = get_unbound_module_fragment_stage(to_fragment);
-          value_t dest_stage = shift_fragment_through_import(from_stage, to_stage);
-          TRY(add_fragment_dependency(runtime, result, dest_stage, from_module_path,
-              to_stage, to_module_path));
-        }
-      }
-    }
-  }
+  value_t result = get_id_hash_map_at(context.bound_module_map, path);
+  CHECK_FALSE("module missing", is_signal(scNotFound, result));
   return result;
 }
 
-// Returns true if the given path and stage have already been scheduled to be
-// bound in the given schedule.
-static bool is_fragment_scheduled(value_t schedule, value_t stage, value_t path) {
-  for (size_t i = 0; i < get_array_buffer_length(schedule); i++) {
-    value_t entry = get_array_buffer_at(schedule, i);
-    if (is_identifier_identical(entry, stage, path))
-      return true;
+// Given an array of modules map builds a mapping from fragment identifiers
+// to module map entries.
+static value_t build_real_module_map(binding_context_t *context, value_t modules) {
+  for (size_t mi = 0; mi < get_array_buffer_length(modules); mi++) {
+    value_t module = get_array_buffer_at(modules, mi);
+    value_t path = get_unbound_module_path(module);
+    value_t fragments = get_unbound_module_fragments(module);
+    for (size_t fi = 0; fi < get_array_length(fragments); fi++) {
+      value_t fragment = get_array_at(fragments, fi);
+      value_t stage = get_unbound_module_fragment_stage(fragment);
+      bool dummy = false;
+      TRY_DEF(entry, binding_context_ensure_module_map_entry(context, stage,
+          path, module, fragment, &dummy));
+      value_t imports = get_fragment_entry_imports(entry);
+      value_t fragment_imports = get_unbound_module_fragment_imports(fragment);
+      for (size_t ii = 0; ii < get_array_length(fragment_imports); ii++) {
+        value_t import = get_array_at(fragment_imports, ii);
+        TRY_DEF(ident, new_heap_identifier(context->runtime, present_stage(),
+            import));
+        TRY(ensure_array_buffer_contains(context->runtime, imports, ident));
+      }
+    }
   }
-  return false;
+  return success();
 }
 
-// Returns true if, according to the given schedule, the fragment with the given
-// path and stage, has all its dependencies satisfied and has not been bound
-// yet.
-static bool should_fragment_be_bound(value_t schedule, value_t deps,
-    value_t stage, value_t path) {
-  if (is_fragment_scheduled(schedule, stage, path))
-    // This one is already bound so it shouldn't be bound again.
-    return false;
-  value_t path_deps = get_id_hash_map_at(deps, path);
-  if (is_signal(scNotFound, path_deps))
-    // This module has no dependencies so there's nothing to stop the fragment
-    // from loading.
-    return true;
-  value_t stage_deps = get_id_hash_map_at(path_deps, stage);
-  if (is_signal(scNotFound, stage_deps))
-    // The module has dependencies but not this fragment so, again, there's
-    // nothing to stop it from loading.
-    return true;
-  for (size_t i = 0; i < get_array_buffer_length(stage_deps); i++) {
-    value_t dep = get_array_buffer_at(stage_deps, i);
-    value_t dep_stage = get_identifier_stage(dep);
-    value_t dep_path = get_identifier_path(dep);
-    if (!is_fragment_scheduled(schedule, dep_stage, dep_path))
-      // Found a dependency that hasn't been scheduled yet so this one can't
-      // be scheduled either.
-      return false;
-  }
-  // All clear.
-  return true;
-}
-
-value_t build_bind_schedule(runtime_t *runtime, value_t modules, value_t deps) {
-  TRY_DEF(result, new_heap_array_buffer(runtime, 16));
+static value_t close_module_map(binding_context_t *context) {
+  // Keep adding synthetic modules as long as changes are being made to the
+  // map. We'll scan through the fragments currently in the map, then scan
+  // through their imports, and for each check that the fragment that should
+  // receive the import exists. If it doesn't it is created.
   loop: do {
-    for (size_t mi = 0; mi < get_array_buffer_length(modules); mi++) {
-      value_t module = get_array_buffer_at(modules, mi);
-      value_t module_path = get_unbound_module_path(module);
-      value_t fragments = get_unbound_module_fragments(module);
-      for (size_t fi = 0; fi < get_array_length(fragments); fi++) {
-        value_t fragment = get_array_at(fragments, fi);
-        value_t fragment_stage = get_unbound_module_fragment_stage(fragment);
-        if (should_fragment_be_bound(result, deps, fragment_stage, module_path)) {
-          TRY_DEF(entry, new_heap_identifier(runtime, fragment_stage, module_path));
-          TRY(add_to_array_buffer(runtime, result, entry));
-          goto loop;
+    id_hash_map_iter_t module_iter;
+    id_hash_map_iter_init(&module_iter, context->module_map);
+    while (id_hash_map_iter_advance(&module_iter)) {
+      value_t module_path;
+      value_t module_fragments;
+      // Scan through the fragments.
+      id_hash_map_iter_get_current(&module_iter, &module_path, &module_fragments);
+      id_hash_map_iter_t fragment_iter;
+      id_hash_map_iter_init(&fragment_iter, module_fragments);
+      while (id_hash_map_iter_advance(&fragment_iter)) {
+        value_t stage;
+        value_t entry;
+        id_hash_map_iter_get_current(&fragment_iter, &stage, &entry);
+        value_t unbound_fragment = get_fragment_entry_fragment(entry);
+        // If there is no fragment associated with this entry it is synthetic
+        // and hence we're done.
+        if (is_nothing(unbound_fragment))
+          continue;
+        // Scan through the fragment's imports and ensure that their import
+        // targets have been created.
+        value_t imports = get_fragment_entry_imports(entry);
+        for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
+          value_t import = get_array_buffer_at(imports, i);
+          value_t import_fragment_stage = get_identifier_stage(import);
+          if (!value_identity_compare(import_fragment_stage, present_stage()))
+            // We'll record past imports but ignore them for the purposes of
+            // closing the import map since they're redundant.
+            continue;
+          value_t import_module_path = get_identifier_path(import);
+          value_t import_module = get_id_hash_map_at(context->module_map, import_module_path);
+          // Scan through the fragments of the imported module.
+          id_hash_map_iter_t imported_fragment_iter;
+          id_hash_map_iter_init(&imported_fragment_iter, import_module);
+          bool has_changed_anything = false;
+          while (id_hash_map_iter_advance(&imported_fragment_iter)) {
+            value_t import_stage;
+            value_t import_entry;
+            id_hash_map_iter_get_current(&imported_fragment_iter,
+                &import_stage, &import_entry);
+            value_t target_stage = add_integers(import_stage, stage);
+            // Ensure that there is a target entry to add the import to. If it
+            // already exists this is a no-op, if it doesn't a synthetic entry
+            // is created.
+            TRY_DEF(target_entry, binding_context_ensure_module_map_entry(
+                context, target_stage, module_path,
+                ROOT(context->runtime, nothing), ROOT(context->runtime, nothing),
+                &has_changed_anything));
+           value_t target_imports = get_fragment_entry_imports(target_entry);
+           value_t import_ident = get_fragment_entry_identifier(import_entry);
+            if (!in_array_buffer(target_imports, import_ident)) {
+              has_changed_anything = true;
+              TRY(add_to_array_buffer(context->runtime, target_imports, import_ident));
+            }
+          }
+          // If any changes were made we have to start over.
+          if (has_changed_anything)
+            goto loop;
         }
       }
     }
   } while (false);
+  return success();
+}
+
+value_t build_fragment_import_map(binding_context_t *context, value_t modules) {
+  TRY_SET(context->module_map, new_heap_id_hash_map(context->runtime, 16));
+  TRY(build_real_module_map(context, modules));
+  TRY(close_module_map(context));
+  return context->module_map;
+}
+
+// Returns true if the given path and stage have already been scheduled to be
+// bound in the given schedule.
+static bool is_fragment_scheduled(value_t schedule, value_t ident) {
+  return in_array_buffer(schedule, ident);
+}
+
+static value_t build_fragment_identifier_array(binding_context_t *context) {
+  TRY_DEF(result, new_heap_array_buffer(context->runtime, 16));
+  id_hash_map_iter_t module_iter;
+  id_hash_map_iter_init(&module_iter, context->module_map);
+  while (id_hash_map_iter_advance(&module_iter)) {
+    value_t module_path;
+    value_t module_fragments;
+    // Scan through the fragments.
+    id_hash_map_iter_get_current(&module_iter, &module_path, &module_fragments);
+    id_hash_map_iter_t fragment_iter;
+    id_hash_map_iter_init(&fragment_iter, module_fragments);
+    while (id_hash_map_iter_advance(&fragment_iter)) {
+      value_t stage;
+      value_t entry;
+      id_hash_map_iter_get_current(&fragment_iter, &stage, &entry);
+      value_t ident = get_fragment_entry_identifier(entry);
+      TRY(add_to_array_buffer(context->runtime, result, ident));
+    }
+  }
+  sort_array_buffer(result);
   return result;
+}
+
+// Returns the entry corresponding to the fragment immediately preceding the
+// fragment with the given stage in the given module. If there is no such entry
+// NotFound is returned.
+static value_t get_fragment_entry_before(value_t module, value_t stage) {
+  // Simply scan through the entries one at a time, keeping track of the closest
+  // one before the given stage.
+  int32_t stage_value = get_integer_value(stage);
+  int32_t closest_stage_value = kMostNegativeInt32;
+  value_t closest_stage_entry = new_not_found_signal();
+  id_hash_map_iter_t fragment_iter;
+  id_hash_map_iter_init(&fragment_iter, module);
+  while (id_hash_map_iter_advance(&fragment_iter)) {
+    value_t fragment_stage;
+    value_t fragment_entry;
+    id_hash_map_iter_get_current(&fragment_iter, &fragment_stage, &fragment_entry);
+    int32_t fragment_stage_value = get_integer_value(fragment_stage);
+    if (fragment_stage_value >= stage_value)
+      // This stage isn't before the one we're looking for.
+      continue;
+    if (fragment_stage_value > closest_stage_value) {
+      // This one is better than the best we've seen so far.
+      closest_stage_value = fragment_stage_value;
+      closest_stage_entry = fragment_entry;
+    }
+  }
+  return closest_stage_entry;
+}
+
+// Returns true iff the given identifier corresponds to a fragment that is
+// ready to be bound and hasn't already been bound.
+static bool should_fragment_be_bound(binding_context_t *context, value_t schedule,
+    value_t ident) {
+  // This fragment is already scheduled so we definitely don't want to bind it
+  // again.
+  if (is_fragment_scheduled(schedule, ident))
+    return false;
+  // Grab the information we hold about the fragment.
+  value_t path = get_identifier_path(ident);
+  value_t stage = get_identifier_stage(ident);
+  value_t module = get_id_hash_map_at(context->module_map, path);
+  value_t entry = get_id_hash_map_at(module, stage);
+  value_t imports = get_fragment_entry_imports(entry);
+  // Check whether all its explicit dependencies are satisfied.
+  for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
+    value_t import = get_array_buffer_at(imports, i);
+    if (!is_fragment_scheduled(schedule, import))
+      return false;
+  }
+  // Check if there is a preceding fragment and whether it has been bound.
+  value_t entry_before = get_fragment_entry_before(module, stage);
+  if (is_signal(scNotFound, entry_before)) {
+    return true;
+  } else {
+    value_t before_ident = get_fragment_entry_identifier(entry_before);
+    return is_fragment_scheduled(schedule, before_ident);
+  }
+}
+
+value_t build_bind_schedule(binding_context_t *context) {
+  TRY_DEF(schedule, new_heap_array_buffer(context->runtime, 16));
+  TRY_DEF(all_fragments, build_fragment_identifier_array(context));
+  loop: do {
+    for (size_t i = 0; i < get_array_buffer_length(all_fragments); i++) {
+      value_t ident = get_array_buffer_at(all_fragments, i);
+      if (should_fragment_be_bound(context, schedule, ident)) {
+        TRY(add_to_array_buffer(context->runtime, schedule, ident));
+        goto loop;
+      }
+    }
+  } while (false);
+  return schedule;
 }
 
 

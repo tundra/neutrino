@@ -309,7 +309,7 @@ static value_t new_moved_object(value_t target) {
   F(Function,                function,                  _, _, X, X, _, _, _, X, _)\
   F(Guard,                   guard,                     _, _, _, _, _, _, _, X, _)\
   F(GuardAst,                guard_ast,                 _, _, X, X, _, _, _, _, _)\
-  F(Identifier,              identifier,                _, X, X, _, _, _, _, _, _)\
+  F(Identifier,              identifier,                X, X, X, _, _, _, _, _, _)\
   F(IdHashMap,               id_hash_map,               _, _, _, X, _, X, _, X, X)\
   F(Instance,                instance,                  _, _, X, X, _, _, _, _, _)\
   F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _, _)\
@@ -738,6 +738,9 @@ value_t *get_array_elements_unchecked(value_t value);
 // values are not comparable, a signal is returned.
 value_t sort_array(value_t value);
 
+// Sorts the first 'elmc' elements of this array.
+value_t sort_array_partial(value_t value, size_t elmc);
+
 // Returns true if the given array is sorted.
 bool is_array_sorted(value_t value);
 
@@ -808,6 +811,18 @@ void set_array_buffer_at(value_t self, size_t index, value_t value);
 // Attempts to add an element at the end of this array buffer, increasing its
 // length by 1. Returns true if this succeeds, false if it wasn't possible.
 bool try_add_to_array_buffer(value_t self, value_t value);
+
+// Checks whether there is already a value in this array buffer object identical
+// to the given value and if not adds it.
+value_t ensure_array_buffer_contains(runtime_t *runtime, value_t self,
+    value_t value);
+
+// Returns true iff the given array buffer contains a value identical to the
+// given value.
+bool in_array_buffer(value_t self, value_t value);
+
+// Sorts the contents of this array buffer.
+void sort_array_buffer(value_t self);
 
 
 // --- I d e n t i t y   h a s h   m a p ---

@@ -655,14 +655,18 @@ static int value_compare_function(const void *vp_a, const void *vp_b) {
 }
 
 value_t sort_array(value_t value) {
+  return sort_array_partial(value, get_array_length(value));
+}
+
+value_t sort_array_partial(value_t value, size_t elmc) {
   CHECK_FAMILY(ofArray, value);
   CHECK_MUTABLE(value);
-  size_t length = get_array_length(value);
+  CHECK_REL("sorting out of bounds", elmc, <=, get_array_length(value));
   value_t *elements = get_array_elements(value);
   // Just use qsort. This means that we can't propagate signals from the compare
   // functions back out but that shouldn't be a huge issue. We'll check on them
   // for now and later on this will have to be rewritten in n anyway.
-  qsort(elements, length, kValueSize, &value_compare_function);
+  qsort(elements, elmc, kValueSize, &value_compare_function);
   return success();
 }
 
@@ -837,6 +841,26 @@ bool try_add_to_array_buffer(value_t self, value_t value) {
   set_array_at(elements, index, value);
   set_array_buffer_length(self, index + 1);
   return true;
+}
+
+bool in_array_buffer(value_t self, value_t value) {
+  for (size_t i = 0; i < get_array_buffer_length(self); i++) {
+    if (value_identity_compare(value, get_array_buffer_at(self, i)))
+      return true;
+  }
+  return false;
+}
+
+value_t ensure_array_buffer_contains(runtime_t *runtime, value_t self,
+    value_t value) {
+  if (in_array_buffer(self, value))
+    return success();
+  return add_to_array_buffer(runtime, self, value);
+}
+
+void sort_array_buffer(value_t self) {
+  value_t elements = get_array_buffer_elements(self);
+  sort_array_partial(elements, get_array_buffer_length(self));
 }
 
 value_t get_array_buffer_at(value_t self, size_t index) {
@@ -1585,12 +1609,12 @@ void namespace_print_on(value_t value, string_buffer_t *buf, print_flags_t flags
 
 FIXED_GET_MODE_IMPL(module, vmMutable);
 
-ACCESSORS_IMPL(Module, module, acInFamily, ofPath, Path, path);
+ACCESSORS_IMPL(Module, module, acInFamilyOpt, ofPath, Path, path);
 ACCESSORS_IMPL(Module, module, acInFamily, ofArrayBuffer, Fragments, fragments);
 
 value_t module_validate(value_t self) {
   VALIDATE_FAMILY(ofModule, self);
-  VALIDATE_FAMILY(ofPath, get_module_path(self));
+  VALIDATE_FAMILY_OPT(ofPath, get_module_path(self));
   VALIDATE_FAMILY(ofArrayBuffer, get_module_fragments(self));
   return success();
 }
@@ -1633,57 +1657,31 @@ bool has_module_fragment_at(value_t self, value_t stage) {
   return !is_signal(scNotFound, get_module_fragment_at(self, stage));
 }
 
-// Looks for the given path in the module's imports. If no matching import is
-// found NotFound is returned.
-static value_t module_lookup_identifier_in_imports(runtime_t *runtime,
-    value_t self, value_t stage, value_t path) {
-  value_t head = get_path_head(path);
-  value_t fragments = get_module_fragments(self);
-  for (size_t i = 0; i < get_array_buffer_length(fragments); i++) {
-    value_t fragment = get_array_buffer_at(fragments, i);
-    value_t importspace = get_module_fragment_imports(fragment);
-    value_t binding = get_namespace_binding_at(importspace, head);
-    if (is_signal(scNotFound, binding))
-      continue;
-    value_t fragment_stage = get_module_fragment_stage(fragment);
-    value_t new_stage = shift_lookup_through_import(fragment_stage, stage);
-    value_t tail = get_path_tail(path);
-    return module_lookup_identifier(runtime, binding, new_stage, tail);
-  }
-  return new_not_found_signal();
-}
+static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
+    value_t path);
 
-static value_t module_lookup_identifier_in_namespace(runtime_t *runtime,
-    value_t self, value_t stage, value_t path) {
+static value_t module_fragment_lookup_path_in_imports(runtime_t *runtime,
+    value_t self, value_t path) {
   value_t head = get_path_head(path);
+  value_t importspace = get_module_fragment_imports(self);
+  value_t binding = get_namespace_binding_at(importspace, head);
+  if (is_signal(scNotFound, binding))
+    return binding;
   value_t tail = get_path_tail(path);
-  value_t fragments = get_module_fragments(self);
-  for (size_t i = 0; i < get_array_buffer_length(fragments); i++) {
-    value_t fragment = get_array_buffer_at(fragments, i);
-    if (is_same_value(get_module_fragment_stage(fragment), stage)) {
-      value_t namespace = get_module_fragment_namespace(fragment);
-      TRY_DEF(binding, get_namespace_binding_at(namespace, head));
-      if (is_path_empty(tail)) {
-        // We've found a binding and we're at the end of the path so we're good,
-        // we can just return the binding.
-        return binding;
-      } else {
-        // We found a binding but the path goes on so we have to look up
-        // recursively.
-        CHECK_FAMILY(ofModule, binding);
-        // TODO: Always using the present stage to look up recursively doesn't
-        //   seem quite right but I'll have to add some tests of this to get
-        //   it completely right.
-        return module_lookup_identifier(runtime, binding, present_stage(),
-            tail);
-      }
-    }
-  }
-  WARN("Couldn't find fragment for stage %v when looking up %v", stage, path);
-  return new_lookup_error_signal(lcNoSuchStage);
+  return module_fragment_lookup_path(runtime, binding, tail);
 }
 
-value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage,
+static value_t module_fragment_lookup_path_in_namespace(runtime_t *runtime,
+    value_t self, value_t path) {
+  value_t head = get_path_head(path);
+  value_t namespace = get_module_fragment_namespace(self);
+  value_t binding = get_namespace_binding_at(namespace, head);
+  if (is_signal(scNotFound, binding))
+    return new_lookup_error_signal(lcNamespace);
+  return binding;
+}
+
+static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
     value_t path) {
   CHECK_FAMILY(ofPath, path);
   CHECK_FALSE("looking up empty path", is_path_empty(path));
@@ -1692,12 +1690,17 @@ value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage
   if (value_identity_compare(head, RSTR(runtime, ctrino)))
     return ROOT(runtime, ctrino);
   // First check the imports.
-  value_t as_import = module_lookup_identifier_in_imports(runtime, self, stage,
-      path);
+  value_t as_import = module_fragment_lookup_path_in_imports(runtime, self, path);
   if (!is_signal(scNotFound, as_import))
     return as_import;
   // If not an import try looking up in the appropriate namespace.
-  return module_lookup_identifier_in_namespace(runtime, self, stage, path);
+  return module_fragment_lookup_path_in_namespace(runtime, self, path);
+}
+
+value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage,
+    value_t path) {
+  value_t fragment = get_module_fragment_at(self, stage);
+  return module_fragment_lookup_path(runtime, fragment, path);
 }
 
 
@@ -1734,7 +1737,13 @@ value_t module_fragment_validate(value_t value) {
 void module_fragment_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
     size_t depth) {
   CHECK_FAMILY(ofModuleFragment, value);
-  string_buffer_printf(buf, "<module fragment>");
+  string_buffer_printf(buf, "#<fragment ");
+  value_t module = get_module_fragment_module(value);
+  value_print_inner_on(get_module_path(module), buf, flags, depth + 1);
+  string_buffer_printf(buf, " ");
+  value_t stage = get_module_fragment_stage(value);
+  value_print_inner_on(stage, buf, flags, depth + 1);
+  string_buffer_printf(buf, ">");
 }
 
 static value_t module_fragment_print(builtin_arguments_t *args) {
@@ -1929,6 +1938,19 @@ value_t identifier_identity_compare(value_t a, value_t b, cycle_detector_t *oute
   value_t a_path = get_identifier_path(a);
   value_t b_path = get_identifier_path(b);
   return value_identity_compare_cycle_protect(a_path, b_path, &inner);
+}
+
+value_t identifier_ordering_compare(value_t a, value_t b) {
+  CHECK_FAMILY(ofIdentifier, a);
+  CHECK_FAMILY(ofIdentifier, b);
+  value_t a_stage = get_identifier_stage(a);
+  value_t b_stage = get_identifier_stage(b);
+  value_t cmp_stage = value_ordering_compare(a_stage, b_stage);
+  if (ordering_to_int(cmp_stage) != 0)
+    return cmp_stage;
+  value_t a_path = get_identifier_path(a);
+  value_t b_path = get_identifier_path(b);
+  return value_ordering_compare(a_path, b_path);
 }
 
 

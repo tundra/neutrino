@@ -37,8 +37,9 @@ value_t ctrino_get_builtin_protocol(builtin_arguments_t *args) {
 value_t ctrino_new_function(builtin_arguments_t *args) {
   runtime_t *runtime = get_builtin_runtime(args);
   value_t self = get_builtin_subject(args);
+  value_t display_name = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofCtrino, self);
-  return new_heap_function(runtime, afMutable, ROOT(runtime, nothing));
+  return new_heap_function(runtime, afMutable, display_name);
 }
 
 value_t ctrino_new_instance(builtin_arguments_t *args) {
@@ -61,7 +62,7 @@ value_t ctrino_new_protocol(builtin_arguments_t *args) {
 value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(ctrino, INFIX("fail"), 0, ctrino_fail);
   ADD_BUILTIN(ctrino, INFIX("get_builtin_protocol"), 1, ctrino_get_builtin_protocol);
-  ADD_BUILTIN(ctrino, INFIX("new_function"), 0, ctrino_new_function);
+  ADD_BUILTIN(ctrino, INFIX("new_function"), 1, ctrino_new_function);
   ADD_BUILTIN(ctrino, INFIX("new_instance"), 1, ctrino_new_instance);
   ADD_BUILTIN(ctrino, INFIX("new_protocol"), 1, ctrino_new_protocol);
   return success();

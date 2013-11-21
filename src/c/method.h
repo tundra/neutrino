@@ -261,7 +261,10 @@ value_t add_methodspace_method(runtime_t *runtime, value_t self,
 // Looks up a method in this method space given an invocation record and a stack
 // frame. If the match is successful, as a side-effect stores an argument map
 // that maps between the result's parameters and argument offsets on the stack.
-value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
+value_t lookup_fragment_method(runtime_t *runtime, value_t fragment,
+    value_t record, frame_t *frame, value_t *arg_map_out);
+
+value_t lookup_methodspace_method(runtime_t *runtime, value_t methodspace,
     value_t record, frame_t *frame, value_t *arg_map_out);
 
 

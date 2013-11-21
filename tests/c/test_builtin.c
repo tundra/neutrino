@@ -40,10 +40,14 @@ static void test_builtin(runtime_t *runtime, value_t module, variant_t expected,
   ASSERT_VAREQ(expected, result);
 }
 
+// XXX
 static value_t new_empty_module_fragment(runtime_t *runtime) {
-  return new_heap_module_fragment(runtime, ROOT(runtime, nothing), new_integer(0),
+  TRY_DEF(module, new_heap_empty_module(runtime, ROOT(runtime, nothing)));
+  TRY_DEF(fragment, new_heap_module_fragment(runtime, module, new_integer(0),
       ROOT(runtime, nothing), ROOT(runtime, builtin_methodspace),
-      ROOT(runtime, nothing));
+      ROOT(runtime, nothing)));
+  TRY(add_to_array_buffer(runtime, get_module_fragments(module), fragment));
+  return fragment;
 }
 
 TEST(builtin, integers) {

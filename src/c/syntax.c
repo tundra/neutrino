@@ -231,8 +231,6 @@ ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, ofArray, Arguments,
 value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofInvocationAst, value);
   value_t arguments = get_invocation_ast_arguments(value);
-  value_t methodspace = get_module_fragment_methodspace(assm->fragment);
-  CHECK_FAMILY(ofMethodspace, methodspace);
   size_t arg_count = get_array_length(arguments);
   // Build the invocation record and emit the values at the same time.
   TRY_DEF(arg_vector, new_heap_pair_array(assm->runtime, arg_count));
@@ -248,7 +246,7 @@ value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   }
   TRY(co_sort_pair_array(arg_vector));
   TRY_DEF(record, new_heap_invocation_record(assm->runtime, afFreeze, arg_vector));
-  TRY(assembler_emit_invocation(assm, methodspace, record));
+  TRY(assembler_emit_invocation(assm, assm->fragment, record));
   return success();
 }
 
@@ -501,7 +499,7 @@ ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acInFamilyOpt,
 
 value_t emit_namespace_variable_ast(value_t self, assembler_t *assm) {
   assembler_emit_load_global(assm, get_namespace_variable_ast_identifier(self),
-      get_module_fragment_module(assm->fragment));
+      assm->fragment);
   return success();
 }
 

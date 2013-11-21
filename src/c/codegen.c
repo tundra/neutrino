@@ -325,12 +325,12 @@ value_t assembler_emit_delegate_lambda_call(assembler_t *assm) {
   return success();
 }
 
-value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t record) {
-  CHECK_FAMILY(ofMethodspace, space);
+value_t assembler_emit_invocation(assembler_t *assm, value_t fragment, value_t record) {
+  CHECK_FAMILY(ofModuleFragment, fragment);
   CHECK_FAMILY(ofInvocationRecord, record);
   assembler_emit_opcode(assm, ocInvoke);
   TRY(assembler_emit_value(assm, record));
-  TRY(assembler_emit_value(assm, space));
+  TRY(assembler_emit_value(assm, fragment));
   // The result will be pushed onto the stack on top of the arguments.
   assembler_adjust_stack_height(assm, 1);
   size_t argc = get_invocation_record_argument_count(record);
@@ -363,11 +363,11 @@ value_t assembler_emit_load_local(assembler_t *assm, size_t index) {
 }
 
 value_t assembler_emit_load_global(assembler_t *assm, value_t name,
-    value_t module) {
-  CHECK_FAMILY(ofModule, module);
+    value_t fragment) {
+  CHECK_FAMILY(ofModuleFragment, fragment);
   assembler_emit_opcode(assm, ocLoadGlobal);
   TRY(assembler_emit_value(assm, name));
-  TRY(assembler_emit_value(assm, module));
+  TRY(assembler_emit_value(assm, fragment));
   assembler_adjust_stack_height(assm, +1);
   return success();
 }

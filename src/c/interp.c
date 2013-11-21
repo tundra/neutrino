@@ -142,10 +142,10 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         // Look up the method in the method space.
         value_t record = read_next_value(&state);
         CHECK_FAMILY(ofInvocationRecord, record);
-        value_t methodspace = read_next_value(&state);
-        CHECK_FAMILY(ofMethodspace, methodspace);
+        value_t fragment = read_next_value(&state);
+        CHECK_FAMILY(ofModuleFragment, fragment);
         value_t arg_map;
-        value_t method = lookup_methodspace_method(runtime, methodspace, record,
+        value_t method = lookup_fragment_method(runtime, fragment, record,
             &frame, &arg_map);
         if (is_signal(scLookupError, method)) {
           log_lookup_error(method, record, &frame);
@@ -232,8 +232,9 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
       case ocLoadGlobal: {
         value_t ident = read_next_value(&state);
         CHECK_FAMILY(ofIdentifier, ident);
-        value_t module = read_next_value(&state);
-        CHECK_FAMILY(ofModule, module);
+        value_t fragment = read_next_value(&state);
+        CHECK_FAMILY(ofModuleFragment, fragment);
+        value_t module = get_module_fragment_module(fragment);
         TRY_DEF(value, module_lookup_identifier(runtime, module,
             get_identifier_stage(ident), get_identifier_path(ident)));
         frame_push_value(&frame, value);

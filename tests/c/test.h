@@ -287,6 +287,10 @@ static bool variant_is_marker(variant_t *variant) {
 // Creates a variant array with the given length and elements.
 #define vArrayBuffer(...) vBuild(expand_variant_to_array_buffer, vArrayPayload(__VA_ARGS__))
 
+// Expands to the empty array. Because of the way the vArray macro works it has
+// to be non-empty.
+#define vEmptyArrayBuffer() vBuild(expand_variant_to_array_buffer, .as_array={0 o 0})
+
 // Expands to a variant representing a path with the given segments. This can
 // not be used to construct the empty path.
 #define vPath(...) vBuild(expand_variant_to_path, vArrayPayload(__VA_ARGS__))

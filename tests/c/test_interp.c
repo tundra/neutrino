@@ -12,13 +12,21 @@ TEST(interp, binding_info_size) {
   ASSERT_TRUE(sizeof(binding_info_t) <= sizeof(int64_t));
 }
 
+// XXX
+static value_t new_empty_module_fragment(runtime_t *runtime) {
+  TRY_DEF(module, new_heap_empty_module(runtime, ROOT(runtime, nothing)));
+  TRY_DEF(fragment, new_heap_module_fragment(runtime, module, new_integer(0),
+      ROOT(runtime, nothing), ROOT(runtime, builtin_methodspace),
+      ROOT(runtime, nothing)));
+  TRY(add_to_array_buffer(runtime, get_module_fragments(module), fragment));
+  return fragment;
+}
+
 // Evaluates the given syntax tree and checks that the result is the given
 // expected value.
 static value_t assert_ast_value(runtime_t *runtime, variant_t expected,
     value_t ast) {
-  TRY_DEF(fragment, new_heap_module_fragment(runtime, ROOT(runtime, nothing),
-      new_integer(0), ROOT(runtime, nothing), ROOT(runtime, builtin_methodspace),
-      ROOT(runtime, nothing)));
+  TRY_DEF(fragment, new_empty_module_fragment(runtime));
   TRY_DEF(code_block, compile_expression(runtime, ast, fragment,
       scope_lookup_callback_get_bottom()));
   TRY_DEF(result, run_code_block_until_signal(runtime, code_block));
