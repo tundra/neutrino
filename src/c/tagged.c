@@ -28,7 +28,7 @@ value_t stage_offset_ordering_compare(value_t a, value_t b) {
   CHECK_PHYLUM(tpStageOffset, b);
   int32_t a_stage = get_stage_offset_value(a);
   int32_t b_stage = get_stage_offset_value(b);
-  return int_to_ordering(a_stage - b_stage);
+  return compare_signed_integers(a_stage, b_stage);
 }
 
 
@@ -59,5 +59,27 @@ void boolean_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) 
 value_t boolean_ordering_compare(value_t a, value_t b) {
   CHECK_PHYLUM(tpBoolean, a);
   CHECK_PHYLUM(tpBoolean, b);
-  return int_to_ordering(get_boolean_value(a) - get_boolean_value(b));
+  return compare_signed_integers(get_boolean_value(a), get_boolean_value(b));
+}
+
+
+// --- R e l a t i o n ---
+
+void relation_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
+  const char *str = NULL;
+  switch (get_relation_value(value)) {
+    case reLessThan:
+      str = "<";
+      break;
+    case reEqual:
+      str = "==";
+      break;
+    case reGreaterThan:
+      str = ">";
+      break;
+    case reUnordered:
+      str = "?";
+      break;
+  }
+  string_buffer_printf(buf, str);
 }

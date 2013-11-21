@@ -98,4 +98,81 @@ static bool get_boolean_value(value_t value) {
 }
 
 
+// --- R e l a t i o n s ---
+
+typedef enum {
+  reLessThan = 0x1,
+  reEqual = 0x2,
+  reGreaterThan = 0x4,
+  reUnordered = 0x0
+} relation_t;
+
+// Creates a relation value representing the given relation.
+static value_t new_relation(relation_t rel) {
+  return new_custom_tagged(tpRelation, rel);
+}
+
+// Returns a relation value representing <.
+static value_t less_than() {
+  return new_relation(reLessThan);
+}
+
+// Returns a relation value representing >.
+static value_t greater_than() {
+  return new_relation(reGreaterThan);
+}
+
+// Returns a relation value representing ==.
+static value_t equal() {
+  return new_relation(reEqual);
+}
+
+// Returns a relation value representing the arguments not being related.
+static value_t unordered() {
+  return new_relation(reUnordered);
+}
+
+// Returns the relation the represents the comparison between the two given
+// signed integers.
+static value_t compare_signed_integers(int64_t a, int64_t b) {
+  if (a < b) {
+    return less_than();
+  } else if (a == b) {
+    return equal();
+  } else {
+    return greater_than();
+  }
+}
+
+// Given an integer which is either negative for smaller, 0 for equal, or
+// positive for greater, returns a relation that represents the same thing.
+static value_t integer_to_relation(int64_t value) {
+  return compare_signed_integers(value, 0);
+}
+
+// Returns the enum value indicating the type of this relation.
+static relation_t get_relation_value(value_t value) {
+  CHECK_PHYLUM(tpRelation, value);
+  return get_custom_tagged_payload(value);
+}
+
+// Given a relation, returns an integer that represents the same relation such
+// that -1 is smaller, 0 is equal, and 1 is greater. If the value is unordered
+// an arbitrary value is returned.
+static int relation_to_integer(value_t value) {
+  switch (get_relation_value(value)) {
+    case reLessThan: return -1;
+    case reEqual: return 0;
+    case reGreaterThan: return 1;
+    case reUnordered: return 2;
+  }
+}
+
+// Tests what kind of relation the given value is. For instance, if you call
+// test_relation(x, reLessThan | reEqual) the result will be true iff x is
+// the relation less_than() or equal().
+static bool test_relation(value_t relation, unsigned mask) {
+  return (get_relation_value(relation) & mask) != 0;
+}
+
 #endif // _TAGGED
