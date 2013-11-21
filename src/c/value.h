@@ -1184,9 +1184,6 @@ ACCESSORS_DECL(identifier, path);
 // The stage (ie. $..., @..., etc) of this identifier.
 ACCESSORS_DECL(identifier, stage);
 
-// Returns true if the given identifier has the specified stage and path.
-bool is_identifier_identical(value_t self, value_t stage, value_t path);
-
 
 // --- F u n c t i o n ---
 

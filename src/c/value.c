@@ -22,6 +22,8 @@ const char *get_value_domain_name(value_domain_t domain) {
       return "MovedObject";
     case vdSignal:
       return "Signal";
+    case vdCustomTagged:
+      return "CustomTagged";
     default:
       return "invalid domain";
   }
@@ -1916,13 +1918,6 @@ void identifier_print_on(value_t value, string_buffer_t *buf, print_flags_t flag
   CHECK_FAMILY(ofIdentifier, value);
   value_print_inner_on(get_identifier_stage(value), buf, flags, depth - 1);
   value_print_inner_on(get_identifier_path(value), buf, flags, depth - 1);
-}
-
-bool is_identifier_identical(value_t self, value_t stage, value_t path) {
-  CHECK_DOMAIN(vdInteger, stage);
-  CHECK_FAMILY(ofPath, path);
-  return value_identity_compare(get_identifier_stage(self), stage)
-      && value_identity_compare(get_identifier_path(self), path);
 }
 
 value_t identifier_transient_identity_hash(value_t value, hash_stream_t *stream,
