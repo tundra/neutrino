@@ -214,7 +214,7 @@ value_t plankton_set_array_ast_contents(value_t object, runtime_t *runtime,
 }
 
 value_t plankton_new_array_ast(runtime_t *runtime) {
-  return new_heap_array_ast(runtime, ROOT(runtime, nothing));
+  return new_heap_array_ast(runtime, nothing());
 }
 
 
@@ -264,7 +264,7 @@ value_t plankton_set_invocation_ast_contents(value_t object, runtime_t *runtime,
 }
 
 value_t plankton_new_invocation_ast(runtime_t *runtime) {
-  return new_heap_invocation_ast(runtime, ROOT(runtime, nothing));
+  return new_heap_invocation_ast(runtime, nothing());
 }
 
 
@@ -292,8 +292,8 @@ value_t plankton_set_argument_ast_contents(value_t object, runtime_t *runtime,
 }
 
 value_t plankton_new_argument_ast(runtime_t *runtime) {
-  return new_heap_argument_ast(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
+  return new_heap_argument_ast(runtime, nothing(),
+      nothing());
 }
 
 
@@ -414,8 +414,8 @@ value_t plankton_set_local_declaration_ast_contents(value_t object,
 }
 
 value_t plankton_new_local_declaration_ast(runtime_t *runtime) {
-  return new_heap_local_declaration_ast(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, nothing), ROOT(runtime, nothing));
+  return new_heap_local_declaration_ast(runtime, nothing(),
+      nothing(), nothing());
 }
 
 
@@ -483,7 +483,7 @@ value_t plankton_set_local_variable_ast_contents(value_t object,
 }
 
 value_t plankton_new_local_variable_ast(runtime_t *runtime) {
-  return new_heap_local_variable_ast(runtime, ROOT(runtime, nothing));
+  return new_heap_local_variable_ast(runtime, nothing());
 }
 
 
@@ -516,7 +516,7 @@ value_t plankton_set_namespace_variable_ast_contents(value_t object,
 }
 
 value_t plankton_new_namespace_variable_ast(runtime_t *runtime) {
-  return new_heap_namespace_variable_ast(runtime, ROOT(runtime, nothing));
+  return new_heap_namespace_variable_ast(runtime, nothing());
 }
 
 
@@ -548,7 +548,7 @@ value_t plankton_set_symbol_ast_contents(value_t object, runtime_t *runtime,
 }
 
 value_t plankton_new_symbol_ast(runtime_t *runtime) {
-  return new_heap_symbol_ast(runtime, ROOT(runtime, nothing));
+  return new_heap_symbol_ast(runtime, nothing());
 }
 
 
@@ -697,7 +697,7 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   // Compile the signature and, if we're in a nontrivial inner scope, the
   // body of the lambda.
   value_t method_ast = get_lambda_ast_method(value);
-  value_t body_code = ROOT(runtime, nothing);
+  value_t body_code = nothing();
   if (assm->scope_callback != scope_lookup_callback_get_bottom())
     TRY_SET(body_code, compile_method_body(assm, method_ast));
   TRY_DEF(signature, build_method_signature(assm->runtime, assm->fragment,
@@ -705,7 +705,7 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
 
   // Build a method space in which to store the method.
   TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
-      ROOT(runtime, nothing), body_code, ROOT(runtime, nothing)));
+      nothing(), body_code, nothing()));
   TRY_DEF(space, new_heap_methodspace(runtime));
   TRY(add_methodspace_method(runtime, space, method));
 
@@ -742,7 +742,7 @@ value_t plankton_set_lambda_ast_contents(value_t object, runtime_t *runtime,
 }
 
 value_t plankton_new_lambda_ast(runtime_t *runtime) {
-  return new_heap_lambda_ast(runtime, ROOT(runtime, nothing));
+  return new_heap_lambda_ast(runtime, nothing());
 }
 
 
@@ -775,8 +775,8 @@ value_t plankton_set_parameter_ast_contents(value_t object, runtime_t *runtime,
 }
 
 value_t plankton_new_parameter_ast(runtime_t *runtime) {
-  return new_heap_parameter_ast(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, nothing), ROOT(runtime, nothing));
+  return new_heap_parameter_ast(runtime, nothing(),
+      nothing(), nothing());
 }
 
 void parameter_ast_print_on(value_t self, string_buffer_t *buf,
@@ -823,7 +823,7 @@ value_t plankton_set_guard_ast_contents(value_t object, runtime_t *runtime,
 }
 
 value_t plankton_new_guard_ast(runtime_t *runtime) {
-  return new_heap_guard_ast(runtime, gtAny, ROOT(runtime, nothing));
+  return new_heap_guard_ast(runtime, gtAny, nothing());
 }
 
 void guard_ast_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
@@ -870,7 +870,7 @@ value_t plankton_set_signature_ast_contents(value_t object, runtime_t *runtime,
 }
 
 value_t plankton_new_signature_ast(runtime_t *runtime) {
-  return new_heap_signature_ast(runtime, ROOT(runtime, nothing));
+  return new_heap_signature_ast(runtime, nothing());
 }
 
 void signature_ast_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
@@ -910,8 +910,8 @@ value_t plankton_set_method_ast_contents(value_t object, runtime_t *runtime,
 }
 
 value_t plankton_new_method_ast(runtime_t *runtime) {
-  return new_heap_method_ast(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
+  return new_heap_method_ast(runtime, nothing(),
+      nothing());
 }
 
 void method_ast_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
@@ -950,8 +950,8 @@ value_t plankton_set_namespace_declaration_ast_contents(value_t object,
 }
 
 value_t plankton_new_namespace_declaration_ast(runtime_t *runtime) {
-  return new_heap_namespace_declaration_ast(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
+  return new_heap_namespace_declaration_ast(runtime, nothing(),
+      nothing());
 }
 
 void namespace_declaration_ast_print_on(value_t value, string_buffer_t *buf,
@@ -985,7 +985,7 @@ value_t plankton_set_method_declaration_ast_contents(value_t object,
 }
 
 value_t plankton_new_method_declaration_ast(runtime_t *runtime) {
-  return new_heap_method_declaration_ast(runtime, ROOT(runtime, nothing));
+  return new_heap_method_declaration_ast(runtime, nothing());
 }
 
 void method_declaration_ast_print_on(value_t value, string_buffer_t *buf,
@@ -1017,8 +1017,8 @@ value_t plankton_set_program_ast_contents(value_t object, runtime_t *runtime,
 }
 
 value_t plankton_new_program_ast(runtime_t *runtime) {
-  return new_heap_program_ast(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
+  return new_heap_program_ast(runtime, nothing(),
+      nothing());
 }
 
 void program_ast_print_on(value_t value, string_buffer_t *buf,

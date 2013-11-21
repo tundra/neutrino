@@ -28,3 +28,10 @@ value_t stage_offset_ordering_compare(value_t a, value_t b) {
   int32_t b_stage = get_stage_offset_value(b);
   return int_to_ordering(a_stage - b_stage);
 }
+
+
+// --- N o t h i n g ---
+
+void nothing_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
+  string_buffer_printf(buf, "#<nothing>");
+}

@@ -77,14 +77,14 @@ value_t add_methodspace_builtin_method(runtime_t *runtime, value_t space,
   // Build the implementation.
   E_BEGIN_TRY_FINALLY();
     assembler_t assm;
-    E_TRY(assembler_init(&assm, runtime, ROOT(runtime, nothing),
+    E_TRY(assembler_init(&assm, runtime, nothing(),
         scope_lookup_callback_get_bottom()));
     E_TRY(assembler_emit_builtin(&assm, implementation));
     E_TRY(assembler_emit_return(&assm));
     E_TRY_DEF(code_block, assembler_flush(&assm));
     E_TRY_DEF(signature, build_signature(runtime, receiver, &operation, posc, false));
     E_TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
-        ROOT(runtime, nothing), code_block, ROOT(runtime, nothing)));
+        nothing(), code_block, nothing()));
     E_RETURN(add_methodspace_method(runtime, space, method));
   E_FINALLY();
     assembler_dispose(&assm);
@@ -98,7 +98,7 @@ value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
   CHECK_FAMILY(ofProtocol, receiver);
   // Build the implementation.
   assembler_t assm;
-  TRY(assembler_init(&assm, runtime, ROOT(runtime, nothing),
+  TRY(assembler_init(&assm, runtime, nothing(),
       scope_lookup_callback_get_bottom()));
   TRY(emitter(&assm));
   TRY(assembler_emit_return(&assm));
@@ -106,7 +106,7 @@ value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
   assembler_dispose(&assm);
   TRY_DEF(signature, build_signature(runtime, receiver, &operation, posc, allow_extra));
   TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
-      ROOT(runtime, nothing), code_block, ROOT(runtime, nothing)));
+      nothing(), code_block, nothing()));
   return add_methodspace_method(runtime, space, method);
 }
 

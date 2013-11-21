@@ -294,7 +294,6 @@ static value_t new_moved_object(value_t target) {
   F(Namespace,               namespace,                 _, _, _, _, _, _, _, X, X)\
   F(NamespaceDeclarationAst, namespace_declaration_ast, _, _, X, _, _, _, _, _, _)\
   F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _)\
-  F(Nothing,                 nothing,                   _, _, _, _, _, _, _, _, _)\
   F(Null,                    null,                      _, _, _, X, _, _, _, _, _)\
   F(Operation,               operation,                 _, X, X, _, _, _, _, X, _)\
   F(Options,                 options,                   _, _, X, _, _, _, _, _, _)\
@@ -461,6 +460,7 @@ ACCESSORS_DECL(object, header);
 // Enumerates the compact object species.
 #define ENUM_CUSTOM_TAGGED_PHYLUMS(F)                                          \
   F(StageOffset,             stage_offset,              X)                     \
+  F(Nothing,                 nothing,                   _)
 
 // Enum identifying the different phylums of custom tagged values.
 typedef enum {
@@ -915,11 +915,6 @@ void id_hash_map_iter_get_current(id_hash_map_iter_t *iter, value_t *key_out,
 // --- N u l l ---
 
 static const size_t kNullSize = OBJECT_SIZE(0);
-
-
-// --- N o t h i n g ---
-
-static const size_t kNothingSize = OBJECT_SIZE(0);
 
 
 // --- B o o l e a n ---

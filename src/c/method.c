@@ -314,7 +314,7 @@ value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
     E_TRY_DEF(signature, build_method_signature(runtime, fragment, &scratch,
         get_method_ast_signature(method_ast)));
     E_TRY_DEF(method, new_heap_method(runtime, afMutable, signature, method_ast,
-        ROOT(runtime, nothing), fragment));
+        nothing(), fragment));
     E_RETURN(method);
   E_FINALLY();
     reusable_scratch_memory_dispose(&scratch);
@@ -747,7 +747,7 @@ void operation_print_on(value_t self, string_buffer_t *buf,
 }
 
 value_t plankton_new_operation(runtime_t *runtime) {
-  return new_heap_operation(runtime, afMutable, otCall, ROOT(runtime, nothing));
+  return new_heap_operation(runtime, afMutable, otCall, nothing());
 }
 
 value_t plankton_set_operation_contents(value_t object, runtime_t *runtime,

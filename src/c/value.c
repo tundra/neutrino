@@ -124,7 +124,7 @@ static value_t integer_negate(builtin_arguments_t *args) {
 static value_t integer_print(builtin_arguments_t *args) {
   value_t this = get_builtin_subject(args);
   print_ln("%v", this);
-  return ROOT(args->runtime, nothing);
+  return nothing();
 }
 
 value_t add_integer_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
@@ -509,7 +509,7 @@ static value_t string_print(builtin_arguments_t *args) {
   value_t this = get_builtin_subject(args);
   CHECK_FAMILY(ofString, this);
   print_ln("%v", this);
-  return ROOT(args->runtime, nothing);
+  return nothing();
 }
 
 value_t add_string_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
@@ -961,7 +961,7 @@ static void set_id_hash_map_entry(value_t *entry, value_t key, size_t hash,
 // deleted.
 static void delete_id_hash_map_entry(runtime_t *runtime, value_t *entry) {
   value_t null = ROOT(runtime, null);
-  entry[kIdHashMapEntryKeyOffset] = ROOT(runtime, nothing);
+  entry[kIdHashMapEntryKeyOffset] = nothing();
   entry[kIdHashMapEntryHashOffset] = null;
   entry[kIdHashMapEntryValueOffset] = null;
 }
@@ -1252,21 +1252,6 @@ void null_print_on(value_t value, string_buffer_t *buf,
 }
 
 
-// --- N o t h i n g ---
-
-FIXED_GET_MODE_IMPL(nothing, vmDeepFrozen);
-
-value_t nothing_validate(value_t value) {
-  VALIDATE_FAMILY(ofNothing, value);
-  return success();
-}
-
-void nothing_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<nothing>");
-}
-
-
 // --- B o o l e a n ---
 
 GET_FAMILY_PROTOCOL_IMPL(boolean);
@@ -1464,7 +1449,7 @@ void protocol_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
 }
 
 value_t plankton_new_protocol(runtime_t *runtime) {
-  return new_heap_protocol(runtime, afMutable, ROOT(runtime, nothing));
+  return new_heap_protocol(runtime, afMutable, nothing());
 }
 
 value_t plankton_set_protocol_contents(value_t object, runtime_t *runtime,
@@ -1767,7 +1752,7 @@ void module_fragment_print_on(value_t value, string_buffer_t *buf, print_flags_t
 static value_t module_fragment_print(builtin_arguments_t *args) {
   value_t this = get_builtin_subject(args);
   print_ln("%v", this);
-  return ROOT(args->runtime, nothing);
+  return nothing();
 }
 
 value_t add_module_fragment_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
@@ -1800,8 +1785,8 @@ bool is_path_empty(value_t value) {
 }
 
 value_t plankton_new_path(runtime_t *runtime) {
-  return new_heap_path(runtime, afMutable, ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
+  return new_heap_path(runtime, afMutable, nothing(),
+      nothing());
 }
 
 value_t plankton_set_path_contents(value_t object, runtime_t *runtime,
@@ -1902,7 +1887,7 @@ value_t identifier_validate(value_t self) {
 }
 
 value_t plankton_new_identifier(runtime_t *runtime) {
-  return new_heap_identifier(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing));
+  return new_heap_identifier(runtime, nothing(), nothing());
 }
 
 value_t plankton_set_identifier_contents(value_t object, runtime_t *runtime,
@@ -1971,7 +1956,7 @@ value_t function_validate(value_t self) {
 }
 
 value_t plankton_new_function(runtime_t *runtime) {
-  return new_heap_function(runtime, afMutable, ROOT(runtime, nothing));
+  return new_heap_function(runtime, afMutable, nothing());
 }
 
 value_t plankton_set_function_contents(value_t object, runtime_t *runtime,
@@ -2030,7 +2015,7 @@ FIXED_GET_MODE_IMPL(options, vmMutable);
 ACCESSORS_IMPL(Options, options, acInFamilyOpt, ofArray, Elements, elements);
 
 value_t plankton_new_options(runtime_t *runtime) {
-  return new_heap_options(runtime, ROOT(runtime, nothing));
+  return new_heap_options(runtime, nothing());
 }
 
 value_t plankton_set_options_contents(value_t object, runtime_t *runtime,

@@ -67,7 +67,6 @@
   F(empty_path)                                                                \
   F(fahlse)                                                                    \
   F(integer_protocol)                                                          \
-  F(nothing)                                                                   \
   F(null)                                                                      \
   F(op_call)                                                                   \
   F(plankton_environment)                                                      \

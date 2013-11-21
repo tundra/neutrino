@@ -13,7 +13,7 @@ TEST(syntax, emitting) {
 
   value_t ast = new_heap_literal_ast(runtime, runtime_bool(runtime, true));
   assembler_t assm;
-  ASSERT_SUCCESS(assembler_init(&assm, runtime, ROOT(runtime, nothing),
+  ASSERT_SUCCESS(assembler_init(&assm, runtime, nothing(),
       scope_lookup_callback_get_bottom()));
   ASSERT_SUCCESS(emit_value(ast, &assm));
   assembler_emit_return(&assm);
@@ -61,7 +61,7 @@ TEST(syntax, parameter_order_index) {
   for (size_t i = 0; i < (N); i++) {                                           \
     value_t tags = variant_to_value(runtime, elms[i]);                         \
     set_array_at(params, i, new_heap_parameter_ast(runtime,                    \
-        ROOT(runtime, nothing), tags, any_guard_ast));                         \
+        nothing(), tags, any_guard_ast));                         \
   }                                                                            \
   size_t *ordering = calc_parameter_ast_ordering(&scratch, params);            \
   size_t expected[N] = {EXPECTED};                                             \

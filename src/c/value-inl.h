@@ -6,6 +6,7 @@
 #define _VALUE_INL
 
 #include "signals.h"
+#include "tagged.h"
 #include "try-inl.h"
 #include "utils-inl.h"
 #include "value.h"
@@ -24,11 +25,6 @@ static inline bool in_family(object_family_t family, value_t value) {
 // Returns true iff the given value is some runtime's null.
 static inline bool is_null(value_t value) {
   return in_family(ofNull, value);
-}
-
-// Returns true iff the given value is some runtime's nothing.
-static inline bool is_nothing(value_t value) {
-  return in_family(ofNothing, value);
 }
 
 // Returns true iff the given value is either nothing or an object within the
