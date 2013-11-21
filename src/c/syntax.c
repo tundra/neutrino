@@ -159,7 +159,7 @@ void literal_ast_print_on(value_t value, string_buffer_t *buf,
 }
 
 value_t plankton_new_literal_ast(runtime_t *runtime) {
-  return new_heap_literal_ast(runtime, ROOT(runtime, null));
+  return new_heap_literal_ast(runtime, null());
 }
 
 value_t plankton_set_literal_ast_contents(value_t object, runtime_t *runtime,
@@ -311,7 +311,7 @@ value_t emit_sequence_ast(value_t value, assembler_t *assm) {
   size_t length = get_array_length(values);
   if (length == 0) {
     // A no-element sequence has value null.
-    TRY(assembler_emit_push(assm, ROOT(assm->runtime, null)));
+    TRY(assembler_emit_push(assm, null()));
   } else if (length == 1) {
     // A one-element sequence is equivalent to the value of the one element.
     TRY(emit_value(get_array_at(values, 0), assm));

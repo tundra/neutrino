@@ -58,4 +58,16 @@ static inline bool is_nothing(value_t value) {
 }
 
 
+// --- N u l l ---
+
+static value_t null() {
+  return new_custom_tagged(tpNull, 0);
+}
+
+// Returns true iff the given value is some runtime's null.
+static inline bool is_null(value_t value) {
+  return is_same_value(value, null());
+}
+
+
 #endif // _TAGGED

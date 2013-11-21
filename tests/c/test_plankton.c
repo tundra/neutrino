@@ -37,7 +37,7 @@ TEST(plankton, simple) {
   check_plankton(runtime, new_integer(-65536));
 
   // Singletons
-  check_plankton(runtime, ROOT(runtime, null));
+  check_plankton(runtime, null());
   check_plankton(runtime, runtime_bool(runtime, true));
   check_plankton(runtime, runtime_bool(runtime, false));
 

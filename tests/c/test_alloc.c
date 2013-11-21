@@ -64,17 +64,16 @@ TEST(alloc, heap_array) {
   // Check initial state.
   value_t array = new_heap_array(runtime, 3);
   ASSERT_EQ(3, get_array_length(array));
-  value_t null = ROOT(runtime, null);
-  ASSERT_SAME(null, get_array_at(array, 0));
-  ASSERT_SAME(null, get_array_at(array, 1));
-  ASSERT_SAME(null, get_array_at(array, 2));
+  ASSERT_SAME(null(), get_array_at(array, 0));
+  ASSERT_SAME(null(), get_array_at(array, 1));
+  ASSERT_SAME(null(), get_array_at(array, 2));
 
   // Update the array, then check its state.
   set_array_at(array, 0, array);
   set_array_at(array, 2, array);
   ASSERT_EQ(3, get_array_length(array));
   ASSERT_SAME(array, get_array_at(array, 0));
-  ASSERT_SAME(null, get_array_at(array, 1));
+  ASSERT_SAME(null(), get_array_at(array, 1));
   ASSERT_SAME(array, get_array_at(array, 2));
 
   DISPOSE_RUNTIME();

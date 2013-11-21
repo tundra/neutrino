@@ -262,7 +262,7 @@ TEST(value, get_protocol) {
   value_t int_proto = get_protocol(new_integer(2), runtime);
   ASSERT_VALEQ(int_proto, ROOT(runtime, integer_protocol));
   ASSERT_VALEQ(int_proto, get_protocol(new_integer(6), runtime));
-  value_t null_proto = get_protocol(ROOT(runtime, null), runtime);
+  value_t null_proto = get_protocol(null(), runtime);
   ASSERT_FALSE(value_structural_equal(int_proto, null_proto));
   ASSERT_VALEQ(null_proto, ROOT(runtime, null_protocol));
 
@@ -273,7 +273,7 @@ TEST(value, get_protocol) {
 TEST(value, instance_division) {
   CREATE_RUNTIME();
 
-  value_t proto = new_heap_protocol(runtime, afFreeze, ROOT(runtime, null));
+  value_t proto = new_heap_protocol(runtime, afFreeze, null());
   value_t species = new_heap_instance_species(runtime, proto);
   value_t instance = new_heap_instance(runtime, species);
   ASSERT_VALEQ(proto, get_instance_species_primary_protocol(species));
@@ -725,12 +725,11 @@ TEST(value, set_value_mode) {
   ASSERT_SUCCESS(ensure_shallow_frozen(runtime, arr));
   ASSERT_TRUE(is_frozen(arr));
 
-  value_t null = ROOT(runtime, null);
-  ASSERT_TRUE(is_frozen(null));
-  ASSERT_FALSE(is_mutable(null));
-  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, null, vmFluid));
-  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, null, vmMutable));
-  ASSERT_SUCCESS(ensure_shallow_frozen(runtime, null));
+  ASSERT_TRUE(is_frozen(null()));
+  ASSERT_FALSE(is_mutable(null()));
+  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, null(), vmFluid));
+  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, null(), vmMutable));
+  ASSERT_SUCCESS(ensure_shallow_frozen(runtime, null()));
 
   value_t zero = new_integer(0);
   ASSERT_TRUE(is_frozen(zero));
@@ -750,9 +749,8 @@ TEST(value, deep_freeze) {
   ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, zero,
       NULL));
 
-  value_t null = ROOT(runtime, null);
-  ASSERT_TRUE(is_frozen(null));
-  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, null,
+  ASSERT_TRUE(is_frozen(null()));
+  ASSERT_VALEQ(internal_true_value(), try_validate_deep_frozen(runtime, null(),
       NULL));
 
   value_t null_arr = new_heap_array(runtime, 2);

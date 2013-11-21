@@ -93,9 +93,6 @@ value_t new_heap_array_buffer_with_contents(runtime_t *runtime, value_t array);
 // Creates a new identity hash map with the given initial capacity.
 value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity);
 
-// Creates the singleton null value.
-value_t new_heap_null(runtime_t *runtime);
-
 // Creates the singleton ctrino value.
 value_t new_heap_ctrino(runtime_t *runtime);
 

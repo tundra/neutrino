@@ -489,7 +489,7 @@ static value_t build_argument_map(runtime_t *runtime, size_t offsetc, size_t *of
   value_t current_node = MROOT(runtime, argument_map_trie_root);
   for (size_t i = 0; i < offsetc; i++) {
     size_t offset = offsets[i];
-    value_t value = (offset == kNoOffset) ? ROOT(runtime, null) : new_integer(offset);
+    value_t value = (offset == kNoOffset) ? null() : new_integer(offset);
     TRY_SET(current_node, get_argument_map_trie_child(runtime, current_node, value));
   }
   return get_argument_map_trie_value(current_node);

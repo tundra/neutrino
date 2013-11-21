@@ -2,8 +2,10 @@
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "behavior.h"
+#include "runtime.h"
 #include "tagged.h"
 #include "utils.h"
+#include "value-inl.h"
 
 // --- S t a g e   o f f s e t ---
 
@@ -34,4 +36,13 @@ value_t stage_offset_ordering_compare(value_t a, value_t b) {
 
 void nothing_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
   string_buffer_printf(buf, "#<nothing>");
+}
+
+
+// --- N u l l ---
+
+GET_FAMILY_PROTOCOL_IMPL(null);
+
+void null_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
+  string_buffer_printf(buf, "null");
 }

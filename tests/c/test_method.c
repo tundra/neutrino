@@ -18,14 +18,13 @@ TEST(method, identity_guard) {
 
   value_t space = new_heap_methodspace(runtime);
   value_t zero = new_integer(0);
-  value_t null = ROOT(runtime, null);
   value_t id_zero = new_heap_guard(runtime, afFreeze, gtEq, zero);
-  value_t id_null = new_heap_guard(runtime, afFreeze, gtEq, null);
+  value_t id_null = new_heap_guard(runtime, afFreeze, gtEq, null());
 
   ASSERT_MATCH(true, id_zero, zero);
-  ASSERT_MATCH(false, id_zero, null);
+  ASSERT_MATCH(false, id_zero, null());
   ASSERT_MATCH(false, id_null, zero);
-  ASSERT_MATCH(true, id_null, null);
+  ASSERT_MATCH(true, id_null, null());
 
   DISPOSE_RUNTIME();
 }
@@ -38,7 +37,7 @@ TEST(method, any_guard) {
 
   ASSERT_MATCH(true, any_guard, new_integer(0));
   ASSERT_MATCH(true, any_guard, new_integer(1));
-  ASSERT_MATCH(true, any_guard, ROOT(runtime, null));
+  ASSERT_MATCH(true, any_guard, null());
 
   DISPOSE_RUNTIME();
 }
@@ -47,13 +46,12 @@ TEST(method, method_space) {
   CREATE_RUNTIME();
 
   value_t space = new_heap_methodspace(runtime);
-  value_t null = ROOT(runtime, null);
-  value_t p1 = new_heap_protocol(runtime, afFreeze, null);
-  value_t p2 = new_heap_protocol(runtime, afFreeze, null);
+  value_t p1 = new_heap_protocol(runtime, afFreeze, null());
+  value_t p2 = new_heap_protocol(runtime, afFreeze, null());
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p1, p2));
-  value_t p3 = new_heap_protocol(runtime, afFreeze, null);
+  value_t p3 = new_heap_protocol(runtime, afFreeze, null());
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p2, p3));
-  value_t p4 = new_heap_protocol(runtime, afFreeze, null);
+  value_t p4 = new_heap_protocol(runtime, afFreeze, null());
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p2, p4));
 
   ASSERT_EQ(1, get_array_buffer_length(get_protocol_parents(runtime, space, p1)));
@@ -74,8 +72,8 @@ static value_t new_instance_of(runtime_t *runtime, value_t proto) {
 TEST(method, simple_is) {
   CREATE_RUNTIME();
 
-  value_t s_str_p = new_heap_protocol(runtime, afFreeze, ROOT(runtime, null));
-  value_t obj_p = new_heap_protocol(runtime, afFreeze, ROOT(runtime, null));
+  value_t s_str_p = new_heap_protocol(runtime, afFreeze, null());
+  value_t obj_p = new_heap_protocol(runtime, afFreeze, null());
   value_t int_p = ROOT(runtime, integer_protocol);
   value_t str_p = ROOT(runtime, string_protocol);
   value_t space = new_heap_methodspace(runtime);
@@ -108,11 +106,10 @@ TEST(method, simple_is) {
   ASSERT_MATCH(true, is_str, s_str);
   ASSERT_MATCH(true, is_s_str, s_str);
 
-  value_t null = ROOT(runtime, null);
-  ASSERT_MATCH(false, is_int, null);
-  ASSERT_MATCH(false, is_obj, null);
-  ASSERT_MATCH(false, is_str, null);
-  ASSERT_MATCH(false, is_s_str, null);
+  ASSERT_MATCH(false, is_int, null());
+  ASSERT_MATCH(false, is_obj, null());
+  ASSERT_MATCH(false, is_str, null());
+  ASSERT_MATCH(false, is_s_str, null());
 
   DISPOSE_RUNTIME();
 }
@@ -130,8 +127,8 @@ TEST(method, simple_is) {
 TEST(method, is_score) {
   CREATE_RUNTIME();
 
-  value_t s_str_p = new_heap_protocol(runtime, afFreeze, ROOT(runtime, null));
-  value_t obj_p = new_heap_protocol(runtime, afFreeze, ROOT(runtime, null));
+  value_t s_str_p = new_heap_protocol(runtime, afFreeze, null());
+  value_t obj_p = new_heap_protocol(runtime, afFreeze, null());
   value_t str_p = ROOT(runtime, string_protocol);
   value_t space = new_heap_methodspace(runtime);
   // s-str <: str <: obj
@@ -158,7 +155,7 @@ TEST(method, is_score) {
 TEST(method, multi_score) {
   CREATE_RUNTIME();
 
-  value_t int_str_p = new_heap_protocol(runtime, afFreeze, ROOT(runtime, null));
+  value_t int_str_p = new_heap_protocol(runtime, afFreeze, null());
   value_t int_p = ROOT(runtime, integer_protocol);
   value_t str_p = ROOT(runtime, string_protocol);
   value_t space = new_heap_methodspace(runtime);

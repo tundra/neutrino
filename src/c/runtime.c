@@ -71,8 +71,6 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
 
   // Initialize singletons first since we need those to create more complex
   // values below.
-  TRY_DEF(null, new_heap_null(runtime));
-  RAW_ROOT(roots, null) = null;
   TRY_SET(RAW_ROOT(roots, thrue), new_heap_boolean(runtime, true));
   TRY_SET(RAW_ROOT(roots, fahlse), new_heap_boolean(runtime, false));
   TRY_DEF(empty_array, new_heap_array(runtime, 0));
@@ -80,22 +78,22 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, empty_array_buffer), new_heap_array_buffer(runtime, 0));
   TRY_SET(RAW_ROOT(roots, empty_path), new_heap_path(runtime, afFreeze, nothing(),
       nothing()));
-  TRY_SET(RAW_ROOT(roots, any_guard), new_heap_guard(runtime, afFreeze, gtAny, null));
-  TRY_SET(RAW_ROOT(roots, integer_protocol), new_heap_protocol(runtime, afFreeze, null));
-  TRY_DEF(empty_protocol, new_heap_protocol(runtime, afFreeze, null));
+  TRY_SET(RAW_ROOT(roots, any_guard), new_heap_guard(runtime, afFreeze, gtAny, null()));
+  TRY_SET(RAW_ROOT(roots, integer_protocol), new_heap_protocol(runtime, afFreeze, null()));
+  TRY_DEF(empty_protocol, new_heap_protocol(runtime, afFreeze, null()));
   TRY(validate_deep_frozen(runtime, empty_protocol, NULL));
   TRY_SET(RAW_ROOT(roots, empty_instance_species),
       new_heap_instance_species(runtime, empty_protocol));
   TRY_SET(RAW_ROOT(roots, subject_key), new_heap_key(runtime, RAW_RSTR(roots, subject)));
   TRY_SET(RAW_ROOT(roots, selector_key), new_heap_key(runtime, RAW_RSTR(roots, selector)));
   TRY_SET(RAW_ROOT(roots, builtin_methodspace), new_heap_methodspace(runtime));
-  TRY_SET(RAW_ROOT(roots, op_call), new_heap_operation(runtime, afFreeze, otCall, null));
+  TRY_SET(RAW_ROOT(roots, op_call), new_heap_operation(runtime, afFreeze, otCall, null()));
   TRY_SET(RAW_ROOT(roots, ctrino), new_heap_ctrino(runtime));
 
   // Generate initialization for the per-family protocols.
 #define __CREATE_FAMILY_PROTOCOL__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\
   SR(                                                                          \
-    TRY_SET(RAW_ROOT(roots, family##_protocol), new_heap_protocol(runtime, afFreeze, null));,\
+    TRY_SET(RAW_ROOT(roots, family##_protocol), new_heap_protocol(runtime, afFreeze, null()));,\
     )
   ENUM_OBJECT_FAMILIES(__CREATE_FAMILY_PROTOCOL__)
 #undef __CREATE_FAMILY_PROTOCOL__
@@ -159,7 +157,6 @@ value_t roots_validate(value_t roots) {
 #undef __VALIDATE_PER_FAMILY_FIELDS__
 
   // Validate singletons manually.
-  VALIDATE_OBJECT(ofNull, RAW_ROOT(roots, null));
   VALIDATE_OBJECT(ofBoolean, RAW_ROOT(roots, thrue));
   VALIDATE_OBJECT(ofBoolean, RAW_ROOT(roots, fahlse));
   VALIDATE_OBJECT(ofArray, RAW_ROOT(roots, empty_array));
@@ -561,14 +558,6 @@ value_t runtime_dispose(runtime_t *runtime) {
     runtime->gc_fuzzer = NULL;
   }
   return success();
-}
-
-value_t runtime_null(runtime_t *runtime) {
-  return ROOT(runtime, null);
-}
-
-value_t runtime_nothing(runtime_t *runtime) {
-  return nothing();
 }
 
 value_t runtime_bool(runtime_t *runtime, bool which) {

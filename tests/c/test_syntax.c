@@ -72,7 +72,7 @@ TEST(syntax, parameter_order_index) {
 TEST(syntax, param_ordering) {
   CREATE_RUNTIME();
 
-  value_t any_guard_ast = new_heap_guard_ast(runtime, gtAny, ROOT(runtime, null));
+  value_t any_guard_ast = new_heap_guard_ast(runtime, gtAny, null());
 
   reusable_scratch_memory_t scratch;
   reusable_scratch_memory_init(&scratch);
