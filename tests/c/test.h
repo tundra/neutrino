@@ -217,6 +217,7 @@ typedef union {
 
 // Expanders for the basic types.
 value_t expand_variant_to_integer(runtime_t *runtime, variant_value_t *value);
+value_t expand_variant_to_stage_offset(runtime_t *runtime, variant_value_t *value);
 value_t expand_variant_to_string(runtime_t *runtime, variant_value_t *value);
 value_t expand_variant_to_bool(runtime_t *runtime, variant_value_t *value);
 value_t expand_variant_to_null(runtime_t *runtime, variant_value_t *value);
@@ -257,6 +258,9 @@ static bool variant_is_marker(variant_t *variant) {
 
 // Creates an integer variant with the given value.
 #define vInt(V) vBuild(expand_variant_to_integer, .as_int64=(V))
+
+// Creates a stage offset variant with the given offset.
+#define vStageOffset(V) vBuild(expand_variant_to_stage_offset, .as_int64=(V))
 
 // Creates a variant string with the given value.
 #define vStr(V) vBuild(expand_variant_to_string, .as_c_str=(V))

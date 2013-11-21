@@ -37,17 +37,17 @@ value_t expand_variant_to_unbound_fragment(runtime_t *runtime, variant_value_t *
 #define EB vEmptyArrayBuffer()
 #define A(...) vArray(__VA_ARGS__)
 #define B(...) vArrayBuffer(__VA_ARGS__)
-#define I(S, N) vIdentifier(vInt(S), vPath(vStr(#N)))
+#define I(S, N) vIdentifier(vStageOffset(S), vPath(vStr(#N)))
 
 // Shorthands for creating dependency calculation input.
 #define MOD(N, ...) vUnboundModule(vPath(vStr(#N)), __VA_ARGS__)
-#define FRG(S, I) vUnboundFragment(vInt(S), I)
+#define FRG(S, I) vUnboundFragment(vStageOffset(S), I)
 #define IMP(N) vPath(vStr(#N))
 
 // Macros for creating expected dependency calculation output.
 #define DEP(I, E) I, E
 #define MDEP(N, ...) vPath(vStr(#N)), __VA_ARGS__
-#define FDEP(S, I) vInt(S), I
+#define FDEP(S, I) vStageOffset(S), I
 
 // Given a map, returns a pair array of the map entries sorted by key.
 static value_t sort_and_flatten_map(runtime_t *runtime, value_t map) {

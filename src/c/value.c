@@ -8,6 +8,7 @@
 #include "interp.h"
 #include "log.h"
 #include "runtime.h"
+#include "tagged.h"
 #include "try-inl.h"
 #include "value-inl.h"
 
@@ -21,6 +22,8 @@ const char *get_value_domain_name(value_domain_t domain) {
       return "MovedObject";
     case vdSignal:
       return "Signal";
+    case vdCustomTagged:
+      return "CustomTagged";
     default:
       return "invalid domain";
   }
@@ -44,6 +47,16 @@ const char *get_species_division_name(species_division_t division) {
 #undef __GEN_CASE__
     default:
       return "invalid division";
+  }
+}
+
+const char *get_custom_tagged_phylum_name(custom_tagged_phylum_t phylum) {
+  switch (phylum) {
+#define __GEN_CASE__(Name, name, CM) case tp##Name: return #Name;
+    ENUM_CUSTOM_TAGGED_PHYLUMS(__GEN_CASE__)
+#undef __GEN_CASE__
+    default:
+      return "invalid phylum";
   }
 }
 
@@ -1643,13 +1656,13 @@ value_t add_module_fragment(runtime_t *runtime, value_t self, value_t fragment) 
 }
 
 value_t get_module_fragment_before(value_t self, value_t stage) {
-  int32_t limit = get_integer_value(stage);
+  int32_t limit = get_stage_offset_value(stage);
   value_t fragments = get_module_fragments(self);
   int32_t best_stage = kMostNegativeInt32;
   value_t best_fragment = new_not_found_signal();
   for (size_t i = 0; i < get_array_buffer_length(fragments); i++) {
     value_t fragment = get_array_buffer_at(fragments, i);
-    int32_t fragment_stage = get_integer_value(get_module_fragment_stage(fragment));
+    int32_t fragment_stage = get_stage_offset_value(get_module_fragment_stage(fragment));
     if (fragment_stage < limit && fragment_stage > best_stage) {
       best_stage = fragment_stage;
       best_fragment = fragment;
@@ -1895,7 +1908,7 @@ value_t plankton_new_identifier(runtime_t *runtime) {
 value_t plankton_set_identifier_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, stage, path);
-  set_identifier_stage(object, stage);
+  set_identifier_stage(object, new_stage_offset(get_integer_value(stage)));
   set_identifier_path(object, path);
   return success();
 }
@@ -1903,22 +1916,8 @@ value_t plankton_set_identifier_contents(value_t object, runtime_t *runtime,
 void identifier_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
     size_t depth) {
   CHECK_FAMILY(ofIdentifier, value);
-  int32_t stage = get_integer_value(get_identifier_stage(value));
-  if (stage < 0) {
-    for (int32_t i = stage; i < 0; i++)
-      string_buffer_putc(buf, '@');
-  } else {
-    for (int32_t i = 0; i <= stage; i++)
-      string_buffer_putc(buf, '$');
-  }
+  value_print_inner_on(get_identifier_stage(value), buf, flags, depth - 1);
   value_print_inner_on(get_identifier_path(value), buf, flags, depth - 1);
-}
-
-bool is_identifier_identical(value_t self, value_t stage, value_t path) {
-  CHECK_DOMAIN(vdInteger, stage);
-  CHECK_FAMILY(ofPath, path);
-  return value_identity_compare(get_identifier_stage(self), stage)
-      && value_identity_compare(get_identifier_path(self), path);
 }
 
 value_t identifier_transient_identity_hash(value_t value, hash_stream_t *stream,

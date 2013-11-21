@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "ctrino.h"
 #include "process.h"
+#include "tagged.h"
 #include "try-inl.h"
 #include "value-inl.h"
 
@@ -313,7 +314,7 @@ value_t new_heap_namespace(runtime_t *runtime) {
 value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t stage,
     value_t namespace, value_t methodspace, value_t imports) {
   CHECK_FAMILY_OPT(ofModule, module);
-  CHECK_DOMAIN(vdInteger, stage);
+  CHECK_PHYLUM(tpStageOffset, stage);
   CHECK_FAMILY_OPT(ofNamespace, namespace);
   CHECK_FAMILY_OPT(ofMethodspace, methodspace);
   CHECK_FAMILY_OPT(ofNamespace, imports);
@@ -668,7 +669,7 @@ value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point,
 }
 
 value_t new_heap_identifier(runtime_t *runtime, value_t stage, value_t path) {
-  CHECK_DOMAIN_OPT(vdInteger, stage);
+  CHECK_PHYLUM_OPT(tpStageOffset, stage);
   CHECK_FAMILY_OPT(ofPath, path);
   size_t size = kIdentifierSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,

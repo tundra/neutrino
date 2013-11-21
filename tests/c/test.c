@@ -9,6 +9,7 @@
 #include "runtime.h"
 #include "test.h"
 #include "utils.h"
+#include "tagged.h"
 #include "try-inl.h"
 #include "value-inl.h"
 
@@ -267,6 +268,10 @@ void uninstall_log_validator(log_validator_t *validator) {
 
 value_t expand_variant_to_integer(runtime_t *runtime, variant_value_t *value) {
   return new_integer(value->as_int64);
+}
+
+value_t expand_variant_to_stage_offset(runtime_t *runtime, variant_value_t *value) {
+  return new_stage_offset(value->as_int64);
 }
 
 value_t expand_variant_to_string(runtime_t *runtime, variant_value_t *value) {

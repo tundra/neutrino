@@ -945,21 +945,3 @@ TEST(value, options) {
 
   DISPOSE_RUNTIME();
 }
-
-TEST(value, stage_shifting) {
-  value_t present = present_stage();
-  value_t past = past_stage();
-  value_t past_past = past_past_stage();
-
-  ASSERT_VALEQ(present, shift_lookup_through_import(present, present));
-  ASSERT_VALEQ(past, shift_lookup_through_import(present, past));
-  ASSERT_VALEQ(past_past, shift_lookup_through_import(present, past_past));
-  ASSERT_VALEQ(present, shift_lookup_through_import(past, past));
-  ASSERT_VALEQ(past, shift_lookup_through_import(past, past_past));
-  ASSERT_VALEQ(present, shift_lookup_through_import(past_past, past_past));
-
-  ASSERT_VALEQ(present, shift_fragment_through_import(present, present));
-  ASSERT_VALEQ(past, shift_fragment_through_import(present, past));
-  ASSERT_VALEQ(past, shift_fragment_through_import(past, present));
-  ASSERT_VALEQ(past_past, shift_fragment_through_import(past, past));
-}

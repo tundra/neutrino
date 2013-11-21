@@ -26,7 +26,9 @@ typedef enum {
   // A VM-internal signal.
   vdSignal = 2,
   // An object that has been moved during an in-process garbage collection.
-  vdMovedObject = 3
+  vdMovedObject = 3,
+  // A custom tagged value.
+  vdCustomTagged = 4
 } value_domain_t;
 
 // Returns the string name of the given domain.
@@ -84,6 +86,13 @@ typedef struct {
   uint32_t details;
 } signal_value_t;
 
+// Data for custom-tagged values.
+typedef struct {
+  value_domain_t domain : 3;
+  uint32_t phylum : 8;
+  uint64_t payload : 53;
+} custom_tagged_value_t;
+
 // The data type used to represent a raw encoded value.
 typedef uint64_t encoded_value_t;
 
@@ -92,6 +101,7 @@ typedef union value_t {
   unknown_value_t as_unknown;
   integer_value_t as_integer;
   signal_value_t as_signal;
+  custom_tagged_value_t as_custom_tagged;
   encoded_value_t encoded;
 } value_t;
 
@@ -147,18 +157,6 @@ static int64_t get_integer_value(value_t value) {
   return value.as_integer.value;
 }
 
-// Returns a new tagged integer which is the sum of the two given tagged
-// integers.
-static value_t add_integers(value_t a, value_t b) {
-  return new_integer(get_integer_value(a) + get_integer_value(b));
-}
-
-// Returns a new tagged integer which is the first of the given tagged integers
-// minus the second.
-static value_t sub_integers(value_t a, value_t b) {
-  return new_integer(get_integer_value(a) - get_integer_value(b));
-}
-
 // Returns a value that is _not_ a signal. This can be used to indicate
 // unspecific success.
 static value_t success() {
@@ -169,42 +167,6 @@ static value_t success() {
 // indicate that the concrete value doesn't matter.
 static value_t whatever() {
   return new_integer(1);
-}
-
-// Returns a value representing the present stage.
-static value_t present_stage() {
-  return new_integer(0);
-}
-
-// Returns a value representing the past stage.
-static value_t past_stage() {
-  return new_integer(-1);
-}
-
-// Returns a value representing the past stage.
-static value_t past_past_stage() {
-  return new_integer(-2);
-}
-
-// Shifts a stage index being looked up through an imported stage index. Going
-// through a non-present import will shift which stage you're looking for and
-// this function tells you what the new stage should be. If, for instance,
-// you're looking up @foo:X through import $foo you want to continue looking for
-// @X in $foo, whereas if you're looking for @foo:X in @foo you want to shift to
-// looking for $X. Hence shifting @ by $ yields @, shifting @ by @ yields $,
-// etc.
-static value_t shift_lookup_through_import(value_t import, value_t stage) {
-  return sub_integers(stage, import);
-}
-
-// Shifts a fragment index through an imported stage index. Importing a module
-// non-presently will shift the dependencies between modules such that, for
-// instance, if you import @x then you'll want to import $x in your past, and
-// @x in your past^2. That's what importing @x means. This function tells you,
-// given the point at which you're importing and a stage being imported, which
-// fragment of yours should the fragment being imported be imported into..
-static value_t shift_fragment_through_import(value_t import, value_t stage) {
-  return add_integers(import, stage);
 }
 
 // Creates an internal boolean with the given value. Note that this is purely
@@ -492,6 +454,48 @@ ACCESSORS_DECL(object, species);
 // the species but during GC it may be a forward pointer. Only use these calls
 // during GC, anywhere else use the species accessors which does more checking.
 ACCESSORS_DECL(object, header);
+
+
+// --- C u s t o m   d o m a i n ---
+
+// Enumerates the compact object species.
+#define ENUM_CUSTOM_TAGGED_PHYLUMS(F)                                          \
+  F(StageOffset,             stage_offset,              X)                     \
+
+// Enum identifying the different phylums of custom tagged values.
+typedef enum {
+  __tpFirst__ = -1
+  #define __DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__(Phylum, phylum, X)             \
+  , tp##Phylum
+  ENUM_CUSTOM_TAGGED_PHYLUMS(__DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__)
+  #undef __DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__
+  // This is a special value separate from any of the others that can be used
+  // to indicate no phylum.
+  , __tpUnknown__
+} custom_tagged_phylum_t;
+
+#define kCustomTaggedPhylumCount __tpUnknown__
+
+// Returns the string name of the given phylum.
+const char *get_custom_tagged_phylum_name(custom_tagged_phylum_t phylum);
+
+// Creates a new custom tagged value.
+static value_t new_custom_tagged(custom_tagged_phylum_t phylum, uint64_t payload) {
+  return (value_t) {.as_custom_tagged={vdCustomTagged, phylum, payload}};
+}
+
+// Returns the phylum of a custom tagged value.
+static custom_tagged_phylum_t get_custom_tagged_phylum(value_t value) {
+  CHECK_DOMAIN(vdCustomTagged, value);
+  return value.as_custom_tagged.phylum;
+}
+
+// Returns the payload of a custom tagged value.
+static uint64_t get_custom_tagged_payload(value_t value) {
+  CHECK_DOMAIN(vdCustomTagged, value);
+  return value.as_custom_tagged.payload;
+}
+
 
 // --- S p e c i e s ---
 
@@ -1179,9 +1183,6 @@ ACCESSORS_DECL(identifier, path);
 
 // The stage (ie. $..., @..., etc) of this identifier.
 ACCESSORS_DECL(identifier, stage);
-
-// Returns true if the given identifier has the specified stage and path.
-bool is_identifier_identical(value_t self, value_t stage, value_t path);
 
 
 // --- F u n c t i o n ---

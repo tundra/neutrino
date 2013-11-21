@@ -5,6 +5,7 @@
 #include "builtin.h"
 #include "method.h"
 #include "safe-inl.h"
+#include "tagged.h"
 #include "test.h"
 
 static void test_builtin(runtime_t *runtime, value_t module, variant_t expected,
@@ -43,7 +44,7 @@ static void test_builtin(runtime_t *runtime, value_t module, variant_t expected,
 // XXX
 static value_t new_empty_module_fragment(runtime_t *runtime) {
   TRY_DEF(module, new_heap_empty_module(runtime, ROOT(runtime, nothing)));
-  TRY_DEF(fragment, new_heap_module_fragment(runtime, module, new_integer(0),
+  TRY_DEF(fragment, new_heap_module_fragment(runtime, module, present_stage(),
       ROOT(runtime, nothing), ROOT(runtime, builtin_methodspace),
       ROOT(runtime, nothing)));
   TRY(add_to_array_buffer(runtime, get_module_fragments(module), fragment));
