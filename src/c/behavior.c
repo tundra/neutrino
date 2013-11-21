@@ -431,7 +431,7 @@ static value_t new_instance_of_factory(runtime_t *runtime, value_t type) {
 }
 
 static value_t new_instance_of_unknown(runtime_t *runtime, value_t type) {
-  return new_heap_unknown(runtime, type, ROOT(runtime, nothing));
+  return new_heap_unknown(runtime, type, nothing());
 }
 
 static value_t new_instance_of_protocol(runtime_t *runtime, value_t protocol) {

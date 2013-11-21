@@ -46,4 +46,16 @@ static value_t add_stage_offsets(value_t a, value_t b) {
 }
 
 
+// --- N o t h i n g ---
+
+static value_t nothing() {
+  return new_custom_tagged(tpNothing, 0);
+}
+
+// Returns true iff the given value is the nothing value.
+static inline bool is_nothing(value_t value) {
+  return is_same_value(value, nothing());
+}
+
+
 #endif // _TAGGED

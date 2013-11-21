@@ -867,8 +867,8 @@ TEST(value, paths) {
   value_t empty = ROOT(runtime, empty_path);
   ASSERT_CHECK_FAILURE(scEmptyPath, get_path_head(empty));
   ASSERT_CHECK_FAILURE(scEmptyPath, get_path_tail(empty));
-  ASSERT_FAMILY(ofNothing, get_path_raw_head(empty));
-  ASSERT_FAMILY(ofNothing, get_path_raw_tail(empty));
+  ASSERT_SAME(nothing(), get_path_raw_head(empty));
+  ASSERT_SAME(nothing(), get_path_raw_tail(empty));
 
   value_t segments = variant_to_value(runtime, vArray(vStr("a"), vStr("b"),
       vStr("c")));

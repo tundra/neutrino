@@ -327,7 +327,7 @@ static value_t build_synthetic_fragment_entries(binding_context_t *context) {
             // already exists this is a no-op, if it doesn't a synthetic entry
             // is created.
             TRY_DEF(target_entry, binding_context_ensure_fragment_entry(
-                context, target_stage, module_path, ROOT(context->runtime, nothing),
+                context, target_stage, module_path, nothing(),
                 &has_changed_anything));
            value_t target_imports = get_fragment_entry_imports(target_entry);
            value_t import_ident = get_fragment_entry_identifier(import_entry);
@@ -532,7 +532,7 @@ value_t library_validate(value_t self) {
 }
 
 value_t plankton_new_library(runtime_t *runtime) {
-  return new_heap_library(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing));
+  return new_heap_library(runtime, nothing(), nothing());
 }
 
 value_t plankton_set_library_contents(value_t object, runtime_t *runtime,
@@ -567,8 +567,8 @@ value_t unbound_module_validate(value_t self) {
 }
 
 value_t plankton_new_unbound_module(runtime_t *runtime) {
-  return new_heap_unbound_module(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
+  return new_heap_unbound_module(runtime, nothing(),
+      nothing());
 }
 
 value_t plankton_set_unbound_module_contents(value_t object, runtime_t *runtime,
@@ -608,8 +608,8 @@ value_t unbound_module_fragment_validate(value_t self) {
 }
 
 value_t plankton_new_unbound_module_fragment(runtime_t *runtime) {
-  return new_heap_unbound_module_fragment(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, nothing), ROOT(runtime, nothing));
+  return new_heap_unbound_module_fragment(runtime, nothing(),
+      nothing(), nothing());
 }
 
 value_t plankton_set_unbound_module_fragment_contents(value_t object, runtime_t *runtime,
