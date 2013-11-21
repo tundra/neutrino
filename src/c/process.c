@@ -129,8 +129,8 @@ bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame, size_t fram
   set_frame_previous_frame_pointer(frame, old_frame.frame_pointer);
   set_frame_previous_capacity(frame, old_frame.capacity);
   set_frame_pc(frame, 0);
-  set_frame_code_block(frame, success());
-  set_frame_argument_map(frame, success());
+  set_frame_code_block(frame, whatever());
+  set_frame_argument_map(frame, whatever());
   // Update the stack piece's top frame data to reflect the new top frame.
   set_stack_piece_top_stack_pointer(stack_piece, frame->stack_pointer);
   set_stack_piece_top_frame_pointer(stack_piece, frame->frame_pointer);

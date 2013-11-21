@@ -304,7 +304,7 @@ static value_t runtime_freeze_shared_state(runtime_t *runtime) {
   // The roots object must be deep frozen.
   TRY(ensure_frozen(runtime, roots));
 
-  value_t offender = new_integer(0);
+  value_t offender = whatever();
   TRY_DEF(froze, try_validate_deep_frozen(runtime, roots, &offender));
   if (!is_internal_true_value(froze)) {
     ERROR("Could not freeze the roots object; offender: %v", offender);
@@ -549,8 +549,8 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
 void runtime_clear(runtime_t *runtime) {
   runtime->next_key_index = 0;
   runtime->gc_fuzzer = NULL;
-  runtime->roots = success();
-  runtime->mutable_roots = success();
+  runtime->roots = whatever();
+  runtime->mutable_roots = whatever();
   runtime->plankton_mapping = ((value_mapping_t) {NULL, NULL});
   runtime->module_loader = empty_safe_value();
 }
