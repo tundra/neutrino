@@ -9,6 +9,36 @@
 
 #include "value-inl.h"
 
+// --- B i n d i n g ---
+
+// Encapsulates the data maintained during the binding process.
+typedef struct {
+  // Map from paths -> bound modules.
+  value_t bound_module_map;
+  // Map from paths -> stages -> entries where each entry describes a
+  // corresponding fragment to be bound.
+  value_t fragment_entry_map;
+  // The runtime.
+  runtime_t *runtime;
+} binding_context_t;
+
+// Initializes a binding context appropriately.
+void binding_context_init(binding_context_t *context, runtime_t *runtime);
+
+// Given an unbound module creates a bound version, loading and binding
+// dependencies from the runtime's module loader as required.
+value_t build_bound_module(runtime_t *runtime, value_t unbound_module);
+
+// Given an array buffer of modules, initialized the fragment_entry_map of
+// the context. See bind.md for details.
+value_t build_fragment_entry_map(binding_context_t *context, value_t modules);
+
+// Given a context whose fragment entry map has been computed, returns an
+// array buffer of identifiers that specify the load order to apply to satisfy
+// the dependencies.
+value_t build_binding_schedule(binding_context_t *context);
+
+
 // --- M o d u l e   L o a d e r ---
 
 static const size_t kModuleLoaderSize = OBJECT_SIZE(1);
@@ -20,6 +50,10 @@ ACCESSORS_DECL(module_loader, modules);
 // Configure this loader according to the given options object.
 value_t module_loader_process_options(runtime_t *runtime, value_t self,
     value_t options);
+
+// Looks up a module by path, returning an unbound module. If the loader doesn't
+// know any modules with the given path NotFound is returned.
+value_t module_loader_lookup_module(value_t self, value_t path);
 
 
 // --- L i b r a r y ---

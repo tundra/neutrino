@@ -72,6 +72,12 @@ value_t new_heap_instance_species(runtime_t *runtime, value_t primary);
 // number of elements. The array will be initialized to null.
 value_t new_heap_array(runtime_t *runtime, size_t length);
 
+// Creates a new 2-element tuple. Currently backed by an array.
+value_t new_heap_pair(runtime_t *runtime, value_t e0, value_t e1);
+
+// Creates a new 3-element tuple. Currently backed by an array.
+value_t new_heap_triple(runtime_t *runtime, value_t e0, value_t e1, value_t e2);
+
 // Allocates a new array that is going to be used as a pair array containing
 // the given number of pairs.
 value_t new_heap_pair_array(runtime_t *runtime, size_t length);
@@ -135,9 +141,12 @@ value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t outers);
 // Creates a new empty namespace object.
 value_t new_heap_namespace(runtime_t *runtime);
 
-// Creates a new module object.
-value_t new_heap_module(runtime_t *runtime, value_t namespace, value_t methodspace,
-    value_t display_name);
+// Creates a new module fragment object.
+value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t stage,
+    value_t namespace, value_t methodspace, value_t imports);
+
+// Creates a new empty bound module with the given path.
+value_t new_heap_empty_module(runtime_t *runtime, value_t path);
 
 // Creates a new operation object.
 value_t new_heap_operation(runtime_t *runtime, alloc_flags_t flags,
@@ -202,7 +211,7 @@ value_t new_heap_methodspace(runtime_t *runtime);
 
 // Creates a new method with the given signature and implementation.
 value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signature,
-    value_t syntax, value_t code);
+    value_t syntax, value_t code, value_t fragment);
 
 // Creates an invocation record with the given argument vector.
 value_t new_heap_invocation_record(runtime_t *runtime, alloc_flags_t flags,
@@ -217,10 +226,8 @@ value_t new_heap_literal_ast(runtime_t *runtime, value_t value);
 // Creates a new array syntax tree with the given element array.
 value_t new_heap_array_ast(runtime_t *runtime, value_t elements);
 
-// Creates a new invocation syntax tree with the given arguments to be performed
-// in the given method space.
-value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments,
-    value_t methodspace);
+// Creates a new invocation syntax tree with the given arguments.
+value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments);
 
 // Creates a new argument syntax tree with the given tag and value.
 value_t new_heap_argument_ast(runtime_t *runtime, value_t tag, value_t value);
@@ -235,10 +242,8 @@ value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
 // Creates a new local variable syntax tree with the given symbol.
 value_t new_heap_local_variable_ast(runtime_t *runtime, value_t symbol);
 
-// Creates a new namespace variable syntax tree with the given name from the
-// given namespace.
-value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t name,
-    value_t namespace);
+// Creates a new namespace variable syntax tree with the given name.
+value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t ident);
 
 // Creates a new symbol syntax tree with the given name.
 value_t new_heap_symbol_ast(runtime_t *runtime, value_t name);
@@ -261,10 +266,18 @@ value_t new_heap_method_ast(runtime_t *runtime, value_t signature, value_t body)
 
 // Creates a new program syntax tree with the given elements.
 value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point,
-    value_t fragment);
+    value_t module);
 
 // Creates a new identifier with the given path and stage.
-value_t new_heap_identifier(runtime_t *runtime, value_t path, value_t stage);
+value_t new_heap_identifier(runtime_t *runtime, value_t stage, value_t path);
+
+// Creates a new namespace declaration syntax tree with the given path bound
+// to the given name.
+value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t path,
+    value_t value);
+
+// Creates a new method declaration that declares the given method.
+value_t new_heap_method_declaration_ast(runtime_t *runtime, value_t method);
 
 
 // --- U t i l s ---

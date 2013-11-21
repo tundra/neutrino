@@ -283,6 +283,8 @@ static value_t runtime_hard_init(runtime_t *runtime, const runtime_config_t *con
 // Perform "soft" initialization, the stuff where we're starting to rely on the
 // runtime being fully functional.
 static value_t runtime_soft_init(runtime_t *runtime) {
+  TRY_DEF(module_loader, new_heap_empty_module_loader(runtime));
+  runtime->module_loader = runtime_protect_value(runtime, module_loader);
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
     safe_value_t s_builtin_methodspace = protect(pool,
@@ -550,10 +552,12 @@ void runtime_clear(runtime_t *runtime) {
   runtime->roots = success();
   runtime->mutable_roots = success();
   runtime->plankton_mapping = ((value_mapping_t) {NULL, NULL});
+  runtime->module_loader = empty_safe_value();
 }
 
 value_t runtime_dispose(runtime_t *runtime) {
   TRY(runtime_validate(runtime));
+  dispose_safe_value(runtime, runtime->module_loader);
   heap_dispose(&runtime->heap);
   if (runtime->gc_fuzzer != NULL) {
     allocator_default_free(new_memory_block(runtime->gc_fuzzer, sizeof(gc_fuzzer_t)));

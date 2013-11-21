@@ -12,7 +12,6 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 # Remaining imports.
 import analysis
 import ast
-import bindings
 import data
 import optparse
 import parser
@@ -37,7 +36,6 @@ class Main(object):
     self.flags = None
     self.units = {}
     self.scheduler = schedule.TaskScheduler()
-    self.binder = bindings.Binder(self.units)
 
   # Builds and returns a new option parser for the flags understood by this
   # script.
@@ -67,7 +65,7 @@ class Main(object):
   def run_filter(self):
     if not self.flags.filter:
       return False
-    pattern = re.compile(r'^p64/([a-zA-Z0-9=+]+)$')
+    pattern = re.compile(r'^p64/([a-zA-Z0-9=+/]+)$')
     for line in sys.stdin:
       match = pattern.match(line.strip())
       if match:
@@ -108,7 +106,7 @@ class Main(object):
       with open(arg, "rt") as stream:
         contents = stream.read()
       tokens = token.tokenize(contents)
-      unit = parser.OldParser(tokens, module_name).parse_program()
+      unit = parser.Parser(tokens, module_name).parse_program()
       self.units[module_name] = unit
     # Then schedule them to be compiled.
     for unit in self.units.values():
@@ -117,19 +115,19 @@ class Main(object):
   # Processes any --expression arguments.
   def schedule_expressions(self):
     self.run_parse_input(self.flags.expression,
-        lambda tokens: parser.OldParser(tokens, "expression").parse_expression_program())
+        lambda tokens: parser.Parser(tokens, "expression").parse_expression_program())
 
   # Processes any --program arguments.
   def schedule_programs(self):
     self.run_parse_input(self.flags.program,
-        lambda tokens: parser.OldParser(tokens, "program").parse_program())
+        lambda tokens: parser.Parser(tokens, "program").parse_program())
 
   # Processes any --file arguments.
   def schedule_files(self):
     for filename in self.flags.file:
       source = open(filename, "rt").read()
       tokens = token.tokenize(source)
-      unit = parser.OldParser(tokens, filename).parse_program()
+      unit = parser.Parser(tokens, filename).parse_program()
       self.schedule_for_compile(unit)
       self.schedule_for_output(unit)
 
@@ -143,7 +141,7 @@ class Main(object):
       (module_name, ext) = os.path.splitext(module_basename)
       module_source = open(module_file, "rt").read()
       tokens = token.tokenize(module_source)
-      unit = parser.NewParser(tokens, module_name).parse_program()
+      unit = parser.Parser(tokens, module_name).parse_program()
       analysis.scope_analyze(unit)
       module = unit.as_unbound_module()
       library.add_module(module.path, module)
@@ -158,20 +156,12 @@ class Main(object):
     # Analysis doesn't depend on anything else so we can just go ahead and get
     # that out of the way.
     analysis.scope_analyze(unit)
-    for (index, stage) in unit.get_stages():
-      self.scheduler.add_task(self.binder.new_task(unit, stage))
 
   # Schedules the present program of the given unit to be output to stdout when
   # all the prerequisites for doing so have been run.
   def schedule_for_output(self, unit):
-    def output_unit():
-      program = unit.get_present_program()
-      self.binder.bind_program(program)
-      self.output_value(program)
-    self.scheduler.add_task(schedule.SimpleTask(
-      schedule.ActionId("output program"),
-      [unit.get_present().get_bind_action()],
-      output_unit))
+    program = unit.get_present_program()
+    self.output_value(program)
 
   def run_parse_input(self, inputs, parse_thunk):
     for expr in inputs:

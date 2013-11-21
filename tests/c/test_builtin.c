@@ -7,9 +7,8 @@
 #include "safe-inl.h"
 #include "test.h"
 
-static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
+static void test_builtin(runtime_t *runtime, value_t module, variant_t expected,
     variant_t receiver, builtin_operation_t operation, variant_t args) {
-  ASSERT_EQ(vtArray, args.type);
   size_t positional_count = args.value.as_array.length;
   size_t arg_count = 2 + positional_count;
 
@@ -18,8 +17,7 @@ static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
   // The subject argument.
   set_array_at(args_ast, 0, new_heap_argument_ast(runtime,
       ROOT(runtime, subject_key),
-      new_heap_literal_ast(runtime,
-          variant_to_value(runtime, receiver))));
+      new_heap_literal_ast(runtime, C(receiver))));
   // The selector argument.
   value_t selector = builtin_operation_to_value(runtime, &operation);
   set_array_at(args_ast, 1, new_heap_argument_ast(runtime,
@@ -30,34 +28,43 @@ static void test_builtin(runtime_t *runtime, value_t space, variant_t expected,
     variant_t var_arg = args.value.as_array.elements[i];
     set_array_at(args_ast, 2 + i, new_heap_argument_ast(runtime,
         new_integer(i),
-        new_heap_literal_ast(runtime,
-            variant_to_value(runtime, var_arg))));
+        new_heap_literal_ast(runtime, C(var_arg))));
   }
-  value_t invocation = new_heap_invocation_ast(runtime, args_ast, space);
+  value_t invocation = new_heap_invocation_ast(runtime, args_ast);
 
   // Compile and execute the syntax.
-  value_t code = compile_expression(runtime, invocation,
+  value_t code = compile_expression(runtime, invocation, module,
       scope_lookup_callback_get_bottom());
   value_t result = run_code_block_until_signal(runtime, code);
   ASSERT_SUCCESS(result);
-  ASSERT_VALEQ(variant_to_value(runtime, expected), result);
+  ASSERT_VAREQ(expected, result);
+}
+
+// XXX
+static value_t new_empty_module_fragment(runtime_t *runtime) {
+  TRY_DEF(module, new_heap_empty_module(runtime, ROOT(runtime, nothing)));
+  TRY_DEF(fragment, new_heap_module_fragment(runtime, module, new_integer(0),
+      ROOT(runtime, nothing), ROOT(runtime, builtin_methodspace),
+      ROOT(runtime, nothing)));
+  TRY(add_to_array_buffer(runtime, get_module_fragments(module), fragment));
+  return fragment;
 }
 
 TEST(builtin, integers) {
   CREATE_RUNTIME();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
-  value_t space = ROOT(runtime, builtin_methodspace);
+  value_t fragment = new_empty_module_fragment(runtime);
 
-  test_builtin(runtime, space, vInt(2), vInt(1), INFIX("+"), vArray(1, vInt(1)));
-  test_builtin(runtime, space, vInt(3), vInt(2), INFIX("+"), vArray(1, vInt(1)));
-  test_builtin(runtime, space, vInt(5), vInt(2), INFIX("+"), vArray(1, vInt(3)));
+  test_builtin(runtime, fragment, vInt(2), vInt(1), INFIX("+"), vArray(vInt(1)));
+  test_builtin(runtime, fragment, vInt(3), vInt(2), INFIX("+"), vArray(vInt(1)));
+  test_builtin(runtime, fragment, vInt(5), vInt(2), INFIX("+"), vArray(vInt(3)));
 
-  test_builtin(runtime, space, vInt(0), vInt(1), INFIX("-"), vArray(1, vInt(1)));
-  test_builtin(runtime, space, vInt(1), vInt(2), INFIX("-"), vArray(1, vInt(1)));
-  test_builtin(runtime, space, vInt(-1), vInt(2), INFIX("-"), vArray(1, vInt(3)));
+  test_builtin(runtime, fragment, vInt(0), vInt(1), INFIX("-"), vArray(vInt(1)));
+  test_builtin(runtime, fragment, vInt(1), vInt(2), INFIX("-"), vArray(vInt(1)));
+  test_builtin(runtime, fragment, vInt(-1), vInt(2), INFIX("-"), vArray(vInt(3)));
 
-  test_builtin(runtime, space, vInt(-1), vInt(1), PREFIX("-"), vEmptyArray());
+  test_builtin(runtime, fragment, vInt(-1), vInt(1), PREFIX("-"), vEmptyArray());
 
   DISPOSE_SAFE_VALUE_POOL(pool);
   DISPOSE_RUNTIME();
@@ -67,12 +74,12 @@ TEST(builtin, strings) {
   CREATE_RUNTIME();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
-  value_t space = ROOT(runtime, builtin_methodspace);
+  value_t fragment = new_empty_module_fragment(runtime);
 
-  test_builtin(runtime, space, vStr("abcd"), vStr("ab"), INFIX("+"),
-      vArray(1, vStr("cd")));
-  test_builtin(runtime, space, vStr(""), vStr(""), INFIX("+"),
-      vArray(1, vStr("")));
+  test_builtin(runtime, fragment, vStr("abcd"), vStr("ab"), INFIX("+"),
+      vArray(vStr("cd")));
+  test_builtin(runtime, fragment, vStr(""), vStr(""), INFIX("+"),
+      vArray(vStr("")));
 
   DISPOSE_SAFE_VALUE_POOL(pool);
   DISPOSE_RUNTIME();

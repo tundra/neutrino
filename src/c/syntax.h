@@ -27,7 +27,7 @@ value_t emit_value(value_t value, assembler_t *assm);
 // allows this compilation to access symbols defined in an outer scope. If the
 // callback is null it is taken to mean that there is no outer scope.
 value_t compile_expression(runtime_t *runtime, value_t ast,
-    scope_lookup_callback_t *scope_callback);
+    value_t fragment, scope_lookup_callback_t *scope_callback);
 
 // Does the same a compile_expression but takes an existing assembler rather
 // than create one.
@@ -39,7 +39,7 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast);
 
 // Retrying version of compile_expression.
 value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
-    scope_lookup_callback_t *scope_callback);
+    safe_value_t module, scope_lookup_callback_t *scope_callback);
 
 // Determines the parameter ordering to use given an array of parameter asts.
 //
@@ -67,7 +67,7 @@ static const size_t kMaxOrderIndex = ~0L;
 size_t get_parameter_order_index_for_array(value_t tags);
 
 // Builds a method signature based on a signature syntax tree.
-value_t build_method_signature(runtime_t *runtime,
+value_t build_method_signature(runtime_t *runtime, value_t fragment,
     reusable_scratch_memory_t *scratch, value_t signature_ast);
 
 
@@ -91,15 +91,11 @@ ACCESSORS_DECL(array_ast, elements);
 
 // --- I n v o c a t i o n   a s t ---
 
-static const size_t kInvocationAstSize = OBJECT_SIZE(2);
+static const size_t kInvocationAstSize = OBJECT_SIZE(1);
 static const size_t kInvocationAstArgumentsOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kInvocationAstMethodspaceOffset = OBJECT_FIELD_OFFSET(1);
 
 // The array of element expressions.
 ACCESSORS_DECL(invocation_ast, arguments);
-
-// The methodspace to perform the invocation in.
-ACCESSORS_DECL(invocation_ast, methodspace);
 
 
 // --- A r g u m e n t   a s t ---
@@ -152,15 +148,11 @@ ACCESSORS_DECL(local_variable_ast, symbol);
 
 // --- N a m e s p a c e   v a r i a b l e   a s t ---
 
-static const size_t kNamespaceVariableAstSize = OBJECT_SIZE(2);
-static const size_t kNamespaceVariableAstNameOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kNamespaceVariableAstNamespaceOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kNamespaceVariableAstSize = OBJECT_SIZE(1);
+static const size_t kNamespaceVariableAstIdentifierOffset = OBJECT_FIELD_OFFSET(0);
 
-// The name to look up through this namespace variable.
-ACCESSORS_DECL(namespace_variable_ast, name);
-
-// The namespace to look up within.
-ACCESSORS_DECL(namespace_variable_ast, namespace);
+// The identifier to look up through this namespace variable.
+ACCESSORS_DECL(namespace_variable_ast, identifier);
 
 
 // --- S y m b o l ---
@@ -233,17 +225,39 @@ ACCESSORS_DECL(method_ast, signature);
 ACCESSORS_DECL(method_ast, body);
 
 
+// --- N a m e s p a c e   d e c l a r a t i o n   a s t ---
+
+static const size_t kNamespaceDeclarationAstSize = OBJECT_SIZE(2);
+static const size_t kNamespaceDeclarationAstPathOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kNamespaceDeclarationAstValueOffset = OBJECT_FIELD_OFFSET(1);
+
+// The path this declaration declares.
+ACCESSORS_DECL(namespace_declaration_ast, path);
+
+// The value to be bound by this declaration.
+ACCESSORS_DECL(namespace_declaration_ast, value);
+
+
+// --- M e t h o d   d e c l a r a t i o n   a s t ---
+
+static const size_t kMethodDeclarationAstSize = OBJECT_SIZE(1);
+static const size_t kMethodDeclarationAstMethodOffset = OBJECT_FIELD_OFFSET(0);
+
+// The method object describing the method being declared.
+ACCESSORS_DECL(method_declaration_ast, method);
+
+
 // --- P r o g r a m -  a s t --
 
 static const size_t kProgramAstSize = OBJECT_SIZE(2);
 static const size_t kProgramAstEntryPointOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kProgramAstFragmentOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kProgramAstModuleOffset = OBJECT_FIELD_OFFSET(1);
 
 // The program entry-point expression.
 ACCESSORS_DECL(program_ast, entry_point);
 
-// The fragment that provides context for the entry-point.
-ACCESSORS_DECL(program_ast, fragment);
+// The module that provides context for the entry-point.
+ACCESSORS_DECL(program_ast, module);
 
 
 #endif // _SYNTAX

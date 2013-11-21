@@ -115,6 +115,10 @@ IF_CHECKS_ENABLED(CHECK_EQ(M, E, false))
 #define CHECK_DOMAIN(vdDomain, EXPR)                                           \
 IF_CHECKS_ENABLED(__CHECK_CLASS__(value_domain_t, vdDomain, EXPR, get_value_domain))
 
+// Check that fails unless the object is in the specified family or nothing.
+#define CHECK_DOMAIN_OPT(vdDomain, EXPR)                                       \
+IF_CHECKS_ENABLED(__CHECK_CLASS_OPT__(value_domain_t, vdDomain, EXPR, get_value_domain))
+
 // Check that fails unless the object is in the specified family.
 #define CHECK_FAMILY(ofFamily, EXPR)                                           \
 IF_CHECKS_ENABLED(__CHECK_CLASS__(object_family_t, ofFamily, EXPR, get_object_family))

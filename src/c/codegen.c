@@ -200,12 +200,14 @@ void reusable_scratch_memory_double_alloc(reusable_scratch_memory_t *memory,
 
 // --- A s s e m b l e r ---
 
-value_t assembler_init(assembler_t *assm, runtime_t *runtime,
+value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t fragment,
     scope_lookup_callback_t *scope_callback) {
   CHECK_FALSE("no scope callback", scope_callback == NULL);
+  CHECK_FAMILY_OPT(ofModuleFragment, fragment);
   TRY_SET(assm->value_pool, new_heap_id_hash_map(runtime, 16));
   assm->scope_callback = scope_callback;
   assm->runtime = runtime;
+  assm->fragment = fragment;
   byte_buffer_init(&assm->code);
   assm->stack_height = assm->high_water_mark = 0;
   reusable_scratch_memory_init(&assm->scratch_memory);
@@ -323,12 +325,12 @@ value_t assembler_emit_delegate_lambda_call(assembler_t *assm) {
   return success();
 }
 
-value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t record) {
-  CHECK_FAMILY(ofMethodspace, space);
+value_t assembler_emit_invocation(assembler_t *assm, value_t fragment, value_t record) {
+  CHECK_FAMILY(ofModuleFragment, fragment);
   CHECK_FAMILY(ofInvocationRecord, record);
   assembler_emit_opcode(assm, ocInvoke);
   TRY(assembler_emit_value(assm, record));
-  TRY(assembler_emit_value(assm, space));
+  TRY(assembler_emit_value(assm, fragment));
   // The result will be pushed onto the stack on top of the arguments.
   assembler_adjust_stack_height(assm, 1);
   size_t argc = get_invocation_record_argument_count(record);
@@ -361,10 +363,11 @@ value_t assembler_emit_load_local(assembler_t *assm, size_t index) {
 }
 
 value_t assembler_emit_load_global(assembler_t *assm, value_t name,
-    value_t namespace) {
+    value_t fragment) {
+  CHECK_FAMILY(ofModuleFragment, fragment);
   assembler_emit_opcode(assm, ocLoadGlobal);
   TRY(assembler_emit_value(assm, name));
-  TRY(assembler_emit_value(assm, namespace));
+  TRY(assembler_emit_value(assm, fragment));
   assembler_adjust_stack_height(assm, +1);
   return success();
 }

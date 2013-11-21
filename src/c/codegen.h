@@ -107,11 +107,13 @@ typedef struct assembler_t {
   scope_lookup_callback_t *scope_callback;
   // A reusable memory block.
   reusable_scratch_memory_t scratch_memory;
+  // The module fragment we're compiling within.
+  value_t fragment;
 } assembler_t;
 
 // Initializes an assembler. If the given scope callback is NULL it is taken to
 // mean that there is no enclosing scope.
-value_t assembler_init(assembler_t *assm, runtime_t *runtime,
+value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t fragment,
     scope_lookup_callback_t *scope_callback);
 
 // Sets the scope callback for the given assembler, returning the previous
@@ -154,9 +156,9 @@ value_t assembler_emit_return(assembler_t *assm);
 value_t assembler_emit_load_local(assembler_t *assm, size_t index);
 
 // Emits a global variable load of the local with the given name within the
-// given namespace.
+// given module.
 value_t assembler_emit_load_global(assembler_t *assm, value_t name,
-    value_t namespace);
+    value_t module);
 
 // Emits an argument load of the argument with the given parameter index.
 value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index);

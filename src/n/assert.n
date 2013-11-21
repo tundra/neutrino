@@ -3,12 +3,12 @@
 
 ## Primitive assertion library.
 
-import @core;
+import $core;
 
 ## Does nothing if the given value is 'true', fails if the value is 'false'.
-def $that($value) => $that($value.is_truthy());
-def $that($value == false) => @ctrino.fail();
-def $that($value == true) => null;
+def @that($value) => @that($value.is_truthy());
+def @that($value == false) => @ctrino.fail();
+def @that($value == true) => null;
 
 ## Does nothing if the two given values are equal, fails otherwise.
-def $equals(expected: $a, found: $b) => $that($a == $b);
+def @equals(expected: $a, found: $b) => @that($a == $b);

@@ -19,12 +19,12 @@
   F(bindings,                   "bindings")                                    \
   F(body,                       "body")                                        \
   F(core,                       "core")                                        \
+  F(ctrino,                     "ctrino")                                      \
   F(display_name,               "display_name")                                \
   F(elements,                   "elements")                                    \
   F(entry_point,                "entry_point")                                 \
   F(environment_reference,      "environment_reference")                       \
   F(FlagElement,                "FlagElement")                                 \
-  F(fragment,                   "fragment")                                    \
   F(fragments,                  "fragments")                                   \
   F(guard,                      "guard")                                       \
   F(imports,                    "imports")                                     \
@@ -33,8 +33,8 @@
   F(libraries,                  "libraries")                                   \
   F(method,                     "method")                                      \
   F(methods,                    "methods")                                     \
-  F(methodspace,                "methodspace")                                 \
   F(module_loader,              "module_loader")                               \
+  F(module,                     "module")                                      \
   F(modules,                    "modules")                                     \
   F(name,                       "name")                                        \
   F(names,                      "names")                                       \
@@ -192,6 +192,8 @@ struct runtime_t {
   gc_fuzzer_t *gc_fuzzer;
   // Environment mapping to use when deserializing plankton.
   value_mapping_t plankton_mapping;
+  // The module loader used by this runtime.
+  safe_value_t module_loader;
 };
 
 // Creates a new runtime object, storing it in the given runtime out parameter.

@@ -196,10 +196,9 @@ TEST(method, invocation_record) {
   CREATE_RUNTIME();
 
 #define kCount 8
-  variant_t raw_array = vArray(kCount, vInt(7) o vInt(6) o vInt(5) o vInt(4) o
-      vInt(3) o vInt(2) o vInt(1) o vInt(0));
-  value_t argument_vector = build_invocation_record_vector(runtime,
-      variant_to_value(runtime, raw_array));
+  variant_t raw_array = vArray(vInt(7), vInt(6), vInt(5), vInt(4), vInt(3),
+      vInt(2), vInt(1), vInt(0));
+  value_t argument_vector = build_invocation_record_vector(runtime, C(raw_array));
   value_t record = new_heap_invocation_record(runtime, afFreeze, argument_vector);
   ASSERT_EQ(kCount, get_invocation_record_argument_count(record));
   for (size_t i = 0; i < kCount; i++) {
@@ -214,16 +213,15 @@ TEST(method, invocation_record) {
 // Makes an invocation record for the given array of tags, passed as a variant
 // for convenience.
 static value_t make_invocation_record(runtime_t *runtime, variant_t variant) {
-  TRY_DEF(argument_vector, build_invocation_record_vector(runtime,
-      variant_to_value(runtime, variant)));
+  TRY_DEF(argument_vector, build_invocation_record_vector(runtime, C(variant)));
   return new_heap_invocation_record(runtime, afFreeze, argument_vector);
 }
 
 TEST(method, make_invocation_record) {
   CREATE_RUNTIME();
 
-  value_t record = make_invocation_record(runtime, vArray(3, vStr("z") o
-      vStr("x") o vStr("y")));
+  value_t record = make_invocation_record(runtime, vArray(vStr("z"), vStr("x"),
+      vStr("y")));
   ASSERT_VAREQ(vStr("x"), get_invocation_record_tag_at(record, 0));
   ASSERT_VAREQ(vStr("y"), get_invocation_record_tag_at(record, 1));
   ASSERT_VAREQ(vStr("z"), get_invocation_record_tag_at(record, 2));
@@ -240,8 +238,8 @@ TEST(method, record_with_stack) {
   value_t stack = new_heap_stack(runtime, 16);
   frame_t frame;
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3));
-  value_t record = make_invocation_record(runtime, vArray(3, vStr("b") o
-      vStr("c") o vStr("a")));
+  value_t record = make_invocation_record(runtime, vArray(vStr("b"), vStr("c"),
+      vStr("a")));
   frame_push_value(&frame, new_integer(7));
   frame_push_value(&frame, new_integer(8));
   frame_push_value(&frame, new_integer(9));
@@ -266,7 +264,7 @@ typedef struct {
 
 // Collects a set of parameters into an array that can be passed to
 // make_signature.
-#define PARAMS(N, values) ((test_param_t[(N) + 1]) {values, PARAM(new_integer(0), false, vNull())})
+#define PARAMS(N, values) ((test_param_t[(N) + 1]) {values, PARAM(new_integer(0), false, vMarker)})
 
 // Make a signature object out of the given input.
 static value_t make_signature(runtime_t *runtime, bool allow_extra, test_param_t *params) {
@@ -276,7 +274,7 @@ static value_t make_signature(runtime_t *runtime, bool allow_extra, test_param_t
   // Loop over the parameters, stop at the first non-array which will be the end
   // marker added by the PARAMS macro. First we just collect some information,
   // then we'll build the signature.
-  for (size_t i = 0; params[i].tags.type == vtArray; i++) {
+  for (size_t i = 0; !variant_is_marker(&params[i].tags); i++) {
     test_param_t test_param = params[i];
     param_count++;
     if (!test_param.is_optional)
@@ -288,9 +286,9 @@ static value_t make_signature(runtime_t *runtime, bool allow_extra, test_param_t
   TRY_DEF(param_vector, new_heap_pair_array(runtime, tag_count));
   // Loop over all the tags, t being the tag index across the whole signature.
   size_t t = 0;
-  for (size_t i = 0; params[i].tags.type == vtArray; i++) {
+  for (size_t i = 0; !variant_is_marker(&params[i].tags); i++) {
     test_param_t test_param = params[i];
-    TRY_DEF(tags_array, variant_to_value(runtime, test_param.tags));
+    TRY_DEF(tags_array, C(test_param.tags));
     size_t param_tag_count = get_array_length(tags_array);
     TRY_DEF(param, new_heap_parameter(runtime, afFreeze, test_param.guard,
         ROOT(runtime, empty_array), test_param.is_optional, i));
@@ -312,8 +310,8 @@ TEST(method, make_signature) {
   value_t s0 = make_signature(runtime,
       false,
       PARAMS(2,
-          PARAM(any_guard, false, vArray(1, vInt(0))) o
-          PARAM(any_guard, false, vArray(1, vInt(1)))));
+          PARAM(any_guard, false, vArray(vInt(0))) o
+          PARAM(any_guard, false, vArray(vInt(1)))));
   ASSERT_EQ(2, get_signature_tag_count(s0));
   ASSERT_VAREQ(vInt(0), get_signature_tag_at(s0, 0));
   ASSERT_VAREQ(vInt(1), get_signature_tag_at(s0, 1));
@@ -321,9 +319,9 @@ TEST(method, make_signature) {
   value_t s1 = make_signature(runtime,
       false,
       PARAMS(3,
-          PARAM(any_guard, false, vArray(1, vInt(6))) o
-          PARAM(any_guard, false, vArray(1, vInt(3))) o
-          PARAM(any_guard, false, vArray(1, vInt(7)))));
+          PARAM(any_guard, false, vArray(vInt(6))) o
+          PARAM(any_guard, false, vArray(vInt(3))) o
+          PARAM(any_guard, false, vArray(vInt(7)))));
   ASSERT_EQ(3, get_signature_tag_count(s1));
   ASSERT_VAREQ(vInt(3), get_signature_tag_at(s1, 0));
   ASSERT_VAREQ(vInt(6), get_signature_tag_at(s1, 1));
@@ -332,9 +330,9 @@ TEST(method, make_signature) {
   value_t s2 = make_signature(runtime,
       false,
       PARAMS(3,
-          PARAM(any_guard, false, vArray(2, vInt(9) o vInt(11))) o
-          PARAM(any_guard, false, vArray(1, vInt(13))) o
-          PARAM(any_guard, false, vArray(3, vInt(15) o vInt(7) o vInt(27)))));
+          PARAM(any_guard, false, vArray(vInt(9), vInt(11))) o
+          PARAM(any_guard, false, vArray(vInt(13))) o
+          PARAM(any_guard, false, vArray(vInt(15), vInt(7), vInt(27)))));
   ASSERT_EQ(6, get_signature_tag_count(s2));
   ASSERT_VAREQ(vInt(7), get_signature_tag_at(s2, 0));
   ASSERT_VAREQ(vInt(9), get_signature_tag_at(s2, 1));
@@ -377,8 +375,8 @@ void assert_match_with_offsets(runtime_t *runtime, match_result_t expected_resul
   push_stack_frame(runtime, stack, &frame, arg_count);
   for (size_t i = 0; i < arg_count; i++) {
     test_argument_t arg = args[i];
-    set_array_at(tags, i, variant_to_value(runtime, arg.tag));
-    frame_push_value(&frame, variant_to_value(runtime, arg.value));
+    set_array_at(tags, i, C(arg.tag));
+    frame_push_value(&frame, C(arg.value));
   }
   value_t vector = build_invocation_record_vector(runtime, tags);
   value_t record = new_heap_invocation_record(runtime, afFreeze, vector);
@@ -413,8 +411,8 @@ TEST(method, simple_matching) {
   value_t sig = make_signature(runtime,
       false,
       PARAMS(2,
-          PARAM(any_guard, false, vArray(1, vInt(0))) o
-          PARAM(any_guard, false, vArray(1, vInt(1)))));
+          PARAM(any_guard, false, vArray(vInt(0))) o
+          PARAM(any_guard, false, vArray(vInt(1)))));
 
   test_argument_t empty[1] = {{vInt(0), vInt(0), false}};
   assert_match(runtime, mrMatch, sig, ARGS(2,
@@ -439,13 +437,13 @@ TEST(method, simple_guard_matching) {
   CREATE_RUNTIME();
 
   value_t any_guard = ROOT(runtime, any_guard);
-  value_t foo = variant_to_value(runtime, vStr("foo"));
+  value_t foo = C(vStr("foo"));
   value_t guard = new_heap_guard(runtime, afFreeze, gtEq, foo);
   value_t sig = make_signature(runtime,
       false,
       PARAMS(2,
-          PARAM(guard, false, vArray(1, vInt(0))) o
-          PARAM(any_guard, false, vArray(1, vInt(1)))));
+          PARAM(guard, false, vArray(vInt(0))) o
+          PARAM(any_guard, false, vArray(vInt(1)))));
 
   assert_match(runtime, mrMatch, sig, ARGS(2,
       ARG(vInt(0), vStr("foo")) o
@@ -467,8 +465,8 @@ TEST(method, multi_tag_matching) {
   value_t sig = make_signature(runtime,
       false,
       PARAMS(2,
-          PARAM(any_guard, false, vArray(2, vInt(0) o vStr("x"))) o
-          PARAM(any_guard, false, vArray(2, vInt(1) o vStr("y")))));
+          PARAM(any_guard, false, vArray(vInt(0) o vStr("x"))) o
+          PARAM(any_guard, false, vArray(vInt(1) o vStr("y")))));
 
   assert_match(runtime, mrMatch, sig, ARGS(2,
       ARG(vInt(0), vStr("foo")) o
@@ -499,8 +497,8 @@ TEST(method, extra_args) {
   value_t sig = make_signature(runtime,
       true,
       PARAMS(2,
-          PARAM(any_guard, false, vArray(2, vInt(0) o vStr("x"))) o
-          PARAM(any_guard, false, vArray(2, vInt(1) o vStr("y")))));
+          PARAM(any_guard, false, vArray(vInt(0), vStr("x"))) o
+          PARAM(any_guard, false, vArray(vInt(1), vStr("y")))));
 
   assert_match(runtime, mrMatch, sig, ARGS(2,
       ARG(vInt(0), vStr("foo")) o
@@ -550,10 +548,10 @@ TEST(method, match_argument_map) {
   value_t sig = make_signature(runtime,
       true,
       PARAMS(4,
-          PARAM(any_guard, false, vArray(2, vInt(0) o vStr("w"))) o
-          PARAM(any_guard, false, vArray(2, vInt(1) o vStr("z"))) o
-          PARAM(any_guard, false, vArray(2, vInt(2) o vStr("y"))) o
-          PARAM(any_guard, false, vArray(2, vInt(3) o vStr("x")))));
+          PARAM(any_guard, false, vArray(vInt(0), vStr("w"))) o
+          PARAM(any_guard, false, vArray(vInt(1), vStr("z"))) o
+          PARAM(any_guard, false, vArray(vInt(2), vStr("y"))) o
+          PARAM(any_guard, false, vArray(vInt(3), vStr("x")))));
 
   // Evaluation order. We'll cycle through all permutations of this, starting
   // with the "obvious" order.
@@ -685,10 +683,10 @@ TEST(method, dense_perfect_lookup) {
   CREATE_RUNTIME();
 
   // Protocols and inheritance hierarchy.
-  value_t a_p = new_heap_protocol(runtime, afFreeze, variant_to_value(runtime, vStr("A")));
-  value_t b_p = new_heap_protocol(runtime, afFreeze, variant_to_value(runtime, vStr("B")));
-  value_t c_p = new_heap_protocol(runtime, afFreeze, variant_to_value(runtime, vStr("C")));
-  value_t d_p = new_heap_protocol(runtime, afFreeze, variant_to_value(runtime, vStr("D")));
+  value_t a_p = new_heap_protocol(runtime, afFreeze, C(vStr("A")));
+  value_t b_p = new_heap_protocol(runtime, afFreeze, C(vStr("B")));
+  value_t c_p = new_heap_protocol(runtime, afFreeze, C(vStr("C")));
+  value_t d_p = new_heap_protocol(runtime, afFreeze, C(vStr("D")));
   value_t space = new_heap_methodspace(runtime);
   // D <: C <: B <: A <: Object
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, d_p, c_p));
@@ -719,11 +717,11 @@ TEST(method, dense_perfect_lookup) {
     for (size_t second = 0; second < 4; second++) {
       for (size_t third = 0; third < 4; third++) {
         value_t signature = make_signature(runtime, false, PARAMS(3,
-            PARAM(guards[first], false, vArray(1, vInt(0))) o
-            PARAM(guards[second], false, vArray(1, vInt(1))) o
-            PARAM(guards[third], false, vArray(1, vInt(2)))));
+            PARAM(guards[first], false, vArray(vInt(0))) o
+            PARAM(guards[second], false, vArray(vInt(1))) o
+            PARAM(guards[third], false, vArray(vInt(2)))));
         value_t method = new_heap_method(runtime, afFreeze, signature,
-            ROOT(runtime, nothing), dummy_code);
+            ROOT(runtime, nothing), dummy_code, ROOT(runtime, nothing));
         add_methodspace_method(runtime, space, method);
         methods[first][second][third] = method;
       }
@@ -754,7 +752,7 @@ TEST(method, dense_perfect_lookup) {
 
 // Shorthand for creating an op with the given type and value.
 #define OP(otType, vValue)                                                     \
-  new_heap_operation(runtime, afFreeze, otType, variant_to_value(runtime, vValue))
+  new_heap_operation(runtime, afFreeze, otType, C(vValue))
 
 TEST(method, operation_printing) {
   CREATE_RUNTIME();

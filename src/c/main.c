@@ -31,14 +31,25 @@ static value_t base64_c_str_to_blob(runtime_t *runtime, const char *data) {
   }
 }
 
+// Assemble a module that can be executed from unbound modules in the module
+// loader.
+static value_t assemble_module(runtime_t *runtime, value_t unbound_module) {
+  CHECK_FAMILY(ofUnboundModule, unbound_module);
+  TRY_DEF(module, build_bound_module(runtime, unbound_module));
+  return get_module_fragment_at(module, present_stage());
+}
+
 // Executes the given program syntax tree within the given runtime.
 static value_t safe_execute_syntax(runtime_t *runtime, safe_value_t s_program) {
   CHECK_FAMILY(ofProgramAst, deref(s_program));
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
+    value_t unbound_module = get_program_ast_module(deref(s_program));
+    TRY_DEF(module, assemble_module(runtime, unbound_module));
+    safe_value_t s_module = protect(pool, module);
     safe_value_t s_entry_point = protect(pool, get_program_ast_entry_point(deref(s_program)));
     E_TRY_DEF(code_block, safe_compile_expression(runtime, s_entry_point,
-        scope_lookup_callback_get_bottom()));
+        s_module, scope_lookup_callback_get_bottom()));
     E_RETURN(run_code_block(runtime, protect(pool, code_block)));
   E_FINALLY();
     DISPOSE_SAFE_VALUE_POOL(pool);
@@ -187,7 +198,7 @@ static value_t parse_main_options(runtime_t *runtime, const char *value) {
 
 // Constructs a module loader based on the given command-line options.
 static value_t build_module_loader(runtime_t *runtime, value_t options) {
-  TRY_DEF(loader, new_heap_empty_module_loader(runtime));
+  value_t loader = deref(runtime->module_loader);
   value_t module_loader_options = get_options_flag_value(runtime, options,
       RSTR(runtime, module_loader), ROOT(runtime, null));
   if (!is_null(module_loader_options))

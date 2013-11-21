@@ -46,6 +46,9 @@ object_tracker_t *safe_value_to_object_tracker(safe_value_t s_value);
 // object.
 safe_value_t protect_immediate(value_t immediate);
 
+// Returns a safe value that is safe to use as an empty value.
+safe_value_t empty_safe_value();
+
 // Returns the immediate value stored in a safe reference. The value must be
 // known not to be an object.
 value_t deref_immediate(safe_value_t s_value);

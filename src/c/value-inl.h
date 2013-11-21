@@ -48,6 +48,19 @@ static inline bool is_signal(signal_cause_t cause, value_t value) {
 }
 
 
+// --- T u p l e   s h o r t h a n d s ---
+
+// Returns the first entry in the given tuple.
+static value_t get_tuple_first(value_t self) {
+  return get_tuple_at(self, 0);
+}
+
+// Returns the second entry in the given tuple.
+static value_t get_tuple_second(value_t self) {
+  return get_tuple_at(self, 1);
+}
+
+
 // --- P r i n t i n g ---
 
 // Helper data type for the shorthand for converting a value to a string.

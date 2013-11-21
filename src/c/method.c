@@ -4,6 +4,7 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "codegen.h"
+#include "log.h"
 #include "method.h"
 #include "try-inl.h"
 #include "value-inl.h"
@@ -279,30 +280,55 @@ void guard_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
 
 // --- M e t h o d ---
 
-TRIVIAL_PRINT_ON_IMPL(Method, method);
-
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofSignature, Signature, signature);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofCodeBlock, Code, code);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofMethodAst, Syntax, syntax);
+ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofModuleFragment, ModuleFragment,
+    module_fragment);
 
 value_t method_validate(value_t self) {
   VALIDATE_FAMILY(ofMethod, self);
   VALIDATE_FAMILY_OPT(ofSignature, get_method_signature(self));
   VALIDATE_FAMILY_OPT(ofCodeBlock, get_method_code(self));
   VALIDATE_FAMILY_OPT(ofMethodAst, get_method_syntax(self));
+  VALIDATE_FAMILY_OPT(ofModuleFragment, get_method_module_fragment(self));
   return success();
+}
+
+void method_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<method ");
+  value_t signature = get_method_signature(self);
+  value_print_inner_on(signature, buf, flags, depth - 1);
+  string_buffer_printf(buf, " ");
+  value_t syntax = get_method_syntax(self);
+  value_print_inner_on(syntax, buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
+value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
+    value_t fragment) {
+  reusable_scratch_memory_t scratch;
+  reusable_scratch_memory_init(&scratch);
+  E_BEGIN_TRY_FINALLY();
+    E_TRY_DEF(signature, build_method_signature(runtime, fragment, &scratch,
+        get_method_ast_signature(method_ast)));
+    E_TRY_DEF(method, new_heap_method(runtime, afMutable, signature, method_ast,
+        ROOT(runtime, nothing), fragment));
+    E_RETURN(method);
+  E_FINALLY();
+    reusable_scratch_memory_dispose(&scratch);
+  E_END_TRY_FINALLY();
 }
 
 
 // --- M e t h o d   s p a c e ---
 
-TRIVIAL_PRINT_ON_IMPL(Methodspace, methodspace);
-
 ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofIdHashMap, Inheritance,
     inheritance);
 ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofArrayBuffer, Methods,
     methods);
-ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofArray, Imports,
+ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofArrayBuffer, Imports,
     imports);
 
 value_t methodspace_validate(value_t value) {
@@ -337,6 +363,14 @@ value_t add_methodspace_inheritance(runtime_t *runtime, value_t self,
   // If this fails we may have set the parents array of the subtype to an empty
   // array which is awkward but okay.
   return add_to_array_buffer(runtime, parents, supertype);
+}
+
+value_t add_methodspace_import(runtime_t *runtime, value_t self, value_t imported) {
+  CHECK_FAMILY(ofMethodspace, self);
+  CHECK_FAMILY(ofMethodspace, imported);
+  CHECK_MUTABLE(self);
+  value_t imports = get_methodspace_imports(self);
+  return add_to_array_buffer(runtime, imports, imported);
 }
 
 value_t add_methodspace_method(runtime_t *runtime, value_t self,
@@ -442,8 +476,8 @@ static value_t lookup_methodspace_transitive_method(methodspace_lookup_state_t *
     runtime_t *runtime, value_t space, value_t record, frame_t *frame) {
   TRY(lookup_methodspace_local_method(state, runtime, space, record, frame));
   value_t imports = get_methodspace_imports(space);
-  for (size_t i = 0; i < get_array_length(imports); i++) {
-    value_t import = get_array_at(imports, i);
+  for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
+    value_t import = get_array_buffer_at(imports, i);
     TRY(lookup_methodspace_transitive_method(state, runtime, import, record, frame));
   }
   return success();
@@ -461,9 +495,13 @@ static value_t build_argument_map(runtime_t *runtime, size_t offsetc, size_t *of
   return get_argument_map_trie_value(current_node);
 }
 
-value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
-    value_t record, frame_t *frame, value_t *arg_map_out) {
-  // Input validation.
+typedef value_t (generic_lookup_callback_t)(runtime_t *runtime,
+    value_t argument, value_t record, frame_t *frame,
+    methodspace_lookup_state_t *state);
+
+static value_t generic_lookup(runtime_t *runtime, value_t argument,
+    value_t record, frame_t *frame, value_t *arg_map_out,
+    generic_lookup_callback_t callback) {
   size_t arg_count = get_invocation_record_argument_count(record);
   CHECK_REL("too many arguments", arg_count, <=, kSmallLookupLimit);
   // Initialize the lookup state using stack-allocated space.
@@ -480,8 +518,7 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
   state.max_score = max_score;
   state.result_offsets = offsets_one;
   state.scratch_offsets = offsets_two;
-  // Perform the lookup.
-  TRY(lookup_methodspace_transitive_method(&state, runtime, space, record, frame));
+  TRY(callback(runtime, argument, record, frame, &state));
   // Post-process the result.
   if (!in_domain(vdSignal, state.result)) {
     // We have a result so we need to build an argument map that represents the
@@ -491,27 +528,35 @@ value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
   return state.result;
 }
 
-// Given an array of method asts, returns a corresponding array of method
-// objects.
-static value_t method_asts_to_methods(runtime_t *runtime, value_t method_asts) {
-  size_t count = get_array_length(method_asts);
-  TRY_DEF(methods, new_heap_array(runtime, count));
-  reusable_scratch_memory_t scratch;
-  reusable_scratch_memory_init(&scratch);
-  E_BEGIN_TRY_FINALLY();
-    for (size_t i = 0; i < count; i++) {
-      value_t method_ast = get_array_at(method_asts, i);
-      E_TRY_DEF(signature, build_method_signature(runtime, &scratch,
-          get_method_ast_signature(method_ast)));
-      E_TRY_DEF(method, new_heap_method(runtime, afMutable, signature, method_ast,
-          ROOT(runtime, nothing)));
-      set_array_at(methods, i, method);
-    }
-    E_TRY_DEF(result, new_heap_array_buffer_with_contents(runtime, methods));
-    E_RETURN(result);
-  E_FINALLY();
-    reusable_scratch_memory_dispose(&scratch);
-  E_END_TRY_FINALLY();
+static value_t do_fragment_method_lookup(runtime_t *runtime, value_t fragment,
+    value_t record, frame_t *frame, methodspace_lookup_state_t *state) {
+  value_t module = get_module_fragment_module(fragment);
+  while (!is_signal(scNotFound, fragment)) {
+    value_t methodspace = get_module_fragment_methodspace(fragment);
+    TRY(lookup_methodspace_transitive_method(state, runtime, methodspace, record,
+        frame));
+    value_t stage = get_module_fragment_stage(fragment);
+    fragment = get_module_fragment_before(module, stage);
+  }
+  return success();
+}
+
+value_t lookup_fragment_method(runtime_t *runtime, value_t fragment,
+    value_t record, frame_t *frame, value_t *arg_map_out) {
+  return generic_lookup(runtime, fragment, record, frame, arg_map_out,
+      do_fragment_method_lookup);
+}
+
+static value_t do_methodspace_method_lookup(runtime_t *runtime, value_t methodspace,
+    value_t record, frame_t *frame, methodspace_lookup_state_t *state) {
+  return lookup_methodspace_transitive_method(state, runtime, methodspace,
+      record, frame);
+}
+
+value_t lookup_methodspace_method(runtime_t *runtime, value_t methodspace,
+    value_t record, frame_t *frame, value_t *arg_map_out) {
+  return generic_lookup(runtime, methodspace, record, frame, arg_map_out,
+      do_methodspace_method_lookup);
 }
 
 value_t plankton_new_methodspace(runtime_t *runtime) {
@@ -521,11 +566,21 @@ value_t plankton_new_methodspace(runtime_t *runtime) {
 value_t plankton_set_methodspace_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, methods, inheritance, imports);
-  TRY_DEF(heap_methods, method_asts_to_methods(runtime, methods));
-  set_methodspace_methods(object, heap_methods);
+  set_methodspace_methods(object, methods);
   set_methodspace_inheritance(object, inheritance);
   set_methodspace_imports(object, imports);
   return success();
+}
+
+void methodspace_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<methodspace ");
+  value_t methods = get_methodspace_methods(self);
+  value_print_inner_on(methods, buf, flags, depth - 1);
+  string_buffer_printf(buf, " ");
+  value_t imports = get_methodspace_imports(self);
+  value_print_inner_on(imports, buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
 }
 
 

@@ -193,10 +193,11 @@ int compare_scores(score_t a, score_t b);
 
 // --- M e t h o d ---
 
-static const size_t kMethodSize = OBJECT_SIZE(3);
+static const size_t kMethodSize = OBJECT_SIZE(4);
 static const size_t kMethodSignatureOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kMethodCodeOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kMethodSyntaxOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kMethodModuleFragmentOffset = OBJECT_FIELD_OFFSET(3);
 
 // The method's signature, the arguments it matches.
 ACCESSORS_DECL(method, signature);
@@ -206,6 +207,13 @@ ACCESSORS_DECL(method, code);
 
 // The syntax of the implementation of the method.
 ACCESSORS_DECL(method, syntax);
+
+// The module fragment that provides context for this method.
+ACCESSORS_DECL(method, module_fragment);
+
+// Compiles a method syntax tree into a method object.
+value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
+    value_t fragment);
 
 
 // --- M e t h o d   s p a c e ---
@@ -218,8 +226,11 @@ static const size_t kMethodspaceImportsOffset = OBJECT_FIELD_OFFSET(2);
 // The size of the inheritance map in an empty method space.
 static const size_t kInheritanceMapInitialSize = 16;
 
-// The size of the method arra in the empty method space
+// The size of the method array buffer in an empty method space
 static const size_t kMethodArrayInitialSize = 16;
+
+// The size of the imports array buffer in an empty method space
+static const size_t kImportsArrayInitialSize = 16;
 
 // The mapping that defines the inheritance hierarchy within this method space.
 ACCESSORS_DECL(methodspace, inheritance);
@@ -236,6 +247,9 @@ ACCESSORS_DECL(methodspace, imports);
 value_t add_methodspace_inheritance(runtime_t *runtime, value_t self,
     value_t subtype, value_t supertype);
 
+// Records in the given method space that it imports the given other methodspace.
+value_t add_methodspace_import(runtime_t *runtime, value_t self, value_t imported);
+
 // Returns the array buffer of parents of the given protocol.
 value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol);
 
@@ -247,7 +261,10 @@ value_t add_methodspace_method(runtime_t *runtime, value_t self,
 // Looks up a method in this method space given an invocation record and a stack
 // frame. If the match is successful, as a side-effect stores an argument map
 // that maps between the result's parameters and argument offsets on the stack.
-value_t lookup_methodspace_method(runtime_t *runtime, value_t space,
+value_t lookup_fragment_method(runtime_t *runtime, value_t fragment,
+    value_t record, frame_t *frame, value_t *arg_map_out);
+
+value_t lookup_methodspace_method(runtime_t *runtime, value_t methodspace,
     value_t record, frame_t *frame, value_t *arg_map_out);
 
 

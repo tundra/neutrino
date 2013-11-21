@@ -142,6 +142,20 @@ static bool array_structural_equal(value_t a, value_t b) {
   return true;
 }
 
+static bool array_buffer_structural_equal(value_t a, value_t b) {
+  CHECK_FAMILY(ofArrayBuffer, a);
+  CHECK_FAMILY(ofArrayBuffer, b);
+  size_t length = get_array_buffer_length(a);
+  if (get_array_buffer_length(b) != length)
+    return false;
+  for (size_t i = 0; i < length; i++) {
+    if (!(value_structural_equal(get_array_buffer_at(a, i),
+        get_array_buffer_at(b, i))))
+      return false;
+  }
+  return true;
+}
+
 static bool id_hash_map_structural_equal(value_t a, value_t b) {
   CHECK_FAMILY(ofIdHashMap, a);
   CHECK_FAMILY(ofIdHashMap, b);
@@ -178,6 +192,8 @@ static bool object_structural_equal(value_t a, value_t b) {
   switch (a_family) {
     case ofArray:
       return array_structural_equal(a, b);
+    case ofArrayBuffer:
+      return array_buffer_structural_equal(a, b);
     case ofIdHashMap:
       return id_hash_map_structural_equal(a, b);
     case ofInstance:
@@ -249,35 +265,64 @@ void uninstall_log_validator(log_validator_t *validator) {
 
 // --- V a r i a n t s ---
 
-value_t variant_to_value(runtime_t *runtime, variant_t variant) {
-  switch (variant.type) {
-    case vtInteger:
-      return new_integer(variant.value.as_integer);
-    case vtString: {
-      string_t chars = STR(variant.value.as_string);
-      return new_heap_string(runtime, &chars);
-    }
-    case vtBool:
-      return runtime_bool(runtime, variant.value.as_bool);
-    case vtNull:
-      return ROOT(runtime, null);
-    case vtValue:
-      return variant.value.as_value;
-    case vtArray: {
-      size_t length = variant.value.as_array.length;
-      TRY_DEF(result, new_heap_array(runtime, length));
-      for (size_t i = 0; i < length; i++) {
-        TRY_DEF(element, variant_to_value(runtime, variant.value.as_array.elements[i]));
-        set_array_at(result, i, element);
-      }
-      return result;
-    }
-    default:
-      UNREACHABLE("unknown variant type");
-      return new_signal(scWat);
-  }
+value_t expand_variant_to_integer(runtime_t *runtime, variant_value_t *value) {
+  return new_integer(value->as_int64);
 }
 
+value_t expand_variant_to_string(runtime_t *runtime, variant_value_t *value) {
+  string_t chars = STR(value->as_c_str);
+  return new_heap_string(runtime, &chars);
+}
+
+value_t expand_variant_to_bool(runtime_t *runtime, variant_value_t *value) {
+  return runtime_bool(runtime, value->as_bool);
+}
+
+value_t expand_variant_to_null(runtime_t *runtime, variant_value_t *value) {
+  return ROOT(runtime, null);
+}
+
+value_t expand_variant_to_value(runtime_t *runtime, variant_value_t *value) {
+  return value->as_value;
+}
+
+value_t expand_variant_to_array(runtime_t *runtime, variant_value_t *value) {
+  size_t length = value->as_array.length;
+  TRY_DEF(result, new_heap_array(runtime, length));
+  for (size_t i = 0; i < length; i++) {
+    TRY_DEF(element, C(value->as_array.elements[i]));
+    set_array_at(result, i, element);
+  }
+  return result;
+}
+
+value_t expand_variant_to_array_buffer(runtime_t *runtime, variant_value_t *value) {
+  TRY_DEF(array, expand_variant_to_array(runtime, value));
+  return new_heap_array_buffer_with_contents(runtime, array);
+}
+
+value_t expand_variant_to_path(runtime_t *runtime, variant_value_t *value) {
+  size_t length = value->as_array.length;
+  value_t result = ROOT(runtime, empty_path);
+  for (size_t i = 0; i < length; i++) {
+    // The path has to be constructed backwards to the first element becomes
+    // the head of the result, rather than the head of the end.
+    TRY_DEF(head, C(value->as_array.elements[length - i - 1]));
+    TRY_SET(result, new_heap_path(runtime, afMutable, head, result));
+  }
+  return result;
+}
+
+value_t expand_variant_to_identifier(runtime_t *runtime, variant_value_t *value) {
+  CHECK_EQ("invalid identifier variant input", 2, value->as_array.length);
+  TRY_DEF(stage, C(value->as_array.elements[0]));
+  TRY_DEF(path, C(value->as_array.elements[1]));
+  return new_heap_identifier(runtime, stage, path);
+}
+
+value_t variant_to_value(runtime_t *runtime, variant_t variant) {
+  return (variant.expander)(runtime, &variant.value);
+}
 
 bool advance_lexical_permutation(int64_t *elms, size_t elmc) {
   // This implementation follows an outline from wikipedia's article on

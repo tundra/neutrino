@@ -69,8 +69,9 @@ static value_t peek_previous_value(interpreter_state_t *state, size_t size,
 // Returns the code that implements the given method object.
 static value_t compile_method(runtime_t *runtime, value_t method) {
   value_t method_ast = get_method_syntax(method);
+  value_t fragment = get_method_module_fragment(method);
   assembler_t assm;
-  TRY(assembler_init(&assm, runtime, scope_lookup_callback_get_bottom()));
+  TRY(assembler_init(&assm, runtime, fragment, scope_lookup_callback_get_bottom()));
   E_BEGIN_TRY_FINALLY();
     E_TRY_DEF(code, compile_method_body(&assm, method_ast));
     E_RETURN(code);
@@ -141,10 +142,10 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         // Look up the method in the method space.
         value_t record = read_next_value(&state);
         CHECK_FAMILY(ofInvocationRecord, record);
-        value_t space = read_next_value(&state);
-        CHECK_FAMILY(ofMethodspace, space);
+        value_t fragment = read_next_value(&state);
+        CHECK_FAMILY(ofModuleFragment, fragment);
         value_t arg_map;
-        value_t method = lookup_methodspace_method(runtime, space, record,
+        value_t method = lookup_fragment_method(runtime, fragment, record,
             &frame, &arg_map);
         if (is_signal(scLookupError, method)) {
           log_lookup_error(method, record, &frame);
@@ -229,14 +230,13 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         break;
       }
       case ocLoadGlobal: {
-        value_t path = read_next_value(&state);
-        CHECK_FAMILY(ofPath, path);
-        value_t namespace = read_next_value(&state);
-        CHECK_FAMILY(ofNamespace, namespace);
-        // TODO: implement proper lookup of paths in imported namespaces.
-        CHECK_TRUE("nontrivial path", is_path_empty(get_path_tail(path)));
-        value_t name = get_path_head(path);
-        TRY_DEF(value, get_namespace_binding_at(namespace, name));
+        value_t ident = read_next_value(&state);
+        CHECK_FAMILY(ofIdentifier, ident);
+        value_t fragment = read_next_value(&state);
+        CHECK_FAMILY(ofModuleFragment, fragment);
+        value_t module = get_module_fragment_module(fragment);
+        TRY_DEF(value, module_lookup_identifier(runtime, module,
+            get_identifier_stage(ident), get_identifier_path(ident)));
         frame_push_value(&frame, value);
         break;
       }

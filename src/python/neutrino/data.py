@@ -3,60 +3,6 @@
 
 import plankton
 
-@plankton.serializable(plankton.EnvironmentReference.path("core", "Namespace"))
-class Namespace(object):
-
-  @plankton.field("bindings")
-  def __init__(self, bindings):
-    self.bindings = bindings
-
-  def add_binding(self, name, value):
-    self.bindings[name] = value
-
-  def has_binding(self, name):
-    return name in self.bindings
-
-  def lookup(self, name):
-    import interp
-    special_binding = interp.lookup_special_binding(name)
-    if special_binding is None:
-      return self.bindings.get(name, None)
-    else:
-      return special_binding
-
-
-@plankton.serializable(plankton.EnvironmentReference.path("core", "Methodspace"))
-class Methodspace(object):
-
-  @plankton.field("inheritance")
-  @plankton.field("methods")
-  @plankton.field("imports")
-  def __init__(self, inheritance, methods, imports):
-    self.inheritance = inheritance
-    self.methods = methods
-    self.imports = imports
-
-  def add_method(self, method):
-    self.methods.append(method)
-
-  def add_import(self, other):
-    self.imports.append(other)
-
-
-@plankton.serializable(plankton.EnvironmentReference.path("core", "Module"))
-class Module(object):
-
-  @plankton.field("namespace")
-  @plankton.field("methodspace")
-  @plankton.field("display_name")
-  def __init__(self, namespace, methodspace, display_name):
-    self.namespace = namespace
-    self.methodspace = methodspace
-    self.display_name = display_name
-
-  def lookup(self, name):
-    return self.namespace.lookup(name)
-
 
 class Method(object):
 

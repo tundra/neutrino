@@ -6,6 +6,7 @@
 #include "builtin.h"
 #include "heap.h"
 #include "interp.h"
+#include "log.h"
 #include "runtime.h"
 #include "try-inl.h"
 #include "value-inl.h"
@@ -654,14 +655,18 @@ static int value_compare_function(const void *vp_a, const void *vp_b) {
 }
 
 value_t sort_array(value_t value) {
+  return sort_array_partial(value, get_array_length(value));
+}
+
+value_t sort_array_partial(value_t value, size_t elmc) {
   CHECK_FAMILY(ofArray, value);
   CHECK_MUTABLE(value);
-  size_t length = get_array_length(value);
+  CHECK_REL("sorting out of bounds", elmc, <=, get_array_length(value));
   value_t *elements = get_array_elements(value);
   // Just use qsort. This means that we can't propagate signals from the compare
   // functions back out but that shouldn't be a huge issue. We'll check on them
   // for now and later on this will have to be rewritten in n anyway.
-  qsort(elements, length, kValueSize, &value_compare_function);
+  qsort(elements, elmc, kValueSize, &value_compare_function);
   return success();
 }
 
@@ -799,9 +804,15 @@ value_t add_array_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
 }
 
 
+// --- T u p l e ---
+
+value_t get_tuple_at(value_t self, size_t index) {
+  return get_array_at(self, index);
+}
+
+
 // --- A r r a y   b u f f e r ---
 
-TRIVIAL_PRINT_ON_IMPL(ArrayBuffer, array_buffer);
 GET_FAMILY_PROTOCOL_IMPL(array_buffer);
 NO_BUILTIN_METHODS(array_buffer);
 
@@ -832,6 +843,26 @@ bool try_add_to_array_buffer(value_t self, value_t value) {
   return true;
 }
 
+bool in_array_buffer(value_t self, value_t value) {
+  for (size_t i = 0; i < get_array_buffer_length(self); i++) {
+    if (value_identity_compare(value, get_array_buffer_at(self, i)))
+      return true;
+  }
+  return false;
+}
+
+value_t ensure_array_buffer_contains(runtime_t *runtime, value_t self,
+    value_t value) {
+  if (in_array_buffer(self, value))
+    return success();
+  return add_to_array_buffer(runtime, self, value);
+}
+
+void sort_array_buffer(value_t self) {
+  value_t elements = get_array_buffer_elements(self);
+  sort_array_partial(elements, get_array_buffer_length(self));
+}
+
 value_t get_array_buffer_at(value_t self, size_t index) {
   CHECK_FAMILY(ofArrayBuffer, self);
   SIG_CHECK_TRUE("array buffer index out of bounds", scOutOfBounds,
@@ -845,6 +876,17 @@ void set_array_buffer_at(value_t self, size_t index, value_t value) {
   CHECK_TRUE("array buffer index out of bounds",
       index < get_array_buffer_length(self));
   set_array_at(get_array_buffer_elements(self), index, value);
+}
+
+void array_buffer_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
+  string_buffer_printf(buf, "%[");
+  for (size_t i = 0; i < get_array_buffer_length(value); i++) {
+    if (i > 0)
+      string_buffer_printf(buf, ", ");
+    value_print_inner_on(get_array_buffer_at(value, i), buf, flags, depth - 1);
+  }
+  string_buffer_printf(buf, "]");
 }
 
 
@@ -1519,8 +1561,6 @@ value_t ensure_lambda_owned_values_frozen(runtime_t *runtime, value_t self) {
 
 // --- N a m e s p a c e ---
 
-TRIVIAL_PRINT_ON_IMPL(Namespace, namespace);
-
 ACCESSORS_IMPL(Namespace, namespace, acInFamilyOpt, ofIdHashMap, Bindings, bindings);
 
 value_t namespace_validate(value_t self) {
@@ -1545,63 +1585,185 @@ value_t get_namespace_binding_at(value_t namespace, value_t name) {
   return get_id_hash_map_at(bindings, name);
 }
 
+value_t set_namespace_binding_at(runtime_t *runtime, value_t namespace,
+    value_t name, value_t value) {
+  value_t bindings = get_namespace_bindings(namespace);
+  return set_id_hash_map_at(runtime, bindings, name, value);
+}
+
 value_t ensure_namespace_owned_values_frozen(runtime_t *runtime, value_t self) {
   TRY(ensure_frozen(runtime, get_namespace_bindings(self)));
   return success();
 }
 
-
-// --- M o d u l e ---
-
-GET_FAMILY_PROTOCOL_IMPL(module);
-
-ACCESSORS_IMPL(Module, module, acInFamilyOpt, ofNamespace, Namespace, namespace);
-ACCESSORS_IMPL(Module, module, acInFamilyOpt, ofMethodspace, Methodspace, methodspace);
-ACCESSORS_IMPL(Module, module, acNoCheck, 0, DisplayName, display_name);
-
-value_t module_validate(value_t value) {
-  VALIDATE_FAMILY(ofModule, value);
-  VALIDATE_FAMILY_OPT(ofNamespace, get_module_namespace(value));
-  VALIDATE_FAMILY_OPT(ofMethodspace, get_module_methodspace(value));
-  return success();
+void namespace_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  CHECK_FAMILY(ofNamespace, value);
+  string_buffer_printf(buf, "#<namespace ");
+  value_print_inner_on(get_namespace_bindings(value), buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
 }
 
-value_t plankton_set_module_contents(value_t object, runtime_t *runtime,
-    value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, namespace, methodspace, display_name);
-  set_module_namespace(object, namespace);
-  set_module_methodspace(object, methodspace);
-  set_module_display_name(object, display_name);
-  return success();
-}
 
-value_t plankton_new_module(runtime_t *runtime) {
-  return new_heap_module(runtime, ROOT(runtime, nothing), ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
+// --- M o d u l e---
+
+FIXED_GET_MODE_IMPL(module, vmMutable);
+
+ACCESSORS_IMPL(Module, module, acInFamilyOpt, ofPath, Path, path);
+ACCESSORS_IMPL(Module, module, acInFamily, ofArrayBuffer, Fragments, fragments);
+
+value_t module_validate(value_t self) {
+  VALIDATE_FAMILY(ofModule, self);
+  VALIDATE_FAMILY_OPT(ofPath, get_module_path(self));
+  VALIDATE_FAMILY(ofArrayBuffer, get_module_fragments(self));
+  return success();
 }
 
 void module_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
     size_t depth) {
   CHECK_FAMILY(ofModule, value);
-  string_buffer_printf(buf, "<module");
-  value_t display_name = get_module_display_name(value);
-  if (!is_null(display_name)) {
-    string_buffer_printf(buf, " ");
-    value_print_inner_on(get_module_display_name(value), buf,
-        flags | pfUnquote, depth);
-  }
+  string_buffer_printf(buf, "#<module ");
+  value_print_inner_on(get_module_path(value), buf, flags, depth - 1);
   string_buffer_printf(buf, ">");
 }
 
-static value_t module_print(builtin_arguments_t *args) {
+value_t get_module_fragment_at(value_t self, value_t stage) {
+  value_t fragments = get_module_fragments(self);
+  for (size_t i = 0; i < get_array_buffer_length(fragments); i++) {
+    value_t fragment = get_array_buffer_at(fragments, i);
+    if (is_same_value(get_module_fragment_stage(fragment), stage))
+      return fragment;
+  }
+  return new_not_found_signal();
+}
+
+value_t add_module_fragment(runtime_t *runtime, value_t self, value_t fragment) {
+  value_t fragments = get_module_fragments(self);
+  return add_to_array_buffer(runtime, fragments, fragment);
+}
+
+value_t get_module_fragment_before(value_t self, value_t stage) {
+  int32_t limit = get_integer_value(stage);
+  value_t fragments = get_module_fragments(self);
+  int32_t best_stage = kMostNegativeInt32;
+  value_t best_fragment = new_not_found_signal();
+  for (size_t i = 0; i < get_array_buffer_length(fragments); i++) {
+    value_t fragment = get_array_buffer_at(fragments, i);
+    int32_t fragment_stage = get_integer_value(get_module_fragment_stage(fragment));
+    if (fragment_stage < limit && fragment_stage > best_stage) {
+      best_stage = fragment_stage;
+      best_fragment = fragment;
+    }
+  }
+  return best_fragment;
+}
+
+bool has_module_fragment_at(value_t self, value_t stage) {
+  return !is_signal(scNotFound, get_module_fragment_at(self, stage));
+}
+
+static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
+    value_t path);
+
+static value_t module_fragment_lookup_path_in_imports(runtime_t *runtime,
+    value_t self, value_t path) {
+  value_t head = get_path_head(path);
+  value_t importspace = get_module_fragment_imports(self);
+  value_t binding = get_namespace_binding_at(importspace, head);
+  if (is_signal(scNotFound, binding))
+    return binding;
+  value_t tail = get_path_tail(path);
+  return module_fragment_lookup_path(runtime, binding, tail);
+}
+
+static value_t module_fragment_lookup_path_in_namespace(runtime_t *runtime,
+    value_t self, value_t path) {
+  value_t head = get_path_head(path);
+  value_t namespace = get_module_fragment_namespace(self);
+  value_t binding = get_namespace_binding_at(namespace, head);
+  if (is_signal(scNotFound, binding))
+    return new_lookup_error_signal(lcNamespace);
+  return binding;
+}
+
+static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
+    value_t path) {
+  CHECK_FAMILY(ofPath, path);
+  CHECK_FALSE("looking up empty path", is_path_empty(path));
+  value_t head = get_path_head(path);
+  // Special case for ctrino which is always available.
+  if (value_identity_compare(head, RSTR(runtime, ctrino)))
+    return ROOT(runtime, ctrino);
+  // First check the imports.
+  value_t as_import = module_fragment_lookup_path_in_imports(runtime, self, path);
+  if (!is_signal(scNotFound, as_import))
+    return as_import;
+  // If not an import try looking up in the appropriate namespace.
+  return module_fragment_lookup_path_in_namespace(runtime, self, path);
+}
+
+value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage,
+    value_t path) {
+  value_t fragment = get_module_fragment_at(self, stage);
+  return module_fragment_lookup_path(runtime, fragment, path);
+}
+
+
+// --- M o d u l e   f r a g m e n t ---
+
+GET_FAMILY_PROTOCOL_IMPL(module_fragment);
+
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acNoCheck, 0, Stage, stage);
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofModule,
+    Module, module);
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofNamespace,
+    Namespace, namespace);
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofMethodspace,
+    Methodspace, methodspace);
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofNamespace,
+    Imports, imports);
+
+void set_module_fragment_epoch(value_t self, module_fragment_epoch_t value) {
+  *access_object_field(self, kModuleFragmentEpochOffset) = new_integer(value);
+}
+
+module_fragment_epoch_t get_module_fragment_epoch(value_t self) {
+  value_t epoch = *access_object_field(self, kModuleFragmentEpochOffset);
+  return (module_fragment_epoch_t) get_integer_value(epoch);
+}
+
+value_t module_fragment_validate(value_t value) {
+  VALIDATE_FAMILY(ofModuleFragment, value);
+  VALIDATE_FAMILY_OPT(ofNamespace, get_module_fragment_namespace(value));
+  VALIDATE_FAMILY_OPT(ofMethodspace, get_module_fragment_methodspace(value));
+  return success();
+}
+
+void module_fragment_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  CHECK_FAMILY(ofModuleFragment, value);
+  string_buffer_printf(buf, "#<fragment ");
+  value_t module = get_module_fragment_module(value);
+  value_print_inner_on(get_module_path(module), buf, flags, depth + 1);
+  string_buffer_printf(buf, " ");
+  value_t stage = get_module_fragment_stage(value);
+  value_print_inner_on(stage, buf, flags, depth + 1);
+  string_buffer_printf(buf, ">");
+}
+
+static value_t module_fragment_print(builtin_arguments_t *args) {
   value_t this = get_builtin_subject(args);
   print_ln("%v", this);
   return ROOT(args->runtime, nothing);
 }
 
-value_t add_module_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(module, INFIX("print"), 0, module_print);
+value_t add_module_fragment_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
+  ADD_BUILTIN(module_fragment, INFIX("print"), 0, module_fragment_print);
   return success();
+}
+
+bool is_module_fragment_bound(value_t fragment) {
+  return get_module_fragment_epoch(fragment) == feComplete;
 }
 
 
@@ -1699,10 +1861,22 @@ value_t path_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
   return value_identity_compare_cycle_protect(a_tail, b_tail, &inner);
 }
 
+value_t path_ordering_compare(value_t a, value_t b) {
+  CHECK_FAMILY(ofPath, a);
+  CHECK_FAMILY(ofPath, b);
+  value_t a_head = get_path_raw_head(a);
+  value_t b_head = get_path_raw_head(b);
+  value_t cmp_head = value_ordering_compare(a_head, b_head);
+  if (ordering_to_int(cmp_head) != 0)
+    return cmp_head;
+  value_t a_tail = get_path_raw_tail(a);
+  value_t b_tail = get_path_raw_tail(b);
+  return value_ordering_compare(a_tail, b_tail);
+}
+
 
 // --- I d e n t i f i e r ---
 
-TRIVIAL_PRINT_ON_IMPL(Identifier, identifier);
 FIXED_GET_MODE_IMPL(identifier, vmMutable);
 
 ACCESSORS_IMPL(Identifier, identifier, acInFamilyOpt, ofPath, Path, path);
@@ -1720,10 +1894,68 @@ value_t plankton_new_identifier(runtime_t *runtime) {
 
 value_t plankton_set_identifier_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, path, stage);
-  set_identifier_path(object, path);
+  UNPACK_PLANKTON_MAP(contents, stage, path);
   set_identifier_stage(object, stage);
+  set_identifier_path(object, path);
   return success();
+}
+
+void identifier_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  CHECK_FAMILY(ofIdentifier, value);
+  int32_t stage = get_integer_value(get_identifier_stage(value));
+  if (stage < 0) {
+    for (int32_t i = stage; i < 0; i++)
+      string_buffer_putc(buf, '@');
+  } else {
+    for (int32_t i = 0; i <= stage; i++)
+      string_buffer_putc(buf, '$');
+  }
+  value_print_inner_on(get_identifier_path(value), buf, flags, depth - 1);
+}
+
+bool is_identifier_identical(value_t self, value_t stage, value_t path) {
+  CHECK_DOMAIN(vdInteger, stage);
+  CHECK_FAMILY(ofPath, path);
+  return value_identity_compare(get_identifier_stage(self), stage)
+      && value_identity_compare(get_identifier_path(self), path);
+}
+
+value_t identifier_transient_identity_hash(value_t value, hash_stream_t *stream,
+    cycle_detector_t *outer) {
+  cycle_detector_t inner;
+  cycle_detector_enter(outer, &inner, value);
+  value_t stage = get_identifier_stage(value);
+  value_t path = get_identifier_path(value);
+  TRY(value_transient_identity_hash_cycle_protect(stage, stream, &inner));
+  TRY(value_transient_identity_hash_cycle_protect(path, stream, &inner));
+  return success();
+}
+
+value_t identifier_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
+  cycle_detector_t inner;
+  TRY(cycle_detector_enter(outer, &inner, a));
+  value_t a_stage = get_identifier_stage(a);
+  value_t b_stage = get_identifier_stage(b);
+  TRY_DEF(cmp_head, value_identity_compare_cycle_protect(a_stage, b_stage, &inner));
+  if (!is_internal_true_value(cmp_head))
+    return cmp_head;
+  value_t a_path = get_identifier_path(a);
+  value_t b_path = get_identifier_path(b);
+  return value_identity_compare_cycle_protect(a_path, b_path, &inner);
+}
+
+value_t identifier_ordering_compare(value_t a, value_t b) {
+  CHECK_FAMILY(ofIdentifier, a);
+  CHECK_FAMILY(ofIdentifier, b);
+  value_t a_stage = get_identifier_stage(a);
+  value_t b_stage = get_identifier_stage(b);
+  value_t cmp_stage = value_ordering_compare(a_stage, b_stage);
+  if (ordering_to_int(cmp_stage) != 0)
+    return cmp_stage;
+  value_t a_path = get_identifier_path(a);
+  value_t b_path = get_identifier_path(b);
+  return value_ordering_compare(a_path, b_path);
 }
 
 
@@ -1877,10 +2109,7 @@ static value_t add_plankton_binding(value_t map, value_t category, const char *n
   string_init(&key_str, name);
   // Build the key, [category, name].
   TRY_DEF(name_obj, new_heap_string(runtime, &key_str));
-  TRY_DEF(key_obj, new_heap_array(runtime, 2));
-  set_array_at(key_obj, 0, category);
-  set_array_at(key_obj, 1, name_obj);
-  TRY(ensure_frozen(runtime, key_obj));
+  TRY_DEF(key_obj, new_heap_pair(runtime, category, name_obj));
   // Add the mapping to the environment map.
   TRY(set_id_hash_map_at(runtime, map, key_obj, value));
   return success();
@@ -1898,8 +2127,6 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, core, "Function", plankton_new_function, runtime));
   TRY(add_plankton_factory(map, core, "Identifier", plankton_new_identifier, runtime));
   TRY(add_plankton_factory(map, core, "Library", plankton_new_library, runtime));
-  TRY(add_plankton_factory(map, core, "Methodspace", plankton_new_methodspace, runtime));
-  TRY(add_plankton_factory(map, core, "Module", plankton_new_module, runtime));
   TRY(add_plankton_factory(map, core, "Namespace", plankton_new_namespace, runtime));
   TRY(add_plankton_factory(map, core, "Operation", plankton_new_operation, runtime));
   TRY(add_plankton_factory(map, core, "Path", plankton_new_path, runtime));

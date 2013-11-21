@@ -115,9 +115,8 @@ class Variable(object):
   _LOCAL_HEADER = plankton.EnvironmentReference.path("ast", "LocalVariable")
   _NAMESPACE_HEADER = plankton.EnvironmentReference.path("ast", "NamespaceVariable")
 
-  def __init__(self, ident, namespace=None, symbol=None):
+  def __init__(self, ident, symbol=None):
     self.ident = ident
-    self.namespace = namespace
     self.symbol = symbol
 
   def accept(self, visitor):
@@ -139,14 +138,9 @@ class Variable(object):
   @plankton.payload
   def get_payload(self):
     if self.symbol is None:
-      return {
-        'name': self.ident.path,
-        'namespace': self.namespace
-      }
+      return {'name': self.ident}
     else:
-      return {
-        'symbol': self.symbol
-      }
+      return {'symbol': self.symbol}
 
   def __str__(self):
     return "(var %s)" % str(self.ident)
@@ -157,10 +151,8 @@ class Variable(object):
 class Invocation(object):
 
   @plankton.field("arguments")
-  @plankton.field("methodspace")
-  def __init__(self, arguments, methodspace=None):
+  def __init__(self, arguments):
     self.arguments = arguments
-    self.methodspace = methodspace
 
   def accept(self, visitor):
     return visitor.visit_invocation(self)
@@ -327,10 +319,7 @@ class Guard(object):
   @plankton.field("value")
   def __init__(self, type, value):
     self.type = type
-    if value is None:
-      self.value = None
-    else:
-      self.value = Quote(-1, value)
+    self.value = value
 
   def accept(self, visitor):
     visitor.visit_guard(self)
@@ -343,7 +332,7 @@ class Guard(object):
     if self.value is None:
       return "%s()" % self.type
     else:
-      return "%s(%s)" % (self.type, self.value.ast)
+      return "%s(%s)" % (self.type, self.value)
 
   @staticmethod
   def any():
@@ -351,17 +340,13 @@ class Guard(object):
 
   @staticmethod
   def eq(value):
+    assert not value is None
     return Guard(data.Guard._EQ, value)
-
-  @staticmethod
-  def bound_eq(value):
-    result = Guard(data.Guard._EQ, value)
-    result.value.value = value
-    return result
 
   # 'is' is a reserved word in python. T t t.
   @staticmethod
   def is_(value):
+    assert not value is None
     return Guard(data.Guard._IS, value)
 
 
@@ -388,11 +373,11 @@ class Lambda(object):
 class Program(object):
 
   @plankton.field("entry_point")
-  @plankton.field("fragment")
-  def __init__(self, elements, entry_point, fragment):
+  @plankton.field("module")
+  def __init__(self, elements, entry_point, module):
     self.elements = elements
     self.entry_point = entry_point
-    self.fragment = fragment
+    self.module = module
 
   def accept(self, visitor):
     return visitor.visit_program(self)
@@ -402,10 +387,14 @@ class Program(object):
 
 
 # A toplevel namespace declaration.
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "NamespaceDeclaration"))
 class NamespaceDeclaration(object):
 
+  @plankton.field("path")
+  @plankton.field("value")
   def __init__(self, ident, value):
     self.ident = ident
+    self.path = ident.path
     self.value = value
 
   # Returns the stage this declaration belongs to.
@@ -415,10 +404,8 @@ class NamespaceDeclaration(object):
   def accept(self, visitor):
     return visitor.visit_namespace_declaration(self)
 
-  def apply(self, program, helper):
-    name = self.ident.get_name()
-    value = helper.evaluate(self.value)
-    program.module.namespace.add_binding(name, value)
+  def apply(self, fragment):
+    fragment.add_element(self)
 
   def traverse(self, visitor):
     self.value.accept(visitor)
@@ -446,8 +433,10 @@ class Method(object):
 
 
 # A toplevel method declaration.
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "MethodDeclaration"))
 class MethodDeclaration(object):
 
+  @plankton.field("method")
   def __init__(self, method):
     self.method = method
 
@@ -457,11 +446,11 @@ class MethodDeclaration(object):
   def accept(self, visitor):
     return visitor.visit_method_declaration(self)
 
-  def apply(self, program, helper):
-    program.module.methodspace.add_method(self.method)
-
   def traverse(self, visitor):
     self.method.accept(visitor)
+
+  def apply(self, fragment):
+    fragment.add_element(self)
 
   def __str__(self):
     return "(method-declaration %s %s)" % (self.method.signature, self.method.body)
@@ -470,29 +459,22 @@ class MethodDeclaration(object):
 # A toplevel function declaration.
 class FunctionDeclaration(object):
 
-  def __init__(self, method):
+  def __init__(self, ident, method):
+    self.ident = ident
     self.method = method
 
   def get_stage(self):
-    return 0
+    return self.ident.stage
 
   def accept(self, visitor):
     return visitor.visit_function_declaration(self)
 
-  def apply(self, program, helper):
-    subject = self.method.signature.parameters[0]
-    name = subject.ident.get_name()
-    namespace = program.module.namespace
-    if namespace.has_binding(name):
-      value = namespace.lookup(name)
-    else:
-      value = data.Function(name)
-      namespace.add_binding(name, value)
-    subject.guard = Guard.bound_eq(value)
-    program.module.methodspace.add_method(self.method)
-
   def traverse(self, visitor):
     self.method.accept(visitor)
+
+  def apply(self, fragment):
+    fragment.ensure_function_declared(self.ident)
+    fragment.add_element(MethodDeclaration(self.method))
 
   def __str__(self):
     return "(function-declaration %s %s)" % (self.method.signature, self.method.body)
@@ -529,56 +511,38 @@ class UnboundModuleFragment(object):
 # An individual execution stage.
 class Stage(object):
 
-  _BUILTIN_METHODSPACE = data.Key("subject", ("core", "builtin_methodspace"))
-
   def __init__(self, index, module_name):
     self.index = index
     self.imports = []
-    self.import_paths = []
-    self.namespace = data.Namespace({})
-    self.methodspace = data.Methodspace({}, [], [])
-    self.module = data.Module(self.namespace, self.methodspace, module_name)
     self.elements = []
-    self.bind_action = schedule.ActionId("bind %s of %s" % (self.index, module_name))
+    self.functions = set()
 
   def __str__(self):
     return "#<stage %i>" % self.index
 
   # Returns all the imports for this stage.
-  def add_import(self, path, value):
-    if not path is None:
-      self.import_paths.append(path)
-    self.imports.append(value)
+  def add_import(self, path):
+    self.imports.append(path)
 
-  # Returns this stage's namespace.
-  def get_namespace(self):
-    return self.namespace
+  def add_element(self, element):
+    self.elements.append(element)
 
-  # Returns this stage's methodspace.
-  def get_methodspace(self):
-    return self.methodspace
+  def apply_element(self, element):
+    element.apply(self)
 
-  # Returns the module that encapsulates this stage's data.
-  def get_module(self):
-    return self.module
-
-  # Returns the action id that represents binding this stage.
-  def get_bind_action(self):
-    return self.bind_action
-
-  # Brings bindings from the previous stage into this stage. If this is the
-  # earliest stage previous will be None.
-  def import_previous(self, previous):
-    if previous is None:
-      self.methodspace.add_import(Stage._BUILTIN_METHODSPACE)
-    else:
-      self.methodspace.add_import(previous.methodspace)
+  def ensure_function_declared(self, name):
+    if name in self.functions:
+      return
+    self.functions.add(name)
+    value = Invocation([
+      Argument(data._SUBJECT, Variable(data.Identifier(-1, data.Path(["ctrino"])))),
+      Argument(data._SELECTOR, Literal(data.Operation.infix("new_function"))),
+      Argument(0, Literal(name.path))
+    ])
+    self.add_element(NamespaceDeclaration(name, value))
 
   def as_unbound_module_fragment(self):
-    imports = []
-    for path in self.import_paths:
-      imports.append(path)
-    return UnboundModuleFragment(self.index, imports, [])
+    return UnboundModuleFragment(self.index, self.imports, self.elements)
 
   def as_program_fragment(self):
     return None
@@ -598,7 +562,7 @@ class Unit(object):
   def add_element(self, stage, *elements):
     target = self.get_or_create_stage(stage)
     for element in elements:
-      target.elements.append(element)
+      target.apply_element(element)
     return self
 
   def get_stages(self):
@@ -639,8 +603,8 @@ class Unit(object):
 
   def get_present_program(self):
     last_stage = self.get_present()
-    fragment = last_stage.as_program_fragment()
-    return Program(last_stage.elements, self.entry_point, fragment)
+    module = self.as_unbound_module()
+    return Program(last_stage.elements, self.entry_point, module)
 
   def get_present_module(self):
     last_stage = self.get_present()
@@ -707,14 +671,11 @@ class Import(object):
   def accept(self, visitor):
     visitor.visit_import(self)
 
+  def apply(self, fragment):
+    fragment.add_import(self.ident.path)
+
   def traverse(self, visitor):
     pass
-
-  def apply(self, program, helper):
-    name = self.ident.get_name()
-    value = helper.lookup_import(name)
-    program.module.namespace.add_binding(name, value)
-    program.module.methodspace.add_import(value.methodspace)
 
   def __str__(self):
     return "(import %s)" % self.ident

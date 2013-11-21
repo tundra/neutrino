@@ -133,12 +133,12 @@ TEST(process, get_argument_one_piece) {
   frame_push_value(&frame, new_integer(4));
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 0));
   set_frame_argument_map(&frame,
-      variant_to_value(runtime, vArray(3, vInt(0) o vInt(1) o vInt(2))));
+      C(vArray(vInt(0), vInt(1), vInt(2))));
   ASSERT_VALEQ(new_integer(4), frame_get_argument(&frame, 0));
   ASSERT_VALEQ(new_integer(5), frame_get_argument(&frame, 1));
   ASSERT_VALEQ(new_integer(6), frame_get_argument(&frame, 2));
   set_frame_argument_map(&frame,
-      variant_to_value(runtime, vArray(3, vInt(2) o vInt(1) o vInt(0))));
+      C(vArray(vInt(2), vInt(1), vInt(0))));
   ASSERT_VALEQ(new_integer(6), frame_get_argument(&frame, 0));
   ASSERT_VALEQ(new_integer(5), frame_get_argument(&frame, 1));
   ASSERT_VALEQ(new_integer(4), frame_get_argument(&frame, 2));
@@ -157,7 +157,7 @@ TEST(process, get_argument_multi_pieces) {
   frame_push_value(&frame, new_integer(4));
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 16));
   set_frame_argument_map(&frame,
-      variant_to_value(runtime, vArray(3, vInt(0) o vInt(1) o vInt(2))));
+      C(vArray(vInt(0), vInt(1), vInt(2))));
   ASSERT_VALEQ(new_integer(4), frame_get_argument(&frame, 0));
   ASSERT_VALEQ(new_integer(5), frame_get_argument(&frame, 1));
   ASSERT_VALEQ(new_integer(6), frame_get_argument(&frame, 2));

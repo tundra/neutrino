@@ -32,11 +32,12 @@ class Main(object):
     opts.add_flag('modules', self.flags.modules)
     modules = self.find_modules()
     # Compile the test file. If compilation fails this will throw an exception,
-    data = subprocess.check_output([
+    compile_command = [
       "./src/python/neutrino/main.py",
       "--file", self.flags.test,
       "--compile", opts.base64_encode()
-    ])
+    ]
+    data = subprocess.check_output(compile_command)
     # Write the compiled output to a temporary file so it gets a file descriptor
     # and can be passed to the executable.
     tmp = SpooledTemporaryFile()

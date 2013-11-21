@@ -7,6 +7,11 @@
 #include "utils-inl.h"
 #include "value-inl.h"
 
+TEST(utils, globals) {
+  ASSERT_TRUE(kMostNegativeInt32 < 0);
+  ASSERT_FALSE((int32_t) (((int64_t) kMostNegativeInt32) - 1) < 0);
+}
+
 TEST(utils, string_simple) {
   string_t str;
   string_init(&str, "Hello, World!");
@@ -420,19 +425,32 @@ TEST(utils, for_each_va_arg) {
   ASSERT_EQ(record[2], 4);
 }
 
+#define CHECK_HINT(HINT, EXPECTED) do {                                        \
+  string_hint_t hint = STRING_HINT(HINT);                                      \
+  char hint_str[7];                                                            \
+  string_hint_to_c_str(hint, hint_str);                                        \
+  ASSERT_C_STREQ(EXPECTED, hint_str);                                          \
+} while (false)
+
 TEST(utils, string_hint) {
   ASSERT_EQ(sizeof(uint32_t), sizeof(string_hint_t));
 
-  string_hint_t foobar_hint = STRING_HINT("foobar");
-  char hint_str[5];
-  string_hint_to_c_str(foobar_hint, hint_str);
-  ASSERT_C_STREQ("foob", hint_str);
+  CHECK_HINT("abcdef", "ab..ef");
+  CHECK_HINT("abcde", "ab..de");
+  CHECK_HINT("abcd", "ab..cd");
+  CHECK_HINT("abc", "abc");
+  CHECK_HINT("ab", "ab");
+  CHECK_HINT("a", "a");
+  CHECK_HINT("", "");
+}
 
-  string_hint_t fo_hint = STRING_HINT("fo");
-  string_hint_to_c_str(fo_hint, hint_str);
-  ASSERT_C_STREQ("fo", hint_str);
-
-  string_hint_t empty_hint = STRING_HINT("");
-  string_hint_to_c_str(empty_hint, hint_str);
-  ASSERT_C_STREQ("", hint_str);
+TEST(utils, va_argc) {
+  ASSERT_EQ(1, VA_ARGC(a));
+  ASSERT_EQ(2, VA_ARGC(a, b));
+  ASSERT_EQ(3, VA_ARGC(a, b, c));
+  ASSERT_EQ(4, VA_ARGC(a, b, c, d));
+  ASSERT_EQ(5, VA_ARGC(a, b, c, d, e));
+  ASSERT_EQ(6, VA_ARGC(a, b, c, d, e, f));
+  ASSERT_EQ(7, VA_ARGC(a, b, c, d, e, f, g));
+  ASSERT_EQ(8, VA_ARGC(a, b, c, d, e, f, g, h));
 }

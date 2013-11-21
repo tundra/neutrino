@@ -9,7 +9,7 @@
 // Returns the initial for the given log level.
 static const char *get_log_level_char(log_level_t level) {
   switch (level) {
-#define __LEVEL_CASE__(Name, C) case ll##Name: return #C;
+#define __LEVEL_CASE__(Name, C, V, S) case ll##Name: return #C;
     ENUM_LOG_LEVELS(__LEVEL_CASE__)
 #undef __LEVEL_CASE__
     default:
@@ -20,11 +20,22 @@ static const char *get_log_level_char(log_level_t level) {
 // Returns the full name of the given log level.
 static const char *get_log_level_name(log_level_t level) {
   switch (level) {
-#define __LEVEL_CASE__(Name, C) case ll##Name: return #Name;
+#define __LEVEL_CASE__(Name, C, V, S) case ll##Name: return #Name;
     ENUM_LOG_LEVELS(__LEVEL_CASE__)
 #undef __LEVEL_CASE__
     default:
       return "?";
+  }
+}
+
+// Returns the destination stream of the given log level.
+static log_stream_t get_log_level_destination(log_level_t level) {
+  switch (level) {
+#define __LEVEL_CASE__(Name, C, V, S) case ll##Name: return S;
+    ENUM_LOG_LEVELS(__LEVEL_CASE__)
+#undef __LEVEL_CASE__
+    default:
+      return lsStderr;
   }
 }
 
@@ -75,8 +86,10 @@ log_callback_t *set_log_callback(log_callback_t *value) {
   return result;
 }
 
-void log_entry_init(log_entry_t *entry, const char *file, int line,
-    log_level_t level, string_t *message, string_t *timestamp) {
+void log_entry_init(log_entry_t *entry, log_stream_t destination,
+    const char *file, int line, log_level_t level, string_t *message,
+    string_t *timestamp) {
+  entry->destination = destination;
   entry->file = file;
   entry->line = line;
   entry->level = level;
@@ -102,9 +115,11 @@ void vlog_message(log_level_t level, const char *file, int line, const char *fmt
   char timestamp[128];
   size_t timestamp_chars = strftime(timestamp, 128, "%d%m%H%M%S", &local_time);
   string_t timestamp_str = {timestamp_chars, timestamp};
+  log_stream_t destination = get_log_level_destination(level);
   // Print the result.
   log_entry_t entry;
-  log_entry_init(&entry, file, line, level, &message_str, &timestamp_str);
+  log_entry_init(&entry, destination, file, line, level, &message_str,
+      &timestamp_str);
   log_callback_t *callback = get_global_log_callback();
   (callback->function)(callback->data, &entry);
   string_buffer_dispose(&buf);

@@ -131,6 +131,24 @@ value_t new_heap_array(runtime_t *runtime, size_t length) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_pair(runtime_t *runtime, value_t e0, value_t e1) {
+  TRY_DEF(result, new_heap_array(runtime, 2));
+  set_array_at(result, 0, e0);
+  set_array_at(result, 1, e1);
+  TRY(ensure_frozen(runtime, result));
+  return result;
+}
+
+value_t new_heap_triple(runtime_t *runtime, value_t e0, value_t e1,
+    value_t e2) {
+  TRY_DEF(result, new_heap_array(runtime, 3));
+  set_array_at(result, 0, e0);
+  set_array_at(result, 1, e1);
+  set_array_at(result, 2, e2);
+  TRY(ensure_frozen(runtime, result));
+  return result;
+}
+
 value_t new_heap_pair_array(runtime_t *runtime, size_t length) {
   return new_heap_array(runtime, length << 1);
 }
@@ -292,15 +310,34 @@ value_t new_heap_namespace(runtime_t *runtime) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_module(runtime_t *runtime, value_t namespace, value_t methodspace,
-    value_t display_name) {
+value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t stage,
+    value_t namespace, value_t methodspace, value_t imports) {
+  CHECK_FAMILY_OPT(ofModule, module);
+  CHECK_DOMAIN(vdInteger, stage);
+  CHECK_FAMILY_OPT(ofNamespace, namespace);
+  CHECK_FAMILY_OPT(ofMethodspace, methodspace);
+  CHECK_FAMILY_OPT(ofNamespace, imports);
+  size_t size = kModuleFragmentSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_module_fragment_species)));
+  set_module_fragment_stage(result, stage);
+  set_module_fragment_module(result, module);
+  set_module_fragment_namespace(result, namespace);
+  set_module_fragment_methodspace(result, methodspace);
+  set_module_fragment_imports(result, imports);
+  set_module_fragment_epoch(result, feUnbound);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_empty_module(runtime_t *runtime, value_t path) {
+  TRY_DEF(fragments, new_heap_array_buffer(runtime, 16));
   size_t size = kModuleSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, mutable_module_species)));
-  set_module_namespace(result, namespace);
-  set_module_methodspace(result, methodspace);
-  set_module_display_name(result, display_name);
-  return post_create_sanity_check(result, size);
+      ROOT(runtime, module_species)));
+  set_module_path(result, path);
+  set_module_fragments(result, fragments);
+  return result;
+
 }
 
 value_t new_heap_operation(runtime_t *runtime, alloc_flags_t flags,
@@ -462,16 +499,17 @@ value_t new_heap_methodspace(runtime_t *runtime) {
   size_t size = kMethodspaceSize;
   TRY_DEF(inheritance, new_heap_id_hash_map(runtime, kInheritanceMapInitialSize));
   TRY_DEF(methods, new_heap_array_buffer(runtime, kMethodArrayInitialSize));
+  TRY_DEF(imports, new_heap_array_buffer(runtime, kImportsArrayInitialSize));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_methodspace_species)));
   set_methodspace_inheritance(result, inheritance);
   set_methodspace_methods(result, methods);
-  set_methodspace_imports(result, ROOT(runtime, empty_array));
+  set_methodspace_imports(result, imports);
   return post_create_sanity_check(result, size);
 }
 
 value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signature,
-    value_t syntax, value_t code) {
+    value_t syntax, value_t code, value_t fragment) {
   CHECK_FAMILY_OPT(ofSignature, signature);
   CHECK_FAMILY_OPT(ofCodeBlock, code);
   size_t size = kMethodSize;
@@ -480,6 +518,7 @@ value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signatu
   set_method_signature(result, signature);
   set_method_code(result, code);
   set_method_syntax(result, syntax);
+  set_method_module_fragment(result, fragment);
   TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
@@ -514,13 +553,11 @@ value_t new_heap_array_ast(runtime_t *runtime, value_t elements) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments,
-    value_t methodspace) {
+value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments) {
   size_t size = kInvocationAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, invocation_ast_species)));
   set_invocation_ast_arguments(result, arguments);
-  set_invocation_ast_methodspace(result, methodspace);
   return post_create_sanity_check(result, size);
 }
 
@@ -560,13 +597,11 @@ value_t new_heap_local_variable_ast(runtime_t *runtime, value_t symbol) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t name,
-    value_t namespace) {
+value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t ident) {
   size_t size = kNamespaceVariableAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, namespace_variable_ast_species)));
-  set_namespace_variable_ast_name(result, name);
-  set_namespace_variable_ast_namespace(result, namespace);
+  set_namespace_variable_ast_identifier(result, ident);
   return post_create_sanity_check(result, size);
 }
 
@@ -624,20 +659,40 @@ value_t new_heap_method_ast(runtime_t *runtime, value_t signature, value_t body)
 }
 
 value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point,
-    value_t fragment) {
+    value_t module) {
   size_t size = kProgramAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, program_ast_species)));
   set_program_ast_entry_point(result, entry_point);
-  set_program_ast_fragment(result, fragment);
+  set_program_ast_module(result, module);
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_identifier(runtime_t *runtime, value_t path, value_t stage) {
+value_t new_heap_identifier(runtime_t *runtime, value_t stage, value_t path) {
+  CHECK_DOMAIN_OPT(vdInteger, stage);
+  CHECK_FAMILY_OPT(ofPath, path);
   size_t size = kIdentifierSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, identifier_species)));
-  set_identifier_path(result, path);
   set_identifier_stage(result, stage);
+  set_identifier_path(result, path);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t path,
+    value_t value) {
+  size_t size = kNamespaceDeclarationAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, namespace_declaration_ast_species)));
+  set_namespace_declaration_ast_path(result, path);
+  set_namespace_declaration_ast_value(result, value);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_method_declaration_ast(runtime_t *runtime, value_t method) {
+  size_t size = kMethodDeclarationAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, method_declaration_ast_species)));
+  set_method_declaration_ast_method(result, method);
   return post_create_sanity_check(result, size);
 }
 

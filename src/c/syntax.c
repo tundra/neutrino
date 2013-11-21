@@ -29,11 +29,11 @@ value_t init_plankton_environment_mapping(value_mapping_t *mapping,
 }
 
 value_t compile_expression(runtime_t *runtime, value_t program,
-    scope_lookup_callback_t *scope_callback) {
+    value_t fragment, scope_lookup_callback_t *scope_callback) {
   assembler_t assm;
   // Don't try to execute cleanup if this fails since there'll not be an
   // assembler to dispose.
-  TRY(assembler_init(&assm, runtime, scope_callback));
+  TRY(assembler_init(&assm, runtime, fragment, scope_callback));
   E_BEGIN_TRY_FINALLY();
     E_TRY_DEF(code_block, compile_expression_with_assembler(runtime, program,
         &assm));
@@ -52,8 +52,9 @@ value_t compile_expression_with_assembler(runtime_t *runtime, value_t program,
 }
 
 value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
-    scope_lookup_callback_t *scope_callback) {
-  RETRY_ONCE_IMPL(runtime, compile_expression(runtime, deref(ast), scope_callback));
+    safe_value_t module, scope_lookup_callback_t *scope_callback) {
+  RETRY_ONCE_IMPL(runtime, compile_expression(runtime, deref(ast), deref(module),
+      scope_callback));
 }
 
 size_t get_parameter_order_index_for_array(value_t tags) {
@@ -152,7 +153,7 @@ value_t literal_ast_validate(value_t self) {
 
 void literal_ast_print_on(value_t value, string_buffer_t *buf,
     print_flags_t flags, size_t depth) {
-  string_buffer_printf(buf, "#<literal ast: ");
+  string_buffer_printf(buf, "#<");
   value_print_inner_on(get_literal_ast_value(value), buf, flags, depth - 1);
   string_buffer_printf(buf, ">");
 }
@@ -226,14 +227,10 @@ FIXED_GET_MODE_IMPL(invocation_ast, vmMutable);
 
 ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, ofArray, Arguments,
     arguments);
-ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, ofMethodspace,
-    Methodspace, methodspace);
 
 value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofInvocationAst, value);
   value_t arguments = get_invocation_ast_arguments(value);
-  value_t methodspace = get_invocation_ast_methodspace(value);
-  CHECK_FAMILY(ofMethodspace, methodspace);
   size_t arg_count = get_array_length(arguments);
   // Build the invocation record and emit the values at the same time.
   TRY_DEF(arg_vector, new_heap_pair_array(assm->runtime, arg_count));
@@ -249,28 +246,25 @@ value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   }
   TRY(co_sort_pair_array(arg_vector));
   TRY_DEF(record, new_heap_invocation_record(assm->runtime, afFreeze, arg_vector));
-  TRY(assembler_emit_invocation(assm, methodspace, record));
+  TRY(assembler_emit_invocation(assm, assm->fragment, record));
   return success();
 }
 
 value_t invocation_ast_validate(value_t value) {
   VALIDATE_FAMILY(ofInvocationAst, value);
   VALIDATE_FAMILY_OPT(ofArray, get_invocation_ast_arguments(value));
-  VALIDATE_FAMILY_OPT(ofMethodspace, get_invocation_ast_methodspace(value));
   return success();
 }
 
 value_t plankton_set_invocation_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, arguments, methodspace);
+  UNPACK_PLANKTON_MAP(contents, arguments);
   set_invocation_ast_arguments(object, arguments);
-  set_invocation_ast_methodspace(object, methodspace);
   return success();
 }
 
 value_t plankton_new_invocation_ast(runtime_t *runtime) {
-  return new_heap_invocation_ast(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
+  return new_heap_invocation_ast(runtime, ROOT(runtime, nothing));
 }
 
 
@@ -500,34 +494,29 @@ NO_BUILTIN_METHODS(namespace_variable_ast);
 TRIVIAL_PRINT_ON_IMPL(NamespaceVariableAst, namespace_variable_ast);
 FIXED_GET_MODE_IMPL(namespace_variable_ast, vmMutable);
 
-ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acNoCheck, 0,
-    Name, name);
 ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acInFamilyOpt,
-    ofNamespace, Namespace, namespace);
+    ofIdentifier, Identifier, identifier);
 
 value_t emit_namespace_variable_ast(value_t self, assembler_t *assm) {
-  assembler_emit_load_global(assm, get_namespace_variable_ast_name(self),
-      get_namespace_variable_ast_namespace(self));
+  assembler_emit_load_global(assm, get_namespace_variable_ast_identifier(self),
+      assm->fragment);
   return success();
 }
 
 value_t namespace_variable_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofNamespaceVariableAst, self);
-  VALIDATE_FAMILY_OPT(ofNamespace, get_namespace_variable_ast_namespace(self));
   return success();
 }
 
 value_t plankton_set_namespace_variable_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, name, namespace);
-  set_namespace_variable_ast_name(object, name);
-  set_namespace_variable_ast_namespace(object, namespace);
+  UNPACK_PLANKTON_MAP(contents, name);
+  set_namespace_variable_ast_identifier(object, name);
   return success();
 }
 
-static value_t new_namespace_variable_ast(runtime_t *runtime) {
-  return new_heap_namespace_variable_ast(runtime, ROOT(runtime, nothing),
-      ROOT(runtime, nothing));
+value_t plankton_new_namespace_variable_ast(runtime_t *runtime) {
+  return new_heap_namespace_variable_ast(runtime, ROOT(runtime, nothing));
 }
 
 
@@ -573,7 +562,24 @@ FIXED_GET_MODE_IMPL(lambda_ast, vmMutable);
 ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, ofMethodAst, Method,
     method);
 
-value_t build_method_signature(runtime_t *runtime,
+static value_t quick_and_dirty_evaluate_syntax(runtime_t *runtime,
+    value_t fragment, value_t value_ast) {
+  switch (get_object_family(value_ast)) {
+    case ofLiteralAst:
+      return get_literal_ast_value(value_ast);
+    case ofNamespaceVariableAst: {
+      value_t ident = get_namespace_variable_ast_identifier(value_ast);
+      value_t module = get_module_fragment_module(fragment);
+      return module_lookup_identifier(runtime, module,
+          get_identifier_stage(ident), get_identifier_path(ident));
+    }
+    default:
+      ERROR("Cannot evaluate guard value %v", value_ast);
+      return new_invalid_input_signal();
+  }
+}
+
+value_t build_method_signature(runtime_t *runtime, value_t fragment,
     reusable_scratch_memory_t *scratch, value_t signature_ast) {
   value_t param_asts = get_signature_ast_parameters(signature_ast);
   size_t param_astc = get_array_length(param_asts);
@@ -608,7 +614,8 @@ value_t build_method_signature(runtime_t *runtime,
       guard = ROOT(runtime, any_guard);
     } else {
       value_t guard_value_ast = get_guard_ast_value(guard_ast);
-      value_t guard_value = get_literal_ast_value(guard_value_ast);
+      TRY_DEF(guard_value, quick_and_dirty_evaluate_syntax(runtime, fragment,
+          guard_value_ast));
       TRY_SET(guard, new_heap_guard(runtime, afFreeze, guard_type,
           guard_value));
     }
@@ -670,7 +677,8 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
 
   // Compile the code.
   value_t body_ast = get_method_ast_body(method_ast);
-  TRY_DEF(result, compile_expression(runtime, body_ast, assm->scope_callback));
+  TRY_DEF(result, compile_expression(runtime, body_ast, assm->fragment,
+      assm->scope_callback));
   assembler_pop_map_scope(assm, &param_scope);
   return result;
 }
@@ -692,12 +700,12 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   value_t body_code = ROOT(runtime, nothing);
   if (assm->scope_callback != scope_lookup_callback_get_bottom())
     TRY_SET(body_code, compile_method_body(assm, method_ast));
-  TRY_DEF(signature, build_method_signature(assm->runtime,
+  TRY_DEF(signature, build_method_signature(assm->runtime, assm->fragment,
       assembler_get_scratch_memory(assm), get_method_ast_signature(method_ast)));
 
   // Build a method space in which to store the method.
   TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
-      ROOT(runtime, nothing), body_code));
+      ROOT(runtime, nothing), body_code, ROOT(runtime, nothing)));
   TRY_DEF(space, new_heap_methodspace(runtime));
   TRY(add_methodspace_method(runtime, space, method));
 
@@ -742,7 +750,6 @@ value_t plankton_new_lambda_ast(runtime_t *runtime) {
 
 GET_FAMILY_PROTOCOL_IMPL(parameter_ast);
 NO_BUILTIN_METHODS(parameter_ast);
-TRIVIAL_PRINT_ON_IMPL(ParameterAst, parameter_ast);
 FIXED_GET_MODE_IMPL(parameter_ast, vmMutable);
 
 ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, ofSymbolAst, Symbol,
@@ -772,12 +779,20 @@ value_t plankton_new_parameter_ast(runtime_t *runtime) {
       ROOT(runtime, nothing), ROOT(runtime, nothing));
 }
 
+void parameter_ast_print_on(value_t self, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
+  CHECK_FAMILY(ofParameterAst, self);
+  value_t guard = get_parameter_ast_guard(self);
+  string_buffer_printf(buf, "#<parameter ast ");
+  value_print_inner_on(guard, buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
 
 // --- G u a r d   a s t ---
 
 GET_FAMILY_PROTOCOL_IMPL(guard_ast);
 NO_BUILTIN_METHODS(guard_ast);
-TRIVIAL_PRINT_ON_IMPL(GuardAst, guard_ast);
 FIXED_GET_MODE_IMPL(guard_ast, vmMutable);
 
 ENUM_ACCESSORS_IMPL(GuardAst, guard_ast, guard_type_t, Type, type);
@@ -811,12 +826,31 @@ value_t plankton_new_guard_ast(runtime_t *runtime) {
   return new_heap_guard_ast(runtime, gtAny, ROOT(runtime, nothing));
 }
 
+void guard_ast_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  CHECK_FAMILY(ofGuardAst, self);
+  switch (get_guard_ast_type(self)) {
+    case gtEq:
+      string_buffer_printf(buf, "eq(");
+      value_print_inner_on(get_guard_ast_value(self), buf, flags, depth - 1);
+      string_buffer_printf(buf, ")");
+      break;
+    case gtIs:
+      string_buffer_printf(buf, "is(");
+      value_print_inner_on(get_guard_ast_value(self), buf, flags, depth - 1);
+      string_buffer_printf(buf, ")");
+      break;
+    case gtAny:
+      string_buffer_printf(buf, "any()");
+      break;
+  }
+}
+
 
 // --- S i g n a t u r e   a s t ---
 
 GET_FAMILY_PROTOCOL_IMPL(signature_ast);
 NO_BUILTIN_METHODS(signature_ast);
-TRIVIAL_PRINT_ON_IMPL(SignatureAst, signature_ast);
 FIXED_GET_MODE_IMPL(signature_ast, vmMutable);
 
 ACCESSORS_IMPL(SignatureAst, signature_ast, acInFamilyOpt, ofArray,
@@ -839,12 +873,23 @@ value_t plankton_new_signature_ast(runtime_t *runtime) {
   return new_heap_signature_ast(runtime, ROOT(runtime, nothing));
 }
 
+void signature_ast_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<signature ast ");
+  value_t params = get_signature_ast_parameters(self);
+  for (size_t i = 0; i < get_array_length(params); i++) {
+    if (i > 0)
+      string_buffer_printf(buf, ", ");
+    value_print_inner_on(get_array_at(params, i), buf, flags, depth - 1);
+  }
+  string_buffer_printf(buf, ">");
+}
+
 
 // --- M e t h o d   a s t ---
 
 GET_FAMILY_PROTOCOL_IMPL(method_ast);
 NO_BUILTIN_METHODS(method_ast);
-TRIVIAL_PRINT_ON_IMPL(MethodAst, method_ast);
 
 ACCESSORS_IMPL(MethodAst, method_ast, acInFamilyOpt, ofSignatureAst, Signature,
     signature);
@@ -869,14 +914,94 @@ value_t plankton_new_method_ast(runtime_t *runtime) {
       ROOT(runtime, nothing));
 }
 
+void method_ast_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<method ast ");
+  value_t signature = get_method_ast_signature(self);
+  value_print_inner_on(signature, buf, flags, depth - 1);
+  string_buffer_printf(buf, " ");
+  value_t body = get_method_ast_body(self);
+  value_print_inner_on(body, buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
+
+// --- N a m e s p a c e   d e c l a r a t i o n   a s t ---
+
+FIXED_GET_MODE_IMPL(namespace_declaration_ast, vmMutable);
+
+ACCESSORS_IMPL(NamespaceDeclarationAst, namespace_declaration_ast,
+    acInFamilyOpt, ofPath, Path, path);
+ACCESSORS_IMPL(NamespaceDeclarationAst, namespace_declaration_ast,
+    acIsSyntaxOpt, 0, Value, value);
+
+value_t namespace_declaration_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofNamespaceDeclarationAst, self);
+  VALIDATE_FAMILY_OPT(ofPath, get_namespace_declaration_ast_path(self));
+  return success();
+}
+
+value_t plankton_set_namespace_declaration_ast_contents(value_t object,
+    runtime_t *runtime, value_t contents) {
+  UNPACK_PLANKTON_MAP(contents, path, value);
+  set_namespace_declaration_ast_path(object, path);
+  set_namespace_declaration_ast_value(object, value);
+  return success();
+}
+
+value_t plankton_new_namespace_declaration_ast(runtime_t *runtime) {
+  return new_heap_namespace_declaration_ast(runtime, ROOT(runtime, nothing),
+      ROOT(runtime, nothing));
+}
+
+void namespace_declaration_ast_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
+  string_buffer_printf(buf, "#<def ");
+  value_print_inner_on(get_namespace_declaration_ast_path(value), buf, flags, depth - 1);
+  string_buffer_printf(buf, " := ");
+  value_print_inner_on(get_namespace_declaration_ast_value(value), buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
+
+// --- M e t h o d   d e c l a r a t i o n   a s t ---
+
+FIXED_GET_MODE_IMPL(method_declaration_ast, vmMutable);
+
+ACCESSORS_IMPL(MethodDeclarationAst, method_declaration_ast,
+    acInFamilyOpt, ofMethodAst, Method, method);
+
+value_t method_declaration_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofMethodDeclarationAst, self);
+  VALIDATE_FAMILY_OPT(ofMethodAst, get_method_declaration_ast_method(self));
+  return success();
+}
+
+value_t plankton_set_method_declaration_ast_contents(value_t object,
+    runtime_t *runtime, value_t contents) {
+  UNPACK_PLANKTON_MAP(contents, method);
+  set_method_declaration_ast_method(object, method);
+  return success();
+}
+
+value_t plankton_new_method_declaration_ast(runtime_t *runtime) {
+  return new_heap_method_declaration_ast(runtime, ROOT(runtime, nothing));
+}
+
+void method_declaration_ast_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
+  string_buffer_printf(buf, "#<def ");
+  value_print_inner_on(get_method_declaration_ast_method(value), buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
 
 // --- P r o g r a m   a s t ---
 
-TRIVIAL_PRINT_ON_IMPL(ProgramAst, program_ast);
 FIXED_GET_MODE_IMPL(program_ast, vmMutable);
 
 ACCESSORS_IMPL(ProgramAst, program_ast, acIsSyntaxOpt, 0, EntryPoint, entry_point);
-ACCESSORS_IMPL(ProgramAst, program_ast, acNoCheck, 0, Fragment, fragment);
+ACCESSORS_IMPL(ProgramAst, program_ast, acNoCheck, 0, Module, module);
 
 value_t program_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofProgramAst, self);
@@ -885,15 +1010,24 @@ value_t program_ast_validate(value_t self) {
 
 value_t plankton_set_program_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, entry_point, fragment);
+  UNPACK_PLANKTON_MAP(contents, entry_point, module);
   set_program_ast_entry_point(object, entry_point);
-  set_program_ast_fragment(object, fragment);
+  set_program_ast_module(object, module);
   return success();
 }
 
 value_t plankton_new_program_ast(runtime_t *runtime) {
   return new_heap_program_ast(runtime, ROOT(runtime, nothing),
       ROOT(runtime, nothing));
+}
+
+void program_ast_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
+  string_buffer_printf(buf, "#<program ast: ");
+  value_print_inner_on(get_program_ast_entry_point(value), buf, flags, depth - 1);
+  string_buffer_printf(buf, " ");
+  value_print_inner_on(get_program_ast_module(value), buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
 }
 
 
@@ -932,7 +1066,9 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "LocalDeclaration", plankton_new_local_declaration_ast, runtime));
   TRY(add_plankton_factory(map, ast, "LocalVariable", plankton_new_local_variable_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Method", plankton_new_method_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "NamespaceVariable", new_namespace_variable_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "MethodDeclaration", plankton_new_method_declaration_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "NamespaceDeclaration", plankton_new_namespace_declaration_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "NamespaceVariable", plankton_new_namespace_variable_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Parameter", plankton_new_parameter_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Program", plankton_new_program_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Sequence", plankton_new_sequence_ast, runtime));
