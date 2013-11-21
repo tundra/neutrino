@@ -11,15 +11,15 @@ TEST(safe, simple_safe_value) {
   CREATE_RUNTIME();
 
   value_t array_before = new_heap_array(runtime, 2);
-  set_array_at(array_before, 0, runtime_bool(runtime, true));
-  set_array_at(array_before, 1, runtime_bool(runtime, false));
+  set_array_at(array_before, 0, yes());
+  set_array_at(array_before, 1, no());
   safe_value_t s_array = runtime_protect_value(runtime, array_before);
   ASSERT_SAME(array_before, deref(s_array));
   ASSERT_SUCCESS(runtime_garbage_collect(runtime));
   value_t array_after = deref(s_array);
   ASSERT_NSAME(array_before, array_after);
-  ASSERT_VALEQ(runtime_bool(runtime, true), get_array_at(array_after, 0));
-  ASSERT_VALEQ(runtime_bool(runtime, false), get_array_at(array_after, 1));
+  ASSERT_VALEQ(yes(), get_array_at(array_after, 0));
+  ASSERT_VALEQ(no(), get_array_at(array_after, 1));
 
   dispose_safe_value(runtime, s_array);
 

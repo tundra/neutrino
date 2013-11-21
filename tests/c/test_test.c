@@ -10,8 +10,8 @@ TEST(test, variant) {
 
   ASSERT_VALEQ(new_integer(1), C(vInt(1)));
   ASSERT_VALEQ(new_integer(-1), C(vInt(-1)));
-  ASSERT_VALEQ(runtime_bool(runtime, true), C(vBool(true)));
-  ASSERT_VALEQ(runtime_bool(runtime, false), C(vBool(false)));
+  ASSERT_VALEQ(yes(), C(vBool(true)));
+  ASSERT_VALEQ(no(), C(vBool(false)));
   ASSERT_VALEQ(null(), C(vNull()));
 
   string_t str = STR("blahblahblah");

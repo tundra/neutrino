@@ -169,33 +169,6 @@ static value_t whatever() {
   return new_integer(1);
 }
 
-// Creates an internal boolean with the given value. Note that this is purely
-// for runtime internal use and does not yield the true/false boolean values
-// used by the surface language.
-static value_t to_internal_boolean(bool value) {
-  return new_integer(value);
-}
-
-// Returns a non-signal value that can be used to signify "true". Note that this
-// is purely for runtime internal use and not the true boolean value used by the
-// surface language.
-static value_t internal_true_value() {
-  return to_internal_boolean(true);
-}
-
-// Returns a non-signal value that can be used to signify "false". Note that
-// this is purely for runtime internal use and not the false boolean value used
-// by the surface language.
-static value_t internal_false_value() {
-  return to_internal_boolean(false);
-}
-
-// Is the given value the runtime internal true value. This does not identify
-// the surface language boolean true value, this is for internal use.
-static bool is_internal_true_value(value_t value) {
-  return (value.as_unknown.domain == vdInteger) && !!value.as_integer.value;
-}
-
 
 // --- M o v e d   o b j e c t ---
 
@@ -249,7 +222,7 @@ static value_t new_moved_object(value_t target) {
 //   - Ow: do objects of this family use some other objects in their
 //       implementation that they own?
 //
-// CamelName            underscore_name                 Cm Id Pt Sr Nl Fu Em Md Ow
+// CamelName                 underscore_name            Cm Id Pt Sr Nl Fu Em Md Ow
 
 // Enumerates the special species, the ones that require special handling during
 // startup.
@@ -264,7 +237,6 @@ static value_t new_moved_object(value_t target) {
   F(ArrayAst,                array_ast,                 _, _, X, X, _, _, X, _, _)\
   F(ArrayBuffer,             array_buffer,              _, _, _, X, _, _, _, X, X)\
   F(Blob,                    blob,                      _, _, _, X, X, _, _, _, _)\
-  F(Boolean,                 boolean,                   X, _, _, X, _, _, _, _, _)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X)\
   F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _)\
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _)\
@@ -461,8 +433,9 @@ ACCESSORS_DECL(object, header);
 //   - Cm: do the values support ordered comparison?
 //   - Sr: is this type exposed to the surface language?
 //
-// CamelName            underscore_name                 Cm Sr
+//  CamelName                underscore_name            Cm Sr
 #define ENUM_CUSTOM_TAGGED_PHYLUMS(F)                                          \
+  F(Boolean,                 boolean,                   X, X)                  \
   F(Nothing,                 nothing,                   _, _)                  \
   F(Null,                    null,                      _, X)                  \
   F(StageOffset,             stage_offset,              X, _)
@@ -915,23 +888,6 @@ bool id_hash_map_iter_advance(id_hash_map_iter_t *iter);
 // out parameters. Fails if the last advance call did not return true.
 void id_hash_map_iter_get_current(id_hash_map_iter_t *iter, value_t *key_out,
     value_t *value_out);
-
-
-// --- N u l l ---
-
-static const size_t kNullSize = OBJECT_SIZE(0);
-
-
-// --- B o o l e a n ---
-
-static const size_t kBooleanSize = OBJECT_SIZE(1);
-static const size_t kBooleanValueOffset = OBJECT_FIELD_OFFSET(0);
-
-// Sets whether the given bool represents true or false.
-void set_boolean_value(value_t value, bool truth);
-
-// Returns whether the given bool is true.
-bool get_boolean_value(value_t value);
 
 
 // --- K e y ---

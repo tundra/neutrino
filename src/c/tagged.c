@@ -46,3 +46,18 @@ GET_FAMILY_PROTOCOL_IMPL(null);
 void null_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
   string_buffer_printf(buf, "null");
 }
+
+
+// --- B o o l e a n ---
+
+GET_FAMILY_PROTOCOL_IMPL(boolean);
+
+void boolean_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
+  string_buffer_printf(buf, get_boolean_value(value) ? "true" : "false");
+}
+
+value_t boolean_ordering_compare(value_t a, value_t b) {
+  CHECK_PHYLUM(tpBoolean, a);
+  CHECK_PHYLUM(tpBoolean, b);
+  return int_to_ordering(get_boolean_value(a) - get_boolean_value(b));
+}

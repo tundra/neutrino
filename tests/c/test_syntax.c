@@ -11,7 +11,7 @@
 TEST(syntax, emitting) {
   CREATE_RUNTIME();
 
-  value_t ast = new_heap_literal_ast(runtime, runtime_bool(runtime, true));
+  value_t ast = new_heap_literal_ast(runtime, yes());
   assembler_t assm;
   ASSERT_SUCCESS(assembler_init(&assm, runtime, nothing(),
       scope_lookup_callback_get_bottom()));
@@ -20,7 +20,7 @@ TEST(syntax, emitting) {
   value_t code = assembler_flush(&assm);
   ASSERT_SUCCESS(code);
   value_t result = run_code_block_until_signal(runtime, code);
-  ASSERT_VALEQ(runtime_bool(runtime, true), result);
+  ASSERT_VALEQ(yes(), result);
   assembler_dispose(&assm);
 
   DISPOSE_RUNTIME();

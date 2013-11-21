@@ -139,7 +139,7 @@ TEST(utils, string_buffer_value_printf) {
   CHECK_PRINTF("--- 0 ---", "--- %v ---", new_integer(0));
   CHECK_PRINTF("--- %<signal: Wat(dt@0)> ---", "--- %v ---", new_signal(scWat));
   CHECK_PRINTF("--- null ---", "--- %v ---", null());
-  CHECK_PRINTF("--- true ---", "--- %v ---", ROOT(runtime, thrue));
+  CHECK_PRINTF("--- true ---", "--- %v ---", yes());
   CHECK_PRINTF("--- [] ---", "--- %v ---", ROOT(runtime, empty_array));
 
   value_t cycle_array = new_heap_array(runtime, 1);

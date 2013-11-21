@@ -197,7 +197,7 @@ value_t value_transient_identity_hash_cycle_protect(value_t value,
 
 static value_t default_object_identity_compare(value_t a, value_t b,
     cycle_detector_t *detector) {
-  return to_internal_boolean(is_same_value(a, b));
+  return boolean(is_same_value(a, b));
 }
 
 static value_t object_identity_compare(value_t a, value_t b,
@@ -206,11 +206,11 @@ static value_t object_identity_compare(value_t a, value_t b,
   CHECK_DOMAIN(vdObject, b);
   // Fast case when a and b are the same object.
   if (is_same_value(a, b))
-    return internal_true_value();
+    return yes();
   object_family_t a_family = get_object_family(a);
   object_family_t b_family = get_object_family(b);
   if (a_family != b_family)
-    return internal_false_value();
+    return no();
   family_behavior_t *behavior = get_object_family_behavior(a);
   return (behavior->identity_compare)(a, b, detector);
 }
@@ -219,7 +219,7 @@ bool value_identity_compare(value_t a, value_t b) {
   cycle_detector_t detector;
   cycle_detector_init_bottom(&detector);
   value_t protected = value_identity_compare_cycle_protect(a, b, &detector);
-  return is_internal_true_value(protected);
+  return is_signal(scCircular, protected) ? false : get_boolean_value(protected);
 }
 
 value_t value_identity_compare_cycle_protect(value_t a, value_t b,
@@ -229,16 +229,16 @@ value_t value_identity_compare_cycle_protect(value_t a, value_t b,
   value_domain_t a_domain = get_value_domain(a);
   value_domain_t b_domain = get_value_domain(b);
   if (a_domain != b_domain)
-    return internal_false_value();
+    return no();
   // Then dispatch to the domain equals functions.
   switch (a_domain) {
     case vdInteger:
     case vdCustomTagged:
-      return to_internal_boolean(is_same_value(a, b));
+      return boolean(is_same_value(a, b));
     case vdObject:
       return object_identity_compare(a, b, detector);
     default:
-      return internal_false_value();
+      return no();
   }
 }
 
