@@ -69,7 +69,7 @@ static void test_import_map(runtime_t *runtime, variant_t expected,
     variant_t modules) {
   binding_context_t context;
   binding_context_init(&context, runtime);
-  value_t deps = build_fragment_import_map(&context, C(modules));
+  value_t deps = build_fragment_entry_map(&context, C(modules));
   // Flatten the map so we can compare it deterministically.
   value_t flat_deps = sort_and_flatten_map(runtime, deps);
   for (size_t mi = 0; mi < get_pair_array_length(flat_deps); mi++) {
@@ -172,8 +172,8 @@ static void test_load_order(runtime_t *runtime, variant_t expected,
     variant_t modules) {
   binding_context_t context;
   binding_context_init(&context, runtime);
-  build_fragment_import_map(&context, C(modules));
-  value_t schedule = build_bind_schedule(&context);
+  build_fragment_entry_map(&context, C(modules));
+  value_t schedule = build_binding_schedule(&context);
   ASSERT_VAREQ(expected, schedule);
 }
 

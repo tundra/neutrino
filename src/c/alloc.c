@@ -139,6 +139,16 @@ value_t new_heap_pair(runtime_t *runtime, value_t e0, value_t e1) {
   return result;
 }
 
+value_t new_heap_triple(runtime_t *runtime, value_t e0, value_t e1,
+    value_t e2) {
+  TRY_DEF(result, new_heap_array(runtime, 3));
+  set_array_at(result, 0, e0);
+  set_array_at(result, 1, e1);
+  set_array_at(result, 2, e2);
+  TRY(ensure_frozen(runtime, result));
+  return result;
+}
+
 value_t new_heap_pair_array(runtime_t *runtime, size_t length) {
   return new_heap_array(runtime, length << 1);
 }
@@ -499,7 +509,7 @@ value_t new_heap_methodspace(runtime_t *runtime) {
 }
 
 value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signature,
-    value_t syntax, value_t code, value_t module) {
+    value_t syntax, value_t code, value_t fragment) {
   CHECK_FAMILY_OPT(ofSignature, signature);
   CHECK_FAMILY_OPT(ofCodeBlock, code);
   size_t size = kMethodSize;
@@ -508,7 +518,7 @@ value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signatu
   set_method_signature(result, signature);
   set_method_code(result, code);
   set_method_syntax(result, syntax);
-  set_method_module_fragment(result, module);
+  set_method_module_fragment(result, fragment);
   TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }

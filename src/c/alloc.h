@@ -75,6 +75,9 @@ value_t new_heap_array(runtime_t *runtime, size_t length);
 // Creates a new 2-element tuple. Currently backed by an array.
 value_t new_heap_pair(runtime_t *runtime, value_t e0, value_t e1);
 
+// Creates a new 3-element tuple. Currently backed by an array.
+value_t new_heap_triple(runtime_t *runtime, value_t e0, value_t e1, value_t e2);
+
 // Allocates a new array that is going to be used as a pair array containing
 // the given number of pairs.
 value_t new_heap_pair_array(runtime_t *runtime, size_t length);

@@ -13,7 +13,6 @@ from token import Token
 
 # Neutrino parser.
 class Parser(object):
-  __metaclass__ = ABCMeta
 
   _SAUSAGES = data.Operation.call()
 
@@ -365,11 +364,7 @@ class Parser(object):
     ident = self.expect_type(Token.IDENTIFIER)
     stage_index = ident.stage
     stage = self.unit.get_or_create_stage(stage_index)
-    return self.new_variable(ident)
-
-  @abstractmethod
-  def new_variable(self, ident):
-    pass
+    return ast.Variable(ident)
 
   # <atomic expression>
   #   -> <literal>
@@ -475,32 +470,6 @@ class Parser(object):
   # Creates a new syntax error at the current token.
   def new_syntax_error(self):
     return SyntaxError(self.current())
-
-
-# Parser that builds old-style syntax trees.
-class OldParser(Parser):
-
-  def __init__(self, tokens, module_name=None, unit=None):
-    super(OldParser, self).__init__(tokens)
-    if unit is None:
-      self.unit = ast.Unit(module_name)
-    else:
-      self.unit = unit
-    self.present = self.unit.get_present()
-
-  def new_variable(self, ident):
-    variable = ast.Variable(ident=ident)
-    if ident.stage < 0:
-      return ast.Quote(ident.stage, variable)
-    else:
-      return variable
-
-
-# Parser that builds new-style syntax trees.
-class NewParser(Parser):
-
-  def new_variable(self, ident):
-    return ast.Variable(ident=ident)
 
 
 # Exception signalling a syntax error.

@@ -1126,6 +1126,9 @@ value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage
 // stage. If there is no such fragment a NotFound signal is returned.
 value_t get_module_fragment_at(value_t self, value_t stage);
 
+// Add a module fragment to the list of fragments held by this module.
+value_t add_module_fragment(runtime_t *runtime, value_t self, value_t fragment);
+
 // Returns the fragment in the given module that comes immediately before the
 // given stage.
 value_t get_module_fragment_before(value_t self, value_t stage);

@@ -1637,6 +1637,11 @@ value_t get_module_fragment_at(value_t self, value_t stage) {
   return new_not_found_signal();
 }
 
+value_t add_module_fragment(runtime_t *runtime, value_t self, value_t fragment) {
+  value_t fragments = get_module_fragments(self);
+  return add_to_array_buffer(runtime, fragments, fragment);
+}
+
 value_t get_module_fragment_before(value_t self, value_t stage) {
   int32_t limit = get_integer_value(stage);
   value_t fragments = get_module_fragments(self);

@@ -495,10 +495,13 @@ static value_t build_argument_map(runtime_t *runtime, size_t offsetc, size_t *of
   return get_argument_map_trie_value(current_node);
 }
 
-// XXX
-value_t lookup_fragment_method(runtime_t *runtime, value_t fragment,
-    value_t record, frame_t *frame, value_t *arg_map_out) {
-  // Input validation.
+typedef value_t (generic_lookup_callback_t)(runtime_t *runtime,
+    value_t argument, value_t record, frame_t *frame,
+    methodspace_lookup_state_t *state);
+
+static value_t generic_lookup(runtime_t *runtime, value_t argument,
+    value_t record, frame_t *frame, value_t *arg_map_out,
+    generic_lookup_callback_t callback) {
   size_t arg_count = get_invocation_record_argument_count(record);
   CHECK_REL("too many arguments", arg_count, <=, kSmallLookupLimit);
   // Initialize the lookup state using stack-allocated space.
@@ -515,14 +518,7 @@ value_t lookup_fragment_method(runtime_t *runtime, value_t fragment,
   state.max_score = max_score;
   state.result_offsets = offsets_one;
   state.scratch_offsets = offsets_two;
-  // Perform the lookup.
-  value_t module = get_module_fragment_module(fragment);
-  while (!is_signal(scNotFound, fragment)) {
-    value_t methodspace = get_module_fragment_methodspace(fragment);
-    TRY(lookup_methodspace_transitive_method(&state, runtime, methodspace, record, frame));
-    value_t stage = get_module_fragment_stage(fragment);
-    fragment = get_module_fragment_before(module, stage);
-  }
+  TRY(callback(runtime, argument, record, frame, &state));
   // Post-process the result.
   if (!in_domain(vdSignal, state.result)) {
     // We have a result so we need to build an argument map that represents the
@@ -532,35 +528,35 @@ value_t lookup_fragment_method(runtime_t *runtime, value_t fragment,
   return state.result;
 }
 
-// XXX
+static value_t do_fragment_method_lookup(runtime_t *runtime, value_t fragment,
+    value_t record, frame_t *frame, methodspace_lookup_state_t *state) {
+  value_t module = get_module_fragment_module(fragment);
+  while (!is_signal(scNotFound, fragment)) {
+    value_t methodspace = get_module_fragment_methodspace(fragment);
+    TRY(lookup_methodspace_transitive_method(state, runtime, methodspace, record,
+        frame));
+    value_t stage = get_module_fragment_stage(fragment);
+    fragment = get_module_fragment_before(module, stage);
+  }
+  return success();
+}
+
+value_t lookup_fragment_method(runtime_t *runtime, value_t fragment,
+    value_t record, frame_t *frame, value_t *arg_map_out) {
+  return generic_lookup(runtime, fragment, record, frame, arg_map_out,
+      do_fragment_method_lookup);
+}
+
+static value_t do_methodspace_method_lookup(runtime_t *runtime, value_t methodspace,
+    value_t record, frame_t *frame, methodspace_lookup_state_t *state) {
+  return lookup_methodspace_transitive_method(state, runtime, methodspace,
+      record, frame);
+}
+
 value_t lookup_methodspace_method(runtime_t *runtime, value_t methodspace,
     value_t record, frame_t *frame, value_t *arg_map_out) {
-  // Input validation.
-  size_t arg_count = get_invocation_record_argument_count(record);
-  CHECK_REL("too many arguments", arg_count, <=, kSmallLookupLimit);
-  // Initialize the lookup state using stack-allocated space.
-  score_t max_score[kSmallLookupLimit];
-  // The following code will assume the max score has a meaningful value so
-  // reset it explicitly.
-  for (size_t i = 0; i < arg_count; i++)
-    max_score[i] = gsNoMatch;
-  size_t offsets_one[kSmallLookupLimit];
-  size_t offsets_two[kSmallLookupLimit];
-  methodspace_lookup_state_t state;
-  state.result = new_lookup_error_signal(lcNoMatch);
-  state.max_is_synthetic = false;
-  state.max_score = max_score;
-  state.result_offsets = offsets_one;
-  state.scratch_offsets = offsets_two;
-  // Perform the lookup.
-  TRY(lookup_methodspace_transitive_method(&state, runtime, methodspace, record, frame));
-  // Post-process the result.
-  if (!in_domain(vdSignal, state.result)) {
-    // We have a result so we need to build an argument map that represents the
-    // result's offsets vector.
-    TRY_SET(*arg_map_out, build_argument_map(runtime, arg_count, state.result_offsets));
-  }
-  return state.result;
+  return generic_lookup(runtime, methodspace, record, frame, arg_map_out,
+      do_methodspace_method_lookup);
 }
 
 value_t plankton_new_methodspace(runtime_t *runtime) {

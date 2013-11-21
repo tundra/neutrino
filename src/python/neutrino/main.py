@@ -106,7 +106,7 @@ class Main(object):
       with open(arg, "rt") as stream:
         contents = stream.read()
       tokens = token.tokenize(contents)
-      unit = parser.NewParser(tokens, module_name).parse_program()
+      unit = parser.Parser(tokens, module_name).parse_program()
       self.units[module_name] = unit
     # Then schedule them to be compiled.
     for unit in self.units.values():
@@ -115,19 +115,19 @@ class Main(object):
   # Processes any --expression arguments.
   def schedule_expressions(self):
     self.run_parse_input(self.flags.expression,
-        lambda tokens: parser.NewParser(tokens, "expression").parse_expression_program())
+        lambda tokens: parser.Parser(tokens, "expression").parse_expression_program())
 
   # Processes any --program arguments.
   def schedule_programs(self):
     self.run_parse_input(self.flags.program,
-        lambda tokens: parser.NewParser(tokens, "program").parse_program())
+        lambda tokens: parser.Parser(tokens, "program").parse_program())
 
   # Processes any --file arguments.
   def schedule_files(self):
     for filename in self.flags.file:
       source = open(filename, "rt").read()
       tokens = token.tokenize(source)
-      unit = parser.NewParser(tokens, filename).parse_program()
+      unit = parser.Parser(tokens, filename).parse_program()
       self.schedule_for_compile(unit)
       self.schedule_for_output(unit)
 
@@ -141,7 +141,7 @@ class Main(object):
       (module_name, ext) = os.path.splitext(module_basename)
       module_source = open(module_file, "rt").read()
       tokens = token.tokenize(module_source)
-      unit = parser.NewParser(tokens, module_name).parse_program()
+      unit = parser.Parser(tokens, module_name).parse_program()
       analysis.scope_analyze(unit)
       module = unit.as_unbound_module()
       library.add_module(module.path, module)

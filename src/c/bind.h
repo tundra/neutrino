@@ -13,11 +13,11 @@
 
 // Encapsulates the data maintained during the binding process.
 typedef struct {
-  // Map from module paths to bound modules.
+  // Map from paths -> bound modules.
   value_t bound_module_map;
-  // Map from paths -> stages -> entries where each entry describes the
-  // corresponding fragment.
-  value_t module_map;
+  // Map from paths -> stages -> entries where each entry describes a
+  // corresponding fragment to be bound.
+  value_t fragment_entry_map;
   // The runtime.
   runtime_t *runtime;
 } binding_context_t;
@@ -29,21 +29,14 @@ void binding_context_init(binding_context_t *context, runtime_t *runtime);
 // dependencies from the runtime's module loader as required.
 value_t build_bound_module(runtime_t *runtime, value_t unbound_module);
 
-// Given an array buffer of modules, returns a map describing the dependencies
-// between the fragments. The keys of the map are the fragments' identifiers,
-// the values are array buffers of (stage, path) pairs that indicate which
-// other fragments the fragment depends on.
-//
-// The map may contain entries for fragments that don't exist. For instance,
-// if stage 0 of module A imports B which has stages 0 and -1 there will be
-// a dependency from stage -1 of A to -1 of B, even though -1 of A doesn't
-// exist.
-value_t build_fragment_import_map(binding_context_t *context, value_t modules);
+// Given an array buffer of modules, initialized the fragment_entry_map of
+// the context. See bind.md for details.
+value_t build_fragment_entry_map(binding_context_t *context, value_t modules);
 
-// Given a fragment dependency map and an array buffer of modules, returns an
-// array buffer of (path, stage) pairs that specify the load order to apply
-// to satify the dependencies.
-value_t build_bind_schedule(binding_context_t *context);
+// Given a context whose fragment entry map has been computed, returns an
+// array buffer of identifiers that specify the load order to apply to satisfy
+// the dependencies.
+value_t build_binding_schedule(binding_context_t *context);
 
 
 // --- M o d u l e   L o a d e r ---
@@ -87,10 +80,6 @@ ACCESSORS_DECL(unbound_module, path);
 
 // The fragments that make up this module
 ACCESSORS_DECL(unbound_module, fragments);
-
-// Returns the most recent fragment before the given stage, if that is well-
-// defined, otherwise a NotFound signal.
-value_t get_unbound_module_fragment_before(value_t self, value_t stage);
 
 
 // --- U n b o u n d   m o d u l e   f r a g m e n t ---
