@@ -67,7 +67,6 @@
   F(empty_path)                                                                \
   F(fahlse)                                                                    \
   F(integer_protocol)                                                          \
-  F(null)                                                                      \
   F(op_call)                                                                   \
   F(plankton_environment)                                                      \
   F(selector_key)                                                              \
@@ -85,6 +84,7 @@ typedef enum {
   ENUM_ROOT_SINGLETONS(__EMIT_SINGLETON_ENUM__)
 #undef __EMIT_SINGLETON_ENUM__
 
+  // Family-related roots.
   // Any arguments to selector macros must themselves be macros because
   // generating an enum value uses a comma which confuses the macro call.
 #define __EMIT_FAMILY_PROTOCOL__(family) , rk_##family##_protocol
@@ -104,6 +104,16 @@ typedef enum {
 #undef __EMIT_MODAL_SPECIES__
 #undef __EMIT_COMPACT_SPECIES__
 #undef __EMIT_FAMILY_PROTOCOL__
+
+  // Phylum-related roots.
+#define __EMIT_PHYLUM_PROTOCOL__(phylum) , rk_##phylum##_protocol
+#define __EMIT_PER_PHYLUM_ENUMS__(Phylum, phylum, CM, SR)                      \
+  SR(                                                                          \
+    __EMIT_PHYLUM_PROTOCOL__(phylum),                                          \
+    )
+  ENUM_CUSTOM_TAGGED_PHYLUMS(__EMIT_PER_PHYLUM_ENUMS__)
+#undef __EMIT_PER_PHYLUM_ENUMS__
+#undef __EMIT_PHYLUM_PROTOCOL__
 
   // The string table
 #define __EMIT_STRING_TABLE_ENUM__(name, value) , rk_string_table_##name
@@ -256,7 +266,7 @@ value_t roots_init(value_t roots, runtime_t *runtime);
 #define RAW_ROOT(roots, name) (*access_roots_entry_at((roots), rk_##name))
 
 // Macro for accessing a named root in the given runtime. For instance, to get
-// null you would do ROOT(runtime, null). This can be used as an lval.
+// null you would do null(). This can be used as an lval.
 #define ROOT(runtime, name) RAW_ROOT((runtime)->roots, name)
 
 // Accesses a string table string directly from the roots struct. Usually you'll

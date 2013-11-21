@@ -262,10 +262,13 @@ ENUM_SPECIES_DIVISIONS(DECLARE_DIVISION_BEHAVIOR_IMPLS)
 
 // Declare the functions that implement the behaviors too, that way they can be
 // implemented wherever.
-#define __DECLARE_PHYLUM_FUNCTIONS__(Phylum, phylum, CM)                       \
+#define __DECLARE_PHYLUM_FUNCTIONS__(Phylum, phylum, CM, SR)                   \
 void phylum##_print_on(value_t value, string_buffer_t *buf, print_flags_t flags);\
 CM(                                                                            \
   value_t phylum##_ordering_compare(value_t a, value_t b);,                    \
+  )                                                                            \
+SR(                                                                            \
+  value_t get_##phylum##_protocol(value_t value, runtime_t *runtime);,         \
   )
 ENUM_CUSTOM_TAGGED_PHYLUMS(__DECLARE_PHYLUM_FUNCTIONS__)
 #undef __DECLARE_PHYLUM_FUNCTIONS__
@@ -281,10 +284,12 @@ typedef struct {
   // value supports it. If this phylum doesn't support comparison this field
   // is NULL.
   value_t (*ordering_compare)(value_t a, value_t b);
+  // Returns the protocol object for the given object.
+  value_t (*get_protocol)(value_t value, runtime_t *runtime);
 } phylum_behavior_t;
 
 // Declare the division behavior structs.
-#define DECLARE_PHYLUM_BEHAVIOR(Phylum, phylum, CM)                            \
+#define DECLARE_PHYLUM_BEHAVIOR(Phylum, phylum, CM, SR)                        \
 extern phylum_behavior_t k##Phylum##PhylumBehavior;
 ENUM_CUSTOM_TAGGED_PHYLUMS(DECLARE_PHYLUM_BEHAVIOR)
 #undef DECLARE_PHYLUM_BEHAVIOR
@@ -292,6 +297,9 @@ ENUM_CUSTOM_TAGGED_PHYLUMS(DECLARE_PHYLUM_BEHAVIOR)
 // Returns the object that defined the behavior of values within the given
 // phylum.
 phylum_behavior_t *get_custom_tagged_phylum_behavior(custom_tagged_phylum_t phylum);
+
+// Returns the behavior struct for the given value which must be custom tagged.
+phylum_behavior_t *get_custom_tagged_behavior(value_t value);
 
 
 #endif // _BEHAVIOR

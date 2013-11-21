@@ -22,11 +22,6 @@ static inline bool in_family(object_family_t family, value_t value) {
   return in_domain(vdObject, value) && (get_object_family(value) == family);
 }
 
-// Returns true iff the given value is some runtime's null.
-static inline bool is_null(value_t value) {
-  return in_family(ofNull, value);
-}
-
 // Returns true iff the given value is either nothing or an object within the
 // given family.
 static inline bool in_family_opt(object_family_t family, value_t value) {

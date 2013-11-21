@@ -284,7 +284,7 @@ value_t expand_variant_to_bool(runtime_t *runtime, variant_value_t *value) {
 }
 
 value_t expand_variant_to_null(runtime_t *runtime, variant_value_t *value) {
-  return ROOT(runtime, null);
+  return null();
 }
 
 value_t expand_variant_to_value(runtime_t *runtime, variant_value_t *value) {

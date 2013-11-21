@@ -194,8 +194,6 @@ static value_t instance_serialize(value_t value, serialize_state_t *state) {
 static value_t object_serialize(value_t value, serialize_state_t *state) {
   CHECK_DOMAIN(vdObject, value);
   switch (get_object_family(value)) {
-    case ofNull:
-      return singleton_serialize(pNull, state->buf);
     case ofBoolean:
       return singleton_serialize(get_boolean_value(value) ? pTrue : pFalse, state->buf);
     case ofArray:
@@ -211,6 +209,16 @@ static value_t object_serialize(value_t value, serialize_state_t *state) {
   }
 }
 
+static value_t custom_tagged_serialize(value_t value, serialize_state_t *state) {
+  CHECK_DOMAIN(vdCustomTagged, value);
+  switch (get_custom_tagged_phylum(value)) {
+    case tpNull:
+      return singleton_serialize(pNull, state->buf);
+    default:
+      return new_invalid_input_signal();
+  }
+}
+
 static value_t value_serialize(value_t data, serialize_state_t *state) {
   value_domain_t domain = get_value_domain(data);
   switch (domain) {
@@ -218,6 +226,8 @@ static value_t value_serialize(value_t data, serialize_state_t *state) {
       return integer_serialize(data, state->buf);
     case vdObject:
       return object_serialize(data, state);
+    case vdCustomTagged:
+      return custom_tagged_serialize(data, state);
     default:
       UNREACHABLE("value serialize");
       return new_unsupported_behavior_signal(domain, __ofUnknown__,
@@ -385,7 +395,7 @@ static value_t value_deserialize(deserialize_state_t *state) {
     case pInt32:
       return int32_deserialize(state->in);
     case pNull:
-      return ROOT(state->runtime, null);
+      return null();
     case pTrue:
       return runtime_bool(state->runtime, true);
     case pFalse:

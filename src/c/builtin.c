@@ -30,7 +30,7 @@ value_t builtin_operation_to_value(runtime_t *runtime, builtin_operation_t
     *operation) {
   value_t name;
   if (operation->value == NULL) {
-    name = ROOT(runtime, null);
+    name = null();
   } else {
     string_t name_str;
     string_init(&name_str, operation->value);

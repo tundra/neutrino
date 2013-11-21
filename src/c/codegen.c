@@ -244,7 +244,7 @@ value_t assembler_flush(assembler_t *assm) {
     id_hash_map_iter_get_current(&iter, &key, &value);
     size_t index = get_integer_value(value);
     // Check that the entry hasn't been set already.
-    CHECK_FAMILY(ofNull, get_array_at(value_pool, index));
+    CHECK_PHYLUM(tpNull, get_array_at(value_pool, index));
     set_array_at(value_pool, index, key);
     entries_seen++;
   }

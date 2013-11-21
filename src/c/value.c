@@ -52,7 +52,7 @@ const char *get_species_division_name(species_division_t division) {
 
 const char *get_custom_tagged_phylum_name(custom_tagged_phylum_t phylum) {
   switch (phylum) {
-#define __GEN_CASE__(Name, name, CM) case tp##Name: return #Name;
+#define __GEN_CASE__(Name, name, CM, SR) case tp##Name: return #Name;
     ENUM_CUSTOM_TAGGED_PHYLUMS(__GEN_CASE__)
 #undef __GEN_CASE__
     default:
@@ -960,10 +960,9 @@ static void set_id_hash_map_entry(value_t *entry, value_t key, size_t hash,
 // Sets the full contents of a map entry such that it can be recognized as
 // deleted.
 static void delete_id_hash_map_entry(runtime_t *runtime, value_t *entry) {
-  value_t null = ROOT(runtime, null);
   entry[kIdHashMapEntryKeyOffset] = nothing();
-  entry[kIdHashMapEntryHashOffset] = null;
-  entry[kIdHashMapEntryValueOffset] = null;
+  entry[kIdHashMapEntryHashOffset] = null();
+  entry[kIdHashMapEntryValueOffset] = null();
 }
 
 // Identifies if and how a new hash map entry was allocated.
@@ -1135,10 +1134,9 @@ void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_object,
   value_t *old_entries = get_array_elements_unchecked(old_entry_array);
   // Copy the contents of the new entry array into the old one and clear it as
   // we go so it's ready to have elements added back.
-  value_t null = ROOT(runtime, null);
   for (size_t i = 0; i < entry_array_length; i++) {
     old_entries[i] = new_entries[i];
-    new_entries[i] = null;
+    new_entries[i] = null();
   }
   // Reset the map's fields. It is now empty.
   set_id_hash_map_size(new_object, 0);
@@ -1232,23 +1230,6 @@ void id_hash_map_print_on(value_t value, string_buffer_t *buf,
     }
     string_buffer_printf(buf, "}");
   }
-}
-
-
-// --- N u l l ---
-
-GET_FAMILY_PROTOCOL_IMPL(null);
-NO_BUILTIN_METHODS(null);
-FIXED_GET_MODE_IMPL(null, vmDeepFrozen);
-
-value_t null_validate(value_t value) {
-  VALIDATE_FAMILY(ofNull, value);
-  return success();
-}
-
-void null_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
-  string_buffer_printf(buf, "null");
 }
 
 
@@ -1496,7 +1477,7 @@ value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, value_t ke
   }
   // Pad the children buffer if necessary.
   for (size_t i = get_array_buffer_length(children); i <= index; i++)
-    TRY(add_to_array_buffer(runtime, children, ROOT(runtime, null)));
+    TRY(add_to_array_buffer(runtime, children, null()));
   // Create the new child.
   value_t old_value = get_argument_map_trie_value(self);
   size_t old_length = get_array_length(old_value);

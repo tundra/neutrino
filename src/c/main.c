@@ -17,7 +17,7 @@
 // raw bytes represented by the string.
 static value_t base64_c_str_to_blob(runtime_t *runtime, const char *data) {
   if ((data == NULL) || (strstr(data, "p64/") != data)) {
-    return ROOT(runtime, null);
+    return null();
   } else {
     string_t str;
     string_init(&str, data + 4);
@@ -201,7 +201,7 @@ static value_t parse_main_options(runtime_t *runtime, const char *value) {
 static value_t build_module_loader(runtime_t *runtime, value_t options) {
   value_t loader = deref(runtime->module_loader);
   value_t module_loader_options = get_options_flag_value(runtime, options,
-      RSTR(runtime, module_loader), ROOT(runtime, null));
+      RSTR(runtime, module_loader), null());
   if (!is_null(module_loader_options))
     TRY(module_loader_process_options(runtime, loader, module_loader_options));
   return loader;

@@ -372,8 +372,7 @@ static void object_print_on(value_t value, string_buffer_t *buf,
 static void custom_tagged_print_on(value_t value, string_buffer_t *buf,
     print_flags_t flags) {
   CHECK_DOMAIN(vdCustomTagged, value);
-  custom_tagged_phylum_t phylum = get_custom_tagged_phylum(value);
-  phylum_behavior_t *behavior = get_custom_tagged_phylum_behavior(phylum);
+  phylum_behavior_t *behavior = get_custom_tagged_behavior(value);
   (behavior->print_on)(value, buf, flags);
 }
 
@@ -443,10 +442,6 @@ static value_t new_instance_of_protocol(runtime_t *runtime, value_t protocol) {
 static value_t new_object_with_object_type(runtime_t *runtime, value_t type) {
   object_family_t family = get_object_family(type);
   switch (family) {
-    case ofNull:
-      // For now we use null to indicate an instance. Later this should be
-      // replaced by something else, something species-like possibly.
-      return new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
     case ofProtocol:
       return new_instance_of_protocol(runtime, type);
     case ofFactory:
@@ -457,11 +452,25 @@ static value_t new_object_with_object_type(runtime_t *runtime, value_t type) {
   }
 }
 
+static value_t new_object_with_custom_tagged_type(runtime_t *runtime, value_t type) {
+  custom_tagged_phylum_t phylum = get_custom_tagged_phylum(type);
+  switch (phylum) {
+    case tpNull:
+      // For now we use null to indicate an instance. Later this should be
+      // replaced by something else, something species-like possibly.
+      return new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
+    default:
+      return new_instance_of_unknown(runtime, type);
+  }
+}
+
 value_t new_object_with_type(runtime_t *runtime, value_t type) {
   value_domain_t domain = get_value_domain(type);
   switch (domain) {
     case vdObject:
       return new_object_with_object_type(runtime, type);
+    case vdCustomTagged:
+      return new_object_with_custom_tagged_type(runtime, type);
     default:
       return new_unsupported_behavior_signal(domain, __ofUnknown__,
           ubNewObjectWithType);
@@ -493,6 +502,11 @@ static value_t get_object_protocol(value_t self, runtime_t *runtime) {
   return (behavior->get_protocol)(self, runtime);
 }
 
+static value_t get_custom_tagged_protocol(value_t self, runtime_t *runtime) {
+  phylum_behavior_t *behavior = get_custom_tagged_behavior(self);
+  return (behavior->get_protocol)(self, runtime);
+}
+
 value_t get_protocol(value_t self, runtime_t *runtime) {
   value_domain_t domain = get_value_domain(self);
   switch (domain) {
@@ -500,6 +514,8 @@ value_t get_protocol(value_t self, runtime_t *runtime) {
       return ROOT(runtime, integer_protocol);
     case vdObject:
       return get_object_protocol(self, runtime);
+    case vdCustomTagged:
+      return get_custom_tagged_protocol(self, runtime);
     default:
       return new_unsupported_behavior_signal(domain, __ofUnknown__,
           ubGetProtocol);
@@ -568,13 +584,16 @@ ENUM_SPECIES_DIVISIONS(DEFINE_SPECIES_DIVISION_BEHAVIOR)
 
 // Define all the division behaviors. Similarly to families, when you add a new
 // division you have to add the methods or this will break.
-#define DEFINE_TAGGED_PHYLUM_BEHAVIOR(Phylum, phylum, CM)                      \
+#define DEFINE_TAGGED_PHYLUM_BEHAVIOR(Phylum, phylum, CM, SR)                  \
 phylum_behavior_t k##Phylum##PhylumBehavior = {                                \
   tp##Phylum,                                                                  \
   &phylum##_print_on,                                                          \
   CM(                                                                          \
     &phylum##_ordering_compare,                                                \
     NULL),                                                                     \
+  SR(                                                                          \
+    &get_##phylum##_protocol,                                                  \
+    &get_internal_object_protocol)                                             \
 };
 ENUM_CUSTOM_TAGGED_PHYLUMS(DEFINE_TAGGED_PHYLUM_BEHAVIOR)
 #undef DEFINE_TAGGED_PHYLUM_BEHAVIOR
@@ -583,10 +602,16 @@ phylum_behavior_t *kCustomTaggedPhylumBehaviors[kCustomTaggedPhylumCount] = {NUL
 
 phylum_behavior_t *get_custom_tagged_phylum_behavior(custom_tagged_phylum_t phylum) {
   if (kCustomTaggedPhylumBehaviors[0] == NULL) {
-#define __SET_PHYLUM_BEHAVIOR__(Phylum, phylum, CM)                            \
+#define __SET_PHYLUM_BEHAVIOR__(Phylum, phylum, CM, SR)                        \
     kCustomTaggedPhylumBehaviors[tp##Phylum] = &k##Phylum##PhylumBehavior;
   ENUM_CUSTOM_TAGGED_PHYLUMS(__SET_PHYLUM_BEHAVIOR__)
 #undef __SET_PHYLUM_BEHAVIOR__
   }
   return kCustomTaggedPhylumBehaviors[phylum];
+}
+
+phylum_behavior_t *get_custom_tagged_behavior(value_t value) {
+  CHECK_DOMAIN(vdCustomTagged, value);
+  custom_tagged_phylum_t phylum = get_custom_tagged_phylum(value);
+  return get_custom_tagged_phylum_behavior(phylum);
 }

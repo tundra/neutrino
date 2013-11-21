@@ -12,7 +12,7 @@ TEST(test, variant) {
   ASSERT_VALEQ(new_integer(-1), C(vInt(-1)));
   ASSERT_VALEQ(runtime_bool(runtime, true), C(vBool(true)));
   ASSERT_VALEQ(runtime_bool(runtime, false), C(vBool(false)));
-  ASSERT_VALEQ(ROOT(runtime, null), C(vNull()));
+  ASSERT_VALEQ(null(), C(vNull()));
 
   string_t str = STR("blahblahblah");
   ASSERT_VALEQ(new_heap_string(runtime, &str), C(vStr("blahblahblah")));

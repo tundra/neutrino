@@ -294,7 +294,6 @@ static value_t new_moved_object(value_t target) {
   F(Namespace,               namespace,                 _, _, _, _, _, _, _, X, X)\
   F(NamespaceDeclarationAst, namespace_declaration_ast, _, _, X, _, _, _, _, _, _)\
   F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _)\
-  F(Null,                    null,                      _, _, _, X, _, _, _, _, _)\
   F(Operation,               operation,                 _, X, X, _, _, _, _, X, _)\
   F(Options,                 options,                   _, _, X, _, _, _, _, _, _)\
   F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _)\
@@ -457,15 +456,21 @@ ACCESSORS_DECL(object, header);
 
 // --- C u s t o m   d o m a i n ---
 
-// Enumerates the compact object species.
+//   - CamelName: the name of the phylum in upper camel case.
+//   - underscore_name: the name of the phylum in lower underscore case.
+//   - Cm: do the values support ordered comparison?
+//   - Sr: is this type exposed to the surface language?
+//
+// CamelName            underscore_name                 Cm Sr
 #define ENUM_CUSTOM_TAGGED_PHYLUMS(F)                                          \
-  F(StageOffset,             stage_offset,              X)                     \
-  F(Nothing,                 nothing,                   _)
+  F(Nothing,                 nothing,                   _, _)                  \
+  F(Null,                    null,                      _, X)                  \
+  F(StageOffset,             stage_offset,              X, _)
 
 // Enum identifying the different phylums of custom tagged values.
 typedef enum {
   __tpFirst__ = -1
-  #define __DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__(Phylum, phylum, X)             \
+  #define __DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__(Phylum, phylum, CM, SR)        \
   , tp##Phylum
   ENUM_CUSTOM_TAGGED_PHYLUMS(__DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__)
   #undef __DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__

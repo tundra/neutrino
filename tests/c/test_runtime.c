@@ -29,8 +29,6 @@ TEST(runtime, create) {
 TEST(runtime, singletons) {
   CREATE_RUNTIME();
 
-  value_t null = ROOT(runtime, null);
-  ASSERT_FAMILY(ofNull, null);
   value_t thrue = runtime_bool(runtime, true);
   value_t fahlse = runtime_bool(runtime, false);
   ASSERT_FAMILY(ofBoolean, thrue);
@@ -46,10 +44,10 @@ TEST(runtime, runtime_validation) {
   ASSERT_SUCCESS(runtime_validate(runtime));
 
   // Break a root.
-  value_t old_null = ROOT(runtime, null);
-  ROOT(runtime, null) = new_integer(0);
+  value_t old_empty_array = ROOT(runtime, empty_array);
+  ROOT(runtime, empty_array) = new_integer(0);
   ASSERT_CHECK_FAILURE(scValidationFailed, runtime_validate(runtime));
-  ROOT(runtime, null) = old_null;
+  ROOT(runtime, empty_array) = old_empty_array;
   ASSERT_SUCCESS(runtime_validate(runtime));
 
   // Break a non-root.
@@ -70,13 +68,13 @@ TEST(runtime, gc_move_null) {
   // Check that anything gets moved at all and that we can call behavior
   // correctly.
   object_layout_t layout_before;
-  value_t null_before = ROOT(runtime, null);
-  get_object_layout(null_before, &layout_before);
+  value_t empty_array_before = ROOT(runtime, empty_array);
+  get_object_layout(empty_array_before, &layout_before);
   ASSERT_SUCCESS(runtime_garbage_collect(runtime));
-  value_t null_after = ROOT(runtime, null);
-  ASSERT_NSAME(null_before, null_after);
+  value_t empty_array_after = ROOT(runtime, empty_array);
+  ASSERT_NSAME(empty_array_before, empty_array_after);
   object_layout_t layout_after;
-  get_object_layout(null_after, &layout_after);
+  get_object_layout(empty_array_after, &layout_after);
   ASSERT_EQ(layout_before.size, layout_after.size);
   ASSERT_EQ(layout_before.value_offset, layout_after.value_offset);
 

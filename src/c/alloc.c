@@ -128,7 +128,7 @@ value_t new_heap_array(runtime_t *runtime, size_t length) {
       ROOT(runtime, mutable_array_species)));
   set_array_length(result, length);
   for (size_t i = 0; i < length; i++)
-    set_array_at(result, i, ROOT(runtime, null));
+    set_array_at(result, i, null());
   return post_create_sanity_check(result, size);
 }
 
@@ -189,11 +189,6 @@ value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity) {
   set_id_hash_map_capacity(result, init_capacity);
   set_id_hash_map_occupied_count(result, 0);
   return post_create_sanity_check(result, size);
-}
-
-value_t new_heap_null(runtime_t *runtime) {
-  size_t size = kNullSize;
-  return alloc_heap_object(runtime, size, ROOT(runtime, null_species));
 }
 
 value_t new_heap_ctrino(runtime_t *runtime) {
