@@ -93,14 +93,14 @@ class ParserTest(unittest.TestCase):
     self.maxDiff = None
 
   def check_expression(self, input, expected):
-    found = parser.OldParser(token.tokenize(input)).parse_expression()
+    found = parser.Parser(token.tokenize(input)).parse_expression()
     # Convert the asts to strings because that's just infinitely easier to
     # debug when assertions fail. Of course that requires that ast string
     # conversion is sane, which it is.
     self.assertEquals(str(expected), str(found))
 
   def check_program(self, input, expected):
-    found = parser.OldParser(token.tokenize(input)).parse_program()
+    found = parser.Parser(token.tokenize(input)).parse_program()
     self.assertEquals(unicode(expected), unicode(found))
 
   def test_atomic_expressions(self):
@@ -108,8 +108,8 @@ class ParserTest(unittest.TestCase):
     test('1', lt(1))
     test('"foo"', lt('foo'))
     test('$foo', id('foo'))
-    test('@foo', qt(-1, id('foo', -1)))
-    test('@foo:bar', qt(-1, id(['foo', 'bar'], -1)))
+    test('@foo', id('foo', -1))
+    test('@foo:bar', id(['foo', 'bar'], -1))
     test('(1)', lt(1))
     test('((($foo)))', id('foo'))
     test('[]', ar())
@@ -186,35 +186,6 @@ class ParserTest(unittest.TestCase):
       (-1, [nd(nm("x", -1), lt(5))]),
       (0, [])))
 
-  def test_program_unrestricted_method_definition(self):
-    test = self.check_program
-    test('def ($this).foo() => 4;', ut(0, md(ms(nm("this"), ix("foo")), lt(4))))
-    test('def ($that).bar() => 5;', ut(0, md(ms(nm("that"), ix("bar")), lt(5))))
-    test('def $this.bar() => 6;', ut(0, md(ms(nm("this"), ix("bar")), lt(6))))
-    test('def $this+() => 7;', ut(0, md(ms(nm("this"), ix("+")), lt(7))))
-    test('def $this+($that) => 8;', ut(0, md(ms(nm("this"), ix("+"), pm(nm("that"), 0)), lt(8))))
-    test('def $this+$that => 9;', ut(0, md(ms(nm("this"), ix("+"), pm(nm("that"), 0)), lt(9))))
-    test('def $this.foo($a, $b) => 10;', ut(0, md(ms(nm("this"), ix("foo"), pm(nm("a"), 0),
-      pm(nm("b"), 1)), lt(10))))
-
-  def test_program_restricted_method_definition(self):
-    test = self.check_program
-    test('def ($this == 8).foo() => 4;', ut(0, md(fms(
-        fpm(nm("this"), eq(lt(8)), ST),
-        fpm(nm("name"), eq(lt(ix("foo"))), SL)),
-      lt(4))))
-    test('def ($this == 8).foo($that == 9) => 4;', ut(0, md(fms(
-        fpm(nm("this"), eq(lt(8)), ST),
-        fpm(nm("name"), eq(lt(ix("foo"))), SL),
-        fpm(nm("that"), eq(lt(9)), 0)),
-      lt(4))))
-    test('def ($this is @This).foo() => 4;', mu(
-      (0, [md(fms(
-              fpm(nm("this"), is_(qt(-1, id("This", -1))), ST),
-              fpm(nm("name"), eq(lt(ix("foo"))), SL)),
-            lt(4))]),
-      (-1, [])))
-
   def test_program_imports(self):
     test = self.check_program
     test('import $foo;', ut(0, im(nm("foo"))))
@@ -230,10 +201,6 @@ class ParserTest(unittest.TestCase):
     test('@@@(1 + 2)', qt(-3, bn(lt(1), '+', lt(2))))
     test('@(1 + @(2))', qt(-1, bn(lt(1), '+', qt(-1, lt(2)))))
 
-  def test_program_toplevel_methods(self):
-    test = self.check_program
-    test('def $fun($x) => 5;', ut(0, fd(ms(nm("fun"), data.Operation.call(),
-      pm(nm("x"), 0)), lt(5))))
 
 if __name__ == '__main__':
   runner = unittest.TextTestRunner(verbosity=0)
