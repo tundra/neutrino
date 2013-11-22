@@ -284,22 +284,13 @@ TEST(value, instance_division) {
 }
 
 
-TEST(value, ordering) {
-  ASSERT_EQ(0, ordering_to_int(int_to_ordering(0)));
-  ASSERT_EQ(-1, ordering_to_int(int_to_ordering(-1)));
-  ASSERT_EQ(1, ordering_to_int(int_to_ordering(1)));
-  ASSERT_EQ(-65536, ordering_to_int(int_to_ordering(-65536)));
-  ASSERT_EQ(1024, ordering_to_int(int_to_ordering(1024)));
-}
-
-
 TEST(value, integer_comparison) {
-#define ASSERT_INT_COMPARE(A, REL, B)                                          \
-  ASSERT_TRUE(ordering_to_int(value_ordering_compare(new_integer(A), new_integer(B))) REL 0)
+#define ASSERT_INT_COMPARE(A, B, REL)                                          \
+  ASSERT_TRUE(test_relation(value_ordering_compare(new_integer(A), new_integer(B)), REL))
 
-  ASSERT_INT_COMPARE(0, <, 1);
-  ASSERT_INT_COMPARE(0, ==, 0);
-  ASSERT_INT_COMPARE(2, >, 1);
+  ASSERT_INT_COMPARE(0, 1, reLessThan);
+  ASSERT_INT_COMPARE(0, 0, reEqual);
+  ASSERT_INT_COMPARE(2, 1, reGreaterThan);
 
 #undef ASSERT_INT_COMPARE
 }
@@ -308,24 +299,24 @@ TEST(value, string_comparison) {
   CREATE_RUNTIME();
 
   // Checks that the string with contents A compares to B as the given operator.
-#define ASSERT_STR_COMPARE(A, REL, B) do {                                     \
+#define ASSERT_STR_COMPARE(A, B, REL) do {                                     \
   string_t a_str = STR(A);                                                     \
-  value_t a = new_heap_string(runtime, &a_str);                               \
+  value_t a = new_heap_string(runtime, &a_str);                                \
   string_t b_str = STR(B);                                                     \
-  value_t b = new_heap_string(runtime, &b_str);                               \
-  ASSERT_TRUE(ordering_to_int(value_ordering_compare(a, b)) REL 0);            \
+  value_t b = new_heap_string(runtime, &b_str);                                \
+  ASSERT_TRUE(test_relation(value_ordering_compare(a, b), REL));               \
 } while (false)
 
-  ASSERT_STR_COMPARE("", ==, "");
-  ASSERT_STR_COMPARE("", <, "x");
-  ASSERT_STR_COMPARE("", <, "xx");
-  ASSERT_STR_COMPARE("x", <, "xx");
-  ASSERT_STR_COMPARE("xx", ==, "xx");
-  ASSERT_STR_COMPARE("xxx", >, "xx");
-  ASSERT_STR_COMPARE("xy", >, "xx");
-  ASSERT_STR_COMPARE("yx", >, "xx");
-  ASSERT_STR_COMPARE("yx", >, "x");
-  ASSERT_STR_COMPARE("wx", >, "x");
+  ASSERT_STR_COMPARE("", "", reEqual);
+  ASSERT_STR_COMPARE("", "x", reLessThan);
+  ASSERT_STR_COMPARE("", "xx", reLessThan);
+  ASSERT_STR_COMPARE("x", "xx", reLessThan);
+  ASSERT_STR_COMPARE("xx", "xx", reEqual);
+  ASSERT_STR_COMPARE("xxx", "xx", reGreaterThan);
+  ASSERT_STR_COMPARE("xy", "xx", reGreaterThan);
+  ASSERT_STR_COMPARE("yx", "xx", reGreaterThan);
+  ASSERT_STR_COMPARE("yx", "x", reGreaterThan);
+  ASSERT_STR_COMPARE("wx", "x", reGreaterThan);
 
 #undef ASSERT_STR_COMPARE
 
@@ -338,10 +329,10 @@ TEST(value, bool_comparison) {
   value_t t = yes();
   value_t f = no();
 
-  ASSERT_TRUE(ordering_to_int(value_ordering_compare(t, t)) == 0);
-  ASSERT_TRUE(ordering_to_int(value_ordering_compare(f, f)) == 0);
-  ASSERT_TRUE(ordering_to_int(value_ordering_compare(t, f)) > 0);
-  ASSERT_TRUE(ordering_to_int(value_ordering_compare(f, t)) < 0);
+  ASSERT_TRUE(test_relation(value_ordering_compare(t, t), reEqual));
+  ASSERT_TRUE(test_relation(value_ordering_compare(f, f), reEqual));
+  ASSERT_TRUE(test_relation(value_ordering_compare(t, f), reGreaterThan));
+  ASSERT_TRUE(test_relation(value_ordering_compare(f, t), reLessThan));
 
   DISPOSE_RUNTIME();
 }

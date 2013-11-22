@@ -438,6 +438,7 @@ ACCESSORS_DECL(object, header);
   F(Boolean,                 boolean,                   X, X)                  \
   F(Nothing,                 nothing,                   _, _)                  \
   F(Null,                    null,                      _, X)                  \
+  F(Relation,                relation,                  _, _)                  \
   F(StageOffset,             stage_offset,              X, _)
 
 // Enum identifying the different phylums of custom tagged values.
