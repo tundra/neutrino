@@ -467,7 +467,7 @@ value_t string_ordering_compare(value_t a, value_t b) {
   get_string_contents(a, &a_contents);
   string_t b_contents;
   get_string_contents(b, &b_contents);
-  return int_to_ordering(string_compare(&a_contents, &b_contents));
+  return integer_to_relation(string_compare(&a_contents, &b_contents));
 }
 
 void string_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
@@ -663,7 +663,7 @@ static int value_compare_function(const void *vp_a, const void *vp_b) {
   value_t b = *((const value_t*) vp_b);
   value_t comparison = value_ordering_compare(a, b);
   CHECK_FALSE("not comparable", in_domain(vdSignal, comparison));
-  return ordering_to_int(comparison);
+  return relation_to_integer(comparison);
 }
 
 value_t sort_array(value_t value) {
@@ -688,9 +688,7 @@ bool is_array_sorted(value_t value) {
   for (size_t i = 1; i < length; i++) {
     value_t a = get_array_at(value, i - 1);
     value_t b = get_array_at(value, i);
-    value_t comparison = value_ordering_compare(a, b);
-    CHECK_FALSE("not comparable", in_domain(vdSignal, comparison));
-    if (ordering_to_int(comparison) > 0)
+    if (test_relation(value_ordering_compare(a, b), reGreaterThan))
       return false;
   }
   return true;
@@ -737,9 +735,7 @@ bool is_pair_array_sorted(value_t value) {
   for (size_t i = 1; i < length; i++) {
     value_t a = get_pair_array_first_at(value, i - 1);
     value_t b = get_pair_array_first_at(value, i);
-    value_t comparison = value_ordering_compare(a, b);
-    CHECK_FALSE("not comparable", in_domain(vdSignal, comparison));
-    if (ordering_to_int(comparison) > 0)
+    if (test_relation(value_ordering_compare(a, b), reGreaterThan))
       return false;
   }
   return true;
@@ -757,13 +753,12 @@ value_t binary_search_pair_array(value_t self, value_t key) {
   while (min <= max) {
     int64_t mid = ((max - min) >> 1) + min;
     value_t current_key = get_pair_array_first_at(self, mid);
-    TRY_DEF(ordering_value, value_ordering_compare(current_key, key));
-    int ordering = ordering_to_int(ordering_value);
-    if (ordering < 0) {
+    TRY_DEF(ordering, value_ordering_compare(current_key, key));
+    if (test_relation(ordering, reLessThan)) {
       // The current key is smaller than the key we're looking for. Advance the
       // min past it.
       min = mid + 1;
-    } else if (ordering > 0) {
+    } else if (test_relation(ordering, reGreaterThan)) {
       // The current key is larger than the key we're looking for. Move the max
       // below it.
       max = mid - 1;
@@ -1254,7 +1249,7 @@ value_t key_identity_compare(value_t a, value_t b, size_t depth) {
 value_t key_ordering_compare(value_t a, value_t b) {
   CHECK_FAMILY(ofKey, a);
   CHECK_FAMILY(ofKey, b);
-  return new_integer(get_key_id(a) - get_key_id(b));
+  return compare_signed_integers(get_key_id(a), get_key_id(b));
 }
 
 void key_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
@@ -1810,7 +1805,7 @@ value_t path_ordering_compare(value_t a, value_t b) {
   value_t a_head = get_path_raw_head(a);
   value_t b_head = get_path_raw_head(b);
   value_t cmp_head = value_ordering_compare(a_head, b_head);
-  if (ordering_to_int(cmp_head) != 0)
+  if (!test_relation(cmp_head, reEqual))
     return cmp_head;
   value_t a_tail = get_path_raw_tail(a);
   value_t b_tail = get_path_raw_tail(b);
@@ -1880,7 +1875,7 @@ value_t identifier_ordering_compare(value_t a, value_t b) {
   value_t a_stage = get_identifier_stage(a);
   value_t b_stage = get_identifier_stage(b);
   value_t cmp_stage = value_ordering_compare(a_stage, b_stage);
-  if (ordering_to_int(cmp_stage) != 0)
+  if (!test_relation(cmp_stage, reEqual))
     return cmp_stage;
   value_t a_path = get_identifier_path(a);
   value_t b_path = get_identifier_path(b);
@@ -2015,17 +2010,6 @@ value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key,
       return element_value;
   }
   return defawlt;
-}
-
-
-// --- O r d e r i n g ---
-
-int ordering_to_int(value_t value) {
-  return get_integer_value(value);
-}
-
-value_t int_to_ordering(int value) {
-  return new_integer(value);
 }
 
 
