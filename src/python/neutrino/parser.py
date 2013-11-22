@@ -374,7 +374,16 @@ class Parser(object):
   def parse_atomic_expression(self):
     if self.at_type(Token.LITERAL):
       value = self.expect_type(Token.LITERAL)
-      return ast.Literal(value)
+      result = ast.Literal(value)
+      if isinstance(value, data.DecimalFraction):
+        # While the infrastructure is not in place to create floats without
+        # magic we insert a new_float invocation in the parser.
+        result = ast.Invocation([
+          ast.Argument(data._SUBJECT, ast.Variable(data.Identifier(-1, data.Path(["ctrino"])))),
+          ast.Argument(data._SELECTOR, ast.Literal(data.Operation.infix("new_float_32"))),
+          ast.Argument(0, result)
+        ])
+      return result
     elif self.at_type(Token.IDENTIFIER):
       return self.parse_variable()
     elif self.at_punctuation('('):

@@ -269,6 +269,10 @@ CM(                                                                            \
   )                                                                            \
 SR(                                                                            \
   value_t get_##phylum##_protocol(value_t value, runtime_t *runtime);,         \
+  )                                                                            \
+SR(                                                                            \
+  value_t add_##phylum##_builtin_methods(runtime_t *runtime,                   \
+    safe_value_t s_space);,                                                    \
   )
 ENUM_CUSTOM_TAGGED_PHYLUMS(__DECLARE_PHYLUM_FUNCTIONS__)
 #undef __DECLARE_PHYLUM_FUNCTIONS__

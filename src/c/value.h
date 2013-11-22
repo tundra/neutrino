@@ -239,6 +239,7 @@ static value_t new_moved_object(value_t target) {
   F(Blob,                    blob,                      _, _, _, X, X, _, _, _, _)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X)\
   F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _)\
+  F(DecimalFraction,         decimal_fraction,          _, _, X, _, _, _, _, _, _)\
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _)\
   F(Function,                function,                  _, _, X, X, _, _, _, X, _)\
   F(Guard,                   guard,                     _, _, _, _, _, _, _, X, _)\
@@ -436,7 +437,7 @@ ACCESSORS_DECL(object, header);
 //  CamelName                underscore_name            Cm Sr
 #define ENUM_CUSTOM_TAGGED_PHYLUMS(F)                                          \
   F(Boolean,                 boolean,                   X, X)                  \
-  F(Float32,                 float_32,                  X, _)                  \
+  F(Float32,                 float_32,                  X, X)                  \
   F(Nothing,                 nothing,                   _, _)                  \
   F(Null,                    null,                      _, X)                  \
   F(Relation,                relation,                  _, _)                  \
@@ -1181,15 +1182,22 @@ value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key,
     value_t defawlt);
 
 
-// --- O r d e r i n g ---
+// --- D e c i m a l   f r a c t i o n ---
 
-// Returns a value ordering to an integer such that less than becomes -1,
-// greater than becomes 1 and equals becomes 0.
-int ordering_to_int(value_t value);
+static const size_t kDecimalFractionSize = OBJECT_SIZE(3);
+static const size_t kDecimalFractionNumeratorOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kDecimalFractionDenominatorOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kDecimalFractionPrecisionOffset = OBJECT_FIELD_OFFSET(2);
 
-// Returns a non-signal indicating an ordering such that ordering_to_int returns
-// the given value.
-value_t int_to_ordering(int value);
+// The fraction numerator.
+ACCESSORS_DECL(decimal_fraction, numerator);
+
+// Log-10 of the fraction denominator.
+ACCESSORS_DECL(decimal_fraction, denominator);
+
+// The precision of the fraction, represented as a delta on the denominator.
+// Under most circumstances equal to the number of leading zeros.
+ACCESSORS_DECL(decimal_fraction, precision);
 
 
 // --- M i s c ---

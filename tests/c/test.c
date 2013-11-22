@@ -280,7 +280,7 @@ value_t expand_variant_to_string(runtime_t *runtime, variant_value_t *value) {
 }
 
 value_t expand_variant_to_bool(runtime_t *runtime, variant_value_t *value) {
-  return boolean(value->as_bool);
+  return new_boolean(value->as_bool);
 }
 
 value_t expand_variant_to_null(runtime_t *runtime, variant_value_t *value) {

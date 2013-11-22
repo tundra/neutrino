@@ -306,6 +306,11 @@ void string_buffer_vprintf(string_buffer_t *buf, const char *fmt, va_list argp) 
               break;
           }
           break;
+        case 'f': {
+          double value = (double) va_arg(argp, double);
+          string_buffer_native_printf(buf, "%f", value);
+          break;
+        }
         case 'c': {
           // Assume the char has been fully promoted to an int.
           char value = (char) va_arg(argp, int);

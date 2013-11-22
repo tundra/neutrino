@@ -211,5 +211,20 @@ class Library(object):
     self.modules[path] = module
 
 
+@plankton.serializable(plankton.EnvironmentReference.path("core", "DecimalFraction"))
+class DecimalFraction(object):
+
+  @plankton.field("numerator")
+  @plankton.field("denominator")
+  @plankton.field("precision")
+  def __init__(self, numerator, denominator, precision):
+    self.numerator = numerator
+    self.denominator = denominator
+    self.precision = precision
+
+  def __str__(self):
+    return "(decimal %i/%i@%i)" % (self.numerator, self.denominator, self.precision)
+
+
 _SUBJECT = Key("subject", ("core", "subject"))
 _SELECTOR = Key("selector", ("core", "selector"))

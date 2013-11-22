@@ -87,7 +87,7 @@ static value_t no() {
 }
 
 // Returns the tagged boolean corresponding to the given C boolean.
-static value_t boolean(bool value) {
+static value_t new_boolean(bool value) {
   return new_custom_tagged(tpBoolean, value ? 1 : 0);
 }
 
@@ -164,7 +164,7 @@ static int relation_to_integer(value_t value) {
     case reLessThan: return -1;
     case reEqual: return 0;
     case reGreaterThan: return 1;
-    case reUnordered: return 2;
+    default: return 2;
   }
 }
 
@@ -178,10 +178,38 @@ static bool test_relation(value_t relation, unsigned mask) {
 
 // --- F l o a t   3 2 ---
 
-static value_t new_float_32(float value) {
+// Creates a new tagged value wrapping a float-32.
+static value_t new_float_32(float32_t value) {
   uint32_t binary;
   memcpy(&binary, &value, sizeof(uint32_t));
   return new_custom_tagged(tpFloat32, binary);
 }
+
+// Returns the value stored in a tagged float-32.
+static float32_t get_float_32_value(value_t self) {
+  CHECK_PHYLUM(tpFloat32, self);
+  uint32_t binary = get_custom_tagged_payload(self);
+  float32_t result;
+  memcpy(&result, &binary, sizeof(float));
+  return result;
+}
+
+// Returns the float-32 value representing infinity.
+value_t float_32_infinity();
+
+// Returns the float-32 value representing minus infinity.
+value_t float_32_minus_infinity();
+
+// Returns a float-32 value representing NaN.
+value_t float_32_nan();
+
+// Returns a relation giving how a and b relate to each other.
+relation_t compare_float_32(float32_t a, float32_t b);
+
+// Returns true if value is a float-32 other than NaN and the infinities.
+bool is_float_32_finite(value_t value);
+
+// Returns true if the value is the float-32 representation of NaN.
+bool is_float_32_nan(value_t value);
 
 #endif // _TAGGED

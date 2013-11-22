@@ -112,11 +112,22 @@ value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
 
 value_t add_methodspace_builtin_methods(runtime_t *runtime, safe_value_t s_self) {
   TRY(add_integer_builtin_methods(runtime, s_self));
-#define __EMIT_ADD_BUILTINS_CALL__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\
+
+  // The family built-ins.
+#define __EMIT_FAMILY_BUILTINS_CALL__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\
   SR(                                                                          \
     TRY(add_##family##_builtin_methods(runtime, s_self));,                     \
     )
-  ENUM_OBJECT_FAMILIES(__EMIT_ADD_BUILTINS_CALL__)
+  ENUM_OBJECT_FAMILIES(__EMIT_FAMILY_BUILTINS_CALL__)
 #undef __EMIT_ADD_BUILTINS_CALL__
+
+  // The phylum built-ins.
+#define __EMIT_PHYLUM_BUILTINS_CALL__(Phylum, phylum, CM, SR)                  \
+  SR(                                                                          \
+    TRY(add_##phylum##_builtin_methods(runtime, s_self));,                     \
+    )
+  ENUM_CUSTOM_TAGGED_PHYLUMS(__EMIT_PHYLUM_BUILTINS_CALL__)
+#undef __EMIT_PHYLUM_BUILTINS_CALL__
+
   return success();
 }
