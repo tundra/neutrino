@@ -175,4 +175,13 @@ static bool test_relation(value_t relation, unsigned mask) {
   return (get_relation_value(relation) & mask) != 0;
 }
 
+
+// --- F l o a t   3 2 ---
+
+static value_t new_float_32(float value) {
+  uint32_t binary;
+  memcpy(&binary, &value, sizeof(uint32_t));
+  return new_custom_tagged(tpFloat32, binary);
+}
+
 #endif // _TAGGED

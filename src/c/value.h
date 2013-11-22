@@ -436,6 +436,7 @@ ACCESSORS_DECL(object, header);
 //  CamelName                underscore_name            Cm Sr
 #define ENUM_CUSTOM_TAGGED_PHYLUMS(F)                                          \
   F(Boolean,                 boolean,                   X, X)                  \
+  F(Float32,                 float_32,                  X, _)                  \
   F(Nothing,                 nothing,                   _, _)                  \
   F(Null,                    null,                      _, X)                  \
   F(Relation,                relation,                  _, _)                  \
