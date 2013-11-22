@@ -104,7 +104,7 @@ typedef enum {
   reLessThan = 0x1,
   reEqual = 0x2,
   reGreaterThan = 0x4,
-  reUnordered = 0x0
+  reUnordered = 0x8
 } relation_t;
 
 // Creates a relation value representing the given relation.
