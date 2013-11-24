@@ -24,10 +24,7 @@
         "name": "variable.parameter.neutrino"
       },
       { "match": "\\.([\\w_]*)",
-        "captures": {
-          "1": {"name": "entity.name.function.neutrino"}
-        },
-        "comment": "Don't highlight the dot, just the name"
+        "name": "entity.name.function.neutrino"
       },
       { "match": "\\.?([!+=<>/*%-]+)",
         "captures": {

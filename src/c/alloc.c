@@ -418,6 +418,14 @@ value_t new_heap_decimal_fraction(runtime_t *runtime, value_t numerator,
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_global_field(runtime_t *runtime, value_t display_name) {
+  size_t size = kGlobalFieldSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, global_field_species)));
+  set_global_field_display_name(result, display_name);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- P r o c e s s ---
 

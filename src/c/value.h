@@ -242,6 +242,7 @@ static value_t new_moved_object(value_t target) {
   F(DecimalFraction,         decimal_fraction,          _, _, X, _, _, _, _, _, _)\
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _)\
   F(Function,                function,                  _, _, X, X, _, _, _, X, _)\
+  F(GlobalField,             global_field,              _, _, _, X, _, _, _, _, _)\
   F(Guard,                   guard,                     _, _, _, _, _, _, _, X, _)\
   F(GuardAst,                guard_ast,                 _, _, X, X, _, _, _, _, _)\
   F(Identifier,              identifier,                X, X, X, _, _, _, _, _, _)\
@@ -1198,6 +1199,15 @@ ACCESSORS_DECL(decimal_fraction, denominator);
 // The precision of the fraction, represented as a delta on the denominator.
 // Under most circumstances equal to the number of leading zeros.
 ACCESSORS_DECL(decimal_fraction, precision);
+
+
+// --- G l o b a l   f i e l d ---
+
+static const size_t kGlobalFieldSize = OBJECT_SIZE(1);
+static const size_t kGlobalFieldDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
+
+// The display name which is used to identify the field.
+ACCESSORS_DECL(global_field, display_name);
 
 
 // --- M i s c ---
