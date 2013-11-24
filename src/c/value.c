@@ -2054,6 +2054,47 @@ value_t plankton_new_decimal_fraction(runtime_t *runtime) {
 }
 
 
+// --- G l o b a l   f i e l d ---
+
+GET_FAMILY_PROTOCOL_IMPL(global_field);
+FIXED_GET_MODE_IMPL(global_field, vmFrozen);
+
+ACCESSORS_IMPL(GlobalField, global_field, acNoCheck, 0, DisplayName, display_name);
+
+value_t global_field_validate(value_t self) {
+  VALIDATE_FAMILY(ofGlobalField, self);
+  return success();
+}
+
+void global_field_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<global field ");
+  value_t display_name = get_global_field_display_name(value);
+  value_print_inner_on(display_name, buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
+static value_t global_field_set(builtin_arguments_t *args) {
+  value_t this = get_builtin_subject(args);
+  value_t instance = get_builtin_argument(args, 0);
+  value_t value = get_builtin_argument(args, 1);
+  runtime_t *runtime = get_builtin_runtime(args);
+  return set_instance_field(runtime, instance, this, value);
+}
+
+static value_t global_field_get(builtin_arguments_t *args) {
+  value_t this = get_builtin_subject(args);
+  value_t instance = get_builtin_argument(args, 0);
+  return get_instance_field(instance, this);
+}
+
+value_t add_global_field_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
+  ADD_BUILTIN(global_field, INFIX("set"), 2, global_field_set);
+  ADD_BUILTIN(global_field, INFIX("get"), 1, global_field_get);
+  return success();
+}
+
+
 // --- M i s c ---
 
 // Adds a binding to the given plankton environment map.

@@ -178,6 +178,9 @@ value_t new_heap_library(runtime_t *runtime, value_t display_name,
 value_t new_heap_decimal_fraction(runtime_t *runtime, value_t numerator,
     value_t denominator, value_t precision);
 
+// Creates a new global field object with the given display name.
+value_t new_heap_global_field(runtime_t *runtime, value_t display_name);
+
 
 // --- P r o c e s s ---
 
