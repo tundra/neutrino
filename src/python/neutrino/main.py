@@ -58,7 +58,7 @@ class Main(object):
     if self.flags.compile:
       self.compile_flags = self.flags.compile.get_flags()
     else:
-      self.compile_flags = {}
+      self.compile_flags = None
 
   # If the filter option is set, filters input and return True. Otherwise
   # returns False.
@@ -99,6 +99,8 @@ class Main(object):
     # Load the modules before scheduling them since they all have to be
     # available, though not necessarily compiled, before we can set them up to
     # be compiled in the right order.
+    if not self.compile_flags:
+      return
     for arg in self.compile_flags.get('modules', []):
       filename = os.path.basename(arg)
       (module_name, ext) = os.path.splitext(filename)
@@ -132,7 +134,7 @@ class Main(object):
       self.schedule_for_output(unit)
 
   def schedule_libraries(self):
-    if not self.compile_flags.build_library:
+    if not self.compile_flags or not self.compile_flags.build_library:
       return
     library = data.Library()
     library_spec = self.compile_flags.build_library

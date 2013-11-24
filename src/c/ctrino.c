@@ -81,9 +81,18 @@ value_t ctrino_new_float_32(builtin_arguments_t *args) {
   return new_float_32(value);
 }
 
+value_t ctrino_log_info(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t value = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofCtrino, self);
+  INFO("%9v", value);
+  return null();
+}
+
 value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(ctrino, INFIX("fail"), 0, ctrino_fail);
   ADD_BUILTIN(ctrino, INFIX("get_builtin_protocol"), 1, ctrino_get_builtin_protocol);
+  ADD_BUILTIN(ctrino, INFIX("log_info"), 1, ctrino_log_info);
   ADD_BUILTIN(ctrino, INFIX("new_float_32"), 1, ctrino_new_float_32);
   ADD_BUILTIN(ctrino, INFIX("new_function"), 1, ctrino_new_function);
   ADD_BUILTIN(ctrino, INFIX("new_global_field"), 1, ctrino_new_global_field);

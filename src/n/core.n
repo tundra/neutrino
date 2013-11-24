@@ -5,3 +5,6 @@
 ## import the different basic modules together.
 
 import @integer;
+
+# Info-log the given value to stdout using the built-in INFO macro.
+def @info($value) => @ctrino.log_info($value);

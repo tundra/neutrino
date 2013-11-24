@@ -2068,10 +2068,10 @@ value_t global_field_validate(value_t self) {
 
 void global_field_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
     size_t depth) {
-  string_buffer_printf(buf, "#<global field ");
+  string_buffer_printf(buf, ".$");
   value_t display_name = get_global_field_display_name(value);
   value_print_inner_on(display_name, buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  string_buffer_printf(buf, "");
 }
 
 static value_t global_field_set(builtin_arguments_t *args) {
