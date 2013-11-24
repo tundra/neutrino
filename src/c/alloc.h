@@ -163,14 +163,20 @@ value_t new_heap_options(runtime_t *runtime, value_t elements);
 value_t new_heap_empty_module_loader(runtime_t *runtime);
 
 // Creates a new unbound module with the given path and fragments.
-value_t new_heap_unbound_module(runtime_t *runtime, value_t path, value_t fragments);
+value_t new_heap_unbound_module(runtime_t *runtime, value_t path,
+    value_t fragments);
 
 // Creates a new unbound module fragment with the given attributes.
 value_t new_heap_unbound_module_fragment(runtime_t *runtime, value_t stage,
     value_t imports, value_t elements);
 
 // Creates a new library with the given display name and module map.
-value_t new_heap_library(runtime_t *runtime, value_t display_name, value_t modules);
+value_t new_heap_library(runtime_t *runtime, value_t display_name,
+    value_t modules);
+
+// Creates a new decimal fraction object.
+value_t new_heap_decimal_fraction(runtime_t *runtime, value_t numerator,
+    value_t denominator, value_t precision);
 
 
 // --- P r o c e s s ---

@@ -111,7 +111,7 @@ static value_t integer_equals_integer(builtin_arguments_t *args) {
   value_t that = get_builtin_argument(args, 0);
   CHECK_DOMAIN(vdInteger, this);
   CHECK_DOMAIN(vdInteger, that);
-  return boolean(is_same_value(this, that));
+  return new_boolean(is_same_value(this, that));
 }
 
 static value_t integer_negate(builtin_arguments_t *args) {
@@ -457,7 +457,7 @@ value_t string_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
   get_string_contents(a, &a_contents);
   string_t b_contents;
   get_string_contents(b, &b_contents);
-  return boolean(string_equals(&a_contents, &b_contents));
+  return new_boolean(string_equals(&a_contents, &b_contents));
 }
 
 value_t string_ordering_compare(value_t a, value_t b) {
@@ -1243,7 +1243,7 @@ value_t key_validate(value_t value) {
 value_t key_identity_compare(value_t a, value_t b, size_t depth) {
   size_t a_id = get_key_id(a);
   size_t b_id = get_key_id(b);
-  return boolean(a_id == b_id);
+  return new_boolean(a_id == b_id);
 }
 
 value_t key_ordering_compare(value_t a, value_t b) {
@@ -2013,6 +2013,47 @@ value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key,
 }
 
 
+// --- D e c i m a l   f r a c t i o n ---
+
+FIXED_GET_MODE_IMPL(decimal_fraction, vmFrozen);
+
+ACCESSORS_IMPL(DecimalFraction, decimal_fraction, acNoCheck, 0, Numerator, numerator);
+ACCESSORS_IMPL(DecimalFraction, decimal_fraction, acNoCheck, 0, Denominator, denominator);
+ACCESSORS_IMPL(DecimalFraction, decimal_fraction, acNoCheck, 0, Precision, precision);
+
+value_t decimal_fraction_validate(value_t self) {
+  VALIDATE_FAMILY(ofDecimalFraction, self);
+  return success();
+}
+
+void decimal_fraction_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<");
+  value_t numerator = get_decimal_fraction_numerator(value);
+  value_print_inner_on(numerator, buf, flags, depth - 1);
+  string_buffer_printf(buf, "/10^");
+  value_t denominator = get_decimal_fraction_denominator(value);
+  value_print_inner_on(denominator, buf, flags, depth - 1);
+  string_buffer_printf(buf, "@10^-");
+  value_t precision = get_decimal_fraction_precision(value);
+  value_print_inner_on(precision, buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
+value_t plankton_set_decimal_fraction_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
+  UNPACK_PLANKTON_MAP(contents, numerator, denominator, precision);
+  set_decimal_fraction_numerator(object, numerator);
+  set_decimal_fraction_denominator(object, denominator);
+  set_decimal_fraction_precision(object, precision);
+  return success();
+}
+
+value_t plankton_new_decimal_fraction(runtime_t *runtime) {
+  return new_heap_decimal_fraction(runtime, nothing(), nothing(), nothing());
+}
+
+
 // --- M i s c ---
 
 // Adds a binding to the given plankton environment map.
@@ -2037,6 +2078,7 @@ value_t add_plankton_factory(value_t map, value_t category, const char *name,
 value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   value_t core = RSTR(runtime, core);
   // Factories
+  TRY(add_plankton_factory(map, core, "DecimalFraction", plankton_new_decimal_fraction, runtime));
   TRY(add_plankton_factory(map, core, "Function", plankton_new_function, runtime));
   TRY(add_plankton_factory(map, core, "Identifier", plankton_new_identifier, runtime));
   TRY(add_plankton_factory(map, core, "Library", plankton_new_library, runtime));

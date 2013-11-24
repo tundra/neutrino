@@ -66,5 +66,8 @@ static size_t min_size(size_t a, size_t b) {
 // conversions to unsigned/wider int types which eagerly mess with this value.
 #define kMostNegativeInt32 ((int32_t) 0x80000000)
 
+// The native 32-bit single precision floating point type.
+typedef float float32_t;
+
 
 #endif // _GLOBALS

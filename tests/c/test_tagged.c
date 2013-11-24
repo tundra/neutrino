@@ -1,6 +1,7 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "behavior.h"
 #include "tagged.h"
 #include "test.h"
 
@@ -39,4 +40,59 @@ TEST(tagged, integer_comparison) {
   ASSERT_TRUE(test_relation(compare_signed_integers(0, 1), reLessThan));
   ASSERT_TRUE(test_relation(compare_signed_integers(0, 0), reEqual));
   ASSERT_TRUE(test_relation(compare_signed_integers(0, -1), reGreaterThan));
+}
+
+TEST(tagged, float_32) {
+  ASSERT_EQ(sizeof(uint32_t), sizeof(float32_t));
+
+  value_t one = new_float_32(1.0);
+  ASSERT_TRUE(get_float_32_value(one) == 1.0);
+  value_t zero = new_float_32(0.0);
+  ASSERT_TRUE(get_float_32_value(zero) == 0.0);
+  value_t minus_one = new_float_32(-1.0);
+  ASSERT_TRUE(get_float_32_value(minus_one) == -1.0);
+
+  ASSERT_VALEQ(equal(), value_ordering_compare(one, one));
+  ASSERT_VALEQ(equal(), value_ordering_compare(zero, zero));
+  ASSERT_VALEQ(equal(), value_ordering_compare(minus_one, minus_one));
+  ASSERT_VALEQ(less_than(), value_ordering_compare(minus_one, zero));
+  ASSERT_VALEQ(less_than(), value_ordering_compare(zero, one));
+  ASSERT_VALEQ(greater_than(), value_ordering_compare(zero, minus_one));
+  ASSERT_VALEQ(greater_than(), value_ordering_compare(one, zero));
+
+  value_t nan = float_32_nan();
+  ASSERT_VALEQ(unordered(), value_ordering_compare(nan, nan));
+  ASSERT_VALEQ(unordered(), value_ordering_compare(nan, one));
+  ASSERT_VALEQ(unordered(), value_ordering_compare(nan, zero));
+  ASSERT_VALEQ(unordered(), value_ordering_compare(zero, nan));
+  ASSERT_VALEQ(unordered(), value_ordering_compare(one, nan));
+  ASSERT_SAME(nan, nan);
+
+  value_t inf = float_32_infinity();
+  value_t minf = float_32_minus_infinity();
+  ASSERT_VALEQ(unordered(), value_ordering_compare(nan, inf));
+  ASSERT_VALEQ(unordered(), value_ordering_compare(inf, nan));
+  ASSERT_VALEQ(unordered(), value_ordering_compare(nan, minf));
+  ASSERT_VALEQ(unordered(), value_ordering_compare(minf, nan));
+  ASSERT_VALEQ(less_than(), value_ordering_compare(one, inf));
+  ASSERT_VALEQ(greater_than(), value_ordering_compare(inf, one));
+  ASSERT_VALEQ(greater_than(), value_ordering_compare(one, minf));
+  ASSERT_VALEQ(less_than(), value_ordering_compare(minf, one));
+  ASSERT_VALEQ(equal(), value_ordering_compare(inf, inf));
+  ASSERT_VALEQ(greater_than(), value_ordering_compare(inf, minf));
+  ASSERT_VALEQ(less_than(), value_ordering_compare(minf, inf));
+
+  ASSERT_TRUE(is_float_32_nan(nan));
+  ASSERT_FALSE(is_float_32_nan(minus_one));
+  ASSERT_FALSE(is_float_32_nan(zero));
+  ASSERT_FALSE(is_float_32_nan(one));
+  ASSERT_FALSE(is_float_32_nan(inf));
+  ASSERT_FALSE(is_float_32_nan(minf));
+
+  ASSERT_FALSE(is_float_32_finite(nan));
+  ASSERT_TRUE(is_float_32_finite(minus_one));
+  ASSERT_TRUE(is_float_32_finite(zero));
+  ASSERT_TRUE(is_float_32_finite(one));
+  ASSERT_FALSE(is_float_32_finite(inf));
+  ASSERT_FALSE(is_float_32_finite(minf));
 }

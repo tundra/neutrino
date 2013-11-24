@@ -96,6 +96,14 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   ENUM_OBJECT_FAMILIES(__CREATE_FAMILY_PROTOCOL__)
 #undef __CREATE_FAMILY_PROTOCOL__
 
+  // Generate initialization for the per-phylum protocols.
+#define __CREATE_PHYLUM_PROTOCOL__(Phylum, phylum, CM, SR)                     \
+  SR(                                                                          \
+    TRY_SET(RAW_ROOT(roots, phylum##_protocol), new_heap_protocol(runtime, afFreeze, null()));,\
+    )
+  ENUM_CUSTOM_TAGGED_PHYLUMS(__CREATE_PHYLUM_PROTOCOL__)
+#undef __CREATE_PHYLUM_PROTOCOL__
+
   TRY_DEF(plankton_environment, new_heap_id_hash_map(runtime, 16));
   init_plankton_core_factories(plankton_environment, runtime);
   init_plankton_syntax_factories(plankton_environment, runtime);
@@ -153,6 +161,14 @@ value_t roots_validate(value_t roots) {
     )
   ENUM_OBJECT_FAMILIES(__VALIDATE_PER_FAMILY_FIELDS__)
 #undef __VALIDATE_PER_FAMILY_FIELDS__
+
+  // Generate validation for phylums.
+#define __VALIDATE_PER_PHYLUM_FIELDS__(Phylum, phylum, CM, SR)                 \
+  SR(                                                                          \
+    VALIDATE_OBJECT(ofProtocol, RAW_ROOT(roots, phylum##_protocol));,          \
+    )
+  ENUM_CUSTOM_TAGGED_PHYLUMS(__VALIDATE_PER_PHYLUM_FIELDS__)
+#undef __VALIDATE_PER_PHYLUM_FIELDS__
 
   // Validate singletons manually.
   VALIDATE_OBJECT(ofArray, RAW_ROOT(roots, empty_array));

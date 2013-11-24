@@ -407,6 +407,17 @@ value_t new_heap_library(runtime_t *runtime, value_t display_name, value_t modul
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_decimal_fraction(runtime_t *runtime, value_t numerator,
+    value_t denominator, value_t precision) {
+  size_t size = kDecimalFractionSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, decimal_fraction_species)));
+  set_decimal_fraction_numerator(result, numerator);
+  set_decimal_fraction_denominator(result, denominator);
+  set_decimal_fraction_precision(result, precision);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- P r o c e s s ---
 

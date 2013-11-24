@@ -31,7 +31,7 @@ def @test_simple_arithmetic() {
 
 ## Temporary test that method from imported modules are visible.
 def @test_imports() {
-  @assert:equals(8, 0.method_from_integer_module());
+  @assert:equals(8, (0).method_from_integer_module());
 }
 
 def @main() {

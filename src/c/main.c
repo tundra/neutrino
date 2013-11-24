@@ -226,6 +226,7 @@ static value_t neutrino_main(int argc, char **argv) {
   E_BEGIN_TRY_FINALLY();
     E_TRY_DEF(main_options, parse_main_options(runtime, options.main_options));
     E_TRY(build_module_loader(runtime, main_options));
+    value_t result;
     for (size_t i = 0; i < options.argc; i++) {
       const char *filename = options.argv[i];
       value_t input;
@@ -237,11 +238,11 @@ static value_t neutrino_main(int argc, char **argv) {
         E_TRY_SET(input, read_file_to_blob(runtime, &filename_str));
       }
       E_TRY_DEF(program, safe_runtime_plankton_deserialize(runtime, protect(pool, input)));
-      value_t result = safe_execute_syntax(runtime, protect(pool, program));
+      result = safe_execute_syntax(runtime, protect(pool, program));
       if (options.print_value)
         print_ln("%v", result);
     }
-    E_RETURN(success());
+    E_RETURN(result);
   E_FINALLY();
     DISPOSE_SAFE_VALUE_POOL(pool);
     TRY(delete_runtime(runtime));
@@ -254,7 +255,7 @@ int main(int argc, char *argv[]) {
   install_crash_handler();
   value_t result = neutrino_main(argc, argv);
   if (get_value_domain(result) == vdSignal) {
-    print_ln("%v", result);
+    ERROR("%v", result);
     return 1;
   } else {
     return 0;

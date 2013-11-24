@@ -5,6 +5,7 @@
 
 
 import data
+import fractions
 import re
 
 
@@ -273,13 +274,35 @@ class Tokenizer(object):
     else:
       return Token.operation(value, delim)
 
+  # Turns a decimal literal string into a parsed decimal literal value which
+  # losslessly retains all the information from the string form.
+  def parse_decimal_literal(self, str):
+    [integer_str, fraction_str] = str.split('.')
+    precision = len(fraction_str)
+    denominator = pow(10, precision)
+    integer = int(integer_str)
+    fraction = int(fraction_str)
+    numerator = (integer * denominator) + fraction
+    log_denominator = precision
+    while (numerator % 10) == 0:
+      numerator /= 10
+      log_denominator -= 1
+    return data.DecimalFraction(numerator, log_denominator, precision-log_denominator)
+
   # Scans over a literal number or a number-valued tag.
   def scan_number_or_tag(self, delim):
     start = self.cursor
     while self.has_more() and self.is_number_part(self.current()):
       self.advance()
-    end = self.cursor
-    value = int(self.slice(start, end))
+    if self.has_more() and self.current() == '.':
+      self.advance()
+      while self.has_more() and self.is_number_part(self.current()):
+        self.advance()
+      end = self.cursor
+      value = self.parse_decimal_literal(self.slice(start, end))
+    else:
+      end = self.cursor
+      value = int(self.slice(start, end))
     if self.has_more() and self.current() == ':':
       self.advance()
       cons = Token.tag

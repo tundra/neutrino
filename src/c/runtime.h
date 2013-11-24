@@ -20,6 +20,7 @@
   F(body,                       "body")                                        \
   F(core,                       "core")                                        \
   F(ctrino,                     "ctrino")                                      \
+  F(denominator,                "denominator")                                 \
   F(display_name,               "display_name")                                \
   F(elements,                   "elements")                                    \
   F(entry_point,                "entry_point")                                 \
@@ -39,9 +40,11 @@
   F(name,                       "name")                                        \
   F(names,                      "names")                                       \
   F(namespace,                  "namespace")                                   \
+  F(numerator,                  "numerator")                                   \
   F(options,                    "options")                                     \
   F(parameters,                 "parameters")                                  \
   F(path,                       "path")                                        \
+  F(precision,                  "precision")                                   \
   F(protocol,                   "protocol")                                    \
   F(selector,                   "selector")                                    \
   F(signature,                  "signature")                                   \

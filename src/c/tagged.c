@@ -2,10 +2,13 @@
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "behavior.h"
+#include "builtin.h"
 #include "runtime.h"
 #include "tagged.h"
 #include "utils.h"
 #include "value-inl.h"
+
+#include <math.h>
 
 // --- S t a g e   o f f s e t ---
 
@@ -42,6 +45,7 @@ void nothing_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) 
 // --- N u l l ---
 
 GET_FAMILY_PROTOCOL_IMPL(null);
+NO_BUILTIN_METHODS(null);
 
 void null_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
   string_buffer_printf(buf, "null");
@@ -51,6 +55,7 @@ void null_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
 // --- B o o l e a n ---
 
 GET_FAMILY_PROTOCOL_IMPL(boolean);
+NO_BUILTIN_METHODS(boolean);
 
 void boolean_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
   string_buffer_printf(buf, get_boolean_value(value) ? "true" : "false");
@@ -82,4 +87,91 @@ void relation_print_on(value_t value, string_buffer_t *buf, print_flags_t flags)
       break;
   }
   string_buffer_printf(buf, str);
+}
+
+
+// --- F l o a t   3 2 ---
+
+GET_FAMILY_PROTOCOL_IMPL(float_32);
+
+void float_32_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
+  string_buffer_printf(buf, "%f", get_float_32_value(value));
+}
+
+value_t float_32_ordering_compare(value_t a, value_t b) {
+  CHECK_PHYLUM(tpFloat32, a);
+  CHECK_PHYLUM(tpFloat32, b);
+  float a_value = get_float_32_value(a);
+  float b_value = get_float_32_value(b);
+  return new_relation(compare_float_32(a_value, b_value));
+}
+
+relation_t compare_float_32(float32_t a, float32_t b) {
+  if (a < b) {
+    return reLessThan;
+  } else if (b < a) {
+    return reGreaterThan;
+  } else if (a == b) {
+    return reEqual;
+  } else {
+    return reUnordered;
+  }
+}
+
+value_t float_32_infinity() {
+  return new_float_32(INFINITY);
+}
+
+value_t float_32_minus_infinity() {
+  return new_float_32(-INFINITY);
+}
+
+value_t float_32_nan() {
+  return new_float_32(NAN);
+}
+
+bool is_float_32_finite(value_t value) {
+  return isfinite(get_float_32_value(value));
+}
+
+bool is_float_32_nan(value_t value) {
+  return isnan(get_float_32_value(value));
+}
+
+static value_t float_32_negate(builtin_arguments_t *args) {
+  value_t this = get_builtin_subject(args);
+  CHECK_PHYLUM(tpFloat32, this);
+  return new_float_32(-get_float_32_value(this));
+}
+
+static value_t float_32_minus_float_32(builtin_arguments_t *args) {
+  value_t this = get_builtin_subject(args);
+  value_t that = get_builtin_argument(args, 0);
+  CHECK_PHYLUM(tpFloat32, this);
+  CHECK_PHYLUM(tpFloat32, that);
+  return new_float_32(get_float_32_value(this) - get_float_32_value(that));
+}
+
+static value_t float_32_plus_float_32(builtin_arguments_t *args) {
+  value_t this = get_builtin_subject(args);
+  value_t that = get_builtin_argument(args, 0);
+  CHECK_PHYLUM(tpFloat32, this);
+  CHECK_PHYLUM(tpFloat32, that);
+  return new_float_32(get_float_32_value(this) + get_float_32_value(that));
+}
+
+static value_t float_32_equals_float_32(builtin_arguments_t *args) {
+  value_t this = get_builtin_subject(args);
+  value_t that = get_builtin_argument(args, 0);
+  CHECK_PHYLUM(tpFloat32, this);
+  CHECK_PHYLUM(tpFloat32, that);
+  return new_boolean(test_relation(value_ordering_compare(this, that), reEqual));
+}
+
+value_t add_float_32_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
+  ADD_BUILTIN(float_32, PREFIX("-"), 0, float_32_negate);
+  ADD_BUILTIN(float_32, INFIX("-"), 1, float_32_minus_float_32);
+  ADD_BUILTIN(float_32, INFIX("+"), 1, float_32_plus_float_32);
+  ADD_BUILTIN(float_32, INFIX("=="), 1, float_32_equals_float_32);
+  return success();
 }

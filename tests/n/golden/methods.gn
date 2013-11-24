@@ -16,5 +16,5 @@
 -- INPUT: 1+(2)
 -- VALUE: 3
 
--- INPUT: 1.+(2)
+-- INPUT: (1).+(2)
 -- VALUE: 3

@@ -197,7 +197,7 @@ value_t value_transient_identity_hash_cycle_protect(value_t value,
 
 static value_t default_object_identity_compare(value_t a, value_t b,
     cycle_detector_t *detector) {
-  return boolean(is_same_value(a, b));
+  return new_boolean(is_same_value(a, b));
 }
 
 static value_t object_identity_compare(value_t a, value_t b,
@@ -234,7 +234,7 @@ value_t value_identity_compare_cycle_protect(value_t a, value_t b,
   switch (a_domain) {
     case vdInteger:
     case vdCustomTagged:
-      return boolean(is_same_value(a, b));
+      return new_boolean(is_same_value(a, b));
     case vdObject:
       return object_identity_compare(a, b, detector);
     default:
