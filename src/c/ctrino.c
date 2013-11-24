@@ -63,6 +63,8 @@ value_t ctrino_new_float_32(builtin_arguments_t *args) {
   value_t decimal = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofCtrino, self);
   CHECK_FAMILY(ofDecimalFraction, decimal);
+  // TODO: This may or may not produce the most accurate approximation of the
+  //   fractional value. Either verify that it does or replace it.
   double value = get_integer_value(get_decimal_fraction_numerator(decimal));
   int32_t log_denom = get_integer_value(get_decimal_fraction_denominator(decimal));
   while (log_denom > 0) {

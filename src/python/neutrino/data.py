@@ -222,6 +222,13 @@ class DecimalFraction(object):
     self.denominator = denominator
     self.precision = precision
 
+  def __eq__(self, that):
+    if not isinstance(that, DecimalFraction):
+      return False
+    return (self.numerator == that.numerator
+       and self.denominator == that.denominator
+       and self.precision == that.precision)
+
   def __str__(self):
     return "(decimal %i/%i@%i)" % (self.numerator, self.denominator, self.precision)
 

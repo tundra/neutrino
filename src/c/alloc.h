@@ -174,7 +174,7 @@ value_t new_heap_unbound_module_fragment(runtime_t *runtime, value_t stage,
 value_t new_heap_library(runtime_t *runtime, value_t display_name,
     value_t modules);
 
-// Creates a new decomal fraction object.
+// Creates a new decimal fraction object.
 value_t new_heap_decimal_fraction(runtime_t *runtime, value_t numerator,
     value_t denominator, value_t precision);
 

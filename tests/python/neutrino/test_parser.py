@@ -21,7 +21,6 @@ any = ast.Guard.any
 ST = data._SUBJECT
 SL = data._SELECTOR
 ix = data.Operation.infix
-dec = data.DecimalFraction
 
 def ut(phase, *elements):
   return ast.Unit(None).add_element(phase, *elements)
@@ -107,13 +106,6 @@ class ParserTest(unittest.TestCase):
   def test_atomic_expressions(self):
     test = self.check_expression
     test('1', lt(1))
-    test('1.5', lt(dec(15, 1, 0)))
-    test('2.0', lt(dec(2, 0, 1)))
-    test('2.00', lt(dec(2, 0, 2)))
-    test('2.00001', lt(dec(200001, 5, 0)))
-    test('2.0000000001', lt(dec(20000000001, 10, 0)))
-    test('3.1415926', lt(dec(31415926, 7, 0)))
-    test('3.14159260', lt(dec(31415926, 7, 1)))
     test('"foo"', lt('foo'))
     test('$foo', id('foo'))
     test('@foo', id('foo', -1))
