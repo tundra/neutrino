@@ -46,25 +46,25 @@ TEST(method, method_space) {
   CREATE_RUNTIME();
 
   value_t space = new_heap_methodspace(runtime);
-  value_t p1 = new_heap_protocol(runtime, afFreeze, null());
-  value_t p2 = new_heap_protocol(runtime, afFreeze, null());
+  value_t p1 = new_heap_type(runtime, afFreeze, null());
+  value_t p2 = new_heap_type(runtime, afFreeze, null());
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p1, p2));
-  value_t p3 = new_heap_protocol(runtime, afFreeze, null());
+  value_t p3 = new_heap_type(runtime, afFreeze, null());
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p2, p3));
-  value_t p4 = new_heap_protocol(runtime, afFreeze, null());
+  value_t p4 = new_heap_type(runtime, afFreeze, null());
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p2, p4));
 
-  ASSERT_EQ(1, get_array_buffer_length(get_protocol_parents(runtime, space, p1)));
-  ASSERT_EQ(2, get_array_buffer_length(get_protocol_parents(runtime, space, p2)));
-  ASSERT_EQ(0, get_array_buffer_length(get_protocol_parents(runtime, space, p3)));
-  ASSERT_EQ(0, get_array_buffer_length(get_protocol_parents(runtime, space, p4)));
+  ASSERT_EQ(1, get_array_buffer_length(get_type_parents(runtime, space, p1)));
+  ASSERT_EQ(2, get_array_buffer_length(get_type_parents(runtime, space, p2)));
+  ASSERT_EQ(0, get_array_buffer_length(get_type_parents(runtime, space, p3)));
+  ASSERT_EQ(0, get_array_buffer_length(get_type_parents(runtime, space, p4)));
 
   DISPOSE_RUNTIME();
 }
 
-// Returns a new instance with the given primary protocol.
+// Returns a new instance with the given primary type.
 static value_t new_instance_of(runtime_t *runtime, value_t proto) {
-  CHECK_FAMILY(ofProtocol, proto);
+  CHECK_FAMILY(ofType, proto);
   value_t species = new_heap_instance_species(runtime, proto);
   return new_heap_instance(runtime, species);
 }
@@ -72,10 +72,10 @@ static value_t new_instance_of(runtime_t *runtime, value_t proto) {
 TEST(method, simple_is) {
   CREATE_RUNTIME();
 
-  value_t s_str_p = new_heap_protocol(runtime, afFreeze, null());
-  value_t obj_p = new_heap_protocol(runtime, afFreeze, null());
-  value_t int_p = ROOT(runtime, integer_protocol);
-  value_t str_p = ROOT(runtime, string_protocol);
+  value_t s_str_p = new_heap_type(runtime, afFreeze, null());
+  value_t obj_p = new_heap_type(runtime, afFreeze, null());
+  value_t int_p = ROOT(runtime, integer_type);
+  value_t str_p = ROOT(runtime, string_type);
   value_t space = new_heap_methodspace(runtime);
   // int <: obj
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, int_p, obj_p));
@@ -127,9 +127,9 @@ TEST(method, simple_is) {
 TEST(method, is_score) {
   CREATE_RUNTIME();
 
-  value_t s_str_p = new_heap_protocol(runtime, afFreeze, null());
-  value_t obj_p = new_heap_protocol(runtime, afFreeze, null());
-  value_t str_p = ROOT(runtime, string_protocol);
+  value_t s_str_p = new_heap_type(runtime, afFreeze, null());
+  value_t obj_p = new_heap_type(runtime, afFreeze, null());
+  value_t str_p = ROOT(runtime, string_type);
   value_t space = new_heap_methodspace(runtime);
   // s-str <: str <: obj
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, str_p, obj_p));
@@ -155,9 +155,9 @@ TEST(method, is_score) {
 TEST(method, multi_score) {
   CREATE_RUNTIME();
 
-  value_t int_str_p = new_heap_protocol(runtime, afFreeze, null());
-  value_t int_p = ROOT(runtime, integer_protocol);
-  value_t str_p = ROOT(runtime, string_protocol);
+  value_t int_str_p = new_heap_type(runtime, afFreeze, null());
+  value_t int_p = ROOT(runtime, integer_type);
+  value_t str_p = ROOT(runtime, string_type);
   value_t space = new_heap_methodspace(runtime);
   value_t is_str = new_heap_guard(runtime, afFreeze, gtIs, str_p);
   value_t is_int = new_heap_guard(runtime, afFreeze, gtIs, int_p);
@@ -680,10 +680,10 @@ TEST(method, dense_perfect_lookup) {
   CREATE_RUNTIME();
 
   // Protocols and inheritance hierarchy.
-  value_t a_p = new_heap_protocol(runtime, afFreeze, C(vStr("A")));
-  value_t b_p = new_heap_protocol(runtime, afFreeze, C(vStr("B")));
-  value_t c_p = new_heap_protocol(runtime, afFreeze, C(vStr("C")));
-  value_t d_p = new_heap_protocol(runtime, afFreeze, C(vStr("D")));
+  value_t a_p = new_heap_type(runtime, afFreeze, C(vStr("A")));
+  value_t b_p = new_heap_type(runtime, afFreeze, C(vStr("B")));
+  value_t c_p = new_heap_type(runtime, afFreeze, C(vStr("C")));
+  value_t d_p = new_heap_type(runtime, afFreeze, C(vStr("D")));
   value_t space = new_heap_methodspace(runtime);
   // D <: C <: B <: A <: Object
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, d_p, c_p));

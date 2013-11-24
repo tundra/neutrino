@@ -45,7 +45,6 @@
   F(parameters,                 "parameters")                                  \
   F(path,                       "path")                                        \
   F(precision,                  "precision")                                   \
-  F(protocol,                   "protocol")                                    \
   F(selector,                   "selector")                                    \
   F(signature,                  "signature")                                   \
   F(stage,                      "stage")                                       \
@@ -68,7 +67,7 @@
   F(empty_array)                                                               \
   F(empty_instance_species)                                                    \
   F(empty_path)                                                                \
-  F(integer_protocol)                                                          \
+  F(integer_type)                                                              \
   F(op_call)                                                                   \
   F(plankton_environment)                                                      \
   F(selector_key)                                                              \
@@ -88,7 +87,7 @@ typedef enum {
   // Family-related roots.
   // Any arguments to selector macros must themselves be macros because
   // generating an enum value uses a comma which confuses the macro call.
-#define __EMIT_FAMILY_PROTOCOL__(family) , rk_##family##_protocol
+#define __EMIT_FAMILY_TYPE__(family) , rk_##family##_type
 #define __EMIT_COMPACT_SPECIES__(family) , rk_##family##_species
 #define __EMIT_MODAL_SPECIES__(family) , rk_fluid_##family##_species,          \
   rk_mutable_##family##_species, rk_frozen_##family##_species,                 \
@@ -98,23 +97,23 @@ typedef enum {
     __EMIT_MODAL_SPECIES__(family),                                            \
     __EMIT_COMPACT_SPECIES__(family))                                          \
   SR(                                                                          \
-    __EMIT_FAMILY_PROTOCOL__(family),                                          \
+    __EMIT_FAMILY_TYPE__(family),                                              \
     )
   ENUM_OBJECT_FAMILIES(__EMIT_PER_FAMILY_ENUMS__)
 #undef __EMIT_PER_FAMILY_ENUMS__
 #undef __EMIT_MODAL_SPECIES__
 #undef __EMIT_COMPACT_SPECIES__
-#undef __EMIT_FAMILY_PROTOCOL__
+#undef __EMIT_FAMILY_TYPE__
 
   // Phylum-related roots.
-#define __EMIT_PHYLUM_PROTOCOL__(phylum) , rk_##phylum##_protocol
+#define __EMIT_PHYLUM_TYPE__(phylum) , rk_##phylum##_type
 #define __EMIT_PER_PHYLUM_ENUMS__(Phylum, phylum, CM, SR)                      \
   SR(                                                                          \
-    __EMIT_PHYLUM_PROTOCOL__(phylum),                                          \
+    __EMIT_PHYLUM_TYPE__(phylum),                                              \
     )
   ENUM_CUSTOM_TAGGED_PHYLUMS(__EMIT_PER_PHYLUM_ENUMS__)
 #undef __EMIT_PER_PHYLUM_ENUMS__
-#undef __EMIT_PHYLUM_PROTOCOL__
+#undef __EMIT_PHYLUM_TYPE__
 
   // The string table
 #define __EMIT_STRING_TABLE_ENUM__(name, value) , rk_string_table_##name

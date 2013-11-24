@@ -83,13 +83,13 @@ value_t new_heap_blob_with_data(runtime_t *runtime, blob_t *contents) {
 
 value_t new_heap_instance_species(runtime_t *runtime, value_t primary) {
   size_t size = kInstanceSpeciesSize;
-  CHECK_FAMILY(ofProtocol, primary);
+  CHECK_FAMILY(ofType, primary);
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_species_species)));
   set_species_instance_family(result, ofInstance);
   set_species_family_behavior(result, &kInstanceBehavior);
   set_species_division_behavior(result, &kInstanceSpeciesBehavior);
-  set_instance_species_primary_protocol(result, primary);
+  set_instance_species_primary_type_field(result, primary);
   return post_create_sanity_check(result, size);
 }
 
@@ -244,12 +244,12 @@ value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_protocol(runtime_t *runtime, alloc_flags_t flags,
+value_t new_heap_type(runtime_t *runtime, alloc_flags_t flags,
     value_t display_name) {
-  size_t size = kProtocolSize;
+  size_t size = kTypeSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, mutable_protocol_species)));
-  set_protocol_display_name(result, display_name);
+      ROOT(runtime, mutable_type_species)));
+  set_type_display_name(result, display_name);
   TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }

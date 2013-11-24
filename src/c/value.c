@@ -262,8 +262,8 @@ void get_instance_species_layout(value_t species, object_layout_t *layout) {
   object_layout_set(layout, kInstanceSpeciesSize, kSpeciesHeaderSize);
 }
 
-CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance, Protocol,
-    PrimaryProtocol, primary_protocol);
+CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance, Type,
+    PrimaryTypeField, primary_type_field);
 
 
 // --- M o d a l   s p e c i e s ---
@@ -405,7 +405,7 @@ value_t try_validate_deep_frozen(runtime_t *runtime, value_t value,
 
 // --- S t r i n g ---
 
-GET_FAMILY_PROTOCOL_IMPL(string);
+GET_FAMILY_PRIMARY_TYPE_IMPL(string);
 FIXED_GET_MODE_IMPL(string, vmDeepFrozen);
 
 size_t calc_string_size(size_t char_count) {
@@ -520,7 +520,7 @@ value_t add_string_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
 
 // --- B l o b ---
 
-GET_FAMILY_PROTOCOL_IMPL(blob);
+GET_FAMILY_PRIMARY_TYPE_IMPL(blob);
 NO_BUILTIN_METHODS(blob);
 FIXED_GET_MODE_IMPL(blob, vmDeepFrozen);
 
@@ -597,7 +597,7 @@ void get_void_p_layout(value_t value, object_layout_t *layout) {
 
 // --- A r r a y ---
 
-GET_FAMILY_PROTOCOL_IMPL(array);
+GET_FAMILY_PRIMARY_TYPE_IMPL(array);
 
 size_t calc_array_size(size_t length) {
   return kObjectHeaderSize       // header
@@ -820,7 +820,7 @@ value_t get_tuple_at(value_t self, size_t index) {
 
 // --- A r r a y   b u f f e r ---
 
-GET_FAMILY_PROTOCOL_IMPL(array_buffer);
+GET_FAMILY_PRIMARY_TYPE_IMPL(array_buffer);
 NO_BUILTIN_METHODS(array_buffer);
 
 ACCESSORS_IMPL(ArrayBuffer, array_buffer, acInFamily, ofArray, Elements, elements);
@@ -899,7 +899,7 @@ void array_buffer_print_on(value_t value, string_buffer_t *buf,
 
 // --- I d e n t i t y   h a s h   m a p ---
 
-GET_FAMILY_PROTOCOL_IMPL(id_hash_map);
+GET_FAMILY_PRIMARY_TYPE_IMPL(id_hash_map);
 NO_BUILTIN_METHODS(id_hash_map);
 
 ACCESSORS_IMPL(IdHashMap, id_hash_map, acInFamily, ofArray, EntryArray, entry_array);
@@ -1229,7 +1229,7 @@ void id_hash_map_print_on(value_t value, string_buffer_t *buf,
 
 // --- K e y ---
 
-GET_FAMILY_PROTOCOL_IMPL(key);
+GET_FAMILY_PRIMARY_TYPE_IMPL(key);
 NO_BUILTIN_METHODS(key);
 
 INTEGER_ACCESSORS_IMPL(Key, key, Id, id);
@@ -1287,7 +1287,7 @@ void instance_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
     size_t depth) {
   CHECK_FAMILY(ofInstance, value);
   string_buffer_printf(buf, "#<instance of ");
-  value_print_inner_on(get_instance_primary_protocol(value), buf, flags,
+  value_print_inner_on(get_instance_primary_type_field(value), buf, flags,
       depth - 1);
   string_buffer_printf(buf, ": ");
   value_print_inner_on(get_instance_fields(value), buf, flags, depth - 1);
@@ -1301,8 +1301,8 @@ value_t plankton_set_instance_contents(value_t instance, runtime_t *runtime,
   return success();
 }
 
-value_t get_instance_protocol(value_t self, runtime_t *runtime) {
-  return get_instance_primary_protocol(self);
+value_t get_instance_primary_type(value_t self, runtime_t *runtime) {
+  return get_instance_primary_type_field(self);
 }
 
 value_mode_t get_instance_mode(value_t self) {
@@ -1366,21 +1366,21 @@ value_t ensure_code_block_owned_values_frozen(runtime_t *runtime, value_t self) 
 
 // --- P r o t o c o l ---
 
-GET_FAMILY_PROTOCOL_IMPL(protocol);
-NO_BUILTIN_METHODS(protocol);
+GET_FAMILY_PRIMARY_TYPE_IMPL(type);
+NO_BUILTIN_METHODS(type);
 
-ACCESSORS_IMPL(Protocol, protocol, acNoCheck, 0, DisplayName, display_name);
+ACCESSORS_IMPL(Type, type, acNoCheck, 0, DisplayName, display_name);
 
-value_t protocol_validate(value_t value) {
-  VALIDATE_FAMILY(ofProtocol, value);
+value_t type_validate(value_t value) {
+  VALIDATE_FAMILY(ofType, value);
   return success();
 }
 
-void protocol_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+void type_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
     size_t depth) {
-  CHECK_FAMILY(ofProtocol, value);
-  value_t display_name = get_protocol_display_name(value);
-  string_buffer_printf(buf, "#<protocol");
+  CHECK_FAMILY(ofType, value);
+  value_t display_name = get_type_display_name(value);
+  string_buffer_printf(buf, "#<type");
   if (!is_null(display_name)) {
     string_buffer_printf(buf, " ");
     value_print_inner_on(display_name, buf, flags | pfUnquote, depth - 1);
@@ -1388,14 +1388,14 @@ void protocol_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
   string_buffer_printf(buf, ">");
 }
 
-value_t plankton_new_protocol(runtime_t *runtime) {
-  return new_heap_protocol(runtime, afMutable, nothing());
+value_t plankton_new_type(runtime_t *runtime) {
+  return new_heap_type(runtime, afMutable, nothing());
 }
 
-value_t plankton_set_protocol_contents(value_t object, runtime_t *runtime,
+value_t plankton_set_type_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, name);
-  set_protocol_display_name(object, name);
+  set_type_display_name(object, name);
   return success();
 }
 
@@ -1460,7 +1460,7 @@ value_t ensure_argument_map_trie_owned_values_frozen(runtime_t *runtime,
 
 // --- L a m b d a ---
 
-GET_FAMILY_PROTOCOL_IMPL(lambda);
+GET_FAMILY_PRIMARY_TYPE_IMPL(lambda);
 TRIVIAL_PRINT_ON_IMPL(Lambda, lambda);
 
 ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, ofMethodspace, Methods, methods);
@@ -1480,7 +1480,7 @@ value_t emit_lambda_call_trampoline(assembler_t *assm) {
 
 value_t add_lambda_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   TRY(add_methodspace_custom_method(runtime, deref(s_space),
-      ROOT(runtime, lambda_protocol), OPERATION(otCall, NULL), 0, true,
+      ROOT(runtime, lambda_type), OPERATION(otCall, NULL), 0, true,
       emit_lambda_call_trampoline));
   return success();
 }
@@ -1649,7 +1649,7 @@ value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage
 
 // --- M o d u l e   f r a g m e n t ---
 
-GET_FAMILY_PROTOCOL_IMPL(module_fragment);
+GET_FAMILY_PRIMARY_TYPE_IMPL(module_fragment);
 
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acNoCheck, 0, Stage, stage);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofModule,
@@ -1707,7 +1707,7 @@ bool is_module_fragment_bound(value_t fragment) {
 
 // --- P a t h ---
 
-GET_FAMILY_PROTOCOL_IMPL(path);
+GET_FAMILY_PRIMARY_TYPE_IMPL(path);
 NO_BUILTIN_METHODS(path);
 
 ACCESSORS_IMPL(Path, path, acNoCheck, 0, RawHead, raw_head);
@@ -1885,7 +1885,7 @@ value_t identifier_ordering_compare(value_t a, value_t b) {
 
 // --- F u n c t i o n ---
 
-GET_FAMILY_PROTOCOL_IMPL(function);
+GET_FAMILY_PRIMARY_TYPE_IMPL(function);
 NO_BUILTIN_METHODS(function);
 
 ACCESSORS_IMPL(Function, function, acNoCheck, 0, DisplayName, display_name);
@@ -2056,7 +2056,7 @@ value_t plankton_new_decimal_fraction(runtime_t *runtime) {
 
 // --- G l o b a l   f i e l d ---
 
-GET_FAMILY_PROTOCOL_IMPL(global_field);
+GET_FAMILY_PRIMARY_TYPE_IMPL(global_field);
 FIXED_GET_MODE_IMPL(global_field, vmFrozen);
 
 ACCESSORS_IMPL(GlobalField, global_field, acNoCheck, 0, DisplayName, display_name);
@@ -2126,7 +2126,7 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, core, "Namespace", plankton_new_namespace, runtime));
   TRY(add_plankton_factory(map, core, "Operation", plankton_new_operation, runtime));
   TRY(add_plankton_factory(map, core, "Path", plankton_new_path, runtime));
-  TRY(add_plankton_factory(map, core, "Protocol", plankton_new_protocol, runtime));
+  TRY(add_plankton_factory(map, core, "Type", plankton_new_type, runtime));
   TRY(add_plankton_factory(map, core, "UnboundModule", plankton_new_unbound_module, runtime));
   TRY(add_plankton_factory(map, core, "UnboundModuleFragment", plankton_new_unbound_module_fragment, runtime));
   // Singletons
@@ -2137,9 +2137,9 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
       runtime));
   TRY(add_plankton_binding(map, core, "builtin_methodspace",
       ROOT(runtime, builtin_methodspace), runtime));
-  // Protocols
-  value_t protocol = RSTR(runtime, protocol);
-  TRY(add_plankton_binding(map, protocol, "Integer", ROOT(runtime, integer_protocol),
+  // Types
+  value_t type = RSTR(runtime, type);
+  TRY(add_plankton_binding(map, type, "Integer", ROOT(runtime, integer_type),
       runtime));
   // Options
   value_t options = RSTR(runtime, options);

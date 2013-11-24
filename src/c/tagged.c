@@ -44,7 +44,7 @@ void nothing_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) 
 
 // --- N u l l ---
 
-GET_FAMILY_PROTOCOL_IMPL(null);
+GET_FAMILY_PRIMARY_TYPE_IMPL(null);
 NO_BUILTIN_METHODS(null);
 
 void null_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
@@ -54,7 +54,7 @@ void null_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
 
 // --- B o o l e a n ---
 
-GET_FAMILY_PROTOCOL_IMPL(boolean);
+GET_FAMILY_PRIMARY_TYPE_IMPL(boolean);
 NO_BUILTIN_METHODS(boolean);
 
 void boolean_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
@@ -92,7 +92,7 @@ void relation_print_on(value_t value, string_buffer_t *buf, print_flags_t flags)
 
 // --- F l o a t   3 2 ---
 
-GET_FAMILY_PROTOCOL_IMPL(float_32);
+GET_FAMILY_PRIMARY_TYPE_IMPL(float_32);
 
 void float_32_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
   string_buffer_printf(buf, "%f", get_float_32_value(value));

@@ -1,8 +1,8 @@
 # Copyright 2013 the Neutrino authors (see AUTHORS).
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-## The built-in protocol of runtime-native integers.
-def @Integer := @ctrino.get_builtin_protocol("Integer");
+## The built-in type of runtime-native integers.
+def @Integer := @ctrino.get_builtin_type("Integer");
 
 ## Test method.
 def ($this is @Integer).method_from_integer_module() => 8;

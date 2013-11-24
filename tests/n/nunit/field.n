@@ -1,6 +1,6 @@
 import $assert;
 
-def @Point := @ctrino.new_protocol("Point");
+def @Point := @ctrino.new_type("Point");
 def @x := @ctrino.new_global_field("x");
 def @y := @ctrino.new_global_field("y");
 

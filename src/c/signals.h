@@ -74,7 +74,7 @@ const char *get_invalid_syntax_cause_name(invalid_syntax_cause_t cause);
 // ENUM_INVALID_SYNTAX_CAUSES.
 #define ENUM_UNSUPPORTED_BEHAVIOR_TYPES(F)                                     \
   F(Unspecified)                                                               \
-  F(GetProtocol)                                                               \
+  F(GetPrimaryType)                                                            \
   F(NewObjectWithType)                                                         \
   F(PlanktonSerialize)                                                         \
   F(SetContents)                                                               \
