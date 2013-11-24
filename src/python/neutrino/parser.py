@@ -15,6 +15,7 @@ from token import Token
 class Parser(object):
 
   _SAUSAGES = data.Operation.call()
+  _SQUARE_SAUSAGES = data.Operation.index()
 
   def __init__(self, tokens, module_name=None, unit=None):
     self.tokens = tokens
@@ -355,7 +356,7 @@ class Parser(object):
         start = '('
         end = ')'
       elif self.at_punctuation('['):
-        selector = data.Operation.index()
+        selector = Parser._SQUARE_SAUSAGES
         start = '['
         end = ']'
       else:
