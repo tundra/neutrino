@@ -140,7 +140,7 @@ size_t *calc_parameter_ast_ordering(reusable_scratch_memory_t *scratch,
 
 // --- L i t e r a l ---
 
-GET_FAMILY_PROTOCOL_IMPL(literal_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(literal_ast);
 NO_BUILTIN_METHODS(literal_ast);
 FIXED_GET_MODE_IMPL(literal_ast, vmMutable);
 
@@ -177,7 +177,7 @@ value_t emit_literal_ast(value_t value, assembler_t *assm) {
 
 // --- A r r a y ---
 
-GET_FAMILY_PROTOCOL_IMPL(array_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(array_ast);
 NO_BUILTIN_METHODS(array_ast);
 FIXED_GET_MODE_IMPL(array_ast, vmMutable);
 
@@ -221,7 +221,7 @@ value_t plankton_new_array_ast(runtime_t *runtime) {
 // --- I n v o c a t i o n ---
 
 TRIVIAL_PRINT_ON_IMPL(InvocationAst, invocation_ast);
-GET_FAMILY_PROTOCOL_IMPL(invocation_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(invocation_ast);
 NO_BUILTIN_METHODS(invocation_ast);
 FIXED_GET_MODE_IMPL(invocation_ast, vmMutable);
 
@@ -271,7 +271,7 @@ value_t plankton_new_invocation_ast(runtime_t *runtime) {
 // --- A r g u m e n t ---
 
 TRIVIAL_PRINT_ON_IMPL(ArgumentAst, argument_ast);
-GET_FAMILY_PROTOCOL_IMPL(argument_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(argument_ast);
 NO_BUILTIN_METHODS(argument_ast);
 FIXED_GET_MODE_IMPL(argument_ast, vmMutable);
 
@@ -299,7 +299,7 @@ value_t plankton_new_argument_ast(runtime_t *runtime) {
 
 // --- S e q u e n c e ---
 
-GET_FAMILY_PROTOCOL_IMPL(sequence_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(sequence_ast);
 NO_BUILTIN_METHODS(sequence_ast);
 FIXED_GET_MODE_IMPL(sequence_ast, vmMutable);
 
@@ -355,7 +355,7 @@ value_t plankton_new_sequence_ast(runtime_t *runtime) {
 
 // --- L o c a l   d e c l a r a t i o n ---
 
-GET_FAMILY_PROTOCOL_IMPL(local_declaration_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(local_declaration_ast);
 NO_BUILTIN_METHODS(local_declaration_ast);
 FIXED_GET_MODE_IMPL(local_declaration_ast, vmMutable);
 
@@ -421,7 +421,7 @@ value_t plankton_new_local_declaration_ast(runtime_t *runtime) {
 
 // --- L o c a l   v a r i a b l e ---
 
-GET_FAMILY_PROTOCOL_IMPL(local_variable_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(local_variable_ast);
 NO_BUILTIN_METHODS(local_variable_ast);
 FIXED_GET_MODE_IMPL(local_variable_ast, vmMutable);
 
@@ -489,7 +489,7 @@ value_t plankton_new_local_variable_ast(runtime_t *runtime) {
 
 // --- N a m e s p a c e   v a r i a b l e ---
 
-GET_FAMILY_PROTOCOL_IMPL(namespace_variable_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(namespace_variable_ast);
 NO_BUILTIN_METHODS(namespace_variable_ast);
 TRIVIAL_PRINT_ON_IMPL(NamespaceVariableAst, namespace_variable_ast);
 FIXED_GET_MODE_IMPL(namespace_variable_ast, vmMutable);
@@ -522,7 +522,7 @@ value_t plankton_new_namespace_variable_ast(runtime_t *runtime) {
 
 // --- S y m b o l ---
 
-GET_FAMILY_PROTOCOL_IMPL(symbol_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(symbol_ast);
 NO_BUILTIN_METHODS(symbol_ast);
 FIXED_GET_MODE_IMPL(symbol_ast, vmMutable);
 
@@ -554,7 +554,7 @@ value_t plankton_new_symbol_ast(runtime_t *runtime) {
 
 // --- L a m b d a   a s t ---
 
-GET_FAMILY_PROTOCOL_IMPL(lambda_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(lambda_ast);
 NO_BUILTIN_METHODS(lambda_ast);
 TRIVIAL_PRINT_ON_IMPL(LambdaAst, lambda_ast);
 FIXED_GET_MODE_IMPL(lambda_ast, vmMutable);
@@ -748,7 +748,7 @@ value_t plankton_new_lambda_ast(runtime_t *runtime) {
 
 // --- P a r a m e t e r   a s t ---
 
-GET_FAMILY_PROTOCOL_IMPL(parameter_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(parameter_ast);
 NO_BUILTIN_METHODS(parameter_ast);
 FIXED_GET_MODE_IMPL(parameter_ast, vmMutable);
 
@@ -791,7 +791,7 @@ void parameter_ast_print_on(value_t self, string_buffer_t *buf,
 
 // --- G u a r d   a s t ---
 
-GET_FAMILY_PROTOCOL_IMPL(guard_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(guard_ast);
 NO_BUILTIN_METHODS(guard_ast);
 FIXED_GET_MODE_IMPL(guard_ast, vmMutable);
 
@@ -849,7 +849,7 @@ void guard_ast_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
 
 // --- S i g n a t u r e   a s t ---
 
-GET_FAMILY_PROTOCOL_IMPL(signature_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(signature_ast);
 NO_BUILTIN_METHODS(signature_ast);
 FIXED_GET_MODE_IMPL(signature_ast, vmMutable);
 
@@ -888,7 +888,7 @@ void signature_ast_print_on(value_t self, string_buffer_t *buf, print_flags_t fl
 
 // --- M e t h o d   a s t ---
 
-GET_FAMILY_PROTOCOL_IMPL(method_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(method_ast);
 NO_BUILTIN_METHODS(method_ast);
 
 ACCESSORS_IMPL(MethodAst, method_ast, acInFamilyOpt, ofSignatureAst, Signature,

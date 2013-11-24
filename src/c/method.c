@@ -217,7 +217,7 @@ static value_t find_best_match(runtime_t *runtime, value_t current,
     *score_out = current_score;
     return success();
   } else {
-    TRY_DEF(parents, get_protocol_parents(runtime, space, current));
+    TRY_DEF(parents, get_type_parents(runtime, space, current));
     size_t length = get_array_buffer_length(parents);
     score_t score = gsNoMatch;
     for (size_t i = 0; i < length; i++) {
@@ -243,7 +243,7 @@ value_t guard_match(runtime_t *runtime, value_t guard, value_t value,
       return success();
     }
     case gtIs: {
-      TRY_DEF(primary, get_protocol(value, runtime));
+      TRY_DEF(primary, get_primary_type(value, runtime));
       value_t target = get_guard_value(guard);
       return find_best_match(runtime, primary, target, gsPerfectIsMatch, space,
           score_out);
@@ -348,12 +348,12 @@ value_t add_methodspace_inheritance(runtime_t *runtime, value_t self,
     value_t subtype, value_t supertype) {
   CHECK_FAMILY(ofMethodspace, self);
   CHECK_MUTABLE(self);
-  CHECK_FAMILY(ofProtocol, subtype);
-  CHECK_FAMILY(ofProtocol, supertype);
+  CHECK_FAMILY(ofType, subtype);
+  CHECK_FAMILY(ofType, supertype);
   value_t inheritance = get_methodspace_inheritance(self);
   value_t parents = get_id_hash_map_at(inheritance, subtype);
   if (is_signal(scNotFound, parents)) {
-    // Make the parents buffer small since most protocols don't have many direct
+    // Make the parents buffer small since most types don't have many direct
     // parents. If this fails nothing has happened.
     TRY_SET(parents, new_heap_array_buffer(runtime, 4));
     // If this fails we've wasted some space allocating the parents array but
@@ -381,9 +381,9 @@ value_t add_methodspace_method(runtime_t *runtime, value_t self,
   return add_to_array_buffer(runtime, get_methodspace_methods(self), method);
 }
 
-value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol) {
+value_t get_type_parents(runtime_t *runtime, value_t space, value_t type) {
   value_t inheritance = get_methodspace_inheritance(space);
-  value_t parents = get_id_hash_map_at(inheritance, protocol);
+  value_t parents = get_id_hash_map_at(inheritance, type);
   if (is_signal(scNotFound, parents)) {
     return ROOT(runtime, empty_array_buffer);
   } else {

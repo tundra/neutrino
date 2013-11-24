@@ -256,15 +256,15 @@ TEST(value, array_buffer_empty) {
   DISPOSE_RUNTIME();
 }
 
-TEST(value, get_protocol) {
+TEST(value, get_primary_type) {
   CREATE_RUNTIME();
 
-  value_t int_proto = get_protocol(new_integer(2), runtime);
-  ASSERT_VALEQ(int_proto, ROOT(runtime, integer_protocol));
-  ASSERT_VALEQ(int_proto, get_protocol(new_integer(6), runtime));
-  value_t null_proto = get_protocol(null(), runtime);
+  value_t int_proto = get_primary_type(new_integer(2), runtime);
+  ASSERT_VALEQ(int_proto, ROOT(runtime, integer_type));
+  ASSERT_VALEQ(int_proto, get_primary_type(new_integer(6), runtime));
+  value_t null_proto = get_primary_type(null(), runtime);
   ASSERT_FALSE(value_structural_equal(int_proto, null_proto));
-  ASSERT_VALEQ(null_proto, ROOT(runtime, null_protocol));
+  ASSERT_VALEQ(null_proto, ROOT(runtime, null_type));
 
   DISPOSE_RUNTIME();
 }
@@ -273,12 +273,12 @@ TEST(value, get_protocol) {
 TEST(value, instance_division) {
   CREATE_RUNTIME();
 
-  value_t proto = new_heap_protocol(runtime, afFreeze, null());
+  value_t proto = new_heap_type(runtime, afFreeze, null());
   value_t species = new_heap_instance_species(runtime, proto);
   value_t instance = new_heap_instance(runtime, species);
-  ASSERT_VALEQ(proto, get_instance_species_primary_protocol(species));
-  ASSERT_VALEQ(proto, get_instance_primary_protocol(instance));
-  ASSERT_VALEQ(proto, get_protocol(instance, runtime));
+  ASSERT_VALEQ(proto, get_instance_species_primary_type_field(species));
+  ASSERT_VALEQ(proto, get_instance_primary_type_field(instance));
+  ASSERT_VALEQ(proto, get_primary_type(instance, runtime));
 
   DISPOSE_RUNTIME();
 }

@@ -430,8 +430,8 @@ static value_t new_instance_of_unknown(runtime_t *runtime, value_t type) {
   return new_heap_unknown(runtime, type, nothing());
 }
 
-static value_t new_instance_of_protocol(runtime_t *runtime, value_t protocol) {
-  TRY_DEF(species, new_heap_instance_species(runtime, protocol));
+static value_t new_instance_of_type(runtime_t *runtime, value_t type) {
+  TRY_DEF(species, new_heap_instance_species(runtime, type));
   TRY_DEF(result, new_heap_instance(runtime, species));
   return result;
 }
@@ -439,8 +439,8 @@ static value_t new_instance_of_protocol(runtime_t *runtime, value_t protocol) {
 static value_t new_object_with_object_type(runtime_t *runtime, value_t type) {
   object_family_t family = get_object_family(type);
   switch (family) {
-    case ofProtocol:
-      return new_instance_of_protocol(runtime, type);
+    case ofType:
+      return new_instance_of_type(runtime, type);
     case ofFactory:
       return new_instance_of_factory(runtime, type);
     default: {
@@ -494,32 +494,32 @@ static value_t plankton_set_contents_unsupported(value_t value, runtime_t *runti
 
 // --- P r o t o c o l ---
 
-static value_t get_object_protocol(value_t self, runtime_t *runtime) {
+static value_t get_object_primary_type(value_t self, runtime_t *runtime) {
   family_behavior_t *behavior = get_object_family_behavior(self);
-  return (behavior->get_protocol)(self, runtime);
+  return (behavior->get_primary_type)(self, runtime);
 }
 
-static value_t get_custom_tagged_protocol(value_t self, runtime_t *runtime) {
+static value_t get_custom_tagged_primary_type(value_t self, runtime_t *runtime) {
   phylum_behavior_t *behavior = get_custom_tagged_behavior(self);
-  return (behavior->get_protocol)(self, runtime);
+  return (behavior->get_primary_type)(self, runtime);
 }
 
-value_t get_protocol(value_t self, runtime_t *runtime) {
+value_t get_primary_type(value_t self, runtime_t *runtime) {
   value_domain_t domain = get_value_domain(self);
   switch (domain) {
     case vdInteger:
-      return ROOT(runtime, integer_protocol);
+      return ROOT(runtime, integer_type);
     case vdObject:
-      return get_object_protocol(self, runtime);
+      return get_object_primary_type(self, runtime);
     case vdCustomTagged:
-      return get_custom_tagged_protocol(self, runtime);
+      return get_custom_tagged_primary_type(self, runtime);
     default:
       return new_unsupported_behavior_signal(domain, __ofUnknown__,
-          ubGetProtocol);
+          ubGetPrimaryType);
   }
 }
 
-static value_t get_internal_object_protocol(value_t self, runtime_t *runtime) {
+static value_t get_internal_object_type(value_t self, runtime_t *runtime) {
   return new_signal(scInternalFamily);
 }
 
@@ -548,8 +548,8 @@ family_behavior_t k##Family##Behavior = {                                      \
     &plankton_set_##family##_contents,                                         \
     &plankton_set_contents_unsupported),                                       \
   SR(                                                                          \
-    &get_##family##_protocol,                                                  \
-    &get_internal_object_protocol),                                            \
+    &get_##family##_primary_type,                                              \
+    &get_internal_object_type),                                                \
   FU(                                                                          \
     &fixup_##family##_post_migrate,                                            \
     NULL),                                                                     \
@@ -589,8 +589,8 @@ phylum_behavior_t k##Phylum##PhylumBehavior = {                                \
     &phylum##_ordering_compare,                                                \
     NULL),                                                                     \
   SR(                                                                          \
-    &get_##phylum##_protocol,                                                  \
-    &get_internal_object_protocol)                                             \
+    &get_##phylum##_primary_type,                                              \
+    &get_internal_object_type)                                                 \
 };
 ENUM_CUSTOM_TAGGED_PHYLUMS(DEFINE_TAGGED_PHYLUM_BEHAVIOR)
 #undef DEFINE_TAGGED_PHYLUM_BEHAVIOR

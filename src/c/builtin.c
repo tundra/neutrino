@@ -73,7 +73,7 @@ value_t add_methodspace_builtin_method(runtime_t *runtime, value_t space,
     value_t receiver, builtin_operation_t operation, size_t posc,
     builtin_method_t implementation) {
   CHECK_FAMILY(ofMethodspace, space);
-  CHECK_FAMILY(ofProtocol, receiver);
+  CHECK_FAMILY(ofType, receiver);
   // Build the implementation.
   E_BEGIN_TRY_FINALLY();
     assembler_t assm;
@@ -95,7 +95,7 @@ value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
     value_t receiver, builtin_operation_t operation, size_t posc, bool allow_extra,
     custom_method_emitter_t emitter) {
   CHECK_FAMILY(ofMethodspace, space);
-  CHECK_FAMILY(ofProtocol, receiver);
+  CHECK_FAMILY(ofType, receiver);
   // Build the implementation.
   assembler_t assm;
   TRY(assembler_init(&assm, runtime, nothing(),

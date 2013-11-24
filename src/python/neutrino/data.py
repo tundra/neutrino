@@ -101,30 +101,6 @@ class Key(plankton.EnvironmentReference):
     return "(key %s)" % self.display_name
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("core", "Protocol"))
-class Protocol(object):
-
-  @plankton.field("name")
-  def __init__(self, display_name):
-    self.name = display_name
-
-
-# A user-defined object instance.
-@plankton.serializable()
-class Instance(object):
-
-  def __init__(self, protocol):
-    self.protocol = protocol
-
-  @plankton.header
-  def get_header(self):
-    return self.protocol
-
-  @plankton.payload
-  def get_payload(self):
-    return {}
-
-
 @plankton.serializable(plankton.EnvironmentReference.path("core", "Path"))
 class Path(object):
 

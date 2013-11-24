@@ -250,8 +250,8 @@ value_t add_methodspace_inheritance(runtime_t *runtime, value_t self,
 // Records in the given method space that it imports the given other methodspace.
 value_t add_methodspace_import(runtime_t *runtime, value_t self, value_t imported);
 
-// Returns the array buffer of parents of the given protocol.
-value_t get_protocol_parents(runtime_t *runtime, value_t space, value_t protocol);
+// Returns the array buffer of parents of the given type.
+value_t get_type_parents(runtime_t *runtime, value_t space, value_t type);
 
 // Add a method to this metod space. Returns a signal if adding fails, for
 // instance if we run out of memory to increase the size of the map.

@@ -77,32 +77,32 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, empty_path), new_heap_path(runtime, afFreeze, nothing(),
       nothing()));
   TRY_SET(RAW_ROOT(roots, any_guard), new_heap_guard(runtime, afFreeze, gtAny, null()));
-  TRY_SET(RAW_ROOT(roots, integer_protocol), new_heap_protocol(runtime, afFreeze, null()));
-  TRY_DEF(empty_protocol, new_heap_protocol(runtime, afFreeze, null()));
-  TRY(validate_deep_frozen(runtime, empty_protocol, NULL));
+  TRY_SET(RAW_ROOT(roots, integer_type), new_heap_type(runtime, afFreeze, null()));
+  TRY_DEF(empty_type, new_heap_type(runtime, afFreeze, null()));
+  TRY(validate_deep_frozen(runtime, empty_type, NULL));
   TRY_SET(RAW_ROOT(roots, empty_instance_species),
-      new_heap_instance_species(runtime, empty_protocol));
+      new_heap_instance_species(runtime, empty_type));
   TRY_SET(RAW_ROOT(roots, subject_key), new_heap_key(runtime, RAW_RSTR(roots, subject)));
   TRY_SET(RAW_ROOT(roots, selector_key), new_heap_key(runtime, RAW_RSTR(roots, selector)));
   TRY_SET(RAW_ROOT(roots, builtin_methodspace), new_heap_methodspace(runtime));
   TRY_SET(RAW_ROOT(roots, op_call), new_heap_operation(runtime, afFreeze, otCall, null()));
   TRY_SET(RAW_ROOT(roots, ctrino), new_heap_ctrino(runtime));
 
-  // Generate initialization for the per-family protocols.
-#define __CREATE_FAMILY_PROTOCOL__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\
+  // Generate initialization for the per-family types.
+#define __CREATE_FAMILY_TYPE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\
   SR(                                                                          \
-    TRY_SET(RAW_ROOT(roots, family##_protocol), new_heap_protocol(runtime, afFreeze, null()));,\
+    TRY_SET(RAW_ROOT(roots, family##_type), new_heap_type(runtime, afFreeze, null()));,\
     )
-  ENUM_OBJECT_FAMILIES(__CREATE_FAMILY_PROTOCOL__)
-#undef __CREATE_FAMILY_PROTOCOL__
+  ENUM_OBJECT_FAMILIES(__CREATE_FAMILY_TYPE__)
+#undef __CREATE_FAMILY_TYPE__
 
-  // Generate initialization for the per-phylum protocols.
-#define __CREATE_PHYLUM_PROTOCOL__(Phylum, phylum, CM, SR)                     \
+  // Generate initialization for the per-phylum types.
+#define __CREATE_PHYLUM_TYPE__(Phylum, phylum, CM, SR)                         \
   SR(                                                                          \
-    TRY_SET(RAW_ROOT(roots, phylum##_protocol), new_heap_protocol(runtime, afFreeze, null()));,\
+    TRY_SET(RAW_ROOT(roots, phylum##_type), new_heap_type(runtime, afFreeze, null()));,\
     )
-  ENUM_CUSTOM_TAGGED_PHYLUMS(__CREATE_PHYLUM_PROTOCOL__)
-#undef __CREATE_PHYLUM_PROTOCOL__
+  ENUM_CUSTOM_TAGGED_PHYLUMS(__CREATE_PHYLUM_TYPE__)
+#undef __CREATE_PHYLUM_TYPE__
 
   TRY_DEF(plankton_environment, new_heap_id_hash_map(runtime, 16));
   init_plankton_core_factories(plankton_environment, runtime);
@@ -157,7 +157,7 @@ value_t roots_validate(value_t roots) {
     VALIDATE_ALL_MODAL_SPECIES(of##Family, family),                            \
     VALIDATE_SPECIES(of##Family, RAW_ROOT(roots, family##_species)));          \
   SR(                                                                          \
-    VALIDATE_OBJECT(ofProtocol, RAW_ROOT(roots, family##_protocol));,          \
+    VALIDATE_OBJECT(ofType, RAW_ROOT(roots, family##_type));,                  \
     )
   ENUM_OBJECT_FAMILIES(__VALIDATE_PER_FAMILY_FIELDS__)
 #undef __VALIDATE_PER_FAMILY_FIELDS__
@@ -165,7 +165,7 @@ value_t roots_validate(value_t roots) {
   // Generate validation for phylums.
 #define __VALIDATE_PER_PHYLUM_FIELDS__(Phylum, phylum, CM, SR)                 \
   SR(                                                                          \
-    VALIDATE_OBJECT(ofProtocol, RAW_ROOT(roots, phylum##_protocol));,          \
+    VALIDATE_OBJECT(ofType, RAW_ROOT(roots, phylum##_type));,                  \
     )
   ENUM_CUSTOM_TAGGED_PHYLUMS(__VALIDATE_PER_PHYLUM_FIELDS__)
 #undef __VALIDATE_PER_PHYLUM_FIELDS__
@@ -178,7 +178,7 @@ value_t roots_validate(value_t roots) {
   VALIDATE_CHECK_TRUE(is_path_empty(RAW_ROOT(roots, empty_path)));
   VALIDATE_OBJECT(ofGuard, RAW_ROOT(roots, any_guard));
   VALIDATE_CHECK_EQ(gtAny, get_guard_type(RAW_ROOT(roots, any_guard)));
-  VALIDATE_OBJECT(ofProtocol, RAW_ROOT(roots, integer_protocol));
+  VALIDATE_OBJECT(ofType, RAW_ROOT(roots, integer_type));
   VALIDATE_OBJECT(ofSpecies, RAW_ROOT(roots, empty_instance_species));
   VALIDATE_OBJECT(ofKey, RAW_ROOT(roots, subject_key));
   VALIDATE_CHECK_EQ(0, get_key_id(RAW_ROOT(roots, subject_key)));

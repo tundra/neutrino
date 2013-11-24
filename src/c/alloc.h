@@ -65,7 +65,7 @@ value_t new_heap_modal_species(runtime_t *runtime, family_behavior_t *behavior,
 value_t new_heap_modal_species_unchecked(runtime_t *runtime,
     family_behavior_t *behavior, value_mode_t mode, root_key_t base_root);
 
-// Creates a new instance species with the specified primary protocol.
+// Creates a new instance species with the specified primary type.
 value_t new_heap_instance_species(runtime_t *runtime, value_t primary);
 
 // Allocates a new heap array in the given runtime with room for the given
@@ -117,8 +117,8 @@ value_t new_heap_argument_map_trie(runtime_t *runtime, value_t value);
 value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
     value_t value_pool, size_t high_water_mark);
 
-// Creates a new protocol object with the given display name.
-value_t new_heap_protocol(runtime_t *runtime, alloc_flags_t flags,
+// Creates a new type object with the given display name.
+value_t new_heap_type(runtime_t *runtime, alloc_flags_t flags,
     value_t display_name);
 
 // Creates a new function object with the given display name.

@@ -274,7 +274,6 @@ static value_t new_moved_object(value_t target) {
   F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _)\
   F(Path,                    path,                      X, X, X, X, _, _, _, X, _)\
   F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, _, _)\
-  F(Protocol,                protocol,                  _, _, X, X, _, _, _, X, _)\
   F(Roots,                   roots,                     _, _, _, _, _, _, _, X, X)\
   F(SequenceAst,             sequence_ast,              _, _, X, X, _, _, X, _, _)\
   F(Signature,               signature,                 _, _, _, _, _, _, _, X, X)\
@@ -283,6 +282,7 @@ static value_t new_moved_object(value_t target) {
   F(StackPiece,              stack_piece,               _, _, _, _, _, _, _, _, _)\
   F(String,                  string,                    X, X, _, X, X, _, _, _, _)\
   F(SymbolAst,               symbol_ast,                _, _, X, X, _, _, _, _, _)\
+  F(Type,                    type,                      _, _, X, X, _, _, _, X, _)\
   F(UnboundModule,           unbound_module,            _, _, X, _, _, _, _, _, _)\
   F(UnboundModuleFragment,   unbound_module_fragment,   _, _, X, _, _, _, _, _, _)\
   F(Unknown,                 unknown,                   _, _, X, _, _, _, _, _, _)\
@@ -545,17 +545,18 @@ static const size_t kCompactSpeciesSize = SPECIES_SIZE(0);
 // --- I n s t a n c e   s p e c i e s ---
 
 static const size_t kInstanceSpeciesSize = SPECIES_SIZE(1);
-static const size_t kInstanceSpeciesPrimaryProtocolOffset = SPECIES_FIELD_OFFSET(0);
+static const size_t kInstanceSpeciesPrimaryTypeFieldOffset = SPECIES_FIELD_OFFSET(0);
 
-// The primary protocol of the instance.
-SPECIES_ACCESSORS_DECL(instance, primary_protocol);
+// The primary type of the instance. This has the _field suffix to distinguish
+// it from the get_primary_type behavior.
+SPECIES_ACCESSORS_DECL(instance, primary_type_field);
 
 
 // --- M o d a l    s p e c i e s ---
 
 // Enum of the modes an object can be in.
 typedef enum {
-  // Any changes can be made to this object, including changing which protocol
+  // Any changes can be made to this object, including changing which type
   // it supports and which fields it has.
   vmFluid,
   // The object's fields can be set.
@@ -956,13 +957,13 @@ ACCESSORS_DECL(code_block, value_pool);
 INTEGER_ACCESSORS_DECL(code_block, high_water_mark);
 
 
-// --- P r o t o c o l ---
+// --- T y p e ---
 
-static const size_t kProtocolSize = OBJECT_SIZE(1);
-static const size_t kProtocolDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kTypeSize = OBJECT_SIZE(1);
+static const size_t kTypeDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
 
-// Returns the display (debug) name for this protocol object.
-ACCESSORS_DECL(protocol, display_name);
+// Returns the display (debug) name for this type object.
+ACCESSORS_DECL(type, display_name);
 
 
 // --- A r g u m e n t   m a p   t r i e ---

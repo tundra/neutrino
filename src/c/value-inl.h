@@ -107,13 +107,13 @@ value_t add_##family##_builtin_methods(runtime_t *runtime,                     \
   return success();                                                            \
 }
 
-// Expands to an implementation of get_protocol that returns the canonical
-// protocol for the value's family.
-#define GET_FAMILY_PROTOCOL_IMPL(family)                                       \
-value_t get_##family##_protocol(value_t self, runtime_t *runtime) {            \
-  return ROOT(runtime, family##_protocol);                                     \
+// Expands to an implementation of get_primary_type that returns the canonical
+// type for the value's family.
+#define GET_FAMILY_PRIMARY_TYPE_IMPL(family)                                   \
+value_t get_##family##_primary_type(value_t self, runtime_t *runtime) {        \
+  return ROOT(runtime, family##_type);                                         \
 }                                                                              \
-SWALLOW_SEMI(gfpi)
+SWALLOW_SEMI(gfpti)
 
 // Expands to an implementation of get and set family_mode for a family with a
 // fixed mode.
@@ -240,7 +240,7 @@ SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
 
 #define ADD_BUILTIN(family, name, argc, impl)                                  \
   TRY(add_methodspace_builtin_method(runtime, deref(s_space),                  \
-      ROOT(runtime, family##_protocol), name, argc, impl))
+      ROOT(runtime, family##_type), name, argc, impl))
 
 
 // --- P l a n k t o n ---

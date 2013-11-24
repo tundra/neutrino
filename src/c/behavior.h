@@ -73,8 +73,8 @@ struct family_behavior_t {
   // Sets the contents of the given value from the given serialized contents.
   value_t (*set_contents)(value_t value, runtime_t *runtime,
       value_t contents);
-  // Returns the protocol object for the given object.
-  value_t (*get_protocol)(value_t value, runtime_t *runtime);
+  // Returns the primary type object for the given object.
+  value_t (*get_primary_type)(value_t value, runtime_t *runtime);
   // If non-NULL, performs a fixup step to the new object optionally using the
   // old object which is still intact except for a forward-pointer instead of
   // a header. The old object will not be used again so it can also just be
@@ -173,8 +173,8 @@ value_t new_object_with_type(runtime_t *runtime, value_t type);
 value_t set_object_contents(runtime_t *runtime, value_t object,
     value_t payload);
 
-// Returns the primary protocol of the given value.
-value_t get_protocol(value_t value, runtime_t *runtime);
+// Returns the primary type of the given value.
+value_t get_primary_type(value_t value, runtime_t *runtime);
 
 // Returns a value suitable to be returned as a hash from the address of an
 // object.
@@ -214,7 +214,7 @@ PT(                                                                            \
   value_t plankton_new_##family(runtime_t *runtime);,                          \
   )                                                                            \
 SR(                                                                            \
-  value_t get_##family##_protocol(value_t value, runtime_t *runtime);,         \
+  value_t get_##family##_primary_type(value_t value, runtime_t *runtime);,     \
   )                                                                            \
 SR(                                                                            \
   value_t add_##family##_builtin_methods(runtime_t *runtime,                   \
@@ -268,7 +268,7 @@ CM(                                                                            \
   value_t phylum##_ordering_compare(value_t a, value_t b);,                    \
   )                                                                            \
 SR(                                                                            \
-  value_t get_##phylum##_protocol(value_t value, runtime_t *runtime);,         \
+  value_t get_##phylum##_primary_type(value_t value, runtime_t *runtime);,     \
   )                                                                            \
 SR(                                                                            \
   value_t add_##phylum##_builtin_methods(runtime_t *runtime,                   \
@@ -288,8 +288,8 @@ typedef struct {
   // value supports it. If this phylum doesn't support comparison this field
   // is NULL.
   value_t (*ordering_compare)(value_t a, value_t b);
-  // Returns the protocol object for the given object.
-  value_t (*get_protocol)(value_t value, runtime_t *runtime);
+  // Returns the primary type object for the given object.
+  value_t (*get_primary_type)(value_t value, runtime_t *runtime);
 } phylum_behavior_t;
 
 // Declare the division behavior structs.

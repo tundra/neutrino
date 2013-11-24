@@ -58,7 +58,7 @@ typedef struct {
 value_t builtin_operation_to_value(runtime_t *runtime, builtin_operation_t
     *operation);
 
-// Add a method to the given method space with the given receiver protocol,
+// Add a method to the given method space with the given receiver type,
 // name, number of arguments, and implementation.
 value_t add_methodspace_builtin_method(runtime_t *runtime, value_t space,
     value_t receiver, builtin_operation_t operation, size_t arg_count,
@@ -69,7 +69,7 @@ struct assembler_t;
 // Signature of a function that implements a built-in method.
 typedef value_t (*custom_method_emitter_t)(struct assembler_t *assm);
 
-// Add a method to the given method space with the given receiver protocol,
+// Add a method to the given method space with the given receiver type,
 // name, number of arguments, by delegating to the given emitter to generate
 // the code.
 value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
