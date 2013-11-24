@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 CONFIG=clang-32-warnings
 BIN=bin-$CONFIG
 

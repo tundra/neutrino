@@ -1,5 +1,4 @@
 import $assert;
-import $core;
 
 def @Point := @ctrino.new_protocol("Point");
 def @x := @ctrino.new_global_field("x");
@@ -17,7 +16,6 @@ def @test_raw_field_access() {
   @y.set($p, 2);
   @assert:equals(1, @x.get($p));
   @assert:equals(2, @y.get($p));
-  @core:info($p);
 }
 
 def @main() {
