@@ -51,6 +51,9 @@ typedef struct {
 // Macro that produces a prefix builtin_operation_t.
 #define PREFIX(value) OPERATION(otPrefix, value)
 
+// Macro that produces an index builtin_operation_t.
+#define INDEX() OPERATION(otIndex, NULL)
+
 // Macro that produces a builtin_operation_t.
 #define OPERATION(type, value) ((builtin_operation_t) {(type), (value)})
 

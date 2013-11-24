@@ -50,6 +50,7 @@ class Parameter(object):
 class Operation(object):
 
   _CALL = 2
+  _INDEX = 3
   _INFIX = 4
   _PREFIX = 5
 
@@ -62,6 +63,10 @@ class Operation(object):
   @staticmethod
   def call():
     return Operation(Operation._CALL, None)
+
+  @staticmethod
+  def index():
+    return Operation(Operation._INDEX, None)
 
   @staticmethod
   def infix(value):
