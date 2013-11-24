@@ -805,8 +805,17 @@ value_t array_length(builtin_arguments_t *args) {
   return new_integer(get_array_length(self));
 }
 
+value_t array_get_at(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t index = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofArray, self);
+  CHECK_DOMAIN(vdInteger, index);
+  return get_array_at(self, get_integer_value(index));
+}
+
 value_t add_array_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(array, INFIX("length"), 0, array_length);
+  ADD_BUILTIN(array, INDEX(), 1, array_get_at);
   return success();
 }
 
@@ -2090,7 +2099,7 @@ static value_t global_field_get(builtin_arguments_t *args) {
 
 value_t add_global_field_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(global_field, INFIX("set"), 2, global_field_set);
-  ADD_BUILTIN(global_field, INFIX("get"), 1, global_field_get);
+  ADD_BUILTIN(global_field, INDEX(), 1, global_field_get);
   return success();
 }
 

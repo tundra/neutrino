@@ -294,18 +294,18 @@ class Parser(object):
         ast.Argument(data._SUBJECT, left),
         ast.Argument(data._SELECTOR, ast.Literal(selector))
       ]
-      rest = self.parse_arguments()
+      rest = self.parse_arguments('(', ')')
       left = ast.Invocation(prefix + rest)
     return left
 
   # <arguments>
   #   -> <call expression>
-  #   -> "(" <expression> *: "," ")"
-  def parse_arguments(self):
+  #   -> <start> <expression> *: "," <end>
+  def parse_arguments(self, start, end):
     args = []
-    if self.at_punctuation('('):
-      self.expect_punctuation('(')
-      if not self.at_punctuation(')'):
+    if self.at_punctuation(start):
+      self.expect_punctuation(start)
+      if not self.at_punctuation(end):
         arg = self.parse_argument(0)
         args.append(arg)
         index = 1
@@ -314,7 +314,7 @@ class Parser(object):
           arg = self.parse_argument(index)
           args.append(arg)
           index += 1
-      self.expect_punctuation(')')
+      self.expect_punctuation(end)
     else:
       arg = self.parse_unary_expression()
       args.append(ast.Argument(0, arg))
@@ -349,12 +349,22 @@ class Parser(object):
   #   -> <atomic expression>
   def parse_call_expression(self):
     recv = self.parse_atomic_expression()
-    while self.at_punctuation('('):
+    while True:
+      if self.at_punctuation('('):
+        selector = Parser._SAUSAGES
+        start = '('
+        end = ')'
+      elif self.at_punctuation('['):
+        selector = data.Operation.index()
+        start = '['
+        end = ']'
+      else:
+        break
       prefix = [
         ast.Argument(data._SUBJECT, recv),
-        ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES))
+        ast.Argument(data._SELECTOR, ast.Literal(selector))
       ]
-      rest = self.parse_arguments()
+      rest = self.parse_arguments(start, end)
       recv = ast.Invocation(prefix + rest)
     return recv
 

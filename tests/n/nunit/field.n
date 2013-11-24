@@ -8,14 +8,14 @@ def @test_raw_field_access() {
   def $p := @ctrino.new_instance(@Point);
   @x.set($p, 0);
   @y.set($p, 0);
-  @assert:equals(0, @x.get($p));
-  @assert:equals(0, @y.get($p));
+  @assert:equals(0, @x[$p]);
+  @assert:equals(0, @y[$p]);
   @x.set($p, 1);
-  @assert:equals(1, @x.get($p));
-  @assert:equals(0, @y.get($p));
+  @assert:equals(1, @x[$p]);
+  @assert:equals(0, @y[$p]);
   @y.set($p, 2);
-  @assert:equals(1, @x.get($p));
-  @assert:equals(2, @y.get($p));
+  @assert:equals(1, @x[$p]);
+  @assert:equals(2, @y[$p]);
 }
 
 def @main() {
