@@ -813,9 +813,20 @@ value_t array_get_at(builtin_arguments_t *args) {
   return get_array_at(self, get_integer_value(index));
 }
 
+value_t array_set_at(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t index = get_builtin_argument(args, 0);
+  value_t value = get_builtin_argument(args, 1);
+  CHECK_FAMILY(ofArray, self);
+  CHECK_DOMAIN(vdInteger, index);
+  set_array_at(self, get_integer_value(index), value);
+  return value;
+}
+
 value_t add_array_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(array, INFIX("length"), 0, array_length);
   ADD_BUILTIN(array, INDEX(), 1, array_get_at);
+  ADD_BUILTIN(array, ASSIGN(INDEX()), 2, array_set_at);
   return success();
 }
 
@@ -1489,7 +1500,7 @@ value_t emit_lambda_call_trampoline(assembler_t *assm) {
 
 value_t add_lambda_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   TRY(add_methodspace_custom_method(runtime, deref(s_space),
-      ROOT(runtime, lambda_type), OPERATION(otCall, NULL), 0, true,
+      ROOT(runtime, lambda_type), CALL(), 0, true,
       emit_lambda_call_trampoline));
   return success();
 }
@@ -2098,7 +2109,7 @@ static value_t global_field_get(builtin_arguments_t *args) {
 }
 
 value_t add_global_field_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(global_field, INFIX("set"), 2, global_field_set);
+  ADD_BUILTIN(global_field, ASSIGN(INDEX()), 2, global_field_set);
   ADD_BUILTIN(global_field, INDEX(), 1, global_field_get);
   return success();
 }

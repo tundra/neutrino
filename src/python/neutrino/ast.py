@@ -161,6 +161,21 @@ class Invocation(object):
     for argument in self.arguments:
       argument.accept(visitor)
 
+  def to_assignment(self, rvalue):
+    new_args = []
+    max_arg_index = 0
+    for arg in self.arguments:
+      new_arg = arg
+      if arg.tag is data._SELECTOR:
+        inner_op = arg.value.value
+        outer_op = data.Operation.assign(inner_op)
+        new_arg = Argument(arg.tag, Literal(outer_op))
+      elif type(arg.tag) == int:
+        max_arg_index = max(max_arg_index, arg.tag)
+      new_args.append(new_arg)
+    new_args.append(Argument(max_arg_index + 1, rvalue))
+    return Invocation(new_args)
+
   def __str__(self):
     return "(call %s)" % " ".join(map(str, self.arguments))
 

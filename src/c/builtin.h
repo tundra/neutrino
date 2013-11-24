@@ -35,27 +35,41 @@ runtime_t *get_builtin_runtime(builtin_arguments_t *args);
 typedef value_t (*builtin_method_t)(builtin_arguments_t *args);
 
 // Describes the selector for a builtin method.
-typedef struct {
+typedef struct builtin_operation_t {
   // The type.
   operation_type_t type;
-  // The string value or NULL if there is none.
-  const char *value;
+  union {
+    // The string value.
+    const char *c_str;
+    struct builtin_operation_t *nested;
+  } value;
 } builtin_operation_t;
 
 // Macro that produces an infix builtin_operation_t.
-#define INFIX(value) OPERATION(otInfix, value)
+#define INFIX(value) STRING_OPERATION(otInfix, value)
 
 // Macro that produces a suffix builtin_operation_t.
-#define SUFFIX(value) OPERATION(otSuffix, value)
+#define SUFFIX(value) STRING_OPERATION(otSuffix, value)
 
 // Macro that produces a prefix builtin_operation_t.
-#define PREFIX(value) OPERATION(otPrefix, value)
+#define PREFIX(value) STRING_OPERATION(otPrefix, value)
 
 // Macro that produces an index builtin_operation_t.
-#define INDEX() OPERATION(otIndex, NULL)
+#define INDEX() STRING_OPERATION(otIndex, NULL)
 
-// Macro that produces a builtin_operation_t.
-#define OPERATION(type, value) ((builtin_operation_t) {(type), (value)})
+// Macro that produces an assignment for the given nested operation.
+#define ASSIGN(value) NESTED_OPERATION(otAssign, value)
+
+// Macro that produces a call builtin_operation_t.
+#define CALL() STRING_OPERATION(otCall, NULL)
+
+// Macro that produces a builtin_operation_t with a string value.
+#define STRING_OPERATION(type, value) ((builtin_operation_t) {(type), {.c_str=(value)}})
+
+// Macro that produces a builtin_operation_t with a nested operation argument.
+#define NESTED_OPERATION(type, value) ((builtin_operation_t) {                 \
+  (type),                                                                      \
+  {.nested=((builtin_operation_t[1]) {(value)})}})
 
 // Returns an operation value based on the given description.
 value_t builtin_operation_to_value(runtime_t *runtime, builtin_operation_t
