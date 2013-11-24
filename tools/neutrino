@@ -1,0 +1,16 @@
+#!/bin/bash
+
+CONFIG=clang-32-warnings
+BIN=bin-$CONFIG
+
+LIBRARY=$BIN/out/n/library.nl
+if [ ! -f $LIBRARY ]; then
+  make library
+fi
+
+if [ ! -f $BIN/ctrino ]; then
+  make ctrino
+fi
+
+./src/python/neutrino/main.py --file $1 > .neutrino.last
+$BIN/ctrino .neutrino.last --main-options `tools/plopt --module_loader { --libraries [ $LIBRARY ] }`
