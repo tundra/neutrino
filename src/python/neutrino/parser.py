@@ -199,11 +199,23 @@ class Parser(object):
 
   # <word expression>
   #   -> <lambda>
+  #   -> <assignment expression>
   def parse_word_expression(self):
     if self.at_word('fn'):
       return self.parse_lambda_expression()
     else:
-      return self.parse_operator_expression()
+      return self.parse_assignment_expression()
+
+  # <assignment expression>
+  #   -> <operator expression> :* ":="
+  def parse_assignment_expression(self):
+    lvalue = self.parse_operator_expression()
+    if self.at_punctuation(':='):
+      self.expect_punctuation(':=')
+      rvalue = self.parse_assignment_expression()
+      return lvalue.to_assignment(rvalue)
+    else:
+      return lvalue
 
   # <lambda expression>
   #   -> "fn" <parameters> "=>" <word expression>

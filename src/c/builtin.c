@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "builtin.h"
 #include "interp.h"
+#include "log.h"
 #include "try-inl.h"
 #include "value-inl.h"
 
@@ -28,15 +29,31 @@ runtime_t *get_builtin_runtime(builtin_arguments_t *args) {
 
 value_t builtin_operation_to_value(runtime_t *runtime, builtin_operation_t
     *operation) {
-  value_t name;
-  if (operation->value == NULL) {
-    name = null();
-  } else {
-    string_t name_str;
-    string_init(&name_str, operation->value);
-    TRY_SET(name, new_heap_string(runtime, &name_str));
+  value_t value = whatever();
+  switch (operation->type) {
+    case otAssign: {
+      TRY_SET(value, builtin_operation_to_value(runtime, operation->value.nested));
+      break;
+    }
+    case otInfix:
+    case otPrefix:
+    case otSuffix:
+    case otProperty: {
+      string_t name_str;
+      string_init(&name_str, operation->value.c_str);
+      TRY_SET(value, new_heap_string(runtime, &name_str));
+      break;
+    }
+    case otCall:
+    case otIndex: {
+      value = null();
+      break;
+    }
+    default:
+      ERROR("Unhandled operation type %i", operation->type);
+      return new_unsupported_behavior_signal(0, 0, 0);
   }
-  return new_heap_operation(runtime, afFreeze, operation->type, name);
+  return new_heap_operation(runtime, afFreeze, operation->type, value);
 }
 
 // Builds a signature for the built-in method with the given receiver, name,

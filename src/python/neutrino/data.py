@@ -49,6 +49,7 @@ class Parameter(object):
 @plankton.serializable(plankton.EnvironmentReference.path("core", "Operation"))
 class Operation(object):
 
+  _ASSIGN = 1
   _CALL = 2
   _INDEX = 3
   _INFIX = 4
@@ -76,6 +77,10 @@ class Operation(object):
   def prefix(value):
     return Operation(Operation._PREFIX, value)
 
+  @staticmethod
+  def assign(value):
+    return Operation(Operation._ASSIGN, value)
+
   def __hash__(self):
     return hash(self.type) ^ hash(self.value)
 
@@ -86,8 +91,13 @@ class Operation(object):
     if self.type == Operation._CALL:
       assert self.value is None
       return "()"
+    if self.type == Operation._INDEX:
+      assert self.value is None
+      return "[]"
     elif self.type == Operation._INFIX:
       return ".%s" % self.value
+    elif self.type == Operation._ASSIGN:
+      return "%s:=" % self.value
     else:
       return repr(self)
 

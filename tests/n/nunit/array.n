@@ -7,6 +7,11 @@ def @test_simple_array_methods() {
   @assert:equals(9, $a[0]);
   @assert:equals(8, $a[1]);
   @assert:equals(7, $a[2]);
+  @assert:equals(10, $a[1] := 10);
+  @assert:equals(3, $a.length());
+  @assert:equals(9, $a[0]);
+  @assert:equals(10, $a[1]);
+  @assert:equals(7, $a[2]);
 }
 
 def @main() {
