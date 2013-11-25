@@ -1,8 +1,8 @@
 import $assert;
 
 # A method that does something, anything.
-def @main() {
-  @assert:that(true);
+def $main() {
+  $assert:that(true);
 }
 
-entry_point @main();
+entry_point $main();

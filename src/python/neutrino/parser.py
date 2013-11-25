@@ -99,7 +99,7 @@ class Parser(object):
     while self.has_more():
       entry = self.parse_toplevel_statement()
       if entry:
-        self.unit.add_element(entry.get_stage(), entry)
+        self.unit.add_element(entry)
     return self.unit
 
   # <subject>
@@ -133,7 +133,7 @@ class Parser(object):
         return ast.NamespaceDeclaration(name, value)
       else:
         # First argument to a method
-        subject = ast.Parameter(name, [data._SUBJECT], ast.Guard.eq(ast.Variable(name)))
+        subject = ast.Parameter(name, [data._SUBJECT], ast.Guard.eq(ast.Variable(name.shift_back())))
         if self.at_punctuation('('):
           params = self.parse_parameters()
           body = self.parse_method_tail()

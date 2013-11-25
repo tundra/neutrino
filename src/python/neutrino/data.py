@@ -174,6 +174,10 @@ class Identifier(object):
   def get_path_parts(self):
     return self.path.get_path_parts()
 
+  # Returns the same identifier shifted one step into the past.
+  def shift_back(self):
+    return Identifier(self.stage - 1, self.path)
+
   def __str__(self):
     if self.stage < 0:
       prefix = "@" * -self.stage

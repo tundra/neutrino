@@ -4,22 +4,22 @@ def @Point := @ctrino.new_type("Point");
 def @x := @ctrino.new_global_field("x");
 def @y := @ctrino.new_global_field("y");
 
-def @test_raw_field_access() {
+def $test_raw_field_access() {
   def $p := @ctrino.new_instance(@Point);
   @x[$p] := 0;
   @y[$p] := 0;
-  @assert:equals(0, @x[$p]);
-  @assert:equals(0, @y[$p]);
+  $assert:equals(0, @x[$p]);
+  $assert:equals(0, @y[$p]);
   @x[$p] := 1;
-  @assert:equals(1, @x[$p]);
-  @assert:equals(0, @y[$p]);
+  $assert:equals(1, @x[$p]);
+  $assert:equals(0, @y[$p]);
   @y[$p] := 2;
-  @assert:equals(1, @x[$p]);
-  @assert:equals(2, @y[$p]);
+  $assert:equals(1, @x[$p]);
+  $assert:equals(2, @y[$p]);
 }
 
-def @main() {
-  @test_raw_field_access();
+def $main() {
+  $test_raw_field_access();
 }
 
-entry_point @main();
+entry_point $main();

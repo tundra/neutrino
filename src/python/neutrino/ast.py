@@ -6,7 +6,6 @@
 from abc import abstractmethod
 import data
 import plankton
-import schedule
 
 # Syntax tree visitor. The default behavior of each visit method is to apply
 # the visitor recursively.
@@ -419,7 +418,8 @@ class NamespaceDeclaration(object):
   def accept(self, visitor):
     return visitor.visit_namespace_declaration(self)
 
-  def apply(self, fragment):
+  def apply(self, module):
+    fragment = module.get_fragment(self.ident.stage)
     fragment.add_element(self)
 
   def traverse(self, visitor):
@@ -464,7 +464,8 @@ class MethodDeclaration(object):
   def traverse(self, visitor):
     self.method.accept(visitor)
 
-  def apply(self, fragment):
+  def apply(self, module):
+    fragment = module.get_fragment(0)
     fragment.add_element(self)
 
   def __str__(self):
@@ -487,9 +488,12 @@ class FunctionDeclaration(object):
   def traverse(self, visitor):
     self.method.accept(visitor)
 
-  def apply(self, fragment):
-    fragment.ensure_function_declared(self.ident)
-    fragment.add_element(MethodDeclaration(self.method))
+  def apply(self, module):
+    stage = self.ident.stage
+    value_fragment = module.get_fragment(stage - 1);
+    value_fragment.ensure_function_declared(self.ident)
+    method_fragment = module.get_fragment(stage)
+    method_fragment.add_element(MethodDeclaration(self.method))
 
   def __str__(self):
     return "(function-declaration %s %s)" % (self.method.signature, self.method.body)
@@ -542,9 +546,6 @@ class Stage(object):
   def add_element(self, element):
     self.elements.append(element)
 
-  def apply_element(self, element):
-    element.apply(self)
-
   def ensure_function_declared(self, name):
     if name in self.functions:
       return
@@ -570,14 +571,11 @@ class Unit(object):
     self.module_name = module_name
     self.entry_point = None
     self.stages = {}
-    self.min_stage = 0
-    self.max_stage = 0
     self.get_or_create_stage(0)
 
-  def add_element(self, stage, *elements):
-    target = self.get_or_create_stage(stage)
+  def add_element(self, *elements):
     for element in elements:
-      target.apply_element(element)
+      element.apply(self)
     return self
 
   def get_stages(self):
@@ -593,22 +591,13 @@ class Unit(object):
   def get_stage(self, index):
     return self.stages[index]
 
-  # Returns the stage immediately before the given one. If this is the earliest
-  # state None is returned.
-  def get_stage_before(self, index):
-    if index <= self.min_stage:
-      return None
-    if (index - 1) in self.stages:
-      return self.get_stage(index - 1)
-    else:
-      return self.get_stage_before(index - 1)
-
   def get_or_create_stage(self, index):
     if not index in self.stages:
       self.stages[index] = self.create_stage(index, self.module_name)
-      self.min_stage = min(self.min_stage, index)
-      self.max_stage = max(self.max_stage, index)
     return self.stages[index]
+
+  def get_fragment(self, index):
+    return self.get_or_create_stage(index)
 
   def create_stage(self, index, module_name):
     return Stage(index, module_name)
@@ -686,7 +675,8 @@ class Import(object):
   def accept(self, visitor):
     visitor.visit_import(self)
 
-  def apply(self, fragment):
+  def apply(self, module):
+    fragment = module.get_fragment(self.ident.stage)
     fragment.add_import(self.ident.path)
 
   def traverse(self, visitor):

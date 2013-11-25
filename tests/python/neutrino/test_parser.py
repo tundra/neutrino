@@ -23,12 +23,12 @@ SL = data._SELECTOR
 ix = data.Operation.infix
 
 def ut(phase, *elements):
-  return ast.Unit(None).add_element(phase, *elements)
+  return ast.Unit(None).add_element(*elements)
 
 def mu(*phases):
   result = ast.Unit(None)
   for (phase, elements) in phases:
-    result.add_element(phase, *elements)
+    result.add_element(*elements)
   return result
 
 def ls(*params):

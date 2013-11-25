@@ -1,16 +1,16 @@
 import $assert;
 
 ## Test of the most basic float operations.
-def @test_simple_arithmetic() {
-  @assert:equals(0.5 - 1.7, -1.2);
+def $test_simple_arithmetic() {
+  $assert:equals(0.5 - 1.7, -1.2);
 
-  @assert:equals(3.4, 1.2 + 2.2);
-  @assert:equals(7.4, 3.1 + 4.3);
-  @assert:equals(-1.3, 3.3 + -4.6);
+  $assert:equals(3.4, 1.2 + 2.2);
+  $assert:equals(7.4, 3.1 + 4.3);
+  $assert:equals(-1.3, 3.3 + -4.6);
 }
 
-def @main() {
-  @test_simple_arithmetic();
+def $main() {
+  $test_simple_arithmetic();
 }
 
-entry_point @main();
+entry_point $main();

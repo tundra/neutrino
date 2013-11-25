@@ -1,0 +1,36 @@
+import $assert;
+
+def $a() => 0;
+def $a($x) => $x;
+
+def @aa := @a;
+
+def $test_function_calls() {
+  # Calling normally.
+  $assert:equals(0, $a());
+  $assert:equals(1, $a(1));
+  $assert:equals(2, $a(2));
+  # Calling through the past name.
+  $assert:equals(0, @a());
+  $assert:equals(1, @a(1));
+  $assert:equals(2, @a(2));
+  # Calling through a local alias.
+  def $b := $a;
+  $assert:equals(0, $b());
+  $assert:equals(1, $b(1));
+  $assert:equals(2, $b(2));
+  # Calling through a toplevel alias.
+  $assert:equals(0, $aa());
+  $assert:equals(1, $aa(1));
+  $assert:equals(2, $aa(2));
+  # Calling through a past toplevel alias.
+  $assert:equals(0, @aa());
+  $assert:equals(1, @aa(1));
+  $assert:equals(2, @aa(2));
+}
+
+def $main() {
+  $test_function_calls();
+}
+
+entry_point $main();
