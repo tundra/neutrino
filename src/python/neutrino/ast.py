@@ -6,7 +6,6 @@
 from abc import abstractmethod
 import data
 import plankton
-import schedule
 
 # Syntax tree visitor. The default behavior of each visit method is to apply
 # the visitor recursively.
