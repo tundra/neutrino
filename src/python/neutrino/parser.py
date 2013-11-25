@@ -416,8 +416,7 @@ class Parser(object):
         or self.at_word('null')
         or self.at_word('true')
         or self.at_word('false')
-        or self.at_type(Token.QUOTE)
-        or self.at_type(Token.OPERATION))
+        or self.at_type(Token.QUOTE))
 
   # <atomic expression>
   #   -> <literal>
