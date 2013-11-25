@@ -1623,17 +1623,28 @@ bool has_module_fragment_at(value_t self, value_t stage) {
 static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
     value_t path);
 
+// Look up a path in the import part of a fragment. If an import is found the
+// lookup of the path's tail will continue through the imported module.
 static value_t module_fragment_lookup_path_in_imports(runtime_t *runtime,
     value_t self, value_t path) {
   value_t head = get_path_head(path);
   value_t importspace = get_module_fragment_imports(self);
-  value_t binding = get_namespace_binding_at(importspace, head);
-  if (is_signal(scNotFound, binding))
-    return binding;
+  value_t fragment = get_namespace_binding_at(importspace, head);
+  if (is_signal(scNotFound, fragment))
+    return fragment;
+  // We found a binding for the head in the imports. However, we don't continue
+  // the lookup directly in the fragment since we also want to be able to find
+  // bindings in the fragment's predecessors. Instead we only use the fragment
+  // to identify the start stage and then look up in the module -- which will
+  // start the lookup in the fragment but if it doesn't find the result continue
+  // backwards through the stages.
   value_t tail = get_path_tail(path);
-  return module_fragment_lookup_path(runtime, binding, tail);
+  value_t module = get_module_fragment_module(fragment);
+  value_t start_stage = get_module_fragment_stage(fragment);
+  return module_lookup_identifier(runtime, module, start_stage, tail);
 }
 
+// Look up a path in the namespace part of a fragment.
 static value_t module_fragment_lookup_path_in_namespace(runtime_t *runtime,
     value_t self, value_t path) {
   value_t head = get_path_head(path);
@@ -1641,40 +1652,43 @@ static value_t module_fragment_lookup_path_in_namespace(runtime_t *runtime,
   return get_namespace_binding_at(namespace, head);
 }
 
+// Look up a path locally in the given fragment. You generally don't want to
+// call this directly unless you explicitly continue backwards through the
+// predecessor fragments if this lookup doesn't find what you're looking for.
 static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
     value_t path) {
   CHECK_FAMILY(ofPath, path);
   CHECK_FALSE("looking up empty path", is_path_empty(path));
-  // Special case for ctrino which is always available.
+  // First check the imports.
+  value_t as_import = module_fragment_lookup_path_in_imports(runtime, self,
+      path);
+  if (!is_signal(scNotFound, as_import))
+    return as_import;
+  // If not an import try looking up in the appropriate namespace.
+  return module_fragment_lookup_path_in_namespace(runtime, self, path);
+}
+
+value_t module_lookup_identifier(runtime_t *runtime, value_t self,
+    value_t start_stage, value_t path) {
+  CHECK_PHYLUM(tpStageOffset, start_stage);
+  CHECK_FAMILY(ofPath, path);
   value_t head = get_path_head(path);
   if (value_identity_compare(head, RSTR(runtime, ctrino)))
     return ROOT(runtime, ctrino);
-  value_t current_fragment = self;
-  // Look up in successive fragments, starting from this one and then going
-  // backwards.
-  while (!is_signal(scNotFound, current_fragment)) {
-    // First check the imports.
-    value_t as_import = module_fragment_lookup_path_in_imports(runtime,
-        current_fragment, path);
-    if (!is_signal(scNotFound, as_import))
-      return as_import;
-    // If not an import try looking up in the appropriate namespace.
-    value_t as_namespace = module_fragment_lookup_path_in_namespace(runtime,
-        current_fragment, path);
-    if (!is_signal(scNotFound, as_namespace))
-      return as_namespace;
-    value_t module = get_module_fragment_module(current_fragment);
-    value_t stage = get_module_fragment_stage(current_fragment);
-    current_fragment = get_module_fragment_before(module, stage);
+  // Loop backwards through the fragments, starting from the specified stage.
+  value_t stage = start_stage;
+  value_t fragment = get_module_fragment_at(self, stage);
+  while (true) {
+    value_t binding = module_fragment_lookup_path(runtime, fragment, path);
+    if (!is_signal(scNotFound, binding))
+      return binding;
+    fragment = get_module_fragment_before(self, stage);
+    if (is_signal(scNotFound, fragment))
+      break;
+    stage = get_module_fragment_stage(fragment);
   }
   WARN("Namespace lookup of %v failed", path);
   return new_lookup_error_signal(lcNamespace);
-}
-
-value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage,
-    value_t path) {
-  value_t fragment = get_module_fragment_at(self, stage);
-  return module_fragment_lookup_path(runtime, fragment, path);
 }
 
 
