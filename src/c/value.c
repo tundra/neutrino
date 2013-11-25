@@ -1638,26 +1638,37 @@ static value_t module_fragment_lookup_path_in_namespace(runtime_t *runtime,
     value_t self, value_t path) {
   value_t head = get_path_head(path);
   value_t namespace = get_module_fragment_namespace(self);
-  value_t binding = get_namespace_binding_at(namespace, head);
-  if (is_signal(scNotFound, binding))
-    return new_lookup_error_signal(lcNamespace);
-  return binding;
+  return get_namespace_binding_at(namespace, head);
 }
 
 static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
     value_t path) {
   CHECK_FAMILY(ofPath, path);
   CHECK_FALSE("looking up empty path", is_path_empty(path));
-  value_t head = get_path_head(path);
   // Special case for ctrino which is always available.
+  value_t head = get_path_head(path);
   if (value_identity_compare(head, RSTR(runtime, ctrino)))
     return ROOT(runtime, ctrino);
-  // First check the imports.
-  value_t as_import = module_fragment_lookup_path_in_imports(runtime, self, path);
-  if (!is_signal(scNotFound, as_import))
-    return as_import;
-  // If not an import try looking up in the appropriate namespace.
-  return module_fragment_lookup_path_in_namespace(runtime, self, path);
+  value_t current_fragment = self;
+  // Look up in successive fragments, starting from this one and then going
+  // backwards.
+  while (!is_signal(scNotFound, current_fragment)) {
+    // First check the imports.
+    value_t as_import = module_fragment_lookup_path_in_imports(runtime,
+        current_fragment, path);
+    if (!is_signal(scNotFound, as_import))
+      return as_import;
+    // If not an import try looking up in the appropriate namespace.
+    value_t as_namespace = module_fragment_lookup_path_in_namespace(runtime,
+        current_fragment, path);
+    if (!is_signal(scNotFound, as_namespace))
+      return as_namespace;
+    value_t module = get_module_fragment_module(current_fragment);
+    value_t stage = get_module_fragment_stage(current_fragment);
+    current_fragment = get_module_fragment_before(module, stage);
+  }
+  WARN("Namespace lookup of %v failed", path);
+  return new_lookup_error_signal(lcNamespace);
 }
 
 value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage,
