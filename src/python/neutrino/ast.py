@@ -162,7 +162,7 @@ class Invocation(object):
 
   def to_assignment(self, rvalue):
     new_args = []
-    max_arg_index = 0
+    max_arg_index = -1
     for arg in self.arguments:
       new_arg = arg
       if arg.tag is data._SELECTOR:

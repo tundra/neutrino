@@ -54,6 +54,7 @@ class Operation(object):
   _INDEX = 3
   _INFIX = 4
   _PREFIX = 5
+  _PROPERTY = 6
 
   @plankton.field("type")
   @plankton.field("value")
@@ -80,6 +81,10 @@ class Operation(object):
   @staticmethod
   def assign(value):
     return Operation(Operation._ASSIGN, value)
+
+  @staticmethod
+  def property(value):
+    return Operation(Operation._PROPERTY, value)
 
   def __hash__(self):
     return hash(self.type) ^ hash(self.value)
