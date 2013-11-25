@@ -261,6 +261,8 @@ class Parser(object):
       self.name_as_selector(Parser._SAUSAGES)
     ]
     params = self.parse_parameters()
+    if params is None:
+      params = []
     return ast.Signature(prefix + params)
 
   # <parameters>
