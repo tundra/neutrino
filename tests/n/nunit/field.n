@@ -18,8 +18,25 @@ def $test_raw_field_access() {
   $assert:equals(2, @y[$p]);
 }
 
+def ($this is @Point).x() => @x[$this];
+
+def $test_field_accessors() {
+  def $p := @ctrino.new_instance(@Point);
+  @x[$p] := 0;
+  @y[$p] := 0;
+  $assert:equals(0, $p.x());
+  $assert:equals(0, @y[$p]);
+  @x[$p] := 1;
+  $assert:equals(1, $p.x());
+  $assert:equals(0, @y[$p]);
+  @y[$p] := 2;
+  $assert:equals(1, $p.x());
+  $assert:equals(2, @y[$p]);
+}
+
 def $main() {
   $test_raw_field_access();
+  $test_field_accessors();
 }
 
 entry_point $main();
