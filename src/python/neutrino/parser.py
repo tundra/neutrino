@@ -143,8 +143,18 @@ class Parser(object):
     else:
       subject = self.parse_subject()
     name = self.expect_type(Token.OPERATION)
-    selector = self.name_as_selector(data.Operation.infix(name))
     params = self.parse_parameters()
+    if params is None:
+      op = data.Operation.property(name)
+      params = []
+    else:
+      op = data.Operation.infix(name)
+    if self.at_punctuation(':='):
+      self.expect_punctuation(':=')
+      assign_params = self.parse_parameters()
+      params += assign_params
+      op = data.Operation.assign(op)
+    selector = self.name_as_selector(op)
     body = self.parse_method_tail()
     signature = ast.Signature([subject, selector] + params)
     return ast.MethodDeclaration(ast.Method(signature, body))
@@ -251,22 +261,24 @@ class Parser(object):
       self.name_as_selector(Parser._SAUSAGES)
     ]
     params = self.parse_parameters()
+    if params is None:
+      params = []
     return ast.Signature(prefix + params)
 
   # <parameters>
   #   -> "(" <parameter> *: "," ")"
   #   -> <parameter>
   #   -> .
-  def parse_parameters(self):
+  def parse_parameters(self, start_index=0):
     if self.at_parameter_start():
       param = self.parse_parameter(0)
       return [param]
     elif not self.at_punctuation('('):
-      return []
+      return None
     self.expect_punctuation('(')
     result = []
     if not self.at_punctuation(')'):
-      index = 0
+      index = start_index
       first = self.parse_parameter(index)
       index += 1
       result.append(first)
@@ -302,12 +314,16 @@ class Parser(object):
     left = self.parse_unary_expression()
     while self.at_type(Token.OPERATION):
       name = self.expect_type(Token.OPERATION)
-      selector = data.Operation.infix(name)
+      if self.at_atomic_start():
+        selector = data.Operation.infix(name)
+        rest = self.parse_arguments('(', ')')
+      else:
+        selector = data.Operation.property(name)
+        rest = []
       prefix = [
         ast.Argument(data._SUBJECT, left),
         ast.Argument(data._SELECTOR, ast.Literal(selector))
       ]
-      rest = self.parse_arguments('(', ')')
       left = ast.Invocation(prefix + rest)
     return left
 
@@ -388,6 +404,19 @@ class Parser(object):
     stage_index = ident.stage
     stage = self.unit.get_or_create_stage(stage_index)
     return ast.Variable(ident)
+
+  # Are we at the beginning of an atomic expression? This is a massive hack and
+  # must be replaced when there's a proper precedence parser.
+  def at_atomic_start(self):
+    return (self.at_type(Token.LITERAL)
+        or self.at_type(Token.IDENTIFIER)
+        or self.at_punctuation('(')
+        or self.at_punctuation('[')
+        or self.at_punctuation('{')
+        or self.at_word('null')
+        or self.at_word('true')
+        or self.at_word('false')
+        or self.at_type(Token.QUOTE))
 
   # <atomic expression>
   #   -> <literal>
