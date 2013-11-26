@@ -706,5 +706,6 @@ class IsDeclaration(object):
     self.supertype.accept(visitor)
 
   def apply(self, module):
+    # TODO: allow past is-declarations.
     fragment = module.get_fragment(0)
     fragment.add_element(self)
