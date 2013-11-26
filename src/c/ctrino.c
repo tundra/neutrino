@@ -18,22 +18,34 @@ value_t ctrino_validate(value_t self) {
   return success();
 }
 
-value_t ctrino_fail(builtin_arguments_t *args) {
+static value_t ctrino_fail(builtin_arguments_t *args) {
   log_message(llError, NULL, 0, "@ctrino.fail()");
   exit(1);
   return nothing();
 }
 
-value_t ctrino_get_builtin_type(builtin_arguments_t *args) {
+static value_t ctrino_get_builtin_type(builtin_arguments_t *args) {
   runtime_t *runtime = get_builtin_runtime(args);
   value_t self = get_builtin_subject(args);
   value_t name = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofCtrino, self);
   CHECK_FAMILY(ofString, name);
-  return ROOT(runtime, integer_type);
+#define __CHECK_BUILTIN_TYPE_OPT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW) \
+  SR(__CHECK_BUILTIN_TYPE__(family),)
+#define __CHECK_BUILTIN_TYPE__(family)                                         \
+  do {                                                                         \
+    value_t type = ROOT(runtime, family##_type);                               \
+    if (value_identity_compare(name, get_type_display_name(type)))             \
+      return type;                                                             \
+  } while (false);
+  ENUM_OBJECT_FAMILIES(__CHECK_BUILTIN_TYPE_OPT__)
+  __CHECK_BUILTIN_TYPE__(integer);
+#undef __CHECK_BUILTIN_TYPE__
+#undef __CHECK_BUILTIN_TYPE_OPT__
+  return null();
 }
 
-value_t ctrino_new_function(builtin_arguments_t *args) {
+static value_t ctrino_new_function(builtin_arguments_t *args) {
   runtime_t *runtime = get_builtin_runtime(args);
   value_t self = get_builtin_subject(args);
   value_t display_name = get_builtin_argument(args, 0);
@@ -41,28 +53,28 @@ value_t ctrino_new_function(builtin_arguments_t *args) {
   return new_heap_function(runtime, afMutable, display_name);
 }
 
-value_t ctrino_new_type(builtin_arguments_t *args) {
+static value_t ctrino_new_type(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t display_name = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofCtrino, self);
   return new_heap_type(get_builtin_runtime(args), afMutable, display_name);
 }
 
-value_t ctrino_new_instance_manager(builtin_arguments_t *args) {
+static value_t ctrino_new_instance_manager(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t display_name = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofCtrino, self);
   return new_heap_instance_manager(get_builtin_runtime(args), display_name);
 }
 
-value_t ctrino_new_global_field(builtin_arguments_t *args) {
+static value_t ctrino_new_global_field(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t display_name = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofCtrino, self);
   return new_heap_global_field(get_builtin_runtime(args), display_name);
 }
 
-value_t ctrino_new_float_32(builtin_arguments_t *args) {
+static value_t ctrino_new_float_32(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t decimal = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofCtrino, self);
@@ -78,12 +90,30 @@ value_t ctrino_new_float_32(builtin_arguments_t *args) {
   return new_float_32(value);
 }
 
-value_t ctrino_log_info(builtin_arguments_t *args) {
+static value_t ctrino_log_info(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t value = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofCtrino, self);
   INFO("%9v", value);
   return null();
+}
+
+static value_t ctrino_to_string(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t value = get_builtin_argument(args, 0);
+  runtime_t *runtime = get_builtin_runtime(args);
+  CHECK_FAMILY(ofCtrino, self);
+  string_buffer_t buf;
+  string_buffer_init(&buf);
+  string_buffer_printf(&buf, "%9v", value);
+  string_t as_string;
+  string_buffer_flush(&buf, &as_string);
+  E_BEGIN_TRY_FINALLY();
+    E_TRY_DEF(result, new_heap_string(runtime, &as_string));
+    E_RETURN(result);
+  E_FINALLY();
+    string_buffer_dispose(&buf);
+  E_END_TRY_FINALLY();
 }
 
 value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
@@ -95,5 +125,6 @@ value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(ctrino, INFIX("new_global_field"), 1, ctrino_new_global_field);
   ADD_BUILTIN(ctrino, INFIX("new_instance_manager"), 1, ctrino_new_instance_manager);
   ADD_BUILTIN(ctrino, INFIX("new_type"), 1, ctrino_new_type);
+  ADD_BUILTIN(ctrino, INFIX("to_string"), 1, ctrino_to_string);
   return success();
 }

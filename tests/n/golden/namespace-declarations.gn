@@ -16,7 +16,7 @@ entry_point ($x + $y).print();
 -- INPUT:
 def $x := "6";
 def $y := "7";
-entry_point ($x + $y).print();
+entry_point ($x + $y).print_raw();
 -- OUTPUT:
-"67"
+67
 -- END

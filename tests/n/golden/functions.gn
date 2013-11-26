@@ -1,17 +1,17 @@
 -- INPUT:
 def $myfun($x) => "[" + $x + "]";
-entry_point $myfun("-").print();
+entry_point $myfun("-").print_raw();
 -- OUTPUT:
-"[-]"
+[-]
 -- END
 
 
 -- INPUT:
 def $foo($x) => "[" + $x + "]";
 def $bar($x) => "{" + $x + "}";
-entry_point $foo($bar("X")).print();
+entry_point $foo($bar("X")).print_raw();
 -- OUTPUT:
-"[{X}]"
+[{X}]
 -- END
 
 
@@ -19,14 +19,14 @@ entry_point $foo($bar("X")).print();
 def $foo($x) => "<" + $x + ">";
 def $foo($x == "y") => "{" + $x + "}";
 entry_point {
-  $foo("x").print();
-  $foo("y").print();
-  $foo("z").print();
+  $foo("x").print_raw();
+  $foo("y").print_raw();
+  $foo("z").print_raw();
 }
 -- OUTPUT:
-"<x>"
-"{y}"
-"<z>"
+<x>
+{y}
+<z>
 -- END
 
 
@@ -34,10 +34,10 @@ entry_point {
 def $foo($x) => "<" + $x + ">";
 def $foo($x, $y) => "{" + $x + ", " + $y + "}";
 entry_point {
-  $foo("x").print();
-  $foo("y", "z").print();
+  $foo("x").print_raw();
+  $foo("y", "z").print_raw();
 }
 -- OUTPUT:
-"<x>"
-"{y, z}"
+<x>
+{y, z}
 -- END

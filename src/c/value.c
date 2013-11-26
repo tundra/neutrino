@@ -506,16 +506,19 @@ static value_t string_plus_string(builtin_arguments_t *args) {
   return result;
 }
 
-static value_t string_print(builtin_arguments_t *args) {
+static value_t string_print_raw(builtin_arguments_t *args) {
   value_t this = get_builtin_subject(args);
   CHECK_FAMILY(ofString, this);
-  print_ln("%v", this);
+  string_t contents;
+  get_string_contents(this, &contents);
+  fwrite(contents.chars, sizeof(char), contents.length, stdout);
+  fputc('\n', stdout);
   return nothing();
 }
 
 value_t add_string_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(string, INFIX("+"), 1, string_plus_string);
-  ADD_BUILTIN(string, INFIX("print"), 0, string_print);
+  ADD_BUILTIN(string, INFIX("print_raw"), 0, string_print_raw);
   return success();
 }
 
@@ -1437,7 +1440,7 @@ void type_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
   CHECK_FAMILY(ofType, value);
   value_t display_name = get_type_display_name(value);
   string_buffer_printf(buf, "#<type");
-  if (!is_null(display_name)) {
+  if (!is_nothing(display_name)) {
     string_buffer_printf(buf, " ");
     value_print_inner_on(display_name, buf, flags | pfUnquote, depth - 1);
   }
@@ -1731,6 +1734,7 @@ value_t module_lookup_identifier(runtime_t *runtime, value_t self,
 // --- M o d u l e   f r a g m e n t ---
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(module_fragment);
+NO_BUILTIN_METHODS(module_fragment);
 
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acNoCheck, 0, Stage, stage);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofModule,
@@ -1768,17 +1772,6 @@ void module_fragment_print_on(value_t value, string_buffer_t *buf, print_flags_t
   value_t stage = get_module_fragment_stage(value);
   value_print_inner_on(stage, buf, flags, depth + 1);
   string_buffer_printf(buf, ">");
-}
-
-static value_t module_fragment_print(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
-  print_ln("%v", this);
-  return nothing();
-}
-
-value_t add_module_fragment_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(module_fragment, INFIX("print"), 0, module_fragment_print);
-  return success();
 }
 
 bool is_module_fragment_bound(value_t fragment) {
