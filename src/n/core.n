@@ -5,8 +5,10 @@
 ## import the different basic modules together.
 
 import @array;
+import @bool;
 import @function;
 import @integer;
+import @null;
 import @string;
 
 ## Info-log the given value to stdout using the built-in INFO macro.
@@ -19,10 +21,16 @@ def @Object := @ctrino.new_type("Object");
 ## the given object.
 def ($this is @Object).to($target == @string:String) => @ctrino.to_string($this);
 
+## Returns true iff the two given objects are identical.
+def ($this is @Object)==($that is @Object)
+ => @ctrino.identity_compare($this, $that);
+
 ## Prints the internal representation of this object.
 def ($this is @Object).print() => $this.to(@string:String).print_raw();
 
 type @array:Array is @Object;
+type @bool:Bool is @Object;
 type @function:Function is @Object;
 type @integer:Integer is @Object;
+type @null:Null is @Object;
 type @string:String is @Object;

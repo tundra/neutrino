@@ -1,0 +1,14 @@
+import $assert;
+import $core;
+
+def $test_to_string() {
+  $assert:equals("null", null.to(@core:string:String));
+  $assert:equals("true", true.to(@core:string:String));
+  $assert:equals("false", false.to(@core:string:String));
+}
+
+def $main() {
+  $test_to_string();
+}
+
+entry_point $main();

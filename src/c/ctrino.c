@@ -30,18 +30,26 @@ static value_t ctrino_get_builtin_type(builtin_arguments_t *args) {
   value_t name = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofCtrino, self);
   CHECK_FAMILY(ofString, name);
-#define __CHECK_BUILTIN_TYPE_OPT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW) \
-  SR(__CHECK_BUILTIN_TYPE__(family),)
 #define __CHECK_BUILTIN_TYPE__(family)                                         \
   do {                                                                         \
     value_t type = ROOT(runtime, family##_type);                               \
     if (value_identity_compare(name, get_type_display_name(type)))             \
       return type;                                                             \
   } while (false);
-  ENUM_OBJECT_FAMILIES(__CHECK_BUILTIN_TYPE_OPT__)
   __CHECK_BUILTIN_TYPE__(integer);
+
+#define __CHECK_FAMILY_TYPE_OPT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW) \
+  SR(__CHECK_BUILTIN_TYPE__(family),)
+  ENUM_OBJECT_FAMILIES(__CHECK_FAMILY_TYPE_OPT__)
+#undef __CHECK_FAMILY_TYPE_OPT__
+
+#define __CHECK_PHYLUM_TYPE_OPT__(Phylum, phylum, CM, SR)                      \
+  SR(__CHECK_BUILTIN_TYPE__(phylum),)
+  ENUM_CUSTOM_TAGGED_PHYLUMS(__CHECK_PHYLUM_TYPE_OPT__)
+#undef __CHECK_PHYLUM_TYPE_OPT__
+
 #undef __CHECK_BUILTIN_TYPE__
-#undef __CHECK_BUILTIN_TYPE_OPT__
+  WARN("No built-in type %v found", name);
   return null();
 }
 
@@ -98,6 +106,14 @@ static value_t ctrino_log_info(builtin_arguments_t *args) {
   return null();
 }
 
+static value_t ctrino_identity_compare(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofCtrino, self);
+  value_t a = get_builtin_argument(args, 0);
+  value_t b = get_builtin_argument(args, 1);
+  return new_boolean(value_identity_compare(a, b));
+}
+
 static value_t ctrino_to_string(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t value = get_builtin_argument(args, 0);
@@ -119,6 +135,7 @@ static value_t ctrino_to_string(builtin_arguments_t *args) {
 value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(ctrino, INFIX("fail"), 0, ctrino_fail);
   ADD_BUILTIN(ctrino, INFIX("get_builtin_type"), 1, ctrino_get_builtin_type);
+  ADD_BUILTIN(ctrino, INFIX("identity_compare"), 2, ctrino_identity_compare);
   ADD_BUILTIN(ctrino, INFIX("log_info"), 1, ctrino_log_info);
   ADD_BUILTIN(ctrino, INFIX("new_float_32"), 1, ctrino_new_float_32);
   ADD_BUILTIN(ctrino, INFIX("new_function"), 1, ctrino_new_function);
