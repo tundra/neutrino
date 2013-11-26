@@ -38,9 +38,29 @@ def $test_field_accessors() {
   $assert:equals(2, $p.y);
 }
 
+def ($this == @Point).new(x: $x, y: $y) {
+  def $result := @manager.new_instance($this);
+  $result.x := $x;
+  $result.y := $y;
+  $result;
+}
+
+def $test_constructor() {
+  def $p0 := @Point.new(10, 11);
+  $assert:equals(10, $p0.x);
+  $assert:equals(11, $p0.y);
+  def $p1 := @Point.new(x: 3, y: 4);
+  $assert:equals(3, $p1.x);
+  $assert:equals(4, $p1.y);
+  def $p2 := @Point.new(y: 32, x: 35);
+  $assert:equals(35, $p2.x);
+  $assert:equals(32, $p2.y);
+}
+
 def $main() {
   $test_raw_field_access();
   $test_field_accessors();
+  $test_constructor();
 }
 
 entry_point $main();

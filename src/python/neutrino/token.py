@@ -169,6 +169,9 @@ class Tokenizer(object):
   def is_alpha(self, c):
     return c.isalpha() or (c == '_')
 
+  def is_word_char(self, c):
+    return c.isdigit() or self.is_alpha(c)
+
   # Is the given character an operator character.
   def is_operator(self, c):
     return c in Tokenizer._OPERATORS
@@ -210,7 +213,7 @@ class Tokenizer(object):
   # Scans over the next word or string-valued tag.
   def scan_word_or_tag(self, delim):
     start = self.cursor
-    while self.has_more() and self.is_alpha(self.current()):
+    while self.has_more() and self.is_word_char(self.current()):
       self.advance()
     end = self.cursor
     if self.has_more() and self.current() == ':':
@@ -237,7 +240,7 @@ class Tokenizer(object):
       stage += direction
       self.advance()
     start = self.cursor
-    while self.has_more() and (self.is_alpha(self.current()) or self.current() == ':'):
+    while self.has_more() and (self.is_word_char(self.current()) or self.current() == ':'):
       self.advance()
     end = self.cursor
     combined = self.slice(start, end)
@@ -249,7 +252,7 @@ class Tokenizer(object):
 
   # Is this a character that is allowed to follow a .?
   def is_named_operator_char(self, value):
-    return self.is_alpha(value) or self.is_operator(value)
+    return self.is_word_char(value) or self.is_operator(value)
 
   # Scans over the next named operation.
   def scan_named_operation(self, delim):
