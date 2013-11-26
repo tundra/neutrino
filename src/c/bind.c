@@ -85,6 +85,20 @@ static value_t apply_method_declaration(runtime_t *runtime, value_t decl,
   return success();
 }
 
+// Executes an is declaration on the given fragment.
+static value_t apply_is_declaration(runtime_t *runtime, value_t decl,
+    value_t fragment) {
+  CHECK_FAMILY(ofIsDeclarationAst, decl);
+  CHECK_FAMILY(ofModuleFragment, fragment);
+  value_t subtype_ast = get_is_declaration_ast_subtype(decl);
+  value_t supertype_ast = get_is_declaration_ast_supertype(decl);
+  TRY_DEF(subtype, quick_and_dirty_evaluate_syntax(runtime, fragment, subtype_ast));
+  TRY_DEF(supertype, quick_and_dirty_evaluate_syntax(runtime, fragment, supertype_ast));
+  value_t methodspace = get_module_fragment_methodspace(fragment);
+  TRY(add_methodspace_inheritance(runtime, methodspace, subtype, supertype));
+  return success();
+}
+
 // Performs the appropriate action for a fragment element to the given fragment.
 static value_t apply_unbound_fragment_element(runtime_t *runtime, value_t element,
     value_t fragment) {
@@ -94,6 +108,8 @@ static value_t apply_unbound_fragment_element(runtime_t *runtime, value_t elemen
       return apply_namespace_declaration(runtime, element, fragment);
     case ofMethodDeclarationAst:
       return apply_method_declaration(runtime, element, fragment);
+    case ofIsDeclarationAst:
+      return apply_is_declaration(runtime, element, fragment);
     default:
       ERROR("Invalid toplevel element %s", get_object_family_name(family));
       return success();

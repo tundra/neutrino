@@ -193,8 +193,20 @@ class Parser(object):
       self.unit.set_entry_point(self.parse_expression())
       self.expect_statement_delimiter()
       return None
+    elif self.at_word('type'):
+      return self.parse_toplevel_type_declaration()
     else:
       raise self.new_syntax_error()
+
+  # <toplevel-type-declaration>
+  #   -> "type" <atomic> "is" <atomic> ";"
+  def parse_toplevel_type_declaration(self):
+    self.expect_word('type')
+    subtype = self.parse_atomic_expression()
+    self.expect_word('is')
+    supertype = self.parse_atomic_expression()
+    self.expect_statement_delimiter()
+    return ast.IsDeclaration(subtype, supertype)
 
   # <expression>
   #   -> <operator expression>

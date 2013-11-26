@@ -562,8 +562,8 @@ FIXED_GET_MODE_IMPL(lambda_ast, vmMutable);
 ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, ofMethodAst, Method,
     method);
 
-static value_t quick_and_dirty_evaluate_syntax(runtime_t *runtime,
-    value_t fragment, value_t value_ast) {
+value_t quick_and_dirty_evaluate_syntax(runtime_t *runtime, value_t fragment,
+    value_t value_ast) {
   switch (get_object_family(value_ast)) {
     case ofLiteralAst:
       return get_literal_ast_value(value_ast);
@@ -574,7 +574,7 @@ static value_t quick_and_dirty_evaluate_syntax(runtime_t *runtime,
           get_identifier_stage(ident), get_identifier_path(ident));
     }
     default:
-      ERROR("Cannot evaluate guard value %v", value_ast);
+      ERROR("Quick-and-dirty evaluation doesn't work for %v", value_ast);
       return new_invalid_input_signal();
   }
 }
@@ -996,6 +996,42 @@ void method_declaration_ast_print_on(value_t value, string_buffer_t *buf,
 }
 
 
+// --- I s   d e c l a r a t i o n   a s t ---
+
+FIXED_GET_MODE_IMPL(is_declaration_ast, vmMutable);
+
+ACCESSORS_IMPL(IsDeclarationAst, is_declaration_ast, acIsSyntaxOpt, 0, Subtype,
+    subtype);
+ACCESSORS_IMPL(IsDeclarationAst, is_declaration_ast, acIsSyntaxOpt, 0, Supertype,
+    supertype);
+
+value_t is_declaration_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofIsDeclarationAst, self);
+  return success();
+}
+
+value_t plankton_set_is_declaration_ast_contents(value_t object,
+    runtime_t *runtime, value_t contents) {
+  UNPACK_PLANKTON_MAP(contents, subtype, supertype);
+  set_is_declaration_ast_subtype(object, subtype);
+  set_is_declaration_ast_supertype(object, supertype);
+  return success();
+}
+
+value_t plankton_new_is_declaration_ast(runtime_t *runtime) {
+  return new_heap_is_declaration_ast(runtime, nothing(), nothing());
+}
+
+void is_declaration_ast_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
+  string_buffer_printf(buf, "#<type ");
+  value_print_inner_on(get_is_declaration_ast_subtype(value), buf, flags, depth - 1);
+  string_buffer_printf(buf, " is ");
+  value_print_inner_on(get_is_declaration_ast_supertype(value), buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
+
 // --- P r o g r a m   a s t ---
 
 FIXED_GET_MODE_IMPL(program_ast, vmMutable);
@@ -1061,6 +1097,7 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "Array", plankton_new_array_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Guard", plankton_new_guard_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Invocation", plankton_new_invocation_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "IsDeclaration", plankton_new_is_declaration_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Lambda", plankton_new_lambda_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Literal", plankton_new_literal_ast, runtime));
   TRY(add_plankton_factory(map, ast, "LocalDeclaration", plankton_new_local_declaration_ast, runtime));
