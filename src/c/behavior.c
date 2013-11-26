@@ -431,7 +431,7 @@ static value_t new_instance_of_unknown(runtime_t *runtime, value_t type) {
 }
 
 static value_t new_instance_of_type(runtime_t *runtime, value_t type) {
-  TRY_DEF(species, new_heap_instance_species(runtime, type));
+  TRY_DEF(species, new_heap_instance_species(runtime, type, nothing()));
   TRY_DEF(result, new_heap_instance(runtime, species));
   return result;
 }

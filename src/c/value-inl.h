@@ -226,10 +226,10 @@ SWALLOW_SEMI(sgi)
 // Expands to function implementations that get and set checked values on a
 // particular kind of species.
 #define CHECKED_SPECIES_ACCESSORS_IMPL(Receiver, receiver, ReceiverSpecies,    \
-    receiver_species, Family, Field, field)                                    \
+    receiver_species, acValueCheck, VALUE_CHECK_ARG, Field, field)             \
 void set_##receiver_species##_species_##field(value_t self, value_t value) {   \
   CHECK_DIVISION(sd##ReceiverSpecies, self);                                   \
-  CHECK_FAMILY(of##Family, value);                                             \
+  acValueCheck(VALUE_CHECK_ARG, value);                                        \
   *access_object_field(self, k##ReceiverSpecies##Species##Field##Offset) = value; \
 }                                                                              \
 SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \

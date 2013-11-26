@@ -41,21 +41,18 @@ value_t ctrino_new_function(builtin_arguments_t *args) {
   return new_heap_function(runtime, afMutable, display_name);
 }
 
-value_t ctrino_new_instance(builtin_arguments_t *args) {
-  runtime_t *runtime = get_builtin_runtime(args);
-  value_t self = get_builtin_subject(args);
-  value_t type = get_builtin_argument(args, 0);
-  CHECK_FAMILY(ofCtrino, self);
-  CHECK_FAMILY(ofType, type);
-  TRY_DEF(species, new_heap_instance_species(runtime, type));
-  return new_heap_instance(runtime, species);
-}
-
 value_t ctrino_new_type(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t display_name = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofCtrino, self);
   return new_heap_type(get_builtin_runtime(args), afMutable, display_name);
+}
+
+value_t ctrino_new_instance_manager(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t display_name = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofCtrino, self);
+  return new_heap_instance_manager(get_builtin_runtime(args), display_name);
 }
 
 value_t ctrino_new_global_field(builtin_arguments_t *args) {
@@ -96,7 +93,7 @@ value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(ctrino, INFIX("new_float_32"), 1, ctrino_new_float_32);
   ADD_BUILTIN(ctrino, INFIX("new_function"), 1, ctrino_new_function);
   ADD_BUILTIN(ctrino, INFIX("new_global_field"), 1, ctrino_new_global_field);
-  ADD_BUILTIN(ctrino, INFIX("new_instance"), 1, ctrino_new_instance);
+  ADD_BUILTIN(ctrino, INFIX("new_instance_manager"), 1, ctrino_new_instance_manager);
   ADD_BUILTIN(ctrino, INFIX("new_type"), 1, ctrino_new_type);
   return success();
 }

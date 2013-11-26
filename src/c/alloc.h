@@ -65,8 +65,10 @@ value_t new_heap_modal_species(runtime_t *runtime, family_behavior_t *behavior,
 value_t new_heap_modal_species_unchecked(runtime_t *runtime,
     family_behavior_t *behavior, value_mode_t mode, root_key_t base_root);
 
-// Creates a new instance species with the specified primary type.
-value_t new_heap_instance_species(runtime_t *runtime, value_t primary);
+// Creates a new instance species with the specified primary type and instance
+// manager.
+value_t new_heap_instance_species(runtime_t *runtime, value_t primary,
+    value_t manager);
 
 // Allocates a new heap array in the given runtime with room for the given
 // number of elements. The array will be initialized to null.
@@ -101,6 +103,9 @@ value_t new_heap_key(runtime_t *runtime, value_t display_name);
 
 // Creates a new empty object instance with the given instance species.
 value_t new_heap_instance(runtime_t *runtime, value_t species);
+
+// Creates a new instance manager object with the given display name.
+value_t new_heap_instance_manager(runtime_t *runtime, value_t display_name);
 
 // Creates a new pointer wrapper around the given value.
 value_t new_heap_void_p(runtime_t *runtime, void *value);

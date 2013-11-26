@@ -274,7 +274,7 @@ TEST(value, instance_division) {
   CREATE_RUNTIME();
 
   value_t proto = new_heap_type(runtime, afFreeze, null());
-  value_t species = new_heap_instance_species(runtime, proto);
+  value_t species = new_heap_instance_species(runtime, proto, nothing());
   value_t instance = new_heap_instance(runtime, species);
   ASSERT_VALEQ(proto, get_instance_species_primary_type_field(species));
   ASSERT_VALEQ(proto, get_instance_primary_type_field(instance));
