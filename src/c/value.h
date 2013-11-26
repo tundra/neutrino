@@ -248,6 +248,7 @@ static value_t new_moved_object(value_t target) {
   F(Identifier,              identifier,                X, X, X, _, _, _, _, _, _)\
   F(IdHashMap,               id_hash_map,               _, _, _, X, _, X, _, X, X)\
   F(Instance,                instance,                  _, _, X, X, _, _, _, _, _)\
+  F(InstanceManager,         instance_manager,          _, _, _, X, _, _, _, _, _)\
   F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _, _)\
   F(InvocationRecord,        invocation_record,         _, _, _, _, _, _, _, X, X)\
   F(Key,                     key,                       X, _, _, X, _, _, _, X, _)\
@@ -544,12 +545,16 @@ static const size_t kCompactSpeciesSize = SPECIES_SIZE(0);
 
 // --- I n s t a n c e   s p e c i e s ---
 
-static const size_t kInstanceSpeciesSize = SPECIES_SIZE(1);
+static const size_t kInstanceSpeciesSize = SPECIES_SIZE(2);
 static const size_t kInstanceSpeciesPrimaryTypeFieldOffset = SPECIES_FIELD_OFFSET(0);
+static const size_t kInstanceSpeciesManagerOffset = SPECIES_FIELD_OFFSET(1);
 
 // The primary type of the instance. This has the _field suffix to distinguish
 // it from the get_primary_type behavior.
 SPECIES_ACCESSORS_DECL(instance, primary_type_field);
+
+// The object manager that governs instances of this species.
+SPECIES_ACCESSORS_DECL(instance, manager);
 
 
 // --- M o d a l    s p e c i e s ---
@@ -923,6 +928,15 @@ value_t get_instance_field(value_t value, value_t key);
 // Sets the field with the given key on the given instance. Returns a signal
 // if setting the field failed, for instance if the field map was full.
 value_t try_set_instance_field(value_t instance, value_t key, value_t value);
+
+
+// --- I n s t a n c e   m a n a g e r ---
+
+static const size_t kInstanceManagerSize = OBJECT_SIZE(1);
+static const size_t kInstanceManagerDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
+
+// The display name to show for this instance manager.
+ACCESSORS_DECL(instance_manager, display_name);
 
 
 // --- F a c t o r y ---

@@ -82,7 +82,7 @@ entry_point {
 
 -- INPUT:
 def @This := @ctrino.new_type("This");
-def @obj := @ctrino.new_instance(@This);
+def @obj := @ctrino.new_instance_manager(null).new_instance(@This);
 def ($this).foo() => 6;
 def ($this is @This).foo() => 7;
 entry_point {

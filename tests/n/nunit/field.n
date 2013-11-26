@@ -1,11 +1,12 @@
 import $assert;
 
+def @manager := @ctrino.new_instance_manager(null);
 def @Point := @ctrino.new_type("Point");
 def @x := @ctrino.new_global_field("x");
 def @y := @ctrino.new_global_field("y");
 
 def $test_raw_field_access() {
-  def $p := @ctrino.new_instance(@Point);
+  def $p := @manager.new_instance(@Point);
   @x[$p] := 0;
   @y[$p] := 0;
   $assert:equals(0, @x[$p]);
@@ -24,7 +25,7 @@ def ($this is @Point).y => @y[$this];
 def ($this is @Point).y := ($v) => @y[$this] := $v;
 
 def $test_field_accessors() {
-  def $p := @ctrino.new_instance(@Point);
+  def $p := @manager.new_instance(@Point);
   $p.x := 0;
   $p.y := 0;
   $assert:equals(0, $p.x);

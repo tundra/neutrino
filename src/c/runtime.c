@@ -81,7 +81,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_DEF(empty_type, new_heap_type(runtime, afFreeze, null()));
   TRY(validate_deep_frozen(runtime, empty_type, NULL));
   TRY_SET(RAW_ROOT(roots, empty_instance_species),
-      new_heap_instance_species(runtime, empty_type));
+      new_heap_instance_species(runtime, empty_type, nothing()));
   TRY_SET(RAW_ROOT(roots, subject_key), new_heap_key(runtime, RAW_RSTR(roots, subject)));
   TRY_SET(RAW_ROOT(roots, selector_key), new_heap_key(runtime, RAW_RSTR(roots, selector)));
   TRY_SET(RAW_ROOT(roots, builtin_methodspace), new_heap_methodspace(runtime));

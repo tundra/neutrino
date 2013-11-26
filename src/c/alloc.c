@@ -81,15 +81,18 @@ value_t new_heap_blob_with_data(runtime_t *runtime, blob_t *contents) {
   return blob;
 }
 
-value_t new_heap_instance_species(runtime_t *runtime, value_t primary) {
+value_t new_heap_instance_species(runtime_t *runtime, value_t primary,
+    value_t manager) {
   size_t size = kInstanceSpeciesSize;
   CHECK_FAMILY(ofType, primary);
+  CHECK_FAMILY_OPT(ofInstanceManager, manager);
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_species_species)));
   set_species_instance_family(result, ofInstance);
   set_species_family_behavior(result, &kInstanceBehavior);
   set_species_division_behavior(result, &kInstanceSpeciesBehavior);
   set_instance_species_primary_type_field(result, primary);
+  set_instance_species_manager(result, manager);
   return post_create_sanity_check(result, size);
 }
 
@@ -212,6 +215,14 @@ value_t new_heap_instance(runtime_t *runtime, value_t species) {
   size_t size = kInstanceSize;
   TRY_DEF(result, alloc_heap_object(runtime, size, species));
   set_instance_fields(result, fields);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_instance_manager(runtime_t *runtime, value_t display_name) {
+  size_t size = kInstanceManagerSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, instance_manager_species)));
+  set_instance_manager_display_name(result, display_name);
   return post_create_sanity_check(result, size);
 }
 

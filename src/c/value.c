@@ -262,8 +262,10 @@ void get_instance_species_layout(value_t species, object_layout_t *layout) {
   object_layout_set(layout, kInstanceSpeciesSize, kSpeciesHeaderSize);
 }
 
-CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance, Type,
-    PrimaryTypeField, primary_type_field);
+CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance,
+    acInFamily, ofType, PrimaryTypeField, primary_type_field);
+CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance,
+    acInFamilyOpt, ofInstanceManager, Manager, manager);
 
 
 // --- M o d a l   s p e c i e s ---
@@ -1334,6 +1336,40 @@ value_t set_instance_mode_unchecked(runtime_t *runtime, value_t self,
   // TODO: implement this.
   UNREACHABLE("setting instance mode not implemented");
   return new_invalid_mode_change_signal(get_instance_mode(self));
+}
+
+
+// --- I n s t a n c e   m a n a g e r ---
+
+ACCESSORS_IMPL(InstanceManager, instance_manager, acNoCheck, 0, DisplayName, display_name);
+GET_FAMILY_PRIMARY_TYPE_IMPL(instance_manager);
+FIXED_GET_MODE_IMPL(instance_manager, vmDeepFrozen);
+
+value_t instance_manager_validate(value_t value) {
+  VALIDATE_FAMILY(ofInstanceManager, value);
+  return success();
+}
+
+void instance_manager_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  CHECK_FAMILY(ofInstanceManager, value);
+  string_buffer_printf(buf, "#<instance manager: ");
+  value_print_inner_on(get_instance_manager_display_name(value), buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
+static value_t instance_manager_new_instance(builtin_arguments_t *args) {
+  runtime_t *runtime = get_builtin_runtime(args);
+  value_t self = get_builtin_subject(args);
+  value_t type = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofType, type);
+  TRY_DEF(species, new_heap_instance_species(runtime, type, self));
+  return new_heap_instance(runtime, species);
+}
+
+value_t add_instance_manager_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
+  ADD_BUILTIN(instance_manager, INFIX("new_instance"), 1, instance_manager_new_instance);
+  return success();
 }
 
 
