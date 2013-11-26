@@ -13,7 +13,7 @@
 -- VALUE: "(foo, bar)"
 
 -- INPUT:
-entry_point ("a" + "b" + "c").print();
+entry_point ("a" + "b" + "c").print_raw();
 -- OUTPUT:
-"abc"
+abc
 -- END

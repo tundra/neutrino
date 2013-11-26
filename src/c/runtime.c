@@ -77,7 +77,6 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, empty_path), new_heap_path(runtime, afFreeze, nothing(),
       nothing()));
   TRY_SET(RAW_ROOT(roots, any_guard), new_heap_guard(runtime, afFreeze, gtAny, null()));
-  TRY_SET(RAW_ROOT(roots, integer_type), new_heap_type(runtime, afFreeze, null()));
   TRY_DEF(empty_type, new_heap_type(runtime, afFreeze, null()));
   TRY(validate_deep_frozen(runtime, empty_type, NULL));
   TRY_SET(RAW_ROOT(roots, empty_instance_species),
@@ -89,20 +88,27 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, ctrino), new_heap_ctrino(runtime));
 
   // Generate initialization for the per-family types.
-#define __CREATE_FAMILY_TYPE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\
-  SR(                                                                          \
-    TRY_SET(RAW_ROOT(roots, family##_type), new_heap_type(runtime, afFreeze, null()));,\
-    )
-  ENUM_OBJECT_FAMILIES(__CREATE_FAMILY_TYPE__)
-#undef __CREATE_FAMILY_TYPE__
+#define __CREATE_TYPE__(Name, name) do {                                       \
+  string_t __display_name_str__;                                               \
+  string_init(&__display_name_str__, #Name);                                   \
+  TRY_DEF(__display_name__, new_heap_string(runtime, &__display_name_str__));  \
+  TRY_SET(RAW_ROOT(roots, name##_type), new_heap_type(runtime, afFreeze,       \
+      __display_name__));                                                      \
+} while (false);
+  __CREATE_TYPE__(Integer, integer);
+#define __CREATE_FAMILY_TYPE_OPT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\
+  SR(__CREATE_TYPE__(Family, family),)
+  ENUM_OBJECT_FAMILIES(__CREATE_FAMILY_TYPE_OPT__)
+#undef __CREATE_FAMILY_TYPE_OPT__
 
   // Generate initialization for the per-phylum types.
 #define __CREATE_PHYLUM_TYPE__(Phylum, phylum, CM, SR)                         \
-  SR(                                                                          \
-    TRY_SET(RAW_ROOT(roots, phylum##_type), new_heap_type(runtime, afFreeze, null()));,\
-    )
+  SR(__CREATE_TYPE__(Phylum, phylum),)
   ENUM_CUSTOM_TAGGED_PHYLUMS(__CREATE_PHYLUM_TYPE__)
 #undef __CREATE_PHYLUM_TYPE__
+
+#undef __CREATE_TYPE__
+
 
   TRY_DEF(plankton_environment, new_heap_id_hash_map(runtime, 16));
   init_plankton_core_factories(plankton_environment, runtime);

@@ -110,26 +110,26 @@ def @@x := "g";
 def @@y := "h";
 def @@z := "i";
 entry_point {
-  @@x.print();
-  @@y.print();
-  @@z.print();
-  @x.print();
-  @y.print();
-  @z.print();
-  $x.print();
-  $y.print();
-  $z.print();
+  @@x.print_raw();
+  @@y.print_raw();
+  @@z.print_raw();
+  @x.print_raw();
+  @y.print_raw();
+  @z.print_raw();
+  $x.print_raw();
+  $y.print_raw();
+  $z.print_raw();
 }
 -- OUTPUT:
-"g"
-"h"
-"i"
-"gd"
-"he"
-"if"
-"gda"
-"heb"
-"ifc"
+g
+h
+i
+gd
+he
+if
+gda
+heb
+ifc
 -- END
 
 

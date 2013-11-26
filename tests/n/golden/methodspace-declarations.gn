@@ -1,15 +1,15 @@
 -- INPUT:
 def ($this).get_some_value() => "foo";
-entry_point "blah".get_some_value().print();
+entry_point "blah".get_some_value().print_raw();
 -- OUTPUT:
-"foo"
+foo
 -- END
 
 -- INPUT:
 def ($this).id() => $this;
-entry_point "blah".id().print();
+entry_point "blah".id().print_raw();
 -- OUTPUT:
-"blah"
+blah
 -- END
 
 -- INPUT:
@@ -37,12 +37,12 @@ entry_point "blah".second(7, 8).print();
 def ($this).foo() => "foo";
 def ($this).bar() => "bar";
 entry_point {
-  "blah".foo().print();
-  "blah".bar().print();
+  "blah".foo().print_raw();
+  "blah".bar().print_raw();
 }
 -- OUTPUT:
-"foo"
-"bar"
+foo
+bar
 -- END
 
 -- INPUT:
