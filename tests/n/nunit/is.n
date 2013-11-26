@@ -1,0 +1,26 @@
+import $assert;
+
+def @m := @ctrino.new_instance_manager(null);
+def @A := @ctrino.new_type("A");
+def @B := @ctrino.new_type("B");
+
+type @B is @A;
+
+def ($this is @A).x() => 8;
+def ($this is @A).y() => 9;
+def ($this is @B).x() => 10;
+
+def $test_simple_inheritance() {
+  def $a := @m.new_instance(@A);
+  $assert:equals(8, $a.x());
+  $assert:equals(9, $a.y());
+  def $b := @m.new_instance(@B);
+  $assert:equals(10, $b.x());
+  $assert:equals(9, $b.y());
+}
+
+def $main() {
+  $test_simple_inheritance();
+}
+
+entry_point $main();

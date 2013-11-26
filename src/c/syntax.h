@@ -70,6 +70,11 @@ size_t get_parameter_order_index_for_array(value_t tags);
 value_t build_method_signature(runtime_t *runtime, value_t fragment,
     reusable_scratch_memory_t *scratch, value_t signature_ast);
 
+// So... yeah. Evaluates a piece of syntax without too much fuss. Should be
+// replaced by proper evaluation as soon as it makes sense.
+value_t quick_and_dirty_evaluate_syntax(runtime_t *runtime, value_t fragment,
+    value_t value_ast);
+
 
 // --- L i t e r a l   a s t ---
 
@@ -245,6 +250,19 @@ static const size_t kMethodDeclarationAstMethodOffset = OBJECT_FIELD_OFFSET(0);
 
 // The method object describing the method being declared.
 ACCESSORS_DECL(method_declaration_ast, method);
+
+
+// --- I s   d e c l a r a t i o n   a s t ---
+
+static const size_t kIsDeclarationAstSize = OBJECT_SIZE(2);
+static const size_t kIsDeclarationAstSubtypeOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kIsDeclarationAstSupertypeOffset = OBJECT_FIELD_OFFSET(1);
+
+// The subtype being declared.
+ACCESSORS_DECL(is_declaration_ast, subtype);
+
+// The new supertype of the subtype.
+ACCESSORS_DECL(is_declaration_ast, supertype);
 
 
 // --- P r o g r a m -  a s t --

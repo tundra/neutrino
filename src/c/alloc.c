@@ -708,6 +708,16 @@ value_t new_heap_method_declaration_ast(runtime_t *runtime, value_t method) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_is_declaration_ast(runtime_t *runtime, value_t subtype,
+    value_t supertype) {
+  size_t size = kIsDeclarationAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, is_declaration_ast_species)));
+  set_is_declaration_ast_subtype(result, subtype);
+  set_is_declaration_ast_supertype(result, supertype);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- M i s c ---
 

@@ -251,6 +251,7 @@ static value_t new_moved_object(value_t target) {
   F(InstanceManager,         instance_manager,          _, _, _, X, _, _, _, _, _)\
   F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _, _)\
   F(InvocationRecord,        invocation_record,         _, _, _, _, _, _, _, X, X)\
+  F(IsDeclarationAst,        is_declaration_ast,        _, _, X, _, _, _, _, _, _)\
   F(Key,                     key,                       X, _, _, X, _, _, _, X, _)\
   F(Lambda,                  lambda,                    _, _, _, X, _, _, _, X, X)\
   F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, _, _)\

@@ -49,6 +49,8 @@
   F(signature,                  "signature")                                   \
   F(stage,                      "stage")                                       \
   F(subject,                    "subject")                                     \
+  F(subtype,                    "subtype")                                     \
+  F(supertype,                  "supertype")                                   \
   F(symbol,                     "symbol")                                      \
   F(syntax,                     "syntax")                                      \
   F(tag,                        "tag")                                         \

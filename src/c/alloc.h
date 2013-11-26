@@ -284,6 +284,11 @@ value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t path,
 // Creates a new method declaration that declares the given method.
 value_t new_heap_method_declaration_ast(runtime_t *runtime, value_t method);
 
+// Creates a new is declaration that declares the given subtype to have the
+// given supertype.
+value_t new_heap_is_declaration_ast(runtime_t *runtime, value_t subtype,
+    value_t supertype);
+
 
 // --- U t i l s ---
 

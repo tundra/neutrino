@@ -68,6 +68,9 @@ class Visitor(object):
   def visit_import(self, that):
     self.visit_ast(that)
 
+  def visit_is_declaration(self, that):
+    self.visit_ast(that)
+
 
 # A constant literal value.
 @plankton.serializable(plankton.EnvironmentReference.path("ast", "Literal"))
@@ -684,3 +687,24 @@ class Import(object):
 
   def __str__(self):
     return "(import %s)" % self.ident
+
+
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "IsDeclaration"))
+class IsDeclaration(object):
+
+  @plankton.field("subtype")
+  @plankton.field("supertype")
+  def __init__(self, subtype, supertype):
+    self.subtype = subtype
+    self.supertype = supertype
+
+  def accept(self, visitor):
+    visitor.visit_is_declaration(self)
+
+  def traverse(self, visitor):
+    self.subtype.accept(visitor)
+    self.supertype.accept(visitor)
+
+  def apply(self, module):
+    fragment = module.get_fragment(0)
+    fragment.add_element(self)
