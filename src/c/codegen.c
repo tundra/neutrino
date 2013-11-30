@@ -62,7 +62,7 @@ void assembler_push_single_symbol_scope(assembler_t *assm,
 
 void assembler_pop_single_symbol_scope(assembler_t *assm,
     single_symbol_scope_t *scope) {
-  CHECK_EQ("scopes out of sync", assm->scope_callback, &scope->callback);
+  CHECK_PTREQ("scopes out of sync", assm->scope_callback, &scope->callback);
   assm->scope_callback = scope->outer;
 }
 
@@ -98,7 +98,7 @@ value_t assembler_push_map_scope(assembler_t *assm, map_scope_t *scope) {
 }
 
 void assembler_pop_map_scope(assembler_t *assm, map_scope_t *scope) {
-  CHECK_EQ("scopes out of sync", assm->scope_callback, &scope->callback);
+  CHECK_PTREQ("scopes out of sync", assm->scope_callback, &scope->callback);
   assm->scope_callback = scope->outer;
 }
 
@@ -152,7 +152,7 @@ value_t assembler_push_capture_scope(assembler_t *assm, capture_scope_t *scope) 
 }
 
 void assembler_pop_capture_scope(assembler_t *assm, capture_scope_t *scope) {
-  CHECK_EQ("scopes out of sync", assm->scope_callback, &scope->callback);
+  CHECK_PTREQ("scopes out of sync", assm->scope_callback, &scope->callback);
   assm->scope_callback = scope->outer;
 }
 

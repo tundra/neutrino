@@ -30,6 +30,10 @@
 #define CHECK_EQ(M, A, B)                                                      \
 IF_CHECKS_ENABLED(CHECK_REL(M, A, ==, B))
 
+// Fails unless the two pointer values are equal.
+#define CHECK_PTREQ(M, A, B)                                                   \
+IF_CHECKS_ENABLED(CHECK_TRUE(M, (A) == (B)))
+
 #define __SIG_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause, VALUE, A, B) do {       \
   if (!((A) == (B))) {                                                         \
     sig_check_fail(__FILE__, __LINE__, scCause,                                \
