@@ -130,7 +130,7 @@ bool memory_block_is_empty(memory_block_t block) {
 
 // Throws away the data argument and just calls malloc.
 static memory_block_t system_malloc_trampoline(void *data, size_t size) {
-  CHECK_EQ("invalid system allocator", NULL, data);
+  CHECK_PTREQ("invalid system allocator", NULL, data);
   void *result = malloc(size);
   if (result == NULL) {
     return memory_block_empty();
@@ -142,7 +142,7 @@ static memory_block_t system_malloc_trampoline(void *data, size_t size) {
 
 // Throws away the data argument and just calls free.
 static void system_free_trampoline(void *data, memory_block_t memory) {
-  CHECK_EQ("invalid system allocator", NULL, data);
+  CHECK_PTREQ("invalid system allocator", NULL, data);
   free(memory.memory);
 }
 
