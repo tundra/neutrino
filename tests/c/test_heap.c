@@ -36,7 +36,7 @@ TEST(heap, align_address) {
   ASSERT_ALIGN(4, 4, 1);
   ASSERT_ALIGN(4, 4, 4);
   ASSERT_ALIGN(8, 4, 5);
-#ifdef M64
+#ifdef IS_64_BIT
   ASSERT_ALIGN(0x2ba3b9505010, 8, 0x2ba3b9505010);
 #endif
 }

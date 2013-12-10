@@ -17,11 +17,7 @@ typedef byte_t *address_t;
 
 // The type to cast pointers to when you need to do advanced pointer
 // arithmetic.
-#if M64
-typedef uint64_t address_arith_t;
-#else
-typedef uint32_t address_arith_t;
-#endif
+typedef IF_32_BIT(uint32_t, uint64_t) address_arith_t;
 
 // Shorthands for commonly used sizes.
 #define kKB 1024

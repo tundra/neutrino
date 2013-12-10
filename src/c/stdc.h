@@ -32,4 +32,14 @@
 #define IF_GCC(T, E) T
 #endif
 
+// Define some expression macros for wordsize dependent code. The IS_..._BIT
+// macros should be set in some platform dependent way above.
+#ifdef IS_32_BIT
+#  define IF_32_BIT(T, F) T
+#  define IF_64_BIT(T, F) F
+#else
+#  define IF_32_BIT(T, F) F
+#  define IF_64_BIT(T, F) T
+#endif
+
 #endif // _STDC
