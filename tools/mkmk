@@ -1,0 +1,35 @@
+#!/usr/bin/python
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+
+# Entry-point for the build process.
+
+
+import sys
+import os.path
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src', 'python'))
+import build
+
+
+# Parse command-line options, returning just the flags and discarding the args.
+def parse_options(argv):
+  import optparse
+  parser = optparse.OptionParser()
+  parser.add_option('--root')
+  parser.add_option('--dot')
+  parser.add_option('--makefile')
+  parser.add_option('--bindir')
+  parser.add_option('--toolchain', default='gcc')
+  (flags, args) = parser.parse_args(argv)
+  return flags
+
+
+def main():
+  flags = parse_options(sys.argv[1:])
+  build.process.main(root=flags.root, bindir=flags.bindir, dot=flags.dot,
+    makefile=flags.makefile, toolchain=flags.toolchain)
+
+
+if __name__ == '__main__':
+  main()

@@ -1,0 +1,48 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+# ls neutrino/src/c -1 | grep \\.c | sort
+library_file_names = [
+  "alloc.c",
+  "behavior.c",
+  "bind.c",
+  "builtin.c",
+  "codegen.c",
+  "crash.c",
+  "ctrino.c",
+  "file.c",
+  "heap.c",
+  "interp.c",
+  "log.c",
+  "method.c",
+  "plankton.c",
+  "process.c",
+  "runtime.c",
+  "safe.c",
+  "signals.c",
+  "syntax.c",
+  "tagged.c",
+  "utils.c",
+  "value.c"
+]
+
+# All the objects for the library source files. It might make sense to create
+# a real library at some point but for now this'll do.
+library = get_group("library")
+
+# Add the source file objects to the library.
+for library_file_name in library_file_names:
+  library_file = c.get_source_file(library_file_name)
+  object_file = library_file.get_object()
+  library.add_member(object_file)
+
+ctrino_file_names = [
+  "main.c"
+]
+
+# Build an executable from the library along with the main file.
+ctrino = c.get_executable("ctrino")
+ctrino.add_object(library)
+for ctrino_file_name in ctrino_file_names:
+  ctrino_file = c.get_source_file(ctrino_file_name)
+  ctrino.add_object(ctrino_file.get_object())
