@@ -25,13 +25,12 @@ test_file_names = [
 # Compile a single test file, ensuring that the include paths are hooked up
 # right.
 def compile_test_file(source):
-  obj = source.get_object()
   # Include the C sources.
-  obj.add_include_path(get_root().get_child('src', 'c'))
+  source.add_include(get_root().get_child('src', 'c'))
   # Also include the c test folder in the bin directory since that's where the
   # TOC file is going to land.
-  obj.add_include_path(get_bindir().get_child('tests', 'c'))
-  return obj
+  source.add_include(get_bindir().get_child('tests', 'c'))
+  return source.get_object()
 
 # Create a group containing the test files along with the runtime library.
 test_library = get_group("library")
@@ -44,9 +43,9 @@ toc_file.set_generator(get_root().get_child('src', 'python', 'build', 'toc.py'))
 # Compile the test source files and include them in the TOC.
 for test_file_name in test_file_names:
   test_file = c.get_source_file(test_file_name)
-  toc_file.add_dependency(test_file)
+  toc_file.add_test(test_file)
   object_file = compile_test_file(test_file)
-  test_library.add_element(object_file)
+  test_library.add_member(object_file)
 
 main_file_names = [
   "test.c"
@@ -54,11 +53,11 @@ main_file_names = [
 
 # Compile the test main executable.
 main = c.get_executable("main")
-main.add_library(test_library)
+main.add_object(test_library)
 for main_file_name in main_file_names:
   main_file = c.get_source_file(main_file_name)
   object_file = compile_test_file(main_file)
   # Let the main files depend on toc.c but don't try to compile it directly
   # since it's going to be #included into test.c.
-  object_file.add_dependency(toc_file, quiet=True)
-  main.add_dependency(object_file)
+  object_file.add_dependency(toc_file)
+  main.add_object(object_file)

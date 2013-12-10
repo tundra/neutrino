@@ -34,7 +34,7 @@ library = get_group("library")
 for library_file_name in library_file_names:
   library_file = c.get_source_file(library_file_name)
   object_file = library_file.get_object()
-  library.add_element(object_file)
+  library.add_member(object_file)
 
 ctrino_file_names = [
   "main.c"
@@ -42,7 +42,7 @@ ctrino_file_names = [
 
 # Build an executable from the library along with the main file.
 ctrino = c.get_executable("ctrino")
-ctrino.add_library(library)
+ctrino.add_object(library)
 for ctrino_file_name in ctrino_file_names:
   ctrino_file = c.get_source_file(ctrino_file_name)
-  ctrino.add_dependency(ctrino_file.get_object())
+  ctrino.add_object(ctrino_file.get_object())
