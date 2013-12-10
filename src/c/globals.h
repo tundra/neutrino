@@ -7,12 +7,7 @@
 #ifndef _GLOBALS
 #define _GLOBALS
 
-#include <stdbool.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "stdc.h"
 
 // A single byte.
 typedef uint8_t byte_t;
@@ -62,12 +57,19 @@ static size_t min_size(size_t a, size_t b) {
 // it to be executed.
 #define USE(E) do { if (false) { E; } } while (false)
 
+// The token "namespace" without upsetting C++ compilers.
+#define NAMESPACE __CONCAT_NO_EVAL__(name, space)
+
 // The negative int32 with the largest possible magnitude. Beware of implicit
 // conversions to unsigned/wider int types which eagerly mess with this value.
 #define kMostNegativeInt32 ((int32_t) 0x80000000)
 
 // The native 32-bit single precision floating point type.
 typedef float float32_t;
+
+// Given an enum type and a mask and a flag both belonging to the enum, returns
+// a new enum value that represents the mast with the given flag enabled.
+#define SET_ENUM_FLAG(ENUM, MASK, FLAG) ((ENUM) (((uint32_t) MASK) | ((uint32_t) FLAG)))
 
 
 #endif // _GLOBALS

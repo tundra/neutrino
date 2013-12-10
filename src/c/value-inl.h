@@ -183,7 +183,7 @@ SWALLOW_SEMI(msi)
 #define __MAPPING_GETTER_IMPL__(Receiver, receiver, type_t, Field, field, MAP) \
 type_t get_##receiver##_##field(value_t self) {                                \
   CHECK_FAMILY(of##Receiver, self);                                            \
-  return MAP(type_t, *access_object_field(self, k##Receiver##Field##Offset));  \
+  return (type_t) MAP(type_t, *access_object_field(self, k##Receiver##Field##Offset));  \
 }                                                                              \
 SWALLOW_SEMI(mgi)
 
@@ -247,7 +247,8 @@ SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
 
 #define __CHECK_MAP_ENTRY_FOUND__(name) do {                                   \
   if (is_signal(scNotFound, name)) {                                           \
-    return new_invalid_input_signal_with_hint(STRING_HINT(#name));             \
+    string_hint_t __hint__ = STRING_HINT_INIT(#name);                          \
+    return new_invalid_input_signal_with_hint(__hint__);                       \
   }                                                                            \
 } while (false)
 

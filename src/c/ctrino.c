@@ -117,14 +117,23 @@ static value_t ctrino_to_string(builtin_arguments_t *args) {
 }
 
 value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(ctrino, INFIX("fail"), 0, ctrino_fail);
-  ADD_BUILTIN(ctrino, INFIX("get_builtin_type"), 1, ctrino_get_builtin_type);
-  ADD_BUILTIN(ctrino, INFIX("log_info"), 1, ctrino_log_info);
-  ADD_BUILTIN(ctrino, INFIX("new_float_32"), 1, ctrino_new_float_32);
-  ADD_BUILTIN(ctrino, INFIX("new_function"), 1, ctrino_new_function);
-  ADD_BUILTIN(ctrino, INFIX("new_global_field"), 1, ctrino_new_global_field);
-  ADD_BUILTIN(ctrino, INFIX("new_instance_manager"), 1, ctrino_new_instance_manager);
-  ADD_BUILTIN(ctrino, INFIX("new_type"), 1, ctrino_new_type);
-  ADD_BUILTIN(ctrino, INFIX("to_string"), 1, ctrino_to_string);
+  DEF_INFIX(infix_fail, "fail");
+  ADD_BUILTIN(ctrino, infix_fail, 0, ctrino_fail);
+  DEF_INFIX(infix_get_builtin_type, "get_builtin_type");
+  ADD_BUILTIN(ctrino, infix_get_builtin_type, 1, ctrino_get_builtin_type);
+  DEF_INFIX(infix_log_info, "log_info");
+  ADD_BUILTIN(ctrino, infix_log_info, 1, ctrino_log_info);
+  DEF_INFIX(infix_new_float_32, "new_float_32");
+  ADD_BUILTIN(ctrino, infix_new_float_32, 1, ctrino_new_float_32);
+  DEF_INFIX(infix_new_function, "new_function");
+  ADD_BUILTIN(ctrino, infix_new_function, 1, ctrino_new_function);
+  DEF_INFIX(infix_new_global_field, "new_global_field");
+  ADD_BUILTIN(ctrino, infix_new_global_field, 1, ctrino_new_global_field);
+  DEF_INFIX(infix_new_instance_manager, "new_instance_manager");
+  ADD_BUILTIN(ctrino, infix_new_instance_manager, 1, ctrino_new_instance_manager);
+  DEF_INFIX(infix_new_type, "new_type");
+  ADD_BUILTIN(ctrino, infix_new_type, 1, ctrino_new_type);
+  DEF_INFIX(infix_to_string, "to_string");
+  ADD_BUILTIN(ctrino, infix_to_string, 1, ctrino_to_string);
   return success();
 }

@@ -45,8 +45,13 @@ typedef struct builtin_operation_t {
   } value;
 } builtin_operation_t;
 
+// TODO: remove all the non-DEF versions.
+
 // Macro that produces an infix builtin_operation_t.
 #define INFIX(value) STRING_OPERATION(otInfix, value)
+
+// Macro that produces a declaration of an infix builtin_operation_t.
+#define DEF_INFIX(NAME, VALUE) DEF_STRING_OPERATION(NAME, otInfix, VALUE)
 
 // Macro that produces a suffix builtin_operation_t.
 #define SUFFIX(value) STRING_OPERATION(otSuffix, value)
@@ -54,22 +59,48 @@ typedef struct builtin_operation_t {
 // Macro that produces a prefix builtin_operation_t.
 #define PREFIX(value) STRING_OPERATION(otPrefix, value)
 
+// Macro that produces a declaration of an prefix builtin_operation_t.
+#define DEF_PREFIX(NAME, VALUE) DEF_STRING_OPERATION(NAME, otPrefix, VALUE)
+
 // Macro that produces an index builtin_operation_t.
 #define INDEX() STRING_OPERATION(otIndex, NULL)
+
+// Macro that produces a declaration of an index builtin_operation_t.
+#define DEF_INDEX(NAME) DEF_STRING_OPERATION(NAME, otIndex, NULL)
 
 // Macro that produces an assignment for the given nested operation.
 #define ASSIGN(value) NESTED_OPERATION(otAssign, value)
 
+// Macro that produces a builtin_operation_t with a nested operation argument.
+#define DEF_ASSIGN(NAME, VALUE) DEF_NESTED_OPERATION(NAME, otAssign, VALUE)
+
 // Macro that produces a call builtin_operation_t.
 #define CALL() STRING_OPERATION(otCall, NULL)
 
+// Macro that produces a declaration of a call builtin_operation_t.
+#define DEF_CALL(NAME) DEF_STRING_OPERATION(NAME, otCall, NULL)
+
 // Macro that produces a builtin_operation_t with a string value.
 #define STRING_OPERATION(type, value) ((builtin_operation_t) {(type), {.c_str=(value)}})
+
+// Macro that produces a declaration of a builtin_operation_t with a string
+// value.
+#define DEF_STRING_OPERATION(NAME, TYPE, VALUE)                                \
+  builtin_operation_t NAME;                                                    \
+  NAME.type = (TYPE);                                                          \
+  NAME.value.c_str = (VALUE);
 
 // Macro that produces a builtin_operation_t with a nested operation argument.
 #define NESTED_OPERATION(type, value) ((builtin_operation_t) {                 \
   (type),                                                                      \
   {.nested=((builtin_operation_t[1]) {(value)})}})
+
+// Macro that produces a declaration of a builtin_operation_t with a nested
+// operation argument.
+#define DEF_NESTED_OPERATION(NAME, TYPE, VALUE)                                \
+  builtin_operation_t NAME;                                                    \
+  NAME.type = (TYPE);                                                          \
+  NAME.value.nested = &(VALUE);
 
 // Returns an operation value based on the given description.
 value_t builtin_operation_to_value(runtime_t *runtime, builtin_operation_t

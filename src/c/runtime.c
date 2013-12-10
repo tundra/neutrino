@@ -264,7 +264,7 @@ bool gc_fuzzer_tick(gc_fuzzer_t *fuzzer) {
 value_t new_runtime(runtime_config_t *config, runtime_t **runtime_out) {
   memory_block_t memory = allocator_default_malloc(sizeof(runtime_t));
   CHECK_EQ("wrong runtime_t memory size", sizeof(runtime_t), memory.size);
-  runtime_t *runtime = memory.memory;
+  runtime_t *runtime = (runtime_t*) memory.memory;
   TRY(runtime_init(runtime, config));
   *runtime_out = runtime;
   return success();
@@ -340,7 +340,7 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
   if (config->gc_fuzz_freq > 0) {
     memory_block_t memory = allocator_default_malloc(
         sizeof(gc_fuzzer_t));
-    runtime->gc_fuzzer = memory.memory;
+    runtime->gc_fuzzer = (gc_fuzzer_t*) memory.memory;
     gc_fuzzer_init(runtime->gc_fuzzer, kGcFuzzerMinFrequency,
         config->gc_fuzz_freq, config->gc_fuzz_seed);
   }
@@ -404,7 +404,7 @@ static value_t pending_fixup_worklist_add(pending_fixup_worklist_t *worklist,
     size_t new_capacity = (old_capacity == 0) ? 16 : 2 * old_capacity;
     memory_block_t new_memory = allocator_default_malloc(
         new_capacity * sizeof(pending_fixup_t));
-    pending_fixup_t *new_fixups = new_memory.memory;
+    pending_fixup_t *new_fixups = (pending_fixup_t*) new_memory.memory;
     if (old_capacity > 0) {
       // Copy the previous data over to the new backing store.
       memcpy(new_fixups, worklist->fixups, worklist->length * sizeof(pending_fixup_t));
@@ -490,7 +490,8 @@ static value_t migrate_field_shallow(value_t *field, field_callback_t *callback)
     // The header indicates that this object hasn't been moved yet. First make
     // a raw clone of the object in to-space.
     CHECK_DOMAIN(vdObject, old_header);
-    garbage_collection_state_t *state = field_callback_get_data(callback);
+    garbage_collection_state_t *state =
+        (garbage_collection_state_t*) field_callback_get_data(callback);
     // Check with the object whether it needs post processing. This is the last
     // time the object is intact so it's the last point we can call methods on
     // it to find out.
@@ -563,7 +564,8 @@ void runtime_clear(runtime_t *runtime) {
   runtime->gc_fuzzer = NULL;
   runtime->roots = whatever();
   runtime->mutable_roots = whatever();
-  runtime->plankton_mapping = ((value_mapping_t) {NULL, NULL});
+  runtime->plankton_mapping.data = NULL;
+  runtime->plankton_mapping.function = NULL;
   runtime->module_loader = empty_safe_value();
 }
 
@@ -613,8 +615,8 @@ void runtime_toggle_fuzzing(runtime_t *runtime, bool enable) {
 value_t get_modal_species_sibling_with_mode(runtime_t *runtime, value_t species,
     value_mode_t mode) {
   CHECK_DIVISION(sdModal, species);
-  root_key_t base_root = get_modal_species_base_root(species);
-  root_key_t mode_root = base_root + mode - vmFluid;
+  root_key_t base_root = (root_key_t) get_modal_species_base_root(species);
+  root_key_t mode_root = (root_key_t) (base_root + mode - vmFluid);
   value_t result = get_roots_entry_at(runtime->roots, mode_root);
   CHECK_EQ("incorrect sibling mode", mode, get_modal_species_mode(result));
   CHECK_EQ("incorrect sibling family", get_species_instance_family(species),

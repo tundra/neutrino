@@ -182,7 +182,7 @@ value_t get_primary_type(value_t value, runtime_t *runtime);
 
 // Declare the behavior structs for all the families on one fell swoop.
 #define DECLARE_FAMILY_BEHAVIOR(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW) \
-family_behavior_t k##Family##Behavior;
+extern family_behavior_t k##Family##Behavior;
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 #undef DECLARE_FAMILY_BEHAVIOR
 

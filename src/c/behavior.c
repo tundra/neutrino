@@ -218,8 +218,8 @@ static value_t object_identity_compare(value_t a, value_t b,
 bool value_identity_compare(value_t a, value_t b) {
   cycle_detector_t detector;
   cycle_detector_init_bottom(&detector);
-  value_t protected = value_identity_compare_cycle_protect(a, b, &detector);
-  return is_signal(scCircular, protected) ? false : get_boolean_value(protected);
+  value_t ptected = value_identity_compare_cycle_protect(a, b, &detector);
+  return is_signal(scCircular, ptected) ? false : get_boolean_value(ptected);
 }
 
 value_t value_identity_compare_cycle_protect(value_t a, value_t b,
@@ -318,7 +318,8 @@ static void signal_print_on(value_t value, string_buffer_t *buf) {
   uint32_t details = get_signal_details(value);
   switch (cause) {
     case scInvalidSyntax: {
-      string_buffer_printf(buf, "%s", get_invalid_syntax_cause_name(details));
+      invalid_syntax_cause_t cause = (invalid_syntax_cause_t) details;
+      string_buffer_printf(buf, "%s", get_invalid_syntax_cause_name(cause));
       break;
     }
     case scUnsupportedBehavior: {
@@ -334,18 +335,21 @@ static void signal_print_on(value_t value, string_buffer_t *buf) {
       break;
     }
     case scLookupError: {
-      string_buffer_printf(buf, "%s", get_lookup_error_cause_name(details));
+      lookup_error_cause_t cause = (lookup_error_cause_t) details;
+      string_buffer_printf(buf, "%s", get_lookup_error_cause_name(cause));
       break;
     }
     case scSystemError: {
-      string_buffer_printf(buf, "%s", get_system_error_cause_name(details));
+      system_error_cause_t cause = (system_error_cause_t) details;
+      string_buffer_printf(buf, "%s", get_system_error_cause_name(cause));
       break;
     }
     case scInvalidInput: {
       if (details != 0) {
         // If no hint is given (or the hint it the empty string) the details
         // field will be 0.
-        invalid_input_details_codec_t codec = {.encoded=details};
+        invalid_input_details_codec_t codec;
+        codec.encoded = details;
         char hint[7];
         string_hint_to_c_str(codec.decoded, hint);
         string_buffer_printf(buf, "%s", hint);

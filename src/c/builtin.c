@@ -51,7 +51,7 @@ value_t builtin_operation_to_value(runtime_t *runtime, builtin_operation_t
     }
     default:
       ERROR("Unhandled operation type %i", operation->type);
-      return new_unsupported_behavior_signal(0, 0, 0);
+      return new_unsupported_behavior_signal(vdInteger, __ofUnknown__, __ubFirst__);
   }
   return new_heap_operation(runtime, afFreeze, operation->type, value);
 }

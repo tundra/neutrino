@@ -4,7 +4,7 @@
 #include "signals.h"
 
 invalid_syntax_cause_t get_invalid_syntax_signal_cause(value_t signal) {
-  return get_signal_details(signal);
+  return (invalid_syntax_cause_t) get_signal_details(signal);
 }
 
 const char *get_invalid_syntax_cause_name(invalid_syntax_cause_t cause) {

@@ -139,7 +139,7 @@ value_t new_heap_namespace(runtime_t *runtime);
 
 // Creates a new module fragment object.
 value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t stage,
-    value_t namespace, value_t methodspace, value_t imports);
+    value_t nspace, value_t methodspace, value_t imports);
 
 // Creates a new empty bound module with the given path.
 value_t new_heap_empty_module(runtime_t *runtime, value_t path);

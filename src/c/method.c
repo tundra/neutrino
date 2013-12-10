@@ -152,10 +152,10 @@ join_status_t join_score_vectors(score_t *target, score_t *source, size_t length
     int cmp = compare_scores(target[i], source[i]);
     if (cmp < 0) {
       // The target was strictly better than the source.
-      result |= jsWorse;
+      result = SET_ENUM_FLAG(join_status_t, result, jsWorse);
     } else if (cmp > 0) {
       // The source was strictly better than the target; override.
-      result |= jsBetter;
+      result = SET_ENUM_FLAG(join_status_t, result, jsBetter);
       target[i] = source[i];
     }
   }
@@ -687,7 +687,7 @@ value_t operation_validate(value_t self) {
 value_t operation_transient_identity_hash(value_t self, hash_stream_t *stream,
     cycle_detector_t *outer) {
   value_t value = get_operation_value(self);
-  operation_type_t type = get_operation_type(self);
+  operation_type_t type = (operation_type_t) get_operation_type(self);
   cycle_detector_t inner;
   TRY(cycle_detector_enter(outer, &inner, self));
   hash_stream_write_int64(stream, type);
@@ -708,13 +708,14 @@ value_t operation_identity_compare(value_t a, value_t b,
 void operation_print_on(value_t self, string_buffer_t *buf,
     print_flags_t flags, size_t depth) {
   value_t value = get_operation_value(self);
+  print_flags_t unquote_flags = SET_ENUM_FLAG(print_flags_t, flags, pfUnquote);
   switch (get_operation_type(self)) {
     case otAssign:
       // Since the operator for the assignment is kind of sort of part of the
       // operator let's not decrease depth. If you make an assignment whose
       // operator is the assignment itself then 1) this will fail and 2) I hate
       // you.
-      value_print_inner_on(value, buf, flags | pfUnquote, depth);
+      value_print_inner_on(value, buf, unquote_flags, depth);
       string_buffer_printf(buf, ":=");
       break;
     case otCall:
@@ -725,20 +726,20 @@ void operation_print_on(value_t self, string_buffer_t *buf,
       break;
     case otInfix:
       string_buffer_printf(buf, ".");
-      value_print_inner_on(value, buf, flags | pfUnquote, depth - 1);
+      value_print_inner_on(value, buf, unquote_flags, depth - 1);
       string_buffer_printf(buf, "()");
       break;
     case otPrefix:
-      value_print_inner_on(value, buf, flags | pfUnquote, depth - 1);
+      value_print_inner_on(value, buf, unquote_flags, depth - 1);
       string_buffer_printf(buf, "()");
       break;
     case otProperty:
       string_buffer_printf(buf, ".");
-      value_print_inner_on(value, buf, flags | pfUnquote, depth - 1);
+      value_print_inner_on(value, buf, unquote_flags, depth - 1);
       break;
     case otSuffix:
       string_buffer_printf(buf, "()");
-      value_print_inner_on(value, buf, flags | pfUnquote, depth - 1);
+      value_print_inner_on(value, buf, unquote_flags, depth - 1);
       break;
     default:
       UNREACHABLE("unexpected operation type");

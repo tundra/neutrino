@@ -16,12 +16,17 @@
 // Creates a new string hint from a literal C string by chopping off the
 // beginning and the end of the string. For details of how the encoding works
 // see string_hint_to_c_str.
-#define STRING_HINT(str) ((string_hint_t) {{                                   \
+// TODO: remove this when all uses have been replaced by STRING_HINT_INIT.
+#define STRING_HINT(str) ((string_hint_t) STRING_HINT_INIT(str))
+
+// Expands to an initializer that can be used to initialize a string_hint_t
+// variable.
+#define STRING_HINT_INIT(str) {{                                               \
   ((__STATIC_STRLEN__(str) == 0) ? '\0' : str[0]),                             \
   ((__STATIC_STRLEN__(str) <= 1) ? '\0' : str[1]),                             \
   ((__STATIC_STRLEN__(str) <= 3) ? '\0' : str[__STATIC_STRLEN__(str) - 2]),    \
   ((__STATIC_STRLEN__(str) <= 2) ? '\0' : str[__STATIC_STRLEN__(str) - 1]),    \
-}})
+}}
 
 
 // --- V a r i a d i c   m a c r o s ---
