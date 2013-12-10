@@ -45,6 +45,8 @@ typedef struct builtin_operation_t {
   } value;
 } builtin_operation_t;
 
+// TODO: remove all the non-DEF versions.
+
 // Macro that produces an infix builtin_operation_t.
 #define INFIX(value) STRING_OPERATION(otInfix, value)
 

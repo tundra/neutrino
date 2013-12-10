@@ -253,13 +253,9 @@ SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
 } while (false)
 
 // Reads a single entry from a plankton map.
-#define GET_PLANKTON_MAP_ENTRY(contents, name)                                 \
-  value_t name = get_id_hash_map_at(contents, RSTR(runtime, name));            \
-  __CHECK_MAP_ENTRY_FOUND__(name);
-
-// Reads a single entry from a plankton map.
 #define __GET_PLANKTON_MAP_ENTRY__(name)                                       \
-  GET_PLANKTON_MAP_ENTRY(__source__, name)
+  value_t name = get_id_hash_map_at(__source__, RSTR(runtime, name));          \
+  __CHECK_MAP_ENTRY_FOUND__(name);
 
 // Reads successive values from a plankton map, storing them in variables with
 // names matching the keys of the values.
