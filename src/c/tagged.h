@@ -153,7 +153,7 @@ static value_t integer_to_relation(int64_t value) {
 // Returns the enum value indicating the type of this relation.
 static relation_t get_relation_value(value_t value) {
   CHECK_PHYLUM(tpRelation, value);
-  return get_custom_tagged_payload(value);
+  return (relation_t) get_custom_tagged_payload(value);
 }
 
 // Given a relation, returns an integer that represents the same relation such

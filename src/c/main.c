@@ -70,13 +70,13 @@ typedef struct {
 } main_allocator_data_t;
 
 void main_free(void *raw_data, memory_block_t memory) {
-  main_allocator_data_t *data = raw_data;
+  main_allocator_data_t *data = (main_allocator_data_t*) raw_data;
   data->live_memory -= memory.size;
   allocator_free(data->outer, memory);
 }
 
 memory_block_t main_malloc(void *raw_data, size_t size) {
-  main_allocator_data_t *data = raw_data;
+  main_allocator_data_t *data = (main_allocator_data_t*) raw_data;
   if (data->live_memory + size > data->config->system_memory_limit) {
     WARN("Tried to allocate more than %i of system memory. At %i, requested %i.",
         data->config->system_memory_limit, data->live_memory, size);
@@ -164,7 +164,7 @@ static void parse_options(size_t argc, char **argv, main_options_t *flags_out) {
   // Allocate an argv array that is definitely large enough to store all the
   // positional arguments.
   flags_out->argv_memory = allocator_default_malloc(argc * sizeof(char*));
-  flags_out->argv = flags_out->argv_memory.memory;
+  flags_out->argv = (const char **) flags_out->argv_memory.memory;
   // Scan through the arguments and parse them as flags or arguments.
   for (size_t i = 1; i < argc;) {
     const char *arg = argv[i++];

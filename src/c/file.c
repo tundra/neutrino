@@ -3,7 +3,6 @@
 
 #include "alloc.h"
 #include "file.h"
-#include <unistd.h>
 
 value_t read_handle_to_blob(runtime_t *runtime, FILE *handle) {
   // Read the complete file into a byte buffer.
@@ -12,10 +11,10 @@ value_t read_handle_to_blob(runtime_t *runtime, FILE *handle) {
   while (true) {
     static const size_t kBufSize = 1024;
     byte_t raw_buffer[kBufSize];
-    ssize_t was_read = fread(raw_buffer, 1, kBufSize, handle);
+    size_t was_read = fread(raw_buffer, 1, kBufSize, handle);
     if (was_read <= 0)
       break;
-    for (ssize_t i = 0; i < was_read; i++)
+    for (size_t i = 0; i < was_read; i++)
       byte_buffer_append(&buffer, raw_buffer[i]);
   }
   blob_t data_blob;

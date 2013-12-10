@@ -148,7 +148,10 @@ static bool fits_as_tagged_integer(int64_t value) {
 // Creates a new tagged integer with the given value.
 static value_t new_integer(int64_t value) {
   CHECK_TRUE("new integer overflow", fits_as_tagged_integer(value));
-  return (value_t) {.as_integer={vdInteger, value}};
+  value_t result;
+  result.as_integer.domain = vdInteger;
+  result.as_integer.value = value;
+  return result;
 }
 
 // Returns the integer value stored in a tagged integer.
@@ -174,7 +177,9 @@ static value_t whatever() {
 
 // Given an encoded value, returns the corresponding value_t struct.
 static value_t decode_value(encoded_value_t value) {
-  return (value_t) {.encoded=value};
+  value_t result;
+  result.encoded = value;
+  return result;
 }
 
 // Given a moved object forward pointer returns the object this object has been
@@ -334,7 +339,9 @@ static value_t pointer_to_value_bit_cast(void *ptr) {
   // See the sizes test in test_value.
   encoded_value_t encoded = 0;
   memcpy(&encoded, &ptr, sizeof(void*));
-  return (value_t) {.encoded=encoded};
+  value_t result;
+  result.encoded = encoded;
+  return result;
 }
 
 // Converts a pointer to an object into an tagged object value pointer.
@@ -355,7 +362,8 @@ static void *value_to_pointer_bit_cast(value_t value) {
 // pointer.
 static address_t get_object_address(value_t value) {
   CHECK_DOMAIN(vdObject, value);
-  return value_to_pointer_bit_cast(value) - vdObject;
+  address_t tagged_address = (address_t) value_to_pointer_bit_cast(value);
+  return tagged_address - ((address_arith_t) vdObject);
 }
 
 // Returns a pointer to the index'th field in the given heap object. Check
@@ -465,13 +473,17 @@ const char *get_custom_tagged_phylum_name(custom_tagged_phylum_t phylum);
 
 // Creates a new custom tagged value.
 static value_t new_custom_tagged(custom_tagged_phylum_t phylum, uint64_t payload) {
-  return (value_t) {.as_custom_tagged={vdCustomTagged, phylum, payload}};
+  value_t result;
+  result.as_custom_tagged.domain = vdCustomTagged;
+  result.as_custom_tagged.phylum = phylum;
+  result.as_custom_tagged.payload = payload;
+  return result;
 }
 
 // Returns the phylum of a custom tagged value.
 static custom_tagged_phylum_t get_custom_tagged_phylum(value_t value) {
   CHECK_DOMAIN(vdCustomTagged, value);
-  return value.as_custom_tagged.phylum;
+  return (custom_tagged_phylum_t) value.as_custom_tagged.phylum;
 }
 
 // Returns the payload of a custom tagged value.
@@ -1025,14 +1037,14 @@ static const size_t kNamespaceSize = OBJECT_SIZE(1);
 static const size_t kNamespaceBindingsOffset = OBJECT_FIELD_OFFSET(0);
 
 // Returns the bindings map for this namespace.
-ACCESSORS_DECL(namespace, bindings);
+ACCESSORS_DECL(NAMESPACE, bindings);
 
 // Returns the binding for the given name in the given namespace. If the binding
 // doesn't exist a NotFound signal is returned.
-value_t get_namespace_binding_at(value_t namespace, value_t name);
+value_t get_namespace_binding_at(value_t self, value_t name);
 
 // Sets the binding for a given name in the given namespace.
-value_t set_namespace_binding_at(runtime_t *runtime, value_t namespace,
+value_t set_namespace_binding_at(runtime_t *runtime, value_t nspace,
     value_t name, value_t value);
 
 

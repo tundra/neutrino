@@ -119,59 +119,68 @@ relation_t compare_float_32(float32_t a, float32_t b) {
 }
 
 value_t float_32_infinity() {
-  return new_float_32(INFINITY);
+  // TODO: fix this for MSVC.
+  return new_float_32(IF_MSVC(0, INFINITY));
 }
 
 value_t float_32_minus_infinity() {
-  return new_float_32(-INFINITY);
+  // TODO: fix this for MSVC.
+  return new_float_32(IF_MSVC(0, -INFINITY));
 }
 
 value_t float_32_nan() {
-  return new_float_32(NAN);
+  // TODO: fix this for MSVC.
+  return new_float_32(IF_MSVC(0, NAN));
 }
 
 bool is_float_32_finite(value_t value) {
-  return isfinite(get_float_32_value(value));
+  // TODO: fix this for MSVC.
+  return IF_MSVC(false, isfinite(get_float_32_value(value)));
 }
 
 bool is_float_32_nan(value_t value) {
-  return isnan(get_float_32_value(value));
+  // TODO: fix this for MSVC.
+  return IF_MSVC(false, isnan(get_float_32_value(value)));
 }
 
 static value_t float_32_negate(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
-  CHECK_PHYLUM(tpFloat32, this);
-  return new_float_32(-get_float_32_value(this));
+  value_t self = get_builtin_subject(args);
+  CHECK_PHYLUM(tpFloat32, self);
+  return new_float_32(-get_float_32_value(self));
 }
 
 static value_t float_32_minus_float_32(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
+  value_t self = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
-  CHECK_PHYLUM(tpFloat32, this);
+  CHECK_PHYLUM(tpFloat32, self);
   CHECK_PHYLUM(tpFloat32, that);
-  return new_float_32(get_float_32_value(this) - get_float_32_value(that));
+  return new_float_32(get_float_32_value(self) - get_float_32_value(that));
 }
 
 static value_t float_32_plus_float_32(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
+  value_t self = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
-  CHECK_PHYLUM(tpFloat32, this);
+  CHECK_PHYLUM(tpFloat32, self);
   CHECK_PHYLUM(tpFloat32, that);
-  return new_float_32(get_float_32_value(this) + get_float_32_value(that));
+  return new_float_32(get_float_32_value(self) + get_float_32_value(that));
 }
 
 static value_t float_32_equals_float_32(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
+  value_t self = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
-  CHECK_PHYLUM(tpFloat32, this);
+  CHECK_PHYLUM(tpFloat32, self);
   CHECK_PHYLUM(tpFloat32, that);
-  return new_boolean(test_relation(value_ordering_compare(this, that), reEqual));
+  return new_boolean(test_relation(value_ordering_compare(self, that), reEqual));
 }
 
 value_t add_float_32_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(float_32, PREFIX("-"), 0, float_32_negate);
-  ADD_BUILTIN(float_32, INFIX("-"), 1, float_32_minus_float_32);
-  ADD_BUILTIN(float_32, INFIX("+"), 1, float_32_plus_float_32);
-  ADD_BUILTIN(float_32, INFIX("=="), 1, float_32_equals_float_32);
+  DEF_PREFIX(prefix_minus, "-");
+  ADD_BUILTIN(float_32, prefix_minus, 0, float_32_negate);
+  DEF_INFIX(infix_minus, "-");
+  ADD_BUILTIN(float_32, infix_minus, 1, float_32_minus_float_32);
+  DEF_INFIX(infix_plus, "+");
+  ADD_BUILTIN(float_32, infix_plus, 1, float_32_plus_float_32);
+  DEF_INFIX(infix_eqeq, "==");
+  ADD_BUILTIN(float_32, infix_eqeq, 1, float_32_equals_float_32);
   return success();
 }

@@ -428,7 +428,7 @@ TEST(utils, for_each_va_arg) {
 #define CHECK_HINT(HINT, EXPECTED) do {                                        \
   string_hint_t hint = STRING_HINT(HINT);                                      \
   char hint_str[7];                                                            \
-  string_hint_to_c_str(hint, hint_str);                                        \
+  string_hint_to_c_str(hint.value, hint_str);                                  \
   ASSERT_C_STREQ(EXPECTED, hint_str);                                          \
 } while (false)
 

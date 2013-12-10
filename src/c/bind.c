@@ -66,10 +66,10 @@ static value_t apply_namespace_declaration(runtime_t *runtime, value_t decl,
   TRY_DEF(code_block, compile_expression(runtime, value_syntax,
       fragment, scope_lookup_callback_get_bottom()));
   TRY_DEF(value, run_code_block_until_signal(runtime, code_block));
-  value_t namespace = get_module_fragment_namespace(fragment);
+  value_t nspace = get_module_fragment_namespace(fragment);
   value_t path = get_namespace_declaration_ast_path(decl);
   value_t name = get_path_head(path);
-  TRY(set_namespace_binding_at(runtime, namespace, name, value));
+  TRY(set_namespace_binding_at(runtime, nspace, name, value));
   return success();
 }
 
@@ -212,14 +212,14 @@ static value_t build_transitive_module_array(runtime_t *runtime,
 // Creates a new empty but suitably initialized bound module fragment.
 static value_t new_empty_module_fragment(runtime_t *runtime, value_t stage,
     value_t module) {
-  TRY_DEF(namespace, new_heap_namespace(runtime));
+  TRY_DEF(nspace, new_heap_namespace(runtime));
   TRY_DEF(methodspace, new_heap_methodspace(runtime));
   TRY_DEF(imports, new_heap_namespace(runtime));
   // Prime all methodspaces with the built-in one. This is a temporary hack
   // (famous last words), longer term the built-ins should be loaded through
   // the same mechanism as all other methods.
   TRY(add_methodspace_import(runtime, methodspace, ROOT(runtime, builtin_methodspace)));
-  return new_heap_module_fragment(runtime, module, stage, namespace, methodspace,
+  return new_heap_module_fragment(runtime, module, stage, nspace, methodspace,
       imports);
 }
 

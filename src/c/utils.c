@@ -62,25 +62,25 @@ bool string_equals_cstr(string_t *a, const char *str) {
   return string_equals(a, &b);
 }
 
-void string_hint_to_c_str(string_hint_t hint, char c_str_out[7]) {
+void string_hint_to_c_str(const char *hint, char c_str_out[7]) {
   // The first two characters can always just be copied, even if they're '\0'.
-  c_str_out[0] = hint.value[0];
-  c_str_out[1] = hint.value[1];
-  if (hint.value[3] != '\0') {
+  c_str_out[0] = hint[0];
+  c_str_out[1] = hint[1];
+  if (hint[3] != '\0') {
     // If the string has a last character we also want to add that.
-    if (hint.value[2] != '\0') {
+    if (hint[2] != '\0') {
       // If the string has a one-before-last character we'll have to assume
       // that there might be something in between too so show '..' between the
       // first and last part.
       c_str_out[2] = '.';
       c_str_out[3] = '.';
-      c_str_out[4] = hint.value[2];
-      c_str_out[5] = hint.value[3];
+      c_str_out[4] = hint[2];
+      c_str_out[5] = hint[3];
       c_str_out[6] = '\0';
     } else {
       // If there is just a last character the string must have had length 3. So
       // write the third character and terminate.
-      c_str_out[2] = hint.value[3];
+      c_str_out[2] = hint[3];
       c_str_out[3] = '\0';
     }
   } else {
@@ -121,7 +121,10 @@ memory_block_t memory_block_empty() {
 }
 
 memory_block_t new_memory_block(void *memory, size_t size) {
-  return (memory_block_t) {memory, size};
+  memory_block_t result;
+  result.memory = memory;
+  result.size = size;
+  return result;
 }
 
 bool memory_block_is_empty(memory_block_t block) {
@@ -136,7 +139,7 @@ static memory_block_t system_malloc_trampoline(void *data, size_t size) {
     return memory_block_empty();
   } else {
     memset(result, kMallocHeapMarker, size);
-    return (memory_block_t) {result, size};
+    return new_memory_block(result, size);
   }
 }
 
@@ -208,14 +211,14 @@ static void string_buffer_ensure_capacity(string_buffer_t *buf,
 
 void string_buffer_append(string_buffer_t *buf, string_t *str) {
   string_buffer_ensure_capacity(buf, buf->length + string_length(str));
-  char *chars = buf->memory.memory;
+  char *chars = (char*) buf->memory.memory;
   string_copy_to(str, chars + buf->length, buf->memory.size - buf->length);
   buf->length += string_length(str);
 }
 
 void string_buffer_putc(string_buffer_t *buf, char c) {
   string_buffer_ensure_capacity(buf, buf->length + 1);
-  char *chars = buf->memory.memory;
+  char *chars = (char*) buf->memory.memory;
   chars[buf->length] = c;
   buf->length++;
 }
@@ -326,7 +329,8 @@ void string_buffer_vprintf(string_buffer_t *buf, const char *fmt, va_list argp) 
           // directly. However if that ever fails just grab the encoded value
           // where the value is passed.
           encoded_value_t encoded = va_arg(argp, encoded_value_t);
-          value_t value = {.encoded=encoded};
+          value_t value;
+          value.encoded = encoded;
           size_t depth = (int_param == -1) ? kDefaultPrintDepth : ((size_t) int_param);
           value_print_on(value, buf, pfNone, depth);
           break;
@@ -343,7 +347,7 @@ void string_buffer_vprintf(string_buffer_t *buf, const char *fmt, va_list argp) 
 
 void string_buffer_flush(string_buffer_t *buf, string_t *str_out) {
   CHECK_REL("no room for null terminator", buf->length, <, buf->memory.size);
-  char *chars = buf->memory.memory;
+  char *chars = (char*) buf->memory.memory;
   chars[buf->length] = '\0';
   str_out->length = buf->length;
   str_out->chars = chars;
@@ -379,7 +383,7 @@ void byte_buffer_append(byte_buffer_t *buf, uint8_t value) {
 }
 
 void byte_buffer_flush(byte_buffer_t *buf, blob_t *blob_out) {
-  blob_init(blob_out, buf->memory.memory, buf->length);
+  blob_init(blob_out, (byte_t*) buf->memory.memory, buf->length);
 }
 
 
@@ -397,7 +401,7 @@ value_t bit_vector_init(bit_vector_t *vector, size_t length, bool value) {
   } else {
     memory_block_t memory = allocator_default_malloc(byte_size);
     vector->storage.as_large.memory = memory;
-    vector->data = memory.memory;
+    vector->data = (uint8_t*) memory.memory;
   }
   memset(vector->data, value ? 0xFF : 0x00, byte_size);
   return success();
@@ -456,7 +460,7 @@ void pseudo_random_shuffle(pseudo_random_t *random, void *data,
   // Fisher–Yates shuffle
   CHECK_REL("element size too big", elem_size, <, 16);
   byte_t scratch[16];
-  byte_t *start = data;
+  byte_t *start = (byte_t*) data;
   for (size_t i = 0; i < elem_count - 1; i++) {
     size_t target = elem_count - i - 1;
     size_t source = pseudo_random_next(random, target + 1);
@@ -539,7 +543,7 @@ void hash_stream_write_int64(hash_stream_t *stream, int64_t value) {
 }
 
 void hash_stream_write_data(hash_stream_t *stream, const void *ptr, size_t size) {
-  const uint8_t *bytes = ptr;
+  const uint8_t *bytes = (const uint8_t*) ptr;
   // Look away, it's hideous!
   // TODO: It should be possible to do this block-by-block, the tricky part is
   //   making sure that identical chunks of data hash the same whether they're

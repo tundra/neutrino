@@ -64,77 +64,85 @@ const char *get_custom_tagged_phylum_name(custom_tagged_phylum_t phylum) {
 // --- I n t e g e r ---
 
 static value_t integer_plus_integer(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
+  value_t self = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
-  CHECK_DOMAIN(vdInteger, this);
+  CHECK_DOMAIN(vdInteger, self);
   CHECK_DOMAIN(vdInteger, that);
-  return decode_value(this.encoded + that.encoded);
+  return decode_value(self.encoded + that.encoded);
 }
 
 static value_t integer_minus_integer(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
+  value_t self = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
-  CHECK_DOMAIN(vdInteger, this);
+  CHECK_DOMAIN(vdInteger, self);
   CHECK_DOMAIN(vdInteger, that);
-  return decode_value(this.encoded - that.encoded);
+  return decode_value(self.encoded - that.encoded);
 }
 
 static value_t integer_times_integer(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
+  value_t self = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
-  CHECK_DOMAIN(vdInteger, this);
+  CHECK_DOMAIN(vdInteger, self);
   CHECK_DOMAIN(vdInteger, that);
-  int64_t result = get_integer_value(this) * get_integer_value(that);
+  int64_t result = get_integer_value(self) * get_integer_value(that);
   return new_integer(result);
 }
 
 static value_t integer_divide_integer(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
+  value_t self = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
-  CHECK_DOMAIN(vdInteger, this);
+  CHECK_DOMAIN(vdInteger, self);
   CHECK_DOMAIN(vdInteger, that);
-  int64_t result = get_integer_value(this) / get_integer_value(that);
+  int64_t result = get_integer_value(self) / get_integer_value(that);
   return new_integer(result);
 }
 
 static value_t integer_modulo_integer(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
+  value_t self = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
-  CHECK_DOMAIN(vdInteger, this);
+  CHECK_DOMAIN(vdInteger, self);
   CHECK_DOMAIN(vdInteger, that);
-  int64_t result = get_integer_value(this) % get_integer_value(that);
+  int64_t result = get_integer_value(self) % get_integer_value(that);
   return new_integer(result);
 }
 
 static value_t integer_equals_integer(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
+  value_t self = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
-  CHECK_DOMAIN(vdInteger, this);
+  CHECK_DOMAIN(vdInteger, self);
   CHECK_DOMAIN(vdInteger, that);
-  return new_boolean(is_same_value(this, that));
+  return new_boolean(is_same_value(self, that));
 }
 
 static value_t integer_negate(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
-  CHECK_DOMAIN(vdInteger, this);
-  return decode_value(-this.encoded);
+  value_t self = get_builtin_subject(args);
+  CHECK_DOMAIN(vdInteger, self);
+  return decode_value(-self.encoded);
 }
 
 static value_t integer_print(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
-  print_ln("%v", this);
+  value_t self = get_builtin_subject(args);
+  print_ln("%v", self);
   return nothing();
 }
 
 value_t add_integer_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(integer, INFIX("+"), 1, integer_plus_integer);
-  ADD_BUILTIN(integer, INFIX("-"), 1, integer_minus_integer);
-  ADD_BUILTIN(integer, INFIX("*"), 1, integer_times_integer);
-  ADD_BUILTIN(integer, INFIX("/"), 1, integer_divide_integer);
-  ADD_BUILTIN(integer, INFIX("%"), 1, integer_modulo_integer);
-  ADD_BUILTIN(integer, INFIX("=="), 1, integer_equals_integer);
-  ADD_BUILTIN(integer, PREFIX("-"), 0, integer_negate);
-  ADD_BUILTIN(integer, INFIX("print"), 0, integer_print);
+  DEF_INFIX(infix_plus, "+");
+  ADD_BUILTIN(integer, infix_plus, 1, integer_plus_integer);
+  DEF_INFIX(infix_minus, "-");
+  ADD_BUILTIN(integer, infix_minus, 1, integer_minus_integer);
+  DEF_INFIX(infix_times, "*");
+  ADD_BUILTIN(integer, infix_times, 1, integer_times_integer);
+  DEF_INFIX(infix_divide, "/");
+  ADD_BUILTIN(integer, infix_divide, 1, integer_divide_integer);
+  DEF_INFIX(infix_modulo, "%");
+  ADD_BUILTIN(integer, infix_modulo, 1, integer_modulo_integer);
+  DEF_INFIX(infix_equals, "==");
+  ADD_BUILTIN(integer, infix_equals, 1, integer_equals_integer);
+  DEF_PREFIX(prefix_negate, "-");
+  ADD_BUILTIN(integer, prefix_negate, 0, integer_negate);
+  DEF_INFIX(infix_print, "print");
+  ADD_BUILTIN(integer, infix_print, 0, integer_print);
   return success();
 }
 
@@ -216,7 +224,8 @@ void set_species_family_behavior(value_t value, family_behavior_t *behavior) {
 }
 
 family_behavior_t *get_species_family_behavior(value_t value) {
-  return value_to_pointer_bit_cast(*access_object_field(value, kSpeciesFamilyBehaviorOffset));
+  void *ptr = value_to_pointer_bit_cast(*access_object_field(value, kSpeciesFamilyBehaviorOffset));
+  return (family_behavior_t*) ptr;
 }
 
 void set_species_division_behavior(value_t value, division_behavior_t *behavior) {
@@ -224,7 +233,8 @@ void set_species_division_behavior(value_t value, division_behavior_t *behavior)
 }
 
 division_behavior_t *get_species_division_behavior(value_t value) {
-  return value_to_pointer_bit_cast(*access_object_field(value, kSpeciesDivisionBehaviorOffset));
+  void *ptr = value_to_pointer_bit_cast(*access_object_field(value, kSpeciesDivisionBehaviorOffset));
+  return (division_behavior_t*) ptr;
 }
 
 species_division_t get_species_division(value_t value) {
@@ -278,7 +288,7 @@ void get_modal_species_layout(value_t species, object_layout_t *layout) {
 
 value_mode_t get_modal_species_mode(value_t value) {
   value_t mode = *access_object_field(value, kModalSpeciesModeOffset);
-  return (object_family_t) get_integer_value(mode);
+  return (value_mode_t) get_integer_value(mode);
 }
 
 void set_modal_species_mode(value_t value, value_mode_t mode) {
@@ -489,14 +499,14 @@ void string_buffer_append_string(string_buffer_t *buf, value_t value) {
 }
 
 static value_t string_plus_string(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
+  value_t self = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
-  CHECK_FAMILY(ofString, this);
+  CHECK_FAMILY(ofString, self);
   CHECK_FAMILY(ofString, that);
   string_buffer_t buf;
   string_buffer_init(&buf);
   string_t str;
-  get_string_contents(this, &str);
+  get_string_contents(self, &str);
   string_buffer_append(&buf, &str);
   get_string_contents(that, &str);
   string_buffer_append(&buf, &str);
@@ -507,18 +517,20 @@ static value_t string_plus_string(builtin_arguments_t *args) {
 }
 
 static value_t string_print_raw(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
-  CHECK_FAMILY(ofString, this);
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofString, self);
   string_t contents;
-  get_string_contents(this, &contents);
+  get_string_contents(self, &contents);
   fwrite(contents.chars, sizeof(char), contents.length, stdout);
   fputc('\n', stdout);
   return nothing();
 }
 
 value_t add_string_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(string, INFIX("+"), 1, string_plus_string);
-  ADD_BUILTIN(string, INFIX("print_raw"), 0, string_print_raw);
+  DEF_INFIX(infix_plus, "+");
+  ADD_BUILTIN(string, infix_plus, 1, string_plus_string);
+  DEF_INFIX(infix_print_raw, "print_raw");
+  ADD_BUILTIN(string, infix_print_raw, 0, string_print_raw);
   return success();
 }
 
@@ -829,9 +841,12 @@ value_t array_set_at(builtin_arguments_t *args) {
 }
 
 value_t add_array_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(array, INFIX("length"), 0, array_length);
-  ADD_BUILTIN(array, INDEX(), 1, array_get_at);
-  ADD_BUILTIN(array, ASSIGN(INDEX()), 2, array_set_at);
+  DEF_INFIX(infix_length, "length");
+  ADD_BUILTIN(array, infix_length, 0, array_length);
+  DEF_INDEX(index);
+  ADD_BUILTIN(array, index, 1, array_get_at);
+  DEF_ASSIGN(index_assign, index);
+  ADD_BUILTIN(array, index_assign, 2, array_set_at);
   return success();
 }
 
@@ -1283,7 +1298,8 @@ void key_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
   if (is_nothing(display_name))
     display_name = new_integer(get_key_id(value));
   string_buffer_printf(buf, "%%");
-  value_print_inner_on(display_name, buf, flags | pfUnquote, depth - 1);
+  value_print_inner_on(display_name, buf,
+      SET_ENUM_FLAG(print_flags_t, flags, pfUnquote), depth - 1);
 }
 
 
@@ -1371,7 +1387,8 @@ static value_t instance_manager_new_instance(builtin_arguments_t *args) {
 }
 
 value_t add_instance_manager_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(instance_manager, INFIX("new_instance"), 1, instance_manager_new_instance);
+  DEF_INFIX(infix_new_instance, "new_instance");
+  ADD_BUILTIN(instance_manager, infix_new_instance, 1, instance_manager_new_instance);
   return success();
 }
 
@@ -1442,7 +1459,8 @@ void type_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
   string_buffer_printf(buf, "#<type");
   if (!is_nothing(display_name)) {
     string_buffer_printf(buf, " ");
-    value_print_inner_on(display_name, buf, flags | pfUnquote, depth - 1);
+    value_print_inner_on(display_name, buf,
+        SET_ENUM_FLAG(print_flags_t, flags, pfUnquote), depth - 1);
   }
   string_buffer_printf(buf, ">");
 }
@@ -1538,8 +1556,9 @@ value_t emit_lambda_call_trampoline(assembler_t *assm) {
 }
 
 value_t add_lambda_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
+  DEF_CALL(call);
   TRY(add_methodspace_custom_method(runtime, deref(s_space),
-      ROOT(runtime, lambda_type), CALL(), 0, true,
+      ROOT(runtime, lambda_type), call, 0, true,
       emit_lambda_call_trampoline));
   return success();
 }
@@ -1577,14 +1596,14 @@ value_t plankton_new_namespace(runtime_t *runtime) {
   return new_heap_namespace(runtime);
 }
 
-value_t get_namespace_binding_at(value_t namespace, value_t name) {
-  value_t bindings = get_namespace_bindings(namespace);
+value_t get_namespace_binding_at(value_t self, value_t name) {
+  value_t bindings = get_namespace_bindings(self);
   return get_id_hash_map_at(bindings, name);
 }
 
-value_t set_namespace_binding_at(runtime_t *runtime, value_t namespace,
+value_t set_namespace_binding_at(runtime_t *runtime, value_t nspace,
     value_t name, value_t value) {
-  value_t bindings = get_namespace_bindings(namespace);
+  value_t bindings = get_namespace_bindings(nspace);
   return set_id_hash_map_at(runtime, bindings, name, value);
 }
 
@@ -1687,8 +1706,8 @@ static value_t module_fragment_lookup_path_in_imports(runtime_t *runtime,
 static value_t module_fragment_lookup_path_in_namespace(runtime_t *runtime,
     value_t self, value_t path) {
   value_t head = get_path_head(path);
-  value_t namespace = get_module_fragment_namespace(self);
-  return get_namespace_binding_at(namespace, head);
+  value_t nspace = get_module_fragment_namespace(self);
+  return get_namespace_binding_at(nspace, head);
 }
 
 // Look up a path locally in the given fragment. You generally don't want to
@@ -1838,8 +1857,8 @@ void path_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
     value_t current = value;
     while (!is_path_empty(current)) {
       string_buffer_printf(buf, ":");
-      value_print_inner_on(get_path_head(current), buf, flags | pfUnquote,
-          depth - 1);
+      value_print_inner_on(get_path_head(current), buf,
+          SET_ENUM_FLAG(print_flags_t, flags, pfUnquote), depth - 1);
       current = get_path_tail(current);
     }
   }
@@ -1986,7 +2005,8 @@ void function_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
   value_t display_name = get_function_display_name(value);
   if (!is_nothing(display_name)) {
     string_buffer_printf(buf, " ");
-    value_print_inner_on(display_name, buf, flags | pfUnquote, depth - 1);
+    value_print_inner_on(display_name, buf,
+        SET_ENUM_FLAG(print_flags_t, flags, pfUnquote), depth - 1);
   }
   string_buffer_printf(buf, ">");
 }
@@ -2149,22 +2169,24 @@ void global_field_print_on(value_t value, string_buffer_t *buf, print_flags_t fl
 }
 
 static value_t global_field_set(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
+  value_t self = get_builtin_subject(args);
   value_t instance = get_builtin_argument(args, 0);
   value_t value = get_builtin_argument(args, 1);
   runtime_t *runtime = get_builtin_runtime(args);
-  return set_instance_field(runtime, instance, this, value);
+  return set_instance_field(runtime, instance, self, value);
 }
 
 static value_t global_field_get(builtin_arguments_t *args) {
-  value_t this = get_builtin_subject(args);
+  value_t self = get_builtin_subject(args);
   value_t instance = get_builtin_argument(args, 0);
-  return get_instance_field(instance, this);
+  return get_instance_field(instance, self);
 }
 
 value_t add_global_field_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  ADD_BUILTIN(global_field, ASSIGN(INDEX()), 2, global_field_set);
-  ADD_BUILTIN(global_field, INDEX(), 1, global_field_get);
+  DEF_INDEX(index);
+  ADD_BUILTIN(global_field, index, 1, global_field_get);
+  DEF_ASSIGN(index_assign, index);
+  ADD_BUILTIN(global_field, index_assign, 2, global_field_set);
   return success();
 }
 

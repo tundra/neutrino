@@ -68,9 +68,15 @@ class Gcc(Toolchain):
 class MSVC(Toolchain):
 
   def get_object_compile_command(self, output, inputs, includepaths):
-    command = "$(CC) /EHsc /Fo %(output)s %(inputs)s" % {
+    def build_source_argument(path):
+      return "/Tp%s" % process.shell_escape(path)
+    cflags = ["/nologo", "/c"]
+    for path in includepaths:
+      cflags.append("/I%s" % process.shell_escape(path))
+    command = "$(CC) %(cflags)s /Fo%(output)s %(inputs)s" % {
       "output": process.shell_escape(output),
-      "inputs": " ".join(map(process.shell_escape, inputs))
+      "inputs": " ".join(map(build_source_argument, inputs)),
+      "cflags": " ".join(cflags)
     }
     return [command]
 
@@ -78,8 +84,11 @@ class MSVC(Toolchain):
     return "obj"
 
   def get_executable_compile_command(self, output, inputs):
-    # TODO: implement once object compilation works.
-    return []
+    command = "$(CC) /nologo /Fe%(output)s %(inputs)s" % {
+      "output": process.shell_escape(output),
+      "inputs": " ".join(map(process.shell_escape, inputs))
+    }
+    return [command]
 
   def get_ensure_folder_command(self, folder):
     # Windows mkdir doesn't have an equivalent to -p but we can use a bit of

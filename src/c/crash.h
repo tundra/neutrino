@@ -8,6 +8,8 @@
 #ifndef _CRASH
 #define _CRASH
 
+#include "globals.h"
+
 // Data used to construct the message displayed when the runtime aborts.
 typedef struct {
   const char *file;

@@ -14,7 +14,11 @@
 
 // Creates a new signal with the specified cause and details.
 static value_t new_signal_with_details(signal_cause_t cause, uint32_t details) {
-  return (value_t) {.as_signal={vdSignal, cause, details}};
+  value_t result;
+  result.as_signal.domain = vdSignal;
+  result.as_signal.cause = cause;
+  result.as_signal.details = details;
+  return result;
 }
 
 // Creates a new signal with the specified cause and no details.
@@ -139,13 +143,17 @@ static value_t new_invalid_input_signal() {
 
 // Converter to get and set details for invalid input as a uint32_t.
 typedef union {
-  string_hint_t decoded;
+  char decoded[4];
   uint32_t encoded;
 } invalid_input_details_codec_t;
 
 // Creates a new invalid input signal with a hint describing the problem.
 static value_t new_invalid_input_signal_with_hint(string_hint_t hint) {
-  invalid_input_details_codec_t codec = {.decoded = hint};
+  invalid_input_details_codec_t codec;
+  codec.decoded[0] = hint.value[0];
+  codec.decoded[1] = hint.value[1];
+  codec.decoded[2] = hint.value[2];
+  codec.decoded[3] = hint.value[3];
   return new_signal_with_details(scInvalidInput, codec.encoded);
 }
 

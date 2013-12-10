@@ -41,7 +41,7 @@ value_t scope_lookup_callback_call(scope_lookup_callback_t *callback,
 // Performs a lookup for a single symbol scope.
 static value_t single_symbol_scope_lookup(value_t symbol, void *data,
     binding_info_t *info_out) {
-  single_symbol_scope_t *scope = data;
+  single_symbol_scope_t *scope = (single_symbol_scope_t*) data;
   if (value_identity_compare(symbol, scope->symbol)) {
     if (info_out != NULL)
       *info_out = scope->binding;
@@ -55,7 +55,8 @@ void assembler_push_single_symbol_scope(assembler_t *assm,
     single_symbol_scope_t *scope, value_t symbol, binding_type_t type,
     uint32_t data) {
   scope->symbol = symbol;
-  scope->binding = (binding_info_t) {type, data};
+  scope->binding.type = type;
+  scope->binding.data = data;
   scope_lookup_callback_init(&scope->callback, single_symbol_scope_lookup, scope);
   scope->outer = assembler_set_scope_callback(assm, &scope->callback);
 }
@@ -76,13 +77,14 @@ typedef union {
 // Performs a lookup for a single symbol scope.
 static value_t map_scope_lookup(value_t symbol, void *data,
     binding_info_t *info_out) {
-  map_scope_t *scope = data;
+  map_scope_t *scope = (map_scope_t*) data;
   value_t value = get_id_hash_map_at(scope->map, symbol);
   if (is_signal(scNotFound, value)) {
     return scope_lookup_callback_call(scope->outer, symbol, info_out);
   } else {
     if (info_out != NULL) {
-      binding_info_codec_t codec = {.encoded=get_integer_value(value)};
+      binding_info_codec_t codec;
+      codec.encoded = get_integer_value(value);
       *info_out = codec.decoded;
     }
     return success();
@@ -104,7 +106,9 @@ void assembler_pop_map_scope(assembler_t *assm, map_scope_t *scope) {
 
 value_t map_scope_bind(map_scope_t *scope, value_t symbol, binding_type_t type,
     uint32_t data) {
-  binding_info_codec_t codec = {.decoded={type, data}};
+  binding_info_codec_t codec;
+  codec.decoded.type = type;
+  codec.decoded.data = data;
   value_t value = new_integer(codec.encoded);
   TRY(set_id_hash_map_at(scope->assembler->runtime, scope->map, symbol, value));
   return success();
@@ -112,7 +116,7 @@ value_t map_scope_bind(map_scope_t *scope, value_t symbol, binding_type_t type,
 
 static value_t capture_scope_lookup(value_t symbol, void *data,
     binding_info_t *info_out) {
-  capture_scope_t *scope = data;
+  capture_scope_t *scope = (capture_scope_t*) data;
   size_t capture_count_before = get_array_buffer_length(scope->captures);
   // See if we've captured this variable before.
   for (size_t i = 0; i < capture_count_before; i++) {

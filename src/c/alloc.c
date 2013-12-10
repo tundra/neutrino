@@ -305,10 +305,10 @@ value_t new_heap_namespace(runtime_t *runtime) {
 }
 
 value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t stage,
-    value_t namespace, value_t methodspace, value_t imports) {
+    value_t nspace, value_t methodspace, value_t imports) {
   CHECK_FAMILY_OPT(ofModule, module);
   CHECK_PHYLUM(tpStageOffset, stage);
-  CHECK_FAMILY_OPT(ofNamespace, namespace);
+  CHECK_FAMILY_OPT(ofNamespace, nspace);
   CHECK_FAMILY_OPT(ofMethodspace, methodspace);
   CHECK_FAMILY_OPT(ofNamespace, imports);
   size_t size = kModuleFragmentSize;
@@ -316,7 +316,7 @@ value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t sta
       ROOT(runtime, mutable_module_fragment_species)));
   set_module_fragment_stage(result, stage);
   set_module_fragment_module(result, module);
-  set_module_fragment_namespace(result, namespace);
+  set_module_fragment_namespace(result, nspace);
   set_module_fragment_methodspace(result, methodspace);
   set_module_fragment_imports(result, imports);
   set_module_fragment_epoch(result, feUnbound);

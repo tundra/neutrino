@@ -78,7 +78,7 @@ value_t space_init(space_t *space, const runtime_config_t *config) {
     return new_system_error_signal(seAllocationFailed);
   // Clear the newly allocated memory to a recognizable value.
   memset(memory.memory, kBlankHeapMarker, bytes);
-  address_t aligned = align_address(kValueSize, memory.memory);
+  address_t aligned = align_address(kValueSize, (address_t) memory.memory);
   space->memory = memory;
   space->next_free = space->start = aligned;
   // If malloc gives us an aligned pointer using only 'size_bytes' of memory
@@ -179,7 +179,7 @@ static void object_tracker_iter_advance(object_tracker_iter_t *iter) {
 object_tracker_t *heap_new_object_tracker(heap_t *heap, value_t value) {
   CHECK_DOMAIN(vdObject, value);
   memory_block_t memory = allocator_default_malloc(sizeof(object_tracker_t));
-  object_tracker_t *new_tracker = memory.memory;
+  object_tracker_t *new_tracker = (object_tracker_t*) memory.memory;
   object_tracker_t *next = heap->root_object_tracker.next;
   object_tracker_t *prev = next->prev;
   new_tracker->value = value;
@@ -264,7 +264,7 @@ value_t heap_for_each_object(heap_t *heap, value_callback_t *callback) {
 // callback for each value field in the given object.
 static value_t visit_object_fields(value_t object, value_callback_t *value_callback) {
   // Visit the object's species first.
-  field_callback_t *field_callback = value_callback_get_data(value_callback);
+  field_callback_t *field_callback = (field_callback_t*) value_callback_get_data(value_callback);
   value_t *header = access_object_field(object, kObjectHeaderOffset);
   // Check that the header isn't a forward pointer -- traversing a space that's
   // being migrated from doesn't work so all headers must be objects. We also

@@ -61,7 +61,7 @@ typedef struct {
 } string_hint_t;
 
 // Reads the characters from a string hint, storing them in a plain c-string.
-void string_hint_to_c_str(string_hint_t hint, char c_str_out[5]);
+void string_hint_to_c_str(const char *hint, char c_str_out[5]);
 
 
 // --- B l o b ---
