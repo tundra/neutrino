@@ -8,6 +8,7 @@ test_file_names = [
   "test_bind.c",
   "test_builtin.c",
   "test_crash.c",
+  "test_globals.c",
   "test_heap.c",
   "test_interp.c",
   "test_method.c",
