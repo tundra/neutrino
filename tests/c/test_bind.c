@@ -14,7 +14,7 @@ value_t expand_variant_to_unbound_module(runtime_t *runtime, variant_value_t *va
 
 // Creates a variant that expands to an unbound module with the given path and
 // fragments.
-#define vUnboundModule(path, ...) vBuild(                                      \
+#define vUnboundModule(path, ...) vVariant(                                    \
   expand_variant_to_unbound_module,                                            \
   vArrayPayload(path, vArray(__VA_ARGS__)))
 
@@ -28,7 +28,7 @@ value_t expand_variant_to_unbound_fragment(runtime_t *runtime, variant_value_t *
 
 // Creates a variant that expands to an unbound fragment with the given stage
 // and imports.
-#define vUnboundFragment(stage, imports) vBuild(                               \
+#define vUnboundFragment(stage, imports) vVariant(                             \
   expand_variant_to_unbound_fragment,                                          \
   vArrayPayload(stage, imports))
 
@@ -65,8 +65,8 @@ static value_t sort_and_flatten_map(runtime_t *runtime, value_t map) {
   return pairs;
 }
 
-static void test_import_map(runtime_t *runtime, variant_t expected,
-    variant_t modules) {
+static void test_import_map(runtime_t *runtime, variant_t *expected,
+    variant_t *modules) {
   binding_context_t context;
   binding_context_init(&context, runtime);
   value_t deps = build_fragment_entry_map(&context, C(modules));
@@ -87,6 +87,7 @@ static void test_import_map(runtime_t *runtime, variant_t expected,
 
 TEST(bind, dependency_map) {
   CREATE_RUNTIME();
+  CREATE_VARIANT_CONTAINER();
 
   // Two stages, 0 and -1, yield 0 -> -1.
   test_import_map(runtime,
@@ -165,11 +166,13 @@ TEST(bind, dependency_map) {
         MOD(other,
           FRG( 0, E),
           FRG(-1, E))));
+
+  DISPOSE_VARIANT_CONTAINER();
   DISPOSE_RUNTIME();
 }
 
-static void test_load_order(runtime_t *runtime, variant_t expected,
-    variant_t modules) {
+static void test_load_order(runtime_t *runtime, variant_t *expected,
+    variant_t *modules) {
   binding_context_t context;
   binding_context_init(&context, runtime);
   build_fragment_entry_map(&context, C(modules));
@@ -179,6 +182,7 @@ static void test_load_order(runtime_t *runtime, variant_t expected,
 
 TEST(bind, load_order) {
   CREATE_RUNTIME();
+  CREATE_VARIANT_CONTAINER();
 
   // Stages within the same module.
   test_load_order(runtime,
@@ -317,5 +321,6 @@ TEST(bind, load_order) {
           FRG( 0, E),
           FRG(-1, E))));
 
+  DISPOSE_VARIANT_CONTAINER();
   DISPOSE_RUNTIME();
 }

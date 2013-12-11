@@ -124,6 +124,7 @@ TEST(process, stack_frames) {
 
 TEST(process, get_argument_one_piece) {
   CREATE_RUNTIME();
+  CREATE_VARIANT_CONTAINER();
 
   value_t stack = new_heap_stack(runtime, 16);
   frame_t frame;
@@ -143,11 +144,13 @@ TEST(process, get_argument_one_piece) {
   ASSERT_VALEQ(new_integer(5), frame_get_argument(&frame, 1));
   ASSERT_VALEQ(new_integer(4), frame_get_argument(&frame, 2));
 
+  DISPOSE_VARIANT_CONTAINER();
   DISPOSE_RUNTIME();
 }
 
 TEST(process, get_argument_multi_pieces) {
   CREATE_RUNTIME();
+  CREATE_VARIANT_CONTAINER();
 
   value_t stack = new_heap_stack(runtime, 16);
   frame_t frame;
@@ -162,6 +165,7 @@ TEST(process, get_argument_multi_pieces) {
   ASSERT_VALEQ(new_integer(5), frame_get_argument(&frame, 1));
   ASSERT_VALEQ(new_integer(6), frame_get_argument(&frame, 2));
 
+  DISPOSE_VARIANT_CONTAINER();
   DISPOSE_RUNTIME();
 }
 

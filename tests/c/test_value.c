@@ -640,6 +640,7 @@ TEST(value, try_finally) {
 
 TEST(value, array_identity) {
   CREATE_RUNTIME();
+  CREATE_VARIANT_CONTAINER();
 
   value_t v_nn_0 = C(vArray(vNull(), vNull()));
   value_t v_nn_1 = C(vArray(vNull(), vNull()));
@@ -696,6 +697,7 @@ TEST(value, array_identity) {
   value_t hdeep = value_transient_identity_hash(deep);
   ASSERT_SUCCESS(hdeep);
 
+  DISPOSE_VARIANT_CONTAINER();
   DISPOSE_RUNTIME();
 }
 
@@ -838,6 +840,7 @@ TEST(value, invalid_input) {
 
 TEST(value, paths) {
   CREATE_RUNTIME();
+  CREATE_VARIANT_CONTAINER();
 
   value_t empty = ROOT(runtime, empty_path);
   ASSERT_CHECK_FAILURE(scEmptyPath, get_path_head(empty));
@@ -858,6 +861,7 @@ TEST(value, paths) {
   ASSERT_C_STREQ(":a:b:c", found);
   dispose_value_to_string(&to_string);
 
+  DISPOSE_VARIANT_CONTAINER();
   DISPOSE_RUNTIME();
 }
 
@@ -884,6 +888,7 @@ value_t new_options(runtime_t *runtime, size_t count, value_t* elements) {
 
 TEST(value, options) {
   CREATE_RUNTIME();
+  CREATE_VARIANT_CONTAINER();
 
   value_t x = variant_to_value(runtime, vStr("x"));
   value_t y = variant_to_value(runtime, vStr("y"));
@@ -918,5 +923,6 @@ TEST(value, options) {
   ASSERT_VAREQ(vInt(64), get_options_flag_value(runtime, has_xyz, y, new_integer(19)));
   ASSERT_VAREQ(vInt(65), get_options_flag_value(runtime, has_xyz, z, new_integer(20)));
 
+  DISPOSE_VARIANT_CONTAINER();
   DISPOSE_RUNTIME();
 }

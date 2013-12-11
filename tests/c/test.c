@@ -266,6 +266,84 @@ void uninstall_log_validator(log_validator_t *validator) {
 
 // --- V a r i a n t s ---
 
+// The size of an individual variant container block.
+static const size_t kVariantContainerBlockSize = 1024;
+
+// Moves the current block, which is now presumably exhausted, into the list
+// of past blocks.
+static void variant_container_retire_current_block(variant_container_t *container) {
+  if (container->past_block_count == container->past_block_capacity) {
+    // If we've exhausted the past blocks array we double the capacity.
+    size_t new_capacity = 2 * container->past_block_capacity;
+    if (new_capacity < 4)
+      // The first time the old capacity will be 0 so we go directly to 4.
+      new_capacity = 4;
+    // Allocate a new past blocks array.
+    memory_block_t new_memory = allocator_default_malloc(new_capacity * sizeof(memory_block_t));
+    memory_block_t *new_blocks = (memory_block_t*) new_memory.memory;
+    // Copy the previous values.
+    for (size_t i = 0; i < container->past_block_capacity; i++)
+      new_blocks[i] = container->past_blocks[i];
+    // Free the old array before we clobber the field.
+    allocator_default_free(container->past_blocks_memory);
+    // Update the state of the container.
+    container->past_blocks_memory = new_memory;
+    container->past_blocks = new_blocks;
+    container->past_block_capacity = new_capacity;
+  }
+  container->past_blocks[container->past_block_count] = container->current_block;
+  container->past_block_count++;
+  container->current_block = allocator_default_malloc(kVariantContainerBlockSize);
+  container->current_block_cursor = 0;
+}
+
+static void *variant_container_malloc(variant_container_t *container, size_t size) {
+  CHECK_REL("variant block too big", size, <, kVariantContainerBlockSize);
+  if ((container->current_block_cursor + size) > container->current_block.size)
+    variant_container_retire_current_block(container);
+  byte_t *start = container->current_block.memory;
+  byte_t *result = start + container->current_block_cursor;
+  container->current_block_cursor += size;
+  return result;
+}
+
+void variant_container_init(variant_container_t *container) {
+  container->past_blocks_memory = memory_block_empty();
+  container->current_block = allocator_default_malloc(kVariantContainerBlockSize);
+  container->current_block_cursor = 0;
+  container->past_block_capacity = 0;
+  container->past_block_count = 0;
+  container->past_blocks = NULL;
+}
+
+void variant_container_dispose(variant_container_t *container) {
+  for (size_t i = 0; i < container->past_block_count; i++) {
+    memory_block_t past_block = container->past_blocks[i];
+    allocator_default_free(past_block);
+  }
+  allocator_default_free(container->past_blocks_memory);
+  allocator_default_free(container->current_block);
+}
+
+variant_t *variant_container_alloc_variant(variant_container_t *container) {
+  void *result = variant_container_malloc(container, sizeof(variant_t));
+  return (variant_t*) result;
+}
+
+variant_value_t var_array(variant_container_t *container, size_t elmc, ...) {
+  variant_value_t value;
+  value.as_array.length = elmc;
+  void *mem = variant_container_malloc(container, elmc * sizeof(variant_t*));
+  value.as_array.elements = (variant_t**) mem;
+  va_list ap;
+  va_start(ap, elmc);
+  for (size_t i = 0; i < elmc; i++) {
+    value.as_array.elements[i] = va_arg(ap, variant_t*);
+  }
+  va_end(ap);
+  return value;
+}
+
 value_t expand_variant_to_integer(runtime_t *runtime, variant_value_t *value) {
   return new_integer(value->as_int64);
 }
@@ -325,8 +403,8 @@ value_t expand_variant_to_identifier(runtime_t *runtime, variant_value_t *value)
   return new_heap_identifier(runtime, stage, path);
 }
 
-value_t variant_to_value(runtime_t *runtime, variant_t variant) {
-  return (variant.expander)(runtime, &variant.value);
+value_t variant_to_value(runtime_t *runtime, variant_t *variant) {
+  return (variant->expander)(runtime, &variant->value);
 }
 
 bool advance_lexical_permutation(int64_t *elms, size_t elmc) {

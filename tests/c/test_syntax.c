@@ -32,9 +32,10 @@ TEST(syntax, emitting) {
 
 TEST(syntax, parameter_order_index) {
   CREATE_RUNTIME();
+  CREATE_VARIANT_CONTAINER();
 
-  variant_t subject_key = vValue(ROOT(runtime, subject_key));
-  variant_t selector_key = vValue(ROOT(runtime, selector_key));
+  variant_t *subject_key = vValue(ROOT(runtime, subject_key));
+  variant_t *selector_key = vValue(ROOT(runtime, selector_key));
 
   CHECK_ORDERING_INDEX(0, vArray(subject_key));
   CHECK_ORDERING_INDEX(1, vArray(selector_key));
@@ -50,18 +51,19 @@ TEST(syntax, parameter_order_index) {
   CHECK_ORDERING_INDEX(kMaxOrderIndex, vArray(vStr("foo")));
   CHECK_ORDERING_INDEX(102, vArray(vStr("foo"), vInt(100)));
 
+  DISPOSE_VARIANT_CONTAINER();
   DISPOSE_RUNTIME();
 }
 
 // Shorthand for running an ordering test.
 #define CHECK_ORDERING(N, PARAMS, EXPECTED) do {                               \
   value_t params = new_heap_array(runtime, (N));                               \
-  variant_t var_params = (PARAMS);                                             \
-  variant_t *elms = var_params.value.as_array.elements;                        \
+  variant_t *var_params = (PARAMS);                                            \
+  variant_t **elms = var_params->value.as_array.elements;                      \
   for (size_t i = 0; i < (N); i++) {                                           \
     value_t tags = variant_to_value(runtime, elms[i]);                         \
     set_array_at(params, i, new_heap_parameter_ast(runtime,                    \
-        nothing(), tags, any_guard_ast));                         \
+        nothing(), tags, any_guard_ast));                                      \
   }                                                                            \
   size_t *ordering = calc_parameter_ast_ordering(&scratch, params);            \
   size_t expected[N] = {EXPECTED};                                             \
@@ -71,20 +73,21 @@ TEST(syntax, parameter_order_index) {
 
 TEST(syntax, param_ordering) {
   CREATE_RUNTIME();
+  CREATE_VARIANT_CONTAINER();
 
   value_t any_guard_ast = new_heap_guard_ast(runtime, gtAny, null());
 
   reusable_scratch_memory_t scratch;
   reusable_scratch_memory_init(&scratch);
 
-  variant_t sub = vValue(ROOT(runtime, subject_key));
-  variant_t sel = vValue(ROOT(runtime, selector_key));
-  variant_t just_sub = vArray(sub);
-  variant_t just_sel = vArray(sel);
-  variant_t just_0 = vArray(vInt(0));
-  variant_t just_1 = vArray(vInt(1));
-  variant_t just_2 = vArray(vInt(2));
-  variant_t just_3 = vArray(vInt(3));
+  variant_t *sub = vValue(ROOT(runtime, subject_key));
+  variant_t *sel = vValue(ROOT(runtime, selector_key));
+  variant_t *just_sub = vArray(sub);
+  variant_t *just_sel = vArray(sel);
+  variant_t *just_0 = vArray(vInt(0));
+  variant_t *just_1 = vArray(vInt(1));
+  variant_t *just_2 = vArray(vInt(2));
+  variant_t *just_3 = vArray(vInt(3));
 
   CHECK_ORDERING(4, vArray(just_0, just_1, just_2, just_3), 0 o 1 o 2 o 3);
   CHECK_ORDERING(4, vArray(just_3, just_2, just_1, just_0), 3 o 2 o 1 o 0);
@@ -102,5 +105,6 @@ TEST(syntax, param_ordering) {
 
   reusable_scratch_memory_dispose(&scratch);
 
+  DISPOSE_VARIANT_CONTAINER();
   DISPOSE_RUNTIME();
 }

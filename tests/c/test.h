@@ -215,7 +215,7 @@ typedef union {
   bool as_bool;
   struct {
     size_t length;
-    variant_t *elements;
+    variant_t **elements;
   } as_array;
   value_t as_value;
 } variant_value_t;
@@ -245,6 +245,42 @@ struct variant_t {
   variant_value_t value;
 };
 
+// A stack-allocated data structure that holds the memory used by variants.
+typedef struct {
+  // The memory where the past blocks array is stored.
+  memory_block_t past_blocks_memory;
+  // Array of past blocks that have been exhausted and are waiting to be
+  // disposed.
+  memory_block_t *past_blocks;
+  // The size of the past blocks array.
+  size_t past_block_capacity;
+  // The number of entries in the past blocks array that are in use.
+  size_t past_block_count;
+  // The block from which we're currently grabbing memory.
+  memory_block_t current_block;
+  // Pointer into the current block where the free memory starts.
+  size_t current_block_cursor;
+} variant_container_t;
+
+// Initializes a variant container.
+void variant_container_init(variant_container_t *container);
+
+// Disposes a variant container.
+void variant_container_dispose(variant_container_t *container);
+
+// Allocates a new empty variant value in the given container.
+variant_t *variant_container_alloc_variant(variant_container_t *container);
+
+// Creates a new variant container that can be used implicitly by the variant
+// macros.
+#define CREATE_VARIANT_CONTAINER()                                             \
+  variant_container_t __variant_container__;                                   \
+  variant_container_init(&__variant_container__)
+
+// Disposes a variant container created by CREATE_VARIANT_CONTAINER.
+#define DISPOSE_VARIANT_CONTAINER()                                            \
+  variant_container_dispose(&__variant_container__)
+
 // Returns true if the given variant value expands to null.
 static bool variant_is_marker(variant_t *variant) {
   return variant->expander == NULL;
@@ -254,66 +290,106 @@ static bool variant_is_marker(variant_t *variant) {
 // with macros, this fixes that.
 #define o ,
 
-// Expands to an expression that yields a variant with the specified expander
-// and payload.
-#define vBuild(expander, payload) ((variant_t) {expander, {payload}})
+// Creates a variant from an expander and a payload.
+static variant_t *new_variant(variant_container_t *container,
+    variant_expander_t expander, variant_value_t value) {
+  variant_t *result = variant_container_alloc_variant(container);
+  result->expander = expander;
+  result->value = value;
+  return result;
+}
+
+// Creates a boolean variant value.
+static variant_value_t var_bool(bool as_bool) {
+  variant_value_t value;
+  value.as_bool = as_bool;
+  return value;
+}
+
+// Creates a variant value representing the empty array.
+static variant_value_t var_empty_array() {
+  variant_value_t contents;
+  contents.as_array.length = 0;
+  return contents;
+}
+
+static variant_value_t var_int64(int64_t as_int64) {
+  variant_value_t value;
+  value.as_int64 = as_int64;
+  return value;
+}
+
+static variant_value_t var_value(value_t as_value) {
+  variant_value_t value;
+  value.as_value = as_value;
+  return value;
+}
+
+static variant_value_t var_c_str(const char *as_c_str) {
+  variant_value_t value;
+  value.as_c_str = as_c_str;
+  return value;
+}
+
+// Creates an array-type variant value.
+variant_value_t var_array(variant_container_t *container, size_t elmc, ...);
+
+// Creates a new variant in the enclosing variant container.
+#define vVariant(expander, value) new_variant(&__variant_container__, expander, value)
 
 // Returns a recognizable marker that can be detected using variant_is_marker.
-#define vMarker vBuild(NULL, .as_bool=0)
+#define vMarker vVariant(NULL, var_bool(0))
 
 // Creates an integer variant with the given value.
-#define vInt(V) vBuild(expand_variant_to_integer, .as_int64=(V))
+#define vInt(V) vVariant(expand_variant_to_integer, var_int64(V))
 
 // Creates a stage offset variant with the given offset.
-#define vStageOffset(V) vBuild(expand_variant_to_stage_offset, .as_int64=(V))
+#define vStageOffset(V) vVariant(expand_variant_to_stage_offset, var_int64(V))
 
 // Creates a variant string with the given value.
-#define vStr(V) vBuild(expand_variant_to_string, .as_c_str=(V))
+#define vStr(V) vVariant(expand_variant_to_string, var_c_str(V))
 
 // Creates a variant bool with the given value.
-#define vBool(V) vBuild(expand_variant_to_bool, .as_bool=(V))
+#define vBool(V) vVariant(expand_variant_to_bool, var_bool(V))
 
 // Creates a variant null.
-#define vNull() vBuild(expand_variant_to_null, .as_bool=0)
+#define vNull() vVariant(expand_variant_to_null, var_bool(0))
 
 // Creates a variant which represents the given value_t.
-#define vValue(V) vBuild(expand_variant_to_value, .as_value=(V))
+#define vValue(V) vVariant(expand_variant_to_value, var_value(V))
 
 // Expands to the empty array. Because of the way the vArray macro works it has
 // to be non-empty.
-#define vEmptyArray() vBuild(expand_variant_to_array, .as_array={0 o 0})
+#define vEmptyArray() vVariant(expand_variant_to_array, var_empty_array())
 
 // Expands to a payload value for the vBuild macro that stores all the argument
 // in the as_array field in the value union.
-#define vArrayPayload(...) .as_array={                                         \
-  VA_ARGC(__VA_ARGS__),                                                        \
-  (variant_t[VA_ARGC(__VA_ARGS__)]) { __VA_ARGS__ }                            \
-}
+#define vArrayPayload(...) var_array(&__variant_container__, VA_ARGC(__VA_ARGS__), __VA_ARGS__)
 
 // Creates a variant array with the given length and elements.
-#define vArray(...) vBuild(expand_variant_to_array, vArrayPayload(__VA_ARGS__))
+#define vArray(...) vVariant(expand_variant_to_array, vArrayPayload(__VA_ARGS__))
 
 // Creates a variant array with the given length and elements.
-#define vArrayBuffer(...) vBuild(expand_variant_to_array_buffer, vArrayPayload(__VA_ARGS__))
+#define vArrayBuffer(...) vVariant(expand_variant_to_array_buffer, vArrayPayload(__VA_ARGS__))
 
 // Expands to the empty array. Because of the way the vArray macro works it has
 // to be non-empty.
-#define vEmptyArrayBuffer() vBuild(expand_variant_to_array_buffer, .as_array={0 o 0})
+#define vEmptyArrayBuffer() vVariant(expand_variant_to_array_buffer, var_empty_array())
 
 // Expands to a variant representing a path with the given segments. This can
 // not be used to construct the empty path.
-#define vPath(...) vBuild(expand_variant_to_path, vArrayPayload(__VA_ARGS__))
+#define vPath(...) vVariant(expand_variant_to_path, vArrayPayload(__VA_ARGS__))
 
 // Expands to a variant representing an identifier with the given path and
 // stage.
-#define vIdentifier(S, P) vBuild(expand_variant_to_identifier, vArrayPayload(S, P))
+#define vIdentifier(S, P) vVariant(expand_variant_to_identifier, vArrayPayload(S, P))
 
 // Instantiates a variant value in the runtime stored in the variable 'runtime'.
 #define C(V) variant_to_value(runtime, (V))
 
 // Given a variant, returns a value allocated in the given runtime (if necessary)
 // with the corresponding value.
-value_t variant_to_value(runtime_t *runtime, variant_t variant);
+value_t variant_to_value(runtime_t *runtime, variant_t *variant);
 
 // Given an array of length N that contains a permutation of the numbers from 0
 // to N, advances the numbers to the next permutation such that calling this 2^N

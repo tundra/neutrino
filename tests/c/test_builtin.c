@@ -8,9 +8,9 @@
 #include "tagged.h"
 #include "test.h"
 
-static void test_builtin(runtime_t *runtime, value_t module, variant_t expected,
-    variant_t receiver, builtin_operation_t operation, variant_t args) {
-  size_t positional_count = args.value.as_array.length;
+static void test_builtin(runtime_t *runtime, value_t module, variant_t *expected,
+    variant_t *receiver, builtin_operation_t operation, variant_t *args) {
+  size_t positional_count = args->value.as_array.length;
   size_t arg_count = 2 + positional_count;
 
   // Build an ast that implements the requested call.
@@ -26,7 +26,7 @@ static void test_builtin(runtime_t *runtime, value_t module, variant_t expected,
       new_heap_literal_ast(runtime, selector)));
   // The positional arguments.
   for (size_t i = 0; i < positional_count; i++) {
-    variant_t var_arg = args.value.as_array.elements[i];
+    variant_t *var_arg = args->value.as_array.elements[i];
     set_array_at(args_ast, 2 + i, new_heap_argument_ast(runtime,
         new_integer(i),
         new_heap_literal_ast(runtime, C(var_arg))));
@@ -53,6 +53,7 @@ static value_t new_empty_module_fragment(runtime_t *runtime) {
 
 TEST(builtin, integers) {
   CREATE_RUNTIME();
+  CREATE_VARIANT_CONTAINER();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
   value_t fragment = new_empty_module_fragment(runtime);
@@ -68,11 +69,13 @@ TEST(builtin, integers) {
   test_builtin(runtime, fragment, vInt(-1), vInt(1), PREFIX("-"), vEmptyArray());
 
   DISPOSE_SAFE_VALUE_POOL(pool);
+  DISPOSE_VARIANT_CONTAINER();
   DISPOSE_RUNTIME();
 }
 
 TEST(builtin, strings) {
   CREATE_RUNTIME();
+  CREATE_VARIANT_CONTAINER();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
   value_t fragment = new_empty_module_fragment(runtime);
@@ -83,5 +86,6 @@ TEST(builtin, strings) {
       vArray(vStr("")));
 
   DISPOSE_SAFE_VALUE_POOL(pool);
+  DISPOSE_VARIANT_CONTAINER();
   DISPOSE_RUNTIME();
 }
