@@ -179,14 +179,14 @@ $(C_TEST_TOC_SRCS):	$(C_TEST_LIB_SRCS) $(GLOBAL_DEPS)
 	@mkdir -p $(shell dirname $@)
 	@echo Generating test table of contents
 	@cat $(C_TEST_LIB_SRCS) \
-	  | grep "TEST\(.*\)" \
-	  | sed "s/\(TEST(.*)\).*/DECLARE_\1;/g" \
+	  | grep "\bTEST\(.*\)" \
+	  | sed "s/\(\bTEST(.*)\).*/DECLARE_\1;/g" \
 	  > $@
 	@echo "ENUMERATE_TESTS_HEADER {" \
 	  >> $@
 	@cat $(C_TEST_LIB_SRCS) \
-	  | grep "TEST\(.*\)" \
-	  | sed "s/\(TEST(.*)\).*/  ENUMERATE_\1;/g" \
+	  | grep "\bTEST\(.*\)" \
+	  | sed "s/\(\bTEST(.*)\).*/  ENUMERATE_\1;/g" \
 	  >> $@
 	@echo "}" \
 	  >> $@

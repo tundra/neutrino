@@ -245,7 +245,7 @@ struct variant_t {
   variant_value_t value;
 };
 
-// A stack-allocated data structure that holds the memory used by variants.
+// A stack-allocated arena that holds the memory used by test cases.
 typedef struct {
   // The memory where the past blocks array is stored.
   memory_block_t past_blocks_memory;
@@ -260,26 +260,35 @@ typedef struct {
   memory_block_t current_block;
   // Pointer into the current block where the free memory starts.
   size_t current_block_cursor;
-} variant_container_t;
+} test_arena_t;
 
-// Initializes a variant container.
-void variant_container_init(variant_container_t *container);
+// Initializes a test arena.
+void test_arena_init(test_arena_t *arena);
 
 // Disposes a variant container.
-void variant_container_dispose(variant_container_t *container);
+void test_arena_dispose(test_arena_t *arena);
 
 // Allocates a new empty variant value in the given container.
-variant_t *variant_container_alloc_variant(variant_container_t *container);
+void *test_arena_malloc(test_arena_t *arena, size_t size);
+
+// Allocates an instance of the given type in the given test arena.
+#define TEST_ARENA_MALLOC(ARENA, TYPE)                                         \
+  ((TYPE*) test_arena_malloc((ARENA), sizeof(TYPE)))
+
+// Allocates an array of the given number of elements of the given in the given
+// arena.
+#define TEST_ARENA_MALLOC_ARRAY(ARENA, TYPE, SIZE)                             \
+  ((TYPE*) test_arena_malloc((ARENA), (SIZE) * sizeof(TYPE)))
 
 // Creates a new variant container that can be used implicitly by the variant
 // macros.
-#define CREATE_VARIANT_CONTAINER()                                             \
-  variant_container_t __variant_container__;                                   \
-  variant_container_init(&__variant_container__)
+#define CREATE_TEST_ARENA()                                                    \
+  test_arena_t __test_arena__;                                                 \
+  test_arena_init(&__test_arena__)
 
-// Disposes a variant container created by CREATE_VARIANT_CONTAINER.
-#define DISPOSE_VARIANT_CONTAINER()                                            \
-  variant_container_dispose(&__variant_container__)
+// Disposes a test arena created by CREATE_TEST_ARENA.
+#define DISPOSE_TEST_ARENA()                                                   \
+  test_arena_dispose(&__test_arena__)
 
 // Returns true if the given variant value expands to null.
 static bool variant_is_marker(variant_t *variant) {
@@ -290,10 +299,11 @@ static bool variant_is_marker(variant_t *variant) {
 // with macros, this fixes that.
 #define o ,
 
-// Creates a variant from an expander and a payload.
-static variant_t *new_variant(variant_container_t *container,
-    variant_expander_t expander, variant_value_t value) {
-  variant_t *result = variant_container_alloc_variant(container);
+// Creates a new variant in the given arena with the given expander and
+// payload.
+static variant_t *new_variant(test_arena_t *arena, variant_expander_t expander,
+    variant_value_t value) {
+  variant_t *result = TEST_ARENA_MALLOC(arena, variant_t);
   result->expander = expander;
   result->value = value;
   return result;
@@ -313,29 +323,34 @@ static variant_value_t var_empty_array() {
   return contents;
 }
 
+// Creates an int64 variant value.
 static variant_value_t var_int64(int64_t as_int64) {
   variant_value_t value;
   value.as_int64 = as_int64;
   return value;
 }
 
+// Creates a value_t variant value.
 static variant_value_t var_value(value_t as_value) {
   variant_value_t value;
   value.as_value = as_value;
   return value;
 }
 
+// Creates a C-string variant value.
 static variant_value_t var_c_str(const char *as_c_str) {
   variant_value_t value;
   value.as_c_str = as_c_str;
   return value;
 }
 
-// Creates an array-type variant value.
-variant_value_t var_array(variant_container_t *container, size_t elmc, ...);
+// Creates an array-type variant value with the given elements.
+variant_value_t var_array(test_arena_t *arena, size_t elmc, ...);
 
-// Creates a new variant in the enclosing variant container.
-#define vVariant(expander, value) new_variant(&__variant_container__, expander, value)
+// Creates a new variant in the given arena. This macro and all the macros
+// below must be somewhere between CREATE_TEST_ARENA and DISPOSE_TEST_ARENA
+// declarations.
+#define vVariant(expander, value) new_variant(&__test_arena__, expander, value)
 
 // Returns a recognizable marker that can be detected using variant_is_marker.
 #define vMarker vVariant(NULL, var_bool(0))
@@ -362,9 +377,9 @@ variant_value_t var_array(variant_container_t *container, size_t elmc, ...);
 // to be non-empty.
 #define vEmptyArray() vVariant(expand_variant_to_array, var_empty_array())
 
-// Expands to a payload value for the vBuild macro that stores all the argument
+// Expands to a payload value for the vVariant macro that stores all the argument
 // in the as_array field in the value union.
-#define vArrayPayload(...) var_array(&__variant_container__, VA_ARGC(__VA_ARGS__), __VA_ARGS__)
+#define vArrayPayload(...) var_array(&__test_arena__, VA_ARGC(__VA_ARGS__), __VA_ARGS__)
 
 // Creates a variant array with the given length and elements.
 #define vArray(...) vVariant(expand_variant_to_array, vArrayPayload(__VA_ARGS__))

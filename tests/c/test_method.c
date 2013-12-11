@@ -191,7 +191,7 @@ TEST(method, signature) {
 
 TEST(method, invocation_record) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
 #define kCount 8
   variant_t *raw_array = vArray(vInt(7), vInt(6), vInt(5), vInt(4), vInt(3),
@@ -205,7 +205,7 @@ TEST(method, invocation_record) {
   }
 #undef kCount
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
@@ -218,7 +218,7 @@ static value_t make_invocation_record(runtime_t *runtime, variant_t *variant) {
 
 TEST(method, make_invocation_record) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   value_t record = make_invocation_record(runtime, vArray(vStr("z"), vStr("x"),
       vStr("y")));
@@ -229,13 +229,13 @@ TEST(method, make_invocation_record) {
   ASSERT_EQ(0, get_invocation_record_offset_at(record, 1));
   ASSERT_EQ(2, get_invocation_record_offset_at(record, 2));
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
 TEST(method, record_with_stack) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   value_t stack = new_heap_stack(runtime, 16);
   frame_t frame;
@@ -249,7 +249,7 @@ TEST(method, record_with_stack) {
   ASSERT_VAREQ(vInt(7), get_invocation_record_argument_at(record, &frame, 1));
   ASSERT_VAREQ(vInt(8), get_invocation_record_argument_at(record, &frame, 2));
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
@@ -308,7 +308,7 @@ static value_t make_signature(runtime_t *runtime, bool allow_extra, test_param_t
 
 TEST(method, make_signature) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   value_t any_guard = ROOT(runtime, any_guard);
   value_t s0 = make_signature(runtime,
@@ -345,7 +345,7 @@ TEST(method, make_signature) {
   ASSERT_VAREQ(vInt(15), get_signature_tag_at(s2, 4));
   ASSERT_VAREQ(vInt(27), get_signature_tag_at(s2, 5));
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
@@ -411,7 +411,7 @@ void assert_match(runtime_t *runtime, match_result_t expected, value_t signature
 
 TEST(method, simple_matching) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   value_t any_guard = ROOT(runtime, any_guard);
   value_t sig = make_signature(runtime,
@@ -436,13 +436,13 @@ TEST(method, simple_matching) {
       ARG(vInt(2), vStr("baz"))));
   assert_match(runtime, mrMissingArgument, sig, empty);
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
 TEST(method, simple_guard_matching) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   value_t any_guard = ROOT(runtime, any_guard);
   value_t foo = C(vStr("foo"));
@@ -463,13 +463,13 @@ TEST(method, simple_guard_matching) {
       ARG(vInt(0), vStr("fop")) o
       ARG(vInt(1), vStr("boo"))));
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
 TEST(method, multi_tag_matching) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   value_t any_guard = ROOT(runtime, any_guard);
   value_t sig = make_signature(runtime,
@@ -497,13 +497,13 @@ TEST(method, multi_tag_matching) {
       ARG(vInt(1), vStr("bar")) o
       ARG(vStr("y"), vStr("bar"))));
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
 TEST(method, extra_args) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   value_t any_guard = ROOT(runtime, any_guard);
   value_t sig = make_signature(runtime,
@@ -550,13 +550,13 @@ TEST(method, extra_args) {
       ARG(vInt(1), vStr("bar")) o
       ARG(vStr("z"), vStr("baz"))));
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
 TEST(method, match_argument_map) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   value_t any_guard = ROOT(runtime, any_guard);
   value_t sig = make_signature(runtime,
@@ -605,7 +605,7 @@ TEST(method, match_argument_map) {
             ARG(ss[es[3]], vInt(101))));
   } while (advance_lexical_permutation(es, 4));
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
@@ -696,7 +696,7 @@ static void test_lookup(runtime_t *runtime, value_t expected, value_t first,
 
 TEST(method, dense_perfect_lookup) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   // Protocols and inheritance hierarchy.
   value_t a_p = new_heap_type(runtime, afFreeze, C(vStr("A")));
@@ -755,7 +755,7 @@ TEST(method, dense_perfect_lookup) {
     }
   }
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
@@ -773,7 +773,7 @@ TEST(method, dense_perfect_lookup) {
 
 TEST(method, operation_printing) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   CHECK_OP_PRINT("()", OP(otCall, vNull()));
   CHECK_OP_PRINT("[]", OP(otIndex, vNull()));
@@ -797,6 +797,6 @@ TEST(method, operation_printing) {
   CHECK_OP_PRINT(".foo:=:=", OP(otAssign, vValue(OP(otAssign,
       vValue(OP(otProperty, vStr("foo")))))));
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }

@@ -37,7 +37,7 @@ static value_t assert_ast_value(runtime_t *runtime, variant_t *expected,
 
 TEST(interp, execution) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
   value_t subject_array = C(vArray(vValue(ROOT(runtime, subject_key))));
@@ -116,7 +116,7 @@ TEST(interp, execution) {
   }
 
   DISPOSE_SAFE_VALUE_POOL(pool);
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
@@ -167,7 +167,7 @@ static void validate_lookup_error(void *unused, log_entry_t *entry) {
 
 TEST(interp, lookup_error) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   value_t subject_array = C(vArray(vValue(ROOT(runtime, subject_key))));
   value_t selector_array = C(vArray(vValue(ROOT(runtime, selector_key))));
@@ -199,6 +199,6 @@ TEST(interp, lookup_error) {
   uninstall_log_validator(&validator);
   ASSERT_EQ(1, validator.count);
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }

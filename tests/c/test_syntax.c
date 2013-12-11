@@ -32,7 +32,7 @@ TEST(syntax, emitting) {
 
 TEST(syntax, parameter_order_index) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   variant_t *subject_key = vValue(ROOT(runtime, subject_key));
   variant_t *selector_key = vValue(ROOT(runtime, selector_key));
@@ -51,7 +51,7 @@ TEST(syntax, parameter_order_index) {
   CHECK_ORDERING_INDEX(kMaxOrderIndex, vArray(vStr("foo")));
   CHECK_ORDERING_INDEX(102, vArray(vStr("foo"), vInt(100)));
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
@@ -73,7 +73,7 @@ TEST(syntax, parameter_order_index) {
 
 TEST(syntax, param_ordering) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   value_t any_guard_ast = new_heap_guard_ast(runtime, gtAny, null());
 
@@ -105,6 +105,6 @@ TEST(syntax, param_ordering) {
 
   reusable_scratch_memory_dispose(&scratch);
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }

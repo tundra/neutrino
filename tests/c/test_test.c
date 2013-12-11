@@ -7,7 +7,7 @@
 
 TEST(test, variant) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   ASSERT_VALEQ(new_integer(1), C(vInt(1)));
   ASSERT_VALEQ(new_integer(-1), C(vInt(-1)));
@@ -36,7 +36,7 @@ TEST(test, variant) {
   value_t path_tail_tail = get_path_tail(path_tail);
   ASSERT_TRUE(is_path_empty(path_tail_tail));
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 

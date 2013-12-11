@@ -87,7 +87,7 @@ static void test_import_map(runtime_t *runtime, variant_t *expected,
 
 TEST(bind, dependency_map) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   // Two stages, 0 and -1, yield 0 -> -1.
   test_import_map(runtime,
@@ -167,7 +167,7 @@ TEST(bind, dependency_map) {
           FRG( 0, E),
           FRG(-1, E))));
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
@@ -182,7 +182,7 @@ static void test_load_order(runtime_t *runtime, variant_t *expected,
 
 TEST(bind, load_order) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
 
   // Stages within the same module.
   test_load_order(runtime,
@@ -321,6 +321,6 @@ TEST(bind, load_order) {
           FRG( 0, E),
           FRG(-1, E))));
 
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }

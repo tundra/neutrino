@@ -53,7 +53,7 @@ static value_t new_empty_module_fragment(runtime_t *runtime) {
 
 TEST(builtin, integers) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
   value_t fragment = new_empty_module_fragment(runtime);
@@ -69,13 +69,13 @@ TEST(builtin, integers) {
   test_builtin(runtime, fragment, vInt(-1), vInt(1), PREFIX("-"), vEmptyArray());
 
   DISPOSE_SAFE_VALUE_POOL(pool);
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
 TEST(builtin, strings) {
   CREATE_RUNTIME();
-  CREATE_VARIANT_CONTAINER();
+  CREATE_TEST_ARENA();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
   value_t fragment = new_empty_module_fragment(runtime);
@@ -86,6 +86,6 @@ TEST(builtin, strings) {
       vArray(vStr("")));
 
   DISPOSE_SAFE_VALUE_POOL(pool);
-  DISPOSE_VARIANT_CONTAINER();
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
