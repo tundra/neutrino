@@ -191,9 +191,10 @@ TEST(method, signature) {
 
 TEST(method, invocation_record) {
   CREATE_RUNTIME();
+  CREATE_TEST_ARENA();
 
 #define kCount 8
-  variant_t raw_array = vArray(vInt(7), vInt(6), vInt(5), vInt(4), vInt(3),
+  variant_t *raw_array = vArray(vInt(7), vInt(6), vInt(5), vInt(4), vInt(3),
       vInt(2), vInt(1), vInt(0));
   value_t argument_vector = build_invocation_record_vector(runtime, C(raw_array));
   value_t record = new_heap_invocation_record(runtime, afFreeze, argument_vector);
@@ -204,18 +205,20 @@ TEST(method, invocation_record) {
   }
 #undef kCount
 
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
 // Makes an invocation record for the given array of tags, passed as a variant
 // for convenience.
-static value_t make_invocation_record(runtime_t *runtime, variant_t variant) {
+static value_t make_invocation_record(runtime_t *runtime, variant_t *variant) {
   TRY_DEF(argument_vector, build_invocation_record_vector(runtime, C(variant)));
   return new_heap_invocation_record(runtime, afFreeze, argument_vector);
 }
 
 TEST(method, make_invocation_record) {
   CREATE_RUNTIME();
+  CREATE_TEST_ARENA();
 
   value_t record = make_invocation_record(runtime, vArray(vStr("z"), vStr("x"),
       vStr("y")));
@@ -226,11 +229,13 @@ TEST(method, make_invocation_record) {
   ASSERT_EQ(0, get_invocation_record_offset_at(record, 1));
   ASSERT_EQ(2, get_invocation_record_offset_at(record, 2));
 
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
 TEST(method, record_with_stack) {
   CREATE_RUNTIME();
+  CREATE_TEST_ARENA();
 
   value_t stack = new_heap_stack(runtime, 16);
   frame_t frame;
@@ -244,6 +249,7 @@ TEST(method, record_with_stack) {
   ASSERT_VAREQ(vInt(7), get_invocation_record_argument_at(record, &frame, 1));
   ASSERT_VAREQ(vInt(8), get_invocation_record_argument_at(record, &frame, 2));
 
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
@@ -251,7 +257,7 @@ TEST(method, record_with_stack) {
 typedef struct {
   value_t guard;
   bool is_optional;
-  variant_t tags;
+  variant_t *tags;
 } test_param_t;
 
 // Packs its arguments into a test_param_t struct so they can be passed on to
@@ -271,19 +277,19 @@ static value_t make_signature(runtime_t *runtime, bool allow_extra, test_param_t
   // Loop over the parameters, stop at the first non-array which will be the end
   // marker added by the PARAMS macro. First we just collect some information,
   // then we'll build the signature.
-  for (size_t i = 0; !variant_is_marker(&params[i].tags); i++) {
+  for (size_t i = 0; !variant_is_marker(params[i].tags); i++) {
     test_param_t test_param = params[i];
     param_count++;
     if (!test_param.is_optional)
       mandatory_count++;
-    tag_count += test_param.tags.value.as_array.length;
+    tag_count += test_param.tags->value.as_array.length;
   }
   // Create an array with pairs of values, the first entry of which is the tag
   // and the second is the parameter.
   TRY_DEF(param_vector, new_heap_pair_array(runtime, tag_count));
   // Loop over all the tags, t being the tag index across the whole signature.
   size_t t = 0;
-  for (size_t i = 0; !variant_is_marker(&params[i].tags); i++) {
+  for (size_t i = 0; !variant_is_marker(params[i].tags); i++) {
     test_param_t test_param = params[i];
     TRY_DEF(tags_array, C(test_param.tags));
     size_t param_tag_count = get_array_length(tags_array);
@@ -302,6 +308,7 @@ static value_t make_signature(runtime_t *runtime, bool allow_extra, test_param_t
 
 TEST(method, make_signature) {
   CREATE_RUNTIME();
+  CREATE_TEST_ARENA();
 
   value_t any_guard = ROOT(runtime, any_guard);
   value_t s0 = make_signature(runtime,
@@ -338,13 +345,14 @@ TEST(method, make_signature) {
   ASSERT_VAREQ(vInt(15), get_signature_tag_at(s2, 4));
   ASSERT_VAREQ(vInt(27), get_signature_tag_at(s2, 5));
 
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
 // Description of an argument used in testing.
 typedef struct {
-  variant_t tag;
-  variant_t value;
+  variant_t *tag;
+  variant_t *value;
   bool is_valid;
 } test_argument_t;
 
@@ -403,6 +411,7 @@ void assert_match(runtime_t *runtime, match_result_t expected, value_t signature
 
 TEST(method, simple_matching) {
   CREATE_RUNTIME();
+  CREATE_TEST_ARENA();
 
   value_t any_guard = ROOT(runtime, any_guard);
   value_t sig = make_signature(runtime,
@@ -427,11 +436,13 @@ TEST(method, simple_matching) {
       ARG(vInt(2), vStr("baz"))));
   assert_match(runtime, mrMissingArgument, sig, empty);
 
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
 TEST(method, simple_guard_matching) {
   CREATE_RUNTIME();
+  CREATE_TEST_ARENA();
 
   value_t any_guard = ROOT(runtime, any_guard);
   value_t foo = C(vStr("foo"));
@@ -452,11 +463,13 @@ TEST(method, simple_guard_matching) {
       ARG(vInt(0), vStr("fop")) o
       ARG(vInt(1), vStr("boo"))));
 
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
 TEST(method, multi_tag_matching) {
   CREATE_RUNTIME();
+  CREATE_TEST_ARENA();
 
   value_t any_guard = ROOT(runtime, any_guard);
   value_t sig = make_signature(runtime,
@@ -484,11 +497,13 @@ TEST(method, multi_tag_matching) {
       ARG(vInt(1), vStr("bar")) o
       ARG(vStr("y"), vStr("bar"))));
 
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
 TEST(method, extra_args) {
   CREATE_RUNTIME();
+  CREATE_TEST_ARENA();
 
   value_t any_guard = ROOT(runtime, any_guard);
   value_t sig = make_signature(runtime,
@@ -535,11 +550,13 @@ TEST(method, extra_args) {
       ARG(vInt(1), vStr("bar")) o
       ARG(vStr("z"), vStr("baz"))));
 
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
 TEST(method, match_argument_map) {
   CREATE_RUNTIME();
+  CREATE_TEST_ARENA();
 
   value_t any_guard = ROOT(runtime, any_guard);
   value_t sig = make_signature(runtime,
@@ -558,7 +575,7 @@ TEST(method, match_argument_map) {
 
   // String tags, to try those as well. THis both tests having multiple tags
   // for each param and having the tags out of sort order.
-  variant_t ss[4] = {vStr("w"), vStr("z"), vStr("y"), vStr("x")};
+  variant_t *ss[4] = {vStr("w"), vStr("z"), vStr("y"), vStr("x")};
 
   do {
     // Argument map which is the inverse of the evaluation order (since we're
@@ -588,6 +605,7 @@ TEST(method, match_argument_map) {
             ARG(ss[es[3]], vInt(101))));
   } while (advance_lexical_permutation(es, 4));
 
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
@@ -678,6 +696,7 @@ static void test_lookup(runtime_t *runtime, value_t expected, value_t first,
 
 TEST(method, dense_perfect_lookup) {
   CREATE_RUNTIME();
+  CREATE_TEST_ARENA();
 
   // Protocols and inheritance hierarchy.
   value_t a_p = new_heap_type(runtime, afFreeze, C(vStr("A")));
@@ -736,6 +755,7 @@ TEST(method, dense_perfect_lookup) {
     }
   }
 
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
@@ -753,6 +773,7 @@ TEST(method, dense_perfect_lookup) {
 
 TEST(method, operation_printing) {
   CREATE_RUNTIME();
+  CREATE_TEST_ARENA();
 
   CHECK_OP_PRINT("()", OP(otCall, vNull()));
   CHECK_OP_PRINT("[]", OP(otIndex, vNull()));
@@ -776,5 +797,6 @@ TEST(method, operation_printing) {
   CHECK_OP_PRINT(".foo:=:=", OP(otAssign, vValue(OP(otAssign,
       vValue(OP(otProperty, vStr("foo")))))));
 
+  DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }

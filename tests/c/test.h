@@ -215,7 +215,7 @@ typedef union {
   bool as_bool;
   struct {
     size_t length;
-    variant_t *elements;
+    variant_t **elements;
   } as_array;
   value_t as_value;
 } variant_value_t;
@@ -245,6 +245,51 @@ struct variant_t {
   variant_value_t value;
 };
 
+// A stack-allocated arena that holds the memory used by test cases.
+typedef struct {
+  // The memory where the past blocks array is stored.
+  memory_block_t past_blocks_memory;
+  // Array of past blocks that have been exhausted and are waiting to be
+  // disposed.
+  memory_block_t *past_blocks;
+  // The size of the past blocks array.
+  size_t past_block_capacity;
+  // The number of entries in the past blocks array that are in use.
+  size_t past_block_count;
+  // The block from which we're currently grabbing memory.
+  memory_block_t current_block;
+  // Pointer into the current block where the free memory starts.
+  size_t current_block_cursor;
+} test_arena_t;
+
+// Initializes a test arena.
+void test_arena_init(test_arena_t *arena);
+
+// Disposes a variant container.
+void test_arena_dispose(test_arena_t *arena);
+
+// Allocates a new empty variant value in the given container.
+void *test_arena_malloc(test_arena_t *arena, size_t size);
+
+// Allocates an instance of the given type in the given test arena.
+#define TEST_ARENA_MALLOC(ARENA, TYPE)                                         \
+  ((TYPE*) test_arena_malloc((ARENA), sizeof(TYPE)))
+
+// Allocates an array of the given number of elements of the given in the given
+// arena.
+#define TEST_ARENA_MALLOC_ARRAY(ARENA, TYPE, SIZE)                             \
+  ((TYPE*) test_arena_malloc((ARENA), (SIZE) * sizeof(TYPE)))
+
+// Creates a new variant container that can be used implicitly by the variant
+// macros.
+#define CREATE_TEST_ARENA()                                                    \
+  test_arena_t __test_arena__;                                                 \
+  test_arena_init(&__test_arena__)
+
+// Disposes a test arena created by CREATE_TEST_ARENA.
+#define DISPOSE_TEST_ARENA()                                                   \
+  test_arena_dispose(&__test_arena__)
+
 // Returns true if the given variant value expands to null.
 static bool variant_is_marker(variant_t *variant) {
   return variant->expander == NULL;
@@ -254,66 +299,112 @@ static bool variant_is_marker(variant_t *variant) {
 // with macros, this fixes that.
 #define o ,
 
-// Expands to an expression that yields a variant with the specified expander
-// and payload.
-#define vBuild(expander, payload) ((variant_t) {expander, {payload}})
-
-// Returns a recognizable marker that can be detected using variant_is_marker.
-#define vMarker vBuild(NULL, .as_bool=0)
-
-// Creates an integer variant with the given value.
-#define vInt(V) vBuild(expand_variant_to_integer, .as_int64=(V))
-
-// Creates a stage offset variant with the given offset.
-#define vStageOffset(V) vBuild(expand_variant_to_stage_offset, .as_int64=(V))
-
-// Creates a variant string with the given value.
-#define vStr(V) vBuild(expand_variant_to_string, .as_c_str=(V))
-
-// Creates a variant bool with the given value.
-#define vBool(V) vBuild(expand_variant_to_bool, .as_bool=(V))
-
-// Creates a variant null.
-#define vNull() vBuild(expand_variant_to_null, .as_bool=0)
-
-// Creates a variant which represents the given value_t.
-#define vValue(V) vBuild(expand_variant_to_value, .as_value=(V))
-
-// Expands to the empty array. Because of the way the vArray macro works it has
-// to be non-empty.
-#define vEmptyArray() vBuild(expand_variant_to_array, .as_array={0 o 0})
-
-// Expands to a payload value for the vBuild macro that stores all the argument
-// in the as_array field in the value union.
-#define vArrayPayload(...) .as_array={                                         \
-  VA_ARGC(__VA_ARGS__),                                                        \
-  (variant_t[VA_ARGC(__VA_ARGS__)]) { __VA_ARGS__ }                            \
+// Creates a new variant in the given arena with the given expander and
+// payload.
+static variant_t *new_variant(test_arena_t *arena, variant_expander_t expander,
+    variant_value_t value) {
+  variant_t *result = TEST_ARENA_MALLOC(arena, variant_t);
+  result->expander = expander;
+  result->value = value;
+  return result;
 }
 
-// Creates a variant array with the given length and elements.
-#define vArray(...) vBuild(expand_variant_to_array, vArrayPayload(__VA_ARGS__))
+// Creates a boolean variant value.
+static variant_value_t var_bool(bool as_bool) {
+  variant_value_t value;
+  value.as_bool = as_bool;
+  return value;
+}
 
-// Creates a variant array with the given length and elements.
-#define vArrayBuffer(...) vBuild(expand_variant_to_array_buffer, vArrayPayload(__VA_ARGS__))
+// Creates a variant value representing the empty array.
+static variant_value_t var_empty_array() {
+  variant_value_t contents;
+  contents.as_array.length = 0;
+  return contents;
+}
+
+// Creates an int64 variant value.
+static variant_value_t var_int64(int64_t as_int64) {
+  variant_value_t value;
+  value.as_int64 = as_int64;
+  return value;
+}
+
+// Creates a value_t variant value.
+static variant_value_t var_value(value_t as_value) {
+  variant_value_t value;
+  value.as_value = as_value;
+  return value;
+}
+
+// Creates a C-string variant value.
+static variant_value_t var_c_str(const char *as_c_str) {
+  variant_value_t value;
+  value.as_c_str = as_c_str;
+  return value;
+}
+
+// Creates an array-type variant value with the given elements.
+variant_value_t var_array(test_arena_t *arena, size_t elmc, ...);
+
+// Creates a new variant in the given arena. This macro and all the macros
+// below must be somewhere between CREATE_TEST_ARENA and DISPOSE_TEST_ARENA
+// declarations.
+#define vVariant(expander, value) new_variant(&__test_arena__, expander, value)
+
+// Returns a recognizable marker that can be detected using variant_is_marker.
+#define vMarker vVariant(NULL, var_bool(0))
+
+// Creates an integer variant with the given value.
+#define vInt(V) vVariant(expand_variant_to_integer, var_int64(V))
+
+// Creates a stage offset variant with the given offset.
+#define vStageOffset(V) vVariant(expand_variant_to_stage_offset, var_int64(V))
+
+// Creates a variant string with the given value.
+#define vStr(V) vVariant(expand_variant_to_string, var_c_str(V))
+
+// Creates a variant bool with the given value.
+#define vBool(V) vVariant(expand_variant_to_bool, var_bool(V))
+
+// Creates a variant null.
+#define vNull() vVariant(expand_variant_to_null, var_bool(0))
+
+// Creates a variant which represents the given value_t.
+#define vValue(V) vVariant(expand_variant_to_value, var_value(V))
 
 // Expands to the empty array. Because of the way the vArray macro works it has
 // to be non-empty.
-#define vEmptyArrayBuffer() vBuild(expand_variant_to_array_buffer, .as_array={0 o 0})
+#define vEmptyArray() vVariant(expand_variant_to_array, var_empty_array())
+
+// Expands to a payload value for the vVariant macro that stores all the argument
+// in the as_array field in the value union.
+#define vArrayPayload(...) var_array(&__test_arena__, VA_ARGC(__VA_ARGS__), __VA_ARGS__)
+
+// Creates a variant array with the given length and elements.
+#define vArray(...) vVariant(expand_variant_to_array, vArrayPayload(__VA_ARGS__))
+
+// Creates a variant array with the given length and elements.
+#define vArrayBuffer(...) vVariant(expand_variant_to_array_buffer, vArrayPayload(__VA_ARGS__))
+
+// Expands to the empty array. Because of the way the vArray macro works it has
+// to be non-empty.
+#define vEmptyArrayBuffer() vVariant(expand_variant_to_array_buffer, var_empty_array())
 
 // Expands to a variant representing a path with the given segments. This can
 // not be used to construct the empty path.
-#define vPath(...) vBuild(expand_variant_to_path, vArrayPayload(__VA_ARGS__))
+#define vPath(...) vVariant(expand_variant_to_path, vArrayPayload(__VA_ARGS__))
 
 // Expands to a variant representing an identifier with the given path and
 // stage.
-#define vIdentifier(S, P) vBuild(expand_variant_to_identifier, vArrayPayload(S, P))
+#define vIdentifier(S, P) vVariant(expand_variant_to_identifier, vArrayPayload(S, P))
 
 // Instantiates a variant value in the runtime stored in the variable 'runtime'.
 #define C(V) variant_to_value(runtime, (V))
 
 // Given a variant, returns a value allocated in the given runtime (if necessary)
 // with the corresponding value.
-value_t variant_to_value(runtime_t *runtime, variant_t variant);
+value_t variant_to_value(runtime_t *runtime, variant_t *variant);
 
 // Given an array of length N that contains a permutation of the numbers from 0
 // to N, advances the numbers to the next permutation such that calling this 2^N

@@ -266,6 +266,78 @@ void uninstall_log_validator(log_validator_t *validator) {
 
 // --- V a r i a n t s ---
 
+// The size of an individual variant container block.
+static const size_t kVariantContainerBlockSize = 1024;
+
+// Moves the current block, which is now presumably exhausted, into the list
+// of past blocks.
+static void test_arena_retire_current_block(test_arena_t *arena) {
+  if (arena->past_block_count == arena->past_block_capacity) {
+    // If we've exhausted the past blocks array we double the capacity.
+    size_t new_capacity = 2 * arena->past_block_capacity;
+    if (new_capacity < 4)
+      // The first time the old capacity will be 0 so we go directly to 4.
+      new_capacity = 4;
+    // Allocate a new past blocks array.
+    memory_block_t new_memory = allocator_default_malloc(new_capacity * sizeof(memory_block_t));
+    memory_block_t *new_blocks = (memory_block_t*) new_memory.memory;
+    // Copy the previous values.
+    for (size_t i = 0; i < arena->past_block_capacity; i++)
+      new_blocks[i] = arena->past_blocks[i];
+    // Free the old array before we clobber the field.
+    allocator_default_free(arena->past_blocks_memory);
+    // Update the state of the container.
+    arena->past_blocks_memory = new_memory;
+    arena->past_blocks = new_blocks;
+    arena->past_block_capacity = new_capacity;
+  }
+  arena->past_blocks[arena->past_block_count] = arena->current_block;
+  arena->past_block_count++;
+  arena->current_block = allocator_default_malloc(kVariantContainerBlockSize);
+  arena->current_block_cursor = 0;
+}
+
+void *test_arena_malloc(test_arena_t *arena, size_t size) {
+  CHECK_REL("variant block too big", size, <, kVariantContainerBlockSize);
+  if ((arena->current_block_cursor + size) > arena->current_block.size)
+    test_arena_retire_current_block(arena);
+  byte_t *start = arena->current_block.memory;
+  byte_t *result = start + arena->current_block_cursor;
+  arena->current_block_cursor += size;
+  return result;
+}
+
+void test_arena_init(test_arena_t *arena) {
+  arena->past_blocks_memory = memory_block_empty();
+  arena->current_block = allocator_default_malloc(kVariantContainerBlockSize);
+  arena->current_block_cursor = 0;
+  arena->past_block_capacity = 0;
+  arena->past_block_count = 0;
+  arena->past_blocks = NULL;
+}
+
+void test_arena_dispose(test_arena_t *arena) {
+  for (size_t i = 0; i < arena->past_block_count; i++) {
+    memory_block_t past_block = arena->past_blocks[i];
+    allocator_default_free(past_block);
+  }
+  allocator_default_free(arena->past_blocks_memory);
+  allocator_default_free(arena->current_block);
+}
+
+variant_value_t var_array(test_arena_t *arena, size_t elmc, ...) {
+  variant_value_t value;
+  value.as_array.length = elmc;
+  void *mem = TEST_ARENA_MALLOC_ARRAY(arena, variant_t*, elmc);
+  value.as_array.elements = (variant_t**) mem;
+  va_list ap;
+  va_start(ap, elmc);
+  for (size_t i = 0; i < elmc; i++)
+    value.as_array.elements[i] = va_arg(ap, variant_t*);
+  va_end(ap);
+  return value;
+}
+
 value_t expand_variant_to_integer(runtime_t *runtime, variant_value_t *value) {
   return new_integer(value->as_int64);
 }
@@ -325,8 +397,8 @@ value_t expand_variant_to_identifier(runtime_t *runtime, variant_value_t *value)
   return new_heap_identifier(runtime, stage, path);
 }
 
-value_t variant_to_value(runtime_t *runtime, variant_t variant) {
-  return (variant.expander)(runtime, &variant.value);
+value_t variant_to_value(runtime_t *runtime, variant_t *variant) {
+  return (variant->expander)(runtime, &variant->value);
 }
 
 bool advance_lexical_permutation(int64_t *elms, size_t elmc) {
