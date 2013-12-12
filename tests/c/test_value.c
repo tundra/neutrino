@@ -13,10 +13,10 @@
 // getting the value back out, and testing whether it could be restored. This is
 // an extra sanity check.
 static bool try_tagging_as_integer(int64_t value) {
-  union {
-    int8_t : 3;
+  struct {
+    int8_t dummy : 3;
     int64_t payload : 61;
-  } data = {value};
+  } data = {0, value};
   return data.payload == value;
 }
 
@@ -540,7 +540,7 @@ typedef struct {
 // Creates a new random test argument map. Remember to dispose it after use.
 void new_test_argument_map(test_argument_map_t *map, pseudo_random_t *random) {
   size_t length = map->length = 4 + pseudo_random_next(random, 8);
-  size_t *values = map->values = malloc(length * sizeof(size_t));
+  size_t *values = map->values = (size_t*) malloc(length * sizeof(size_t));
   for (size_t i = 0; i < length; i++)
     values[i] = i;
   pseudo_random_shuffle(random, values, length, sizeof(size_t));
@@ -831,7 +831,8 @@ TEST(value, unsupported) {
 }
 
 TEST(value, invalid_input) {
-  value_t signal = new_invalid_input_signal_with_hint(STRING_HINT("halp!"));
+  string_hint_t halp = STRING_HINT_INIT("halp!");
+  value_t signal = new_invalid_input_signal_with_hint(halp);
   value_to_string_t to_string;
   ASSERT_C_STREQ("%<signal: InvalidInput(ha..p!)>", value_to_string(&to_string, signal));
   dispose_value_to_string(&to_string);
@@ -899,26 +900,27 @@ TEST(value, options) {
   ASSERT_VAREQ(vInt(10), get_options_flag_value(runtime, empty, y, new_integer(10)));
   ASSERT_VAREQ(vInt(11), get_options_flag_value(runtime, empty, z, new_integer(11)));
 
-  value_t has_x = new_options(runtime, 1, ((value_t[1]) {
-    new_flag_element(runtime, x, new_integer(60))
-  }));
+  value_t has_x_elms[1] = {new_flag_element(runtime, x, new_integer(60))};
+  value_t has_x = new_options(runtime, 1, has_x_elms);
   ASSERT_VAREQ(vInt(60), get_options_flag_value(runtime, has_x, x, new_integer(12)));
   ASSERT_VAREQ(vInt(13), get_options_flag_value(runtime, has_x, y, new_integer(13)));
   ASSERT_VAREQ(vInt(14), get_options_flag_value(runtime, has_x, z, new_integer(14)));
 
-  value_t has_xy = new_options(runtime, 2, ((value_t[2]) {
+  value_t has_xy_elms[2] = {
     new_flag_element(runtime, x, new_integer(61)),
     new_flag_element(runtime, y, new_integer(62))
-  }));
+  };
+  value_t has_xy = new_options(runtime, 2, has_xy_elms);
   ASSERT_VAREQ(vInt(61), get_options_flag_value(runtime, has_xy, x, new_integer(15)));
   ASSERT_VAREQ(vInt(62), get_options_flag_value(runtime, has_xy, y, new_integer(16)));
   ASSERT_VAREQ(vInt(17), get_options_flag_value(runtime, has_xy, z, new_integer(17)));
 
-  value_t has_xyz = new_options(runtime, 3, ((value_t[3]) {
+  value_t has_xyz_elms[3] = {
     new_flag_element(runtime, x, new_integer(63)),
     new_flag_element(runtime, y, new_integer(64)),
     new_flag_element(runtime, z, new_integer(65))
-  }));
+  };
+  value_t has_xyz = new_options(runtime, 3, has_xyz_elms);
   ASSERT_VAREQ(vInt(63), get_options_flag_value(runtime, has_xyz, x, new_integer(18)));
   ASSERT_VAREQ(vInt(64), get_options_flag_value(runtime, has_xyz, y, new_integer(19)));
   ASSERT_VAREQ(vInt(65), get_options_flag_value(runtime, has_xyz, z, new_integer(20)));

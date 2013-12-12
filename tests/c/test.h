@@ -271,14 +271,23 @@ void test_arena_dispose(test_arena_t *arena);
 // Allocates a new empty variant value in the given container.
 void *test_arena_malloc(test_arena_t *arena, size_t size);
 
+// Allocates a new array in the given arena and fills it with the pointer values
+// given as arguments.
+void *test_arena_copy_array(test_arena_t *arena, size_t size, size_t elmsize, ...);
+
 // Allocates an instance of the given type in the given test arena.
-#define TEST_ARENA_MALLOC(ARENA, TYPE)                                         \
+#define ARENA_MALLOC(ARENA, TYPE)                                              \
   ((TYPE*) test_arena_malloc((ARENA), sizeof(TYPE)))
 
 // Allocates an array of the given number of elements of the given in the given
 // arena.
-#define TEST_ARENA_MALLOC_ARRAY(ARENA, TYPE, SIZE)                             \
+#define ARENA_MALLOC_ARRAY(ARENA, TYPE, SIZE)                                  \
   ((TYPE*) test_arena_malloc((ARENA), (SIZE) * sizeof(TYPE)))
+
+// Creates an array within an arena with the given elements. The elements must
+// be pointers.
+#define ARENA_ARRAY(ARENA, TYPE, SIZE, ...)                                    \
+  ((TYPE*) test_arena_copy_array((ARENA), (SIZE), sizeof(TYPE), __VA_ARGS__))
 
 // Creates a new variant container that can be used implicitly by the variant
 // macros.
@@ -303,7 +312,7 @@ static bool variant_is_marker(variant_t *variant) {
 // payload.
 static variant_t *new_variant(test_arena_t *arena, variant_expander_t expander,
     variant_value_t value) {
-  variant_t *result = TEST_ARENA_MALLOC(arena, variant_t);
+  variant_t *result = ARENA_MALLOC(arena, variant_t);
   result->expander = expander;
   result->value = value;
   return result;
