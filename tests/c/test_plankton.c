@@ -162,7 +162,7 @@ typedef struct {
 
 // Map values to ints.
 static value_t value_to_int(value_t value, runtime_t *runtime, void *ptr) {
-  test_resolver_data_t *data = ptr;
+  test_resolver_data_t *data = (test_resolver_data_t*) ptr;
   if (value_identity_compare(value, data->i0)) {
     return new_integer(0);
   } else if (value_identity_compare(value, data->i1)) {
@@ -174,7 +174,7 @@ static value_t value_to_int(value_t value, runtime_t *runtime, void *ptr) {
 
 // Map ints to values.
 static value_t int_to_value(value_t value, runtime_t *runtime, void *ptr) {
-  test_resolver_data_t *data = ptr;
+  test_resolver_data_t *data = (test_resolver_data_t*) ptr;
   switch (get_integer_value(value)) {
     case 0:
       return data->i0;

@@ -139,11 +139,11 @@ TEST(runtime, modal_species_change) {
   check_species_with_mode(runtime, fluid, vmMutable);
   check_species_with_mode(runtime, fluid, vmFrozen);
   check_species_with_mode(runtime, fluid, vmDeepFrozen);
-  value_t mutable = ROOT(runtime, mutable_array_species);
-  check_species_with_mode(runtime, mutable, vmFluid);
-  check_species_with_mode(runtime, mutable, vmMutable);
-  check_species_with_mode(runtime, mutable, vmFrozen);
-  check_species_with_mode(runtime, mutable, vmDeepFrozen);
+  value_t muhtable = ROOT(runtime, mutable_array_species);
+  check_species_with_mode(runtime, muhtable, vmFluid);
+  check_species_with_mode(runtime, muhtable, vmMutable);
+  check_species_with_mode(runtime, muhtable, vmFrozen);
+  check_species_with_mode(runtime, muhtable, vmDeepFrozen);
   value_t frozen = ROOT(runtime, frozen_array_species);
   check_species_with_mode(runtime, frozen, vmFluid);
   check_species_with_mode(runtime, frozen, vmMutable);

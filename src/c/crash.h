@@ -37,6 +37,10 @@ typedef struct {
 void init_abort_callback(abort_callback_t *callback, abort_function_t *function,
     void *data);
 
+// Invokes the given callback with the given arguments.
+void call_abort_callback(abort_callback_t *callback,
+    abort_message_t *message);
+
 // Sets the abort callback to use across this process. This should only be used
 // for testing. The specified callback is allowed to kill the vm, the state called
 // "hard check failures", or keep it running known as "soft check failures".

@@ -15,12 +15,13 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 
+#ifdef IS_GCC
 // ARRRG! Features. Are. Awful!
 #define __USE_POSIX199309
 #include <time.h>
 extern char *strdup(const char*);
+#endif
 
 
 // Data associated with a particular test run.
@@ -38,9 +39,13 @@ typedef struct {
 
 // Returns the current time since epoch counted in seconds.
 static double get_current_time_seconds() {
+#ifdef IS_GCC
   struct timespec spec;
   clock_gettime(CLOCK_REALTIME, &spec);
   return spec.tv_sec + (spec.tv_nsec / 1000000000.0);
+#else
+  return 0;
+#endif
 }
 
 // Match the given suite and test name against the given unit test data, return
@@ -218,9 +223,9 @@ bool value_structural_equal(value_t a, value_t b) {
 }
 
 static void recorder_abort_callback(void *data, abort_message_t *message) {
-  check_recorder_t *recorder = data;
+  check_recorder_t *recorder = (check_recorder_t*) data;
   recorder->count++;
-  recorder->last_cause = message->signal_cause;
+  recorder->last_cause = (signal_cause_t) message->signal_cause;
 }
 
 void install_check_recorder(check_recorder_t *recorder) {
@@ -238,7 +243,7 @@ void uninstall_check_recorder(check_recorder_t *recorder) {
 }
 
 void validator_log_callback(void *data, log_entry_t *entry) {
-  log_validator_t *validator = data;
+  log_validator_t *validator = (log_validator_t*) data;
   validator->count++;
   // Temporarily restore the previous log callback in case validation wants to
   // log (which it typically will on validation failure).
@@ -301,10 +306,32 @@ void *test_arena_malloc(test_arena_t *arena, size_t size) {
   CHECK_REL("variant block too big", size, <, kVariantContainerBlockSize);
   if ((arena->current_block_cursor + size) > arena->current_block.size)
     test_arena_retire_current_block(arena);
-  byte_t *start = arena->current_block.memory;
+  byte_t *start = (byte_t*) arena->current_block.memory;
   byte_t *result = start + arena->current_block_cursor;
   arena->current_block_cursor += size;
   return result;
+}
+
+#define COPY_ARRAY_ELEMENTS(TYPE) do {                                         \
+  TYPE *elms = (TYPE*) mem;                                                    \
+  for (size_t i = 0; i < size; i++)                                            \
+    elms[i] = va_arg(ap, TYPE);                                                \
+} while (false)
+
+void *test_arena_copy_array(test_arena_t *arena, size_t size, size_t elmsize, ...) {
+  void *mem = ARENA_MALLOC_ARRAY(arena, variant_t*, size);
+  va_list ap;
+  va_start(ap, elmsize);
+  switch (elmsize) {
+  case 4:
+    COPY_ARRAY_ELEMENTS(int32_t);
+    break;
+  case 8:
+    COPY_ARRAY_ELEMENTS(int64_t);
+    break;
+  }
+  va_end(ap);
+  return mem;
 }
 
 void test_arena_init(test_arena_t *arena) {
@@ -328,7 +355,7 @@ void test_arena_dispose(test_arena_t *arena) {
 variant_value_t var_array(test_arena_t *arena, size_t elmc, ...) {
   variant_value_t value;
   value.as_array.length = elmc;
-  void *mem = TEST_ARENA_MALLOC_ARRAY(arena, variant_t*, elmc);
+  void *mem = ARENA_MALLOC_ARRAY(arena, variant_t*, elmc);
   value.as_array.elements = (variant_t**) mem;
   va_list ap;
   va_start(ap, elmc);

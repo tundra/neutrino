@@ -46,7 +46,7 @@
 // for that argument. The actions are picked out in reverse order so the action
 // to terminate is last, the actions to continue before it.
 #define FOR_EACH_VA_ARG(F, ...)                                                \
-  __E8__(__FOR_EACH_VA_ARG_HELPER__(F, __VA_ARGS__,                            \
+  __E16__(__FOR_EACH_VA_ARG_HELPER__(F, __VA_ARGS__,                           \
       __C__, __C__, __C__, __C__, __C__, __C__, __C__, __C__, __C__, __C__, __T__))
 
 // Kicks things off by invoking the first action which, if necessary, will take
@@ -61,7 +61,7 @@
 #define __E1__(...) __VA_ARGS__
 #define __E2__(...) __E1__(__E1__(__VA_ARGS__))
 #define __E4__(...) __E2__(__E2__(__VA_ARGS__))
-#define __E8__(...) __E2__(__E4__(__VA_ARGS__))
+#define __E16__(...) __E4__(__E4__(__VA_ARGS__))
 
 // To be completely honest I don't understand what's going on here.
 #define EMPTY

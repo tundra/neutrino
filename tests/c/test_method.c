@@ -260,41 +260,54 @@ typedef struct {
   variant_t *tags;
 } test_param_t;
 
+// Creates a new test param struct.
+static test_param_t *new_test_param(test_arena_t *arena, value_t guard,
+    bool is_optional, variant_t *tags) {
+  test_param_t *result = ARENA_MALLOC(arena, test_param_t);
+  result->guard = guard;
+  result->is_optional = is_optional;
+  result->tags = tags;
+  return result;
+}
+
 // Packs its arguments into a test_param_t struct so they can be passed on to
 // make_signature. This is all a bit of a mess but building complex literals is
 // tough in C.
-#define PARAM(guard, is_optional, tags) ((test_param_t) {guard, is_optional, tags})
+#define PARAM(guard, is_optional, tags)                                        \
+  new_test_param(&__test_arena__, guard, is_optional, tags)
 
 // Collects a set of parameters into an array that can be passed to
 // make_signature.
-#define PARAMS(N, values) ((test_param_t[(N) + 1]) {values, PARAM(new_integer(0), false, vMarker)})
+#define PARAMS(N, ...)                                                         \
+  ARENA_ARRAY(&__test_arena__, test_param_t*, (N) + 1, __VA_ARGS__, PARAM(new_integer(0), false, vMarker))
 
 // Make a signature object out of the given input.
-static value_t make_signature(runtime_t *runtime, bool allow_extra, test_param_t *params) {
+static value_t make_signature(runtime_t *runtime, bool allow_extra,
+    test_param_t **params) {
   size_t param_count = 0;
   size_t mandatory_count = 0;
   size_t tag_count = 0;
   // Loop over the parameters, stop at the first non-array which will be the end
   // marker added by the PARAMS macro. First we just collect some information,
   // then we'll build the signature.
-  for (size_t i = 0; !variant_is_marker(params[i].tags); i++) {
-    test_param_t test_param = params[i];
+  for (size_t i = 0; !variant_is_marker(params[i]->tags); i++) {
+    test_param_t *test_param = params[i];
     param_count++;
-    if (!test_param.is_optional)
+    if (!test_param->is_optional)
       mandatory_count++;
-    tag_count += test_param.tags->value.as_array.length;
+    tag_count += test_param->tags->value.as_array.length;
   }
   // Create an array with pairs of values, the first entry of which is the tag
   // and the second is the parameter.
   TRY_DEF(param_vector, new_heap_pair_array(runtime, tag_count));
   // Loop over all the tags, t being the tag index across the whole signature.
   size_t t = 0;
-  for (size_t i = 0; !variant_is_marker(params[i].tags); i++) {
-    test_param_t test_param = params[i];
-    TRY_DEF(tags_array, C(test_param.tags));
+  for (size_t i = 0; !variant_is_marker(params[i]->tags); i++) {
+    test_param_t *test_param = params[i];
+    TRY_DEF(tags_array, C(test_param->tags));
     size_t param_tag_count = get_array_length(tags_array);
-    TRY_DEF(param, new_heap_parameter(runtime, afFreeze, test_param.guard,
-        ROOT(runtime, empty_array), test_param.is_optional, i));
+    TRY_DEF(param, new_heap_parameter(runtime, afFreeze, test_param->guard,
+        ROOT(runtime, empty_array), test_param->is_optional, i));
     for (size_t j = 0; j < param_tag_count; j++, t++) {
       TRY_DEF(tag, get_array_at(tags_array, j));
       set_pair_array_first_at(param_vector, t, tag);
@@ -314,7 +327,7 @@ TEST(method, make_signature) {
   value_t s0 = make_signature(runtime,
       false,
       PARAMS(2,
-          PARAM(any_guard, false, vArray(vInt(0))) o
+          PARAM(any_guard, false, vArray(vInt(0))),
           PARAM(any_guard, false, vArray(vInt(1)))));
   ASSERT_EQ(2, get_signature_tag_count(s0));
   ASSERT_VAREQ(vInt(0), get_signature_tag_at(s0, 0));
@@ -323,8 +336,8 @@ TEST(method, make_signature) {
   value_t s1 = make_signature(runtime,
       false,
       PARAMS(3,
-          PARAM(any_guard, false, vArray(vInt(6))) o
-          PARAM(any_guard, false, vArray(vInt(3))) o
+          PARAM(any_guard, false, vArray(vInt(6))),
+          PARAM(any_guard, false, vArray(vInt(3))),
           PARAM(any_guard, false, vArray(vInt(7)))));
   ASSERT_EQ(3, get_signature_tag_count(s1));
   ASSERT_VAREQ(vInt(3), get_signature_tag_at(s1, 0));
@@ -334,8 +347,8 @@ TEST(method, make_signature) {
   value_t s2 = make_signature(runtime,
       false,
       PARAMS(3,
-          PARAM(any_guard, false, vArray(vInt(9), vInt(11))) o
-          PARAM(any_guard, false, vArray(vInt(13))) o
+          PARAM(any_guard, false, vArray(vInt(9), vInt(11))),
+          PARAM(any_guard, false, vArray(vInt(13))),
           PARAM(any_guard, false, vArray(vInt(15), vInt(7), vInt(27)))));
   ASSERT_EQ(6, get_signature_tag_count(s2));
   ASSERT_VAREQ(vInt(7), get_signature_tag_at(s2, 0));
@@ -353,25 +366,31 @@ TEST(method, make_signature) {
 typedef struct {
   variant_t *tag;
   variant_t *value;
-  bool is_valid;
 } test_argument_t;
 
+// Creates a new test param struct.
+static test_argument_t *new_test_argument(test_arena_t *arena, variant_t *tag,
+    variant_t *value) {
+  test_argument_t *result = ARENA_MALLOC(arena, test_argument_t);
+  result->tag = tag;
+  result->value = value;
+  return result;
+}
+
 // Packs its arguments into a test_argument_t struct.
-#define ARG(tag, value) ((test_argument_t) {tag, value, true})
+#define ARG(tag, value) new_test_argument(&__test_arena__, tag, value)
 
 // Collects a set of arguments into an array.
-#define ARGS(N, args) ((test_argument_t[(N) + 1]) {args, ((test_argument_t) {vInt(0), vInt(0), false})})
-
-// Collects a list of positive ints into an array.
-#define INTS(N, args) ((int64_t[(N) + 1]) {args, -1})
+#define ARGS(N, ...)                                                           \
+  ARENA_ARRAY(&__test_arena__, test_argument_t*, (N) + 1, __VA_ARGS__, NULL)
 
 // Attempts to do a match and checks that the outcome is as expected. If the
 // expected offsets are NULL offsets won't be checked.
 void assert_match_with_offsets(runtime_t *runtime, match_result_t expected_result,
-    int64_t *expected_offsets, value_t signature, test_argument_t *args) {
+    int64_t *expected_offsets, value_t signature, test_argument_t **args) {
   // Count how many arguments there are.
   size_t arg_count = 0;
-  for (size_t i = 0; args[i].is_valid; i++)
+  for (size_t i = 0; args[i] != NULL; i++)
     arg_count++;
   // Build a descriptor from the tags and a stack from the values.
   value_t tags = new_heap_array(runtime, arg_count);
@@ -379,9 +398,9 @@ void assert_match_with_offsets(runtime_t *runtime, match_result_t expected_resul
   frame_t frame;
   push_stack_frame(runtime, stack, &frame, arg_count);
   for (size_t i = 0; i < arg_count; i++) {
-    test_argument_t arg = args[i];
-    set_array_at(tags, i, C(arg.tag));
-    frame_push_value(&frame, C(arg.value));
+    test_argument_t *arg = args[i];
+    set_array_at(tags, i, C(arg->tag));
+    frame_push_value(&frame, C(arg->value));
   }
   value_t vector = build_invocation_record_vector(runtime, tags);
   value_t record = new_heap_invocation_record(runtime, afFreeze, vector);
@@ -405,7 +424,7 @@ void assert_match_with_offsets(runtime_t *runtime, match_result_t expected_resul
 // Attempts to do a match and checks that the result is as expected, ignoring
 // the offsets and scores.
 void assert_match(runtime_t *runtime, match_result_t expected, value_t signature,
-    test_argument_t *args) {
+    test_argument_t **args) {
   assert_match_with_offsets(runtime, expected, NULL, signature, args);
 }
 
@@ -417,16 +436,16 @@ TEST(method, simple_matching) {
   value_t sig = make_signature(runtime,
       false,
       PARAMS(2,
-          PARAM(any_guard, false, vArray(vInt(0))) o
+          PARAM(any_guard, false, vArray(vInt(0))),
           PARAM(any_guard, false, vArray(vInt(1)))));
 
-  test_argument_t empty[1] = {{vInt(0), vInt(0), false}};
+  test_argument_t *empty = NULL;
   assert_match(runtime, mrMatch, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(0), vStr("foo")),
       ARG(vInt(1), vStr("bar"))));
   assert_match(runtime, mrUnexpectedArgument, sig, ARGS(3,
-      ARG(vInt(0), vStr("foo")) o
-      ARG(vInt(1), vStr("bar")) o
+      ARG(vInt(0), vStr("foo")),
+      ARG(vInt(1), vStr("bar")),
       ARG(vInt(2), vStr("baz"))));
   assert_match(runtime, mrMissingArgument, sig, ARGS(1,
       ARG(vInt(0), vStr("foo"))));
@@ -434,7 +453,7 @@ TEST(method, simple_matching) {
       ARG(vInt(1), vStr("bar"))));
   assert_match(runtime, mrUnexpectedArgument, sig, ARGS(1,
       ARG(vInt(2), vStr("baz"))));
-  assert_match(runtime, mrMissingArgument, sig, empty);
+  assert_match(runtime, mrMissingArgument, sig, &empty);
 
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
@@ -450,17 +469,17 @@ TEST(method, simple_guard_matching) {
   value_t sig = make_signature(runtime,
       false,
       PARAMS(2,
-          PARAM(guard, false, vArray(vInt(0))) o
+          PARAM(guard, false, vArray(vInt(0))),
           PARAM(any_guard, false, vArray(vInt(1)))));
 
   assert_match(runtime, mrMatch, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(0), vStr("foo")),
       ARG(vInt(1), vStr("bar"))));
   assert_match(runtime, mrMatch, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(0), vStr("foo")),
       ARG(vInt(1), vStr("boo"))));
   assert_match(runtime, mrGuardRejected, sig, ARGS(2,
-      ARG(vInt(0), vStr("fop")) o
+      ARG(vInt(0), vStr("fop")),
       ARG(vInt(1), vStr("boo"))));
 
   DISPOSE_TEST_ARENA();
@@ -475,26 +494,26 @@ TEST(method, multi_tag_matching) {
   value_t sig = make_signature(runtime,
       false,
       PARAMS(2,
-          PARAM(any_guard, false, vArray(vInt(0) o vStr("x"))) o
+          PARAM(any_guard, false, vArray(vInt(0) o vStr("x"))),
           PARAM(any_guard, false, vArray(vInt(1) o vStr("y")))));
 
   assert_match(runtime, mrMatch, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(0), vStr("foo")),
       ARG(vInt(1), vStr("bar"))));
   assert_match(runtime, mrMatch, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(0), vStr("foo")),
       ARG(vStr("y"), vStr("bar"))));
   assert_match(runtime, mrMatch, sig, ARGS(2,
-      ARG(vInt(1), vStr("bar")) o
+      ARG(vInt(1), vStr("bar")),
       ARG(vStr("x"), vStr("foo"))));
   assert_match(runtime, mrMatch, sig, ARGS(2,
-      ARG(vStr("x"), vStr("foo")) o
+      ARG(vStr("x"), vStr("foo")),
       ARG(vStr("y"), vStr("bar"))));
   assert_match(runtime, mrRedundantArgument, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(0), vStr("foo")),
       ARG(vStr("x"), vStr("foo"))));
   assert_match(runtime, mrRedundantArgument, sig, ARGS(2,
-      ARG(vInt(1), vStr("bar")) o
+      ARG(vInt(1), vStr("bar")),
       ARG(vStr("y"), vStr("bar"))));
 
   DISPOSE_TEST_ARENA();
@@ -509,45 +528,45 @@ TEST(method, extra_args) {
   value_t sig = make_signature(runtime,
       true,
       PARAMS(2,
-          PARAM(any_guard, false, vArray(vInt(0), vStr("x"))) o
+          PARAM(any_guard, false, vArray(vInt(0), vStr("x"))),
           PARAM(any_guard, false, vArray(vInt(1), vStr("y")))));
 
   assert_match(runtime, mrMatch, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(0), vStr("foo")),
       ARG(vInt(1), vStr("bar"))));
   assert_match(runtime, mrMatch, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(0), vStr("foo")),
       ARG(vStr("y"), vStr("bar"))));
   assert_match(runtime, mrMatch, sig, ARGS(2,
-      ARG(vInt(1), vStr("bar")) o
+      ARG(vInt(1), vStr("bar")),
       ARG(vStr("x"), vStr("foo"))));
   assert_match(runtime, mrMatch, sig, ARGS(2,
-      ARG(vStr("x"), vStr("foo")) o
+      ARG(vStr("x"), vStr("foo")),
       ARG(vStr("y"), vStr("bar"))));
   assert_match(runtime, mrRedundantArgument, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(0), vStr("foo")),
       ARG(vStr("x"), vStr("foo"))));
   assert_match(runtime, mrRedundantArgument, sig, ARGS(2,
-      ARG(vInt(1), vStr("bar")) o
+      ARG(vInt(1), vStr("bar")),
       ARG(vStr("y"), vStr("bar"))));
   assert_match(runtime, mrExtraMatch, sig, ARGS(3,
-      ARG(vInt(0), vStr("foo")) o
-      ARG(vInt(1), vStr("bar")) o
+      ARG(vInt(0), vStr("foo")),
+      ARG(vInt(1), vStr("bar")),
       ARG(vInt(2), vStr("baz"))));
   assert_match(runtime, mrExtraMatch, sig, ARGS(4,
-      ARG(vInt(0), vStr("foo")) o
-      ARG(vInt(1), vStr("bar")) o
-      ARG(vInt(2), vStr("baz")) o
+      ARG(vInt(0), vStr("foo")),
+      ARG(vInt(1), vStr("bar")),
+      ARG(vInt(2), vStr("baz")),
       ARG(vInt(3), vStr("quux"))));
   assert_match(runtime, mrMissingArgument, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")) o
+      ARG(vInt(0), vStr("foo")),
       ARG(vInt(2), vStr("baz"))));
   assert_match(runtime, mrMissingArgument, sig, ARGS(2,
-      ARG(vInt(1), vStr("foo")) o
+      ARG(vInt(1), vStr("foo")),
       ARG(vInt(2), vStr("baz"))));
   assert_match(runtime, mrExtraMatch, sig, ARGS(3,
-      ARG(vInt(0), vStr("foo")) o
-      ARG(vInt(1), vStr("bar")) o
+      ARG(vInt(0), vStr("foo")),
+      ARG(vInt(1), vStr("bar")),
       ARG(vStr("z"), vStr("baz"))));
 
   DISPOSE_TEST_ARENA();
@@ -562,9 +581,9 @@ TEST(method, match_argument_map) {
   value_t sig = make_signature(runtime,
       true,
       PARAMS(4,
-          PARAM(any_guard, false, vArray(vInt(0), vStr("w"))) o
-          PARAM(any_guard, false, vArray(vInt(1), vStr("z"))) o
-          PARAM(any_guard, false, vArray(vInt(2), vStr("y"))) o
+          PARAM(any_guard, false, vArray(vInt(0), vStr("w"))),
+          PARAM(any_guard, false, vArray(vInt(1), vStr("z"))),
+          PARAM(any_guard, false, vArray(vInt(2), vStr("y"))),
           PARAM(any_guard, false, vArray(vInt(3), vStr("x")))));
 
   // Evaluation order. We'll cycle through all permutations of this, starting
@@ -588,20 +607,18 @@ TEST(method, match_argument_map) {
     as[es[1]] = 2;
     as[es[0]] = 3;
     // Integer tags.
-    assert_match_with_offsets(runtime, mrMatch,
-        INTS(4, as[0] o as[1] o as[2] o as[3]), sig,
+    assert_match_with_offsets(runtime, mrMatch, as, sig,
         ARGS(4,
-            ARG(vInt(es[0]), vInt(96)) o
-            ARG(vInt(es[1]), vInt(97)) o
-            ARG(vInt(es[2]), vInt(98)) o
+            ARG(vInt(es[0]), vInt(96)),
+            ARG(vInt(es[1]), vInt(97)),
+            ARG(vInt(es[2]), vInt(98)),
             ARG(vInt(es[3]), vInt(99))));
     // String tags.
-    assert_match_with_offsets(runtime, mrMatch,
-        INTS(4, as[0] o as[1] o as[2] o as[3]), sig,
+    assert_match_with_offsets(runtime, mrMatch, as, sig,
         ARGS(4,
-            ARG(ss[es[0]], vInt(104)) o
-            ARG(ss[es[1]], vInt(103)) o
-            ARG(ss[es[2]], vInt(102)) o
+            ARG(ss[es[0]], vInt(104)),
+            ARG(ss[es[1]], vInt(103)),
+            ARG(ss[es[2]], vInt(102)),
             ARG(ss[es[3]], vInt(101))));
   } while (advance_lexical_permutation(es, 4));
 
@@ -609,70 +626,75 @@ TEST(method, match_argument_map) {
   DISPOSE_RUNTIME();
 }
 
-// Description of a score used in testing.
-typedef struct {
-  score_t value;
-  bool is_valid;
-} test_score_t;
+// Allocates a new score pointer.
+static score_t *new_score(test_arena_t *arena, score_t value) {
+  score_t *result = ARENA_MALLOC(arena, score_t);
+  *result = value;
+  return result;
+}
 
-// Expands to a valid test score struct with the given value.
-#define SCORE(V) ((test_score_t) {(V), true})
+// Expands to a valid test score pointer with the given value.
+#define SCORE(V) new_score(&__test_arena__, V)
 
-// Expands to a list of scores with the given values, terminated by a score with
-// the is_valid flag false.
-#define SCORES(N, V) ((test_score_t[(N + 1)]) {V, {0, false}})
+// Expands to a list of scores with the given values, terminated by NULL.
+#define SCORES(N, ...)                                                         \
+  ARENA_ARRAY(&__test_arena__, score_t*, (N + 1), __VA_ARGS__, NULL)
 
 // Test that joining the given target and source yield the expected result and
 // scores stored in the target array.
-static void test_join(join_status_t status, test_score_t *expected,
-    test_score_t *test_target, test_score_t *test_source) {
+static void test_join(join_status_t status, score_t **expected,
+    score_t **test_target, score_t **test_source) {
   score_t source[16];
   score_t source_before[16];
   score_t target[16];
   size_t length = 0;
-  for (size_t i = 0; expected[i].is_valid; i++) {
-    source[i] = source_before[i] = test_source[i].value;
-    target[i] = test_target[i].value;
+  for (size_t i = 0; expected[i] != NULL; i++) {
+    source[i] = source_before[i] = *test_source[i];
+    target[i] = *test_target[i];
     length++;
   }
   join_status_t found = join_score_vectors(target, source, length);
   ASSERT_EQ(status, found);
   for (size_t i = 0; i < length; i++) {
-    ASSERT_EQ(expected[i].value, target[i]);
+    ASSERT_EQ(*expected[i], target[i]);
     ASSERT_EQ(source_before[i], source[i]);
   }
 }
 
 TEST(method, join) {
-  test_score_t empty[1] = {{0, false}};
+  CREATE_TEST_ARENA();
+
+  score_t *empty = NULL;
   test_join(jsEqual,
-      empty,
-      empty,
-      empty);
+      &empty,
+      &empty,
+      &empty);
   test_join(jsEqual,
       SCORES(1, SCORE(1)),
       SCORES(1, SCORE(1)),
       SCORES(1, SCORE(1)));
   test_join(jsAmbiguous,
-      SCORES(2, SCORE(0) o SCORE(0)),
-      SCORES(2, SCORE(0) o SCORE(1)),
-      SCORES(2, SCORE(1) o SCORE(0)));
+      SCORES(2, SCORE(0), SCORE(0)),
+      SCORES(2, SCORE(0), SCORE(1)),
+      SCORES(2, SCORE(1), SCORE(0)));
   test_join(jsBetter,
-      SCORES(2, SCORE(1) o SCORE(2)),
-      SCORES(2, SCORE(2) o SCORE(3)),
-      SCORES(2, SCORE(1) o SCORE(2)));
+      SCORES(2, SCORE(1), SCORE(2)),
+      SCORES(2, SCORE(2), SCORE(3)),
+      SCORES(2, SCORE(1), SCORE(2)));
   test_join(jsBetter,
-      SCORES(2, SCORE(0) o SCORE(0)),
-      SCORES(2, SCORE(5) o SCORE(5)),
-      SCORES(2, SCORE(0) o SCORE(0)));
+      SCORES(2, SCORE(0), SCORE(0)),
+      SCORES(2, SCORE(5), SCORE(5)),
+      SCORES(2, SCORE(0), SCORE(0)));
   test_join(jsWorse,
-      SCORES(2, SCORE(1) o SCORE(2)),
-      SCORES(2, SCORE(1) o SCORE(2)),
-      SCORES(2, SCORE(2) o SCORE(3)));
+      SCORES(2, SCORE(1), SCORE(2)),
+      SCORES(2, SCORE(1), SCORE(2)),
+      SCORES(2, SCORE(2), SCORE(3)));
   test_join(jsWorse,
-      SCORES(2, SCORE(0) o SCORE(0)),
-      SCORES(2, SCORE(0) o SCORE(0)),
-      SCORES(2, SCORE(5) o SCORE(5)));
+      SCORES(2, SCORE(0), SCORE(0)),
+      SCORES(2, SCORE(0), SCORE(0)),
+      SCORES(2, SCORE(5), SCORE(5)));
+
+  DISPOSE_TEST_ARENA();
 }
 
 static void test_lookup(runtime_t *runtime, value_t expected, value_t first,
@@ -733,8 +755,8 @@ TEST(method, dense_perfect_lookup) {
     for (size_t second = 0; second < 4; second++) {
       for (size_t third = 0; third < 4; third++) {
         value_t signature = make_signature(runtime, false, PARAMS(3,
-            PARAM(guards[first], false, vArray(vInt(0))) o
-            PARAM(guards[second], false, vArray(vInt(1))) o
+            PARAM(guards[first], false, vArray(vInt(0))),
+            PARAM(guards[second], false, vArray(vInt(1))),
             PARAM(guards[third], false, vArray(vInt(2)))));
         value_t method = new_heap_method(runtime, afFreeze, signature,
             nothing(), dummy_code, nothing());

@@ -58,15 +58,18 @@ TEST(builtin, integers) {
 
   value_t fragment = new_empty_module_fragment(runtime);
 
-  test_builtin(runtime, fragment, vInt(2), vInt(1), INFIX("+"), vArray(vInt(1)));
-  test_builtin(runtime, fragment, vInt(3), vInt(2), INFIX("+"), vArray(vInt(1)));
-  test_builtin(runtime, fragment, vInt(5), vInt(2), INFIX("+"), vArray(vInt(3)));
+  DEF_INFIX(infix_plus, "+");
+  test_builtin(runtime, fragment, vInt(2), vInt(1), infix_plus, vArray(vInt(1)));
+  test_builtin(runtime, fragment, vInt(3), vInt(2), infix_plus, vArray(vInt(1)));
+  test_builtin(runtime, fragment, vInt(5), vInt(2), infix_plus, vArray(vInt(3)));
 
-  test_builtin(runtime, fragment, vInt(0), vInt(1), INFIX("-"), vArray(vInt(1)));
-  test_builtin(runtime, fragment, vInt(1), vInt(2), INFIX("-"), vArray(vInt(1)));
-  test_builtin(runtime, fragment, vInt(-1), vInt(2), INFIX("-"), vArray(vInt(3)));
+  DEF_INFIX(infix_minus, "-");
+  test_builtin(runtime, fragment, vInt(0), vInt(1), infix_minus, vArray(vInt(1)));
+  test_builtin(runtime, fragment, vInt(1), vInt(2), infix_minus, vArray(vInt(1)));
+  test_builtin(runtime, fragment, vInt(-1), vInt(2), infix_minus, vArray(vInt(3)));
 
-  test_builtin(runtime, fragment, vInt(-1), vInt(1), PREFIX("-"), vEmptyArray());
+  DEF_PREFIX(prefix_minus, "-");
+  test_builtin(runtime, fragment, vInt(-1), vInt(1), prefix_minus, vEmptyArray());
 
   DISPOSE_SAFE_VALUE_POOL(pool);
   DISPOSE_TEST_ARENA();
@@ -80,9 +83,10 @@ TEST(builtin, strings) {
 
   value_t fragment = new_empty_module_fragment(runtime);
 
-  test_builtin(runtime, fragment, vStr("abcd"), vStr("ab"), INFIX("+"),
+  DEF_INFIX(infix_plus, "+");
+  test_builtin(runtime, fragment, vStr("abcd"), vStr("ab"), infix_plus,
       vArray(vStr("cd")));
-  test_builtin(runtime, fragment, vStr(""), vStr(""), INFIX("+"),
+  test_builtin(runtime, fragment, vStr(""), vStr(""), infix_plus,
       vArray(vStr("")));
 
   DISPOSE_SAFE_VALUE_POOL(pool);
