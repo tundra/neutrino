@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// TODO: fix timing for msvc
 #ifdef IS_GCC
 // ARRRG! Features. Are. Awful!
 #define __USE_POSIX199309
@@ -39,6 +40,7 @@ typedef struct {
 
 // Returns the current time since epoch counted in seconds.
 static double get_current_time_seconds() {
+  // TODO: fix timing for msvc.
 #ifdef IS_GCC
   struct timespec spec;
   clock_gettime(CLOCK_REALTIME, &spec);
@@ -312,6 +314,8 @@ void *test_arena_malloc(test_arena_t *arena, size_t size) {
   return result;
 }
 
+// Copies va_args into an array, where each element has the given type.
+// TODO: verify that this is really necessary and otherwise get rid of it.
 #define COPY_ARRAY_ELEMENTS(TYPE) do {                                         \
   TYPE *elms = (TYPE*) mem;                                                    \
   for (size_t i = 0; i < size; i++)                                            \
@@ -328,6 +332,9 @@ void *test_arena_copy_array(test_arena_t *arena, size_t size, size_t elmsize, ..
     break;
   case 8:
     COPY_ARRAY_ELEMENTS(int64_t);
+    break;
+  default:
+    UNREACHABLE("unexpected element size");
     break;
   }
   va_end(ap);

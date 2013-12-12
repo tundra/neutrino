@@ -368,7 +368,7 @@ typedef struct {
   variant_t *value;
 } test_argument_t;
 
-// Creates a new test param struct.
+// Creates a new test argument struct.
 static test_argument_t *new_test_argument(test_arena_t *arena, variant_t *tag,
     variant_t *value) {
   test_argument_t *result = ARENA_MALLOC(arena, test_argument_t);
