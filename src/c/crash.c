@@ -23,8 +23,7 @@ static void default_abort(void *data, abort_message_t *message) {
   abort();
 }
 
-// Returns the current global abort callback.
-static abort_callback_t *get_global_abort_callback() {
+abort_callback_t *get_global_abort_callback() {
   if (global_abort_callback == NULL) {
     init_abort_callback(&kDefaultAbortCallback, default_abort, NULL);
     global_abort_callback = &kDefaultAbortCallback;

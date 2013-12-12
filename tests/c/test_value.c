@@ -13,10 +13,10 @@
 // getting the value back out, and testing whether it could be restored. This is
 // an extra sanity check.
 static bool try_tagging_as_integer(int64_t value) {
-  union {
+  struct {
     int8_t dummy : 3;
     int64_t payload : 61;
-  } data = {value};
+  } data = {0, value};
   return data.payload == value;
 }
 

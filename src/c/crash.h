@@ -47,6 +47,9 @@ void call_abort_callback(abort_callback_t *callback,
 // Returns the previous value such that it can be restored if necessary.
 abort_callback_t *set_abort_callback(abort_callback_t *value);
 
+// Returns the current global abort callback.
+abort_callback_t *get_global_abort_callback();
+
 // Sets up handling of crashes.
 void install_crash_handler();
 
