@@ -224,9 +224,9 @@ static value_t neutrino_main(int argc, char **argv) {
   TRY(new_runtime(&config, &runtime));
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
+    value_t result = whatever();
     E_TRY_DEF(main_options, parse_main_options(runtime, options.main_options));
     E_TRY(build_module_loader(runtime, main_options));
-    value_t result;
     for (size_t i = 0; i < options.argc; i++) {
       const char *filename = options.argv[i];
       value_t input;

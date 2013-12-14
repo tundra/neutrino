@@ -20,6 +20,9 @@ def parse_options(argv):
   parser.add_option('--dot')
   parser.add_option('--makefile')
   parser.add_option('--bindir')
+  parser.add_option('--debug', default=False, action='store_true')
+  parser.add_option('--nochecks', default=False, action='store_true')
+  parser.add_option('--warn', default=False, action='store_true')
   parser.add_option('--toolchain', default='gcc')
   (flags, args) = parser.parse_args(argv)
   return flags
@@ -27,8 +30,13 @@ def parse_options(argv):
 
 def main():
   flags = parse_options(sys.argv[1:])
-  build.process.main(root=flags.root, bindir=flags.bindir, dot=flags.dot,
-    makefile=flags.makefile, toolchain=flags.toolchain)
+  config = {
+    "debug": flags.debug,
+    "checks": (not flags.nochecks),
+    "warn": flags.warn
+  }
+  build.process.main(root=flags.root, bindir=flags.bindir, config=config,
+    dot=flags.dot, makefile=flags.makefile, toolchain=flags.toolchain)
 
 
 if __name__ == '__main__':

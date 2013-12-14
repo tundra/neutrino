@@ -5,3 +5,6 @@
 
 include('src', 'src.mkmk')
 include('tests', 'tests.mkmk')
+
+add_alias("ctrino", get_external("src", "c", "ctrino"))
+add_alias("c-tests", get_external("tests", "c", "main"))

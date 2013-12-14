@@ -13,11 +13,9 @@
 // getting the value back out, and testing whether it could be restored. This is
 // an extra sanity check.
 static bool try_tagging_as_integer(int64_t value) {
-  struct {
-    int8_t dummy : 3;
-    int64_t payload : 61;
-  } data = {0, value};
-  return data.payload == value;
+  int64_t encoded = (value << 3);
+  int64_t decoded = (encoded >> 3);
+  return decoded == value;
 }
 
 TEST(value, fits_as_tagged_integer) {

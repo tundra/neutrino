@@ -22,6 +22,29 @@ class Action(object):
     pass
 
 
+# A command to be executed on the command-line along with a comment. In non-
+# verbose mode only the comment will be displayed while building.
+class Command(object):
+
+  def __init__(self, *parts):
+    self.parts = parts
+    self.comment = None
+
+  def set_comment(self, comment):
+    self.comment = comment
+    return self
+
+  @staticmethod
+  def empty():
+    return Command()
+
+  def get_actions(self, env):
+    parts = list(self.parts)
+    if self.comment:
+      parts = ["echo %s" % self.comment] + parts
+    return ["@%s" % a for a in parts]
+
+
 # Escapes a string such that it can be passed as an argument in a shell command.
 def shell_escape(s):
   return re.sub(r'([\s:])', r"\\\g<1>", s)
@@ -394,6 +417,11 @@ class ConfigContext(object):
   def get_file(self, *file_path):
     return self.home.get_child(*file_path)
 
+  # Adds a toplevel make alias for the given node.
+  @export_to_build_scripts
+  def add_alias(self, name, node):
+    return self.env.add_alias(name, node)
+
   # If a node with the given name already exists within this context returns it,
   # otherwise creates a new node by invoking the given class object with the
   # given arguments and registers the result under the given name.
@@ -443,6 +471,7 @@ class Environment(object):
     self.platform = platform
     self.modules = None
     self.nodes = {}
+    self.aliases = {}
 
   # If there is already a node registered under the given name returns it,
   # otherwise creates and registers a new one by calling the given constructor
@@ -469,6 +498,10 @@ class Environment(object):
   # Returns the platform object.
   def get_platform(self):
     return self.platform
+
+  # Adds a toplevel alias.
+  def add_alias(self, name, node):
+    self.aliases[name] = node
 
   # Returns the map of tools for the given context.
   def get_tools(self, context):
@@ -522,7 +555,7 @@ class Environment(object):
 
   # Writes the nodes loaded into this environment in Makefile syntax to the
   # given out stream.
-  def write_makefile(self, out):
+  def write_makefile(self, out, bindir):
     makefile = Makefile()
     for node in self.nodes.values():
       output = node.get_output_file()
@@ -535,8 +568,16 @@ class Environment(object):
       output_path = output.get_path()
       output_parent = output.get_parent().get_path()
       mkdir_command = self.platform.get_ensure_folder_command(output_parent)
+      mkdir_actions = mkdir_command.get_actions(self)
       process_command = action.get_commands(self.platform, output_path, node)
-      makefile.add_target(output_path, input_paths, mkdir_command + process_command)
+      process_actions = process_command.get_actions(self)
+      makefile.add_target(output_path, input_paths, mkdir_actions + process_actions)
+    for (name, target) in self.aliases.items():
+      target_file = target.get_output_file().get_path()
+      makefile.add_target(name, [target_file], [])
+    clean_command = self.platform.get_clear_folder_command(bindir.get_path())
+    clean_actions = clean_command.get_actions(self)
+    makefile.add_target("clean", [], clean_actions)
     makefile.write(out)
 
   # Lists all the tool modules and the names under which they should be exposed
@@ -549,12 +590,12 @@ class Environment(object):
     yield ('toc', toc)
 
 
-def main(root, bindir, dot=None, makefile=None, toolchain="gcc"):
+def main(root, bindir, config, dot=None, makefile=None, toolchain="gcc"):
   from . import platform
   root_mkmk = AbstractFile.at(root)
   # The path that contains the .mkmk file.
   root_mkmk_home = root_mkmk.get_parent()
-  gcc = platform.get_toolchain(toolchain)
+  gcc = platform.get_toolchain(toolchain, config)
   bindir = AbstractFile.at(bindir)
   env = Environment(root_mkmk_home, bindir, gcc)
   context = ConfigContext(env, root_mkmk_home, Name.of())
@@ -562,5 +603,5 @@ def main(root, bindir, dot=None, makefile=None, toolchain="gcc"):
   if dot:
     env.write_dot_graph(open(dot, "wt"))
   if makefile:
-    env.write_makefile(open(makefile, "wt"))
+    env.write_makefile(open(makefile, "wt"), bindir)
   
