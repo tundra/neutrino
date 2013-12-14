@@ -52,9 +52,10 @@ TEST(value, fits_as_tagged_integer) {
 }
 
 TEST(value, encoding) {
-  ASSERT_EQ(sizeof(unknown_value_t), sizeof(value_t));
-  ASSERT_EQ(sizeof(integer_value_t), sizeof(value_t));
-  ASSERT_EQ(sizeof(signal_value_t), sizeof(value_t));
+  ASSERT_EQ(sizeof(unknown_value_t), sizeof(encoded_value_t));
+  ASSERT_EQ(sizeof(integer_value_t), sizeof(encoded_value_t));
+  ASSERT_EQ(sizeof(signal_value_t), sizeof(encoded_value_t));
+  ASSERT_EQ(sizeof(custom_tagged_value_t), sizeof(encoded_value_t));
   ASSERT_EQ(sizeof(encoded_value_t), sizeof(value_t));
   value_t v0 = new_integer(0);
   ASSERT_EQ(vdInteger, v0.encoded & 0x7);
@@ -81,6 +82,15 @@ TEST(value, signals) {
   value_t v0 = new_signal(scHeapExhausted);
   ASSERT_DOMAIN(vdSignal, v0);
   ASSERT_EQ(scHeapExhausted, get_signal_cause(v0));
+}
+
+TEST(value, custom_tagged) {
+  value_t n0 = new_custom_tagged(tpNull, 0);
+  ASSERT_EQ(0, get_custom_tagged_payload(n0));
+  value_t n1 = new_custom_tagged(tpNull, 255);
+  ASSERT_EQ(255, get_custom_tagged_payload(n1));
+  value_t n2 = new_custom_tagged(tpNull, (1ULL << 48));
+  ASSERT_EQ((1ULL << 48), get_custom_tagged_payload(n2));
 }
 
 TEST(value, objects) {

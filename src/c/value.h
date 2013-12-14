@@ -69,14 +69,12 @@ typedef enum {
 
 // Data for a tagged integer value.
 typedef struct {
-  value_domain_t domain : 3;
-  int64_t value : 61;
+  int64_t data;
 } integer_value_t;
 
 // Data for any value.
 typedef struct {
-  value_domain_t domain : 3;
-  uint64_t payload : 61;
+  uint64_t data;
 } unknown_value_t;
 
 // Data for signals.
@@ -88,9 +86,7 @@ typedef struct {
 
 // Data for custom-tagged values.
 typedef struct {
-  value_domain_t domain : 3;
-  uint32_t phylum : 8;
-  uint64_t payload : 53;
+  uint64_t data;
 } custom_tagged_value_t;
 
 // The data type used to represent a raw encoded value.
@@ -106,15 +102,15 @@ typedef union value_t {
 } value_t;
 
 // How many bits are used for the domain tag?
-static const int kDomainTagSize = 3;
-static const int kDomainTagMask = 0x7;
+static const uint64_t kDomainTagSize = 3;
+static const uint64_t kDomainTagMask = (1 << 3) - 1;
 
 // Alignment that ensures that object pointers have tag 0.
 #define kValueSize sizeof(value_t)
 
 // Returns the tag from a tagged value.
 static value_domain_t get_value_domain(value_t value) {
-  return value.as_unknown.domain;
+  return (value_domain_t) (value.encoded & kDomainTagMask);
 }
 
 // Are the two given values identically the same. This is stronger than object
@@ -149,15 +145,14 @@ static bool fits_as_tagged_integer(int64_t value) {
 static value_t new_integer(int64_t value) {
   CHECK_TRUE("new integer overflow", fits_as_tagged_integer(value));
   value_t result;
-  result.as_integer.domain = vdInteger;
-  result.as_integer.value = value;
+  result.as_integer.data = (value << kDomainTagSize) | vdInteger;
   return result;
 }
 
 // Returns the integer value stored in a tagged integer.
 static int64_t get_integer_value(value_t value) {
   CHECK_DOMAIN(vdInteger, value);
-  return value.as_integer.value;
+  return value.as_integer.data >> kDomainTagSize;
 }
 
 // Returns a value that is _not_ a signal. This can be used to indicate
@@ -471,25 +466,31 @@ typedef enum {
 // Returns the string name of the given phylum.
 const char *get_custom_tagged_phylum_name(custom_tagged_phylum_t phylum);
 
+static const uint64_t kCustomTaggedPhylumTagSize = 8;
+static const uint64_t kCustomTaggedPhylumTagMask = (1 << 8) - 1;
+
 // Creates a new custom tagged value.
 static value_t new_custom_tagged(custom_tagged_phylum_t phylum, uint64_t payload) {
   value_t result;
-  result.as_custom_tagged.domain = vdCustomTagged;
-  result.as_custom_tagged.phylum = phylum;
-  result.as_custom_tagged.payload = payload;
+  result.as_custom_tagged.data
+      = (payload << (kCustomTaggedPhylumTagSize + kDomainTagSize))
+      | (phylum << kDomainTagSize)
+      | vdCustomTagged;
   return result;
 }
 
 // Returns the phylum of a custom tagged value.
 static custom_tagged_phylum_t get_custom_tagged_phylum(value_t value) {
   CHECK_DOMAIN(vdCustomTagged, value);
-  return (custom_tagged_phylum_t) value.as_custom_tagged.phylum;
+  uint64_t data = value.as_custom_tagged.data;
+  return (custom_tagged_phylum_t) ((data >> kDomainTagSize) & kCustomTaggedPhylumTagMask);
 }
 
 // Returns the payload of a custom tagged value.
 static uint64_t get_custom_tagged_payload(value_t value) {
   CHECK_DOMAIN(vdCustomTagged, value);
-  return value.as_custom_tagged.payload;
+  uint64_t data = value.as_custom_tagged.data;
+  return (data >> (kCustomTaggedPhylumTagSize + kDomainTagSize));
 }
 
 
