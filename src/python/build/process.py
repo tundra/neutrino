@@ -134,31 +134,58 @@ class Name(object):
 # An abstract file wrapper that encapsulates various file operations.
 class AbstractFile(object):
 
-  def __init__(self, path):
+  def __init__(self, path, parent):
     self.path = path
+    self.parent = parent
+    self.children = {}
+    self.attribs = {}
 
   # Creates a new file object of the appropriate type depending on what kind of
   # file the path points to.
   @staticmethod
-  def at(path):
+  def at(path, parent=None):
     if os.path.isdir(path):
-      return Folder(path)
+      return Folder(path, parent)
     elif os.path.isfile(path):
-      return RegularFile(path)
+      return RegularFile(path, parent)
     else:
-      return MissingFile(path)
+      return MissingFile(path, parent)
 
   # Returns the folder that contains this file.
   def get_parent(self):
-    return AbstractFile.at(os.path.dirname(self.path))
+    if self.parent is None:
+      self.parent = AbstractFile.at(os.path.dirname(self.path))
+    return self.parent
 
   # Returns a file representing the child under this folder with the given path.
   def get_child(self, *child_path):
-    return AbstractFile.at(os.path.join(self.path, *child_path))
+    current = self
+    for part in child_path:
+      current = current.get_local_child(part)
+    return current
+
+  # Like get_child but only takes a single argument so only files directly under
+  # this folder can be accessed this way.
+  def get_local_child(self, part):
+    if not part in self.children:
+      child = AbstractFile.at(os.path.join(self.path, part), parent=self)
+      self.children[part] = child
+    return self.children[part]
 
   # Returns the raw underlying (relative) string path.
   def get_path(self):
     return self.path
+
+  # Is this file handle backed by a physical file?
+  def exists(self):
+    return os.path.exists(self.get_path())
+
+  # Returns an in-memory attribute associated with this file, computing it using
+  # the given thunk if it doesn't already exist.
+  def get_attribute(self, name, thunk):
+    if not name in self.attribs:
+      self.attribs[name] = thunk(self)
+    return self.attribs[name]
 
   def __cmp__(self, that):
     return cmp(self.path, that.path)
@@ -176,8 +203,8 @@ class AbstractFile(object):
 # way, for instance read them, it won't work.
 class MissingFile(AbstractFile):
 
-  def __init__(self, path):
-    super(MissingFile, self).__init__(path)
+  def __init__(self, path, parent):
+    super(MissingFile, self).__init__(path, parent)
 
   def __str__(self):
     return "Missing(%s)" % self.get_path()
@@ -186,18 +213,32 @@ class MissingFile(AbstractFile):
 # A wrapper around a regular file.
 class RegularFile(AbstractFile):
 
-  def __init__(self, path):
-    super(RegularFile, self).__init__(path)
+  def __init__(self, path, parent):
+    super(RegularFile, self).__init__(path, parent)
+    self.lines = None
 
   def __str__(self):
     return "File(%s)" % self.get_path()
+
+  # Returns an open file handle for the contents of this file.
+  def open(self, mode):
+    return open(self.get_path(), mode)
+
+  # Returns the contents of this file as a list of strings, one for each line.
+  def read_lines(self):
+    if self.lines is None:
+      self.lines = []
+      with self.open("rt") as source:
+        for line in source:
+          self.lines.append(line)
+    return self.lines
 
 
 # A wrapper around a folder.
 class Folder(AbstractFile):
 
-  def __init__(self, path):
-    super(Folder, self).__init__(path)
+  def __init__(self, path, parent):
+    super(Folder, self).__init__(path, parent)
 
   def __str__(self):
     return "Folder(%s)" % self.get_path()
@@ -277,6 +318,11 @@ class Node(object):
   # Returns the context this node was created within.
   def get_context(self):
     return self.context
+
+  # A hook subclasses can use to add extra, otherwise untracked, files that a
+  # node depends on.
+  def get_computed_dependencies(self):
+    return []
 
   # It this a group node? Groups are inlined into dependency lists from the
   # outside -- when a node iterates its dependencies it checks whether any of
@@ -562,7 +608,9 @@ class Environment(object):
       if not output:
         continue
       all_edges = node.get_flat_edges()
-      input_files = [e.get_target().get_input_file() for e in all_edges]
+      direct_input_files = [e.get_target().get_input_file() for e in all_edges]
+      extra_input_files = node.get_computed_dependencies()
+      input_files = direct_input_files + extra_input_files
       input_paths = [f.get_path() for f in input_files]
       action = node.get_action()
       output_path = output.get_path()

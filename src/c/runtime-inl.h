@@ -7,6 +7,7 @@
 
 #include "runtime.h"
 
+
 // Expands to the body of a safe_ function that works by calling a delegate and
 // if it fails garbage collecting and trying again once.
 #define RETRY_ONCE_IMPL(RUNTIME, DELEGATE) do {                                \
