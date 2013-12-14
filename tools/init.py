@@ -13,7 +13,10 @@ def parse_options(argv):
   parser.add_option('--bindir')
   parser.add_option('--toolchain', default='gcc')
   parser.add_option('--language', default='sh')
-  parser.add_option('--has_changed', default=None, )
+  parser.add_option('--has_changed', default=None)
+  parser.add_option('--debug', default=False, action='store_true')
+  parser.add_option('--nochecks', default=False, action='store_true')
+  parser.add_option('--warn', default=False, action='store_true')
   (flags, args) = parser.parse_args(argv)
   return flags
 
@@ -46,7 +49,7 @@ fi
 
 
 # Rebuild makefile every time.
-%(mkmk_tool)s --root "%(root_mkmk)s" --bindir "%(bindir)s" --makefile "%(Makefile.mkmk)s"
+%(mkmk_tool)s --root "%(root_mkmk)s" --bindir "%(bindir)s" --makefile "%(Makefile.mkmk)s" %(variant_flags)s
 
 # Delegate to the resulting makefile.
 make -f Makefile.mkmk $*
@@ -76,7 +79,7 @@ if "%%init_changed%%" == "Changed" (
   exit %%errorlevel%%
 )
 
-python %(mkmk_tool)s --root "%(root_mkmk)s" --bindir "%(bindir)s" --makefile "%(Makefile.mkmk)s" --toolchain msvc
+python %(mkmk_tool)s --root "%(root_mkmk)s" --bindir "%(bindir)s" --makefile "%(Makefile.mkmk)s" --toolchain msvc %(variant_flags)s
 if %%errorlevel%% neq 0 exit /b %%errorlevel%%
 
 nmake /nologo -f Makefile.mkmk %%*
@@ -120,6 +123,10 @@ def generate_build_script(flags):
   else:
     filename = os.path.join(workspace_root, "build.bat")
     template = BAT_TEMPLATE
+  variant_flags = []
+  if flags.debug: variant_flags.append('--debug')
+  if flags.nochecks: variant_flags.append('--nochecks')
+  if flags.warn: variant_flags.append('--warn')
   init_md5 = get_self_md5()
   makefile_src = template % {
     "init_md5": init_md5,
@@ -128,7 +135,8 @@ def generate_build_script(flags):
     "mkmk_tool": os.path.join(neutrino_root, "tools", "mkmk"),
     "root_mkmk": root_mkmk,
     "bindir": flags.bindir,
-    "Makefile.mkmk": "Makefile.mkmk"
+    "Makefile.mkmk": "Makefile.mkmk",
+    "variant_flags": " ".join(variant_flags),
   }
   with open(filename, "wt") as out:
     out.write(makefile_src)

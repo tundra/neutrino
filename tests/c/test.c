@@ -451,7 +451,7 @@ bool advance_lexical_permutation(int64_t *elms, size_t elmc) {
   if (!found_k)
     return false;
   // Find the largest l such that a[k] < a[l].
-  size_t l;
+  size_t l = 0;
   for (size_t l_plus_1 = elmc; l_plus_1 > 0; l_plus_1--) {
     l = l_plus_1 - 1;
     if (elms[k] < elms[l])

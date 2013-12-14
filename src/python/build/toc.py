@@ -51,7 +51,7 @@ class GenerateTocAction(process.Action):
       "infiles": " ".join(infiles),
       "outfile": outfile
     }
-    return [command]
+    return process.Command(command)
 
 
 # Node representing the TOC file.
