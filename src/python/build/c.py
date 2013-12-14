@@ -6,6 +6,7 @@
 
 
 from . import process
+import re
 
 
 # Compiles a source file into an object file.
@@ -52,18 +53,75 @@ class ExecutableNode(process.Node):
 
 
 # A node representing a C source file.
+_HEADER_PATTERN = re.compile(r'#include\s+"([^"]+)"')
 class SourceNode(process.Node):
 
   def __init__(self, name, context, handle):
     super(SourceNode, self).__init__(name, context)
     self.handle = handle
     self.includes = set()
+    self.headers = None
 
   def get_display_name(self):
     return self.handle.get_path()
 
   def get_input_file(self):
     return self.handle
+
+  # Returns the list of names included into the given file. Used to calculate
+  # the transitive includes.
+  def get_include_names(self, handle):
+    return handle.get_attribute("include names", SourceNode.scan_for_include_names)
+
+  # Scans a file for includes. You generally don't want to call this directly
+  # because it's slow, instead use get_include_names which caches the result on
+  # the file handle.
+  @staticmethod
+  def scan_for_include_names(handle):
+    result = set()
+    for line in handle.read_lines():
+      match = _HEADER_PATTERN.match(line)
+      if match:
+        name = match.group(1)
+        result.add(name)
+    return sorted(list(result))
+
+  # Returns the list of headers included (including transitively) into this
+  # source file.
+  def get_included_headers(self):
+    if self.headers is None:
+      self.headers = self.calc_included_headers()
+    return self.headers
+  
+  # Calculates the list of handles of files included by this source file.
+  def calc_included_headers(self):
+    headers = set()
+    files_scanned = set()
+    folders = [self.handle.get_parent()] + list(self.includes)
+    names_seen = set()
+    # Scans the contents of the given file handle for includes, recursively
+    # resolving them as they're encountered.
+    def scan_file(handle):
+      if (not handle.exists()) or (handle.get_path() in files_scanned):
+        return
+      files_scanned.add(handle.get_path())
+      for name in self.get_include_names(handle):
+        resolve_include(name)
+    # Looks for the source of a given include in the include paths and if found
+    # recursively scans the file for includes.
+    def resolve_include(name):
+      if name in names_seen:
+        return
+      names_seen.add(name)
+      for parent in folders:
+        candidate = parent.get_child(name)
+        if candidate.exists():
+          if not candidate in headers:
+            headers.add(candidate)
+            scan_file(candidate)
+          return
+    scan_file(self.handle)
+    return sorted(list(headers))
 
   # Add a folder to the include paths required by this source file. Adding the
   # same path more than once is safe.
@@ -90,11 +148,17 @@ class ObjectNode(process.Node):
     self.add_dependency(source, src=True)
     self.source = source
 
+  def get_source(self):
+    return self.source
+
   def get_output_file(self):
     return self.get_context().get_outdir_file(self.name)
 
   def get_action(self):
     return CompileObjectAction(self.source.get_includes())
+
+  def get_computed_dependencies(self):
+    return self.get_source().get_included_headers()
 
 
 # The tools for working with C. Available in mkmk files as "c".
