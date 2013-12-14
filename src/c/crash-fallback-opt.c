@@ -3,11 +3,6 @@
 
 // Fallback that doesn't dump anything.
 
-void print_stack_trace(FILE *out, int signum) {
-  fprintf(out, "# Received signal %i\n", signum);
-  fflush(out);
-}
-
-void propagate_signal(int signum) {
+void install_crash_handler() {
   // nothing to do
 }
