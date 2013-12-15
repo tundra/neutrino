@@ -1,8 +1,6 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-#include <limits>
-
 // Rename the built-in types to the names expected in the code base.
 typedef signed char int8_t;
 typedef unsigned char uint8_t;
