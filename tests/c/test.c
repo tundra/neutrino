@@ -381,7 +381,7 @@ value_t expand_variant_to_stage_offset(runtime_t *runtime, variant_value_t *valu
 }
 
 value_t expand_variant_to_string(runtime_t *runtime, variant_value_t *value) {
-  string_t chars = STR(value->as_c_str);
+  string_t chars = new_string(value->as_c_str);
   return new_heap_string(runtime, &chars);
 }
 

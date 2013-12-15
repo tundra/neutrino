@@ -308,9 +308,9 @@ TEST(value, string_comparison) {
 
   // Checks that the string with contents A compares to B as the given operator.
 #define ASSERT_STR_COMPARE(A, B, REL) do {                                     \
-  string_t a_str = STR(A);                                                     \
+  string_t a_str = new_string(A);                                                     \
   value_t a = new_heap_string(runtime, &a_str);                                \
-  string_t b_str = STR(B);                                                     \
+  string_t b_str = new_string(B);                                                     \
   value_t b = new_heap_string(runtime, &b_str);                                \
   ASSERT_TRUE(test_relation(value_ordering_compare(a, b), REL));               \
 } while (false)
