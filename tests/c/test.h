@@ -198,8 +198,8 @@ IF_CHECKS_ENABLED(                                                             \
 #define ASSERT_CHECK_FAILURE_NO_VALUE(scCause, E)                              \
 IF_CHECKS_ENABLED(__ASSERT_CHECK_FAILURE_NO_VALUE_HELPER__(scCause, E))
 
-// TODO: fix the naming of this one.
-static string_t STR(const char *value) {
+// Wraps a string_t around a C string.
+static string_t new_string(const char *value) {
   string_t result;
   result.length = strlen(value);
   result.chars = value;

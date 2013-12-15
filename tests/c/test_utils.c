@@ -83,7 +83,7 @@ TEST(utils, string_buffer_simple) {
   string_buffer_printf(&buf, "[%s: %i]", "test", 8);
   string_t str;
   string_buffer_flush(&buf, &str);
-  string_t expected = STR("[test: 8]");
+  string_t expected = new_string("[test: 8]");
   ASSERT_STREQ(&expected, &str);
 
   string_buffer_dispose(&buf);
@@ -98,7 +98,7 @@ TEST(utils, string_buffer_concat) {
   string_buffer_printf(&buf, "baz");
   string_t str;
   string_buffer_flush(&buf, &str);
-  string_t expected = STR("foobarbaz");
+  string_t expected = new_string("foobarbaz");
   ASSERT_STREQ(&expected, &str);
 
   string_buffer_dispose(&buf);
@@ -128,7 +128,7 @@ TEST(utils, string_buffer_long) {
   string_buffer_printf(&buf, format, __VA_ARGS__);                             \
   string_t found;                                                              \
   string_buffer_flush(&buf, &found);                                           \
-  string_t str = STR(expected);                                                \
+  string_t str = new_string(expected);                                                \
   ASSERT_STREQ(&str, &found);                                                  \
   string_buffer_dispose(&buf);                                                 \
 } while (false)

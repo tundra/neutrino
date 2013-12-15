@@ -93,7 +93,7 @@ TEST(method, simple_is) {
   ASSERT_MATCH(false, is_str, zero);
   ASSERT_MATCH(false, is_s_str, zero);
 
-  string_t x_str = STR("x");
+  string_t x_str = new_string("x");
   value_t x = new_heap_string(runtime, &x_str);
   ASSERT_MATCH(false, is_int, x);
   ASSERT_MATCH(true, is_obj, x);
@@ -135,7 +135,7 @@ TEST(method, is_score) {
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, str_p, obj_p));
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, s_str_p, str_p));
 
-  string_t x_str = STR("x");
+  string_t x_str = new_string("x");
   value_t x = new_heap_string(runtime, &x_str);
   value_t s_str = new_instance_of(runtime, s_str_p);
 

@@ -15,7 +15,7 @@ TEST(test, variant) {
   ASSERT_VALEQ(no(), C(vBool(false)));
   ASSERT_VALEQ(null(), C(vNull()));
 
-  string_t str = STR("blahblahblah");
+  string_t str = new_string("blahblahblah");
   ASSERT_VALEQ(new_heap_string(runtime, &str), C(vStr("blahblahblah")));
 
   value_t arr = C(vArray(vInt(0), vInt(1), vInt(2)));

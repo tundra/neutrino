@@ -4,6 +4,7 @@
 #include "behavior.h"
 #include "builtin.h"
 #include "runtime.h"
+#include "stdc-inl.h"
 #include "tagged.h"
 #include "utils.h"
 #include "value-inl.h"
@@ -119,28 +120,23 @@ relation_t compare_float_32(float32_t a, float32_t b) {
 }
 
 value_t float_32_infinity() {
-  // TODO: fix this for MSVC.
-  return new_float_32(IF_MSVC(0, INFINITY));
+  return new_float_32(INFINITY);
 }
 
 value_t float_32_minus_infinity() {
-  // TODO: fix this for MSVC.
-  return new_float_32(IF_MSVC(0, -INFINITY));
+  return new_float_32(-INFINITY);
 }
 
 value_t float_32_nan() {
-  // TODO: fix this for MSVC.
-  return new_float_32(IF_MSVC(0, NAN));
+  return new_float_32(NAN);
 }
 
 bool is_float_32_finite(value_t value) {
-  // TODO: fix this for MSVC.
-  return IF_MSVC(false, isfinite(get_float_32_value(value)));
+  return isfinite(get_float_32_value(value));
 }
 
 bool is_float_32_nan(value_t value) {
-  // TODO: fix this for MSVC.
-  return IF_MSVC(false, isnan(get_float_32_value(value)));
+  return isnan(get_float_32_value(value));
 }
 
 static value_t float_32_negate(builtin_arguments_t *args) {

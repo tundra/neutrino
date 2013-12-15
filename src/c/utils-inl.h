@@ -13,12 +13,6 @@
 // null terminator.
 #define __STATIC_STRLEN__(S) ((sizeof(S) / sizeof(char)) - 1)
 
-// Creates a new string hint from a literal C string by chopping off the
-// beginning and the end of the string. For details of how the encoding works
-// see string_hint_to_c_str.
-// TODO: remove this when all uses have been replaced by STRING_HINT_INIT.
-#define STRING_HINT(str) ((string_hint_t) STRING_HINT_INIT(str))
-
 // Expands to an initializer that can be used to initialize a string_hint_t
 // variable.
 #define STRING_HINT_INIT(str) {{                                               \
@@ -34,9 +28,14 @@
 // Utility that picks out the correct count from the arguments passed by VA_ARGC.
 #define __VA_ARGC_PICK_COUNT__(_1, _2, _3, _4, _5, _6, _7, _8, _9, _10, COUNT, ...) COUNT
 
+// Rather than call the macro directly we call it through this one to ensure
+// that the __VA_ARGS__ macro is expanded into all its tokens rather than
+// substituted as a single token, which MSVC happily does.
+#define __CALL_VA_ARGC_PICK_COUNT_WITH__(TUPLE) __VA_ARGC_PICK_COUNT__ TUPLE
+
 // Expands to the number of arguments given as var args. Note that this macro
 // does _not_ work with 0 arguments.
-#define VA_ARGC(...) __VA_ARGC_PICK_COUNT__(__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1)
+#define VA_ARGC(...) __CALL_VA_ARGC_PICK_COUNT_WITH__((__VA_ARGS__, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1))
 
 // Expands the given function for each element in the var args. The
 // implementation of this is insane, plus there is a fixed limit on how many
