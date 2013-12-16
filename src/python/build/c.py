@@ -33,6 +33,13 @@ class CompileExecutableAction(process.Action):
     return platform.get_executable_compile_command(outpath, inpaths)
 
 
+# Prints the build environment to stdout.
+class PrintEnvAction(process.Action):
+
+  def get_commands(self, platform, node):
+    return platform.get_print_env_command()
+
+
 # A build dependency node that represents an executable.
 class ExecutableNode(process.PhysicalNode):
 
@@ -169,20 +176,27 @@ class ObjectNode(process.PhysicalNode):
     return self.get_source().get_included_headers()
 
 
-# The tools for working with C. Available in mkmk files as "c".
-class CTools(object):
+# Node that represents the action of printing the build environment to stdout.
+class EnvPrinterNode(process.VirtualNode):
 
-  def __init__(self, context):
-    self.context = context
+  def get_action(self):
+    return PrintEnvAction()
+
+
+# The tools for working with C. Available in mkmk files as "c".
+class CTools(process.ToolSet):
 
   # Returns the source file under the current path with the given name.
   def get_source_file(self, name):
     handle = self.context.get_file(name)
-    return self.context.get_or_create_node(name, SourceNode, handle)
+    return self.get_context().get_or_create_node(name, SourceNode, handle)
 
   # Returns an empty executable node that can then be configured.
   def get_executable(self, name):
-    return self.context.get_or_create_node(name, ExecutableNode)
+    return self.get_context().get_or_create_node(name, ExecutableNode)
+
+  def get_env_printer(self, name):
+    return self.get_context().get_or_create_node(name, EnvPrinterNode)
 
 
 # Entry-point used by the framework to get the tool set for the given context.

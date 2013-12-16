@@ -41,9 +41,11 @@ class Command(object):
 
   def get_actions(self, env):
     parts = list(self.parts)
+    if not env.get_platform().get_config_option('noisy'):
+      parts = ["@%s" % a for a in parts]
     if self.comment:
-      parts = ["echo %s" % self.comment] + parts
-    return ["@%s" % a for a in parts]
+      parts = ["@echo %s" % self.comment] + parts
+    return parts
 
 
 # Escapes a string such that it can be passed as an argument in a shell command.
@@ -80,19 +82,25 @@ class Makefile(object):
 
   def __init__(self):
     self.targets = {}
+    self.phonies = set()
 
   # Add a target that builds the given output from the given inputs by invoking
   # the given commands in sequence.
-  def add_target(self, output, inputs, commands):
+  def add_target(self, output, inputs, commands, is_phony):
     target = MakefileTarget(output, inputs, commands)
     self.targets[output] = target
+    if is_phony:
+      self.phonies.add(output)
 
   # Write this makefile in Makefile syntax to the given stream.
   def write(self, out):
     for name in sorted(self.targets.keys()):
       target = self.targets[name]
       target.write(out)
-    
+    # Mike Moffit says: list *all* the phonies.
+    if self.phonies:
+      out.write(".PHONY: %s\n\n" % " ".join(sorted(list(self.phonies))))
+
 
 # A segmented name. This is sort of like a relative file path but avoids any
 # ambiguities that might be caused by multiple relative paths pointing to the
@@ -347,6 +355,10 @@ class Node(object):
   def get_computed_dependencies(self):
     return []
 
+  # Should the corresponding makefile target be marked as phony?
+  def is_phony(self):
+    return False
+
   def __str__(self):
     return "%s(%s, %s)" % (type(self).__name__, self.context, self.name)
 
@@ -355,8 +367,14 @@ class Node(object):
 class VirtualNode(Node):
   __metaclass__ = ABCMeta
 
+  def get_output_target(self):
+    return self.get_name()
+
   def get_action(self):
     return None
+
+  def is_phony(self):
+    return True
 
 
 # A node associated with a physical file.
@@ -563,6 +581,17 @@ class ConfigContext(object):
     return "Context(%s)" % self.home
 
 
+# Abstract superclass of the tool sets loaded implicitly into each context.
+class ToolSet(object):
+
+  def __init__(self, context):
+    self.context = context
+
+  # Returns the context this tool set belongs to.
+  def get_context(self):
+    return self.context
+
+
 # The static environment that is shared and constant between all contexts and
 # across the lifetime of the build process. The environment is responsible for
 # keeping track of nodes and dependencies, and for providing the context-
@@ -578,7 +607,6 @@ class Environment(object):
     self.platform = platform
     self.modules = None
     self.nodes = {}
-    self.aliases = {}
 
   # If there is already a node registered under the given name returns it,
   # otherwise creates and registers a new one by calling the given constructor
@@ -684,13 +712,10 @@ class Environment(object):
       if not action is None:
         process_command = action.get_commands(self.platform, node)
         commands += process_command.get_actions(self)
-      makefile.add_target(output_target, input_paths, commands)
-    for (name, target) in self.aliases.items():
-      target_file = target.get_output_file().get_path()
-      makefile.add_target(name, [target_file], [])
+      makefile.add_target(output_target, input_paths, commands, node.is_phony())
     clean_command = self.platform.get_clear_folder_command(bindir.get_path())
     clean_actions = clean_command.get_actions(self)
-    makefile.add_target("clean", [], clean_actions)
+    makefile.add_target("clean", [], clean_actions, True)
     makefile.write(out)
 
   # Lists all the tool modules and the names under which they should be exposed
