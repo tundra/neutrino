@@ -44,7 +44,8 @@ class GenerateTocAction(process.Action):
   def __init__(self, generator):
     self.generator = generator
   
-  def get_commands(self, platform, outfile, node):
+  def get_commands(self, platform, node):
+    outfile = node.get_output_path()
     infiles = node.get_input_paths(test=True)
     command = "%(generator)s %(infiles)s > %(outfile)s" % {
       "generator": self.generator.get_path(),
@@ -55,7 +56,7 @@ class GenerateTocAction(process.Action):
 
 
 # Node representing the TOC file.
-class TocNode(process.Node):
+class TocNode(process.PhysicalNode):
 
   def __init__(self, name, context):
     super(TocNode, self).__init__(name, context)
@@ -77,17 +78,13 @@ class TocNode(process.Node):
 
 
 # The TOC tools, exposed as "toc" to build scripts.
-class TocTools(object):
-
-  def __init__(self, context):
-    self.context = context
+class TocTools(process.ToolSet):
 
   # Returns a node representing a TOC file with the given name.
   def get_toc_file(self, name):
-    return self.context.get_or_create_node(name, TocNode)
+    return self.get_context().get_or_create_node(name, TocNode)
 
 
 # Entry-point used by the framework to get the tool set for the given context.
 def get_tools(context):
   return TocTools(context)
-

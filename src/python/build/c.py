@@ -5,6 +5,7 @@
 # Tools for building C code.
 
 
+import os.path
 from . import process
 import re
 
@@ -15,7 +16,8 @@ class CompileObjectAction(process.Action):
   def __init__(self, includepaths):
     self.includepaths = includepaths
 
-  def get_commands(self, platform, outpath, node):
+  def get_commands(self, platform, node):
+    outpath = node.get_output_path()
     inpaths = node.get_input_paths(src=True)
     includes = [p.get_path() for p in self.includepaths]
     return platform.get_object_compile_command(outpath, inpaths,
@@ -25,28 +27,38 @@ class CompileObjectAction(process.Action):
 # Compiles a set of object files into an executable.
 class CompileExecutableAction(process.Action):
 
-  def get_commands(self, platform, outpath, node):
+  def get_commands(self, platform, node):
+    outpath = node.get_output_path()
     inpaths = node.get_input_paths(obj=True)
     return platform.get_executable_compile_command(outpath, inpaths)
 
 
+# Prints the build environment to stdout.
+class PrintEnvAction(process.Action):
+
+  def get_commands(self, platform, node):
+    return platform.get_print_env_command()
+
+
 # A build dependency node that represents an executable.
-class ExecutableNode(process.Node):
+class ExecutableNode(process.PhysicalNode):
 
   def __init__(self, name, context):
     super(ExecutableNode, self).__init__(name, context)
 
   def get_output_file(self):
-    return self.get_context().get_outdir_file(self.name)
+    name = self.get_name()
+    ext = self.get_context().get_platform().get_executable_file_ext()
+    if ext:
+      filename = "%s.%s" % (name, ext)
+    else:
+      filename = name
+    return self.get_context().get_outdir_file(filename)
 
   # Adds an object file to be compiled into this executable. Groups will be
   # flattened.
   def add_object(self, node):
-    if node.is_group():
-      for edge in node.get_direct_edges():
-        self.add_object(edge.get_target())
-    else:
-      self.add_dependency(node, obj=True)
+    self.add_dependency(node, obj=True)
 
   def get_action(self):
     return CompileExecutableAction()
@@ -54,7 +66,7 @@ class ExecutableNode(process.Node):
 
 # A node representing a C source file.
 _HEADER_PATTERN = re.compile(r'#include\s+"([^"]+)"')
-class SourceNode(process.Node):
+class SourceNode(process.PhysicalNode):
 
   def __init__(self, name, context, handle):
     super(SourceNode, self).__init__(name, context)
@@ -136,12 +148,11 @@ class SourceNode(process.Node):
   # file.
   def get_object(self):
     name = self.get_name()
-    ext = self.get_context().get_platform().get_object_file_ext()
-    return self.context.get_or_create_node("%s.%s" % (name, ext), ObjectNode, self)
+    return self.context.get_or_create_node("%s:object" % name, ObjectNode, self)
 
 
 # A node representing a built object file.
-class ObjectNode(process.Node):
+class ObjectNode(process.PhysicalNode):
   
   def __init__(self, name, context, source):
     super(ObjectNode, self).__init__(name, context)
@@ -152,7 +163,11 @@ class ObjectNode(process.Node):
     return self.source
 
   def get_output_file(self):
-    return self.get_context().get_outdir_file(self.name)
+    source_name = self.get_source().get_name()
+    (source_name_root, source_name_ext) = os.path.splitext(source_name)
+    ext = self.get_context().get_platform().get_object_file_ext()
+    object_name = "%s.%s" % (source_name_root, ext)
+    return self.get_context().get_outdir_file(object_name)
 
   def get_action(self):
     return CompileObjectAction(self.source.get_includes())
@@ -161,20 +176,27 @@ class ObjectNode(process.Node):
     return self.get_source().get_included_headers()
 
 
-# The tools for working with C. Available in mkmk files as "c".
-class CTools(object):
+# Node that represents the action of printing the build environment to stdout.
+class EnvPrinterNode(process.VirtualNode):
 
-  def __init__(self, context):
-    self.context = context
+  def get_action(self):
+    return PrintEnvAction()
+
+
+# The tools for working with C. Available in mkmk files as "c".
+class CTools(process.ToolSet):
 
   # Returns the source file under the current path with the given name.
   def get_source_file(self, name):
     handle = self.context.get_file(name)
-    return self.context.get_or_create_node(name, SourceNode, handle)
+    return self.get_context().get_or_create_node(name, SourceNode, handle)
 
   # Returns an empty executable node that can then be configured.
   def get_executable(self, name):
-    return self.context.get_or_create_node(name, ExecutableNode)
+    return self.get_context().get_or_create_node(name, ExecutableNode)
+
+  def get_env_printer(self, name):
+    return self.get_context().get_or_create_node(name, EnvPrinterNode)
 
 
 # Entry-point used by the framework to get the tool set for the given context.

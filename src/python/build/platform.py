@@ -20,6 +20,11 @@ class Toolchain(object):
   def get_config_option(self, name):
     return self.config.get(name, None)
 
+  # Look ma, gcc and msvc are sharing code!
+  def get_print_env_command(self):
+    command = "echo CFLAGS: %s" % (" ".join(self.get_config_flags()))
+    return process.Command(command)
+
   # Returns the command for compiling a source file into an object.
   @abstractmethod
   def get_object_compile_command(self, output, inputs, includepaths):

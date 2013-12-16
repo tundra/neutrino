@@ -12,6 +12,7 @@ _MKMK_FLAGS = [
   ('debug', False, 'store_true'),
   ('nochecks', False, 'store_true'),
   ('warn', False, 'store_true'),
+  ('noisy', False, 'store_true'),
 ]
 
 
