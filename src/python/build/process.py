@@ -3,6 +3,7 @@
 
 
 from abc import ABCMeta, abstractmethod
+import os
 import os.path
 import re
 import sys
@@ -638,6 +639,13 @@ class Environment(object):
     yield ('toc', toc)
 
 
+# Ensures that the parent folder of the given path exists.
+def ensure_parent(path):
+  parent = os.path.dirname(path)
+  if not os.path.exists(parent):
+    os.makedirs(parent)
+
+
 def main(root, bindir, config, dot=None, makefile=None, toolchain="gcc"):
   from . import platform
   root_mkmk = AbstractFile.at(root)
@@ -651,5 +659,6 @@ def main(root, bindir, config, dot=None, makefile=None, toolchain="gcc"):
   if dot:
     env.write_dot_graph(open(dot, "wt"))
   if makefile:
+    ensure_parent(makefile)
     env.write_makefile(open(makefile, "wt"), bindir)
   
