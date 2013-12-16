@@ -292,8 +292,8 @@ class Node(object):
   def get_flat_edges(self, **annots):
     for edge in self.edges:
       target = edge.get_target()
-      for edge in target.get_flat_edges_through(edge, annots):
-        yield edge
+      for transitive in target.get_flat_edges_through(edge, annots):
+        yield transitive
 
   # Given an edge into this node, generates the set of outgoing edges it should
   # be flattened into that also match the given annotations. This is how groups
@@ -354,10 +354,6 @@ class Node(object):
 # A node that has no corresponding physical file.
 class VirtualNode(Node):
   __metaclass__ = ABCMeta
-
-  @abstractmethod
-  def get_output_target(self):
-    return None
 
   def get_action(self):
     return None
@@ -525,9 +521,10 @@ class ConfigContext(object):
   # Adds a toplevel make alias for the given node.
   @export_to_build_scripts
   def add_alias(self, name, *nodes):
+    # Aliases have two names, one fully qualified and one just the basic name.
     alias = self.get_or_create_node(name, AliasNode)
-    full_name = Name.of(name)
-    self.env.add_node(full_name, alias)
+    basic_name = Name.of(name)
+    self.env.add_node(basic_name, alias)
     for node in nodes:
       alias.add_member(node)
     return alias
