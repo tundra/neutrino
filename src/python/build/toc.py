@@ -44,7 +44,8 @@ class GenerateTocAction(process.Action):
   def __init__(self, generator):
     self.generator = generator
   
-  def get_commands(self, platform, outfile, node):
+  def get_commands(self, platform, node):
+    outfile = node.get_output_path()
     infiles = node.get_input_paths(test=True)
     command = "%(generator)s %(infiles)s > %(outfile)s" % {
       "generator": self.generator.get_path(),
@@ -55,7 +56,7 @@ class GenerateTocAction(process.Action):
 
 
 # Node representing the TOC file.
-class TocNode(process.Node):
+class TocNode(process.PhysicalNode):
 
   def __init__(self, name, context):
     super(TocNode, self).__init__(name, context)

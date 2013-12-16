@@ -284,18 +284,26 @@ class Node(object):
   def get_all_flat_edges(self):
     for edge in self.edges:
       target = edge.get_target()
-      if target.is_group():
-        for sub_edge in target.get_flat_edges():
-          yield sub_edge
-      else:
-        yield edge
+      for sub_edge in target.flatten_through_edge(edge):
+        yield sub_edge
 
   # Generated the edges emanating from this node, flattening groups. Only edges
   # that match the given annotations are returned.
   def get_flat_edges(self, **annots):
-    for edge in self.get_all_flat_edges():
-      if edge.has_annotations(annots):
+    for edge in self.edges:
+      target = edge.get_target()
+      for edge in target.get_flat_edges_through(edge, annots):
         yield edge
+
+  # Given an edge into this node, generates the set of outgoing edges it should
+  # be flattened into that also match the given annotations. This is how groups
+  # are implemented: an edge into a group is expanded into the edges pointing
+  # through the group.
+  def get_flat_edges_through(self, edge, annots):
+    # The default behavior is to just yield the edge itself since only groups
+    # have special behavior that cause edges to be flattened.
+    if edge.has_annotations(annots):
+      yield edge
 
   # Returns the string file paths of all the dependencies from this node that
   # have been annotated in the specified way. Edges with additional annotations
@@ -305,16 +313,30 @@ class Node(object):
     edges = self.get_flat_edges(**annots)
     return [e.get_target().get_input_file().get_path() for e in edges]
 
-  # Returns the file that represents the output of processing this node. If
-  # the node doesn't require processing returns None.
-  def get_output_file(self):
-    return None
+  # Returns the string file path of the file to output for this node. If this
+  # node has no associated output file returns None.
+  def get_output_path(self):
+    output_file = self.get_output_file()
+    if output_file is None:
+      return None
+    else:
+      return output_file.get_path()
 
   # Returns the file that represents this file when used as input to actions.
   def get_input_file(self):
     result = self.get_output_file()
     assert not result is None
     return result
+
+  # Returns the file that represents the output of processing this node. If
+  # the node doesn't require processing returns None.
+  def get_output_file(self):
+    return None
+
+  # Returns the name of the target produced by this node.
+  @abstractmethod
+  def get_output_target(self):
+    pass
 
   # Returns the context this node was created within.
   def get_context(self):
@@ -325,14 +347,31 @@ class Node(object):
   def get_computed_dependencies(self):
     return []
 
-  # It this a group node? Groups are inlined into dependency lists from the
-  # outside -- when a node iterates its dependencies it checks whether any of
-  # them are groups.
-  def is_group(self):
-    return False
-
   def __str__(self):
     return "%s(%s, %s)" % (type(self).__name__, self.context, self.name)
+
+
+# A node that has no corresponding physical file.
+class VirtualNode(Node):
+  __metaclass__ = ABCMeta
+
+  @abstractmethod
+  def get_output_target(self):
+    return None
+
+  def get_action(self):
+    return None
+
+
+# A node associated with a physical file.
+class PhysicalNode(Node):
+
+  def get_output_target(self):
+    output_file = self.get_output_file()
+    if output_file:
+      return output_file.get_path()
+    else:
+      return None
 
 
 # A dependency between nodes. An edge is like a pointer from one node to another
@@ -371,14 +410,33 @@ class Edge(object):
 # A node that works as a stand-in for a set of other nodes. If you know you're
 # going to be using the same set of nodes in a bunch of places creating a single
 # group node to represent them is a convenient way to handle that.
-class GroupNode(Node):
+class GroupNode(VirtualNode):
 
   # Adds a member to this group.
   def add_member(self, node):
     self.add_dependency(node)
 
-  def is_group(self):
-    return True
+  # A group node doesn't produce any actual output, it is resolved directly into
+  # anything that depends on it.
+  def get_output_target(self):
+    return None
+
+  def get_flat_edges_through(self, edge, annots):
+    # If the edge we used to get here has the annotations then we consider them
+    # to be satisfied and remove any restrictions on the following nodes.
+    if edge.has_annotations(annots):
+      annots = {}
+    for target in self.get_flat_edges(**annots):
+      yield target
+
+
+# A different name for a group of nodes. Similar to a group except that a target
+# is produces so the alias can be built independently of any physical targets.
+class AliasNode(GroupNode):
+
+  # Unlike a normal group an alias causes a target to be generated.
+  def get_output_target(self):
+    return self.get_name()
 
 
 # A function marked to be exported into build scripts.
@@ -466,8 +524,13 @@ class ConfigContext(object):
 
   # Adds a toplevel make alias for the given node.
   @export_to_build_scripts
-  def add_alias(self, name, node):
-    return self.env.add_alias(name, node)
+  def add_alias(self, name, *nodes):
+    alias = self.get_or_create_node(name, AliasNode)
+    full_name = Name.of(name)
+    self.env.add_node(full_name, alias)
+    for node in nodes:
+      alias.add_member(node)
+    return alias
 
   # If a node with the given name already exists within this context returns it,
   # otherwise creates a new node by invoking the given class object with the
@@ -527,8 +590,11 @@ class Environment(object):
     if full_name in self.nodes:
       return self.nodes[full_name]
     new_node = Class(full_name.get_last_part(), *args)
-    self.nodes[full_name] = new_node
-    return new_node
+    return self.add_node(full_name, new_node)
+
+  def add_node(self, full_name, node):
+    self.nodes[full_name] = node
+    return node
 
   # Returns the node with the given full name, which must already exist.
   def get_node(self, full_name):
@@ -545,10 +611,6 @@ class Environment(object):
   # Returns the platform object.
   def get_platform(self):
     return self.platform
-
-  # Adds a toplevel alias.
-  def add_alias(self, name, node):
-    self.aliases[name] = node
 
   # Returns the map of tools for the given context.
   def get_tools(self, context):
@@ -605,22 +667,27 @@ class Environment(object):
   def write_makefile(self, out, bindir):
     makefile = Makefile()
     for node in self.nodes.values():
-      output = node.get_output_file()
-      if not output:
+      output_target = node.get_output_target()
+      if not output_target:
+        # If the node has no output target there's nothing to do to generate it.
         continue
       all_edges = node.get_flat_edges()
       direct_input_files = [e.get_target().get_input_file() for e in all_edges]
       extra_input_files = node.get_computed_dependencies()
       input_files = direct_input_files + extra_input_files
       input_paths = [f.get_path() for f in input_files]
+      commands = []
+      output_file = node.get_output_file()
+      # If there's a file to produce make sure the parent folder exists.
+      if not output_file is None:
+        output_parent = output_file.get_parent().get_path()
+        mkdir_command = self.platform.get_ensure_folder_command(output_parent)
+        commands += mkdir_command.get_actions(self)
       action = node.get_action()
-      output_path = output.get_path()
-      output_parent = output.get_parent().get_path()
-      mkdir_command = self.platform.get_ensure_folder_command(output_parent)
-      mkdir_actions = mkdir_command.get_actions(self)
-      process_command = action.get_commands(self.platform, output_path, node)
-      process_actions = process_command.get_actions(self)
-      makefile.add_target(output_path, input_paths, mkdir_actions + process_actions)
+      if not action is None:
+        process_command = action.get_commands(self.platform, node)
+        commands += process_command.get_actions(self)
+      makefile.add_target(output_target, input_paths, commands)
     for (name, target) in self.aliases.items():
       target_file = target.get_output_file().get_path()
       makefile.add_target(name, [target_file], [])
