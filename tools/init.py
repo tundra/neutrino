@@ -34,7 +34,7 @@ _SH_TEMPLATE = """\
 #
 # You generally don't want to edit it by hand. Instead, either change the init 
 # tool or copy it to another name and then edit that to avoid your changes being
-# randomly overridden.
+# randomly overwritten.
 
 # Bail out on the first error.
 set -e
@@ -76,7 +76,7 @@ REM     %(init_tool)s %(init_args)s
 REM
 REM You generally don't want to edit it by hand. Instead, either change the init 
 REM tool or copy it to another name and then edit that to avoid your changes
-REM being randomly overridden.
+REM being randomly overwritten.
 
 for /f "tokens=*" %%%%a in (
   'python %(init_tool)s --has_changed "%(init_md5)s"'
