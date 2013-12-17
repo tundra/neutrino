@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 
-# Tools for building C code.
+# Tools for building python code.
 
 
 from . import process
@@ -31,7 +31,7 @@ class PythonSourceNode(process.PhysicalNode):
     return command
 
 
-# The tools for working with C. Available in mkmk files as "c".
+# The tools for working with python. Available in mkmk files as "py".
 class PythonTools(process.ToolSet):
 
   # Returns the source file under the current path with the given name.

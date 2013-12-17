@@ -1,0 +1,19 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+file_names = [
+  "array.n",
+  "assert.n",
+  "core.n",
+  "function.n",
+  "integer.n",
+  "string.n",
+]
+
+library = n.get_library("library")
+library.set_compiler(get_external("src", "python", "neutrino", "main.py"))
+
+# Add the source file objects to the library.
+for file_name in file_names:
+  source_file = n.get_source_file(file_name)
+  library.add_source(source_file)
