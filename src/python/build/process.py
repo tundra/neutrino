@@ -304,8 +304,12 @@ class Node(object):
   # are included in the result so specifying an empty annotation set will give
   # all the dependencies.
   def get_input_paths(self, **annots):
+    return [n.get_input_file().get_path() for n in self.get_input_nodes(**annots)]
+
+  # Returns the nodes of all the dependencies from this node.
+  def get_input_nodes(self, **annots):
     edges = self.get_flat_edges(**annots)
-    return [e.get_target().get_input_file().get_path() for e in edges]
+    return [e.get_target() for e in edges]
 
   # Returns the string file path of the file to output for this node. If this
   # node has no associated output file returns None.
@@ -708,9 +712,11 @@ class Environment(object):
   @staticmethod
   def generate_tool_modules():
     from . import c
+    from . import py
     from . import test
     from . import toc
     yield ('c', c)
+    yield ('py', py)
     yield ('test', test)
     yield ('toc', toc)
 

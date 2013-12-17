@@ -35,13 +35,16 @@ class ExecutableNode(process.PhysicalNode):
     inpaths = self.get_input_paths(obj=True)
     return platform.get_executable_compile_command(outpath, inpaths)
 
+  def get_run_command_line(self, platform):
+    return self.get_output_file().get_path()
+
 
 # A node representing a C source file.
 _HEADER_PATTERN = re.compile(r'#include\s+"([^"]+)"')
-class SourceNode(process.PhysicalNode):
+class CSourceNode(process.PhysicalNode):
 
   def __init__(self, name, context, handle):
-    super(SourceNode, self).__init__(name, context)
+    super(CSourceNode, self).__init__(name, context)
     self.handle = handle
     self.includes = set()
     self.headers = None
@@ -55,7 +58,7 @@ class SourceNode(process.PhysicalNode):
   # Returns the list of names included into the given file. Used to calculate
   # the transitive includes.
   def get_include_names(self, handle):
-    return handle.get_attribute("include names", SourceNode.scan_for_include_names)
+    return handle.get_attribute("include names", CSourceNode.scan_for_include_names)
 
   # Scans a file for includes. You generally don't want to call this directly
   # because it's slow, instead use get_include_names which caches the result on
@@ -166,7 +169,7 @@ class CTools(process.ToolSet):
   # Returns the source file under the current path with the given name.
   def get_source_file(self, name):
     handle = self.context.get_file(name)
-    return self.get_context().get_or_create_node(name, SourceNode, handle)
+    return self.get_context().get_or_create_node(name, CSourceNode, handle)
 
   # Returns an empty executable node that can then be configured.
   def get_executable(self, name):

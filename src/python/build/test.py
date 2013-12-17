@@ -23,7 +23,8 @@ class ExecTestCaseNode(process.PhysicalNode):
     return self.get_context().get_outdir_file(filename)
 
   def get_command_line(self, platform):
-    [runner] = self.get_input_paths(runner=True)
+    [runner_node] = self.get_input_nodes(runner=True)
+    runner = runner_node.get_run_command_line(platform)
     outpath = self.get_output_path()
     args = " ".join(self.get_arguments())
     raw_command_line = "%s %s" % (runner, args)
