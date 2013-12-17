@@ -10,36 +10,6 @@ from . import process
 import re
 
 
-# Compiles a source file into an object file.
-class CompileObjectAction(process.Action):
-
-  def __init__(self, includepaths):
-    self.includepaths = includepaths
-
-  def get_commands(self, platform, node):
-    outpath = node.get_output_path()
-    inpaths = node.get_input_paths(src=True)
-    includes = [p.get_path() for p in self.includepaths]
-    return platform.get_object_compile_command(outpath, inpaths,
-      includepaths=includes)
-
-
-# Compiles a set of object files into an executable.
-class CompileExecutableAction(process.Action):
-
-  def get_commands(self, platform, node):
-    outpath = node.get_output_path()
-    inpaths = node.get_input_paths(obj=True)
-    return platform.get_executable_compile_command(outpath, inpaths)
-
-
-# Prints the build environment to stdout.
-class PrintEnvAction(process.Action):
-
-  def get_commands(self, platform, node):
-    return platform.get_print_env_command()
-
-
 # A build dependency node that represents an executable.
 class ExecutableNode(process.PhysicalNode):
 
@@ -60,8 +30,10 @@ class ExecutableNode(process.PhysicalNode):
   def add_object(self, node):
     self.add_dependency(node, obj=True)
 
-  def get_action(self):
-    return CompileExecutableAction()
+  def get_command_line(self, platform):
+    outpath = self.get_output_path()
+    inpaths = self.get_input_paths(obj=True)
+    return platform.get_executable_compile_command(outpath, inpaths)
 
 
 # A node representing a C source file.
@@ -169,8 +141,13 @@ class ObjectNode(process.PhysicalNode):
     object_name = "%s.%s" % (source_name_root, ext)
     return self.get_context().get_outdir_file(object_name)
 
-  def get_action(self):
-    return CompileObjectAction(self.source.get_includes())
+  def get_command_line(self, platform):
+    includepaths = self.source.get_includes()
+    outpath = self.get_output_path()
+    inpaths = self.get_input_paths(src=True)
+    includes = [p.get_path() for p in includepaths]
+    return platform.get_object_compile_command(outpath, inpaths,
+      includepaths=includes)
 
   def get_computed_dependencies(self):
     return self.get_source().get_included_headers()
@@ -179,8 +156,8 @@ class ObjectNode(process.PhysicalNode):
 # Node that represents the action of printing the build environment to stdout.
 class EnvPrinterNode(process.VirtualNode):
 
-  def get_action(self):
-    return PrintEnvAction()
+  def get_command_line(self, platform):
+    return platform.get_print_env_command()
 
 
 # The tools for working with C. Available in mkmk files as "c".

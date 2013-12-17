@@ -9,17 +9,6 @@ import os
 from . import process
 
 
-# Prints the build environment to stdout.
-class RunExecTestCaseAction(process.Action):
-
-  def get_commands(self, platform, node):
-    [runner] = node.get_input_paths(runner=True)
-    outpath = node.get_output_path()
-    args = " ".join(node.get_arguments())
-    command_line = "%s %s" % (runner, args)
-    return platform.get_safe_tee_command(command_line, outpath)
-
-
 # A build dependency node that represents running a test case.
 class ExecTestCaseNode(process.PhysicalNode):
 
@@ -33,8 +22,12 @@ class ExecTestCaseNode(process.PhysicalNode):
     filename = "%s.run" % subject_root
     return self.get_context().get_outdir_file(filename)
 
-  def get_action(self):
-    return RunExecTestCaseAction()
+  def get_command_line(self, platform):
+    [runner] = self.get_input_paths(runner=True)
+    outpath = self.get_output_path()
+    args = " ".join(self.get_arguments())
+    raw_command_line = "%s %s" % (runner, args)
+    return platform.get_safe_tee_command(raw_command_line, outpath)
 
   # Sets the executable used to run this test case.
   def set_runner(self, node):

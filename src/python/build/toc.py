@@ -38,23 +38,6 @@ if __name__ == '__main__':
 from . import process
 
 
-# Action that produces a test TOC from a set of C test files.
-class GenerateTocAction(process.Action):
-
-  def __init__(self, generator):
-    self.generator = generator
-  
-  def get_commands(self, platform, node):
-    outfile = node.get_output_path()
-    infiles = node.get_input_paths(test=True)
-    command = "%(generator)s %(infiles)s > %(outfile)s" % {
-      "generator": self.generator.get_path(),
-      "infiles": " ".join(infiles),
-      "outfile": outfile
-    }
-    return process.Command(command)
-
-
 # Node representing the TOC file.
 class TocNode(process.PhysicalNode):
 
@@ -65,8 +48,15 @@ class TocNode(process.PhysicalNode):
   def get_output_file(self):
     return self.get_context().get_outdir_file(self.get_name())
 
-  def get_action(self):
-    return GenerateTocAction(self.generator)
+  def get_command_line(self, platform):
+    outfile = self.get_output_path()
+    infiles = self.get_input_paths(test=True)
+    command = "%(generator)s %(infiles)s > %(outfile)s" % {
+      "generator": self.generator.get_path(),
+      "infiles": " ".join(infiles),
+      "outfile": outfile
+    }
+    return process.Command(command)
 
   # Add a test case to include in the TOC.
   def add_test(self, node):
