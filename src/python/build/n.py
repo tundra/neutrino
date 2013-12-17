@@ -50,16 +50,6 @@ class NLibrary(process.PhysicalNode):
     command = "%s --compile %s" % (compile_command_line, options.base64_encode())
     return process.Command(command)
 
-#  @echo Building library $@
-#  @mkdir -p $(shell dirname $@)
-#  @./src/python/neutrino/main.py --compile                                     \
-#    `$(PLOPT)                                                                  \
-#      --build-library {                                                        \
-#        --out $@                                                               \
-#        --modules [ $(CORE_LIBRARY_SRCS) ]                                     \
-#      }`
-#    return platform.get_safe_tee_command(raw_command_line, outpath)
-
 
 # The tools for working with neutrino. Available in mkmk files as "n".
 class NTools(process.ToolSet):
