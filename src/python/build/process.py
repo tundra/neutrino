@@ -9,20 +9,6 @@ import re
 import sys
 
 
-# Abstract supertype of actions. An action represents the thing to do to
-# generate an output from a set of inputs.
-class Action(object):
-  __metaclass__ = ABCMeta
-
-  # Returns an array of strings, each of which is a command to execute to 
-  # produce the requested output from the given inputs. The platform object
-  # can be used to implement platform-dependent operations (which is more or
-  # less all of them). The parent folder of the output can be assumed to exist.
-  @abstractmethod
-  def get_commands(self, platform, outpath, inpaths):
-    pass
-
-
 # A command to be executed on the command-line along with a comment. In non-
 # verbose mode only the comment will be displayed while building.
 class Command(object):
@@ -370,7 +356,7 @@ class VirtualNode(Node):
   def get_output_target(self):
     return self.get_name()
 
-  def get_action(self):
+  def get_command_line(self, platform):
     return None
 
   def is_phony(self):
@@ -708,9 +694,8 @@ class Environment(object):
         output_parent = output_file.get_parent().get_path()
         mkdir_command = self.platform.get_ensure_folder_command(output_parent)
         commands += mkdir_command.get_actions(self)
-      action = node.get_action()
-      if not action is None:
-        process_command = action.get_commands(self.platform, node)
+      process_command = node.get_command_line(self.platform)
+      if not process_command is None:
         commands += process_command.get_actions(self)
       makefile.add_target(output_target, input_paths, commands, node.is_phony())
     clean_command = self.platform.get_clear_folder_command(bindir.get_path())
