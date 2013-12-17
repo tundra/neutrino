@@ -16,3 +16,5 @@ add_alias("run-c-tests", get_external("tests", "c", "run-tests"))
 
 # Add some hooks for describing the build env.
 c.get_env_printer("c-env")
+
+add_alias("libn", get_external("src", "n", "library"))

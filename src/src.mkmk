@@ -3,3 +3,4 @@
 
 include('c', 'src_c.mkmk')
 include('python', 'src_python.mkmk')
+include('n', 'src_n.mkmk')
