@@ -12,5 +12,7 @@ ctrino = add_alias("ctrino", get_external("src", "c", "ctrino"))
 c_tests = add_alias("c-tests", get_external("tests", "c", "main"))
 add_alias("c-all", ctrino, c_tests)
 
+add_alias("run-c-tests", get_external("tests", "c", "run-tests"))
+
 # Add some hooks for describing the build env.
 c.get_env_printer("c-env")

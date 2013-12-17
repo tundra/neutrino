@@ -46,6 +46,13 @@ class Toolchain(object):
   def get_ensure_folder_command(self, folder):
     pass
 
+  # Returns the command that runs the given command line, printing the output
+  # and also storing it in the given outpath, but deletes the outpath again and
+  # fails if the command line fails. Sort of how you wish tee could work.
+  @abstractmethod
+  def get_safe_tee_command(self, command_line, outpath):
+    pass
+
 
 # The gcc toolchain. Clang is gcc-compatible so this works for clang too.
 class Gcc(Toolchain):
@@ -107,6 +114,19 @@ class Gcc(Toolchain):
     command = "rm -rf %s" % (process.shell_escape(folder))
     comment = "Clearing '%s'" % folder
     return process.Command(command).set_comment(comment)
+
+  def get_safe_tee_command(self, command_line, outpath):
+    params = {
+      "command_line": command_line,
+      "outpath": outpath
+    }
+    parts = [
+      "%(command_line)s > %(outpath)s || echo > %(outpath)s.fail",
+      "cat %(outpath)s",
+      "if [ -f %(outpath)s.fail ]; then rm %(outpath)s %(outpath)s.fail; false; else true; fi",
+    ]
+    comment = "Running %(command_line)s" % params
+    return process.Command(*[part % params for part in parts]).set_comment(comment)
 
 
 # The Microsoft visual studio toolchain.
@@ -195,6 +215,19 @@ class MSVC(Toolchain):
     comment = "Clearing '%s'" % path
     action = "if exist %(path)s rmdir /s /q %(path)s" % {"path": path}
     return process.Command(action).set_comment(comment)
+
+  def get_safe_tee_command(self, command_line, outpath):
+    params = {
+      "command_line": command_line,
+      "outpath": outpath
+    }
+    parts = [
+      "%(command_line)s > %(outpath)s || echo > %(outpath)s.fail",
+      "type %(outpath)s",
+      "if exist %(outpath)s.fail (del %(outpath)s %(outpath)s.fail && exit 1) else (exit 0)",
+    ]
+    comment = "Running %(command_line)s" % params
+    return process.Command(*[part % params for part in parts]).set_comment(comment)
 
 
 # Returns the toolchain with the given name

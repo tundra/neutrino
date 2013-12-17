@@ -723,8 +723,10 @@ class Environment(object):
   @staticmethod
   def generate_tool_modules():
     from . import c
+    from . import test
     from . import toc
     yield ('c', c)
+    yield ('test', test)
     yield ('toc', toc)
 
 
