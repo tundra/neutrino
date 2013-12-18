@@ -1,0 +1,27 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import os.path
+
+file_names = [
+  "anything.n",
+  "array.n",
+  "field.n",
+  "float32.n",
+  "function.n",
+  "integer.n",
+  "is.n",
+]
+
+suite = get_group("suite")
+compiler = get_external("src", "python", "neutrino", "main.py")
+runner = get_external("src", "c", "ctrino")
+
+for file_name in file_names:
+  # Compile the source file to a library.
+  source_file = n.get_source_file(file_name)
+  (filename, ext) = os.path.splitext(file_name)
+  module = n.get_library(filename)
+  module.set_compiler(compiler)
+  module.add_source(source_file)
+  suite.add_member(module)

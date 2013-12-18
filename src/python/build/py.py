@@ -24,11 +24,13 @@ class PythonSourceNode(process.PhysicalNode):
     return self
 
   def get_run_command_line(self, platform):
-    path = ":".join(sorted(list(self.pythonpath)))
-    command = "python %s" % self.handle.get_path()
-    if path:
-      command = "PYTHONPATH=\"$PYTHONPATH:%s\" %s" % (path, command)
-    return command
+    command = "python -B %s" % self.handle.get_path()
+    if self.pythonpath:
+      pythonpath = ":".join(sorted(list(self.pythonpath)))
+      env = [("PYTHONPATH", pythonpath, "append")]
+      return platform.run_with_environment(command, env)
+    else:
+      return command
 
 
 # The tools for working with python. Available in mkmk files as "py".

@@ -3,7 +3,11 @@
 
 include('c', 'tests_c.mkmk')
 include('python', 'tests_python.mkmk')
+include('n', 'tests_n.mkmk')
 
 run_py_tests = add_alias("run-py-tests")
 run_py_tests.add_member(get_external("tests", "python", "plankton", "suite"))
 run_py_tests.add_member(get_external("tests", "python", "neutrino", "suite"))
+
+run_n_tests = add_alias("run-n-tests")
+run_n_tests.add_member(get_external("tests", "n", "nunit", "suite"))
