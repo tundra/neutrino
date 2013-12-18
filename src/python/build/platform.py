@@ -53,6 +53,12 @@ class Toolchain(object):
   def get_safe_tee_command(self, command_line, outpath):
     pass
 
+  # Returns a command the executes the given command in an environment augmented
+  # with the given bindings.
+  @abstractmethod
+  def run_with_environment(self, command, env):
+    pass
+
 
 # The gcc toolchain. Clang is gcc-compatible so this works for clang too.
 class Gcc(Toolchain):
@@ -127,6 +133,18 @@ class Gcc(Toolchain):
     ]
     comment = "Running %(command_line)s" % params
     return process.Command(*[part % params for part in parts]).set_comment(comment)
+
+  def run_with_environment(self, command, env):
+    envs = []
+    for (name, value, mode) in env:
+      if mode == "append":
+        envs.append("%(name)s=$%(name)s:%(value)s" % {
+          "name": name,
+          "value": value
+        })
+      else:
+        raise Exception("Unknown mode %s" % mode)
+    return "%s %s" % (" ".join(envs), command)
 
 
 # The Microsoft visual studio toolchain.
@@ -229,6 +247,17 @@ class MSVC(Toolchain):
     comment = "Running %(command_line)s" % params
     return process.Command(*[part % params for part in parts]).set_comment(comment)
 
+  def run_with_environment(self, command, env):
+    envs = []
+    for (name, value, mode) in env:
+      if mode == "append":
+        envs.append("set %(name)s=%%%(name)s%%:%(value)s" % {
+          "name": name,
+          "value": value
+        })
+      else:
+        raise Exception("Unknown mode %s" % mode)
+    return "%s && %s" % (" && ".join(envs), command)
 
 # Returns the toolchain with the given name
 def get_toolchain(name, config):

@@ -5,7 +5,7 @@
 # Utilities for parsing command-line options into plankton.
 
 
-import codec
+from . import codec
 import collections
 import re
 import sys
@@ -184,7 +184,7 @@ class Tokenizer(AbstractScanner):
 def value_to_string(value):
   if isinstance(value, collections.OrderedDict):
     mappings = ['--%s %s' % (value_to_string(k), value_to_string(v))
-      for (k, v) in value.iteritems()]
+      for (k, v) in value.items()]
     return '{%s}' % ' '.join(mappings)
   elif isinstance(value, list):
     return '[%s]' % ' '.join(map(value_to_string, value))
@@ -208,6 +208,9 @@ class ArgumentElement(object):
       return False
     return self.value == that.value
 
+  def __hash__(self):
+    return hash(self.value)
+
   def __str__(self):
     return '%s' % value_to_string(self.value)
 
@@ -228,6 +231,9 @@ class FlagElement(object):
     if not isinstance(that, FlagElement):
       return False
     return (self.key == that.key) and (self.value == that.value)
+
+  def __hash__(self):
+    return hash(self.key) ^ id(self.value)
 
   def __str__(self):
     if self.value is None:
@@ -316,10 +322,13 @@ class Options(object):
       return False
     if len(self.elements) != len(that.elements):
       return False
-    for i in xrange(0, len(self.elements)):
+    for i in range(0, len(self.elements)):
       if not (self.elements[i] == that.elements[i]):
         return False
     return True
+
+  def __hash__(self):
+    return hash(tuple(self.elements))
 
 
 # Command-line option parser.

@@ -46,6 +46,9 @@ class EnvRef(object):
     assert isinstance(that, EnvRef)
     return self.key == that.key
 
+  def __hash__(self):
+    return hash(self.key)
+
 
 
 class Context(object):

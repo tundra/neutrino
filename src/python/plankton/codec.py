@@ -100,8 +100,9 @@ class DataOutputStream(object):
   # Emit a tagged string.
   def visit_string(self, value):
     self.assm.tag(_STRING_TAG)
-    self.assm.uint32(len(value))
-    self.assm.blob(value)
+    bytes = bytearray(value, "utf-8")
+    self.assm.uint32(len(bytes))
+    self.assm.blob(bytes)
 
   # Emit a tagged array.
   def visit_array(self, value):
@@ -395,7 +396,7 @@ class Encoder(object):
 
   # Encodes the given object into a base64 string.
   def base64encode(self, obj):
-    return base64.b64encode(str(self.encode(obj)))
+    return base64.b64encode(self.encode(obj))
 
   # Sets the environment resolver to use when encoding. If the given value is
   # None the resolver is left unchanged.
@@ -487,7 +488,7 @@ class Stringifier(object):
     return "{%s}" % ", ".join([
       "%s: %s" % (self.s(k), self.s(v))
         for (k, v)
-        in value.iteritems()
+        in value.items()
     ])
 
   def visit_string(self, value):
@@ -535,7 +536,7 @@ class ClassMetaInfo(object):
 
   # Scan through the class members and store the handlers appropriately
   def analyze(self):
-    for (name, value) in self.klass.__dict__.iteritems():
+    for (name, value) in self.klass.__dict__.items():
       value = peel_method_wrappers(value)
       attribs = MethodAttributes.get(value)
       if attribs.is_header_getter:

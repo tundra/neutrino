@@ -30,7 +30,7 @@ class Command(object):
     if not env.get_platform().get_config_option('noisy'):
       parts = ["@%s" % a for a in parts]
     if self.comment:
-      parts = ["@echo %s" % self.comment] + parts
+      parts = ["@echo '%s'" % self.comment] + parts
     return parts
 
 
