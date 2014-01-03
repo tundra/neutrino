@@ -1,4 +1,5 @@
-# The default build.
+# The default build. It really makes no difference which target is the default
+# and which are defined though the build matrix.
 language: c
 compiler: gcc
 script: ./configure && ./build.sh run-tests
