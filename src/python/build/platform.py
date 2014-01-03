@@ -70,7 +70,6 @@ class Gcc(Toolchain):
       "-Wno-unused-parameter",      # Sometime you don't need all the params.
       "-Wno-unused-function",       # Not all header functions are used in all.
                                     #   the files that include them.
-      "-Wno-unused-local-typedefs", # Some macros generate unused typedefs.
       "-std=c99",
     ]
     # Debug flags
