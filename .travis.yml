@@ -7,10 +7,9 @@ script: ./configure && ./build.sh run-tests
 matrix:
   include:
     # Test a clang build in debug mode under valgrind.
-    # TODO: reenable valgrind
     - language: c
       compiler: clang
-      script: ./configure --debug && ./build.sh run-tests
+      script: ./configure --debug --valgrind && ./build.sh run-tests
       install: sudo apt-get update && sudo apt-get install valgrind
     # Test everything using an optimized clang build.
     - language: c
