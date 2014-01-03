@@ -235,6 +235,10 @@ def generate_build_script(flags):
   }
   with open(filename, "wt") as out:
     out.write(makefile_src)
+  # Make the build script executable
+  import stat
+  st = os.stat(filename)
+  os.chmod(filename, st.st_mode | stat.S_IEXEC)
 
 
 def main():
