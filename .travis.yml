@@ -1,6 +1,3 @@
-language:
-  - c
-
 matrix:
   include:
     # Test a clang build in debug mode under valgrind.
