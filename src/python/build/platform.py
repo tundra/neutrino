@@ -131,7 +131,7 @@ class Gcc(Toolchain):
       "if [ -f %(outpath)s.fail ]; then rm %(outpath)s %(outpath)s.fail; false; else true; fi",
     ]
     comment = "Running %(command_line)s" % params
-    return process.Command(*[part % params for part in parts]).set_comment(comment)
+    return process.Command(*[part % params for part in parts])
 
   def run_with_environment(self, command, env):
     envs = []
@@ -244,7 +244,7 @@ class MSVC(Toolchain):
       "if exist %(outpath)s.fail (del %(outpath)s %(outpath)s.fail && exit 1) else (exit 0)",
     ]
     comment = "Running %(command_line)s" % params
-    return process.Command(*[part % params for part in parts]).set_comment(comment)
+    return process.Command(*[part % params for part in parts])
 
   def run_with_environment(self, command, env):
     envs = []
