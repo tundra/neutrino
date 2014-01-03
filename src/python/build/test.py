@@ -28,11 +28,18 @@ class ExecTestCaseNode(process.PhysicalNode):
     outpath = self.get_output_path()
     args = " ".join(self.get_arguments())
     raw_command_line = "%s %s" % (runner, args)
-    return platform.get_safe_tee_command(raw_command_line, outpath)
+    result = platform.get_safe_tee_command(raw_command_line, outpath)
+    result.set_comment("Running %s" % self.get_full_name())
+    return result
 
   # Sets the executable used to run this test case.
   def set_runner(self, node):
     self.add_dependency(node, runner=True)
+    return self
+
+  # Sets the title of the test, the message to print when running it.
+  def set_title(self, title):
+    self.comment = title
     return self
 
   # Sets the (string) arguments to pass to the runner to execute the test.

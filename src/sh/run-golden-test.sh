@@ -155,3 +155,5 @@ if [ $HAS_INPUT -eq 1 -o $HAS_VALUE -eq 1 -o $HAS_OUTPUT -eq 1 -o -$HAS_END -eq 
   echo "Incomplete test"
   exit 1
 fi
+
+echo
