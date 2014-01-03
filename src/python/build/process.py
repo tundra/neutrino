@@ -378,6 +378,21 @@ class PhysicalNode(Node):
       return None
 
 
+# A "dumb" node representing a file. If you need any kind of file type specific
+# behavior use a subclass of PhysicalNode instead.
+class FileNode(PhysicalNode):
+  
+  def __init__(self, name, context, handle):
+    super(FileNode, self).__init__(name, context)
+    self.handle = handle
+
+  def get_input_file(self):
+    return self.handle
+
+  def get_run_command_line(self, platform):
+    return self.handle.get_path()
+
+
 # A dependency between nodes. An edge is like a pointer from one node to another
 # but additionally carries a set of annotations that control what the pointer
 # means. For instance, an object file may depend on both a source file and its
@@ -525,6 +540,17 @@ class ConfigContext(object):
   @export_to_build_scripts
   def get_file(self, *file_path):
     return self.home.get_child(*file_path)
+
+  # Returns a node representing a source file with the given name.
+  @export_to_build_scripts
+  def get_source_file(self, *file_path):
+    file = self.home.get_child(*file_path)
+    return self.get_or_create_node(Name.of(*file_path), FileNode, file)
+
+  # Creates a source file that represents the given source file.
+  @export_to_build_scripts
+  def wrap_source_file(self, file):
+    return FileNode(None, self, file)
 
   # Adds a toplevel make alias for the given node.
   @export_to_build_scripts

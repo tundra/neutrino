@@ -11,3 +11,15 @@ run_py_tests.add_member(get_external("tests", "python", "neutrino", "suite"))
 
 run_n_tests = add_alias("run-n-tests")
 run_n_tests.add_member(get_external("tests", "n", "nunit", "suite"))
+run_n_tests.add_member(get_external("tests", "n", "golden", "suite"))
+
+run_c_tests = add_alias("run-c-tests")
+run_c_tests.add_member(get_external("tests", "c", "run-tests"))
+
+run_ctrino_tests = add_alias("run-ctrino-tests")
+run_ctrino_tests.add_member(run_c_tests)
+run_ctrino_tests.add_member(run_n_tests)
+
+run_tests = add_alias("run-tests")
+run_tests.add_member(run_py_tests)
+run_tests.add_member(run_ctrino_tests)

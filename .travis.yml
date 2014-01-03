@@ -4,19 +4,20 @@ language:
 matrix:
   include:
     # Test a clang build in debug mode under valgrind.
+    # TODO: reenable valgrind
     - language: c
       compiler: clang
-      script: make MODE=dbg VALGRIND=on test
+      script: ./configure --debug && ./build.sh run-tests
       install: sudo apt-get update && sudo apt-get install valgrind
     # Test everything using an optimized clang build.
     - language: c
       compiler: clang
-      script: make MODE=opt test-ctrino
+      script: ./configure && ./build.sh run-ctrino-tests
     # Test with checks disabled.
     - languate: c
       compiler: clang
-      script: make MODE=opt CHECKS=off test-ctrino
+      script: ./configure --nochecks && ./build.sh run-ctrino-tests
     # Check that the C code compiles using gcc.
     - language: c
       compiler: gcc
-      script: make MODE=dbg test-ctrino
+      script: ./configure --debug && ./build.sh run-ctrino-tests
