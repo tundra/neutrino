@@ -9,6 +9,10 @@ import os.path
 from . import process
 import re
 
+_VALGRIND_COMMAND = [
+  "valgrind", "-q", "--leak-check=full", "--error-exitcode=1"
+]
+
 
 # A build dependency node that represents an executable.
 class ExecutableNode(process.PhysicalNode):
@@ -36,7 +40,11 @@ class ExecutableNode(process.PhysicalNode):
     return platform.get_executable_compile_command(outpath, inpaths)
 
   def get_run_command_line(self, platform):
-    return self.get_output_file().get_path()
+    exec_command = self.get_output_file().get_path()
+    if platform.get_config_option('valgrind'):
+      return " ".join(_VALGRIND_COMMAND + [exec_command])
+    else:
+      return exec_command
 
 
 # A node representing a C source file.

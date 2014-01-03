@@ -13,6 +13,7 @@ _MKMK_FLAGS = [
   ('nochecks', False, 'store_true'),
   ('warn', False, 'store_true'),
   ('noisy', False, 'store_true'),
+  ('valgrind', False, 'store_true'),
 ]
 
 
