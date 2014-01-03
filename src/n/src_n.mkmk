@@ -10,10 +10,15 @@ file_names = [
   "string.n",
 ]
 
+# The library compiled from all the source files.
 library = n.get_library("library")
 library.set_compiler(get_external("src", "python", "neutrino", "main.py"))
+
+# The source files.
+files = get_group("files")
 
 # Add the source file objects to the library.
 for file_name in file_names:
   source_file = n.get_source_file(file_name)
+  files.add_member(source_file)
   library.add_source(source_file)

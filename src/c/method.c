@@ -222,7 +222,7 @@ static value_t find_best_match(runtime_t *runtime, value_t current,
     score_t score = gsNoMatch;
     for (size_t i = 0; i < length; i++) {
       value_t parent = get_array_buffer_at(parents, i);
-      score_t next_score;
+      score_t next_score = 0;
       TRY(find_best_match(runtime, parent, target, current_score + 1, space,
           &next_score));
       score = best_score(score, next_score);

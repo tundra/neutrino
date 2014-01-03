@@ -70,7 +70,6 @@ class Gcc(Toolchain):
       "-Wno-unused-parameter",      # Sometime you don't need all the params.
       "-Wno-unused-function",       # Not all header functions are used in all.
                                     #   the files that include them.
-      "-Wno-unused-local-typedefs", # Some macros generate unused typedefs.
       "-std=c99",
     ]
     # Debug flags
@@ -102,7 +101,7 @@ class Gcc(Toolchain):
     return "o"
 
   def get_executable_compile_command(self, output, inputs):
-    command = "$(CC) -o %(output)s %(inputs)s" % {
+    command = "$(CC) -o %(output)s %(inputs)s -rdynamic -lrt" % {
       "output": process.shell_escape(output),
       "inputs": " ".join(map(process.shell_escape, inputs))
     }

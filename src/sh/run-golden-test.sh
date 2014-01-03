@@ -9,19 +9,16 @@
 
 # Parse command-line arguments.
 
-PLOPT=tools/plopt
+SRC=$(dirname $(dirname $0))
+PLOPT=$SRC/../tools/plopt
 TEST_FILE=
-OUTPUT_FILE=
 EXECUTABLE=
 MODULES=
 
-while getopts "t:o:e:m:l:" OPT; do
+while getopts "t:e:m:l:" OPT; do
   case "$OPT" in
     t)
       TEST_FILE="$OPTARG"
-      ;;
-    o)
-      OUTPUT_FILE="$OPTARG"
       ;;
     e)
       EXECUTABLE="$OPTARG"
@@ -34,10 +31,6 @@ while getopts "t:o:e:m:l:" OPT; do
       ;;
   esac
 done
-
-# Clear the output file so we're ready to create a new one.
-
-rm -f "$OUTPUT_FILE"
 
 # Scan through the test file and pick out INPUT/VALUE clauses. This uses a
 # state machine-like structure that stores them in variables and when the
@@ -82,6 +75,7 @@ check_result() {
     printf "  Found: '%s'\\n" "$FOUND"
     COMMAND="$4"
     printf "  Compile: $COMMAND '$INPUT' --compile `$PLOPT --modules [ $MODULES ]` --base64\\n"
+    RUN="$5"
     printf "  Run: $RUN\\n"
     exit 1
   fi
@@ -135,7 +129,7 @@ while read LINE; do
   fi
   if [ $HAS_INPUT -eq 1 -a $HAS_VALUE -eq 1 ]; then
     # If we now have both an INPUT and a VALUE line run the test.
-    COMMAND="./src/python/neutrino/main.py --expression"
+    COMMAND="$SRC/python/neutrino/main.py --expression"
     run_test "$COMMAND" "$INPUT" "$VALUE" "$EXECUTABLE --print-value $MAIN_OPTIONS"
     INPUT=
     HAS_INPUT=0
@@ -143,7 +137,7 @@ while read LINE; do
     HAS_VALUE=0
   elif [ $HAS_INPUT -eq 1 -a $HAS_OUTPUT -eq 1 -a $HAS_END -eq 1 ]; then
     # If we now have both an INPUT and an OUTPUT line run the test.
-    COMMAND="./src/python/neutrino/main.py --program"
+    COMMAND="$SRC/python/neutrino/main.py --program"
     run_test "$COMMAND" "$INPUT" "$OUTPUT" "$EXECUTABLE $MAIN_OPTIONS"
     INPUT=
     HAS_INPUT=0
@@ -161,6 +155,3 @@ if [ $HAS_INPUT -eq 1 -o $HAS_VALUE -eq 1 -o $HAS_OUTPUT -eq 1 -o -$HAS_END -eq 
   echo "Incomplete test"
   exit 1
 fi
-
-echo
-touch "$OUTPUT_FILE"
