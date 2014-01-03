@@ -101,7 +101,7 @@ class Gcc(Toolchain):
     return "o"
 
   def get_executable_compile_command(self, output, inputs):
-    command = "$(CC) -o %(output)s %(inputs)s" % {
+    command = "$(CC) -o %(output)s %(inputs)s -rdynamic -lrt" % {
       "output": process.shell_escape(output),
       "inputs": " ".join(map(process.shell_escape, inputs))
     }
