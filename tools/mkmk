@@ -25,6 +25,7 @@ def parse_options(argv):
   parser.add_option('--warn', default=False, action='store_true')
   parser.add_option('--noisy', default=False, action='store_true')
   parser.add_option('--valgrind', default=False, action='store_true')
+  parser.add_option('--gcc48', default=False, action='store_true')
   parser.add_option('--toolchain', default='gcc')
   (flags, args) = parser.parse_args(argv)
   return flags
@@ -38,6 +39,7 @@ def main():
     "warn": flags.warn,
     "noisy": flags.noisy,
     "valgrind": flags.valgrind,
+    "gcc48": flags.gcc48,
   }
   build.process.main(root=flags.root, bindir=flags.bindir, config=config,
     dot=flags.dot, makefile=flags.makefile, toolchain=flags.toolchain)

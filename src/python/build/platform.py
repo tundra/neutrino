@@ -72,6 +72,9 @@ class Gcc(Toolchain):
                                     #   the files that include them.
       "-std=c99",
     ]
+    # Annoyingly this warning option only exists in gcc > 4.8 and not in clang.
+    if self.get_config_option("gcc48"):
+      result += ["-Wno-unused-local-typedefs"]
     # Debug flags
     if self.get_config_option("debug"):
       result += ["-O0", "-g"]
