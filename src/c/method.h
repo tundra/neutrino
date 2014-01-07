@@ -16,7 +16,7 @@ typedef uint32_t score_t;
 // Input to a signature map lookup. This is the stuff that's fixed across the
 // whole lookup. This is kept in a separate struct such that it can be passed
 // to any part of the lookup that needs it separately from the rest of the
-// lookup state which is more transient and error prone.
+// lookup state which is more transient and less likely to be useful.
 typedef struct {
   // The runtime we're looking up within.
   runtime_t *runtime;
@@ -272,7 +272,7 @@ value_t do_signature_map_lookup(runtime_t *runtime, value_t record, frame_t *fra
 value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
     value_t sigmap, value_t space);
 
-// Returns the argument map that describes the location of the argument of the
+// Returns the argument map that describes the location of the arguments of the
 // signature map lookup match recorded in the given lookup state. If there is
 // no match recorded an arbitrary non-signal value will be returned.
 value_t get_signature_map_lookup_argument_map(signature_map_lookup_state_t *state);
