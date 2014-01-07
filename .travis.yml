@@ -2,24 +2,24 @@
 # and which are defined though the build matrix.
 language: c
 compiler: gcc
-script: ./configure && ./build.sh run-tests
+script: ./configure --noisy && ./build.sh run-tests
 
 matrix:
   include:
     # Test a clang build in debug mode under valgrind.
     - language: c
       compiler: clang
-      script: ./configure --debug --valgrind && ./build.sh run-tests
+      script: ./configure --debug --valgrind --noisy && ./build.sh run-tests
       install: sudo apt-get update && sudo apt-get install valgrind
     # Test everything using an optimized clang build.
     - language: c
       compiler: clang
-      script: ./configure && ./build.sh run-ctrino-tests
+      script: ./configure --noisy && ./build.sh run-ctrino-tests
     # Test with checks disabled.
     - languate: c
       compiler: clang
-      script: ./configure --nochecks && ./build.sh run-ctrino-tests
+      script: ./configure --nochecks --noisy && ./build.sh run-ctrino-tests
     # Check that the C code compiles using gcc.
     - language: c
       compiler: gcc
-      script: ./configure --debug && ./build.sh run-ctrino-tests
+      script: ./configure --debug --noisy && ./build.sh run-ctrino-tests
