@@ -10,6 +10,15 @@
 #include "value-inl.h"
 
 
+void signature_map_lookup_input_init(signature_map_lookup_input_t *input,
+    runtime_t *runtime, value_t record, frame_t *frame, void *data) {
+  input->runtime = runtime;
+  input->record = record;
+  input->frame = frame;
+  input->data = data;
+}
+
+
 // --- S i g n a t u r e ---
 
 ACCESSORS_IMPL(Signature, signature, acInFamilyOpt, ofArray, Tags, tags);
@@ -67,10 +76,9 @@ void match_info_init(match_info_t *info, score_t *scores, size_t *offsets,
   info->capacity = capacity;
 }
 
-value_t match_signature(runtime_t *runtime, value_t self, value_t record,
-    frame_t *frame, value_t space, match_info_t *match_info,
-    match_result_t *result_out) {
-  size_t argument_count = get_invocation_record_argument_count(record);
+value_t match_signature(value_t self, signature_map_lookup_input_t *input,
+    value_t space, match_info_t *match_info, match_result_t *result_out) {
+  size_t argument_count = get_invocation_record_argument_count(input->record);
   CHECK_REL("score array too short", argument_count, <=, match_info->capacity);
   // Vector of parameters seen. This is used to ensure that we only see each
   // parameter once.
@@ -90,7 +98,7 @@ value_t match_signature(runtime_t *runtime, value_t self, value_t record,
   // Scan through the arguments and look them up in the signature.
   value_t tags = get_signature_tags(self);
   for (size_t i = 0; i < argument_count; i++) {
-    value_t tag = get_invocation_record_tag_at(record, i);
+    value_t tag = get_invocation_record_tag_at(input->record, i);
     // TODO: propagate any errors caused by this.
     value_t param = binary_search_pair_array(tags, tag);
     if (is_signal(scNotFound, param)) {
@@ -116,9 +124,9 @@ value_t match_signature(runtime_t *runtime, value_t self, value_t record,
       *result_out = mrRedundantArgument;
       return success();
     }
-    value_t value = get_invocation_record_argument_at(record, frame, i);
+    value_t value = get_invocation_record_argument_at(input->record, input->frame, i);
     score_t score;
-    TRY(guard_match(runtime, get_parameter_guard(param), value, space, &score));
+    TRY(guard_match(get_parameter_guard(param), value, input, space, &score));
     if (!is_score_match(score)) {
       // The guard says the argument doesn't match. Bail out.
       bit_vector_dispose(&params_seen);
@@ -128,7 +136,7 @@ value_t match_signature(runtime_t *runtime, value_t self, value_t record,
     // We got a match! Record the result and move on to the next.
     bit_vector_set_at(&params_seen, index, true);
     match_info->scores[i] = score;
-    match_info->offsets[index] = get_invocation_record_offset_at(record, i);
+    match_info->offsets[index] = get_invocation_record_offset_at(input->record, i);
     if (!get_parameter_is_optional(param))
       mandatory_seen_count++;
   }
@@ -232,8 +240,8 @@ static value_t find_best_match(runtime_t *runtime, value_t current,
   }
 }
 
-value_t guard_match(runtime_t *runtime, value_t guard, value_t value,
-    value_t space, score_t *score_out) {
+value_t guard_match(value_t guard, value_t value,
+    signature_map_lookup_input_t *lookup_input, value_t space, score_t *score_out) {
   CHECK_FAMILY(ofGuard, guard);
   switch (get_guard_type(guard)) {
     case gtEq: {
@@ -243,10 +251,10 @@ value_t guard_match(runtime_t *runtime, value_t guard, value_t value,
       return success();
     }
     case gtIs: {
-      TRY_DEF(primary, get_primary_type(value, runtime));
+      TRY_DEF(primary, get_primary_type(value, lookup_input->runtime));
       value_t target = get_guard_value(guard);
-      return find_best_match(runtime, primary, target, gsPerfectIsMatch, space,
-          score_out);
+      return find_best_match(lookup_input->runtime, primary, target,
+          gsPerfectIsMatch, space, score_out);
     }
     case gtAny:
       *score_out = gsAnyMatch;
@@ -354,6 +362,131 @@ value_t ensure_signature_map_owned_values_frozen(runtime_t *runtime, value_t sel
   return success();
 }
 
+// The state maintained while doing signature map lookup.
+struct signature_map_lookup_state_t {
+  // The resulting value to return, or an appropriate signal.
+  value_t result;
+  // Running argument-wise max over all the entries that have matched.
+  score_t *max_score;
+  // We use two scratch offsets vectors such that we can keep the best in one
+  // and the other as scratch, swapping them around when a new best one is
+  // found.
+  size_t *result_offsets;
+  size_t *scratch_offsets;
+  // Is the current max score vector synthetic, that is, is it taken over
+  // several ambiguous entries that are each individually smaller than their
+  // max?
+  bool max_is_synthetic;
+  // The input data used as the basis of the lookup.
+  signature_map_lookup_input_t input;
+};
+
+// Swaps around the result and scratch offsets.
+static void signature_map_lookup_state_swap_offsets(signature_map_lookup_state_t *state) {
+  size_t *temp = state->result_offsets;
+  state->result_offsets = state->scratch_offsets;
+  state->scratch_offsets = temp;
+}
+
+// The max amount of arguments for which we'll allocate the lookup state on the
+// stack.
+#define kSmallLookupLimit 32
+
+value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
+    value_t sigmap, value_t space) {
+  CHECK_FAMILY(ofSignatureMap, sigmap);
+  CHECK_FAMILY(ofMethodspace, space);
+  value_t entries = get_signature_map_entries(sigmap);
+  size_t entry_count = get_pair_array_buffer_length(entries);
+  score_t scratch_score[kSmallLookupLimit];
+  match_info_t match_info;
+  match_info_init(&match_info, scratch_score, state->scratch_offsets,
+      kSmallLookupLimit);
+  size_t arg_count = get_invocation_record_argument_count(state->input.record);
+  for (size_t current = 0; current < entry_count; current++) {
+    value_t signature = get_pair_array_buffer_first_at(entries, current);
+    value_t value = get_pair_array_buffer_second_at(entries, current);
+    match_result_t match;
+    TRY(match_signature(signature, &state->input, space, &match_info, &match));
+    if (!match_result_is_match(match))
+      continue;
+    join_status_t status = join_score_vectors(state->max_score, scratch_score,
+        arg_count);
+    if (status == jsBetter || (state->max_is_synthetic && status == jsEqual)) {
+      // This score is either better than the previous best, or it is equal to
+      // the max which is itself synthetic and hence better than any of the
+      // entries we've seen so far.
+      state->result = value;
+      // Now the max definitely isn't synthetic.
+      state->max_is_synthetic = false;
+      // The offsets for the result is now stored in scratch_offsets and we have
+      // no more use for the previous result_offsets so we swap them around.
+      signature_map_lookup_state_swap_offsets(state);
+      // And then we have to update the match info with the new scratch offsets.
+      match_info_init(&match_info, scratch_score, state->scratch_offsets,
+          kSmallLookupLimit);
+    } else if (status != jsWorse) {
+      // If we hit the exact same entry more than once, which can happen if
+      // the same signature map is traversed more than once, that's okay we just
+      // skip.
+      if (is_same_value(value, state->result))
+        continue;
+      // The next score was not strictly worse than the best we've seen so we
+      // don't have a unique best.
+      state->result = new_lookup_error_signal(lcAmbiguity);
+      // If the result is ambiguous that means the max is now synthetic.
+      state->max_is_synthetic = (status == jsAmbiguous);
+    }
+  }
+  return success();
+}
+
+value_t do_signature_map_lookup(runtime_t *runtime, value_t record, frame_t *frame,
+    signature_map_lookup_callback_t callback, void *data) {
+  // For now we only handle lookups of a certain size. Hopefully by the time
+  // this is too small this implementation will be gone anyway.
+  size_t arg_count = get_invocation_record_argument_count(record);
+  CHECK_REL("too many arguments", arg_count, <=, kSmallLookupLimit);
+  // Initialize the lookup state using stack-allocated space.
+  score_t max_score[kSmallLookupLimit];
+  // The following code will assume the max score has a meaningful value so
+  // reset it explicitly.
+  for (size_t i = 0; i < arg_count; i++)
+    max_score[i] = gsNoMatch;
+  size_t offsets_one[kSmallLookupLimit];
+  size_t offsets_two[kSmallLookupLimit];
+  signature_map_lookup_state_t state;
+  signature_map_lookup_input_init(&state.input, runtime, record, frame, data);
+  state.result = new_lookup_error_signal(lcNoMatch);
+  state.max_is_synthetic = false;
+  state.max_score = max_score;
+  state.result_offsets = offsets_one;
+  state.scratch_offsets = offsets_two;
+  TRY(callback(&state));
+  return state.result;
+}
+
+// Given an array of offsets, builds and returns an argument map that performs
+// that offset mapping.
+static value_t build_argument_map(runtime_t *runtime, size_t offsetc, size_t *offsets) {
+  value_t current_node = MROOT(runtime, argument_map_trie_root);
+  for (size_t i = 0; i < offsetc; i++) {
+    size_t offset = offsets[i];
+    value_t value = (offset == kNoOffset) ? null() : new_integer(offset);
+    TRY_SET(current_node, get_argument_map_trie_child(runtime, current_node, value));
+  }
+  return get_argument_map_trie_value(current_node);
+}
+
+value_t get_signature_map_lookup_argument_map(signature_map_lookup_state_t *state) {
+  if (in_domain(vdSignal, state->result)) {
+    return whatever();
+  } else {
+    size_t arg_count = get_invocation_record_argument_count(state->input.record);
+    return build_argument_map(state->input.runtime, arg_count, state->result_offsets);
+  }
+}
+
 
 // --- M e t h o d   s p a c e ---
 
@@ -427,173 +560,67 @@ value_t get_type_parents(runtime_t *runtime, value_t space, value_t type) {
   }
 }
 
-// The state maintained while doing method space lookup.
-typedef struct {
-  // The resulting method to return, or an appropriate signal.
-  value_t result;
-  // Running argument-wise max over all the methods that have matched.
-  score_t *max_score;
-  // We use two scratch offsets vectors such that we can keep the best in one
-  // and the other as scratch, swapping them around when a new best one is
-  // found.
-  size_t *result_offsets;
-  size_t *scratch_offsets;
-  // Is the current max score vector synthetic, that is, is it taken over
-  // several ambiguous methods that are each individually smaller than their
-  // max?
-  bool max_is_synthetic;
-} methodspace_lookup_state_t;
-
-// Swaps around the result and scratch offsets.
-static void methodspace_lookup_state_swap_offsets(methodspace_lookup_state_t *state) {
-  size_t *temp = state->result_offsets;
-  state->result_offsets = state->scratch_offsets;
-  state->scratch_offsets = temp;
-}
-
-// The max amount of arguments for which we'll allocate the lookup state on the
-// stack.
-#define kSmallLookupLimit 32
-
-// Continue a search for a method method locally in the given method space, that
-// is, this does not follow imports and only updates the lookup state, it doesn't
-// return the best match.
-static value_t lookup_signature_map_local_method(methodspace_lookup_state_t *state,
-    runtime_t *runtime, value_t methods, value_t space, value_t record, frame_t *frame) {
-  value_t entries = get_signature_map_entries(methods);
-  size_t method_count = get_pair_array_buffer_length(entries);
-  score_t scratch_score[kSmallLookupLimit];
-  match_info_t match_info;
-  match_info_init(&match_info, scratch_score, state->scratch_offsets,
-      kSmallLookupLimit);
-  size_t arg_count = get_invocation_record_argument_count(record);
-  for (size_t current = 0; current < method_count; current++) {
-    value_t signature = get_pair_array_buffer_first_at(entries, current);
-    value_t method = get_pair_array_buffer_second_at(entries, current);
-    match_result_t match;
-    TRY(match_signature(runtime, signature, record, frame, space, &match_info,
-        &match));
-    if (!match_result_is_match(match))
-      continue;
-    join_status_t status = join_score_vectors(state->max_score, scratch_score,
-        arg_count);
-    if (status == jsBetter || (state->max_is_synthetic && status == jsEqual)) {
-      // This score is either better than the previous best, or it is equal to
-      // the max which is itself synthetic and hence better than any of the
-      // methods we've seen so far.
-      state->result = method;
-      // Now the max definitely isn't synthetic.
-      state->max_is_synthetic = false;
-      // The offsets for the result is now stored in scratch_offsets and we have
-      // no more use for the previous result_offsets so we swap them around.
-      methodspace_lookup_state_swap_offsets(state);
-      // And then we have to update the match info with the new scratch offsets.
-      match_info_init(&match_info, scratch_score, state->scratch_offsets,
-          kSmallLookupLimit);
-    } else if (status != jsWorse) {
-      // If we hit the exact same method more than once, which can happen if
-      // the same methodspace is imported more than once, that's okay we just
-      // skip.
-      if (is_same_value(method, state->result))
-        continue;
-      // The next score was not strictly worse than the best we've seen so we
-      // don't have a unique best.
-      state->result = new_lookup_error_signal(lcAmbiguity);
-      // If the result is ambiguous that means the max is now synthetic.
-      state->max_is_synthetic = (status == jsAmbiguous);
-    }
-  }
-  return success();
-}
-
 // Do a transitive method lookup in the given method space, that is, look up
 // locally and in any imported spaces.
-static value_t lookup_methodspace_transitive_method(methodspace_lookup_state_t *state,
-    runtime_t *runtime, value_t space, value_t record, frame_t *frame) {
+static value_t lookup_methodspace_transitive_method(signature_map_lookup_state_t *state,
+    value_t space) {
   value_t local_methods = get_methodspace_methods(space);
-  TRY(lookup_signature_map_local_method(state, runtime, local_methods, space, record, frame));
+  TRY(continue_signature_map_lookup(state, local_methods, space));
   value_t imports = get_methodspace_imports(space);
   for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
     value_t import = get_array_buffer_at(imports, i);
-    TRY(lookup_methodspace_transitive_method(state, runtime, import, record, frame));
+    TRY(lookup_methodspace_transitive_method(state, import));
   }
   return success();
 }
 
-// Given an array of offsets, builds and returns an argument map that performs
-// that offset mapping.
-static value_t build_argument_map(runtime_t *runtime, size_t offsetc, size_t *offsets) {
-  value_t current_node = MROOT(runtime, argument_map_trie_root);
-  for (size_t i = 0; i < offsetc; i++) {
-    size_t offset = offsets[i];
-    value_t value = (offset == kNoOffset) ? null() : new_integer(offset);
-    TRY_SET(current_node, get_argument_map_trie_child(runtime, current_node, value));
-  }
-  return get_argument_map_trie_value(current_node);
-}
+// A pair of a value and an argument map. If only C had generic types.
+typedef struct {
+  value_t value;
+  value_t *arg_map_out;
+} value_and_argument_map_t;
 
-typedef value_t (generic_lookup_callback_t)(runtime_t *runtime,
-    value_t argument, value_t record, frame_t *frame,
-    methodspace_lookup_state_t *state);
-
-static value_t generic_lookup(runtime_t *runtime, value_t argument,
-    value_t record, frame_t *frame, value_t *arg_map_out,
-    generic_lookup_callback_t callback) {
-  size_t arg_count = get_invocation_record_argument_count(record);
-  CHECK_REL("too many arguments", arg_count, <=, kSmallLookupLimit);
-  // Initialize the lookup state using stack-allocated space.
-  score_t max_score[kSmallLookupLimit];
-  // The following code will assume the max score has a meaningful value so
-  // reset it explicitly.
-  for (size_t i = 0; i < arg_count; i++)
-    max_score[i] = gsNoMatch;
-  size_t offsets_one[kSmallLookupLimit];
-  size_t offsets_two[kSmallLookupLimit];
-  methodspace_lookup_state_t state;
-  state.result = new_lookup_error_signal(lcNoMatch);
-  state.max_is_synthetic = false;
-  state.max_score = max_score;
-  state.result_offsets = offsets_one;
-  state.scratch_offsets = offsets_two;
-  TRY(callback(runtime, argument, record, frame, &state));
-  // Post-process the result.
-  if (!in_domain(vdSignal, state.result)) {
-    // We have a result so we need to build an argument map that represents the
-    // result's offsets vector.
-    TRY_SET(*arg_map_out, build_argument_map(runtime, arg_count, state.result_offsets));
-  }
-  return state.result;
-}
-
-static value_t do_fragment_method_lookup(runtime_t *runtime, value_t fragment,
-    value_t record, frame_t *frame, methodspace_lookup_state_t *state) {
+// Traverses the method spaces reachable from a given fragment, looking up
+// through their respective signature maps.
+static value_t do_fragment_method_lookup(signature_map_lookup_state_t *state) {
+  value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
+  CHECK_FAMILY(ofModuleFragment, data->value);
+  value_t fragment = data->value;
   value_t module = get_module_fragment_module(fragment);
   while (!is_signal(scNotFound, fragment)) {
     value_t methodspace = get_module_fragment_methodspace(fragment);
-    TRY(lookup_methodspace_transitive_method(state, runtime, methodspace, record,
-        frame));
+    TRY(lookup_methodspace_transitive_method(state, methodspace));
     value_t stage = get_module_fragment_stage(fragment);
     fragment = get_module_fragment_before(module, stage);
   }
+  TRY_SET(*data->arg_map_out, get_signature_map_lookup_argument_map(state));
   return success();
 }
 
 value_t lookup_fragment_method(runtime_t *runtime, value_t fragment,
     value_t record, frame_t *frame, value_t *arg_map_out) {
-  return generic_lookup(runtime, fragment, record, frame, arg_map_out,
-      do_fragment_method_lookup);
+  value_and_argument_map_t data;
+  data.value = fragment;
+  data.arg_map_out = arg_map_out;
+  return do_signature_map_lookup(runtime, record, frame, do_fragment_method_lookup,
+      &data);
 }
 
-static value_t do_methodspace_method_lookup(runtime_t *runtime, value_t methodspace,
-    value_t record, frame_t *frame, methodspace_lookup_state_t *state) {
-  return lookup_methodspace_transitive_method(state, runtime, methodspace,
-      record, frame);
+// Performs a method lookup within a single methodspace.
+static value_t do_methodspace_method_lookup(signature_map_lookup_state_t *state) {
+  value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
+  CHECK_FAMILY(ofMethodspace, data->value);
+  TRY(lookup_methodspace_transitive_method(state, data->value));
+  TRY_SET(*data->arg_map_out, get_signature_map_lookup_argument_map(state));
+  return success();
 }
 
 value_t lookup_methodspace_method(runtime_t *runtime, value_t methodspace,
     value_t record, frame_t *frame, value_t *arg_map_out) {
-  return generic_lookup(runtime, methodspace, record, frame, arg_map_out,
-      do_methodspace_method_lookup);
+  value_and_argument_map_t data;
+  data.value = methodspace;
+  data.arg_map_out = arg_map_out;
+  return do_signature_map_lookup(runtime, record, frame, do_methodspace_method_lookup, &data);
 }
 
 value_t plankton_new_methodspace(runtime_t *runtime) {

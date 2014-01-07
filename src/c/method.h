@@ -13,6 +13,25 @@
 // A guard score against a value.
 typedef uint32_t score_t;
 
+// Input to a signature map lookup. This is the stuff that's fixed across the
+// whole lookup. This is kept in a separate struct such that it can be passed
+// to any part of the lookup that needs it separately from the rest of the
+// lookup state which is more transient and less likely to be useful.
+typedef struct {
+  // The runtime we're looking up within.
+  runtime_t *runtime;
+  // The invocation record that describes the invocation being looked up.
+  value_t record;
+  // The frame containing the invocation arguments.
+  frame_t *frame;
+  // Optional extra data to pass around.
+  void *data;
+} signature_map_lookup_input_t;
+
+// Initializes an input struct appropriately.
+void signature_map_lookup_input_init(signature_map_lookup_input_t *input,
+    runtime_t *runtime, value_t record, frame_t *frame, void *data);
+
 
 // --- S i g n a t u r e ---
 
@@ -92,9 +111,8 @@ void match_info_init(match_info_t *info, score_t *scores, size_t *offsets,
 // The capacity of the match_info argument must be at least large enough to hold
 // info about all the arguments. If the match succeeds it holds the info, if
 // it fails the state is unspecified.
-value_t match_signature(runtime_t *runtime, value_t self, value_t record,
-    frame_t *frame, value_t space, match_info_t *match_info,
-    match_result_t *match_out);
+value_t match_signature(value_t self, signature_map_lookup_input_t *input,
+    value_t space, match_info_t *match_info, match_result_t *match_out);
 
 // The outcome of joining two score vectors. The values encode how they matched:
 // if the first bit is set the target was strictly better at some point, if the
@@ -180,8 +198,9 @@ static const score_t gsAnyMatch = 0xFFFFFFFD;
 // Matches the given guard against the given value, returning a signal that
 // indicates whether the match was successful and, if it was, storing the score
 // in the out argument for how well it matched within the given method space.
-value_t guard_match(runtime_t *runtime, value_t guard, value_t value,
-    value_t methodspace, score_t *score_out);
+value_t guard_match(value_t guard, value_t value,
+    signature_map_lookup_input_t *lookup_input, value_t methodspace,
+    score_t *score_out);
 
 // Returns true if the given score represents a match.
 bool is_score_match(score_t score);
@@ -232,6 +251,31 @@ ACCESSORS_DECL(signature_map, entries);
 // a signal on failure.
 value_t add_to_signature_map(runtime_t *runtime, value_t map, value_t signature,
     value_t value);
+
+// Opaque datatype used during signature map lookup.
+FORWARD(signature_map_lookup_state_t);
+
+// A callback called by do_signature_map_lookup to perform the traversal that
+// produces the signature maps to lookup within.
+typedef value_t (signature_map_lookup_callback_t)(signature_map_lookup_state_t *state);
+
+// Prepares a signature map lookup and then calls the callback which must
+// traverse the signature maps to include in the lookup and invoke
+// continue_signature_map_lookup for each of them. When the callback returns
+// this function completes the lookup and returns the result or a signal as
+// appropriate.
+value_t do_signature_map_lookup(runtime_t *runtime, value_t record, frame_t *frame,
+    signature_map_lookup_callback_t *callback, void *data);
+
+// Includes the given signature map in the lookup associated with the given
+// lookup state.
+value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
+    value_t sigmap, value_t space);
+
+// Returns the argument map that describes the location of the arguments of the
+// signature map lookup match recorded in the given lookup state. If there is
+// no match recorded an arbitrary non-signal value will be returned.
+value_t get_signature_map_lookup_argument_map(signature_map_lookup_state_t *state);
 
 
 // --- M e t h o d   s p a c e ---
