@@ -211,6 +211,9 @@ value_t new_heap_signature(runtime_t *runtime, alloc_flags_t flags, value_t tags
 value_t new_heap_parameter(runtime_t *runtime, alloc_flags_t flags, value_t guard,
     value_t tags, bool is_optional, size_t index);
 
+// Creates a new mutable empty signature map.
+value_t new_heap_signature_map(runtime_t *runtime);
+
 // Creates a new empty method space.
 value_t new_heap_methodspace(runtime_t *runtime);
 
@@ -301,10 +304,6 @@ value_t alloc_heap_object(runtime_t *runtime, size_t bytes, value_t species);
 // value if it already exists. Returns a signal on failure.
 value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,
     value_t value);
-
-// Adds an element at the end of the given array buffer, expanding it to a new
-// backing array if necessary. Returns a signal on failure.
-value_t add_to_array_buffer(runtime_t *runtime, value_t buffer, value_t value);
 
 
 #endif // _ALLOC

@@ -280,6 +280,7 @@ static value_t new_moved_object(value_t target) {
   F(SequenceAst,             sequence_ast,              _, _, X, X, _, _, X, _, _)\
   F(Signature,               signature,                 _, _, _, _, _, _, _, X, X)\
   F(SignatureAst,            signature_ast,             _, _, X, X, _, _, _, _, _)\
+  F(SignatureMap,            signature_map,             _, _, _, _, _, _, _, X, X)\
   F(Stack,                   stack,                     _, _, _, _, _, _, _, _, _)\
   F(StackPiece,              stack_piece,               _, _, _, _, _, _, _, _, _)\
   F(String,                  string,                    X, X, _, X, X, _, _, _, _)\
@@ -818,6 +819,10 @@ void set_array_buffer_at(value_t self, size_t index, value_t value);
 // length by 1. Returns true if this succeeds, false if it wasn't possible.
 bool try_add_to_array_buffer(value_t self, value_t value);
 
+// Adds an element at the end of the given array buffer, expanding it to a new
+// backing array if necessary. Returns a signal on failure.
+value_t add_to_array_buffer(runtime_t *runtime, value_t buffer, value_t value);
+
 // Checks whether there is already a value in this array buffer object identical
 // to the given value and if not adds it.
 value_t ensure_array_buffer_contains(runtime_t *runtime, value_t self,
@@ -829,6 +834,33 @@ bool in_array_buffer(value_t self, value_t value);
 
 // Sorts the contents of this array buffer.
 void sort_array_buffer(value_t self);
+
+// Attempts to add a pair of elements at the end of this array buffer,
+// increasing its length by 2 (or its pair length by 1). Returns true if this
+// succeeds, false if it wasn't possible.
+//
+// Note that this is the only reliable way to add to a pair array buffer since
+// adding the elements one at a time using try_add_to_array_buffer may fail
+// after the first, leaving the buffer in an inconsistent state.
+bool try_add_to_pair_array_buffer(value_t self, value_t first, value_t second);
+
+// Adds a pair of elements at the end of the given array buffer, expanding it to
+// a new backing array if necessary. Returns a signal on failure. See
+// try_add_to_array_buffer for details.
+value_t add_to_pair_array_buffer(runtime_t *runtime, value_t buffer, value_t first,
+    value_t second);
+
+// Gets the first entry in the index'th pair in the given array, viewed as a
+// pair array.
+value_t get_pair_array_buffer_first_at(value_t self, size_t index);
+
+// Gets the second entry in the index'th pair in the given array, viewed as a
+// pair array.
+value_t get_pair_array_buffer_second_at(value_t self, size_t index);
+
+// Returns the length of this array when viewed as a pair array.
+size_t get_pair_array_buffer_length(value_t self);
+
 
 
 // --- I d e n t i t y   h a s h   m a p ---

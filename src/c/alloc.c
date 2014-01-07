@@ -507,10 +507,19 @@ value_t new_heap_parameter(runtime_t *runtime, alloc_flags_t flags, value_t guar
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_signature_map(runtime_t *runtime) {
+  size_t size = kSignatureMapSize;
+  TRY_DEF(entries, new_heap_array_buffer(runtime, kMethodArrayInitialSize));
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_signature_map_species)));
+  set_signature_map_entries(result, entries);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_methodspace(runtime_t *runtime) {
   size_t size = kMethodspaceSize;
   TRY_DEF(inheritance, new_heap_id_hash_map(runtime, kInheritanceMapInitialSize));
-  TRY_DEF(methods, new_heap_array_buffer(runtime, kMethodArrayInitialSize));
+  TRY_DEF(methods, new_heap_signature_map(runtime));
   TRY_DEF(imports, new_heap_array_buffer(runtime, kImportsArrayInitialSize));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_methodspace_species)));
@@ -778,25 +787,4 @@ value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,
     value_t value) {
   value_t fields = get_instance_fields(instance);
   return set_id_hash_map_at(runtime, fields, key, value);
-}
-
-value_t extend_array_buffer(runtime_t *runtime, value_t buffer) {
-  value_t old_elements = get_array_buffer_elements(buffer);
-  size_t old_capacity = get_array_length(old_elements);
-  size_t new_capacity = (old_capacity + 1) * 2;
-  TRY_DEF(new_elements, new_heap_array(runtime, new_capacity));
-  for (size_t i = 0; i < old_capacity; i++)
-    set_array_at(new_elements, i, get_array_at(old_elements, i));
-  set_array_buffer_elements(buffer, new_elements);
-  return success();
-}
-
-value_t add_to_array_buffer(runtime_t *runtime, value_t buffer, value_t value) {
-  CHECK_FAMILY(ofArrayBuffer, buffer);
-  if (!try_add_to_array_buffer(buffer, value)) {
-    TRY(extend_array_buffer(runtime, buffer));
-    bool second_try = try_add_to_array_buffer(buffer, value);
-    CHECK_TRUE("second array try", second_try);
-  }
-  return success();
 }

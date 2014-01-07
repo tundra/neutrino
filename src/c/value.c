@@ -890,6 +890,52 @@ bool try_add_to_array_buffer(value_t self, value_t value) {
   return true;
 }
 
+static value_t extend_array_buffer(runtime_t *runtime, value_t buffer) {
+  value_t old_elements = get_array_buffer_elements(buffer);
+  size_t old_capacity = get_array_length(old_elements);
+  size_t new_capacity = (old_capacity + 1) * 2;
+  TRY_DEF(new_elements, new_heap_array(runtime, new_capacity));
+  for (size_t i = 0; i < old_capacity; i++)
+    set_array_at(new_elements, i, get_array_at(old_elements, i));
+  set_array_buffer_elements(buffer, new_elements);
+  return success();
+}
+
+value_t add_to_array_buffer(runtime_t *runtime, value_t buffer, value_t value) {
+  CHECK_FAMILY(ofArrayBuffer, buffer);
+  if (!try_add_to_array_buffer(buffer, value)) {
+    TRY(extend_array_buffer(runtime, buffer));
+    bool second_try = try_add_to_array_buffer(buffer, value);
+    CHECK_TRUE("second array try", second_try);
+  }
+  return success();
+}
+
+bool try_add_to_pair_array_buffer(value_t self, value_t first, value_t second) {
+  CHECK_FAMILY(ofArrayBuffer, self);
+  CHECK_MUTABLE(self);
+  value_t elements = get_array_buffer_elements(self);
+  size_t capacity = get_array_length(elements);
+  size_t index = get_array_buffer_length(self);
+  if ((index + 1) >= capacity)
+    return false;
+  set_array_at(elements, index, first);
+  set_array_at(elements, index + 1, second);
+  set_array_buffer_length(self, index + 2);
+  return true;
+}
+
+value_t add_to_pair_array_buffer(runtime_t *runtime, value_t buffer, value_t first,
+    value_t second) {
+  CHECK_FAMILY(ofArrayBuffer, buffer);
+  if (!try_add_to_pair_array_buffer(buffer, first, second)) {
+    TRY(extend_array_buffer(runtime, buffer));
+    bool second_try = try_add_to_pair_array_buffer(buffer, first, second);
+    CHECK_TRUE("second array try", second_try);
+  }
+  return success();
+}
+
 bool in_array_buffer(value_t self, value_t value) {
   for (size_t i = 0; i < get_array_buffer_length(self); i++) {
     if (value_identity_compare(value, get_array_buffer_at(self, i)))
@@ -935,6 +981,19 @@ void array_buffer_print_on(value_t value, string_buffer_t *buf,
   }
   string_buffer_printf(buf, "]");
 }
+
+value_t get_pair_array_buffer_first_at(value_t self, size_t index) {
+  return get_array_buffer_at(self, index << 1);
+}
+
+value_t get_pair_array_buffer_second_at(value_t self, size_t index) {
+  return get_array_buffer_at(self, (index << 1) + 1);
+}
+
+size_t get_pair_array_buffer_length(value_t self) {
+  return get_array_buffer_length(self) >> 1;
+}
+
 
 
 // --- I d e n t i t y   h a s h   m a p ---
