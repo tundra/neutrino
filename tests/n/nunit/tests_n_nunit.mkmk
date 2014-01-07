@@ -38,3 +38,4 @@ for file_name in file_names:
   test_case.set_runner(runner)
   test_case.set_arguments(program.get_output_path(), "--main-options", opts.base64_encode())
   test_case.add_dependency(program)
+  test_case.add_dependency(library)
