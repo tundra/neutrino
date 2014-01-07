@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 import os.path
+import plankton.options
 
 file_names = [
   "anything.n",
@@ -16,12 +17,25 @@ file_names = [
 suite = get_group("suite")
 compiler = get_external("src", "python", "neutrino", "main.py")
 runner = get_external("src", "c", "ctrino")
+modules = get_external("src", "n", "files")
+library = get_external("src", "n", "library")
 
 for file_name in file_names:
   # Compile the source file to a library.
   source_file = n.get_source_file(file_name)
   (filename, ext) = os.path.splitext(file_name)
-  module = n.get_library(filename)
-  module.set_compiler(compiler)
-  module.add_source(source_file)
-  suite.add_member(module)
+  program = n.get_program(filename)
+  program.set_compiler(compiler)
+  program.add_source(source_file)
+  program.add_module(modules)
+  # Run the test
+  test_case = test.get_exec_test_case(file_name)
+  suite.add_member(test_case)
+  opts = plankton.options.Options()
+  opts.add_flag("module_loader", {
+    "libraries": [library.get_output_path()]
+  })
+  test_case.set_runner(runner)
+  test_case.set_arguments(program.get_output_path(), "--main-options", opts.base64_encode())
+  test_case.add_dependency(program)
+  test_case.add_dependency(library)
