@@ -216,6 +216,24 @@ value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
     value_t fragment);
 
 
+// --- S i g n a t u r e   m a p ---
+
+static const size_t kSignatureMapSize = OBJECT_SIZE(1);
+static const size_t kSignatureMapEntriesOffset = OBJECT_FIELD_OFFSET(0);
+
+// The size of the method array buffer in an empty signature map.
+static const size_t kMethodArrayInitialSize = 16;
+
+// The signature+value entries in this signature map. The entries are stored as
+// alternating signatures and values.
+ACCESSORS_DECL(signature_map, entries);
+
+// Adds a mapping to the given signature map, expanding it if necessary. Returns
+// a signal on failure.
+value_t add_to_signature_map(runtime_t *runtime, value_t map, value_t signature,
+    value_t value);
+
+
 // --- M e t h o d   s p a c e ---
 
 static const size_t kMethodspaceSize = OBJECT_SIZE(3);
@@ -225,9 +243,6 @@ static const size_t kMethodspaceImportsOffset = OBJECT_FIELD_OFFSET(2);
 
 // The size of the inheritance map in an empty method space.
 static const size_t kInheritanceMapInitialSize = 16;
-
-// The size of the method array buffer in an empty method space
-static const size_t kMethodArrayInitialSize = 16;
 
 // The size of the imports array buffer in an empty method space
 static const size_t kImportsArrayInitialSize = 16;

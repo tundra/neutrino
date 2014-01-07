@@ -321,12 +321,46 @@ value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
   E_END_TRY_FINALLY();
 }
 
+// --- S i g n a t u r e   m a p ---
+
+ACCESSORS_IMPL(SignatureMap, signature_map, acInFamily, ofArrayBuffer, Entries,
+    entries);
+
+value_t signature_map_validate(value_t value) {
+  VALIDATE_FAMILY(ofSignatureMap, value);
+  VALIDATE_FAMILY(ofArrayBuffer, get_signature_map_entries(value));
+  return success();
+}
+
+void signature_map_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "#<signature map ");
+  value_t entries = get_signature_map_entries(self);
+  value_print_inner_on(entries, buf, flags, depth - 1);
+  string_buffer_printf(buf, ">");
+}
+
+value_t add_to_signature_map(runtime_t *runtime, value_t map, value_t signature,
+    value_t value) {
+  CHECK_FAMILY(ofSignatureMap, map);
+  CHECK_FAMILY(ofSignature, signature);
+  value_t entries = get_signature_map_entries(map);
+  TRY(add_to_array_buffer(runtime, entries, signature));
+  TRY(add_to_array_buffer(runtime, entries, value));
+  return success();
+}
+
+value_t ensure_signature_map_owned_values_frozen(runtime_t *runtime, value_t self) {
+  TRY(ensure_frozen(runtime, get_signature_map_entries(self)));
+  return success();
+}
+
 
 // --- M e t h o d   s p a c e ---
 
 ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofIdHashMap, Inheritance,
     inheritance);
-ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofArrayBuffer, Methods,
+ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofSignatureMap, Methods,
     methods);
 ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofArrayBuffer, Imports,
     imports);
@@ -334,6 +368,7 @@ ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofArrayBuffer, Imports,
 value_t methodspace_validate(value_t value) {
   VALIDATE_FAMILY(ofMethodspace, value);
   VALIDATE_FAMILY(ofIdHashMap, get_methodspace_inheritance(value));
+  VALIDATE_FAMILY(ofSignatureMap, get_methodspace_methods(value));
   return success();
 }
 
@@ -378,7 +413,9 @@ value_t add_methodspace_method(runtime_t *runtime, value_t self,
   CHECK_FAMILY(ofMethodspace, self);
   CHECK_MUTABLE(self);
   CHECK_FAMILY(ofMethod, method);
-  return add_to_array_buffer(runtime, get_methodspace_methods(self), method);
+  value_t signature = get_method_signature(method);
+  return add_to_signature_map(runtime, get_methodspace_methods(self), signature,
+      method);
 }
 
 value_t get_type_parents(runtime_t *runtime, value_t space, value_t type) {
@@ -422,18 +459,18 @@ static void methodspace_lookup_state_swap_offsets(methodspace_lookup_state_t *st
 // Continue a search for a method method locally in the given method space, that
 // is, this does not follow imports and only updates the lookup state, it doesn't
 // return the best match.
-static value_t lookup_methodspace_local_method(methodspace_lookup_state_t *state,
-    runtime_t *runtime, value_t space, value_t record, frame_t *frame) {
-  value_t methods = get_methodspace_methods(space);
-  size_t method_count = get_array_buffer_length(methods);
+static value_t lookup_signature_map_local_method(methodspace_lookup_state_t *state,
+    runtime_t *runtime, value_t methods, value_t space, value_t record, frame_t *frame) {
+  value_t entries = get_signature_map_entries(methods);
+  size_t method_count = get_array_buffer_length(entries) / 2;
   score_t scratch_score[kSmallLookupLimit];
   match_info_t match_info;
   match_info_init(&match_info, scratch_score, state->scratch_offsets,
       kSmallLookupLimit);
   size_t arg_count = get_invocation_record_argument_count(record);
   for (size_t current = 0; current < method_count; current++) {
-    value_t method = get_array_buffer_at(methods, current);
-    value_t signature = get_method_signature(method);
+    value_t signature = get_array_buffer_at(entries, 2 * current);
+    value_t method = get_array_buffer_at(entries, 2 * current + 1);
     match_result_t match;
     TRY(match_signature(runtime, signature, record, frame, space, &match_info,
         &match));
@@ -474,7 +511,8 @@ static value_t lookup_methodspace_local_method(methodspace_lookup_state_t *state
 // locally and in any imported spaces.
 static value_t lookup_methodspace_transitive_method(methodspace_lookup_state_t *state,
     runtime_t *runtime, value_t space, value_t record, frame_t *frame) {
-  TRY(lookup_methodspace_local_method(state, runtime, space, record, frame));
+  value_t local_methods = get_methodspace_methods(space);
+  TRY(lookup_signature_map_local_method(state, runtime, local_methods, space, record, frame));
   value_t imports = get_methodspace_imports(space);
   for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
     value_t import = get_array_buffer_at(imports, i);

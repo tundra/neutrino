@@ -211,6 +211,9 @@ value_t new_heap_signature(runtime_t *runtime, alloc_flags_t flags, value_t tags
 value_t new_heap_parameter(runtime_t *runtime, alloc_flags_t flags, value_t guard,
     value_t tags, bool is_optional, size_t index);
 
+// Creates a new mutable empty signature map.
+value_t new_heap_signature_map(runtime_t *runtime);
+
 // Creates a new empty method space.
 value_t new_heap_methodspace(runtime_t *runtime);
 

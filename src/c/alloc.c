@@ -507,10 +507,19 @@ value_t new_heap_parameter(runtime_t *runtime, alloc_flags_t flags, value_t guar
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_signature_map(runtime_t *runtime) {
+  size_t size = kSignatureMapSize;
+  TRY_DEF(entries, new_heap_array_buffer(runtime, kMethodArrayInitialSize));
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_signature_map_species)));
+  set_signature_map_entries(result, entries);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_methodspace(runtime_t *runtime) {
   size_t size = kMethodspaceSize;
   TRY_DEF(inheritance, new_heap_id_hash_map(runtime, kInheritanceMapInitialSize));
-  TRY_DEF(methods, new_heap_array_buffer(runtime, kMethodArrayInitialSize));
+  TRY_DEF(methods, new_heap_signature_map(runtime));
   TRY_DEF(imports, new_heap_array_buffer(runtime, kImportsArrayInitialSize));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_methodspace_species)));
