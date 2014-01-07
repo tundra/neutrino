@@ -9,7 +9,10 @@
 // Checks that scoring value against guard gives a match iff is_match is true.
 #define ASSERT_MATCH(is_match, guard, value) do {                              \
   score_t match;                                                               \
-  ASSERT_SUCCESS(guard_match(runtime, guard, value, space, &match));           \
+  signature_map_lookup_input_t lookup_input;                                   \
+  signature_map_lookup_input_init(&lookup_input, runtime, whatever(), NULL,    \
+    NULL);                                                                     \
+  ASSERT_SUCCESS(guard_match(guard, value, &lookup_input, space, &match));     \
   ASSERT_EQ(is_match, is_score_match(match));                                  \
 } while (false)
 
@@ -118,9 +121,12 @@ TEST(method, simple_is) {
 // matching GB against VB.
 #define ASSERT_COMPARE(GA, VA, REL, GB, VB) do {                               \
   score_t score_a;                                                             \
-  ASSERT_SUCCESS(guard_match(runtime, GA, VA, space, &score_a));               \
+  signature_map_lookup_input_t lookup_input;                                   \
+  signature_map_lookup_input_init(&lookup_input, runtime, whatever(), NULL,    \
+    NULL);                                                                     \
+  ASSERT_SUCCESS(guard_match(GA, VA, &lookup_input, space, &score_a));         \
   score_t score_b;                                                             \
-  ASSERT_SUCCESS(guard_match(runtime, GB, VB, space, &score_b));               \
+  ASSERT_SUCCESS(guard_match(GB, VB, &lookup_input, space, &score_b));         \
   ASSERT_TRUE(compare_scores(score_a, score_b) REL 0);                         \
 } while (false)
 
@@ -412,8 +418,10 @@ void assert_match_with_offsets(runtime_t *runtime, match_result_t expected_resul
   match_info_t match_info;
   match_info_init(&match_info, scores, offsets, kLength);
   match_result_t result;
-  ASSERT_SUCCESS(match_signature(runtime, signature, record, &frame,
-      new_integer(0), &match_info, &result));
+  signature_map_lookup_input_t input;
+  signature_map_lookup_input_init(&input, runtime, record, &frame, NULL);
+  ASSERT_SUCCESS(match_signature(signature, &input, new_integer(0), &match_info,
+      &result));
   ASSERT_EQ(expected_result, result);
   if (expected_offsets != NULL) {
     for (size_t i = 0; i < arg_count; i++)
