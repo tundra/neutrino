@@ -305,9 +305,5 @@ value_t alloc_heap_object(runtime_t *runtime, size_t bytes, value_t species);
 value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,
     value_t value);
 
-// Adds an element at the end of the given array buffer, expanding it to a new
-// backing array if necessary. Returns a signal on failure.
-value_t add_to_array_buffer(runtime_t *runtime, value_t buffer, value_t value);
-
 
 #endif // _ALLOC

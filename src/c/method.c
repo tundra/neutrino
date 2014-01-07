@@ -345,8 +345,7 @@ value_t add_to_signature_map(runtime_t *runtime, value_t map, value_t signature,
   CHECK_FAMILY(ofSignatureMap, map);
   CHECK_FAMILY(ofSignature, signature);
   value_t entries = get_signature_map_entries(map);
-  TRY(add_to_array_buffer(runtime, entries, signature));
-  TRY(add_to_array_buffer(runtime, entries, value));
+  TRY(add_to_pair_array_buffer(runtime, entries, signature, value));
   return success();
 }
 
@@ -462,15 +461,15 @@ static void methodspace_lookup_state_swap_offsets(methodspace_lookup_state_t *st
 static value_t lookup_signature_map_local_method(methodspace_lookup_state_t *state,
     runtime_t *runtime, value_t methods, value_t space, value_t record, frame_t *frame) {
   value_t entries = get_signature_map_entries(methods);
-  size_t method_count = get_array_buffer_length(entries) / 2;
+  size_t method_count = get_pair_array_buffer_length(entries);
   score_t scratch_score[kSmallLookupLimit];
   match_info_t match_info;
   match_info_init(&match_info, scratch_score, state->scratch_offsets,
       kSmallLookupLimit);
   size_t arg_count = get_invocation_record_argument_count(record);
   for (size_t current = 0; current < method_count; current++) {
-    value_t signature = get_array_buffer_at(entries, 2 * current);
-    value_t method = get_array_buffer_at(entries, 2 * current + 1);
+    value_t signature = get_pair_array_buffer_first_at(entries, current);
+    value_t method = get_pair_array_buffer_second_at(entries, current);
     match_result_t match;
     TRY(match_signature(runtime, signature, record, frame, space, &match_info,
         &match));
