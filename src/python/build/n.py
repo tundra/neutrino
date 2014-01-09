@@ -28,6 +28,11 @@ class NBinary(process.PhysicalNode):
     self.add_dependency(node, src=True)
     return self
 
+  # Adds a module manifest describing the module to construct.
+  def add_manifest(self, node):
+    self.add_dependency(node, manifest=True)
+    return self
+
   # Sets the compiler executable to use when building this library.
   def set_compiler(self, compiler):
     self.add_dependency(compiler, compiler=True)
@@ -48,14 +53,15 @@ class NLibrary(NBinary):
 
   def get_command_line(self, platform):
     [compiler_node] = self.get_input_nodes(compiler=True)
+    manifests = self.get_input_paths(manifest=True)
     compile_command_line = compiler_node.get_run_command_line(platform)
     outpath = self.get_output_path()
-    files = self.get_input_paths(src=True)
     options = plankton.options.Options()
-    options.add_flag("build-library", {
+    build_library = {
       "out": outpath,
-      "modules": files
-    })
+      "modules": manifests
+    }
+    options.add_flag("build-library", build_library)
     command = "%s --compile %s" % (compile_command_line, options.base64_encode())
     return process.Command(command)
 
@@ -91,6 +97,10 @@ class NTools(process.ToolSet):
   def get_source_file(self, name):
     handle = self.context.get_file(name)
     return self.get_context().get_or_create_node(name, NSourceNode, handle)
+
+  # Returns the module manifest file under the current path with the given name.
+  def get_module_file(self, name):
+    return self.get_source_file(name)
 
   # Returns a neutrino library file under the current path.
   def get_library(self, name):

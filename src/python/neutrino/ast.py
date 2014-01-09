@@ -391,8 +391,7 @@ class Program(object):
 
   @plankton.field("entry_point")
   @plankton.field("module")
-  def __init__(self, elements, entry_point, module):
-    self.elements = elements
+  def __init__(self, entry_point, module):
     self.entry_point = entry_point
     self.module = module
 
@@ -400,7 +399,7 @@ class Program(object):
     return visitor.visit_program(self)
 
   def __str__(self):
-    return "(program %s)" % " ".join(map(str, self.elements))
+    return "(program %s)" % str(self.module)
 
 
 # A toplevel namespace declaration.
@@ -422,7 +421,7 @@ class NamespaceDeclaration(object):
     return visitor.visit_namespace_declaration(self)
 
   def apply(self, module):
-    fragment = module.get_fragment(self.ident.stage)
+    fragment = module.get_or_create_fragment(self.ident.stage)
     fragment.add_element(self)
 
   def traverse(self, visitor):
@@ -468,7 +467,7 @@ class MethodDeclaration(object):
     self.method.accept(visitor)
 
   def apply(self, module):
-    fragment = module.get_fragment(0)
+    fragment = module.get_or_create_fragment(0)
     fragment.add_element(self)
 
   def __str__(self):
@@ -493,9 +492,9 @@ class FunctionDeclaration(object):
 
   def apply(self, module):
     stage = self.ident.stage
-    value_fragment = module.get_fragment(stage - 1);
+    value_fragment = module.get_or_create_fragment(stage - 1);
     value_fragment.ensure_function_declared(self.ident)
-    method_fragment = module.get_fragment(stage)
+    method_fragment = module.get_or_create_fragment(stage)
     method_fragment.add_element(MethodDeclaration(self.method))
 
   def __str__(self):
@@ -512,7 +511,7 @@ class UnboundModule(object):
     self.fragments = fragments
 
   def __str__(self):
-    return "#<unbound module %s>" % self.path
+    return "(module %s %s)" % (self.path, " ".join(map(str, self.fragments)))
 
 
 @plankton.serializable(plankton.EnvironmentReference.path("core", "UnboundModuleFragment"))
@@ -521,26 +520,11 @@ class UnboundModuleFragment(object):
   @plankton.field('stage')
   @plankton.field('imports')
   @plankton.field('elements')
-  def __init__(self, stage, imports, elements):
+  def __init__(self, stage):
     self.stage = stage
-    self.imports = imports
-    self.elements = elements
-
-  def __str__(self):
-    return "#<unbound fragment %s>" % self.stage
-
-
-# An individual execution stage.
-class Stage(object):
-
-  def __init__(self, index, module_name):
-    self.index = index
     self.imports = []
     self.elements = []
     self.functions = set()
-
-  def __str__(self):
-    return "#<stage %i>" % self.index
 
   # Returns all the imports for this stage.
   def add_import(self, path):
@@ -560,21 +544,18 @@ class Stage(object):
     ])
     self.add_element(NamespaceDeclaration(name, value))
 
-  def as_unbound_module_fragment(self):
-    return UnboundModuleFragment(self.index, self.imports, self.elements)
-
-  def as_program_fragment(self):
-    return None
+  def __str__(self):
+    return "(fragment %s %s)" % (self.stage, " ".join(map(str, self.elements)))
 
 
 # A full compilation unit.
-class Unit(object):
+class Module(object):
 
   def __init__(self, module_name):
     self.module_name = module_name
     self.entry_point = None
     self.stages = {}
-    self.get_or_create_stage(0)
+    self.get_or_create_fragment(0)
 
   def add_element(self, *elements):
     for element in elements:
@@ -594,24 +575,20 @@ class Unit(object):
   def get_stage(self, index):
     return self.stages[index]
 
-  def get_or_create_stage(self, index):
+  def get_or_create_fragment(self, index):
     if not index in self.stages:
-      self.stages[index] = self.create_stage(index, self.module_name)
+      self.stages[index] = self.create_fragment(index)
     return self.stages[index]
 
-  def get_fragment(self, index):
-    return self.get_or_create_stage(index)
-
-  def create_stage(self, index, module_name):
-    return Stage(index, module_name)
+  def create_fragment(self, stage):
+    return UnboundModuleFragment(stage)
 
   def get_present(self):
-    return self.get_or_create_stage(0)
+    return self.get_or_create_fragment(0)
 
   def get_present_program(self):
-    last_stage = self.get_present()
     module = self.as_unbound_module()
-    return Program(last_stage.elements, self.entry_point, module)
+    return Program(self.entry_point, module)
 
   def get_present_module(self):
     last_stage = self.get_present()
@@ -622,8 +599,7 @@ class Unit(object):
 
   def as_unbound_module(self):
     fragments = []
-    for (index, stage) in self.stages.iteritems():
-      fragment = stage.as_unbound_module_fragment()
+    for (index, fragment) in self.stages.iteritems():
       fragments.append(fragment)
     return UnboundModule(data.Path([self.module_name]), fragments)
 
@@ -679,7 +655,7 @@ class Import(object):
     visitor.visit_import(self)
 
   def apply(self, module):
-    fragment = module.get_fragment(self.ident.stage)
+    fragment = module.get_or_create_fragment(self.ident.stage)
     fragment.add_import(self.ident.path)
 
   def traverse(self, visitor):
@@ -707,5 +683,21 @@ class IsDeclaration(object):
 
   def apply(self, module):
     # TODO: allow past is-declarations.
-    fragment = module.get_fragment(0)
+    fragment = module.get_or_create_fragment(0)
     fragment.add_element(self)
+
+
+class ModuleManifest(object):
+
+  def __init__(self, ident, sources):
+    assert isinstance(sources, Array)
+    self.ident = ident
+    self.sources = sources
+
+  def get_path(self):
+    return self.ident.path
+
+  def get_sources(self):
+    for element in self.sources.elements:
+      assert isinstance(element, Literal)
+      yield element.value

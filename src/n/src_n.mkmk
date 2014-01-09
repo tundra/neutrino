@@ -1,7 +1,10 @@
 # Copyright 2013 the Neutrino authors (see AUTHORS).
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-file_names = [
+# The source files.
+files = get_group("files")
+
+core_file_names = [
   "array.n",
   "assert.n",
   "core.n",
@@ -10,15 +13,26 @@ file_names = [
   "string.n",
 ]
 
+core_manifest_file_name = "core.module"
+core_manifest = n.get_module_file(core_manifest_file_name)
+for file_name in core_file_names:
+  source_file = n.get_source_file(file_name)
+  core_manifest.add_dependency(source_file)
+  files.add_member(source_file)
+
+assert_file_names = [
+  "assert.n",
+]
+
+assert_manifest_file_name = "assert.module"
+assert_manifest = n.get_module_file(assert_manifest_file_name)
+for file_name in assert_file_names:
+  source_file = n.get_source_file(file_name)
+  assert_manifest.add_dependency(source_file)
+  files.add_member(source_file)
+
 # The library compiled from all the source files.
 library = n.get_library("library")
 library.set_compiler(get_external("src", "python", "neutrino", "main.py"))
-
-# The source files.
-files = get_group("files")
-
-# Add the source file objects to the library.
-for file_name in file_names:
-  source_file = n.get_source_file(file_name)
-  files.add_member(source_file)
-  library.add_source(source_file)
+library.add_manifest(core_manifest)
+library.add_manifest(assert_manifest)

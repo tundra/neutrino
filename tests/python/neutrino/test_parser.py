@@ -23,10 +23,10 @@ SL = data._SELECTOR
 ix = data.Operation.infix
 
 def ut(phase, *elements):
-  return ast.Unit(None).add_element(*elements)
+  return ast.Module(None).add_element(*elements)
 
 def mu(*phases):
-  result = ast.Unit(None)
+  result = ast.Module(None)
   for (phase, elements) in phases:
     result.add_element(*elements)
   return result
@@ -93,14 +93,14 @@ class ParserTest(unittest.TestCase):
     self.maxDiff = None
 
   def check_expression(self, input, expected):
-    found = parser.Parser(token.tokenize(input)).parse_expression()
+    found = parser.Parser(token.tokenize(input), ast.Module("")).parse_expression()
     # Convert the asts to strings because that's just infinitely easier to
     # debug when assertions fail. Of course that requires that ast string
     # conversion is sane, which it is.
     self.assertEquals(str(expected), str(found))
 
   def check_program(self, input, expected):
-    found = parser.Parser(token.tokenize(input)).parse_program()
+    found = parser.Parser(token.tokenize(input), ast.Module("")).parse_program()
     self.assertEquals(unicode(expected), unicode(found))
 
   def test_atomic_expressions(self):

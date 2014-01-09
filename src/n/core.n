@@ -1,14 +1,6 @@
 # Copyright 2013 the Neutrino authors (see AUTHORS).
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-## The core module doesn't "do" anything itself, it's just a convenient way to
-## import the different basic modules together.
-
-import @array;
-import @function;
-import @integer;
-import @string;
-
 ## Info-log the given value to stdout using the built-in INFO macro.
 def $info($value) => @ctrino.log_info($value);
 
@@ -17,12 +9,12 @@ def @Object := @ctrino.new_type("Object");
 
 ## Generic converter method that returns the internal string representation of
 ## the given object.
-def ($this is @Object).to($target == @string:String) => @ctrino.to_string($this);
+def ($this is @Object).to($target == @String) => @ctrino.to_string($this);
 
 ## Prints the internal representation of this object.
-def ($this is @Object).print() => $this.to(@string:String).print_raw();
+def ($this is @Object).print() => $this.to(@String).print_raw();
 
-type @array:Array is @Object;
-type @function:Function is @Object;
-type @integer:Integer is @Object;
-type @string:String is @Object;
+type @Array is @Object;
+type @Function is @Object;
+type @Integer is @Object;
+type @String is @Object;

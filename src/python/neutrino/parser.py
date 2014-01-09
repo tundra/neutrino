@@ -17,14 +17,10 @@ class Parser(object):
   _SAUSAGES = data.Operation.call()
   _SQUARE_SAUSAGES = data.Operation.index()
 
-  def __init__(self, tokens, module_name=None, unit=None):
+  def __init__(self, tokens, module):
     self.tokens = tokens
     self.cursor = 0
-    if unit is None:
-      self.unit = ast.Unit(module_name)
-    else:
-      self.unit = unit
-    self.present = self.unit.get_present()
+    self.module = module
 
   # Does this parser have more tokens to process?
   def has_more(self):
@@ -99,8 +95,8 @@ class Parser(object):
     while self.has_more():
       entry = self.parse_toplevel_statement()
       if entry:
-        self.unit.add_element(entry)
-    return self.unit
+        self.module.add_element(entry)
+    return self.module
 
   # <subject>
   #   -> <identifier>
@@ -190,7 +186,7 @@ class Parser(object):
       return self.parse_toplevel_import()
     elif self.at_word('entry_point'):
       self.expect_word('entry_point')
-      self.unit.set_entry_point(self.parse_expression())
+      self.module.set_entry_point(self.parse_expression())
       self.expect_statement_delimiter()
       return None
     elif self.at_word('type'):
@@ -216,8 +212,8 @@ class Parser(object):
   # Parses an expression and wraps it in a program appropriately to make it
   # executable.
   def parse_expression_program(self):
-    self.unit.set_entry_point(self.parse_word_expression())
-    return self.unit
+    self.module.set_entry_point(self.parse_word_expression())
+    return self.module
 
   # <word expression>
   #   -> <lambda>
@@ -414,7 +410,7 @@ class Parser(object):
   def parse_variable(self):
     ident = self.expect_type(Token.IDENTIFIER)
     stage_index = ident.stage
-    stage = self.unit.get_or_create_stage(stage_index)
+    stage = self.module.get_or_create_fragment(stage_index)
     return ast.Variable(ident)
 
   # Are we at the beginning of an atomic expression? This is a massive hack and
@@ -543,6 +539,22 @@ class Parser(object):
   # Creates a new syntax error at the current token.
   def new_syntax_error(self):
     return SyntaxError(self.current())
+
+
+# Module manifest parser.
+class ModuleParser(Parser):
+
+  def __init__(self, tokens):
+    super(ModuleParser, self).__init__(tokens, None)
+
+  def parse_module_manifest(self):
+    self.expect_word('module')
+    name = self.expect_type(Token.IDENTIFIER)
+    self.expect_punctuation('{')
+    self.expect_word('source')
+    values = self.parse_array_expression()
+    self.expect_punctuation('}')
+    return ast.ModuleManifest(name, values)
 
 
 # Exception signalling a syntax error.

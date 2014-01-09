@@ -531,7 +531,10 @@ void module_loader_print_on(value_t value, string_buffer_t *buf, print_flags_t f
 
 value_t module_loader_lookup_module(value_t self, value_t path) {
   value_t modules = get_module_loader_modules(self);
-  return get_id_hash_map_at(modules, path);
+  value_t result = get_id_hash_map_at(modules, path);
+  if (is_signal(scNotFound, result))
+    WARN("Module %v not found.", path);
+  return result;
 }
 
 
