@@ -47,7 +47,6 @@ class Main(object):
     parser.add_option('--filter', action='store_true', default=False)
     parser.add_option('--base64', action='store_true', default=False)
     parser.add_option('--disass', action='store_true', default=False)
-    parser.add_option('--module', action='append', default=[])
     parser.add_option('--compile', action='callback', type='string', callback=parse_plankton_option)
     return parser
 
@@ -83,7 +82,6 @@ class Main(object):
   # Main entry-point.
   def run(self):
     self.parse_arguments()
-    self.load_modules()
     if self.run_filter():
       return
     # First load the units to compile without actually doing it.
@@ -94,37 +92,17 @@ class Main(object):
     # Then compile everything in the right order.
     self.scheduler.run()
 
-  # Load any referenced modules.
-  def load_modules(self):
-    # Load the modules before scheduling them since they all have to be
-    # available, though not necessarily compiled, before we can set them up to
-    # be compiled in the right order.
-    if not self.compile_flags:
-      return
-    for arg in self.compile_flags.get('modules', []):
-      filename = os.path.basename(arg)
-      (module_name, ext) = os.path.splitext(filename)
-      contents = None
-      with open(arg, "rt") as stream:
-        contents = stream.read()
-      tokens = token.tokenize(contents)
-      unit = parser.Parser(tokens, module_name).parse_program()
-      self.units[module_name] = unit
-    # Then schedule them to be compiled.
-    for unit in self.units.values():
-      self.schedule_for_compile(unit)
-
-  # Processes any --expression arguments.
+  # Processes any --expression arguments. These are used by the golden tests.
   def schedule_expressions(self):
     self.run_parse_input(self.flags.expression,
         lambda tokens: parser.Parser(tokens, "expression").parse_expression_program())
 
-  # Processes any --program arguments.
+  # Processes any --program arguments. These are used by the golden tests.
   def schedule_programs(self):
     self.run_parse_input(self.flags.program,
         lambda tokens: parser.Parser(tokens, "program").parse_program())
 
-  # Processes any --file arguments.
+  # Processes any --file arguments. These are used by the nunit tests.
   def schedule_files(self):
     for filename in self.flags.file:
       source = open(filename, "rt").read()
