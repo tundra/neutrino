@@ -1,0 +1,7 @@
+module $assert {
+  
+  source [
+    "assert.n"
+  ]
+
+}

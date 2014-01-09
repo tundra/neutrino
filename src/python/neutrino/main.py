@@ -28,6 +28,12 @@ def parse_plankton_option(option, opt_str, value, parser):
   setattr(parser.values, option.dest, value)
 
 
+class ModuleManifest(object):
+
+  def __init__(self, filename):
+    self.filename = filename
+
+
 # Encapsulates stats relating to the main script.
 class Main(object):
 
@@ -95,21 +101,22 @@ class Main(object):
   # Processes any --expression arguments. These are used by the golden tests.
   def schedule_expressions(self):
     self.run_parse_input(self.flags.expression,
-        lambda tokens: parser.Parser(tokens, "expression").parse_expression_program())
+        lambda tokens: parser.Parser(tokens, ast.Module("expression")).parse_expression_program())
 
   # Processes any --program arguments. These are used by the golden tests.
   def schedule_programs(self):
     self.run_parse_input(self.flags.program,
-        lambda tokens: parser.Parser(tokens, "program").parse_program())
+        lambda tokens: parser.Parser(tokens, ast.Module("program")).parse_program())
 
   # Processes any --file arguments. These are used by the nunit tests.
   def schedule_files(self):
     for filename in self.flags.file:
       source = open(filename, "rt").read()
       tokens = token.tokenize(source)
-      unit = parser.Parser(tokens, filename).parse_program()
-      self.schedule_for_compile(unit)
-      self.schedule_for_output(unit)
+      module = ast.Module(filename)
+      parser.Parser(tokens, module).parse_program()
+      self.schedule_for_compile(module)
+      self.schedule_for_output(module)
 
   def schedule_libraries(self):
     if not self.compile_flags or not self.compile_flags.build_library:
@@ -121,10 +128,19 @@ class Main(object):
       (module_name, ext) = os.path.splitext(module_basename)
       module_source = open(module_file, "rt").read()
       tokens = token.tokenize(module_source)
-      unit = parser.Parser(tokens, module_name).parse_program()
-      analysis.scope_analyze(unit)
-      module = unit.as_unbound_module()
-      library.add_module(module.path, module)
+      if root_module is None:
+        module = ast.Module(module_name)
+      else:
+        module = root_module
+      parser.Parser(tokens, module).parse_program()
+      if root_module is None:
+        analysis.scope_analyze(module)
+        unbound_module = module.as_unbound_module()
+        library.add_module(unbound_module.path, unbound_module)
+    if not root_module is None:
+      analysis.scope_analyze(module)
+      unbound_module = root_module.as_unbound_module()
+      library.add_module(unbound_module.path, unbound_module)
     blob = plankton.Encoder().encode(library)
     handle = open(library_spec['out'], 'wb')
     handle.write(blob)

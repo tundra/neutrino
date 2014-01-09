@@ -1,0 +1,11 @@
+module $core {
+  
+  source [
+    "array.n",
+    "core.n",
+    "function.n",
+    "integer.n",
+    "string.n"
+  ]
+
+}
