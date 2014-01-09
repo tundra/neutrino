@@ -13,18 +13,14 @@ SRC=$(dirname $(dirname $0))
 PLOPT=$SRC/../tools/plopt
 TEST_FILE=
 EXECUTABLE=
-MODULES=
 
-while getopts "t:e:m:l:" OPT; do
+while getopts "t:e:l:" OPT; do
   case "$OPT" in
     t)
       TEST_FILE="$OPTARG"
       ;;
     e)
       EXECUTABLE="$OPTARG"
-      ;;
-    m)
-      MODULES="$OPTARG"
       ;;
     l)
       LIBRARY="$OPTARG"
@@ -74,7 +70,7 @@ check_result() {
     printf "  Expected: '%s'\\n" "$EXPECTED"
     printf "  Found: '%s'\\n" "$FOUND"
     COMMAND="$4"
-    printf "  Compile: $COMMAND '$INPUT' --compile `$PLOPT --modules [ $MODULES ]` --base64\\n"
+    printf "  Compile: $COMMAND '$INPUT' --base64\\n"
     RUN="$5"
     printf "  Run: $RUN\\n"
     exit 1
@@ -89,7 +85,7 @@ run_test() {
   INPUT="$2"
   OUTPUT="$3"
   RUN="$4"
-  FOUND=$($COMPILE "$INPUT" --compile `$PLOPT --modules [ $MODULES ]` | $RUN - 2>&1 | grep "^[^#]")
+  FOUND=$($COMPILE "$INPUT" | $RUN - 2>&1 | grep "^[^#]")
   check_result "$OUTPUT" "$FOUND" "$INPUT" "$COMPILE" "$RUN"
 }
 

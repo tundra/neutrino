@@ -34,13 +34,10 @@ for file_name in file_names:
   source_file = get_source_file(file_name)
   test_case = test.get_exec_test_case(file_name)
   test_case.set_runner(runner)
-  n_modules = get_external("src", "n", "files").get_input_paths()
-  test_modules = [get_source_file("test.n").get_input_file().get_path()]
   test_case.set_arguments(
     "-t", source_file.get_input_file().get_path(),
     "-e", ctrino.get_output_path(),
-    "-l", library.get_output_path(),
-    "-m", '"%s"' % " ".join(n_modules + test_modules)
+    "-l", library.get_output_path()
   )
   test_case.add_dependency(source_file)
   test_case.add_dependency(ctrino)
