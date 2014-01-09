@@ -93,7 +93,6 @@ class Main(object):
   def __init__(self):
     self.args = None
     self.flags = None
-    self.units = {}
     self.scheduler = schedule.TaskScheduler()
 
   # Builds and returns a new option parser for the flags understood by this

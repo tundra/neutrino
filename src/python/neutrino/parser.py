@@ -541,6 +541,7 @@ class Parser(object):
     return SyntaxError(self.current())
 
 
+# Module manifest parser.
 class ModuleParser(Parser):
 
   def __init__(self, tokens):
