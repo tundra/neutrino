@@ -18,7 +18,6 @@ class Parser(object):
   _SQUARE_SAUSAGES = data.Operation.index()
 
   def __init__(self, tokens, module):
-    assert isinstance(module, ast.Module)
     self.tokens = tokens
     self.cursor = 0
     self.module = module
@@ -540,6 +539,21 @@ class Parser(object):
   # Creates a new syntax error at the current token.
   def new_syntax_error(self):
     return SyntaxError(self.current())
+
+
+class ModuleParser(Parser):
+
+  def __init__(self, tokens):
+    super(ModuleParser, self).__init__(tokens, None)
+
+  def parse_module_manifest(self):
+    self.expect_word('module')
+    name = self.expect_type(Token.IDENTIFIER)
+    self.expect_punctuation('{')
+    self.expect_word('source')
+    values = self.parse_array_expression()
+    self.expect_punctuation('}')
+    return ast.ModuleManifest(name, values)
 
 
 # Exception signalling a syntax error.

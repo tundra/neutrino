@@ -685,3 +685,19 @@ class IsDeclaration(object):
     # TODO: allow past is-declarations.
     fragment = module.get_or_create_fragment(0)
     fragment.add_element(self)
+
+
+class ModuleManifest(object):
+
+  def __init__(self, ident, sources):
+    assert isinstance(sources, Array)
+    self.ident = ident
+    self.sources = sources
+
+  def get_path(self):
+    return self.ident.path
+
+  def get_sources(self):
+    for element in self.sources.elements:
+      assert isinstance(element, Literal)
+      yield element.value

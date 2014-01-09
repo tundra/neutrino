@@ -28,10 +28,63 @@ def parse_plankton_option(option, opt_str, value, parser):
   setattr(parser.values, option.dest, value)
 
 
-class ModuleManifest(object):
+# Encapsulates the compilation of an individual module.
+class ModuleCompile(object):
 
-  def __init__(self, filename):
-    self.filename = filename
+  def __init__(self, manifest_file):
+    self.manifest_file = manifest_file
+    self.module = None
+
+  def process(self):
+    # Read the manifest.
+    manifest = self.parse_manifest()
+    path = manifest.get_path()
+    self.module = ast.Module(path.get_name())
+    root = os.path.dirname(self.manifest_file)
+    # Scan through and load the source files.
+    for file in manifest.get_sources():
+      filename = os.path.join(root, file)
+      self.parse_source_file(filename)
+    # Do post-processing.
+    analysis.scope_analyze(self.module)
+
+  def parse_manifest(self):
+    source = open(self.manifest_file, "rt").read()
+    tokens = token.tokenize(source)
+    return parser.ModuleParser(tokens).parse_module_manifest()
+
+  def parse_source_file(self, name):
+    source = open(name, "rt").read()
+    tokens = token.tokenize(source)
+    parser.Parser(tokens, self.module).parse_program()
+
+  def add_to_library(self, library):
+    unbound = self.module.as_unbound_module()
+    library.add_module(unbound.path, unbound)
+
+
+# Encapsulates the compilation of source files into a library.
+class LibraryCompile(object):
+
+  def __init__(self, options):
+    self.options = options
+    self.library = data.Library()
+
+  def run(self):
+    self.compile_modules()
+    self.write_output()
+
+  def compile_modules(self):
+    for module_manifest in self.options["modules"]:
+      module = ModuleCompile(module_manifest)
+      module.process()
+      module.add_to_library(self.library)
+
+  def write_output(self):
+    blob = plankton.Encoder().encode(self.library)
+    handle = open(self.options['out'], 'wb')
+    handle.write(blob)
+    handle.close()
 
 
 # Encapsulates stats relating to the main script.
@@ -121,30 +174,8 @@ class Main(object):
   def schedule_libraries(self):
     if not self.compile_flags or not self.compile_flags.build_library:
       return
-    library = data.Library()
-    library_spec = self.compile_flags.build_library
-    for module_file in library_spec['modules']:
-      module_basename = os.path.basename(module_file)
-      (module_name, ext) = os.path.splitext(module_basename)
-      module_source = open(module_file, "rt").read()
-      tokens = token.tokenize(module_source)
-      if root_module is None:
-        module = ast.Module(module_name)
-      else:
-        module = root_module
-      parser.Parser(tokens, module).parse_program()
-      if root_module is None:
-        analysis.scope_analyze(module)
-        unbound_module = module.as_unbound_module()
-        library.add_module(unbound_module.path, unbound_module)
-    if not root_module is None:
-      analysis.scope_analyze(module)
-      unbound_module = root_module.as_unbound_module()
-      library.add_module(unbound_module.path, unbound_module)
-    blob = plankton.Encoder().encode(library)
-    handle = open(library_spec['out'], 'wb')
-    handle.write(blob)
-    handle.close()
+    process = LibraryCompile(self.compile_flags.build_library)
+    process.run()
 
   # Schedules a unit for compilation at the appropriate time relative to any
   # of its dependencies.
