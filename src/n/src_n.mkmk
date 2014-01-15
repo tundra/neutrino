@@ -7,6 +7,8 @@ files = get_group("files")
 core_file_names = [
   "array.n",
   "assert.n",
+  "bool.n",
+  "control.n",
   "core.n",
   "function.n",
   "integer.n",
@@ -36,3 +38,4 @@ library = n.get_library("library")
 library.set_compiler(get_external("src", "python", "neutrino", "main.py"))
 library.add_manifest(core_manifest)
 library.add_manifest(assert_manifest)
+library.add_dependency(files)

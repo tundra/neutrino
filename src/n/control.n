@@ -1,0 +1,7 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## If $cond is true executes the $then thunk, otherwise executes the $else
+## thunk.
+def @if($cond == true, $then, $else) => $then();
+def @if($cond == false, $then, $else) => $else();

@@ -30,18 +30,26 @@ static value_t ctrino_get_builtin_type(builtin_arguments_t *args) {
   value_t name = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofCtrino, self);
   CHECK_FAMILY(ofString, name);
-#define __CHECK_BUILTIN_TYPE_OPT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW) \
-  SR(__CHECK_BUILTIN_TYPE__(family),)
 #define __CHECK_BUILTIN_TYPE__(family)                                         \
   do {                                                                         \
     value_t type = ROOT(runtime, family##_type);                               \
     if (value_identity_compare(name, get_type_display_name(type)))             \
       return type;                                                             \
   } while (false);
-  ENUM_OBJECT_FAMILIES(__CHECK_BUILTIN_TYPE_OPT__)
+  // Match against the built-in families.
+#define __CHECK_BUILTIN_FAMILY_OPT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW) \
+  SR(__CHECK_BUILTIN_TYPE__(family),)
+  ENUM_OBJECT_FAMILIES(__CHECK_BUILTIN_FAMILY_OPT__)
+#undef __CHECK_BUILTIN_FAMILY_OPT__
+  // Match against the built-in phylums.
+#define __CHECK_BUILTIN_PHYLUM_OPT__(Phylum, phylum, CM, SR)                   \
+  SR(__CHECK_BUILTIN_TYPE__(phylum),)
+  ENUM_CUSTOM_TAGGED_PHYLUMS(__CHECK_BUILTIN_PHYLUM_OPT__)
+#undef __CHECK_BUILTIN_PHYLUM_OPT__
+  // Special cases.
   __CHECK_BUILTIN_TYPE__(integer);
 #undef __CHECK_BUILTIN_TYPE__
-#undef __CHECK_BUILTIN_TYPE_OPT__
+  WARN("Couldn't resolve builtin type %v.", name);
   return null();
 }
 

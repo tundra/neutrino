@@ -1,0 +1,14 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## The built-in type of runtime-native booleans. Note that, unusually, the
+## surface name of the type ("Bool") is different from the internal name,
+## that's because the word "bool" internally is already somewhat taken so to
+## avoid ambiguity internally we use "boolean" instead.
+def @Bool := @ctrino.get_builtin_type("Boolean");
+
+## Specialized implementation of .select for the true value.
+def ($this == true).select($if_true, $if_false) => $if_true;
+
+## Specialized implementation of .select if the false value.
+def ($this == false).select($if_true, $if_false) => $if_false;

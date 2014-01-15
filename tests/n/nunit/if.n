@@ -1,0 +1,22 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $core;
+import $assert;
+
+def $test_select() {
+  $assert:equals(0, true.select(0, 1));
+  $assert:equals(1, false.select(0, 1));
+}
+
+def $test_if_call() {
+  $assert:equals(1, @core:if(true, fn => 1, fn => 2));
+  $assert:equals(2, @core:if(false, fn => 1, fn => 2));
+}
+
+def $main() {
+  $test_select();
+  $test_if_call();
+}
+
+entry_point $main();

@@ -18,3 +18,4 @@ type @Array is @Object;
 type @Function is @Object;
 type @Integer is @Object;
 type @String is @Object;
+type @Bool is @Object;
