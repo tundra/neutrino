@@ -93,7 +93,7 @@ class ParserTest(unittest.TestCase):
     self.maxDiff = None
 
   def check_expression(self, input, expected):
-    found = parser.Parser(token.tokenize(input), ast.Module("")).parse_expression()
+    found = parser.Parser(token.tokenize(input), ast.Module("")).parse_expression(False)
     # Convert the asts to strings because that's just infinitely easier to
     # debug when assertions fail. Of course that requires that ast string
     # conversion is sane, which it is.

@@ -385,6 +385,17 @@ class Lambda(object):
   def __str__(self):
     return "(fn (%s) => %s)" % (self.method.signature, self.method.body)
 
+  # Creates a no-argument lambda with the given expression as the body.
+  @staticmethod
+  def thunk(body):
+    signature = Signature([
+      Parameter(data.Identifier(0, data.Path(['this'])), [data._SUBJECT],
+        Guard.any()),
+      Parameter(data.Identifier(0, data.Path(['name'])), [data._SELECTOR],
+        Guard.eq(Literal(data.Operation.call())))
+    ])
+    return Lambda(Method(signature, body))
+
 
 @plankton.serializable(plankton.EnvironmentReference.path("ast", "Program"))
 class Program(object):

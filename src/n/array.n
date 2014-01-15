@@ -3,3 +3,5 @@
 
 ## The built-in type of runtime-native object arrays.
 def @Array := @ctrino.get_builtin_type("Array");
+
+type @Array is @Object;

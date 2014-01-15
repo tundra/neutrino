@@ -4,5 +4,7 @@
 ## The built-in type of runtime-native integers.
 def @Integer := @ctrino.get_builtin_type("Integer");
 
+type @Integer is @Object;
+
 ## Test method.
 def ($this is @Integer).method_from_integer_module() => 8;

@@ -1,0 +1,12 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## The common supertype of all the built-in types.
+def @Object := @ctrino.new_type("Object");
+
+## Generic converter method that returns the internal string representation of
+## the given object.
+def ($this is @Object).to($target == @String) => @ctrino.to_string($this);
+
+## Prints the internal representation of this object.
+def ($this is @Object).print() => $this.to(@String).print_raw();
