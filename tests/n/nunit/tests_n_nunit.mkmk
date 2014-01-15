@@ -11,6 +11,7 @@ file_names = [
   "float32.n",
   "function.n",
   "integer.n",
+  "if.n",
   "is.n",
 ]
 
