@@ -12,3 +12,6 @@ def $that($value == true) => null;
 
 ## Does nothing if the two given values are equal, fails otherwise.
 def $equals(expected: $a, found: $b) => $that($a == $b);
+
+## Aborts the test with a failure.
+def $fail() => $ctrino.fail();

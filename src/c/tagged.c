@@ -5,7 +5,7 @@
 #include "builtin.h"
 #include "runtime.h"
 #include "stdc-inl.h"
-#include "tagged.h"
+#include "tagged-inl.h"
 #include "utils.h"
 #include "value-inl.h"
 
@@ -46,12 +46,23 @@ void nothing_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) 
 // --- N u l l ---
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(null);
-NO_BUILTIN_METHODS(null);
 
 void null_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
   string_buffer_printf(buf, "null");
 }
 
+static value_t null_equals(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t that = get_builtin_argument(args, 0);
+  CHECK_PHYLUM(tpNull, self);
+  return new_boolean(in_phylum(tpNull, that));
+}
+
+value_t add_null_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
+  DEF_INFIX(infix_eqeq, "==");
+  ADD_BUILTIN(null, infix_eqeq, 1, null_equals);
+  return success();
+}
 
 // --- B o o l e a n ---
 

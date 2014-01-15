@@ -9,14 +9,56 @@ def $test_select() {
   $assert:equals(1, false.select(0, 1));
 }
 
+## Test direct calls to the if function.
 def $test_if_call() {
   $assert:equals(1, @core:if(true, fn => 1, fn => 2));
-  $assert:equals(2, @core:if(false, fn => 1, fn => 2));
+  $assert:equals(4, @core:if(false, fn => 3, fn => 4));
+}
+
+## Test the if syntax form used as an expression.
+def $test_if_expression() {
+  $assert:equals(5, if true then 5 else 6);
+  $assert:equals(8, if false then 7 else 8);
+  $assert:equals(9, if true then 9 else $assert:fail());
+  $assert:equals(10, if false then $assert:fail() else 10);
+  $assert:equals(11, if true then 11);
+  $assert:equals(null, if false then 12);
+}
+
+## Test the if syntax form used as a statement.
+def $test_if_statement() {
+  if true
+    then null;
+    else $assert:fail();
+  if true then {
+    null;
+  } else {
+    $assert:fail();
+  }
+  def $v0 := if false then {
+    8;
+  } else {
+    9;
+  }
+  $assert:equals(9, $v0);
+  def $v1 := {
+    if false
+      then 10;
+      else 11;
+  }
+  $assert:equals(11, $v1);
+  def $v2 := {
+    if false
+      then 12;
+  }
+  $assert:equals(null, $v2);
 }
 
 def $main() {
   $test_select();
   $test_if_call();
+  $test_if_expression();
+  $test_if_statement();
 }
 
 entry_point $main();

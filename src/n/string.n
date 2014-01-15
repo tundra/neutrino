@@ -3,3 +3,5 @@
 
 ## The built-in type of runtime-native strings.
 def @String := @ctrino.get_builtin_type("String");
+
+type @String is @Object;

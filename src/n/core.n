@@ -3,19 +3,3 @@
 
 ## Info-log the given value to stdout using the built-in INFO macro.
 def $info($value) => @ctrino.log_info($value);
-
-## The common supertype of all the built-in types.
-def @Object := @ctrino.new_type("Object");
-
-## Generic converter method that returns the internal string representation of
-## the given object.
-def ($this is @Object).to($target == @String) => @ctrino.to_string($this);
-
-## Prints the internal representation of this object.
-def ($this is @Object).print() => $this.to(@String).print_raw();
-
-type @Array is @Object;
-type @Function is @Object;
-type @Integer is @Object;
-type @String is @Object;
-type @Bool is @Object;

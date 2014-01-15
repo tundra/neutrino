@@ -124,8 +124,7 @@ class Parser(object):
       if self.at_punctuation(':='):
         # Plain definition
         self.expect_punctuation(':=')
-        value = self.parse_expression()
-        self.expect_statement_delimiter()
+        value = self.parse_expression(True)
         return ast.NamespaceDeclaration(name, value)
       else:
         # First argument to a method
@@ -159,8 +158,7 @@ class Parser(object):
   def parse_method_tail(self):
     if self.at_punctuation('=>'):
       self.expect_punctuation('=>')
-      body = self.parse_expression()
-      self.expect_statement_delimiter()
+      body = self.parse_expression(True)
       return body
     elif self.at_punctuation('{'):
       return self.parse_sequence_expression()
@@ -173,7 +171,7 @@ class Parser(object):
   def parse_toplevel_import(self):
     self.expect_word('import')
     name = self.expect_type(Token.IDENTIFIER)
-    self.expect_statement_delimiter()
+    self.expect_statement_delimiter(True)
     return ast.Import(name)
 
   # <toplevel-statement>
@@ -186,8 +184,7 @@ class Parser(object):
       return self.parse_toplevel_import()
     elif self.at_word('entry_point'):
       self.expect_word('entry_point')
-      self.module.set_entry_point(self.parse_expression())
-      self.expect_statement_delimiter()
+      self.module.set_entry_point(self.parse_expression(True))
       return None
     elif self.at_word('type'):
       return self.parse_toplevel_type_declaration()
@@ -201,39 +198,62 @@ class Parser(object):
     subtype = self.parse_atomic_expression()
     self.expect_word('is')
     supertype = self.parse_atomic_expression()
-    self.expect_statement_delimiter()
+    self.expect_statement_delimiter(True)
     return ast.IsDeclaration(subtype, supertype)
 
   # <expression>
   #   -> <operator expression>
-  def parse_expression(self):
-    return self.parse_word_expression()
+  def parse_expression(self, expect_delim):
+    return self.parse_word_expression(expect_delim)
 
   # Parses an expression and wraps it in a program appropriately to make it
   # executable.
   def parse_expression_program(self):
-    self.module.set_entry_point(self.parse_word_expression())
+    self.module.set_entry_point(self.parse_word_expression(False))
     return self.module
 
   # <word expression>
   #   -> <lambda>
   #   -> <assignment expression>
-  def parse_word_expression(self):
+  def parse_word_expression(self, expect_delim):
     if self.at_word('fn'):
       return self.parse_lambda_expression()
+    elif self.at_word('if'):
+      return self.parse_if_expression(expect_delim)
     else:
-      return self.parse_assignment_expression()
+      return self.parse_assignment_expression(expect_delim)
+
+  def parse_if_expression(self, expect_delim):
+    self.expect_word('if')
+    cond = self.parse_expression(False)
+    self.expect_word('then')
+    then_part = self.parse_expression(expect_delim)
+    if self.at_word('else'):
+      self.expect_word('else')
+      else_part = self.parse_expression(expect_delim)
+    else:
+      else_part = ast.Literal(None)
+    result = ast.Invocation([
+      ast.Argument(data._SUBJECT, ast.Variable(data.Identifier(-1, data.Path(["core", "if"])))),
+      ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES)),
+      ast.Argument(0, cond),
+      ast.Argument(1, ast.Lambda.thunk(then_part)),
+      ast.Argument(2, ast.Lambda.thunk(else_part)),
+    ])
+    return result
 
   # <assignment expression>
   #   -> <operator expression> :* ":="
-  def parse_assignment_expression(self):
+  def parse_assignment_expression(self, expect_delim):
     lvalue = self.parse_operator_expression()
     if self.at_punctuation(':='):
       self.expect_punctuation(':=')
-      rvalue = self.parse_assignment_expression()
-      return lvalue.to_assignment(rvalue)
+      rvalue = self.parse_assignment_expression(False)
+      result = lvalue.to_assignment(rvalue)
     else:
-      return lvalue
+      result = lvalue
+    self.expect_statement_delimiter(expect_delim)
+    return result
 
   # <lambda expression>
   #   -> "fn" <parameters> "=>" <word expression>
@@ -245,7 +265,7 @@ class Parser(object):
       value = self.parse_sequence_expression()
     else:
       self.expect_punctuation('=>')
-      value = self.parse_word_expression()
+      value = self.parse_word_expression(False)
     return ast.Lambda(ast.Method(signature, value))
 
   # Are we currently at a token that is allowed as the first token of a
@@ -364,7 +384,7 @@ class Parser(object):
       tag = self.expect_type(Token.TAG)
     else:
       tag = default_tag
-    value = self.parse_expression()
+    value = self.parse_expression(False)
     return ast.Argument(tag, value)
 
   # <unary expression>
@@ -448,7 +468,7 @@ class Parser(object):
       return self.parse_variable()
     elif self.at_punctuation('('):
       self.expect_punctuation('(')
-      result = self.parse_expression()
+      result = self.parse_expression(False)
       self.expect_punctuation(')')
       return result
     elif self.at_punctuation('['):
@@ -472,7 +492,7 @@ class Parser(object):
   def parse_quote(self):
     stage = self.expect_type(Token.QUOTE)
     self.expect_punctuation('(')
-    value = self.parse_expression()
+    value = self.parse_expression(False)
     self.expect_punctuation(')')
     return ast.Quote(stage, value)
 
@@ -484,18 +504,20 @@ class Parser(object):
     if self.at_punctuation(']'):
       elements = []
     else:
-      first = self.parse_expression()
+      first = self.parse_expression(False)
       elements.append(first)
       while self.at_punctuation(','):
         self.expect_punctuation(',')
-        next = self.parse_expression()
+        next = self.parse_expression(False)
         elements.append(next)
     self.expect_punctuation(']')
     return ast.Array(elements)
 
   # Raises an error if the current token is not a valid statement delimiter. If
   # the delimiter is explicit consumes it.
-  def expect_statement_delimiter(self):
+  def expect_statement_delimiter(self, expect_delim):
+    if not expect_delim:
+      return
     # Don't check explicitly for has-more since we may be at the end where the
     # end token is an implicit delimiter.
     current = self.current()
@@ -523,8 +545,7 @@ class Parser(object):
       body = ast.Sequence.make(self.parse_statement_list())
       return [ast.LocalDeclaration(name, value, body)]
     else:
-      next = self.parse_expression()
-      self.expect_statement_delimiter()
+      next = self.parse_expression(True)
       tail = self.parse_statement_list()
       return [next] + tail
 
@@ -532,8 +553,7 @@ class Parser(object):
     self.expect_word('def')
     name = self.expect_type(Token.IDENTIFIER)
     self.expect_punctuation(':=')
-    value = self.parse_expression()
-    self.expect_statement_delimiter()
+    value = self.parse_expression(True)
     return (name, value)
 
   # Creates a new syntax error at the current token.
