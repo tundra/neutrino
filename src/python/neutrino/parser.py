@@ -223,6 +223,8 @@ class Parser(object):
     else:
       return self.parse_assignment_expression(expect_delim)
 
+  # <if expression>
+  #   -> "if" <expression> "then" <expression> ("else" <expression>)?
   def parse_if_expression(self, expect_delim):
     self.expect_word('if')
     cond = self.parse_expression(False)
