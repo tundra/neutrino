@@ -1,0 +1,28 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+# Get a handle to the files we're working with.
+json_file = get_source_file("Neutrino.json")
+converter = py.get_source_file("../../src/sh/json-to-plist.py")
+
+# Create the tmLanguage file.
+tm_language = get_custom_exec_file("Neutrino.tmLanguage")
+tm_language.set_runner(converter)
+tm_language.set_arguments(
+  json_file.get_input_file().get_path(),
+  tm_language.get_output_path())
+tm_language.add_dependency(json_file)
+tm_language.set_title("Building sublime package")
+
+# Package everything into a zip file.
+package = get_system_exec_file("Neutrino.sublime-package")
+package.set_command("zip")
+package.set_arguments(
+  "-j",
+  package.get_output_path(),
+  tm_language.get_output_path())
+package.add_dependency(tm_language)
+
+# Convenience shorthand.
+sublime = add_alias("sublime")
+sublime.add_member(package)
