@@ -10,46 +10,19 @@ from . import process
 
 
 # A build dependency node that represents running a test case.
-class ExecTestCaseNode(process.PhysicalNode):
+class ExecTestCaseNode(process.CustomExecNode):
 
   def __init__(self, name, context, subject):
-    super(ExecTestCaseNode, self).__init__(name, context)
-    self.subject = subject
-    self.args = []
+    super(ExecTestCaseNode, self).__init__(name, context, subject)
 
   def get_output_file(self):
     (subject_root, subject_ext) = os.path.splitext(self.subject)
     filename = "%s.run" % subject_root
     return self.get_context().get_outdir_file(filename)
 
-  def get_command_line(self, platform):
-    [runner_node] = self.get_input_nodes(runner=True)
-    runner = runner_node.get_run_command_line(platform)
-    outpath = self.get_output_path()
-    args = " ".join(self.get_arguments())
-    raw_command_line = "%s %s" % (runner, args)
-    result = platform.get_safe_tee_command(raw_command_line, outpath)
-    result.set_comment("Running %s" % self.get_full_name())
-    return result
+  def should_tee_output(self):
+    return True
 
-  # Sets the executable used to run this test case.
-  def set_runner(self, node):
-    self.add_dependency(node, runner=True)
-    return self
-
-  # Sets the title of the test, the message to print when running it.
-  def set_title(self, title):
-    self.comment = title
-    return self
-
-  # Sets the (string) arguments to pass to the runner to execute the test.
-  def set_arguments(self, *args):
-    self.args = args
-    return self
-
-  # Returns the argument list to pass when executing this test.
-  def get_arguments(self):
-    return self.args
 
 
 # The tools for working with C. Available in mkmk files as "c".

@@ -393,6 +393,78 @@ class FileNode(PhysicalNode):
     return self.handle.get_path()
 
 
+# A node representing the execution of a custom command.
+class CustomExecNode(PhysicalNode):
+
+  def __init__(self, name, context, subject):
+    super(CustomExecNode, self).__init__(name, context)
+    self.subject = subject
+    self.args = []
+    self.title = None
+
+  def get_output_file(self):
+    return self.get_context().get_outdir_file(self.subject)
+
+  def get_command_line(self, platform):
+    runner = self.get_runner_command(platform)
+    outpath = self.get_output_path()
+    args = " ".join(self.get_arguments())
+    raw_command_line = "%s %s" % (runner, args)
+    if self.should_tee_output():
+      result = platform.get_safe_tee_command(raw_command_line, outpath)
+    else:
+      result = Command(raw_command_line)
+    if self.title is None:
+      title = "Running %s" % self.get_full_name()
+    else:
+      title = self.title
+    result.set_comment(title)
+    return result
+
+  # Returns the executable to run.
+  def get_runner_command(self, platform):
+    [runner_node] = self.get_input_nodes(runner=True)
+    return runner_node.get_run_command_line(platform)
+
+  # Should the contents of the output file be printed on successful completion?
+  def should_tee_output(self):
+    return False
+
+  # Sets the executable used to run this node case.
+  def set_runner(self, node):
+    self.add_dependency(node, runner=True)
+    return self
+
+  # Sets the title of the node, the message to print when running it.
+  def set_title(self, title):
+    self.title = title
+    return self
+
+  # Sets the (string) arguments to pass to the runner.
+  def set_arguments(self, *args):
+    self.args = args
+    return self
+
+  # Returns the argument list to pass when executing this node.
+  def get_arguments(self):
+    return self.args
+
+
+# A custom executable node that calls a system command.
+class SystemExecNode(CustomExecNode):
+
+  def __init__(self, name, context, subject):
+    super(SystemExecNode, self).__init__(name, context, subject)
+    self.command = None
+
+  def set_command(self, command):
+    self.command = command
+    return self
+
+  def get_runner_command(self, platform):
+    return self.command
+
+
 # A dependency between nodes. An edge is like a pointer from one node to another
 # but additionally carries a set of annotations that control what the pointer
 # means. For instance, an object file may depend on both a source file and its
@@ -543,9 +615,19 @@ class ConfigContext(object):
 
   # Returns a node representing a source file with the given name.
   @export_to_build_scripts
-  def get_source_file(self, *file_path):
-    file = self.home.get_child(*file_path)
-    return self.get_or_create_node(Name.of(*file_path), FileNode, file)
+  def get_source_file(self, file_path):
+    file = self.home.get_child(file_path)
+    return self.get_or_create_node(file_path, FileNode, file)
+
+  # Returns a node representing the output of running a custom command.
+  @export_to_build_scripts
+  def get_custom_exec_file(self, file_path):
+    return self.get_or_create_node(file_path, CustomExecNode, file_path)
+
+  # Returns a node representing the output of running a system command.
+  @export_to_build_scripts
+  def get_system_exec_file(self, file_path):
+    return self.get_or_create_node(file_path, SystemExecNode, file_path)
 
   # Creates a source file that represents the given source file.
   @export_to_build_scripts
