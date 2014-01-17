@@ -8,6 +8,8 @@ def $test_var() {
   $assert:equals(3, $x);
   $x := 4;
   $assert:equals(4, $x);
+  $x := 3;
+  $assert:equals(3, $x);
 }
 
 def $main() {

@@ -608,11 +608,12 @@ value_t new_heap_sequence_ast(runtime_t *runtime, value_t values) {
 }
 
 value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
-    value_t value, value_t body) {
+    value_t is_mutable, value_t value, value_t body) {
   size_t size = kLocalDeclarationAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, local_declaration_ast_species)));
   set_local_declaration_ast_symbol(result, symbol);
+  set_local_declaration_ast_is_mutable(result, is_mutable);
   set_local_declaration_ast_value(result, value);
   set_local_declaration_ast_body(result, body);
   return post_create_sanity_check(result, size);
@@ -626,6 +627,17 @@ value_t new_heap_local_variable_ast(runtime_t *runtime, value_t symbol) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_variable_assignment_ast(runtime_t *runtime, value_t target,
+    value_t value) {
+  size_t size = kVariableAssignmentAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, variable_assignment_ast_species)));
+  set_variable_assignment_ast_target(result, target);
+  set_variable_assignment_ast_value(result, value);
+  return post_create_sanity_check(result, size);
+}
+
+
 value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t ident) {
   size_t size = kNamespaceVariableAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
@@ -634,11 +646,12 @@ value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t ident) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_symbol_ast(runtime_t *runtime, value_t name) {
+value_t new_heap_symbol_ast(runtime_t *runtime, value_t name, value_t origin) {
   size_t size = kSymbolAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, symbol_ast_species)));
   set_symbol_ast_name(result, name);
+  set_symbol_ast_origin(result, origin);
   return post_create_sanity_check(result, size);
 }
 

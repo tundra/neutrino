@@ -30,6 +30,7 @@
   F(guard,                      "guard")                                       \
   F(imports,                    "imports")                                     \
   F(inheritance,                "inheritance")                                 \
+  F(is_mutable,                 "is_mutable")                                  \
   F(key,                        "key")                                         \
   F(libraries,                  "libraries")                                   \
   F(method,                     "method")                                      \
@@ -42,6 +43,7 @@
   F(namespace,                  "namespace")                                   \
   F(numerator,                  "numerator")                                   \
   F(options,                    "options")                                     \
+  F(origin,                     "origin")                                      \
   F(parameters,                 "parameters")                                  \
   F(path,                       "path")                                        \
   F(precision,                  "precision")                                   \
@@ -55,6 +57,7 @@
   F(syntax,                     "syntax")                                      \
   F(tag,                        "tag")                                         \
   F(tags,                       "tags")                                        \
+  F(target,                     "target")                                      \
   F(type,                       "type")                                        \
   F(value,                      "value")                                       \
   F(values,                     "values")

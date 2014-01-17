@@ -361,6 +361,8 @@ FIXED_GET_MODE_IMPL(local_declaration_ast, vmMutable);
 
 ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acInFamilyOpt,
     ofSymbolAst, Symbol, symbol);
+ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acNoCheck, 0,
+    IsMutable, is_mutable);
 ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acIsSyntaxOpt,
     0, Value, value);
 ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acIsSyntaxOpt,
@@ -368,9 +370,19 @@ ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acIsSyntaxOpt,
 
 value_t emit_local_declaration_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofLocalDeclarationAst, self);
+  // Record the stack offset where the value is being pushed.
   size_t offset = assm->stack_height;
+  // Emit the value, wrapping it in a reference if this is a mutable local. The
+  // reference approach is really inefficient but gives the correct semantics
+  // with little effort.
   value_t value = get_local_declaration_ast_value(self);
   TRY(emit_value(value, assm));
+  value_t is_mutable = get_local_declaration_ast_is_mutable(self);
+  if (get_boolean_value(is_mutable))
+    TRY(assembler_emit_new_reference(assm));
+  // Record in the scope chain that the symbol is bound and where the value is
+  // located on the stack. It is the responsibility of anyone reading or writing
+  // the variable to dereference the value as appropriate.
   value_t symbol = get_local_declaration_ast_symbol(self);
   CHECK_FAMILY(ofSymbolAst, symbol);
   if (assembler_is_symbol_bound(assm, symbol))
@@ -406,8 +418,9 @@ void local_declaration_ast_print_on(value_t value, string_buffer_t *buf,
 
 value_t plankton_set_local_declaration_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, symbol, value, body);
+  UNPACK_PLANKTON_MAP(contents, symbol, is_mutable, value, body);
   set_local_declaration_ast_symbol(object, symbol);
+  set_local_declaration_ast_is_mutable(object, is_mutable);
   set_local_declaration_ast_value(object, value);
   set_local_declaration_ast_body(object, body);
   return success();
@@ -415,21 +428,43 @@ value_t plankton_set_local_declaration_ast_contents(value_t object,
 
 value_t plankton_new_local_declaration_ast(runtime_t *runtime) {
   return new_heap_local_declaration_ast(runtime, nothing(),
-      nothing(), nothing());
+      nothing(), nothing(), nothing());
 }
 
 
-// --- L o c a l   v a r i a b l e ---
+// --- V a r i a b l e   a s s i g n m e n t   a s t ---
 
-GET_FAMILY_PRIMARY_TYPE_IMPL(local_variable_ast);
-NO_BUILTIN_METHODS(local_variable_ast);
-FIXED_GET_MODE_IMPL(local_variable_ast, vmMutable);
+FIXED_GET_MODE_IMPL(variable_assignment_ast, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(VariableAssignmentAst, variable_assignment_ast);
 
-ACCESSORS_IMPL(LocalVariableAst, local_variable_ast, acInFamilyOpt, ofSymbolAst,
-    Symbol, symbol);
+ACCESSORS_IMPL(VariableAssignmentAst, variable_assignment_ast, acIsSyntaxOpt, 0,
+    Target, target);
+ACCESSORS_IMPL(VariableAssignmentAst, variable_assignment_ast, acIsSyntaxOpt, 0,
+    Value, value);
 
-// Pushes the value of a symbol onto the stack.
-static value_t assembler_load_symbol(value_t symbol, assembler_t *assm) {
+value_t variable_assignment_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofVariableAssignmentAst, self);
+  return success();
+}
+
+value_t plankton_set_variable_assignment_ast_contents(value_t object,
+    runtime_t *runtime, value_t contents) {
+  UNPACK_PLANKTON_MAP(contents, target, value);
+  set_variable_assignment_ast_target(object, target);
+  set_variable_assignment_ast_value(object, value);
+  return success();
+}
+
+value_t plankton_new_variable_assignment_ast(runtime_t *runtime) {
+  return new_heap_variable_assignment_ast(runtime, nothing(), nothing());
+}
+
+// Pushes the binding of a symbol onto the stack. If the symbol is mutable this
+// will push the reference, not the value. It is the caller's responsibility to
+// dereference the value as appropriate. The is_ref out argument indicates
+// whether that is relevant.
+static value_t assembler_access_symbol(value_t symbol, assembler_t *assm,
+    bool *is_ref_out) {
   CHECK_FAMILY(ofSymbolAst, symbol);
   binding_info_t binding;
   if (is_signal(scNotFound, assembler_lookup_symbol(assm, symbol, &binding)))
@@ -437,9 +472,13 @@ static value_t assembler_load_symbol(value_t symbol, assembler_t *assm) {
     // not valid.
     return new_invalid_syntax_signal(isSymbolNotBound);
   switch (binding.type) {
-    case btLocal:
+    case btLocal: {
       TRY(assembler_emit_load_local(assm, binding.data));
+      value_t origin = get_symbol_ast_origin(symbol);
+      value_t is_mutable = get_local_declaration_ast_is_mutable(origin);
+      *is_ref_out = get_boolean_value(is_mutable);
       break;
+    }
     case btArgument:
       TRY(assembler_emit_load_argument(assm, binding.data));
       break;
@@ -453,6 +492,42 @@ static value_t assembler_load_symbol(value_t symbol, assembler_t *assm) {
   }
   return success();
 }
+
+// Loads the value of the given symbol onto the stack. If the variable is
+// mutable the reference that holds the value is read as appropriate.
+static value_t assembler_load_symbol(value_t symbol, assembler_t *assm) {
+  bool is_ref = false;
+  TRY(assembler_access_symbol(symbol, assm, &is_ref));
+  if (is_ref)
+    TRY(assembler_emit_get_reference(assm));
+  return success();
+}
+
+value_t emit_variable_assignment_ast(value_t self, assembler_t *assm) {
+  // First push the value we're going to store. This will be left on the stack
+  // as the value of the whole expression.
+  value_t value = get_variable_assignment_ast_value(self);
+  TRY(emit_value(value, assm));
+  // Then load the reference to store the value in.
+  value_t variable = get_variable_assignment_ast_target(self);
+  CHECK_FAMILY(ofLocalVariableAst, variable);
+  value_t symbol = get_local_variable_ast_symbol(variable);
+  bool is_ref = false;
+  TRY(assembler_access_symbol(symbol, assm, &is_ref));
+  CHECK_TRUE("assigning immutable", is_ref);
+  TRY(assembler_emit_set_reference(assm));
+  return success();
+}
+
+
+// --- L o c a l   v a r i a b l e ---
+
+GET_FAMILY_PRIMARY_TYPE_IMPL(local_variable_ast);
+NO_BUILTIN_METHODS(local_variable_ast);
+FIXED_GET_MODE_IMPL(local_variable_ast, vmMutable);
+
+ACCESSORS_IMPL(LocalVariableAst, local_variable_ast, acInFamilyOpt, ofSymbolAst,
+    Symbol, symbol);
 
 value_t emit_local_variable_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofLocalVariableAst, self);
@@ -527,6 +602,7 @@ NO_BUILTIN_METHODS(symbol_ast);
 FIXED_GET_MODE_IMPL(symbol_ast, vmMutable);
 
 ACCESSORS_IMPL(SymbolAst, symbol_ast, acNoCheck, 0, Name, name);
+ACCESSORS_IMPL(SymbolAst, symbol_ast, acNoCheck, 0, Origin, origin);
 
 value_t symbol_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofSymbolAst, self);
@@ -542,13 +618,14 @@ void symbol_ast_print_on(value_t value, string_buffer_t *buf,
 
 value_t plankton_set_symbol_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, name);
+  UNPACK_PLANKTON_MAP(contents, name, origin);
   set_symbol_ast_name(object, name);
+  set_symbol_ast_origin(object, origin);
   return success();
 }
 
 value_t plankton_new_symbol_ast(runtime_t *runtime) {
-  return new_heap_symbol_ast(runtime, nothing());
+  return new_heap_symbol_ast(runtime, nothing(), nothing());
 }
 
 
@@ -1111,5 +1188,6 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "Sequence", plankton_new_sequence_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Signature", plankton_new_signature_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Symbol", plankton_new_symbol_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "VariableAssignment", plankton_new_variable_assignment_ast, runtime));
   return success();
 }
