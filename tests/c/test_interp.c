@@ -96,6 +96,7 @@ TEST(interp, execution) {
     value_t var = new_heap_local_variable_ast(runtime, sym);
     value_t ast = new_heap_local_declaration_ast(runtime, sym, no(),
         new_heap_literal_ast(runtime, new_integer(3)), var);
+    set_symbol_ast_origin(sym, ast);
     assert_ast_value(runtime, vInt(3), ast);
   }
 
