@@ -936,3 +936,16 @@ TEST(value, options) {
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
+
+
+TEST(value, reference) {
+  CREATE_RUNTIME();
+
+  value_t ref = new_heap_reference(runtime, null());
+  ASSERT_VALEQ(null(), get_reference_value(ref));
+  set_reference_value(ref, new_integer(0));
+  ASSERT_VALEQ(new_integer(0), get_reference_value(ref));
+  ASSERT_SUCCESS(ensure_frozen(runtime, ref));
+
+  DISPOSE_RUNTIME();
+}
