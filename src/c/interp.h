@@ -14,6 +14,7 @@
 #define ENUM_OPCODES(F)                                                        \
   F(Builtin)                                                                   \
   F(DelegateToLambda)                                                          \
+  F(GetReference)                                                              \
   F(Invoke)                                                                    \
   F(Lambda)                                                                    \
   F(LoadArgument)                                                              \
@@ -21,9 +22,11 @@
   F(LoadLocal)                                                                 \
   F(LoadOuter)                                                                 \
   F(NewArray)                                                                  \
+  F(NewReference)                                                              \
   F(Pop)                                                                       \
   F(Push)                                                                      \
   F(Return)                                                                    \
+  F(SetReference)                                                              \
   F(Slap)
 
 // The enum of all opcodes.

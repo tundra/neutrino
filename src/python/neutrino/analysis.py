@@ -49,7 +49,7 @@ class ScopeVisitor(ast.Visitor):
   def visit_local_declaration(self, that):
     assert that.symbol is None
     that.value.accept(self)
-    that.symbol = ast.Symbol(that.get_name())
+    that.symbol = ast.Symbol(that.get_name(), that)
     bindings = {}
     bindings[that.get_name()] = that.symbol
     outer_scope = self.scope

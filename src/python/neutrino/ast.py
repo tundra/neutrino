@@ -29,6 +29,9 @@ class Visitor(object):
   def visit_variable(self, that):
     self.visit_ast(that)
 
+  def visit_variable_assignment(self, that):
+    self.visit_ast(that)
+
   def visit_invocation(self, that):
     self.visit_ast(that)
 
@@ -130,6 +133,9 @@ class Variable(object):
   def get_name(self):
     return self.ident.get_name()
 
+  def to_assignment(self, rvalue):
+    return VariableAssignment(self, rvalue)
+
   @plankton.header
   def get_header(self):
     if self.symbol is None:
@@ -146,6 +152,23 @@ class Variable(object):
 
   def __str__(self):
     return "(var %s)" % str(self.ident)
+
+
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "VariableAssignment"))
+class VariableAssignment(object):
+
+  @plankton.field("target")
+  @plankton.field("value")
+  def __init__(self, target, value):
+    self.target = target
+    self.value = value
+
+  def accept(self, visitor):
+    visitor.visit_variable_assignment(self)
+
+  def traverse(self, visitor):
+    self.target.accept(visitor)
+    self.value.accept(visitor)
 
 
 # A multi-method invocation.
@@ -247,11 +270,13 @@ class Sequence(object):
 class LocalDeclaration(object):
 
   @plankton.field("symbol")
+  @plankton.field("is_mutable")
   @plankton.field("value")
   @plankton.field("body")
-  def __init__(self, ident, value, body, symbol=None):
+  def __init__(self, ident, is_mutable, value, body):
     self.ident = ident
-    self.symbol = symbol
+    self.symbol = None
+    self.is_mutable = is_mutable
     self.value = value
     self.body = body
 
@@ -266,7 +291,11 @@ class LocalDeclaration(object):
     return self.ident.get_name()
 
   def __str__(self):
-    return "(def %s := %s in %s)" % (self.ident, self.value, self.body)
+    if self.is_mutable:
+      type = "def"
+    else:
+      type = "var"
+    return "(%s %s := %s in %s)" % (type, self.ident, self.value, self.body)
 
 
 # A symbol that identifies a scoped binding.
@@ -274,8 +303,15 @@ class LocalDeclaration(object):
 class Symbol(object):
 
   @plankton.field("name")
-  def __init__(self, name):
+  @plankton.field("origin")
+  def __init__(self, name, origin=None):
     self.name = name
+    self.origin = origin
+
+  def set_origin(self, value):
+    assert self.origin is None
+    self.origin = value
+    return self
 
 
 # An individual method parameter.

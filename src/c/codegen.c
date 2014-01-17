@@ -359,6 +359,27 @@ value_t assembler_emit_return(assembler_t *assm) {
   return success();
 }
 
+value_t assembler_emit_set_reference(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocSetReference);
+  // Pop the reference but not the value off the stack.
+  assembler_adjust_stack_height(assm, -1);
+  return success();
+}
+
+value_t assembler_emit_get_reference(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocGetReference);
+  // There is no stack adjustment because the reference is popped off and the
+  // value pushed on.
+  return success();
+}
+
+value_t assembler_emit_new_reference(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocNewReference);
+  // There is no stack adjustment because the value is popped off and the
+  // reference pushed on.
+  return success();
+}
+
 value_t assembler_emit_load_local(assembler_t *assm, size_t index) {
   assembler_emit_opcode(assm, ocLoadLocal);
   assembler_emit_byte(assm, index);

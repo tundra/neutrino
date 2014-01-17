@@ -248,16 +248,20 @@ value_t new_heap_sequence_ast(runtime_t *runtime, value_t values);
 
 // Creates a new local declaration syntax tree with the given attributes.
 value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
-    value_t value, value_t body);
+    value_t is_mutable, value_t value, value_t body);
 
 // Creates a new local variable syntax tree with the given symbol.
 value_t new_heap_local_variable_ast(runtime_t *runtime, value_t symbol);
 
+// Creates a new assignment of the given value to the given variable.
+value_t new_heap_variable_assignment_ast(runtime_t *runtime, value_t target,
+    value_t value);
+
 // Creates a new namespace variable syntax tree with the given name.
 value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t ident);
 
-// Creates a new symbol syntax tree with the given name.
-value_t new_heap_symbol_ast(runtime_t *runtime, value_t name);
+// Creates a new symbol syntax tree with the given name and origin.
+value_t new_heap_symbol_ast(runtime_t *runtime, value_t name, value_t origin);
 
 // Creates a new lambda syntax tree with the given attributes.
 value_t new_heap_lambda_ast(runtime_t *runtime, value_t method);

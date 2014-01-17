@@ -1,0 +1,19 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+
+def $test_var() {
+  var $x := 3;
+  $assert:equals(3, $x);
+  $x := 4;
+  $assert:equals(4, $x);
+  $x := 3;
+  $assert:equals(3, $x);
+}
+
+def $main() {
+  $test_var();
+}
+
+entry_point $main();

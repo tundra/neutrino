@@ -223,6 +223,29 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         frame_push_value(&frame, value);
         break;
       }
+      case ocNewReference: {
+        // Create the reference first so that if it fails we haven't clobbered
+        // the stack yet.
+        TRY_DEF(ref, new_heap_reference(runtime, nothing()));
+        value_t value = frame_pop_value(&frame);
+        set_reference_value(ref, value);
+        TRY(frame_push_value(&frame, ref));
+        break;
+      }
+      case ocSetReference: {
+        value_t ref = frame_pop_value(&frame);
+        CHECK_FAMILY(ofReference, ref);
+        value_t value = frame_peek_value(&frame, 0);
+        set_reference_value(ref, value);
+        break;
+      }
+      case ocGetReference: {
+        value_t ref = frame_pop_value(&frame);
+        CHECK_FAMILY(ofReference, ref);
+        value_t value = get_reference_value(ref);
+        TRY(frame_push_value(&frame, value));
+        break;
+      }
       case ocLoadLocal: {
         size_t index = read_next_byte(&state);
         value_t value = frame_get_local(&frame, index);

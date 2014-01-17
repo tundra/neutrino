@@ -152,6 +152,15 @@ value_t assembler_emit_builtin(assembler_t *assm, builtin_method_t builtin);
 // Emits a return instruction.
 value_t assembler_emit_return(assembler_t *assm);
 
+// Emits a set-reference instruction.
+value_t assembler_emit_set_reference(assembler_t *assm);
+
+// Emits a get-reference instruction.
+value_t assembler_emit_get_reference(assembler_t *assm);
+
+// Wraps a reference around the top stack value.
+value_t assembler_emit_new_reference(assembler_t *assm);
+
 // Emits a local variable load of the local with the given index.
 value_t assembler_emit_load_local(assembler_t *assm, size_t index);
 

@@ -127,19 +127,36 @@ ACCESSORS_DECL(sequence_ast, values);
 
 // --- L o c a l   d e c l a r a t i o n   a s t ---
 
-static const size_t kLocalDeclarationAstSize = OBJECT_SIZE(3);
+static const size_t kLocalDeclarationAstSize = OBJECT_SIZE(4);
 static const size_t kLocalDeclarationAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kLocalDeclarationAstValueOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kLocalDeclarationAstBodyOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kLocalDeclarationAstIsMutableOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kLocalDeclarationAstValueOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kLocalDeclarationAstBodyOffset = OBJECT_FIELD_OFFSET(3);
 
 // The declaration's symbol.
 ACCESSORS_DECL(local_declaration_ast, symbol);
+
+// Is this variable mutable or fixed?
+ACCESSORS_DECL(local_declaration_ast, is_mutable);
 
 // The variable's value.
 ACCESSORS_DECL(local_declaration_ast, value);
 
 // The expression that's in scope of the variable.
 ACCESSORS_DECL(local_declaration_ast, body);
+
+
+// --- V a r i a b l e   a s s i g n m e n t   a s t ---
+
+static const size_t kVariableAssignmentAstSize = OBJECT_SIZE(2);
+static const size_t kVariableAssignmentAstTargetOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kVariableAssignmentAstValueOffset = OBJECT_FIELD_OFFSET(1);
+
+// The variable to store the value in.
+ACCESSORS_DECL(variable_assignment_ast, target);
+
+// The value to store.
+ACCESSORS_DECL(variable_assignment_ast, value);
 
 
 // --- L o c a l   v a r i a b l e   a s t ---
@@ -162,11 +179,15 @@ ACCESSORS_DECL(namespace_variable_ast, identifier);
 
 // --- S y m b o l ---
 
-static const size_t kSymbolAstSize = OBJECT_SIZE(1);
+static const size_t kSymbolAstSize = OBJECT_SIZE(2);
 static const size_t kSymbolAstNameOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kSymbolAstOriginOffset = OBJECT_FIELD_OFFSET(1);
 
 // The display name of this symbol
 ACCESSORS_DECL(symbol_ast, name);
+
+// A pointer back to the declaration that introduced this symbol.
+ACCESSORS_DECL(symbol_ast, origin);
 
 
 // --- L a m b d a   a s t ---

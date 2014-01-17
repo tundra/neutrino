@@ -4,7 +4,7 @@ from neutrino import parser, token, ast, data
 import unittest
 
 ar = lambda *e: ast.Array(e)
-df = ast.LocalDeclaration
+df = lambda i, v, b: ast.LocalDeclaration(i, False, v, b)
 lm = lambda s, b: ast.Lambda(ast.Method(s, b))
 lt = ast.Literal
 nd = ast.NamespaceDeclaration

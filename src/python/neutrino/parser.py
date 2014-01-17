@@ -542,21 +542,29 @@ class Parser(object):
     # If we're at the end
     if self.at_punctuation('}'):
       return []
-    elif self.at_word('def'):
-      (name, value) = self.parse_local_declaration()
+    elif self.at_local_declaration():
+      (name, value, is_mutable) = self.parse_local_declaration()
       body = ast.Sequence.make(self.parse_statement_list())
-      return [ast.LocalDeclaration(name, value, body)]
+      return [ast.LocalDeclaration(name, is_mutable, value, body)]
     else:
       next = self.parse_expression(True)
       tail = self.parse_statement_list()
       return [next] + tail
 
+  def at_local_declaration(self):
+    return self.at_word('def') or self.at_word('var')
+
   def parse_local_declaration(self):
-    self.expect_word('def')
+    if self.at_word('var'):
+      self.expect_word('var')
+      is_mutable = True
+    else:
+      self.expect_word('def')
+      is_mutable = False
     name = self.expect_type(Token.IDENTIFIER)
     self.expect_punctuation(':=')
     value = self.parse_expression(True)
-    return (name, value)
+    return (name, value, is_mutable)
 
   # Creates a new syntax error at the current token.
   def new_syntax_error(self):
