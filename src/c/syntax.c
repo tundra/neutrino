@@ -803,6 +803,10 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
     // Push the captured symbols onto the stack in reverse order just to make
     // it simpler to pop them into the capture array at runtime. It makes no
     // difference, loading a symbol has no side-effects.
+    //
+    // For mutable variables this will push the reference, not the value, which
+    // is what we want. Reading and writing will work as expected because
+    // captured or not the symbol knows if it's a value or a reference.
     assembler_access_symbol(get_array_buffer_at(captures, capture_count - i - 1),
         assm, NULL);
 
