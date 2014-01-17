@@ -545,7 +545,7 @@ class Parser(object):
     elif self.at_local_declaration():
       (name, value, is_mutable) = self.parse_local_declaration()
       body = ast.Sequence.make(self.parse_statement_list())
-      return [ast.LocalDeclaration(name, value, is_mutable, body)]
+      return [ast.LocalDeclaration(name, is_mutable, value, body)]
     else:
       next = self.parse_expression(True)
       tail = self.parse_statement_list()

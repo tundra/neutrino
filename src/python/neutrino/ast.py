@@ -273,11 +273,11 @@ class LocalDeclaration(object):
   @plankton.field("is_mutable")
   @plankton.field("value")
   @plankton.field("body")
-  def __init__(self, ident, value, is_mutable, body):
+  def __init__(self, ident, is_mutable, value, body):
     self.ident = ident
     self.symbol = None
-    self.value = value
     self.is_mutable = is_mutable
+    self.value = value
     self.body = body
 
   def accept(self, visitor):
