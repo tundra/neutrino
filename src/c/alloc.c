@@ -135,6 +135,14 @@ value_t new_heap_array(runtime_t *runtime, size_t length) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_reference(runtime_t *runtime, value_t value) {
+  size_t size = kReferenceSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_reference_species)));
+  set_reference_value(result, value);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_pair(runtime_t *runtime, value_t e0, value_t e1) {
   TRY_DEF(result, new_heap_array(runtime, 2));
   set_array_at(result, 0, e0);

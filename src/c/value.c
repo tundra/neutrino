@@ -2250,6 +2250,25 @@ value_t add_global_field_builtin_methods(runtime_t *runtime, safe_value_t s_spac
 }
 
 
+// --- R e f e r e n c e ---
+
+FIXED_GET_MODE_IMPL(reference, vmMutable);
+
+ACCESSORS_IMPL(Reference, reference, acNoCheck, 0, Value, value);
+
+value_t reference_validate(value_t self) {
+  VALIDATE_FAMILY(ofReference, self);
+  return success();
+}
+
+void reference_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
+    size_t depth) {
+  string_buffer_printf(buf, "&");
+  value_t value = get_reference_value(self);
+  value_print_inner_on(value, buf, flags, depth - 1);
+}
+
+
 // --- M i s c ---
 
 // Adds a binding to the given plankton environment map.

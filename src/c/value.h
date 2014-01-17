@@ -276,6 +276,7 @@ static value_t new_moved_object(value_t target) {
   F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _)\
   F(Path,                    path,                      X, X, X, X, _, _, _, X, _)\
   F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, _, _)\
+  F(Reference,               reference,                 _, _, _, _, _, _, _, X, _)\
   F(Roots,                   roots,                     _, _, _, _, _, _, _, X, X)\
   F(SequenceAst,             sequence_ast,              _, _, X, X, _, _, X, _, _)\
   F(Signature,               signature,                 _, _, _, _, _, _, _, X, X)\
@@ -1269,6 +1270,15 @@ static const size_t kGlobalFieldDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
 
 // The display name which is used to identify the field.
 ACCESSORS_DECL(global_field, display_name);
+
+
+// --- R e f e r e n c e ---
+
+static const size_t kReferenceSize = OBJECT_SIZE(1);
+static const size_t kReferenceValueOffset = OBJECT_FIELD_OFFSET(0);
+
+// The raw value currently held by this reference.
+ACCESSORS_DECL(reference, value);
 
 
 // --- M i s c ---
