@@ -86,7 +86,11 @@ typedef struct {
   size_t gc_fuzz_seed;
 } runtime_config_t;
 
-// Initializes the fields of this runtime config to the defaults.
+// Initializes the fields of this runtime config to the defaults. These defaults
+// aren't necessarily appropriate for any particular use, they are just a set
+// of well-defined values such that the config has at least been initialized
+// with something. For any particular use you typically want to perform an
+// additional initialization step appropriate for that use.
 void runtime_config_init_defaults(runtime_config_t *config);
 
 // Returns a pointer to a runtime config that holds the default values.

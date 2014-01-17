@@ -23,6 +23,18 @@ def $test_if_expression() {
   $assert:equals(10, if false then $assert:fail() else 10);
   $assert:equals(11, if true then 11);
   $assert:equals(null, if false then 12);
+  $assert:equals(1, if true then if true then 1 else 2 else 3);
+  $assert:equals(2, if true then if false then 1 else 2 else 3);
+  $assert:equals(3, if false then if true then 1 else 2 else 3);
+  $assert:equals(3, if false then if false then 1 else 2 else 3);
+  $assert:equals(1, if true then if true then 1 else 2);
+  $assert:equals(2, if true then if false then 1 else 2);
+  $assert:equals(null, if false then if true then 1 else 2);
+  $assert:equals(null, if false then if false then 1 else 2);
+  $assert:equals(1, if true then (if true then 1) else 2);
+  $assert:equals(null, if true then (if false then 1) else 2);
+  $assert:equals(2, if false then (if true then 1) else 2);
+  $assert:equals(2, if false then (if false then 1) else 2);
 }
 
 ## Test the if syntax form used as a statement.
