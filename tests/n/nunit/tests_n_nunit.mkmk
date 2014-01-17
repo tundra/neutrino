@@ -13,6 +13,7 @@ file_names = [
   "integer.n",
   "if.n",
   "is.n",
+  "var.n",
 ]
 
 suite = get_group("suite")
