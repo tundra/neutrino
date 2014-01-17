@@ -12,8 +12,44 @@ def $test_var() {
   $assert:equals(3, $x);
 }
 
+def $test_outer_var() {
+  var $x := 5;
+  def $get_x := (fn => $x);
+  def $set_x := (fn ($v) => ($x := $v));
+  $assert:equals(5, $x);
+  $assert:equals(5, $get_x());
+  $x := 6;
+  $assert:equals(6, $x);
+  $assert:equals(6, $get_x());
+  $set_x(7);
+  $assert:equals(7, $x);
+  $assert:equals(7, $get_x());
+}
+
+def $test_var_value() {
+  def $v0 := { var $x := 0; }
+  $assert:equals(null, $v0);
+}
+
+def $test_orphan_var() {
+  def $get_then_set := {
+    var $x := 0;
+    fn ($v) {
+      def $result := $x;
+      $x := $v;
+      $result;
+    }
+  }
+  $assert:equals(0, $get_then_set(3));
+  $assert:equals(3, $get_then_set(5));
+  $assert:equals(5, $get_then_set(7));
+}
+
 def $main() {
   $test_var();
+  $test_outer_var();
+  $test_var_value();
+  $test_orphan_var();
 }
 
 entry_point $main();

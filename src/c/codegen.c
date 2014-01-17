@@ -315,6 +315,13 @@ value_t assembler_emit_pop(assembler_t *assm, size_t count) {
   return success();
 }
 
+value_t assembler_emit_slap(assembler_t *assm, size_t count) {
+  assembler_emit_opcode(assm, ocSlap);
+  assembler_emit_byte(assm, count);
+  assembler_adjust_stack_height(assm, -count);
+  return success();
+}
+
 value_t assembler_emit_new_array(assembler_t *assm, size_t length) {
   assembler_emit_opcode(assm, ocNewArray);
   assembler_emit_byte(assm, length);

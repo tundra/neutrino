@@ -110,7 +110,6 @@ static value_t integer_equals_integer(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
   CHECK_DOMAIN(vdInteger, self);
-  CHECK_DOMAIN(vdInteger, that);
   return new_boolean(is_same_value(self, that));
 }
 
