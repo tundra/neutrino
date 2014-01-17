@@ -207,10 +207,19 @@ static value_t build_module_loader(runtime_t *runtime, value_t options) {
   return loader;
 }
 
+// Override some of the basic defaults to make the config better suited for
+// running scripts.
+static void runtime_config_init_main_defaults(runtime_config_t *config) {
+  // Currently the runtime doesn't handle allocation failures super well
+  // (particularly plankton parsing) so keep the semispace size big.
+  config->semispace_size_bytes = 10 * kMB;
+}
+
 // Create a vm and run the program.
 static value_t neutrino_main(int argc, char **argv) {
   runtime_config_t config;
   runtime_config_init_defaults(&config);
+  runtime_config_init_main_defaults(&config);
   // Set up a custom allocator we get tighter control over allocation.
   main_allocator_data_t allocator_data;
   main_allocator_data_init(&allocator_data, &config);
