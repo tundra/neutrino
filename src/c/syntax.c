@@ -391,8 +391,11 @@ value_t emit_local_declaration_ast(value_t self, assembler_t *assm) {
   single_symbol_scope_t scope;
   assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal, offset);
   value_t body = get_local_declaration_ast_body(self);
+  // Emit the body in scope of the local.
   TRY(emit_value(body, assm));
   assembler_pop_single_symbol_scope(assm, &scope);
+  // Slap the value of the local off, leaving just the value of the body.
+  TRY(assembler_emit_slap(assm, 1));
   return success();
 }
 
@@ -472,13 +475,9 @@ static value_t assembler_access_symbol(value_t symbol, assembler_t *assm,
     // not valid.
     return new_invalid_syntax_signal(isSymbolNotBound);
   switch (binding.type) {
-    case btLocal: {
+    case btLocal:
       TRY(assembler_emit_load_local(assm, binding.data));
-      value_t origin = get_symbol_ast_origin(symbol);
-      value_t is_mutable = get_local_declaration_ast_is_mutable(origin);
-      *is_ref_out = get_boolean_value(is_mutable);
       break;
-    }
     case btArgument:
       TRY(assembler_emit_load_argument(assm, binding.data));
       break;
@@ -489,6 +488,13 @@ static value_t assembler_access_symbol(value_t symbol, assembler_t *assm,
       WARN("Unknown binding type %i", binding.type);
       UNREACHABLE("unknown binding type");
       break;
+  }
+  if (is_ref_out != NULL) {
+    value_t origin = get_symbol_ast_origin(symbol);
+    if (in_family(ofLocalDeclarationAst, origin)) {
+      value_t is_mutable = get_local_declaration_ast_is_mutable(origin);
+      *is_ref_out = get_boolean_value(is_mutable);
+    }
   }
   return success();
 }
@@ -798,10 +804,11 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
     // it simpler to pop them into the capture array at runtime. It makes no
     // difference, loading a symbol has no side-effects.
     //
-    // TODO: ensure that this works for mutable variables, which it currently
-    //   doesn't.
-    assembler_load_symbol(get_array_buffer_at(captures, capture_count - i - 1),
-        assm);
+    // For mutable variables this will push the reference, not the value, which
+    // is what we want. Reading and writing will work as expected because
+    // captured or not the symbol knows if it's a value or a reference.
+    assembler_access_symbol(get_array_buffer_at(captures, capture_count - i - 1),
+        assm, NULL);
 
   // Finally emit the bytecode that will create the lambda.
   TRY(assembler_emit_lambda(assm, space, capture_count));

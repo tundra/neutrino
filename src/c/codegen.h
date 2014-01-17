@@ -138,6 +138,10 @@ value_t assembler_emit_push(assembler_t *assm, value_t value);
 // Emits a pop instruction. Pops count elements off the stack.
 value_t assembler_emit_pop(assembler_t *assm, size_t count);
 
+// Emits a store-local-and-pop instruction. Pops off the top, then pops off
+// count additional values, and finally pushes the top back on.
+value_t assembler_emit_slap(assembler_t *assm, size_t count);
+
 // Emits a new-array instruction that builds an array from the top 'length'
 // elements.
 value_t assembler_emit_new_array(assembler_t *assm, size_t length);
