@@ -8,3 +8,6 @@ type @Integer is @Object;
 
 ## Test method.
 def ($this is @Integer).method_from_integer_module() => 8;
+
+## Returns the successor value of this integer, that is, this value plus one.
+def ($this is @Integer).successor => ($this + 1);

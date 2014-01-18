@@ -12,6 +12,7 @@ core_file_names = [
   "core.n",
   "function.n",
   "integer.n",
+  "interval.n",
   "null.n",
   "object.n",
   "string.n",
