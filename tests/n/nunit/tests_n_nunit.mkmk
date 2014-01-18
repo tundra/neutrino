@@ -10,6 +10,7 @@ file_names = [
   "def.n",
   "field.n",
   "float32.n",
+  "for.n",
   "function.n",
   "integer.n",
   "if.n",

@@ -16,6 +16,7 @@ class Parser(object):
 
   _SAUSAGES = data.Operation.call()
   _SQUARE_SAUSAGES = data.Operation.index()
+  _FOR = data.Operation.infix("for")
 
   def __init__(self, tokens, module):
     self.tokens = tokens
@@ -222,6 +223,8 @@ class Parser(object):
       return self.parse_if_expression(expect_delim)
     elif self.at_word('while'):
       return self.parse_while_expression(expect_delim)
+    elif self.at_word('for'):
+      return self.parse_for_expression(expect_delim)
     else:
       return self.parse_assignment_expression(expect_delim)
 
@@ -260,6 +263,23 @@ class Parser(object):
       ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES)),
       ast.Argument(0, ast.Lambda.thunk(cond)),
       ast.Argument(1, ast.Lambda.thunk(body)),
+    ])
+
+  def parse_for_expression(self, expect_delim):
+    self.expect_word('for')
+    sig = self.parse_signature()
+    self.expect_word('in')
+    elms = self.parse_expression(False)
+    self.expect_word('do')
+    body = self.parse_expression(expect_delim)
+    thunk = ast.Lambda(ast.Method(sig, body))
+    # TODO: This should really resolve to a call to @core:for which does the
+    #   delegation but the method visibility model is sufficiently broken that
+    #   that doesn't work at the moment. That should be fixed.
+    return ast.Invocation([
+      ast.Argument(data._SUBJECT, elms),
+      ast.Argument(data._SELECTOR, ast.Literal(Parser._FOR)),
+      ast.Argument(0, thunk)
     ])
 
   # <assignment expression>
