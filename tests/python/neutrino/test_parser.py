@@ -33,7 +33,7 @@ def mu(*phases):
 
 def ls(*params):
   prefix = [
-    fpm(nm(['this']), any(), ST),
+    fpm(nm(['self']), any(), ST),
     fpm(nm(['name']), eq(lt(data.Operation.call())), SL)
   ]
   return ast.Signature(prefix + list(params))

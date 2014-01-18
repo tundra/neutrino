@@ -82,6 +82,14 @@ static value_t ctrino_new_global_field(builtin_arguments_t *args) {
   return new_heap_global_field(get_builtin_runtime(args), display_name);
 }
 
+static value_t ctrino_new_array(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t length = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofCtrino, self);
+  CHECK_DOMAIN(vdInteger, length);
+  return new_heap_array(get_builtin_runtime(args), get_integer_value(length));
+}
+
 static value_t ctrino_new_float_32(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t decimal = get_builtin_argument(args, 0);
@@ -131,6 +139,8 @@ value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(ctrino, infix_get_builtin_type, 1, ctrino_get_builtin_type);
   DEF_INFIX(infix_log_info, "log_info");
   ADD_BUILTIN(ctrino, infix_log_info, 1, ctrino_log_info);
+  DEF_INFIX(infix_new_array, "new_array");
+  ADD_BUILTIN(ctrino, infix_new_array, 1, ctrino_new_array);
   DEF_INFIX(infix_new_float_32, "new_float_32");
   ADD_BUILTIN(ctrino, infix_new_float_32, 1, ctrino_new_float_32);
   DEF_INFIX(infix_new_function, "new_function");

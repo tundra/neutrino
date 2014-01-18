@@ -325,7 +325,7 @@ class Parser(object):
   # Same as parse_parameters but returns a full signature.
   def parse_signature(self):
     prefix = [
-      self.name_as_subject(data.Identifier(0, data.Path(['this']))),
+      self.name_as_subject(data.Identifier(0, data.Path(['self']))),
       self.name_as_selector(Parser._SAUSAGES)
     ]
     params = self.parse_parameters()
