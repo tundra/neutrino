@@ -1,0 +1,53 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+## The instance manager for this process. The whole instance manager model is
+## pretty tentative at the moment so this will inevitably change.
+def @manager := @ctrino.new_instance_manager(null);
+
+def @HanoiDisk := @ctrino.new_type("HanoiDisk");
+
+## Holds the state of the hanoi system.
+def @Hanoi := @ctrino.new_type("Hanoi");
+
+## The Hanoi.piles field.
+def @HanoiPiles := @ctrino.new_global_field("Hanoi.piles");
+def ($this is @Hanoi).piles => @HanoiPiles[$this];
+def ($this is @Hanoi).piles := ($value) => (@HanoiPiles[$this] := $value);
+
+## The Hanoi.moves field.
+def @HanoiMoves := @ctrino.new_global_field("Hanoi.moves");
+def ($this is @Hanoi).moves => @HanoiMoves[$this];
+def ($this is @Hanoi).moves := ($value) => (@HanoiMoves[$this] := $value);
+
+## Creates a new empty hanoi instance.
+def ($this == @Hanoi).new() {
+  def $self := @manager.new_instance(@Hanoi);
+  $self.piles := null;
+  $self.moves := 0;
+  $self;
+}
+
+## Runs the hanoi algorithm starting from a stack of $size disks on the first
+## pile.
+def ($this is @Hanoi).run(size: $size) {
+  $this.build(pile: 0, disks: $size);
+}
+
+def ($this is @Hanoi).build(pile: $pile, disks: $disks) {
+  # TODO
+}
+
+def $test_hanoi() {
+  def $hanoi := @Hanoi.new();
+  $core:info($hanoi.run(size: 7));
+}
+
+def $main() {
+  $test_hanoi();
+}
+
+entry_point $main();
