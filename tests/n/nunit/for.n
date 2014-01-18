@@ -1,0 +1,88 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def @manager := @ctrino.new_instance_manager(null);
+
+def $test_for_call() {
+  var $sum := 0;
+  var $count := 0;
+  @manager.new_instance(@Fibonacci).for(fn ($elm) {
+    $sum := $sum + $elm;
+    $count := $count + 1;
+  });
+  $assert:equals(4, $count);
+  $assert:equals(29, $sum);
+}
+
+## Yields a few values from the fibonacci sequence.
+def @Fibonacci := @ctrino.new_type("Fibonacci");
+def ($this is @Fibonacci).for($thunk) {
+  $thunk(3);
+  $thunk(5);
+  $thunk(8);
+  $thunk(13);
+}
+
+## Yields a few pairs of values from the fibonacci sequence.
+def @Paironacci := @ctrino.new_type("Paironacci");
+def ($this is @Paironacci).for($thunk) {
+  $thunk(21, 34);
+  $thunk(55, 89);
+  $thunk(144, 233);
+  $thunk(377, 610);
+}
+
+def $test_for_syntax() {
+  var $sum := 0;
+  var $count := 0;
+  for $elm in @manager.new_instance(@Fibonacci) do {
+    $sum := $sum + $elm;
+    $count := $count + 1;
+  }
+  $assert:equals(4, $count);
+  $assert:equals(29, $sum);
+  $sum := $count := 0;
+  var $sum2 := 0;
+  for ($first, $second) in @manager.new_instance(@Paironacci) do {
+    $sum := $sum + $first;
+    $sum2 := $sum2 + $second;
+    $count := $count + 1;
+  }
+  $assert:equals(4, $count);
+  $assert:equals(597, $sum);
+  $assert:equals(966, $sum2);
+}
+
+## Yields a few values, passed with tags, from the sequence.
+def @Tagonacci := @ctrino.new_type("Tagonacci");
+def ($this is @Tagonacci).for($thunk) {
+  $thunk(index: 0, value: 987);
+  $thunk(index: 1, value: 1597);
+  $thunk(index: 2, value: 2584);
+  $thunk(index: 3, value: 4181);
+}
+
+def $test_tagged_for_syntax() {
+  var $expected_index := 0;
+  var $count := 0;
+  var $sum := 0;
+  for (index: $index, value: $value) in @manager.new_instance(@Tagonacci) do {
+    $assert:equals($expected_index, $index);
+    $expected_index := $index + 1;
+    $count := $count + 1;
+    $sum := $sum + $value;
+  }
+  $assert:equals(4, $count);
+  $assert:equals(9349, $sum);
+}
+
+def $main() {
+  $test_for_call();
+  $test_for_syntax();
+  $test_tagged_for_syntax();
+}
+
+entry_point $main();
