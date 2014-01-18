@@ -17,7 +17,7 @@ def $test_while_call() {
   $assert:equals(null, $v);
 }
 
-def $test_while() {
+def $test_while_syntax() {
   var $i := 0;
   while $i < 10 do {
     $assert:that($i < 10);
@@ -32,7 +32,7 @@ def $test_while() {
 
 def $main() {
   $test_while_call();
-  $test_while();
+  $test_while_syntax();
 }
 
 entry_point $main();

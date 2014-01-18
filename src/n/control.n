@@ -12,7 +12,13 @@ def @if($cond == true, $then) => $then();
 def @if($cond == false, $then) => null;
 
 ## Executes the $cond and $body thunks alternately until the $cond thunk returns
-## true. Always returns null.
+## true. Always returns null. (Alternatively could return the last value of the
+## body but it's unclear whether giving while loops any nontrivial value will be
+## intuitive since while loops having values at all is exotic).
+##
+## TODO: this implementation grows the stack for each iteration which is a
+##   really Bad Thing(TM). Should be fixed, in the inlined version by custom
+##   generated code and in the non-inlined by tail call elimination.
 def @while($cond, $body) => @if($cond(), fn {
   $body();
   @while($cond, $body);
