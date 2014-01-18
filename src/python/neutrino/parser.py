@@ -220,6 +220,8 @@ class Parser(object):
       return self.parse_lambda_expression()
     elif self.at_word('if'):
       return self.parse_if_expression(expect_delim)
+    elif self.at_word('while'):
+      return self.parse_while_expression(expect_delim)
     else:
       return self.parse_assignment_expression(expect_delim)
 
@@ -234,15 +236,31 @@ class Parser(object):
       self.expect_word('else')
       else_part = self.parse_expression(expect_delim)
     else:
-      else_part = ast.Literal(None)
-    result = ast.Invocation([
+      else_part = None
+    args = [
       ast.Argument(data._SUBJECT, ast.Variable(data.Identifier(-1, data.Path(["core", "if"])))),
       ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES)),
       ast.Argument(0, cond),
       ast.Argument(1, ast.Lambda.thunk(then_part)),
-      ast.Argument(2, ast.Lambda.thunk(else_part)),
-    ])
+    ]
+    if not else_part is None:
+      args.append(ast.Argument(2, ast.Lambda.thunk(else_part)))
+    result = ast.Invocation(args)
     return result
+
+  # <while expression>
+  #   -> "while" <expression> "do" <expression>
+  def parse_while_expression(self, expect_delim):
+    self.expect_word('while')
+    cond = self.parse_expression(False)
+    self.expect_word('do')
+    body = self.parse_expression(expect_delim)
+    return ast.Invocation([
+      ast.Argument(data._SUBJECT, ast.Variable(data.Identifier(-1, data.Path(["core", "while"])))),
+      ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES)),
+      ast.Argument(0, ast.Lambda.thunk(cond)),
+      ast.Argument(1, ast.Lambda.thunk(body)),
+    ])
 
   # <assignment expression>
   #   -> <operator expression> :* ":="

@@ -32,6 +32,16 @@ def $test_simple_arithmetic() {
   $assert:equals(-2, -44 % (-3));
 }
 
+## Test of the most basic integer relations.
+def $test_simple_relations() {
+  $assert:equals(true, 0 < 1);
+  $assert:equals(false, 0 < (-1));
+  $assert:equals(false, 1 < 0);
+  $assert:equals(true, (-1) < 0);
+  $assert:equals(true, 0 == 0);
+  $assert:equals(false, 0 == 1);
+}
+
 ## Temporary test that method from imported modules are visible.
 def $test_imports() {
   $assert:equals(8, (0).method_from_integer_module());
@@ -39,6 +49,7 @@ def $test_imports() {
 
 def $main() {
   $test_simple_arithmetic();
+  $test_simple_relations();
   $test_imports();
 }
 

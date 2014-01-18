@@ -67,7 +67,6 @@ value_t add_null_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
 // --- B o o l e a n ---
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(boolean);
-NO_BUILTIN_METHODS(boolean);
 
 void boolean_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
   string_buffer_printf(buf, get_boolean_value(value) ? "true" : "false");
@@ -77,6 +76,19 @@ value_t boolean_ordering_compare(value_t a, value_t b) {
   CHECK_PHYLUM(tpBoolean, a);
   CHECK_PHYLUM(tpBoolean, b);
   return compare_signed_integers(get_boolean_value(a), get_boolean_value(b));
+}
+
+static value_t boolean_equals(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t that = get_builtin_argument(args, 0);
+  CHECK_PHYLUM(tpBoolean, self);
+  return new_boolean(is_same_value(self, that));
+}
+
+value_t add_boolean_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
+  DEF_INFIX(infix_eqeq, "==");
+  ADD_BUILTIN(boolean, infix_eqeq, 1, boolean_equals);
+  return success();
 }
 
 
