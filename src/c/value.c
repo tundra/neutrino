@@ -113,6 +113,14 @@ static value_t integer_equals_integer(builtin_arguments_t *args) {
   return new_boolean(is_same_value(self, that));
 }
 
+static value_t integer_less_integer(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t that = get_builtin_argument(args, 0);
+  CHECK_DOMAIN(vdInteger, self);
+  CHECK_DOMAIN(vdInteger, that);
+  return new_boolean(get_integer_value(self) < get_integer_value(that));
+}
+
 static value_t integer_negate(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_DOMAIN(vdInteger, self);
@@ -138,6 +146,8 @@ value_t add_integer_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(integer, infix_modulo, 1, integer_modulo_integer);
   DEF_INFIX(infix_equals, "==");
   ADD_BUILTIN(integer, infix_equals, 1, integer_equals_integer);
+  DEF_INFIX(infix_less, "<");
+  ADD_BUILTIN(integer, infix_less, 1, integer_less_integer);
   DEF_PREFIX(prefix_negate, "-");
   ADD_BUILTIN(integer, prefix_negate, 0, integer_negate);
   DEF_INFIX(infix_print, "print");
