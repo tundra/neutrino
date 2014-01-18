@@ -22,7 +22,8 @@ def $test_mutable_arrays() {
   $assert:equals(3, $a.length);
   $assert:equals(null, $a[0]);
   $assert:equals(null, $a[1]);
-  $assert:equals(null, $a[2]);  $a[0] := 1;
+  $assert:equals(null, $a[2]);
+  $a[0] := 1;
   $assert:equals(1, $a[0]);
   $assert:equals(null, $a[1]);
   $assert:equals(null, $a[2]);
