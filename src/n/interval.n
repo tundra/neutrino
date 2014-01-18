@@ -1,0 +1,32 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## A half-open interval.
+def @Interval := @ctrino.new_type("Interval");
+
+def @from_field := @ctrino.new_global_field("from");
+def @to_field := @ctrino.new_global_field("to");
+
+## Creates a new interval with the given boundaries.
+def ($this == @Interval).new($from, $to) {
+  def $result := @manager.new_instance(@Interval);
+  @from_field[$result] := $from;
+  @to_field[$result] := $to;
+  $result;
+}
+
+## Invokes the given thunk for each value within this interval.
+def ($this is @Interval).for($thunk) {
+  var $i := @from_field[$this];
+  def $limit := @to_field[$this];
+  @while(fn => $i < $limit, fn {
+    $thunk($i);
+    $i := $i.successor;
+  });
+}
+
+## Shorthand for constructing an interval.
+##
+## TODO: It doesn't make sense to have this on all objects, this should all be
+##   factored out. Also it should probably use the .. operator instead of .to.
+def ($from).to($to) => @Interval.new($from, $to);

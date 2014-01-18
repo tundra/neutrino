@@ -10,6 +10,7 @@ module $core {
     "core.n",
     "function.n",
     "integer.n",
+    "interval.n",
     "null.n",
     "object.n",
     "string.n"

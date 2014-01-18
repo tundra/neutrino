@@ -3,3 +3,6 @@
 
 ## Info-log the given value to stdout using the built-in INFO macro.
 def $info($value) => @ctrino.log_info($value);
+
+## Instance manager used within the core library.
+def @manager := @ctrino.new_instance_manager(null);
