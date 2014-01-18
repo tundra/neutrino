@@ -1,13 +1,13 @@
--- INPUT: [].length()
+-- INPUT: [].length
 -- VALUE: 0
 
--- INPUT: [2].length()
+-- INPUT: [2].length
 -- VALUE: 1
 
--- INPUT: [1, 2, 3].length()
+-- INPUT: [1, 2, 3].length
 -- VALUE: 3
 
--- INPUT: [3, 2, 1] .length ()
+-- INPUT: [3, 2, 1] .length
 -- VALUE: 3
 
 -- INPUT: 1 + 2
