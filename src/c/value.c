@@ -850,8 +850,8 @@ value_t array_set_at(builtin_arguments_t *args) {
 }
 
 value_t add_array_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  DEF_INFIX(infix_length, "length");
-  ADD_BUILTIN(array, infix_length, 0, array_length);
+  DEF_PROPERTY(property_length, "length");
+  ADD_BUILTIN(array, property_length, 0, array_length);
   DEF_INDEX(index);
   ADD_BUILTIN(array, index, 1, array_get_at);
   DEF_ASSIGN(index_assign, index);

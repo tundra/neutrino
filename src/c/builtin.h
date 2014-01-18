@@ -51,6 +51,9 @@ typedef struct builtin_operation_t {
 // Macro that produces a declaration of an prefix builtin_operation_t.
 #define DEF_PREFIX(NAME, VALUE) DEF_STRING_OPERATION(NAME, otPrefix, VALUE)
 
+// Macro that produces a declaration of a property builtin_operation_t.
+#define DEF_PROPERTY(NAME, VALUE) DEF_STRING_OPERATION(NAME, otProperty, VALUE)
+
 // Macro that produces a declaration of an index builtin_operation_t.
 #define DEF_INDEX(NAME) DEF_STRING_OPERATION(NAME, otIndex, NULL)
 

@@ -2,22 +2,55 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 import $assert;
+import $core;
 
 def $test_simple_array_methods() {
   def $a := [9, 8, 7];
-  $assert:equals(3, $a.length());
+  $assert:equals(3, $a.length);
   $assert:equals(9, $a[0]);
   $assert:equals(8, $a[1]);
   $assert:equals(7, $a[2]);
   $assert:equals(10, $a[1] := 10);
-  $assert:equals(3, $a.length());
+  $assert:equals(3, $a.length);
   $assert:equals(9, $a[0]);
   $assert:equals(10, $a[1]);
   $assert:equals(7, $a[2]);
 }
 
+def $test_mutable_arrays() {
+  def $a := @core:Array.new(3);
+  $assert:equals(3, $a.length);
+  $assert:equals(null, $a[0]);
+  $assert:equals(null, $a[1]);
+  $assert:equals(null, $a[2]);  $a[0] := 1;
+  $assert:equals(1, $a[0]);
+  $assert:equals(null, $a[1]);
+  $assert:equals(null, $a[2]);
+  $a[1] := 2;
+  $assert:equals(1, $a[0]);
+  $assert:equals(2, $a[1]);
+  $assert:equals(null, $a[2]);
+  $a[2] := 3;
+  $assert:equals(1, $a[0]);
+  $assert:equals(2, $a[1]);
+  $assert:equals(3, $a[2]);
+}
+
+def $test_array_iteration() {
+  var $sum := 0;
+  var $count := 0;
+  for $elm in [1, 2, 3] do {
+    $count := $count + 1;
+    $sum := $sum + $elm;
+  }
+  $assert:equals(3, $count);
+  $assert:equals(6, $sum);
+}
+
 def $main() {
   $test_simple_array_methods();
+  $test_mutable_arrays();
+  $test_array_iteration();
 }
 
 entry_point $main();

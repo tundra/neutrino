@@ -425,7 +425,7 @@ class Lambda(object):
   @staticmethod
   def thunk(body):
     signature = Signature([
-      Parameter(data.Identifier(0, data.Path(['this'])), [data._SUBJECT],
+      Parameter(data.Identifier(0, data.Path(['self'])), [data._SUBJECT],
         Guard.any()),
       Parameter(data.Identifier(0, data.Path(['name'])), [data._SELECTOR],
         Guard.eq(Literal(data.Operation.call())))
