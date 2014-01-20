@@ -202,6 +202,20 @@ void byte_buffer_append(byte_buffer_t *buf, uint8_t value);
 // still be backed by this buffer so disposing this will make the blob invalid.
 void byte_buffer_flush(byte_buffer_t *buf, blob_t *blob_out);
 
+// A pointer to a location within a byte buffer that can be written to directly.
+typedef struct {
+  byte_buffer_t *buf;
+  size_t offset;
+} byte_buffer_cursor_t;
+
+// Writes 0 to the next location and stores a cursor for writing to that
+// location in the given out parameter. Obviously the cursor becomes invalid
+// when the buffer is disposed.
+void byte_buffer_append_cursor(byte_buffer_t *buf, byte_buffer_cursor_t *cursor_out);
+
+// Sets the value at the given location in a byte buffer.
+void byte_buffer_cursor_set(byte_buffer_cursor_t *cursor, uint8_t value);
+
 
 // --- B i t   v e c t o r ---
 

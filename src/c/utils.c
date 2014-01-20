@@ -386,6 +386,17 @@ void byte_buffer_flush(byte_buffer_t *buf, blob_t *blob_out) {
   blob_init(blob_out, (byte_t*) buf->memory.memory, buf->length);
 }
 
+void byte_buffer_append_cursor(byte_buffer_t *buf, byte_buffer_cursor_t *cursor_out) {
+  cursor_out->buf = buf;
+  cursor_out->offset = buf->length;
+  byte_buffer_append(buf, 0);
+}
+
+void byte_buffer_cursor_set(byte_buffer_cursor_t *cursor, uint8_t value) {
+  byte_t *block = (byte_t*) cursor->buf->memory.memory;
+  block[cursor->offset] = value;
+}
+
 
 // --- B i t   v e c t o r ---
 

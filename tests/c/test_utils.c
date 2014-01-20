@@ -454,3 +454,37 @@ TEST(utils, va_argc) {
   ASSERT_EQ(7, VA_ARGC(a, b, c, d, e, f, g));
   ASSERT_EQ(8, VA_ARGC(a, b, c, d, e, f, g, h));
 }
+
+TEST(utils, byte_buffer_cursor) {
+  byte_buffer_t buf;
+  byte_buffer_init(&buf);
+
+  byte_buffer_cursor_t c0, c1, c2;
+  byte_buffer_append_cursor(&buf, &c0);
+  byte_buffer_append_cursor(&buf, &c1);
+  byte_buffer_append_cursor(&buf, &c2);
+
+  blob_t blob;
+  byte_buffer_flush(&buf, &blob);
+  ASSERT_EQ(3, blob_length(&blob));
+  ASSERT_EQ(0, blob_byte_at(&blob, 0));
+  ASSERT_EQ(0, blob_byte_at(&blob, 1));
+  ASSERT_EQ(0, blob_byte_at(&blob, 2));
+
+  byte_buffer_cursor_set(&c0, 8);
+  ASSERT_EQ(8, blob_byte_at(&blob, 0));
+  ASSERT_EQ(0, blob_byte_at(&blob, 1));
+  ASSERT_EQ(0, blob_byte_at(&blob, 2));
+
+  byte_buffer_cursor_set(&c1, 7);
+  ASSERT_EQ(8, blob_byte_at(&blob, 0));
+  ASSERT_EQ(7, blob_byte_at(&blob, 1));
+  ASSERT_EQ(0, blob_byte_at(&blob, 2));
+
+  byte_buffer_cursor_set(&c2, 6);
+  ASSERT_EQ(8, blob_byte_at(&blob, 0));
+  ASSERT_EQ(7, blob_byte_at(&blob, 1));
+  ASSERT_EQ(6, blob_byte_at(&blob, 2));
+
+  byte_buffer_dispose(&buf);
+}
