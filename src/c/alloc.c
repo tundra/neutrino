@@ -619,6 +619,16 @@ value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_with_escape_ast(runtime_t *runtime, value_t symbol,
+    value_t body) {
+  size_t size = kWithEscapeAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, with_escape_ast_species)));
+  set_with_escape_ast_symbol(result, symbol);
+  set_with_escape_ast_body(result, body);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_local_variable_ast(runtime_t *runtime, value_t symbol) {
   size_t size = kLocalVariableAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,

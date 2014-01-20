@@ -291,7 +291,8 @@ static value_t new_moved_object(value_t target) {
   F(UnboundModuleFragment,   unbound_module_fragment,   _, _, X, _, _, _, _, _, _)\
   F(Unknown,                 unknown,                   _, _, X, _, _, _, _, _, _)\
   F(VariableAssignmentAst,   variable_assignment_ast,   _, _, X, _, _, _, X, _, _)\
-  F(VoidP,                   void_p,                    _, _, _, _, X, _, _, _, _)
+  F(VoidP,                   void_p,                    _, _, _, _, X, _, _, _, _)\
+  F(WithEscapeAst,           with_escape_ast,           _, _, X, _, _, _, X, _, _)
 
 // Enumerates all the object families.
 #define ENUM_OBJECT_FAMILIES(F)                                                \

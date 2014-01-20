@@ -146,6 +146,19 @@ ACCESSORS_DECL(local_declaration_ast, value);
 ACCESSORS_DECL(local_declaration_ast, body);
 
 
+// --- W i t h   e s c a p e   a s t ---
+
+static const size_t kWithEscapeAstSize = OBJECT_SIZE(2);
+static const size_t kWithEscapeAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kWithEscapeAstBodyOffset = OBJECT_FIELD_OFFSET(1);
+
+// The symbol that represents the captured escape.
+ACCESSORS_DECL(with_escape_ast, symbol);
+
+// The expression that's in scope of the escape.
+ACCESSORS_DECL(with_escape_ast, body);
+
+
 // --- V a r i a b l e   a s s i g n m e n t   a s t ---
 
 static const size_t kVariableAssignmentAstSize = OBJECT_SIZE(2);

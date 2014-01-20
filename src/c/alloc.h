@@ -250,6 +250,10 @@ value_t new_heap_sequence_ast(runtime_t *runtime, value_t values);
 value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
     value_t is_mutable, value_t value, value_t body);
 
+// Creates a new with_escape syntax tree with the given attributes.
+value_t new_heap_with_escape_ast(runtime_t *runtime, value_t symbol,
+    value_t body);
+
 // Creates a new local variable syntax tree with the given symbol.
 value_t new_heap_local_variable_ast(runtime_t *runtime, value_t symbol);
 

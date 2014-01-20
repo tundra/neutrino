@@ -342,6 +342,11 @@ value_t assembler_emit_delegate_lambda_call(assembler_t *assm) {
   return success();
 }
 
+value_t assembler_emit_capture_escape(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocCaptureEscape);
+  return success();
+}
+
 value_t assembler_emit_invocation(assembler_t *assm, value_t fragment, value_t record) {
   CHECK_FAMILY(ofModuleFragment, fragment);
   CHECK_FAMILY(ofInvocationRecord, record);

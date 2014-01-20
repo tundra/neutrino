@@ -435,6 +435,59 @@ value_t plankton_new_local_declaration_ast(runtime_t *runtime) {
 }
 
 
+// --- W i t h   e s c a p e   a s t ---
+
+FIXED_GET_MODE_IMPL(with_escape_ast, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(WithEscapeAst, with_escape_ast);
+
+ACCESSORS_IMPL(WithEscapeAst, with_escape_ast, acInFamilyOpt, ofSymbolAst,
+    Symbol, symbol);
+ACCESSORS_IMPL(WithEscapeAst, with_escape_ast, acIsSyntaxOpt, 0, Body, body);
+
+value_t with_escape_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofWithEscapeAst, self);
+  VALIDATE_FAMILY_OPT(ofSymbolAst, get_with_escape_ast_symbol(self));
+  return success();
+}
+
+value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
+  CHECK_FAMILY(ofWithEscapeAst, self);
+  // Record the stack offset where the value is being pushed.
+  size_t offset = assm->stack_height;
+  // Capture the escape.
+  TRY(assembler_emit_capture_escape(assm));
+  // Record in the scope chain that the symbol is bound and where the value is
+  // located on the stack. It is the responsibility of anyone reading or writing
+  // the variable to dereference the value as appropriate.
+  value_t symbol = get_with_escape_ast_symbol(self);
+  CHECK_FAMILY(ofSymbolAst, symbol);
+  if (assembler_is_symbol_bound(assm, symbol))
+    // We're trying to redefine an already defined symbol. That's not valid.
+    return new_invalid_syntax_signal(isSymbolAlreadyBound);
+  single_symbol_scope_t scope;
+  assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal, offset);
+  value_t body = get_with_escape_ast_body(self);
+  // Emit the body in scope of the local.
+  TRY(emit_value(body, assm));
+  assembler_pop_single_symbol_scope(assm, &scope);
+  // Slap the value of the local off, leaving just the value of the body.
+  TRY(assembler_emit_slap(assm, 1));
+  return success();
+}
+
+value_t plankton_set_with_escape_ast_contents(value_t object,
+    runtime_t *runtime, value_t contents) {
+  UNPACK_PLANKTON_MAP(contents, symbol, body);
+  set_with_escape_ast_symbol(object, symbol);
+  set_with_escape_ast_body(object, body);
+  return success();
+}
+
+value_t plankton_new_with_escape_ast(runtime_t *runtime) {
+  return new_heap_with_escape_ast(runtime, nothing(), nothing());
+}
+
+
 // --- V a r i a b l e   a s s i g n m e n t   a s t ---
 
 FIXED_GET_MODE_IMPL(variable_assignment_ast, vmMutable);
