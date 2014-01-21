@@ -314,6 +314,11 @@ void string_buffer_vprintf(string_buffer_t *buf, const char *fmt, va_list argp) 
           string_buffer_native_printf(buf, "%f", value);
           break;
         }
+        case 'p': {
+          void *ptr = (void*) va_arg(argp, void*);
+          string_buffer_native_printf(buf, "%p", ptr);
+          break;
+        }
         case 'c': {
           // Assume the char has been fully promoted to an int.
           char value = (char) va_arg(argp, int);

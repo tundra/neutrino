@@ -472,6 +472,17 @@ value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_escape(runtime_t *runtime, value_t is_live, value_t stack_piece,
+    value_t stack_pointer) {
+  size_t size = kEscapeSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, escape_species)));
+  set_escape_is_live(result, is_live);
+  set_escape_stack_piece(result, stack_piece);
+  set_escape_stack_pointer(result, stack_pointer);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- M e t h o d ---
 

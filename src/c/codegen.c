@@ -344,6 +344,16 @@ value_t assembler_emit_delegate_lambda_call(assembler_t *assm) {
 
 value_t assembler_emit_capture_escape(assembler_t *assm) {
   assembler_emit_opcode(assm, ocCaptureEscape);
+  // We'll record the complete state and also push the capture object.
+  assembler_adjust_stack_height(assm, (1 + kCapturedStateSize));
+  return success();
+}
+
+value_t assembler_emit_fire_escape(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocFireEscape);
+  // This instruction occurs in a special method which doesn't use its stack
+  // since this instruction bails out so the stack height is neither necessary
+  // nor well defined.
   return success();
 }
 

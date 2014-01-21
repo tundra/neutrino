@@ -191,6 +191,9 @@ value_t assembler_emit_delegate_lambda_call(assembler_t *assm);
 // Capture an escape, pushing it onto the stack.
 value_t assembler_emit_capture_escape(assembler_t *assm);
 
+// Fire an escape object, unwinding to where it was captured.
+value_t assembler_emit_fire_escape(assembler_t *assm);
+
 
 // A scope defining a single symbol.
 typedef struct {

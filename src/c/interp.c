@@ -38,6 +38,27 @@ static void interpreter_state_load(interpreter_state_t *state, frame_t *frame) {
   state->value_pool = get_code_block_value_pool(code_block);
 }
 
+static void interpreter_state_push(interpreter_state_t *state, frame_t *frame) {
+  frame_t snapshot = *frame;
+  frame_push_value(frame, new_integer(snapshot.stack_pointer));
+  frame_push_value(frame, new_integer(snapshot.frame_pointer));
+  frame_push_value(frame, new_integer(snapshot.capacity));
+  frame_push_value(frame, new_integer(state->pc));
+}
+
+static void interpreter_state_pop(interpreter_state_t *state, frame_t *frame) {
+  frame_t snapshot;
+  state->pc = get_integer_value(frame_pop_value(frame));
+  snapshot.capacity = get_integer_value(frame_pop_value(frame));
+  snapshot.frame_pointer = get_integer_value(frame_pop_value(frame));
+  snapshot.stack_pointer = get_integer_value(frame_pop_value(frame));
+  value_t code_block = get_frame_code_block(&snapshot);
+  value_t bytecode = get_code_block_bytecode(code_block);
+  get_blob_data(bytecode, &state->bytecode);
+  state->value_pool = get_code_block_value_pool(code_block);
+  *frame = snapshot;
+}
+
 // Reads over and returns the next byte in the bytecode stream.
 static byte_t read_next_byte(interpreter_state_t *state) {
   return blob_byte_at(&state->bytecode, state->pc++);
@@ -78,6 +99,14 @@ static value_t compile_method(runtime_t *runtime, value_t method) {
   E_FINALLY();
     assembler_dispose(&assm);
   E_END_TRY_FINALLY();
+}
+
+static void frame_log_info(frame_t *frame) {
+  INFO("frame %p", frame);
+  INFO(" - stack_piece: %v", frame->stack_piece);
+  INFO(" - stack_pointer: %i", frame->stack_pointer);
+  INFO(" - frame_pointer: %i", frame->frame_pointer);
+  INFO(" - capacity: %i", frame->capacity);
 }
 
 // Gets the code from a method object, compiling the method if necessary.
@@ -297,6 +326,24 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         }
         TRY_DEF(lambda, new_heap_lambda(runtime, space, outers));
         frame_push_value(&frame, lambda);
+        break;
+      }
+      case ocCaptureEscape: {
+        frame_log_info(&frame);
+        // Push the current interpreter state onto the stack.
+        interpreter_state_push(&state, &frame);
+        value_t stack_piece = frame.stack_piece;
+        value_t stack_pointer = new_integer(frame.stack_pointer);
+        INFO("Created escape for %v@%v", stack_piece, stack_pointer);
+        TRY_DEF(escape, new_heap_escape(runtime, yes(), stack_piece, stack_pointer));
+        frame_push_value(&frame, escape);
+        break;
+      }
+      case ocFireEscape: {
+        value_t escape = frame_get_argument(&frame, 0);
+        CHECK_FAMILY(ofEscape, escape);
+        value_t value = frame_get_argument(&frame, 2);
+        frame_push_value(&frame, value);
         break;
       }
       default:

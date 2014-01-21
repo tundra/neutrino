@@ -452,10 +452,11 @@ value_t with_escape_ast_validate(value_t self) {
 
 value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofWithEscapeAst, self);
-  // Record the stack offset where the value is being pushed.
-  size_t offset = assm->stack_height;
   // Capture the escape.
   TRY(assembler_emit_capture_escape(assm));
+  // The capture will be pushed as the top element so its offset is one below
+  // the current top.
+  size_t offset = assm->stack_height - 1;
   // Record in the scope chain that the symbol is bound and where the value is
   // located on the stack. It is the responsibility of anyone reading or writing
   // the variable to dereference the value as appropriate.
@@ -1252,5 +1253,6 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "Signature", plankton_new_signature_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Symbol", plankton_new_symbol_ast, runtime));
   TRY(add_plankton_factory(map, ast, "VariableAssignment", plankton_new_variable_assignment_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "WithEscape", plankton_new_with_escape_ast, runtime));
   return success();
 }

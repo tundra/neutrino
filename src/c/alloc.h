@@ -199,6 +199,10 @@ value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
 // Creates a new empty stack with one piece with the given capacity.
 value_t new_heap_stack(runtime_t *runtime, size_t initial_capacity);
 
+// Creates a new captured escape value.
+value_t new_heap_escape(runtime_t *runtime, value_t is_live, value_t stack_piece,
+    value_t stack_pointer);
+
 
 // --- M e t h o d ---
 

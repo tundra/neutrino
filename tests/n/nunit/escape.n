@@ -2,13 +2,14 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 import $assert;
+import $core;
 
 def $test_simple_escape() {
-  def $x := with_escape $leave do $leave(0);
-  $assert:equals(0, $x);
+  $assert:equals(0, with_escape $break do $core:info($break));
+  $assert:equals(1, with_escape $break do $break(1));
+  $core:info(with_escape $break do { $break(2); 3; });
 }
 
-# A method that does something, anything.
 def $main() {
   $test_simple_escape();
 }

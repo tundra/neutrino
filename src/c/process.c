@@ -29,7 +29,7 @@ void stack_piece_print_on(value_t value, string_buffer_t *buf,
     print_flags_t flags, size_t depth) {
   CHECK_FAMILY(ofStackPiece, value);
   string_buffer_printf(buf, "#<stack piece: st@%i>",
-      get_blob_length(get_stack_piece_storage(value)));
+      get_array_length(get_stack_piece_storage(value)));
 }
 
 
@@ -290,4 +290,33 @@ value_t frame_get_local(frame_t *frame, size_t index) {
   SIG_CHECK_TRUE("local not defined yet", scOutOfBounds,
       location < frame->stack_pointer);
   return *access_frame_field(frame, location);
+}
+
+
+// --- E s c a p e ---
+
+FIXED_GET_MODE_IMPL(escape, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(Escape, escape);
+GET_FAMILY_PRIMARY_TYPE_IMPL(escape);
+
+ACCESSORS_IMPL(Escape, escape, acNoCheck, 0, IsLive, is_live);
+ACCESSORS_IMPL(Escape, escape, acInFamily, ofStackPiece, StackPiece, stack_piece);
+ACCESSORS_IMPL(Escape, escape, acNoCheck, 0, StackPointer, stack_pointer);
+
+value_t escape_validate(value_t value) {
+  VALIDATE_FAMILY(ofEscape, value);
+  return success();
+}
+
+value_t emit_fire_escape(assembler_t *assm) {
+  TRY(assembler_emit_fire_escape(assm));
+  return success();
+}
+
+value_t add_escape_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
+  DEF_CALL(call);
+  TRY(add_methodspace_custom_method(runtime, deref(s_space),
+      ROOT(runtime, escape_type), call, 1, false,
+      emit_fire_escape));
+  return success();
 }
