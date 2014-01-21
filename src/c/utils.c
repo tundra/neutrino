@@ -335,6 +335,13 @@ void string_buffer_vprintf(string_buffer_t *buf, const char *fmt, va_list argp) 
           value_print_on(value, buf, pfNone, depth);
           break;
         }
+        case 'w': {
+          encoded_value_t encoded = va_arg(argp, encoded_value_t);
+          char wordy[kMaxWordyNameSize];
+          wordy_encode(encoded, wordy, kMaxWordyNameSize);
+          string_buffer_native_printf(buf, "%s", wordy);
+          break;
+        }
         default:
           string_buffer_native_printf(buf, "%%%c", c);
           break;
@@ -616,4 +623,34 @@ void base64_decode(string_t *str, byte_buffer_t *out) {
         byte_buffer_append(out, (c << 6) | d);
     }
   }
+}
+
+
+// --- 6 4   n a m e ---
+
+// The tables from which to grab characters.
+static const string_t kCharTables[2] = {
+  {6, "aeiouy"},
+  {20, "bcdfghjklmnpqrstvwxz"}
+};
+
+void wordy_encode(uint64_t value, char *buf, size_t bufc) {
+  size_t cursor = 0;
+  // Use the first bit to determine whether to start with a vowel or a
+  // consonant.
+  size_t table_index = (value & 1);
+  value >>= 1;
+  // Even if value is 0 we have to run at least once.
+  do {
+    string_t table = kCharTables[table_index];
+    size_t char_index = value % table.length;
+    char c = table.chars[char_index];
+    CHECK_REL("wordy_encode buf too small", cursor, <, bufc);
+    buf[cursor] = c;
+    table_index = 1 - table_index;
+    cursor++;
+    value /= table.length;
+  } while (value != 0);
+  CHECK_REL("wordy_encode buf too small", cursor, <, bufc);
+  buf[cursor] = 0;
 }

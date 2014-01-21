@@ -160,10 +160,12 @@ static void validate_lookup_error(void *unused, log_entry_t *entry) {
   // Ignore any logging to stdout, we're only interested in the error.
   if (entry->destination == lsStdout)
     return;
+  const char *prefix = "%<signal: LookupError(NoMatch)>: {%subject: #<lambda";
   string_t expected;
-  string_init(&expected,
-      "%<signal: LookupError(NoMatch)>: {%subject: #<lambda>, %selector: 0}");
-  ASSERT_STREQ(&expected, entry->message);
+  string_init(&expected, prefix);
+  string_t message = *entry->message;
+  message.length = min_size(strlen(prefix), message.length);
+  ASSERT_STREQ(&expected, &message);
 }
 
 TEST(interp, lookup_error) {

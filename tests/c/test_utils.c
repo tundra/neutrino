@@ -488,3 +488,19 @@ TEST(utils, byte_buffer_cursor) {
 
   byte_buffer_dispose(&buf);
 }
+
+TEST(utils, 64name) {
+  char buf[kMaxWordyNameSize];
+  wordy_encode(0xFFFFFFFFFFFFFFFFL, buf, kMaxWordyNameSize);
+  ASSERT_C_STREQ("kahyfahuzytolubosuc", buf);
+  wordy_encode(0xFFFFFFFFFFFFFFFEL, buf, kMaxWordyNameSize);
+  ASSERT_C_STREQ("ecowobesyzoqusanute", buf);
+  wordy_encode(0, buf, kMaxWordyNameSize);
+  ASSERT_C_STREQ("a", buf);
+  wordy_encode(1, buf, kMaxWordyNameSize);
+  ASSERT_C_STREQ("b", buf);
+  wordy_encode(65536, buf, kMaxWordyNameSize);
+  ASSERT_C_STREQ("icohi", buf);
+  wordy_encode(-65536, buf, kMaxWordyNameSize);
+  ASSERT_C_STREQ("abaqebesyzoqusanute", buf);
+}
