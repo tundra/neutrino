@@ -626,7 +626,7 @@ void base64_decode(string_t *str, byte_buffer_t *out) {
 }
 
 
-// --- 6 4   n a m e ---
+// --- W o r d y ---
 
 // The tables from which to grab characters.
 static const string_t kCharTables[2] = {

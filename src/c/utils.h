@@ -366,7 +366,7 @@ int64_t hash_stream_flush(hash_stream_t *stream);
 void base64_decode(string_t *str, byte_buffer_t *out);
 
 
-// --- 6 4   n a m e s ---
+// --- W o r d y  ---
 
 // The average number of bits per letter is 3.7; 64 / 3.7 is 17.3, rounded up
 // is 18, add 1 because 3.7 is a slight over-estimate for finite-length strings,
