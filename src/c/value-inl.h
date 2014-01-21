@@ -95,7 +95,7 @@ VALIDATE(in_family_opt(ofFamily, EXPR))
 void family##_print_on(value_t value, string_buffer_t *buf,                    \
     print_flags_t flags, size_t depth) {                                       \
   CHECK_FAMILY(of##Family, value);                                             \
-  string_buffer_printf(buf, "#<" #family ">");                                 \
+  string_buffer_printf(buf, "#<" #family " ~%w>", value.encoded);              \
 }                                                                              \
 SWALLOW_SEMI(tpo)
 
