@@ -16,7 +16,7 @@ def $test_simple_escape() {
 # Calls recursively 10 times, then calls the thunk with the argument 10.
 def $call_at_10($n, $thunk) => 
   if $n < 10
-    then $call_at_10($n + 1, $thunk);
+    then $call_at_10($n + 1, $thunk)
     else $thunk($n);
 
 def $test_deep_escape() {

@@ -159,7 +159,8 @@ class Parser(object):
   def parse_method_tail(self):
     if self.at_punctuation('=>'):
       self.expect_punctuation('=>')
-      body = self.parse_expression(True)
+      body = self.parse_expression(False)
+      self.expect_statement_delimiter(True)
       return body
     elif self.at_punctuation('{'):
       return self.parse_sequence_expression()
