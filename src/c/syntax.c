@@ -435,6 +435,66 @@ value_t plankton_new_local_declaration_ast(runtime_t *runtime) {
 }
 
 
+// --- W i t h   e s c a p e   a s t ---
+
+FIXED_GET_MODE_IMPL(with_escape_ast, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(WithEscapeAst, with_escape_ast);
+
+ACCESSORS_IMPL(WithEscapeAst, with_escape_ast, acInFamilyOpt, ofSymbolAst,
+    Symbol, symbol);
+ACCESSORS_IMPL(WithEscapeAst, with_escape_ast, acIsSyntaxOpt, 0, Body, body);
+
+value_t with_escape_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofWithEscapeAst, self);
+  VALIDATE_FAMILY_OPT(ofSymbolAst, get_with_escape_ast_symbol(self));
+  return success();
+}
+
+value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
+  CHECK_FAMILY(ofWithEscapeAst, self);
+  // Capture the escape.
+  byte_buffer_cursor_t dest;
+  TRY(assembler_emit_capture_escape(assm, &dest));
+  size_t code_start_offset = assembler_get_code_cursor(assm);
+  // The capture will be pushed as the top element so its offset is one below
+  // the current top.
+  size_t stack_offset = assm->stack_height - 1;
+  // Record in the scope chain that the symbol is bound and where the value is
+  // located on the stack.
+  value_t symbol = get_with_escape_ast_symbol(self);
+  CHECK_FAMILY(ofSymbolAst, symbol);
+  if (assembler_is_symbol_bound(assm, symbol))
+    // We're trying to redefine an already defined symbol. That's not valid.
+    return new_invalid_syntax_signal(isSymbolAlreadyBound);
+  single_symbol_scope_t scope;
+  assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal, stack_offset);
+  value_t body = get_with_escape_ast_body(self);
+  // Emit the body in scope of the local.
+  TRY(emit_value(body, assm));
+  assembler_pop_single_symbol_scope(assm, &scope);
+  // If the escape is ever fired it will drop down to this location, leaving
+  // the value on top of the stack. That way the stack cleanup happens the same
+  // way whether you return normally or escape.
+  size_t code_end_offset = assembler_get_code_cursor(assm);
+  byte_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
+  // Slap the value of the local off, leaving just the value of the body.
+  TRY(assembler_emit_slap(assm, 1 + kCapturedStateSize));
+  return success();
+}
+
+value_t plankton_set_with_escape_ast_contents(value_t object,
+    runtime_t *runtime, value_t contents) {
+  UNPACK_PLANKTON_MAP(contents, symbol, body);
+  set_with_escape_ast_symbol(object, symbol);
+  set_with_escape_ast_body(object, body);
+  return success();
+}
+
+value_t plankton_new_with_escape_ast(runtime_t *runtime) {
+  return new_heap_with_escape_ast(runtime, nothing(), nothing());
+}
+
+
 // --- V a r i a b l e   a s s i g n m e n t   a s t ---
 
 FIXED_GET_MODE_IMPL(variable_assignment_ast, vmMutable);
@@ -1199,5 +1259,6 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "Signature", plankton_new_signature_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Symbol", plankton_new_symbol_ast, runtime));
   TRY(add_plankton_factory(map, ast, "VariableAssignment", plankton_new_variable_assignment_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "WithEscape", plankton_new_with_escape_ast, runtime));
   return success();
 }

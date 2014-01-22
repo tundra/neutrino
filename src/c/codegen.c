@@ -272,6 +272,10 @@ static void assembler_emit_opcode(assembler_t *assm, opcode_t opcode) {
   assembler_emit_byte(assm, opcode);
 }
 
+static void assembler_emit_cursor(assembler_t *assm, byte_buffer_cursor_t *out) {
+  byte_buffer_append_cursor(&assm->code, out);
+}
+
 // Writes a reference to a value in the value pool, adding the value to the
 // pool if necessary.
 static value_t assembler_emit_value(assembler_t *assm, value_t value) {
@@ -307,6 +311,10 @@ static void assembler_adjust_stack_height(assembler_t *assm, int delta) {
   IF_EXPENSIVE_CHECKS_ENABLED(assembler_emit_stack_height_check(assm));
 }
 
+size_t assembler_get_code_cursor(assembler_t *assm) {
+  return assm->code.length;
+}
+
 value_t assembler_emit_push(assembler_t *assm, value_t value) {
   assembler_emit_opcode(assm, ocPush);
   TRY(assembler_emit_value(assm, value));
@@ -339,6 +347,23 @@ value_t assembler_emit_new_array(assembler_t *assm, size_t length) {
 value_t assembler_emit_delegate_lambda_call(assembler_t *assm) {
   assembler_emit_opcode(assm, ocDelegateToLambda);
   assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
+value_t assembler_emit_capture_escape(assembler_t *assm,
+    byte_buffer_cursor_t *offset_out) {
+  assembler_emit_opcode(assm, ocCaptureEscape);
+  assembler_emit_cursor(assm, offset_out);
+  // We'll record the complete state and also push the capture object.
+  assembler_adjust_stack_height(assm, (1 + kCapturedStateSize));
+  return success();
+}
+
+value_t assembler_emit_fire_escape(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocFireEscape);
+  // This instruction occurs in a special method which doesn't use its stack
+  // since this instruction bails out so the stack height is neither necessary
+  // nor well defined.
   return success();
 }
 

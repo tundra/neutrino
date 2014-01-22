@@ -132,6 +132,10 @@ value_t assembler_flush(assembler_t *assm);
 // for reusable_scratch_memory_t).
 reusable_scratch_memory_t *assembler_get_scratch_memory(assembler_t *assm);
 
+// Returns the offset in words of the next location in the code stream which
+// will be written, that is, one past the last written instruction.
+size_t assembler_get_code_cursor(assembler_t *assm);
+
 // Emits a push instruction.
 value_t assembler_emit_push(assembler_t *assm, value_t value);
 
@@ -187,6 +191,14 @@ value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
 // Hacky implementation of calling lambdas. Later this should be replaced by a
 // more general delegate operation.
 value_t assembler_emit_delegate_lambda_call(assembler_t *assm);
+
+// Capture an escape, pushing it onto the stack. The offset_out is a cursor
+// where the offset to jump to when returning to the escape should be written.
+value_t assembler_emit_capture_escape(assembler_t *assm,
+    byte_buffer_cursor_t *offset_out);
+
+// Fire an escape object, unwinding to where it was captured.
+value_t assembler_emit_fire_escape(assembler_t *assm);
 
 
 // A scope defining a single symbol.

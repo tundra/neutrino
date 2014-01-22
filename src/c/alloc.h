@@ -199,6 +199,10 @@ value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
 // Creates a new empty stack with one piece with the given capacity.
 value_t new_heap_stack(runtime_t *runtime, size_t initial_capacity);
 
+// Creates a new captured escape value.
+value_t new_heap_escape(runtime_t *runtime, value_t is_live, value_t stack_piece,
+    value_t stack_pointer);
+
 
 // --- M e t h o d ---
 
@@ -249,6 +253,10 @@ value_t new_heap_sequence_ast(runtime_t *runtime, value_t values);
 // Creates a new local declaration syntax tree with the given attributes.
 value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
     value_t is_mutable, value_t value, value_t body);
+
+// Creates a new with_escape syntax tree with the given attributes.
+value_t new_heap_with_escape_ast(runtime_t *runtime, value_t symbol,
+    value_t body);
 
 // Creates a new local variable syntax tree with the given symbol.
 value_t new_heap_local_variable_ast(runtime_t *runtime, value_t symbol);

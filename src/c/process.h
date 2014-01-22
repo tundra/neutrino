@@ -146,4 +146,26 @@ bool pop_stack_frame(value_t stack, frame_t *frame);
 void get_stack_top_frame(value_t stack, frame_t *frame);
 
 
+// --- E s c a p e ---
+
+static const size_t kEscapeSize = OBJECT_SIZE(3);
+static const size_t kEscapeIsLiveOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kEscapeStackPieceOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kEscapeStackPointerOffset = OBJECT_FIELD_OFFSET(2);
+
+// The number of stack entries it takes to record the complete state of a frame.
+static const size_t kCapturedStateSize = 4;
+
+// Is it valid to invoke this escape, that is, are we still within the body of
+// the with_escape block that produced this escape?
+ACCESSORS_DECL(escape, is_live);
+
+// The stack piece to drop to when escaping.
+ACCESSORS_DECL(escape, stack_piece);
+
+// The stack pointer that indicates where the stored state is located on the
+// stack piece.
+ACCESSORS_DECL(escape, stack_pointer);
+
+
 #endif // _PROCESS

@@ -225,6 +225,8 @@ class Parser(object):
       return self.parse_while_expression(expect_delim)
     elif self.at_word('for'):
       return self.parse_for_expression(expect_delim)
+    elif self.at_word('with_escape'):
+      return self.parse_with_escape_expression(expect_delim)
     else:
       return self.parse_assignment_expression(expect_delim)
 
@@ -265,6 +267,8 @@ class Parser(object):
       ast.Argument(1, ast.Lambda.thunk(body)),
     ])
 
+  # <for expression>
+  #   -> "for" <signature> "in" <expression> "do" <expression>
   def parse_for_expression(self, expect_delim):
     self.expect_word('for')
     sig = self.parse_signature()
@@ -281,6 +285,15 @@ class Parser(object):
       ast.Argument(data._SELECTOR, ast.Literal(Parser._FOR)),
       ast.Argument(0, thunk)
     ])
+
+  # <with escape expression>
+  #   -> "with_escape" <ident> "do" <expression>
+  def parse_with_escape_expression(self, expect_delim):
+    self.expect_word('with_escape')
+    name = self.expect_type(Token.IDENTIFIER)
+    self.expect_word('do')
+    body = self.parse_expression(expect_delim)
+    return ast.WithEscape(name, body)
 
   # <assignment expression>
   #   -> <operator expression> :* ":="

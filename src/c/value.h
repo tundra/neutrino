@@ -240,6 +240,7 @@ static value_t new_moved_object(value_t target) {
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X)\
   F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _)\
   F(DecimalFraction,         decimal_fraction,          _, _, X, _, _, _, _, _, _)\
+  F(Escape,                  escape,                    _, _, _, X, _, _, _, _, _)\
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _)\
   F(Function,                function,                  _, _, X, X, _, _, _, X, _)\
   F(GlobalField,             global_field,              _, _, _, X, _, _, _, _, _)\
@@ -291,7 +292,8 @@ static value_t new_moved_object(value_t target) {
   F(UnboundModuleFragment,   unbound_module_fragment,   _, _, X, _, _, _, _, _, _)\
   F(Unknown,                 unknown,                   _, _, X, _, _, _, _, _, _)\
   F(VariableAssignmentAst,   variable_assignment_ast,   _, _, X, _, _, _, X, _, _)\
-  F(VoidP,                   void_p,                    _, _, _, _, X, _, _, _, _)
+  F(VoidP,                   void_p,                    _, _, _, _, X, _, _, _, _)\
+  F(WithEscapeAst,           with_escape_ast,           _, _, X, _, _, _, X, _, _)
 
 // Enumerates all the object families.
 #define ENUM_OBJECT_FAMILIES(F)                                                \

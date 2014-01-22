@@ -38,6 +38,46 @@ static void interpreter_state_load(interpreter_state_t *state, frame_t *frame) {
   state->value_pool = get_code_block_value_pool(code_block);
 }
 
+// Pushes the current state of the interpreter onto the stack such that it can
+// later be restored. Returns a location value that must later be passed to
+// interpreter_state_restore when restoring the state. The pc offset is a delta
+// to add to the current pc in the case there the code location to return to is
+// not just the next instruction. The sp_offset is a delta to add to the stack
+// pointer to account for any changes that happen after pushing the state that
+// must be included when restoring the state.
+static size_t interpreter_state_push(interpreter_state_t *state, frame_t *frame,
+    size_t pc_offset, int sp_offset) {
+  frame_t snapshot = *frame;
+  size_t location = snapshot.stack_pointer;
+  frame_push_value(frame, new_integer(snapshot.stack_pointer + sp_offset));
+  frame_push_value(frame, new_integer(snapshot.frame_pointer));
+  frame_push_value(frame, new_integer(snapshot.capacity));
+  frame_push_value(frame, new_integer(state->pc + pc_offset));
+  return location;
+}
+
+// Restores the previous state of the interpreter that, when captured, returned
+// the given location value.
+static void interpreter_state_restore(interpreter_state_t *state, frame_t *frame,
+    value_t stack, value_t stack_piece, size_t location) {
+  CHECK_TRUE("wrong stack piece", is_same_value(frame->stack_piece, stack_piece));
+  value_t storage = get_stack_piece_storage(stack_piece);
+  value_t stack_pointer = get_array_at(storage, location);
+  value_t frame_pointer = get_array_at(storage, location + 1);
+  value_t capacity = get_array_at(storage, location + 2);
+  value_t pc = get_array_at(storage, location + 3);
+  set_stack_piece_top_stack_pointer(stack_piece, get_integer_value(stack_pointer));
+  set_stack_piece_top_frame_pointer(stack_piece, get_integer_value(frame_pointer));
+  set_stack_piece_top_capacity(stack_piece, get_integer_value(capacity));
+  set_stack_top_piece(stack, stack_piece);
+  get_stack_top_frame(stack, frame);
+  state->pc = get_integer_value(pc);
+  value_t code_block = get_frame_code_block(frame);
+  value_t bytecode = get_code_block_bytecode(code_block);
+  get_blob_data(bytecode, &state->bytecode);
+  state->value_pool = get_code_block_value_pool(code_block);
+}
+
 // Reads over and returns the next byte in the bytecode stream.
 static byte_t read_next_byte(interpreter_state_t *state) {
   return blob_byte_at(&state->bytecode, state->pc++);
@@ -297,6 +337,27 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         }
         TRY_DEF(lambda, new_heap_lambda(runtime, space, outers));
         frame_push_value(&frame, lambda);
+        break;
+      }
+      case ocCaptureEscape: {
+        size_t dest_offset = read_next_byte(&state);
+        // Push the interpreter state at the end of this instruction onto the
+        // stack.
+        value_t location = new_integer(interpreter_state_push(&state, &frame,
+            dest_offset, kCapturedStateSize + 1));
+        value_t stack_piece = frame.stack_piece;
+        TRY_DEF(escape, new_heap_escape(runtime, yes(), stack_piece, location));
+        frame_push_value(&frame, escape);
+        break;
+      }
+      case ocFireEscape: {
+        value_t escape = frame_get_argument(&frame, 0);
+        CHECK_FAMILY(ofEscape, escape);
+        value_t value = frame_get_argument(&frame, 2);
+        size_t location = get_integer_value(get_escape_stack_pointer(escape));
+        value_t stack_piece = get_escape_stack_piece(escape);
+        interpreter_state_restore(&state, &frame, stack, stack_piece, location);
+        frame_push_value(&frame, value);
         break;
       }
       default:

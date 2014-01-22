@@ -49,6 +49,14 @@ class ScopeVisitor(ast.Visitor):
   def visit_local_declaration(self, that):
     assert that.symbol is None
     that.value.accept(self)
+    self.visit_generic_declaration(that)
+
+  def visit_with_escape(self, that):
+    assert that.symbol is None
+    self.visit_generic_declaration(that)
+
+  # Analyzes the body of a declaration-like syntax tree.
+  def visit_generic_declaration(self, that):
     that.symbol = ast.Symbol(that.get_name(), that)
     bindings = {}
     bindings[that.get_name()] = that.symbol

@@ -14,7 +14,9 @@
 #define ENUM_OPCODES(F)                                                        \
   F(Builtin)                                                                   \
   F(CheckStackHeight)                                                          \
+  F(CaptureEscape)                                                             \
   F(DelegateToLambda)                                                          \
+  F(FireEscape)                                                                \
   F(GetReference)                                                              \
   F(Invoke)                                                                    \
   F(Lambda)                                                                    \

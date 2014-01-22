@@ -44,6 +44,9 @@ class Visitor(object):
   def visit_local_declaration(self, that):
     self.visit_ast(that)
 
+  def visit_with_escape(self, that):
+    self.visit_ast(that)
+
   def visit_namespace_declaration(self, that):
     self.visit_ast(that)
 
@@ -296,6 +299,27 @@ class LocalDeclaration(object):
     else:
       type = "var"
     return "(%s %s := %s in %s)" % (type, self.ident, self.value, self.body)
+
+
+# A local escape capture.
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "WithEscape"))
+class WithEscape(object):
+
+  @plankton.field("symbol")
+  @plankton.field("body")
+  def __init__(self, ident, body):
+    self.ident = ident
+    self.symbol = None
+    self.body = body
+
+  def accept(self, visitor):
+    return visitor.visit_with_escape(self)
+
+  def traverse(self, visitor):
+    self.body.accept(visitor)
+
+  def get_name(self):
+    return self.ident.get_name()
 
 
 # A symbol that identifies a scoped binding.
