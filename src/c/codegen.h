@@ -200,6 +200,11 @@ value_t assembler_emit_capture_escape(assembler_t *assm,
 // Fire an escape object, unwinding to where it was captured.
 value_t assembler_emit_fire_escape(assembler_t *assm);
 
+// Pops off the escape currently on the stack and marks it as dead. Note that
+// this expects there to be a value above the escape, so this in effect does a
+// slap-1, not a pop-1.
+value_t assembler_emit_kill_escape(assembler_t *assm);
+
 
 // A scope defining a single symbol.
 typedef struct {

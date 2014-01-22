@@ -364,6 +364,14 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         frame_push_value(&frame, value);
         break;
       }
+      case ocKillEscape: {
+        value_t value = frame_pop_value(&frame);
+        value_t escape = frame_pop_value(&frame);
+        CHECK_FAMILY(ofEscape, escape);
+        set_escape_is_live(escape, no());
+        frame_push_value(&frame, value);
+        break;
+      }
       default:
         ERROR("Unexpected opcode %i", opcode);
         UNREACHABLE("unexpected opcode");
