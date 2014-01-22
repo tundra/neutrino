@@ -310,7 +310,7 @@ static void assembler_adjust_stack_height(assembler_t *assm, int delta) {
 value_t assembler_emit_push(assembler_t *assm, value_t value) {
   assembler_emit_opcode(assm, ocPush);
   TRY(assembler_emit_value(assm, value));
-  assembler_adjust_stack_height(assm, +2);
+  assembler_adjust_stack_height(assm, +1);
   return success();
 }
 
