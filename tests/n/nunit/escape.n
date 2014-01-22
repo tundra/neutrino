@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 import $assert;
+import $core;
 
 def $test_simple_escape() {
   $assert:equals(0, with_escape $break do 0);
