@@ -60,17 +60,21 @@ static size_t interpreter_state_push(interpreter_state_t *state, frame_t *frame,
 // the given location value.
 static void interpreter_state_restore(interpreter_state_t *state, frame_t *frame,
     value_t stack, value_t stack_piece, size_t location) {
-  CHECK_TRUE("wrong stack piece", is_same_value(frame->stack_piece, stack_piece));
+  // Read the state from the given stack piece.
   value_t storage = get_stack_piece_storage(stack_piece);
   value_t stack_pointer = get_array_at(storage, location);
   value_t frame_pointer = get_array_at(storage, location + 1);
   value_t capacity = get_array_at(storage, location + 2);
   value_t pc = get_array_at(storage, location + 3);
+  // Restore the state to the stack/stack piece objects. We need those values
+  // to be consistent with the frame so write them there and then update the
+  // frame based on those values.
   set_stack_piece_top_stack_pointer(stack_piece, get_integer_value(stack_pointer));
   set_stack_piece_top_frame_pointer(stack_piece, get_integer_value(frame_pointer));
   set_stack_piece_top_capacity(stack_piece, get_integer_value(capacity));
   set_stack_top_piece(stack, stack_piece);
   get_stack_top_frame(stack, frame);
+  // Restore the interpreter state from the now restored frame.
   state->pc = get_integer_value(pc);
   value_t code_block = get_frame_code_block(frame);
   value_t bytecode = get_code_block_bytecode(code_block);
