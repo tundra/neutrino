@@ -27,11 +27,31 @@ def $test_deep_escape() {
   $assert:equals(100, with_escape $break do $call_at_n(0, 100, $break));
 }
 
+def $test_direct_kill() {
+  $assert:equals(true, with_escape $break do $break.is_live);
+  $assert:equals(true, with_escape $break do $break($break.is_live));
+  $assert:equals(false, (with_escape $break do $break).is_live);
+  $assert:equals(false, (with_escape $break do $break($break)).is_live);
+  var $e := null;
+  with_escape $break do {
+    $e := $break;
+    $assert:equals(true, $e.is_live);
+  }
+  $assert:equals(false, $e.is_live);
+  var $f := null;
+  with_escape $break do {
+    $f := $break;
+    $assert:equals(true, $f.is_live);
+    $break(null);
+  }
+  $assert:equals(false, $f.is_live);  
+}
+
 def $main() {
   $test_simple_escape();
+  $test_direct_kill();
   $test_deep_escape();
   # TODO: check that
-  #   - escapes are killed appropriately.
   #   - escaping fails if called from a different process.
 }
 

@@ -367,6 +367,12 @@ value_t assembler_emit_fire_escape(assembler_t *assm) {
   return success();
 }
 
+value_t assembler_emit_kill_escape(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocKillEscape);
+  assembler_adjust_stack_height(assm, -1);
+  return success();
+}
+
 value_t assembler_emit_invocation(assembler_t *assm, value_t fragment, value_t record) {
   CHECK_FAMILY(ofModuleFragment, fragment);
   CHECK_FAMILY(ofInvocationRecord, record);

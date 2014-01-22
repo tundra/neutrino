@@ -19,6 +19,7 @@
   F(FireEscape)                                                                \
   F(GetReference)                                                              \
   F(Invoke)                                                                    \
+  F(KillEscape)                                                                \
   F(Lambda)                                                                    \
   F(LoadArgument)                                                              \
   F(LoadGlobal)                                                                \

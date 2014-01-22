@@ -313,10 +313,18 @@ value_t emit_fire_escape(assembler_t *assm) {
   return success();
 }
 
+value_t escape_is_live(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofEscape, self);
+  return get_escape_is_live(self);
+}
+
 value_t add_escape_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   DEF_CALL(call);
   TRY(add_methodspace_custom_method(runtime, deref(s_space),
       ROOT(runtime, escape_type), call, 1, false,
       emit_fire_escape));
+  DEF_PROPERTY(property_is_live, "is_live");
+  ADD_BUILTIN(escape, property_is_live, 0, escape_is_live);
   return success();
 }

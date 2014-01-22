@@ -477,8 +477,10 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   // way whether you return normally or escape.
   size_t code_end_offset = assembler_get_code_cursor(assm);
   byte_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
-  // Slap the value of the local off, leaving just the value of the body.
-  TRY(assembler_emit_slap(assm, 1 + kCapturedStateSize));
+  // Ensure that the escape is dead then slap the value and the captured state
+  // off, leaving just the value of the body or the escaped value.
+  TRY(assembler_emit_kill_escape(assm));
+  TRY(assembler_emit_slap(assm, kCapturedStateSize));
   return success();
 }
 
