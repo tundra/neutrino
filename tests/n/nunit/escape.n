@@ -52,6 +52,7 @@ def $main() {
   $test_direct_kill();
   $test_deep_escape();
   # TODO: check that
+  #   - escaping past another escape kills both (indirect killing).
   #   - escaping fails if called from a different process.
 }
 
