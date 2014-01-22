@@ -83,6 +83,8 @@ class Gcc(Toolchain):
     # Checks en/dis-abled
     if self.get_config_option("checks"):
       result += ["-DENABLE_CHECKS=1"]
+    if self.get_config_option("expchecks"):
+      result += ["-DEXPENSIVE_CHECKS=1"]
     # Strict errors
     if not self.get_config_option("warn"):
       result += ["-Werror"]

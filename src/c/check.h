@@ -26,6 +26,12 @@
 #define IF_CHECKS_DISABLED(V) V
 #endif
 
+#ifdef EXPENSIVE_CHECKS
+#define IF_EXPENSIVE_CHECKS_ENABLED(V) V
+#else
+#define IF_EXPENSIVE_CHECKS_ENABLED(V) USE(V)
+#endif
+
 // Fails unless the two values are equal.
 #define CHECK_EQ(M, A, B)                                                      \
 IF_CHECKS_ENABLED(CHECK_REL(M, A, ==, B))

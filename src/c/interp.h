@@ -13,6 +13,7 @@
 // Invokes the given macro for each opcode name.
 #define ENUM_OPCODES(F)                                                        \
   F(Builtin)                                                                   \
+  F(CheckStackHeight)                                                          \
   F(DelegateToLambda)                                                          \
   F(GetReference)                                                              \
   F(Invoke)                                                                    \
