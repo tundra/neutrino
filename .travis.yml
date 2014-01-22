@@ -13,7 +13,7 @@ matrix:
       install: sudo apt-get update && sudo apt-get install valgrind
     # Test a debug build with expensive checks but not under valgrind.
     - language: c
-      compile: clang
+      compiler: clang
       script: ./configure --debug --expchecks --noisy && ./build.sh run-ctrino-tests
     # Test everything using an optimized clang build.
     - language: c
