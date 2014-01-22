@@ -491,16 +491,20 @@ TEST(utils, byte_buffer_cursor) {
 
 TEST(utils, 64name) {
   char buf[kMaxWordyNameSize];
-  wordy_encode(0xFFFFFFFFFFFFFFFFL, buf, kMaxWordyNameSize);
+  wordy_encode(0x7FFFFFFFFFFFFFFFL, buf, kMaxWordyNameSize);
   ASSERT_C_STREQ("kahyfahuzytolubosuc", buf);
-  wordy_encode(0xFFFFFFFFFFFFFFFEL, buf, kMaxWordyNameSize);
-  ASSERT_C_STREQ("ecowobesyzoqusanute", buf);
+  wordy_encode(0x7FFFFFFFFFFFFFFEL, buf, kMaxWordyNameSize);
+  ASSERT_C_STREQ("jahyfahuzytolubosuc", buf);
   wordy_encode(0, buf, kMaxWordyNameSize);
-  ASSERT_C_STREQ("a", buf);
-  wordy_encode(1, buf, kMaxWordyNameSize);
   ASSERT_C_STREQ("b", buf);
+  wordy_encode(1, buf, kMaxWordyNameSize);
+  ASSERT_C_STREQ("c", buf);
+  wordy_encode(-1, buf, kMaxWordyNameSize);
+  ASSERT_C_STREQ("a", buf);
+  wordy_encode(-2, buf, kMaxWordyNameSize);
+  ASSERT_C_STREQ("e", buf);
   wordy_encode(65536, buf, kMaxWordyNameSize);
-  ASSERT_C_STREQ("icohi", buf);
+  ASSERT_C_STREQ("vajog", buf);
   wordy_encode(-65536, buf, kMaxWordyNameSize);
-  ASSERT_C_STREQ("abaqebesyzoqusanute", buf);
+  ASSERT_C_STREQ("odapu", buf);
 }

@@ -5,9 +5,9 @@ import $assert;
 import $core;
 
 def $test_simple_escape() {
-  $assert:equals(0, with_escape $break do $core:info($break));
+  $assert:equals(0, with_escape $break do $break(0));
   $assert:equals(1, with_escape $break do $break(1));
-  $core:info(with_escape $break do { $break(2); 3; });
+  # $core:info(with_escape $break do { $break(2); 3; });
 }
 
 def $main() {

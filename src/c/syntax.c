@@ -453,10 +453,12 @@ value_t with_escape_ast_validate(value_t self) {
 value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofWithEscapeAst, self);
   // Capture the escape.
-  TRY(assembler_emit_capture_escape(assm));
+  byte_buffer_cursor_t dest;
+  TRY(assembler_emit_capture_escape(assm, &dest));
+  size_t code_start_offset = assembler_get_code_cursor(assm);
   // The capture will be pushed as the top element so its offset is one below
   // the current top.
-  size_t offset = assm->stack_height - 1;
+  size_t stack_offset = assm->stack_height - 1;
   // Record in the scope chain that the symbol is bound and where the value is
   // located on the stack. It is the responsibility of anyone reading or writing
   // the variable to dereference the value as appropriate.
@@ -466,13 +468,15 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
     // We're trying to redefine an already defined symbol. That's not valid.
     return new_invalid_syntax_signal(isSymbolAlreadyBound);
   single_symbol_scope_t scope;
-  assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal, offset);
+  assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal, stack_offset);
   value_t body = get_with_escape_ast_body(self);
   // Emit the body in scope of the local.
   TRY(emit_value(body, assm));
   assembler_pop_single_symbol_scope(assm, &scope);
   // Slap the value of the local off, leaving just the value of the body.
-  TRY(assembler_emit_slap(assm, 1));
+  size_t code_end_offset = assembler_get_code_cursor(assm);
+  byte_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
+  TRY(assembler_emit_slap(assm, kCapturedStateSize));
   return success();
 }
 

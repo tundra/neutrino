@@ -635,16 +635,27 @@ void base64_decode(string_t *str, byte_buffer_t *out) {
 
 // The tables from which to grab characters.
 static const string_t kCharTables[2] = {
-  {6, "aeiouy"},
-  {20, "bcdfghjklmnpqrstvwxz"}
+  {20, "bcdfghjklmnpqrstvwxz"},
+  {6, "aeiouy"}
 };
 
-void wordy_encode(uint64_t value, char *buf, size_t bufc) {
+void wordy_encode(int64_t signed_value, char *buf, size_t bufc) {
   size_t cursor = 0;
-  // Use the first bit to determine whether to start with a vowel or a
+  // Use the top bit to determine whether to start with a vowel or a
   // consonant.
-  size_t table_index = (value & 1);
-  value >>= 1;
+  size_t table_index;
+  uint64_t value;
+  if (signed_value < 0) {
+    // If the top bit is set we flip the whole word; that way small negative
+    // values become short words. The +1 is such that -1 maps to 0 rather than
+    // 1 which would cause the 0'th negative wordy string to be unused. Also the
+    // largest negative value wouldn't fit as positive.
+    table_index = 1;
+    value = -(signed_value + 1);
+  } else {
+    table_index = 0;
+    value = signed_value;
+  }
   // Even if value is 0 we have to run at least once.
   do {
     string_t table = kCharTables[table_index];
@@ -658,4 +669,9 @@ void wordy_encode(uint64_t value, char *buf, size_t bufc) {
   } while (value != 0);
   CHECK_REL("wordy_encode buf too small", cursor, <, bufc);
   buf[cursor] = 0;
+  // It might seem to make sense to reverse the result such that the least
+  // significant bits affect the rightmost characters but in practice, since
+  // these are typically read left-to-right and differences are most likely
+  // to be in the least significant bits, it's easier to read if values with
+  // different low bits result in words with differences to the left.
 }

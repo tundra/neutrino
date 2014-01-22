@@ -377,7 +377,7 @@ void base64_decode(string_t *str, byte_buffer_t *out);
 // must be at least wide enough to holde the name plus the null terminator; the
 // kMaxWordyNameSize macro gives a size that is guaranteed to be wide enough for
 // any 64-bit value.
-void wordy_encode(uint64_t value, char *buf, size_t bufc);
+void wordy_encode(int64_t value, char *buf, size_t bufc);
 
 
 #endif // _UTILS
