@@ -120,9 +120,6 @@ value_t frame_get_argument(frame_t *frame, size_t param_index);
 // Returns the value of the index'th local variable in this frame.
 value_t frame_get_local(frame_t *frame, size_t index);
 
-// Pushes the current state of the given frame onto the stack.
-void frame_record_state(frame_t *frame);
-
 
 // --- S t a c k ---
 

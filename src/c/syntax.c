@@ -460,8 +460,7 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   // the current top.
   size_t stack_offset = assm->stack_height - 1;
   // Record in the scope chain that the symbol is bound and where the value is
-  // located on the stack. It is the responsibility of anyone reading or writing
-  // the variable to dereference the value as appropriate.
+  // located on the stack.
   value_t symbol = get_with_escape_ast_symbol(self);
   CHECK_FAMILY(ofSymbolAst, symbol);
   if (assembler_is_symbol_bound(assm, symbol))
@@ -473,9 +472,12 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   // Emit the body in scope of the local.
   TRY(emit_value(body, assm));
   assembler_pop_single_symbol_scope(assm, &scope);
-  // Slap the value of the local off, leaving just the value of the body.
+  // If the escape is ever fired it will drop down to this location, leaving
+  // the value on top of the stack. That way the stack cleanup happens the same
+  // way whether you return normally or escape.
   size_t code_end_offset = assembler_get_code_cursor(assm);
   byte_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
+  // Slap the value of the local off, leaving just the value of the body.
   TRY(assembler_emit_slap(assm, 1 + kCapturedStateSize));
   return success();
 }

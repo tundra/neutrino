@@ -49,7 +49,6 @@ static size_t interpreter_state_push(interpreter_state_t *state, frame_t *frame,
     size_t pc_offset, int sp_offset) {
   frame_t snapshot = *frame;
   size_t location = snapshot.stack_pointer;
-  // Record the state of the stack _after_ pushing all the data.
   frame_push_value(frame, new_integer(snapshot.stack_pointer + sp_offset));
   frame_push_value(frame, new_integer(snapshot.frame_pointer));
   frame_push_value(frame, new_integer(snapshot.capacity));
@@ -119,17 +118,6 @@ static value_t compile_method(runtime_t *runtime, value_t method) {
   E_FINALLY();
     assembler_dispose(&assm);
   E_END_TRY_FINALLY();
-}
-
-static void interpreter_state_log(interpreter_state_t *state, frame_t *frame) {
-  INFO("state %p", frame);
-  INFO(" - stack_piece: %v", frame->stack_piece);
-  INFO(" - stack_pointer: %i", frame->stack_pointer);
-  INFO(" - frame_pointer: %i", frame->frame_pointer);
-  INFO(" - capacity: %i", frame->capacity);
-  INFO(" - pc: %i", state->pc);
-  INFO(" - code: %p %i", state->bytecode.data, state->bytecode.length);
-  INFO(" - pool: %v ", state->value_pool);
 }
 
 // Gets the code from a method object, compiling the method if necessary.
