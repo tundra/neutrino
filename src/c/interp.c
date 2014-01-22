@@ -128,6 +128,12 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
           frame_pop_value(&frame);
         break;
       }
+      case ocCheckStackHeight: {
+        size_t expected = read_next_byte(&state);
+        size_t height = frame.stack_pointer - frame.frame_pointer;
+        CHECK_EQ("stack height", expected, height);
+        break;
+      }
       case ocNewArray: {
         size_t length = read_next_byte(&state);
         TRY_DEF(array, new_heap_array(runtime, length));

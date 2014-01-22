@@ -294,11 +294,17 @@ static value_t assembler_emit_value(assembler_t *assm, value_t value) {
   return success();
 }
 
+static void assembler_emit_stack_height_check(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocCheckStackHeight);
+  assembler_emit_byte(assm, assm->stack_height);
+}
+
 // Adds the given delta to the recorded stack height and updates the high water
 // mark if necessary.
 static void assembler_adjust_stack_height(assembler_t *assm, int delta) {
   assm->stack_height += delta;
   assm->high_water_mark = max_size(assm->high_water_mark, assm->stack_height);
+  IF_EXPENSIVE_CHECKS_ENABLED(assembler_emit_stack_height_check(assm));
 }
 
 value_t assembler_emit_push(assembler_t *assm, value_t value) {

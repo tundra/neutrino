@@ -15,6 +15,7 @@ _MKMK_FLAGS = [
   ('noisy', False, 'store_true'),
   ('valgrind', False, 'store_true'),
   ('gcc48', False, 'store_true'),
+  ('expchecks', False, 'store_true'),
 ]
 
 
