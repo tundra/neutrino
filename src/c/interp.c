@@ -42,13 +42,15 @@ static void interpreter_state_load(interpreter_state_t *state, frame_t *frame) {
 // later be restored. Returns a location value that must later be passed to
 // interpreter_state_restore when restoring the state. The pc offset is a delta
 // to add to the current pc in the case there the code location to return to is
-// not just the next instruction.
+// not just the next instruction. The sp_offset is a delta to add to the stack
+// pointer to account for any changes that happen after pushing the state that
+// must be included when restoring the state.
 static size_t interpreter_state_push(interpreter_state_t *state, frame_t *frame,
-    size_t pc_offset) {
+    size_t pc_offset, int sp_offset) {
   frame_t snapshot = *frame;
   size_t location = snapshot.stack_pointer;
   // Record the state of the stack _after_ pushing all the data.
-  frame_push_value(frame, new_integer(snapshot.stack_pointer + kCapturedStateSize));
+  frame_push_value(frame, new_integer(snapshot.stack_pointer + sp_offset));
   frame_push_value(frame, new_integer(snapshot.frame_pointer));
   frame_push_value(frame, new_integer(snapshot.capacity));
   frame_push_value(frame, new_integer(state->pc + pc_offset));
@@ -351,27 +353,22 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
       }
       case ocCaptureEscape: {
         size_t dest_offset = read_next_byte(&state);
-        interpreter_state_log(&state, &frame);
-        // Push the current interpreter state onto the stack.
-        value_t location = new_integer(interpreter_state_push(&state, &frame, dest_offset));
+        // Push the interpreter state at the end of this instruction onto the
+        // stack.
+        value_t location = new_integer(interpreter_state_push(&state, &frame,
+            dest_offset, kCapturedStateSize + 1));
         value_t stack_piece = frame.stack_piece;
-        INFO("Created escape for %v@%v -> %i", stack_piece, location, dest_offset);
         TRY_DEF(escape, new_heap_escape(runtime, yes(), stack_piece, location));
-        INFO("Captured escape %v", escape);
         frame_push_value(&frame, escape);
         break;
       }
       case ocFireEscape: {
-        interpreter_state_log(&state, &frame);
         value_t escape = frame_get_argument(&frame, 0);
-        INFO("Firing escape %v", escape);
         CHECK_FAMILY(ofEscape, escape);
         value_t value = frame_get_argument(&frame, 2);
         size_t location = get_integer_value(get_escape_stack_pointer(escape));
         value_t stack_piece = get_escape_stack_piece(escape);
-        INFO("Escaping to %v@%i", stack_piece, location);
         interpreter_state_restore(&state, &frame, stack, stack_piece, location);
-        interpreter_state_log(&state, &frame);
         frame_push_value(&frame, value);
         break;
       }

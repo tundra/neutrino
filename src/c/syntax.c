@@ -476,7 +476,7 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   // Slap the value of the local off, leaving just the value of the body.
   size_t code_end_offset = assembler_get_code_cursor(assm);
   byte_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
-  TRY(assembler_emit_slap(assm, kCapturedStateSize));
+  TRY(assembler_emit_slap(assm, 1 + kCapturedStateSize));
   return success();
 }
 
