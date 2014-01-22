@@ -13,15 +13,17 @@ def $test_simple_escape() {
   $assert:equals(8, with_escape $break do { 7; $break(8); 9; });
 }
 
-# Calls recursively 10 times, then calls the thunk with the argument 10.
-def $call_at_10($n, $thunk) => 
-  if $n < 10
-    then $call_at_10($n + 1, $thunk)
+## Calls recursively $n times, then calls the thunk with the argument 10.
+def $call_at_n($i, $n, $thunk) =>
+  if $i < $n
+    # Ensure that the call is not in a tail position by having it in a sequence.
+    then { $call_at_n($i + 1, $n, $thunk); $i; }
     else $thunk($n);
 
 def $test_deep_escape() {
-  $assert:equals(10, with_escape $break do $call_at_10(0, $break));
-  $assert:equals(10, with_escape $break do { $call_at_10(0, $break); 11; });
+  $assert:equals(10, with_escape $break do $call_at_n(0, 10, $break));
+  $assert:equals(11, with_escape $break do { $call_at_n(0, 11, $break); 12; });
+  $assert:equals(100, with_escape $break do $call_at_n(0, 100, $break));
 }
 
 def $main() {
@@ -29,7 +31,6 @@ def $main() {
   $test_deep_escape();
   # TODO: check that
   #   - escapes are killed appropriately.
-  #   - this works for really deep stacks (that is, across segments).
   #   - escaping fails if called from a different process.
 }
 
