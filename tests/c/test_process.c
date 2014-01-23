@@ -109,11 +109,8 @@ static bool frame_is_stack_piece_bottom(runtime_t *runtime, frame_t *frame) {
 // popped successfully.
 static bool pop_real_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame) {
   do {
-    bool popped = pop_stack_frame(stack, frame);
-    INFO("Popped: %i", popped);
-    if (!popped)
+    if (!pop_stack_frame(stack, frame))
       return false;
-    INFO("Is bottom: %i", frame_is_stack_piece_bottom(runtime, frame));
   } while (frame_is_stack_piece_bottom(runtime, frame));
   return true;
 }
@@ -129,7 +126,6 @@ TEST(process, stack_frames) {
   }
 
   for (int i = 255; i > 0; i--) {
-    INFO("Loop %i", i);
     frame_t frame;
     get_stack_top_frame(stack, &frame);
     ASSERT_EQ((size_t) i + 1, frame.capacity);
@@ -139,9 +135,9 @@ TEST(process, stack_frames) {
   }
   frame_t frame;
   // Popping the synthetic stack bottom frame should succeed.
-  ASSERT_TRUE(pop_real_stack_frame(runtime, stack, &frame));
+  ASSERT_TRUE(pop_stack_frame(stack, &frame));
   // Now the stack is empty so it should not be possible to pop.
-  ASSERT_FALSE(pop_real_stack_frame(runtime, stack, &frame));
+  ASSERT_FALSE(pop_stack_frame(stack, &frame));
 
   DISPOSE_RUNTIME();
 }
