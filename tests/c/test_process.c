@@ -109,8 +109,11 @@ static bool frame_is_stack_piece_bottom(runtime_t *runtime, frame_t *frame) {
 // popped successfully.
 static bool pop_real_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame) {
   do {
-    if (!pop_stack_frame(stack, frame))
+    bool popped = pop_stack_frame(stack, frame);
+    INFO("Popped: %i", popped);
+    if (!popped)
       return false;
+    INFO("Is bottom: %i", frame_is_stack_piece_bottom(runtime, frame));
   } while (frame_is_stack_piece_bottom(runtime, frame));
   return true;
 }
@@ -126,6 +129,7 @@ TEST(process, stack_frames) {
   }
 
   for (int i = 255; i > 0; i--) {
+    INFO("Loop %i", i);
     frame_t frame;
     get_stack_top_frame(stack, &frame);
     ASSERT_EQ((size_t) i + 1, frame.capacity);
