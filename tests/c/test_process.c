@@ -117,7 +117,9 @@ TEST(process, stack_frames) {
     ASSERT_TRUE(pop_stack_frame(stack, &frame));
   }
   frame_t frame;
+  // Popping the artificial bottom frame should succeed.
   ASSERT_TRUE(pop_stack_frame(stack, &frame));
+  // Now the stack is empty so it should not be possible to pop.
   ASSERT_FALSE(pop_stack_frame(stack, &frame));
 
   DISPOSE_RUNTIME();
