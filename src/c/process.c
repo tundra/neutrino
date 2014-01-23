@@ -64,8 +64,7 @@ static void transfer_top_arguments(value_t new_piece, frame_t *frame,
   set_stack_piece_top_stack_pointer(new_piece, arg_count);
 }
 
-// Sets the given frame to be the top frame of the given stack piece. If the
-// stack piece has no frames the frame is set to all zeroes.
+// Sets the given frame to be the top frame of the given stack piece.
 static void get_top_stack_piece_frame(value_t stack_piece, frame_t *frame) {
   frame->stack_piece = stack_piece;
   frame->frame_pointer = get_stack_piece_top_frame_pointer(stack_piece);

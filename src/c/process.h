@@ -142,7 +142,8 @@ INTEGER_ACCESSORS_DECL(stack, default_piece_capacity);
 // from the old to the new segment in the case where we have to create a new
 // one. It is passed as a value rather than a size because the value is easily
 // available wherever this gets called and it saves reading the size in the
-// common case where no new segment gets allocated.
+// common case where no new segment gets allocated. If you're _absolutely_ sure
+// no new segment will be allocated you can pass null for the arg map.
 value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     size_t frame_capacity, value_t arg_map);
 
