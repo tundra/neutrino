@@ -245,7 +245,7 @@ TEST(method, record_with_stack) {
 
   value_t stack = new_heap_stack(runtime, 16);
   frame_t frame;
-  ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3));
+  ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3, null()));
   value_t record = make_invocation_record(runtime, vArray(vStr("b"), vStr("c"),
       vStr("a")));
   frame_push_value(&frame, new_integer(7));
@@ -402,7 +402,7 @@ void assert_match_with_offsets(runtime_t *runtime, match_result_t expected_resul
   value_t tags = new_heap_array(runtime, arg_count);
   value_t stack = new_heap_stack(runtime, 16);
   frame_t frame;
-  push_stack_frame(runtime, stack, &frame, arg_count);
+  push_stack_frame(runtime, stack, &frame, arg_count, null());
   for (size_t i = 0; i < arg_count; i++) {
     test_argument_t *arg = args[i];
     set_array_at(tags, i, C(arg->tag));
@@ -710,7 +710,7 @@ static void test_lookup(runtime_t *runtime, value_t expected, value_t first,
   value_t stack = new_heap_stack(runtime, 16);
   value_t vector = new_heap_pair_array(runtime, 3);
   frame_t frame;
-  push_stack_frame(runtime, stack, &frame, 3);
+  push_stack_frame(runtime, stack, &frame, 3, null());
   value_t values[3] = {first, second, third};
   for (size_t i = 0; i < 3; i++) {
     set_pair_array_first_at(vector, i, new_integer(i));

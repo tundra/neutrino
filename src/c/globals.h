@@ -50,7 +50,9 @@ static size_t min_size(size_t a, size_t b) {
 }
 
 // Ensures that the compiler knows that the expression is used but doesn't cause
-// it to be executed.
+// it to be executed. The 'if (false)' ensures that the code is not run, the
+// 'do while (false)' ensures that the macro doesn't leave a potential dangling
+// else ambiguity.
 #define USE(E) do { if (false) { E; } } while (false)
 
 // The token "namespace" without upsetting C++ compilers.

@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "behavior.h"
+#include "log.h"
 #include "process.h"
 #include "try-inl.h"
 #include "value-inl.h"
@@ -47,22 +48,67 @@ value_t stack_validate(value_t value) {
   return success();
 }
 
+// Transfers the arguments from the top of the previous piece (which the frame
+// points to) to the bottom of the new stack segment.
+static void transfer_top_arguments(value_t new_piece, frame_t *frame,
+    size_t arg_count) {
+  value_t storage = get_stack_piece_storage(new_piece);
+  for (size_t i = 0; i < arg_count; i++) {
+    value_t value = frame_peek_value(frame, arg_count - i - 1);
+    set_array_at(storage, i, value);
+  }
+  // Set the stack pointer as if this is the top of a previous stack frame. This
+  // assumes that the stack piece is freshly initialized.
+  CHECK_EQ("not new stack piece", 0, get_stack_piece_top_stack_pointer(new_piece));
+  CHECK_EQ("not new stack piece", 0, get_stack_piece_top_frame_pointer(new_piece));
+  set_stack_piece_top_stack_pointer(new_piece, arg_count);
+}
+
+// Sets the given frame to be the top frame of the given stack piece. If the
+// stack piece has no frames the frame is set to all zeroes.
+static void get_top_stack_piece_frame(value_t stack_piece, frame_t *frame) {
+  frame->stack_piece = stack_piece;
+  frame->frame_pointer = get_stack_piece_top_frame_pointer(stack_piece);
+  frame->stack_pointer = get_stack_piece_top_stack_pointer(stack_piece);
+  frame->capacity = get_stack_piece_top_capacity(stack_piece);
+}
+
+// Validates that the given newly initialized stack piece is in the appropriate
+// state.
+static void validate_initialized_stack_piece(value_t stack_piece) {
+  // Check that the bottom frame can be recognized as being at the bottom. If it
+  // can't it will cause returning across the boundary to fail in unexpected
+  // ways.
+  frame_t frame;
+  get_top_stack_piece_frame(stack_piece, &frame);
+  CHECK_TRUE("invalid bottom frame", frame_at_stack_piece_bottom(&frame));
+}
+
 value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
-    size_t frame_capacity) {
+    size_t frame_capacity, value_t arg_map) {
   CHECK_FAMILY(ofStack, stack);
   value_t top_piece = get_stack_top_piece(stack);
   if (!try_push_stack_piece_frame(top_piece, frame, frame_capacity)) {
     // There wasn't room to push this frame onto the top stack piece so
     // allocate a new top piece that definitely has room.
     size_t default_capacity = get_stack_default_piece_capacity(stack);
-    size_t required_capacity = frame_capacity + kFrameHeaderSize;
+    size_t transfer_arg_count = get_array_length(arg_map);
+    size_t required_capacity = frame_capacity + kFrameHeaderSize + transfer_arg_count;
     size_t new_capacity = max_size(default_capacity, required_capacity);
+    // Create and initialize the new stack segment. The frame struct is still
+    // pointing to the old frame.
     TRY_DEF(new_piece, new_heap_stack_piece(runtime, new_capacity, top_piece));
+    transfer_top_arguments(new_piece, frame, transfer_arg_count);
     set_stack_top_piece(stack, new_piece);
+    IF_CHECKS_ENABLED(validate_initialized_stack_piece(new_piece));
+    // Finally, create a new frame on the new stack which includes updating the
+    // struct. The required_capacity calculation ensures that this call will
+    // succeed.
     bool pushed_stack_piece = try_push_stack_piece_frame(new_piece,
         frame, frame_capacity);
     CHECK_TRUE("pushing on new piece failed", pushed_stack_piece);
   }
+  set_frame_argument_map(frame, arg_map);
   return success();
 }
 
@@ -85,15 +131,6 @@ bool pop_stack_frame(value_t stack, frame_t *frame) {
     get_stack_top_frame(stack, frame);
     return true;
   }
-}
-
-// Sets the given frame to be the top frame of the given stack piece. If the
-// stack piece has no frames the frame is set to all zeroes.
-static void get_top_stack_piece_frame(value_t stack_piece, frame_t *frame) {
-  frame->stack_piece = stack_piece;
-  frame->frame_pointer = get_stack_piece_top_frame_pointer(stack_piece);
-  frame->stack_pointer = get_stack_piece_top_stack_pointer(stack_piece);
-  frame->capacity = get_stack_piece_top_capacity(stack_piece);
 }
 
 void get_stack_top_frame(value_t stack, frame_t *frame) {
@@ -138,6 +175,10 @@ bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame, size_t fram
   return true;
 }
 
+bool frame_at_stack_piece_bottom(frame_t *frame) {
+  return frame->frame_pointer == 0;
+}
+
 bool pop_stack_piece_frame(value_t stack_piece, frame_t *frame) {
   // Grab the current top frame.
   frame_t top_frame;
@@ -151,7 +192,7 @@ bool pop_stack_piece_frame(value_t stack_piece, frame_t *frame) {
   set_stack_piece_top_stack_pointer(stack_piece, frame->stack_pointer);
   set_stack_piece_top_frame_pointer(stack_piece, frame->frame_pointer);
   set_stack_piece_top_capacity(stack_piece, frame->capacity);
-  return (frame->frame_pointer != 0);
+  return !frame_at_stack_piece_bottom(frame);
 }
 
 // Accesses a frame header field, that is, a bookkeeping field below the frame
@@ -258,27 +299,11 @@ value_t frame_peek_value(frame_t *frame, size_t index) {
   return *access_frame_field(frame, frame->stack_pointer - index - 1);
 }
 
-// Is the given frame at the bottom of a stack piece?
-static bool is_frame_at_bottom_of_piece(frame_t *frame) {
-  return frame->frame_pointer == kFrameHeaderSize;
-}
-
 value_t frame_get_argument(frame_t *frame, size_t param_index) {
   size_t stack_pointer;
   value_t storage;
-  // TODO: This is dumb, it needs to be made more efficient. Maybe we want to
-  // copy the previous piece's arguments onto the next piece to avoid this
-  // conditional?
-  if (is_frame_at_bottom_of_piece(frame)) {
-    // Fetch arguments from the previous stack piece.
-    value_t previous = get_stack_piece_previous(frame->stack_piece);
-    stack_pointer = get_stack_piece_top_stack_pointer(previous);
-    storage = get_stack_piece_storage(previous);
-  } else {
-    // Use the current stack piece.
-    stack_pointer = frame->frame_pointer - kFrameHeaderSize;
-    storage = get_stack_piece_storage(frame->stack_piece);
-  }
+  stack_pointer = frame->frame_pointer - kFrameHeaderSize;
+  storage = get_stack_piece_storage(frame->stack_piece);
   value_t arg_map = get_frame_argument_map(frame);
   size_t offset = get_integer_value(get_array_at(arg_map, param_index));
   value_t *elements = get_array_elements(storage);
