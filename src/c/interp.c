@@ -218,7 +218,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         CHECK_FAMILY(ofLambda, lambda);
         value_t space = get_lambda_methods(lambda);
         // Pop off the top frame since we're repeating the previous call.
-        bool popped = pop_stack_frame(stack, &frame);
+        bool popped = pop_stack_piece_frame(get_stack_top_piece(stack), &frame);
         CHECK_TRUE("delegating from bottom frame", popped);
         interpreter_state_load(&state, &frame);
         // Extract the invocation record from the calling instruction.
@@ -255,7 +255,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
       }
       case ocReturn: {
         value_t result = frame_pop_value(&frame);
-        bool popped = pop_stack_frame(stack, &frame);
+        bool popped = pop_stack_piece_frame(get_stack_top_piece(stack), &frame);
         CHECK_TRUE("bottomed out", popped);
         interpreter_state_load(&state, &frame);
         frame_push_value(&frame, result);
@@ -264,6 +264,16 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
       case ocStackBottom: {
         value_t result = frame_pop_value(&frame);
         return result;
+      }
+      case ocStackPieceBottom: {
+        value_t result = frame_pop_value(&frame);
+        value_t top_piece = get_stack_top_piece(stack);
+        value_t next_piece = get_stack_piece_previous(top_piece);
+        set_stack_top_piece(stack, next_piece);
+        get_stack_top_frame(stack, &frame);
+        interpreter_state_load(&state, &frame);
+        frame_push_value(&frame, result);
+        break;
       }
       case ocSlap: {
         value_t value = frame_pop_value(&frame);

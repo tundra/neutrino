@@ -385,6 +385,11 @@ value_t assembler_emit_stack_bottom(assembler_t *assm) {
   return success();
 }
 
+value_t assembler_emit_stack_piece_bottom(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocStackPieceBottom);
+  return success();
+}
+
 value_t assembler_emit_invocation(assembler_t *assm, value_t fragment, value_t record) {
   CHECK_FAMILY(ofModuleFragment, fragment);
   CHECK_FAMILY(ofInvocationRecord, record);

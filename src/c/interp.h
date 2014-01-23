@@ -32,7 +32,8 @@
   F(Return)                                                                    \
   F(SetReference)                                                              \
   F(Slap)                                                                      \
-  F(StackBottom)
+  F(StackBottom)                                                               \
+  F(StackPieceBottom)
 
 // The enum of all opcodes.
 typedef enum {

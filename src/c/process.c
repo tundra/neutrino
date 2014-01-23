@@ -53,34 +53,34 @@ value_t stack_validate(value_t value) {
 static void transfer_top_arguments(value_t new_piece, frame_t *frame,
     size_t arg_count) {
   value_t storage = get_stack_piece_storage(new_piece);
+  size_t old_sp = get_stack_piece_top_stack_pointer(new_piece);
   for (size_t i = 0; i < arg_count; i++) {
     value_t value = frame_peek_value(frame, arg_count - i - 1);
-    set_array_at(storage, i, value);
+    set_array_at(storage, old_sp + i, value);
   }
-  // Set the stack pointer as if this is the top of a previous stack frame. This
-  // assumes that the stack piece is freshly initialized.
-  CHECK_EQ("not new stack piece", 0, get_stack_piece_top_stack_pointer(new_piece));
-  CHECK_EQ("not new stack piece", 0, get_stack_piece_top_frame_pointer(new_piece));
-  set_stack_piece_top_stack_pointer(new_piece, arg_count);
+  set_stack_piece_top_stack_pointer(new_piece, old_sp + arg_count);
+}
+
+static void push_stack_piece_bottom_frame(runtime_t *runtime, value_t stack_piece,
+    size_t arg_count) {
+  frame_t bottom;
+  value_t code_block = ROOT(runtime, stack_piece_bottom_code_block);
+  // The transferred arguments are going to appear as if they were arguments
+  // passed from this frame so we have to "allocate" enough room for them on
+  // the stack.
+  bool pushed = try_push_stack_piece_frame(stack_piece, &bottom,
+      get_code_block_high_water_mark(code_block) + arg_count);
+  CHECK_TRUE("pushing bottom frame", pushed);
+  set_frame_code_block(&bottom, code_block);
 }
 
 // Sets the given frame to be the top frame of the given stack piece.
 static void get_top_stack_piece_frame(value_t stack_piece, frame_t *frame) {
+  CHECK_FAMILY(ofStackPiece, stack_piece);
   frame->stack_piece = stack_piece;
   frame->frame_pointer = get_stack_piece_top_frame_pointer(stack_piece);
   frame->stack_pointer = get_stack_piece_top_stack_pointer(stack_piece);
   frame->capacity = get_stack_piece_top_capacity(stack_piece);
-}
-
-// Validates that the given newly initialized stack piece is in the appropriate
-// state.
-static void validate_initialized_stack_piece(value_t stack_piece) {
-  // Check that the bottom frame can be recognized as being at the bottom. If it
-  // can't it will cause returning across the boundary to fail in unexpected
-  // ways.
-  frame_t frame;
-  get_top_stack_piece_frame(stack_piece, &frame);
-  CHECK_TRUE("invalid bottom frame", frame_at_stack_piece_bottom(&frame));
 }
 
 value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
@@ -92,14 +92,19 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     // allocate a new top piece that definitely has room.
     size_t default_capacity = get_stack_default_piece_capacity(stack);
     size_t transfer_arg_count = get_array_length(arg_map);
-    size_t required_capacity = frame_capacity + kFrameHeaderSize + transfer_arg_count;
+    size_t required_capacity
+        = frame_capacity      // the new frame's locals
+        + kFrameHeaderSize    // the new frame's header
+        + 1                   // the synthetic bottom frame's one local
+        + kFrameHeaderSize    // the synthetic bottom frame's header
+        + transfer_arg_count; // any arguments to be copied onto the piece
     size_t new_capacity = max_size(default_capacity, required_capacity);
     // Create and initialize the new stack segment. The frame struct is still
     // pointing to the old frame.
     TRY_DEF(new_piece, new_heap_stack_piece(runtime, new_capacity, top_piece));
+    push_stack_piece_bottom_frame(runtime, new_piece, transfer_arg_count);
     transfer_top_arguments(new_piece, frame, transfer_arg_count);
     set_stack_top_piece(stack, new_piece);
-    IF_CHECKS_ENABLED(validate_initialized_stack_piece(new_piece));
     // Finally, create a new frame on the new stack which includes updating the
     // struct. The required_capacity calculation ensures that this call will
     // succeed.

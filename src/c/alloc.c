@@ -472,7 +472,7 @@ static void push_stack_bottom_frame(runtime_t *runtime, value_t stack) {
   bool pushed = try_push_stack_piece_frame(piece, &bottom,
       get_code_block_high_water_mark(code_block));
   CHECK_TRUE("pushing bottom frame", pushed);
-  set_frame_code_block(&bottom, ROOT(runtime, stack_bottom_code_block));
+  set_frame_code_block(&bottom, code_block);
 }
 
 value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {
