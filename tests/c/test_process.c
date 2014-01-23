@@ -117,6 +117,7 @@ TEST(process, stack_frames) {
     ASSERT_TRUE(pop_stack_frame(stack, &frame));
   }
   frame_t frame;
+  ASSERT_TRUE(pop_stack_frame(stack, &frame));
   ASSERT_FALSE(pop_stack_frame(stack, &frame));
 
   DISPOSE_RUNTIME();
@@ -126,7 +127,7 @@ TEST(process, get_argument_one_piece) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
-  value_t stack = new_heap_stack(runtime, 16);
+  value_t stack = new_heap_stack(runtime, 18);
   frame_t frame;
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3, null()));
   frame_push_value(&frame, new_integer(6));

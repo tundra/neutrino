@@ -208,10 +208,17 @@ value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t fragment,
     scope_lookup_callback_t *scope_callback) {
   CHECK_FALSE("no scope callback", scope_callback == NULL);
   CHECK_FAMILY_OPT(ofModuleFragment, fragment);
+  TRY(assembler_init_stripped_down(assm, runtime));
   TRY_SET(assm->value_pool, new_heap_id_hash_map(runtime, 16));
   assm->scope_callback = scope_callback;
-  assm->runtime = runtime;
   assm->fragment = fragment;
+  return success();
+}
+
+value_t assembler_init_stripped_down(assembler_t *assm, runtime_t *runtime) {
+  assm->scope_callback = NULL;
+  assm->runtime = runtime;
+  assm->fragment = null();
   byte_buffer_init(&assm->code);
   assm->stack_height = assm->high_water_mark = 0;
   reusable_scratch_memory_init(&assm->scratch_memory);
@@ -370,6 +377,11 @@ value_t assembler_emit_fire_escape(assembler_t *assm) {
 value_t assembler_emit_kill_escape(assembler_t *assm) {
   assembler_emit_opcode(assm, ocKillEscape);
   assembler_adjust_stack_height(assm, -1);
+  return success();
+}
+
+value_t assembler_emit_stack_bottom(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocStackBottom);
   return success();
 }
 

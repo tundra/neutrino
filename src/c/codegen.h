@@ -116,6 +116,10 @@ typedef struct assembler_t {
 value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t fragment,
     scope_lookup_callback_t *scope_callback);
 
+// Initializes an assembler to the bare minimum required to assembler code with
+// no value pool.
+value_t assembler_init_stripped_down(assembler_t *assm, runtime_t *runtime);
+
 // Sets the scope callback for the given assembler, returning the previous
 // value.
 scope_lookup_callback_t *assembler_set_scope_callback(assembler_t *assm,
@@ -204,6 +208,9 @@ value_t assembler_emit_fire_escape(assembler_t *assm);
 // this expects there to be a value above the escape, so this in effect does a
 // slap-1, not a pop-1.
 value_t assembler_emit_kill_escape(assembler_t *assm);
+
+// Emits a stack bottom instruction that indicates that we're done executing.
+value_t assembler_emit_stack_bottom(assembler_t *assm);
 
 
 // A scope defining a single symbol.

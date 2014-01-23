@@ -462,6 +462,19 @@ value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
   return post_create_sanity_check(result, size);
 }
 
+// Pushes an artificial bottom frame onto the stack such that at the end of
+// the execution we bottom out at a well-defined place and all instructions
+// (particularly return) can assume that there's at least one frame below them.
+static void push_stack_bottom_frame(runtime_t *runtime, value_t stack) {
+  value_t piece = get_stack_top_piece(stack);
+  frame_t bottom;
+  value_t code_block = ROOT(runtime, stack_bottom_code_block);
+  bool pushed = try_push_stack_piece_frame(piece, &bottom,
+      get_code_block_high_water_mark(code_block));
+  CHECK_TRUE("pushing bottom frame", pushed);
+  set_frame_code_block(&bottom, ROOT(runtime, stack_bottom_code_block));
+}
+
 value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {
   size_t size = kStackSize;
   TRY_DEF(piece, new_heap_stack_piece(runtime, default_piece_capacity, nothing()));
@@ -469,6 +482,7 @@ value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {
       ROOT(runtime, stack_species)));
   set_stack_top_piece(result, piece);
   set_stack_default_piece_capacity(result, default_piece_capacity);
+  push_stack_bottom_frame(runtime, result);
   return post_create_sanity_check(result, size);
 }
 
