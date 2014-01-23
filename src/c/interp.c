@@ -206,9 +206,9 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         // Push a new activation.
         interpreter_state_store(&state, &frame);
         TRY_DEF(code_block, ensure_method_code(runtime, method));
-        push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block));
+        push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block),
+            arg_map);
         set_frame_code_block(&frame, code_block);
-        set_frame_argument_map(&frame, arg_map);
         interpreter_state_load(&state, &frame);
         break;
       }
@@ -238,9 +238,9 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         // The lookup may have failed with a different signal. Check for that.
         TRY(method);
         TRY_DEF(code_block, ensure_method_code(runtime, method));
-        push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block));
+        push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block),
+            arg_map);
         set_frame_code_block(&frame, code_block);
-        set_frame_argument_map(&frame, arg_map);
         interpreter_state_load(&state, &frame);
         break;
       }
@@ -385,9 +385,8 @@ value_t run_code_block_until_signal(runtime_t *runtime, value_t code) {
   TRY_DEF(stack, new_heap_stack(runtime, 1024));
   frame_t frame;
   size_t frame_size = get_code_block_high_water_mark(code);
-  push_stack_frame(runtime, stack, &frame, frame_size);
+  TRY(push_stack_frame(runtime, stack, &frame, frame_size, ROOT(runtime, empty_array)));
   set_frame_code_block(&frame, code);
-  set_frame_argument_map(&frame, ROOT(runtime, empty_array));
   return run_stack(runtime, stack);
 }
 
@@ -400,9 +399,9 @@ value_t run_code_block(runtime_t *runtime, safe_value_t code) {
       // Set up the initial frame.
       size_t frame_size = get_code_block_high_water_mark(deref(code));
       frame_t frame;
-      push_stack_frame(runtime, deref(s_stack), &frame, frame_size);
+      E_TRY(push_stack_frame(runtime, deref(s_stack), &frame, frame_size,
+          ROOT(runtime, empty_array)));
       set_frame_code_block(&frame, deref(code));
-      set_frame_argument_map(&frame, ROOT(runtime, empty_array));
     }
     // Run until completion.
     E_RETURN(run_stack(runtime, deref(s_stack)));

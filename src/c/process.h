@@ -120,6 +120,9 @@ value_t frame_get_argument(frame_t *frame, size_t param_index);
 // Returns the value of the index'th local variable in this frame.
 value_t frame_get_local(frame_t *frame, size_t index);
 
+// Returns true if this frame is at the bottom of a stack piece.
+bool frame_at_stack_piece_bottom(frame_t *frame);
+
 
 // --- S t a c k ---
 
@@ -135,8 +138,14 @@ INTEGER_ACCESSORS_DECL(stack, default_piece_capacity);
 
 // Allocates a new frame on this stack. If allocating fails, for instance if a
 // new stack piece is required and we're out of memory, a signal is returned.
+// The arg map array is used to determine how many arguments should be copied
+// from the old to the new segment in the case where we have to create a new
+// one. It is passed as a value rather than a size because the value is easily
+// available wherever this gets called and it saves reading the size in the
+// common case where no new segment gets allocated. If you're _absolutely_ sure
+// no new segment will be allocated you can pass null for the arg map.
 value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
-    size_t frame_capacity);
+    size_t frame_capacity, value_t arg_map);
 
 // Pops the top frame off the given stack and stores the next frame in the given
 // frame struct.
