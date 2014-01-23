@@ -15,6 +15,17 @@
 
 TRIVIAL_PRINT_ON_IMPL(Roots, roots);
 
+static value_t create_stack_bottom_code_block(runtime_t *runtime) {
+  assembler_t assm;
+  TRY(assembler_init_stripped_down(&assm, runtime));
+  assembler_emit_stack_bottom(&assm);
+  blob_t blob;
+  byte_buffer_flush(&assm.code, &blob);
+  TRY_DEF(bytecode, new_heap_blob_with_data(runtime, &blob));
+  assembler_dispose(&assm);
+  return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array), 1);
+}
+
 value_t roots_init(value_t roots, runtime_t *runtime) {
   // The modal meta-roots are tricky because the species relationship between
   // them is circular.
@@ -86,6 +97,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, builtin_methodspace), new_heap_methodspace(runtime));
   TRY_SET(RAW_ROOT(roots, op_call), new_heap_operation(runtime, afFreeze, otCall, null()));
   TRY_SET(RAW_ROOT(roots, ctrino), new_heap_ctrino(runtime));
+  TRY_SET(RAW_ROOT(roots, stack_bottom_code_block), create_stack_bottom_code_block(runtime));
 
   // Generate initialization for the per-family types.
 #define __CREATE_TYPE__(Name, name) do {                                       \

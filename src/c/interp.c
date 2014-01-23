@@ -255,15 +255,15 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
       }
       case ocReturn: {
         value_t result = frame_pop_value(&frame);
-        if (!pop_stack_frame(stack, &frame)) {
-          // TODO: push a bottom frame on a clean stack that does the final
-          //   return rather than make return do both.
-          return result;
-        } else {
-          interpreter_state_load(&state, &frame);
-          frame_push_value(&frame, result);
-          break;
-        }
+        bool popped = pop_stack_frame(stack, &frame);
+        CHECK_TRUE("bottomed out", popped);
+        interpreter_state_load(&state, &frame);
+        frame_push_value(&frame, result);
+        break;
+      }
+      case ocStackBottom: {
+        value_t result = frame_pop_value(&frame);
+        return result;
       }
       case ocSlap: {
         value_t value = frame_pop_value(&frame);
