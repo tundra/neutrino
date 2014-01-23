@@ -76,6 +76,7 @@
   F(op_call)                                                                   \
   F(plankton_environment)                                                      \
   F(selector_key)                                                              \
+  F(stack_piece_bottom_code_block)                                             \
   F(stack_bottom_code_block)                                                   \
   F(subject_key)
 

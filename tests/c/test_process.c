@@ -98,6 +98,23 @@ TEST(process, bottom_frame) {
   DISPOSE_RUNTIME();
 }
 
+// Returns true iff the given frame is the synthetic stack piece bottom frame.
+static bool frame_is_stack_piece_bottom(runtime_t *runtime, frame_t *frame) {
+  return is_same_value(get_frame_code_block(frame),
+      ROOT(runtime, stack_piece_bottom_code_block));
+}
+
+// Pops the next real frame off the given stack, that is, the next frame that is
+// not a synthetic stack piece bottom frame. Returns true iff all frames were
+// popped successfully.
+static bool pop_real_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame) {
+  do {
+    if (!pop_stack_frame(stack, frame))
+      return false;
+  } while (frame_is_stack_piece_bottom(runtime, frame));
+  return true;
+}
+
 TEST(process, stack_frames) {
   CREATE_RUNTIME();
 
@@ -114,13 +131,13 @@ TEST(process, stack_frames) {
     ASSERT_EQ((size_t) i + 1, frame.capacity);
     value_t value = frame_pop_value(&frame);
     ASSERT_EQ(i * 3, get_integer_value(value));
-    ASSERT_TRUE(pop_stack_frame(stack, &frame));
+    ASSERT_TRUE(pop_real_stack_frame(runtime, stack, &frame));
   }
   frame_t frame;
-  // Popping the artificial bottom frame should succeed.
-  ASSERT_TRUE(pop_stack_frame(stack, &frame));
+  // Popping the synthetic stack bottom frame should succeed.
+  ASSERT_TRUE(pop_real_stack_frame(runtime, stack, &frame));
   // Now the stack is empty so it should not be possible to pop.
-  ASSERT_FALSE(pop_stack_frame(stack, &frame));
+  ASSERT_FALSE(pop_real_stack_frame(runtime, stack, &frame));
 
   DISPOSE_RUNTIME();
 }

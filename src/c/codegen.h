@@ -212,6 +212,10 @@ value_t assembler_emit_kill_escape(assembler_t *assm);
 // Emits a stack bottom instruction that indicates that we're done executing.
 value_t assembler_emit_stack_bottom(assembler_t *assm);
 
+// Emits a stack piece bottom instruction that indicates that we've reached the
+// bottom of one stack piece and should step down to the next piece.
+value_t assembler_emit_stack_piece_bottom(assembler_t *assm);
+
 
 // A scope defining a single symbol.
 typedef struct {
