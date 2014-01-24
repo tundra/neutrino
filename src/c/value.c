@@ -1820,9 +1820,6 @@ value_t module_lookup_identifier(runtime_t *runtime, value_t self,
 
 // --- M o d u l e   f r a g m e n t ---
 
-GET_FAMILY_PRIMARY_TYPE_IMPL(module_fragment);
-NO_BUILTIN_METHODS(module_fragment);
-
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acNoCheck, 0, Stage, stage);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofModule,
     Module, module);
