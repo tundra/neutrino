@@ -4,7 +4,7 @@
 import $assert;
 
 def @manager := @ctrino.new_instance_manager(null);
-def @Point := @ctrino.new_type("Point");
+def @Point := module.new_type("Point");
 def @x := @ctrino.new_global_field("x");
 def @y := @ctrino.new_global_field("y");
 

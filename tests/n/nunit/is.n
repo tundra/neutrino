@@ -4,8 +4,8 @@
 import $assert;
 
 def @m := @ctrino.new_instance_manager(null);
-def @A := @ctrino.new_type("A");
-def @B := @ctrino.new_type("B");
+def @A := module.new_type("A");
+def @B := module.new_type("B");
 
 type @B is @A;
 
