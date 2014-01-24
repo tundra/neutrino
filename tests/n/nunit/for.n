@@ -18,7 +18,7 @@ def $test_for_call() {
 }
 
 ## Yields a few values from the fibonacci sequence.
-def @Fibonacci := @ctrino.new_type("Fibonacci");
+def @Fibonacci := module.new_type("Fibonacci");
 def ($this is @Fibonacci).for($thunk) {
   $thunk(3);
   $thunk(5);
@@ -27,7 +27,7 @@ def ($this is @Fibonacci).for($thunk) {
 }
 
 ## Yields a few pairs of values from the fibonacci sequence.
-def @Paironacci := @ctrino.new_type("Paironacci");
+def @Paironacci := module.new_type("Paironacci");
 def ($this is @Paironacci).for($thunk) {
   $thunk(21, 34);
   $thunk(55, 89);
@@ -57,7 +57,7 @@ def $test_for_syntax() {
 }
 
 ## Yields a few values, passed with tags, from the sequence.
-def @Tagonacci := @ctrino.new_type("Tagonacci");
+def @Tagonacci := module.new_type("Tagonacci");
 def ($this is @Tagonacci).for($thunk) {
   $thunk(index: 0, value: 987);
   $thunk(index: 1, value: 1597);

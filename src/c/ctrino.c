@@ -61,13 +61,6 @@ static value_t ctrino_new_function(builtin_arguments_t *args) {
   return new_heap_function(runtime, afMutable, display_name);
 }
 
-static value_t ctrino_new_type(builtin_arguments_t *args) {
-  value_t self = get_builtin_subject(args);
-  value_t display_name = get_builtin_argument(args, 0);
-  CHECK_FAMILY(ofCtrino, self);
-  return new_heap_type(get_builtin_runtime(args), afMutable, display_name);
-}
-
 static value_t ctrino_new_instance_manager(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t display_name = get_builtin_argument(args, 0);
@@ -149,8 +142,6 @@ value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(ctrino, infix_new_global_field, 1, ctrino_new_global_field);
   DEF_INFIX(infix_new_instance_manager, "new_instance_manager");
   ADD_BUILTIN(ctrino, infix_new_instance_manager, 1, ctrino_new_instance_manager);
-  DEF_INFIX(infix_new_type, "new_type");
-  ADD_BUILTIN(ctrino, infix_new_type, 1, ctrino_new_type);
   DEF_INFIX(infix_to_string, "to_string");
   ADD_BUILTIN(ctrino, infix_to_string, 1, ctrino_to_string);
   return success();
