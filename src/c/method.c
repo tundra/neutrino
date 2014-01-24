@@ -606,6 +606,21 @@ static value_t get_invocation_subject_with_shortcut(
   }
 }
 
+// Performs a method lookup through the given fragment, that is, in the fragment
+// itself and any of the siblings before it.
+static value_t lookup_through_fragment(signature_map_lookup_state_t *state,
+    value_t fragment) {
+  CHECK_FAMILY(ofModuleFragment, fragment);
+  value_t module = get_module_fragment_module(fragment);
+  while (!is_signal(scNotFound, fragment)) {
+    value_t methodspace = get_module_fragment_methodspace(fragment);
+    TRY(lookup_methodspace_transitive_method(state, methodspace));
+    value_t stage = get_module_fragment_stage(fragment);
+    fragment = get_module_fragment_before(module, stage);
+  }
+  return success();
+}
+
 // Perform a method lookup in the subject's module of origin.
 static value_t lookup_subject_methods(signature_map_lookup_state_t *state) {
   // Look for a subject value, if there is none there is nothing to do.
@@ -615,10 +630,15 @@ static value_t lookup_subject_methods(signature_map_lookup_state_t *state) {
         is_signal(scNotFound, get_invocation_subject_no_shortcut(state))));
     return success();
   }
+  // Extract the origin of the subject.
   value_t type = get_primary_type(subject, state->input.runtime);
   CHECK_FAMILY(ofType, type);
   value_t origin = get_type_origin(type);
-
+  if (is_nothing(origin))
+    // Some types have no origin (at least at the moment) and that's okay, we
+    // just don't perform the extra lookup.
+    return success();
+  TRY(lookup_through_fragment(state, origin));
   return success();
 }
 
@@ -633,14 +653,7 @@ typedef struct {
 static value_t do_full_method_lookup(signature_map_lookup_state_t *state) {
   value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
   CHECK_FAMILY(ofModuleFragment, data->value);
-  value_t fragment = data->value;
-  value_t module = get_module_fragment_module(fragment);
-  while (!is_signal(scNotFound, fragment)) {
-    value_t methodspace = get_module_fragment_methodspace(fragment);
-    TRY(lookup_methodspace_transitive_method(state, methodspace));
-    value_t stage = get_module_fragment_stage(fragment);
-    fragment = get_module_fragment_before(module, stage);
-  }
+  TRY(lookup_through_fragment(state, data->value));
   TRY(lookup_subject_methods(state));
   TRY_SET(*data->arg_map_out, get_signature_map_lookup_argument_map(state));
   return success();
