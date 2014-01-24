@@ -1820,9 +1820,6 @@ value_t module_lookup_identifier(runtime_t *runtime, value_t self,
 
 // --- M o d u l e   f r a g m e n t ---
 
-GET_FAMILY_PRIMARY_TYPE_IMPL(module_fragment);
-NO_BUILTIN_METHODS(module_fragment);
-
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acNoCheck, 0, Stage, stage);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofModule,
     Module, module);
@@ -1832,6 +1829,8 @@ ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofMethodspace,
     Methodspace, methodspace);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofNamespace,
     Imports, imports);
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamily, ofModuleFragmentPrivate,
+    Private, private);
 
 void set_module_fragment_epoch(value_t self, module_fragment_epoch_t value) {
   *access_object_field(self, kModuleFragmentEpochOffset) = new_integer(value);
@@ -1846,6 +1845,7 @@ value_t module_fragment_validate(value_t value) {
   VALIDATE_FAMILY(ofModuleFragment, value);
   VALIDATE_FAMILY_OPT(ofNamespace, get_module_fragment_namespace(value));
   VALIDATE_FAMILY_OPT(ofMethodspace, get_module_fragment_methodspace(value));
+  VALIDATE_FAMILY(ofModuleFragmentPrivate, get_module_fragment_private(value));
   return success();
 }
 
@@ -1863,6 +1863,35 @@ void module_fragment_print_on(value_t value, string_buffer_t *buf, print_flags_t
 
 bool is_module_fragment_bound(value_t fragment) {
   return get_module_fragment_epoch(fragment) == feComplete;
+}
+
+
+// --- M o d u l e   f r a g m e n t   a c c e s s ---
+
+GET_FAMILY_PRIMARY_TYPE_IMPL(module_fragment_private);
+FIXED_GET_MODE_IMPL(module_fragment_private, vmMutable);
+NO_BUILTIN_METHODS(module_fragment_private);
+
+ACCESSORS_IMPL(ModuleFragmentPrivate, module_fragment_private, acInFamilyOpt,
+    ofModuleFragment, Owner, owner);
+
+value_t module_fragment_private_validate(value_t value) {
+  VALIDATE_FAMILY(ofModuleFragmentPrivate, value);
+  VALIDATE_FAMILY_OPT(ofModuleFragment, get_module_fragment_private_owner(value));
+  return success();
+}
+
+void module_fragment_private_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
+  CHECK_FAMILY(ofModuleFragmentPrivate, value);
+  string_buffer_printf(buf, "#<privileged access to ");
+  value_t fragment = get_module_fragment_private_owner(value);
+  value_t stage = get_module_fragment_stage(fragment);
+  value_print_inner_on(stage, buf, flags, depth + 1);
+  value_t module = get_module_fragment_module(fragment);
+  value_t path = get_module_path(module);
+  value_print_inner_on(path, buf, flags, depth + 1);
+  string_buffer_printf(buf, ">");
 }
 
 

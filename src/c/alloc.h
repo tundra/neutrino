@@ -144,6 +144,9 @@ value_t new_heap_namespace(runtime_t *runtime);
 value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t stage,
     value_t nspace, value_t methodspace, value_t imports);
 
+// Creates a new module fragment private access object.
+value_t new_heap_module_fragment_private(runtime_t *runtime, value_t owner);
+
 // Creates a new empty bound module with the given path.
 value_t new_heap_empty_module(runtime_t *runtime, value_t path);
 
@@ -306,6 +309,9 @@ value_t new_heap_method_declaration_ast(runtime_t *runtime, value_t method);
 // given supertype.
 value_t new_heap_is_declaration_ast(runtime_t *runtime, value_t subtype,
     value_t supertype);
+
+// Creates a new current module accessor ast.
+value_t new_heap_current_module_ast(runtime_t *runtime);
 
 
 // --- U t i l s ---

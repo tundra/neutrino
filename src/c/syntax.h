@@ -312,4 +312,9 @@ ACCESSORS_DECL(program_ast, entry_point);
 ACCESSORS_DECL(program_ast, module);
 
 
+// --- C u r r e n t   m o d u l e   a s t ---
+
+static const size_t kCurrentModuleAstSize = OBJECT_SIZE(0);
+
+
 #endif // _SYNTAX

@@ -1216,6 +1216,32 @@ void program_ast_print_on(value_t value, string_buffer_t *buf,
 }
 
 
+// --- C u r r e n t   m o d u l e   a s t ---
+
+FIXED_GET_MODE_IMPL(current_module_ast, vmDeepFrozen);
+TRIVIAL_PRINT_ON_IMPL(CurrentModuleAst, current_module_ast);
+
+value_t current_module_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofCurrentModuleAst, self);
+  return success();
+}
+
+value_t plankton_new_current_module_ast(runtime_t *runtime) {
+  return new_heap_current_module_ast(runtime);
+}
+
+value_t plankton_set_current_module_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
+  // Current module asts have no fields.
+  return success();
+}
+
+value_t emit_current_module_ast(value_t value, assembler_t *assm) {
+  CHECK_FAMILY(ofCurrentModuleAst, value);
+  return assembler_emit_push(assm, get_module_fragment_private(assm->fragment));
+}
+
+
 // --- C o d e   g e n e r a t i o n ---
 
 value_t emit_value(value_t value, assembler_t *assm) {
@@ -1244,6 +1270,7 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   value_t ast = RSTR(runtime, ast);
   TRY(add_plankton_factory(map, ast, "Argument", plankton_new_argument_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Array", plankton_new_array_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "CurrentModule", plankton_new_current_module_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Guard", plankton_new_guard_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Invocation", plankton_new_invocation_ast, runtime));
   TRY(add_plankton_factory(map, ast, "IsDeclaration", plankton_new_is_declaration_ast, runtime));

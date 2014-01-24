@@ -319,6 +319,7 @@ value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t sta
   CHECK_FAMILY_OPT(ofNamespace, nspace);
   CHECK_FAMILY_OPT(ofMethodspace, methodspace);
   CHECK_FAMILY_OPT(ofNamespace, imports);
+  TRY_DEF(phrivate, new_heap_module_fragment_private(runtime, nothing()));
   size_t size = kModuleFragmentSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_module_fragment_species)));
@@ -328,6 +329,16 @@ value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t sta
   set_module_fragment_methodspace(result, methodspace);
   set_module_fragment_imports(result, imports);
   set_module_fragment_epoch(result, feUnbound);
+  set_module_fragment_private(result, phrivate);
+  set_module_fragment_private_owner(phrivate, result);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_module_fragment_private(runtime_t *runtime, value_t owner) {
+  size_t size = kModuleFragmentPrivateSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+        ROOT(runtime, module_fragment_private_species)));
+  set_module_fragment_private_owner(result, owner);
   return post_create_sanity_check(result, size);
 }
 
@@ -780,6 +791,13 @@ value_t new_heap_is_declaration_ast(runtime_t *runtime, value_t subtype,
       ROOT(runtime, is_declaration_ast_species)));
   set_is_declaration_ast_subtype(result, subtype);
   set_is_declaration_ast_supertype(result, supertype);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_current_module_ast(runtime_t *runtime) {
+  size_t size = kCurrentModuleAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, current_module_ast_species)));
   return post_create_sanity_check(result, size);
 }
 

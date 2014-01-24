@@ -1,0 +1,13 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def $test_grab_module() => module;
+
+def $main() {
+  $test_grab_module();
+}
+
+entry_point $main();
