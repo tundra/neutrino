@@ -574,6 +574,54 @@ static value_t lookup_methodspace_transitive_method(signature_map_lookup_state_t
   return success();
 }
 
+// Does a full exhaustive lookup through the tags of the invocation for the
+// subject of this call. This is only a sanity check, the subject should always
+// be the 0'th argument because keys sort first, and the subject is the 0'th
+// key.
+static value_t get_invocation_subject_no_shortcut(
+    signature_map_lookup_state_t *state) {
+  value_t record = state->input.record;
+  size_t argc = get_invocation_record_argument_count(record);
+  for (size_t i = 0; i < argc; i++) {
+    value_t tag = get_invocation_record_tag_at(record, 0);
+    if (is_same_value(tag, ROOT(state->input.runtime, subject_key)))
+      return get_invocation_record_argument_at(record, state->input.frame, i);
+  }
+  return new_not_found_signal();
+}
+
+// Returns the subject of the given call using the assumption that if it's
+// present it will always be the argument at the 0'th parameter index (that is,
+// not necessarily the first argument in the evaluation order, even though it
+// will actually usually be that, but the one whose stack position is given by
+// the 0'th entry in the parameter index map).
+static value_t get_invocation_subject_with_shortcut(
+    signature_map_lookup_state_t *state) {
+  value_t record = state->input.record;
+  value_t tag_zero = get_invocation_record_tag_at(record, 0);
+  if (is_same_value(tag_zero, ROOT(state->input.runtime, subject_key))) {
+    return get_invocation_record_argument_at(record, state->input.frame, 0);
+  } else {
+    return new_not_found_signal();
+  }
+}
+
+// Perform a method lookup in the subject's module of origin.
+static value_t lookup_subject_methods(signature_map_lookup_state_t *state) {
+  // Look for a subject value, if there is none there is nothing to do.
+  value_t subject = get_invocation_subject_with_shortcut(state);
+  if (is_signal(scNotFound, subject)) {
+    IF_EXPENSIVE_CHECKS_ENABLED(CHECK_TRUE("shortcut gave wrong result",
+        is_signal(scNotFound, get_invocation_subject_no_shortcut(state))));
+    return success();
+  }
+  value_t type = get_primary_type(subject, state->input.runtime);
+  CHECK_FAMILY(ofType, type);
+  value_t origin = get_type_origin(type);
+
+  return success();
+}
+
 // A pair of a value and an argument map. If only C had generic types.
 typedef struct {
   value_t value;
@@ -582,7 +630,7 @@ typedef struct {
 
 // Traverses the method spaces reachable from a given fragment, looking up
 // through their respective signature maps.
-static value_t do_fragment_method_lookup(signature_map_lookup_state_t *state) {
+static value_t do_full_method_lookup(signature_map_lookup_state_t *state) {
   value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
   CHECK_FAMILY(ofModuleFragment, data->value);
   value_t fragment = data->value;
@@ -593,16 +641,17 @@ static value_t do_fragment_method_lookup(signature_map_lookup_state_t *state) {
     value_t stage = get_module_fragment_stage(fragment);
     fragment = get_module_fragment_before(module, stage);
   }
+  TRY(lookup_subject_methods(state));
   TRY_SET(*data->arg_map_out, get_signature_map_lookup_argument_map(state));
   return success();
 }
 
-value_t lookup_fragment_method(runtime_t *runtime, value_t fragment,
+value_t lookup_method_full(runtime_t *runtime, value_t fragment,
     value_t record, frame_t *frame, value_t *arg_map_out) {
   value_and_argument_map_t data;
   data.value = fragment;
   data.arg_map_out = arg_map_out;
-  return do_signature_map_lookup(runtime, record, frame, do_fragment_method_lookup,
+  return do_signature_map_lookup(runtime, record, frame, do_full_method_lookup,
       &data);
 }
 
