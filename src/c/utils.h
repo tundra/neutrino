@@ -187,7 +187,7 @@ void string_buffer_flush(string_buffer_t *buf, string_t *str_out);
 
 // --- B y t e   b u f f e r ---
 
-#define BUFFER_TYPE uint8_t
+#define BUFFER_TYPE byte_t
 #define MAKE_BUFFER_NAME(SUFFIX) byte_buffer_##SUFFIX
 
 #include "buffer-tmpl.h"
@@ -198,7 +198,7 @@ void string_buffer_flush(string_buffer_t *buf, string_t *str_out);
 
 // --- S h o r t   b u f f e r ---
 
-#define BUFFER_TYPE uint16_t
+#define BUFFER_TYPE short_t
 #define MAKE_BUFFER_NAME(SUFFIX) short_buffer_##SUFFIX
 
 #include "buffer-tmpl.h"

@@ -12,21 +12,21 @@
 #error No buffer name maker defined
 #endif
 
-// Buffer for building a block of bytes incrementally.
+// Buffer for building a block of BUFFER_TYPE incrementally.
 typedef struct {
-  // Size of data currently in the buffer.
+  // Size of data currently in the buffer counted in elements, not bytes.
   size_t length;
   // The data block.
   memory_block_t memory;
 } MAKE_BUFFER_NAME(t);
 
-// Initialize a byte buffer.
+// Initialize a buffer.
 void MAKE_BUFFER_NAME(init)(MAKE_BUFFER_NAME(t) *buf);
 
-// Disposes the given byte buffer.
+// Disposes the given buffer.
 void MAKE_BUFFER_NAME(dispose)(MAKE_BUFFER_NAME(t) *buf);
 
-// Add a byte to the given buffer.
+// Add an element to the given buffer.
 void MAKE_BUFFER_NAME(append)(MAKE_BUFFER_NAME(t) *buf,
     BUFFER_TYPE value);
 
@@ -35,7 +35,7 @@ void MAKE_BUFFER_NAME(append)(MAKE_BUFFER_NAME(t) *buf,
 void MAKE_BUFFER_NAME(flush)(MAKE_BUFFER_NAME(t) *buf,
     blob_t *blob_out);
 
-// A pointer to a location within a byte buffer that can be written to directly.
+// A pointer to a location within a buffer that can be written to directly.
 typedef struct {
   MAKE_BUFFER_NAME(t) *buf;
   size_t offset;
@@ -47,6 +47,6 @@ typedef struct {
 void MAKE_BUFFER_NAME(append_cursor)(MAKE_BUFFER_NAME(t) *buf,
     MAKE_BUFFER_NAME(cursor_t) *cursor_out);
 
-// Sets the value at the given location in a byte buffer.
+// Sets the value at the given location in a buffer.
 void MAKE_BUFFER_NAME(cursor_set)(MAKE_BUFFER_NAME(cursor_t) *cursor,
     BUFFER_TYPE value);

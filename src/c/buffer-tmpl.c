@@ -22,9 +22,10 @@ void MAKE_BUFFER_NAME(dispose)(MAKE_BUFFER_NAME(t) *buf) {
   allocator_default_free(buf->memory);
 }
 
-// Expands the buffer to make room for 'length' characters if necessary.
+// Expands the buffer to make room for 'length' elements if necessary.
 static void MAKE_BUFFER_NAME(ensure_capacity)(MAKE_BUFFER_NAME(t) *buf, size_t length) {
-  if (length < buf->memory.size)
+  size_t length_bytes = length * sizeof(BUFFER_TYPE);
+  if (length_bytes < buf->memory.size)
     return;
   size_t new_capacity = (length * 2);
   memory_block_t new_memory = allocator_default_malloc(new_capacity * sizeof(BUFFER_TYPE));
