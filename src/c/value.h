@@ -266,6 +266,7 @@ static value_t new_moved_object(value_t target) {
   F(MethodDeclarationAst,    method_declaration_ast,    _, _, X, _, _, _, _, _, _)\
   F(Methodspace,             methodspace,               _, _, _, _, _, _, _, X, X)\
   F(Module,                  module,                    _, _, _, _, _, _, _, _, _)\
+  F(ModuleFragmentPrivate,   module_fragment_private,   _, _, _, X, _, _, _, _, _)\
   F(ModuleFragment,          module_fragment,           _, _, _, X, _, _, _, X, _)\
   F(ModuleLoader,            module_loader,             _, _, _, _, _, _, _, _, _)\
   F(MutableRoots,            mutable_roots,             _, _, _, _, _, _, _, X, X)\
@@ -1099,13 +1100,14 @@ typedef enum {
   feComplete
 } module_fragment_epoch_t;
 
-static const size_t kModuleFragmentSize = OBJECT_SIZE(6);
+static const size_t kModuleFragmentSize = OBJECT_SIZE(7);
 static const size_t kModuleFragmentStageOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kModuleFragmentModuleOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kModuleFragmentNamespaceOffset = OBJECT_FIELD_OFFSET(2);
 static const size_t kModuleFragmentMethodspaceOffset = OBJECT_FIELD_OFFSET(3);
 static const size_t kModuleFragmentImportsOffset = OBJECT_FIELD_OFFSET(4);
 static const size_t kModuleFragmentEpochOffset = OBJECT_FIELD_OFFSET(5);
+static const size_t kModuleFragmentPrivateOffset = OBJECT_FIELD_OFFSET(6);
 
 // The index of the stage this fragment belongs to.
 ACCESSORS_DECL(module_fragment, stage);
@@ -1125,11 +1127,25 @@ ACCESSORS_DECL(module_fragment, methodspace);
 // TODO: consider whether this is really a good design.
 ACCESSORS_DECL(module_fragment, imports);
 
+// The private access object that gives code within the module privileged
+// access to modifying the module (and outside, if the code within the module
+// passes it outside itself).
+ACCESSORS_DECL(module_fragment, private);
+
 // The current epoch of the given module fragment.
 TYPED_ACCESSORS_DECL(module_fragment, module_fragment_epoch_t, epoch);
 
 // Returns true iff this fragment has been bound.
 bool is_module_fragment_bound(value_t fragment);
+
+
+// --- M o d u l e   f r a g m e n t   p r i v a t e ---
+
+static const size_t kModuleFragmentPrivateSize = OBJECT_SIZE(1);
+static const size_t kModuleFragmentPrivateOwnerOffset = OBJECT_FIELD_OFFSET(0);
+
+// Returns the module fragment that this private object provides access to.
+ACCESSORS_DECL(module_fragment_private, owner);
 
 
 // --- M o d u l e   ---

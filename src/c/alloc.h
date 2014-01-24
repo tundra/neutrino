@@ -144,6 +144,9 @@ value_t new_heap_namespace(runtime_t *runtime);
 value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t stage,
     value_t nspace, value_t methodspace, value_t imports);
 
+// Creates a new module fragment private access object.
+value_t new_heap_module_fragment_private(runtime_t *runtime, value_t owner);
+
 // Creates a new empty bound module with the given path.
 value_t new_heap_empty_module(runtime_t *runtime, value_t path);
 

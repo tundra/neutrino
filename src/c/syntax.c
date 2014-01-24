@@ -1238,7 +1238,7 @@ value_t plankton_set_current_module_ast_contents(value_t object, runtime_t *runt
 
 value_t emit_current_module_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofCurrentModuleAst, value);
-  return assembler_emit_push(assm, assm->fragment);
+  return assembler_emit_push(assm, get_module_fragment_private(assm->fragment));
 }
 
 

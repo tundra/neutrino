@@ -4,7 +4,7 @@
 import $assert;
 import $core;
 
-def $test_grab_module() => module;
+def $test_grab_module() => $core:info(module);
 
 def $main() {
   $test_grab_module();
