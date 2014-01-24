@@ -498,6 +498,7 @@ class Parser(object):
         or self.at_word('null')
         or self.at_word('true')
         or self.at_word('false')
+        or self.at_word('module')
         or self.at_type(Token.QUOTE))
 
   # <atomic expression>
@@ -538,6 +539,9 @@ class Parser(object):
     elif self.at_word('false'):
       self.expect_word('false')
       return ast.Literal(False)
+    elif self.at_word('module'):
+      self.expect_word('module')
+      return ast.CurrentModule()
     elif self.at_type(Token.QUOTE):
       return self.parse_quote()
     else:

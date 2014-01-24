@@ -783,6 +783,13 @@ value_t new_heap_is_declaration_ast(runtime_t *runtime, value_t subtype,
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_current_module_ast(runtime_t *runtime) {
+  size_t size = kCurrentModuleAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, current_module_ast_species)));
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- M i s c ---
 

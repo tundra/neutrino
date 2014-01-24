@@ -77,6 +77,9 @@ class Visitor(object):
   def visit_is_declaration(self, that):
     self.visit_ast(that)
 
+  def visit_current_module(self, that):
+    self.visit_ast(that)
+
 
 # A constant literal value.
 @plankton.serializable(plankton.EnvironmentReference.path("ast", "Literal"))
@@ -455,6 +458,20 @@ class Lambda(object):
         Guard.eq(Literal(data.Operation.call())))
     ])
     return Lambda(Method(signature, body))
+
+
+# Yields the current bound module fragment.
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "CurrentModule"))
+class CurrentModule(object):
+
+  def accept(self, visitor):
+    return visitor.visit_current_module(self)
+
+  def traverse(self, visitor):
+    pass
+
+  def __str__(self):
+    return "(current-module)"
 
 
 @plankton.serializable(plankton.EnvironmentReference.path("ast", "Program"))

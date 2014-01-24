@@ -239,6 +239,7 @@ static value_t new_moved_object(value_t target) {
   F(Blob,                    blob,                      _, _, _, X, X, _, _, _, _)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X)\
   F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _)\
+  F(CurrentModuleAst,        current_module_ast,        _, _, X, _, _, _, X, _, _)\
   F(DecimalFraction,         decimal_fraction,          _, _, X, _, _, _, _, _, _)\
   F(Escape,                  escape,                    _, _, _, X, _, _, _, _, _)\
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _)\

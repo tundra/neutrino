@@ -307,6 +307,9 @@ value_t new_heap_method_declaration_ast(runtime_t *runtime, value_t method);
 value_t new_heap_is_declaration_ast(runtime_t *runtime, value_t subtype,
     value_t supertype);
 
+// Creates a new current module accessor ast.
+value_t new_heap_current_module_ast(runtime_t *runtime);
+
 
 // --- U t i l s ---
 
