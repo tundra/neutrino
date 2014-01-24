@@ -20,7 +20,7 @@ static value_t create_stack_bottom_code_block(runtime_t *runtime) {
   TRY(assembler_init_stripped_down(&assm, runtime));
   TRY(assembler_emit_stack_bottom(&assm));
   blob_t blob;
-  byte_buffer_flush(&assm.code, &blob);
+  short_buffer_flush(&assm.code, &blob);
   TRY_DEF(bytecode, new_heap_blob_with_data(runtime, &blob));
   assembler_dispose(&assm);
   return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array), 1);
@@ -31,7 +31,7 @@ static value_t create_stack_piece_bottom_code_block(runtime_t *runtime) {
   TRY(assembler_init_stripped_down(&assm, runtime));
   TRY(assembler_emit_stack_piece_bottom(&assm));
   blob_t blob;
-  byte_buffer_flush(&assm.code, &blob);
+  short_buffer_flush(&assm.code, &blob);
   TRY_DEF(bytecode, new_heap_blob_with_data(runtime, &blob));
   assembler_dispose(&assm);
   return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array), 1);

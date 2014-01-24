@@ -219,14 +219,14 @@ value_t assembler_init_stripped_down(assembler_t *assm, runtime_t *runtime) {
   assm->scope_callback = NULL;
   assm->runtime = runtime;
   assm->fragment = null();
-  byte_buffer_init(&assm->code);
+  short_buffer_init(&assm->code);
   assm->stack_height = assm->high_water_mark = 0;
   reusable_scratch_memory_init(&assm->scratch_memory);
   return success();
 }
 
 void assembler_dispose(assembler_t *assm) {
-  byte_buffer_dispose(&assm->code);
+  short_buffer_dispose(&assm->code);
   reusable_scratch_memory_dispose(&assm->scratch_memory);
 }
 
@@ -240,7 +240,7 @@ scope_lookup_callback_t *assembler_set_scope_callback(assembler_t *assm,
 value_t assembler_flush(assembler_t *assm) {
   // Copy the bytecode into a blob object.
   blob_t code_blob;
-  byte_buffer_flush(&assm->code, &code_blob);
+  short_buffer_flush(&assm->code, &code_blob);
   TRY_DEF(bytecode, new_heap_blob_with_data(assm->runtime, &code_blob));
   // Invert the constant pool map into an array.
   value_t value_pool_map = assm->value_pool;
@@ -269,18 +269,18 @@ reusable_scratch_memory_t *assembler_get_scratch_memory(assembler_t *assm) {
 }
 
 // Writes a single byte to this assembler.
-static void assembler_emit_byte(assembler_t *assm, size_t value) {
-  CHECK_REL("large value", value, <=, 0xFF);
-  byte_buffer_append(&assm->code, (byte_t) value);
+static void assembler_emit_short(assembler_t *assm, size_t value) {
+  CHECK_REL("large value", value, <=, 0xFFFF);
+  short_buffer_append(&assm->code, (short_t) value);
 }
 
 // Writes an opcode to this assembler.
 static void assembler_emit_opcode(assembler_t *assm, opcode_t opcode) {
-  assembler_emit_byte(assm, opcode);
+  assembler_emit_short(assm, opcode);
 }
 
-static void assembler_emit_cursor(assembler_t *assm, byte_buffer_cursor_t *out) {
-  byte_buffer_append_cursor(&assm->code, out);
+static void assembler_emit_cursor(assembler_t *assm, short_buffer_cursor_t *out) {
+  short_buffer_append_cursor(&assm->code, out);
 }
 
 // Writes a reference to a value in the value pool, adding the value to the
@@ -301,13 +301,13 @@ static value_t assembler_emit_value(assembler_t *assm, value_t value) {
   // TODO: handle the case where there's more than 0xFF constants.
   CHECK_REL("negative index", index, >=, 0);
   CHECK_REL("large index", index, <=, 0xFF);
-  byte_buffer_append(&assm->code, index);
+  short_buffer_append(&assm->code, index);
   return success();
 }
 
 static void assembler_emit_stack_height_check(assembler_t *assm) {
   assembler_emit_opcode(assm, ocCheckStackHeight);
-  assembler_emit_byte(assm, assm->stack_height);
+  assembler_emit_short(assm, assm->stack_height);
 }
 
 // Adds the given delta to the recorded stack height and updates the high water
@@ -319,6 +319,8 @@ static void assembler_adjust_stack_height(assembler_t *assm, int delta) {
 }
 
 size_t assembler_get_code_cursor(assembler_t *assm) {
+  // The length is measured in number of elements so we can just return it
+  // directly, there's no need to adjust for the element size.
   return assm->code.length;
 }
 
@@ -331,21 +333,21 @@ value_t assembler_emit_push(assembler_t *assm, value_t value) {
 
 value_t assembler_emit_pop(assembler_t *assm, size_t count) {
   assembler_emit_opcode(assm, ocPop);
-  assembler_emit_byte(assm, count);
+  assembler_emit_short(assm, count);
   assembler_adjust_stack_height(assm, -count);
   return success();
 }
 
 value_t assembler_emit_slap(assembler_t *assm, size_t count) {
   assembler_emit_opcode(assm, ocSlap);
-  assembler_emit_byte(assm, count);
+  assembler_emit_short(assm, count);
   assembler_adjust_stack_height(assm, -count);
   return success();
 }
 
 value_t assembler_emit_new_array(assembler_t *assm, size_t length) {
   assembler_emit_opcode(assm, ocNewArray);
-  assembler_emit_byte(assm, length);
+  assembler_emit_short(assm, length);
   // Pops off 'length' elements, pushes back an array.
   assembler_adjust_stack_height(assm, -length+1);
   return success();
@@ -358,7 +360,7 @@ value_t assembler_emit_delegate_lambda_call(assembler_t *assm) {
 }
 
 value_t assembler_emit_capture_escape(assembler_t *assm,
-    byte_buffer_cursor_t *offset_out) {
+    short_buffer_cursor_t *offset_out) {
   assembler_emit_opcode(assm, ocCaptureEscape);
   assembler_emit_cursor(assm, offset_out);
   // We'll record the complete state and also push the capture object.
@@ -400,7 +402,7 @@ value_t assembler_emit_invocation(assembler_t *assm, value_t fragment, value_t r
   assembler_adjust_stack_height(assm, 1);
   size_t argc = get_invocation_record_argument_count(record);
   assembler_emit_opcode(assm, ocSlap);
-  assembler_emit_byte(assm, argc);
+  assembler_emit_short(assm, argc);
   // Pop off all the arguments.
   assembler_adjust_stack_height(assm, -argc);
   return success();
@@ -443,7 +445,7 @@ value_t assembler_emit_new_reference(assembler_t *assm) {
 
 value_t assembler_emit_load_local(assembler_t *assm, size_t index) {
   assembler_emit_opcode(assm, ocLoadLocal);
-  assembler_emit_byte(assm, index);
+  assembler_emit_short(assm, index);
   assembler_adjust_stack_height(assm, +1);
   return success();
 }
@@ -460,14 +462,14 @@ value_t assembler_emit_load_global(assembler_t *assm, value_t name,
 
 value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index) {
   assembler_emit_opcode(assm, ocLoadArgument);
-  assembler_emit_byte(assm, param_index);
+  assembler_emit_short(assm, param_index);
   assembler_adjust_stack_height(assm, +1);
   return success();
 }
 
 value_t assembler_emit_load_outer(assembler_t *assm, size_t index) {
   assembler_emit_opcode(assm, ocLoadOuter);
-  assembler_emit_byte(assm, index);
+  assembler_emit_short(assm, index);
   assembler_adjust_stack_height(assm, +1);
   return success();
 }
@@ -476,7 +478,7 @@ value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
     size_t outer_count) {
   assembler_emit_opcode(assm, ocLambda);
   TRY(assembler_emit_value(assm, methods));
-  assembler_emit_byte(assm, outer_count);
+  assembler_emit_short(assm, outer_count);
   // Pop off all the outers and push back the lambda.
   assembler_adjust_stack_height(assm, -outer_count+1);
   return success();
