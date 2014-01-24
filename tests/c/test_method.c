@@ -49,12 +49,12 @@ TEST(method, method_space) {
   CREATE_RUNTIME();
 
   value_t space = new_heap_methodspace(runtime);
-  value_t p1 = new_heap_type(runtime, afFreeze, null());
-  value_t p2 = new_heap_type(runtime, afFreeze, null());
+  value_t p1 = new_heap_type(runtime, afFreeze, nothing(), null());
+  value_t p2 = new_heap_type(runtime, afFreeze, nothing(), null());
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p1, p2));
-  value_t p3 = new_heap_type(runtime, afFreeze, null());
+  value_t p3 = new_heap_type(runtime, afFreeze, nothing(), null());
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p2, p3));
-  value_t p4 = new_heap_type(runtime, afFreeze, null());
+  value_t p4 = new_heap_type(runtime, afFreeze, nothing(), null());
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p2, p4));
 
   ASSERT_EQ(1, get_array_buffer_length(get_type_parents(runtime, space, p1)));
@@ -75,8 +75,8 @@ static value_t new_instance_of(runtime_t *runtime, value_t proto) {
 TEST(method, simple_is) {
   CREATE_RUNTIME();
 
-  value_t s_str_p = new_heap_type(runtime, afFreeze, null());
-  value_t obj_p = new_heap_type(runtime, afFreeze, null());
+  value_t s_str_p = new_heap_type(runtime, afFreeze, nothing(), null());
+  value_t obj_p = new_heap_type(runtime, afFreeze, nothing(), null());
   value_t int_p = ROOT(runtime, integer_type);
   value_t str_p = ROOT(runtime, string_type);
   value_t space = new_heap_methodspace(runtime);
@@ -133,8 +133,8 @@ TEST(method, simple_is) {
 TEST(method, is_score) {
   CREATE_RUNTIME();
 
-  value_t s_str_p = new_heap_type(runtime, afFreeze, null());
-  value_t obj_p = new_heap_type(runtime, afFreeze, null());
+  value_t s_str_p = new_heap_type(runtime, afFreeze, nothing(), null());
+  value_t obj_p = new_heap_type(runtime, afFreeze, nothing(), null());
   value_t str_p = ROOT(runtime, string_type);
   value_t space = new_heap_methodspace(runtime);
   // s-str <: str <: obj
@@ -161,7 +161,7 @@ TEST(method, is_score) {
 TEST(method, multi_score) {
   CREATE_RUNTIME();
 
-  value_t int_str_p = new_heap_type(runtime, afFreeze, null());
+  value_t int_str_p = new_heap_type(runtime, afFreeze, nothing(), null());
   value_t int_p = ROOT(runtime, integer_type);
   value_t str_p = ROOT(runtime, string_type);
   value_t space = new_heap_methodspace(runtime);
@@ -729,10 +729,10 @@ TEST(method, dense_perfect_lookup) {
   CREATE_TEST_ARENA();
 
   // Protocols and inheritance hierarchy.
-  value_t a_p = new_heap_type(runtime, afFreeze, C(vStr("A")));
-  value_t b_p = new_heap_type(runtime, afFreeze, C(vStr("B")));
-  value_t c_p = new_heap_type(runtime, afFreeze, C(vStr("C")));
-  value_t d_p = new_heap_type(runtime, afFreeze, C(vStr("D")));
+  value_t a_p = new_heap_type(runtime, afFreeze, nothing(), C(vStr("A")));
+  value_t b_p = new_heap_type(runtime, afFreeze, nothing(), C(vStr("B")));
+  value_t c_p = new_heap_type(runtime, afFreeze, nothing(), C(vStr("C")));
+  value_t d_p = new_heap_type(runtime, afFreeze, nothing(), C(vStr("D")));
   value_t space = new_heap_methodspace(runtime);
   // D <: C <: B <: A <: Object
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, d_p, c_p));

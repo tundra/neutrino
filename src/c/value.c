@@ -1508,11 +1508,12 @@ value_t ensure_code_block_owned_values_frozen(runtime_t *runtime, value_t self) 
 }
 
 
-// --- P r o t o c o l ---
+// --- T y p e ---
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(type);
 NO_BUILTIN_METHODS(type);
 
+ACCESSORS_IMPL(Type, type, acInFamilyOpt, ofModuleFragment, Origin, origin);
 ACCESSORS_IMPL(Type, type, acNoCheck, 0, DisplayName, display_name);
 
 value_t type_validate(value_t value) {
@@ -1534,7 +1535,7 @@ void type_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
 }
 
 value_t plankton_new_type(runtime_t *runtime) {
-  return new_heap_type(runtime, afMutable, nothing());
+  return new_heap_type(runtime, afMutable, nothing(), nothing());
 }
 
 value_t plankton_set_type_contents(value_t object, runtime_t *runtime,
@@ -1897,7 +1898,9 @@ static value_t module_fragment_private_new_type(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t display_name = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofModuleFragmentPrivate, self);
-  return new_heap_type(get_builtin_runtime(args), afMutable, display_name);
+  value_t origin = get_module_fragment_private_owner(self);
+  return new_heap_type(get_builtin_runtime(args), afMutable, origin,
+      display_name);
 }
 
 value_t add_module_fragment_private_builtin_methods(runtime_t *runtime,

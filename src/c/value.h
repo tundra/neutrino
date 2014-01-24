@@ -1025,8 +1025,12 @@ INTEGER_ACCESSORS_DECL(code_block, high_water_mark);
 
 // --- T y p e ---
 
-static const size_t kTypeSize = OBJECT_SIZE(1);
-static const size_t kTypeDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kTypeSize = OBJECT_SIZE(2);
+static const size_t kTypeOriginOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kTypeDisplayNameOffset = OBJECT_FIELD_OFFSET(1);
+
+// Returns the originating module fragment for this type.
+ACCESSORS_DECL(type, origin);
 
 // Returns the display (debug) name for this type object.
 ACCESSORS_DECL(type, display_name);
