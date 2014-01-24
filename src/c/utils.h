@@ -68,7 +68,7 @@ void string_hint_to_c_str(const char *hint, char c_str_out[5]);
 
 // A block of data with a length.
 struct blob_t {
-  size_t length;
+  size_t byte_length;
   byte_t *data;
 };
 

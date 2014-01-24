@@ -92,17 +92,17 @@ void string_hint_to_c_str(const char *hint, char c_str_out[7]) {
 
 
 void blob_init(blob_t *blob, byte_t *data, size_t byte_length) {
-  blob->length = length;
+  blob->byte_length = byte_length;
   blob->data = data;
 }
 
 size_t blob_byte_length(blob_t *blob) {
-  return blob->length;
+  return blob->byte_length;
 }
 
 size_t blob_short_length(blob_t *blob) {
-  CHECK_EQ("unaligned short blob", 0, blob->length & 0x1);
-  return blob->length >> 1;
+  CHECK_EQ("unaligned short blob", 0, blob->byte_length & 0x1);
+  return blob->byte_length >> 1;
 }
 
 byte_t blob_byte_at(blob_t *blob, size_t index) {
