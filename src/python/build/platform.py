@@ -80,6 +80,9 @@ class Gcc(Toolchain):
       result += ["-O0", "-g"]
     else:
       result += ["-O3"]
+    # Profiling
+    if self.get_config_option("gprof"):
+      result += ["-pg"]
     # Checks en/dis-abled
     if self.get_config_option("checks"):
       result += ["-DENABLE_CHECKS=1"]
@@ -88,6 +91,15 @@ class Gcc(Toolchain):
     # Strict errors
     if not self.get_config_option("warn"):
       result += ["-Werror"]
+    return result
+
+  def get_linker_flags(self):
+    result = [
+      "-rdynamic",
+      "-lrt"
+    ]
+    if self.get_config_option("gprof"):
+      result += ["-pg"]
     return result
 
   def get_object_compile_command(self, output, inputs, includepaths):
@@ -106,9 +118,11 @@ class Gcc(Toolchain):
     return "o"
 
   def get_executable_compile_command(self, output, inputs):
-    command = "$(CC) -o %(output)s %(inputs)s -rdynamic -lrt" % {
+    linkflags = self.get_linker_flags()
+    command = "$(CC) -o %(output)s %(inputs)s %(linkflags)s" % {
       "output": process.shell_escape(output),
-      "inputs": " ".join(map(process.shell_escape, inputs))
+      "inputs": " ".join(map(process.shell_escape, inputs)),
+      "linkflags": " ".join(linkflags),
     }
     comment = "Building executable %s" % os.path.basename(output)
     return process.Command(command).set_comment(comment)

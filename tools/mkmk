@@ -27,6 +27,7 @@ def parse_options(argv):
   parser.add_option('--valgrind', default=False, action='store_true')
   parser.add_option('--gcc48', default=False, action='store_true')
   parser.add_option('--expchecks', default=False, action='store_true')
+  parser.add_option('--gprof', default=False, action='store_true')
   parser.add_option('--toolchain', default='gcc')
   (flags, args) = parser.parse_args(argv)
   return flags
@@ -42,6 +43,7 @@ def main():
     "valgrind": flags.valgrind,
     "gcc48": flags.gcc48,
     "expchecks": flags.expchecks,
+    "gprof": flags.gprof
   }
   build.process.main(root=flags.root, bindir=flags.bindir, config=config,
     dot=flags.dot, makefile=flags.makefile, toolchain=flags.toolchain)
