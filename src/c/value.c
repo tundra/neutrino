@@ -1903,7 +1903,8 @@ static value_t module_fragment_private_new_type(builtin_arguments_t *args) {
 value_t add_module_fragment_private_builtin_methods(runtime_t *runtime,
     safe_value_t s_space) {
   DEF_INFIX(infix_new_type, "new_type");
-  ADD_BUILTIN(module_fragment_private, infix_new_type, 1, module_fragment_private_new_type);
+  ADD_BUILTIN(module_fragment_private, infix_new_type, 1,
+      module_fragment_private_new_type);
   return success();
 }
 
