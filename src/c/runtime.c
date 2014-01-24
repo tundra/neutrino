@@ -99,7 +99,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, empty_path), new_heap_path(runtime, afFreeze, nothing(),
       nothing()));
   TRY_SET(RAW_ROOT(roots, any_guard), new_heap_guard(runtime, afFreeze, gtAny, null()));
-  TRY_DEF(empty_type, new_heap_type(runtime, afFreeze, null()));
+  TRY_DEF(empty_type, new_heap_type(runtime, afFreeze, nothing(), null()));
   TRY(validate_deep_frozen(runtime, empty_type, NULL));
   TRY_SET(RAW_ROOT(roots, empty_instance_species),
       new_heap_instance_species(runtime, empty_type, nothing()));
@@ -119,7 +119,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   string_init(&__display_name_str__, #Name);                                   \
   TRY_DEF(__display_name__, new_heap_string(runtime, &__display_name_str__));  \
   TRY_SET(RAW_ROOT(roots, name##_type), new_heap_type(runtime, afFreeze,       \
-      __display_name__));                                                      \
+      nothing(), __display_name__));                                           \
 } while (false);
   __CREATE_TYPE__(Integer, integer);
 #define __CREATE_FAMILY_TYPE_OPT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\

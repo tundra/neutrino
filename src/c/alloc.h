@@ -127,7 +127,7 @@ value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
 
 // Creates a new type object with the given display name.
 value_t new_heap_type(runtime_t *runtime, alloc_flags_t flags,
-    value_t display_name);
+    value_t origin, value_t display_name);
 
 // Creates a new function object with the given display name.
 value_t new_heap_function(runtime_t *runtime, alloc_flags_t flags,
