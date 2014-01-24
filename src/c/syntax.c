@@ -453,7 +453,7 @@ value_t with_escape_ast_validate(value_t self) {
 value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofWithEscapeAst, self);
   // Capture the escape.
-  byte_buffer_cursor_t dest;
+  short_buffer_cursor_t dest;
   TRY(assembler_emit_capture_escape(assm, &dest));
   size_t code_start_offset = assembler_get_code_cursor(assm);
   // The capture will be pushed as the top element so its offset is one below
@@ -476,7 +476,7 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   // the value on top of the stack. That way the stack cleanup happens the same
   // way whether you return normally or escape.
   size_t code_end_offset = assembler_get_code_cursor(assm);
-  byte_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
+  short_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
   // Ensure that the escape is dead then slap the value and the captured state
   // off, leaving just the value of the body or the escaped value.
   TRY(assembler_emit_kill_escape(assm));

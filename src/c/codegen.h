@@ -96,7 +96,7 @@ typedef struct assembler_t {
   // The runtime we're generating code within.
   runtime_t *runtime;
   // The buffer that holds the code being built.
-  byte_buffer_t code;
+  short_buffer_t code;
   // The value pool map.
   value_t value_pool;
   // The current stack height.
@@ -199,7 +199,7 @@ value_t assembler_emit_delegate_lambda_call(assembler_t *assm);
 // Capture an escape, pushing it onto the stack. The offset_out is a cursor
 // where the offset to jump to when returning to the escape should be written.
 value_t assembler_emit_capture_escape(assembler_t *assm,
-    byte_buffer_cursor_t *offset_out);
+    short_buffer_cursor_t *offset_out);
 
 // Fire an escape object, unwinding to where it was captured.
 value_t assembler_emit_fire_escape(assembler_t *assm);

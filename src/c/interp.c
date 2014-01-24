@@ -82,31 +82,31 @@ static void interpreter_state_restore(interpreter_state_t *state, frame_t *frame
   state->value_pool = get_code_block_value_pool(code_block);
 }
 
-// Reads over and returns the next byte in the bytecode stream.
-static byte_t read_next_byte(interpreter_state_t *state) {
-  return blob_byte_at(&state->bytecode, state->pc++);
+// Reads over and returns the next word in the bytecode stream.
+static short_t read_next_short(interpreter_state_t *state) {
+  return blob_short_at(&state->bytecode, state->pc++);
 }
 
 // Reads over the next value index from the code and returns the associated
 // value pool value.
 static value_t read_next_value(interpreter_state_t *state) {
-  size_t index = read_next_byte(state);
+  size_t index = read_next_short(state);
   return get_array_at(state->value_pool, index);
 }
 
-// Reads a byte from the previous instruction, assuming that we're currently
-// at the first byte of the next instruction. Size is the size of the
-// instruction, offset is the offset of the byte we want to read.
-static byte_t peek_previous_byte(interpreter_state_t *state, size_t size,
+// Reads a word from the previous instruction, assuming that we're currently
+// at the first word of the next instruction. Size is the size of the
+// instruction, offset is the offset of the word we want to read.
+static short_t peek_previous_short(interpreter_state_t *state, size_t size,
     size_t offset) {
-  return blob_byte_at(&state->bytecode, state->pc - size + offset);
+  return blob_short_at(&state->bytecode, state->pc - size + offset);
 }
 
 // Reads a value pool value from the previous instruction, assuming that we're
-// currently at the first byte of the next instruction.
+// currently at the first word of the next instruction.
 static value_t peek_previous_value(interpreter_state_t *state, size_t size,
     size_t offset) {
-  size_t index = peek_previous_byte(state, size, offset);
+  size_t index = peek_previous_short(state, size, offset);
   return get_array_at(state->value_pool, index);
 }
 
@@ -159,7 +159,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
   interpreter_state_t state;
   interpreter_state_load(&state, &frame);
   while (true) {
-    opcode_t opcode = (opcode_t) read_next_byte(&state);
+    opcode_t opcode = (opcode_t) read_next_short(&state);
     switch (opcode) {
       case ocPush: {
         value_t value = read_next_value(&state);
@@ -167,19 +167,19 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         break;
       }
       case ocPop: {
-        size_t count = read_next_byte(&state);
+        size_t count = read_next_short(&state);
         for (size_t i = 0; i < count; i++)
           frame_pop_value(&frame);
         break;
       }
       case ocCheckStackHeight: {
-        size_t expected = read_next_byte(&state);
+        size_t expected = read_next_short(&state);
         size_t height = frame.stack_pointer - frame.frame_pointer;
         CHECK_EQ("stack height", expected, height);
         break;
       }
       case ocNewArray: {
-        size_t length = read_next_byte(&state);
+        size_t length = read_next_short(&state);
         TRY_DEF(array, new_heap_array(runtime, length));
         for (size_t i = 0; i < length; i++) {
           value_t element = frame_pop_value(&frame);
@@ -223,7 +223,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         interpreter_state_load(&state, &frame);
         // Extract the invocation record from the calling instruction.
         CHECK_EQ("invalid calling instruction", ocInvoke,
-            peek_previous_byte(&state, 3, 0));
+            peek_previous_short(&state, 3, 0));
         value_t record = peek_previous_value(&state, 3, 1);
         CHECK_FAMILY(ofInvocationRecord, record);
         // From this point we do the same as invoke except using the space from
@@ -277,7 +277,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
       }
       case ocSlap: {
         value_t value = frame_pop_value(&frame);
-        size_t argc = read_next_byte(&state);
+        size_t argc = read_next_short(&state);
         for (size_t i = 0; i < argc; i++)
           frame_pop_value(&frame);
         frame_push_value(&frame, value);
@@ -307,7 +307,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         break;
       }
       case ocLoadLocal: {
-        size_t index = read_next_byte(&state);
+        size_t index = read_next_short(&state);
         value_t value = frame_get_local(&frame, index);
         frame_push_value(&frame, value);
         break;
@@ -324,13 +324,13 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         break;
       }
       case ocLoadArgument: {
-        size_t param_index = read_next_byte(&state);
+        size_t param_index = read_next_short(&state);
         value_t value = frame_get_argument(&frame, param_index);
         frame_push_value(&frame, value);
         break;
       }
       case ocLoadOuter: {
-        size_t index = read_next_byte(&state);
+        size_t index = read_next_short(&state);
         value_t subject = frame_get_argument(&frame, 0);
         CHECK_FAMILY(ofLambda, subject);
         value_t value = get_lambda_outer(subject, index);
@@ -340,7 +340,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
       case ocLambda: {
         value_t space = read_next_value(&state);
         CHECK_FAMILY(ofMethodspace, space);
-        size_t outer_count = read_next_byte(&state);
+        size_t outer_count = read_next_short(&state);
         value_t outers;
         if (outer_count == 0) {
           outers = ROOT(runtime, empty_array);
@@ -354,7 +354,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         break;
       }
       case ocCaptureEscape: {
-        size_t dest_offset = read_next_byte(&state);
+        size_t dest_offset = read_next_short(&state);
         // Push the interpreter state at the end of this instruction onto the
         // stack.
         value_t location = new_integer(interpreter_state_push(&state, &frame,
