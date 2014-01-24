@@ -356,7 +356,7 @@ TEST(utils, hash_stream) {
   base64_decode(&str, &buf);                                                   \
   blob_t blob;                                                                 \
   byte_buffer_flush(&buf, &blob);                                              \
-  ASSERT_EQ(N, blob_length(&blob));                                            \
+  ASSERT_EQ(N, blob_byte_length(&blob));                                            \
   uint8_t expected[(N == 0) ? 1 : (N)] = {__VA_ARGS__};                        \
   for (int i = 0; i < (N); i++)                                                \
     ASSERT_EQ(expected[i], blob_byte_at(&blob, i));                            \
@@ -466,7 +466,7 @@ TEST(utils, byte_buffer_cursor) {
 
   blob_t blob;
   byte_buffer_flush(&buf, &blob);
-  ASSERT_EQ(3, blob_length(&blob));
+  ASSERT_EQ(3, blob_byte_length(&blob));
   ASSERT_EQ(0, blob_byte_at(&blob, 0));
   ASSERT_EQ(0, blob_byte_at(&blob, 1));
   ASSERT_EQ(0, blob_byte_at(&blob, 2));
@@ -487,6 +487,24 @@ TEST(utils, byte_buffer_cursor) {
   ASSERT_EQ(6, blob_byte_at(&blob, 2));
 
   byte_buffer_dispose(&buf);
+}
+
+TEST(utils, short_buffer) {
+  short_buffer_t buf;
+  short_buffer_init(&buf);
+
+  short_buffer_append(&buf, 0xFACE);
+  short_buffer_append(&buf, 0xF00D);
+  short_buffer_append(&buf, 0xDEAD);
+
+  blob_t blob;
+  short_buffer_flush(&buf, &blob);
+  ASSERT_EQ(3, blob_short_length(&blob));
+  ASSERT_EQ(0xFACE, blob_short_at(&blob, 0));
+  ASSERT_EQ(0xF00D, blob_short_at(&blob, 1));
+  ASSERT_EQ(0xDEAD, blob_short_at(&blob, 2));
+
+  short_buffer_dispose(&buf);
 }
 
 TEST(utils, 64name) {

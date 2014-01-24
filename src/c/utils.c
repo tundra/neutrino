@@ -91,27 +91,38 @@ void string_hint_to_c_str(const char *hint, char c_str_out[7]) {
 }
 
 
-void blob_init(blob_t *blob, byte_t *data, size_t length) {
+void blob_init(blob_t *blob, byte_t *data, size_t byte_length) {
   blob->length = length;
   blob->data = data;
 }
 
-size_t blob_length(blob_t *blob) {
+size_t blob_byte_length(blob_t *blob) {
   return blob->length;
 }
 
+size_t blob_short_length(blob_t *blob) {
+  CHECK_EQ("unaligned short blob", 0, blob->length & 0x1);
+  return blob->length >> 1;
+}
+
 byte_t blob_byte_at(blob_t *blob, size_t index) {
-  CHECK_REL("blob index out of bounds", index, <, blob_length(blob));
+  CHECK_REL("blob index out of bounds", index, <, blob_byte_length(blob));
   return blob->data[index];
 }
 
+short_t blob_short_at(blob_t *blob, size_t index) {
+  CHECK_REL("blob index out of bounds", index, <, blob_short_length(blob));
+  return ((short_t*) blob->data)[index];
+}
+
 void blob_fill(blob_t *blob, byte_t value) {
-  memset(blob->data, value, blob_length(blob));
+  memset(blob->data, value, blob_byte_length(blob));
 }
 
 void blob_copy_to(blob_t *src, blob_t *dest) {
-  CHECK_REL("blob copy destination too small", blob_length(dest), >=, blob_length(src));
-  memcpy(dest->data, src->data, blob_length(src));
+  CHECK_REL("blob copy destination too small", blob_byte_length(dest), >=,
+      blob_byte_length(src));
+  memcpy(dest->data, src->data, blob_byte_length(src));
 }
 
 static const byte_t kMallocHeapMarker = 0xB0;
@@ -368,46 +379,24 @@ void string_buffer_flush(string_buffer_t *buf, string_t *str_out) {
 
 // --- B y t e   b u f f e r ---
 
-void byte_buffer_init(byte_buffer_t *buf) {
-  buf->length = 0;
-  buf->memory = allocator_default_malloc(128);
-}
+#define BUFFER_TYPE uint8_t
+#define MAKE_BUFFER_NAME(SUFFIX) byte_buffer_##SUFFIX
 
-void byte_buffer_dispose(byte_buffer_t *buf) {
-  allocator_default_free(buf->memory);
-}
+#include "buffer-tmpl.c"
 
-// Expands the buffer to make room for 'length' characters if necessary.
-static void byte_buffer_ensure_capacity(byte_buffer_t *buf, size_t length) {
-  if (length < buf->memory.size)
-    return;
-  size_t new_capacity = (length * 2);
-  memory_block_t new_memory = allocator_default_malloc(new_capacity);
-  memcpy(new_memory.memory, buf->memory.memory, buf->length);
-  allocator_default_free(buf->memory);
-  buf->memory = new_memory;
-}
+#undef BUFFER_TYPE
+#undef MAKE_BUFFER_NAME
 
-void byte_buffer_append(byte_buffer_t *buf, uint8_t value) {
-  byte_buffer_ensure_capacity(buf, buf->length + 1);
-  ((byte_t*) buf->memory.memory)[buf->length] = value;
-  buf->length++;
-}
 
-void byte_buffer_flush(byte_buffer_t *buf, blob_t *blob_out) {
-  blob_init(blob_out, (byte_t*) buf->memory.memory, buf->length);
-}
+// --- S h o r t   b u f f e r ---
 
-void byte_buffer_append_cursor(byte_buffer_t *buf, byte_buffer_cursor_t *cursor_out) {
-  cursor_out->buf = buf;
-  cursor_out->offset = buf->length;
-  byte_buffer_append(buf, 0);
-}
+#define BUFFER_TYPE uint16_t
+#define MAKE_BUFFER_NAME(SUFFIX) short_buffer_##SUFFIX
 
-void byte_buffer_cursor_set(byte_buffer_cursor_t *cursor, uint8_t value) {
-  byte_t *block = (byte_t*) cursor->buf->memory.memory;
-  block[cursor->offset] = value;
-}
+#include "buffer-tmpl.c"
+
+#undef BUFFER_TYPE
+#undef MAKE_BUFFER_NAME
 
 
 // --- B i t   v e c t o r ---
@@ -424,7 +413,7 @@ value_t bit_vector_init(bit_vector_t *vector, size_t length, bool value) {
   } else {
     memory_block_t memory = allocator_default_malloc(byte_size);
     vector->storage.as_large.memory = memory;
-    vector->data = (uint8_t*) memory.memory;
+    vector->data = (byte_t*) memory.memory;
   }
   memset(vector->data, value ? 0xFF : 0x00, byte_size);
   return success();
@@ -566,7 +555,7 @@ void hash_stream_write_int64(hash_stream_t *stream, int64_t value) {
 }
 
 void hash_stream_write_data(hash_stream_t *stream, const void *ptr, size_t size) {
-  const uint8_t *bytes = (const uint8_t*) ptr;
+  const byte_t *bytes = (const byte_t*) ptr;
   // Look away, it's hideous!
   // TODO: It should be possible to do this block-by-block, the tricky part is
   //   making sure that identical chunks of data hash the same whether they're

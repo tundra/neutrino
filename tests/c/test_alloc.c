@@ -29,7 +29,7 @@ TEST(alloc, heap_blob) {
   ASSERT_EQ(9, get_blob_length(blob));
   blob_t data;
   get_blob_data(blob, &data);
-  ASSERT_EQ(9, blob_length(&data));
+  ASSERT_EQ(9, blob_byte_length(&data));
   for (size_t i = 0; i < 9; i++)
     ASSERT_EQ(0, blob_byte_at(&data, i));
 
@@ -39,7 +39,7 @@ TEST(alloc, heap_blob) {
   blob = new_heap_blob_with_data(runtime, &contents);
   blob_t heap_blob;
   get_blob_data(blob, &heap_blob);
-  ASSERT_EQ(3, blob_length(&heap_blob));
+  ASSERT_EQ(3, blob_byte_length(&heap_blob));
   ASSERT_EQ(6, blob_byte_at(&heap_blob, 0));
   ASSERT_EQ(5, blob_byte_at(&heap_blob, 1));
   ASSERT_EQ(4, blob_byte_at(&heap_blob, 2));

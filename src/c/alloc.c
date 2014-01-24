@@ -72,7 +72,7 @@ value_t new_heap_blob(runtime_t *runtime, size_t length) {
 
 value_t new_heap_blob_with_data(runtime_t *runtime, blob_t *contents) {
   // Allocate the blob object to hold the data.
-  TRY_DEF(blob, new_heap_blob(runtime, blob_length(contents)));
+  TRY_DEF(blob, new_heap_blob(runtime, blob_byte_length(contents)));
   // Pull out the contents of the heap blob.
   blob_t blob_data;
   get_blob_data(blob, &blob_data);

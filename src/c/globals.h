@@ -11,6 +11,7 @@
 
 // A single byte.
 typedef uint8_t byte_t;
+typedef uint16_t short_t;
 
 // Shorthand for pointers into memory.
 typedef byte_t *address_t;
