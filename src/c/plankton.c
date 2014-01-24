@@ -25,7 +25,7 @@ void byte_stream_init(byte_stream_t *stream, blob_t *blob) {
 
 // Returns true iff data can be read from this stream.
 bool byte_stream_has_more(byte_stream_t *stream) {
-  return stream->cursor < blob_length(stream->blob);
+  return stream->cursor < blob_byte_length(stream->blob);
 }
 
 // Returns the next byte from the given byte stream.

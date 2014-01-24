@@ -68,18 +68,24 @@ void string_hint_to_c_str(const char *hint, char c_str_out[5]);
 
 // A block of data with a length.
 struct blob_t {
-  size_t length;
+  size_t byte_length;
   byte_t *data;
 };
 
 // Initializes a blob to hold this data.
-void blob_init(blob_t *blob, byte_t *data, size_t length);
+void blob_init(blob_t *blob, byte_t *data, size_t byte_length);
 
 // The number of bytes in this blob.
-size_t blob_length(blob_t *blob);
+size_t blob_byte_length(blob_t *blob);
+
+// The number of shorts in this blob.
+size_t blob_short_length(blob_t *blob);
 
 // Returns the index'th byte in the given blob.
 byte_t blob_byte_at(blob_t *blob, size_t index);
+
+// Returns the index'th short in the given blob.
+short_t blob_short_at(blob_t *blob, size_t index);
 
 // Fills this blob's data with the given value.
 void blob_fill(blob_t *blob, byte_t value);
@@ -181,40 +187,24 @@ void string_buffer_flush(string_buffer_t *buf, string_t *str_out);
 
 // --- B y t e   b u f f e r ---
 
-// Buffer for building a block of bytes incrementally.
-typedef struct {
-  // Size of data currently in the buffer.
-  size_t length;
-  // The data block.
-  memory_block_t memory;
-} byte_buffer_t;
+#define BUFFER_TYPE byte_t
+#define MAKE_BUFFER_NAME(SUFFIX) byte_buffer_##SUFFIX
 
-// Initialize a byte buffer.
-void byte_buffer_init(byte_buffer_t *buf);
+#include "buffer-tmpl.h"
 
-// Disposes the given byte buffer.
-void byte_buffer_dispose(byte_buffer_t *buf);
+#undef BUFFER_TYPE
+#undef MAKE_BUFFER_NAME
 
-// Add a byte to the given buffer.
-void byte_buffer_append(byte_buffer_t *buf, uint8_t value);
 
-// Write the current contents to the given blob. The data in the blob will
-// still be backed by this buffer so disposing this will make the blob invalid.
-void byte_buffer_flush(byte_buffer_t *buf, blob_t *blob_out);
+// --- S h o r t   b u f f e r ---
 
-// A pointer to a location within a byte buffer that can be written to directly.
-typedef struct {
-  byte_buffer_t *buf;
-  size_t offset;
-} byte_buffer_cursor_t;
+#define BUFFER_TYPE short_t
+#define MAKE_BUFFER_NAME(SUFFIX) short_buffer_##SUFFIX
 
-// Writes 0 to the next location and stores a cursor for writing to that
-// location in the given out parameter. Obviously the cursor becomes invalid
-// when the buffer is disposed.
-void byte_buffer_append_cursor(byte_buffer_t *buf, byte_buffer_cursor_t *cursor_out);
+#include "buffer-tmpl.h"
 
-// Sets the value at the given location in a byte buffer.
-void byte_buffer_cursor_set(byte_buffer_cursor_t *cursor, uint8_t value);
+#undef BUFFER_TYPE
+#undef MAKE_BUFFER_NAME
 
 
 // --- B i t   v e c t o r ---
@@ -228,7 +218,7 @@ void byte_buffer_cursor_set(byte_buffer_cursor_t *cursor, uint8_t value);
 // Data used for bit vectors smaller than kSmallBitVectorLimit which are stored
 // inline without heap allocation.
 typedef struct {
-  uint8_t inline_data[kBitVectorInlineDataSize];
+  byte_t inline_data[kBitVectorInlineDataSize];
 } small_bit_vector_store_t;
 
 // Data used for bit vectors of size kSmallBitVectorLimit or larger which get
@@ -243,7 +233,7 @@ typedef struct {
   // How many bits?
   size_t length;
   // The storage array.
-  uint8_t *data;
+  byte_t *data;
   // The source of the storage, either allocated inline or on the heap.
   union {
     small_bit_vector_store_t as_small;

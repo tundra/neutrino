@@ -582,7 +582,7 @@ void blob_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
   string_buffer_printf(buf, "#<blob: [");
   blob_t blob;
   get_blob_data(value, &blob);
-  size_t length = blob_length(&blob);
+  size_t length = blob_byte_length(&blob);
   size_t bytes_to_show = (length <= 8) ? length : 8;
   for (size_t i = 0; i < bytes_to_show; i++) {
     static const char *kChars = "0123456789abcdef";
