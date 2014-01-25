@@ -29,6 +29,29 @@ typedef enum {
   F(Warning, W, 2, lsStderr)                                                   \
   F(Error,   E, 3, lsStderr)
 
+// Special log topics that can be turned on and off statically and dynamically.
+// These are useful if you want to instrument particular areas of the code but
+// have the logging off by default and be able to turn it on and off
+// selectively. Since these are a debug aid they should always be returned to
+// tlNever before submitting code.
+#define LOG_TOPIC_Interpreter tlNever
+#define LOG_TOPIC_Lookup      tlNever
+
+// Topic log settings: always log, never log, dynamically toggle.
+#define tlAlways  true
+#define tlNever   false
+#define tlDynamic dynamic_topic_logging_enabled
+
+// Flag that controls whether topic logging is enabled in dynamic mode.
+extern bool dynamic_topic_logging_enabled;
+
+// Toggle whether topic logging is enabled for those topics that are set to
+// tlDynamic. If you have multiple dynamic topics this doesn't allow you to
+// control them separately but it's pretty easy to add if it becomes an issue.
+// Returns the previous value in case you need to be able to restore the
+// previous value.
+bool set_topic_logging_enabled(bool value);
+
 // Expands to a true value if the current log level is the specified value or
 // less severe, implying that log messages to the given level should be
 // reported.
@@ -86,29 +109,37 @@ log_callback_t *set_log_callback(log_callback_t *value);
 
 // Emits a warning if the static log level is at least warning, otherwise does
 // nothing (including doesn't evaluate arguments).
-#define WARN(FMT, ...) do {                                                    \
+#define WARN(...) do {                                                         \
   if (LOG_LEVEL_AT_LEAST(llWarning))                                           \
-    log_message(llWarning, __FILE__, __LINE__, FMT, __VA_ARGS__);              \
+    log_message(llWarning, __FILE__, __LINE__, __VA_ARGS__);                   \
 } while (false)
 
 // Emits an error if the static log level is at least error, otherwise does
 // nothing (including doesn't evaluate arguments).
-#define ERROR(FMT, ...) do {                                                   \
+#define ERROR(...) do {                                                        \
   if (LOG_LEVEL_AT_LEAST(llError))                                             \
-    log_message(llError, __FILE__, __LINE__, FMT, __VA_ARGS__);                \
+    log_message(llError, __FILE__, __LINE__, __VA_ARGS__);                     \
 } while (false)
 
 // Emits an info if the static log level is at least info, otherwise does
 // nothing (including doesn't evaluate arguments).
-#define INFO(FMT, ...) do {                                                    \
+#define INFO(...) do {                                                         \
   if (LOG_LEVEL_AT_LEAST(llInfo))                                              \
-    log_message(llInfo, __FILE__, __LINE__, FMT, __VA_ARGS__);                 \
+    log_message(llInfo, __FILE__, __LINE__, __VA_ARGS__);                      \
+} while (false)
+
+// Log an event relevant to the given topic. If logging is disabled for the
+// given topic nothing happens.
+#define TOPIC_INFO(TOPIC, ...) do {                                            \
+  if (LOG_TOPIC_##TOPIC)                                                       \
+    INFO(__VA_ARGS__);                                                         \
 } while (false)
 
 // Works the same as INFO but any occurrences of this macro will cause the
 // linter to choke if you try to submit. If you use this when debugging/tracing
 // by hest the linter will help you remember to get rid of all the debug print
 // statements before submitting.
-#define HEST(FMT, ...) INFO(FMT, __VA_ARGS__)
+#define HEST(...) INFO(__VA_ARGS__)
+
 
 #endif // _LOG

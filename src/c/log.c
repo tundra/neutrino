@@ -6,6 +6,14 @@
 
 #include <time.h>
 
+bool dynamic_topic_logging_enabled = false;
+
+bool set_topic_logging_enabled(bool value) {
+  bool prev_value = dynamic_topic_logging_enabled;
+  dynamic_topic_logging_enabled = value;
+  return prev_value;
+}
+
 // Returns the initial for the given log level.
 static const char *get_log_level_char(log_level_t level) {
   switch (level) {
