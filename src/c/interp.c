@@ -160,6 +160,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
   interpreter_state_load(&state, &frame);
   while (true) {
     opcode_t opcode = (opcode_t) read_next_short(&state);
+    TOPIC_INFO(Interpreter, "Opcode: %i", opcode);
     switch (opcode) {
       case ocPush: {
         value_t value = read_next_value(&state);
