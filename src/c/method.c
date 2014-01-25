@@ -392,6 +392,14 @@ static void signature_map_lookup_state_swap_offsets(signature_map_lookup_state_t
 // stack.
 #define kSmallLookupLimit 32
 
+static bool verbose_lookup_log = false;
+
+#define IF_LOOKUP_LOG(V) do {                                                  \
+  if (verbose_lookup_log) {                                                    \
+    V;                                                                         \
+  }                                                                            \
+} while (false)
+
 value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
     value_t sigmap, value_t space) {
   CHECK_FAMILY(ofSignatureMap, sigmap);
@@ -575,35 +583,20 @@ static value_t lookup_methodspace_transitive_method(signature_map_lookup_state_t
 }
 
 // Does a full exhaustive lookup through the tags of the invocation for the
-// subject of this call. This is only a sanity check, the subject should always
-// be the 0'th argument because keys sort first, and the subject is the 0'th
-// key.
+// subject of this call.
+//
+// TODO: ensure that the subject parameter has index 0 to not have to do so much
+//   work at every call.
 static value_t get_invocation_subject_no_shortcut(
     signature_map_lookup_state_t *state) {
   value_t record = state->input.record;
   size_t argc = get_invocation_record_argument_count(record);
   for (size_t i = 0; i < argc; i++) {
-    value_t tag = get_invocation_record_tag_at(record, 0);
+    value_t tag = get_invocation_record_tag_at(record, i);
     if (is_same_value(tag, ROOT(state->input.runtime, subject_key)))
       return get_invocation_record_argument_at(record, state->input.frame, i);
   }
   return new_not_found_signal();
-}
-
-// Returns the subject of the given call using the assumption that if it's
-// present it will always be the argument at the 0'th parameter index (that is,
-// not necessarily the first argument in the evaluation order, even though it
-// will actually usually be that, but the one whose stack position is given by
-// the 0'th entry in the parameter index map).
-static value_t get_invocation_subject_with_shortcut(
-    signature_map_lookup_state_t *state) {
-  value_t record = state->input.record;
-  value_t tag_zero = get_invocation_record_tag_at(record, 0);
-  if (is_same_value(tag_zero, ROOT(state->input.runtime, subject_key))) {
-    return get_invocation_record_argument_at(record, state->input.frame, 0);
-  } else {
-    return new_not_found_signal();
-  }
 }
 
 // Performs a method lookup through the given fragment, that is, in the fragment
@@ -624,16 +617,16 @@ static value_t lookup_through_fragment(signature_map_lookup_state_t *state,
 // Perform a method lookup in the subject's module of origin.
 static value_t lookup_subject_methods(signature_map_lookup_state_t *state) {
   // Look for a subject value, if there is none there is nothing to do.
-  value_t subject = get_invocation_subject_with_shortcut(state);
-  if (is_signal(scNotFound, subject)) {
-    IF_EXPENSIVE_CHECKS_ENABLED(CHECK_TRUE("shortcut gave wrong result",
-        is_signal(scNotFound, get_invocation_subject_no_shortcut(state))));
+  value_t subject = get_invocation_subject_no_shortcut(state);
+  IF_LOOKUP_LOG(INFO("Subject: %v", subject));
+  if (is_signal(scNotFound, subject))
     return success();
-  }
   // Extract the origin of the subject.
   value_t type = get_primary_type(subject, state->input.runtime);
+  IF_LOOKUP_LOG(INFO("Type: %v", type));
   CHECK_FAMILY(ofType, type);
   value_t origin = get_type_origin(type);
+  IF_LOOKUP_LOG(INFO("Origin: %v", origin));
   if (is_nothing(origin))
     // Some types have no origin (at least at the moment) and that's okay, we
     // just don't perform the extra lookup.
@@ -653,19 +646,26 @@ typedef struct {
 static value_t do_full_method_lookup(signature_map_lookup_state_t *state) {
   value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
   CHECK_FAMILY(ofModuleFragment, data->value);
+  IF_LOOKUP_LOG(INFO("Performing fragment lookup %v", state->input.record));
   TRY(lookup_through_fragment(state, data->value));
+  IF_LOOKUP_LOG(INFO("Performing subject lookup", NULL));
   TRY(lookup_subject_methods(state));
   TRY_SET(*data->arg_map_out, get_signature_map_lookup_argument_map(state));
   return success();
 }
 
+static int count = 0;
 value_t lookup_method_full(runtime_t *runtime, value_t fragment,
     value_t record, frame_t *frame, value_t *arg_map_out) {
   value_and_argument_map_t data;
   data.value = fragment;
   data.arg_map_out = arg_map_out;
-  return do_signature_map_lookup(runtime, record, frame, do_full_method_lookup,
+  if (count++ >= 120)
+    verbose_lookup_log = true;
+  value_t result = do_signature_map_lookup(runtime, record, frame, do_full_method_lookup,
       &data);
+  verbose_lookup_log = false;
+  return result;
 }
 
 // Performs a method lookup within a single methodspace.
