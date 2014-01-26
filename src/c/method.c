@@ -78,6 +78,7 @@ void match_info_init(match_info_t *info, score_t *scores, size_t *offsets,
 
 value_t match_signature(value_t self, signature_map_lookup_input_t *input,
     value_t space, match_info_t *match_info, match_result_t *result_out) {
+  TOPIC_INFO(Lookup, "Matching against %4v", self);
   size_t argument_count = get_invocation_record_argument_count(input->record);
   CHECK_REL("score array too short", argument_count, <=, match_info->capacity);
   // Vector of parameters seen. This is used to ensure that we only see each
@@ -331,6 +332,8 @@ value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
 
 // --- S i g n a t u r e   m a p ---
 
+TRIVIAL_PRINT_ON_IMPL(SignatureMap, signature_map);
+
 ACCESSORS_IMPL(SignatureMap, signature_map, acInFamily, ofArrayBuffer, Entries,
     entries);
 
@@ -338,14 +341,6 @@ value_t signature_map_validate(value_t value) {
   VALIDATE_FAMILY(ofSignatureMap, value);
   VALIDATE_FAMILY(ofArrayBuffer, get_signature_map_entries(value));
   return success();
-}
-
-void signature_map_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<signature map ");
-  value_t entries = get_signature_map_entries(self);
-  value_print_inner_on(entries, buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
 }
 
 value_t add_to_signature_map(runtime_t *runtime, value_t map, value_t signature,
@@ -396,6 +391,7 @@ value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
     value_t sigmap, value_t space) {
   CHECK_FAMILY(ofSignatureMap, sigmap);
   CHECK_FAMILY(ofMethodspace, space);
+  TOPIC_INFO(Lookup, "Looking up in signature map %v", sigmap);
   value_t entries = get_signature_map_entries(sigmap);
   size_t entry_count = get_pair_array_buffer_length(entries);
   score_t scratch_score[kSmallLookupLimit];
@@ -574,18 +570,28 @@ static value_t lookup_methodspace_transitive_method(signature_map_lookup_state_t
   return success();
 }
 
-// A pair of a value and an argument map. If only C had generic types.
-typedef struct {
-  value_t value;
-  value_t *arg_map_out;
-} value_and_argument_map_t;
+// Does a full exhaustive lookup through the tags of the invocation for the
+// subject of this call. Returns a not found signal if there is no subject.
+//
+// TODO: ensure that the subject parameter has index 0 to not have to do so much
+//   work at every call.
+static value_t get_invocation_subject_no_shortcut(
+    signature_map_lookup_state_t *state) {
+  value_t record = state->input.record;
+  size_t argc = get_invocation_record_argument_count(record);
+  for (size_t i = 0; i < argc; i++) {
+    value_t tag = get_invocation_record_tag_at(record, i);
+    if (is_same_value(tag, ROOT(state->input.runtime, subject_key)))
+      return get_invocation_record_argument_at(record, state->input.frame, i);
+  }
+  return new_not_found_signal();
+}
 
-// Traverses the method spaces reachable from a given fragment, looking up
-// through their respective signature maps.
-static value_t do_fragment_method_lookup(signature_map_lookup_state_t *state) {
-  value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
-  CHECK_FAMILY(ofModuleFragment, data->value);
-  value_t fragment = data->value;
+// Performs a method lookup through the given fragment, that is, in the fragment
+// itself and any of the siblings before it.
+static value_t lookup_through_fragment(signature_map_lookup_state_t *state,
+    value_t fragment) {
+  CHECK_FAMILY(ofModuleFragment, fragment);
   value_t module = get_module_fragment_module(fragment);
   while (!is_signal(scNotFound, fragment)) {
     value_t methodspace = get_module_fragment_methodspace(fragment);
@@ -593,16 +599,56 @@ static value_t do_fragment_method_lookup(signature_map_lookup_state_t *state) {
     value_t stage = get_module_fragment_stage(fragment);
     fragment = get_module_fragment_before(module, stage);
   }
+  return success();
+}
+
+// Perform a method lookup in the subject's module of origin.
+static value_t lookup_subject_methods(signature_map_lookup_state_t *state) {
+  // Look for a subject value, if there is none there is nothing to do.
+  value_t subject = get_invocation_subject_no_shortcut(state);
+  TOPIC_INFO(Lookup, "Subject value: %v", subject);
+  if (is_signal(scNotFound, subject))
+    return success();
+  // Extract the origin of the subject.
+  value_t type = get_primary_type(subject, state->input.runtime);
+  TOPIC_INFO(Lookup, "Subject type: %v", type);
+  CHECK_FAMILY(ofType, type);
+  value_t origin = get_type_origin(type);
+  TOPIC_INFO(Lookup, "Subject origin: %v", origin);
+  if (is_nothing(origin))
+    // Some types have no origin (at least at the moment) and that's okay, we
+    // just don't perform the extra lookup.
+    return success();
+  TRY(lookup_through_fragment(state, origin));
+  return success();
+}
+
+// A pair of a value and an argument map. If only C had generic types.
+typedef struct {
+  value_t value;
+  value_t *arg_map_out;
+} value_and_argument_map_t;
+
+// Performs a full method lookup through the current module and the subject's
+// module of origin.
+static value_t do_full_method_lookup(signature_map_lookup_state_t *state) {
+  value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
+  CHECK_FAMILY(ofModuleFragment, data->value);
+  TOPIC_INFO(Lookup, "Performing fragment lookup %v", state->input.record);
+  TRY(lookup_through_fragment(state, data->value));
+  TOPIC_INFO(Lookup, "Performing subject lookup");
+  TRY(lookup_subject_methods(state));
+  TOPIC_INFO(Lookup, "Lookup result: %v", state->result);
   TRY_SET(*data->arg_map_out, get_signature_map_lookup_argument_map(state));
   return success();
 }
 
-value_t lookup_fragment_method(runtime_t *runtime, value_t fragment,
+value_t lookup_method_full(runtime_t *runtime, value_t fragment,
     value_t record, frame_t *frame, value_t *arg_map_out) {
   value_and_argument_map_t data;
   data.value = fragment;
   data.arg_map_out = arg_map_out;
-  return do_signature_map_lookup(runtime, record, frame, do_fragment_method_lookup,
+  return do_signature_map_lookup(runtime, record, frame, do_full_method_lookup,
       &data);
 }
 

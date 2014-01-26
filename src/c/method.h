@@ -318,9 +318,13 @@ value_t add_methodspace_method(runtime_t *runtime, value_t self,
     value_t method);
 
 // Looks up a method in this method space given an invocation record and a stack
-// frame. If the match is successful, as a side-effect stores an argument map
-// that maps between the result's parameters and argument offsets on the stack.
-value_t lookup_fragment_method(runtime_t *runtime, value_t fragment,
+// frame, as well as the origin of the subject type. If the match is successful,
+// as a side-effect stores an argument map that maps between the result's
+// parameters and argument offsets on the stack.
+//
+// TODO: this is an approximation of the intended lookup mechanism and should be
+//   revised later on, for instance to not hard-code the subject origin lookup.
+value_t lookup_method_full(runtime_t *runtime, value_t fragment,
     value_t record, frame_t *frame, value_t *arg_map_out);
 
 value_t lookup_methodspace_method(runtime_t *runtime, value_t methodspace,

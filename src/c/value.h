@@ -1096,7 +1096,11 @@ value_t set_namespace_binding_at(runtime_t *runtime, value_t nspace,
 // Identifies the phases a module fragment goes through is it's being loaded
 // and bound.
 typedef enum {
-  // The fragment has been created but nothing else has been done.
+  // The fragment has been created such that it can be referenced but has not
+  // been initialized.
+  feUninitialized,
+  // The fragment has been created and initialized but nothing else has been
+  // done.
   feUnbound,
   // We're in the process of constructing the contents of this fragment.
   feBinding,
@@ -1175,6 +1179,12 @@ value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage
 // Returns the fragment in the given module that corresponds to the specified
 // stage. If there is no such fragment a NotFound signal is returned.
 value_t get_module_fragment_at(value_t self, value_t stage);
+
+// Returns the fragment in the given module that corresponds to the specified
+// stage. If there is no such fragment a new uninitialized one is created and
+// returned.
+value_t get_or_create_module_fragment_at(runtime_t *runtime, value_t self,
+    value_t stage);
 
 // Add a module fragment to the list of fragments held by this module.
 value_t add_module_fragment(runtime_t *runtime, value_t self, value_t fragment);

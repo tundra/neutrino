@@ -1722,8 +1722,24 @@ value_t get_module_fragment_at(value_t self, value_t stage) {
   return new_not_found_signal();
 }
 
+value_t get_or_create_module_fragment_at(runtime_t *runtime, value_t self,
+    value_t stage) {
+  value_t existing = get_module_fragment_at(self, stage);
+  if (!is_signal(scNotFound, existing))
+    return existing;
+  // No fragment has been created yet. Create one but leave it uninitialized
+  // since we don't have the context do that properly here.
+  TRY_DEF(new_fragment, new_heap_module_fragment(runtime, self, stage, nothing(),
+      nothing(), nothing()));
+  set_module_fragment_epoch(new_fragment, feUninitialized);
+  TRY(add_to_array_buffer(runtime, get_module_fragments(self), new_fragment));
+  return new_fragment;
+}
+
 value_t add_module_fragment(runtime_t *runtime, value_t self, value_t fragment) {
   value_t fragments = get_module_fragments(self);
+  CHECK_TRUE("fragment already exists", is_signal(scNotFound,
+      get_module_fragment_at(self, get_module_fragment_stage(fragment))));
   return add_to_array_buffer(runtime, fragments, fragment);
 }
 
@@ -1898,8 +1914,17 @@ static value_t module_fragment_private_new_type(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t display_name = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofModuleFragmentPrivate, self);
-  value_t origin = get_module_fragment_private_owner(self);
-  return new_heap_type(get_builtin_runtime(args), afMutable, origin,
+  // The type is bound in the namespace of the fragment .new_type is called on
+  // but its origin is the next module since that's where the methods for the
+  // type are defined there.
+  value_t origin_fragment = get_module_fragment_private_owner(self);
+  value_t origin_stage = get_module_fragment_stage(origin_fragment);
+  value_t next_stage = get_stage_offset_successor(origin_stage);
+  value_t origin_module = get_module_fragment_module(origin_fragment);
+  runtime_t *runtime = get_builtin_runtime(args);
+  value_t next_fragment = get_or_create_module_fragment_at(runtime,
+      origin_module, next_stage);
+  return new_heap_type(get_builtin_runtime(args), afMutable, next_fragment,
       display_name);
 }
 

@@ -196,8 +196,8 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         value_t fragment = read_next_value(&state);
         CHECK_FAMILY(ofModuleFragment, fragment);
         value_t arg_map;
-        value_t method = lookup_fragment_method(runtime, fragment, record,
-            &frame, &arg_map);
+        value_t method = lookup_method_full(runtime, fragment, record, &frame,
+            &arg_map);
         if (is_signal(scLookupError, method)) {
           log_lookup_error(method, record, &frame);
           return method;

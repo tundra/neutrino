@@ -209,9 +209,7 @@ static value_t build_transitive_module_array(runtime_t *runtime,
   return result;
 }
 
-// Creates a new empty but suitably initialized bound module fragment.
-static value_t new_empty_module_fragment(runtime_t *runtime, value_t stage,
-    value_t module) {
+static value_t init_empty_module_fragment(runtime_t *runtime, value_t fragment) {
   TRY_DEF(nspace, new_heap_namespace(runtime));
   TRY_DEF(methodspace, new_heap_methodspace(runtime));
   TRY_DEF(imports, new_heap_namespace(runtime));
@@ -219,8 +217,19 @@ static value_t new_empty_module_fragment(runtime_t *runtime, value_t stage,
   // (famous last words), longer term the built-ins should be loaded through
   // the same mechanism as all other methods.
   TRY(add_methodspace_import(runtime, methodspace, ROOT(runtime, builtin_methodspace)));
-  return new_heap_module_fragment(runtime, module, stage, nspace, methodspace,
-      imports);
+  set_module_fragment_namespace(fragment, nspace);
+  set_module_fragment_methodspace(fragment, methodspace);
+  set_module_fragment_imports(fragment, imports);
+  return success();
+}
+
+// Creates a new empty but suitably initialized bound module fragment.
+static value_t new_empty_module_fragment(runtime_t *runtime, value_t stage,
+    value_t module) {
+  TRY_DEF(empty_fragment, new_heap_module_fragment(runtime, module, stage,
+      nothing(), nothing(), nothing()));
+  TRY(init_empty_module_fragment(runtime, empty_fragment));
+  return empty_fragment;
 }
 
 // Creates and binds modules and fragments according to the given schedule.
@@ -237,9 +246,19 @@ static value_t execute_binding_schedule(binding_context_t *context, value_t sche
           bound_module));
     }
     // Create the bound fragment.
-    value_t bound_fragment = new_empty_module_fragment(context->runtime, stage,
-        bound_module);
-    TRY(add_module_fragment(context->runtime, bound_module, bound_fragment));
+    value_t bound_fragment = get_module_fragment_at(bound_module, stage);
+    if (is_signal(scNotFound, bound_fragment)) {
+      TRY_SET(bound_fragment, new_empty_module_fragment(context->runtime, stage,
+          bound_module));
+      TRY(add_module_fragment(context->runtime, bound_module, bound_fragment));
+    } else {
+      // An earlier phase needed a reference to this fragment so it has already
+      // been created but not initialized yet.
+      CHECK_EQ("Unexpected phase", get_module_fragment_epoch(bound_fragment),
+          feUninitialized);
+      TRY(init_empty_module_fragment(context->runtime, bound_fragment));
+      set_module_fragment_epoch(bound_fragment, feUnbound);
+    }
     // Grab the unbound fragment we'll use to create the bound fragment.
     value_t module_entries = get_id_hash_map_at(context->fragment_entry_map, path);
     value_t fragment_entry = get_id_hash_map_at(module_entries, stage);
