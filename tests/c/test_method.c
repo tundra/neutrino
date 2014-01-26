@@ -830,3 +830,28 @@ TEST(method, operation_printing) {
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
+
+TEST(method, tag_sorting) {
+  CREATE_RUNTIME();
+
+  value_t array = new_heap_array(runtime, 8);
+  set_array_at(array, 0, new_integer(1));
+  set_array_at(array, 1, new_integer(0));
+  set_array_at(array, 2, null());
+  set_array_at(array, 3, RSTR(runtime, value));
+  set_array_at(array, 4, RSTR(runtime, key));
+  set_array_at(array, 5, ROOT(runtime, empty_array));
+  set_array_at(array, 6, ROOT(runtime, selector_key));
+  set_array_at(array, 7, ROOT(runtime, subject_key));
+  sort_array(array);
+  ASSERT_SAME(ROOT(runtime, subject_key), get_array_at(array, 0));
+  ASSERT_SAME(ROOT(runtime, selector_key), get_array_at(array, 1));
+  ASSERT_SAME(ROOT(runtime, empty_array), get_array_at(array, 2));
+  ASSERT_SAME(RSTR(runtime, key), get_array_at(array, 3));
+  ASSERT_SAME(RSTR(runtime, value), get_array_at(array, 4));
+  ASSERT_SAME(new_integer(0), get_array_at(array, 5));
+  ASSERT_SAME(new_integer(1), get_array_at(array, 6));
+  ASSERT_SAME(null(), get_array_at(array, 7));
+
+  DISPOSE_RUNTIME();
+}
