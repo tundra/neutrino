@@ -78,6 +78,7 @@ void match_info_init(match_info_t *info, score_t *scores, size_t *offsets,
 
 value_t match_signature(value_t self, signature_map_lookup_input_t *input,
     value_t space, match_info_t *match_info, match_result_t *result_out) {
+  TOPIC_INFO(Lookup, "Matching against %4v", self);
   size_t argument_count = get_invocation_record_argument_count(input->record);
   CHECK_REL("score array too short", argument_count, <=, match_info->capacity);
   // Vector of parameters seen. This is used to ensure that we only see each
@@ -331,6 +332,8 @@ value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
 
 // --- S i g n a t u r e   m a p ---
 
+TRIVIAL_PRINT_ON_IMPL(SignatureMap, signature_map);
+
 ACCESSORS_IMPL(SignatureMap, signature_map, acInFamily, ofArrayBuffer, Entries,
     entries);
 
@@ -338,14 +341,6 @@ value_t signature_map_validate(value_t value) {
   VALIDATE_FAMILY(ofSignatureMap, value);
   VALIDATE_FAMILY(ofArrayBuffer, get_signature_map_entries(value));
   return success();
-}
-
-void signature_map_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<signature map ");
-  value_t entries = get_signature_map_entries(self);
-  value_print_inner_on(entries, buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
 }
 
 value_t add_to_signature_map(runtime_t *runtime, value_t map, value_t signature,
@@ -392,18 +387,11 @@ static void signature_map_lookup_state_swap_offsets(signature_map_lookup_state_t
 // stack.
 #define kSmallLookupLimit 32
 
-static bool verbose_lookup_log = false;
-
-#define IF_LOOKUP_LOG(V) do {                                                  \
-  if (verbose_lookup_log) {                                                    \
-    V;                                                                         \
-  }                                                                            \
-} while (false)
-
 value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
     value_t sigmap, value_t space) {
   CHECK_FAMILY(ofSignatureMap, sigmap);
   CHECK_FAMILY(ofMethodspace, space);
+  TOPIC_INFO(Lookup, "Looking up in signature map %v", sigmap);
   value_t entries = get_signature_map_entries(sigmap);
   size_t entry_count = get_pair_array_buffer_length(entries);
   score_t scratch_score[kSmallLookupLimit];
@@ -618,15 +606,15 @@ static value_t lookup_through_fragment(signature_map_lookup_state_t *state,
 static value_t lookup_subject_methods(signature_map_lookup_state_t *state) {
   // Look for a subject value, if there is none there is nothing to do.
   value_t subject = get_invocation_subject_no_shortcut(state);
-  IF_LOOKUP_LOG(INFO("Subject: %v", subject));
+  TOPIC_INFO(Lookup, "Subject value: %v", subject);
   if (is_signal(scNotFound, subject))
     return success();
   // Extract the origin of the subject.
   value_t type = get_primary_type(subject, state->input.runtime);
-  IF_LOOKUP_LOG(INFO("Type: %v", type));
+  TOPIC_INFO(Lookup, "Subject type: %v", type);
   CHECK_FAMILY(ofType, type);
   value_t origin = get_type_origin(type);
-  IF_LOOKUP_LOG(INFO("Origin: %v", origin));
+  TOPIC_INFO(Lookup, "Subject origin: %v", origin);
   if (is_nothing(origin))
     // Some types have no origin (at least at the moment) and that's okay, we
     // just don't perform the extra lookup.
@@ -646,25 +634,22 @@ typedef struct {
 static value_t do_full_method_lookup(signature_map_lookup_state_t *state) {
   value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
   CHECK_FAMILY(ofModuleFragment, data->value);
-  IF_LOOKUP_LOG(INFO("Performing fragment lookup %v", state->input.record));
+  TOPIC_INFO(Lookup, "Performing fragment lookup %v", state->input.record);
   TRY(lookup_through_fragment(state, data->value));
-  IF_LOOKUP_LOG(INFO("Performing subject lookup", NULL));
+  TOPIC_INFO(Lookup, "Performing subject lookup");
   TRY(lookup_subject_methods(state));
+  TOPIC_INFO(Lookup, "Lookup result: %v", state->result);
   TRY_SET(*data->arg_map_out, get_signature_map_lookup_argument_map(state));
   return success();
 }
 
-static int count = 0;
 value_t lookup_method_full(runtime_t *runtime, value_t fragment,
     value_t record, frame_t *frame, value_t *arg_map_out) {
   value_and_argument_map_t data;
   data.value = fragment;
   data.arg_map_out = arg_map_out;
-  if (count++ >= 120)
-    verbose_lookup_log = true;
   value_t result = do_signature_map_lookup(runtime, record, frame, do_full_method_lookup,
       &data);
-  verbose_lookup_log = false;
   return result;
 }
 

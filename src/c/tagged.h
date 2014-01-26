@@ -39,6 +39,12 @@ static int32_t get_stage_offset_value(value_t value) {
   return (int32_t) get_custom_tagged_payload(value);
 }
 
+// Returns a value representing the next stage after the given stage. For
+// instance, the successor of the past is the present.
+static value_t get_stage_offset_successor(value_t stage) {
+  return new_stage_offset(get_stage_offset_value(stage) + 1);
+}
+
 // Returns a new tagged integer which is the sum of the two given tagged
 // integers.
 static value_t add_stage_offsets(value_t a, value_t b) {
