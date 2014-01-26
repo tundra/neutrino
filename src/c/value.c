@@ -14,18 +14,21 @@
 
 const char *get_value_domain_name(value_domain_t domain) {
   switch (domain) {
-    case vdInteger:
-      return "Integer";
-    case vdObject:
-      return "Object";
-    case vdMovedObject:
-      return "MovedObject";
-    case vdSignal:
-      return "Signal";
-    case vdCustomTagged:
-      return "CustomTagged";
+#define __EMIT_DOMAIN_CASE__(Name, TAG, ORDINAL) case vd##Name: return #Name;
+  FOR_EACH_VALUE_DOMAIN(__EMIT_DOMAIN_CASE__)
+#undef __EMIT_DOMAIN_CASE__
     default:
       return "invalid domain";
+  }
+}
+
+int get_value_domain_ordinal(value_domain_t domain) {
+  switch (domain) {
+#define __EMIT_DOMAIN_CASE__(Name, TAG, ORDINAL) case vd##Name: return (ORDINAL);
+  FOR_EACH_VALUE_DOMAIN(__EMIT_DOMAIN_CASE__)
+#undef __EMIT_DOMAIN_CASE__
+    default:
+      return -1;
   }
 }
 

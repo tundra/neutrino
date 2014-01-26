@@ -572,9 +572,6 @@ static value_t lookup_methodspace_transitive_method(signature_map_lookup_state_t
 
 // Does a full exhaustive lookup through the tags of the invocation for the
 // subject of this call. Returns a not found signal if there is no subject.
-//
-// TODO: ensure that the subject parameter has index 0 to not have to do so much
-//   work at every call.
 static value_t get_invocation_subject_no_shortcut(
     signature_map_lookup_state_t *state) {
   value_t record = state->input.record;
@@ -585,6 +582,24 @@ static value_t get_invocation_subject_no_shortcut(
       return get_invocation_record_argument_at(record, state->input.frame, i);
   }
   return new_not_found_signal();
+}
+
+// Returns the subject of the invocation, using the fact that the subject sorts
+// lowest so it must be at parameter index 0 if it is there at all. Note that
+// _parameter_ index 0 is not the same as _argument_ index 0, it doesn't have
+// to be the 0'th argument (that is, the first in evaluation order) for this
+// to work. Rather, the argument index must be given by the 0'th entry of the
+// invocation record. Potentially confusingly, the argument index will actually
+// almost always be 0 as well but that's not what we're using here (since we're
+// hardcoding the index we need _always_ always, not _almost_ always).
+static value_t get_invocation_subject_with_shortcut(
+    signature_map_lookup_state_t *state) {
+  value_t record = state->input.record;
+  value_t tag_zero = get_invocation_record_tag_at(record, 0);
+  if (is_same_value(tag_zero, ROOT(state->input.runtime, subject_key)))
+    return get_invocation_record_argument_at(record, state->input.frame, 0);
+  else
+    return new_not_found_signal();
 }
 
 // Performs a method lookup through the given fragment, that is, in the fragment
@@ -605,10 +620,16 @@ static value_t lookup_through_fragment(signature_map_lookup_state_t *state,
 // Perform a method lookup in the subject's module of origin.
 static value_t lookup_subject_methods(signature_map_lookup_state_t *state) {
   // Look for a subject value, if there is none there is nothing to do.
-  value_t subject = get_invocation_subject_no_shortcut(state);
+  value_t subject = get_invocation_subject_with_shortcut(state);
   TOPIC_INFO(Lookup, "Subject value: %v", subject);
-  if (is_signal(scNotFound, subject))
+  if (is_signal(scNotFound, subject)) {
+    // Just in case, check that the shortcut version gave the correct answer.
+    // The case where it returns a non-signal is trivially correct (FLW) so this
+    // is the only case there can be any doubt about.
+    IF_EXPENSIVE_CHECKS_ENABLED(CHECK_TRUE("Subject shortcut didn't work",
+        is_signal(scNotFound, get_invocation_subject_no_shortcut(state))));
     return success();
+  }
   // Extract the origin of the subject.
   value_t type = get_primary_type(subject, state->input.runtime);
   TOPIC_INFO(Lookup, "Subject type: %v", type);

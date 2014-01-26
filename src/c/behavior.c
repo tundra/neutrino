@@ -287,7 +287,9 @@ value_t value_ordering_compare(value_t a, value_t b) {
   value_domain_t a_domain = get_value_domain(a);
   value_domain_t b_domain = get_value_domain(b);
   if (a_domain != b_domain) {
-    return compare_signed_integers(a_domain, b_domain);
+    int a_ordinal = get_value_domain_ordinal(a_domain);
+    int b_ordinal = get_value_domain_ordinal(b_domain);
+    return compare_signed_integers(a_ordinal, b_ordinal);
   } else {
     switch (a_domain) {
       case vdInteger:

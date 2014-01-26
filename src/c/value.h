@@ -17,22 +17,36 @@ FORWARD(runtime_t);
 FORWARD(string_t);
 FORWARD(string_buffer_t);
 
+// Calls the given macro for each value domain name. The tag is the one used
+// to distinguish pointers, the ordinal gives the sort order (lowest ordinal
+// sorts first). Objects sort first such that key objects can come before all
+// other values in sorted order.
+//
+// TODO: Later on we probably need something more elaborate such that the
+//   sort order matches the most common evaluation order: keys first, then
+//   integers, then strings, etc. Later is the operative word.
+//
+//  Name               Tag     Ordinal
+#define FOR_EACH_VALUE_DOMAIN(F)                                               \
+  F(Integer,           0x0,    1)                                              \
+  F(Object,            0x1,    0)                                              \
+  F(Signal,            0x2,    2)                                              \
+  F(MovedObject,       0x3,    3)                                              \
+  F(CustomTagged,      0x4,    4)
+
 // Value domain identifiers.
 typedef enum {
-  // Tagged integer.
-  vdInteger = 0,
-  // Pointer to a heap object.
-  vdObject = 1,
-  // A VM-internal signal.
-  vdSignal = 2,
-  // An object that has been moved during an in-process garbage collection.
-  vdMovedObject = 3,
-  // A custom tagged value.
-  vdCustomTagged = 4
+#define __EMIT_DOMAIN_ENUM__(Name, TAG, ORDER) vd##Name = TAG,
+  FOR_EACH_VALUE_DOMAIN(__EMIT_DOMAIN_ENUM__)
+#undef __EMIT_DOMAIN_ENUM__
+  __vdLast__
 } value_domain_t;
 
 // Returns the string name of the given domain.
 const char *get_value_domain_name(value_domain_t domain);
+
+// Returns the given domain's ordinal value.
+int get_value_domain_ordinal(value_domain_t domain);
 
 // Invokes the given macro for each signal cause.
 #define ENUM_SIGNAL_CAUSES(F)                                                  \
@@ -229,8 +243,17 @@ static value_t new_moved_object(value_t target) {
 #define ENUM_SPECIAL_OBJECT_FAMILIES(F)                                           \
   F(Species,                 species,                   _, _, _, _, X, _, _, X, _)
 
-// Enumerates the compact object species.
+// Enumerates the compact object species. The order these appear in is the order
+// in which the families sort relative to each other (higher families sort
+// before lower ones). Families whose sort order is irrelevant must be in
+// alphabetical order.
 #define ENUM_OTHER_OBJECT_FAMILIES(F)                                             \
+  F(Key,                     key,                       X, _, _, X, _, _, _, X, _)\
+  /*   ---   Correctness depends on the sort order of families above      ---   */\
+  /*   ---   this divider. The relative sort order of the families        ---   */\
+  /*   ---   below must not affect correctness. If it does they must be   ---   */\
+  /*   ---   moved above the line (or a corresponding line must be made   ---   */\
+  /*   ---   at the bottom).                                              ---   */\
   F(ArgumentAst,             argument_ast,              _, _, X, X, _, _, _, _, _)\
   F(ArgumentMapTrie,         argument_map_trie,         _, _, _, _, _, _, _, X, X)\
   F(Array,                   array,                     _, X, _, X, X, _, _, X, _)\
@@ -254,7 +277,6 @@ static value_t new_moved_object(value_t target) {
   F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _, _)\
   F(InvocationRecord,        invocation_record,         _, _, _, _, _, _, _, X, X)\
   F(IsDeclarationAst,        is_declaration_ast,        _, _, X, _, _, _, _, _, _)\
-  F(Key,                     key,                       X, _, _, X, _, _, _, X, _)\
   F(Lambda,                  lambda,                    _, _, _, X, _, _, _, X, X)\
   F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, _, _)\
   F(Library,                 library,                   _, _, X, _, _, _, _, _, _)\
@@ -299,8 +321,8 @@ static value_t new_moved_object(value_t target) {
 
 // Enumerates all the object families.
 #define ENUM_OBJECT_FAMILIES(F)                                                \
-    ENUM_SPECIAL_OBJECT_FAMILIES(F)                                            \
-    ENUM_OTHER_OBJECT_FAMILIES(F)
+    ENUM_OTHER_OBJECT_FAMILIES(F)                                              \
+    ENUM_SPECIAL_OBJECT_FAMILIES(F)
 
 // Enum identifying the different families of heap objects.
 typedef enum {
