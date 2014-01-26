@@ -1181,7 +1181,8 @@ value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage
 value_t get_module_fragment_at(value_t self, value_t stage);
 
 // Returns the fragment in the given module that corresponds to the specified
-// stage. If there is no such fragment a new one is created and returned.
+// stage. If there is no such fragment a new uninitialized one is created and
+// returned.
 value_t get_or_create_module_fragment_at(runtime_t *runtime, value_t self,
     value_t stage);
 

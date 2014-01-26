@@ -252,6 +252,8 @@ static value_t execute_binding_schedule(binding_context_t *context, value_t sche
           bound_module));
       TRY(add_module_fragment(context->runtime, bound_module, bound_fragment));
     } else {
+      // An earlier phase needed a reference to this fragment so it has already
+      // been created but not initialized yet.
       CHECK_EQ("Unexpected phase", get_module_fragment_epoch(bound_fragment),
           feUninitialized);
       TRY(init_empty_module_fragment(context->runtime, bound_fragment));

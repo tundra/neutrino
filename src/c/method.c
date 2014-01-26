@@ -571,7 +571,7 @@ static value_t lookup_methodspace_transitive_method(signature_map_lookup_state_t
 }
 
 // Does a full exhaustive lookup through the tags of the invocation for the
-// subject of this call.
+// subject of this call. Returns a not found signal if there is no subject.
 //
 // TODO: ensure that the subject parameter has index 0 to not have to do so much
 //   work at every call.
@@ -629,8 +629,8 @@ typedef struct {
   value_t *arg_map_out;
 } value_and_argument_map_t;
 
-// Traverses the method spaces reachable from a given fragment, looking up
-// through their respective signature maps.
+// Performs a full method lookup through the current module and the subject's
+// module of origin.
 static value_t do_full_method_lookup(signature_map_lookup_state_t *state) {
   value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
   CHECK_FAMILY(ofModuleFragment, data->value);
@@ -648,9 +648,8 @@ value_t lookup_method_full(runtime_t *runtime, value_t fragment,
   value_and_argument_map_t data;
   data.value = fragment;
   data.arg_map_out = arg_map_out;
-  value_t result = do_signature_map_lookup(runtime, record, frame, do_full_method_lookup,
+  return do_signature_map_lookup(runtime, record, frame, do_full_method_lookup,
       &data);
-  return result;
 }
 
 // Performs a method lookup within a single methodspace.

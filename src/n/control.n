@@ -23,6 +23,3 @@ def @while($cond, $body) => @if($cond(), fn {
   $body();
   @while($cond, $body);
 });
-
-## Executes $thunk for each element in the given collection.
-def @for($coll, $thunk) => $coll.for($thunk);
