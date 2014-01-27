@@ -36,7 +36,7 @@ class Command(object):
 
 # Escapes a string such that it can be passed as an argument in a shell command.
 def shell_escape(s):
-  return re.sub(r'([\s:])', r"\\\g<1>", s)
+  return re.sub(r'([\s:()])', r"\\\g<1>", s)
 
 
 # An individual target within a makefile.

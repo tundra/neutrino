@@ -18,11 +18,11 @@ matrix:
     # Test everything using an optimized clang build.
     - language: c
       compiler: clang
-      script: ./configure --noisy && ./build.sh run-ctrino-tests
+      script: ./configure --noisy --time && ./build.sh run-ctrino-tests
     # Test with checks disabled.
     - languate: c
       compiler: clang
-      script: ./configure --nochecks --noisy && ./build.sh run-ctrino-tests
+      script: ./configure --nochecks --noisy --time && ./build.sh run-ctrino-tests
     # Check that the C code compiles using gcc.
     - language: c
       compiler: gcc

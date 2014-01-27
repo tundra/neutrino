@@ -13,6 +13,10 @@ _VALGRIND_COMMAND = [
   "valgrind", "-q", "--leak-check=full", "--error-exitcode=1"
 ]
 
+_TIME_COMMAND = [
+  "/usr/bin/time", "-f", "[Time: E%E U%U S%S]"
+]
+
 
 # A build dependency node that represents an executable.
 class ExecutableNode(process.PhysicalNode):
@@ -40,11 +44,12 @@ class ExecutableNode(process.PhysicalNode):
     return platform.get_executable_compile_command(outpath, inpaths)
 
   def get_run_command_line(self, platform):
-    exec_command = self.get_output_file().get_path()
+    exec_command = [self.get_output_file().get_path()]
     if platform.get_config_option('valgrind'):
-      return " ".join(_VALGRIND_COMMAND + [exec_command])
-    else:
-      return exec_command
+      exec_command = _VALGRIND_COMMAND + exec_command
+    if platform.get_config_option('time'):
+      exec_command = _TIME_COMMAND + exec_command
+    return " ".join(map(process.shell_escape, exec_command))
 
 
 # A node representing a C source file.
