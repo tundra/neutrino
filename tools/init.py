@@ -17,6 +17,7 @@ _MKMK_FLAGS = [
   ('gcc48', False, 'store_true'),
   ('expchecks', False, 'store_true'),
   ('gprof', False, 'store_true'),
+  ('time', False, 'store_true'),
 ]
 
 
