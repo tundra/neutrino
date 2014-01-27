@@ -104,9 +104,9 @@ def ($this is @Hanoi).build(pile: $pile, disks: $disks) {
 
 def $test_hanoi() {
   def $hanoi := @Hanoi.new();
-  def $moves := $hanoi.run(size: 5);
+  def $moves := $hanoi.run(size: 8);
   # Verify that the algorithm took 2^n-1 steps as expected.
-  $assert:equals(31, $moves);
+  $assert:equals(255, $moves);
 }
 
 def $main() {
