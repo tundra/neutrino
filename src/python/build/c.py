@@ -14,7 +14,7 @@ _VALGRIND_COMMAND = [
 ]
 
 _TIME_COMMAND = [
-  "/usr/bin/time", "-f", "[Time: E%E U%U S%S]"
+  "time"
 ]
 
 
