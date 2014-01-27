@@ -556,20 +556,6 @@ value_t get_type_parents(runtime_t *runtime, value_t space, value_t type) {
   }
 }
 
-// Do a transitive method lookup in the given method space, that is, look up
-// locally and in any imported spaces.
-static value_t lookup_methodspace_transitive_method(signature_map_lookup_state_t *state,
-    value_t space) {
-  value_t local_methods = get_methodspace_methods(space);
-  TRY(continue_signature_map_lookup(state, local_methods, space));
-  value_t imports = get_methodspace_imports(space);
-  for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
-    value_t import = get_array_buffer_at(imports, i);
-    TRY(lookup_methodspace_transitive_method(state, import));
-  }
-  return success();
-}
-
 // Does a full exhaustive lookup through the tags of the invocation for the
 // subject of this call. Returns a not found signal if there is no subject.
 static value_t get_invocation_subject_no_shortcut(
@@ -602,17 +588,68 @@ static value_t get_invocation_subject_with_shortcut(
     return new_not_found_signal();
 }
 
+// Ensures that the given methodspace as well as all transitive dependencies
+// are present in the given cache array.
+static value_t ensure_methodspace_transitive_dependencies(runtime_t *runtime,
+    value_t methodspace, value_t cache) {
+  CHECK_FAMILY(ofMethodspace, methodspace);
+  CHECK_FAMILY(ofArrayBuffer, cache);
+  TRY(ensure_array_buffer_contains(runtime, cache, methodspace));
+  value_t imports = get_methodspace_imports(methodspace);
+  for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
+    value_t import = get_array_buffer_at(imports, i);
+    TRY(ensure_methodspace_transitive_dependencies(runtime, import, cache));
+  }
+  return success();
+}
+
+// Given a module fragment, returns the cache of methodspaces to look up within.
+// If the cache has not yet been created, create it. Creating the cache may
+// cause a signal to be returned.
+static value_t get_or_create_module_fragment_methodspaces_cache(
+    runtime_t *runtime, value_t fragment) {
+  CHECK_FAMILY(ofModuleFragment, fragment);
+  value_t cache = get_module_fragment_methodspaces_cache(fragment);
+  if (!is_nothing(cache)) {
+    CHECK_FAMILY(ofArrayBuffer, cache);
+    return cache;
+  }
+  // There is no cache available; build it now. As always, remember to do any
+  // allocation before modifying objects to make sure we don't end up in an
+  // inconsistent state if allocation fails.
+  TRY_SET(cache, new_heap_array_buffer(runtime, 16));
+  // We catch cycles (crudely) by setting the cache to an invalid value which
+  // will be caught by the check above. It's not that cycles couldn't in
+  // principle make sense but it'll take some thinking through to ensure that it
+  // really does make sense.
+  set_module_fragment_methodspaces_cache(fragment, new_integer(0));
+  // Scan through this fragment and its predecessors and add their transitive
+  // dependencies.
+  value_t module = get_module_fragment_module(fragment);
+  value_t current = fragment;
+  while (!is_signal(scNotFound, current)) {
+    value_t methodspace = get_module_fragment_methodspace(current);
+    TRY(ensure_methodspace_transitive_dependencies(runtime, methodspace, cache));
+    value_t stage = get_module_fragment_stage(current);
+    current = get_module_fragment_before(module, stage);
+  }
+  TRY(ensure_frozen(runtime, cache));
+  set_module_fragment_methodspaces_cache(fragment, cache);
+  return cache;
+}
+
 // Performs a method lookup through the given fragment, that is, in the fragment
 // itself and any of the siblings before it.
 static value_t lookup_through_fragment(signature_map_lookup_state_t *state,
     value_t fragment) {
   CHECK_FAMILY(ofModuleFragment, fragment);
-  value_t module = get_module_fragment_module(fragment);
-  while (!is_signal(scNotFound, fragment)) {
-    value_t methodspace = get_module_fragment_methodspace(fragment);
-    TRY(lookup_methodspace_transitive_method(state, methodspace));
-    value_t stage = get_module_fragment_stage(fragment);
-    fragment = get_module_fragment_before(module, stage);
+  value_t space = get_module_fragment_methodspace(fragment);
+  TRY_DEF(methodspaces, get_or_create_module_fragment_methodspaces_cache(
+      state->input.runtime, fragment));
+  for (size_t i = 0; i < get_array_buffer_length(methodspaces); i++) {
+    value_t methodspace = get_array_buffer_at(methodspaces, i);
+    value_t sigmap = get_methodspace_methods(methodspace);
+    TRY(continue_signature_map_lookup(state, sigmap, space));
   }
   return success();
 }
@@ -671,6 +708,20 @@ value_t lookup_method_full(runtime_t *runtime, value_t fragment,
   data.arg_map_out = arg_map_out;
   return do_signature_map_lookup(runtime, record, frame, do_full_method_lookup,
       &data);
+}
+
+// Do a transitive method lookup in the given method space, that is, look up
+// locally and in any imported spaces.
+static value_t lookup_methodspace_transitive_method(signature_map_lookup_state_t *state,
+    value_t space) {
+  value_t local_methods = get_methodspace_methods(space);
+  TRY(continue_signature_map_lookup(state, local_methods, space));
+  value_t imports = get_methodspace_imports(space);
+  for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
+    value_t import = get_array_buffer_at(imports, i);
+    TRY(lookup_methodspace_transitive_method(state, import));
+  }
+  return success();
 }
 
 // Performs a method lookup within a single methodspace.

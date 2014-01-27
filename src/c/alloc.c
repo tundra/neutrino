@@ -332,6 +332,7 @@ value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t sta
   set_module_fragment_epoch(result, feUnbound);
   set_module_fragment_private(result, phrivate);
   set_module_fragment_private_owner(phrivate, result);
+  set_module_fragment_methodspaces_cache(result, nothing());
   return post_create_sanity_check(result, size);
 }
 

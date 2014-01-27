@@ -1851,6 +1851,8 @@ ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofNamespace,
     Imports, imports);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamily, ofModuleFragmentPrivate,
     Private, private);
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acNoCheck, 0, MethodspacesCache,
+    methodspaces_cache);
 
 void set_module_fragment_epoch(value_t self, module_fragment_epoch_t value) {
   *access_object_field(self, kModuleFragmentEpochOffset) = new_integer(value);
