@@ -1130,7 +1130,7 @@ typedef enum {
   feComplete
 } module_fragment_epoch_t;
 
-static const size_t kModuleFragmentSize = OBJECT_SIZE(7);
+static const size_t kModuleFragmentSize = OBJECT_SIZE(8);
 static const size_t kModuleFragmentStageOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kModuleFragmentModuleOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kModuleFragmentNamespaceOffset = OBJECT_FIELD_OFFSET(2);
@@ -1138,6 +1138,7 @@ static const size_t kModuleFragmentMethodspaceOffset = OBJECT_FIELD_OFFSET(3);
 static const size_t kModuleFragmentImportsOffset = OBJECT_FIELD_OFFSET(4);
 static const size_t kModuleFragmentEpochOffset = OBJECT_FIELD_OFFSET(5);
 static const size_t kModuleFragmentPrivateOffset = OBJECT_FIELD_OFFSET(6);
+static const size_t kModuleFragmentMethodspacesCacheOffset = OBJECT_FIELD_OFFSET(7);
 
 // The index of the stage this fragment belongs to.
 ACCESSORS_DECL(module_fragment, stage);
@@ -1164,6 +1165,10 @@ ACCESSORS_DECL(module_fragment, private);
 
 // The current epoch of the given module fragment.
 TYPED_ACCESSORS_DECL(module_fragment, module_fragment_epoch_t, epoch);
+
+// A cache of the array of signature maps to look up through when resolving
+// methods in this fragment.
+ACCESSORS_DECL(module_fragment, methodspaces_cache);
 
 // Returns true iff this fragment has been bound.
 bool is_module_fragment_bound(value_t fragment);
