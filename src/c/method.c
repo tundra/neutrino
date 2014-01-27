@@ -81,9 +81,21 @@ value_t match_signature(value_t self, signature_map_lookup_input_t *input,
   TOPIC_INFO(Lookup, "Matching against %4v", self);
   size_t argument_count = get_invocation_record_argument_count(input->record);
   CHECK_REL("score array too short", argument_count, <=, match_info->capacity);
+  // Fast case if fewer than that minimum number of arguments is given.
+  size_t mandatory_count = get_signature_mandatory_count(self);
+  if (argument_count < mandatory_count) {
+    *result_out = mrMissingArgument;
+    return success();
+  }
+  // Fast case if too many arguments are given.
+  size_t param_count = get_signature_parameter_count(self);
+  bool allow_extra = get_signature_allow_extra(self);
+  if (!allow_extra && (argument_count > param_count)) {
+    *result_out = mrUnexpectedArgument;
+    return success();
+  }
   // Vector of parameters seen. This is used to ensure that we only see each
   // parameter once.
-  size_t param_count = get_signature_parameter_count(self);
   bit_vector_t params_seen;
   bit_vector_init(&params_seen, param_count, false);
   // Count how many mandatory parameters we see so we can check that we see all
@@ -104,7 +116,7 @@ value_t match_signature(value_t self, signature_map_lookup_input_t *input,
     value_t param = binary_search_pair_array(tags, tag);
     if (is_signal(scNotFound, param)) {
       // The tag wasn't found in this signature.
-      if (get_signature_allow_extra(self)) {
+      if (allow_extra) {
         // It's fine, this signature allows extra arguments.
         on_match = mrExtraMatch;
         match_info->scores[i] = gsExtraMatch;

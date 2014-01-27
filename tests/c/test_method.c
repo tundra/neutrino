@@ -459,7 +459,7 @@ TEST(method, simple_matching) {
       ARG(vInt(0), vStr("foo"))));
   assert_match(runtime, mrMissingArgument, sig, ARGS(1,
       ARG(vInt(1), vStr("bar"))));
-  assert_match(runtime, mrUnexpectedArgument, sig, ARGS(1,
+  assert_match(runtime, mrMissingArgument, sig, ARGS(1,
       ARG(vInt(2), vStr("baz"))));
   assert_match(runtime, mrMissingArgument, sig, &empty);
 
