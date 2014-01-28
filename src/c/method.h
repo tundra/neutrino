@@ -20,6 +20,8 @@ typedef uint32_t score_t;
 typedef struct {
   // The runtime we're looking up within.
   runtime_t *runtime;
+  // The ambience we're looking up within.
+  value_t ambience;
   // The invocation record that describes the invocation being looked up.
   value_t record;
   // The frame containing the invocation arguments.

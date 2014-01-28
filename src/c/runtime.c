@@ -114,7 +114,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
       create_stack_piece_bottom_code_block(runtime));
 
   // Generate initialization for the per-family types.
-  value_t core_type_origin = get_ambience_core_present_redirect();
+  value_t core_type_origin = get_ambience_present_core_fragment_redirect();
 #define __CREATE_TYPE__(Name, name) do {                                       \
   string_t __display_name_str__;                                               \
   string_init(&__display_name_str__, #Name);                                   \
