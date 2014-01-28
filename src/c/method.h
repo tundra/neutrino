@@ -18,10 +18,10 @@ typedef uint32_t score_t;
 // to any part of the lookup that needs it separately from the rest of the
 // lookup state which is more transient and less likely to be useful.
 typedef struct {
-  // The runtime we're looking up within.
-  runtime_t *runtime;
   // The ambience we're looking up within.
   value_t ambience;
+  // Cache of the ambience's runtime.
+  runtime_t *runtime;
   // The invocation record that describes the invocation being looked up.
   value_t record;
   // The frame containing the invocation arguments.
