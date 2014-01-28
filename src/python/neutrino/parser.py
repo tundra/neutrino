@@ -17,6 +17,7 @@ class Parser(object):
   _SAUSAGES = data.Operation.call()
   _SQUARE_SAUSAGES = data.Operation.index()
   _FOR = data.Operation.infix("for")
+  _NEW = data.Operation.infix("new")
 
   def __init__(self, tokens, module):
     self.tokens = tokens
@@ -220,6 +221,8 @@ class Parser(object):
   def parse_word_expression(self, expect_delim):
     if self.at_word('fn'):
       return self.parse_lambda_expression()
+    elif self.at_word('new'):
+      return self.parse_new_expression(expect_delim)
     elif self.at_word('if'):
       return self.parse_if_expression(expect_delim)
     elif self.at_word('while'):
@@ -230,6 +233,19 @@ class Parser(object):
       return self.parse_with_escape_expression(expect_delim)
     else:
       return self.parse_assignment_expression(expect_delim)
+
+  # <new expression>
+  #   -> "new" <atomic expression> <arguments>
+  def parse_new_expression(self, expect_delim):
+    self.expect_word('new')
+    cons = self.parse_atomic_expression()
+    args = self.parse_arguments('(', ')')
+    self.expect_statement_delimiter(expect_delim)
+    prefix = [
+      ast.Argument(data._SUBJECT, cons),
+      ast.Argument(data._SELECTOR, ast.Literal(Parser._NEW)),
+    ]
+    return ast.Invocation(prefix + args)
 
   # <if expression>
   #   -> "if" <expression> "then" <expression> ("else" <expression>)?
