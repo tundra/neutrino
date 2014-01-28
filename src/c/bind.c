@@ -243,8 +243,10 @@ static bool is_present_core(runtime_t *runtime, value_t ident) {
   value_t path = get_identifier_path(ident);
   value_t stage = get_identifier_stage(ident);
   if (get_stage_offset_value(stage) != 0)
+    // Not present.
     return false;
   if (is_path_empty(path) || !is_path_empty(get_path_tail(path)))
+    // Not length 1.
     return false;
   value_t head = get_path_head(path);
   return value_identity_compare(head, RSTR(runtime, core));
