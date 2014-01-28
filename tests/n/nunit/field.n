@@ -49,13 +49,13 @@ def ($this == @Point).new(x: $x, y: $y) {
 }
 
 def $test_constructor() {
-  def $p0 := @Point.new(10, 11);
+  def $p0 := new @Point(10, 11);
   $assert:equals(10, $p0.x);
   $assert:equals(11, $p0.y);
-  def $p1 := @Point.new(x: 3, y: 4);
+  def $p1 := new @Point(x: 3, y: 4);
   $assert:equals(3, $p1.x);
   $assert:equals(4, $p1.y);
-  def $p2 := @Point.new(y: 32, x: 35);
+  def $p2 := new @Point(y: 32, x: 35);
   $assert:equals(35, $p2.x);
   $assert:equals(32, $p2.y);
 }
