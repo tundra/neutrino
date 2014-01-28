@@ -458,6 +458,14 @@ value_t new_heap_global_field(runtime_t *runtime, value_t display_name) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_ambience(runtime_t *runtime) {
+  size_t size = kAmbienceSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, ambience_species)));
+  set_ambience_runtime(result, runtime);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- P r o c e s s ---
 

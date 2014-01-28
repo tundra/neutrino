@@ -19,7 +19,7 @@ TEST(syntax, emitting) {
   assembler_emit_return(&assm);
   value_t code = assembler_flush(&assm);
   ASSERT_SUCCESS(code);
-  value_t result = run_code_block_until_signal(runtime, code);
+  value_t result = run_code_block_until_signal(ambience, code);
   ASSERT_VALEQ(yes(), result);
   assembler_dispose(&assm);
 

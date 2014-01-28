@@ -11,8 +11,8 @@
 
 
 void signature_map_lookup_input_init(signature_map_lookup_input_t *input,
-    runtime_t *runtime, value_t record, frame_t *frame, void *data) {
-  input->runtime = runtime;
+    value_t ambience, value_t record, frame_t *frame, void *data) {
+  input->runtime = get_ambience_runtime(ambience);
   input->record = record;
   input->frame = frame;
   input->data = data;
@@ -449,7 +449,7 @@ value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
   return success();
 }
 
-value_t do_signature_map_lookup(runtime_t *runtime, value_t record, frame_t *frame,
+value_t do_signature_map_lookup(value_t ambience, value_t record, frame_t *frame,
     signature_map_lookup_callback_t callback, void *data) {
   // For now we only handle lookups of a certain size. Hopefully by the time
   // this is too small this implementation will be gone anyway.
@@ -464,7 +464,7 @@ value_t do_signature_map_lookup(runtime_t *runtime, value_t record, frame_t *fra
   size_t offsets_one[kSmallLookupLimit];
   size_t offsets_two[kSmallLookupLimit];
   signature_map_lookup_state_t state;
-  signature_map_lookup_input_init(&state.input, runtime, record, frame, data);
+  signature_map_lookup_input_init(&state.input, ambience, record, frame, data);
   state.result = new_lookup_error_signal(lcNoMatch);
   state.max_is_synthetic = false;
   state.max_score = max_score;
@@ -713,12 +713,12 @@ static value_t do_full_method_lookup(signature_map_lookup_state_t *state) {
   return success();
 }
 
-value_t lookup_method_full(runtime_t *runtime, value_t fragment,
+value_t lookup_method_full(value_t ambience, value_t fragment,
     value_t record, frame_t *frame, value_t *arg_map_out) {
   value_and_argument_map_t data;
   data.value = fragment;
   data.arg_map_out = arg_map_out;
-  return do_signature_map_lookup(runtime, record, frame, do_full_method_lookup,
+  return do_signature_map_lookup(ambience, record, frame, do_full_method_lookup,
       &data);
 }
 
@@ -745,12 +745,13 @@ static value_t do_methodspace_method_lookup(signature_map_lookup_state_t *state)
   return success();
 }
 
-value_t lookup_methodspace_method(runtime_t *runtime, value_t methodspace,
+value_t lookup_methodspace_method(value_t ambience, value_t methodspace,
     value_t record, frame_t *frame, value_t *arg_map_out) {
   value_and_argument_map_t data;
   data.value = methodspace;
   data.arg_map_out = arg_map_out;
-  return do_signature_map_lookup(runtime, record, frame, do_methodspace_method_lookup, &data);
+  return do_signature_map_lookup(ambience, record, frame,
+      do_methodspace_method_lookup, &data);
 }
 
 value_t plankton_new_methodspace(runtime_t *runtime) {

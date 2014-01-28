@@ -18,16 +18,16 @@ typedef struct {
   // Map from paths -> stages -> entries where each entry describes a
   // corresponding fragment to be bound.
   value_t fragment_entry_map;
-  // The runtime.
-  runtime_t *runtime;
+  // The ambience.
+  value_t ambience;
 } binding_context_t;
 
 // Initializes a binding context appropriately.
-void binding_context_init(binding_context_t *context, runtime_t *runtime);
+void binding_context_init(binding_context_t *context, value_t ambience);
 
 // Given an unbound module creates a bound version, loading and binding
 // dependencies from the runtime's module loader as required.
-value_t build_bound_module(runtime_t *runtime, value_t unbound_module);
+value_t build_bound_module(value_t ambience, value_t unbound_module);
 
 // Given an array buffer of modules, initialized the fragment_entry_map of
 // the context. See bind.md for details.

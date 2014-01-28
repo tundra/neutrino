@@ -2354,6 +2354,32 @@ void reference_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
 }
 
 
+// --- A m b i e n c e ---
+
+TRIVIAL_PRINT_ON_IMPL(Ambience, ambience);
+FIXED_GET_MODE_IMPL(ambience, vmMutable);
+
+value_t ambience_validate(value_t self) {
+  VALIDATE_FAMILY(ofAmbience, self);
+  return success();
+}
+
+void get_ambience_layout(value_t value, object_layout_t *layout) {
+  // An ambience has no value fields.
+  object_layout_set(layout, kAmbienceSize, kAmbienceSize);
+}
+
+void set_ambience_runtime(value_t self, runtime_t *runtime) {
+  CHECK_FAMILY(ofAmbience, self);
+  *access_object_field(self, kAmbienceRuntimeOffset) = pointer_to_value_bit_cast(runtime);
+}
+
+runtime_t *get_ambience_runtime(value_t self) {
+  CHECK_FAMILY(ofAmbience, self);
+  return value_to_pointer_bit_cast(*access_object_field(self, kAmbienceRuntimeOffset));
+}
+
+
 // --- M i s c ---
 
 // Adds a binding to the given plankton environment map.

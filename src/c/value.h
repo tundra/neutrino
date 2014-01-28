@@ -254,6 +254,7 @@ static value_t new_moved_object(value_t target) {
   /*   ---   below must not affect correctness. If it does they must be   ---   */\
   /*   ---   moved above the line (or a corresponding line must be made   ---   */\
   /*   ---   at the bottom).                                              ---   */\
+  F(Ambience,                ambience,                  _, _, _, _, X, _, _, _, _)\
   F(ArgumentAst,             argument_ast,              _, _, X, X, _, _, _, _, _)\
   F(ArgumentMapTrie,         argument_map_trie,         _, _, _, _, _, _, _, X, X)\
   F(Array,                   array,                     _, X, _, X, X, _, _, X, _)\
@@ -1340,6 +1341,18 @@ static const size_t kReferenceValueOffset = OBJECT_FIELD_OFFSET(0);
 
 // The raw value currently held by this reference.
 ACCESSORS_DECL(reference, value);
+
+
+// --- A m b i e n c e ---
+
+static const size_t kAmbienceSize = OBJECT_SIZE(1);
+static const size_t kAmbienceRuntimeOffset = OBJECT_FIELD_OFFSET(0);
+
+// Returns the runtime struct underlying this ambience.
+runtime_t *get_ambience_runtime(value_t self);
+
+// Sets the runtime field of this ambience.
+void set_ambience_runtime(value_t self, runtime_t *runtime);
 
 
 // --- M i s c ---
