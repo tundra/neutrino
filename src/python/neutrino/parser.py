@@ -278,13 +278,11 @@ class Parser(object):
     self.expect_word('do')
     body = self.parse_expression(expect_delim)
     thunk = ast.Lambda(ast.Method(sig, body))
-    # TODO: This should really resolve to a call to @core:for which does the
-    #   delegation but the method visibility model is sufficiently broken that
-    #   that doesn't work at the moment. That should be fixed.
     return ast.Invocation([
-      ast.Argument(data._SUBJECT, elms),
-      ast.Argument(data._SELECTOR, ast.Literal(Parser._FOR)),
-      ast.Argument(0, thunk)
+      ast.Argument(data._SUBJECT, ast.Variable(data.Identifier(-1, data.Path(["core", "for"])))),
+      ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES)),
+      ast.Argument(0, elms),
+      ast.Argument(1, thunk),
     ])
 
   # <with escape expression>
