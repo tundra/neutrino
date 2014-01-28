@@ -8,8 +8,9 @@
 #include "tagged.h"
 #include "test.h"
 
-static void test_builtin(runtime_t *runtime, value_t module, variant_t *expected,
+static void test_builtin(value_t ambience, value_t module, variant_t *expected,
     variant_t *receiver, builtin_operation_t operation, variant_t *args) {
+  runtime_t *runtime = get_ambience_runtime(ambience);
   size_t positional_count = args->value.as_array.length;
   size_t arg_count = 2 + positional_count;
 
@@ -36,7 +37,7 @@ static void test_builtin(runtime_t *runtime, value_t module, variant_t *expected
   // Compile and execute the syntax.
   value_t code = compile_expression(runtime, invocation, module,
       scope_lookup_callback_get_bottom());
-  value_t result = run_code_block_until_signal(runtime, code);
+  value_t result = run_code_block_until_signal(ambience, code);
   ASSERT_SUCCESS(result);
   ASSERT_VAREQ(expected, result);
 }
@@ -59,17 +60,17 @@ TEST(builtin, integers) {
   value_t fragment = new_empty_module_fragment(runtime);
 
   DEF_INFIX(infix_plus, "+");
-  test_builtin(runtime, fragment, vInt(2), vInt(1), infix_plus, vArray(vInt(1)));
-  test_builtin(runtime, fragment, vInt(3), vInt(2), infix_plus, vArray(vInt(1)));
-  test_builtin(runtime, fragment, vInt(5), vInt(2), infix_plus, vArray(vInt(3)));
+  test_builtin(ambience, fragment, vInt(2), vInt(1), infix_plus, vArray(vInt(1)));
+  test_builtin(ambience, fragment, vInt(3), vInt(2), infix_plus, vArray(vInt(1)));
+  test_builtin(ambience, fragment, vInt(5), vInt(2), infix_plus, vArray(vInt(3)));
 
   DEF_INFIX(infix_minus, "-");
-  test_builtin(runtime, fragment, vInt(0), vInt(1), infix_minus, vArray(vInt(1)));
-  test_builtin(runtime, fragment, vInt(1), vInt(2), infix_minus, vArray(vInt(1)));
-  test_builtin(runtime, fragment, vInt(-1), vInt(2), infix_minus, vArray(vInt(3)));
+  test_builtin(ambience, fragment, vInt(0), vInt(1), infix_minus, vArray(vInt(1)));
+  test_builtin(ambience, fragment, vInt(1), vInt(2), infix_minus, vArray(vInt(1)));
+  test_builtin(ambience, fragment, vInt(-1), vInt(2), infix_minus, vArray(vInt(3)));
 
   DEF_PREFIX(prefix_minus, "-");
-  test_builtin(runtime, fragment, vInt(-1), vInt(1), prefix_minus, vEmptyArray());
+  test_builtin(ambience, fragment, vInt(-1), vInt(1), prefix_minus, vEmptyArray());
 
   DISPOSE_SAFE_VALUE_POOL(pool);
   DISPOSE_TEST_ARENA();
@@ -84,9 +85,9 @@ TEST(builtin, strings) {
   value_t fragment = new_empty_module_fragment(runtime);
 
   DEF_INFIX(infix_plus, "+");
-  test_builtin(runtime, fragment, vStr("abcd"), vStr("ab"), infix_plus,
+  test_builtin(ambience, fragment, vStr("abcd"), vStr("ab"), infix_plus,
       vArray(vStr("cd")));
-  test_builtin(runtime, fragment, vStr(""), vStr(""), infix_plus,
+  test_builtin(ambience, fragment, vStr(""), vStr(""), infix_plus,
       vArray(vStr("")));
 
   DISPOSE_SAFE_VALUE_POOL(pool);

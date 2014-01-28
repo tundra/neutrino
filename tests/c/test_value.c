@@ -949,3 +949,10 @@ TEST(value, reference) {
 
   DISPOSE_RUNTIME();
 }
+
+
+TEST(value, ambience) {
+  CREATE_RUNTIME();
+  ASSERT_PTREQ(runtime, get_ambience_runtime(ambience));
+  DISPOSE_RUNTIME();
+}

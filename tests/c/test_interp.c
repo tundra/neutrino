@@ -25,12 +25,13 @@ static value_t new_empty_module_fragment(runtime_t *runtime) {
 
 // Evaluates the given syntax tree and checks that the result is the given
 // expected value.
-static value_t assert_ast_value(runtime_t *runtime, variant_t *expected,
+static value_t assert_ast_value(value_t ambience, variant_t *expected,
     value_t ast) {
+  runtime_t *runtime = get_ambience_runtime(ambience);
   TRY_DEF(fragment, new_empty_module_fragment(runtime));
   TRY_DEF(code_block, compile_expression(runtime, ast, fragment,
       scope_lookup_callback_get_bottom()));
-  TRY_DEF(result, run_code_block_until_signal(runtime, code_block));
+  TRY_DEF(result, run_code_block_until_signal(ambience, code_block));
   ASSERT_VAREQ(expected, result);
   return success();
 }
@@ -55,7 +56,7 @@ TEST(interp, execution) {
   // Literal
   {
     value_t ast = new_heap_literal_ast(runtime, new_integer(121));
-    assert_ast_value(runtime, vInt(121), ast);
+    assert_ast_value(ambience, vInt(121), ast);
   }
 
   // Array
@@ -64,13 +65,13 @@ TEST(interp, execution) {
     set_array_at(elements, 0, new_heap_literal_ast(runtime, new_integer(98)));
     set_array_at(elements, 1, new_heap_literal_ast(runtime, new_integer(87)));
     value_t ast = new_heap_array_ast(runtime, elements);
-    assert_ast_value(runtime, vArray(vInt(98), vInt(87)), ast);
+    assert_ast_value(ambience, vArray(vInt(98), vInt(87)), ast);
   }
 
   // 0-element sequence
   {
     value_t ast = new_heap_sequence_ast(runtime, ROOT(runtime, empty_array));
-    assert_ast_value(runtime, vNull(), ast);
+    assert_ast_value(ambience, vNull(), ast);
   }
 
   // 1-element sequence
@@ -78,7 +79,7 @@ TEST(interp, execution) {
     value_t values = new_heap_array(runtime, 1);
     set_array_at(values, 0, new_heap_literal_ast(runtime, new_integer(98)));
     value_t ast = new_heap_sequence_ast(runtime, values);
-    assert_ast_value(runtime, vInt(98), ast);
+    assert_ast_value(ambience, vInt(98), ast);
   }
 
   // 2-element sequence
@@ -87,7 +88,7 @@ TEST(interp, execution) {
     set_array_at(values, 0, new_heap_literal_ast(runtime, new_integer(98)));
     set_array_at(values, 1, new_heap_literal_ast(runtime, new_integer(87)));
     value_t ast = new_heap_sequence_ast(runtime, values);
-    assert_ast_value(runtime, vInt(87), ast);
+    assert_ast_value(ambience, vInt(87), ast);
   }
 
   // Simple local definition
@@ -97,7 +98,7 @@ TEST(interp, execution) {
     value_t ast = new_heap_local_declaration_ast(runtime, sym, no(),
         new_heap_literal_ast(runtime, new_integer(3)), var);
     set_symbol_ast_origin(sym, ast);
-    assert_ast_value(runtime, vInt(3), ast);
+    assert_ast_value(ambience, vInt(3), ast);
   }
 
   // Simple lambda
@@ -113,7 +114,7 @@ TEST(interp, execution) {
     set_array_at(args, 0, subject_arg);
     set_array_at(args, 1, selector_arg);
     value_t ast = new_heap_invocation_ast(runtime, args);
-    assert_ast_value(runtime, vInt(13), ast);
+    assert_ast_value(ambience, vInt(13), ast);
   }
 
   DISPOSE_SAFE_VALUE_POOL(pool);
@@ -198,7 +199,7 @@ TEST(interp, lookup_error) {
 
   log_validator_t validator;
   install_log_validator(&validator, validate_lookup_error, NULL);
-  ASSERT_SIGNAL(scLookupError, assert_ast_value(runtime, vInt(13), ast));
+  ASSERT_SIGNAL(scLookupError, assert_ast_value(ambience, vInt(13), ast));
   uninstall_log_validator(&validator);
   ASSERT_EQ(1, validator.count);
 

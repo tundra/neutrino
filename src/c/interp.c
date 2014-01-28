@@ -153,7 +153,10 @@ static void log_lookup_error(value_t signal, value_t record, frame_t *frame) {
   string_buffer_dispose(&buf);
 }
 
-value_t run_stack(runtime_t *runtime, value_t stack) {
+static value_t run_stack(value_t ambience, value_t stack) {
+  CHECK_FAMILY(ofAmbience, ambience);
+  CHECK_FAMILY(ofStack, stack);
+  runtime_t *runtime = get_ambience_runtime(ambience);
   frame_t frame;
   get_stack_top_frame(stack, &frame);
   interpreter_state_t state;
@@ -196,7 +199,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         value_t fragment = read_next_value(&state);
         CHECK_FAMILY(ofModuleFragment, fragment);
         value_t arg_map;
-        value_t method = lookup_method_full(runtime, fragment, record, &frame,
+        value_t method = lookup_method_full(ambience, fragment, record, &frame,
             &arg_map);
         if (is_signal(scLookupError, method)) {
           log_lookup_error(method, record, &frame);
@@ -230,7 +233,7 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
         // From this point we do the same as invoke except using the space from
         // the lambda rather than the space from the invoke instruction.
         value_t arg_map;
-        value_t method = lookup_methodspace_method(runtime, space, record,
+        value_t method = lookup_methodspace_method(ambience, space, record,
             &frame, &arg_map);
         if (is_signal(scLookupError, method)) {
           log_lookup_error(method, record, &frame);
@@ -392,16 +395,18 @@ value_t run_stack(runtime_t *runtime, value_t stack) {
   return success();
 }
 
-value_t run_code_block_until_signal(runtime_t *runtime, value_t code) {
+value_t run_code_block_until_signal(value_t ambience, value_t code) {
+  runtime_t *runtime = get_ambience_runtime(ambience);
   TRY_DEF(stack, new_heap_stack(runtime, 1024));
   frame_t frame;
   size_t frame_size = get_code_block_high_water_mark(code);
   TRY(push_stack_frame(runtime, stack, &frame, frame_size, ROOT(runtime, empty_array)));
   set_frame_code_block(&frame, code);
-  return run_stack(runtime, stack);
+  return run_stack(ambience, stack);
 }
 
-value_t run_code_block(runtime_t *runtime, safe_value_t code) {
+value_t run_code_block(safe_value_t s_ambience, safe_value_t code) {
+  runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
     // Build a stack to run the code on.
@@ -415,7 +420,7 @@ value_t run_code_block(runtime_t *runtime, safe_value_t code) {
       set_frame_code_block(&frame, deref(code));
     }
     // Run until completion.
-    E_RETURN(run_stack(runtime, deref(s_stack)));
+    E_RETURN(run_stack(deref(s_ambience), deref(s_stack)));
   E_FINALLY();
     DISPOSE_SAFE_VALUE_POOL(pool);
   E_END_TRY_FINALLY();

@@ -12,10 +12,10 @@
 
 // --- B i n d i n g ---
 
-void binding_context_init(binding_context_t *context, runtime_t *runtime) {
-  context->runtime = runtime;
+void binding_context_init(binding_context_t *context, value_t ambience) {
   context->bound_module_map = whatever();
   context->fragment_entry_map = whatever();
+  context->ambience = ambience;
 }
 
 // Returns the unbound fragment for the given fragment.
@@ -41,16 +41,17 @@ static value_t binding_context_ensure_fragment_entry(binding_context_t *context,
   CHECK_FAMILY(ofPath, path);
   CHECK_FAMILY_OPT(ofUnboundModuleFragment, fragment);
   value_t path_map = context->fragment_entry_map;
+  runtime_t *runtime = get_ambience_runtime(context->ambience);
   if (!has_id_hash_map_at(path_map, path)) {
-    TRY_DEF(stage_map, new_heap_id_hash_map(context->runtime, 16));
-    TRY(set_id_hash_map_at(context->runtime, path_map, path, stage_map));
+    TRY_DEF(stage_map, new_heap_id_hash_map(runtime, 16));
+    TRY(set_id_hash_map_at(runtime, path_map, path, stage_map));
   }
   value_t stage_map = get_id_hash_map_at(path_map, path);
   if (!has_id_hash_map_at(stage_map, stage)) {
-    TRY_DEF(imports, new_heap_array_buffer(context->runtime, 4));
-    TRY_DEF(ident, new_heap_identifier(context->runtime, stage, path));
-    TRY_DEF(entry, new_heap_triple(context->runtime, fragment, imports, ident));
-    TRY(set_id_hash_map_at(context->runtime, stage_map, stage, entry));
+    TRY_DEF(imports, new_heap_array_buffer(runtime, 4));
+    TRY_DEF(ident, new_heap_identifier(runtime, stage, path));
+    TRY_DEF(entry, new_heap_triple(runtime, fragment, imports, ident));
+    TRY(set_id_hash_map_at(runtime, stage_map, stage, entry));
     *created = true;
   }
   return get_id_hash_map_at(stage_map, stage);
@@ -58,14 +59,16 @@ static value_t binding_context_ensure_fragment_entry(binding_context_t *context,
 
 // Adds a namespace binding based on the given declaration ast in the given
 // fragment's namespace.
-static value_t apply_namespace_declaration(runtime_t *runtime, value_t decl,
+static value_t apply_namespace_declaration(value_t ambience, value_t decl,
     value_t fragment) {
+  CHECK_FAMILY(ofAmbience, ambience);
   CHECK_FAMILY(ofNamespaceDeclarationAst, decl);
   CHECK_FAMILY(ofModuleFragment, fragment);
+  runtime_t *runtime = get_ambience_runtime(ambience);
   value_t value_syntax = get_namespace_declaration_ast_value(decl);
   TRY_DEF(code_block, compile_expression(runtime, value_syntax,
       fragment, scope_lookup_callback_get_bottom()));
-  TRY_DEF(value, run_code_block_until_signal(runtime, code_block));
+  TRY_DEF(value, run_code_block_until_signal(ambience, code_block));
   value_t nspace = get_module_fragment_namespace(fragment);
   value_t path = get_namespace_declaration_ast_path(decl);
   value_t name = get_path_head(path);
@@ -100,16 +103,17 @@ static value_t apply_is_declaration(runtime_t *runtime, value_t decl,
 }
 
 // Performs the appropriate action for a fragment element to the given fragment.
-static value_t apply_unbound_fragment_element(runtime_t *runtime, value_t element,
+static value_t apply_unbound_fragment_element(value_t ambience, value_t element,
     value_t fragment) {
+  CHECK_FAMILY(ofAmbience, ambience);
   object_family_t family = get_object_family(element);
   switch (family) {
     case ofNamespaceDeclarationAst:
-      return apply_namespace_declaration(runtime, element, fragment);
+      return apply_namespace_declaration(ambience, element, fragment);
     case ofMethodDeclarationAst:
-      return apply_method_declaration(runtime, element, fragment);
+      return apply_method_declaration(get_ambience_runtime(ambience), element, fragment);
     case ofIsDeclarationAst:
-      return apply_is_declaration(runtime, element, fragment);
+      return apply_is_declaration(get_ambience_runtime(ambience), element, fragment);
     default:
       ERROR("Invalid toplevel element %s", get_object_family_name(family));
       return success();
@@ -124,6 +128,7 @@ static value_t bind_module_fragment_imports(binding_context_t *context,
   // importspace.
   value_t methodspace = get_module_fragment_methodspace(bound_fragment);
   value_t importspace = get_module_fragment_imports(bound_fragment);
+  runtime_t *runtime = get_ambience_runtime(context->ambience);
   for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
     // Look up the imported module.
     value_t import_ident = get_array_buffer_at(imports, i);
@@ -134,8 +139,8 @@ static value_t bind_module_fragment_imports(binding_context_t *context,
     value_t import_fragment = get_module_fragment_at(import_module, import_stage);
     CHECK_TRUE("import not bound", is_module_fragment_bound(import_fragment));
     value_t import_methods = get_module_fragment_methodspace(import_fragment);
-    TRY(add_methodspace_import(context->runtime, methodspace, import_methods));
-    TRY(set_namespace_binding_at(context->runtime, importspace, import_name,
+    TRY(add_methodspace_import(runtime, methodspace, import_methods));
+    TRY(set_namespace_binding_at(runtime, importspace, import_name,
         import_fragment));
   }
   return success();
@@ -148,7 +153,7 @@ static value_t apply_module_fragment_elements(binding_context_t *context,
   value_t elements = get_unbound_module_fragment_elements(unbound_fragment);
   for (size_t i = 0; i < get_array_length(elements); i++) {
     value_t element = get_array_at(elements, i);
-    TRY(apply_unbound_fragment_element(context->runtime, element, bound_fragment));
+    TRY(apply_unbound_fragment_element(context->ambience, element, bound_fragment));
   }
   return success();
 }
@@ -234,6 +239,7 @@ static value_t new_empty_module_fragment(runtime_t *runtime, value_t stage,
 
 // Creates and binds modules and fragments according to the given schedule.
 static value_t execute_binding_schedule(binding_context_t *context, value_t schedule) {
+  runtime_t *runtime = get_ambience_runtime(context->ambience);
   for (size_t i = 0; i < get_array_buffer_length(schedule); i++) {
     value_t next = get_array_buffer_at(schedule, i);
     value_t path = get_identifier_path(next);
@@ -241,22 +247,22 @@ static value_t execute_binding_schedule(binding_context_t *context, value_t sche
     // Create the bound module if it doesn't already exist.
     value_t bound_module = get_id_hash_map_at(context->bound_module_map, path);
     if (is_signal(scNotFound, bound_module)) {
-      TRY_SET(bound_module, new_heap_empty_module(context->runtime, path));
-      TRY(set_id_hash_map_at(context->runtime, context->bound_module_map, path,
+      TRY_SET(bound_module, new_heap_empty_module(runtime, path));
+      TRY(set_id_hash_map_at(runtime, context->bound_module_map, path,
           bound_module));
     }
     // Create the bound fragment.
     value_t bound_fragment = get_module_fragment_at(bound_module, stage);
     if (is_signal(scNotFound, bound_fragment)) {
-      TRY_SET(bound_fragment, new_empty_module_fragment(context->runtime, stage,
+      TRY_SET(bound_fragment, new_empty_module_fragment(runtime, stage,
           bound_module));
-      TRY(add_module_fragment(context->runtime, bound_module, bound_fragment));
+      TRY(add_module_fragment(runtime, bound_module, bound_fragment));
     } else {
       // An earlier phase needed a reference to this fragment so it has already
       // been created but not initialized yet.
       CHECK_EQ("Unexpected phase", get_module_fragment_epoch(bound_fragment),
           feUninitialized);
-      TRY(init_empty_module_fragment(context->runtime, bound_fragment));
+      TRY(init_empty_module_fragment(runtime, bound_fragment));
       set_module_fragment_epoch(bound_fragment, feUnbound);
     }
     // Grab the unbound fragment we'll use to create the bound fragment.
@@ -268,9 +274,10 @@ static value_t execute_binding_schedule(binding_context_t *context, value_t sche
   return success();
 }
 
-value_t build_bound_module(runtime_t *runtime, value_t unbound_module) {
+value_t build_bound_module(value_t ambience, value_t unbound_module) {
+  runtime_t *runtime = get_ambience_runtime(ambience);
   binding_context_t context;
-  binding_context_init(&context, runtime);
+  binding_context_init(&context, ambience);
   TRY_SET(context.bound_module_map, new_heap_id_hash_map(runtime, 16));
   TRY_DEF(modules, build_transitive_module_array(runtime, unbound_module));
   TRY(build_fragment_entry_map(&context, modules));
@@ -286,6 +293,7 @@ value_t build_bound_module(runtime_t *runtime, value_t unbound_module) {
 // fragment entries.
 static value_t build_real_fragment_entries(binding_context_t *context,
     value_t modules) {
+  runtime_t *runtime = get_ambience_runtime(context->ambience);
   for (size_t mi = 0; mi < get_array_buffer_length(modules); mi++) {
     value_t module = get_array_buffer_at(modules, mi);
     value_t path = get_unbound_module_path(module);
@@ -300,9 +308,8 @@ static value_t build_real_fragment_entries(binding_context_t *context,
       value_t fragment_imports = get_unbound_module_fragment_imports(fragment);
       for (size_t ii = 0; ii < get_array_length(fragment_imports); ii++) {
         value_t import = get_array_at(fragment_imports, ii);
-        TRY_DEF(ident, new_heap_identifier(context->runtime, present_stage(),
-            import));
-        TRY(ensure_array_buffer_contains(context->runtime, imports, ident));
+        TRY_DEF(ident, new_heap_identifier(runtime, present_stage(), import));
+        TRY(ensure_array_buffer_contains(runtime, imports, ident));
       }
     }
   }
@@ -368,7 +375,8 @@ static value_t build_synthetic_fragment_entries(binding_context_t *context) {
            value_t import_ident = get_fragment_entry_identifier(import_entry);
             if (!in_array_buffer(target_imports, import_ident)) {
               has_changed_anything = true;
-              TRY(add_to_array_buffer(context->runtime, target_imports, import_ident));
+              TRY(add_to_array_buffer(get_ambience_runtime(context->ambience),
+                  target_imports, import_ident));
             }
           }
           // If any changes were made we have to start over.
@@ -382,7 +390,8 @@ static value_t build_synthetic_fragment_entries(binding_context_t *context) {
 }
 
 value_t build_fragment_entry_map(binding_context_t *context, value_t modules) {
-  TRY_SET(context->fragment_entry_map, new_heap_id_hash_map(context->runtime, 16));
+  runtime_t *runtime = get_ambience_runtime(context->ambience);
+  TRY_SET(context->fragment_entry_map, new_heap_id_hash_map(runtime, 16));
   TRY(build_real_fragment_entries(context, modules));
   TRY(build_synthetic_fragment_entries(context));
   return context->fragment_entry_map;
@@ -397,7 +406,8 @@ static bool is_fragment_scheduled(value_t schedule, value_t ident) {
 // Uses the fragment entry map to create an array of identifiers for all the
 // fragments, synthetic and real.
 static value_t build_fragment_identifier_array(binding_context_t *context) {
-  TRY_DEF(result, new_heap_array_buffer(context->runtime, 16));
+  runtime_t *runtime = get_ambience_runtime(context->ambience);
+  TRY_DEF(result, new_heap_array_buffer(runtime, 16));
   id_hash_map_iter_t module_iter;
   id_hash_map_iter_init(&module_iter, context->fragment_entry_map);
   while (id_hash_map_iter_advance(&module_iter)) {
@@ -412,7 +422,7 @@ static value_t build_fragment_identifier_array(binding_context_t *context) {
       value_t entry;
       id_hash_map_iter_get_current(&fragment_iter, &stage, &entry);
       value_t ident = get_fragment_entry_identifier(entry);
-      TRY(add_to_array_buffer(context->runtime, result, ident));
+      TRY(add_to_array_buffer(runtime, result, ident));
     }
   }
   sort_array_buffer(result);
@@ -478,13 +488,14 @@ static bool should_fragment_be_bound(binding_context_t *context, value_t schedul
 }
 
 value_t build_binding_schedule(binding_context_t *context) {
-  TRY_DEF(schedule, new_heap_array_buffer(context->runtime, 16));
+  runtime_t *runtime = get_ambience_runtime(context->ambience);
+  TRY_DEF(schedule, new_heap_array_buffer(runtime, 16));
   TRY_DEF(all_fragments, build_fragment_identifier_array(context));
   loop: do {
     for (size_t i = 0; i < get_array_buffer_length(all_fragments); i++) {
       value_t ident = get_array_buffer_at(all_fragments, i);
       if (should_fragment_be_bound(context, schedule, ident)) {
-        TRY(add_to_array_buffer(context->runtime, schedule, ident));
+        TRY(add_to_array_buffer(runtime, schedule, ident));
         goto loop;
       }
     }

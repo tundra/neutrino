@@ -65,10 +65,11 @@ static value_t sort_and_flatten_map(runtime_t *runtime, value_t map) {
   return pairs;
 }
 
-static void test_import_map(runtime_t *runtime, variant_t *expected,
+static void test_import_map(value_t ambience, variant_t *expected,
     variant_t *modules) {
+  runtime_t *runtime = get_ambience_runtime(ambience);
   binding_context_t context;
-  binding_context_init(&context, runtime);
+  binding_context_init(&context, ambience);
   value_t deps = build_fragment_entry_map(&context, C(modules));
   // Flatten the map so we can compare it deterministically.
   value_t flat_deps = sort_and_flatten_map(runtime, deps);
@@ -90,7 +91,7 @@ TEST(bind, dependency_map) {
   CREATE_TEST_ARENA();
 
   // Two stages, 0 and -1, yield 0 -> -1.
-  test_import_map(runtime,
+  test_import_map(ambience,
       A(MDEP(root, A(
           FDEP(-1, EB),
           FDEP( 0, EB)))),
@@ -98,7 +99,7 @@ TEST(bind, dependency_map) {
           FRG( 0, E),
           FRG(-1, E))));
   // Three stages, 0, -1, and -2, yield 0 -> -1, -1 -> -2.
-  test_import_map(runtime,
+  test_import_map(ambience,
       A(MDEP(root, A(
           FDEP(-2, EB),
           FDEP(-1, EB),
@@ -108,7 +109,7 @@ TEST(bind, dependency_map) {
           FRG(-1, E),
           FRG(-2, E))));
   // Simple import dependencies.
-  test_import_map(runtime,
+  test_import_map(ambience,
       A(MDEP(root, A(
           FDEP(0, B(I(0, other))))),
         MDEP(other, A(
@@ -118,7 +119,7 @@ TEST(bind, dependency_map) {
         MOD(other,
           FRG( 0, E))));
   // Not quite so simple import dependencies.
-  test_import_map(runtime,
+  test_import_map(ambience,
       A(MDEP(root, A(
           FDEP(-1, B(I(-1, other))),
           FDEP( 0, B(I( 0, other))))),
@@ -131,7 +132,7 @@ TEST(bind, dependency_map) {
           FRG( 0, E),
           FRG(-1, E))));
   // Deep transitive import dependencies
-  test_import_map(runtime,
+  test_import_map(ambience,
       A(MDEP(x, A(
           FDEP(-1, B(I(-1, y))),
           FDEP( 0, B(I( 0, y))))),
@@ -154,7 +155,7 @@ TEST(bind, dependency_map) {
           FRG( 0, E),
           FRG(-1, E))));
   // Stage shifting imports.
-  test_import_map(runtime,
+  test_import_map(ambience,
       A(MDEP(root, A(
           FDEP(-2, B(I(-1, other))),
           FDEP(-1, B(I( 0, other))))),
@@ -171,10 +172,11 @@ TEST(bind, dependency_map) {
   DISPOSE_RUNTIME();
 }
 
-static void test_load_order(runtime_t *runtime, variant_t *expected,
+static void test_load_order(value_t ambience, variant_t *expected,
     variant_t *modules) {
+  runtime_t *runtime = get_ambience_runtime(ambience);
   binding_context_t context;
-  binding_context_init(&context, runtime);
+  binding_context_init(&context, ambience);
   build_fragment_entry_map(&context, C(modules));
   value_t schedule = build_binding_schedule(&context);
   ASSERT_VAREQ(expected, schedule);
@@ -185,16 +187,16 @@ TEST(bind, load_order) {
   CREATE_TEST_ARENA();
 
   // Stages within the same module.
-  test_load_order(runtime,
+  test_load_order(ambience,
       B(I(0, root)),
       B(MOD(root,
           FRG( 0, E))));
-  test_load_order(runtime,
+  test_load_order(ambience,
       B(I(-1, root), I(0, root)),
       B(MOD(root,
           FRG( 0, E),
           FRG(-1, E))));
-  test_load_order(runtime,
+  test_load_order(ambience,
       B(I(-2, root), I(-1, root), I(0, root)),
       B(MOD(root,
           FRG(-1, E),
@@ -204,20 +206,20 @@ TEST(bind, load_order) {
   // Present imports. For some of these there's more than one way to resolve
   // the dependencies and the solution will depend on the otherwise irrelevant
   // lexical ordering of the names of the modules.
-  test_load_order(runtime,
+  test_load_order(ambience,
       B(I(0, other), I(0, root)),
       B(MOD(root,
           FRG(0, A(IMP(other)))),
         MOD(other,
           FRG(0, E))));
-  test_load_order(runtime,
+  test_load_order(ambience,
       B(I(-1, root), I(0, other), I(0, root)),
       B(MOD(root,
           FRG(0, A(IMP(other))),
           FRG(-1, E)),
         MOD(other,
           FRG(0, E))));
-  test_load_order(runtime,
+  test_load_order(ambience,
       B(I(-1, other), I(-1, root), I(0, other), I(0, root)),
       B(MOD(root,
           FRG(0, A(IMP(other))),
@@ -225,7 +227,7 @@ TEST(bind, load_order) {
         MOD(other,
           FRG(0, E),
           FRG(-1, E))));
-  test_load_order(runtime,
+  test_load_order(ambience,
       B(I(-2, other), I(-2, root), I(-1, other), I(-1, root), I(0, other), I(0, root)),
       B(MOD(root,
           FRG(0, A(IMP(other))),
@@ -234,7 +236,7 @@ TEST(bind, load_order) {
           FRG(0, E),
           FRG(-1, E),
           FRG(-2, E))));
-  test_load_order(runtime,
+  test_load_order(ambience,
       B(I(-2, other), I(-2, root), I(-1, other), I(-1, root), I(0, other), I(0, root)),
       B(MOD(root,
           FRG(0, A(IMP(other))),
@@ -245,7 +247,7 @@ TEST(bind, load_order) {
           FRG(-1, E),
           FRG(-2, E))));
   // Here the outcome depends particularly on the lexical ordering.
-  test_load_order(runtime,
+  test_load_order(ambience,
       B(I(-1, s), I(-1, t), I(-1, root), I(0, s), I(0, t), I(0, root)),
       B(MOD(root,
           FRG(0, A(IMP(s), IMP(t))),
@@ -256,7 +258,7 @@ TEST(bind, load_order) {
         MOD(t,
           FRG(0, E),
           FRG(-1, E))));
-  test_load_order(runtime,
+  test_load_order(ambience,
       B(I(-1, b), I(-1, a), I(-1, root), I(0, b), I(0, a), I(0, root)),
       B(MOD(root,
           FRG(0, A(IMP(a))),
@@ -270,7 +272,7 @@ TEST(bind, load_order) {
 
   // Here we have $root <- $a <- $b and consequently @root <- @a <- @b, except
   // that there is no @a so what we'll actually get is @root <- @b.
-  test_load_order(runtime,
+  test_load_order(ambience,
       B(I(-1, b), I(-1, a), I(-1, root), I(0, b), I(0, a), I(0, root)),
       B(MOD(root,
           FRG(0, A(IMP(a))),
@@ -282,14 +284,14 @@ TEST(bind, load_order) {
           FRG(-1, E))));
 
   // Past imports
-  test_load_order(runtime,
+  test_load_order(ambience,
       B(I(0, other), I(-1, root), I(0, root)),
       B(MOD(root,
           FRG( 0, E),
           FRG(-1, A(IMP(other)))),
         MOD(other,
           FRG(0, E))));
-  test_load_order(runtime,
+  test_load_order(ambience,
       B(I(-1, other), I(-2, root), I(0, other), I(-1, root), I(0, root)),
       B(MOD(root,
           FRG( 0, E),
@@ -297,7 +299,7 @@ TEST(bind, load_order) {
         MOD(other,
           FRG(0, E),
           FRG(-1, E))));
-  test_load_order(runtime,
+  test_load_order(ambience,
       B(I(-1, b), I(-1, a), I(-2, root), I(0, b), I(0, a), I(-1, root), I(0, root)),
       B(MOD(root,
           FRG( 0, E),
@@ -308,7 +310,7 @@ TEST(bind, load_order) {
         MOD(b,
           FRG( 0, E),
           FRG(-1, E))));
-  test_load_order(runtime,
+  test_load_order(ambience,
       B(I(-1, b), I(-2, a), I(-3, root), I(0, b), I(-1, a), I(-2, root),
           I(0, a), I(-1, root), I(0, root)),
       B(MOD(root,

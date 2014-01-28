@@ -30,7 +30,7 @@ typedef struct {
 
 // Initializes an input struct appropriately.
 void signature_map_lookup_input_init(signature_map_lookup_input_t *input,
-    runtime_t *runtime, value_t record, frame_t *frame, void *data);
+    value_t ambience, value_t record, frame_t *frame, void *data);
 
 
 // --- S i g n a t u r e ---
@@ -264,7 +264,7 @@ typedef value_t (signature_map_lookup_callback_t)(signature_map_lookup_state_t *
 // continue_signature_map_lookup for each of them. When the callback returns
 // this function completes the lookup and returns the result or a signal as
 // appropriate.
-value_t do_signature_map_lookup(runtime_t *runtime, value_t record, frame_t *frame,
+value_t do_signature_map_lookup(value_t ambience, value_t record, frame_t *frame,
     signature_map_lookup_callback_t *callback, void *data);
 
 // Includes the given signature map in the lookup associated with the given
@@ -324,10 +324,10 @@ value_t add_methodspace_method(runtime_t *runtime, value_t self,
 //
 // TODO: this is an approximation of the intended lookup mechanism and should be
 //   revised later on, for instance to not hard-code the subject origin lookup.
-value_t lookup_method_full(runtime_t *runtime, value_t fragment,
+value_t lookup_method_full(value_t ambience, value_t fragment,
     value_t record, frame_t *frame, value_t *arg_map_out);
 
-value_t lookup_methodspace_method(runtime_t *runtime, value_t methodspace,
+value_t lookup_methodspace_method(value_t ambience, value_t methodspace,
     value_t record, frame_t *frame, value_t *arg_map_out);
 
 

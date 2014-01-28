@@ -10,7 +10,7 @@
 #define ASSERT_MATCH(is_match, guard, value) do {                              \
   score_t match;                                                               \
   signature_map_lookup_input_t lookup_input;                                   \
-  signature_map_lookup_input_init(&lookup_input, runtime, whatever(), NULL,    \
+  signature_map_lookup_input_init(&lookup_input, ambience, whatever(), NULL,   \
     NULL);                                                                     \
   ASSERT_SUCCESS(guard_match(guard, value, &lookup_input, space, &match));     \
   ASSERT_EQ(is_match, is_score_match(match));                                  \
@@ -122,7 +122,7 @@ TEST(method, simple_is) {
 #define ASSERT_COMPARE(GA, VA, REL, GB, VB) do {                               \
   score_t score_a;                                                             \
   signature_map_lookup_input_t lookup_input;                                   \
-  signature_map_lookup_input_init(&lookup_input, runtime, whatever(), NULL,    \
+  signature_map_lookup_input_init(&lookup_input, ambience, whatever(), NULL,   \
     NULL);                                                                     \
   ASSERT_SUCCESS(guard_match(GA, VA, &lookup_input, space, &score_a));         \
   score_t score_b;                                                             \
@@ -392,13 +392,14 @@ static test_argument_t *new_test_argument(test_arena_t *arena, variant_t *tag,
 
 // Attempts to do a match and checks that the outcome is as expected. If the
 // expected offsets are NULL offsets won't be checked.
-void assert_match_with_offsets(runtime_t *runtime, match_result_t expected_result,
+void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
     int64_t *expected_offsets, value_t signature, test_argument_t **args) {
   // Count how many arguments there are.
   size_t arg_count = 0;
   for (size_t i = 0; args[i] != NULL; i++)
     arg_count++;
   // Build a descriptor from the tags and a stack from the values.
+  runtime_t *runtime = get_ambience_runtime(ambience);
   value_t tags = new_heap_array(runtime, arg_count);
   value_t stack = new_heap_stack(runtime, 16);
   frame_t frame;
@@ -419,7 +420,7 @@ void assert_match_with_offsets(runtime_t *runtime, match_result_t expected_resul
   match_info_init(&match_info, scores, offsets, kLength);
   match_result_t result;
   signature_map_lookup_input_t input;
-  signature_map_lookup_input_init(&input, runtime, record, &frame, NULL);
+  signature_map_lookup_input_init(&input, ambience, record, &frame, NULL);
   ASSERT_SUCCESS(match_signature(signature, &input, new_integer(0), &match_info,
       &result));
   ASSERT_EQ(expected_result, result);
@@ -431,9 +432,9 @@ void assert_match_with_offsets(runtime_t *runtime, match_result_t expected_resul
 
 // Attempts to do a match and checks that the result is as expected, ignoring
 // the offsets and scores.
-void assert_match(runtime_t *runtime, match_result_t expected, value_t signature,
+void assert_match(value_t ambience, match_result_t expected, value_t signature,
     test_argument_t **args) {
-  assert_match_with_offsets(runtime, expected, NULL, signature, args);
+  assert_match_with_offsets(ambience, expected, NULL, signature, args);
 }
 
 TEST(method, simple_matching) {
@@ -448,20 +449,20 @@ TEST(method, simple_matching) {
           PARAM(any_guard, false, vArray(vInt(1)))));
 
   test_argument_t *empty = NULL;
-  assert_match(runtime, mrMatch, sig, ARGS(2,
+  assert_match(ambience, mrMatch, sig, ARGS(2,
       ARG(vInt(0), vStr("foo")),
       ARG(vInt(1), vStr("bar"))));
-  assert_match(runtime, mrUnexpectedArgument, sig, ARGS(3,
+  assert_match(ambience, mrUnexpectedArgument, sig, ARGS(3,
       ARG(vInt(0), vStr("foo")),
       ARG(vInt(1), vStr("bar")),
       ARG(vInt(2), vStr("baz"))));
-  assert_match(runtime, mrMissingArgument, sig, ARGS(1,
+  assert_match(ambience, mrMissingArgument, sig, ARGS(1,
       ARG(vInt(0), vStr("foo"))));
-  assert_match(runtime, mrMissingArgument, sig, ARGS(1,
+  assert_match(ambience, mrMissingArgument, sig, ARGS(1,
       ARG(vInt(1), vStr("bar"))));
-  assert_match(runtime, mrMissingArgument, sig, ARGS(1,
+  assert_match(ambience, mrMissingArgument, sig, ARGS(1,
       ARG(vInt(2), vStr("baz"))));
-  assert_match(runtime, mrMissingArgument, sig, &empty);
+  assert_match(ambience, mrMissingArgument, sig, &empty);
 
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
@@ -480,13 +481,13 @@ TEST(method, simple_guard_matching) {
           PARAM(guard, false, vArray(vInt(0))),
           PARAM(any_guard, false, vArray(vInt(1)))));
 
-  assert_match(runtime, mrMatch, sig, ARGS(2,
+  assert_match(ambience, mrMatch, sig, ARGS(2,
       ARG(vInt(0), vStr("foo")),
       ARG(vInt(1), vStr("bar"))));
-  assert_match(runtime, mrMatch, sig, ARGS(2,
+  assert_match(ambience, mrMatch, sig, ARGS(2,
       ARG(vInt(0), vStr("foo")),
       ARG(vInt(1), vStr("boo"))));
-  assert_match(runtime, mrGuardRejected, sig, ARGS(2,
+  assert_match(ambience, mrGuardRejected, sig, ARGS(2,
       ARG(vInt(0), vStr("fop")),
       ARG(vInt(1), vStr("boo"))));
 
@@ -505,22 +506,22 @@ TEST(method, multi_tag_matching) {
           PARAM(any_guard, false, vArray(vInt(0) o vStr("x"))),
           PARAM(any_guard, false, vArray(vInt(1) o vStr("y")))));
 
-  assert_match(runtime, mrMatch, sig, ARGS(2,
+  assert_match(ambience, mrMatch, sig, ARGS(2,
       ARG(vInt(0), vStr("foo")),
       ARG(vInt(1), vStr("bar"))));
-  assert_match(runtime, mrMatch, sig, ARGS(2,
+  assert_match(ambience, mrMatch, sig, ARGS(2,
       ARG(vInt(0), vStr("foo")),
       ARG(vStr("y"), vStr("bar"))));
-  assert_match(runtime, mrMatch, sig, ARGS(2,
+  assert_match(ambience, mrMatch, sig, ARGS(2,
       ARG(vInt(1), vStr("bar")),
       ARG(vStr("x"), vStr("foo"))));
-  assert_match(runtime, mrMatch, sig, ARGS(2,
+  assert_match(ambience, mrMatch, sig, ARGS(2,
       ARG(vStr("x"), vStr("foo")),
       ARG(vStr("y"), vStr("bar"))));
-  assert_match(runtime, mrRedundantArgument, sig, ARGS(2,
+  assert_match(ambience, mrRedundantArgument, sig, ARGS(2,
       ARG(vInt(0), vStr("foo")),
       ARG(vStr("x"), vStr("foo"))));
-  assert_match(runtime, mrRedundantArgument, sig, ARGS(2,
+  assert_match(ambience, mrRedundantArgument, sig, ARGS(2,
       ARG(vInt(1), vStr("bar")),
       ARG(vStr("y"), vStr("bar"))));
 
@@ -539,40 +540,40 @@ TEST(method, extra_args) {
           PARAM(any_guard, false, vArray(vInt(0), vStr("x"))),
           PARAM(any_guard, false, vArray(vInt(1), vStr("y")))));
 
-  assert_match(runtime, mrMatch, sig, ARGS(2,
+  assert_match(ambience, mrMatch, sig, ARGS(2,
       ARG(vInt(0), vStr("foo")),
       ARG(vInt(1), vStr("bar"))));
-  assert_match(runtime, mrMatch, sig, ARGS(2,
+  assert_match(ambience, mrMatch, sig, ARGS(2,
       ARG(vInt(0), vStr("foo")),
       ARG(vStr("y"), vStr("bar"))));
-  assert_match(runtime, mrMatch, sig, ARGS(2,
+  assert_match(ambience, mrMatch, sig, ARGS(2,
       ARG(vInt(1), vStr("bar")),
       ARG(vStr("x"), vStr("foo"))));
-  assert_match(runtime, mrMatch, sig, ARGS(2,
+  assert_match(ambience, mrMatch, sig, ARGS(2,
       ARG(vStr("x"), vStr("foo")),
       ARG(vStr("y"), vStr("bar"))));
-  assert_match(runtime, mrRedundantArgument, sig, ARGS(2,
+  assert_match(ambience, mrRedundantArgument, sig, ARGS(2,
       ARG(vInt(0), vStr("foo")),
       ARG(vStr("x"), vStr("foo"))));
-  assert_match(runtime, mrRedundantArgument, sig, ARGS(2,
+  assert_match(ambience, mrRedundantArgument, sig, ARGS(2,
       ARG(vInt(1), vStr("bar")),
       ARG(vStr("y"), vStr("bar"))));
-  assert_match(runtime, mrExtraMatch, sig, ARGS(3,
+  assert_match(ambience, mrExtraMatch, sig, ARGS(3,
       ARG(vInt(0), vStr("foo")),
       ARG(vInt(1), vStr("bar")),
       ARG(vInt(2), vStr("baz"))));
-  assert_match(runtime, mrExtraMatch, sig, ARGS(4,
+  assert_match(ambience, mrExtraMatch, sig, ARGS(4,
       ARG(vInt(0), vStr("foo")),
       ARG(vInt(1), vStr("bar")),
       ARG(vInt(2), vStr("baz")),
       ARG(vInt(3), vStr("quux"))));
-  assert_match(runtime, mrMissingArgument, sig, ARGS(2,
+  assert_match(ambience, mrMissingArgument, sig, ARGS(2,
       ARG(vInt(0), vStr("foo")),
       ARG(vInt(2), vStr("baz"))));
-  assert_match(runtime, mrMissingArgument, sig, ARGS(2,
+  assert_match(ambience, mrMissingArgument, sig, ARGS(2,
       ARG(vInt(1), vStr("foo")),
       ARG(vInt(2), vStr("baz"))));
-  assert_match(runtime, mrExtraMatch, sig, ARGS(3,
+  assert_match(ambience, mrExtraMatch, sig, ARGS(3,
       ARG(vInt(0), vStr("foo")),
       ARG(vInt(1), vStr("bar")),
       ARG(vStr("z"), vStr("baz"))));
@@ -615,14 +616,14 @@ TEST(method, match_argument_map) {
     as[es[1]] = 2;
     as[es[0]] = 3;
     // Integer tags.
-    assert_match_with_offsets(runtime, mrMatch, as, sig,
+    assert_match_with_offsets(ambience, mrMatch, as, sig,
         ARGS(4,
             ARG(vInt(es[0]), vInt(96)),
             ARG(vInt(es[1]), vInt(97)),
             ARG(vInt(es[2]), vInt(98)),
             ARG(vInt(es[3]), vInt(99))));
     // String tags.
-    assert_match_with_offsets(runtime, mrMatch, as, sig,
+    assert_match_with_offsets(ambience, mrMatch, as, sig,
         ARGS(4,
             ARG(ss[es[0]], vInt(104)),
             ARG(ss[es[1]], vInt(103)),
@@ -705,8 +706,9 @@ TEST(method, join) {
   DISPOSE_TEST_ARENA();
 }
 
-static void test_lookup(runtime_t *runtime, value_t expected, value_t first,
+static void test_lookup(value_t ambience, value_t expected, value_t first,
     value_t second, value_t third, value_t space) {
+  runtime_t *runtime = get_ambience_runtime(ambience);
   value_t stack = new_heap_stack(runtime, 16);
   value_t vector = new_heap_pair_array(runtime, 3);
   frame_t frame;
@@ -719,7 +721,7 @@ static void test_lookup(runtime_t *runtime, value_t expected, value_t first,
   }
   value_t record = new_heap_invocation_record(runtime, afFreeze, vector);
   value_t arg_map;
-  value_t method = lookup_methodspace_method(runtime, space, record, &frame,
+  value_t method = lookup_methodspace_method(ambience, space, record, &frame,
       &arg_map);
   ASSERT_VALEQ(expected, method);
 }
@@ -779,7 +781,7 @@ TEST(method, dense_perfect_lookup) {
     for (size_t second = 0; second < 4; second++) {
       for (size_t third = 0; third < 4; third++) {
         value_t expected = methods[first][second][third];
-        test_lookup(runtime, expected, values[first], values[second],
+        test_lookup(ambience, expected, values[first], values[second],
             values[third], space);
       }
     }

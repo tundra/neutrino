@@ -34,24 +34,25 @@ static value_t base64_c_str_to_blob(runtime_t *runtime, const char *data) {
 
 // Assemble a module that can be executed from unbound modules in the module
 // loader.
-static value_t assemble_module(runtime_t *runtime, value_t unbound_module) {
+static value_t assemble_module(value_t ambience, value_t unbound_module) {
   CHECK_FAMILY(ofUnboundModule, unbound_module);
-  TRY_DEF(module, build_bound_module(runtime, unbound_module));
+  TRY_DEF(module, build_bound_module(ambience, unbound_module));
   return get_module_fragment_at(module, present_stage());
 }
 
 // Executes the given program syntax tree within the given runtime.
-static value_t safe_execute_syntax(runtime_t *runtime, safe_value_t s_program) {
+static value_t safe_execute_syntax(runtime_t *runtime, safe_value_t s_ambience,
+    safe_value_t s_program) {
   CHECK_FAMILY(ofProgramAst, deref(s_program));
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
     value_t unbound_module = get_program_ast_module(deref(s_program));
-    TRY_DEF(module, assemble_module(runtime, unbound_module));
+    TRY_DEF(module, assemble_module(deref(s_ambience), unbound_module));
     safe_value_t s_module = protect(pool, module);
     safe_value_t s_entry_point = protect(pool, get_program_ast_entry_point(deref(s_program)));
     E_TRY_DEF(code_block, safe_compile_expression(runtime, s_entry_point,
         s_module, scope_lookup_callback_get_bottom()));
-    E_RETURN(run_code_block(runtime, protect(pool, code_block)));
+    E_RETURN(run_code_block(s_ambience, protect(pool, code_block)));
   E_FINALLY();
     DISPOSE_SAFE_VALUE_POOL(pool);
   E_END_TRY_FINALLY();
@@ -231,6 +232,7 @@ static value_t neutrino_main(int argc, char **argv) {
 
   runtime_t *runtime;
   TRY(new_runtime(&config, &runtime));
+  TRY_DEF(ambience, new_heap_ambience(runtime));
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
     value_t result = whatever();
@@ -247,7 +249,8 @@ static value_t neutrino_main(int argc, char **argv) {
         E_TRY_SET(input, read_file_to_blob(runtime, &filename_str));
       }
       E_TRY_DEF(program, safe_runtime_plankton_deserialize(runtime, protect(pool, input)));
-      result = safe_execute_syntax(runtime, protect(pool, program));
+      result = safe_execute_syntax(runtime, protect(pool, ambience),
+          protect(pool, program));
       if (options.print_value)
         print_ln("%v", result);
     }

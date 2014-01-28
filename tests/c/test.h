@@ -21,7 +21,9 @@ bool value_structural_equal(value_t a, value_t b);
 // created here.
 #define CREATE_RUNTIME()                                                       \
 runtime_t *runtime = NULL;                                                     \
-ASSERT_SUCCESS(new_runtime(NULL, &runtime));
+value_t ambience = nothing();                                                  \
+ASSERT_SUCCESS(new_runtime(NULL, &runtime));                                   \
+ASSERT_SUCCESS(ambience = new_heap_ambience(runtime));
 
 // Disposes a runtime created using the CREATE_RUNTIME method.
 #define DISPOSE_RUNTIME()                                                      \
