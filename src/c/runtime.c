@@ -114,12 +114,13 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
       create_stack_piece_bottom_code_block(runtime));
 
   // Generate initialization for the per-family types.
+  value_t core_type_origin = get_ambience_core_present_redirect();
 #define __CREATE_TYPE__(Name, name) do {                                       \
   string_t __display_name_str__;                                               \
   string_init(&__display_name_str__, #Name);                                   \
   TRY_DEF(__display_name__, new_heap_string(runtime, &__display_name_str__));  \
   TRY_SET(RAW_ROOT(roots, name##_type), new_heap_type(runtime, afFreeze,       \
-      nothing(), __display_name__));                                           \
+      core_type_origin, __display_name__));                                    \
 } while (false);
   __CREATE_TYPE__(Integer, integer);
 #define __CREATE_FAMILY_TYPE_OPT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\

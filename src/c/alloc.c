@@ -463,6 +463,7 @@ value_t new_heap_ambience(runtime_t *runtime) {
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, ambience_species)));
   set_ambience_runtime(result, runtime);
+  set_ambience_present_core_fragment(result, nothing());
   return post_create_sanity_check(result, size);
 }
 

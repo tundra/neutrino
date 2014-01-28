@@ -472,6 +472,7 @@ ACCESSORS_DECL(object, header);
 //
 //  CamelName                underscore_name            Cm Sr
 #define ENUM_CUSTOM_TAGGED_PHYLUMS(F)                                          \
+  F(AmbienceRedirect,        ambience_redirect,         _, _)                  \
   F(Boolean,                 boolean,                   X, X)                  \
   F(Float32,                 float_32,                  X, X)                  \
   F(Nothing,                 nothing,                   _, _)                  \
@@ -1345,14 +1346,18 @@ ACCESSORS_DECL(reference, value);
 
 // --- A m b i e n c e ---
 
-static const size_t kAmbienceSize = OBJECT_SIZE(1);
+static const size_t kAmbienceSize = OBJECT_SIZE(2);
 static const size_t kAmbienceRuntimeOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kAmbiencePresentCoreFragmentOffset = OBJECT_FIELD_OFFSET(1);
 
 // Returns the runtime struct underlying this ambience.
 runtime_t *get_ambience_runtime(value_t self);
 
 // Sets the runtime field of this ambience.
 void set_ambience_runtime(value_t self, runtime_t *runtime);
+
+// The present fragment of the core module.
+ACCESSORS_DECL(ambience, present_core_fragment);
 
 
 // --- M i s c ---

@@ -6,6 +6,7 @@
 #include "codegen.h"
 #include "log.h"
 #include "method.h"
+#include "tagged-inl.h"
 #include "try-inl.h"
 #include "value-inl.h"
 
@@ -685,10 +686,14 @@ static value_t lookup_subject_methods(signature_map_lookup_state_t *state) {
   CHECK_FAMILY(ofType, type);
   value_t origin = get_type_origin(type);
   TOPIC_INFO(Lookup, "Subject origin: %v", origin);
-  if (is_nothing(origin))
+  if (in_phylum(tpAmbienceRedirect, origin)) {
+    origin = nothing();
+  }
+  if (is_nothing(origin)) {
     // Some types have no origin (at least at the moment) and that's okay, we
     // just don't perform the extra lookup.
     return success();
+  }
   TRY(lookup_through_fragment(state, origin));
   return success();
 }

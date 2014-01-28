@@ -1516,7 +1516,7 @@ value_t ensure_code_block_owned_values_frozen(runtime_t *runtime, value_t self) 
 GET_FAMILY_PRIMARY_TYPE_IMPL(type);
 NO_BUILTIN_METHODS(type);
 
-ACCESSORS_IMPL(Type, type, acInFamilyOpt, ofModuleFragment, Origin, origin);
+ACCESSORS_IMPL(Type, type, acNoCheck, 0, Origin, origin);
 ACCESSORS_IMPL(Type, type, acNoCheck, 0, DisplayName, display_name);
 
 value_t type_validate(value_t value) {
@@ -2358,6 +2358,9 @@ void reference_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
 
 TRIVIAL_PRINT_ON_IMPL(Ambience, ambience);
 FIXED_GET_MODE_IMPL(ambience, vmMutable);
+
+ACCESSORS_IMPL(Ambience, ambience, acInFamilyOpt, ofModuleFragment,
+    PresentCoreFragment, present_core_fragment);
 
 value_t ambience_validate(value_t self) {
   VALIDATE_FAMILY(ofAmbience, self);

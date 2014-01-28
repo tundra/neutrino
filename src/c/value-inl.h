@@ -52,6 +52,14 @@ static value_t get_tuple_second(value_t self) {
 }
 
 
+// --- A m b i e n c e ----
+
+// Returns an ambience redirect for the core present module.
+static value_t get_ambience_core_present_redirect() {
+  return new_ambience_redirect(kAmbiencePresentCoreFragmentOffset);
+}
+
+
 // --- P r i n t i n g ---
 
 // Helper data type for the shorthand for converting a value to a string.
