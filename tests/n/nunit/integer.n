@@ -42,15 +42,9 @@ def $test_simple_relations() {
   $assert:equals(false, 0 == 1);
 }
 
-## Temporary test that method from imported modules are visible.
-def $test_imports() {
-  $assert:equals(8, (0).method_from_integer_module());
-}
-
 def $main() {
   $test_simple_arithmetic();
   $test_simple_relations();
-  $test_imports();
 }
 
 entry_point $main();
