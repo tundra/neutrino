@@ -6,6 +6,7 @@
 #include "codegen.h"
 #include "log.h"
 #include "method.h"
+#include "tagged.h"
 #include "try-inl.h"
 #include "value-inl.h"
 
@@ -13,6 +14,7 @@
 void signature_map_lookup_input_init(signature_map_lookup_input_t *input,
     value_t ambience, value_t record, frame_t *frame, void *data) {
   input->runtime = get_ambience_runtime(ambience);
+  input->ambience = ambience;
   input->record = record;
   input->frame = frame;
   input->data = data;
@@ -683,7 +685,7 @@ static value_t lookup_subject_methods(signature_map_lookup_state_t *state) {
   value_t type = get_primary_type(subject, state->input.runtime);
   TOPIC_INFO(Lookup, "Subject type: %v", type);
   CHECK_FAMILY(ofType, type);
-  value_t origin = get_type_origin(type);
+  value_t origin = get_type_origin(type, state->input.ambience);
   TOPIC_INFO(Lookup, "Subject origin: %v", origin);
   if (is_nothing(origin))
     // Some types have no origin (at least at the moment) and that's okay, we

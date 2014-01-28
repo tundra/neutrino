@@ -8,7 +8,7 @@
 #include "interp.h"
 #include "log.h"
 #include "runtime.h"
-#include "tagged.h"
+#include "tagged-inl.h"
 #include "try-inl.h"
 #include "value-inl.h"
 
@@ -1516,7 +1516,7 @@ value_t ensure_code_block_owned_values_frozen(runtime_t *runtime, value_t self) 
 GET_FAMILY_PRIMARY_TYPE_IMPL(type);
 NO_BUILTIN_METHODS(type);
 
-ACCESSORS_IMPL(Type, type, acInFamilyOpt, ofModuleFragment, Origin, origin);
+ACCESSORS_IMPL(Type, type, acNoCheck, 0, RawOrigin, raw_origin);
 ACCESSORS_IMPL(Type, type, acNoCheck, 0, DisplayName, display_name);
 
 value_t type_validate(value_t value) {
@@ -1546,6 +1546,15 @@ value_t plankton_set_type_contents(value_t object, runtime_t *runtime,
   UNPACK_PLANKTON_MAP(contents, name);
   set_type_display_name(object, name);
   return success();
+}
+
+value_t get_type_origin(value_t self, value_t ambience) {
+  value_t raw_origin = get_type_raw_origin(self);
+  if (in_phylum(tpAmbienceRedirect, raw_origin)) {
+    return follow_ambience_redirect(ambience, raw_origin);
+  } else {
+    return raw_origin;
+  }
 }
 
 
@@ -2359,6 +2368,9 @@ void reference_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
 TRIVIAL_PRINT_ON_IMPL(Ambience, ambience);
 FIXED_GET_MODE_IMPL(ambience, vmMutable);
 
+ACCESSORS_IMPL(Ambience, ambience, acInFamilyOpt, ofModuleFragment,
+    PresentCoreFragment, present_core_fragment);
+
 value_t ambience_validate(value_t self) {
   VALIDATE_FAMILY(ofAmbience, self);
   return success();
@@ -2377,6 +2389,14 @@ void set_ambience_runtime(value_t self, runtime_t *runtime) {
 runtime_t *get_ambience_runtime(value_t self) {
   CHECK_FAMILY(ofAmbience, self);
   return value_to_pointer_bit_cast(*access_object_field(self, kAmbienceRuntimeOffset));
+}
+
+value_t follow_ambience_redirect(value_t self, value_t redirect) {
+  CHECK_FAMILY(ofAmbience, self);
+  CHECK_PHYLUM(tpAmbienceRedirect, redirect);
+  size_t offset = get_ambience_redirect_offset(redirect);
+  CHECK_REL("invalid redirect", offset, <, kAmbienceSize);
+  return *access_object_field(self, offset);
 }
 
 

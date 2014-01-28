@@ -472,6 +472,7 @@ ACCESSORS_DECL(object, header);
 //
 //  CamelName                underscore_name            Cm Sr
 #define ENUM_CUSTOM_TAGGED_PHYLUMS(F)                                          \
+  F(AmbienceRedirect,        ambience_redirect,         _, _)                  \
   F(Boolean,                 boolean,                   X, X)                  \
   F(Float32,                 float_32,                  X, X)                  \
   F(Nothing,                 nothing,                   _, _)                  \
@@ -1049,14 +1050,22 @@ INTEGER_ACCESSORS_DECL(code_block, high_water_mark);
 // --- T y p e ---
 
 static const size_t kTypeSize = OBJECT_SIZE(2);
-static const size_t kTypeOriginOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kTypeRawOriginOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kTypeDisplayNameOffset = OBJECT_FIELD_OFFSET(1);
 
-// Returns the originating module fragment for this type.
-ACCESSORS_DECL(type, origin);
+// The originating module fragment for this type or a value indicating that
+// there is no fragment or that it is available through the ambience. For most
+// purposes you'll want to use get_type_origin instead of this.
+ACCESSORS_DECL(type, raw_origin);
 
 // Returns the display (debug) name for this type object.
 ACCESSORS_DECL(type, display_name);
+
+// Returns the originating module fragment for the given type within the given
+// ambience. Because the origin of the built-in types can be set on the ambience
+// the origin is not well-defined on all types independent of which ambience
+// they're being used within.
+value_t get_type_origin(value_t self, value_t ambience);
 
 
 // --- A r g u m e n t   m a p   t r i e ---
@@ -1345,14 +1354,21 @@ ACCESSORS_DECL(reference, value);
 
 // --- A m b i e n c e ---
 
-static const size_t kAmbienceSize = OBJECT_SIZE(1);
+static const size_t kAmbienceSize = OBJECT_SIZE(2);
 static const size_t kAmbienceRuntimeOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kAmbiencePresentCoreFragmentOffset = OBJECT_FIELD_OFFSET(1);
 
 // Returns the runtime struct underlying this ambience.
 runtime_t *get_ambience_runtime(value_t self);
 
 // Sets the runtime field of this ambience.
 void set_ambience_runtime(value_t self, runtime_t *runtime);
+
+// Returns the value corresponding to the given redirect for this ambience.
+value_t follow_ambience_redirect(value_t self, value_t redirect);
+
+// The present fragment of the core module.
+ACCESSORS_DECL(ambience, present_core_fragment);
 
 
 // --- M i s c ---

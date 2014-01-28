@@ -218,4 +218,23 @@ bool is_float_32_finite(value_t value);
 // Returns true if the value is the float-32 representation of NaN.
 bool is_float_32_nan(value_t value);
 
+
+// --- A m b i e n c e   r e d i r e c t ---
+
+// Creates a new ambience redirect that corresponds to the field with the given
+// offset. An ambient redirect is a point where otherwise ambience-independent
+// code (typically the runtime) can indicate that an ambience-specific value
+// should be used. These can't be used everywhere, only in places that
+// explicitly look for them.
+static value_t new_ambience_redirect(size_t offset) {
+  return new_custom_tagged(tpAmbienceRedirect, offset);
+}
+
+// Returns the field this ambience redirect points to.
+static size_t get_ambience_redirect_offset(value_t self) {
+  CHECK_PHYLUM(tpAmbienceRedirect, self);
+  return get_custom_tagged_payload(self);
+}
+
+
 #endif // _TAGGED

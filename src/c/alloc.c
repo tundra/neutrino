@@ -264,11 +264,11 @@ value_t new_heap_code_block(runtime_t *runtime, value_t bytecode,
 }
 
 value_t new_heap_type(runtime_t *runtime, alloc_flags_t flags,
-    value_t origin, value_t display_name) {
+    value_t raw_origin, value_t display_name) {
   size_t size = kTypeSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_type_species)));
-  set_type_origin(result, origin);
+  set_type_raw_origin(result, raw_origin);
   set_type_display_name(result, display_name);
   TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
@@ -463,6 +463,7 @@ value_t new_heap_ambience(runtime_t *runtime) {
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, ambience_species)));
   set_ambience_runtime(result, runtime);
+  set_ambience_present_core_fragment(result, nothing());
   return post_create_sanity_check(result, size);
 }
 

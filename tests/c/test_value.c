@@ -953,6 +953,19 @@ TEST(value, reference) {
 
 TEST(value, ambience) {
   CREATE_RUNTIME();
+
   ASSERT_PTREQ(runtime, get_ambience_runtime(ambience));
+  value_t redirect = get_ambience_present_core_fragment_redirect();
+  ASSERT_VALEQ(nothing(), get_ambience_present_core_fragment(ambience));
+  ASSERT_VALEQ(nothing(), follow_ambience_redirect(ambience, redirect));
+  ASSERT_VALEQ(nothing(), get_type_origin(ROOT(runtime, string_type), ambience));
+
+  value_t frag = new_heap_module_fragment(runtime, nothing(), present_stage(),
+      nothing(), nothing(), nothing());
+  set_ambience_present_core_fragment(ambience, frag);
+  ASSERT_VALEQ(frag, get_ambience_present_core_fragment(ambience));
+  ASSERT_VALEQ(frag, follow_ambience_redirect(ambience, redirect));
+  ASSERT_VALEQ(frag, get_type_origin(ROOT(runtime, string_type), ambience));
+
   DISPOSE_RUNTIME();
 }

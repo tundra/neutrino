@@ -203,3 +203,12 @@ value_t add_float_32_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(float_32, infix_eqeq, 1, float_32_equals_float_32);
   return success();
 }
+
+
+// --- A m b i e n c e   r e d i r e c t ---
+
+void ambience_redirect_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
+  string_buffer_printf(buf, "#<ambience redirect @+%i>",
+      get_ambience_redirect_offset(value));
+}
+
