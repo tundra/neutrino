@@ -257,9 +257,24 @@ class Parser(object):
     self.expect_statement_delimiter(True)
     return ast.TypeDeclaration(name, supertype, members)
 
+  # <type members>
+  #   -> "{" <type member>* "}"
+  #   -> .
   def parse_type_members(self):
+    result = []
     if not self.at_punctuation('{'):
-      return
+      return result
+    self.expect_punctuation('{')
+    while not self.at_punctuation('}'):
+      member = self.parse_type_member()
+      result.append(member)
+    self.expect_punctuation('}')
+    return result
+
+  # <type member>
+  #   -> <toplevel declaration>
+  def parse_type_member(self):
+    return self.parse_toplevel_declaration([])
 
   # <new expression>
   #   -> "new" <atomic expression> <arguments>
