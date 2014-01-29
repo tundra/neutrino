@@ -85,7 +85,7 @@ class NProgram(NBinary):
     modules = self.get_input_paths(module=True)
     options = plankton.options.Options()
     options.add_flag("modules", modules)
-    command = "%s --file %s --compile %s > %s" % (compile_command_line, file,
+    command = "%s --file %s --compile %s --out %s" % (compile_command_line, file,
       options.base64_encode(), outpath)
     return process.Command(command)
 

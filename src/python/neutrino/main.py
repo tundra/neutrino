@@ -105,6 +105,7 @@ class Main(object):
     parser.add_option('--filter', action='store_true', default=False)
     parser.add_option('--base64', action='store_true', default=False)
     parser.add_option('--disass', action='store_true', default=False)
+    parser.add_option('--out', default=None)
     parser.add_option('--compile', action='callback', type='string', callback=parse_plankton_option)
     return parser
 
@@ -197,11 +198,15 @@ class Main(object):
       self.schedule_for_output(unit)
 
   def output_value(self, value):
+    if self.flags.out is None:
+      out = sys.stdout
+    else:
+      out = open(self.flags.out, "w")
     encoder = plankton.Encoder()
     if self.flags.base64:
       print "p64/%s" % encoder.base64encode(value)
     else:
-      sys.stdout.write(encoder.encode(value))
+      out.write(encoder.encode(value))
 
 
 if __name__ == '__main__':
