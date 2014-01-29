@@ -408,6 +408,10 @@ class Guard(object):
     if not self.value is None:
       self.value.accept(visitor)
 
+  # Is this an any-guard?
+  def is_any(self):
+    return self.type == data.Guard._ANY
+
   def __str__(self):
     if self.value is None:
       return "%s()" % self.type
@@ -560,7 +564,7 @@ class MethodDeclaration(object):
 
   def apply(self, module):
     fragment = module.get_or_create_fragment(0)
-    fragment.add_element(self)
+    fragment.add_element(self)          
 
   def __str__(self):
     return "(method-declaration %s %s)" % (self.method.signature, self.method.body)
@@ -614,6 +618,8 @@ class TypeDeclaration(object):
       sub = Variable(self.ident)
       is_decl = IsDeclaration(sub, parent)
       is_decl.apply(module)
+    for member in self.members:
+      member.apply(module)
 
 
 @plankton.serializable(plankton.EnvironmentReference.path("core", "UnboundModule"))
