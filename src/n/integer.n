@@ -4,7 +4,7 @@
 ## The built-in type of runtime-native integers.
 def @Integer := @ctrino.get_builtin_type("Integer");
 
-type @Integer is @Object;
+def type @Integer is @Object;
 
 ## Returns the successor value of this integer, that is, this value plus one.
 def ($this is @Integer).successor => ($this + 1);

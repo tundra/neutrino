@@ -4,4 +4,4 @@
 ## The built-in type of runtime-native functions.
 def @Function := @ctrino.get_builtin_type("Function");
 
-type @Function is @Object;
+def type @Function is @Object;

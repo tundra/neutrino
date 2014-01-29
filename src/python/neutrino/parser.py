@@ -115,6 +115,7 @@ class Parser(object):
   # <toplevel-declaration>
   #   -> "def" <ident> ":=" <value> ";"
   #   -> "def" <subject> <operation> <parameters> "=>" <value> ";"
+  #   -> "def" "type" <atomic> "is" <atomic> ";"
   def parse_toplevel_declaration(self, annots):
     self.expect_word('def')
     subject = None
@@ -137,6 +138,13 @@ class Parser(object):
           selector = self.name_as_selector(Parser._SAUSAGES)
           signature = ast.Signature([subject, selector] + params)
           return ast.FunctionDeclaration(name, ast.Method(signature, body))
+    elif self.at_word('type'):
+      self.expect_word('type')
+      subtype = self.parse_atomic_expression()
+      self.expect_word('is')
+      supertype = self.parse_atomic_expression()
+      self.expect_statement_delimiter(True)
+      return ast.IsDeclaration(subtype, supertype)
     else:
       subject = self.parse_subject()
     name = self.expect_type(Token.OPERATION)
@@ -191,8 +199,6 @@ class Parser(object):
       self.expect_word('do')
       self.module.set_entry_point(self.parse_expression(True))
       return None
-    elif self.at_word('type'):
-      return self.parse_toplevel_type_declaration()
     else:
       raise self.new_syntax_error()
 
@@ -204,16 +210,6 @@ class Parser(object):
       annot = self.parse_atomic_expression()
       annots.append(annot)
     return annots
-
-  # <toplevel-type-declaration>
-  #   -> "type" <atomic> "is" <atomic> ";"
-  def parse_toplevel_type_declaration(self):
-    self.expect_word('type')
-    subtype = self.parse_atomic_expression()
-    self.expect_word('is')
-    supertype = self.parse_atomic_expression()
-    self.expect_statement_delimiter(True)
-    return ast.IsDeclaration(subtype, supertype)
 
   # <expression>
   #   -> <operator expression>
