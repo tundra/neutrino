@@ -302,8 +302,8 @@ value_t new_heap_identifier(runtime_t *runtime, value_t stage, value_t path);
 
 // Creates a new namespace declaration syntax tree with the given path bound
 // to the given name.
-value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t path,
-    value_t value);
+value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t annotations,
+    value_t path, value_t value);
 
 // Creates a new method declaration that declares the given method.
 value_t new_heap_method_declaration_ast(runtime_t *runtime, value_t method);

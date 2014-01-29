@@ -494,9 +494,11 @@ class Program(object):
 @plankton.serializable(plankton.EnvironmentReference.path("ast", "NamespaceDeclaration"))
 class NamespaceDeclaration(object):
 
+  @plankton.field("annotations")
   @plankton.field("path")
   @plankton.field("value")
-  def __init__(self, ident, value):
+  def __init__(self, annotations, ident, value):
+    self.annotations = annotations
     self.ident = ident
     self.path = ident.path
     self.value = value
@@ -513,6 +515,8 @@ class NamespaceDeclaration(object):
     fragment.add_element(self)
 
   def traverse(self, visitor):
+    for annot in self.annotations:
+      annot.accept(visitor)
     self.value.accept(visitor)
 
   def __str__(self):
@@ -630,7 +634,7 @@ class UnboundModuleFragment(object):
       Argument(data._SELECTOR, Literal(data.Operation.infix("new_function"))),
       Argument(0, Literal(name.path))
     ])
-    self.add_element(NamespaceDeclaration(name, value))
+    self.add_element(NamespaceDeclaration([], name, value))
 
   def __str__(self):
     return "(fragment %s %s)" % (self.stage, " ".join(map(str, self.elements)))
