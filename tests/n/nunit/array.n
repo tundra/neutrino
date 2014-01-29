@@ -48,10 +48,8 @@ def $test_array_iteration() {
   $assert:equals(6, $sum);
 }
 
-def $main() {
+do {
   $test_simple_array_methods();
   $test_mutable_arrays();
   $test_array_iteration();
 }
-
-entry_point $main();

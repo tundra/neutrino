@@ -1,7 +1,7 @@
 # Temporarily disabled while I figure out a new model for quoting.
 
 # -- INPUT:
-# entry_point {
+# do {
 #   @(1 + 1).print();
 #   @("a" + "b").print();
 #   @(1 - 2).print();

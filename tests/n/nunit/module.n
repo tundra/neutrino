@@ -6,8 +6,6 @@ import $core;
 
 def $test_grab_module() => module;
 
-def $main() {
+do {
   $test_grab_module();
 }
-
-entry_point $main();

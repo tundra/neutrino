@@ -66,11 +66,9 @@ def $test_if_statement() {
   $assert:equals(null, $v2);
 }
 
-def $main() {
+do {
   $test_select();
   $test_if_call();
   $test_if_expression();
   $test_if_statement();
 }
-
-entry_point $main();

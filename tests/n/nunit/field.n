@@ -60,10 +60,8 @@ def $test_constructor() {
   $assert:equals(32, $p2.y);
 }
 
-def $main() {
+do {
   $test_raw_field_access();
   $test_field_accessors();
   $test_constructor();
 }
-
-entry_point $main();

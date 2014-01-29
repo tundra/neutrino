@@ -185,8 +185,8 @@ class Parser(object):
       return self.parse_toplevel_declaration()
     elif self.at_word('import'):
       return self.parse_toplevel_import()
-    elif self.at_word('entry_point'):
-      self.expect_word('entry_point')
+    elif self.at_word('do'):
+      self.expect_word('do')
       self.module.set_entry_point(self.parse_expression(True))
       return None
     elif self.at_word('type'):

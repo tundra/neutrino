@@ -1,6 +1,6 @@
 -- INPUT:
 def $x := 4;
-entry_point $x.print();
+do $x.print();
 -- OUTPUT:
 4
 -- END
@@ -8,7 +8,7 @@ entry_point $x.print();
 
 -- INPUT:
 def @x := 8;
-entry_point @x.print();
+do @x.print();
 -- OUTPUT:
 8
 -- END
@@ -17,7 +17,7 @@ entry_point @x.print();
 -- INPUT:
 def @x := 12;
 def $y := @x;
-entry_point ($y).print();
+do ($y).print();
 -- OUTPUT:
 12
 -- END
@@ -25,7 +25,7 @@ entry_point ($y).print();
 
 -- INPUT:
 def @x := 16;
-entry_point ((fn ($y) => (@x + $y))(3)).print();
+do ((fn ($y) => (@x + $y))(3)).print();
 -- OUTPUT:
 19
 -- END
@@ -41,7 +41,7 @@ def @pz := @py + 5;
 def $x := @px + 6;
 def $y := $x + 7;
 def $z := $y + 8;
-entry_point {
+do {
   @@ppx.print();
   @@ppy.print();
   @@ppz.print();
@@ -75,7 +75,7 @@ def @z := 17;
 def $x := 18;
 def $y := 19;
 def $z := 20;
-entry_point {
+do {
   @@x.print();
   @@y.print();
   @@z.print();
@@ -109,7 +109,7 @@ def @z := @@z + "f";
 def @@x := "g";
 def @@y := "h";
 def @@z := "i";
-entry_point {
+do {
   @@x.print_raw();
   @@y.print_raw();
   @@z.print_raw();
@@ -138,7 +138,7 @@ def $a := @b;
 def @b := @@c;
 def @@c := @@@d;
 def @@@d := 8;
-entry_point {
+do {
   $a.print();
   @b.print();
   @@c.print();
@@ -156,7 +156,7 @@ entry_point {
 def @@ppx := 12;
 def @@ppy := @@ppx + 1;
 def @@ppz := @@ppy + 2;
-entry_point {
+do {
   @@ppx.print();
   @@ppy.print();
   @@ppz.print();

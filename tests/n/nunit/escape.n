@@ -56,4 +56,4 @@ def $main() {
   #   - escaping fails if called from a different process.
 }
 
-entry_point $main();
+do $main();

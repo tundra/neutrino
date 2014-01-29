@@ -8,4 +8,4 @@ def $main() {
   $assert:that(true);
 }
 
-entry_point $main();
+do $main();

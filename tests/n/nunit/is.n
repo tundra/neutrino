@@ -22,8 +22,6 @@ def $test_simple_inheritance() {
   $assert:equals(9, $b.y());
 }
 
-def $main() {
+do {
   $test_simple_inheritance();
 }
-
-entry_point $main();
