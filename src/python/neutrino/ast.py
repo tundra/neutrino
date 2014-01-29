@@ -593,6 +593,29 @@ class FunctionDeclaration(object):
     return "(function-declaration %s %s)" % (self.method.signature, self.method.body)
 
 
+# A toplevel type declaration
+class TypeDeclaration(object):
+
+  _NEW_TYPE = data.Operation.infix("new_type")
+
+  def __init__(self, ident, supers, members):
+    self.ident = ident
+    self.supers = supers
+    self.members = members
+
+  def apply(self, module):
+    name_decl = NamespaceDeclaration([], self.ident, Invocation([
+      Argument(data._SUBJECT, CurrentModule()),
+      Argument(data._SELECTOR, Literal(TypeDeclaration._NEW_TYPE)),
+      Argument(0, Literal(self.ident)),
+    ]))
+    name_decl.apply(module)
+    for parent in self.supers:
+      sub = Variable(self.ident)
+      is_decl = IsDeclaration(sub, parent)
+      is_decl.apply(module)
+
+
 @plankton.serializable(plankton.EnvironmentReference.path("core", "UnboundModule"))
 class UnboundModule(object):
 

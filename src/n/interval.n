@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 ## A half-open interval.
-def @Interval := module.new_type("Interval");
+type @Interval;
 
 def @from_field := @ctrino.new_global_field("from");
 def @to_field := @ctrino.new_global_field("to");
