@@ -12,11 +12,11 @@ def @manager := @ctrino.new_instance_manager(null);
 type @HanoiDisk {
 
   ## Getter for the size property.
-  def ($this).size => @size_field[$this];
+  def $this.size => @size_field[$this];
 
   ## Getter and setter for the next property.
-  def ($this).next => @next_field[$this];
-  def ($this).next := ($value) => (@next_field[$this] := $value);
+  def $this.next => @next_field[$this];
+  def $this.next := ($value) => (@next_field[$this] := $value);
 
 }
 
@@ -34,16 +34,16 @@ def ($this == @HanoiDisk).new(size: $size) {
 type @Hanoi {
 
   ## The Hanoi.piles field.
-  def ($this).piles => @piles_field[$this];
-  def ($this).piles := ($value) => (@piles_field[$this] := $value);
+  def $this.piles => @piles_field[$this];
+  def $this.piles := ($value) => (@piles_field[$this] := $value);
 
   ## The Hanoi.moves field.
-  def ($this).moves => @moves_field[$this];
-  def ($this).moves := ($value) => (@moves_field[$this] := $value);
+  def $this.moves => @moves_field[$this];
+  def $this.moves := ($value) => (@moves_field[$this] := $value);
 
   ## Runs the hanoi algorithm starting from a stack of $size disks on the first
   ## pile.
-  def ($this).run(size: $size) {
+  def $this.run(size: $size) {
     $this.build(pile: 0, disks: $size);
     $this.move(from: 0, to: 1, disks: $size);
     $this.moves;
@@ -51,7 +51,7 @@ type @Hanoi {
 
   ## Move $disks disks from $from to $to, possibly using the third pile as an
   ## intermediate. Increments the .moves field by the number of steps taken.
-  def ($this).move(from: $from, to: $to, disks: $disks) {
+  def $this.move(from: $from, to: $to, disks: $disks) {
     if $disks == 1 then {
       $this.move_top($from, $to);
     } else {
@@ -65,14 +65,14 @@ type @Hanoi {
   }
 
   ## Moves the top disk from $from to $to.
-  def ($this).move_top($from, $to) {
+  def $this.move_top($from, $to) {
     def $disk := $this.pop($from);
     $this.push($to, $disk);
     $this.moves := $this.moves + 1;
   }
 
   ## Removes the top disk from the given pile.
-  def ($this).pop($pile) {
+  def $this.pop($pile) {
     def $top := ($this.piles)[$pile];
     ($this.piles)[$pile] := $top.next;
     $top.next := null;
@@ -80,14 +80,14 @@ type @Hanoi {
   }
 
   ## Places the given disk op top of the given pile.
-  def ($this).push($pile, $disk) {
+  def $this.push($pile, $disk) {
     def $top := ($this.piles)[$pile];
     $disk.next := $top;
     ($this.piles)[$pile] := $disk;
   }
 
   ## Build a stack of $disks disks on pile $pile.
-  def ($this).build(pile: $pile, disks: $disks) {
+  def $this.build(pile: $pile, disks: $disks) {
     for $i in (0).to($disks) do {
       def $size := $disks - $i - 1;
       def $disk := new @HanoiDisk(size: $size);
