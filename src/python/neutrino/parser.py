@@ -23,7 +23,7 @@ class Parser(object):
     self.tokens = tokens
     self.cursor = 0
     self.module = module
-    self.default_subject_guard = data.Guard.any()
+    self.default_subject_guard = ast.Guard.any()
 
   # Does this parser have more tokens to process?
   def has_more(self):
