@@ -201,7 +201,7 @@ class Main(object):
     if self.flags.out is None:
       out = sys.stdout
     else:
-      out = open(self.flags.out, "w")
+      out = open(self.flags.out, "wb")
     encoder = plankton.Encoder()
     if self.flags.base64:
       print "p64/%s" % encoder.base64encode(value)
