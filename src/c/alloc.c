@@ -778,7 +778,9 @@ value_t new_heap_identifier(runtime_t *runtime, value_t stage, value_t path) {
 }
 
 value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t path,
-    value_t value) {
+    value_t value, value_t annotations) {
+  CHECK_FAMILY_OPT(ofPath, path);
+  CHECK_FAMILY_OPT(ofArray, annotations);
   size_t size = kNamespaceDeclarationAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, namespace_declaration_ast_species)));

@@ -115,7 +115,7 @@ class Parser(object):
   # <toplevel-declaration>
   #   -> "def" <ident> ":=" <value> ";"
   #   -> "def" <subject> <operation> <parameters> "=>" <value> ";"
-  def parse_toplevel_declaration(self):
+  def parse_toplevel_declaration(self, annots):
     self.expect_word('def')
     subject = None
     if self.at_type(Token.IDENTIFIER):
@@ -127,7 +127,7 @@ class Parser(object):
         # Plain definition
         self.expect_punctuation(':=')
         value = self.parse_expression(True)
-        return ast.NamespaceDeclaration(name, value)
+        return ast.NamespaceDeclaration(annots, name, value)
       else:
         # First argument to a method
         subject = ast.Parameter(name, [data._SUBJECT], ast.Guard.eq(ast.Variable(name.shift_back())))
@@ -178,11 +178,13 @@ class Parser(object):
     return ast.Import(name)
 
   # <toplevel-statement>
-  #   -> <toplevel-declaration>
-  #   -> <toplevel-import>
+  #   -> <annotations> <toplevel-declaration>
+  #   -> <annotations> <toplevel-import>
+  #   -> <annotations> <toplevel-type-declaration>
   def parse_toplevel_statement(self):
+    annots = self.parse_annotations()
     if self.at_word('def'):
-      return self.parse_toplevel_declaration()
+      return self.parse_toplevel_declaration(annots)
     elif self.at_word('import'):
       return self.parse_toplevel_import()
     elif self.at_word('do'):
@@ -193,6 +195,15 @@ class Parser(object):
       return self.parse_toplevel_type_declaration()
     else:
       raise self.new_syntax_error()
+
+  # <annotations>
+  #   -> <atomic expression>*
+  def parse_annotations(self):
+    annots = []
+    while self.at_atomic_start():
+      annot = self.parse_atomic_expression()
+      annots.append(annot)
+    return annots
 
   # <toplevel-type-declaration>
   #   -> "type" <atomic> "is" <atomic> ";"

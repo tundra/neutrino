@@ -1083,6 +1083,8 @@ ACCESSORS_IMPL(NamespaceDeclarationAst, namespace_declaration_ast,
     acInFamilyOpt, ofPath, Path, path);
 ACCESSORS_IMPL(NamespaceDeclarationAst, namespace_declaration_ast,
     acIsSyntaxOpt, 0, Value, value);
+ACCESSORS_IMPL(NamespaceDeclarationAst, namespace_declaration_ast,
+    acInFamilyOpt, ofArray, Annotations, annotations);
 
 value_t namespace_declaration_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofNamespaceDeclarationAst, self);
@@ -1092,15 +1094,16 @@ value_t namespace_declaration_ast_validate(value_t self) {
 
 value_t plankton_set_namespace_declaration_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, path, value);
+  UNPACK_PLANKTON_MAP(contents, path, value, annotations);
   set_namespace_declaration_ast_path(object, path);
   set_namespace_declaration_ast_value(object, value);
+  set_namespace_declaration_ast_annotations(object, annotations);
   return success();
 }
 
 value_t plankton_new_namespace_declaration_ast(runtime_t *runtime) {
   return new_heap_namespace_declaration_ast(runtime, nothing(),
-      nothing());
+      nothing(), nothing());
 }
 
 void namespace_declaration_ast_print_on(value_t value, string_buffer_t *buf,

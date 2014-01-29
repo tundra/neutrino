@@ -5,6 +5,7 @@ import os.path
 import plankton.options
 
 file_names = [
+  "annot.n",
   "anything.n",
   "array.n",
   "def.n",
