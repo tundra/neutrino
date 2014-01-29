@@ -4,10 +4,10 @@
 import $assert;
 
 def @m := @ctrino.new_instance_manager(null);
-def @A := module.new_type("A");
-def @B := module.new_type("B");
 
-def type @B is @A;
+type @A;
+
+type @B is @A;
 
 def ($this is @A).x() => 8;
 def ($this is @A).y() => 9;

@@ -199,6 +199,8 @@ class Parser(object):
       self.expect_word('do')
       self.module.set_entry_point(self.parse_expression(True))
       return None
+    elif self.at_word('type'):
+      return self.parse_type_declaration()
     else:
       raise self.new_syntax_error()
 
@@ -240,6 +242,24 @@ class Parser(object):
       return self.parse_with_escape_expression(expect_delim)
     else:
       return self.parse_assignment_expression(expect_delim)
+
+  # <type declaration>
+  #   -> "type" <ident> ("is" <atomic>)? <members>
+  def parse_type_declaration(self):
+    self.expect_word('type')
+    name = self.expect_type(Token.IDENTIFIER)
+    if self.at_word('is'):
+      self.expect_word('is')
+      supertype = [self.parse_atomic_expression()]
+    else:
+      supertype = []
+    members = self.parse_type_members()
+    self.expect_statement_delimiter(True)
+    return ast.TypeDeclaration(name, supertype, members)
+
+  def parse_type_members(self):
+    if not self.at_punctuation('{'):
+      return
 
   # <new expression>
   #   -> "new" <atomic expression> <arguments>

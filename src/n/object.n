@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 ## The common supertype of all the built-in types.
-def @Object := module.new_type("Object");
+type @Object;
 
 ## Generic converter method that returns the internal string representation of
 ## the given object.

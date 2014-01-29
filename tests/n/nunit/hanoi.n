@@ -9,7 +9,7 @@ import $core;
 def @manager := @ctrino.new_instance_manager(null);
 
 ## An individual hanoi disk.
-def @HanoiDisk := module.new_type("HanoiDisk");
+type @HanoiDisk;
 def @size_field := @ctrino.new_global_field("HanoiDisk.size");
 def @next_field := @ctrino.new_global_field("HanoiDisk.next");
 
@@ -28,7 +28,7 @@ def ($this == @HanoiDisk).new(size: $size) {
 }
 
 ## Holds the state of the hanoi system.
-def @Hanoi := module.new_type("Hanoi");
+type @Hanoi;
 def @piles_field := @ctrino.new_global_field("Hanoi.piles");
 def @moves_field := @ctrino.new_global_field("Hanoi.moves");
 
