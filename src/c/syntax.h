@@ -267,18 +267,18 @@ ACCESSORS_DECL(method_ast, body);
 // --- N a m e s p a c e   d e c l a r a t i o n   a s t ---
 
 static const size_t kNamespaceDeclarationAstSize = OBJECT_SIZE(3);
-static const size_t kNamespaceDeclarationAstPathOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kNamespaceDeclarationAstValueOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kNamespaceDeclarationAstAnnotationsOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kNamespaceDeclarationAstAnnotationsOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kNamespaceDeclarationAstPathOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kNamespaceDeclarationAstValueOffset = OBJECT_FIELD_OFFSET(2);
+
+// The list of annotations attached to this declaration.
+ACCESSORS_DECL(namespace_declaration_ast, annotations);
 
 // The path this declaration declares.
 ACCESSORS_DECL(namespace_declaration_ast, path);
 
 // The value to be bound by this declaration.
 ACCESSORS_DECL(namespace_declaration_ast, value);
-
-// The list of annotations attached to this declaration.
-ACCESSORS_DECL(namespace_declaration_ast, annotations);
 
 
 // --- M e t h o d   d e c l a r a t i o n   a s t ---
