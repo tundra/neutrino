@@ -2,7 +2,19 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 ## A half-open interval.
-type @Interval;
+type @Interval {
+
+  ## Invokes the given thunk for each value within this interval.
+  def $this.for($thunk) {
+    var $i := @from_field[$this];
+    def $limit := @to_field[$this];
+    @while(fn => $i < $limit, fn {
+      $thunk($i);
+      $i := $i.successor;
+    });
+  }
+
+}
 
 def @from_field := @ctrino.new_global_field("from");
 def @to_field := @ctrino.new_global_field("to");
@@ -13,16 +25,6 @@ def ($this == @Interval).new($from, $to) {
   @from_field[$result] := $from;
   @to_field[$result] := $to;
   $result;
-}
-
-## Invokes the given thunk for each value within this interval.
-def ($this is @Interval).for($thunk) {
-  var $i := @from_field[$this];
-  def $limit := @to_field[$this];
-  @while(fn => $i < $limit, fn {
-    $thunk($i);
-    $i := $i.successor;
-  });
 }
 
 ## Shorthand for constructing an interval.
