@@ -109,8 +109,6 @@ def $test_hanoi() {
   $assert:equals(511, $moves);
 }
 
-def $main() {
+do {
   $test_hanoi();
 }
-
-entry_point $main();

@@ -79,10 +79,8 @@ def $test_tagged_for_syntax() {
   $assert:equals(9349, $sum);
 }
 
-def $main() {
+do {
   $test_for_call();
   $test_for_syntax();
   $test_tagged_for_syntax();
 }
-
-entry_point $main();

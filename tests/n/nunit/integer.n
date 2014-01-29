@@ -42,9 +42,7 @@ def $test_simple_relations() {
   $assert:equals(false, 0 == 1);
 }
 
-def $main() {
+do {
   $test_simple_arithmetic();
   $test_simple_relations();
 }
-
-entry_point $main();

@@ -32,8 +32,6 @@ def $test_function_calls() {
   $assert:equals(2, @aa(2));
 }
 
-def $main() {
+do {
   $test_function_calls();
 }
-
-entry_point $main();

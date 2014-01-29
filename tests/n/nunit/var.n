@@ -45,11 +45,9 @@ def $test_orphan_var() {
   $assert:equals(5, $get_then_set(7));
 }
 
-def $main() {
+do {
   $test_var();
   $test_outer_var();
   $test_var_value();
   $test_orphan_var();
 }
-
-entry_point $main();

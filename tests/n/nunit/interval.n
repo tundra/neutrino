@@ -26,9 +26,7 @@ def $test_shorthand() {
   $assert:equals(27, $count);
 }
 
-def $main() {
+do {
   $test_raw_interval();
   $test_shorthand();
 }
-
-entry_point $main();

@@ -1,34 +1,34 @@
 -- INPUT:
 def ($this).get_some_value() => "foo";
-entry_point "blah".get_some_value().print_raw();
+do "blah".get_some_value().print_raw();
 -- OUTPUT:
 foo
 -- END
 
 -- INPUT:
 def ($this).id() => $this;
-entry_point "blah".id().print_raw();
+do "blah".id().print_raw();
 -- OUTPUT:
 blah
 -- END
 
 -- INPUT:
 def ($this).first($a) => $a;
-entry_point "blah".first(4).print();
+do "blah".first(4).print();
 -- OUTPUT:
 4
 -- END
 
 -- INPUT:
 def ($this).first($a, $b) => $a;
-entry_point "blah".first(5, 6).print();
+do "blah".first(5, 6).print();
 -- OUTPUT:
 5
 -- END
 
 -- INPUT:
 def ($this).second($a, $b) => $b;
-entry_point "blah".second(7, 8).print();
+do "blah".second(7, 8).print();
 -- OUTPUT:
 8
 -- END
@@ -36,7 +36,7 @@ entry_point "blah".second(7, 8).print();
 -- INPUT:
 def ($this).foo() => "foo";
 def ($this).bar() => "bar";
-entry_point {
+do {
   "blah".foo().print_raw();
   "blah".bar().print_raw();
 }
@@ -48,7 +48,7 @@ bar
 -- INPUT:
 def ($this).foo() => 4;
 def ($this == 8).foo() => 5;
-entry_point {
+do {
   (7).foo().print();
   (8).foo().print();
   (9).foo().print();
@@ -61,7 +61,7 @@ entry_point {
 
 -- INPUT:
 def ($this).foo($bar) => $bar;
-entry_point (9).foo(6).print();
+do (9).foo(6).print();
 -- OUTPUT:
 6
 -- END
@@ -69,7 +69,7 @@ entry_point (9).foo(6).print();
 -- INPUT:
 def ($this).foo($bar) => $bar;
 def ($this).foo($bar == 18) => $bar + 5;
-entry_point {
+do {
   (1).foo(17).print();
   (1).foo(18).print();
   (1).foo(19).print();
@@ -85,7 +85,7 @@ def @This := module.new_type("This");
 def @obj := @ctrino.new_instance_manager(null).new_instance(@This);
 def ($this).foo() => 6;
 def ($this is @This).foo() => 7;
-entry_point {
+do {
   (1).foo().print();
   @obj.foo().print();
 }

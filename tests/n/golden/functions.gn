@@ -1,6 +1,6 @@
 -- INPUT:
 def $myfun($x) => "[" + $x + "]";
-entry_point $myfun("-").print_raw();
+do $myfun("-").print_raw();
 -- OUTPUT:
 [-]
 -- END
@@ -9,7 +9,7 @@ entry_point $myfun("-").print_raw();
 -- INPUT:
 def $foo($x) => "[" + $x + "]";
 def $bar($x) => "{" + $x + "}";
-entry_point $foo($bar("X")).print_raw();
+do $foo($bar("X")).print_raw();
 -- OUTPUT:
 [{X}]
 -- END
@@ -18,7 +18,7 @@ entry_point $foo($bar("X")).print_raw();
 -- INPUT:
 def $foo($x) => "<" + $x + ">";
 def $foo($x == "y") => "{" + $x + "}";
-entry_point {
+do {
   $foo("x").print_raw();
   $foo("y").print_raw();
   $foo("z").print_raw();
@@ -33,7 +33,7 @@ entry_point {
 -- INPUT:
 def $foo($x) => "<" + $x + ">";
 def $foo($x, $y) => "{" + $x + ", " + $y + "}";
-entry_point {
+do {
   $foo("x").print_raw();
   $foo("y", "z").print_raw();
 }

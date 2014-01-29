@@ -12,8 +12,6 @@ def $test_def_value() {
   $assert:equals(1, $v1);
 }
 
-def $main() {
+do {
   $test_def_value();
 }
-
-entry_point $main();
