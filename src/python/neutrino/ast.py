@@ -564,21 +564,7 @@ class MethodDeclaration(object):
 
   def apply(self, module):
     fragment = module.get_or_create_fragment(0)
-    fragment.add_element(self)
-
-  # Modify this declaration appropriately to reflect that it appears as a member
-  # of the given declaration.
-  def localize(self, holder):
-    signature = self.method.signature
-    for param in signature.parameters:
-      for tag in param.tags:
-        if tag == data._SUBJECT:
-          # Replace the subject's any-guard with the default which is an
-          # is-guard for the containing type.
-          if param.guard.is_any():
-            param.guard = Guard.is_(Variable(holder.ident))
-          return
-          
+    fragment.add_element(self)          
 
   def __str__(self):
     return "(method-declaration %s %s)" % (self.method.signature, self.method.body)
@@ -633,7 +619,6 @@ class TypeDeclaration(object):
       is_decl = IsDeclaration(sub, parent)
       is_decl.apply(module)
     for member in self.members:
-      member.localize(self)
       member.apply(module)
 
 

@@ -23,6 +23,7 @@ class Parser(object):
     self.tokens = tokens
     self.cursor = 0
     self.module = module
+    self.default_subject_guard = data.Guard.any()
 
   # Does this parser have more tokens to process?
   def has_more(self):
@@ -253,21 +254,29 @@ class Parser(object):
       supertype = [self.parse_atomic_expression()]
     else:
       supertype = []
-    members = self.parse_type_members()
+    members = self.parse_type_members(name)
     self.expect_statement_delimiter(True)
     return ast.TypeDeclaration(name, supertype, members)
 
   # <type members>
   #   -> "{" <type member>* "}"
   #   -> .
-  def parse_type_members(self):
+  def parse_type_members(self, holder):
     result = []
     if not self.at_punctuation('{'):
       return result
     self.expect_punctuation('{')
-    while not self.at_punctuation('}'):
-      member = self.parse_type_member()
-      result.append(member)
+    try:
+      # Change the default subject guard for the case where none is explicitly
+      # given to the enclosing type.
+      old_default = self.default_subject_guard
+      self.default_subject_guard = ast.Guard.is_(ast.Variable(holder))
+      while not self.at_punctuation('}'):
+        member = self.parse_type_member()
+        result.append(member)
+    finally:
+      # Remember to pop the default guard off again.
+      self.default_subject_guard = old_default
     self.expect_punctuation('}')
     return result
 
@@ -434,7 +443,6 @@ class Parser(object):
       tag = self.expect_type(Token.TAG)
       tags = [tag] + tags
     name = self.expect_type(Token.IDENTIFIER)
-    guard = ast.Guard.any()
     if self.at_operation('=='):
       self.expect_operation('==')
       guard_value = self.parse_atomic_expression()
@@ -443,6 +451,11 @@ class Parser(object):
       self.expect_word('is')
       guard_value = self.parse_atomic_expression()
       guard = ast.Guard.is_(guard_value)
+    else:
+      if default_tag == data._SUBJECT:
+        guard = self.default_subject_guard
+      else:
+        guard = ast.Guard.any()
     result = ast.Parameter(name, tags, guard)
     return result
 
