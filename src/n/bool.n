@@ -13,4 +13,4 @@ def ($this == true).select($if_true, $if_false) => $if_true;
 ## Specialized implementation of .select if the false value.
 def ($this == false).select($if_true, $if_false) => $if_false;
 
-type @Bool is @Object;
+def type @Bool is @Object;

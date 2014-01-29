@@ -17,4 +17,4 @@ def ($this is @Array).for($thunk) {
   });
 }
 
-type @Array is @Object;
+def type @Array is @Object;

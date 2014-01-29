@@ -4,4 +4,4 @@
 ## The built-in type of runtime-native null singleton.
 def @Null := @ctrino.get_builtin_type("Null");
 
-type @Null is @Object;
+def type @Null is @Object;
