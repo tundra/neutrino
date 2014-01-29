@@ -1942,11 +1942,21 @@ static value_t module_fragment_private_new_type(builtin_arguments_t *args) {
       display_name);
 }
 
+static value_t module_fragment_private_new_global_field(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t display_name = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofModuleFragmentPrivate, self);
+  return new_heap_global_field(get_builtin_runtime(args), display_name);
+}
+
 value_t add_module_fragment_private_builtin_methods(runtime_t *runtime,
     safe_value_t s_space) {
   DEF_INFIX(infix_new_type, "new_type");
   ADD_BUILTIN(module_fragment_private, infix_new_type, 1,
       module_fragment_private_new_type);
+  DEF_INFIX(infix_new_global_field, "new_global_field");
+  ADD_BUILTIN(module_fragment_private, infix_new_global_field, 1,
+      module_fragment_private_new_global_field);
   return success();
 }
 

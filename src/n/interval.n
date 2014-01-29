@@ -16,8 +16,8 @@ type @Interval {
 
 }
 
-def @from_field := @ctrino.new_global_field("from");
-def @to_field := @ctrino.new_global_field("to");
+def @from_field := module.new_global_field("from");
+def @to_field := module.new_global_field("to");
 
 ## Creates a new interval with the given boundaries.
 def ($this == @Interval).new($from, $to) {

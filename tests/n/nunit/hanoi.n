@@ -20,8 +20,8 @@ type @HanoiDisk {
 
 }
 
-def @size_field := @ctrino.new_global_field("HanoiDisk.size");
-def @next_field := @ctrino.new_global_field("HanoiDisk.next");
+def @size_field := module.new_global_field("HanoiDisk.size");
+def @next_field := module.new_global_field("HanoiDisk.next");
 
 ## Creates a new mutable hanoi disk with the given size.
 def ($this == @HanoiDisk).new(size: $size) {
@@ -97,8 +97,8 @@ type @Hanoi {
 
 }
 
-def @piles_field := @ctrino.new_global_field("Hanoi.piles");
-def @moves_field := @ctrino.new_global_field("Hanoi.moves");
+def @piles_field := module.new_global_field("Hanoi.piles");
+def @moves_field := module.new_global_field("Hanoi.moves");
 
 ## Creates a new empty hanoi instance.
 def ($this == @Hanoi).new() {
