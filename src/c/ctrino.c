@@ -68,13 +68,6 @@ static value_t ctrino_new_instance_manager(builtin_arguments_t *args) {
   return new_heap_instance_manager(get_builtin_runtime(args), display_name);
 }
 
-static value_t ctrino_new_global_field(builtin_arguments_t *args) {
-  value_t self = get_builtin_subject(args);
-  value_t display_name = get_builtin_argument(args, 0);
-  CHECK_FAMILY(ofCtrino, self);
-  return new_heap_global_field(get_builtin_runtime(args), display_name);
-}
-
 static value_t ctrino_new_array(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t length = get_builtin_argument(args, 0);
@@ -138,8 +131,6 @@ value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(ctrino, infix_new_float_32, 1, ctrino_new_float_32);
   DEF_INFIX(infix_new_function, "new_function");
   ADD_BUILTIN(ctrino, infix_new_function, 1, ctrino_new_function);
-  DEF_INFIX(infix_new_global_field, "new_global_field");
-  ADD_BUILTIN(ctrino, infix_new_global_field, 1, ctrino_new_global_field);
   DEF_INFIX(infix_new_instance_manager, "new_instance_manager");
   ADD_BUILTIN(ctrino, infix_new_instance_manager, 1, ctrino_new_instance_manager);
   DEF_INFIX(infix_to_string, "to_string");
