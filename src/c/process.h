@@ -123,6 +123,10 @@ value_t frame_get_local(frame_t *frame, size_t index);
 // Returns true if this frame is at the bottom of a stack piece.
 bool frame_at_stack_piece_bottom(frame_t *frame);
 
+// Is this frame synthetic, that is, does it correspond to an activation
+// inserted by the runtime and not caused by an invocation?
+bool frame_is_synthetic(runtime_t *runtime, frame_t *frame);
+
 
 // --- S t a c k ---
 
@@ -150,6 +154,10 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
 // Pops the top frame off the given stack and stores the next frame in the given
 // frame struct.
 bool pop_stack_frame(value_t stack, frame_t *frame);
+
+// Pops down to the next organic stack frame, that is, below any synthetic
+// frames.
+bool pop_organic_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame);
 
 // Reads the top frame off the given stack into the given frame.
 void get_stack_top_frame(value_t stack, frame_t *frame);
