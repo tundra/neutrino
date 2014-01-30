@@ -96,7 +96,7 @@ TEST(alloc, instance) {
   value_t instance = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
   ASSERT_FAMILY(ofInstance, instance);
   value_t key = new_integer(0);
-  ASSERT_SIGNAL(scNotFound, get_instance_field(instance, key));
+  ASSERT_CONDITION(ccNotFound, get_instance_field(instance, key));
   ASSERT_SUCCESS(try_set_instance_field(instance, key, new_integer(3)));
   ASSERT_VALEQ(new_integer(3), get_instance_field(instance, key));
 

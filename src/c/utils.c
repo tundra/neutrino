@@ -492,7 +492,7 @@ void pseudo_random_shuffle(pseudo_random_t *random, void *data,
 
 void cycle_detector_init_bottom(cycle_detector_t *detector) {
   detector->remaining_before_check = kCircularObjectDepthThreshold;
-  // This should really be a signal such that it's safe to enter any value (not
+  // This should really be a condition such that it's safe to enter any value (not
   // that you'd want to enter an integer but it's one fewer special cases) but
   // it causes a valgrind error in check_for_cycles if it is so we'll use an
   // integer instead, even though I'm almost certain the valgrind problem is
@@ -508,7 +508,7 @@ static value_t check_for_cycles(cycle_detector_t *detector, value_t value) {
   while (current != NULL) {
     value_t level = current->value;
     if (is_same_value(level, value))
-      return new_signal(scCircular);
+      return new_condition(ccCircular);
     current = current->outer;
   }
   return success();

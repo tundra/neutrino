@@ -68,7 +68,7 @@ static value_t apply_namespace_declaration(value_t ambience, value_t decl,
   value_t value_syntax = get_namespace_declaration_ast_value(decl);
   TRY_DEF(code_block, compile_expression(runtime, value_syntax,
       fragment, scope_lookup_callback_get_bottom()));
-  TRY_DEF(value, run_code_block_until_signal(ambience, code_block));
+  TRY_DEF(value, run_code_block_until_condition(ambience, code_block));
   value_t nspace = get_module_fragment_namespace(fragment);
   value_t path = get_namespace_declaration_ast_path(decl);
   value_t name = get_path_head(path);
@@ -261,14 +261,14 @@ static value_t execute_binding_schedule(binding_context_t *context, value_t sche
     value_t stage = get_identifier_stage(next);
     // Create the bound module if it doesn't already exist.
     value_t bound_module = get_id_hash_map_at(context->bound_module_map, path);
-    if (is_signal(scNotFound, bound_module)) {
+    if (is_condition(ccNotFound, bound_module)) {
       TRY_SET(bound_module, new_heap_empty_module(runtime, path));
       TRY(set_id_hash_map_at(runtime, context->bound_module_map, path,
           bound_module));
     }
     // Create the bound fragment.
     value_t bound_fragment = get_module_fragment_at(bound_module, stage);
-    if (is_signal(scNotFound, bound_fragment)) {
+    if (is_condition(ccNotFound, bound_fragment)) {
       TRY_SET(bound_fragment, new_empty_module_fragment(runtime, stage,
           bound_module));
       TRY(add_module_fragment(runtime, bound_module, bound_fragment));
@@ -306,7 +306,7 @@ value_t build_bound_module(value_t ambience, value_t unbound_module) {
   TRY(execute_binding_schedule(&context, schedule));
   value_t path = get_unbound_module_path(unbound_module);
   value_t result = get_id_hash_map_at(context.bound_module_map, path);
-  CHECK_FALSE("module missing", is_signal(scNotFound, result));
+  CHECK_FALSE("module missing", is_condition(ccNotFound, result));
   return result;
 }
 
@@ -458,7 +458,7 @@ static value_t get_fragment_entry_before(value_t module, value_t stage) {
   // one before the given stage.
   int32_t stage_offset = get_stage_offset_value(stage);
   int32_t closest_stage_value = kMostNegativeInt32;
-  value_t closest_stage_entry = new_not_found_signal();
+  value_t closest_stage_entry = new_not_found_condition();
   id_hash_map_iter_t fragment_iter;
   id_hash_map_iter_init(&fragment_iter, module);
   while (id_hash_map_iter_advance(&fragment_iter)) {
@@ -500,7 +500,7 @@ static bool should_fragment_be_bound(binding_context_t *context, value_t schedul
   }
   // Check if there is a preceding fragment and whether it has been bound.
   value_t entry_before = get_fragment_entry_before(module, stage);
-  if (is_signal(scNotFound, entry_before)) {
+  if (is_condition(ccNotFound, entry_before)) {
     return true;
   } else {
     value_t before_ident = get_fragment_entry_identifier(entry_before);
@@ -546,7 +546,7 @@ static value_t module_loader_read_library(runtime_t *runtime, value_t self,
   TRY_DEF(data, read_file_to_blob(runtime, &library_path_str));
   TRY_DEF(library, runtime_plankton_deserialize(runtime, data));
   if (!in_family(ofLibrary, library))
-    return new_invalid_input_signal();
+    return new_invalid_input_condition();
   set_library_display_name(library, library_path);
   // Load all the modules from the library into this module loader.
   id_hash_map_iter_t iter;
@@ -583,7 +583,7 @@ void module_loader_print_on(value_t value, string_buffer_t *buf, print_flags_t f
 value_t module_loader_lookup_module(value_t self, value_t path) {
   value_t modules = get_module_loader_modules(self);
   value_t result = get_id_hash_map_at(modules, path);
-  if (is_signal(scNotFound, result))
+  if (is_condition(ccNotFound, result))
     WARN("Module %v not found.", path);
   return result;
 }

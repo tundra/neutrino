@@ -8,7 +8,7 @@
 static const size_t kMaxStackSize = 128;
 
 void print_stack_trace(FILE *out, int signum) {
-  fprintf(out, "# Received signal %i\n", signum);
+  fprintf(out, "# Received condition %i\n", signum);
   void *raw_frames[kMaxStackSize];
   size_t size = backtrace(raw_frames, kMaxStackSize);
   char **frames = backtrace_symbols(raw_frames, size);
@@ -19,6 +19,6 @@ void print_stack_trace(FILE *out, int signum) {
   fflush(out);
 }
 
-void propagate_signal(int signum) {
+void propagate_condition(int signum) {
   kill(getpid(), signum);
 }

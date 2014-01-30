@@ -114,7 +114,7 @@ value_t set_value_mode(runtime_t *runtime, value_t self, value_mode_t mode) {
     // deep frozen. It's a no-op.
     return success();
   } else {
-    return new_invalid_mode_change_signal(current_mode);
+    return new_invalid_mode_change_condition(current_mode);
   }
 }
 
@@ -187,7 +187,7 @@ value_t value_transient_identity_hash_cycle_protect(value_t value,
     case vdCustomTagged:
       return custom_tagged_transient_identity_hash(value, stream);
     default:
-      return new_unsupported_behavior_signal(domain, __ofUnknown__,
+      return new_unsupported_behavior_condition(domain, __ofUnknown__,
           ubTransientIdentityHash);
   }
 }
@@ -219,7 +219,7 @@ bool value_identity_compare(value_t a, value_t b) {
   cycle_detector_t detector;
   cycle_detector_init_bottom(&detector);
   value_t ptected = value_identity_compare_cycle_protect(a, b, &detector);
-  return is_signal(scCircular, ptected) ? false : get_boolean_value(ptected);
+  return is_condition(ccCircular, ptected) ? false : get_boolean_value(ptected);
 }
 
 value_t value_identity_compare_cycle_protect(value_t a, value_t b,
@@ -312,19 +312,19 @@ static void integer_print_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, "%lli", get_integer_value(value));
 }
 
-static void signal_print_on(value_t value, string_buffer_t *buf) {
-  CHECK_DOMAIN(vdSignal, value);
-  signal_cause_t cause = get_signal_cause(value);
-  const char *cause_name = get_signal_cause_name(cause);
-  string_buffer_printf(buf, "%%<signal: %s(", cause_name);
-  uint32_t details = get_signal_details(value);
+static void condition_print_on(value_t value, string_buffer_t *buf) {
+  CHECK_DOMAIN(vdCondition, value);
+  consition_cause_t cause = get_condition_cause(value);
+  const char *cause_name = get_condition_cause_name(cause);
+  string_buffer_printf(buf, "%%<condition: %s(", cause_name);
+  uint32_t details = get_condition_details(value);
   switch (cause) {
-    case scInvalidSyntax: {
+    case ccInvalidSyntax: {
       invalid_syntax_cause_t cause = (invalid_syntax_cause_t) details;
       string_buffer_printf(buf, "%s", get_invalid_syntax_cause_name(cause));
       break;
     }
-    case scUnsupportedBehavior: {
+    case ccUnsupportedBehavior: {
       unsupported_behavior_details_codec_t codec;
       codec.encoded = details;
       unsupported_behavior_cause_t cause = codec.decoded.cause;
@@ -336,17 +336,17 @@ static void signal_print_on(value_t value, string_buffer_t *buf) {
         string_buffer_printf(buf, "/%s", get_object_family_name(family));
       break;
     }
-    case scLookupError: {
+    case ccLookupError: {
       lookup_error_cause_t cause = (lookup_error_cause_t) details;
       string_buffer_printf(buf, "%s", get_lookup_error_cause_name(cause));
       break;
     }
-    case scSystemError: {
+    case ccSystemError: {
       system_error_cause_t cause = (system_error_cause_t) details;
       string_buffer_printf(buf, "%s", get_system_error_cause_name(cause));
       break;
     }
-    case scInvalidInput: {
+    case ccInvalidInput: {
       if (details != 0) {
         // If no hint is given (or the hint it the empty string) the details
         // field will be 0.
@@ -388,8 +388,8 @@ void value_print_on_cycle_detect(value_t value, string_buffer_t *buf,
     case vdObject:
       object_print_on(value, buf, flags, depth);
       break;
-    case vdSignal:
-      signal_print_on(value, buf);
+    case vdCondition:
+      condition_print_on(value, buf);
       break;
     case vdCustomTagged:
       custom_tagged_print_on(value, buf, flags);
@@ -475,7 +475,7 @@ value_t new_object_with_type(runtime_t *runtime, value_t type) {
     case vdCustomTagged:
       return new_object_with_custom_tagged_type(runtime, type);
     default:
-      return new_unsupported_behavior_signal(domain, __ofUnknown__,
+      return new_unsupported_behavior_condition(domain, __ofUnknown__,
           ubNewObjectWithType);
   }
 }
@@ -493,7 +493,7 @@ value_t set_object_contents(runtime_t *runtime, value_t object, value_t payload)
 // A function compatible with set_contents that always returns unsupported.
 static value_t plankton_set_contents_unsupported(value_t value, runtime_t *runtime,
     value_t contents) {
-  return new_unsupported_behavior_signal(vdObject, get_object_family(value),
+  return new_unsupported_behavior_condition(vdObject, get_object_family(value),
       ubSetContents);
 }
 
@@ -520,13 +520,13 @@ value_t get_primary_type(value_t self, runtime_t *runtime) {
     case vdCustomTagged:
       return get_custom_tagged_primary_type(self, runtime);
     default:
-      return new_unsupported_behavior_signal(domain, __ofUnknown__,
+      return new_unsupported_behavior_condition(domain, __ofUnknown__,
           ubGetPrimaryType);
   }
 }
 
 static value_t get_internal_object_type(value_t self, runtime_t *runtime) {
-  return new_signal(scInternalFamily);
+  return new_condition(ccInternalFamily);
 }
 
 

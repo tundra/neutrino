@@ -1,8 +1,8 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "condition.h"
 #include "log.h"
-#include "signals.h"
 #include "value.h"
 
 // Declare a unit test method. The suite name must match the file the test
@@ -35,7 +35,7 @@ typedef struct {
   // How many check failures were triggered?
   size_t count;
   // What was the cause of the last check failure triggered?
-  signal_cause_t last_cause;
+  consition_cause_t last_cause;
   // The abort callback to restore when we're done recording checks.
   abort_callback_t *previous;
   // This recorder's callback.
@@ -45,7 +45,7 @@ typedef struct {
 // Installs a check recorder and switch to soft check failure mode. This also
 // resets the recorder so it's not necessary to explicitly initialize it in
 // advance. The initial cause is set to a value that is different from all
-// signal causes but the concrete value should not otherwise be relied on.
+// condition causes but the concrete value should not otherwise be relied on.
 void install_check_recorder(check_recorder_t *recorder);
 
 // Uninstalls the given check recorder, which must be the currently active one,
@@ -157,9 +157,9 @@ ASSERT_CLASS(value_domain_t, vdDomain, EXPR, get_value_domain)
 #define ASSERT_FAMILY(ofFamily, EXPR) \
 ASSERT_CLASS(object_family_t, ofFamily, EXPR, get_object_family)
 
-// Fails unless the given value is a signal of the given type.
-#define ASSERT_SIGNAL(scCause, EXPR) \
-ASSERT_CLASS(signal_cause_t, scCause, EXPR, get_signal_cause)
+// Fails unless the given value is a condition of the given type.
+#define ASSERT_CONDITION(scCause, EXPR) \
+ASSERT_CLASS(consition_cause_t, scCause, EXPR, get_condition_cause)
 
 #define ASSERT_CLASS(class_t, cExpected, EXPR, get_class) do {                 \
   class_t __class__ = get_class(EXPR);                                         \
@@ -170,12 +170,12 @@ ASSERT_CLASS(signal_cause_t, scCause, EXPR, get_signal_cause)
   }                                                                            \
 } while (false)
 
-// Fails if the given value is a signal.
+// Fails if the given value is a condition.
 #define ASSERT_SUCCESS(EXPR) do {                                              \
   value_t __value__ = (EXPR);                                                  \
-  if (get_value_domain(__value__) == vdSignal) {                               \
-    fail(__FILE__, __LINE__, "Assertion failed: is_signal(%s).\n  Was signal: %s",\
-        #EXPR, get_signal_cause_name(get_signal_cause(__value__)));            \
+  if (get_value_domain(__value__) == vdCondition) {                            \
+    fail(__FILE__, __LINE__, "Assertion failed: is_condition(%s).\n  Was condition: %s",\
+        #EXPR, get_condition_cause_name(get_condition_cause(__value__)));      \
   }                                                                            \
 } while (false)
 
@@ -192,7 +192,7 @@ ASSERT_CLASS(signal_cause_t, scCause, EXPR, get_signal_cause)
 // with the same cause. Only executed when checks are enabled.
 #define ASSERT_CHECK_FAILURE(scCause, E)                                       \
 IF_CHECKS_ENABLED(                                                             \
-    __ASSERT_CHECK_FAILURE_NO_VALUE_HELPER__(scCause, ASSERT_SIGNAL(scCause, (E))))
+    __ASSERT_CHECK_FAILURE_NO_VALUE_HELPER__(scCause, ASSERT_CONDITION(scCause, (E))))
 
 // Fails unless the given expression CHECK fails. Unlike ASSERT_CHECK_FAILURE
 // this makes no assumption about the returned value. Only executed when checks

@@ -15,7 +15,7 @@
 
 static value_t resolve_syntax_factory(value_t key, runtime_t *runtime, void *data) {
   value_t result = get_id_hash_map_at(ROOT(runtime, plankton_environment), key);
-  if (is_signal(scNotFound, result)) {
+  if (is_condition(ccNotFound, result)) {
     return new_heap_unknown(runtime, RSTR(runtime, environment_reference), key);
   } else {
     return result;
@@ -387,7 +387,7 @@ value_t emit_local_declaration_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofSymbolAst, symbol);
   if (assembler_is_symbol_bound(assm, symbol))
     // We're trying to redefine an already defined symbol. That's not valid.
-    return new_invalid_syntax_signal(isSymbolAlreadyBound);
+    return new_invalid_syntax_condition(isSymbolAlreadyBound);
   single_symbol_scope_t scope;
   assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal, offset);
   value_t body = get_local_declaration_ast_body(self);
@@ -465,7 +465,7 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofSymbolAst, symbol);
   if (assembler_is_symbol_bound(assm, symbol))
     // We're trying to redefine an already defined symbol. That's not valid.
-    return new_invalid_syntax_signal(isSymbolAlreadyBound);
+    return new_invalid_syntax_condition(isSymbolAlreadyBound);
   single_symbol_scope_t scope;
   assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal, stack_offset);
   value_t body = get_with_escape_ast_body(self);
@@ -532,10 +532,10 @@ static value_t assembler_access_symbol(value_t symbol, assembler_t *assm,
     bool *is_ref_out) {
   CHECK_FAMILY(ofSymbolAst, symbol);
   binding_info_t binding;
-  if (is_signal(scNotFound, assembler_lookup_symbol(assm, symbol, &binding)))
+  if (is_condition(ccNotFound, assembler_lookup_symbol(assm, symbol, &binding)))
     // We're trying to access a symbol that hasn't been defined here. That's
     // not valid.
-    return new_invalid_syntax_signal(isSymbolNotBound);
+    return new_invalid_syntax_condition(isSymbolNotBound);
   switch (binding.type) {
     case btLocal:
       TRY(assembler_emit_load_local(assm, binding.data));
@@ -720,7 +720,7 @@ value_t quick_and_dirty_evaluate_syntax(runtime_t *runtime, value_t fragment,
     }
     default:
       ERROR("Quick-and-dirty evaluation doesn't work for %v", value_ast);
-      return new_invalid_input_signal();
+      return new_invalid_input_condition();
   }
 }
 
@@ -809,10 +809,10 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
     value_t param_ast = get_array_at(param_asts, i);
     value_t symbol = get_parameter_ast_symbol(param_ast);
     if (!in_family(ofSymbolAst, symbol))
-      return new_invalid_syntax_signal(isExpectedSymbol);
+      return new_invalid_syntax_condition(isExpectedSymbol);
     if (assembler_is_symbol_bound(assm, symbol))
       // We're trying to redefine an already defined symbol. That's not valid.
-      return new_invalid_syntax_signal(isSymbolAlreadyBound);
+      return new_invalid_syntax_condition(isSymbolAlreadyBound);
     TRY(map_scope_bind(&param_scope, symbol, btArgument, offsets[i]));
   }
 
@@ -958,13 +958,13 @@ value_t plankton_set_guard_ast_contents(value_t object, runtime_t *runtime,
   guard_type_t type_enum;
   // Maybe passing an integer enum will be good enough? Or does that conflict
   // with being self-describing?
-  EXPECT_FAMILY(scInvalidInput, ofString, type);
+  EXPECT_FAMILY(ccInvalidInput, ofString, type);
   char type_char = get_string_chars(type)[0];
   switch (type_char) {
     case '=': type_enum = gtEq; break;
     case 'i': type_enum = gtIs; break;
     case '*': type_enum = gtAny; break;
-    default: return new_invalid_input_signal();
+    default: return new_invalid_input_condition();
   }
   set_guard_ast_type(object, type_enum);
   set_guard_ast_value(object, value);
@@ -1250,7 +1250,7 @@ value_t emit_current_module_ast(value_t value, assembler_t *assm) {
 
 value_t emit_value(value_t value, assembler_t *assm) {
   if (!in_domain(vdObject, value))
-    return new_invalid_syntax_signal(isNotSyntax);
+    return new_invalid_syntax_condition(isNotSyntax);
   switch (get_object_family(value)) {
 #define __EMIT_SYNTAX_FAMILY_CASE_HELPER__(Family, family)                     \
     case of##Family:                                                           \
@@ -1263,7 +1263,7 @@ value_t emit_value(value_t value, assembler_t *assm) {
 #undef __EMIT_SYNTAX_FAMILY_CASE__
 #undef __EMIT_SYNTAX_FAMILY_CASE_HELPER__
     default:
-      return new_invalid_syntax_signal(isNotSyntax);
+      return new_invalid_syntax_condition(isNotSyntax);
   }
 }
 

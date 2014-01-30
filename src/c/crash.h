@@ -14,13 +14,13 @@
 typedef struct {
   const char *file;
   int line;
-  int signal_cause;
+  int condition_cause;
   const char *text;
 } abort_message_t;
 
 // Initializes the fields of an abort message.
 void abort_message_init(abort_message_t *message, const char *file, int line,
-    int signal_cause, const char *text);
+    int condition_cause, const char *text);
 
 // Type of abort functions.
 typedef void (abort_function_t)(void *data, abort_message_t *message);
@@ -58,7 +58,7 @@ void check_fail(const char *file, int line, const char *fmt, ...);
 
 // In hard check failure mode signals an error and kills the process, in soft
 // mode records the check and returns.
-void sig_check_fail(const char *file, int line, int signal_cause,
+void cond_check_fail(const char *file, int line, int condition_cause,
     const char *fmt, ...);
 
 #endif // _CRASH

@@ -134,11 +134,11 @@ static value_t ensure_method_code(runtime_t *runtime, value_t method) {
   return code;
 }
 
-static void log_lookup_error(value_t signal, value_t record, frame_t *frame) {
+static void log_lookup_error(value_t condition, value_t record, frame_t *frame) {
   size_t arg_count = get_invocation_record_argument_count(record);
   string_buffer_t buf;
   string_buffer_init(&buf);
-  string_buffer_printf(&buf, "%v: {", signal);
+  string_buffer_printf(&buf, "%v: {", condition);
   for (size_t i = 0; i < arg_count; i++) {
     if (i > 0)
       string_buffer_printf(&buf, ", ");
@@ -201,11 +201,11 @@ static value_t run_stack(value_t ambience, value_t stack) {
         value_t arg_map;
         value_t method = lookup_method_full(ambience, fragment, record, &frame,
             &arg_map);
-        if (is_signal(scLookupError, method)) {
+        if (is_condition(ccLookupError, method)) {
           log_lookup_error(method, record, &frame);
           return method;
         }
-        // The lookup may have failed with a different signal. Check for that.
+        // The lookup may have failed with a different condition. Check for that.
         TRY(method);
         // Push a new activation.
         interpreter_state_store(&state, &frame);
@@ -235,11 +235,11 @@ static value_t run_stack(value_t ambience, value_t stack) {
         value_t arg_map;
         value_t method = lookup_methodspace_method(ambience, space, record,
             &frame, &arg_map);
-        if (is_signal(scLookupError, method)) {
+        if (is_condition(ccLookupError, method)) {
           log_lookup_error(method, record, &frame);
           return method;
         }
-        // The lookup may have failed with a different signal. Check for that.
+        // The lookup may have failed with a different condition. Check for that.
         TRY(method);
         TRY_DEF(code_block, ensure_method_code(runtime, method));
         push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block),
@@ -395,7 +395,7 @@ static value_t run_stack(value_t ambience, value_t stack) {
   return success();
 }
 
-value_t run_code_block_until_signal(value_t ambience, value_t code) {
+value_t run_code_block_until_condition(value_t ambience, value_t code) {
   runtime_t *runtime = get_ambience_runtime(ambience);
   TRY_DEF(stack, new_heap_stack(runtime, 1024));
   frame_t frame;

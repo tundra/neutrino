@@ -50,10 +50,10 @@ abort_callback_t *set_abort_callback(abort_callback_t *value) {
 }
 
 void abort_message_init(abort_message_t *message, const char *file, int line,
-    int signal_cause, const char *text) {
+    int condition_cause, const char *text) {
   message->file = file;
   message->line = line;
-  message->signal_cause = signal_cause;
+  message->condition_cause = condition_cause;
   message->text = text;
 }
 
@@ -61,7 +61,7 @@ void abort_message_init(abort_message_t *message, const char *file, int line,
 // --- C h e c k   f a i l i n g ---
 
 // Prints the message for a check failure on standard error.
-static void vcheck_fail(const char *file, int line, int signal_cause,
+static void vcheck_fail(const char *file, int line, int condition_cause,
     const char *fmt, va_list argp) {
   // Write the error message into a string buffer.
   string_buffer_t buf;
@@ -73,7 +73,7 @@ static void vcheck_fail(const char *file, int line, int signal_cause,
   string_buffer_flush(&buf, &str);
   // Print the formatted error message.
   abort_message_t message;
-  abort_message_init(&message, file, line, signal_cause, str.chars);
+  abort_message_init(&message, file, line, condition_cause, str.chars);
   call_abort_callback(get_global_abort_callback(), &message);
   string_buffer_dispose(&buf);
 }
@@ -81,11 +81,11 @@ static void vcheck_fail(const char *file, int line, int signal_cause,
 void check_fail(const char *file, int line, const char *fmt, ...) {
   va_list argp;
   va_start(argp, fmt);
-  vcheck_fail(file, line, scNothing, fmt, argp);
+  vcheck_fail(file, line, ccNothing, fmt, argp);
 }
 
-void sig_check_fail(const char *file, int line, int signal_cause, const char *fmt, ...) {
+void cond_check_fail(const char *file, int line, int condition_cause, const char *fmt, ...) {
   va_list argp;
   va_start(argp, fmt);
-  vcheck_fail(file, line, signal_cause, fmt, argp);
+  vcheck_fail(file, line, condition_cause, fmt, argp);
 }

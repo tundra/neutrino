@@ -31,7 +31,7 @@ static value_t assert_ast_value(value_t ambience, variant_t *expected,
   TRY_DEF(fragment, new_empty_module_fragment(runtime));
   TRY_DEF(code_block, compile_expression(runtime, ast, fragment,
       scope_lookup_callback_get_bottom()));
-  TRY_DEF(result, run_code_block_until_signal(ambience, code_block));
+  TRY_DEF(result, run_code_block_until_condition(ambience, code_block));
   ASSERT_VAREQ(expected, result);
   return success();
 }
@@ -123,13 +123,13 @@ TEST(interp, execution) {
 }
 
 // Tries to compile the given syntax tree and expects it to fail with the
-// specified signal.
+// specified condition.
 static void assert_compile_failure(runtime_t *runtime, value_t ast,
     invalid_syntax_cause_t cause) {
   value_t result = compile_expression(runtime, ast,
       nothing(), scope_lookup_callback_get_bottom());
-  ASSERT_SIGNAL(scInvalidSyntax, result);
-  ASSERT_EQ(cause, get_invalid_syntax_signal_cause(result));
+  ASSERT_CONDITION(ccInvalidSyntax, result);
+  ASSERT_EQ(cause, get_invalid_syntax_condition_cause(result));
 }
 
 TEST(interp, compile_errors) {
@@ -161,7 +161,7 @@ static void validate_lookup_error(void *unused, log_entry_t *entry) {
   // Ignore any logging to stdout, we're only interested in the error.
   if (entry->destination == lsStdout)
     return;
-  const char *prefix = "%<signal: LookupError(NoMatch)>: {%subject: #<lambda";
+  const char *prefix = "%<condition: LookupError(NoMatch)>: {%subject: #<lambda";
   string_t expected;
   string_init(&expected, prefix);
   string_t message = *entry->message;
@@ -199,7 +199,7 @@ TEST(interp, lookup_error) {
 
   log_validator_t validator;
   install_log_validator(&validator, validate_lookup_error, NULL);
-  ASSERT_SIGNAL(scLookupError, assert_ast_value(ambience, vInt(13), ast));
+  ASSERT_CONDITION(ccLookupError, assert_ast_value(ambience, vInt(13), ast));
   uninstall_log_validator(&validator);
   ASSERT_EQ(1, validator.count);
 

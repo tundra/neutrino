@@ -34,8 +34,8 @@ typedef struct {
 
 // A function that performs a scoped lookup. If the info_out argument is NULL
 // we're only checking whether the binding exists, not actually accessing it.
-// The return value should be a NotFound signal if the symbol could not be
-// resolved, a non-signal otherwise.
+// The return value should be a NotFound condition if the symbol could not be
+// resolved, a non-condition otherwise.
 typedef value_t (*scope_lookup_function_t)(value_t symbol, void *data,
     binding_info_t *info_out);
 
@@ -52,7 +52,7 @@ void scope_lookup_callback_init(scope_lookup_callback_t *callback,
     scope_lookup_function_t function, void *data);
 
 // Invokes a scope lookup callback with a symbol. The result will be stored in
-// the info-out parameter. If there's any problem the result will be a signal.
+// the info-out parameter. If there's any problem the result will be a condition.
 value_t scope_lookup_callback_call(scope_lookup_callback_t *callback,
     value_t symbol, binding_info_t *info_out);
 
@@ -252,7 +252,7 @@ typedef struct {
 } map_scope_t;
 
 // Pushes a map symbol scope onto the scope stack. This involves allocating a
-// map on the heap and if that fails a signal is returned.
+// map on the heap and if that fails a condition is returned.
 value_t assembler_push_map_scope(assembler_t *assm, map_scope_t *scope);
 
 // Pops a map symbol scope off the scope stack.
@@ -284,7 +284,7 @@ value_t assembler_push_capture_scope(assembler_t *assm, capture_scope_t *scope);
 void assembler_pop_capture_scope(assembler_t *assm, capture_scope_t *scope);
 
 
-// Looks up a symbol in the current and surrounding scopes. Returns a signal if
+// Looks up a symbol in the current and surrounding scopes. Returns a condition if
 // the symbol is not found, otherwise if the stores the binding in the given out
 // argument.
 value_t assembler_lookup_symbol(assembler_t *assm, value_t symbol,

@@ -54,7 +54,7 @@ TEST(value, fits_as_tagged_integer) {
 TEST(value, encoding) {
   ASSERT_EQ(sizeof(unknown_value_t), sizeof(encoded_value_t));
   ASSERT_EQ(sizeof(integer_value_t), sizeof(encoded_value_t));
-  ASSERT_EQ(sizeof(signal_value_t), sizeof(encoded_value_t));
+  ASSERT_EQ(sizeof(condition_value_t), sizeof(encoded_value_t));
   ASSERT_EQ(sizeof(custom_tagged_value_t), sizeof(encoded_value_t));
   ASSERT_EQ(sizeof(encoded_value_t), sizeof(value_t));
   value_t v0 = new_integer(0);
@@ -78,10 +78,10 @@ TEST(value, tagged_integers) {
   ASSERT_EQ(0, get_integer_value(v2));
 }
 
-TEST(value, signals) {
-  value_t v0 = new_signal(scHeapExhausted);
-  ASSERT_DOMAIN(vdSignal, v0);
-  ASSERT_EQ(scHeapExhausted, get_signal_cause(v0));
+TEST(value, conditions) {
+  value_t v0 = new_condition(ccHeapExhausted);
+  ASSERT_DOMAIN(vdCondition, v0);
+  ASSERT_EQ(ccHeapExhausted, get_condition_cause(v0));
 }
 
 TEST(value, custom_tagged) {
@@ -113,12 +113,12 @@ TEST(value, id_hash_maps_simple) {
   value_t map = new_heap_id_hash_map(runtime, 4);
   ASSERT_FAMILY(ofIdHashMap, map);
   ASSERT_EQ(0, get_id_hash_map_size(map));
-  ASSERT_SIGNAL(scNotFound, get_id_hash_map_at(map, new_integer(0)));
+  ASSERT_CONDITION(ccNotFound, get_id_hash_map_at(map, new_integer(0)));
   // Add something to it.
   ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(0), new_integer(1), false));
   ASSERT_EQ(1, get_id_hash_map_size(map));
   ASSERT_SAME(new_integer(1), get_id_hash_map_at(map, new_integer(0)));
-  ASSERT_SIGNAL(scNotFound, get_id_hash_map_at(map, new_integer(1)));
+  ASSERT_CONDITION(ccNotFound, get_id_hash_map_at(map, new_integer(1)));
   // Add some more to it.
   ASSERT_SUCCESS(try_set_id_hash_map_at(map, new_integer(1), new_integer(2), false));
   ASSERT_EQ(2, get_id_hash_map_size(map));
@@ -136,7 +136,7 @@ TEST(value, id_hash_maps_simple) {
   ASSERT_SAME(new_integer(2), get_id_hash_map_at(map, new_integer(1)));
   ASSERT_SAME(new_integer(5), get_id_hash_map_at(map, new_integer(100)));
   // Now the map should refuse to let us add more.
-  ASSERT_SIGNAL(scMapFull, try_set_id_hash_map_at(map, new_integer(88),
+  ASSERT_CONDITION(ccMapFull, try_set_id_hash_map_at(map, new_integer(88),
       new_integer(79), false));
   ASSERT_EQ(3, get_id_hash_map_size(map));
   ASSERT_SAME(new_integer(3), get_id_hash_map_at(map, new_integer(0)));
@@ -205,7 +205,7 @@ TEST(value, exhaust_id_hash_map) {
     value_t value = new_integer(1024 - i);
     value_t result = set_id_hash_map_at(runtime, map, key, value);
     ASSERT_SUCCESS(object_validate(map));
-    if (is_signal(scHeapExhausted, result))
+    if (is_condition(ccHeapExhausted, result))
       break;
     ASSERT_SUCCESS(result);
   }
@@ -222,7 +222,7 @@ TEST(value, array_bounds) {
   ASSERT_SUCCESS(get_array_at(arr, 1));
   ASSERT_SUCCESS(get_array_at(arr, 2));
   ASSERT_SUCCESS(get_array_at(arr, 3));
-  ASSERT_CHECK_FAILURE(scOutOfBounds, get_array_at(arr, 4));
+  ASSERT_CHECK_FAILURE(ccOutOfBounds, get_array_at(arr, 4));
 
   DISPOSE_RUNTIME();
 }
@@ -237,7 +237,7 @@ TEST(value, array_buffer) {
     ASSERT_EQ(i, get_array_buffer_length(buf));
     ASSERT_TRUE(try_add_to_array_buffer(buf, new_integer(i)));
     ASSERT_VALEQ(new_integer(i / 2), get_array_buffer_at(buf, i / 2));
-    ASSERT_CHECK_FAILURE(scOutOfBounds, get_array_buffer_at(buf, i + 1));
+    ASSERT_CHECK_FAILURE(ccOutOfBounds, get_array_buffer_at(buf, i + 1));
   }
 
   ASSERT_EQ(16, get_array_buffer_length(buf));
@@ -248,7 +248,7 @@ TEST(value, array_buffer) {
     ASSERT_EQ(i, get_array_buffer_length(buf));
     ASSERT_SUCCESS(add_to_array_buffer(runtime, buf, new_integer(i)));
     ASSERT_VALEQ(new_integer(i / 2), get_array_buffer_at(buf, i / 2));
-    ASSERT_CHECK_FAILURE(scOutOfBounds, get_array_buffer_at(buf, i + 1));
+    ASSERT_CHECK_FAILURE(ccOutOfBounds, get_array_buffer_at(buf, i + 1));
   }
 
   DISPOSE_RUNTIME();
@@ -400,7 +400,7 @@ TEST(value, array_sort) {
       ASSERT_SUCCESS(found);
       ASSERT_EQ(i, kUnsorted[get_integer_value(found)]);
     } else {
-      ASSERT_SIGNAL(scNotFound, found);
+      ASSERT_CONDITION(ccNotFound, found);
     }
   }
 
@@ -426,7 +426,7 @@ static void assert_strings_present(size_t skip_first, safe_value_t *s_maps,
         value_t field = get_instance_field(value, new_integer(0));
         ASSERT_VALEQ(new_integer(inst_i), field);
       } else {
-        ASSERT_SIGNAL(scNotFound, value);
+        ASSERT_CONDITION(ccNotFound, value);
       }
     }
   }
@@ -506,7 +506,7 @@ TEST(value, map_delete) {
       bit_vector_set_at(&bits, index, false);
       bits_set--;
     } else {
-      ASSERT_SIGNAL(scNotFound, delete_id_hash_map_at(runtime, map, key));
+      ASSERT_CONDITION(ccNotFound, delete_id_hash_map_at(runtime, map, key));
       ASSERT_SUCCESS(try_set_id_hash_map_at(map, key, key, false));
       bit_vector_set_at(&bits, index, true);
       bits_set++;
@@ -515,7 +515,7 @@ TEST(value, map_delete) {
       // Check that getting the values directly works.
       for (size_t i = 0; i < kRange; i++) {
         value_t key = new_integer(i);
-        bool in_map = !is_signal(scNotFound, get_id_hash_map_at(map, key));
+        bool in_map = !is_condition(ccNotFound, get_id_hash_map_at(map, key));
         ASSERT_EQ(bit_vector_get_at(&bits, i), in_map);
       }
       // Check that iteration works.
@@ -616,9 +616,9 @@ typedef struct {
   bool called;
 } try_finally_data_t;
 
-static value_t try_finally_signal(try_finally_data_t *data) {
+static value_t try_finally_condition(try_finally_data_t *data) {
   E_BEGIN_TRY_FINALLY();
-    E_TRY(new_signal(scNothing));
+    E_TRY(new_condition(ccNothing));
     E_RETURN(success());
   E_FINALLY();
     data->called = true;
@@ -637,7 +637,7 @@ static value_t try_finally_return(try_finally_data_t *data) {
 TEST(value, try_finally) {
   try_finally_data_t data = {false};
 
-  ASSERT_SIGNAL(scNothing, try_finally_signal(&data));
+  ASSERT_CONDITION(ccNothing, try_finally_condition(&data));
   ASSERT_TRUE(data.called);
   data.called = false;
 
@@ -685,12 +685,12 @@ TEST(value, array_identity) {
 
   value_t v_nv_0 = new_heap_array(runtime, 2);
   set_array_at(v_nv_0, 1, v_nv_0);
-  ASSERT_SIGNAL(scCircular, value_transient_identity_hash(v_nv_0));
+  ASSERT_CONDITION(ccCircular, value_transient_identity_hash(v_nv_0));
   ASSERT_TRUE(value_identity_compare(v_nv_0, v_nv_0));
 
   value_t v_nv_1 = new_heap_array(runtime, 2);
   set_array_at(v_nv_1, 1, v_nv_1);
-  ASSERT_SIGNAL(scCircular, value_transient_identity_hash(v_nv_1));
+  ASSERT_CONDITION(ccCircular, value_transient_identity_hash(v_nv_1));
   ASSERT_TRUE(value_identity_compare(v_nv_1, v_nv_1));
 
   ASSERT_FALSE(value_identity_compare(v_nv_0, v_nv_1));
@@ -717,26 +717,26 @@ TEST(value, set_value_mode) {
   value_t arr = new_heap_array(runtime, 3);
   ASSERT_TRUE(is_mutable(arr));
   ASSERT_FALSE(is_frozen(arr));
-  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, arr, vmFluid));
+  ASSERT_CONDITION(ccInvalidModeChange, set_value_mode(runtime, arr, vmFluid));
   ASSERT_SUCCESS(ensure_shallow_frozen(runtime, arr));
   ASSERT_TRUE(is_frozen(arr));
   ASSERT_FALSE(is_mutable(arr));
-  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, arr, vmFluid));
-  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, arr, vmMutable));
+  ASSERT_CONDITION(ccInvalidModeChange, set_value_mode(runtime, arr, vmFluid));
+  ASSERT_CONDITION(ccInvalidModeChange, set_value_mode(runtime, arr, vmMutable));
   ASSERT_SUCCESS(ensure_shallow_frozen(runtime, arr));
   ASSERT_TRUE(is_frozen(arr));
 
   ASSERT_TRUE(is_frozen(null()));
   ASSERT_FALSE(is_mutable(null()));
-  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, null(), vmFluid));
-  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, null(), vmMutable));
+  ASSERT_CONDITION(ccInvalidModeChange, set_value_mode(runtime, null(), vmFluid));
+  ASSERT_CONDITION(ccInvalidModeChange, set_value_mode(runtime, null(), vmMutable));
   ASSERT_SUCCESS(ensure_shallow_frozen(runtime, null()));
 
   value_t zero = new_integer(0);
   ASSERT_TRUE(is_frozen(zero));
   ASSERT_FALSE(is_mutable(zero));
-  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, zero, vmFluid));
-  ASSERT_SIGNAL(scInvalidModeChange, set_value_mode(runtime, zero, vmMutable));
+  ASSERT_CONDITION(ccInvalidModeChange, set_value_mode(runtime, zero, vmFluid));
+  ASSERT_CONDITION(ccInvalidModeChange, set_value_mode(runtime, zero, vmMutable));
   ASSERT_SUCCESS(ensure_shallow_frozen(runtime, zero));
 
   DISPOSE_RUNTIME();
@@ -822,27 +822,27 @@ TEST(value, ownership_freezing) {
 }
 
 #define CHECK_UNSUPPORTED(vdDomain, ofFamily, ubCause, EXPECTED) do {          \
-  value_t signal = new_unsupported_behavior_signal(vdDomain, ofFamily, ubCause);\
+  value_t condition = new_unsupported_behavior_condition(vdDomain, ofFamily, ubCause);\
   value_to_string_t to_string;                                                 \
-  const char *found = value_to_string(&to_string, signal);                     \
+  const char *found = value_to_string(&to_string, condition);                     \
   ASSERT_C_STREQ(EXPECTED, found);                                             \
   dispose_value_to_string(&to_string);                                         \
 } while (false)
 
 TEST(value, unsupported) {
   CHECK_UNSUPPORTED(vdInteger, __ofUnknown__, ubUnspecified,
-      "%<signal: UnsupportedBehavior(Unspecified of Integer)>");
+      "%<condition: UnsupportedBehavior(Unspecified of Integer)>");
   CHECK_UNSUPPORTED(vdObject, __ofUnknown__, ubSetContents,
-      "%<signal: UnsupportedBehavior(SetContents of Object)>");
+      "%<condition: UnsupportedBehavior(SetContents of Object)>");
   CHECK_UNSUPPORTED(vdObject, ofArray, ubPlanktonSerialize,
-      "%<signal: UnsupportedBehavior(PlanktonSerialize of Object/Array)>");
+      "%<condition: UnsupportedBehavior(PlanktonSerialize of Object/Array)>");
 }
 
 TEST(value, invalid_input) {
   string_hint_t halp = STRING_HINT_INIT("halp!");
-  value_t signal = new_invalid_input_signal_with_hint(halp);
+  value_t condition = new_invalid_input_condition_with_hint(halp);
   value_to_string_t to_string;
-  ASSERT_C_STREQ("%<signal: InvalidInput(ha..p!)>", value_to_string(&to_string, signal));
+  ASSERT_C_STREQ("%<condition: InvalidInput(ha..p!)>", value_to_string(&to_string, condition));
   dispose_value_to_string(&to_string);
 }
 
@@ -852,8 +852,8 @@ TEST(value, paths) {
   CREATE_TEST_ARENA();
 
   value_t empty = ROOT(runtime, empty_path);
-  ASSERT_CHECK_FAILURE(scEmptyPath, get_path_head(empty));
-  ASSERT_CHECK_FAILURE(scEmptyPath, get_path_tail(empty));
+  ASSERT_CHECK_FAILURE(ccEmptyPath, get_path_head(empty));
+  ASSERT_CHECK_FAILURE(ccEmptyPath, get_path_tail(empty));
   ASSERT_SAME(nothing(), get_path_raw_head(empty));
   ASSERT_SAME(nothing(), get_path_raw_tail(empty));
 

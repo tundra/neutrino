@@ -137,7 +137,7 @@ TEST(utils, string_buffer_value_printf) {
   CREATE_RUNTIME();
 
   CHECK_PRINTF("--- 0 ---", "--- %v ---", new_integer(0));
-  CHECK_PRINTF("--- %<signal: Wat(dt@0)> ---", "--- %v ---", new_signal(scWat));
+  CHECK_PRINTF("--- %<condition: Wat(dt@0)> ---", "--- %v ---", new_condition(ccWat));
   CHECK_PRINTF("--- null ---", "--- %v ---", null());
   CHECK_PRINTF("--- true ---", "--- %v ---", yes());
   CHECK_PRINTF("--- [] ---", "--- %v ---", ROOT(runtime, empty_array));
@@ -274,7 +274,7 @@ static bool test_eventual_detection(cycle_detector_t *outer, size_t depth) {
     return false;
   cycle_detector_t inner;
   value_t entered = cycle_detector_enter(outer, &inner, new_integer(depth % 17));
-  if (get_value_domain(entered) == vdSignal)
+  if (get_value_domain(entered) == vdCondition)
     return true;
   return test_eventual_detection(&inner, depth - 1);
 }

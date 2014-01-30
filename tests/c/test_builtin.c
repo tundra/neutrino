@@ -37,7 +37,7 @@ static void test_builtin(value_t ambience, value_t module, variant_t *expected,
   // Compile and execute the syntax.
   value_t code = compile_expression(runtime, invocation, module,
       scope_lookup_callback_get_bottom());
-  value_t result = run_code_block_until_signal(ambience, code);
+  value_t result = run_code_block_until_condition(ambience, code);
   ASSERT_SUCCESS(result);
   ASSERT_VAREQ(expected, result);
 }

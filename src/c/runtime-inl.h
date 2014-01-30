@@ -12,13 +12,13 @@
 // if it fails garbage collecting and trying again once.
 #define RETRY_ONCE_IMPL(RUNTIME, DELEGATE) do {                                \
   value_t __result__ = (DELEGATE);                                             \
-  if (is_signal(scHeapExhausted, __result__)) {                                \
+  if (is_condition(ccHeapExhausted, __result__)) {                             \
     runtime_garbage_collect(RUNTIME);                                          \
     runtime_toggle_fuzzing(RUNTIME, false);                                    \
     __result__ = (DELEGATE);                                                   \
     runtime_toggle_fuzzing(RUNTIME, true);                                     \
-    if (is_signal(scHeapExhausted, __result__))                                \
-      return new_out_of_memory_signal();                                       \
+    if (is_condition(ccHeapExhausted, __result__))                             \
+      return new_out_of_memory_condition();                                    \
   }                                                                            \
   return __result__;                                                           \
 } while (false)

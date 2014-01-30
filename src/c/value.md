@@ -5,9 +5,9 @@ Neutrino's value layout and the functionality that services it is at the core of
 
 ## Values
 
-The highest level of abstraction are _values_. A value is any piece of data used by the runtime, both those visible to the surface language like tagged integers and heap objects and those internal to the runtime like moved object forward pointers and signals. A value is represented by `value_t` in the source code.
+The highest level of abstraction are _values_. A value is any piece of data used by the runtime, both those visible to the surface language like tagged integers and heap objects and those internal to the runtime like moved object forward pointers and conditions. A value is represented by `value_t` in the source code.
 
-A value is a 64-bit unsigned integer value. The lowest 3 bits is a tag value used to distinguish the different flavors of value, the remaining 61 bits are the payload. For tagged integers the integer value is stored directly in the payload. For signals it is the signal cause. For heap objects it is a pointer to the memory address where the object is located. These different types are called _domains_. Given a value you can ask for its domain and you'll get `vdTaggedInteger`, `vdObject`, etc. back.
+A value is a 64-bit unsigned integer value. The lowest 3 bits is a tag value used to distinguish the different flavors of value, the remaining 61 bits are the payload. For tagged integers the integer value is stored directly in the payload. For conditions it is the condition cause. For heap objects it is a pointer to the memory address where the object is located. These different types are called _domains_. Given a value you can ask for its domain and you'll get `vdTaggedInteger`, `vdObject`, etc. back.
 
 ## Objects
 

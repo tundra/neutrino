@@ -17,13 +17,13 @@
 // Print a stack trace if the platform supports it.
 void print_stack_trace(FILE *out, int signum);
 
-// After handling the signal here, propagate it so that it doesn't get swallowed.
-void propagate_signal(int signum);
+// After handling the condition here, propagate it so that it doesn't get swallowed.
+void propagate_condition(int signum);
 
 // Processes crashes.
 static void crash_handler(int signum) {
   print_stack_trace(stdout, signum);
-  propagate_signal(signum);
+  propagate_condition(signum);
 }
 
 void install_crash_handler() {

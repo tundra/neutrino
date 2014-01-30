@@ -116,7 +116,7 @@ value_t match_signature(value_t self, signature_map_lookup_input_t *input,
     value_t tag = get_invocation_record_tag_at(input->record, i);
     // TODO: propagate any errors caused by this.
     value_t param = binary_search_pair_array(tags, tag);
-    if (is_signal(scNotFound, param)) {
+    if (is_condition(ccNotFound, param)) {
       // The tag wasn't found in this signature.
       if (allow_extra) {
         // It's fine, this signature allows extra arguments.
@@ -130,7 +130,7 @@ value_t match_signature(value_t self, signature_map_lookup_input_t *input,
         return success();
       }
     }
-    CHECK_FALSE("binary search failed", get_value_domain(tags) == vdSignal);
+    CHECK_FALSE("binary search failed", get_value_domain(tags) == vdCondition);
     // The tag matched one in this signature.
     size_t index = get_parameter_index(param);
     if (bit_vector_get_at(&params_seen, index)) {
@@ -276,7 +276,7 @@ value_t guard_match(value_t guard, value_t value,
       return success();
     default:
       UNREACHABLE("Unknown guard type");
-      return new_signal(scWat);
+      return new_condition(ccWat);
   }
 }
 
@@ -373,7 +373,7 @@ value_t ensure_signature_map_owned_values_frozen(runtime_t *runtime, value_t sel
 
 // The state maintained while doing signature map lookup.
 struct signature_map_lookup_state_t {
-  // The resulting value to return, or an appropriate signal.
+  // The resulting value to return, or an appropriate condition.
   value_t result;
   // Running argument-wise max over all the entries that have matched.
   score_t *max_score;
@@ -443,7 +443,7 @@ value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
         continue;
       // The next score was not strictly worse than the best we've seen so we
       // don't have a unique best.
-      state->result = new_lookup_error_signal(lcAmbiguity);
+      state->result = new_lookup_error_condition(lcAmbiguity);
       // If the result is ambiguous that means the max is now synthetic.
       state->max_is_synthetic = (status == jsAmbiguous);
     }
@@ -467,7 +467,7 @@ value_t do_signature_map_lookup(value_t ambience, value_t record, frame_t *frame
   size_t offsets_two[kSmallLookupLimit];
   signature_map_lookup_state_t state;
   signature_map_lookup_input_init(&state.input, ambience, record, frame, data);
-  state.result = new_lookup_error_signal(lcNoMatch);
+  state.result = new_lookup_error_condition(lcNoMatch);
   state.max_is_synthetic = false;
   state.max_score = max_score;
   state.result_offsets = offsets_one;
@@ -489,7 +489,7 @@ static value_t build_argument_map(runtime_t *runtime, size_t offsetc, size_t *of
 }
 
 value_t get_signature_map_lookup_argument_map(signature_map_lookup_state_t *state) {
-  if (in_domain(vdSignal, state->result)) {
+  if (in_domain(vdCondition, state->result)) {
     return whatever();
   } else {
     size_t arg_count = get_invocation_record_argument_count(state->input.record);
@@ -529,7 +529,7 @@ value_t add_methodspace_inheritance(runtime_t *runtime, value_t self,
   CHECK_FAMILY(ofType, supertype);
   value_t inheritance = get_methodspace_inheritance(self);
   value_t parents = get_id_hash_map_at(inheritance, subtype);
-  if (is_signal(scNotFound, parents)) {
+  if (is_condition(ccNotFound, parents)) {
     // Make the parents buffer small since most types don't have many direct
     // parents. If this fails nothing has happened.
     TRY_SET(parents, new_heap_array_buffer(runtime, 4));
@@ -563,7 +563,7 @@ value_t add_methodspace_method(runtime_t *runtime, value_t self,
 value_t get_type_parents(runtime_t *runtime, value_t space, value_t type) {
   value_t inheritance = get_methodspace_inheritance(space);
   value_t parents = get_id_hash_map_at(inheritance, type);
-  if (is_signal(scNotFound, parents)) {
+  if (is_condition(ccNotFound, parents)) {
     return ROOT(runtime, empty_array_buffer);
   } else {
     return parents;
@@ -571,7 +571,7 @@ value_t get_type_parents(runtime_t *runtime, value_t space, value_t type) {
 }
 
 // Does a full exhaustive lookup through the tags of the invocation for the
-// subject of this call. Returns a not found signal if there is no subject.
+// subject of this call. Returns a not found condition if there is no subject.
 static value_t get_invocation_subject_no_shortcut(
     signature_map_lookup_state_t *state) {
   value_t record = state->input.record;
@@ -581,7 +581,7 @@ static value_t get_invocation_subject_no_shortcut(
     if (is_same_value(tag, ROOT(state->input.runtime, subject_key)))
       return get_invocation_record_argument_at(record, state->input.frame, i);
   }
-  return new_not_found_signal();
+  return new_not_found_condition();
 }
 
 // Returns the subject of the invocation, using the fact that the subject sorts
@@ -599,7 +599,7 @@ static value_t get_invocation_subject_with_shortcut(
   if (is_same_value(tag_zero, ROOT(state->input.runtime, subject_key)))
     return get_invocation_record_argument_at(record, state->input.frame, 0);
   else
-    return new_not_found_signal();
+    return new_not_found_condition();
 }
 
 // Ensures that the given methodspace as well as all transitive dependencies
@@ -619,7 +619,7 @@ static value_t ensure_methodspace_transitive_dependencies(runtime_t *runtime,
 
 // Given a module fragment, returns the cache of methodspaces to look up within.
 // If the cache has not yet been created, create it. Creating the cache may
-// cause a signal to be returned.
+// cause a condition to be returned.
 static value_t get_or_create_module_fragment_methodspaces_cache(
     runtime_t *runtime, value_t fragment) {
   CHECK_FAMILY(ofModuleFragment, fragment);
@@ -641,7 +641,7 @@ static value_t get_or_create_module_fragment_methodspaces_cache(
   // dependencies.
   value_t module = get_module_fragment_module(fragment);
   value_t current = fragment;
-  while (!is_signal(scNotFound, current)) {
+  while (!is_condition(ccNotFound, current)) {
     value_t methodspace = get_module_fragment_methodspace(current);
     TRY(ensure_methodspace_transitive_dependencies(runtime, methodspace, cache));
     value_t stage = get_module_fragment_stage(current);
@@ -673,12 +673,12 @@ static value_t lookup_subject_methods(signature_map_lookup_state_t *state) {
   // Look for a subject value, if there is none there is nothing to do.
   value_t subject = get_invocation_subject_with_shortcut(state);
   TOPIC_INFO(Lookup, "Subject value: %v", subject);
-  if (is_signal(scNotFound, subject)) {
+  if (is_condition(ccNotFound, subject)) {
     // Just in case, check that the shortcut version gave the correct answer.
-    // The case where it returns a non-signal is trivially correct (FLW) so this
+    // The case where it returns a non-condition is trivially correct (FLW) so this
     // is the only case there can be any doubt about.
     IF_EXPENSIVE_CHECKS_ENABLED(CHECK_TRUE("Subject shortcut didn't work",
-        is_signal(scNotFound, get_invocation_subject_no_shortcut(state))));
+        is_condition(ccNotFound, get_invocation_subject_no_shortcut(state))));
     return success();
   }
   // Extract the origin of the subject.

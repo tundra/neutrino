@@ -26,9 +26,9 @@ value_mode_t get_value_mode(value_t value);
 
 // Sets the object's value mode. Values may do this in any number of ways,
 // some of which may require the runtime which is why it is present. Returns
-// a non-signal if setting succeeded, an InvalidModeChange if mode discipline
+// a non-condition if setting succeeded, an InvalidModeChange if mode discipline
 // was violated, which contains the current mode of the value, and possibly
-// any other signals if for instance allocation was required which failed.
+// any other conditions if for instance allocation was required which failed.
 value_t set_value_mode(runtime_t *runtime, value_t self, value_mode_t mode);
 
 // Sets the object's value mode without checking mode discipline.
@@ -94,7 +94,7 @@ struct family_behavior_t {
 };
 
 // Validates an object. Check fails if validation fails except in soft check
-// failure mode where a ValidationFailed signal is returned.
+// failure mode where a ValidationFailed condition is returned.
 value_t object_validate(value_t value);
 
 // Returns the size in bytes of the given object on the heap.
@@ -129,7 +129,7 @@ value_t value_identity_compare_cycle_protect(value_t a, value_t b,
 
 // Returns a value indicating how a and b relate in the total ordering of
 // comparable values. If the values are not both comparable the result is
-// undefined, it may return a comparison value but it may also return a signal.
+// undefined, it may return a comparison value but it may also return a condition.
 // Don't depend on any particular behavior in that case.
 value_t value_ordering_compare(value_t a, value_t b);
 
@@ -163,12 +163,12 @@ void value_print_inner_on(value_t value, string_buffer_t *buf,
     print_flags_t flags, size_t depth);
 
 // Creates a new empty instance of the given type. Not all types support this,
-// in which case an unsupported behavior signal is returned.
+// in which case an unsupported behavior condition is returned.
 value_t new_object_with_type(runtime_t *runtime, value_t type);
 
 // Sets the payload of an object, passing in the object to set and the data to
 // inject as the object payload. If somehow the payload is not as the object
-// expects a signal should be returned (as well as if anything else fails
+// expects a condition should be returned (as well as if anything else fails
 // obviously).
 value_t set_object_contents(runtime_t *runtime, value_t object,
     value_t payload);

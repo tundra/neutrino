@@ -22,7 +22,7 @@ TEST(runtime, create) {
   allocator_t blocker;
   blocker.malloc = blocking_malloc;
   allocator_t *prev_alloc = allocator_set_default(&blocker);
-  ASSERT_SIGNAL(scSystemError, runtime_init(&r1, NULL));
+  ASSERT_CONDITION(ccSystemError, runtime_init(&r1, NULL));
   allocator_set_default(prev_alloc);
 }
 
@@ -44,7 +44,7 @@ TEST(runtime, runtime_validation) {
   // Break a root.
   value_t old_empty_array = ROOT(runtime, empty_array);
   ROOT(runtime, empty_array) = new_integer(0);
-  ASSERT_CHECK_FAILURE(scValidationFailed, runtime_validate(runtime));
+  ASSERT_CHECK_FAILURE(ccValidationFailed, runtime_validate(runtime));
   ROOT(runtime, empty_array) = old_empty_array;
   ASSERT_SUCCESS(runtime_validate(runtime));
 
@@ -53,7 +53,7 @@ TEST(runtime, runtime_validation) {
   value_t map = new_heap_id_hash_map(runtime, capacity);
   ASSERT_SUCCESS(runtime_validate(runtime));
   set_id_hash_map_capacity(map, capacity + 1);
-  ASSERT_CHECK_FAILURE(scValidationFailed, runtime_validate(runtime));
+  ASSERT_CHECK_FAILURE(ccValidationFailed, runtime_validate(runtime));
   set_id_hash_map_capacity(map, capacity);
   ASSERT_SUCCESS(runtime_validate(runtime));
 

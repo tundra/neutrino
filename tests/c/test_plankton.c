@@ -168,7 +168,7 @@ static value_t value_to_int(value_t value, runtime_t *runtime, void *ptr) {
   } else if (value_identity_compare(value, data->i1)) {
     return new_integer(1);
   } else {
-    return new_signal(scNothing);
+    return new_condition(ccNothing);
   }
 }
 

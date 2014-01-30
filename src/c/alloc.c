@@ -13,13 +13,13 @@
 // --- B a s i c ---
 
 // Run a couple of sanity checks before returning the value from a constructor.
-// Returns a signal if the check fails, otherwise returns the given value.
+// Returns a condition if the check fails, otherwise returns the given value.
 static value_t post_create_sanity_check(value_t value, size_t size) {
   TRY(object_validate(value));
   object_layout_t layout;
   object_layout_init(&layout);
   get_object_layout(value, &layout);
-  SIG_CHECK_EQ("post create sanity", scValidationFailed, layout.size, size);
+  COND_CHECK_EQ("post create sanity", ccValidationFailed, layout.size, size);
   return value;
 }
 
@@ -822,10 +822,10 @@ value_t alloc_heap_object(runtime_t *runtime, size_t bytes, value_t species) {
   address_t addr = NULL;
   if (runtime->gc_fuzzer != NULL) {
     if (gc_fuzzer_tick(runtime->gc_fuzzer))
-      return new_heap_exhausted_signal(bytes);
+      return new_heap_exhausted_condition(bytes);
   }
   if (!heap_try_alloc(&runtime->heap, bytes, &addr))
-    return new_heap_exhausted_signal(bytes);
+    return new_heap_exhausted_condition(bytes);
   value_t result = new_object(addr);
   set_object_header(result, species);
   return result;
@@ -852,19 +852,19 @@ static value_t extend_id_hash_map(runtime_t *runtime, value_t map) {
     value_t extension = try_set_id_hash_map_at(map, key, value, false);
     // Since we were able to successfully add these pairs to the old smaller
     // map it can't fail this time around.
-    CHECK_TRUE("rehashing failed", get_value_domain(extension) != vdSignal);
+    CHECK_TRUE("rehashing failed", get_value_domain(extension) != vdCondition);
   }
   return success();
 }
 
 value_t set_id_hash_map_at(runtime_t *runtime, value_t map, value_t key, value_t value) {
   value_t first_try = try_set_id_hash_map_at(map, key, value, false);
-  if (is_signal(scMapFull, first_try)) {
+  if (is_condition(ccMapFull, first_try)) {
     TRY(extend_id_hash_map(runtime, map));
     value_t second_try = try_set_id_hash_map_at(map, key, value, false);
     // It should be impossible for the second try to fail if the first try could
     // hash the key and extending was successful.
-    CHECK_TRUE("second try failure", get_value_domain(second_try) != vdSignal);
+    CHECK_TRUE("second try failure", get_value_domain(second_try) != vdCondition);
     return second_try;
   } else {
     return first_try;

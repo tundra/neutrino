@@ -15,7 +15,7 @@ static scope_lookup_callback_t *bottom_callback = NULL;
 
 static value_t bottom_scope_lookup(value_t symbol, void *data,
     binding_info_t *info_out) {
-  return new_not_found_signal();
+  return new_not_found_condition();
 }
 
 // Returns the bottom callback that never finds symbols.
@@ -79,7 +79,7 @@ static value_t map_scope_lookup(value_t symbol, void *data,
     binding_info_t *info_out) {
   map_scope_t *scope = (map_scope_t*) data;
   value_t value = get_id_hash_map_at(scope->map, symbol);
-  if (is_signal(scNotFound, value)) {
+  if (is_condition(ccNotFound, value)) {
     return scope_lookup_callback_call(scope->outer, symbol, info_out);
   } else {
     if (info_out != NULL) {
@@ -132,7 +132,7 @@ static value_t capture_scope_lookup(value_t symbol, void *data,
   }
   // We haven't seen this one before so look it up outside.
   value_t value = scope_lookup_callback_call(scope->outer, symbol, info_out);
-  if (info_out != NULL && !is_signal(scNotFound, value)) {
+  if (info_out != NULL && !is_condition(ccNotFound, value)) {
     // We found something and this is a read. Add it to the list of captures.
     runtime_t *runtime = scope->assembler->runtime;
     if (get_array_buffer_length(scope->captures) == 0) {
@@ -166,7 +166,7 @@ value_t assembler_lookup_symbol(assembler_t *assm, value_t symbol,
 }
 
 bool assembler_is_symbol_bound(assembler_t *assm, value_t symbol) {
-  return !is_signal(scNotFound, assembler_lookup_symbol(assm, symbol, NULL));
+  return !is_condition(ccNotFound, assembler_lookup_symbol(assm, symbol, NULL));
 }
 
 
@@ -290,7 +290,7 @@ static value_t assembler_emit_value(assembler_t *assm, value_t value) {
   // Check if we've already emitted this value then we can use the index again.
   value_t prev_index = get_id_hash_map_at(value_pool, value);
   int64_t index;
-  if (is_signal(scNotFound, prev_index)) {
+  if (is_condition(ccNotFound, prev_index)) {
     // We haven't so we add the value to the value pool.
     index = get_id_hash_map_size(value_pool);
     TRY(set_id_hash_map_at(assm->runtime, value_pool, value, new_integer(index)));

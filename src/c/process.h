@@ -106,12 +106,12 @@ value_t get_frame_argument_map(frame_t *frame);
 value_t frame_push_value(frame_t *frame, value_t value);
 
 // Pops a value off this stack frame. Bounds checks whether there is a value to
-// pop and in soft check failure mode returns an OutOfBounds signal if not.
+// pop and in soft check failure mode returns an OutOfBounds condition if not.
 value_t frame_pop_value(frame_t *frame);
 
 // Returns the index'th value counting from the top of this stack. Bounds checks
 // whether there is a value to return and in soft check failure mode returns an
-// OutOfBounds signal if not.
+// OutOfBounds condition if not.
 value_t frame_peek_value(frame_t *frame, size_t index);
 
 // Returns the value of the index'th parameter.
@@ -137,7 +137,7 @@ ACCESSORS_DECL(stack, top_piece);
 INTEGER_ACCESSORS_DECL(stack, default_piece_capacity);
 
 // Allocates a new frame on this stack. If allocating fails, for instance if a
-// new stack piece is required and we're out of memory, a signal is returned.
+// new stack piece is required and we're out of memory, a condition is returned.
 // The arg map array is used to determine how many arguments should be copied
 // from the old to the new segment in the case where we have to create a new
 // one. It is passed as a value rather than a size because the value is easily

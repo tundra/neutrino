@@ -1,10 +1,10 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-#include "signals.h"
+#include "condition.h"
 
-invalid_syntax_cause_t get_invalid_syntax_signal_cause(value_t signal) {
-  return (invalid_syntax_cause_t) get_signal_details(signal);
+invalid_syntax_cause_t get_invalid_syntax_condition_cause(value_t condition) {
+  return (invalid_syntax_cause_t) get_condition_details(condition);
 }
 
 const char *get_invalid_syntax_cause_name(invalid_syntax_cause_t cause) {
@@ -27,13 +27,13 @@ const char *get_unsupported_behavior_cause_name(unsupported_behavior_cause_t cau
   }
 }
 
-const char *get_signal_cause_name(signal_cause_t cause) {
+const char *get_condition_cause_name(consition_cause_t cause) {
   switch (cause) {
-#define __GEN_CASE__(Name) case sc##Name: return #Name;
-    ENUM_SIGNAL_CAUSES(__GEN_CASE__)
+#define __GEN_CASE__(Name) case cc##Name: return #Name;
+    ENUM_CONDITION_CAUSES(__GEN_CASE__)
 #undef __GEN_CASE__
     default:
-      return "invalid signal";
+      return "invalid condition";
   }
 }
 

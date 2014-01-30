@@ -30,7 +30,7 @@ FORWARD(string_buffer_t);
 #define FOR_EACH_VALUE_DOMAIN(F)                                               \
   F(Integer,           0x0,    1)                                              \
   F(Object,            0x1,    0)                                              \
-  F(Signal,            0x2,    2)                                              \
+  F(Condition,         0x2,    2)                                              \
   F(MovedObject,       0x3,    3)                                              \
   F(CustomTagged,      0x4,    4)
 
@@ -48,8 +48,8 @@ const char *get_value_domain_name(value_domain_t domain);
 // Returns the given domain's ordinal value.
 int get_value_domain_ordinal(value_domain_t domain);
 
-// Invokes the given macro for each signal cause.
-#define ENUM_SIGNAL_CAUSES(F)                                                  \
+// Invokes the given macro for each condition cause.
+#define ENUM_CONDITION_CAUSES(F)                                               \
   F(Circular)                                                                  \
   F(EmptyPath)                                                                 \
   F(HeapExhausted)                                                             \
@@ -72,13 +72,13 @@ int get_value_domain_ordinal(value_domain_t domain);
   F(SafePoolFull)                                                              \
   F(Wat)
 
-// Enum identifying the type of a signal.
+// Enum identifying the type of a condition.
 typedef enum {
-  __scFirst__ = -1
-#define DECLARE_SIGNAL_CAUSE_ENUM(Cause) , sc##Cause
-  ENUM_SIGNAL_CAUSES(DECLARE_SIGNAL_CAUSE_ENUM)
-#undef DECLARE_SIGNAL_CAUSE_ENUM
-} signal_cause_t;
+  __ccFirst__ = -1
+#define DECLARE_CONDITION_CAUSE_ENUM(Cause) , cc##Cause
+  ENUM_CONDITION_CAUSES(DECLARE_CONDITION_CAUSE_ENUM)
+#undef DECLARE_CONDITION_CAUSE_ENUM
+} consition_cause_t;
 
 
 // Data for a tagged integer value.
@@ -91,12 +91,12 @@ typedef struct {
   uint64_t data;
 } unknown_value_t;
 
-// Data for signals.
+// Data for conditions.
 typedef struct {
   value_domain_t domain : 3;
-  signal_cause_t cause : 8;
+  consition_cause_t cause : 8;
   uint32_t details;
-} signal_value_t;
+} condition_value_t;
 
 // Data for custom-tagged values.
 typedef struct {
@@ -110,7 +110,7 @@ typedef uint64_t encoded_value_t;
 typedef union value_t {
   unknown_value_t as_unknown;
   integer_value_t as_integer;
-  signal_value_t as_signal;
+  condition_value_t as_condition;
   custom_tagged_value_t as_custom_tagged;
   encoded_value_t encoded;
 } value_t;
@@ -169,13 +169,13 @@ static int64_t get_integer_value(value_t value) {
   return value.as_integer.data >> kDomainTagSize;
 }
 
-// Returns a value that is _not_ a signal. This can be used to indicate
+// Returns a value that is _not_ a condition. This can be used to indicate
 // unspecific success.
 static value_t success() {
   return new_integer(0);
 }
 
-// An arbitrary non-signal value which can be used instead of success to
+// An arbitrary non-condition value which can be used instead of success to
 // indicate that the concrete value doesn't matter.
 static value_t whatever() {
   return new_integer(1);
@@ -676,7 +676,7 @@ value_t ensure_frozen(runtime_t *runtime, value_t value);
 // deep frozen as we go. If this succeeds returns the internal true value,
 // otherwise the internal false value. Marking the objects as deep frozen may
 // under some circumstances involve allocation; if there is a problem there a
-// signal may be returned.
+// condition may be returned.
 //
 // If validation fails and the offender_out parameter is non-null, an arbitrary
 // mutable object from the object graph will be stored there. This is a
@@ -690,9 +690,10 @@ value_t ensure_frozen(runtime_t *runtime, value_t value);
 value_t try_validate_deep_frozen(runtime_t *runtime, value_t value,
     value_t *offender_out);
 
-// Works the same way as try_validate_deep_frozen but returns a non-signal instead
-// of true and a signal for false. Depending on what the most convenient
-// interface is you can use either this or the other, they do the same thing.
+// Works the same way as try_validate_deep_frozen but returns a non-condition
+// instead of true and a condition for false. Depending on what the most
+// convenient interface is you can use either this or the other, they do the
+// same thing.
 value_t validate_deep_frozen(runtime_t *runtime, value_t value,
     value_t *offender_out);
 
@@ -758,7 +759,7 @@ size_t calc_array_size(size_t length);
 INTEGER_ACCESSORS_DECL(array, length);
 
 // Returns the index'th element in the given array. Bounds checks the index and
-// returns an OutOfBounds signal under soft check failures.
+// returns an OutOfBounds condition under soft check failures.
 value_t get_array_at(value_t value, size_t index);
 
 // Sets the index'th element in the given array.
@@ -772,7 +773,7 @@ value_t *get_array_elements(value_t value);
 value_t *get_array_elements_unchecked(value_t value);
 
 // Sorts the given array. If there are any errors, for instance if some of the
-// values are not comparable, a signal is returned.
+// values are not comparable, a condition is returned.
 value_t sort_array(value_t value);
 
 // Sorts the first 'elmc' elements of this array.
@@ -839,7 +840,7 @@ ACCESSORS_DECL(array_buffer, elements);
 INTEGER_ACCESSORS_DECL(array_buffer, length);
 
 // Returns the index'th element in the given array buffer. Bounds checks the
-// index and returns an OutOfBounds signal under soft check failures.
+// index and returns an OutOfBounds condition under soft check failures.
 value_t get_array_buffer_at(value_t self, size_t index);
 
 // Sets the index'th element in this array buffer. Bounds checks the index.
@@ -850,7 +851,7 @@ void set_array_buffer_at(value_t self, size_t index, value_t value);
 bool try_add_to_array_buffer(value_t self, value_t value);
 
 // Adds an element at the end of the given array buffer, expanding it to a new
-// backing array if necessary. Returns a signal on failure.
+// backing array if necessary. Returns a condition on failure.
 value_t add_to_array_buffer(runtime_t *runtime, value_t buffer, value_t value);
 
 // Checks whether there is already a value in this array buffer object identical
@@ -875,7 +876,7 @@ void sort_array_buffer(value_t self);
 bool try_add_to_pair_array_buffer(value_t self, value_t first, value_t second);
 
 // Adds a pair of elements at the end of the given array buffer, expanding it to
-// a new backing array if necessary. Returns a signal on failure. See
+// a new backing array if necessary. Returns a condition on failure. See
 // try_add_to_array_buffer for details.
 value_t add_to_pair_array_buffer(runtime_t *runtime, value_t buffer, value_t first,
     value_t second);
@@ -920,13 +921,13 @@ INTEGER_ACCESSORS_DECL(id_hash_map, capacity);
 INTEGER_ACCESSORS_DECL(id_hash_map, occupied_count);
 
 // Adds a binding from the given key to the given value to this map, replacing
-// the existing one if it already exists. Returns a signal on failure, either
+// the existing one if it already exists. Returns a condition on failure, either
 // if the key cannot be hashed or the map is full.
 value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value,
     bool allow_frozen);
 
 // Returns the binding for the given key or, if no binding is present, an
-// appropriate signal.
+// appropriate condition.
 value_t get_id_hash_map_at(value_t map, value_t key);
 
 // Returns the binding for the given key or, if no binding is present, the
@@ -937,13 +938,13 @@ value_t get_id_hash_map_at_with_default(value_t map, value_t key, value_t defawl
 bool has_id_hash_map_at(value_t map, value_t key);
 
 // Adds a binding from the given key to the given value to this map, replacing
-// the existing one if it already exists. Returns a signal on failure, either
+// the existing one if it already exists. Returns a condition on failure, either
 // if the key cannot be hashed or there isn't enough memory in the runtime to
 // extend the map.
 value_t set_id_hash_map_at(runtime_t *runtime, value_t map, value_t key, value_t value);
 
 // Removes the mapping for the given key from the map if it exists. Returns
-// a NotFound signal if that is the case, otherwise a non-signal.
+// a NotFound condition if that is the case, otherwise a non-condition.
 value_t delete_id_hash_map_at(runtime_t *runtime, value_t map, value_t key);
 
 // Data associated with iterating through a map. The iterator grabs the fields
@@ -1001,7 +1002,7 @@ ACCESSORS_DECL(instance, fields);
 // Returns the field with the given key from the given instance.
 value_t get_instance_field(value_t value, value_t key);
 
-// Sets the field with the given key on the given instance. Returns a signal
+// Sets the field with the given key on the given instance. Returns a condition
 // if setting the field failed, for instance if the field map was full.
 value_t try_set_instance_field(value_t instance, value_t key, value_t value);
 
@@ -1115,7 +1116,7 @@ static const size_t kNamespaceBindingsOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(NAMESPACE, bindings);
 
 // Returns the binding for the given name in the given namespace. If the binding
-// doesn't exist a NotFound signal is returned.
+// doesn't exist a NotFound condition is returned.
 value_t get_namespace_binding_at(value_t self, value_t name);
 
 // Sets the binding for a given name in the given namespace.
@@ -1207,14 +1208,14 @@ ACCESSORS_DECL(module, fragments);
 
 // Looks up an identifier in the given module by finding the fragment for the
 // appropriate stage and looking the path up in the namespace. If for any reason
-// the binding cannot be found a lookup error signal is returned. To avoid
+// the binding cannot be found a lookup error condition is returned. To avoid
 // having to construct new identifiers when shifting between stages this call
 // takes the stage and path of the identifier separately.
 value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage,
     value_t path);
 
 // Returns the fragment in the given module that corresponds to the specified
-// stage. If there is no such fragment a NotFound signal is returned.
+// stage. If there is no such fragment a NotFound condition is returned.
 value_t get_module_fragment_at(value_t self, value_t stage);
 
 // Returns the fragment in the given module that corresponds to the specified
@@ -1251,12 +1252,12 @@ ACCESSORS_DECL(path, raw_head);
 // be returned.
 ACCESSORS_DECL(path, raw_tail);
 
-// Returns the head of the given non-empty path. If the path is empty a signal
+// Returns the head of the given non-empty path. If the path is empty a condition
 // will be returned in soft check mode, otherwise the nothing object will be
 // returned.
 value_t get_path_head(value_t path);
 
-// Returns the tail of the given non-empty path. If the path is empty a signal
+// Returns the tail of the given non-empty path. If the path is empty a condition
 // will be returned in soft check mode, otherwise the nothing object will be
 // returned.
 value_t get_path_tail(value_t path);

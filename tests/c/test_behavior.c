@@ -17,7 +17,7 @@ TEST(behavior, string_validation) {
   // Zap the null terminator.
   get_string_chars(str)[4] = 'x';
   // Now the string no longer terminates.
-  ASSERT_CHECK_FAILURE(scValidationFailed, object_validate(str));
+  ASSERT_CHECK_FAILURE(ccValidationFailed, object_validate(str));
   get_string_chars(str)[4] = '\0';
 
   DISPOSE_RUNTIME();
@@ -129,8 +129,8 @@ static value_t dummy_constructor(runtime_t *runtime) {
   return new_integer(434);
 }
 
-static value_t signal_constructor(runtime_t *runtime) {
-  return new_signal(scNothing);
+static value_t condition_constructor(runtime_t *runtime) {
+  return new_condition(ccNothing);
 }
 
 TEST(behavior, new_instance) {
@@ -141,10 +141,10 @@ TEST(behavior, new_instance) {
   value_t instance = new_object_with_type(runtime, dummy_fact);
   ASSERT_VALEQ(new_integer(434), instance);
 
-  value_t signal_fact = new_heap_factory(runtime, signal_constructor);
-  ASSERT_SUCCESS(signal_fact);
-  value_t sig = new_object_with_type(runtime, signal_fact);
-  ASSERT_SIGNAL(scNothing, sig);
+  value_t condition_fact = new_heap_factory(runtime, condition_constructor);
+  ASSERT_SUCCESS(condition_fact);
+  value_t cond = new_object_with_type(runtime, condition_fact);
+  ASSERT_CONDITION(ccNothing, cond);
 
   DISPOSE_RUNTIME();
 }

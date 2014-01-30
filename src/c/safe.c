@@ -1,9 +1,9 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "condition.h"
 #include "runtime.h"
 #include "safe-inl.h"
-#include "signals.h"
 #include "try-inl.h"
 
 
@@ -15,7 +15,7 @@ safe_value_t object_tracker_to_safe_value(object_tracker_t *handle) {
   value_t as_object = new_object((address_t) handle);
   safe_value_t s_result;
   s_result.as_value = as_object;;
-  CHECK_FALSE("cast into signal", safe_value_is_immediate(s_result));
+  CHECK_FALSE("cast into condition", safe_value_is_immediate(s_result));
   return s_result;
 }
 
@@ -28,7 +28,7 @@ safe_value_t protect_immediate(value_t value) {
   CHECK_FALSE("value not immediate", get_value_domain(value) == vdObject);
   safe_value_t s_result;
   s_result.as_value = value;
-  CHECK_TRUE("cast out of signal", safe_value_is_immediate(s_result));
+  CHECK_TRUE("cast out of condition", safe_value_is_immediate(s_result));
   return s_result;
 }
 
@@ -61,8 +61,8 @@ void safe_value_pool_dispose(safe_value_pool_t *pool) {
 }
 
 safe_value_t protect(safe_value_pool_t *pool, value_t value) {
-  SIG_CHECK_TRUE_WITH_VALUE("safe value pool overflow", scSafePoolFull,
-      protect_immediate(new_signal(scSafePoolFull)),
+  COND_CHECK_TRUE_WITH_VALUE("safe value pool overflow", ccSafePoolFull,
+      protect_immediate(new_condition(ccSafePoolFull)),
       pool->used < pool->capacity);
   S_TRY_DEF(result, runtime_protect_value(pool->runtime, value));
   pool->values[pool->used++] = result;
