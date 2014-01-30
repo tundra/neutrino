@@ -407,7 +407,8 @@ const char *get_opcode_name(opcode_t opcode) {
       return #Name;
   ENUM_OPCODES(__EMIT_CASE__)
 #undef __EMIT_CASE__
-    default: return NULL;
+    default:
+      return NULL;
   }
 }
 
