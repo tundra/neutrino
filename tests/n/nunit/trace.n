@@ -1,0 +1,13 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def $test_capture() {
+  $core:info(@ctrino.get_current_backtrace());
+}
+
+do {
+  $test_capture();
+}
