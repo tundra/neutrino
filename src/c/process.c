@@ -137,6 +137,18 @@ bool pop_stack_frame(value_t stack, frame_t *frame) {
   }
 }
 
+bool frame_is_synthetic(runtime_t *runtime, frame_t *frame) {
+  value_t code_block = get_frame_code_block(frame);
+  return is_same_value(code_block, ROOT(runtime, stack_piece_bottom_code_block));
+}
+
+bool pop_organic_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame) {
+  if (!pop_stack_frame(stack, frame))
+    return false;
+  return !frame_is_synthetic(runtime, frame)
+      || pop_organic_stack_frame(runtime, stack, frame);
+}
+
 void get_stack_top_frame(value_t stack, frame_t *frame) {
   CHECK_FAMILY(ofStack, stack);
   value_t top_piece = get_stack_top_piece(stack);

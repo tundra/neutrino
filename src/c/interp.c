@@ -227,7 +227,7 @@ static value_t run_stack(value_t ambience, value_t stack) {
         CHECK_FAMILY(ofLambda, lambda);
         value_t space = get_lambda_methods(lambda);
         // Pop off the top frame since we're repeating the previous call.
-        bool popped = pop_stack_piece_frame(get_stack_top_piece(stack), &frame);
+        bool popped = pop_organic_stack_frame(runtime, stack, &frame);
         CHECK_TRUE("delegating from bottom frame", popped);
         interpreter_state_load(&state, &frame);
         // Extract the invocation record from the calling instruction.
