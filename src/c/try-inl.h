@@ -40,7 +40,7 @@ TRY_SET(name, INIT)
 // references being leaked.
 #define S_TRY(EXPR) do {                                                       \
   safe_value_t __result__ = (EXPR);                                            \
-  if (safe_value_in_domain(vdCondition, __result__))                              \
+  if (safe_value_in_domain(vdCondition, __result__))                           \
     return __result__;                                                         \
 } while (false)
 
@@ -70,7 +70,7 @@ S_TRY_SET(name, INIT)
 // is executed before bailing out on a condition.
 #define E_TRY(EXPR) do {                                                       \
   value_t __result__ = (EXPR);                                                 \
-  if (in_domain(vdCondition, __result__))                                         \
+  if (in_domain(vdCondition, __result__))                                      \
     E_RETURN(__result__);                                                      \
 } while (false)
 
@@ -78,7 +78,7 @@ S_TRY_SET(name, INIT)
 // is executed before bailing out on a condition.
 #define E_S_TRY(EXPR) do {                                                     \
   safe_value_t __result__ = (EXPR);                                            \
-  if (safe_value_in_domain(vdCondition, __result__))                              \
+  if (safe_value_in_domain(vdCondition, __result__))                           \
     E_RETURN(deref_immediate(__result__));                                     \
 } while (false)
 

@@ -83,12 +83,12 @@ IF_CHECKS_ENABLED(__CHECK_REL_HELPER__(M, A, OP, B))
 
 // Fails if the given expression doesn't evaluate to true under hard check
 // failures, returns the given value under soft check failures.
-#define COND_CHECK_TRUE_WITH_VALUE(M, scCause, VALUE, E)                        \
+#define COND_CHECK_TRUE_WITH_VALUE(M, scCause, VALUE, E)                       \
 IF_CHECKS_ENABLED(COND_CHECK_EQ_WITH_VALUE(M, scCause, VALUE, E, true))
 
 // Fails if the given expression doesn't evaluate to true under hard check
 // failures, returns the specified condition under soft check failures.
-#define COND_CHECK_TRUE(M, scCause, E)                                          \
+#define COND_CHECK_TRUE(M, scCause, E)                                         \
 IF_CHECKS_ENABLED(COND_CHECK_EQ(M, scCause, E, true))
 
 // Fails if the given expression doesn't evaluate to false.
