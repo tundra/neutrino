@@ -153,6 +153,10 @@ static void log_lookup_error(value_t condition, value_t record, frame_t *frame) 
   string_buffer_dispose(&buf);
 }
 
+// Counter that increments for each opcode executed when interpreter topic
+// logging is enabled. Can be helpful for debugging but is kind of a lame hack.
+static uint64_t opcode_counter = 0;
+
 static value_t run_stack(value_t ambience, value_t stack) {
   CHECK_FAMILY(ofAmbience, ambience);
   CHECK_FAMILY(ofStack, stack);
@@ -163,7 +167,8 @@ static value_t run_stack(value_t ambience, value_t stack) {
   interpreter_state_load(&state, &frame);
   while (true) {
     opcode_t opcode = (opcode_t) read_next_short(&state);
-    TOPIC_INFO(Interpreter, "Opcode: %i", opcode);
+    TOPIC_INFO(Interpreter, "Opcode: %s (%i)", get_opcode_name(opcode),
+        opcode_counter++);
     switch (opcode) {
       case ocPush: {
         value_t value = read_next_value(&state);
@@ -393,6 +398,18 @@ static value_t run_stack(value_t ambience, value_t stack) {
     }
   }
   return success();
+}
+
+const char *get_opcode_name(opcode_t opcode) {
+  switch (opcode) {
+#define __EMIT_CASE__(Name)                                                    \
+    case oc##Name:                                                             \
+      return #Name;
+  ENUM_OPCODES(__EMIT_CASE__)
+#undef __EMIT_CASE__
+    default:
+      return NULL;
+  }
 }
 
 value_t run_code_block_until_condition(value_t ambience, value_t code) {

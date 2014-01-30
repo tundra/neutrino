@@ -43,6 +43,8 @@ typedef enum {
 #undef __DECLARE_OPCODE__
 } opcode_t;
 
+// Returns the string name of the opcode with the given index.
+const char *get_opcode_name(opcode_t opcode);
 
 // Executes the given code block object, returning the result. If any conditions
 // occur evaluation is interrupted.
