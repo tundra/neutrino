@@ -47,10 +47,32 @@ def $test_direct_kill() {
   $assert:equals(false, $f.is_live);  
 }
 
+## Call recursively $n - $i times then capture an escape, do a recursive call,
+## and fire the escape. This is intended to test that escaping work across stack
+## segments.
+def $escape_at_n($i, $n) {
+  if $i < $n then {
+    $escape_at_n($i + 1, $n);
+    $i;
+  } else {
+    with_escape $break
+      do $call_at_n(0, 2, $break);
+  }
+}
+
+def $test_various_depth_escape() {
+  # TODO: increase the number of iterations when the interpreter is faster.
+  for $i in (17).to(18) do {
+    $core:info($i);
+    $escape_at_n(0, 5 * $i);
+  }
+}
+
 def $main() {
   $test_simple_escape();
   $test_direct_kill();
   $test_deep_escape();
+  $test_various_depth_escape();
   # TODO: check that
   #   - escaping past another escape kills both (indirect killing).
   #   - escaping fails if called from a different process.

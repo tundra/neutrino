@@ -34,7 +34,7 @@ typedef enum {
 // have the logging off by default and be able to turn it on and off
 // selectively. Since these are a debug aid they should always be returned to
 // tlNever before submitting code.
-#define LOG_TOPIC_Interpreter tlNever
+#define LOG_TOPIC_Interpreter tlAlways
 #define LOG_TOPIC_Lookup      tlNever
 
 // Topic log settings: always log, never log, dynamically toggle.
