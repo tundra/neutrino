@@ -26,12 +26,12 @@ TEST(safe, simple_safe_value) {
   DISPOSE_RUNTIME();
 }
 
-TEST(safe, simple_safe_signals) {
+TEST(safe, simple_safe_conditions) {
   CREATE_RUNTIME();
 
-  safe_value_t s_sig = runtime_protect_value(runtime, new_heap_exhausted_signal(43));
-  ASSERT_TRUE(safe_value_is_immediate(s_sig));
-  ASSERT_EQ(43, get_signal_details(deref(s_sig)));
+  safe_value_t s_cond = runtime_protect_value(runtime, new_heap_exhausted_condition(43));
+  ASSERT_TRUE(safe_value_is_immediate(s_cond));
+  ASSERT_EQ(43, get_condition_details(deref(s_cond)));
   safe_value_t s_int = runtime_protect_value(runtime, new_integer(8));
   ASSERT_TRUE(safe_value_is_immediate(s_int));
   ASSERT_EQ(8, get_integer_value(deref(s_int)));
@@ -39,7 +39,7 @@ TEST(safe, simple_safe_signals) {
   safe_value_t s_obj = runtime_protect_value(runtime, obj);
   ASSERT_FALSE(safe_value_is_immediate(s_obj));
 
-  dispose_safe_value(runtime, s_sig);
+  dispose_safe_value(runtime, s_cond);
   dispose_safe_value(runtime, s_int);
   dispose_safe_value(runtime, s_obj);
 
@@ -57,7 +57,7 @@ TEST(safe, simple_try) {
   CREATE_RUNTIME();
 
   bool succeeded = false;
-  simple_try_helper(runtime, new_signal(scNotFound), &succeeded);
+  simple_try_helper(runtime, new_condition(ccNotFound), &succeeded);
   ASSERT_FALSE(succeeded);
   simple_try_helper(runtime, new_integer(8), &succeeded);
   ASSERT_TRUE(succeeded);
@@ -78,7 +78,7 @@ TEST(safe, simple_try_set) {
   CREATE_RUNTIME();
 
   bool succeeded = false;
-  simple_try_set_helper(runtime, new_signal(scNotFound), &succeeded);
+  simple_try_set_helper(runtime, new_condition(ccNotFound), &succeeded);
   ASSERT_FALSE(succeeded);
   simple_try_set_helper(runtime, new_integer(8), &succeeded);
   ASSERT_TRUE(succeeded);
@@ -107,7 +107,7 @@ TEST(safe, pool_overflow) {
 
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
   protect(pool, new_heap_array(runtime, 4));
-  ASSERT_CHECK_FAILURE_NO_VALUE(scSafePoolFull, protect(pool, new_heap_array(runtime, 4)));
+  ASSERT_CHECK_FAILURE_NO_VALUE(ccSafePoolFull, protect(pool, new_heap_array(runtime, 4)));
   DISPOSE_SAFE_VALUE_POOL(pool);
 
   DISPOSE_RUNTIME();

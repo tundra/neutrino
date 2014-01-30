@@ -38,16 +38,16 @@ value_t new_heap_uninitialized_roots(runtime_t *runtime);
 value_t new_heap_mutable_roots(runtime_t *runtime);
 
 // Allocates a new heap string in the given runtime, if there is room, otherwise
-// returns a signal to indicate an error.
+// returns a condition to indicate an error.
 value_t new_heap_string(runtime_t *runtime, string_t *contents);
 
 // Allocates a new heap blob in the given runtime, if there is room, otherwise
-// returns a signal to indicate an error. The result's data will be reset to
+// returns a condition to indicate an error. The result's data will be reset to
 // all zeros.
 value_t new_heap_blob(runtime_t *runtime, size_t length);
 
 // Allocates a new heap blob in the given runtime, if there is room, otherwise
-// returns a signal to indicate an error. The result will contain a copy of the
+// returns a condition to indicate an error. The result will contain a copy of the
 // data in the given contents blob.
 value_t new_heap_blob_with_data(runtime_t *runtime, blob_t *contents);
 
@@ -325,7 +325,7 @@ value_t new_heap_current_module_ast(runtime_t *runtime);
 value_t alloc_heap_object(runtime_t *runtime, size_t bytes, value_t species);
 
 // Sets the given instance field to the given value, replacing the existing
-// value if it already exists. Returns a signal on failure.
+// value if it already exists. Returns a condition on failure.
 value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,
     value_t value);
 

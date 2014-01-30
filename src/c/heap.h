@@ -112,7 +112,7 @@ typedef struct {
 } space_t;
 
 // Initialize the given space, assumed to be uninitialized. If this fails for
-// whatever reason a signal is returned.
+// whatever reason a condition is returned.
 value_t space_init(space_t *space, const runtime_config_t *config);
 
 // If necessary, dispose the memory held by this space.
@@ -157,7 +157,7 @@ typedef struct {
   size_t object_tracker_count;
 } heap_t;
 
-// Initialize the given heap, returning a signal to indicate success or
+// Initialize the given heap, returning a condition to indicate success or
 // failure. If the config is NULL the default is used.
 value_t heap_init(heap_t *heap, const runtime_config_t *config);
 

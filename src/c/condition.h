@@ -1,44 +1,42 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-// Utilities related to runtime-internal signals. Not to be confused with
-// system signals which live in <signal.h>, which is why this file is called
-// signalS, plural.
+// Utilities related to runtime-internal conditions.
 
 
-#ifndef _SIGNALS
-#define _SIGNALS
+#ifndef _CONDITION
+#define _CONDITION
 
 #include "utils.h"
 #include "value.h"
 
-// Creates a new signal with the specified cause and details.
-static value_t new_signal_with_details(signal_cause_t cause, uint32_t details) {
+// Creates a new condition with the specified cause and details.
+static value_t new_condition_with_details(consition_cause_t cause, uint32_t details) {
   value_t result;
-  result.as_signal.domain = vdSignal;
-  result.as_signal.cause = cause;
-  result.as_signal.details = details;
+  result.as_condition.domain = vdCondition;
+  result.as_condition.cause = cause;
+  result.as_condition.details = details;
   return result;
 }
 
-// Creates a new signal with the specified cause and no details.
-static value_t new_signal(signal_cause_t cause) {
-  return new_signal_with_details(cause, 0);
+// Creates a new condition with the specified cause and no details.
+static value_t new_condition(consition_cause_t cause) {
+  return new_condition_with_details(cause, 0);
 }
 
-// Returns the cause of a signal.
-static signal_cause_t get_signal_cause(value_t value) {
-  CHECK_DOMAIN(vdSignal, value);
-  return value.as_signal.cause;
+// Returns the cause of a condition.
+static consition_cause_t get_condition_cause(value_t value) {
+  CHECK_DOMAIN(vdCondition, value);
+  return value.as_condition.cause;
 }
 
-// Returns the string name of a signal cause.
-const char *get_signal_cause_name(signal_cause_t cause);
+// Returns the string name of a condition cause.
+const char *get_condition_cause_name(consition_cause_t cause);
 
-// Returns the details associated with the given signal.
-static uint32_t get_signal_details(value_t value) {
-  CHECK_DOMAIN(vdSignal, value);
-  return value.as_signal.details;
+// Returns the details associated with the given condition.
+static uint32_t get_condition_details(value_t value) {
+  CHECK_DOMAIN(vdCondition, value);
+  return value.as_condition.details;
 }
 
 // Enumerate the causes of invalid syntax. They should be sorted except for the
@@ -59,19 +57,19 @@ typedef enum {
 #undef __GEN_ENUM__
 } invalid_syntax_cause_t;
 
-// Simple signal constructors. They don't really add much except a tiny bit
+// Simple condition constructors. They don't really add much except a tiny bit
 // of type checking of details but they're convenient because you can set
-// breakpoints in them and so suspend on a particular signal.
+// breakpoints in them and so suspend on a particular condition.
 
-// Creates a new SyntaxInvalid signal with the given cause.
-static value_t new_invalid_syntax_signal(invalid_syntax_cause_t cause) {
-  return new_signal_with_details(scInvalidSyntax, cause);
+// Creates a new SyntaxInvalid condition with the given cause.
+static value_t new_invalid_syntax_condition(invalid_syntax_cause_t cause) {
+  return new_condition_with_details(ccInvalidSyntax, cause);
 }
 
-// Returns the cause of an invalid syntax signal.
-invalid_syntax_cause_t get_invalid_syntax_signal_cause(value_t signal);
+// Returns the cause of an invalid syntax condition.
+invalid_syntax_cause_t get_invalid_syntax_condition_cause(value_t condition);
 
-// Returns the string representation of the cause of an invalid syntax signal.
+// Returns the string representation of the cause of an invalid syntax condition.
 const char *get_invalid_syntax_cause_name(invalid_syntax_cause_t cause);
 
 // Enumerate the causes of unsupported behavior. See comment for
@@ -101,44 +99,45 @@ typedef union {
   uint32_t encoded;
 } unsupported_behavior_details_codec_t;
 
-// Creates a new UnsupportedBehavior signal for the given type of behavior.
-static value_t new_unsupported_behavior_signal(value_domain_t domain,
+// Creates a new UnsupportedBehavior condition for the given type of behavior.
+static value_t new_unsupported_behavior_condition(value_domain_t domain,
     object_family_t family, unsupported_behavior_cause_t cause) {
   unsupported_behavior_details_codec_t codec;
   codec.decoded.domain = domain;
   codec.decoded.family = family;
   codec.decoded.cause = cause;
-  return new_signal_with_details(scUnsupportedBehavior, codec.encoded);
+  return new_condition_with_details(ccUnsupportedBehavior, codec.encoded);
 }
 
-// Returns the string representation of the cause of an unsupported behavior signal.
+// Returns the string representation of the cause of an unsupported behavior
+// condition.
 const char *get_unsupported_behavior_cause_name(unsupported_behavior_cause_t cause);
 
-// Creates a new heap exhausted signal where the given amount of memory is
+// Creates a new heap exhausted condition where the given amount of memory is
 // requested.
-static value_t new_heap_exhausted_signal(int32_t requested) {
-  return new_signal_with_details(scHeapExhausted, requested);
+static value_t new_heap_exhausted_condition(int32_t requested) {
+  return new_condition_with_details(ccHeapExhausted, requested);
 }
 
-// Creates a new out-of-memory signal.
-static value_t new_out_of_memory_signal() {
-  return new_signal(scOutOfMemory);
+// Creates a new out-of-memory condition.
+static value_t new_out_of_memory_condition() {
+  return new_condition(ccOutOfMemory);
 }
 
-// Creates a new invalid-mode-change signal whose current mode is the given
+// Creates a new invalid-mode-change condition whose current mode is the given
 // value.
-static value_t new_invalid_mode_change_signal(value_mode_t current_mode) {
-  return new_signal_with_details(scInvalidModeChange, current_mode);
+static value_t new_invalid_mode_change_condition(value_mode_t current_mode) {
+  return new_condition_with_details(ccInvalidModeChange, current_mode);
 }
 
-// Creates a new not-deep-frozen signal.
-static value_t new_not_deep_frozen_signal() {
-  return new_signal(scNotDeepFrozen);
+// Creates a new not-deep-frozen condition.
+static value_t new_not_deep_frozen_condition() {
+  return new_condition(ccNotDeepFrozen);
 }
 
-// Creates a new invalid input signal.
-static value_t new_invalid_input_signal() {
-  return new_signal(scInvalidInput);
+// Creates a new invalid input condition.
+static value_t new_invalid_input_condition() {
+  return new_condition(ccInvalidInput);
 }
 
 // Converter to get and set details for invalid input as a uint32_t.
@@ -147,14 +146,14 @@ typedef union {
   uint32_t encoded;
 } invalid_input_details_codec_t;
 
-// Creates a new invalid input signal with a hint describing the problem.
-static value_t new_invalid_input_signal_with_hint(string_hint_t hint) {
+// Creates a new invalid input condition with a hint describing the problem.
+static value_t new_invalid_input_condition_with_hint(string_hint_t hint) {
   invalid_input_details_codec_t codec;
   codec.decoded[0] = hint.value[0];
   codec.decoded[1] = hint.value[1];
   codec.decoded[2] = hint.value[2];
   codec.decoded[3] = hint.value[3];
-  return new_signal_with_details(scInvalidInput, codec.encoded);
+  return new_condition_with_details(ccInvalidInput, codec.encoded);
 }
 
 // Enumerate the causes of lookup errors. See comment for
@@ -175,12 +174,12 @@ typedef enum {
 #undef __GEN_ENUM__
 } lookup_error_cause_t;
 
-// Returns the string representation of the cause of a lookup error signal.
+// Returns the string representation of the cause of a lookup error condition.
 const char *get_lookup_error_cause_name(lookup_error_cause_t cause);
 
-// Creates a new lookup error signal.
-static value_t new_lookup_error_signal(lookup_error_cause_t cause) {
-  return new_signal_with_details(scLookupError, cause);
+// Creates a new lookup error condition.
+static value_t new_lookup_error_condition(lookup_error_cause_t cause) {
+  return new_condition_with_details(ccLookupError, cause);
 }
 
 // Enumerate the causes of system error. They should be sorted except for the
@@ -199,21 +198,21 @@ typedef enum {
 #undef __GEN_ENUM__
 } system_error_cause_t;
 
-// Returns the string representation of the cause of a system error signal.
+// Returns the string representation of the cause of a system error condition.
 const char *get_system_error_cause_name(system_error_cause_t cause);
 
-// Creates a new system error signal.
-static value_t new_system_error_signal(system_error_cause_t cause) {
-  return new_signal_with_details(scSystemError, cause);
+// Creates a new system error condition.
+static value_t new_system_error_condition(system_error_cause_t cause) {
+  return new_condition_with_details(ccSystemError, cause);
 }
 
-// Creates a new not-found signal. Not-found is a very generic and
-// non-informative signal so it should be caught and converted quickly while
+// Creates a new not-found condition. Not-found is a very generic and
+// non-informative condition so it should be caught and converted quickly while
 // the context gives the information needed to understand it. If it indicates an
 // error that should be propagated it should still be caught and then converted
-// to a more informative signal.
-static value_t new_not_found_signal() {
-  return new_signal(scNotFound);
+// to a more informative condition.
+static value_t new_not_found_condition() {
+  return new_condition(ccNotFound);
 }
 
-#endif // _SIGNALS
+#endif // _CONDITION

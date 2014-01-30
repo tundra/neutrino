@@ -242,7 +242,7 @@ typedef struct {
 } bit_vector_t;
 
 // Initializes a bit vector to the given value. If anything goes wrong, for
-// instance if it's a large bit vector and heap allocation fails, a signal is
+// instance if it's a large bit vector and heap allocation fails, a condition is
 // returned.
 value_t bit_vector_init(bit_vector_t *vector, size_t length, bool value);
 
@@ -305,7 +305,7 @@ void cycle_detector_init_bottom(cycle_detector_t *detector);
 
 // Checks for cycles using the given outer cycle detector and initialies the
 // given inner cycle detector such that it can be passed along to the children
-// of the given value. If a cycle is detected returns a signal, otherwise
+// of the given value. If a cycle is detected returns a condition, otherwise
 // success.
 value_t cycle_detector_enter(cycle_detector_t *outer, cycle_detector_t *inner,
     value_t value);

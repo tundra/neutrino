@@ -75,7 +75,7 @@ value_t space_init(space_t *space, const runtime_config_t *config) {
   size_t bytes = config->semispace_size_bytes + kValueSize;
   memory_block_t memory = allocator_default_malloc(bytes);
   if (memory_block_is_empty(memory))
-    return new_system_error_signal(seAllocationFailed);
+    return new_system_error_condition(seAllocationFailed);
   // Clear the newly allocated memory to a recognizable value.
   memset(memory.memory, kBlankHeapMarker, bytes);
   address_t aligned = align_address(kValueSize, (address_t) memory.memory);
@@ -211,12 +211,12 @@ value_t heap_validate(heap_t *heap) {
   while (object_tracker_iter_has_current(&iter)) {
     object_tracker_t *current = object_tracker_iter_get_current(&iter);
     trackers_seen++;
-    SIG_CHECK_EQ("tracker validate", scValidationFailed, prev->next, current);
-    SIG_CHECK_EQ("tracker validate", scValidationFailed, current->prev, prev);
+    COND_CHECK_EQ("tracker validate", ccValidationFailed, prev->next, current);
+    COND_CHECK_EQ("tracker validate", ccValidationFailed, current->prev, prev);
     prev = current;
     object_tracker_iter_advance(&iter);
   }
-  SIG_CHECK_EQ("tracker validate", scValidationFailed, trackers_seen,
+  COND_CHECK_EQ("tracker validate", ccValidationFailed, trackers_seen,
       heap->object_tracker_count);
   return success();
 }

@@ -3,8 +3,8 @@
 
 #include "test.h"
 
-static value_t do_check(bool value, signal_cause_t cause) {
-  SIG_CHECK_TRUE("foo", cause, value);
+static value_t do_check(bool value, consition_cause_t cause) {
+  COND_CHECK_TRUE("foo", cause, value);
   return success();
 }
 
@@ -14,30 +14,30 @@ TEST(crash, soft_check_failures) {
   install_check_recorder(&recorder);
 
   ASSERT_EQ(0, recorder.count);
-  ASSERT_SUCCESS(do_check(true, scNothing));
+  ASSERT_SUCCESS(do_check(true, ccNothing));
   ASSERT_EQ(0, recorder.count);
-  ASSERT_SIGNAL(scOutOfBounds, do_check(false, scOutOfBounds));
+  ASSERT_CONDITION(ccOutOfBounds, do_check(false, ccOutOfBounds));
   ASSERT_EQ(1, recorder.count);
-  ASSERT_EQ(scOutOfBounds, recorder.last_cause);
-  ASSERT_SIGNAL(scNotFound, do_check(false, scNotFound));
+  ASSERT_EQ(ccOutOfBounds, recorder.last_cause);
+  ASSERT_CONDITION(ccNotFound, do_check(false, ccNotFound));
   ASSERT_EQ(2, recorder.count);
-  ASSERT_EQ(scNotFound, recorder.last_cause);
-  ASSERT_SUCCESS(do_check(true, scSystemError));
+  ASSERT_EQ(ccNotFound, recorder.last_cause);
+  ASSERT_SUCCESS(do_check(true, ccSystemError));
   ASSERT_EQ(2, recorder.count);
-  ASSERT_EQ(scNotFound, recorder.last_cause);
+  ASSERT_EQ(ccNotFound, recorder.last_cause);
 
   check_recorder_t inner;
   install_check_recorder(&inner);
-  ASSERT_SIGNAL(scOutOfBounds, do_check(false, scOutOfBounds));
+  ASSERT_CONDITION(ccOutOfBounds, do_check(false, ccOutOfBounds));
   ASSERT_EQ(2, recorder.count);
-  ASSERT_EQ(scNotFound, recorder.last_cause);
+  ASSERT_EQ(ccNotFound, recorder.last_cause);
   ASSERT_EQ(1, inner.count);
-  ASSERT_EQ(scOutOfBounds, inner.last_cause);
+  ASSERT_EQ(ccOutOfBounds, inner.last_cause);
   uninstall_check_recorder(&inner);
 
-  ASSERT_SIGNAL(scOutOfBounds, do_check(false, scOutOfBounds));
+  ASSERT_CONDITION(ccOutOfBounds, do_check(false, ccOutOfBounds));
   ASSERT_EQ(3, recorder.count);
-  ASSERT_EQ(scOutOfBounds, recorder.last_cause);
+  ASSERT_EQ(ccOutOfBounds, recorder.last_cause);
 
   uninstall_check_recorder(&recorder);
 }

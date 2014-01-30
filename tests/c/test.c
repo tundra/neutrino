@@ -176,7 +176,7 @@ static bool id_hash_map_structural_equal(value_t a, value_t b) {
     value_t a_value;
     id_hash_map_iter_get_current(&iter, &key, &a_value);
     value_t b_value = get_id_hash_map_at(b, key);
-    if (is_signal(scNotFound, b_value))
+    if (is_condition(ccNotFound, b_value))
       return false;
     if (!value_structural_equal(a_value, b_value))
       return false;
@@ -227,12 +227,12 @@ bool value_structural_equal(value_t a, value_t b) {
 static void recorder_abort_callback(void *data, abort_message_t *message) {
   check_recorder_t *recorder = (check_recorder_t*) data;
   recorder->count++;
-  recorder->last_cause = (signal_cause_t) message->signal_cause;
+  recorder->last_cause = (consition_cause_t) message->condition_cause;
 }
 
 void install_check_recorder(check_recorder_t *recorder) {
   recorder->count = 0;
-  recorder->last_cause = __scFirst__;
+  recorder->last_cause = __ccFirst__;
   init_abort_callback(&recorder->callback, recorder_abort_callback, recorder);
   recorder->previous = set_abort_callback(&recorder->callback);
   CHECK_TRUE("no previous abort callback", recorder->previous != NULL);

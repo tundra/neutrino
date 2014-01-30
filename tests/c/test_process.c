@@ -14,24 +14,24 @@ TEST(process, frame_bounds) {
   // Check that push/pop outside the frame boundaries causes a check failure.
   frame_t frame;
   ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 4));
-  ASSERT_CHECK_FAILURE(scOutOfBounds, frame_pop_value(&frame));
+  ASSERT_CHECK_FAILURE(ccOutOfBounds, frame_pop_value(&frame));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(6)));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(5)));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(4)));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(3)));
-  ASSERT_CHECK_FAILURE(scOutOfBounds, frame_push_value(&frame, new_integer(2)));
+  ASSERT_CHECK_FAILURE(ccOutOfBounds, frame_push_value(&frame, new_integer(2)));
   ASSERT_VALEQ(new_integer(3), frame_pop_value(&frame));
   ASSERT_VALEQ(new_integer(4), frame_pop_value(&frame));
   ASSERT_VALEQ(new_integer(5), frame_pop_value(&frame));
   ASSERT_VALEQ(new_integer(6), frame_pop_value(&frame));
-  ASSERT_CHECK_FAILURE(scOutOfBounds, frame_pop_value(&frame));
+  ASSERT_CHECK_FAILURE(ccOutOfBounds, frame_pop_value(&frame));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(0)));
 
   // Mutating a frame that's below the top causes a check failure.
   frame_t inner;
   ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &inner, 4));
-  ASSERT_CHECK_FAILURE(scWat, frame_push_value(&frame, new_integer(1)));
-  ASSERT_CHECK_FAILURE(scWat, frame_pop_value(&frame));
+  ASSERT_CHECK_FAILURE(ccWat, frame_push_value(&frame, new_integer(1)));
+  ASSERT_CHECK_FAILURE(ccWat, frame_pop_value(&frame));
 
   // Popping down to the frame makes value popping work again.
   ASSERT_TRUE(pop_stack_piece_frame(stack_piece, &inner));
@@ -196,12 +196,12 @@ TEST(process, get_local) {
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3, null()));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(6)));
   ASSERT_VALEQ(new_integer(6), frame_get_local(&frame, 0));
-  ASSERT_CHECK_FAILURE(scOutOfBounds, frame_get_local(&frame, 1));
-  ASSERT_CHECK_FAILURE(scOutOfBounds, frame_get_local(&frame, 2));
+  ASSERT_CHECK_FAILURE(ccOutOfBounds, frame_get_local(&frame, 1));
+  ASSERT_CHECK_FAILURE(ccOutOfBounds, frame_get_local(&frame, 2));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(5)));
   ASSERT_VALEQ(new_integer(6), frame_get_local(&frame, 0));
   ASSERT_VALEQ(new_integer(5), frame_get_local(&frame, 1));
-  ASSERT_CHECK_FAILURE(scOutOfBounds, frame_get_local(&frame, 2));
+  ASSERT_CHECK_FAILURE(ccOutOfBounds, frame_get_local(&frame, 2));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(4)));
   ASSERT_VALEQ(new_integer(6), frame_get_local(&frame, 0));
   ASSERT_VALEQ(new_integer(5), frame_get_local(&frame, 1));

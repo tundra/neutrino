@@ -28,7 +28,7 @@ value_t read_handle_to_blob(runtime_t *runtime, FILE *handle) {
 value_t read_file_to_blob(runtime_t *runtime, string_t *filename) {
   FILE *handle = fopen(filename->chars, "r");
   if (handle == NULL)
-    return new_system_error_signal(seFileNotFound);
+    return new_system_error_condition(seFileNotFound);
   E_BEGIN_TRY_FINALLY();
     E_RETURN(read_handle_to_blob(runtime, handle));
   E_FINALLY();

@@ -280,8 +280,8 @@ size_t get_frame_pc(frame_t *frame) {
 
 value_t frame_push_value(frame_t *frame, value_t value) {
   // Check that the stack is in sync with this frame.
-  SIG_CHECK_TRUE("push on lower frame", scWat, is_top_frame(frame));
-  SIG_CHECK_TRUE("push out of frame bounds", scOutOfBounds,
+  COND_CHECK_TRUE("push on lower frame", ccWat, is_top_frame(frame));
+  COND_CHECK_TRUE("push out of frame bounds", ccOutOfBounds,
       is_offset_within_frame(frame, frame->stack_pointer));
   *access_frame_field(frame, frame->stack_pointer) = value;
   frame->stack_pointer++;
@@ -290,8 +290,8 @@ value_t frame_push_value(frame_t *frame, value_t value) {
 }
 
 value_t frame_pop_value(frame_t *frame) {
-  SIG_CHECK_TRUE("pop off lower frame", scWat, is_top_frame(frame));
-  SIG_CHECK_TRUE("pop out of frame bounds", scOutOfBounds,
+  COND_CHECK_TRUE("pop off lower frame", ccWat, is_top_frame(frame));
+  COND_CHECK_TRUE("pop out of frame bounds", ccOutOfBounds,
       is_offset_within_frame(frame, frame->stack_pointer - 1));
   frame->stack_pointer--;
   value_t result = *access_frame_field(frame, frame->stack_pointer);
@@ -316,7 +316,7 @@ value_t frame_get_argument(frame_t *frame, size_t param_index) {
 
 value_t frame_get_local(frame_t *frame, size_t index) {
   size_t location = frame->frame_pointer + index;
-  SIG_CHECK_TRUE("local not defined yet", scOutOfBounds,
+  COND_CHECK_TRUE("local not defined yet", ccOutOfBounds,
       location < frame->stack_pointer);
   return *access_frame_field(frame, location);
 }

@@ -69,7 +69,7 @@ static value_t serialize_state_init(serialize_state_t *state, runtime_t *runtime
   return success();
 }
 
-// Serialize any (non-signal) value on the given buffer.
+// Serialize any (non-condition) value on the given buffer.
 static value_t value_serialize(value_t value, serialize_state_t *state);
 
 value_t plankton_wire_encode_uint32(byte_buffer_t *buf, uint32_t value) {
@@ -161,11 +161,11 @@ static void register_serialized_object(value_t value, serialize_state_t *state) 
 static value_t instance_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofInstance, value);
   value_t ref = get_id_hash_map_at(state->ref_map, value);
-  if (is_signal(scNotFound, ref)) {
+  if (is_condition(ccNotFound, ref)) {
     // We haven't seen this object before. First we check if it should be an
     // environment object.
     value_t raw_resolved = value_mapping_apply(state->resolver, value, state->runtime);
-    if (is_signal(scNothing, raw_resolved)) {
+    if (is_condition(ccNothing, raw_resolved)) {
       // It's not an environment object. Just serialize it directly.
       byte_buffer_append(state->buf, pObject);
       byte_buffer_append(state->buf, pNull);
@@ -203,7 +203,7 @@ static value_t object_serialize(value_t value, serialize_state_t *state) {
     case ofInstance:
       return instance_serialize(value, state);
     default:
-      return new_invalid_input_signal();
+      return new_invalid_input_condition();
   }
 }
 
@@ -215,7 +215,7 @@ static value_t custom_tagged_serialize(value_t value, serialize_state_t *state) 
     case tpBoolean:
       return singleton_serialize(get_boolean_value(value) ? pTrue : pFalse, state->buf);
     default:
-      return new_invalid_input_signal();
+      return new_invalid_input_condition();
   }
 }
 
@@ -230,14 +230,14 @@ static value_t value_serialize(value_t data, serialize_state_t *state) {
       return custom_tagged_serialize(data, state);
     default:
       UNREACHABLE("value serialize");
-      return new_unsupported_behavior_signal(domain, __ofUnknown__,
+      return new_unsupported_behavior_condition(domain, __ofUnknown__,
           ubPlanktonSerialize);
   }
 }
 
 // Never resolve.
 static value_t nothing_mapping(value_t value, runtime_t *runtime, void *data) {
-  return new_signal(scNothing);
+  return new_condition(ccNothing);
 }
 
 value_t plankton_serialize(runtime_t *runtime, value_mapping_t *resolver_or_null,
@@ -385,7 +385,7 @@ static value_t reference_deserialize(deserialize_state_t *state) {
   size_t offset = uint32_deserialize(state->in);
   size_t index = state->object_offset - offset - 1;
   value_t result = get_id_hash_map_at(state->ref_map, new_integer(index));
-  CHECK_FALSE("missing reference", is_signal(scNotFound, result));
+  CHECK_FALSE("missing reference", is_condition(ccNotFound, result));
   return result;
 }
 
@@ -413,7 +413,7 @@ static value_t value_deserialize(deserialize_state_t *state) {
     case pEnvironment:
       return environment_deserialize(state);
     default:
-      return new_invalid_input_signal();
+      return new_invalid_input_condition();
   }
 }
 

@@ -197,7 +197,7 @@ static const score_t gsExtraMatch = 0xFFFFFFFE;
 // anything more specific would match better.
 static const score_t gsAnyMatch = 0xFFFFFFFD;
 
-// Matches the given guard against the given value, returning a signal that
+// Matches the given guard against the given value, returning a condition that
 // indicates whether the match was successful and, if it was, storing the score
 // in the out argument for how well it matched within the given method space.
 value_t guard_match(value_t guard, value_t value,
@@ -250,7 +250,7 @@ static const size_t kMethodArrayInitialSize = 16;
 ACCESSORS_DECL(signature_map, entries);
 
 // Adds a mapping to the given signature map, expanding it if necessary. Returns
-// a signal on failure.
+// a condition on failure.
 value_t add_to_signature_map(runtime_t *runtime, value_t map, value_t signature,
     value_t value);
 
@@ -264,7 +264,7 @@ typedef value_t (signature_map_lookup_callback_t)(signature_map_lookup_state_t *
 // Prepares a signature map lookup and then calls the callback which must
 // traverse the signature maps to include in the lookup and invoke
 // continue_signature_map_lookup for each of them. When the callback returns
-// this function completes the lookup and returns the result or a signal as
+// this function completes the lookup and returns the result or a condition as
 // appropriate.
 value_t do_signature_map_lookup(value_t ambience, value_t record, frame_t *frame,
     signature_map_lookup_callback_t *callback, void *data);
@@ -276,7 +276,7 @@ value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
 
 // Returns the argument map that describes the location of the arguments of the
 // signature map lookup match recorded in the given lookup state. If there is
-// no match recorded an arbitrary non-signal value will be returned.
+// no match recorded an arbitrary non-condition value will be returned.
 value_t get_signature_map_lookup_argument_map(signature_map_lookup_state_t *state);
 
 
@@ -303,7 +303,7 @@ ACCESSORS_DECL(methodspace, methods);
 ACCESSORS_DECL(methodspace, imports);
 
 // Records in the given method space that the subtype inherits directly from
-// the supertype. Returns a signal if adding fails, for instance if we run
+// the supertype. Returns a condition if adding fails, for instance if we run
 // out of memory to increase the size of the map.
 value_t add_methodspace_inheritance(runtime_t *runtime, value_t self,
     value_t subtype, value_t supertype);
@@ -314,7 +314,7 @@ value_t add_methodspace_import(runtime_t *runtime, value_t self, value_t importe
 // Returns the array buffer of parents of the given type.
 value_t get_type_parents(runtime_t *runtime, value_t space, value_t type);
 
-// Add a method to this metod space. Returns a signal if adding fails, for
+// Add a method to this metod space. Returns a condition if adding fails, for
 // instance if we run out of memory to increase the size of the map.
 value_t add_methodspace_method(runtime_t *runtime, value_t self,
     value_t method);

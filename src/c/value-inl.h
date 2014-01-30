@@ -5,7 +5,7 @@
 #ifndef _VALUE_INL
 #define _VALUE_INL
 
-#include "signals.h"
+#include "condition.h"
 #include "tagged.h"
 #include "try-inl.h"
 #include "utils-inl.h"
@@ -33,9 +33,9 @@ static inline bool in_division(species_division_t division, value_t value) {
   return in_family(ofSpecies, value) && (get_species_division(value) == division);
 }
 
-// Returns true iff the value is a signal with the specified cause.
-static inline bool is_signal(signal_cause_t cause, value_t value) {
-  return in_domain(vdSignal, value) && (get_signal_cause(value) == cause);
+// Returns true iff the value is a condition with the specified cause.
+static inline bool is_condition(consition_cause_t cause, value_t value) {
+  return in_domain(vdCondition, value) && (get_condition_cause(value) == cause);
 }
 
 
@@ -83,7 +83,7 @@ void dispose_value_to_string(value_to_string_t *data);
 
 // Checks whether the expression holds and if not returns a validation failure.
 #define VALIDATE(EXPR) do {                                                    \
-  SIG_CHECK_TRUE("validation", scValidationFailed, EXPR);                      \
+  COND_CHECK_TRUE("validation", ccValidationFailed, EXPR);                      \
 } while (false)
 
 // Checks whether the value at the end of the given pointer belongs to the
@@ -149,10 +149,10 @@ value_t get_##receiver##_##field(value_t self) {                               \
 SWALLOW_SEMI(gi)
 
 // Accessor check that indicates that no check should be performed. A check that
-// the value is not a signal will be performed in any case since that is a
+// the value is not a condition will be performed in any case since that is a
 // global invariant.
 #define acNoCheck(UNUSED, VALUE)                                               \
-  CHECK_FALSE("storing signal in heap", in_domain(vdSignal, (VALUE)))
+  CHECK_FALSE("storing condition in heap", in_domain(vdCondition, (VALUE)))
 
 // Accessor check that indicates that the argument should belong to the family
 // specified in the argument.
@@ -254,9 +254,9 @@ SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
 // --- P l a n k t o n ---
 
 #define __CHECK_MAP_ENTRY_FOUND__(name) do {                                   \
-  if (is_signal(scNotFound, name)) {                                           \
+  if (is_condition(ccNotFound, name)) {                                           \
     string_hint_t __hint__ = STRING_HINT_INIT(#name);                          \
-    return new_invalid_input_signal_with_hint(__hint__);                       \
+    return new_invalid_input_condition_with_hint(__hint__);                       \
   }                                                                            \
 } while (false)
 
@@ -269,7 +269,7 @@ SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
 // names matching the keys of the values.
 #define UNPACK_PLANKTON_MAP(SOURCE, ...)                                       \
   value_t __source__ = (SOURCE);                                               \
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, __source__);                      \
+  EXPECT_FAMILY(ccInvalidInput, ofIdHashMap, __source__);                      \
   FOR_EACH_VA_ARG(__GET_PLANKTON_MAP_ENTRY__, __VA_ARGS__)                     \
   SWALLOW_SEMI(upm)
 

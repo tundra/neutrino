@@ -147,11 +147,11 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
 
 // Check that the condition holds, otherwise check fail with a validation error.
 #define VALIDATE_CHECK_TRUE(EXPR)                                              \
-SIG_CHECK_TRUE("validation", scValidationFailed, EXPR)
+COND_CHECK_TRUE("validation", ccValidationFailed, EXPR)
 
 // Check that A and B are equal, otherwise check fail with a validation error.
 #define VALIDATE_CHECK_EQ(A, B)                                                \
-SIG_CHECK_EQ("validation", scValidationFailed, A, B)
+COND_CHECK_EQ("validation", ccValidationFailed, A, B)
 
 value_t roots_validate(value_t roots) {
   // Checks whether the argument is within the specified family, otherwise
@@ -254,7 +254,7 @@ value_t mutable_roots_validate(value_t self) {
 value_t ensure_mutable_roots_owned_values_frozen(runtime_t *runtime, value_t self) {
   // Why would you freeze the mutable roots -- they're supposed to be mutable!
   UNREACHABLE("freezing the mutable roots");
-  return new_signal(scWat);
+  return new_condition(ccWat);
 }
 
 void gc_fuzzer_init(gc_fuzzer_t *fuzzer, size_t min_freq, size_t mean_freq,
@@ -347,7 +347,7 @@ static value_t runtime_freeze_shared_state(runtime_t *runtime) {
   TRY_DEF(froze, try_validate_deep_frozen(runtime, roots, &offender));
   if (!get_boolean_value(froze)) {
     ERROR("Could not freeze the roots object; offender: %v", offender);
-    return new_not_deep_frozen_signal();
+    return new_not_deep_frozen_condition();
   }
 
   return success();
@@ -422,7 +422,7 @@ static void pending_fixup_worklist_init(pending_fixup_worklist_t *worklist) {
 }
 
 // Add a new fixup to the list. This returns a value such that it can return
-// a signal if the system runs out of memory.
+// a condition if the system runs out of memory.
 static value_t pending_fixup_worklist_add(pending_fixup_worklist_t *worklist,
     pending_fixup_t *fixup) {
   if (worklist->capacity == worklist->length) {

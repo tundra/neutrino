@@ -361,7 +361,7 @@ value_t ensure_frozen(runtime_t *runtime, value_t value) {
     }
   } else {
     UNREACHABLE("non-object not deep frozen");
-    return new_signal(scNotDeepFrozen);
+    return new_condition(ccNotDeepFrozen);
   }
 }
 
@@ -381,7 +381,7 @@ value_t transitively_validate_deep_frozen(runtime_t *runtime, value_t value,
   while (value_field_iter_next(&iter, &field)) {
     // Try to deep freeze the field's value.
     value_t ensured = validate_deep_frozen(runtime, *field, offender_out);
-    if (get_value_domain(ensured) == vdSignal) {
+    if (get_value_domain(ensured) == vdCondition) {
       // Deep freezing failed for some reason. Restore the object to its previous
       // state and bail.
       set_value_mode_unchecked(runtime, value, vmFrozen);
@@ -404,24 +404,24 @@ value_t validate_deep_frozen(runtime_t *runtime, value_t value,
   } else {
     if (offender_out != NULL)
       *offender_out = value;
-    return new_not_deep_frozen_signal();
+    return new_not_deep_frozen_condition();
   }
 }
 
 value_t try_validate_deep_frozen(runtime_t *runtime, value_t value,
     value_t *offender_out) {
   value_t ensured = validate_deep_frozen(runtime, value, offender_out);
-  if (get_value_domain(ensured) == vdSignal) {
-    if (is_signal(scNotDeepFrozen, ensured)) {
-      // A NotFrozen signal indicates that there is something mutable somewhere
+  if (get_value_domain(ensured) == vdCondition) {
+    if (is_condition(ccNotDeepFrozen, ensured)) {
+      // A NotFrozen condition indicates that there is something mutable somewhere
       // in the object graph.
       return no();
     } else {
-      // We got a different signal; propagate it.
+      // We got a different condition; propagate it.
       return ensured;
     }
   } else {
-    // Non-signal so freezing must have succeeded.
+    // Non-condition so freezing must have succeeded.
     return yes();
   }
 }
@@ -638,7 +638,7 @@ INTEGER_ACCESSORS_IMPL(Array, array, Length, length);
 
 value_t get_array_at(value_t value, size_t index) {
   CHECK_FAMILY(ofArray, value);
-  SIG_CHECK_TRUE("array index out of bounds", scOutOfBounds,
+  COND_CHECK_TRUE("array index out of bounds", ccOutOfBounds,
       index < get_array_length(value));
   return get_array_elements(value)[index];
 }
@@ -691,7 +691,7 @@ static int value_compare_function(const void *vp_a, const void *vp_b) {
   value_t a = *((const value_t*) vp_a);
   value_t b = *((const value_t*) vp_b);
   value_t comparison = value_ordering_compare(a, b);
-  CHECK_FALSE("not comparable", in_domain(vdSignal, comparison));
+  CHECK_FALSE("not comparable", in_domain(vdCondition, comparison));
   return relation_to_integer(comparison);
 }
 
@@ -704,9 +704,9 @@ value_t sort_array_partial(value_t value, size_t elmc) {
   CHECK_MUTABLE(value);
   CHECK_REL("sorting out of bounds", elmc, <=, get_array_length(value));
   value_t *elements = get_array_elements(value);
-  // Just use qsort. This means that we can't propagate signals from the compare
-  // functions back out but that shouldn't be a huge issue. We'll check on them
-  // for now and later on this will have to be rewritten in n anyway.
+  // Just use qsort. This means that we can't propagate conditions from the
+  // compare functions back out but that shouldn't be a huge issue. We'll check
+  // on them for now and later on this will have to be rewritten in n anyway.
   qsort(elements, elmc, kValueSize, &value_compare_function);
   return success();
 }
@@ -795,7 +795,7 @@ value_t binary_search_pair_array(value_t self, value_t key) {
       return get_pair_array_second_at(self, mid);
     }
   }
-  return new_not_found_signal();
+  return new_not_found_condition();
 }
 
 value_t array_transient_identity_hash(value_t value, hash_stream_t *stream,
@@ -970,7 +970,7 @@ void sort_array_buffer(value_t self) {
 
 value_t get_array_buffer_at(value_t self, size_t index) {
   CHECK_FAMILY(ofArrayBuffer, self);
-  SIG_CHECK_TRUE("array buffer index out of bounds", scOutOfBounds,
+  COND_CHECK_TRUE("array buffer index out of bounds", ccOutOfBounds,
       index < get_array_buffer_length(self));
   return get_array_at(get_array_buffer_elements(self), index);
 }
@@ -1162,7 +1162,7 @@ value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value,
     // The only way this can return false is if the map is full (since if
     // was_created was non-null we would have created a new entry) and the
     // key couldn't be found. Report this.
-    return new_signal(scMapFull);
+    return new_condition(ccMapFull);
   }
   set_id_hash_map_entry(entry, key, hash, value);
   // Only increment the size if we created a new entry.
@@ -1185,17 +1185,17 @@ value_t get_id_hash_map_at(value_t map, value_t key) {
   if (find_id_hash_map_entry(map, key, hash, &entry, NULL)) {
     return get_id_hash_map_entry_value(entry);
   } else {
-    return new_not_found_signal();
+    return new_not_found_condition();
   }
 }
 
 value_t get_id_hash_map_at_with_default(value_t map, value_t key, value_t defawlt) {
   value_t result = get_id_hash_map_at(map, key);
-  return is_signal(scNotFound, result) ? defawlt : result;
+  return is_condition(ccNotFound, result) ? defawlt : result;
 }
 
 bool has_id_hash_map_at(value_t map, value_t key) {
-  return !is_signal(scNotFound, get_id_hash_map_at(map, key));
+  return !is_condition(ccNotFound, get_id_hash_map_at(map, key));
 }
 
 
@@ -1214,7 +1214,7 @@ value_t delete_id_hash_map_at(runtime_t *runtime, value_t map, value_t key) {
     set_id_hash_map_size(map, get_id_hash_map_size(map) - 1);
     return success();
   } else {
-    return new_not_found_signal();
+    return new_not_found_condition();
   }
 }
 
@@ -1262,7 +1262,7 @@ void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_object,
     // okay because at the end it will be in the same state it was in before
     // so it's not really mutating it.
     value_t added = try_set_id_hash_map_at(new_object, key, value, true);
-    CHECK_FALSE("rehash failed to set", get_value_domain(added) == vdSignal);
+    CHECK_FALSE("rehash failed to set", get_value_domain(added) == vdCondition);
   }
 }
 
@@ -1408,7 +1408,7 @@ void instance_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
 
 value_t plankton_set_instance_contents(value_t instance, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(scInvalidInput, ofIdHashMap, contents);
+  EXPECT_FAMILY(ccInvalidInput, ofIdHashMap, contents);
   set_instance_fields(instance, contents);
   return success();
 }
@@ -1425,7 +1425,7 @@ value_t set_instance_mode_unchecked(runtime_t *runtime, value_t self,
     value_mode_t mode) {
   // TODO: implement this.
   UNREACHABLE("setting instance mode not implemented");
-  return new_invalid_mode_change_signal(get_instance_mode(self));
+  return new_invalid_mode_change_condition(get_instance_mode(self));
 }
 
 
@@ -1731,13 +1731,13 @@ value_t get_module_fragment_at(value_t self, value_t stage) {
     if (is_same_value(get_module_fragment_stage(fragment), stage))
       return fragment;
   }
-  return new_not_found_signal();
+  return new_not_found_condition();
 }
 
 value_t get_or_create_module_fragment_at(runtime_t *runtime, value_t self,
     value_t stage) {
   value_t existing = get_module_fragment_at(self, stage);
-  if (!is_signal(scNotFound, existing))
+  if (!is_condition(ccNotFound, existing))
     return existing;
   // No fragment has been created yet. Create one but leave it uninitialized
   // since we don't have the context do that properly here.
@@ -1750,7 +1750,7 @@ value_t get_or_create_module_fragment_at(runtime_t *runtime, value_t self,
 
 value_t add_module_fragment(runtime_t *runtime, value_t self, value_t fragment) {
   value_t fragments = get_module_fragments(self);
-  CHECK_TRUE("fragment already exists", is_signal(scNotFound,
+  CHECK_TRUE("fragment already exists", is_condition(ccNotFound,
       get_module_fragment_at(self, get_module_fragment_stage(fragment))));
   return add_to_array_buffer(runtime, fragments, fragment);
 }
@@ -1759,7 +1759,7 @@ value_t get_module_fragment_before(value_t self, value_t stage) {
   int32_t limit = get_stage_offset_value(stage);
   value_t fragments = get_module_fragments(self);
   int32_t best_stage = kMostNegativeInt32;
-  value_t best_fragment = new_not_found_signal();
+  value_t best_fragment = new_not_found_condition();
   for (size_t i = 0; i < get_array_buffer_length(fragments); i++) {
     value_t fragment = get_array_buffer_at(fragments, i);
     int32_t fragment_stage = get_stage_offset_value(get_module_fragment_stage(fragment));
@@ -1772,7 +1772,7 @@ value_t get_module_fragment_before(value_t self, value_t stage) {
 }
 
 bool has_module_fragment_at(value_t self, value_t stage) {
-  return !is_signal(scNotFound, get_module_fragment_at(self, stage));
+  return !is_condition(ccNotFound, get_module_fragment_at(self, stage));
 }
 
 static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
@@ -1785,7 +1785,7 @@ static value_t module_fragment_lookup_path_in_imports(runtime_t *runtime,
   value_t head = get_path_head(path);
   value_t importspace = get_module_fragment_imports(self);
   value_t fragment = get_namespace_binding_at(importspace, head);
-  if (is_signal(scNotFound, fragment))
+  if (is_condition(ccNotFound, fragment))
     return fragment;
   // We found a binding for the head in the imports. However, we don't continue
   // the lookup directly in the fragment since we also want to be able to find
@@ -1817,7 +1817,7 @@ static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
   // First check the imports.
   value_t as_import = module_fragment_lookup_path_in_imports(runtime, self,
       path);
-  if (!is_signal(scNotFound, as_import))
+  if (!is_condition(ccNotFound, as_import))
     return as_import;
   // If not an import try looking up in the appropriate namespace.
   return module_fragment_lookup_path_in_namespace(runtime, self, path);
@@ -1835,15 +1835,15 @@ value_t module_lookup_identifier(runtime_t *runtime, value_t self,
   value_t fragment = get_module_fragment_at(self, stage);
   while (true) {
     value_t binding = module_fragment_lookup_path(runtime, fragment, path);
-    if (!is_signal(scNotFound, binding))
+    if (!is_condition(ccNotFound, binding))
       return binding;
     fragment = get_module_fragment_before(self, stage);
-    if (is_signal(scNotFound, fragment))
+    if (is_condition(ccNotFound, fragment))
       break;
     stage = get_module_fragment_stage(fragment);
   }
   WARN("Namespace lookup of %v failed", path);
-  return new_lookup_error_signal(lcNamespace);
+  return new_lookup_error_condition(lcNamespace);
 }
 
 
@@ -2001,13 +2001,13 @@ value_t plankton_set_path_contents(value_t object, runtime_t *runtime,
 
 value_t get_path_head(value_t path) {
   value_t raw_head = get_path_raw_head(path);
-  SIG_CHECK_TRUE("head of empty path", scEmptyPath, !is_nothing(raw_head));
+  COND_CHECK_TRUE("head of empty path", ccEmptyPath, !is_nothing(raw_head));
   return raw_head;
 }
 
 value_t get_path_tail(value_t path) {
   value_t raw_tail = get_path_raw_tail(path);
-  SIG_CHECK_TRUE("tail of empty path", scEmptyPath, !is_nothing(raw_tail));
+  COND_CHECK_TRUE("tail of empty path", ccEmptyPath, !is_nothing(raw_tail));
   return raw_tail;
 }
 
@@ -2260,10 +2260,10 @@ value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key,
     if (!in_family(ofIdHashMap, payload))
       continue;
     value_t element_key = get_id_hash_map_at(payload, RSTR(runtime, key));
-    if (is_signal(scNotFound, element_key) || !value_identity_compare(element_key, key))
+    if (is_condition(ccNotFound, element_key) || !value_identity_compare(element_key, key))
       continue;
     value_t element_value = get_id_hash_map_at(payload, RSTR(runtime, value));
-    if (!is_signal(scNotFound, element_value))
+    if (!is_condition(ccNotFound, element_value))
       return element_value;
   }
   return defawlt;

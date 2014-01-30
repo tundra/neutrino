@@ -227,15 +227,15 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config);
 // initialized are sane.
 void runtime_clear(runtime_t *runtime);
 
-// Disposes of the given runtime. If disposing fails a signal is returned.
+// Disposes of the given runtime. If disposing fails a condition is returned.
 value_t runtime_dispose(runtime_t *runtime);
 
 // Collect garbage in the given runtime. If anything goes wrong, such as the os
-// running out a memory, a signal will be returned.
+// running out a memory, a condition will be returned.
 value_t runtime_garbage_collect(runtime_t *runtime);
 
 // Run a series of sanity checks on the runtime to check that it is consistent.
-// Returns a signal iff something is wrong. A runtime will only validate if it
+// Returns a condition iff something is wrong. A runtime will only validate if it
 // has been initialized successfully.
 value_t runtime_validate(runtime_t *runtime);
 

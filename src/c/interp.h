@@ -44,9 +44,9 @@ typedef enum {
 } opcode_t;
 
 
-// Executes the given code block object, returning the result. If any signals
+// Executes the given code block object, returning the result. If any conditions
 // occur evaluation is interrupted.
-value_t run_code_block_until_signal(value_t ambience, value_t code);
+value_t run_code_block_until_condition(value_t ambience, value_t code);
 
 // Executes the given code block object, returning the result. This may cause
 // the runtime to garbage collect.

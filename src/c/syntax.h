@@ -20,7 +20,7 @@ value_t init_plankton_environment_mapping(value_mapping_t *mapping,
 value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime);
 
 // Emits bytecode representing the given syntax tree value. If the value is not
-// a syntax tree an InvalidSyntax signal is returned.
+// a syntax tree an InvalidSyntax condition is returned.
 value_t emit_value(value_t value, assembler_t *assm);
 
 // Compiles the given expression syntax tree to a code block. The scope callback

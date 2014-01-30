@@ -40,9 +40,9 @@ IF_CHECKS_ENABLED(CHECK_REL(M, A, ==, B))
 #define CHECK_PTREQ(M, A, B)                                                   \
 IF_CHECKS_ENABLED(CHECK_TRUE(M, (A) == (B)))
 
-#define __SIG_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause, VALUE, A, B) do {       \
+#define __COND_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause, VALUE, A, B) do {      \
   if (!((A) == (B))) {                                                         \
-    sig_check_fail(__FILE__, __LINE__, scCause,                                \
+    cond_check_fail(__FILE__, __LINE__, scCause,                               \
         "Check failed (" M "): %s == %s.", #A, #B);                            \
     return (VALUE)            ;                                                \
   }                                                                            \
@@ -50,15 +50,16 @@ IF_CHECKS_ENABLED(CHECK_TRUE(M, (A) == (B)))
 
 // Fails unless the two values are equal under hard check failures, returns the
 // specified value under soft check failures. If the value you want to return
-// is a signal with the given cause, which is the common case, it's easier to
-// use SIG_CHECK_EQ.
-#define SIG_CHECK_EQ_WITH_VALUE(M, scCause, VALUE, A, B)                       \
-IF_CHECKS_ENABLED(__SIG_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause, VALUE, A, B))
+// is a condition with the given cause, which is the common case, it's easier to
+// use COND_CHECK_EQ.
+#define COND_CHECK_EQ_WITH_VALUE(M, scCause, VALUE, A, B)                      \
+IF_CHECKS_ENABLED(__COND_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause, VALUE, A, B))
 
 // Fails unless the two values are equal under hard check failures, returns the
-// specified signal under soft check failures.
-#define SIG_CHECK_EQ(M, scCause, A, B)                                         \
-IF_CHECKS_ENABLED(__SIG_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause, new_signal(scCause), A, B))
+// specified condition under soft check failures.
+#define COND_CHECK_EQ(M, scCause, A, B)                                        \
+IF_CHECKS_ENABLED(__COND_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause,              \
+    new_condition(scCause), A, B))
 
 // Fails if the given expression doesn't evaluate to true.
 #define CHECK_TRUE(M, E)                                                       \
@@ -82,13 +83,13 @@ IF_CHECKS_ENABLED(__CHECK_REL_HELPER__(M, A, OP, B))
 
 // Fails if the given expression doesn't evaluate to true under hard check
 // failures, returns the given value under soft check failures.
-#define SIG_CHECK_TRUE_WITH_VALUE(M, scCause, VALUE, E)                        \
-IF_CHECKS_ENABLED(SIG_CHECK_EQ_WITH_VALUE(M, scCause, VALUE, E, true))
+#define COND_CHECK_TRUE_WITH_VALUE(M, scCause, VALUE, E)                        \
+IF_CHECKS_ENABLED(COND_CHECK_EQ_WITH_VALUE(M, scCause, VALUE, E, true))
 
 // Fails if the given expression doesn't evaluate to true under hard check
-// failures, returns the specified signal under soft check failures.
-#define SIG_CHECK_TRUE(M, scCause, E)                                          \
-IF_CHECKS_ENABLED(SIG_CHECK_EQ(M, scCause, E, true))
+// failures, returns the specified condition under soft check failures.
+#define COND_CHECK_TRUE(M, scCause, E)                                          \
+IF_CHECKS_ENABLED(COND_CHECK_EQ(M, scCause, E, true))
 
 // Fails if the given expression doesn't evaluate to false.
 #define CHECK_FALSE(M, E)                                                      \
@@ -165,15 +166,15 @@ IF_CHECKS_ENABLED(__CHECK_CLASS__(species_division_t, sdDivision, EXPR, get_spec
 } while (false)
 
 // Check that a given value belongs to a particular class and otherwise returns
-// a signal, where the class is given by calling a particular getter on the
+// a condition, where the class is given by calling a particular getter on the
 // value. You generally don't want to use this directly.
-#define EXPECT_CLASS(scCause, class_t, cExpected, EXPR, get_class) do {     \
+#define EXPECT_CLASS(scCause, class_t, cExpected, EXPR, get_class) do {        \
   class_t __class__ = get_class(EXPR);                                         \
   if (__class__ != cExpected)                                                  \
-    return new_signal(scCause);                                                \
+    return new_condition(scCause);                                             \
 } while (false)
 
-// Check that returns a signal unless the object is in the specified family.
+// Check that returns a condition unless the object is in the specified family.
 #define EXPECT_FAMILY(scCause, ofFamily, EXPR)                                 \
 EXPECT_CLASS(scCause, object_family_t, ofFamily, EXPR, get_object_family)
 
