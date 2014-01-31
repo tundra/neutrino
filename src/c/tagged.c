@@ -212,3 +212,9 @@ void ambience_redirect_print_on(value_t value, string_buffer_t *buf, print_flags
       get_ambience_redirect_offset(value));
 }
 
+
+// --- T i n y   b i t   s e t ---
+
+void tiny_bit_set_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
+  string_buffer_printf(buf, "tiny_bit_set(%i)", get_custom_tagged_payload(value));
+}

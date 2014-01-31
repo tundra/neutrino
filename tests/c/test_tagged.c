@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "behavior.h"
-#include "tagged.h"
+#include "tagged-inl.h"
 #include "test.h"
 
 TEST(tagged, relation) {
@@ -95,4 +95,34 @@ TEST(tagged, float_32) {
   ASSERT_TRUE(is_float_32_finite(one));
   ASSERT_FALSE(is_float_32_finite(inf));
   ASSERT_FALSE(is_float_32_finite(minf));
+}
+
+TEST(tagged, tiny_bit_set) {
+  // Initialization.
+  value_t regular = new_tiny_bit_set(false);
+  for (size_t i = 0; i < kTinyBitSetMaxSize; i++)
+    ASSERT_FALSE(get_tiny_bit_set_at(regular, i));
+  value_t inverse = new_tiny_bit_set(true);
+  for (size_t i = 0; i < kTinyBitSetMaxSize; i++)
+    ASSERT_TRUE(get_tiny_bit_set_at(inverse, i));
+
+  // Setting/getting.
+  pseudo_random_t random;
+  pseudo_random_init(&random, 42342);
+  uint64_t bits = 0;
+  for (size_t i = 0; i < 1024; i++) {
+    size_t index = pseudo_random_next(&random, kTinyBitSetMaxSize);
+    bool value = pseudo_random_next(&random, 2);
+    regular = set_tiny_bit_set_at(regular, index, value);
+    inverse = set_tiny_bit_set_at(inverse, index, !value);
+    if (value)
+      bits = bits | (1LL << index);
+    else
+      bits = bits & ~(1LL << index);
+    for (size_t i = 0; i < kTinyBitSetMaxSize; i++) {
+      bool bit = (bits & (1LL << i)) != 0;
+      ASSERT_EQ(bit, get_tiny_bit_set_at(regular, i));
+      ASSERT_EQ(!bit, get_tiny_bit_set_at(inverse, i));
+    }
+  }
 }

@@ -478,7 +478,8 @@ ACCESSORS_DECL(object, header);
   F(Nothing,                 nothing,                   _, _)                  \
   F(Null,                    null,                      _, X)                  \
   F(Relation,                relation,                  _, _)                  \
-  F(StageOffset,             stage_offset,              X, _)
+  F(StageOffset,             stage_offset,              X, _)                  \
+  F(TinyBitSet,              tiny_bit_set,              _, _)
 
 // Enum identifying the different phylums of custom tagged values.
 typedef enum {
@@ -500,8 +501,21 @@ const char *get_custom_tagged_phylum_name(custom_tagged_phylum_t phylum);
 static const uint64_t kCustomTaggedPhylumTagSize = 8;
 static const uint64_t kCustomTaggedPhylumTagMask = (1 << 8) - 1;
 
+// Max number of bits in the payload of a custom tagged value. It's the full
+// width minus the domain and phylum tags and then rounded down to an almost-
+// power of 2 (it's 32 + 16).
+static const size_t kCustomTaggedPayloadSize = 48;
+
+// Returns true iff the value can safely be stored in a custom tagged value.
+static bool fits_as_custom_tagged_payload(int64_t value) {
+  const size_t kShiftAmount = 64 - kCustomTaggedPayloadSize;
+  return ((value << kShiftAmount) >> kShiftAmount) == value;
+}
+
 // Creates a new custom tagged value.
-static value_t new_custom_tagged(custom_tagged_phylum_t phylum, uint64_t payload) {
+static value_t new_custom_tagged(custom_tagged_phylum_t phylum, int64_t payload) {
+  CHECK_TRUE("too large for custom tagged payload",
+      fits_as_custom_tagged_payload(payload));
   value_t result;
   result.as_custom_tagged.data
       = (payload << (kCustomTaggedPhylumTagSize + kDomainTagSize))
@@ -518,9 +532,9 @@ static custom_tagged_phylum_t get_custom_tagged_phylum(value_t value) {
 }
 
 // Returns the payload of a custom tagged value.
-static uint64_t get_custom_tagged_payload(value_t value) {
+static int64_t get_custom_tagged_payload(value_t value) {
   CHECK_DOMAIN(vdCustomTagged, value);
-  uint64_t data = value.as_custom_tagged.data;
+  int64_t data = value.as_custom_tagged.data;
   return (data >> (kCustomTaggedPhylumTagSize + kDomainTagSize));
 }
 
