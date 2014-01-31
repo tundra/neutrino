@@ -129,7 +129,7 @@ TEST(process, get_argument_one_piece) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
-  value_t stack = new_heap_stack(runtime, 18);
+  value_t stack = new_heap_stack(runtime, 3 + 3 * kFrameHeaderSize);
   frame_t frame;
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3, null()));
   frame_push_value(&frame, new_integer(6));

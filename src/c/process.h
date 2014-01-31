@@ -50,7 +50,7 @@ typedef struct {
 } frame_t;
 
 // The number of words in a stack frame header.
-static const size_t kFrameHeaderSize = 5;
+static const size_t kFrameHeaderSize = 6;
 
 // Offsets _down_ from the frame pointer to the header fields.
 static const size_t kFrameHeaderPreviousFramePointerOffset = 0;
@@ -58,6 +58,7 @@ static const size_t kFrameHeaderPreviousCapacityOffset = 1;
 static const size_t kFrameHeaderCodeBlockOffset = 2;
 static const size_t kFrameHeaderPcOffset = 3;
 static const size_t kFrameHeaderArgumentMapOffset = 4;
+static const size_t kFrameHeaderFlagsOffset = 5;
 
 // Tries to allocate a new frame on the given stack piece of the given capacity.
 // Returns true iff allocation succeeds.
