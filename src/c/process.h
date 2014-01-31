@@ -102,6 +102,11 @@ bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame,
 // is invalid.
 void pop_stack_piece_frame(value_t stack_piece, frame_t *frame);
 
+// Updates the given frame such that it points to the frame of the caller of the
+// current frame. This does not change that stack in any way, it only updates
+// the frame struct.
+void frame_walk_advance(runtime_t *runtime, frame_t *frame);
+
 // Record the frame pointer for the previous stack frame, the one below this one.
 void set_frame_previous_frame_pointer(frame_t *frame, size_t value);
 
@@ -241,6 +246,11 @@ ACCESSORS_DECL(escape, stack_piece);
 // The stack pointer that indicates where the stored state is located on the
 // stack piece.
 ACCESSORS_DECL(escape, stack_pointer);
+
+
+// --- B a c k t r a c e ---
+
+static const size_t kBacktraceSize = OBJECT_SIZE(0);
 
 
 #endif // _PROCESS

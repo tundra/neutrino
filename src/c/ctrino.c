@@ -119,7 +119,9 @@ static value_t ctrino_to_string(builtin_arguments_t *args) {
 }
 
 static value_t ctrino_get_current_backtrace(builtin_arguments_t *args) {
-  frame_t *frame = args->frame;
+  runtime_t *runtime = get_builtin_runtime(args);
+  TRY_DEF(frames, new_heap_array_buffer(runtime, 16));
+  return frames;
 }
 
 value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {

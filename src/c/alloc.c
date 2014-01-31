@@ -520,6 +520,13 @@ value_t new_heap_escape(runtime_t *runtime, value_t is_live, value_t stack_piece
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_backtrace(runtime_t *runtime) {
+  size_t size = kBacktraceSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, backtrace_species)));
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- M e t h o d ---
 

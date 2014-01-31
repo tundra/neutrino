@@ -154,6 +154,26 @@ TEST(process, walk_stack_frames) {
   DISPOSE_RUNTIME();
 }
 
+TEST(process, walk_frames) {
+  CREATE_RUNTIME();
+
+  value_t stack = new_heap_stack(runtime, 16);
+  for (size_t i = 0; i < 16; i++) {
+    frame_t frame;
+    ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 1, ROOT(runtime, empty_array)));
+    frame_push_value(&frame, new_integer(i + 8));
+    for (size_t j = 0; j <= i; j++) {
+      size_t frame_i = i - j;
+      value_t expected = new_integer(frame_i + 8);
+      ASSERT_VALEQ(expected, frame_peek_value(&frame, 0));
+      if (j < i)
+        frame_walk_advance(runtime, &frame);
+    }
+  }
+
+  DISPOSE_RUNTIME();
+}
+
 TEST(process, get_argument_one_piece) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();

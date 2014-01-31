@@ -217,6 +217,13 @@ void pop_stack_piece_frame(value_t stack_piece, frame_t *frame) {
   set_stack_piece_top_frame(frame);
 }
 
+void frame_walk_advance(runtime_t *runtime, frame_t *frame) {
+  frame_t current = *frame;
+  frame->frame_pointer = get_frame_previous_frame_pointer(&current);
+  frame->capacity = get_frame_previous_capacity(&current);
+  frame->stack_pointer = current.frame_pointer - kFrameHeaderSize;
+}
+
 // Accesses a frame header field, that is, a bookkeeping field below the frame
 // pointer.
 static value_t *access_frame_header_field(frame_t *frame, size_t offset) {
@@ -411,5 +418,21 @@ value_t add_escape_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
       emit_fire_escape));
   DEF_PROPERTY(property_is_live, "is_live");
   ADD_BUILTIN(escape, property_is_live, 0, escape_is_live);
+  return success();
+}
+
+
+// --- B a c k t r a c e ---
+
+FIXED_GET_MODE_IMPL(backtrace, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(Backtrace, backtrace);
+GET_FAMILY_PRIMARY_TYPE_IMPL(backtrace);
+
+value_t backtrace_validate(value_t value) {
+  VALIDATE_FAMILY(ofBacktrace, value);
+  return success();
+}
+
+value_t add_backtrace_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   return success();
 }
