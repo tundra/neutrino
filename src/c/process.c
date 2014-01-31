@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "log.h"
 #include "process.h"
+#include "tagged-inl.h"
 #include "try-inl.h"
 #include "value-inl.h"
 
@@ -18,11 +19,13 @@ ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt, ofStackPiece, Previous, p
 INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopFramePointer, top_frame_pointer);
 INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopStackPointer, top_stack_pointer);
 INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopCapacity, top_capacity);
+ACCESSORS_IMPL(StackPiece, stack_piece, acInPhylum, tpTinyBitSet, TopFlags, top_flags);
 
 value_t stack_piece_validate(value_t value) {
   VALIDATE_FAMILY(ofStackPiece, value);
   VALIDATE_FAMILY(ofArray, get_stack_piece_storage(value));
   VALIDATE_FAMILY_OPT(ofStackPiece, get_stack_piece_previous(value));
+  VALIDATE_PHYLUM(tpTinyBitSet, get_stack_piece_top_flags(value));
   return success();
 }
 
@@ -69,7 +72,7 @@ static void push_stack_piece_bottom_frame(runtime_t *runtime, value_t stack_piec
   // passed from this frame so we have to "allocate" enough room for them on
   // the stack.
   bool pushed = try_push_stack_piece_frame(stack_piece, &bottom,
-      get_code_block_high_water_mark(code_block) + arg_count);
+      get_code_block_high_water_mark(code_block) + arg_count, true);
   CHECK_TRUE("pushing bottom frame", pushed);
   set_frame_code_block(&bottom, code_block);
 }
@@ -81,13 +84,14 @@ static void get_top_stack_piece_frame(value_t stack_piece, frame_t *frame) {
   frame->frame_pointer = get_stack_piece_top_frame_pointer(stack_piece);
   frame->stack_pointer = get_stack_piece_top_stack_pointer(stack_piece);
   frame->capacity = get_stack_piece_top_capacity(stack_piece);
+  frame->flags = get_stack_piece_top_flags(stack_piece);
 }
 
 value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     size_t frame_capacity, value_t arg_map) {
   CHECK_FAMILY(ofStack, stack);
   value_t top_piece = get_stack_top_piece(stack);
-  if (!try_push_stack_piece_frame(top_piece, frame, frame_capacity)) {
+  if (!try_push_stack_piece_frame(top_piece, frame, frame_capacity, false)) {
     // There wasn't room to push this frame onto the top stack piece so
     // allocate a new top piece that definitely has room.
     size_t default_capacity = get_stack_default_piece_capacity(stack);
@@ -109,7 +113,7 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     // struct. The required_capacity calculation ensures that this call will
     // succeed.
     bool pushed_stack_piece = try_push_stack_piece_frame(new_piece,
-        frame, frame_capacity);
+        frame, frame_capacity, false);
     CHECK_TRUE("pushing on new piece failed", pushed_stack_piece);
   }
   set_frame_argument_map(frame, arg_map);
@@ -137,16 +141,15 @@ bool pop_stack_frame(value_t stack, frame_t *frame) {
   }
 }
 
-bool frame_is_synthetic(runtime_t *runtime, frame_t *frame) {
-  value_t code_block = get_frame_code_block(frame);
-  return is_same_value(code_block, ROOT(runtime, stack_piece_bottom_code_block));
+bool frame_is_synthetic(frame_t *frame) {
+  return get_tiny_bit_set_at(frame->flags, ffSynthetic);
 }
 
-bool pop_organic_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame) {
+bool pop_organic_stack_frame(value_t stack, frame_t *frame) {
   if (!pop_stack_frame(stack, frame))
     return false;
-  return !frame_is_synthetic(runtime, frame)
-      || pop_organic_stack_frame(runtime, stack, frame);
+  return !frame_is_synthetic(frame)
+      || pop_organic_stack_frame(stack, frame);
 }
 
 void get_stack_top_frame(value_t stack, frame_t *frame) {
@@ -158,7 +161,8 @@ void get_stack_top_frame(value_t stack, frame_t *frame) {
 
 // --- F r a m e ---
 
-bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame, size_t frame_capacity) {
+bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame,
+    size_t frame_capacity, bool is_synthetic) {
   // First record the current state of the old top frame so we can store it in
   // the header if the new frame.
   frame_t old_frame;
@@ -176,11 +180,15 @@ bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame, size_t fram
   // Store the new frame's info in the frame struct.
   frame->stack_pointer = frame->frame_pointer = new_frame_pointer;
   frame->capacity = frame_capacity;
+  frame->flags = new_tiny_bit_set(0);
+  if (is_synthetic)
+    frame->flags = set_tiny_bit_set_at(frame->flags, ffSynthetic, true);
   frame->stack_piece = stack_piece;
   // Record the relevant information about the previous frame in the new frame's
   // header.
   set_frame_previous_frame_pointer(frame, old_frame.frame_pointer);
   set_frame_previous_capacity(frame, old_frame.capacity);
+  set_frame_previous_flags(frame, old_frame.flags);
   set_frame_pc(frame, 0);
   set_frame_code_block(frame, whatever());
   set_frame_argument_map(frame, whatever());
@@ -188,6 +196,7 @@ bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame, size_t fram
   set_stack_piece_top_stack_pointer(stack_piece, frame->stack_pointer);
   set_stack_piece_top_frame_pointer(stack_piece, frame->frame_pointer);
   set_stack_piece_top_capacity(stack_piece, frame->capacity);
+  set_stack_piece_top_flags(stack_piece, frame->flags);
   return true;
 }
 
@@ -203,11 +212,13 @@ bool pop_stack_piece_frame(value_t stack_piece, frame_t *frame) {
   // Get the frame pointer and capacity from the top frame's header.
   frame->frame_pointer = get_frame_previous_frame_pointer(&top_frame);
   frame->capacity = get_frame_previous_capacity(&top_frame);
+  frame->flags = get_frame_previous_flags(&top_frame);
   // The stack pointer will be the first field of the top frame's header.
   frame->stack_pointer = top_frame.frame_pointer - kFrameHeaderSize;
   set_stack_piece_top_stack_pointer(stack_piece, frame->stack_pointer);
   set_stack_piece_top_frame_pointer(stack_piece, frame->frame_pointer);
   set_stack_piece_top_capacity(stack_piece, frame->capacity);
+  set_stack_piece_top_flags(stack_piece, frame->flags);
   return !frame_at_stack_piece_bottom(frame);
 }
 
@@ -259,6 +270,14 @@ void set_frame_previous_capacity(frame_t *frame, size_t value) {
 size_t get_frame_previous_capacity(frame_t *frame) {
   return get_integer_value(*access_frame_header_field(frame,
       kFrameHeaderPreviousCapacityOffset));
+}
+
+void set_frame_previous_flags(frame_t *frame, value_t flags) {
+  *access_frame_header_field(frame, kFrameHeaderPreviousFlagsOffset) = flags;
+}
+
+value_t get_frame_previous_flags(frame_t *frame) {
+  return *access_frame_header_field(frame, kFrameHeaderPreviousFlagsOffset);
 }
 
 void set_frame_code_block(frame_t *frame, value_t code_block) {

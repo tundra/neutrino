@@ -14,6 +14,16 @@ static inline bool in_phylum(custom_tagged_phylum_t phylum, value_t value) {
   return in_domain(vdCustomTagged, value) && (get_custom_tagged_phylum(value) == phylum);
 }
 
+// Checks whether the value at the end of the given pointer belongs to the
+// specified family. If not, returns a validation failure.
+#define VALIDATE_PHYLUM(tpPhylum, EXPR)                                        \
+VALIDATE(in_phylum(tpPhylum, EXPR))
+
+// Accessor check that indicates that the argument should belong to the phylum
+// specified in the argument.
+#define acInPhylum(tpPhylum, VALUE)                                            \
+  CHECK_PHYLUM(tpPhylum, (VALUE))
+
 
 // --- T i n y   b i t   s e t ---
 

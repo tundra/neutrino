@@ -13,7 +13,7 @@ TEST(process, frame_bounds) {
 
   // Check that push/pop outside the frame boundaries causes a check failure.
   frame_t frame;
-  ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 4));
+  ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 4, false));
   ASSERT_CHECK_FAILURE(ccOutOfBounds, frame_pop_value(&frame));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(6)));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(5)));
@@ -29,7 +29,7 @@ TEST(process, frame_bounds) {
 
   // Mutating a frame that's below the top causes a check failure.
   frame_t inner;
-  ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &inner, 4));
+  ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &inner, 4, false));
   ASSERT_CHECK_FAILURE(ccWat, frame_push_value(&frame, new_integer(1)));
   ASSERT_CHECK_FAILURE(ccWat, frame_pop_value(&frame));
 
@@ -47,7 +47,7 @@ TEST(process, simple_frames) {
   frame_t frame;
   for (int i = 0; i < 256; i++) {
     if (i % 16 == 0)
-      ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 16));
+      ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 16, false));
     frame_push_value(&frame, new_integer(i));
   }
   for (int i = 255; i >= 0; i--) {
@@ -67,7 +67,7 @@ TEST(process, frame_capacity) {
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing());
   for (int i = 0; i < 16; i++) {
     frame_t frame;
-    ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, i));
+    ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, i, false));
     ASSERT_EQ((size_t) i, frame.capacity);
   }
 
@@ -88,8 +88,8 @@ TEST(process, bottom_frame) {
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing());
   frame_t frame;
   // Push two frames onto the stack piece.
-  ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 10));
-  ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 10));
+  ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 10, false));
+  ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 10, false));
   // Popping the first one succeeds since there's a second one below to pop to.
   ASSERT_TRUE(pop_stack_piece_frame(stack_piece, &frame));
   // Popping the second fails since there is no frame below to pop to.
@@ -114,7 +114,7 @@ TEST(process, stack_frames) {
     ASSERT_EQ((size_t) i + 1, frame.capacity);
     value_t value = frame_pop_value(&frame);
     ASSERT_EQ(i * 3, get_integer_value(value));
-    ASSERT_TRUE(pop_organic_stack_frame(runtime, stack, &frame));
+    ASSERT_TRUE(pop_organic_stack_frame(stack, &frame));
   }
   frame_t frame;
   // Popping the synthetic stack bottom frame should succeed.
@@ -129,7 +129,7 @@ TEST(process, get_argument_one_piece) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
-  value_t stack = new_heap_stack(runtime, 18);
+  value_t stack = new_heap_stack(runtime, 3 + 3 * kFrameHeaderSize);
   frame_t frame;
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3, null()));
   frame_push_value(&frame, new_integer(6));

@@ -481,6 +481,7 @@ value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
   set_stack_piece_top_frame_pointer(result, 0);
   set_stack_piece_top_stack_pointer(result, 0);
   set_stack_piece_top_capacity(result, 0);
+  set_stack_piece_top_flags(result, new_tiny_bit_set(false));
   return post_create_sanity_check(result, size);
 }
 
@@ -492,7 +493,7 @@ static void push_stack_bottom_frame(runtime_t *runtime, value_t stack) {
   frame_t bottom;
   value_t code_block = ROOT(runtime, stack_bottom_code_block);
   bool pushed = try_push_stack_piece_frame(piece, &bottom,
-      get_code_block_high_water_mark(code_block));
+      get_code_block_high_water_mark(code_block), true);
   CHECK_TRUE("pushing bottom frame", pushed);
   set_frame_code_block(&bottom, code_block);
 }
