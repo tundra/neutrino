@@ -83,7 +83,7 @@ void dispose_value_to_string(value_to_string_t *data);
 
 // Checks whether the expression holds and if not returns a validation failure.
 #define VALIDATE(EXPR) do {                                                    \
-  COND_CHECK_TRUE("validation", ccValidationFailed, EXPR);                      \
+  COND_CHECK_TRUE("validation", ccValidationFailed, EXPR);                     \
 } while (false)
 
 // Checks whether the value at the end of the given pointer belongs to the
