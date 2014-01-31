@@ -89,8 +89,10 @@ TEST(value, custom_tagged) {
   ASSERT_EQ(0, get_custom_tagged_payload(n0));
   value_t n1 = new_custom_tagged(tpNull, 255);
   ASSERT_EQ(255, get_custom_tagged_payload(n1));
-  value_t n2 = new_custom_tagged(tpNull, (1ULL << 48));
-  ASSERT_EQ((1ULL << 48), get_custom_tagged_payload(n2));
+  value_t n2 = new_custom_tagged(tpNull, (1LL << 46));
+  ASSERT_EQ((1LL << 46), get_custom_tagged_payload(n2));
+  value_t n3 = new_custom_tagged(tpNull, -(1LL << 46));
+  ASSERT_EQ(-(1LL << 46), get_custom_tagged_payload(n3));
 }
 
 TEST(value, objects) {
