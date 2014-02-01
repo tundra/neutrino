@@ -237,16 +237,22 @@ static size_t get_ambience_redirect_offset(value_t self) {
 }
 
 
-// --- T i n y   B i t   S e t ---
+// --- F l a g   S e t ---
 
 // The max number of bits that can be stored in a tiny bit set. This is
 // deliberately somewhat smaller than the payload size because this way it is
 // a round number and we don't have to worry about boundary conditions.
-static const size_t kTinyBitSetMaxSize = 32;
+static const size_t kFlagSetMaxSize = 32;
+
+// Initializer that has all flags of a flag set enabled.
+static const uint32_t kFlagSetAllOn = 0xFFFFFFFF;
+
+// Initializer that has all flags of a flag set disabled.
+static const uint32_t kFlagSetAllOff = 0;
 
 // Creates a new tiny bit set with all bits set to the given initial value.
-static value_t new_tiny_bit_set(bool init) {
-  return new_custom_tagged(tpTinyBitSet, init ? -1 : 0);
+static value_t new_flag_set(uint32_t initial_value) {
+  return new_custom_tagged(tpFlagSet, initial_value);
 }
 
 

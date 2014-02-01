@@ -25,24 +25,36 @@ VALIDATE(in_phylum(tpPhylum, EXPR))
   CHECK_PHYLUM(tpPhylum, (VALUE))
 
 
-// --- T i n y   b i t   s e t ---
+// --- F l a g   s e t ---
 
-// Returns the value of the index'th bit in the given bit set.
-static bool get_tiny_bit_set_at(value_t bits, size_t index) {
-  CHECK_REL("bit set out of bounds", index, <, kTinyBitSetMaxSize);
-  CHECK_PHYLUM(tpTinyBitSet, bits);
-  return (get_custom_tagged_payload(bits) & (1LL << index)) != 0;
+// Returns true iff any of the given flags are set in this flag set. The typical
+// case is giving a single flag in which case the result is the value of that
+// flag.
+static bool get_flag_set_at(value_t self, uint32_t flags) {
+  CHECK_PHYLUM(tpFlagSet, self);
+  return (get_custom_tagged_payload(self) & flags) != 0;
 }
 
-// Returns a new bit set that is identical to the given set at all other indices
-// and where the index'th bit has the given value.
-static value_t set_tiny_bit_set_at(value_t bits, size_t index, bool value) {
-  CHECK_REL("bit set out of bounds", index, <, kTinyBitSetMaxSize);
-  CHECK_PHYLUM(tpTinyBitSet, bits);
-  int64_t old_payload = get_custom_tagged_payload(bits);
+// Returns a flag set identical to the given set on all other flags than the
+// given set, and with all the given flags enabled.
+static value_t enable_flag_set_flags(value_t self, uint32_t flags) {
+  CHECK_PHYLUM(tpFlagSet, self);
+  return new_custom_tagged(tpFlagSet, get_custom_tagged_payload(self) | flags);
+}
+
+// Returns a flag set identical to the given set on all other flags than the
+// given set, and with all the given flags disabled.
+static value_t disable_flag_set_flags(value_t self, uint32_t flags) {
+  CHECK_PHYLUM(tpFlagSet, self);
+  return new_custom_tagged(tpFlagSet, get_custom_tagged_payload(self) & ~flags);
+}
+
+// Returns a flag set identical to the given set on all other flags than the
+// given set, and with the given flags set to the specified value.
+static value_t set_flag_set_at(value_t self, uint32_t flags, bool value) {
   return value
-      ? new_custom_tagged(tpTinyBitSet, old_payload | (1LL << index))
-      : new_custom_tagged(tpTinyBitSet, old_payload & ~(1LL << index));
+      ? enable_flag_set_flags(self, flags)
+      : disable_flag_set_flags(self, flags);
 }
 
 #endif // _TAGGED_INL

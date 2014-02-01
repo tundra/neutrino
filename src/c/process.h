@@ -39,7 +39,8 @@ ACCESSORS_DECL(stack_piece, top_flags);
 
 // Flags that describe a stack frame.
 typedef enum {
-  ffSynthetic = 0
+  ffSynthetic = 0x1,
+  ffOrganic   = 0x2
 } frame_flag_t;
 
 
@@ -82,7 +83,7 @@ static const size_t kFrameHeaderArgumentMapOffset = 5;
 // Tries to allocate a new frame on the given stack piece of the given capacity.
 // Returns true iff allocation succeeds.
 bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame,
-    size_t capacity, bool is_synthetic);
+    size_t capacity, uint32_t flags);
 
 // Pops the top frame off the given stack piece, storing the next frame in the
 // given frame struct. Returns true if there are more frames to pop off the stack,
