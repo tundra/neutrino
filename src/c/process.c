@@ -19,13 +19,13 @@ ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt, ofStackPiece, Previous, p
 INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopFramePointer, top_frame_pointer);
 INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopStackPointer, top_stack_pointer);
 INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopCapacity, top_capacity);
-ACCESSORS_IMPL(StackPiece, stack_piece, acInPhylum, tpTinyBitSet, TopFlags, top_flags);
+ACCESSORS_IMPL(StackPiece, stack_piece, acInPhylum, tpFlagSet, TopFlags, top_flags);
 
 value_t stack_piece_validate(value_t value) {
   VALIDATE_FAMILY(ofStackPiece, value);
   VALIDATE_FAMILY(ofArray, get_stack_piece_storage(value));
   VALIDATE_FAMILY_OPT(ofStackPiece, get_stack_piece_previous(value));
-  VALIDATE_PHYLUM(tpTinyBitSet, get_stack_piece_top_flags(value));
+  VALIDATE_PHYLUM(tpFlagSet, get_stack_piece_top_flags(value));
   return success();
 }
 
@@ -72,7 +72,7 @@ static void push_stack_piece_bottom_frame(runtime_t *runtime, value_t stack_piec
   // passed from this frame so we have to "allocate" enough room for them on
   // the stack.
   bool pushed = try_push_stack_piece_frame(stack_piece, &bottom,
-      get_code_block_high_water_mark(code_block) + arg_count, true);
+      get_code_block_high_water_mark(code_block) + arg_count, ffSynthetic);
   CHECK_TRUE("pushing bottom frame", pushed);
   set_frame_code_block(&bottom, code_block);
 }
@@ -91,7 +91,7 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     size_t frame_capacity, value_t arg_map) {
   CHECK_FAMILY(ofStack, stack);
   value_t top_piece = get_stack_top_piece(stack);
-  if (!try_push_stack_piece_frame(top_piece, frame, frame_capacity, false)) {
+  if (!try_push_stack_piece_frame(top_piece, frame, frame_capacity, ffOrganic)) {
     // There wasn't room to push this frame onto the top stack piece so
     // allocate a new top piece that definitely has room.
     size_t default_capacity = get_stack_default_piece_capacity(stack);
@@ -113,7 +113,7 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     // struct. The required_capacity calculation ensures that this call will
     // succeed.
     bool pushed_stack_piece = try_push_stack_piece_frame(new_piece,
-        frame, frame_capacity, false);
+        frame, frame_capacity, ffOrganic);
     CHECK_TRUE("pushing on new piece failed", pushed_stack_piece);
   }
   set_frame_argument_map(frame, arg_map);
@@ -142,7 +142,7 @@ bool pop_stack_frame(value_t stack, frame_t *frame) {
 }
 
 bool frame_is_synthetic(frame_t *frame) {
-  return get_tiny_bit_set_at(frame->flags, ffSynthetic);
+  return get_flag_set_at(frame->flags, ffSynthetic);
 }
 
 bool pop_organic_stack_frame(value_t stack, frame_t *frame) {
@@ -162,7 +162,7 @@ void get_stack_top_frame(value_t stack, frame_t *frame) {
 // --- F r a m e ---
 
 bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame,
-    size_t frame_capacity, bool is_synthetic) {
+    size_t frame_capacity, uint32_t flags) {
   // First record the current state of the old top frame so we can store it in
   // the header if the new frame.
   frame_t old_frame;
@@ -180,9 +180,7 @@ bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame,
   // Store the new frame's info in the frame struct.
   frame->stack_pointer = frame->frame_pointer = new_frame_pointer;
   frame->capacity = frame_capacity;
-  frame->flags = new_tiny_bit_set(0);
-  if (is_synthetic)
-    frame->flags = set_tiny_bit_set_at(frame->flags, ffSynthetic, true);
+  frame->flags = new_flag_set(flags);
   frame->stack_piece = stack_piece;
   // Record the relevant information about the previous frame in the new frame's
   // header.

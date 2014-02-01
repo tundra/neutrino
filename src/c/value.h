@@ -474,12 +474,12 @@ ACCESSORS_DECL(object, header);
 #define ENUM_CUSTOM_TAGGED_PHYLUMS(F)                                          \
   F(AmbienceRedirect,        ambience_redirect,         _, _)                  \
   F(Boolean,                 boolean,                   X, X)                  \
+  F(FlagSet,                 flag_set,                  _, _)                  \
   F(Float32,                 float_32,                  X, X)                  \
   F(Nothing,                 nothing,                   _, _)                  \
   F(Null,                    null,                      _, X)                  \
   F(Relation,                relation,                  _, _)                  \
-  F(StageOffset,             stage_offset,              X, _)                  \
-  F(TinyBitSet,              tiny_bit_set,              _, _)
+  F(StageOffset,             stage_offset,              X, _)
 
 // Enum identifying the different phylums of custom tagged values.
 typedef enum {

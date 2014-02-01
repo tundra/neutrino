@@ -99,30 +99,30 @@ TEST(tagged, float_32) {
 
 TEST(tagged, tiny_bit_set) {
   // Initialization.
-  value_t regular = new_tiny_bit_set(false);
-  for (size_t i = 0; i < kTinyBitSetMaxSize; i++)
-    ASSERT_FALSE(get_tiny_bit_set_at(regular, i));
-  value_t inverse = new_tiny_bit_set(true);
-  for (size_t i = 0; i < kTinyBitSetMaxSize; i++)
-    ASSERT_TRUE(get_tiny_bit_set_at(inverse, i));
+  value_t regular = new_flag_set(kFlagSetAllOff);
+  for (size_t i = 0; i < kFlagSetMaxSize; i++)
+    ASSERT_FALSE(get_flag_set_at(regular, 1 << i));
+  value_t inverse = new_flag_set(kFlagSetAllOn);
+  for (size_t i = 0; i < kFlagSetMaxSize; i++)
+    ASSERT_TRUE(get_flag_set_at(inverse, 1 << i));
 
   // Setting/getting.
   pseudo_random_t random;
   pseudo_random_init(&random, 42342);
   uint64_t bits = 0;
   for (size_t i = 0; i < 1024; i++) {
-    size_t index = pseudo_random_next(&random, kTinyBitSetMaxSize);
+    size_t index = pseudo_random_next(&random, kFlagSetMaxSize);
     bool value = pseudo_random_next(&random, 2);
-    regular = set_tiny_bit_set_at(regular, index, value);
-    inverse = set_tiny_bit_set_at(inverse, index, !value);
+    regular = set_flag_set_at(regular, 1 << index, value);
+    inverse = set_flag_set_at(inverse, 1 << index, !value);
     if (value)
       bits = bits | (1LL << index);
     else
       bits = bits & ~(1LL << index);
-    for (size_t i = 0; i < kTinyBitSetMaxSize; i++) {
+    for (size_t i = 0; i < kFlagSetMaxSize; i++) {
       bool bit = (bits & (1LL << i)) != 0;
-      ASSERT_EQ(bit, get_tiny_bit_set_at(regular, i));
-      ASSERT_EQ(!bit, get_tiny_bit_set_at(inverse, i));
+      ASSERT_EQ(bit, get_flag_set_at(regular, 1 << i));
+      ASSERT_EQ(!bit, get_flag_set_at(inverse, 1 << i));
     }
   }
 }
