@@ -34,7 +34,8 @@ TEST(process, frame_bounds) {
   ASSERT_CHECK_FAILURE(ccWat, frame_pop_value(&frame));
 
   // Popping down to the frame makes value popping work again.
-  ASSERT_TRUE(pop_stack_piece_frame(stack_piece, &inner));
+  pop_stack_piece_frame(stack_piece, &inner);
+  ASSERT_FALSE(frame_has_flag(&frame, ffStackPieceEmpty));
   ASSERT_VALEQ(new_integer(0), frame_pop_value(&frame));
 
   DISPOSE_RUNTIME();
@@ -54,8 +55,10 @@ TEST(process, simple_frames) {
     value_t expected = new_integer(i);
     value_t found = frame_pop_value(&frame);
     ASSERT_VALEQ(expected, found);
-    if (i % 16 == 0)
-      ASSERT_EQ(i != 0, pop_stack_piece_frame(stack_piece, &frame));
+    if (i % 16 == 0) {
+      pop_stack_piece_frame(stack_piece, &frame);
+      ASSERT_EQ(i == 0, frame_has_flag(&frame, ffStackPieceEmpty));
+    }
   }
 
   DISPOSE_RUNTIME();
@@ -73,11 +76,13 @@ TEST(process, frame_capacity) {
 
   for (int i = 14; i >= 0; i--) {
     frame_t frame;
-    ASSERT_TRUE(pop_stack_piece_frame(stack_piece, &frame));
+    pop_stack_piece_frame(stack_piece, &frame);
+    ASSERT_FALSE(frame_has_flag(&frame, ffStackPieceEmpty));
     ASSERT_EQ((size_t) i, frame.capacity);
   }
   frame_t frame;
-  ASSERT_FALSE(pop_stack_piece_frame(stack_piece, &frame));
+  pop_stack_piece_frame(stack_piece, &frame);
+  ASSERT_TRUE(frame_has_flag(&frame, ffStackPieceEmpty));
 
   DISPOSE_RUNTIME();
 }
@@ -90,10 +95,10 @@ TEST(process, bottom_frame) {
   // Push two frames onto the stack piece.
   ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 10, ffOrganic));
   ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 10, ffOrganic));
-  // Popping the first one succeeds since there's a second one below to pop to.
-  ASSERT_TRUE(pop_stack_piece_frame(stack_piece, &frame));
-  // Popping the second fails since there is no frame below to pop to.
-  ASSERT_FALSE(pop_stack_piece_frame(stack_piece, &frame));
+  pop_stack_piece_frame(stack_piece, &frame);
+  ASSERT_FALSE(frame_has_flag(&frame, ffStackPieceEmpty));
+  pop_stack_piece_frame(stack_piece, &frame);
+  ASSERT_TRUE(frame_has_flag(&frame, ffStackPieceEmpty));
 
   DISPOSE_RUNTIME();
 }
@@ -114,13 +119,37 @@ TEST(process, stack_frames) {
     ASSERT_EQ((size_t) i + 1, frame.capacity);
     value_t value = frame_pop_value(&frame);
     ASSERT_EQ(i * 3, get_integer_value(value));
-    ASSERT_TRUE(pop_organic_stack_frame(stack, &frame));
+    drop_to_stack_frame(stack, &frame, ffOrganic);
   }
   frame_t frame;
   // Popping the synthetic stack bottom frame should succeed.
-  ASSERT_TRUE(pop_stack_frame(stack, &frame));
-  // Now the stack is empty so it should not be possible to pop.
-  ASSERT_FALSE(pop_stack_frame(stack, &frame));
+  drop_to_stack_frame(stack, &frame, ffSynthetic);
+  // Finally we should be at the very bottom.
+  ASSERT_TRUE(frame_has_flag(&frame, ffStackBottom));
+
+  DISPOSE_RUNTIME();
+}
+
+TEST(process, walk_stack_frames) {
+  CREATE_RUNTIME();
+
+  value_t stack = new_heap_stack(runtime, 16);
+  for (size_t i = 0; i < 64; i++) {
+    frame_t frame;
+    ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 1,
+        ROOT(runtime, empty_array)));
+    ASSERT_SUCCESS(frame_push_value(&frame, new_integer(i + 5)));
+    frame_iter_t iter;
+    frame_iter_init(&iter, stack);
+    for (size_t j = 0; j <= i; j++) {
+      size_t frame_i = i - j;
+      frame_t *current = frame_iter_get_current(&iter);
+      ASSERT_VALEQ(new_integer(frame_i + 5), frame_peek_value(current, 0));
+      if (j < i)
+        ASSERT_TRUE(frame_iter_advance(&iter));
+    }
+    ASSERT_FALSE(frame_iter_advance(&iter));
+  }
 
   DISPOSE_RUNTIME();
 }

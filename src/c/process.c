@@ -72,7 +72,8 @@ static void push_stack_piece_bottom_frame(runtime_t *runtime, value_t stack_piec
   // passed from this frame so we have to "allocate" enough room for them on
   // the stack.
   bool pushed = try_push_stack_piece_frame(stack_piece, &bottom,
-      get_code_block_high_water_mark(code_block) + arg_count, ffSynthetic);
+      get_code_block_high_water_mark(code_block) + arg_count,
+      ffSynthetic | ffStackPieceBottom);
   CHECK_TRUE("pushing bottom frame", pushed);
   set_frame_code_block(&bottom, code_block);
 }
@@ -85,6 +86,15 @@ static void get_top_stack_piece_frame(value_t stack_piece, frame_t *frame) {
   frame->stack_pointer = get_stack_piece_top_stack_pointer(stack_piece);
   frame->capacity = get_stack_piece_top_capacity(stack_piece);
   frame->flags = get_stack_piece_top_flags(stack_piece);
+}
+
+// Records the current registers in the given frame in the stack piece.
+static void set_stack_piece_top_frame(frame_t *frame) {
+  value_t piece = frame->stack_piece;
+  set_stack_piece_top_stack_pointer(piece, frame->stack_pointer);
+  set_stack_piece_top_frame_pointer(piece, frame->frame_pointer);
+  set_stack_piece_top_capacity(piece, frame->capacity);
+  set_stack_piece_top_flags(piece, frame->flags);
 }
 
 value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
@@ -120,36 +130,42 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
   return success();
 }
 
-bool pop_stack_frame(value_t stack, frame_t *frame) {
-  value_t top_piece = get_stack_top_piece(stack);
-  if (pop_stack_piece_frame(top_piece, frame)) {
-    // There was a frame to pop on the top piece so we're good.
-    return true;
-  }
-  // The piece was empty so we have to pop down to the previous piece.
-  value_t next_piece = get_stack_piece_previous(top_piece);
-  if (is_nothing(next_piece)) {
-    // There are no more pieces. Leave the empty one in place and report that
-    // popping failed.
-    return false;
-  } else {
-    // There are more pieces. Update the stack and fetch the top frame (which
-    // we know will be there).
-    set_stack_top_piece(stack, next_piece);
-    get_stack_top_frame(stack, frame);
-    return true;
+static void frame_walk_down_stack(frame_t *frame) {
+  frame_t snapshot = *frame;
+  // Get the frame pointer and capacity from the frame's header.
+  frame->frame_pointer = get_frame_previous_frame_pointer(&snapshot);
+  frame->capacity = get_frame_previous_capacity(&snapshot);
+  frame->flags = get_frame_previous_flags(&snapshot);
+  // The stack pointer will be the first field of the top frame's header.
+  frame->stack_pointer = snapshot.frame_pointer - kFrameHeaderSize;
+}
+
+void drop_to_stack_frame(value_t stack, frame_t *frame, frame_flag_t flags) {
+  value_t piece = get_stack_top_piece(stack);
+  get_top_stack_piece_frame(piece, frame);
+  frame_loop: while (true) {
+    CHECK_FALSE("stack piece empty", frame_has_flag(frame, ffStackPieceEmpty));
+    frame_walk_down_stack(frame);
+    if (frame_has_flag(frame, ffStackPieceEmpty)) {
+      // If we're at the bottom of a stack piece walk down another frame to
+      // get to the next one.
+      piece = get_stack_piece_previous(piece);
+      CHECK_FALSE("bottom of stack", is_nothing(piece));
+      set_stack_top_piece(stack, piece);
+      get_top_stack_piece_frame(piece, frame);
+      CHECK_FALSE("stack piece empty", frame_has_flag(frame, ffStackPieceEmpty));
+    }
+    if (!frame_has_flag(frame, flags)) {
+      goto frame_loop;
+    } else {
+      set_stack_piece_top_frame(frame);
+      return;
+    }
   }
 }
 
-bool frame_is_synthetic(frame_t *frame) {
-  return get_flag_set_at(frame->flags, ffSynthetic);
-}
-
-bool pop_organic_stack_frame(value_t stack, frame_t *frame) {
-  if (!pop_stack_frame(stack, frame))
-    return false;
-  return !frame_is_synthetic(frame)
-      || pop_organic_stack_frame(stack, frame);
+bool frame_has_flag(frame_t *frame, frame_flag_t flag) {
+  return get_flag_set_at(frame->flags, flag);
 }
 
 void get_stack_top_frame(value_t stack, frame_t *frame) {
@@ -191,33 +207,15 @@ bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame,
   set_frame_code_block(frame, whatever());
   set_frame_argument_map(frame, whatever());
   // Update the stack piece's top frame data to reflect the new top frame.
-  set_stack_piece_top_stack_pointer(stack_piece, frame->stack_pointer);
-  set_stack_piece_top_frame_pointer(stack_piece, frame->frame_pointer);
-  set_stack_piece_top_capacity(stack_piece, frame->capacity);
-  set_stack_piece_top_flags(stack_piece, frame->flags);
+  set_stack_piece_top_frame(frame);
   return true;
 }
 
-bool frame_at_stack_piece_bottom(frame_t *frame) {
-  return frame->frame_pointer == 0;
-}
-
-bool pop_stack_piece_frame(value_t stack_piece, frame_t *frame) {
-  // Grab the current top frame.
-  frame_t top_frame;
-  get_top_stack_piece_frame(stack_piece, &top_frame);
-  CHECK_REL("empty stack piece", top_frame.frame_pointer, >, 0);
-  // Get the frame pointer and capacity from the top frame's header.
-  frame->frame_pointer = get_frame_previous_frame_pointer(&top_frame);
-  frame->capacity = get_frame_previous_capacity(&top_frame);
-  frame->flags = get_frame_previous_flags(&top_frame);
-  // The stack pointer will be the first field of the top frame's header.
-  frame->stack_pointer = top_frame.frame_pointer - kFrameHeaderSize;
-  set_stack_piece_top_stack_pointer(stack_piece, frame->stack_pointer);
-  set_stack_piece_top_frame_pointer(stack_piece, frame->frame_pointer);
-  set_stack_piece_top_capacity(stack_piece, frame->capacity);
-  set_stack_piece_top_flags(stack_piece, frame->flags);
-  return !frame_at_stack_piece_bottom(frame);
+void pop_stack_piece_frame(value_t stack_piece, frame_t *frame) {
+  get_top_stack_piece_frame(stack_piece, frame);
+  CHECK_FALSE("stack piece empty", frame_has_flag(frame, ffStackPieceEmpty));
+  frame_walk_down_stack(frame);
+  set_stack_piece_top_frame(frame);
 }
 
 // Accesses a frame header field, that is, a bookkeeping field below the frame
@@ -306,7 +304,6 @@ size_t get_frame_pc(frame_t *frame) {
       kFrameHeaderPcOffset));
 }
 
-
 value_t frame_push_value(frame_t *frame, value_t value) {
   // Check that the stack is in sync with this frame.
   COND_CHECK_TRUE("push on lower frame", ccWat, is_top_frame(frame));
@@ -348,6 +345,37 @@ value_t frame_get_local(frame_t *frame, size_t index) {
   COND_CHECK_TRUE("local not defined yet", ccOutOfBounds,
       location < frame->stack_pointer);
   return *access_frame_field(frame, location);
+}
+
+
+// --- F r a m e   i t e r a t o r ---
+
+void frame_iter_init(frame_iter_t *iter, value_t stack) {
+  iter->stack = stack;
+  get_stack_top_frame(stack, &iter->current);
+}
+
+frame_t *frame_iter_get_current(frame_iter_t *iter) {
+  return &iter->current;
+}
+
+bool frame_iter_advance(frame_iter_t *iter) {
+  frame_t *current = &iter->current;
+  do {
+    // Advance the current frame to the next one.
+    frame_walk_down_stack(current);
+    if (frame_has_flag(current, ffStackPieceBottom)) {
+      // If this is the bottom frame of a stack piece jump to the previous
+      // piece.
+      current->stack_piece = get_stack_piece_previous(current->stack_piece);
+      get_top_stack_piece_frame(current->stack_piece, current);
+    } else if (frame_has_flag(current, ffStackBottom)) {
+      // If we're at the bottom of the stack there are no more frames.
+      return false;
+    }
+  } while (!frame_has_flag(current, ffOrganic));
+  // We must have reached an organic frame so return true.
+  return true;
 }
 
 
