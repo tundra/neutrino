@@ -230,8 +230,7 @@ static value_t run_stack(value_t ambience, value_t stack) {
         CHECK_FAMILY(ofLambda, lambda);
         value_t space = get_lambda_methods(lambda);
         // Pop off the top frame since we're repeating the previous call.
-        bool popped = pop_organic_stack_frame(stack, &frame);
-        CHECK_TRUE("delegating from bottom frame", popped);
+        drop_to_stack_frame(stack, &frame, ffOrganic);
         interpreter_state_load(&state, &frame);
         // Extract the invocation record from the calling instruction.
         CHECK_EQ("invalid calling instruction", ocInvoke,
@@ -267,8 +266,7 @@ static value_t run_stack(value_t ambience, value_t stack) {
       }
       case ocReturn: {
         value_t result = frame_pop_value(&frame);
-        bool popped = pop_stack_piece_frame(get_stack_top_piece(stack), &frame);
-        CHECK_TRUE("bottomed out", popped);
+        pop_stack_piece_frame(get_stack_top_piece(stack), &frame);
         interpreter_state_load(&state, &frame);
         frame_push_value(&frame, result);
         break;
