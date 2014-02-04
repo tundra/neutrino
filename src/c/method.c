@@ -53,18 +53,17 @@ value_t get_signature_parameter_at(value_t self, size_t index) {
   return get_pair_array_second_at(get_signature_tags(self), index);
 }
 
-void signature_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<signature: ");
+void signature_print_on(value_t self, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<signature: ");
   for (size_t i = 0; i < get_signature_parameter_count(self); i++) {
     if (i > 0)
-      string_buffer_printf(buf, ", ");
-    value_print_inner_on(get_signature_tag_at(self, i), buf, flags, depth - 1);
-    string_buffer_printf(buf, ":");
+      string_buffer_printf(context->buf, ", ");
+    value_print_inner_on(get_signature_tag_at(self, i), context, -1);
+    string_buffer_printf(context->buf, ":");
     value_t param = get_signature_parameter_at(self, i);
-    value_print_inner_on(get_parameter_guard(param), buf, flags, depth - 1);
+    value_print_inner_on(get_parameter_guard(param), context, -1);
   }
-  string_buffer_printf(buf, ">");
+  string_buffer_printf(context->buf, ">");
 }
 
 bool match_result_is_match(match_result_t value) {
@@ -200,13 +199,12 @@ value_t parameter_validate(value_t value) {
   return success();
 }
 
-void parameter_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
+void parameter_print_on(value_t self, print_on_context_t *context) {
   CHECK_FAMILY(ofParameter, self);
-  string_buffer_printf(buf, "#<parameter: gd@");
+  string_buffer_printf(context->buf, "#<parameter: gd@");
   // We know the guard is a guard, not a parameter, so this can't cause a cycle.
-  value_print_inner_on(get_parameter_guard(self), buf, flags, depth - 1);
-  string_buffer_printf(buf, ", op@%i, ix@%i>",
+  value_print_inner_on(get_parameter_guard(self), context, -1);
+  string_buffer_printf(context->buf, ", op@%i, ix@%i>",
       get_parameter_is_optional(self), get_parameter_index(self));
 }
 
@@ -280,22 +278,21 @@ value_t guard_match(value_t guard, value_t value,
   }
 }
 
-void guard_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
+void guard_print_on(value_t self, print_on_context_t *context) {
   CHECK_FAMILY(ofGuard, self);
   switch (get_guard_type(self)) {
     case gtEq:
-      string_buffer_printf(buf, "eq(");
-      value_print_inner_on(get_guard_value(self), buf, flags, depth - 1);
-      string_buffer_printf(buf, ")");
+      string_buffer_printf(context->buf, "eq(");
+      value_print_inner_on(get_guard_value(self), context, -1);
+      string_buffer_printf(context->buf, ")");
       break;
     case gtIs:
-      string_buffer_printf(buf, "is(");
-      value_print_inner_on(get_guard_value(self), buf, flags, depth - 1);
-      string_buffer_printf(buf, ")");
+      string_buffer_printf(context->buf, "is(");
+      value_print_inner_on(get_guard_value(self), context, -1);
+      string_buffer_printf(context->buf, ")");
       break;
     case gtAny:
-      string_buffer_printf(buf, "any()");
+      string_buffer_printf(context->buf, "any()");
       break;
   }
 }
@@ -318,15 +315,14 @@ value_t method_validate(value_t self) {
   return success();
 }
 
-void method_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<method ");
+void method_print_on(value_t self, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<method ");
   value_t signature = get_method_signature(self);
-  value_print_inner_on(signature, buf, flags, depth - 1);
-  string_buffer_printf(buf, " ");
+  value_print_inner_on(signature, context, -1);
+  string_buffer_printf(context->buf, " ");
   value_t syntax = get_method_syntax(self);
-  value_print_inner_on(syntax, buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  value_print_inner_on(syntax, context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
@@ -769,15 +765,14 @@ value_t plankton_set_methodspace_contents(value_t object, runtime_t *runtime,
   return success();
 }
 
-void methodspace_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<methodspace ");
+void methodspace_print_on(value_t self, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<methodspace ");
   value_t methods = get_methodspace_methods(self);
-  value_print_inner_on(methods, buf, flags, depth - 1);
-  string_buffer_printf(buf, " ");
+  value_print_inner_on(methods, context, -1);
+  string_buffer_printf(context->buf, " ");
   value_t imports = get_methodspace_imports(self);
-  value_print_inner_on(imports, buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  value_print_inner_on(imports, context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 
@@ -850,19 +845,18 @@ void print_invocation(value_t record, frame_t *frame) {
   string_buffer_dispose(&buf);
 }
 
-void invocation_record_print_on(value_t self, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
-  string_buffer_printf(buf, "{");
+void invocation_record_print_on(value_t self, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "{");
   size_t arg_count = get_invocation_record_argument_count(self);
   for (size_t i = 0; i < arg_count; i++) {
     if (i > 0)
-      string_buffer_printf(buf, ", ");
+      string_buffer_printf(context->buf, ", ");
     value_t tag = get_invocation_record_tag_at(self, i);
     size_t offset = get_invocation_record_offset_at(self, i);
-    value_print_inner_on(tag, buf, flags, depth - 1);
-    string_buffer_printf(buf, "@%i", offset);
+    value_print_inner_on(tag, context, -1);
+    string_buffer_printf(context->buf, "@%i", offset);
   }
-  string_buffer_printf(buf, "}");
+  string_buffer_printf(context->buf, "}");
 }
 
 value_t ensure_invocation_record_owned_values_frozen(runtime_t *runtime,
@@ -902,41 +896,41 @@ value_t operation_identity_compare(value_t a, value_t b,
       get_operation_value(b), &inner);
 }
 
-void operation_print_on(value_t self, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
+void operation_print_on(value_t self, print_on_context_t *context) {
   value_t value = get_operation_value(self);
-  print_flags_t unquote_flags = SET_ENUM_FLAG(print_flags_t, flags, pfUnquote);
+  print_on_context_t unquote_context = *context;
+  unquote_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
   switch (get_operation_type(self)) {
     case otAssign:
       // Since the operator for the assignment is kind of sort of part of the
       // operator let's not decrease depth. If you make an assignment whose
       // operator is the assignment itself then 1) this will fail and 2) I hate
       // you.
-      value_print_inner_on(value, buf, unquote_flags, depth);
-      string_buffer_printf(buf, ":=");
+      value_print_inner_on(value, &unquote_context, 0);
+      string_buffer_printf(context->buf, ":=");
       break;
     case otCall:
-      string_buffer_printf(buf, "()");
+      string_buffer_printf(context->buf, "()");
       break;
     case otIndex:
-      string_buffer_printf(buf, "[]");
+      string_buffer_printf(context->buf, "[]");
       break;
     case otInfix:
-      string_buffer_printf(buf, ".");
-      value_print_inner_on(value, buf, unquote_flags, depth - 1);
-      string_buffer_printf(buf, "()");
+      string_buffer_printf(context->buf, ".");
+      value_print_inner_on(value, &unquote_context, -1);
+      string_buffer_printf(context->buf, "()");
       break;
     case otPrefix:
-      value_print_inner_on(value, buf, unquote_flags, depth - 1);
-      string_buffer_printf(buf, "()");
+      value_print_inner_on(value, &unquote_context, -1);
+      string_buffer_printf(context->buf, "()");
       break;
     case otProperty:
-      string_buffer_printf(buf, ".");
-      value_print_inner_on(value, buf, unquote_flags, depth - 1);
+      string_buffer_printf(context->buf, ".");
+      value_print_inner_on(value, &unquote_context, -1);
       break;
     case otSuffix:
-      string_buffer_printf(buf, "()");
-      value_print_inner_on(value, buf, unquote_flags, depth - 1);
+      string_buffer_printf(context->buf, "()");
+      value_print_inner_on(value, &unquote_context, -1);
       break;
     default:
       UNREACHABLE("unexpected operation type");

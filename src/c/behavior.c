@@ -307,6 +307,13 @@ value_t value_ordering_compare(value_t a, value_t b) {
 
 // --- P r i n t i n g ---
 
+void print_on_context_init(print_on_context_t *context, string_buffer_t *buf,
+  print_flags_t flags, size_t depth) {
+  context->buf = buf;
+  context->flags = flags;
+  context->depth = depth;
+}
+
 static void integer_print_on(value_t value, string_buffer_t *buf) {
   CHECK_DOMAIN(vdInteger, value);
   string_buffer_printf(buf, "%lli", get_integer_value(value));
@@ -366,33 +373,30 @@ static void condition_print_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, ")>");
 }
 
-static void object_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
+static void object_print_on(value_t value, print_on_context_t *context) {
   family_behavior_t *behavior = get_object_family_behavior(value);
-  (behavior->print_on)(value, buf, flags, depth);
+  (behavior->print_on)(value, context);
 }
 
-static void custom_tagged_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags) {
+static void custom_tagged_print_on(value_t value, print_on_context_t *context) {
   CHECK_DOMAIN(vdCustomTagged, value);
   phylum_behavior_t *behavior = get_custom_tagged_behavior(value);
-  (behavior->print_on)(value, buf, flags);
+  (behavior->print_on)(value, context);
 }
 
-void value_print_on_cycle_detect(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
+void value_print_on_cycle_detect(value_t value, print_on_context_t *context) {
   switch (get_value_domain(value)) {
     case vdInteger:
-      integer_print_on(value, buf);
+      integer_print_on(value, context->buf);
       break;
     case vdObject:
-      object_print_on(value, buf, flags, depth);
+      object_print_on(value, context);
       break;
     case vdCondition:
-      condition_print_on(value, buf);
+      condition_print_on(value, context->buf);
       break;
     case vdCustomTagged:
-      custom_tagged_print_on(value, buf, flags);
+      custom_tagged_print_on(value, context);
       break;
     default:
       UNREACHABLE("value print on");
@@ -400,25 +404,31 @@ void value_print_on_cycle_detect(value_t value, string_buffer_t *buf,
   }
 }
 
-void value_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  value_print_inner_on(value, buf, flags, depth);
+void value_print_on(value_t value, print_on_context_t *context) {
+  value_print_inner_on(value, context, 0);
 }
 
 void value_print_default_on(value_t value, string_buffer_t *buf) {
-  value_print_on(value, buf, pfNone, kDefaultPrintDepth);
+  print_on_context_t context;
+  print_on_context_init(&context, buf, pfNone, kDefaultPrintDepth);
+  value_print_on(value, &context);
 }
 
 void value_print_on_unquoted(value_t value, string_buffer_t *buf) {
-  value_print_on_cycle_detect(value, buf, pfUnquote, kDefaultPrintDepth);
+  print_on_context_t context;
+  print_on_context_init(&context, buf, pfUnquote, kDefaultPrintDepth);
+  value_print_on_cycle_detect(value, &context);
 }
 
-void value_print_inner_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
-  if (depth == 0) {
-    string_buffer_printf(buf, kBottomValuePlaceholder);
+void value_print_inner_on(value_t value, print_on_context_t *context,
+    int32_t delta_depth) {
+  size_t new_depth = context->depth + delta_depth;
+  if (new_depth == 0) {
+    string_buffer_printf(context->buf, kBottomValuePlaceholder);
   } else {
-    value_print_on_cycle_detect(value, buf, flags, depth);
+    print_on_context_t new_context = *context;
+    new_context.depth = new_depth;
+    value_print_on_cycle_detect(value, &new_context);
   }
 }
 

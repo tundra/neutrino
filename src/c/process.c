@@ -29,10 +29,9 @@ value_t stack_piece_validate(value_t value) {
   return success();
 }
 
-void stack_piece_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
+void stack_piece_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofStackPiece, value);
-  string_buffer_printf(buf, "#<stack piece ~%w: st@%i>", value,
+  string_buffer_printf(context->buf, "#<stack piece ~%w: st@%i>", value,
       get_array_length(get_stack_piece_storage(value)));
 }
 

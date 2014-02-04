@@ -348,7 +348,9 @@ void string_buffer_vprintf(string_buffer_t *buf, const char *fmt, va_list argp) 
           value_t value;
           value.encoded = encoded;
           size_t depth = (int_param == -1) ? kDefaultPrintDepth : ((size_t) int_param);
-          value_print_on(value, buf, pfNone, depth);
+          print_on_context_t context;
+          print_on_context_init(&context, buf, pfNone, depth);
+          value_print_on(value, &context);
           break;
         }
         case 'w': {

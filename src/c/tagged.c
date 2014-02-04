@@ -13,7 +13,7 @@
 
 // --- S t a g e   o f f s e t ---
 
-void stage_offset_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
+void stage_offset_print_on(value_t value, print_on_context_t *context) {
   int32_t offset = get_stage_offset_value(value);
   char c;
   if (offset < 0) {
@@ -24,7 +24,7 @@ void stage_offset_print_on(value_t value, string_buffer_t *buf, print_flags_t fl
     offset += 1;
   }
   for (int32_t i = 0; i < offset; i++)
-    string_buffer_putc(buf, c);
+    string_buffer_putc(context->buf, c);
 }
 
 value_t stage_offset_ordering_compare(value_t a, value_t b) {
@@ -38,8 +38,8 @@ value_t stage_offset_ordering_compare(value_t a, value_t b) {
 
 // --- N o t h i n g ---
 
-void nothing_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
-  string_buffer_printf(buf, "#<nothing>");
+void nothing_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<nothing>");
 }
 
 
@@ -47,8 +47,8 @@ void nothing_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) 
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(null);
 
-void null_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
-  string_buffer_printf(buf, "null");
+void null_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "null");
 }
 
 static value_t null_equals(builtin_arguments_t *args) {
@@ -64,12 +64,13 @@ value_t add_null_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   return success();
 }
 
+
 // --- B o o l e a n ---
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(boolean);
 
-void boolean_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
-  string_buffer_printf(buf, get_boolean_value(value) ? "true" : "false");
+void boolean_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, get_boolean_value(value) ? "true" : "false");
 }
 
 value_t boolean_ordering_compare(value_t a, value_t b) {
@@ -94,7 +95,7 @@ value_t add_boolean_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
 
 // --- R e l a t i o n ---
 
-void relation_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
+void relation_print_on(value_t value, print_on_context_t *context) {
   const char *str = NULL;
   switch (get_relation_value(value)) {
     case reLessThan:
@@ -110,7 +111,7 @@ void relation_print_on(value_t value, string_buffer_t *buf, print_flags_t flags)
       str = "?";
       break;
   }
-  string_buffer_printf(buf, str);
+  string_buffer_printf(context->buf, str);
 }
 
 
@@ -118,8 +119,8 @@ void relation_print_on(value_t value, string_buffer_t *buf, print_flags_t flags)
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(float_32);
 
-void float_32_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
-  string_buffer_printf(buf, "%f", get_float_32_value(value));
+void float_32_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "%f", get_float_32_value(value));
 }
 
 value_t float_32_ordering_compare(value_t a, value_t b) {
@@ -207,14 +208,14 @@ value_t add_float_32_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
 
 // --- A m b i e n c e   r e d i r e c t ---
 
-void ambience_redirect_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
-  string_buffer_printf(buf, "#<ambience redirect @+%i>",
+void ambience_redirect_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<ambience redirect @+%i>",
       get_ambience_redirect_offset(value));
 }
 
 
-// --- T i n y   b i t   s e t ---
+// --- F l a g   s e t ---
 
-void flag_set_print_on(value_t value, string_buffer_t *buf, print_flags_t flags) {
-  string_buffer_printf(buf, "flag_set(%i)", get_custom_tagged_payload(value));
+void flag_set_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "flag_set(%i)", get_custom_tagged_payload(value));
 }
