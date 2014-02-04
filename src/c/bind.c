@@ -572,12 +572,11 @@ value_t module_loader_process_options(runtime_t *runtime, value_t self,
   return success();
 }
 
-void module_loader_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<module loader ");
+void module_loader_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<module loader ");
   value_t modules = get_module_loader_modules(value);
-  value_print_inner_on(modules, buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  value_print_inner_on(modules, context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 value_t module_loader_lookup_module(value_t self, value_t path) {
@@ -612,15 +611,14 @@ value_t plankton_set_library_contents(value_t object, runtime_t *runtime,
   return success();
 }
 
-void library_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<library(");
+void library_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<library(");
   value_t display_name = get_library_display_name(value);
-  value_print_inner_on(display_name, buf, flags, depth - 1);
-  string_buffer_printf(buf, ") ");
+  value_print_inner_on(display_name, context, -1);
+  string_buffer_printf(context->buf, ") ");
   value_t modules = get_library_modules(value);
-  value_print_inner_on(modules, buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  value_print_inner_on(modules, context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 
@@ -649,15 +647,14 @@ value_t plankton_set_unbound_module_contents(value_t object, runtime_t *runtime,
   return success();
 }
 
-void unbound_module_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<unbound_module(");
+void unbound_module_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<unbound_module(");
   value_t path = get_unbound_module_path(value);
-  value_print_inner_on(path, buf, flags, depth - 1);
-  string_buffer_printf(buf, ") ");
+  value_print_inner_on(path, context, -1);
+  string_buffer_printf(context->buf, ") ");
   value_t fragments = get_unbound_module_fragments(value);
-  value_print_inner_on(fragments, buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  value_print_inner_on(fragments, context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 
@@ -691,16 +688,15 @@ value_t plankton_set_unbound_module_fragment_contents(value_t object, runtime_t 
   return success();
 }
 
-void unbound_module_fragment_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<unbound_module_fragment(");
+void unbound_module_fragment_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<unbound_module_fragment(");
   value_t stage = get_unbound_module_fragment_stage(value);
-  value_print_inner_on(stage, buf, flags, depth - 1);
-  string_buffer_printf(buf, ") imports: ");
+  value_print_inner_on(stage, context, -1);
+  string_buffer_printf(context->buf, ") imports: ");
   value_t imports = get_unbound_module_fragment_imports(value);
-  value_print_inner_on(imports, buf, flags, depth - 1);
-  string_buffer_printf(buf, ") elements: ");
+  value_print_inner_on(imports, context, -1);
+  string_buffer_printf(context->buf, ") elements: ");
   value_t elements = get_unbound_module_fragment_elements(value);
-  value_print_inner_on(elements, buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  value_print_inner_on(elements, context, -1);
+  string_buffer_printf(context->buf, ">");
 }

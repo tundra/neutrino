@@ -151,11 +151,10 @@ value_t literal_ast_validate(value_t self) {
   return success();
 }
 
-void literal_ast_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
-  string_buffer_printf(buf, "#<");
-  value_print_inner_on(get_literal_ast_value(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+void literal_ast_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<");
+  value_print_inner_on(get_literal_ast_value(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 value_t plankton_new_literal_ast(runtime_t *runtime) {
@@ -199,11 +198,10 @@ value_t array_ast_validate(value_t value) {
   return success();
 }
 
-void array_ast_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
-  string_buffer_printf(buf, "#<array ast: ");
-  value_print_inner_on(get_array_ast_elements(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+void array_ast_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<array ast: ");
+  value_print_inner_on(get_array_ast_elements(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 value_t plankton_set_array_ast_contents(value_t object, runtime_t *runtime,
@@ -334,11 +332,10 @@ value_t sequence_ast_validate(value_t value) {
   return success();
 }
 
-void sequence_ast_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
-  string_buffer_printf(buf, "#<sequence ast: ");
-  value_print_inner_on(get_sequence_ast_values(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+void sequence_ast_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<sequence ast: ");
+  value_print_inner_on(get_sequence_ast_values(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 value_t plankton_set_sequence_ast_contents(value_t object, runtime_t *runtime,
@@ -405,18 +402,14 @@ value_t local_declaration_ast_validate(value_t self) {
   return success();
 }
 
-void local_declaration_ast_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
-  string_buffer_printf(buf, "#<local declaration ast: ");
-  value_print_inner_on(get_local_declaration_ast_symbol(value), buf, flags,
-      depth - 1);
-  string_buffer_printf(buf, " := ");
-  value_print_inner_on(get_local_declaration_ast_value(value), buf, flags,
-      depth - 1);
-  string_buffer_printf(buf, " in ");
-  value_print_inner_on(get_local_declaration_ast_body(value), buf, flags,
-      depth - 1);
-  string_buffer_printf(buf, ">");
+void local_declaration_ast_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<local declaration ast: ");
+  value_print_inner_on(get_local_declaration_ast_symbol(value), context, -1);
+  string_buffer_printf(context->buf, " := ");
+  value_print_inner_on(get_local_declaration_ast_value(value), context, -1);
+  string_buffer_printf(context->buf, " in ");
+  value_print_inner_on(get_local_declaration_ast_body(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 value_t plankton_set_local_declaration_ast_contents(value_t object,
@@ -610,12 +603,10 @@ value_t local_variable_ast_validate(value_t self) {
   return success();
 }
 
-void local_variable_ast_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
-  string_buffer_printf(buf, "#<local variable ast: ");
-  value_print_inner_on(get_local_variable_ast_symbol(value), buf, flags,
-      depth - 1);
-  string_buffer_printf(buf, ">");
+void local_variable_ast_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<local variable ast: ");
+  value_print_inner_on(get_local_variable_ast_symbol(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 value_t plankton_set_local_variable_ast_contents(value_t object,
@@ -677,11 +668,10 @@ value_t symbol_ast_validate(value_t self) {
   return success();
 }
 
-void symbol_ast_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
-  string_buffer_printf(buf, "#<symbol ast: ");
-  value_print_inner_on(get_symbol_ast_name(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+void symbol_ast_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<symbol ast: ");
+  value_print_inner_on(get_symbol_ast_name(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 value_t plankton_set_symbol_ast_contents(value_t object, runtime_t *runtime,
@@ -928,13 +918,12 @@ value_t plankton_new_parameter_ast(runtime_t *runtime) {
       nothing(), nothing());
 }
 
-void parameter_ast_print_on(value_t self, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
+void parameter_ast_print_on(value_t self, print_on_context_t *context) {
   CHECK_FAMILY(ofParameterAst, self);
   value_t guard = get_parameter_ast_guard(self);
-  string_buffer_printf(buf, "#<parameter ast ");
-  value_print_inner_on(guard, buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  string_buffer_printf(context->buf, "#<parameter ast ");
+  value_print_inner_on(guard, context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 
@@ -975,22 +964,21 @@ value_t plankton_new_guard_ast(runtime_t *runtime) {
   return new_heap_guard_ast(runtime, gtAny, nothing());
 }
 
-void guard_ast_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
+void guard_ast_print_on(value_t self, print_on_context_t *context) {
   CHECK_FAMILY(ofGuardAst, self);
   switch (get_guard_ast_type(self)) {
     case gtEq:
-      string_buffer_printf(buf, "eq(");
-      value_print_inner_on(get_guard_ast_value(self), buf, flags, depth - 1);
-      string_buffer_printf(buf, ")");
+      string_buffer_printf(context->buf, "eq(");
+      value_print_inner_on(get_guard_ast_value(self), context, -1);
+      string_buffer_printf(context->buf, ")");
       break;
     case gtIs:
-      string_buffer_printf(buf, "is(");
-      value_print_inner_on(get_guard_ast_value(self), buf, flags, depth - 1);
-      string_buffer_printf(buf, ")");
+      string_buffer_printf(context->buf, "is(");
+      value_print_inner_on(get_guard_ast_value(self), context, -1);
+      string_buffer_printf(context->buf, ")");
       break;
     case gtAny:
-      string_buffer_printf(buf, "any()");
+      string_buffer_printf(context->buf, "any()");
       break;
   }
 }
@@ -1022,16 +1010,15 @@ value_t plankton_new_signature_ast(runtime_t *runtime) {
   return new_heap_signature_ast(runtime, nothing());
 }
 
-void signature_ast_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<signature ast ");
+void signature_ast_print_on(value_t self, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<signature ast ");
   value_t params = get_signature_ast_parameters(self);
   for (size_t i = 0; i < get_array_length(params); i++) {
     if (i > 0)
-      string_buffer_printf(buf, ", ");
-    value_print_inner_on(get_array_at(params, i), buf, flags, depth - 1);
+      string_buffer_printf(context->buf, ", ");
+    value_print_inner_on(get_array_at(params, i), context, -1);
   }
-  string_buffer_printf(buf, ">");
+  string_buffer_printf(context->buf, ">");
 }
 
 
@@ -1063,15 +1050,14 @@ value_t plankton_new_method_ast(runtime_t *runtime) {
       nothing());
 }
 
-void method_ast_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<method ast ");
+void method_ast_print_on(value_t self, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<method ast ");
   value_t signature = get_method_ast_signature(self);
-  value_print_inner_on(signature, buf, flags, depth - 1);
-  string_buffer_printf(buf, " ");
+  value_print_inner_on(signature, context, -1);
+  string_buffer_printf(context->buf, " ");
   value_t body = get_method_ast_body(self);
-  value_print_inner_on(body, buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  value_print_inner_on(body, context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 
@@ -1107,13 +1093,12 @@ value_t plankton_new_namespace_declaration_ast(runtime_t *runtime) {
       nothing(), nothing());
 }
 
-void namespace_declaration_ast_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
-  string_buffer_printf(buf, "#<def ");
-  value_print_inner_on(get_namespace_declaration_ast_path(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, " := ");
-  value_print_inner_on(get_namespace_declaration_ast_value(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+void namespace_declaration_ast_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<def ");
+  value_print_inner_on(get_namespace_declaration_ast_path(value), context, -1);
+  string_buffer_printf(context->buf, " := ");
+  value_print_inner_on(get_namespace_declaration_ast_value(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 
@@ -1141,11 +1126,10 @@ value_t plankton_new_method_declaration_ast(runtime_t *runtime) {
   return new_heap_method_declaration_ast(runtime, nothing());
 }
 
-void method_declaration_ast_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
-  string_buffer_printf(buf, "#<def ");
-  value_print_inner_on(get_method_declaration_ast_method(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+void method_declaration_ast_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<def ");
+  value_print_inner_on(get_method_declaration_ast_method(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 
@@ -1175,13 +1159,12 @@ value_t plankton_new_is_declaration_ast(runtime_t *runtime) {
   return new_heap_is_declaration_ast(runtime, nothing(), nothing());
 }
 
-void is_declaration_ast_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
-  string_buffer_printf(buf, "#<type ");
-  value_print_inner_on(get_is_declaration_ast_subtype(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, " is ");
-  value_print_inner_on(get_is_declaration_ast_supertype(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+void is_declaration_ast_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<type ");
+  value_print_inner_on(get_is_declaration_ast_subtype(value), context, -1);
+  string_buffer_printf(context->buf, " is ");
+  value_print_inner_on(get_is_declaration_ast_supertype(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 
@@ -1210,13 +1193,12 @@ value_t plankton_new_program_ast(runtime_t *runtime) {
       nothing());
 }
 
-void program_ast_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
-  string_buffer_printf(buf, "#<program ast: ");
-  value_print_inner_on(get_program_ast_entry_point(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, " ");
-  value_print_inner_on(get_program_ast_module(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+void program_ast_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<program ast: ");
+  value_print_inner_on(get_program_ast_entry_point(value), context, -1);
+  string_buffer_printf(context->buf, " ");
+  value_print_inner_on(get_program_ast_module(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 

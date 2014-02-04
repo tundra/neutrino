@@ -47,6 +47,12 @@ typedef enum {
   pfUnquote = 0x1
 } print_flags_t;
 
+typedef struct {
+  string_buffer_t *buf;
+  print_flags_t flags;
+  size_t depth;
+} print_on_context_t;
+
 // A collection of "virtual" methods that define how a particular family of
 // objects behave.
 struct family_behavior_t {
@@ -64,10 +70,10 @@ struct family_behavior_t {
   // is NULL.
   value_t (*ordering_compare)(value_t a, value_t b);
   // Writes a string representation of the value on a string buffer. If the
-  // depth is 0 you're not allowed to print other objects recursively, otherwise
-  // it's fine as long as you decrease the depth by 1 when you do.
-  void (*print_on)(value_t value, string_buffer_t *buf, print_flags_t flags,
-      size_t depth);
+  // context's depth is 0 you're not allowed to print other objects recursively,
+  // otherwise it's fine as long as you decrease the depth by 1 when you do.
+  // If you use value_print_inner_on this is handled for you.
+  void (*print_on)(value_t value, print_on_context_t *context);
   // Stores the layout of the given object in the output layout struct.
   void (*get_object_layout)(value_t value, object_layout_t *layout_out);
   // Sets the contents of the given value from the given serialized contents.
@@ -133,11 +139,14 @@ value_t value_identity_compare_cycle_protect(value_t a, value_t b,
 // Don't depend on any particular behavior in that case.
 value_t value_ordering_compare(value_t a, value_t b);
 
+// Sets the fields of a print_on_context.
+void print_on_context_init(print_on_context_t *context, string_buffer_t *buf,
+  print_flags_t flags, size_t depth);
+
 // Prints a human-readable representation of the given value on the given
 // string buffer. The flags control how the value is printed, the depth
 // indicates how deep into the object structure we want to go.
-void value_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth);
+void value_print_on(value_t value, print_on_context_t *context);
 
 // Same as value_print_on but passes default values for the flags and depth.
 void value_print_default_on(value_t value, string_buffer_t *buf);
@@ -159,8 +168,8 @@ void value_print_on_cycle_protect(value_t value, string_buffer_t *buf,
 
 // A shorthand for printing an inner value if the depth allows it and otherwise
 // a marker, "-".
-void value_print_inner_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth);
+void value_print_inner_on(value_t value, print_on_context_t *context,
+    int32_t delta_depth);
 
 // Creates a new empty instance of the given type. Not all types support this,
 // in which case an unsupported behavior condition is returned.
@@ -201,8 +210,7 @@ ID(                                                                            \
 CM(                                                                            \
   value_t family##_ordering_compare(value_t a, value_t b);,                    \
   )                                                                            \
-void family##_print_on(value_t value, string_buffer_t *buf,                    \
-    print_flags_t flags, size_t depth);                                        \
+void family##_print_on(value_t value, print_on_context_t *context);            \
 NL(                                                                            \
   void get_##family##_layout(value_t value, object_layout_t *layout_out);,     \
   )                                                                            \

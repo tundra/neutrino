@@ -100,10 +100,9 @@ VALIDATE(in_family_opt(ofFamily, EXPR))
 
 // Expands to a trivial implementation of print_on.
 #define TRIVIAL_PRINT_ON_IMPL(Family, family)                                  \
-void family##_print_on(value_t value, string_buffer_t *buf,                    \
-    print_flags_t flags, size_t depth) {                                       \
+void family##_print_on(value_t value, print_on_context_t *context) {           \
   CHECK_FAMILY(of##Family, value);                                             \
-  string_buffer_printf(buf, "#<" #family " ~%w>", value.encoded);              \
+  string_buffer_printf(context->buf, "#<" #family " ~%w>", value.encoded);     \
 }                                                                              \
 SWALLOW_SEMI(tpo)
 

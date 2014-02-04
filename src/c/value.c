@@ -494,13 +494,12 @@ value_t string_ordering_compare(value_t a, value_t b) {
   return integer_to_relation(string_compare(&a_contents, &b_contents));
 }
 
-void string_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  if ((flags & pfUnquote) == 0)
-    string_buffer_putc(buf, '"');
-  string_buffer_append_string(buf, value);
-  if ((flags & pfUnquote) == 0)
-    string_buffer_putc(buf, '"');
+void string_print_on(value_t value, print_on_context_t *context) {
+  if ((context->flags & pfUnquote) == 0)
+    string_buffer_putc(context->buf, '"');
+  string_buffer_append_string(context->buf, value);
+  if ((context->flags & pfUnquote) == 0)
+    string_buffer_putc(context->buf, '"');
 }
 
 void string_buffer_append_string(string_buffer_t *buf, value_t value) {
@@ -579,10 +578,9 @@ void get_blob_layout(value_t value, object_layout_t *layout) {
   object_layout_set(layout, size, size);
 }
 
-void blob_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
+void blob_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofBlob, value);
-  string_buffer_printf(buf, "#<blob: [");
+  string_buffer_printf(context->buf, "#<blob: [");
   blob_t blob;
   get_blob_data(value, &blob);
   size_t length = blob_byte_length(&blob);
@@ -590,11 +588,11 @@ void blob_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
   for (size_t i = 0; i < bytes_to_show; i++) {
     static const char *kChars = "0123456789abcdef";
     byte_t byte = blob_byte_at(&blob, i);
-    string_buffer_printf(buf, "%c%c", kChars[byte >> 4], kChars[byte & 0xF]);
+    string_buffer_printf(context->buf, "%c%c", kChars[byte >> 4], kChars[byte & 0xF]);
   }
   if (bytes_to_show < length)
-    string_buffer_printf(buf, "...");
-  string_buffer_printf(buf, "]>");
+    string_buffer_printf(context->buf, "...");
+  string_buffer_printf(context->buf, "]>");
 }
 
 
@@ -669,20 +667,19 @@ void get_array_layout(value_t value, object_layout_t *layout) {
   object_layout_set(layout, size, kArrayElementsOffset);
 }
 
-void array_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  if (depth == 1) {
+void array_print_on(value_t value, print_on_context_t *context) {
+  if (context->depth == 1) {
     // If we can't print the elements anyway we might as well just show the
     // count.
-    string_buffer_printf(buf, "#<array[%i]>", (int) get_array_length(value));
+    string_buffer_printf(context->buf, "#<array[%i]>", (int) get_array_length(value));
   } else {
-    string_buffer_printf(buf, "[");
+    string_buffer_printf(context->buf, "[");
     for (size_t i = 0; i < get_array_length(value); i++) {
       if (i > 0)
-        string_buffer_printf(buf, ", ");
-      value_print_inner_on(get_array_at(value, i), buf, flags, depth - 1);
+        string_buffer_printf(context->buf, ", ");
+      value_print_inner_on(get_array_at(value, i), context, -1);
     }
-    string_buffer_printf(buf, "]");
+    string_buffer_printf(context->buf, "]");
   }
 }
 
@@ -983,15 +980,14 @@ void set_array_buffer_at(value_t self, size_t index, value_t value) {
   set_array_at(get_array_buffer_elements(self), index, value);
 }
 
-void array_buffer_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
-  string_buffer_printf(buf, "%[");
+void array_buffer_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "%[");
   for (size_t i = 0; i < get_array_buffer_length(value); i++) {
     if (i > 0)
-      string_buffer_printf(buf, ", ");
-    value_print_inner_on(get_array_buffer_at(value, i), buf, flags, depth - 1);
+      string_buffer_printf(context->buf, ", ");
+    value_print_inner_on(get_array_buffer_at(value, i), context, -1);
   }
-  string_buffer_printf(buf, "]");
+  string_buffer_printf(context->buf, "]");
 }
 
 value_t get_pair_array_buffer_first_at(value_t self, size_t index) {
@@ -1311,12 +1307,11 @@ value_t ensure_id_hash_map_owned_values_frozen(runtime_t *runtime, value_t self)
   return ensure_frozen(runtime, get_id_hash_map_entry_array(self));
 }
 
-void id_hash_map_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
-  if (depth == 1) {
-    string_buffer_printf(buf, "#<map{%i}>", get_id_hash_map_size(value));
+void id_hash_map_print_on(value_t value, print_on_context_t *context) {
+  if (context->depth == 1) {
+    string_buffer_printf(context->buf, "#<map{%i}>", get_id_hash_map_size(value));
   } else {
-    string_buffer_printf(buf, "{");
+    string_buffer_printf(context->buf, "{");
     id_hash_map_iter_t iter;
     id_hash_map_iter_init(&iter, value);
     bool is_first = true;
@@ -1324,16 +1319,16 @@ void id_hash_map_print_on(value_t value, string_buffer_t *buf,
       if (is_first) {
         is_first = false;
       } else {
-        string_buffer_printf(buf, ", ");
+        string_buffer_printf(context->buf, ", ");
       }
       value_t key;
       value_t value;
       id_hash_map_iter_get_current(&iter, &key, &value);
-      value_print_inner_on(key, buf, flags, depth - 1);
-      string_buffer_printf(buf, ": ");
-      value_print_inner_on(value, buf, flags, depth - 1);
+      value_print_inner_on(key, context, -1);
+      string_buffer_printf(context->buf, ": ");
+      value_print_inner_on(value, context, -1);
     }
-    string_buffer_printf(buf, "}");
+    string_buffer_printf(context->buf, "}");
   }
 }
 
@@ -1363,14 +1358,14 @@ value_t key_ordering_compare(value_t a, value_t b) {
   return compare_signed_integers(get_key_id(a), get_key_id(b));
 }
 
-void key_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
+void key_print_on(value_t value, print_on_context_t *context) {
   value_t display_name = get_key_display_name(value);
   if (is_nothing(display_name))
     display_name = new_integer(get_key_id(value));
-  string_buffer_printf(buf, "%%");
-  value_print_inner_on(display_name, buf,
-      SET_ENUM_FLAG(print_flags_t, flags, pfUnquote), depth - 1);
+  string_buffer_printf(context->buf, "%%");
+  print_on_context_t new_context = *context;
+  new_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
+  value_print_inner_on(display_name, &new_context, -1);
 }
 
 
@@ -1395,15 +1390,13 @@ value_t instance_validate(value_t value) {
   return success();
 }
 
-void instance_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
+void instance_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofInstance, value);
-  string_buffer_printf(buf, "#<instance of ");
-  value_print_inner_on(get_instance_primary_type_field(value), buf, flags,
-      depth - 1);
-  string_buffer_printf(buf, ": ");
-  value_print_inner_on(get_instance_fields(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  string_buffer_printf(context->buf, "#<instance of ");
+  value_print_inner_on(get_instance_primary_type_field(value), context, -1);
+  string_buffer_printf(context->buf, ": ");
+  value_print_inner_on(get_instance_fields(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 value_t plankton_set_instance_contents(value_t instance, runtime_t *runtime,
@@ -1440,12 +1433,11 @@ value_t instance_manager_validate(value_t value) {
   return success();
 }
 
-void instance_manager_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
+void instance_manager_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofInstanceManager, value);
-  string_buffer_printf(buf, "#<instance manager: ");
-  value_print_inner_on(get_instance_manager_display_name(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  string_buffer_printf(context->buf, "#<instance manager: ");
+  value_print_inner_on(get_instance_manager_display_name(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 static value_t instance_manager_new_instance(builtin_arguments_t *args) {
@@ -1475,12 +1467,11 @@ value_t factory_validate(value_t value) {
   return success();
 }
 
-void factory_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
+void factory_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofFactory, value);
-  string_buffer_printf(buf, "#<factory: ");
-  value_print_inner_on(get_factory_constructor(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  string_buffer_printf(context->buf, "#<factory: ");
+  value_print_inner_on(get_factory_constructor(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 
@@ -1497,10 +1488,9 @@ value_t code_block_validate(value_t value) {
   return success();
 }
 
-void code_block_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
+void code_block_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofCodeBlock, value);
-  string_buffer_printf(buf, "#<code block: bc@%i, vp@%i>",
+  string_buffer_printf(context->buf, "#<code block: bc@%i, vp@%i>",
       get_blob_length(get_code_block_bytecode(value)),
       get_array_length(get_code_block_value_pool(value)));
 }
@@ -1524,17 +1514,17 @@ value_t type_validate(value_t value) {
   return success();
 }
 
-void type_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
+void type_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofType, value);
   value_t display_name = get_type_display_name(value);
-  string_buffer_printf(buf, "#<type");
+  string_buffer_printf(context->buf, "#<type");
   if (!is_nothing(display_name)) {
-    string_buffer_printf(buf, " ");
-    value_print_inner_on(display_name, buf,
-        SET_ENUM_FLAG(print_flags_t, flags, pfUnquote), depth - 1);
+    string_buffer_printf(context->buf, " ");
+    print_on_context_t new_context = *context;
+    new_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
+    value_print_inner_on(display_name, &new_context, -1);
   }
-  string_buffer_printf(buf, ">");
+  string_buffer_printf(context->buf, ">");
 }
 
 value_t plankton_new_type(runtime_t *runtime) {
@@ -1693,12 +1683,11 @@ value_t ensure_namespace_owned_values_frozen(runtime_t *runtime, value_t self) {
   return success();
 }
 
-void namespace_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
+void namespace_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofNamespace, value);
-  string_buffer_printf(buf, "#<namespace ");
-  value_print_inner_on(get_namespace_bindings(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  string_buffer_printf(context->buf, "#<namespace ");
+  value_print_inner_on(get_namespace_bindings(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 
@@ -1716,12 +1705,11 @@ value_t module_validate(value_t self) {
   return success();
 }
 
-void module_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
+void module_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofModule, value);
-  string_buffer_printf(buf, "#<module ");
-  value_print_inner_on(get_module_path(value), buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  string_buffer_printf(context->buf, "#<module ");
+  value_print_inner_on(get_module_path(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 value_t get_module_fragment_at(value_t self, value_t stage) {
@@ -1880,16 +1868,15 @@ value_t module_fragment_validate(value_t value) {
   return success();
 }
 
-void module_fragment_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
+void module_fragment_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofModuleFragment, value);
-  string_buffer_printf(buf, "#<fragment ");
+  string_buffer_printf(context->buf, "#<fragment ");
   value_t module = get_module_fragment_module(value);
-  value_print_inner_on(get_module_path(module), buf, flags, depth + 1);
-  string_buffer_printf(buf, " ");
+  value_print_inner_on(get_module_path(module), context, -1);
+  string_buffer_printf(context->buf, " ");
   value_t stage = get_module_fragment_stage(value);
-  value_print_inner_on(stage, buf, flags, depth + 1);
-  string_buffer_printf(buf, ">");
+  value_print_inner_on(stage, context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 bool is_module_fragment_bound(value_t fragment) {
@@ -1911,17 +1898,16 @@ value_t module_fragment_private_validate(value_t value) {
   return success();
 }
 
-void module_fragment_private_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
+void module_fragment_private_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofModuleFragmentPrivate, value);
-  string_buffer_printf(buf, "#<privileged access to ");
+  string_buffer_printf(context->buf, "#<privileged access to ");
   value_t fragment = get_module_fragment_private_owner(value);
   value_t stage = get_module_fragment_stage(fragment);
-  value_print_inner_on(stage, buf, flags, depth + 1);
+  value_print_inner_on(stage, context, -1);
   value_t module = get_module_fragment_module(fragment);
   value_t path = get_module_path(module);
-  value_print_inner_on(path, buf, flags, depth + 1);
-  string_buffer_printf(buf, ">");
+  value_print_inner_on(path, context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 static value_t module_fragment_private_new_type(builtin_arguments_t *args) {
@@ -2011,17 +1997,17 @@ value_t get_path_tail(value_t path) {
   return raw_tail;
 }
 
-void path_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
+void path_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofPath, value);
   if (is_path_empty(value)) {
-    string_buffer_printf(buf, "#<empty path>");
+    string_buffer_printf(context->buf, "#<empty path>");
   } else {
     value_t current = value;
     while (!is_path_empty(current)) {
-      string_buffer_printf(buf, ":");
-      value_print_inner_on(get_path_head(current), buf,
-          SET_ENUM_FLAG(print_flags_t, flags, pfUnquote), depth - 1);
+      string_buffer_printf(context->buf, ":");
+      print_on_context_t new_context = *context;
+      new_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
+      value_print_inner_on(get_path_head(current), &new_context, -1);
       current = get_path_tail(current);
     }
   }
@@ -2094,11 +2080,10 @@ value_t plankton_set_identifier_contents(value_t object, runtime_t *runtime,
   return success();
 }
 
-void identifier_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
+void identifier_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofIdentifier, value);
-  value_print_inner_on(get_identifier_stage(value), buf, flags, depth - 1);
-  value_print_inner_on(get_identifier_path(value), buf, flags, depth - 1);
+  value_print_inner_on(get_identifier_stage(value), context, -1);
+  value_print_inner_on(get_identifier_path(value), context, -1);
 }
 
 value_t identifier_transient_identity_hash(value_t value, hash_stream_t *stream,
@@ -2162,16 +2147,16 @@ value_t plankton_set_function_contents(value_t object, runtime_t *runtime,
   return success();
 }
 
-void function_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<function");
+void function_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<function");
   value_t display_name = get_function_display_name(value);
   if (!is_nothing(display_name)) {
-    string_buffer_printf(buf, " ");
-    value_print_inner_on(display_name, buf,
-        SET_ENUM_FLAG(print_flags_t, flags, pfUnquote), depth - 1);
+    string_buffer_printf(context->buf, " ");
+    print_on_context_t new_context = *context;
+    new_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
+    value_print_inner_on(display_name, &new_context, -1);
   }
-  string_buffer_printf(buf, ">");
+  string_buffer_printf(context->buf, ">");
 }
 
 
@@ -2193,15 +2178,14 @@ value_t plankton_set_unknown_contents(value_t object, runtime_t *runtime,
   return success();
 }
 
-void unknown_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<? ");
+void unknown_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<? ");
   value_t header = get_unknown_header(value);
-  value_print_inner_on(header, buf, flags, depth - 1);
-  string_buffer_printf(buf, " ");
+  value_print_inner_on(header, context, -1);
+  string_buffer_printf(context->buf, " ");
   value_t payload = get_unknown_payload(value);
-  value_print_inner_on(payload, buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  value_print_inner_on(payload, context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 
@@ -2227,12 +2211,11 @@ value_t options_validate(value_t self) {
   return success();
 }
 
-void options_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<options ");
+void options_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<options ");
   value_t elements = get_options_elements(value);
-  value_print_inner_on(elements, buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  value_print_inner_on(elements, context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key,
@@ -2283,18 +2266,17 @@ value_t decimal_fraction_validate(value_t self) {
   return success();
 }
 
-void decimal_fraction_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "#<");
+void decimal_fraction_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<");
   value_t numerator = get_decimal_fraction_numerator(value);
-  value_print_inner_on(numerator, buf, flags, depth - 1);
-  string_buffer_printf(buf, "/10^");
+  value_print_inner_on(numerator, context, -1);
+  string_buffer_printf(context->buf, "/10^");
   value_t denominator = get_decimal_fraction_denominator(value);
-  value_print_inner_on(denominator, buf, flags, depth - 1);
-  string_buffer_printf(buf, "@10^-");
+  value_print_inner_on(denominator, context, -1);
+  string_buffer_printf(context->buf, "@10^-");
   value_t precision = get_decimal_fraction_precision(value);
-  value_print_inner_on(precision, buf, flags, depth - 1);
-  string_buffer_printf(buf, ">");
+  value_print_inner_on(precision, context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 value_t plankton_set_decimal_fraction_contents(value_t object, runtime_t *runtime,
@@ -2323,12 +2305,11 @@ value_t global_field_validate(value_t self) {
   return success();
 }
 
-void global_field_print_on(value_t value, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, ".$");
+void global_field_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, ".$");
   value_t display_name = get_global_field_display_name(value);
-  value_print_inner_on(display_name, buf, flags, depth - 1);
-  string_buffer_printf(buf, "");
+  value_print_inner_on(display_name, context, -1);
+  string_buffer_printf(context->buf, "");
 }
 
 static value_t global_field_set(builtin_arguments_t *args) {
@@ -2365,11 +2346,10 @@ value_t reference_validate(value_t self) {
   return success();
 }
 
-void reference_print_on(value_t self, string_buffer_t *buf, print_flags_t flags,
-    size_t depth) {
-  string_buffer_printf(buf, "&");
+void reference_print_on(value_t self, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "&");
   value_t value = get_reference_value(self);
-  value_print_inner_on(value, buf, flags, depth - 1);
+  value_print_inner_on(value, context, -1);
 }
 
 
