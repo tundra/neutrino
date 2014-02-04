@@ -4,8 +4,15 @@
 import $assert;
 import $core;
 
+def $recurse($n, $thunk) =>
+  if $n == 0
+    then $thunk()
+    else $recurse($n - 1, $thunk);
+
 def $test_capture() {
-  $core:info(@ctrino.get_current_backtrace());
+  $recurse(10, fn {
+    $core:info(@ctrino.get_current_backtrace());
+  });
 }
 
 do {

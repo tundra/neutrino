@@ -140,7 +140,7 @@ TEST(process, walk_stack_frames) {
         ROOT(runtime, empty_array)));
     ASSERT_SUCCESS(frame_push_value(&frame, new_integer(i + 5)));
     frame_iter_t iter;
-    frame_iter_init(&iter, stack);
+    frame_iter_init_from_stack(&iter, stack);
     for (size_t j = 0; j <= i; j++) {
       size_t frame_i = i - j;
       frame_t *current = frame_iter_get_current(&iter);

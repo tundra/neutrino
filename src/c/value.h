@@ -261,6 +261,7 @@ static value_t new_moved_object(value_t target) {
   F(ArrayAst,                array_ast,                 _, _, X, X, _, _, X, _, _)\
   F(ArrayBuffer,             array_buffer,              _, _, _, X, _, _, _, X, X)\
   F(Backtrace,               backtrace,                 _, _, _, X, _, _, _, _, _)\
+  F(BacktraceEntry,          backtrace_entry,           _, _, _, _, _, _, _, _, _)\
   F(Blob,                    blob,                      _, _, _, X, X, _, _, _, _)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X)\
   F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _)\

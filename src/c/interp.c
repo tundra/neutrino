@@ -234,8 +234,8 @@ static value_t run_stack(value_t ambience, value_t stack) {
         interpreter_state_load(&state, &frame);
         // Extract the invocation record from the calling instruction.
         CHECK_EQ("invalid calling instruction", ocInvoke,
-            peek_previous_short(&state, 3, 0));
-        value_t record = peek_previous_value(&state, 3, 1);
+            peek_previous_short(&state, kInvokeOperationSize, 0));
+        value_t record = peek_previous_value(&state, kInvokeOperationSize, 1);
         CHECK_FAMILY(ofInvocationRecord, record);
         // From this point we do the same as invoke except using the space from
         // the lambda rather than the space from the invoke instruction.

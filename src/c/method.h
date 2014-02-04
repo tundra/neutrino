@@ -361,7 +361,7 @@ value_t build_invocation_record_vector(runtime_t *runtime, value_t tags);
 value_t get_invocation_record_argument_at(value_t self, frame_t *frame, size_t index);
 
 // Prints an invocation record with a set of arguments.
-void print_invocation(value_t record, frame_t *frame);
+void print_invocation_on(value_t record, frame_t *frame, string_buffer_t *out);
 
 
 // --- O p e r a t i o n ---

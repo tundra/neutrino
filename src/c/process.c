@@ -356,9 +356,12 @@ value_t frame_get_local(frame_t *frame, size_t index) {
 
 // --- F r a m e   i t e r a t o r ---
 
-void frame_iter_init(frame_iter_t *iter, value_t stack) {
-  iter->stack = stack;
+void frame_iter_init_from_stack(frame_iter_t *iter, value_t stack) {
   get_stack_top_frame(stack, &iter->current);
+}
+
+void frame_iter_init_from_frame(frame_iter_t *iter, frame_t *frame) {
+  iter->current = *frame;
 }
 
 frame_t *frame_iter_get_current(frame_iter_t *iter) {
@@ -425,8 +428,9 @@ value_t add_escape_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
 // --- B a c k t r a c e ---
 
 FIXED_GET_MODE_IMPL(backtrace, vmMutable);
-TRIVIAL_PRINT_ON_IMPL(Backtrace, backtrace);
 GET_FAMILY_PRIMARY_TYPE_IMPL(backtrace);
+
+ACCESSORS_IMPL(Backtrace, backtrace, acInFamily, ofArrayBuffer, Entries, entries);
 
 value_t backtrace_validate(value_t value) {
   VALIDATE_FAMILY(ofBacktrace, value);
@@ -435,4 +439,78 @@ value_t backtrace_validate(value_t value) {
 
 value_t add_backtrace_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   return success();
+}
+
+void backtrace_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
+  CHECK_FAMILY(ofBacktrace, value);
+  value_t entries = get_backtrace_entries(value);
+  for (size_t i = 0; i < get_array_buffer_length(entries); i++) {
+    if (i > 0)
+      string_buffer_putc(buf, '\n');
+    string_buffer_printf(buf, " - %v", get_array_buffer_at(entries, i));
+  }
+}
+
+value_t capture_backtrace(runtime_t *runtime, frame_t *top) {
+  TRY_DEF(frames, new_heap_array_buffer(runtime, 16));
+  frame_iter_t iter;
+  frame_iter_init_from_frame(&iter, top);
+  do {
+    frame_t *frame = frame_iter_get_current(&iter);
+    TRY_DEF(entry, capture_backtrace_entry(runtime, frame));
+    if (!is_nothing(entry))
+      TRY(add_to_array_buffer(runtime, frames, entry));
+  } while (frame_iter_advance(&iter));
+  return new_heap_backtrace(runtime, frames);
+}
+
+
+// --- B a c k t r a c e   e n t r y ---
+
+FIXED_GET_MODE_IMPL(backtrace_entry, vmMutable);
+
+ACCESSORS_IMPL(BacktraceEntry, backtrace_entry, acNoCheck, 0, Invocation,
+    invocation);
+
+value_t backtrace_entry_validate(value_t value) {
+  VALIDATE_FAMILY(ofBacktraceEntry, value);
+  return success();
+}
+
+void backtrace_entry_print_on(value_t value, string_buffer_t *buf,
+    print_flags_t flags, size_t depth) {
+  CHECK_FAMILY(ofBacktraceEntry, value);
+  value_t invocation = get_backtrace_entry_invocation(value);
+  value_print_on(invocation, buf, flags, depth);
+}
+
+value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
+  // Check whether the program counter stored for this frame points immediately
+  // after an invoke instruction. If it does we'll use that instruction to
+  // construct the entry.
+  value_t code_block = get_frame_code_block(frame);
+  value_t bytecode = get_code_block_bytecode(code_block);
+  size_t pc = get_frame_pc(frame);
+  if (pc <= kInvokeOperationSize)
+    return nothing();
+  blob_t data;
+  get_blob_data(bytecode, &data);
+  opcode_t op = blob_short_at(&data, pc - kInvokeOperationSize);
+  if (op != ocInvoke)
+    return nothing();
+  // Okay so we have an invoke we can use. Grab the invocation record.
+  size_t record_index = blob_short_at(&data, pc - kInvokeOperationSize + 1);
+  value_t value_pool = get_code_block_value_pool(code_block);
+  value_t record = get_array_at(value_pool, record_index);
+  // Scan through the record to build the invocation map.
+  TRY_DEF(invocation, new_heap_id_hash_map(runtime, 16));
+  size_t arg_count = get_invocation_record_argument_count(record);
+  for (size_t i = 0;  i < arg_count; i++) {
+    value_t tag = get_invocation_record_tag_at(record, i);
+    value_t arg = get_invocation_record_argument_at(record, frame, i);
+    TRY(set_id_hash_map_at(runtime, invocation, tag, arg));
+  }
+  // Wrap the result in a backtrace entry.
+  return new_heap_backtrace_entry(runtime, invocation);
 }
