@@ -47,9 +47,13 @@ typedef enum {
   pfUnquote = 0x1
 } print_flags_t;
 
+// Data that is passed around when printing objects.
 typedef struct {
+  // The string buffer to print on.
   string_buffer_t *buf;
+  // Flags that control how values are printed.
   print_flags_t flags;
+  // Remaining recursion depth.
   size_t depth;
 } print_on_context_t;
 
@@ -271,7 +275,7 @@ ENUM_SPECIES_DIVISIONS(DECLARE_DIVISION_BEHAVIOR_IMPLS)
 // Declare the functions that implement the behaviors too, that way they can be
 // implemented wherever.
 #define __DECLARE_PHYLUM_FUNCTIONS__(Phylum, phylum, CM, SR)                   \
-void phylum##_print_on(value_t value, string_buffer_t *buf, print_flags_t flags);\
+void phylum##_print_on(value_t value, print_on_context_t *context);            \
 CM(                                                                            \
   value_t phylum##_ordering_compare(value_t a, value_t b);,                    \
   )                                                                            \
@@ -291,7 +295,7 @@ typedef struct {
   // The phylum this behavior belongs to.
   custom_tagged_phylum_t phylum;
   // Writes a string representation of the value on a string buffer.
-  void (*print_on)(value_t value, string_buffer_t *buf, print_flags_t flags);
+  void (*print_on)(value_t value, print_on_context_t *context);
   // Returns a value indicating how a compares relative to b, if this kind of
   // value supports it. If this phylum doesn't support comparison this field
   // is NULL.

@@ -378,11 +378,10 @@ static void object_print_on(value_t value, print_on_context_t *context) {
   (behavior->print_on)(value, context);
 }
 
-static void custom_tagged_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags) {
+static void custom_tagged_print_on(value_t value, print_on_context_t *context) {
   CHECK_DOMAIN(vdCustomTagged, value);
   phylum_behavior_t *behavior = get_custom_tagged_behavior(value);
-  (behavior->print_on)(value, buf, flags);
+  (behavior->print_on)(value, context);
 }
 
 void value_print_on_cycle_detect(value_t value, print_on_context_t *context) {
@@ -397,7 +396,7 @@ void value_print_on_cycle_detect(value_t value, print_on_context_t *context) {
       condition_print_on(value, context->buf);
       break;
     case vdCustomTagged:
-      custom_tagged_print_on(value, context->buf, context->flags);
+      custom_tagged_print_on(value, context);
       break;
     default:
       UNREACHABLE("value print on");
