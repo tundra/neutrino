@@ -394,5 +394,15 @@ INTEGER_ACCESSORS_DECL(operation, type);
 // The optional value that provides data for the operation.
 ACCESSORS_DECL(operation, value);
 
+// Prints the beginning of an invocation for this kind of operation. For
+// instance, the beginning of an infix operation "foo" would be ".foo(". The
+// beginning of an index operation would be "[".
+void operation_print_open_on(value_t self, print_on_context_t *context);
+
+// Prints the end of an invocation for this kind of operation. For instance, the
+// end of an infix operation "foo" would be ")". The end of an index operation
+// would be "]".
+void operation_print_close_on(value_t self, print_on_context_t *context);
+
 
 #endif // _METHOD

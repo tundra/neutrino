@@ -217,13 +217,6 @@ void pop_stack_piece_frame(value_t stack_piece, frame_t *frame) {
   set_stack_piece_top_frame(frame);
 }
 
-void frame_walk_advance(runtime_t *runtime, frame_t *frame) {
-  frame_t current = *frame;
-  frame->frame_pointer = get_frame_previous_frame_pointer(&current);
-  frame->capacity = get_frame_previous_capacity(&current);
-  frame->stack_pointer = current.frame_pointer - kFrameHeaderSize;
-}
-
 // Accesses a frame header field, that is, a bookkeeping field below the frame
 // pointer.
 static value_t *access_frame_header_field(frame_t *frame, size_t offset) {
@@ -441,14 +434,14 @@ value_t add_backtrace_builtin_methods(runtime_t *runtime, safe_value_t s_space) 
   return success();
 }
 
-void backtrace_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
+void backtrace_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofBacktrace, value);
+  string_buffer_printf(context->buf, "--- backtrace ---");
   value_t entries = get_backtrace_entries(value);
   for (size_t i = 0; i < get_array_buffer_length(entries); i++) {
-    if (i > 0)
-      string_buffer_putc(buf, '\n');
-    string_buffer_printf(buf, " - %v", get_array_buffer_at(entries, i));
+    string_buffer_putc(context->buf, '\n');
+    string_buffer_printf(context->buf, " - ");
+    value_print_inner_on(get_array_buffer_at(entries, i), context, -1);
   }
 }
 
@@ -478,11 +471,82 @@ value_t backtrace_entry_validate(value_t value) {
   return success();
 }
 
-void backtrace_entry_print_on(value_t value, string_buffer_t *buf,
-    print_flags_t flags, size_t depth) {
+void backtrace_entry_invocation_print_on(value_t invocation, print_on_context_t *context) {
+  value_t subject = new_not_found_condition();
+  value_t selector = new_not_found_condition();
+  id_hash_map_iter_t iter;
+  id_hash_map_iter_init(&iter, invocation);
+  while (id_hash_map_iter_advance(&iter)) {
+    value_t key;
+    value_t value;
+    id_hash_map_iter_get_current(&iter, &key, &value);
+    if (in_family(ofKey, key)) {
+      size_t id = get_key_id(key);
+      if (id == 0)
+        subject = value;
+      else if (id == 1)
+        selector = value;
+    }
+  }
+  // Print the subject as the first thing.
+  if (!is_condition(ccNotFound, subject))
+    value_print_inner_on(subject, context, -1);
+  // Begin the selector.
+  if (in_family(ofOperation, selector)) {
+    operation_print_open_on(selector, context);
+  } else if (!is_condition(ccNotFound, selector)) {
+    value_print_inner_on(selector, context, -1);
+  }
+  // Number of positional arguments.
+  size_t posc;
+  // Number of arguments in total discounting the subject and selector.
+  size_t argc;
+  // Print the positional arguments.
+  for (posc = argc = 0; true; posc++, argc++) {
+    value_t key = new_integer(posc);
+    value_t value = get_id_hash_map_at(invocation, key);
+    if (is_condition(ccNotFound, value))
+      break;
+    if (argc > 0)
+      string_buffer_printf(context->buf, ", ");
+    value_print_inner_on(value, context, -1);
+  }
+  // Print any remaining arguments. Note that this will print them in
+  // nondeterministic order since the order depends on the iteration order of
+  // the map. This is bad.
+  id_hash_map_iter_init(&iter, invocation);
+  while (id_hash_map_iter_advance(&iter)) {
+    value_t key;
+    value_t value;
+    id_hash_map_iter_get_current(&iter, &key, &value);
+    if (in_family(ofKey, key)) {
+      size_t id = get_key_id(key);
+      if (id == 0 || id == 1)
+        // Don't print the subject/selector again.
+        continue;
+    } else if (in_domain(vdInteger, key) && get_integer_value(key) < posc) {
+      // Don't print any of the positional arguments again.
+      continue;
+    }
+    if (argc > 0)
+      string_buffer_printf(context->buf, ", ");
+    // Unquote the value such that string tags are unquoted as you would expect.
+    print_on_context_t new_context = *context;
+    new_context.flags = pfUnquote;
+    value_print_inner_on(key, &new_context, -1);
+    string_buffer_printf(context->buf, ": ");
+    value_print_inner_on(value, context, -1);
+    argc++;
+  }
+  // End the selector.
+  if (in_family(ofOperation, selector))
+    operation_print_close_on(selector, context);
+}
+
+void backtrace_entry_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofBacktraceEntry, value);
   value_t invocation = get_backtrace_entry_invocation(value);
-  value_print_on(invocation, buf, flags, depth);
+  backtrace_entry_invocation_print_on(invocation, context);
 }
 
 value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {

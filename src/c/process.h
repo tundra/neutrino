@@ -271,6 +271,12 @@ static const size_t kBacktraceEntryInvocationOffset = OBJECT_FIELD_OFFSET(0);
 // The invocation record for this entry.
 ACCESSORS_DECL(backtrace_entry, invocation);
 
+// Print the given invocation map on the given context. This is really an
+// implementation detail of how backtrace entries print themselves but it's
+// tricky enough that it makes sense to be able to test as a separate thing.
+void backtrace_entry_invocation_print_on(value_t invocation,
+    print_on_context_t *context);
+
 // Creates a backtrace entry from the given stack frame. If no entry can be
 // created nothing is returned.
 value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame);

@@ -1609,7 +1609,6 @@ value_t ensure_argument_map_trie_owned_values_frozen(runtime_t *runtime,
 // --- L a m b d a ---
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(lambda);
-TRIVIAL_PRINT_ON_IMPL(Lambda, lambda);
 
 ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, ofMethodspace, Methods, methods);
 ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, ofArray, Outers, outers);
@@ -1619,6 +1618,11 @@ value_t lambda_validate(value_t self) {
   VALIDATE_FAMILY_OPT(ofMethodspace, get_lambda_methods(self));
   VALIDATE_FAMILY_OPT(ofArray, get_lambda_outers(self));
   return success();
+}
+
+void lambda_print_on(value_t value, print_on_context_t *context) {
+  CHECK_FAMILY(ofLambda, value);
+  string_buffer_printf(context->buf, "\u03BB~%w", value); // Unicode lambda.
 }
 
 value_t emit_lambda_call_trampoline(assembler_t *assm) {
@@ -2148,15 +2152,12 @@ value_t plankton_set_function_contents(value_t object, runtime_t *runtime,
 }
 
 void function_print_on(value_t value, print_on_context_t *context) {
-  string_buffer_printf(context->buf, "#<function");
   value_t display_name = get_function_display_name(value);
   if (!is_nothing(display_name)) {
-    string_buffer_printf(context->buf, " ");
     print_on_context_t new_context = *context;
     new_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
     value_print_inner_on(display_name, &new_context, -1);
   }
-  string_buffer_printf(context->buf, ">");
 }
 
 

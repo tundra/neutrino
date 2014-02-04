@@ -385,6 +385,15 @@ value_t expand_variant_to_string(runtime_t *runtime, variant_value_t *value) {
   return new_heap_string(runtime, &chars);
 }
 
+value_t expand_variant_to_infix(runtime_t *runtime, variant_value_t *value) {
+  TRY_DEF(str, expand_variant_to_string(runtime, value));
+  return new_heap_operation(runtime, afFreeze, otInfix, str);
+}
+
+value_t expand_variant_to_index(runtime_t *runtime, variant_value_t *value) {
+  return new_heap_operation(runtime, afFreeze, otIndex, nothing());
+}
+
 value_t expand_variant_to_bool(runtime_t *runtime, variant_value_t *value) {
   return new_boolean(value->as_bool);
 }
@@ -403,6 +412,17 @@ value_t expand_variant_to_array(runtime_t *runtime, variant_value_t *value) {
   for (size_t i = 0; i < length; i++) {
     TRY_DEF(element, C(value->as_array.elements[i]));
     set_array_at(result, i, element);
+  }
+  return result;
+}
+
+value_t expand_variant_to_map(runtime_t *runtime, variant_value_t *value) {
+  size_t length = value->as_array.length;
+  TRY_DEF(result, new_heap_id_hash_map(runtime, length));
+  for (size_t i = 0; i < length; i += 2) {
+    TRY_DEF(key, C(value->as_array.elements[i]));
+    TRY_DEF(val, C(value->as_array.elements[i + 1]));
+    TRY(set_id_hash_map_at(runtime, result, key, val));
   }
   return result;
 }
