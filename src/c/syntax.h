@@ -283,8 +283,12 @@ ACCESSORS_DECL(namespace_declaration_ast, value);
 
 // --- M e t h o d   d e c l a r a t i o n   a s t ---
 
-static const size_t kMethodDeclarationAstSize = OBJECT_SIZE(1);
-static const size_t kMethodDeclarationAstMethodOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kMethodDeclarationAstSize = OBJECT_SIZE(2);
+static const size_t kMethodDeclarationAstAnnotationsOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kMethodDeclarationAstMethodOffset = OBJECT_FIELD_OFFSET(1);
+
+// The list of annotations attached to this declaration.
+ACCESSORS_DECL(method_declaration_ast, annotations);
 
 // The method object describing the method being declared.
 ACCESSORS_DECL(method_declaration_ast, method);

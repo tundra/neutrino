@@ -405,4 +405,14 @@ void operation_print_open_on(value_t self, print_on_context_t *context);
 void operation_print_close_on(value_t self, print_on_context_t *context);
 
 
+// --- B u i l t i n   m a r k e r ---
+
+static const size_t kBuiltinMarkerSize = OBJECT_SIZE(1);
+static const size_t kBuiltinMarkerNameOffset = OBJECT_FIELD_OFFSET(0);
+
+// The name of the builtin that applies to the element annotated with this
+// marker.
+ACCESSORS_DECL(builtin_marker, name);
+
+
 #endif // _METHOD

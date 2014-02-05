@@ -627,6 +627,14 @@ value_t new_heap_invocation_record(runtime_t *runtime, alloc_flags_t flags,
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_builtin_marker(runtime_t *runtime, value_t name) {
+  size_t size = kBuiltinMarkerSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, builtin_marker_species)));
+  set_builtin_marker_name(result, name);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- S y n t a x ---
 
@@ -807,10 +815,12 @@ value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t annotatio
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_method_declaration_ast(runtime_t *runtime, value_t method) {
+value_t new_heap_method_declaration_ast(runtime_t *runtime, value_t annotations,
+    value_t method) {
   size_t size = kMethodDeclarationAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, method_declaration_ast_species)));
+  set_method_declaration_ast_annotations(result, annotations);
   set_method_declaration_ast_method(result, method);
   return post_create_sanity_check(result, size);
 }

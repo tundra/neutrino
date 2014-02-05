@@ -106,6 +106,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, subject_key), new_heap_key(runtime, RAW_RSTR(roots, subject)));
   TRY_SET(RAW_ROOT(roots, selector_key), new_heap_key(runtime, RAW_RSTR(roots, selector)));
   TRY_SET(RAW_ROOT(roots, builtin_methodspace), new_heap_methodspace(runtime));
+  TRY_SET(RAW_ROOT(roots, builtin_impls), new_heap_id_hash_map(runtime, 256));
   TRY_SET(RAW_ROOT(roots, op_call), new_heap_operation(runtime, afFreeze, otCall, null()));
   TRY_SET(RAW_ROOT(roots, ctrino), new_heap_ctrino(runtime));
   TRY_SET(RAW_ROOT(roots, stack_bottom_code_block),
@@ -218,6 +219,7 @@ value_t roots_validate(value_t roots) {
   VALIDATE_OBJECT(ofKey, RAW_ROOT(roots, selector_key));
   VALIDATE_CHECK_EQ(1, get_key_id(RAW_ROOT(roots, selector_key)));
   VALIDATE_OBJECT(ofMethodspace, RAW_ROOT(roots, builtin_methodspace));
+  VALIDATE_OBJECT(ofIdHashMap, RAW_ROOT(roots, builtin_impls));
   VALIDATE_OBJECT(ofOperation, RAW_ROOT(roots, op_call));
   VALIDATE_CHECK_EQ(otCall, get_operation_type(RAW_ROOT(roots, op_call)));
 
@@ -329,6 +331,9 @@ static value_t runtime_soft_init(runtime_t *runtime) {
     safe_value_t s_builtin_methodspace = protect(pool,
         ROOT(runtime, builtin_methodspace));
     E_TRY(add_methodspace_builtin_methods(runtime, s_builtin_methodspace));
+    safe_value_t s_builtin_impls = protect(pool,
+        ROOT(runtime, builtin_impls));
+    E_TRY(add_builtin_implementations(runtime, s_builtin_impls));
     E_TRY(init_plankton_environment_mapping(&runtime->plankton_mapping, runtime));
     E_RETURN(runtime_validate(runtime));
   E_FINALLY();
@@ -649,4 +654,15 @@ value_t get_modal_species_sibling_with_mode(runtime_t *runtime, value_t species,
   CHECK_EQ("incorrect sibling family", get_species_instance_family(species),
       get_species_instance_family(result));
   return result;
+}
+
+value_t runtime_get_builtin_implementation(runtime_t *runtime, value_t name) {
+  value_t builtins = ROOT(runtime, builtin_impls);
+  value_t impl = get_id_hash_map_at(builtins, name);
+  if (is_condition(ccNotFound, impl)) {
+    WARN("Unknown builtin %v", name);
+    return new_unknown_builtin_condition();
+  } else {
+    return impl;
+  }
 }

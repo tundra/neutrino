@@ -19,6 +19,7 @@
   F(ast,                        "ast")                                         \
   F(bindings,                   "bindings")                                    \
   F(body,                       "body")                                        \
+  F(builtin,                    "builtin")                                     \
   F(core,                       "core")                                        \
   F(ctrino,                     "ctrino")                                      \
   F(denominator,                "denominator")                                 \
@@ -68,6 +69,7 @@
 #define ENUM_ROOT_SINGLETONS(F)                                                \
   F(any_guard)                                                                 \
   F(builtin_methodspace)                                                       \
+  F(builtin_impls)                                                             \
   F(ctrino)                                                                    \
   F(empty_array_buffer)                                                        \
   F(empty_array)                                                               \
@@ -261,6 +263,10 @@ void runtime_toggle_fuzzing(runtime_t *runtime, bool enable);
 // before calling this function.
 value_t get_modal_species_sibling_with_mode(runtime_t *runtime, value_t species,
     value_mode_t mode);
+
+// Returns the code block that implements the builtin method with the given name
+// or a condition if the name is unknown.
+value_t runtime_get_builtin_implementation(runtime_t *runtime, value_t name);
 
 
 // Initialize this root set.

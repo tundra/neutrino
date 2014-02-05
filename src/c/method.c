@@ -1009,3 +1009,22 @@ value_t plankton_set_operation_contents(value_t object, runtime_t *runtime,
   set_operation_value(object, value);
   return success();
 }
+
+
+// --- B u i l t i n   m a r k e r ---
+
+ACCESSORS_IMPL(BuiltinMarker, builtin_marker, acNoCheck, 0, Name, name);
+GET_FAMILY_PRIMARY_TYPE_IMPL(builtin_marker);
+NO_BUILTIN_METHODS(builtin_marker);
+FIXED_GET_MODE_IMPL(builtin_marker, vmMutable);
+
+value_t builtin_marker_validate(value_t self) {
+  VALIDATE_FAMILY(ofBuiltinMarker, self);
+  return success();
+}
+
+void builtin_marker_print_on(value_t self, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<builtin_marker ");
+  value_print_inner_on(get_builtin_marker_name(self), context, -1);
+  string_buffer_printf(context->buf, ">");
+}

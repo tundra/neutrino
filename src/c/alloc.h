@@ -244,6 +244,10 @@ value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signatu
 value_t new_heap_invocation_record(runtime_t *runtime, alloc_flags_t flags,
     value_t argument_vector);
 
+// Creates a new builtin marker corresponding to the builtin with the given
+// name.
+value_t new_heap_builtin_marker(runtime_t *runtime, value_t name);
+
 
 // --- S y n t a x ---
 
@@ -312,7 +316,8 @@ value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t annotatio
     value_t path, value_t value);
 
 // Creates a new method declaration that declares the given method.
-value_t new_heap_method_declaration_ast(runtime_t *runtime, value_t method);
+value_t new_heap_method_declaration_ast(runtime_t *runtime, value_t annotations,
+    value_t method);
 
 // Creates a new is declaration that declares the given subtype to have the
 // given supertype.

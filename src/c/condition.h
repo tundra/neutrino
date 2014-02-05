@@ -215,4 +215,10 @@ static value_t new_not_found_condition() {
   return new_condition(ccNotFound);
 }
 
+// Creates a new condition indicating that no builtin with a given name is known
+// by the runtime.
+static value_t new_unknown_builtin_condition() {
+  return new_condition(ccUnknownBuiltin);
+}
+
 #endif // _CONDITION
