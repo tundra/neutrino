@@ -108,6 +108,25 @@ value_t add_methodspace_builtin_method(runtime_t *runtime, value_t space,
   E_END_TRY_FINALLY();
 }
 
+value_t add_builtin_method_impl(runtime_t *runtime, value_t map,
+    const char *name_c_str, size_t arg_count, builtin_method_t impl) {
+  CHECK_FAMILY(ofIdHashMap, map);
+  E_BEGIN_TRY_FINALLY();
+    assembler_t assm;
+    E_TRY(assembler_init(&assm, runtime, nothing(),
+        scope_lookup_callback_get_bottom()));
+    E_TRY(assembler_emit_builtin(&assm, impl));
+    E_TRY(assembler_emit_return(&assm));
+    E_TRY_DEF(code_block, assembler_flush(&assm));
+    string_t name_str;
+    string_init(&name_str, name_c_str);
+    E_TRY_DEF(name, new_heap_string(runtime, &name_str));
+    E_RETURN(set_id_hash_map_at(runtime, map, name, code_block));
+  E_FINALLY();
+    assembler_dispose(&assm);
+  E_END_TRY_FINALLY();
+}
+
 value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
     value_t receiver, builtin_operation_t operation, size_t posc, bool allow_extra,
     custom_method_emitter_t emitter) {
@@ -146,5 +165,10 @@ value_t add_methodspace_builtin_methods(runtime_t *runtime, safe_value_t s_self)
   ENUM_CUSTOM_TAGGED_PHYLUMS(__EMIT_PHYLUM_BUILTINS_CALL__)
 #undef __EMIT_PHYLUM_BUILTINS_CALL__
 
+  return success();
+}
+
+value_t add_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  TRY(add_integer_builtin_implementations(runtime, s_map));
   return success();
 }

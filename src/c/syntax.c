@@ -1106,24 +1106,28 @@ void namespace_declaration_ast_print_on(value_t value, print_on_context_t *conte
 
 FIXED_GET_MODE_IMPL(method_declaration_ast, vmMutable);
 
+ACCESSORS_IMPL(MethodDeclarationAst, method_declaration_ast, acInFamilyOpt,
+    ofArray, Annotations, annotations);
 ACCESSORS_IMPL(MethodDeclarationAst, method_declaration_ast,
     acInFamilyOpt, ofMethodAst, Method, method);
 
 value_t method_declaration_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofMethodDeclarationAst, self);
+  VALIDATE_FAMILY_OPT(ofArray, get_method_declaration_ast_annotations(self));
   VALIDATE_FAMILY_OPT(ofMethodAst, get_method_declaration_ast_method(self));
   return success();
 }
 
 value_t plankton_set_method_declaration_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, method);
+  UNPACK_PLANKTON_MAP(contents, method, annotations);
+  set_method_declaration_ast_annotations(object, annotations);
   set_method_declaration_ast_method(object, method);
   return success();
 }
 
 value_t plankton_new_method_declaration_ast(runtime_t *runtime) {
-  return new_heap_method_declaration_ast(runtime, nothing());
+  return new_heap_method_declaration_ast(runtime, nothing(), nothing());
 }
 
 void method_declaration_ast_print_on(value_t value, print_on_context_t *context) {

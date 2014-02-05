@@ -165,7 +165,7 @@ class Parser(object):
     selector = self.name_as_selector(op)
     body = self.parse_method_tail()
     signature = ast.Signature([subject, selector] + params)
-    return ast.MethodDeclaration(ast.Method(signature, body))
+    return ast.MethodDeclaration(annots, ast.Method(signature, body))
 
   # Parse the tail of a method, the part after the parameters.
   def parse_method_tail(self):
@@ -176,6 +176,9 @@ class Parser(object):
       return body
     elif self.at_punctuation('{'):
       return self.parse_sequence_expression()
+    elif self.at_punctuation(';'):
+      self.expect_statement_delimiter(True)
+      return ast.Literal(None)
     else:
       raise self.new_syntax_error()
 
@@ -212,7 +215,7 @@ class Parser(object):
   def parse_annotations(self):
     annots = []
     while self.at_atomic_start():
-      annot = self.parse_atomic_expression()
+      annot = self.parse_operator_expression()
       annots.append(annot)
     return annots
 

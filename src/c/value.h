@@ -67,6 +67,7 @@ int get_value_domain_ordinal(value_domain_t domain);
   F(OutOfBounds)                                                               \
   F(OutOfMemory)                                                               \
   F(SystemError)                                                               \
+  F(UnknownBuiltin)                                                            \
   F(UnsupportedBehavior)                                                       \
   F(ValidationFailed)                                                          \
   F(SafePoolFull)                                                              \
@@ -263,6 +264,7 @@ static value_t new_moved_object(value_t target) {
   F(Backtrace,               backtrace,                 _, _, _, X, _, _, _, _, _)\
   F(BacktraceEntry,          backtrace_entry,           _, _, _, _, _, _, _, _, _)\
   F(Blob,                    blob,                      _, _, _, X, X, _, _, _, _)\
+  F(BuiltinMarker,           builtin_marker,            _, _, _, X, _, _, _, _, _)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X)\
   F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _)\
   F(CurrentModuleAst,        current_module_ast,        _, _, X, _, _, _, X, _, _)\

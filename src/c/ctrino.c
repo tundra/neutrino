@@ -135,6 +135,12 @@ static value_t ctrino_get_current_backtrace(builtin_arguments_t *args) {
   return capture_backtrace(runtime, frame);
 }
 
+static value_t builtin_call(builtin_arguments_t *args) {
+  runtime_t *runtime = get_builtin_runtime(args);
+  value_t name = get_builtin_argument(args, 0);
+  return new_heap_builtin_marker(runtime, name);
+}
+
 value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   DEF_INFIX(infix_fail, "fail");
   ADD_BUILTIN(ctrino, infix_fail, 0, ctrino_fail);
@@ -156,5 +162,7 @@ value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(ctrino, infix_to_string, 1, ctrino_to_string);
   DEF_INFIX(infix_get_current_backtrace, "get_current_backtrace");
   ADD_BUILTIN(ctrino, infix_get_current_backtrace, 0, ctrino_get_current_backtrace);
+  DEF_CALL(call);
+  ADD_BUILTIN(ctrino, call, 1, builtin_call);
   return success();
 }

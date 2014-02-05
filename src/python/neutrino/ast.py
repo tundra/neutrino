@@ -549,8 +549,10 @@ class Method(object):
 @plankton.serializable(plankton.EnvironmentReference.path("ast", "MethodDeclaration"))
 class MethodDeclaration(object):
 
+  @plankton.field("annotations")
   @plankton.field("method")
-  def __init__(self, method):
+  def __init__(self, annotations, method):
+    self.annotations = annotations
     self.method = method
 
   def get_stage(self):
@@ -560,6 +562,8 @@ class MethodDeclaration(object):
     return visitor.visit_method_declaration(self)
 
   def traverse(self, visitor):
+    for annot in self.annotations:
+      annot.accept(visitor)
     self.method.accept(visitor)
 
   def apply(self, module):
@@ -591,7 +595,7 @@ class FunctionDeclaration(object):
     value_fragment = module.get_or_create_fragment(stage - 1);
     value_fragment.ensure_function_declared(self.ident)
     method_fragment = module.get_or_create_fragment(stage)
-    method_fragment.add_element(MethodDeclaration(self.method))
+    method_fragment.add_element(MethodDeclaration([], self.method))
 
   def __str__(self):
     return "(function-declaration %s %s)" % (self.method.signature, self.method.body)

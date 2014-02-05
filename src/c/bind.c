@@ -57,6 +57,14 @@ static value_t binding_context_ensure_fragment_entry(binding_context_t *context,
   return get_id_hash_map_at(stage_map, stage);
 }
 
+static value_t run_expression_until_condition(value_t ambience, value_t fragment,
+    value_t expr) {
+  runtime_t *runtime = get_ambience_runtime(ambience);
+  TRY_DEF(code_block, compile_expression(runtime, expr,
+      fragment, scope_lookup_callback_get_bottom()));
+  return run_code_block_until_condition(ambience, code_block);
+}
+
 // Adds a namespace binding based on the given declaration ast in the given
 // fragment's namespace.
 static value_t apply_namespace_declaration(value_t ambience, value_t decl,
@@ -77,12 +85,30 @@ static value_t apply_namespace_declaration(value_t ambience, value_t decl,
 }
 
 // Executes a method declaration on the given fragment.
-static value_t apply_method_declaration(runtime_t *runtime, value_t decl,
+static value_t apply_method_declaration(value_t ambience, value_t decl,
     value_t fragment) {
   CHECK_FAMILY(ofMethodDeclarationAst, decl);
   CHECK_FAMILY(ofModuleFragment, fragment);
+  runtime_t *runtime = get_ambience_runtime(ambience);
+  // Look for the :builtin annotation on this method.
+  value_t annots = get_method_declaration_ast_annotations(decl);
+  value_t builtin_name = new_not_found_condition();
+  for (size_t i = 0; i < get_array_length(annots); i++) {
+    value_t annot = get_array_at(annots, i);
+    TRY_DEF(value, run_expression_until_condition(ambience, fragment, annot));
+    if (in_family(ofBuiltinMarker, value))
+      builtin_name = get_builtin_marker_name(value);
+  }
+  // Compile the method whether it's a builtin or not. This way we can reuse
+  // the compilation code for both cases and just patch up the result after
+  // the fact if it's a builtin.
   value_t method_ast = get_method_declaration_ast_method(decl);
   TRY_DEF(method, compile_method_ast_to_method(runtime, method_ast, fragment));
+  if (!is_condition(ccNotFound, builtin_name)) {
+    // This is a builtin so patch the method with the builtin implementation.
+    TRY_DEF(impl_code, runtime_get_builtin_implementation(runtime, builtin_name));
+    set_method_code(method, impl_code);
+  }
   value_t methodspace = get_module_fragment_methodspace(fragment);
   TRY(add_methodspace_method(runtime, methodspace, method));
   return success();
@@ -111,7 +137,7 @@ static value_t apply_unbound_fragment_element(value_t ambience, value_t element,
     case ofNamespaceDeclarationAst:
       return apply_namespace_declaration(ambience, element, fragment);
     case ofMethodDeclarationAst:
-      return apply_method_declaration(get_ambience_runtime(ambience), element, fragment);
+      return apply_method_declaration(ambience, element, fragment);
     case ofIsDeclarationAst:
       return apply_is_declaration(get_ambience_runtime(ambience), element, fragment);
     default:

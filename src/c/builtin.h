@@ -87,6 +87,11 @@ value_t add_methodspace_builtin_method(runtime_t *runtime, value_t space,
     value_t receiver, builtin_operation_t operation, size_t arg_count,
     builtin_method_t method);
 
+// Add a builtin method implementation to the given map with the given name,
+// number of arguments, and implementation.
+value_t add_builtin_method_impl(runtime_t *runtime, value_t map,
+    const char *name_c_str, size_t arg_count, builtin_method_t method);
+
 struct assembler_t;
 
 // Signature of a function that implements a built-in method.
@@ -101,5 +106,8 @@ value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
 
 // Adds all built-in methods to the given method space.
 value_t add_methodspace_builtin_methods(runtime_t *runtime, safe_value_t s_self);
+
+// Adds the builtin method implementations to the given map.
+value_t add_builtin_implementations(runtime_t *runtime, safe_value_t s_map);
 
 #endif // _BUILTIN

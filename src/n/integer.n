@@ -8,3 +8,7 @@ def type @Integer is @Object;
 
 ## Returns the successor value of this integer, that is, this value plus one.
 def ($this is @Integer).successor => ($this + 1);
+
+## Returns the negated value of this integer.
+@builtin("Integer.negate")
+def ($this is @Integer).negate;
