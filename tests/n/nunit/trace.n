@@ -10,9 +10,7 @@ def $recurse($n, $thunk) =>
     else $recurse($n - 1, $thunk);
 
 def $test_capture() {
-  $recurse(10, fn {
-    $core:info(@ctrino.get_current_backtrace());
-  });
+  $recurse(10, fn => @ctrino.get_current_backtrace());
 }
 
 do {
