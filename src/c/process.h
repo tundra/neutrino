@@ -170,13 +170,15 @@ bool frame_has_flag(frame_t *frame, frame_flag_t flag);
 typedef struct {
   // The currently active frame.
   frame_t current;
-  // The stack being iterated.
-  value_t stack;
 } frame_iter_t;
 
 // Initializes the given frame iterator. After this call the current frame will
 // be the top frame of the stack.
-void frame_iter_init(frame_iter_t *iter, value_t stack);
+void frame_iter_init_from_stack(frame_iter_t *iter, value_t stack);
+
+// Initializes the given frame iterator. After this call the current frame will
+// be the one passed as an argument.
+void frame_iter_init_from_frame(frame_iter_t *iter, frame_t *frame);
 
 // Returns the current frame. The result is well-defined until the first call to
 // frame_iter_advance that returns false.
@@ -241,6 +243,38 @@ ACCESSORS_DECL(escape, stack_piece);
 // The stack pointer that indicates where the stored state is located on the
 // stack piece.
 ACCESSORS_DECL(escape, stack_pointer);
+
+
+// --- B a c k t r a c e ---
+
+static const size_t kBacktraceSize = OBJECT_SIZE(1);
+static const size_t kBacktraceEntriesOffset = OBJECT_FIELD_OFFSET(0);
+
+// The array buffer of backtrace entries.
+ACCESSORS_DECL(backtrace, entries);
+
+// Creates a new backtrace by traversing the stack starting from the given
+// frame.
+value_t capture_backtrace(runtime_t *runtime, frame_t *frame);
+
+
+// --- B a c k t r a c e   e n t r y ---
+
+static const size_t kBacktraceEntrySize = OBJECT_SIZE(1);
+static const size_t kBacktraceEntryInvocationOffset = OBJECT_FIELD_OFFSET(0);
+
+// The invocation record for this entry.
+ACCESSORS_DECL(backtrace_entry, invocation);
+
+// Print the given invocation map on the given context. This is really an
+// implementation detail of how backtrace entries print themselves but it's
+// tricky enough that it makes sense to be able to test as a separate thing.
+void backtrace_entry_invocation_print_on(value_t invocation,
+    print_on_context_t *context);
+
+// Creates a backtrace entry from the given stack frame. If no entry can be
+// created nothing is returned.
+value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame);
 
 
 #endif // _PROCESS

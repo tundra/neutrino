@@ -118,6 +118,12 @@ static value_t ctrino_to_string(builtin_arguments_t *args) {
   E_END_TRY_FINALLY();
 }
 
+static value_t ctrino_get_current_backtrace(builtin_arguments_t *args) {
+  runtime_t *runtime = get_builtin_runtime(args);
+  frame_t *frame = args->frame;
+  return capture_backtrace(runtime, frame);
+}
+
 value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   DEF_INFIX(infix_fail, "fail");
   ADD_BUILTIN(ctrino, infix_fail, 0, ctrino_fail);
@@ -135,5 +141,7 @@ value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(ctrino, infix_new_instance_manager, 1, ctrino_new_instance_manager);
   DEF_INFIX(infix_to_string, "to_string");
   ADD_BUILTIN(ctrino, infix_to_string, 1, ctrino_to_string);
+  DEF_INFIX(infix_get_current_backtrace, "get_current_backtrace");
+  ADD_BUILTIN(ctrino, infix_get_current_backtrace, 0, ctrino_get_current_backtrace);
   return success();
 }

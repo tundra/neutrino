@@ -1,0 +1,18 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def $recurse($n, $thunk) =>
+  if $n == 0
+    then $thunk()
+    else $recurse($n - 1, $thunk);
+
+def $test_capture() {
+  $recurse(10, fn => @ctrino.get_current_backtrace());
+}
+
+do {
+  $test_capture();
+}

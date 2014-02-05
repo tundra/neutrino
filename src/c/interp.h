@@ -43,6 +43,9 @@ typedef enum {
 #undef __DECLARE_OPCODE__
 } opcode_t;
 
+// The number of values in an invoke operation.
+static const size_t kInvokeOperationSize = 3;
+
 // Returns the string name of the opcode with the given index.
 const char *get_opcode_name(opcode_t opcode);
 

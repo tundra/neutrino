@@ -825,24 +825,17 @@ value_t get_invocation_record_argument_at(value_t self, frame_t *frame, size_t i
   return frame_peek_value(frame, offset);
 }
 
-void print_invocation(value_t record, frame_t *frame) {
-  string_buffer_t buf;
-  string_buffer_init(&buf);
+void print_invocation_on(value_t record, frame_t *frame, string_buffer_t *buf) {
   size_t arg_count = get_invocation_record_argument_count(record);
-  string_buffer_printf(&buf, "{");
+  string_buffer_printf(buf, "{");
   for (size_t i = 0;  i < arg_count; i++) {
     value_t tag = get_invocation_record_tag_at(record, i);
     value_t arg = get_invocation_record_argument_at(record, frame, i);
     if (i > 0)
-      string_buffer_printf(&buf, ", ");
-    string_buffer_printf(&buf, "%v: %v", tag, arg);
+      string_buffer_printf(buf, ", ");
+    string_buffer_printf(buf, "%v: %v", tag, arg);
   }
-  string_buffer_printf(&buf, "}");
-  string_t str;
-  string_buffer_flush(&buf, &str);
-  printf("%s\n", str.chars);
-  fflush(stdout);
-  string_buffer_dispose(&buf);
+  string_buffer_printf(buf, "}");
 }
 
 void invocation_record_print_on(value_t self, print_on_context_t *context) {
@@ -935,6 +928,73 @@ void operation_print_on(value_t self, print_on_context_t *context) {
     default:
       UNREACHABLE("unexpected operation type");
       break;
+  }
+}
+
+void operation_print_open_on(value_t self, print_on_context_t *context) {
+  value_t value = get_operation_value(self);
+  print_on_context_t unquote_context = *context;
+  unquote_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
+  switch (get_operation_type(self)) {
+  case otAssign:
+    // Since the operator for the assignment is kind of sort of part of the
+    // operator let's not decrease depth. If you make an assignment whose
+    // operator is the assignment itself then 1) this will fail and 2) I hate
+    // you.
+    value_print_inner_on(value, &unquote_context, 0);
+    string_buffer_printf(context->buf, ":=(");
+    break;
+  case otCall:
+    string_buffer_printf(context->buf, "(");
+    break;
+  case otIndex:
+    string_buffer_printf(context->buf, "[");
+    break;
+  case otInfix:
+    string_buffer_printf(context->buf, ".");
+    value_print_inner_on(value, &unquote_context, -1);
+    string_buffer_printf(context->buf, "(");
+    break;
+  case otPrefix:
+    value_print_inner_on(value, &unquote_context, -1);
+    string_buffer_printf(context->buf, "(");
+    break;
+  case otProperty:
+    string_buffer_printf(context->buf, ".");
+    value_print_inner_on(value, &unquote_context, -1);
+    break;
+  case otSuffix:
+    string_buffer_printf(context->buf, "(");
+    break;
+  default:
+    UNREACHABLE("unexpected operation type");
+    break;
+  }
+}
+
+void operation_print_close_on(value_t self, print_on_context_t *context) {
+  value_t value = get_operation_value(self);
+  print_on_context_t unquote_context = *context;
+  unquote_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
+  switch (get_operation_type(self)) {
+  case otAssign:
+  case otCall:
+  case otInfix:
+  case otPrefix:
+    string_buffer_printf(context->buf, ")");
+    break;
+  case otIndex:
+    string_buffer_printf(context->buf, "]");
+    break;
+  case otProperty:
+    break;
+  case otSuffix:
+    string_buffer_printf(context->buf, ")");
+    value_print_inner_on(value, &unquote_context, -1);
+    break;
+  default:
+    UNREACHABLE("unexpected operation type");
+    break;
   }
 }
 

@@ -15,11 +15,12 @@ file_names = [
   "for.n",
   "function.n",
   "hanoi.n",
+  "if.n",
   "integer.n",
   "interval.n",
-  "if.n",
   "is.n",
   "module.n",
+  "trace.n",
   "var.n",
   "while.n",
 ]

@@ -161,7 +161,7 @@ static void validate_lookup_error(void *unused, log_entry_t *entry) {
   // Ignore any logging to stdout, we're only interested in the error.
   if (entry->destination == lsStdout)
     return;
-  const char *prefix = "%<condition: LookupError(NoMatch)>: {%subject: #<lambda";
+  const char *prefix = "%<condition: LookupError(NoMatch)>: {%subject: \u03BB~";
   string_t expected;
   string_init(&expected, prefix);
   string_t message = *entry->message;

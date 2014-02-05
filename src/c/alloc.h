@@ -209,6 +209,12 @@ value_t new_heap_stack(runtime_t *runtime, size_t initial_capacity);
 value_t new_heap_escape(runtime_t *runtime, value_t is_live, value_t stack_piece,
     value_t stack_pointer);
 
+// Creates a new backtrace object with the given set of entries.
+value_t new_heap_backtrace(runtime_t *runtime, value_t entries);
+
+// Creates a new backtrace entry.
+value_t new_heap_backtrace_entry(runtime_t *runtime, value_t invocation);
+
 
 // --- M e t h o d ---
 

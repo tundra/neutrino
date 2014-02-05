@@ -226,10 +226,13 @@ typedef union {
 value_t expand_variant_to_integer(runtime_t *runtime, variant_value_t *value);
 value_t expand_variant_to_stage_offset(runtime_t *runtime, variant_value_t *value);
 value_t expand_variant_to_string(runtime_t *runtime, variant_value_t *value);
+value_t expand_variant_to_infix(runtime_t *runtime, variant_value_t *value);
+value_t expand_variant_to_index(runtime_t *runtime, variant_value_t *value);
 value_t expand_variant_to_bool(runtime_t *runtime, variant_value_t *value);
 value_t expand_variant_to_null(runtime_t *runtime, variant_value_t *value);
 value_t expand_variant_to_value(runtime_t *runtime, variant_value_t *value);
 value_t expand_variant_to_array(runtime_t *runtime, variant_value_t *value);
+value_t expand_variant_to_map(runtime_t *runtime, variant_value_t *value);
 value_t expand_variant_to_array_buffer(runtime_t *runtime, variant_value_t *value);
 value_t expand_variant_to_path(runtime_t *runtime, variant_value_t *value);
 value_t expand_variant_to_identifier(runtime_t *runtime, variant_value_t *value);
@@ -375,6 +378,12 @@ variant_value_t var_array(test_arena_t *arena, size_t elmc, ...);
 // Creates a variant string with the given value.
 #define vStr(V) vVariant(expand_variant_to_string, var_c_str(V))
 
+// Creates a variant infix operation with the given string value.
+#define vInfix(V) vVariant(expand_variant_to_infix, var_c_str(V))
+
+// Creates a variant index operation.
+#define vIndex() vVariant(expand_variant_to_index, var_bool(0))
+
 // Creates a variant bool with the given value.
 #define vBool(V) vVariant(expand_variant_to_bool, var_bool(V))
 
@@ -394,6 +403,10 @@ variant_value_t var_array(test_arena_t *arena, size_t elmc, ...);
 
 // Creates a variant array with the given length and elements.
 #define vArray(...) vVariant(expand_variant_to_array, vArrayPayload(__VA_ARGS__))
+
+// Creates a variant map with the given elements, passed as alternating keys and
+// values.
+#define vMap(...) vVariant(expand_variant_to_map, vArrayPayload(__VA_ARGS__))
 
 // Creates a variant array with the given length and elements.
 #define vArrayBuffer(...) vVariant(expand_variant_to_array_buffer, vArrayPayload(__VA_ARGS__))

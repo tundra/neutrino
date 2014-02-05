@@ -140,7 +140,7 @@ TEST(process, walk_stack_frames) {
         ROOT(runtime, empty_array)));
     ASSERT_SUCCESS(frame_push_value(&frame, new_integer(i + 5)));
     frame_iter_t iter;
-    frame_iter_init(&iter, stack);
+    frame_iter_init_from_stack(&iter, stack);
     for (size_t j = 0; j <= i; j++) {
       size_t frame_i = i - j;
       frame_t *current = frame_iter_get_current(&iter);
@@ -221,3 +221,74 @@ TEST(process, get_local) {
 
   DISPOSE_RUNTIME();
 }
+
+static void assert_invocation_format(const char *expected_c_str, value_t invocation) {
+  // Print the invocation on a temporary buffer.
+  print_on_context_t context;
+  string_buffer_t buffer;
+  string_buffer_init(&buffer);
+  print_on_context_init(&context, &buffer, 0, 99);
+  backtrace_entry_invocation_print_on(invocation, &context);
+  // Flush the output and the expected values into string_ts.
+  string_t found;
+  string_buffer_flush(&buffer, &found);
+  string_t expected_str;
+  string_init(&expected_str, expected_c_str);
+  ASSERT_STREQ(&expected_str, &found);
+  string_buffer_dispose(&buffer);
+}
+
+TEST(process, backtrace_entry_printing) {
+  CREATE_RUNTIME();
+  CREATE_TEST_ARENA();
+
+  variant_t *subject = vValue(ROOT(runtime, subject_key));
+  variant_t *selector = vValue(ROOT(runtime, selector_key));
+
+  assert_invocation_format("10", C(vMap(
+      subject, vInt(10))));
+  assert_invocation_format("11.foo()", C(vMap(
+      subject, vInt(11),
+      selector, vInfix("foo"))));
+  assert_invocation_format(".fxx()", C(vMap(
+      selector, vInfix("fxx"))));
+  assert_invocation_format("12.bar(\"blah\")", C(vMap(
+      subject, vInt(12),
+      selector, vInfix("bar"),
+      vInt(0), vStr("blah"))));
+  assert_invocation_format("13.baz(\"blah\", \"blob\")", C(vMap(
+      subject, vInt(13),
+      selector, vInfix("baz"),
+      vInt(0), vStr("blah"),
+      vInt(1), vStr("blob"))));
+  assert_invocation_format("13[0]", C(vMap(
+      subject, vInt(13),
+      selector, vIndex(),
+      vInt(0), vInt(0))));
+  assert_invocation_format("14.quux(\"blah\", 2: \"blob\")", C(vMap(
+      subject, vInt(14),
+      selector, vInfix("quux"),
+      vInt(0), vStr("blah"),
+      vInt(2), vStr("blob"))));
+  assert_invocation_format("15.quux(1: \"blah\", 2: \"blob\")", C(vMap(
+      subject, vInt(15),
+      selector, vInfix("quux"),
+      vInt(1), vStr("blah"),
+      vInt(2), vStr("blob"))));
+  assert_invocation_format("16.quux(a: \"blob\")", C(vMap(
+      subject, vInt(16),
+      selector, vInfix("quux"),
+      vStr("a"), vStr("blob"))));
+  assert_invocation_format("17[row: 8]", C(vMap(
+      subject, vInt(17),
+      selector, vIndex(),
+      vStr("row"), vInt(8))));
+  assert_invocation_format("18.quux(-1: \"blob\")", C(vMap(
+      subject, vInt(18),
+      selector, vInfix("quux"),
+      vInt(-1), vStr("blob"))));
+
+  DISPOSE_TEST_ARENA();
+  DISPOSE_RUNTIME();
+}
+
