@@ -137,20 +137,6 @@ static value_t integer_print(builtin_arguments_t *args) {
 }
 
 value_t add_integer_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  DEF_INFIX(infix_plus, "+");
-  ADD_BUILTIN(integer, infix_plus, 1, integer_plus_integer);
-  DEF_INFIX(infix_minus, "-");
-  ADD_BUILTIN(integer, infix_minus, 1, integer_minus_integer);
-  DEF_INFIX(infix_times, "*");
-  ADD_BUILTIN(integer, infix_times, 1, integer_times_integer);
-  DEF_INFIX(infix_divide, "/");
-  ADD_BUILTIN(integer, infix_divide, 1, integer_divide_integer);
-  DEF_INFIX(infix_modulo, "%");
-  ADD_BUILTIN(integer, infix_modulo, 1, integer_modulo_integer);
-  DEF_INFIX(infix_equals, "==");
-  ADD_BUILTIN(integer, infix_equals, 1, integer_equals_integer);
-  DEF_INFIX(infix_less, "<");
-  ADD_BUILTIN(integer, infix_less, 1, integer_less_integer);
   DEF_PREFIX(prefix_negate, "-");
   ADD_BUILTIN(integer, prefix_negate, 0, integer_negate);
   DEF_INFIX(infix_print, "print");
@@ -160,6 +146,13 @@ value_t add_integer_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
 
 value_t add_integer_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   ADD_BUILTIN_IMPL("Integer.negate", 0, integer_negate);
+  ADD_BUILTIN_IMPL("int+int", 1, integer_plus_integer);
+  ADD_BUILTIN_IMPL("int-int", 1, integer_minus_integer);
+  ADD_BUILTIN_IMPL("int*int", 1, integer_times_integer);
+  ADD_BUILTIN_IMPL("int/int", 1, integer_divide_integer);
+  ADD_BUILTIN_IMPL("int%int", 1, integer_modulo_integer);
+  ADD_BUILTIN_IMPL("int==int", 1, integer_equals_integer);
+  ADD_BUILTIN_IMPL("int<int", 1, integer_less_integer);
   return success();
 }
 
