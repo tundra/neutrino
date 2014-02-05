@@ -440,7 +440,7 @@ void backtrace_print_on(value_t value, print_on_context_t *context) {
   value_t entries = get_backtrace_entries(value);
   for (size_t i = 0; i < get_array_buffer_length(entries); i++) {
     string_buffer_putc(context->buf, '\n');
-    string_buffer_printf(context->buf, " - ");
+    string_buffer_printf(context->buf, "- ");
     value_print_inner_on(get_array_buffer_at(entries, i), context, -1);
   }
 }
