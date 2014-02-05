@@ -283,7 +283,10 @@ TEST(process, backtrace_entry_printing) {
       subject, vInt(17),
       selector, vIndex(),
       vStr("row"), vInt(8))));
-
+  assert_invocation_format("18.quux(-1: \"blob\")", C(vMap(
+      subject, vInt(18),
+      selector, vInfix("quux"),
+      vInt(-1), vStr("blob"))));
 
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();

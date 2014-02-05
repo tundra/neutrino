@@ -524,8 +524,10 @@ void backtrace_entry_invocation_print_on(value_t invocation, print_on_context_t 
       if (id == 0 || id == 1)
         // Don't print the subject/selector again.
         continue;
-    } else if (in_domain(vdInteger, key) && get_integer_value(key) < posc) {
-      // Don't print any of the positional arguments again.
+    } else if (in_domain(vdInteger, key) && ((size_t) get_integer_value(key)) < posc) {
+      // Don't print any of the positional arguments again. The size_t cast of
+      // the integer value means that negative values will become very large
+      // positive ones and hence compare greater than posc.
       continue;
     }
     if (argc > 0)
