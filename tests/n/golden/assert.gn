@@ -8,6 +8,10 @@ do $assert:that(true);
 import $assert;
 do $assert:that(false);
 -- OUTPUT:
+--- backtrace ---
+- ctrino.get_current_backtrace()
+- :fail()
+- :that(false)
 Error: @ctrino.fail()
 -- END
 
@@ -21,5 +25,10 @@ do $assert:equals(1, 1);
 import $assert;
 do $assert:equals(1, 2);
 -- OUTPUT:
+--- backtrace ---
+- ctrino.get_current_backtrace()
+- :fail()
+- :that(false)
+- :equals(1, 2)
 Error: @ctrino.fail()
 -- END

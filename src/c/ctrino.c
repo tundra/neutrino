@@ -9,13 +9,16 @@
 #include "value-inl.h"
 
 
-TRIVIAL_PRINT_ON_IMPL(Ctrino, ctrino);
 GET_FAMILY_PRIMARY_TYPE_IMPL(ctrino);
 FIXED_GET_MODE_IMPL(ctrino, vmDeepFrozen);
 
 value_t ctrino_validate(value_t self) {
   VALIDATE_FAMILY(ofCtrino, self);
   return success();
+}
+
+void ctrino_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "ctrino");
 }
 
 static value_t ctrino_fail(builtin_arguments_t *args) {
@@ -100,6 +103,14 @@ static value_t ctrino_log_info(builtin_arguments_t *args) {
   return null();
 }
 
+static value_t ctrino_print_ln(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t value = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofCtrino, self);
+  print_ln("%9v", value);
+  return null();
+}
+
 static value_t ctrino_to_string(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t value = get_builtin_argument(args, 0);
@@ -131,6 +142,8 @@ value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   ADD_BUILTIN(ctrino, infix_get_builtin_type, 1, ctrino_get_builtin_type);
   DEF_INFIX(infix_log_info, "log_info");
   ADD_BUILTIN(ctrino, infix_log_info, 1, ctrino_log_info);
+  DEF_INFIX(infix_print_ln, "print_ln");
+  ADD_BUILTIN(ctrino, infix_print_ln, 1, ctrino_print_ln);
   DEF_INFIX(infix_new_array, "new_array");
   ADD_BUILTIN(ctrino, infix_new_array, 1, ctrino_new_array);
   DEF_INFIX(infix_new_float_32, "new_float_32");
