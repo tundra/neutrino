@@ -84,6 +84,22 @@ static value_t apply_namespace_declaration(value_t ambience, value_t decl,
   return success();
 }
 
+// Validates that it is safe to bind the given implementation to the given
+// surface-level method.
+static value_t validate_builtin_method_binding(value_t method, value_t impl) {
+  value_t signature = get_method_signature(method);
+  size_t posc = get_signature_parameter_count(signature)
+      - 1  // subject
+      - 1; // selector
+  size_t required_posc = get_builtin_implementation_argument_count(impl);
+  if (posc != required_posc) {
+    ERROR("Argument count mismatch (found %i, expected %i) binding %9v to %9v",
+        posc, required_posc, impl, signature);
+    return new_condition(ccBuiltinBindingFailed);
+  }
+  return success();
+}
+
 // Executes a method declaration on the given fragment.
 static value_t apply_method_declaration(value_t ambience, value_t decl,
     value_t fragment) {
@@ -106,7 +122,9 @@ static value_t apply_method_declaration(value_t ambience, value_t decl,
   TRY_DEF(method, compile_method_ast_to_method(runtime, method_ast, fragment));
   if (!is_condition(ccNotFound, builtin_name)) {
     // This is a builtin so patch the method with the builtin implementation.
-    TRY_DEF(impl_code, runtime_get_builtin_implementation(runtime, builtin_name));
+    TRY_DEF(impl, runtime_get_builtin_implementation(runtime, builtin_name));
+    value_t impl_code = get_builtin_implementation_code(impl);
+    TRY(validate_builtin_method_binding(method, impl));
     set_method_code(method, impl_code);
   }
   value_t methodspace = get_module_fragment_methodspace(fragment);

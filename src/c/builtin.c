@@ -121,7 +121,9 @@ value_t add_builtin_method_impl(runtime_t *runtime, value_t map,
     string_t name_str;
     string_init(&name_str, name_c_str);
     E_TRY_DEF(name, new_heap_string(runtime, &name_str));
-    E_RETURN(set_id_hash_map_at(runtime, map, name, code_block));
+    E_TRY_DEF(builtin, new_heap_builtin_implementation(runtime, afFreeze,
+        name, code_block, arg_count));
+    E_RETURN(set_id_hash_map_at(runtime, map, name, builtin));
   E_FINALLY();
     assembler_dispose(&assm);
   E_END_TRY_FINALLY();
@@ -147,8 +149,6 @@ value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
 }
 
 value_t add_methodspace_builtin_methods(runtime_t *runtime, safe_value_t s_self) {
-  TRY(add_integer_builtin_methods(runtime, s_self));
-
   // The family built-ins.
 #define __EMIT_FAMILY_BUILTINS_CALL__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\
   SR(                                                                          \

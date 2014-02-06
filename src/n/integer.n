@@ -10,8 +10,8 @@ def type @Integer is @Object;
 def ($this is @Integer).successor => ($this + 1);
 
 ## Returns the negated value of this integer.
-@builtin("Integer.negate")
-def ($this is @Integer).negate;
+@builtin("-int")
+def -($this is @Integer);
 
 ## Returns the sum of two integers.
 @builtin("int+int")
@@ -40,3 +40,8 @@ def ($this is @Integer)==($that is @Integer);
 ## Returns true iff the left integers is strictly smaller than the right.
 @builtin("int<int")
 def ($this is @Integer)<($that is @Integer);
+
+## Prints this integer on stdout.
+## TODO: This one definitely needs to go.
+@builtin("int.print()")
+def ($this is @Integer).print();

@@ -246,9 +246,6 @@ OW(                                                                            \
 ENUM_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
 #undef __DECLARE_FAMILY_FUNCTIONS__
 
-// Integers don't have a family but have built-in methods too.
-value_t add_integer_builtin_methods(runtime_t *runtime, safe_value_t s_space);
-
 // Add the integer built-ins to the given map.
 value_t add_integer_builtin_implementations(runtime_t *runtime, safe_value_t s_map);
 

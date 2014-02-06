@@ -248,6 +248,12 @@ value_t new_heap_invocation_record(runtime_t *runtime, alloc_flags_t flags,
 // name.
 value_t new_heap_builtin_marker(runtime_t *runtime, value_t name);
 
+// Creates a new builtin implementation object where the implementation is given
+// by the given code object and whose surface binding must take exactly posc
+// positional arguments.
+value_t new_heap_builtin_implementation(runtime_t *runtime, alloc_flags_t flags,
+    value_t name, value_t code, size_t posc);
+
 
 // --- S y n t a x ---
 

@@ -635,6 +635,18 @@ value_t new_heap_builtin_marker(runtime_t *runtime, value_t name) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_builtin_implementation(runtime_t *runtime, alloc_flags_t flags,
+    value_t name, value_t code, size_t posc) {
+  size_t size = kBuiltinImplementationSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_builtin_implementation_species)));
+  set_builtin_implementation_name(result, name);
+  set_builtin_implementation_code(result, code);
+  set_builtin_implementation_argument_count(result, posc);
+  TRY(post_process_result(runtime, result, flags));
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- S y n t a x ---
 

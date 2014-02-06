@@ -1013,10 +1013,11 @@ value_t plankton_set_operation_contents(value_t object, runtime_t *runtime,
 
 // --- B u i l t i n   m a r k e r ---
 
-ACCESSORS_IMPL(BuiltinMarker, builtin_marker, acNoCheck, 0, Name, name);
 GET_FAMILY_PRIMARY_TYPE_IMPL(builtin_marker);
 NO_BUILTIN_METHODS(builtin_marker);
 FIXED_GET_MODE_IMPL(builtin_marker, vmMutable);
+
+ACCESSORS_IMPL(BuiltinMarker, builtin_marker, acNoCheck, 0, Name, name);
 
 value_t builtin_marker_validate(value_t self) {
   VALIDATE_FAMILY(ofBuiltinMarker, self);
@@ -1024,7 +1025,34 @@ value_t builtin_marker_validate(value_t self) {
 }
 
 void builtin_marker_print_on(value_t self, print_on_context_t *context) {
+  CHECK_FAMILY(ofBuiltinMarker, self);
   string_buffer_printf(context->buf, "#<builtin_marker ");
   value_print_inner_on(get_builtin_marker_name(self), context, -1);
+  string_buffer_printf(context->buf, ">");
+}
+
+
+// --- B u i l t i n   i m p l e m e n t a t i o n ---
+
+FIXED_GET_MODE_IMPL(builtin_implementation, vmMutable);
+
+ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation, acInFamily,
+    ofString, Name, name);
+ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation, acInFamily,
+    ofCodeBlock, Code, code);
+INTEGER_ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation,
+    ArgumentCount, argument_count);
+
+value_t builtin_implementation_validate(value_t self) {
+  VALIDATE_FAMILY(ofBuiltinImplementation, self);
+  VALIDATE_FAMILY(ofString, get_builtin_implementation_name(self));
+  VALIDATE_FAMILY(ofCodeBlock, get_builtin_implementation_code(self));
+  return success();
+}
+
+void builtin_implementation_print_on(value_t self, print_on_context_t *context) {
+  CHECK_FAMILY(ofBuiltinImplementation, self);
+  string_buffer_printf(context->buf, "#<builtin_implementation ");
+  value_print_inner_on(get_builtin_implementation_name(self), context, -1);
   string_buffer_printf(context->buf, ">");
 }
