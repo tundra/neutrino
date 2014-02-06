@@ -120,6 +120,7 @@ class Parser(object):
   def parse_toplevel_declaration(self, annots):
     self.expect_word('def')
     subject = None
+    is_prefix = False
     if self.at_type(Token.IDENTIFIER):
       ident = self.current().value
       if not ident.path.is_singular():
@@ -148,11 +149,19 @@ class Parser(object):
       supertype = self.parse_atomic_expression()
       self.expect_statement_delimiter(True)
       return ast.IsDeclaration(subtype, supertype)
+    elif self.at_type(Token.OPERATION):
+      name = self.expect_type(Token.OPERATION)
+      subject = self.parse_subject()
+      is_prefix = True
     else:
       subject = self.parse_subject()
-    name = self.expect_type(Token.OPERATION)
+    if not is_prefix:
+      name = self.expect_type(Token.OPERATION)
     params = self.parse_parameters()
-    if params is None:
+    if is_prefix:
+      op = data.Operation.prefix(name)
+      params = []
+    elif params is None:
       op = data.Operation.property(name)
       params = []
     else:

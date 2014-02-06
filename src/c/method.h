@@ -415,4 +415,22 @@ static const size_t kBuiltinMarkerNameOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(builtin_marker, name);
 
 
+// --- B u i l t i n   i m p l e m e n t a t i o n ---
+
+static const size_t kBuiltinImplementationSize = OBJECT_SIZE(3);
+static const size_t kBuiltinImplementationNameOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kBuiltinImplementationCodeOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kBuiltinImplementationArgumentCountOffset = OBJECT_FIELD_OFFSET(2);
+
+// The name of this builtin.
+ACCESSORS_DECL(builtin_implementation, name);
+
+// The code block that implements this builtin.
+ACCESSORS_DECL(builtin_implementation, code);
+
+// The number of positional arguments expected by the implementation of this
+// builtin.
+INTEGER_ACCESSORS_DECL(builtin_implementation, argument_count);
+
+
 #endif // _METHOD
