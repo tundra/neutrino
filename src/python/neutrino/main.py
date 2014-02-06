@@ -195,7 +195,7 @@ class Main(object):
       tokens = token.tokenize(expr)
       unit = parse_thunk(tokens)
       # Implicitly import the core module into the oldest stage. There needs to
-      # better model for this but for not it helps make builtin methods slightly
+      # better model for this but for now it helps make builtin methods slightly
       # less magic.
       unit.get_oldest_stage().add_import(data.Path(['core']))
       self.schedule_for_compile(unit)

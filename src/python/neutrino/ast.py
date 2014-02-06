@@ -700,6 +700,7 @@ class Module(object):
   def get_stage(self, index):
     return self.stages[index]
 
+  # Returns the oldest stage, the one with the lowest stage offset.
   def get_oldest_stage(self):
     result = None
     result_stage = 100

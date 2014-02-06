@@ -110,9 +110,9 @@ def ($this == @Hanoi).new() {
 
 def $test_hanoi() {
   def $hanoi := new @Hanoi();
-  def $moves := $hanoi.run(size: 9);
+  def $moves := $hanoi.run(size: 7);
   # Verify that the algorithm took 2^n-1 steps as expected.
-  $assert:equals(511, $moves);
+  $assert:equals(127, $moves);
 }
 
 do {
