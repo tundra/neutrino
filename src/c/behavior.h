@@ -248,6 +248,7 @@ ENUM_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
 
 // Add the integer built-ins to the given map.
 value_t add_integer_builtin_implementations(runtime_t *runtime, safe_value_t s_map);
+value_t add_string_builtin_implementations(runtime_t *runtime, safe_value_t s_map);
 
 // Virtual methods that control how the species of a particular division behave.
 struct division_behavior_t {
@@ -283,8 +284,8 @@ SR(                                                                            \
   value_t get_##phylum##_primary_type(value_t value, runtime_t *runtime);,     \
   )                                                                            \
 SR(                                                                            \
-  value_t add_##phylum##_builtin_methods(runtime_t *runtime,                   \
-    safe_value_t s_space);,                                                    \
+  value_t add_##phylum##_builtin_implementations(runtime_t *runtime,           \
+    safe_value_t s_map);,                                                      \
   )
 ENUM_CUSTOM_TAGGED_PHYLUMS(__DECLARE_PHYLUM_FUNCTIONS__)
 #undef __DECLARE_PHYLUM_FUNCTIONS__

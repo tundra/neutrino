@@ -58,11 +58,11 @@ static value_t null_equals(builtin_arguments_t *args) {
   return new_boolean(in_phylum(tpNull, that));
 }
 
-value_t add_null_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  DEF_INFIX(infix_eqeq, "==");
-  ADD_BUILTIN(null, infix_eqeq, 1, null_equals);
+value_t add_null_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("null==*", 1, null_equals);
   return success();
 }
+
 
 
 // --- B o o l e a n ---
@@ -86,11 +86,11 @@ static value_t boolean_equals(builtin_arguments_t *args) {
   return new_boolean(is_same_value(self, that));
 }
 
-value_t add_boolean_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  DEF_INFIX(infix_eqeq, "==");
-  ADD_BUILTIN(boolean, infix_eqeq, 1, boolean_equals);
+value_t add_boolean_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("bool==*", 1, boolean_equals);
   return success();
 }
+
 
 
 // --- R e l a t i o n ---
@@ -193,17 +193,14 @@ static value_t float_32_equals_float_32(builtin_arguments_t *args) {
   return new_boolean(test_relation(value_ordering_compare(self, that), reEqual));
 }
 
-value_t add_float_32_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  DEF_PREFIX(prefix_minus, "-");
-  ADD_BUILTIN(float_32, prefix_minus, 0, float_32_negate);
-  DEF_INFIX(infix_minus, "-");
-  ADD_BUILTIN(float_32, infix_minus, 1, float_32_minus_float_32);
-  DEF_INFIX(infix_plus, "+");
-  ADD_BUILTIN(float_32, infix_plus, 1, float_32_plus_float_32);
-  DEF_INFIX(infix_eqeq, "==");
-  ADD_BUILTIN(float_32, infix_eqeq, 1, float_32_equals_float_32);
+value_t add_float_32_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("-f32", 0, float_32_negate);
+  ADD_BUILTIN_IMPL("f32+f32", 1, float_32_plus_float_32);
+  ADD_BUILTIN_IMPL("f32-f32", 1, float_32_minus_float_32);
+  ADD_BUILTIN_IMPL("f32==f32", 1, float_32_equals_float_32);
   return success();
 }
+
 
 
 // --- A m b i e n c e   r e d i r e c t ---

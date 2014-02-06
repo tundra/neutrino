@@ -8,6 +8,7 @@ module $core {
     "bool.n",
     "control.n",
     "core.n",
+    "float32.n",
     "function.n",
     "integer.n",
     "interval.n",
