@@ -529,10 +529,12 @@ static value_t string_print_raw(builtin_arguments_t *args) {
 }
 
 value_t add_string_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  DEF_INFIX(infix_plus, "+");
-  ADD_BUILTIN(string, infix_plus, 1, string_plus_string);
-  DEF_INFIX(infix_print_raw, "print_raw");
-  ADD_BUILTIN(string, infix_print_raw, 0, string_print_raw);
+  return success();
+}
+
+value_t add_string_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("str+str", 1, string_plus_string);
+  ADD_BUILTIN_IMPL("str.print_raw()", 0, string_print_raw);
   return success();
 }
 

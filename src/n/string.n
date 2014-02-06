@@ -5,3 +5,12 @@
 def @String := @ctrino.get_builtin_type("String");
 
 def type @String is @Object;
+
+## Returns a new string which is the concatenation of the two given strings.
+@builtin("str+str")
+def ($this is @String)+($that is @String);
+
+## Prints this string on stdout.
+## TODO: This one definitely needs to go.
+@builtin("str.print_raw()")
+def ($this is @String).print_raw();
