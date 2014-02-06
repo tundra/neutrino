@@ -700,6 +700,16 @@ class Module(object):
   def get_stage(self, index):
     return self.stages[index]
 
+  # Returns the oldest stage, the one with the lowest stage offset.
+  def get_oldest_stage(self):
+    result = None
+    result_stage = 100
+    for (stage, value) in self.stages.items():
+      if stage < result_stage:
+        result = value
+        result_stage = stage
+    return result
+
   def get_or_create_fragment(self, index):
     if not index in self.stages:
       self.stages[index] = self.create_fragment(index)
