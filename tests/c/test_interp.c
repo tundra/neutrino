@@ -51,7 +51,7 @@ TEST(interp, execution) {
       runtime, new_heap_symbol_ast(runtime, null(), null()), selector_array,
       new_heap_guard_ast(runtime, gtEq,
           new_heap_literal_ast(runtime, ROOT(runtime, op_call)))));
-  value_t basic_signature = new_heap_signature_ast(runtime, basic_signature_params);
+  value_t basic_signature = new_heap_signature_ast(runtime, basic_signature_params, no());
 
   // Literal
   {
@@ -183,7 +183,7 @@ TEST(interp, lookup_error) {
       runtime, new_heap_symbol_ast(runtime, null(), null()), selector_array,
       new_heap_guard_ast(runtime, gtEq,
           new_heap_literal_ast(runtime, ROOT(runtime, op_call)))));
-  value_t basic_signature = new_heap_signature_ast(runtime, basic_signature_params);
+  value_t basic_signature = new_heap_signature_ast(runtime, basic_signature_params, no());
 
   value_t lam = new_heap_lambda_ast(runtime,
       new_heap_method_ast(runtime, basic_signature,

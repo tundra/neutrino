@@ -777,11 +777,13 @@ value_t new_heap_guard_ast(runtime_t *runtime, guard_type_t type, value_t value)
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_signature_ast(runtime_t *runtime, value_t parameters) {
+value_t new_heap_signature_ast(runtime_t *runtime, value_t parameters,
+    value_t allow_extra) {
   size_t size = kSignatureAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, signature_ast_species)));
   set_signature_ast_parameters(result, parameters);
+  set_signature_ast_allow_extra(result, allow_extra);
   return post_create_sanity_check(result, size);
 }
 

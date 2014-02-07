@@ -132,6 +132,8 @@ class Parser(object):
     self.expect_word('def')
     subject = None
     is_prefix = False
+    name = None
+    allow_extra = False
     if self.at_type(Token.IDENTIFIER):
       # def <ident>
       ident = self.current().value
@@ -147,10 +149,10 @@ class Parser(object):
         if self.at_punctuation('('):
           # def <ident> (
           subject = ast.Parameter(name, [data._SUBJECT], ast.Guard.eq(ast.Variable(name.shift_back())))
-          (params, operation) = self.parse_parameters(Parser._SAUSAGES)
+          (params, operation, allow_extra) = self.parse_parameters(Parser._SAUSAGES)
           body = self.parse_method_tail()
           selector = self.name_as_selector(operation)
-          signature = ast.Signature([subject, selector] + params)
+          signature = ast.Signature([subject, selector] + params, allow_extra)
           return ast.FunctionDeclaration(name, ast.Method(signature, body))
         else:
           # def <ident> ...
@@ -173,25 +175,27 @@ class Parser(object):
       subject = self.parse_subject()
     if (not is_prefix) and self.at_type(Token.OPERATION):
       name = self.expect_type(Token.OPERATION)
-    (params, param_operation) = self.parse_parameters(None)
+    if name:
+      default_operation = data.Operation.infix(name)
+    else:
+      default_operation = Parser._SAUSAGES
+    (params, param_operation, allow_extra) = self.parse_parameters(default_operation)
     if is_prefix:
       op = data.Operation.prefix(name)
       params = []
     elif params is None:
       op = data.Operation.property(name)
       params = []
-    elif not param_operation is None:
-      op = param_operation
     else:
-      op = data.Operation.infix(name)
+      op = param_operation
     if self.at_punctuation(':='):
       self.expect_punctuation(':=')
-      (assign_params, assign_op) = self.parse_parameters(None, start_index=len(params))
+      (assign_params, assign_op, allow_extra) = self.parse_parameters(None, start_index=len(params))
       params += assign_params
       op = data.Operation.assign(op)
     selector = self.name_as_selector(op)
     body = self.parse_method_tail()
-    signature = ast.Signature([subject, selector] + params)
+    signature = ast.Signature([subject, selector] + params, allow_extra)
     stage = self.get_subject_stage(subject)
     return ast.MethodDeclaration(stage + 1, annots, ast.Method(signature, body))
 
@@ -423,7 +427,7 @@ class Parser(object):
   # Are we currently at a token that is allowed as the first token of a
   # parameter?
   def at_parameter_start(self):
-    return self.at_type(Token.IDENTIFIER) or self.at_type(Token.TAG)
+    return self.at_type(Token.IDENTIFIER) or self.at_type(Token.TAG) or self.at_operation('*')
 
   # Given a string operation name returns the corresponding selector parameter.
   def name_as_selector(self, name):
@@ -440,10 +444,10 @@ class Parser(object):
       self.name_as_subject(data.Identifier(0, data.Path(['self']))),
       self.name_as_selector(Parser._SAUSAGES)
     ]
-    (params, operation) = self.parse_parameters(None)
+    (params, operation, allow_extra) = self.parse_parameters(None)
     if params is None:
       params = []
-    return ast.Signature(prefix + params)
+    return ast.Signature(prefix + params, allow_extra)
 
   # <parameters>
   #   -> "(" <parameter> *: "," ")"
@@ -453,34 +457,44 @@ class Parser(object):
     operation = default_operation
     if self.at_parameter_start():
       param = self.parse_parameter(0)
-      return ([param], operation)
+      return ([param], operation, False)
     elif self.at_punctuation('('):
       (start, end) = ("(", ")")
     elif self.at_punctuation('['):
       (start, end) = ("[", "]")
       operation = Parser._SQUARE_SAUSAGES
     else:
-      return (None, operation)
+      return (None, operation, False)
     self.expect_punctuation(start)
     result = []
+    allow_extra = False
     if not self.at_punctuation(end):
       index = start_index
       first = self.parse_parameter(index)
-      index += 1
-      result.append(first)
+      if first is None:
+        allow_extra = True
+      else:
+        index += 1
+        result.append(first)
       while self.at_punctuation(','):
         self.expect_punctuation(',')
         next = self.parse_parameter(index)
-        index += 1
-        result.append(next)
+        if next is None:
+          allow_extra = True
+        else:
+          index += 1
+          result.append(next)
     self.expect_punctuation(end)
-    return (result, operation)
+    return (result, operation, allow_extra)
 
   def parse_parameter(self, default_tag):
     tags = [default_tag]
     if self.at_type(Token.TAG):
       tag = self.expect_type(Token.TAG)
       tags = [tag] + tags
+    elif self.at_operation('*'):
+      self.expect_operation('*')
+      return None
     name = self.expect_type(Token.IDENTIFIER)
     if self.at_operation('=='):
       self.expect_operation('==')

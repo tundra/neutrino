@@ -12,6 +12,7 @@ module $core {
     "function.n",
     "integer.n",
     "interval.n",
+    "lambda.n",
     "null.n",
     "object.n",
     "string.n"

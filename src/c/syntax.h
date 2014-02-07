@@ -244,11 +244,15 @@ TYPED_ACCESSORS_DECL(guard_ast, guard_type_t, type);
 
 // --- S i g n a t u r e   a s t ---
 
-static const size_t kSignatureAstSize = OBJECT_SIZE(1);
+static const size_t kSignatureAstSize = OBJECT_SIZE(2);
 static const size_t kSignatureAstParametersOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kSignatureAstAllowExtraOffset = OBJECT_FIELD_OFFSET(1);
 
 // The array of parameters for this signature.
 ACCESSORS_DECL(signature_ast, parameters);
+
+// Permit extra arguments to be passed that don't correspond to formal params.
+ACCESSORS_DECL(signature_ast, allow_extra);
 
 
 // --- M e t h o d   a s t ---

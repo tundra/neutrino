@@ -1628,10 +1628,12 @@ value_t emit_lambda_call_trampoline(assembler_t *assm) {
 }
 
 value_t add_lambda_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  DEF_CALL(call);
-  TRY(add_methodspace_custom_method(runtime, deref(s_space),
-      ROOT(runtime, lambda_type), call, 0, true,
-      emit_lambda_call_trampoline));
+  return success();
+}
+
+value_t add_lambda_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  TRY(add_custom_method_impl(runtime, deref(s_map),
+      "lambda()", 0, emit_lambda_call_trampoline));
   return success();
 }
 

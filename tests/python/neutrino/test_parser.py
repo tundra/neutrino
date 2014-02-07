@@ -36,7 +36,7 @@ def ls(*params):
     fpm(nm(['self']), any(), ST),
     fpm(nm(['name']), eq(lt(data.Operation.call())), SL)
   ]
-  return ast.Signature(prefix + list(params))
+  return ast.Signature(prefix + list(params), False)
 
 def ms(this, name, *params):
   prefix = [
