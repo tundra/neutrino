@@ -374,8 +374,10 @@ class Parameter(object):
 class Signature(object):
 
   @plankton.field("parameters")
-  def __init__(self, parameters):
+  @plankton.field("allow_extra")
+  def __init__(self, parameters, allow_extra):
     self.parameters = parameters
+    self.allow_extra = allow_extra
 
   def accept(self, visitor):
     visitor.visit_signature(self)
@@ -460,7 +462,7 @@ class Lambda(object):
         Guard.any()),
       Parameter(data.Identifier(0, data.Path(['name'])), [data._SELECTOR],
         Guard.eq(Literal(data.Operation.call())))
-    ])
+    ], False)
     return Lambda(Method(signature, body))
 
 

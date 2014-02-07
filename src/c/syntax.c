@@ -767,9 +767,10 @@ value_t build_method_signature(runtime_t *runtime, value_t fragment,
   }
   co_sort_pair_array(tag_array);
 
+  bool allow_extra = get_boolean_value(get_signature_ast_allow_extra(signature_ast));
   // Build the result signature and store it in the out param.
   TRY_DEF(result, new_heap_signature(runtime, afFreeze, tag_array, param_astc,
-      param_astc, false));
+      param_astc, allow_extra));
 
   return result;
 }
@@ -992,6 +993,8 @@ FIXED_GET_MODE_IMPL(signature_ast, vmMutable);
 
 ACCESSORS_IMPL(SignatureAst, signature_ast, acInFamilyOpt, ofArray,
     Parameters, parameters);
+ACCESSORS_IMPL(SignatureAst, signature_ast, acNoCheck, 0, AllowExtra,
+    allow_extra);
 
 value_t signature_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofSignatureAst, self);
@@ -1001,13 +1004,14 @@ value_t signature_ast_validate(value_t self) {
 
 value_t plankton_set_signature_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, parameters);
+  UNPACK_PLANKTON_MAP(contents, parameters, allow_extra);
   set_signature_ast_parameters(object, parameters);
+  set_signature_ast_allow_extra(object, allow_extra);
   return success();
 }
 
 value_t plankton_new_signature_ast(runtime_t *runtime) {
-  return new_heap_signature_ast(runtime, nothing());
+  return new_heap_signature_ast(runtime, nothing(), nothing());
 }
 
 void signature_ast_print_on(value_t self, print_on_context_t *context) {

@@ -148,6 +148,25 @@ value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
   return add_methodspace_method(runtime, space, method);
 }
 
+value_t add_custom_method_impl(runtime_t *runtime, value_t map,
+    const char *name_c_str, size_t posc, custom_method_emitter_t emitter) {
+  CHECK_FAMILY(ofIdHashMap, map);
+  // Build the implementation.
+  assembler_t assm;
+  TRY(assembler_init(&assm, runtime, nothing(),
+      scope_lookup_callback_get_bottom()));
+  TRY(emitter(&assm));
+  TRY(assembler_emit_return(&assm));
+  TRY_DEF(code_block, assembler_flush(&assm));
+  assembler_dispose(&assm);
+  string_t name_str;
+  string_init(&name_str, name_c_str);
+  TRY_DEF(name, new_heap_string(runtime, &name_str));
+  TRY_DEF(builtin, new_heap_builtin_implementation(runtime, afFreeze,
+      name, code_block, posc));
+  return set_id_hash_map_at(runtime, map, name, builtin);
+}
+
 value_t add_methodspace_builtin_methods(runtime_t *runtime, safe_value_t s_self) {
   // The family built-ins.
 #define __EMIT_FAMILY_BUILTINS_CALL__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\
@@ -167,6 +186,7 @@ value_t add_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   TRY(add_instance_manager_builtin_implementations(runtime, s_map));
   TRY(add_module_fragment_private_builtin_implementations(runtime, s_map));
   TRY(add_global_field_builtin_implementations(runtime, s_map));
+  TRY(add_lambda_builtin_implementations(runtime, s_map));
 
   // The phylum built-ins.
 #define __EMIT_PHYLUM_BUILTINS_CALL__(Phylum, phylum, CM, SR)                  \

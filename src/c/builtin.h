@@ -104,6 +104,12 @@ value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
     value_t receiver, builtin_operation_t operation, size_t arg_count,
     bool allow_extra, custom_method_emitter_t emitter);
 
+// Add a builtin method implementation to the given map with the given name and
+// number of arguments by delegating to the given emitter to generate
+// the code.
+value_t add_custom_method_impl(runtime_t *runtime, value_t map,
+    const char *name_c_str, size_t posc, custom_method_emitter_t emitter);
+
 // Adds all built-in methods to the given method space.
 value_t add_methodspace_builtin_methods(runtime_t *runtime, safe_value_t s_self);
 

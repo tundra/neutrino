@@ -14,6 +14,7 @@
 // Enumerates the string table strings that will be stored as easily accessible
 // roots.
 #define ENUM_STRING_TABLE(F)                                                   \
+  F(allow_extra,                "allow_extra")                                 \
   F(annotations,                "annotations")                                 \
   F(arguments,                  "arguments")                                   \
   F(ast,                        "ast")                                         \
