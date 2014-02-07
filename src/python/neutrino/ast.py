@@ -551,12 +551,10 @@ class MethodDeclaration(object):
 
   @plankton.field("annotations")
   @plankton.field("method")
-  def __init__(self, annotations, method):
+  def __init__(self, stage, annotations, method):
+    self.stage = stage
     self.annotations = annotations
     self.method = method
-
-  def get_stage(self):
-    return 0
 
   def accept(self, visitor):
     return visitor.visit_method_declaration(self)
@@ -567,7 +565,7 @@ class MethodDeclaration(object):
     self.method.accept(visitor)
 
   def apply(self, module):
-    fragment = module.get_or_create_fragment(0)
+    fragment = module.get_or_create_fragment(self.stage)
     fragment.add_element(self)          
 
   def __str__(self):
@@ -595,7 +593,7 @@ class FunctionDeclaration(object):
     value_fragment = module.get_or_create_fragment(stage - 1);
     value_fragment.ensure_function_declared(self.ident)
     method_fragment = module.get_or_create_fragment(stage)
-    method_fragment.add_element(MethodDeclaration([], self.method))
+    method_fragment.add_element(MethodDeclaration(0, [], self.method))
 
   def __str__(self):
     return "(function-declaration %s %s)" % (self.method.signature, self.method.body)

@@ -113,6 +113,17 @@ class Parser(object):
     else:
       return self.expect_type(Token.IDENTIFIER)
 
+  # Returns the stage of the given subject parameter. For instance, the stage
+  # of ($this is @String) is -1 because the stage of @String is -1.
+  def get_subject_stage(self, subject):
+    guard = subject.guard
+    if guard.type != data.Guard._IS:
+      return -1
+    value = guard.value
+    if not isinstance(value, ast.Variable):
+      return -1
+    return value.ident.stage
+
   # <toplevel-declaration>
   #   -> "def" <ident> ":=" <value> ";"
   #   -> "def" <subject> <operation> <parameters> "=>" <value> ";"
@@ -122,27 +133,30 @@ class Parser(object):
     subject = None
     is_prefix = False
     if self.at_type(Token.IDENTIFIER):
+      # def <ident>
       ident = self.current().value
       if not ident.path.is_singular():
         raise self.new_syntax_error()
       name = self.expect_type(Token.IDENTIFIER)
       if self.at_punctuation(':='):
-        # Plain definition
+        # def <ident> :=
         self.expect_punctuation(':=')
         value = self.parse_expression(True)
         return ast.NamespaceDeclaration(annots, name, value)
       else:
-        # First argument to a method
         if self.at_punctuation('('):
+          # def <ident> (
           subject = ast.Parameter(name, [data._SUBJECT], ast.Guard.eq(ast.Variable(name.shift_back())))
-          params = self.parse_parameters()
+          (params, operation) = self.parse_parameters(Parser._SAUSAGES)
           body = self.parse_method_tail()
-          selector = self.name_as_selector(Parser._SAUSAGES)
+          selector = self.name_as_selector(operation)
           signature = ast.Signature([subject, selector] + params)
           return ast.FunctionDeclaration(name, ast.Method(signature, body))
         else:
+          # def <ident> ...
           subject = ast.Parameter(name, [data._SUBJECT], ast.Guard.any())
     elif self.at_word('type'):
+      # def type <atomic> is <atomic>
       self.expect_word('type')
       subtype = self.parse_atomic_expression()
       self.expect_word('is')
@@ -150,31 +164,36 @@ class Parser(object):
       self.expect_statement_delimiter(True)
       return ast.IsDeclaration(subtype, supertype)
     elif self.at_type(Token.OPERATION):
+      # def <operation> ...
       name = self.expect_type(Token.OPERATION)
       subject = self.parse_subject()
       is_prefix = True
     else:
+      # def (<parameter>)
       subject = self.parse_subject()
-    if not is_prefix:
+    if (not is_prefix) and self.at_type(Token.OPERATION):
       name = self.expect_type(Token.OPERATION)
-    params = self.parse_parameters()
+    (params, param_operation) = self.parse_parameters(None)
     if is_prefix:
       op = data.Operation.prefix(name)
       params = []
     elif params is None:
       op = data.Operation.property(name)
       params = []
+    elif not param_operation is None:
+      op = param_operation
     else:
       op = data.Operation.infix(name)
     if self.at_punctuation(':='):
       self.expect_punctuation(':=')
-      assign_params = self.parse_parameters()
+      (assign_params, assign_op) = self.parse_parameters(None, start_index=len(params))
       params += assign_params
       op = data.Operation.assign(op)
     selector = self.name_as_selector(op)
     body = self.parse_method_tail()
     signature = ast.Signature([subject, selector] + params)
-    return ast.MethodDeclaration(annots, ast.Method(signature, body))
+    stage = self.get_subject_stage(subject)
+    return ast.MethodDeclaration(stage + 1, annots, ast.Method(signature, body))
 
   # Parse the tail of a method, the part after the parameters.
   def parse_method_tail(self):
@@ -421,7 +440,7 @@ class Parser(object):
       self.name_as_subject(data.Identifier(0, data.Path(['self']))),
       self.name_as_selector(Parser._SAUSAGES)
     ]
-    params = self.parse_parameters()
+    (params, operation) = self.parse_parameters(None)
     if params is None:
       params = []
     return ast.Signature(prefix + params)
@@ -430,15 +449,21 @@ class Parser(object):
   #   -> "(" <parameter> *: "," ")"
   #   -> <parameter>
   #   -> .
-  def parse_parameters(self, start_index=0):
+  def parse_parameters(self, default_operation, start_index=0):
+    operation = default_operation
     if self.at_parameter_start():
       param = self.parse_parameter(0)
-      return [param]
-    elif not self.at_punctuation('('):
-      return None
-    self.expect_punctuation('(')
+      return ([param], operation)
+    elif self.at_punctuation('('):
+      (start, end) = ("(", ")")
+    elif self.at_punctuation('['):
+      (start, end) = ("[", "]")
+      operation = Parser._SQUARE_SAUSAGES
+    else:
+      return (None, operation)
+    self.expect_punctuation(start)
     result = []
-    if not self.at_punctuation(')'):
+    if not self.at_punctuation(end):
       index = start_index
       first = self.parse_parameter(index)
       index += 1
@@ -448,8 +473,8 @@ class Parser(object):
         next = self.parse_parameter(index)
         index += 1
         result.append(next)
-    self.expect_punctuation(')')
-    return result
+    self.expect_punctuation(end)
+    return (result, operation)
 
   def parse_parameter(self, default_tag):
     tags = [default_tag]

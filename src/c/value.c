@@ -843,12 +843,13 @@ value_t array_set_at(builtin_arguments_t *args) {
 }
 
 value_t add_array_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  DEF_PROPERTY(property_length, "length");
-  ADD_BUILTIN(array, property_length, 0, array_length);
-  DEF_INDEX(index);
-  ADD_BUILTIN(array, index, 1, array_get_at);
-  DEF_ASSIGN(index_assign, index);
-  ADD_BUILTIN(array, index_assign, 2, array_set_at);
+  return success();
+}
+
+value_t add_array_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("array[]", 1, array_get_at);
+  ADD_BUILTIN_IMPL("array[]:=()", 2, array_set_at);
+  ADD_BUILTIN_IMPL("array.length", 0, array_length);
   return success();
 }
 
@@ -1443,8 +1444,11 @@ static value_t instance_manager_new_instance(builtin_arguments_t *args) {
 }
 
 value_t add_instance_manager_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  DEF_INFIX(infix_new_instance, "new_instance");
-  ADD_BUILTIN(instance_manager, infix_new_instance, 1, instance_manager_new_instance);
+  return success();
+}
+
+value_t add_instance_manager_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("instance_manager.new_instance", 1, instance_manager_new_instance);
   return success();
 }
 
@@ -1937,11 +1941,14 @@ static value_t module_fragment_private_new_global_field(builtin_arguments_t *arg
 
 value_t add_module_fragment_private_builtin_methods(runtime_t *runtime,
     safe_value_t s_space) {
-  DEF_INFIX(infix_new_type, "new_type");
-  ADD_BUILTIN(module_fragment_private, infix_new_type, 1,
+  return success();
+}
+
+value_t add_module_fragment_private_builtin_implementations(runtime_t *runtime,
+    safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("module_fragment_private.new_type", 1,
       module_fragment_private_new_type);
-  DEF_INFIX(infix_new_global_field, "new_global_field");
-  ADD_BUILTIN(module_fragment_private, infix_new_global_field, 1,
+  ADD_BUILTIN_IMPL("module_fragment_private.new_global_field", 1,
       module_fragment_private_new_global_field);
   return success();
 }
@@ -2311,6 +2318,7 @@ void global_field_print_on(value_t value, print_on_context_t *context) {
 
 static value_t global_field_set(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofGlobalField, self);
   value_t instance = get_builtin_argument(args, 0);
   value_t value = get_builtin_argument(args, 1);
   runtime_t *runtime = get_builtin_runtime(args);
@@ -2319,17 +2327,21 @@ static value_t global_field_set(builtin_arguments_t *args) {
 
 static value_t global_field_get(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofGlobalField, self);
   value_t instance = get_builtin_argument(args, 0);
   return get_instance_field(instance, self);
 }
 
 value_t add_global_field_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  DEF_INDEX(index);
-  ADD_BUILTIN(global_field, index, 1, global_field_get);
-  DEF_ASSIGN(index_assign, index);
-  ADD_BUILTIN(global_field, index_assign, 2, global_field_set);
   return success();
 }
+
+value_t add_global_field_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("global_field[]", 1, global_field_get);
+  ADD_BUILTIN_IMPL("global_field[]:=()", 2, global_field_set);
+  return success();
+}
+
 
 
 // --- R e f e r e n c e ---

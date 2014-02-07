@@ -163,6 +163,10 @@ value_t add_methodspace_builtin_methods(runtime_t *runtime, safe_value_t s_self)
 value_t add_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   TRY(add_integer_builtin_implementations(runtime, s_map));
   TRY(add_string_builtin_implementations(runtime, s_map));
+  TRY(add_array_builtin_implementations(runtime, s_map));
+  TRY(add_instance_manager_builtin_implementations(runtime, s_map));
+  TRY(add_module_fragment_private_builtin_implementations(runtime, s_map));
+  TRY(add_global_field_builtin_implementations(runtime, s_map));
 
   // The phylum built-ins.
 #define __EMIT_PHYLUM_BUILTINS_CALL__(Phylum, phylum, CM, SR)                  \

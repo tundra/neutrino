@@ -202,7 +202,6 @@ value_t add_float_32_builtin_implementations(runtime_t *runtime, safe_value_t s_
 }
 
 
-
 // --- A m b i e n c e   r e d i r e c t ---
 
 void ambience_redirect_print_on(value_t value, print_on_context_t *context) {

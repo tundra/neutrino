@@ -26,6 +26,20 @@ for file_name in core_file_names:
   core_manifest.add_dependency(source_file)
   files.add_member(source_file)
 
+meta_file_names = [
+  "field.n",
+  "instance.n",
+  "module.n",
+]
+
+
+meta_manifest_file_name = "meta.module"
+meta_manifest = n.get_module_file(meta_manifest_file_name)
+for file_name in meta_file_names:
+  source_file = n.get_source_file(file_name)
+  meta_manifest.add_dependency(source_file)
+  files.add_member(source_file)
+
 assert_file_names = [
   "assert.n",
 ]
@@ -41,5 +55,6 @@ for file_name in assert_file_names:
 library = n.get_library("library")
 library.set_compiler(get_external("src", "python", "neutrino", "main.py"))
 library.add_manifest(core_manifest)
+library.add_manifest(meta_manifest)
 library.add_manifest(assert_manifest)
 library.add_dependency(files)
