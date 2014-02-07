@@ -69,9 +69,9 @@
 // generated from the family list).
 #define ENUM_ROOT_SINGLETONS(F)                                                \
   F(any_guard)                                                                 \
-  F(builtin_methodspace)                                                       \
   F(builtin_impls)                                                             \
   F(ctrino)                                                                    \
+  F(ctrino_methodspace)                                                        \
   F(empty_array_buffer)                                                        \
   F(empty_array)                                                               \
   F(empty_instance_species)                                                    \

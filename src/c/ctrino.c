@@ -11,6 +11,7 @@
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(ctrino);
 FIXED_GET_MODE_IMPL(ctrino, vmDeepFrozen);
+NO_BUILTIN_METHODS(ctrino);
 
 value_t ctrino_validate(value_t self) {
   VALIDATE_FAMILY(ofCtrino, self);
@@ -140,6 +141,19 @@ static value_t builtin_call(builtin_arguments_t *args) {
   value_t name = get_builtin_argument(args, 0);
   return new_heap_builtin_marker(runtime, name);
 }
+
+// Macro that produces a declaration of an infix builtin_operation_t.
+#define DEF_INFIX(NAME, VALUE) DEF_STRING_OPERATION(NAME, otInfix, VALUE)
+
+// Macro that produces a declaration of a call builtin_operation_t.
+#define DEF_CALL(NAME) DEF_STRING_OPERATION(NAME, otCall, NULL)
+
+// Macro that produces a declaration of a builtin_operation_t with a string
+// value.
+#define DEF_STRING_OPERATION(NAME, TYPE, VALUE)                                \
+  builtin_operation_t NAME;                                                    \
+  NAME.type = (TYPE);                                                          \
+  NAME.value.c_str = (VALUE);
 
 value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   DEF_INFIX(infix_fail, "fail");

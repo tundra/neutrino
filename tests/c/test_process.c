@@ -270,11 +270,6 @@ TEST(process, backtrace_entry_printing) {
       selector, vInfix("quux"),
       vInt(0), vStr("blah"),
       vInt(2), vStr("blob"))));
-  assert_invocation_format("15.quux(1: \"blah\", 2: \"blob\")", C(vMap(
-      subject, vInt(15),
-      selector, vInfix("quux"),
-      vInt(1), vStr("blah"),
-      vInt(2), vStr("blob"))));
   assert_invocation_format("16.quux(a: \"blob\")", C(vMap(
       subject, vInt(16),
       selector, vInfix("quux"),

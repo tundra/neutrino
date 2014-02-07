@@ -6,6 +6,6 @@ def @Lambda := @ctrino.get_builtin_type("Lambda");
 
 def type @Lambda is @Object;
 
-## Returns the $index'th element of this array.
+## Invokes this function.
 @builtin("lambda()")
 def ($this is @Lambda)(*);

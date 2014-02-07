@@ -105,7 +105,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
       new_heap_instance_species(runtime, empty_type, nothing()));
   TRY_SET(RAW_ROOT(roots, subject_key), new_heap_key(runtime, RAW_RSTR(roots, subject)));
   TRY_SET(RAW_ROOT(roots, selector_key), new_heap_key(runtime, RAW_RSTR(roots, selector)));
-  TRY_SET(RAW_ROOT(roots, builtin_methodspace), new_heap_methodspace(runtime));
+  TRY_SET(RAW_ROOT(roots, ctrino_methodspace), new_heap_methodspace(runtime));
   TRY_SET(RAW_ROOT(roots, builtin_impls), new_heap_id_hash_map(runtime, 256));
   TRY_SET(RAW_ROOT(roots, op_call), new_heap_operation(runtime, afFreeze, otCall, null()));
   TRY_SET(RAW_ROOT(roots, ctrino), new_heap_ctrino(runtime));
@@ -218,7 +218,7 @@ value_t roots_validate(value_t roots) {
   VALIDATE_CHECK_EQ(0, get_key_id(RAW_ROOT(roots, subject_key)));
   VALIDATE_OBJECT(ofKey, RAW_ROOT(roots, selector_key));
   VALIDATE_CHECK_EQ(1, get_key_id(RAW_ROOT(roots, selector_key)));
-  VALIDATE_OBJECT(ofMethodspace, RAW_ROOT(roots, builtin_methodspace));
+  VALIDATE_OBJECT(ofMethodspace, RAW_ROOT(roots, ctrino_methodspace));
   VALIDATE_OBJECT(ofIdHashMap, RAW_ROOT(roots, builtin_impls));
   VALIDATE_OBJECT(ofOperation, RAW_ROOT(roots, op_call));
   VALIDATE_CHECK_EQ(otCall, get_operation_type(RAW_ROOT(roots, op_call)));
@@ -328,9 +328,9 @@ static value_t runtime_soft_init(runtime_t *runtime) {
   runtime->module_loader = runtime_protect_value(runtime, module_loader);
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
-    safe_value_t s_builtin_methodspace = protect(pool,
-        ROOT(runtime, builtin_methodspace));
-    E_TRY(add_methodspace_builtin_methods(runtime, s_builtin_methodspace));
+    safe_value_t s_ctrino_methodspace = protect(pool,
+        ROOT(runtime, ctrino_methodspace));
+    E_TRY(add_ctrino_builtin_methods(runtime, s_ctrino_methodspace));
     safe_value_t s_builtin_impls = protect(pool,
         ROOT(runtime, builtin_impls));
     E_TRY(add_builtin_implementations(runtime, s_builtin_impls));

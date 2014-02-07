@@ -1,0 +1,16 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## The built-in type of runtime-native object arrays.
+def @Escape := @ctrino.get_builtin_type("Escape");
+
+def type @Escape is @Object;
+
+## Escapes back to the place where this escape was captured, causing the
+## capture expression to yield the given value.
+@builtin("escape()")
+def ($this is @Escape)($value);
+
+## Returns true iff this escape is still live, that is, can be fired.
+@builtin("escape.is_live")
+def ($this is @Escape).is_live;
