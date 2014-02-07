@@ -1,0 +1,16 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## The meta module contains the apis that are used to build to core types. The
+## meta module is a fundamental part of how the runtime works but is, by
+## definition, not available to itself which means that you've very limited in
+## what you can do in this module.
+module $meta {
+
+  source [
+    "field.n",
+    "instance.n",
+    "module.n"
+  ]
+
+}

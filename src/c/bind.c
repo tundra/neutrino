@@ -301,6 +301,7 @@ static value_t execute_binding_schedule(binding_context_t *context, value_t sche
   runtime_t *runtime = get_ambience_runtime(context->ambience);
   for (size_t i = 0; i < get_array_buffer_length(schedule); i++) {
     value_t next = get_array_buffer_at(schedule, i);
+    TOPIC_INFO(Library, "About to bind %v", next);
     value_t path = get_identifier_path(next);
     value_t stage = get_identifier_stage(next);
     // Create the bound module if it doesn't already exist.
@@ -324,17 +325,20 @@ static value_t execute_binding_schedule(binding_context_t *context, value_t sche
       TRY(init_empty_module_fragment(runtime, bound_fragment));
       set_module_fragment_epoch(bound_fragment, feUnbound);
     }
-    if (is_present_core(runtime, next))
+    if (is_present_core(runtime, next)) {
       // TODO: this is a hack, there should be some other mechanism for
       //   identifying the core module. This way of binding it also means it
       //   gets bound at a time that's not particularly well-defined which is
       //   also an issue.
+      TOPIC_INFO(Library, "Binding present core to %v", bound_fragment);
       set_ambience_present_core_fragment(context->ambience, bound_fragment);
+    }
     // Grab the unbound fragment we'll use to create the bound fragment.
     value_t module_entries = get_id_hash_map_at(context->fragment_entry_map, path);
     value_t fragment_entry = get_id_hash_map_at(module_entries, stage);
     // Bind the fragment based on the data from the entry.
     TRY(bind_module_fragment(context, fragment_entry, bound_fragment));
+    TOPIC_INFO(Library, "Done binding %v", next);
   }
   return success();
 }
