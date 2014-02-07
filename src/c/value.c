@@ -1632,8 +1632,8 @@ value_t add_lambda_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
 }
 
 value_t add_lambda_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  TRY(add_custom_method_impl(runtime, deref(s_map),
-      "lambda()", 0, emit_lambda_call_trampoline));
+  TRY(add_custom_method_impl(runtime, deref(s_map), "lambda()", 0,
+      emit_lambda_call_trampoline));
   return success();
 }
 
@@ -2442,7 +2442,7 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_binding(map, core, "selector", ROOT(runtime, selector_key),
       runtime));
   TRY(add_plankton_binding(map, core, "builtin_methodspace",
-      ROOT(runtime, builtin_methodspace), runtime));
+      ROOT(runtime, ctrino_methodspace), runtime));
   // Types
   value_t type = RSTR(runtime, type);
   TRY(add_plankton_binding(map, type, "Integer", ROOT(runtime, integer_type),

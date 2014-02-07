@@ -45,38 +45,6 @@ typedef struct builtin_operation_t {
   } value;
 } builtin_operation_t;
 
-// Macro that produces a declaration of an infix builtin_operation_t.
-#define DEF_INFIX(NAME, VALUE) DEF_STRING_OPERATION(NAME, otInfix, VALUE)
-
-// Macro that produces a declaration of an prefix builtin_operation_t.
-#define DEF_PREFIX(NAME, VALUE) DEF_STRING_OPERATION(NAME, otPrefix, VALUE)
-
-// Macro that produces a declaration of a property builtin_operation_t.
-#define DEF_PROPERTY(NAME, VALUE) DEF_STRING_OPERATION(NAME, otProperty, VALUE)
-
-// Macro that produces a declaration of an index builtin_operation_t.
-#define DEF_INDEX(NAME) DEF_STRING_OPERATION(NAME, otIndex, NULL)
-
-// Macro that produces a builtin_operation_t with a nested operation argument.
-#define DEF_ASSIGN(NAME, VALUE) DEF_NESTED_OPERATION(NAME, otAssign, VALUE)
-
-// Macro that produces a declaration of a call builtin_operation_t.
-#define DEF_CALL(NAME) DEF_STRING_OPERATION(NAME, otCall, NULL)
-
-// Macro that produces a declaration of a builtin_operation_t with a string
-// value.
-#define DEF_STRING_OPERATION(NAME, TYPE, VALUE)                                \
-  builtin_operation_t NAME;                                                    \
-  NAME.type = (TYPE);                                                          \
-  NAME.value.c_str = (VALUE);
-
-// Macro that produces a declaration of a builtin_operation_t with a nested
-// operation argument.
-#define DEF_NESTED_OPERATION(NAME, TYPE, VALUE)                                \
-  builtin_operation_t NAME;                                                    \
-  NAME.type = (TYPE);                                                          \
-  NAME.value.nested = &(VALUE);
-
 // Returns an operation value based on the given description.
 value_t builtin_operation_to_value(runtime_t *runtime, builtin_operation_t
     *operation);
@@ -97,21 +65,11 @@ struct assembler_t;
 // Signature of a function that implements a built-in method.
 typedef value_t (*custom_method_emitter_t)(struct assembler_t *assm);
 
-// Add a method to the given method space with the given receiver type,
-// name, number of arguments, by delegating to the given emitter to generate
-// the code.
-value_t add_methodspace_custom_method(runtime_t *runtime, value_t space,
-    value_t receiver, builtin_operation_t operation, size_t arg_count,
-    bool allow_extra, custom_method_emitter_t emitter);
-
 // Add a builtin method implementation to the given map with the given name and
 // number of arguments by delegating to the given emitter to generate
 // the code.
 value_t add_custom_method_impl(runtime_t *runtime, value_t map,
     const char *name_c_str, size_t posc, custom_method_emitter_t emitter);
-
-// Adds all built-in methods to the given method space.
-value_t add_methodspace_builtin_methods(runtime_t *runtime, safe_value_t s_self);
 
 // Adds the builtin method implementations to the given map.
 value_t add_builtin_implementations(runtime_t *runtime, safe_value_t s_map);

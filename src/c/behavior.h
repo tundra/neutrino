@@ -229,8 +229,8 @@ SR(                                                                            \
   value_t get_##family##_primary_type(value_t value, runtime_t *runtime);,     \
   )                                                                            \
 SR(                                                                            \
-  value_t add_##family##_builtin_methods(runtime_t *runtime,                   \
-    safe_value_t s_space);,                                                    \
+  value_t add_##family##_builtin_implementations(runtime_t *runtime,           \
+    safe_value_t s_map);,                                                      \
   )                                                                            \
 FU(                                                                            \
   void fixup_##family##_post_migrate(runtime_t *runtime, value_t new_object,   \
@@ -246,14 +246,10 @@ OW(                                                                            \
 ENUM_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
 #undef __DECLARE_FAMILY_FUNCTIONS__
 
+value_t add_ctrino_builtin_methods(runtime_t *runtime, safe_value_t s_space);
+
 // Add the integer built-ins to the given map.
 value_t add_integer_builtin_implementations(runtime_t *runtime, safe_value_t s_map);
-value_t add_string_builtin_implementations(runtime_t *runtime, safe_value_t s_map);
-value_t add_array_builtin_implementations(runtime_t *runtime, safe_value_t s_map);
-value_t add_instance_manager_builtin_implementations(runtime_t *runtime, safe_value_t s_map);
-value_t add_module_fragment_private_builtin_implementations(runtime_t *runtime, safe_value_t s_map);
-value_t add_global_field_builtin_implementations(runtime_t *runtime, safe_value_t s_map);
-value_t add_lambda_builtin_implementations(runtime_t *runtime, safe_value_t s_map);
 
 // Virtual methods that control how the species of a particular division behave.
 struct division_behavior_t {

@@ -17,7 +17,7 @@ TEST(interp, binding_info_size) {
 static value_t new_empty_module_fragment(runtime_t *runtime) {
   TRY_DEF(module, new_heap_empty_module(runtime, nothing()));
   TRY_DEF(fragment, new_heap_module_fragment(runtime, module, present_stage(),
-      nothing(), ROOT(runtime, builtin_methodspace),
+      nothing(), ROOT(runtime, ctrino_methodspace),
       nothing()));
   TRY(add_to_array_buffer(runtime, get_module_fragments(module), fragment));
   return fragment;
@@ -51,7 +51,6 @@ TEST(interp, execution) {
       runtime, new_heap_symbol_ast(runtime, null(), null()), selector_array,
       new_heap_guard_ast(runtime, gtEq,
           new_heap_literal_ast(runtime, ROOT(runtime, op_call)))));
-  value_t basic_signature = new_heap_signature_ast(runtime, basic_signature_params, no());
 
   // Literal
   {
@@ -99,22 +98,6 @@ TEST(interp, execution) {
         new_heap_literal_ast(runtime, new_integer(3)), var);
     set_symbol_ast_origin(sym, ast);
     assert_ast_value(ambience, vInt(3), ast);
-  }
-
-  // Simple lambda
-  {
-    value_t lam = new_heap_lambda_ast(runtime,
-        new_heap_method_ast(runtime, basic_signature,
-            new_heap_literal_ast(runtime, new_integer(13))));
-    value_t subject_arg = new_heap_argument_ast(runtime, ROOT(runtime, subject_key),
-        lam);
-    value_t selector_arg = new_heap_argument_ast(runtime, ROOT(runtime, selector_key),
-        new_heap_literal_ast(runtime, ROOT(runtime, op_call)));
-    value_t args = new_heap_array(runtime, 2);
-    set_array_at(args, 0, subject_arg);
-    set_array_at(args, 1, selector_arg);
-    value_t ast = new_heap_invocation_ast(runtime, args);
-    assert_ast_value(ambience, vInt(13), ast);
   }
 
   DISPOSE_SAFE_VALUE_POOL(pool);

@@ -408,29 +408,28 @@ value_t escape_is_live(builtin_arguments_t *args) {
 }
 
 value_t add_escape_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  DEF_CALL(call);
-  TRY(add_methodspace_custom_method(runtime, deref(s_space),
-      ROOT(runtime, escape_type), call, 1, false,
-      emit_fire_escape));
-  DEF_PROPERTY(property_is_live, "is_live");
-  ADD_BUILTIN(escape, property_is_live, 0, escape_is_live);
   return success();
 }
+
+value_t add_escape_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  TRY(add_custom_method_impl(runtime, deref(s_map), "escape()", 1,
+      emit_fire_escape));
+  ADD_BUILTIN_IMPL("escape.is_live", 0, escape_is_live);
+  return success();
+}
+
 
 
 // --- B a c k t r a c e ---
 
 FIXED_GET_MODE_IMPL(backtrace, vmMutable);
 GET_FAMILY_PRIMARY_TYPE_IMPL(backtrace);
+NO_BUILTIN_METHODS(backtrace);
 
 ACCESSORS_IMPL(Backtrace, backtrace, acInFamily, ofArrayBuffer, Entries, entries);
 
 value_t backtrace_validate(value_t value) {
   VALIDATE_FAMILY(ofBacktrace, value);
-  return success();
-}
-
-value_t add_backtrace_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   return success();
 }
 
