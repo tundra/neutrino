@@ -301,6 +301,7 @@ static value_t execute_binding_schedule(binding_context_t *context, value_t sche
   runtime_t *runtime = get_ambience_runtime(context->ambience);
   for (size_t i = 0; i < get_array_buffer_length(schedule); i++) {
     value_t next = get_array_buffer_at(schedule, i);
+    TOPIC_INFO(Library, "About to bind %v", next);
     value_t path = get_identifier_path(next);
     value_t stage = get_identifier_stage(next);
     // Create the bound module if it doesn't already exist.
