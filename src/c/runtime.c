@@ -401,6 +401,7 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
   TRY(runtime_hard_init(runtime, config));
   TRY(runtime_soft_init(runtime));
   TRY(runtime_freeze_shared_state(runtime));
+  TRY(runtime_validate(runtime));
   // Set up gc fuzzing. For now do this after the initialization to exempt that
   // from being fuzzed. Longer term (probably after this has been rewritten) we
   // want more of this to be gc safe.
