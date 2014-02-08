@@ -376,6 +376,7 @@ value_t transitively_validate_deep_frozen(runtime_t *runtime, value_t value,
       // Deep freezing failed for some reason. Restore the object to its previous
       // state and bail.
       set_value_mode_unchecked(runtime, value, vmFrozen);
+      TOPIC_INFO(Freeze, "Failed to validate deep frozen: %v", value);
       return ensured;
     }
   }
@@ -1840,6 +1841,12 @@ value_t module_lookup_identifier(runtime_t *runtime, value_t self,
   return new_lookup_error_condition(lcNamespace);
 }
 
+value_t ensure_module_owned_values_frozen(runtime_t *runtime, value_t self) {
+  TRY(ensure_frozen(runtime, get_module_fragments(self)));
+  return success();
+}
+
+
 
 // --- M o d u l e   f r a g m e n t ---
 
@@ -1887,6 +1894,12 @@ void module_fragment_print_on(value_t value, print_on_context_t *context) {
 
 bool is_module_fragment_bound(value_t fragment) {
   return get_module_fragment_epoch(fragment) == feComplete;
+}
+
+value_t ensure_module_fragment_owned_values_frozen(runtime_t *runtime, value_t self) {
+  TRY(ensure_frozen(runtime, get_module_fragment_private(self)));
+  TRY(ensure_frozen(runtime, get_module_fragment_methodspaces_cache(self)));
+  return success();
 }
 
 
@@ -2436,13 +2449,10 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, core, "UnboundModule", plankton_new_unbound_module, runtime));
   TRY(add_plankton_factory(map, core, "UnboundModuleFragment", plankton_new_unbound_module_fragment, runtime));
   // Singletons
-  TRY(add_plankton_binding(map, core, "ctrino", ROOT(runtime, ctrino), runtime));
   TRY(add_plankton_binding(map, core, "subject", ROOT(runtime, subject_key),
       runtime));
   TRY(add_plankton_binding(map, core, "selector", ROOT(runtime, selector_key),
       runtime));
-  TRY(add_plankton_binding(map, core, "builtin_methodspace",
-      ROOT(runtime, ctrino_methodspace), runtime));
   // Types
   value_t type = RSTR(runtime, type);
   TRY(add_plankton_binding(map, type, "Integer", ROOT(runtime, integer_type),

@@ -262,10 +262,6 @@ static value_t init_empty_module_fragment(runtime_t *runtime, value_t fragment) 
   TRY_DEF(nspace, new_heap_namespace(runtime));
   TRY_DEF(methodspace, new_heap_methodspace(runtime));
   TRY_DEF(imports, new_heap_namespace(runtime));
-  // Prime all methodspaces with the built-in one. This is a temporary hack
-  // (famous last words), longer term the built-ins should be loaded through
-  // the same mechanism as all other methods.
-  TRY(add_methodspace_import(runtime, methodspace, ROOT(runtime, ctrino_methodspace)));
   set_module_fragment_namespace(fragment, nspace);
   set_module_fragment_methodspace(fragment, methodspace);
   set_module_fragment_imports(fragment, imports);

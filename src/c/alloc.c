@@ -339,7 +339,7 @@ value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t sta
 value_t new_heap_module_fragment_private(runtime_t *runtime, value_t owner) {
   size_t size = kModuleFragmentPrivateSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-        ROOT(runtime, module_fragment_private_species)));
+        ROOT(runtime, mutable_module_fragment_private_species)));
   set_module_fragment_private_owner(result, owner);
   return post_create_sanity_check(result, size);
 }
@@ -348,7 +348,7 @@ value_t new_heap_empty_module(runtime_t *runtime, value_t path) {
   TRY_DEF(fragments, new_heap_array_buffer(runtime, 16));
   size_t size = kModuleSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, module_species)));
+      ROOT(runtime, mutable_module_species)));
   set_module_path(result, path);
   set_module_fragments(result, fragments);
   return result;

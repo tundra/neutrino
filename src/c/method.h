@@ -332,6 +332,12 @@ value_t lookup_method_full(value_t ambience, value_t fragment,
 value_t lookup_methodspace_method(value_t ambience, value_t methodspace,
     value_t record, frame_t *frame, value_t *arg_map_out);
 
+// Given a module fragment, returns the cache of methodspaces to look up within.
+// If the cache has not yet been created, create it. Creating the cache may
+// cause a condition to be returned.
+value_t get_or_create_module_fragment_methodspaces_cache(runtime_t *runtime,
+    value_t fragment);
+
 
 // --- I n v o c a t i o n   R e c o r d ---
 

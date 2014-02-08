@@ -245,10 +245,6 @@ SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
 
 // --- B u i l t i n s ---
 
-#define ADD_BUILTIN(family, name, argc, impl)                                  \
-  TRY(add_methodspace_builtin_method(runtime, deref(s_space),                  \
-      ROOT(runtime, family##_type), name, argc, impl))
-
 #define ADD_BUILTIN_IMPL(name, argc, impl)                                     \
   TRY(add_builtin_method_impl(runtime, deref(s_map), name, argc, impl))
 

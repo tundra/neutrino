@@ -4,6 +4,7 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "check.h"
+#include "ctrino.h"
 #include "log.h"
 #include "runtime-inl.h"
 #include "safe-inl.h"
@@ -15,6 +16,9 @@
 
 TRIVIAL_PRINT_ON_IMPL(Roots, roots);
 
+// Creates the code block object that lives at the bottom of a stack and takes
+// care of returning the value back from the interpreter and protects against
+// returning through the bottom of the stack.
 static value_t create_stack_bottom_code_block(runtime_t *runtime) {
   assembler_t assm;
   TRY(assembler_init_stripped_down(&assm, runtime));
@@ -26,6 +30,8 @@ static value_t create_stack_bottom_code_block(runtime_t *runtime) {
   return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array), 1);
 }
 
+// Creates the code block object that gets executed when returning across stack
+// pieces.
 static value_t create_stack_piece_bottom_code_block(runtime_t *runtime) {
   assembler_t assm;
   TRY(assembler_init_stripped_down(&assm, runtime));
@@ -35,6 +41,23 @@ static value_t create_stack_piece_bottom_code_block(runtime_t *runtime) {
   TRY_DEF(bytecode, new_heap_blob_with_data(runtime, &blob));
   assembler_dispose(&assm);
   return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array), 1);
+}
+
+// Create the fragment that holds the ctrino methods which will be made the
+// origin of the ctrino type.
+static value_t create_ctrino_origin(runtime_t *runtime) {
+  // Fragments must have a module.
+  TRY_DEF(module, new_heap_empty_module(runtime, nothing()));
+  TRY(ensure_frozen(runtime, module));
+  // The methodspace that holds the methods.
+  TRY_DEF(methodspace, new_heap_methodspace(runtime));
+  TRY(add_ctrino_builtin_methods(runtime, methodspace));
+  TRY(ensure_frozen(runtime, methodspace));
+  TRY_DEF(fragment, new_heap_module_fragment(runtime, module, present_stage(),
+      nothing(), methodspace, nothing()));
+  TRY(get_or_create_module_fragment_methodspaces_cache(runtime, fragment));
+  TRY(ensure_frozen(runtime, fragment));
+  return fragment;
 }
 
 value_t roots_init(value_t roots, runtime_t *runtime) {
@@ -105,7 +128,6 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
       new_heap_instance_species(runtime, empty_type, nothing()));
   TRY_SET(RAW_ROOT(roots, subject_key), new_heap_key(runtime, RAW_RSTR(roots, subject)));
   TRY_SET(RAW_ROOT(roots, selector_key), new_heap_key(runtime, RAW_RSTR(roots, selector)));
-  TRY_SET(RAW_ROOT(roots, ctrino_methodspace), new_heap_methodspace(runtime));
   TRY_SET(RAW_ROOT(roots, builtin_impls), new_heap_id_hash_map(runtime, 256));
   TRY_SET(RAW_ROOT(roots, op_call), new_heap_operation(runtime, afFreeze, otCall, null()));
   TRY_SET(RAW_ROOT(roots, ctrino), new_heap_ctrino(runtime));
@@ -120,7 +142,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   string_t __display_name_str__;                                               \
   string_init(&__display_name_str__, #Name);                                   \
   TRY_DEF(__display_name__, new_heap_string(runtime, &__display_name_str__));  \
-  TRY_SET(RAW_ROOT(roots, name##_type), new_heap_type(runtime, afFreeze,       \
+  TRY_SET(RAW_ROOT(roots, name##_type), new_heap_type(runtime, afMutable,      \
       core_type_origin, __display_name__));                                    \
 } while (false);
   __CREATE_TYPE__(Integer, integer);
@@ -129,6 +151,24 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   ENUM_OBJECT_FAMILIES(__CREATE_FAMILY_TYPE_OPT__)
 #undef __CREATE_FAMILY_TYPE_OPT__
 
+  // Set the origin of the ctrino object manually. Because of the role the
+  // ctrino object plays in how the runtime is initialized it has to be set up
+  // specially.
+  TRY_DEF(ctrino_origin, create_ctrino_origin(runtime));
+  set_type_raw_origin(RAW_ROOT(roots, ctrino_type), ctrino_origin);
+
+  // Ensure that the per-family types are all frozen. Doing this in two steps
+  // means that any modifications that have to be done to these types can be
+  // done before this point, while the types are still mutable.
+#define __FREEZE_TYPE__(Name, name)                                            \
+  TRY(ensure_frozen(runtime, RAW_ROOT(roots, name##_type)));
+  __FREEZE_TYPE__(Integer, integer);
+#define __FREEZE_FAMILY_TYPE_OPT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\
+  SR(__FREEZE_TYPE__(Family, family),)
+  ENUM_OBJECT_FAMILIES(__FREEZE_FAMILY_TYPE_OPT__)
+#undef __FREEZE_FAMILY_TYPE_OPT__
+#undef __FREEZE_TYPE__
+
   // Generate initialization for the per-phylum types.
 #define __CREATE_PHYLUM_TYPE__(Phylum, phylum, CM, SR)                         \
   SR(__CREATE_TYPE__(Phylum, phylum),)
@@ -136,7 +176,6 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
 #undef __CREATE_PHYLUM_TYPE__
 
 #undef __CREATE_TYPE__
-
 
   TRY_DEF(plankton_environment, new_heap_id_hash_map(runtime, 16));
   init_plankton_core_factories(plankton_environment, runtime);
@@ -218,7 +257,6 @@ value_t roots_validate(value_t roots) {
   VALIDATE_CHECK_EQ(0, get_key_id(RAW_ROOT(roots, subject_key)));
   VALIDATE_OBJECT(ofKey, RAW_ROOT(roots, selector_key));
   VALIDATE_CHECK_EQ(1, get_key_id(RAW_ROOT(roots, selector_key)));
-  VALIDATE_OBJECT(ofMethodspace, RAW_ROOT(roots, ctrino_methodspace));
   VALIDATE_OBJECT(ofIdHashMap, RAW_ROOT(roots, builtin_impls));
   VALIDATE_OBJECT(ofOperation, RAW_ROOT(roots, op_call));
   VALIDATE_CHECK_EQ(otCall, get_operation_type(RAW_ROOT(roots, op_call)));
@@ -328,9 +366,6 @@ static value_t runtime_soft_init(runtime_t *runtime) {
   runtime->module_loader = runtime_protect_value(runtime, module_loader);
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
-    safe_value_t s_ctrino_methodspace = protect(pool,
-        ROOT(runtime, ctrino_methodspace));
-    E_TRY(add_ctrino_builtin_methods(runtime, s_ctrino_methodspace));
     safe_value_t s_builtin_impls = protect(pool,
         ROOT(runtime, builtin_impls));
     E_TRY(add_builtin_implementations(runtime, s_builtin_impls));
@@ -366,6 +401,7 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
   TRY(runtime_hard_init(runtime, config));
   TRY(runtime_soft_init(runtime));
   TRY(runtime_freeze_shared_state(runtime));
+  TRY(runtime_validate(runtime));
   // Set up gc fuzzing. For now do this after the initialization to exempt that
   // from being fuzzed. Longer term (probably after this has been rewritten) we
   // want more of this to be gc safe.
