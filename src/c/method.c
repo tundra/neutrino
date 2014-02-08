@@ -613,17 +613,16 @@ static value_t ensure_methodspace_transitive_dependencies(runtime_t *runtime,
   return success();
 }
 
-// Given a module fragment, returns the cache of methodspaces to look up within.
-// If the cache has not yet been created, create it. Creating the cache may
-// cause a condition to be returned.
-static value_t get_or_create_module_fragment_methodspaces_cache(
-    runtime_t *runtime, value_t fragment) {
+value_t get_or_create_module_fragment_methodspaces_cache(runtime_t *runtime,
+    value_t fragment) {
   CHECK_FAMILY(ofModuleFragment, fragment);
   value_t cache = get_module_fragment_methodspaces_cache(fragment);
   if (!is_nothing(cache)) {
     CHECK_FAMILY(ofArrayBuffer, cache);
     return cache;
   }
+  // The next part requires the fragment to be mutable.
+  CHECK_MUTABLE(fragment);
   // There is no cache available; build it now. As always, remember to do any
   // allocation before modifying objects to make sure we don't end up in an
   // inconsistent state if allocation fails.

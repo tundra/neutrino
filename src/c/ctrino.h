@@ -5,3 +5,6 @@
 // C runtime. It has no state of its own.
 
 static const size_t kCtrinoSize = OBJECT_SIZE(1);
+
+// Adds the ctrino method to the given methodspace.
+value_t add_ctrino_builtin_methods(runtime_t *runtime, value_t space);

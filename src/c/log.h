@@ -37,6 +37,7 @@ typedef enum {
 #define LOG_TOPIC_Interpreter tlNever
 #define LOG_TOPIC_Lookup      tlNever
 #define LOG_TOPIC_Library     tlNever
+#define LOG_TOPIC_Freeze      tlNever
 
 // Topic log settings: always log, never log, dynamically toggle.
 #define tlAlways  true
