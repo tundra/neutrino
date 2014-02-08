@@ -8,5 +8,5 @@ def type @Null is @Object;
 
 ## Returns true iff the right argument is null.
 ## TODO: should be a special case of object equality.
-@builtin("null==*")
+@ctrino.builtin("null==*")
 def ($this is @Null)==($that);

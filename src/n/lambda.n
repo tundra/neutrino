@@ -7,5 +7,5 @@ def @Lambda := @ctrino.get_builtin_type("Lambda");
 def type @Lambda is @Object;
 
 ## Invokes this function.
-@builtin("lambda()")
+@ctrino.builtin("lambda()")
 def ($this is @Lambda)(*);
