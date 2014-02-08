@@ -17,5 +17,5 @@ def type @Bool is @Object;
 
 ## Returns true iff the right and left arguments are the same.
 ## TODO: should be a special case of object equality.
-@builtin("bool==*")
+@ctrino.builtin("bool==*")
 def ($this is @Bool)==($that);

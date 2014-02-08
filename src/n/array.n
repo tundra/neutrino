@@ -18,15 +18,15 @@ def ($this is @Array).for($thunk) {
 }
 
 ## Returns the $index'th element of this array.
-@builtin("array[]")
+@ctrino.builtin("array[]")
 def ($this is @Array)[$index];
 
 ## Sets the $index'th element of this array to the specified value.
-@builtin("array[]:=()")
+@ctrino.builtin("array[]:=()")
 def ($this is @Array)[$index]:=($value);
 
 ## Returns the length of this array.
-@builtin("array.length")
+@ctrino.builtin("array.length")
 def ($this is @Array).length;
 
 def type @Array is @Object;

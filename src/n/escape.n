@@ -8,9 +8,9 @@ def type @Escape is @Object;
 
 ## Escapes back to the place where this escape was captured, causing the
 ## capture expression to yield the given value.
-@builtin("escape()")
+@ctrino.builtin("escape()")
 def ($this is @Escape)($value);
 
 ## Returns true iff this escape is still live, that is, can be fired.
-@builtin("escape.is_live")
+@ctrino.builtin("escape.is_live")
 def ($this is @Escape).is_live;

@@ -5,9 +5,9 @@
 def @ModuleFragmentPrivate := @ctrino.get_builtin_type("ModuleFragmentPrivate");
 
 ## Creates a new type with the given display name.
-@builtin("module_fragment_private.new_type")
+@ctrino.builtin("module_fragment_private.new_type")
 def ($this is @ModuleFragmentPrivate).new_type($display_name);
 
 ## Creates a new global field key with the given display name.
-@builtin("module_fragment_private.new_global_field")
+@ctrino.builtin("module_fragment_private.new_global_field")
 def ($this is @ModuleFragmentPrivate).new_global_field($display_name);

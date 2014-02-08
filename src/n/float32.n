@@ -7,17 +7,17 @@ def @Float32 := @ctrino.get_builtin_type("Float32");
 def type @Float32 is @Object;
 
 ## Returns the negated value of this 32-bit float.
-@builtin("-f32")
+@ctrino.builtin("-f32")
 def -($this is @Float32);
 
 ## Returns the sum of two 32-bit floats.
-@builtin("f32+f32")
+@ctrino.builtin("f32+f32")
 def ($this is @Float32)+($that is @Float32);
 
 ## Returns the difference between two 32-bit floats.
-@builtin("f32-f32")
+@ctrino.builtin("f32-f32")
 def ($this is @Float32)-($that is @Float32);
 
 ## Returns true iff the two 32-bit floats represent the same value.
-@builtin("f32==f32")
+@ctrino.builtin("f32==f32")
 def ($this is @Float32)==($that is @Float32);

@@ -1820,10 +1820,7 @@ value_t module_lookup_identifier(runtime_t *runtime, value_t self,
   CHECK_PHYLUM(tpStageOffset, start_stage);
   CHECK_FAMILY(ofPath, path);
   value_t head = get_path_head(path);
-  if (value_identity_compare(head, RSTR(runtime, ctrino))
-      || value_identity_compare(head, RSTR(runtime, builtin)))
-    // This makes :builtin an alias of :ctrino. It's a cheap hack but it'll do
-    // for now; there needs to be a better model for ctrino and builtin anyway.
+  if (value_identity_compare(head, RSTR(runtime, ctrino)))
     return ROOT(runtime, ctrino);
   // Loop backwards through the fragments, starting from the specified stage.
   value_t stage = start_stage;

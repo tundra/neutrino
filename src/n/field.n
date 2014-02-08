@@ -5,9 +5,9 @@
 def @GlobalField := @ctrino.get_builtin_type("GlobalField");
 
 ## Returns the value of this field set on the given instance.
-@builtin("global_field[]")
+@ctrino.builtin("global_field[]")
 def ($this is @GlobalField)[$instance];
 
 ## Sets the value of this field on the given instance.
-@builtin("global_field[]:=()")
+@ctrino.builtin("global_field[]:=()")
 def ($this is @GlobalField)[$instance]:=($value);

@@ -20,7 +20,6 @@
   F(ast,                        "ast")                                         \
   F(bindings,                   "bindings")                                    \
   F(body,                       "body")                                        \
-  F(builtin,                    "builtin")                                     \
   F(core,                       "core")                                        \
   F(ctrino,                     "ctrino")                                      \
   F(denominator,                "denominator")                                 \
