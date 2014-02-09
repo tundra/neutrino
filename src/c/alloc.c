@@ -320,7 +320,7 @@ value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t sta
   CHECK_PHYLUM(tpStageOffset, stage);
   CHECK_FAMILY_OPT(ofNamespace, nspace);
   CHECK_FAMILY_OPT(ofMethodspace, methodspace);
-  CHECK_FAMILY_OPT(ofNamespace, imports);
+  CHECK_FAMILY_OPT(ofIdHashMap, imports);
   TRY_DEF(phrivate, new_heap_module_fragment_private(runtime, nothing()));
   size_t size = kModuleFragmentSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,

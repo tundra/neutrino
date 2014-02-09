@@ -1141,11 +1141,11 @@ ACCESSORS_DECL(NAMESPACE, value);
 
 // Returns the binding for the given name in the given namespace. If the binding
 // doesn't exist a NotFound condition is returned.
-value_t get_namespace_binding_at(value_t self, value_t name);
+value_t get_namespace_binding_at(value_t self, value_t path);
 
 // Sets the binding for a given name in the given namespace.
 value_t set_namespace_binding_at(runtime_t *runtime, value_t nspace,
-    value_t name, value_t value);
+    value_t path, value_t value);
 
 
 // --- M o d u l e   f r a g m e n t ---

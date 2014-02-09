@@ -176,13 +176,14 @@ static value_t bind_module_fragment_imports(binding_context_t *context,
     // Look up the imported module.
     value_t import_ident = get_array_buffer_at(imports, i);
     value_t import_path = get_identifier_path(import_ident);
+    value_t import_head = get_path_head(import_path);
     value_t import_stage = get_identifier_stage(import_ident);
     value_t import_module = get_id_hash_map_at(context->bound_module_map, import_path);
     value_t import_fragment = get_module_fragment_at(import_module, import_stage);
     CHECK_TRUE("import not bound", is_module_fragment_bound(import_fragment));
     value_t import_methods = get_module_fragment_methodspace(import_fragment);
     TRY(add_methodspace_import(runtime, methodspace, import_methods));
-    TRY(set_namespace_binding_at(runtime, importspace, import_path,
+    TRY(set_id_hash_map_at(runtime, importspace, import_head,
         import_fragment));
   }
   return success();
@@ -259,7 +260,7 @@ static value_t build_transitive_module_array(runtime_t *runtime,
 static value_t init_empty_module_fragment(runtime_t *runtime, value_t fragment) {
   TRY_DEF(nspace, new_heap_namespace(runtime, nothing()));
   TRY_DEF(methodspace, new_heap_methodspace(runtime));
-  TRY_DEF(imports, new_heap_namespace(runtime, nothing()));
+  TRY_DEF(imports, new_heap_id_hash_map(runtime, 16));
   set_module_fragment_namespace(fragment, nspace);
   set_module_fragment_methodspace(fragment, methodspace);
   set_module_fragment_imports(fragment, imports);

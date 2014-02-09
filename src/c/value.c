@@ -1664,8 +1664,17 @@ value_t namespace_validate(value_t self) {
 value_t get_namespace_binding_at(value_t self, value_t path) {
   CHECK_FAMILY(ofNamespace, self);
   CHECK_FAMILY(ofPath, path);
-  if (is_path_empty(path))
-    return get_namespace_value(self);
+  if (is_path_empty(path)) {
+    // In the case where a multi-part path has been defined but not one of the
+    // path's prefixes there will be a namespace node with a value present, but
+    // the value will be nothing. Hence that case corresponds to the not found
+    // case; if it were possible to just store the condition in the node that
+    // would be easier but conditions can not be stored in the heap.
+    value_t value = get_namespace_value(self);
+    return is_nothing(value)
+        ? new_not_found_condition()
+        : value;
+  }
   value_t head = get_path_head(path);
   value_t tail = get_path_tail(path);
   value_t bindings = get_namespace_bindings(self);
@@ -1791,8 +1800,9 @@ static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
 // lookup of the path's tail will continue through the imported module.
 static value_t module_fragment_lookup_path_in_imports(runtime_t *runtime,
     value_t self, value_t path) {
+  value_t head = get_path_head(path);
   value_t importspace = get_module_fragment_imports(self);
-  value_t fragment = get_namespace_binding_at(importspace, path);
+  value_t fragment = get_id_hash_map_at(importspace, head);
   if (is_condition(ccNotFound, fragment))
     return fragment;
   // We found a binding for the head in the imports. However, we don't continue
@@ -1821,13 +1831,11 @@ static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
     value_t path) {
   CHECK_FAMILY(ofPath, path);
   CHECK_FALSE("looking up empty path", is_path_empty(path));
-  if (false) {
   // First check the imports.
   value_t as_import = module_fragment_lookup_path_in_imports(runtime, self,
       path);
   if (!is_condition(ccNotFound, as_import))
     return as_import;
-  }
   // If not an import try looking up in the appropriate namespace.
   return module_fragment_lookup_path_in_namespace(runtime, self, path);
 }
@@ -1871,7 +1879,7 @@ ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofNamespace,
     Namespace, namespace);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofMethodspace,
     Methodspace, methodspace);
-ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofNamespace,
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofIdHashMap,
     Imports, imports);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamily, ofModuleFragmentPrivate,
     Private, private);
