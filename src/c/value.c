@@ -1653,6 +1653,7 @@ value_t ensure_lambda_owned_values_frozen(runtime_t *runtime, value_t self) {
 // --- N a m e s p a c e ---
 
 ACCESSORS_IMPL(Namespace, namespace, acInFamilyOpt, ofIdHashMap, Bindings, bindings);
+ACCESSORS_IMPL(Namespace, namespace, acNoCheck, 0, Value, value);
 
 value_t namespace_validate(value_t self) {
   VALIDATE_FAMILY(ofNamespace, self);
@@ -1660,26 +1661,51 @@ value_t namespace_validate(value_t self) {
   return success();
 }
 
-value_t plankton_set_namespace_contents(value_t object, runtime_t *runtime,
-    value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, bindings);
-  set_namespace_bindings(object, bindings);
-  return success();
-}
-
-value_t plankton_new_namespace(runtime_t *runtime) {
-  return new_heap_namespace(runtime);
-}
-
-value_t get_namespace_binding_at(value_t self, value_t name) {
+value_t get_namespace_binding_at(value_t self, value_t path) {
+  CHECK_FAMILY(ofNamespace, self);
+  CHECK_FAMILY(ofPath, path);
+  if (is_path_empty(path)) {
+    // In the case where a multi-part path has been defined but not one of the
+    // path's prefixes there will be a namespace node with a value present, but
+    // the value will be nothing. Hence that case corresponds to the not found
+    // case; if it were possible to just store the condition in the node that
+    // would be easier but conditions can not be stored in the heap.
+    value_t value = get_namespace_value(self);
+    return is_nothing(value)
+        ? new_not_found_condition()
+        : value;
+  }
+  value_t head = get_path_head(path);
+  value_t tail = get_path_tail(path);
   value_t bindings = get_namespace_bindings(self);
-  return get_id_hash_map_at(bindings, name);
+  value_t subspace = get_id_hash_map_at(bindings, head);
+  if (is_condition(ccNotFound, subspace))
+    return subspace;
+  return get_namespace_binding_at(subspace, tail);
 }
 
 value_t set_namespace_binding_at(runtime_t *runtime, value_t nspace,
-    value_t name, value_t value) {
-  value_t bindings = get_namespace_bindings(nspace);
-  return set_id_hash_map_at(runtime, bindings, name, value);
+    value_t path, value_t value) {
+  CHECK_FAMILY(ofNamespace, nspace);
+  CHECK_FAMILY(ofPath, path);
+  if (is_path_empty(path)) {
+    // If the path is empty we've arrived at the namespace node that should
+    // hold the value.
+    set_namespace_value(nspace, value);
+    return success();
+  } else {
+    // This binding has to go through a subspace; acquire/create is as
+    // appropriate.
+    value_t head = get_path_head(path);
+    value_t tail = get_path_tail(path);
+    value_t bindings = get_namespace_bindings(nspace);
+    value_t subspace = get_id_hash_map_at(bindings, head);
+    if (is_condition(ccNotFound, subspace)) {
+      TRY_SET(subspace, new_heap_namespace(runtime, nothing()));
+      TRY(set_id_hash_map_at(runtime, bindings, head, subspace));
+    }
+    return set_namespace_binding_at(runtime, subspace, tail, value);
+  }
 }
 
 value_t ensure_namespace_owned_values_frozen(runtime_t *runtime, value_t self) {
@@ -1776,7 +1802,7 @@ static value_t module_fragment_lookup_path_in_imports(runtime_t *runtime,
     value_t self, value_t path) {
   value_t head = get_path_head(path);
   value_t importspace = get_module_fragment_imports(self);
-  value_t fragment = get_namespace_binding_at(importspace, head);
+  value_t fragment = get_id_hash_map_at(importspace, head);
   if (is_condition(ccNotFound, fragment))
     return fragment;
   // We found a binding for the head in the imports. However, we don't continue
@@ -1794,9 +1820,8 @@ static value_t module_fragment_lookup_path_in_imports(runtime_t *runtime,
 // Look up a path in the namespace part of a fragment.
 static value_t module_fragment_lookup_path_in_namespace(runtime_t *runtime,
     value_t self, value_t path) {
-  value_t head = get_path_head(path);
   value_t nspace = get_module_fragment_namespace(self);
-  return get_namespace_binding_at(nspace, head);
+  return get_namespace_binding_at(nspace, path);
 }
 
 // Look up a path locally in the given fragment. You generally don't want to
@@ -1854,7 +1879,7 @@ ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofNamespace,
     Namespace, namespace);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofMethodspace,
     Methodspace, methodspace);
-ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofNamespace,
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofIdHashMap,
     Imports, imports);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamily, ofModuleFragmentPrivate,
     Private, private);
@@ -2155,17 +2180,6 @@ value_t function_validate(value_t self) {
   return success();
 }
 
-value_t plankton_new_function(runtime_t *runtime) {
-  return new_heap_function(runtime, afMutable, nothing());
-}
-
-value_t plankton_set_function_contents(value_t object, runtime_t *runtime,
-    value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, display_name);
-  set_function_display_name(object, display_name);
-  return success();
-}
-
 void function_print_on(value_t value, print_on_context_t *context) {
   value_t display_name = get_function_display_name(value);
   if (!is_nothing(display_name)) {
@@ -2436,10 +2450,8 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   value_t core = RSTR(runtime, core);
   // Factories
   TRY(add_plankton_factory(map, core, "DecimalFraction", plankton_new_decimal_fraction, runtime));
-  TRY(add_plankton_factory(map, core, "Function", plankton_new_function, runtime));
   TRY(add_plankton_factory(map, core, "Identifier", plankton_new_identifier, runtime));
   TRY(add_plankton_factory(map, core, "Library", plankton_new_library, runtime));
-  TRY(add_plankton_factory(map, core, "Namespace", plankton_new_namespace, runtime));
   TRY(add_plankton_factory(map, core, "Operation", plankton_new_operation, runtime));
   TRY(add_plankton_factory(map, core, "Path", plankton_new_path, runtime));
   TRY(add_plankton_factory(map, core, "Type", plankton_new_type, runtime));

@@ -138,7 +138,7 @@ value_t new_heap_function(runtime_t *runtime, alloc_flags_t flags,
 value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t outers);
 
 // Creates a new empty namespace object.
-value_t new_heap_namespace(runtime_t *runtime);
+value_t new_heap_namespace(runtime_t *runtime, value_t value);
 
 // Creates a new module fragment object.
 value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t stage,

@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 import $assert;
+import $core;
 
 def $test_def_value() {
   # The value of a definition is the value of its body, in the trivial case
@@ -12,6 +13,19 @@ def $test_def_value() {
   $assert:equals(1, $v1);
 }
 
+def $a:x := 9;
+def $a:y := 10;
+def $b:x := 11;
+def $b:y := 12;
+
+def $test_def_paths() {
+  $assert:equals(9, $a:x);
+  $assert:equals(10, $a:y);
+  $assert:equals(11, $b:x);
+  $assert:equals(12, $b:y);
+}
+
 do {
   $test_def_value();
+  $test_def_paths();
 }

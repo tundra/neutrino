@@ -20,3 +20,10 @@ do ($x + $y).print_raw();
 -- OUTPUT:
 67
 -- END
+
+-- INPUT:
+def $x:y := 8;
+do $x:y.print();
+-- OUTPUT:
+8
+-- END

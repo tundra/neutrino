@@ -137,8 +137,6 @@ class Parser(object):
     if self.at_type(Token.IDENTIFIER):
       # def <ident>
       ident = self.current().value
-      if not ident.path.is_singular():
-        raise self.new_syntax_error()
       name = self.expect_type(Token.IDENTIFIER)
       if self.at_punctuation(':='):
         # def <ident> :=
