@@ -273,7 +273,7 @@ static value_t new_moved_object(value_t target) {
   F(DecimalFraction,         decimal_fraction,          _, _, X, _, _, _, _, _, _)\
   F(Escape,                  escape,                    _, _, _, X, _, _, _, _, _)\
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _)\
-  F(Function,                function,                  _, _, X, X, _, _, _, X, _)\
+  F(Function,                function,                  _, _, _, X, _, _, _, X, _)\
   F(GlobalField,             global_field,              _, _, _, X, _, _, _, _, _)\
   F(Guard,                   guard,                     _, _, _, _, _, _, _, X, _)\
   F(GuardAst,                guard_ast,                 _, _, X, X, _, _, _, _, _)\
@@ -1129,11 +1129,15 @@ value_t get_lambda_outer(value_t self, size_t index);
 
 // --- N a m e s p a c e ---
 
-static const size_t kNamespaceSize = OBJECT_SIZE(1);
+static const size_t kNamespaceSize = OBJECT_SIZE(2);
 static const size_t kNamespaceBindingsOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kNamespaceValueOffset = OBJECT_FIELD_OFFSET(1);
 
 // Returns the bindings map for this namespace.
 ACCESSORS_DECL(NAMESPACE, bindings);
+
+// Returns the value stored in this namespace node.
+ACCESSORS_DECL(NAMESPACE, value);
 
 // Returns the binding for the given name in the given namespace. If the binding
 // doesn't exist a NotFound condition is returned.
