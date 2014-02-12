@@ -221,4 +221,9 @@ static value_t new_unknown_builtin_condition() {
   return new_condition(ccUnknownBuiltin);
 }
 
+// Creates a new condition indicating that a signal was raised.
+static value_t new_signal_condition() {
+  return new_condition(ccSignal);
+}
+
 #endif // _CONDITION

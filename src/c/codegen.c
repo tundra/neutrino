@@ -392,10 +392,11 @@ value_t assembler_emit_stack_piece_bottom(assembler_t *assm) {
   return success();
 }
 
-value_t assembler_emit_invocation(assembler_t *assm, value_t fragment, value_t record) {
+value_t assembler_emit_invocation(assembler_t *assm, value_t fragment,
+    value_t record, opcode_t opcode) {
   CHECK_FAMILY(ofModuleFragment, fragment);
   CHECK_FAMILY(ofInvocationRecord, record);
-  assembler_emit_opcode(assm, ocInvoke);
+  assembler_emit_opcode(assm, opcode);
   TRY(assembler_emit_value(assm, record));
   TRY(assembler_emit_value(assm, fragment));
   // The result will be pushed onto the stack on top of the arguments.

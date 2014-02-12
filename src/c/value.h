@@ -67,6 +67,7 @@ int get_value_domain_ordinal(value_domain_t domain);
   F(Nothing)                                                                   \
   F(OutOfBounds)                                                               \
   F(OutOfMemory)                                                               \
+  F(Signal)                                                                    \
   F(SystemError)                                                               \
   F(UnknownBuiltin)                                                            \
   F(UnsupportedBehavior)                                                       \
@@ -311,6 +312,7 @@ static value_t new_moved_object(value_t target) {
   F(Reference,               reference,                 _, _, _, _, _, _, _, X, _)\
   F(Roots,                   roots,                     _, _, _, _, _, _, _, X, X)\
   F(SequenceAst,             sequence_ast,              _, _, X, X, _, _, X, _, _)\
+  F(SignalAst,               signal_ast,                _, _, X, X, _, _, X, _, _)\
   F(Signature,               signature,                 _, _, _, _, _, _, _, X, X)\
   F(SignatureAst,            signature_ast,             _, _, X, X, _, _, _, _, _)\
   F(SignatureMap,            signature_map,             _, _, _, _, _, _, _, X, X)\

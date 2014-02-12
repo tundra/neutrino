@@ -213,7 +213,8 @@ value_t new_heap_escape(runtime_t *runtime, value_t is_live, value_t stack_piece
 value_t new_heap_backtrace(runtime_t *runtime, value_t entries);
 
 // Creates a new backtrace entry.
-value_t new_heap_backtrace_entry(runtime_t *runtime, value_t invocation);
+value_t new_heap_backtrace_entry(runtime_t *runtime, value_t invocation,
+    value_t is_signal);
 
 
 // --- M e t h o d ---
@@ -265,6 +266,9 @@ value_t new_heap_array_ast(runtime_t *runtime, value_t elements);
 
 // Creates a new invocation syntax tree with the given arguments.
 value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments);
+
+// Creates a new signal syntax tree with the given arguments.
+value_t new_heap_signal_ast(runtime_t *runtime, value_t arguments);
 
 // Creates a new argument syntax tree with the given tag and value.
 value_t new_heap_argument_ast(runtime_t *runtime, value_t tag, value_t value);

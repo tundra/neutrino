@@ -260,16 +260,20 @@ value_t capture_backtrace(runtime_t *runtime, frame_t *frame);
 
 // --- B a c k t r a c e   e n t r y ---
 
-static const size_t kBacktraceEntrySize = OBJECT_SIZE(1);
+static const size_t kBacktraceEntrySize = OBJECT_SIZE(2);
 static const size_t kBacktraceEntryInvocationOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kBacktraceEntryIsSignalOffset = OBJECT_FIELD_OFFSET(1);
 
 // The invocation record for this entry.
 ACCESSORS_DECL(backtrace_entry, invocation);
 
+// Is this backtrace entry the result of a signal being raised or a normal call?
+ACCESSORS_DECL(backtrace_entry, is_signal);
+
 // Print the given invocation map on the given context. This is really an
 // implementation detail of how backtrace entries print themselves but it's
 // tricky enough that it makes sense to be able to test as a separate thing.
-void backtrace_entry_invocation_print_on(value_t invocation,
+void backtrace_entry_invocation_print_on(value_t invocation, bool is_signal,
     print_on_context_t *context);
 
 // Creates a backtrace entry from the given stack frame. If no entry can be

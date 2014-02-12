@@ -155,7 +155,8 @@ value_t assembler_emit_slap(assembler_t *assm, size_t count);
 value_t assembler_emit_new_array(assembler_t *assm, size_t length);
 
 // Emits an invocation using the given record.
-value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t record);
+value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t record,
+    opcode_t opcode);
 
 // Emits a raw call to a builtin with the given implementation and number of
 // arguments.

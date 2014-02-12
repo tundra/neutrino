@@ -72,6 +72,7 @@
   F(ctrino)                                                                    \
   F(empty_array_buffer)                                                        \
   F(empty_array)                                                               \
+  F(empty_code_block)                                                          \
   F(empty_instance_species)                                                    \
   F(empty_path)                                                                \
   F(integer_type)                                                              \

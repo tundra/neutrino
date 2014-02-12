@@ -226,9 +226,10 @@ FIXED_GET_MODE_IMPL(invocation_ast, vmMutable);
 ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, ofArray, Arguments,
     arguments);
 
-value_t emit_invocation_ast(value_t value, assembler_t *assm) {
-  CHECK_FAMILY(ofInvocationAst, value);
-  value_t arguments = get_invocation_ast_arguments(value);
+// Invokes an invocation given an array of argument asts. The type of invocation
+// to emit is given in the opcode argument.
+static value_t emit_abstract_invocation(value_t arguments, assembler_t *assm,
+    opcode_t opcode) {
   size_t arg_count = get_array_length(arguments);
   // Build the invocation record and emit the values at the same time.
   TRY_DEF(arg_vector, new_heap_pair_array(assm->runtime, arg_count));
@@ -244,8 +245,14 @@ value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   }
   TRY(co_sort_pair_array(arg_vector));
   TRY_DEF(record, new_heap_invocation_record(assm->runtime, afFreeze, arg_vector));
-  TRY(assembler_emit_invocation(assm, assm->fragment, record));
+  TRY(assembler_emit_invocation(assm, assm->fragment, record, opcode));
   return success();
+}
+
+value_t emit_invocation_ast(value_t value, assembler_t *assm) {
+  CHECK_FAMILY(ofInvocationAst, value);
+  value_t arguments = get_invocation_ast_arguments(value);
+  return emit_abstract_invocation(arguments, assm, ocInvoke);
 }
 
 value_t invocation_ast_validate(value_t value) {
@@ -263,6 +270,40 @@ value_t plankton_set_invocation_ast_contents(value_t object, runtime_t *runtime,
 
 value_t plankton_new_invocation_ast(runtime_t *runtime) {
   return new_heap_invocation_ast(runtime, nothing());
+}
+
+
+// --- S i g n a l ---
+
+TRIVIAL_PRINT_ON_IMPL(SignalAst, signal_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(signal_ast);
+NO_BUILTIN_METHODS(signal_ast);
+FIXED_GET_MODE_IMPL(signal_ast, vmMutable);
+
+ACCESSORS_IMPL(SignalAst, signal_ast, acInFamilyOpt, ofArray, Arguments,
+    arguments);
+
+value_t emit_signal_ast(value_t value, assembler_t *assm) {
+  CHECK_FAMILY(ofSignalAst, value);
+  value_t arguments = get_signal_ast_arguments(value);
+  return emit_abstract_invocation(arguments, assm, ocSignal);
+}
+
+value_t signal_ast_validate(value_t value) {
+  VALIDATE_FAMILY(ofSignalAst, value);
+  VALIDATE_FAMILY_OPT(ofArray, get_signal_ast_arguments(value));
+  return success();
+}
+
+value_t plankton_set_signal_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
+  UNPACK_PLANKTON_MAP(contents, arguments);
+  set_signal_ast_arguments(object, arguments);
+  return success();
+}
+
+value_t plankton_new_signal_ast(runtime_t *runtime) {
+  return new_heap_signal_ast(runtime, nothing());
 }
 
 
@@ -1279,6 +1320,7 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "Parameter", plankton_new_parameter_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Program", plankton_new_program_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Sequence", plankton_new_sequence_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Signal", plankton_new_signal_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Signature", plankton_new_signature_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Symbol", plankton_new_symbol_ast, runtime));
   TRY(add_plankton_factory(map, ast, "VariableAssignment", plankton_new_variable_assignment_ast, runtime));
