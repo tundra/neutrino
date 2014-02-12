@@ -10,6 +10,10 @@ def $that($value) => $that($value.is_truthy());
 def $that($value == false) => $fail();
 def $that($value == true) => null;
 
+## Does nothing if the given value is 'false', fails if the value is 'true'.
+def $not($value == false) => null;
+def $not($value == true) => $fail();
+
 ## Does nothing if the two given values are equal, fails otherwise.
 def $equals(expected: $a, found: $b) => $that($a == $b);
 

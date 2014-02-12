@@ -10,3 +10,23 @@ def ($this is @Object).to($target == @String) => @ctrino.to_string($this);
 
 ## Prints the internal representation of this object.
 def ($this is @Object).print() => $this.to(@String).print_raw();
+
+## Returns true if this object is identical to the given one. By default this
+## means object identity which for user-defined objects means heap pointer
+## equality. For some built-in families, for instance strings, true object
+## identity cannot be observed from the surface language and identity is
+## determined through structural comparison.
+##
+## User-defined types are free to override this -- it's not exactly recommended
+## but it's fine to do.
+@ctrino.builtin("obj.is_identical()")
+def ($this).is_identical($that);
+
+## Returns true if this object is equal to the given one, though not necessarily
+## identical. By default this does use object identity but user-defined types
+## should override this and provide whatever the appropriate equality is.
+##
+## Equality should be reflexive, symmetric, and transitive. Typically you'll
+## want to guard both arguments the same way or, if the guards have to be
+## different, have two methods one for @A == @B and @B == @A.
+def ($this)==($that) => $this.is_identical($that);

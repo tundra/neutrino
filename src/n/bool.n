@@ -14,8 +14,3 @@ def ($this == true).select($if_true, $if_false) => $if_true;
 def ($this == false).select($if_true, $if_false) => $if_false;
 
 def type @Bool is @Object;
-
-## Returns true iff the right and left arguments are the same.
-## TODO: should be a special case of object equality.
-@ctrino.builtin("bool==*")
-def ($this is @Bool)==($that);

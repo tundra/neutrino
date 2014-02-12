@@ -46,28 +46,17 @@ void nothing_print_on(value_t value, print_on_context_t *context) {
 // --- N u l l ---
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(null);
+NO_BUILTIN_METHODS(null);
 
 void null_print_on(value_t value, print_on_context_t *context) {
   string_buffer_printf(context->buf, "null");
 }
 
-static value_t null_equals(builtin_arguments_t *args) {
-  value_t self = get_builtin_subject(args);
-  value_t that = get_builtin_argument(args, 0);
-  CHECK_PHYLUM(tpNull, self);
-  return new_boolean(in_phylum(tpNull, that));
-}
-
-value_t add_null_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  ADD_BUILTIN_IMPL("null==*", 1, null_equals);
-  return success();
-}
-
-
 
 // --- B o o l e a n ---
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(boolean);
+NO_BUILTIN_METHODS(boolean);
 
 void boolean_print_on(value_t value, print_on_context_t *context) {
   string_buffer_printf(context->buf, get_boolean_value(value) ? "true" : "false");
@@ -78,19 +67,6 @@ value_t boolean_ordering_compare(value_t a, value_t b) {
   CHECK_PHYLUM(tpBoolean, b);
   return compare_signed_integers(get_boolean_value(a), get_boolean_value(b));
 }
-
-static value_t boolean_equals(builtin_arguments_t *args) {
-  value_t self = get_builtin_subject(args);
-  value_t that = get_builtin_argument(args, 0);
-  CHECK_PHYLUM(tpBoolean, self);
-  return new_boolean(is_same_value(self, that));
-}
-
-value_t add_boolean_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  ADD_BUILTIN_IMPL("bool==*", 1, boolean_equals);
-  return success();
-}
-
 
 
 // --- R e l a t i o n ---
