@@ -111,7 +111,7 @@ class Parser(object):
       self.expect_punctuation(')')
       return result
     else:
-      return self.expect_type(Token.IDENTIFIER)
+      return self.parse_parameter(data._SUBJECT)
 
   # Returns the stage of the given subject parameter. For instance, the stage
   # of ($this is @String) is -1 because the stage of @String is -1.
@@ -333,7 +333,12 @@ class Parser(object):
   # <type member>
   #   -> <toplevel declaration>
   def parse_type_member(self):
-    return self.parse_toplevel_declaration([])
+    if self.at_word('def'):
+      return self.parse_toplevel_declaration([])
+    elif self.at_word('field'):
+      return self.parse_field_declaration()
+    else:
+      raise self.new_syntax_error()
 
   # <new expression>
   #   -> "new" <atomic expression> <arguments>
