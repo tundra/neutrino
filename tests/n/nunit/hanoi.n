@@ -9,37 +9,32 @@ import $core;
 def @manager := @ctrino.new_instance_manager(null);
 
 ## An individual hanoi disk.
-type @HanoiDisk {
+type @Hanoi:Disk {
 
-  ## Getter for the size property.
-  def $this.size => @size_field[$this];
+  ## Disk size -- this disk can only be placed on top of disks with a larger
+  ## size.
+  field $this.size;
 
-  ## Getter and setter for the next property.
-  def $this.next => @next_field[$this];
-  def $this.next := ($value) => (@next_field[$this] := $value);
+  ## The disk below this one. Null if this is the bottom disk.
+  field $this.next;
 
 }
 
-def @size_field := module.new_global_field("HanoiDisk.size");
-def @next_field := module.new_global_field("HanoiDisk.next");
-
 ## Creates a new mutable hanoi disk with the given size.
-def ($this == @HanoiDisk).new(size: $size) {
-  def $self := @manager.new_instance(@HanoiDisk);
-  @size_field[$self] := $size;
+def ($this == @Hanoi:Disk).new(size: $size) {
+  def $self := @manager.new_instance(@Hanoi:Disk);
+  $self.size := $size;
   $self;
 }
 
 ## Holds the state of the hanoi system.
 type @Hanoi {
 
-  ## The Hanoi.piles field.
-  def $this.piles => @piles_field[$this];
-  def $this.piles := ($value) => (@piles_field[$this] := $value);
+  ## Array of the three piles of disks.
+  field $this.piles;
 
-  ## The Hanoi.moves field.
-  def $this.moves => @moves_field[$this];
-  def $this.moves := ($value) => (@moves_field[$this] := $value);
+  ## Counts how many moves have been made.
+  field $this.moves;
 
   ## Runs the hanoi algorithm starting from a stack of $size disks on the first
   ## pile.
@@ -90,15 +85,12 @@ type @Hanoi {
   def $this.build(pile: $pile, disks: $disks) {
     for $i in (0).to($disks) do {
       def $size := $disks - $i - 1;
-      def $disk := new @HanoiDisk(size: $size);
+      def $disk := new @Hanoi:Disk(size: $size);
       $this.push($pile, $disk);
     }
   }
 
 }
-
-def @piles_field := module.new_global_field("Hanoi.piles");
-def @moves_field := module.new_global_field("Hanoi.moves");
 
 ## Creates a new empty hanoi instance.
 def ($this == @Hanoi).new() {
