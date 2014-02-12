@@ -644,6 +644,7 @@ class FieldDeclaration(object):
     self.setter = setter
 
   def apply(self, module):
+    # TODO: this field shouldn't be accessible through the namespace.
     key_ident = data.Identifier(-1, self.key_name)
     key_access = Variable(key_ident)
     key_decl = NamespaceDeclaration([], key_ident, Invocation([
