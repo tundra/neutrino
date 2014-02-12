@@ -15,7 +15,7 @@ type @Hanoi:Disk {
   ## size.
   field $this.size;
 
-  ## The disk below this one.
+  ## The disk below this one. Null if this is the bottom disk.
   field $this.next;
 
 }
