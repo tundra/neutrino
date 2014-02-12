@@ -237,6 +237,8 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         // the enclosing code.
         interpreter_state_store(&state, &frame);
         TRY(push_stack_frame(runtime, stack, &frame, 1, nothing()));
+        // The stack tracing code expects all frames to have a valid code block
+        // object. The rest makes less of a difference.
         set_frame_code_block(&frame, ROOT(runtime, empty_code_block));
         return new_signal_condition();
       }

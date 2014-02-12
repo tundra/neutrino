@@ -273,7 +273,7 @@ value_t plankton_new_invocation_ast(runtime_t *runtime) {
 }
 
 
-// --- I n v o c a t i o n ---
+// --- S i g n a l ---
 
 TRIVIAL_PRINT_ON_IMPL(SignalAst, signal_ast);
 GET_FAMILY_PRIMARY_TYPE_IMPL(signal_ast);
