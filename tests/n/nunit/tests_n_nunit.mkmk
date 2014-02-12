@@ -20,6 +20,7 @@ file_names = [
   "interval.n",
   "is.n",
   "module.n",
+  "string.n",
   "trace.n",
   "var.n",
   "while.n",
