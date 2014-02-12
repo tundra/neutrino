@@ -160,7 +160,10 @@ static void log_lookup_error(value_t condition, value_t record, frame_t *frame) 
 // logging is enabled. Can be helpful for debugging but is kind of a lame hack.
 static uint64_t opcode_counter = 0;
 
-static value_t run_stack(value_t ambience, value_t stack) {
+// Runs the given stack within the given ambience until a condition is
+// encountered or evaluation completes. This function also bails on and leaves
+// it to the surrounding code to report error messages.
+static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
   CHECK_FAMILY(ofAmbience, ambience);
   CHECK_FAMILY(ofStack, stack);
   runtime_t *runtime = get_ambience_runtime(ambience);
@@ -223,6 +226,19 @@ static value_t run_stack(value_t ambience, value_t stack) {
         set_frame_code_block(&frame, code_block);
         interpreter_state_load(&state, &frame);
         break;
+      }
+      case ocSignal: {
+        // Look up the method in the method space.
+        value_t record = read_next_value(&state);
+        CHECK_FAMILY(ofInvocationRecord, record);
+        value_t fragment = read_next_value(&state);
+        CHECK_FAMILY(ofModuleFragment, fragment);
+        // Push the signal frame onto the stack to record the state of it for
+        // the enclosing code.
+        interpreter_state_store(&state, &frame);
+        TRY(push_stack_frame(runtime, stack, &frame, 1, nothing()));
+        set_frame_code_block(&frame, ROOT(runtime, empty_code_block));
+        return new_signal_condition();
       }
       case ocDelegateToLambda: {
         // Get the lambda to delegate to.
@@ -399,6 +415,18 @@ static value_t run_stack(value_t ambience, value_t stack) {
     }
   }
   return success();
+}
+
+static value_t run_stack(value_t ambience, value_t stack) {
+  value_t result = run_stack_pushing_signals(ambience, stack);
+  if (is_condition(ccSignal, result)) {
+    runtime_t *runtime = get_ambience_runtime(ambience);
+    frame_t frame;
+    get_stack_top_frame(stack, &frame);
+    TRY_DEF(trace, capture_backtrace(runtime, &frame));
+    print_ln("%9v", trace);
+  }
+  return result;
 }
 
 const char *get_opcode_name(opcode_t opcode) {

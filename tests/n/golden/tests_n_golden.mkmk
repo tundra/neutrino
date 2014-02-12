@@ -4,6 +4,7 @@
 import os.path
 
 file_names = [
+  "abort.gn",
   "assert.gn",
   "builtins.gn",
   "functions.gn",

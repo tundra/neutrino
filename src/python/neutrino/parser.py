@@ -278,6 +278,8 @@ class Parser(object):
       return self.parse_for_expression(expect_delim)
     elif self.at_word('with_escape'):
       return self.parse_with_escape_expression(expect_delim)
+    elif self.at_word('abort'):
+      return self.parse_abort_expression(expect_delim)
     else:
       return self.parse_assignment_expression(expect_delim)
 
@@ -389,6 +391,14 @@ class Parser(object):
       ast.Argument(0, ast.Lambda.thunk(cond)),
       ast.Argument(1, ast.Lambda.thunk(body)),
     ])
+
+  # <abort expression>
+  #   -> "abort" <expression> "do" <expression>
+  def parse_abort_expression(self, expect_delim):
+    self.expect_word('abort')
+    (selector, rest) = self.parse_operator_tail()
+    self.expect_statement_delimiter(expect_delim)
+    return ast.Signal([ast.Argument(data._SELECTOR, ast.Literal(selector))] + rest)
 
   # <for expression>
   #   -> "for" <signature> "in" <expression> "do" <expression>
@@ -531,23 +541,29 @@ class Parser(object):
     return result
 
   # <operator expression>
-  #   -> <call expression> +: <operation>
+  #   -> <call expression> +: <operator tail>
   def parse_operator_expression(self):
     left = self.parse_unary_expression()
     while self.at_type(Token.OPERATION):
-      name = self.expect_type(Token.OPERATION)
-      if self.at_atomic_start():
-        selector = data.Operation.infix(name)
-        rest = self.parse_arguments('(', ')')
-      else:
-        selector = data.Operation.property(name)
-        rest = []
+      (selector, rest) = self.parse_operator_tail()
       prefix = [
         ast.Argument(data._SUBJECT, left),
         ast.Argument(data._SELECTOR, ast.Literal(selector))
       ]
       left = ast.Invocation(prefix + rest)
     return left
+
+  # <operator tail>
+  #   <operation> <arguments>
+  def parse_operator_tail(self):
+    name = self.expect_type(Token.OPERATION)
+    if self.at_atomic_start():
+      selector = data.Operation.infix(name)
+      rest = self.parse_arguments('(', ')')
+    else:
+      selector = data.Operation.property(name)
+      rest = []
+    return (selector, rest)
 
   # <arguments>
   #   -> <call expression>

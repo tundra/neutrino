@@ -35,6 +35,9 @@ class Visitor(object):
   def visit_invocation(self, that):
     self.visit_ast(that)
 
+  def visit_signal(self, that):
+    self.visit_ast(that)
+
   def visit_argument(self, that):
     self.visit_ast(that)
 
@@ -209,6 +212,21 @@ class Invocation(object):
 
   def __str__(self):
     return "(call %s)" % " ".join(map(str, self.arguments))
+
+
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Signal"))
+class Signal(object):
+
+  @plankton.field("arguments")
+  def __init__(self, arguments):
+    self.arguments = arguments
+
+  def accept(self, visitor):
+    return visitor.visit_signal(self)
+
+  def traverse(self, visitor):
+    for argument in self.arguments:
+      argument.accept(visitor)
 
 
 # An individual argument to an invocation.

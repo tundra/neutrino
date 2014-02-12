@@ -96,6 +96,15 @@ ACCESSORS_DECL(array_ast, elements);
 
 // --- I n v o c a t i o n   a s t ---
 
+static const size_t kSignalAstSize = OBJECT_SIZE(1);
+static const size_t kSignalAstArgumentsOffset = OBJECT_FIELD_OFFSET(0);
+
+// The array of element expressions.
+ACCESSORS_DECL(signal_ast, arguments);
+
+
+// --- S i g n a l   a s t ---
+
 static const size_t kInvocationAstSize = OBJECT_SIZE(1);
 static const size_t kInvocationAstArgumentsOffset = OBJECT_FIELD_OFFSET(0);
 

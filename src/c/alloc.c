@@ -529,11 +529,13 @@ value_t new_heap_backtrace(runtime_t *runtime, value_t entries) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_backtrace_entry(runtime_t *runtime, value_t invocation) {
+value_t new_heap_backtrace_entry(runtime_t *runtime, value_t invocation,
+    value_t is_signal) {
   size_t size = kBacktraceEntrySize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, backtrace_entry_species)));
   set_backtrace_entry_invocation(result, invocation);
+  set_backtrace_entry_is_signal(result, is_signal);
   return post_create_sanity_check(result, size);
 }
 
@@ -672,6 +674,14 @@ value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments) {
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, invocation_ast_species)));
   set_invocation_ast_arguments(result, arguments);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_signal_ast(runtime_t *runtime, value_t arguments) {
+  size_t size = kSignalAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, signal_ast_species)));
+  set_signal_ast_arguments(result, arguments);
   return post_create_sanity_check(result, size);
 }
 

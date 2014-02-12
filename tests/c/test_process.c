@@ -228,7 +228,7 @@ static void assert_invocation_format(const char *expected_c_str, value_t invocat
   string_buffer_t buffer;
   string_buffer_init(&buffer);
   print_on_context_init(&context, &buffer, 0, 99);
-  backtrace_entry_invocation_print_on(invocation, &context);
+  backtrace_entry_invocation_print_on(invocation, false, &context);
   // Flush the output and the expected values into string_ts.
   string_t found;
   string_buffer_flush(&buffer, &found);

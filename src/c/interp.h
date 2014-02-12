@@ -31,6 +31,7 @@
   F(Push)                                                                      \
   F(Return)                                                                    \
   F(SetReference)                                                              \
+  F(Signal)                                                                    \
   F(Slap)                                                                      \
   F(StackBottom)                                                               \
   F(StackPieceBottom)
