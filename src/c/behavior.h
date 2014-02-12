@@ -249,6 +249,11 @@ ENUM_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
 // Add the integer built-ins to the given map.
 value_t add_integer_builtin_implementations(runtime_t *runtime, safe_value_t s_map);
 
+// Add the object built-ins to the given map. There is no built-in object type,
+// that is defined purely by the surface language, so there is no corresponding
+// family this can live under.
+value_t add_object_builtin_implementations(runtime_t *runtime, safe_value_t s_map);
+
 // Virtual methods that control how the species of a particular division behave.
 struct division_behavior_t {
   // The division this behavior belongs to.

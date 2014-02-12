@@ -5,8 +5,3 @@
 def @Null := @ctrino.get_builtin_type("Null");
 
 def type @Null is @Object;
-
-## Returns true iff the right argument is null.
-## TODO: should be a special case of object equality.
-@ctrino.builtin("null==*")
-def ($this is @Null)==($that);

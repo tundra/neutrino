@@ -69,6 +69,7 @@ value_t add_custom_method_impl(runtime_t *runtime, value_t map,
 
 value_t add_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   add_integer_builtin_implementations(runtime, s_map);
+  add_object_builtin_implementations(runtime, s_map);
 
   // The family built-ins.
 #define __EMIT_FAMILY_BUILTINS_CALL__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)\

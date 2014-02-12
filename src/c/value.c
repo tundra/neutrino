@@ -109,13 +109,6 @@ static value_t integer_modulo_integer(builtin_arguments_t *args) {
   return new_integer(result);
 }
 
-static value_t integer_equals_integer(builtin_arguments_t *args) {
-  value_t self = get_builtin_subject(args);
-  value_t that = get_builtin_argument(args, 0);
-  CHECK_DOMAIN(vdInteger, self);
-  return new_boolean(is_same_value(self, that));
-}
-
 static value_t integer_less_integer(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
@@ -143,7 +136,6 @@ value_t add_integer_builtin_implementations(runtime_t *runtime, safe_value_t s_m
   ADD_BUILTIN_IMPL("int*int", 1, integer_times_integer);
   ADD_BUILTIN_IMPL("int/int", 1, integer_divide_integer);
   ADD_BUILTIN_IMPL("int%int", 1, integer_modulo_integer);
-  ADD_BUILTIN_IMPL("int==int", 1, integer_equals_integer);
   ADD_BUILTIN_IMPL("int<int", 1, integer_less_integer);
   ADD_BUILTIN_IMPL("int.print()", 0, integer_print);
   return success();
@@ -204,6 +196,17 @@ family_behavior_t *get_object_family_behavior_unchecked(value_t self) {
   CHECK_DOMAIN(vdObject, self);
   value_t species = get_object_species(self);
   return get_species_family_behavior(species);
+}
+
+static value_t object_is_identical(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t that = get_builtin_argument(args, 0);
+  return new_boolean(value_identity_compare(self, that));
+}
+
+value_t add_object_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("obj.is_identical()", 1, object_is_identical);
+  return success();
 }
 
 
@@ -555,10 +558,6 @@ static value_t string_get_ascii_characters(builtin_arguments_t *args) {
   return result;
 }
 
-value_t add_string_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  return success();
-}
-
 value_t add_string_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   ADD_BUILTIN_IMPL("str+str", 1, string_plus_string);
   ADD_BUILTIN_IMPL("str==str", 1, string_equals_string);
@@ -869,10 +868,6 @@ value_t array_set_at(builtin_arguments_t *args) {
   CHECK_DOMAIN(vdInteger, index);
   set_array_at(self, get_integer_value(index), value);
   return value;
-}
-
-value_t add_array_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  return success();
 }
 
 value_t add_array_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
@@ -1472,10 +1467,6 @@ static value_t instance_manager_new_instance(builtin_arguments_t *args) {
   return new_heap_instance(runtime, species);
 }
 
-value_t add_instance_manager_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  return success();
-}
-
 value_t add_instance_manager_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   ADD_BUILTIN_IMPL("instance_manager.new_instance", 1, instance_manager_new_instance);
   return success();
@@ -1653,10 +1644,6 @@ void lambda_print_on(value_t value, print_on_context_t *context) {
 
 value_t emit_lambda_call_trampoline(assembler_t *assm) {
   TRY(assembler_emit_delegate_lambda_call(assm));
-  return success();
-}
-
-value_t add_lambda_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   return success();
 }
 
@@ -2002,11 +1989,6 @@ static value_t module_fragment_private_new_global_field(builtin_arguments_t *arg
   value_t display_name = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofModuleFragmentPrivate, self);
   return new_heap_global_field(get_builtin_runtime(args), display_name);
-}
-
-value_t add_module_fragment_private_builtin_methods(runtime_t *runtime,
-    safe_value_t s_space) {
-  return success();
 }
 
 value_t add_module_fragment_private_builtin_implementations(runtime_t *runtime,
@@ -2386,10 +2368,6 @@ static value_t global_field_get(builtin_arguments_t *args) {
   // TODO: This should really result in an exception/signal, not a silent null.
   value_t value = get_instance_field(instance, self);
   return is_condition(ccNotFound, value) ? null() : value;
-}
-
-value_t add_global_field_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  return success();
 }
 
 value_t add_global_field_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
