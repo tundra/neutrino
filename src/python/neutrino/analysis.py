@@ -88,8 +88,7 @@ class ScopeVisitor(ast.Visitor):
   def visit_method(self, that):
     bindings = {}
     for param in that.signature.parameters:
-      param.symbol = ast.Symbol(param.get_name())
-      bindings[param.get_name()] = param.symbol
+      bindings[param.get_name()] = param.get_symbol()
     outer_scope = self.scope
     self.scope = MappedScope(bindings, outer_scope)
     try:

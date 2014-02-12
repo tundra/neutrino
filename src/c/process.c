@@ -308,6 +308,7 @@ value_t frame_push_value(frame_t *frame, value_t value) {
   COND_CHECK_TRUE("push on lower frame", ccWat, is_top_frame(frame));
   COND_CHECK_TRUE("push out of frame bounds", ccOutOfBounds,
       is_offset_within_frame(frame, frame->stack_pointer));
+  CHECK_FALSE("pushing condition", get_value_domain(value) == vdCondition);
   *access_frame_field(frame, frame->stack_pointer) = value;
   frame->stack_pointer++;
   set_stack_piece_top_stack_pointer(frame->stack_piece, frame->stack_pointer);

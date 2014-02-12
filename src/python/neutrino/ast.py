@@ -350,7 +350,7 @@ class Parameter(object):
   @plankton.field("guard")
   def __init__(self, ident, tags, guard):
     self.ident = ident
-    self.symbol = None
+    self.symbol = Symbol(self.get_name())
     self.tags = tags
     self.guard = guard
 
@@ -362,6 +362,10 @@ class Parameter(object):
 
   def get_name(self):
     return self.ident.get_name()
+
+  def get_symbol(self):
+    return self.symbol
+
 
   def __str__(self):
     return "(param (tags %s) (name %s) (guard %s))" % (
@@ -624,6 +628,48 @@ class TypeDeclaration(object):
       is_decl.apply(module)
     for member in self.members:
       member.apply(module)
+
+
+# A stand-alone field declaration.
+class FieldDeclaration(object):
+
+  _NEW_GLOBAL_FIELD = data.Operation.infix("new_global_field")
+  _SQUARE_SAUSAGES = data.Operation.index()
+  _SQUARE_SAUSAGE_ASSIGN = data.Operation.assign(data.Operation.index())
+
+  def __init__(self, subject, key_name, getter, setter):
+    self.subject = subject
+    self.key_name = key_name
+    self.getter = getter
+    self.setter = setter
+
+  def apply(self, module):
+    # TODO: this field shouldn't be accessible through the namespace.
+    key_ident = data.Identifier(-1, self.key_name)
+    key_access = Variable(key_ident)
+    key_decl = NamespaceDeclaration([], key_ident, Invocation([
+      Argument(data._SUBJECT, CurrentModule()),
+      Argument(data._SELECTOR, Literal(FieldDeclaration._NEW_GLOBAL_FIELD)),
+      Argument(0, Literal(self.key_name)),
+    ]))
+    key_decl.apply(module)
+    getter = MethodDeclaration(0, [], Method(
+      Signature([self.subject, self.getter], False), Invocation([
+        Argument(data._SUBJECT, key_access),
+        Argument(data._SELECTOR, Literal(FieldDeclaration._SQUARE_SAUSAGES)),
+        Argument(0, Variable(self.subject.ident))
+    ])))
+    value = Parameter(data.Identifier(0, data.Path(['value'])), [0],
+      Guard.any())
+    setter = MethodDeclaration(0, [], Method(
+      Signature([self.subject, self.setter, value], False), Invocation([
+        Argument(data._SUBJECT, key_access),
+        Argument(data._SELECTOR, Literal(FieldDeclaration._SQUARE_SAUSAGE_ASSIGN)),
+        Argument(0, Variable(self.subject.ident)),
+        Argument(1, Variable(value.ident))
+    ])))
+    getter.apply(module)
+    setter.apply(module)
 
 
 @plankton.serializable(plankton.EnvironmentReference.path("core", "UnboundModule"))

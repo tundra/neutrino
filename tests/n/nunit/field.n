@@ -60,8 +60,28 @@ def $test_constructor() {
   $assert:equals(32, $p2.y);
 }
 
+type @Pair;
+
+field ($this is @Pair).first;
+field ($this is @Pair).second;
+
+def $test_field_declarations() {
+  def $p := @manager.new_instance(@Pair);
+  # TODO: longer term missing fields should cause a signal/abort, not a silent
+  #   null.
+  $assert:equals(null, $p.first);
+  $assert:equals(null, $p.second);  
+  $p.first := 8;
+  $assert:equals(8, $p.first);
+  $assert:equals(null, $p.second);
+  $p.second := 9;
+  $assert:equals(8, $p.first);
+  $assert:equals(9, $p.second);
+}
+
 do {
   $test_raw_field_access();
   $test_field_accessors();
   $test_constructor();
+  $test_field_declarations();
 }
