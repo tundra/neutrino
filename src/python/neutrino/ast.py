@@ -668,7 +668,6 @@ class FieldDeclaration(object):
         Argument(0, Variable(self.subject.ident)),
         Argument(1, Variable(value.ident))
     ])))
-
     getter.apply(module)
     setter.apply(module)
 
