@@ -2355,7 +2355,9 @@ static value_t global_field_get(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofGlobalField, self);
   value_t instance = get_builtin_argument(args, 0);
-  return get_instance_field(instance, self);
+  // TODO: This should really result in an exception/signal, not a silent null.
+  value_t value = get_instance_field(instance, self);
+  return is_condition(ccNotFound, value) ? null() : value;
 }
 
 value_t add_global_field_builtin_methods(runtime_t *runtime, safe_value_t s_space) {

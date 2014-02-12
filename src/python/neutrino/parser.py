@@ -229,6 +229,8 @@ class Parser(object):
     annots = self.parse_annotations()
     if self.at_word('def'):
       return self.parse_toplevel_declaration(annots)
+    elif self.at_word('field'):
+      return self.parse_field_declaration()
     elif self.at_word('import'):
       return self.parse_toplevel_import()
     elif self.at_word('do'):
@@ -278,6 +280,19 @@ class Parser(object):
       return self.parse_with_escape_expression(expect_delim)
     else:
       return self.parse_assignment_expression(expect_delim)
+
+  # <field declaration>
+  #   -> "field" <subject> <operator> ";"
+  def parse_field_declaration(self):
+    self.expect_word('field')
+    subject = self.parse_subject()
+    op = self.expect_type(Token.OPERATION)
+    prop = data.Operation.property(op)
+    getter = self.name_as_selector(prop)
+    setter = self.name_as_selector(data.Operation.assign(prop))
+    self.expect_statement_delimiter(True)
+    key_name = data.Path([op])
+    return ast.FieldDeclaration(subject, key_name, getter, setter)
 
   # <type declaration>
   #   -> "type" <ident> ("is" <atomic>)? <members>
