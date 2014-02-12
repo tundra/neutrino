@@ -1,0 +1,21 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def $test_characters() {
+  def $s := "hello!";
+  def $chars := $s.get_ascii_characters();
+  $assert:equals(6, $chars.length);
+  $assert:equals("h", $chars[0]);
+  $assert:equals("e", $chars[1]);
+  $assert:equals("l", $chars[2]);
+  $assert:equals("l", $chars[3]);
+  $assert:equals("o", $chars[4]);
+  $assert:equals("!", $chars[5]);
+}
+
+do {
+  $test_characters();
+}

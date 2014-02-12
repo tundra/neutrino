@@ -14,3 +14,20 @@ def ($this is @String)+($that is @String);
 ## TODO: This one definitely needs to go.
 @ctrino.builtin("str.print_raw()")
 def ($this is @String).print_raw();
+
+## Returns true if the two strings contain the exact same characters. Note that
+## there are many meaningful ways to compare strings for equality. This one does
+## the dumbest thing possible and looks at the raw underlying characters of the
+## string, ignoring character equivalences. This means that if you use this on
+## non-ascii input that has not been explicitly normalized this may not give you
+## the result you expect, and indeed for user-supplied input you will almost
+## always want to use something else.
+## TODO: implement the above mentioned "something else".
+@ctrino.builtin("str==str")
+def ($this is @String)==($that is @String);
+
+## Returns an ascii character array containing the characters of this string.
+## TODO: This so is not how this should work but it's one of those things that
+##   will have to do for now.
+@ctrino.builtin("str.get_ascii_characters()")
+def ($this is @String).get_ascii_characters();

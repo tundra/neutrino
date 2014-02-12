@@ -519,6 +519,14 @@ static value_t string_plus_string(builtin_arguments_t *args) {
   return result;
 }
 
+static value_t string_equals_string(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t that = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofString, self);
+  CHECK_FAMILY(ofString, that);
+  return new_boolean(value_identity_compare(self, that));
+}
+
 static value_t string_print_raw(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofString, self);
@@ -529,13 +537,33 @@ static value_t string_print_raw(builtin_arguments_t *args) {
   return nothing();
 }
 
+static value_t string_get_ascii_characters(builtin_arguments_t *args) {
+  runtime_t *runtime = get_builtin_runtime(args);
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofString, self);
+  string_t contents;
+  get_string_contents(self, &contents);
+  size_t length = string_length(&contents);
+  TRY_DEF(result, new_heap_array(runtime, length));
+  for (size_t i = 0; i < length; i++) {
+    char c = string_char_at(&contents, i);
+    char char_c_str[2] = {c, '\0'};
+    string_t char_str = {1, char_c_str};
+    TRY_DEF(char_obj, new_heap_string(runtime, &char_str));
+    set_array_at(result, i, char_obj);
+  }
+  return result;
+}
+
 value_t add_string_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
   return success();
 }
 
 value_t add_string_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   ADD_BUILTIN_IMPL("str+str", 1, string_plus_string);
+  ADD_BUILTIN_IMPL("str==str", 1, string_equals_string);
   ADD_BUILTIN_IMPL("str.print_raw()", 0, string_print_raw);
+  ADD_BUILTIN_IMPL("str.get_ascii_characters()", 0, string_get_ascii_characters);
   return success();
 }
 
