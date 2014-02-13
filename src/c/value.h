@@ -521,6 +521,10 @@ static bool fits_as_custom_tagged_payload(int64_t value) {
   return ((value << kShiftAmount) >> kShiftAmount) == value;
 }
 
+// A value that, if added to the encoded representation of a custom tagged value,
+// increases the payload by one.
+#define kCustomTaggedPayloadOne (1LL << (kCustomTaggedPhylumTagSize + kDomainTagSize));
+
 // Creates a new custom tagged value.
 static value_t new_custom_tagged(custom_tagged_phylum_t phylum, int64_t payload) {
   CHECK_TRUE("too large for custom tagged payload",
