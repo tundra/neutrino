@@ -57,4 +57,27 @@ static value_t set_flag_set_at(value_t self, uint32_t flags, bool value) {
       : disable_flag_set_flags(self, flags);
 }
 
+
+// --- S c o r e ---
+
+// Returns the category flag of the given score object.
+static score_category_t get_score_category(value_t score) {
+  return ((uint64_t) get_custom_tagged_payload(score)) >> kScoreSubscoreWidth;
+}
+
+// Returns the subscore of the given score object.
+static uint32_t get_score_subscore(value_t score) {
+  uint64_t kMask = (1LL << kScoreSubscoreWidth) - 1LL;
+  return ((uint64_t) get_custom_tagged_payload(score)) & kMask;
+}
+
+// Works the same way as the ordering compare but returns -1, 0, and 1 instead
+// of relation values.
+static int compare_tagged_scores(value_t a, value_t b) {
+  int64_t a_payload = get_custom_tagged_payload(a);
+  int64_t b_payload = get_custom_tagged_payload(b);
+  return b_payload < a_payload ? -1 : (a_payload == b_payload ? 0 : 1);
+}
+
+
 #endif // _TAGGED_INL
