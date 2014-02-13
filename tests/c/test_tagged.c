@@ -126,3 +126,64 @@ TEST(tagged, tiny_bit_set) {
     }
   }
 }
+
+// Checks that a score created with the given attributes works as expected.
+// Returns the score.
+static value_t test_new_score(score_category_t category, uint32_t subscore) {
+  value_t score = new_tagged_score(category, subscore);
+  ASSERT_EQ(category, get_score_category(score));
+  ASSERT_EQ(subscore, get_score_subscore(score));
+  return score;
+}
+
+TEST(tagged, new_score) {
+  test_new_score(scEq, 0);
+  test_new_score(scAny, 0);
+  test_new_score(scIs, 0);
+  test_new_score(scEq, 100);
+  test_new_score(scAny, 100);
+  test_new_score(scIs, 100);
+  test_new_score(scEq, 0xFFFFFFFF);
+  test_new_score(scAny, 0xFFFFFFFF);
+  test_new_score(scIs, 0xFFFFFFFF);
+}
+
+// Tests that the different score comparison functions give the expected
+// results on the given score values.
+static void test_score_compare(score_category_t cat_a, uint32_t sub_a,
+    unsigned rel, score_category_t cat_b, uint32_t sub_b) {
+  // Run the values through the new score test for good measure.
+  value_t a = test_new_score(cat_a, sub_a);
+  value_t b = test_new_score(cat_b, sub_b);
+  ASSERT_TRUE(test_relation(value_ordering_compare(a, b), rel));
+  int compared = compare_tagged_scores(a, b);
+  ASSERT_TRUE(test_relation(integer_to_relation(compared), rel));
+}
+
+TEST(tagged, compare_scores) {
+  // Scores compare in the opposite order of what you might expect -- lower
+  // values compare greater than. See score_ordering_compare for details.
+
+  test_score_compare(scEq, 1, reLessThan, scEq, 0);
+  test_score_compare(scEq, 0, reGreaterThan, scEq, 1);
+  test_score_compare(scEq, 1, reEqual, scEq, 1);
+
+  test_score_compare(scIs, 0, reLessThan, scEq, 0);
+  test_score_compare(scEq, 0, reGreaterThan, scIs, 0);
+  test_score_compare(scIs, 0, reEqual, scIs, 0);
+
+  test_score_compare(scIs, 1, reLessThan, scEq, 0);
+  test_score_compare(scIs, 0, reLessThan, scEq, 1);
+  test_score_compare(scEq, 1, reGreaterThan, scIs, 0);
+  test_score_compare(scEq, 0, reGreaterThan, scIs, 1);
+
+  test_score_compare(scIs, 0xFFFFFFFF, reLessThan, scEq, 0);
+  test_score_compare(scIs, 0, reLessThan, scEq, 0xFFFFFFFF);
+  test_score_compare(scEq, 0xFFFFFFFF, reGreaterThan, scIs, 0);
+  test_score_compare(scEq, 0, reGreaterThan, scIs, 0xFFFFFFFF);
+
+  test_score_compare(scAny, 0, reLessThan, scIs, 0);
+  test_score_compare(scAny, 0, reLessThan, scEq, 0);
+  test_score_compare(scAny, 0xFFFFFFFF, reLessThan, scIs, 0);
+  test_score_compare(scAny, 0xFFFFFFFF, reLessThan, scEq, 0);
+}

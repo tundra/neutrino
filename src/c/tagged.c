@@ -191,3 +191,23 @@ void ambience_redirect_print_on(value_t value, print_on_context_t *context) {
 void flag_set_print_on(value_t value, print_on_context_t *context) {
   string_buffer_printf(context->buf, "flag_set(%i)", get_custom_tagged_payload(value));
 }
+
+
+// --- S c o r e ---
+
+void score_print_on(value_t value, print_on_context_t *context) {
+  score_category_t category = get_score_category(value);
+  uint32_t subscore = get_score_subscore(value);
+  string_buffer_printf(context->buf, "score(%i/%i)", category, subscore);
+}
+
+value_t score_ordering_compare(value_t a, value_t b) {
+  CHECK_PHYLUM(tpScore, a);
+  CHECK_PHYLUM(tpScore, b);
+  // Note that scores compare in the opposite order of their payloads -- the
+  // absolute greatest value is 0 and the larger the payload value the smaller
+  // the score is considered to be. This matches the fact that the deeper the
+  // inheritance tree the worse the match is considered to be, so an scIs match
+  // with subscore 100 is much worse than one with subscore 0.
+  return compare_signed_integers(get_custom_tagged_payload(b), get_custom_tagged_payload(a));
+}
