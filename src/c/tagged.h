@@ -264,9 +264,11 @@ static value_t new_flag_set(uint32_t initial_value) {
 // within the category only if two scores belong to the same category. (That's
 // not how it's implemented though but it behaves as if it were).
 typedef enum {
-  scEq = 0,
-  scIs = 1,
-  scAny = 2,
+  scEq    = 0,
+  scIs    = 1,
+  scAny   = 2,
+  scExtra = 3,
+  scNone  = 4
 } score_category_t;
 
 // The number of bits used for the subscore within a tagged score.

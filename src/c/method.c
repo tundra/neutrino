@@ -6,7 +6,7 @@
 #include "codegen.h"
 #include "log.h"
 #include "method.h"
-#include "tagged.h"
+#include "tagged-inl.h"
 #include "try-inl.h"
 #include "value-inl.h"
 
@@ -70,7 +70,7 @@ bool match_result_is_match(match_result_t value) {
   return value >= mrMatch;
 }
 
-void match_info_init(match_info_t *info, score_t *scores, size_t *offsets,
+void match_info_init(match_info_t *info, value_t *scores, size_t *offsets,
     size_t capacity) {
   info->scores = scores;
   info->offsets = offsets;
@@ -106,7 +106,7 @@ value_t match_signature(value_t self, signature_map_lookup_input_t *input,
   match_result_t on_match = mrMatch;
   // Clear the score vector.
   for (size_t i = 0; i < argument_count; i++) {
-    match_info->scores[i] = gsNoMatch;
+    match_info->scores[i] = new_tagged_score(scNone, 0);
     match_info->offsets[i] = kNoOffset;
   }
   // Scan through the arguments and look them up in the signature.
@@ -120,7 +120,7 @@ value_t match_signature(value_t self, signature_map_lookup_input_t *input,
       if (allow_extra) {
         // It's fine, this signature allows extra arguments.
         on_match = mrExtraMatch;
-        match_info->scores[i] = gsExtraMatch;
+        match_info->scores[i] = new_tagged_score(scExtra, 0);
         continue;
       } else {
         // This signature doesn't allow extra arguments so we bail out.
@@ -139,7 +139,7 @@ value_t match_signature(value_t self, signature_map_lookup_input_t *input,
       return success();
     }
     value_t value = get_invocation_record_argument_at(input->record, input->frame, i);
-    score_t score;
+    value_t score;
     TRY(guard_match(get_parameter_guard(param), value, input, space, &score));
     if (!is_score_match(score)) {
       // The guard says the argument doesn't match. Bail out.
@@ -167,13 +167,13 @@ value_t match_signature(value_t self, signature_map_lookup_input_t *input,
   }
 }
 
-join_status_t join_score_vectors(score_t *target, score_t *source, size_t length) {
+join_status_t join_score_vectors(value_t *target, value_t *source, size_t length) {
   // The bit fiddling here works because of how the enum values are chosen.
   join_status_t result = jsEqual;
   for (size_t i = 0; i < length; i++) {
-    int cmp = compare_scores(target[i], source[i]);
+    int cmp = compare_tagged_scores(source[i], target[i]);
     if (cmp < 0) {
-      // The target was strictly better than the source.
+      // The source was strictly worse than the target.
       result = SET_ENUM_FLAG(join_status_t, result, jsWorse);
     } else if (cmp > 0) {
       // The source was strictly better than the target; override.
@@ -219,33 +219,29 @@ value_t guard_validate(value_t value) {
   return success();
 }
 
-bool is_score_match(score_t score) {
-  return score != gsNoMatch;
-}
-
-int compare_scores(score_t a, score_t b) {
-  return a < b ? -1 : (a == b ? 0 : 1);
+bool is_score_match(value_t score) {
+  return get_score_category(score) != scNone;
 }
 
 // Given two scores returns the best of them.
-static score_t best_score(score_t a, score_t b) {
-  return (compare_scores(a, b) < 0) ? a : b;
+static value_t best_score(value_t a, value_t b) {
+  return (compare_tagged_scores(a, b) > 0) ? a : b;
 }
 
 static value_t find_best_match(runtime_t *runtime, value_t current,
-    value_t target, score_t current_score, value_t space, score_t *score_out) {
+    value_t target, value_t current_score, value_t space, value_t *score_out) {
   if (value_identity_compare(current, target)) {
     *score_out = current_score;
     return success();
   } else {
     TRY_DEF(parents, get_type_parents(runtime, space, current));
     size_t length = get_array_buffer_length(parents);
-    score_t score = gsNoMatch;
+    value_t score = new_tagged_score(scNone, 0);
     for (size_t i = 0; i < length; i++) {
       value_t parent = get_array_buffer_at(parents, i);
-      score_t next_score = 0;
-      TRY(find_best_match(runtime, parent, target, current_score + 1, space,
-          &next_score));
+      value_t next_score = whatever();
+      TRY(find_best_match(runtime, parent, target, get_score_successor(current_score),
+          space, &next_score));
       score = best_score(score, next_score);
     }
     *score_out = score;
@@ -254,23 +250,23 @@ static value_t find_best_match(runtime_t *runtime, value_t current,
 }
 
 value_t guard_match(value_t guard, value_t value,
-    signature_map_lookup_input_t *lookup_input, value_t space, score_t *score_out) {
+    signature_map_lookup_input_t *lookup_input, value_t space, value_t *score_out) {
   CHECK_FAMILY(ofGuard, guard);
   switch (get_guard_type(guard)) {
     case gtEq: {
       value_t guard_value = get_guard_value(guard);
       bool match = value_identity_compare(guard_value, value);
-      *score_out = (match ? gsIdenticalMatch : gsNoMatch);
+      *score_out = (match ? new_tagged_score(scEq, 0) : new_tagged_score(scNone, 0));
       return success();
     }
     case gtIs: {
       TRY_DEF(primary, get_primary_type(value, lookup_input->runtime));
       value_t target = get_guard_value(guard);
       return find_best_match(lookup_input->runtime, primary, target,
-          gsPerfectIsMatch, space, score_out);
+          new_tagged_score(scIs, 0), space, score_out);
     }
     case gtAny:
-      *score_out = gsAnyMatch;
+      *score_out = new_tagged_score(scAny, 0);
       return success();
     default:
       UNREACHABLE("Unknown guard type");
@@ -372,7 +368,7 @@ struct signature_map_lookup_state_t {
   // The resulting value to return, or an appropriate condition.
   value_t result;
   // Running argument-wise max over all the entries that have matched.
-  score_t *max_score;
+  value_t *max_score;
   // We use two scratch offsets vectors such that we can keep the best in one
   // and the other as scratch, swapping them around when a new best one is
   // found.
@@ -395,7 +391,7 @@ static void signature_map_lookup_state_swap_offsets(signature_map_lookup_state_t
 
 // The max amount of arguments for which we'll allocate the lookup state on the
 // stack.
-#define kSmallLookupLimit 32
+#define kSmallLookupLimit 16
 
 value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
     value_t sigmap, value_t space) {
@@ -404,7 +400,7 @@ value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
   TOPIC_INFO(Lookup, "Looking up in signature map %v", sigmap);
   value_t entries = get_signature_map_entries(sigmap);
   size_t entry_count = get_pair_array_buffer_length(entries);
-  score_t scratch_score[kSmallLookupLimit];
+  value_t scratch_score[kSmallLookupLimit];
   match_info_t match_info;
   match_info_init(&match_info, scratch_score, state->scratch_offsets,
       kSmallLookupLimit);
@@ -454,11 +450,11 @@ value_t do_signature_map_lookup(value_t ambience, value_t record, frame_t *frame
   size_t arg_count = get_invocation_record_argument_count(record);
   CHECK_REL("too many arguments", arg_count, <=, kSmallLookupLimit);
   // Initialize the lookup state using stack-allocated space.
-  score_t max_score[kSmallLookupLimit];
+  value_t max_score[kSmallLookupLimit];
   // The following code will assume the max score has a meaningful value so
   // reset it explicitly.
   for (size_t i = 0; i < arg_count; i++)
-    max_score[i] = gsNoMatch;
+    max_score[i] = new_tagged_score(scNone, 0);
   size_t offsets_one[kSmallLookupLimit];
   size_t offsets_two[kSmallLookupLimit];
   signature_map_lookup_state_t state;

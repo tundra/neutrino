@@ -79,5 +79,13 @@ static int compare_tagged_scores(value_t a, value_t b) {
   return b_payload < a_payload ? -1 : (a_payload == b_payload ? 0 : 1);
 }
 
+// Returns a score that belongs to the same category as the given one with a
+// subscore that is one epsilon worse than the given value, so compares less
+// than.
+static value_t get_score_successor(value_t value) {
+  CHECK_PHYLUM(tpScore, value);
+  return new_tagged_score(get_score_category(value), get_score_subscore(value) + 1);
+}
+
 
 #endif // _TAGGED_INL

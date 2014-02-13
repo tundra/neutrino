@@ -3,12 +3,13 @@
 
 #include "alloc.h"
 #include "runtime.h"
+#include "tagged-inl.h"
 #include "test.h"
 #include "try-inl.h"
 
 // Checks that scoring value against guard gives a match iff is_match is true.
 #define ASSERT_MATCH(is_match, guard, value) do {                              \
-  score_t match;                                                               \
+  value_t match;                                                               \
   signature_map_lookup_input_t lookup_input;                                   \
   signature_map_lookup_input_init(&lookup_input, ambience, whatever(), NULL,   \
     NULL);                                                                     \
@@ -120,14 +121,14 @@ TEST(method, simple_is) {
 // Compare the score of matching guard GA against VA with the score of
 // matching GB against VB.
 #define ASSERT_COMPARE(GA, VA, REL, GB, VB) do {                               \
-  score_t score_a;                                                             \
+  value_t score_a;                                                             \
   signature_map_lookup_input_t lookup_input;                                   \
   signature_map_lookup_input_init(&lookup_input, ambience, whatever(), NULL,   \
     NULL);                                                                     \
   ASSERT_SUCCESS(guard_match(GA, VA, &lookup_input, space, &score_a));         \
-  score_t score_b;                                                             \
+  value_t score_b;                                                             \
   ASSERT_SUCCESS(guard_match(GB, VB, &lookup_input, space, &score_b));         \
-  ASSERT_TRUE(compare_scores(score_a, score_b) REL 0);                         \
+  ASSERT_TRUE(compare_tagged_scores(score_a, score_b) REL 0);                  \
 } while (false)
 
 TEST(method, is_score) {
@@ -150,10 +151,10 @@ TEST(method, is_score) {
   value_t is_str = new_heap_guard(runtime, afFreeze, gtIs, str_p);
   value_t is_s_str = new_heap_guard(runtime, afFreeze, gtIs, s_str_p);
 
-  ASSERT_COMPARE(is_str, x, <, is_obj, x);
-  ASSERT_COMPARE(is_x, x, <, is_str, x);
-  ASSERT_COMPARE(is_str, s_str, <, is_obj, s_str);
-  ASSERT_COMPARE(is_s_str, s_str, <, is_str, s_str);
+  ASSERT_COMPARE(is_str, x, >, is_obj, x);
+  ASSERT_COMPARE(is_x, x, >, is_str, x);
+  ASSERT_COMPARE(is_str, s_str, >, is_obj, s_str);
+  ASSERT_COMPARE(is_s_str, s_str, >, is_str, s_str);
 
   DISPOSE_RUNTIME();
 }
@@ -412,7 +413,7 @@ void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
   value_t vector = build_invocation_record_vector(runtime, tags);
   value_t record = new_heap_invocation_record(runtime, afFreeze, vector);
   static const size_t kLength = 16;
-  score_t scores[16];
+  value_t scores[16];
   size_t offsets[16];
   // Reset the offsets to a recognizable value (the size_t max).
   memset(offsets, 0xFF, kLength * sizeof(size_t));
@@ -636,9 +637,9 @@ TEST(method, match_argument_map) {
 }
 
 // Allocates a new score pointer.
-static score_t *new_score(test_arena_t *arena, score_t value) {
-  score_t *result = ARENA_MALLOC(arena, score_t);
-  *result = value;
+static value_t *new_score(test_arena_t *arena, uint32_t value) {
+  value_t *result = ARENA_MALLOC(arena, value_t);
+  *result = new_tagged_score(scEq, value);
   return result;
 }
 
@@ -647,15 +648,15 @@ static score_t *new_score(test_arena_t *arena, score_t value) {
 
 // Expands to a list of scores with the given values, terminated by NULL.
 #define SCORES(N, ...)                                                         \
-  ARENA_ARRAY(&__test_arena__, score_t*, (N + 1), __VA_ARGS__, NULL)
+  ARENA_ARRAY(&__test_arena__, value_t*, (N + 1), __VA_ARGS__, NULL)
 
 // Test that joining the given target and source yield the expected result and
 // scores stored in the target array.
-static void test_join(join_status_t status, score_t **expected,
-    score_t **test_target, score_t **test_source) {
-  score_t source[16];
-  score_t source_before[16];
-  score_t target[16];
+static void test_join(join_status_t status, value_t **expected,
+    value_t **test_target, value_t **test_source) {
+  value_t source[16];
+  value_t source_before[16];
+  value_t target[16];
   size_t length = 0;
   for (size_t i = 0; expected[i] != NULL; i++) {
     source[i] = source_before[i] = *test_source[i];
@@ -665,15 +666,15 @@ static void test_join(join_status_t status, score_t **expected,
   join_status_t found = join_score_vectors(target, source, length);
   ASSERT_EQ(status, found);
   for (size_t i = 0; i < length; i++) {
-    ASSERT_EQ(*expected[i], target[i]);
-    ASSERT_EQ(source_before[i], source[i]);
+    ASSERT_SAME(*expected[i], target[i]);
+    ASSERT_SAME(source_before[i], source[i]);
   }
 }
 
 TEST(method, join) {
   CREATE_TEST_ARENA();
 
-  score_t *empty = NULL;
+  value_t *empty = NULL;
   test_join(jsEqual,
       &empty,
       &empty,
