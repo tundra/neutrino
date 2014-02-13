@@ -77,6 +77,33 @@ void match_info_init(match_info_t *info, value_t *scores, size_t *offsets,
   info->capacity = capacity;
 }
 
+// This guard matched perfectly.
+static value_t new_identical_match_score() {
+  return new_score(scEq, 0);
+}
+
+// It's not an identical match but the closest possible instanceof-match.
+static value_t new_perfect_is_match_score() {
+  return new_score(scIs, 0);
+}
+
+// Score that signifies that a guard didn't match at all.
+static value_t new_no_match_score() {
+  return new_score(scNone, 0);
+}
+
+// There was a match but only because extra arguments are allowed so anything
+// more specific would match better.
+static value_t new_extra_match_score() {
+  return new_score(scExtra, 0);
+}
+
+// The guard matched the given value but only because it matches any value so
+// anything more specific would match better.
+static value_t new_any_match_score() {
+  return  new_score(scAny, 0);
+}
+
 value_t match_signature(value_t self, signature_map_lookup_input_t *input,
     value_t space, match_info_t *match_info, match_result_t *result_out) {
   TOPIC_INFO(Lookup, "Matching against %4v", self);
@@ -106,7 +133,7 @@ value_t match_signature(value_t self, signature_map_lookup_input_t *input,
   match_result_t on_match = mrMatch;
   // Clear the score vector.
   for (size_t i = 0; i < argument_count; i++) {
-    match_info->scores[i] = new_tagged_score(scNone, 0);
+    match_info->scores[i] = new_no_match_score();
     match_info->offsets[i] = kNoOffset;
   }
   // Scan through the arguments and look them up in the signature.
@@ -120,7 +147,7 @@ value_t match_signature(value_t self, signature_map_lookup_input_t *input,
       if (allow_extra) {
         // It's fine, this signature allows extra arguments.
         on_match = mrExtraMatch;
-        match_info->scores[i] = new_tagged_score(scExtra, 0);
+        match_info->scores[i] = new_extra_match_score();
         continue;
       } else {
         // This signature doesn't allow extra arguments so we bail out.
@@ -219,10 +246,6 @@ value_t guard_validate(value_t value) {
   return success();
 }
 
-bool is_score_match(value_t score) {
-  return get_score_category(score) != scNone;
-}
-
 // Given two scores returns the best of them.
 static value_t best_score(value_t a, value_t b) {
   return (compare_tagged_scores(a, b) > 0) ? a : b;
@@ -236,7 +259,7 @@ static value_t find_best_match(runtime_t *runtime, value_t current,
   } else {
     TRY_DEF(parents, get_type_parents(runtime, space, current));
     size_t length = get_array_buffer_length(parents);
-    value_t score = new_tagged_score(scNone, 0);
+    value_t score = new_no_match_score();
     for (size_t i = 0; i < length; i++) {
       value_t parent = get_array_buffer_at(parents, i);
       value_t next_score = whatever();
@@ -256,17 +279,17 @@ value_t guard_match(value_t guard, value_t value,
     case gtEq: {
       value_t guard_value = get_guard_value(guard);
       bool match = value_identity_compare(guard_value, value);
-      *score_out = (match ? new_tagged_score(scEq, 0) : new_tagged_score(scNone, 0));
+      *score_out = match ? new_identical_match_score() : new_no_match_score();
       return success();
     }
     case gtIs: {
       TRY_DEF(primary, get_primary_type(value, lookup_input->runtime));
       value_t target = get_guard_value(guard);
       return find_best_match(lookup_input->runtime, primary, target,
-          new_tagged_score(scIs, 0), space, score_out);
+          new_perfect_is_match_score(), space, score_out);
     }
     case gtAny:
-      *score_out = new_tagged_score(scAny, 0);
+      *score_out = new_any_match_score();
       return success();
     default:
       UNREACHABLE("Unknown guard type");
@@ -454,7 +477,7 @@ value_t do_signature_map_lookup(value_t ambience, value_t record, frame_t *frame
   // The following code will assume the max score has a meaningful value so
   // reset it explicitly.
   for (size_t i = 0; i < arg_count; i++)
-    max_score[i] = new_tagged_score(scNone, 0);
+    max_score[i] = new_no_match_score();
   size_t offsets_one[kSmallLookupLimit];
   size_t offsets_two[kSmallLookupLimit];
   signature_map_lookup_state_t state;

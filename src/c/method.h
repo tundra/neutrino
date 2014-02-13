@@ -184,9 +184,6 @@ value_t guard_match(value_t guard, value_t value,
     signature_map_lookup_input_t *lookup_input, value_t methodspace,
     value_t *score_out);
 
-// Returns true if the given score represents a match.
-bool is_score_match(value_t score);
-
 
 // --- M e t h o d ---
 

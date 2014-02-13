@@ -84,7 +84,12 @@ static int compare_tagged_scores(value_t a, value_t b) {
 // than.
 static value_t get_score_successor(value_t value) {
   CHECK_PHYLUM(tpScore, value);
-  return new_tagged_score(get_score_category(value), get_score_subscore(value) + 1);
+  return new_score(get_score_category(value), get_score_subscore(value) + 1);
+}
+
+// Returns true if the given score represents a match.
+static bool is_score_match(value_t score) {
+  return get_score_category(score) < scNone;
 }
 
 

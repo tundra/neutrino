@@ -637,14 +637,14 @@ TEST(method, match_argument_map) {
 }
 
 // Allocates a new score pointer.
-static value_t *new_score(test_arena_t *arena, uint32_t value) {
+static value_t *new_score_ptr(test_arena_t *arena, uint32_t value) {
   value_t *result = ARENA_MALLOC(arena, value_t);
-  *result = new_tagged_score(scEq, value);
+  *result = new_score(scEq, value);
   return result;
 }
 
 // Expands to a valid test score pointer with the given value.
-#define SCORE(V) new_score(&__test_arena__, V)
+#define SCORE(V) new_score_ptr(&__test_arena__, V)
 
 // Expands to a list of scores with the given values, terminated by NULL.
 #define SCORES(N, ...)                                                         \

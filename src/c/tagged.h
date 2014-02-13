@@ -276,7 +276,7 @@ static const size_t kScoreSubscoreWidth = 32;
 
 // Returns a new score value belonging to the given category with the given
 // subscore.
-static value_t new_tagged_score(score_category_t category, uint32_t subscore) {
+static value_t new_score(score_category_t category, uint32_t subscore) {
   return new_custom_tagged(tpScore, ((uint64_t) category << kScoreSubscoreWidth) | subscore);
 }
 
