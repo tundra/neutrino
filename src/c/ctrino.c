@@ -81,12 +81,6 @@ void ctrino_print_on(value_t value, print_on_context_t *context) {
   string_buffer_printf(context->buf, "ctrino");
 }
 
-static value_t ctrino_fail(builtin_arguments_t *args) {
-  log_message(llError, NULL, 0, "@ctrino.fail()");
-  exit(1);
-  return nothing();
-}
-
 static value_t ctrino_get_builtin_type(builtin_arguments_t *args) {
   runtime_t *runtime = get_builtin_runtime(args);
   value_t self = get_builtin_subject(args);
@@ -207,7 +201,6 @@ static value_t ctrino_builtin(builtin_arguments_t *args) {
   TRY(add_ctrino_method(runtime, space, name, argc, impl))
 
 value_t add_ctrino_builtin_methods(runtime_t *runtime, value_t space) {
-  ADD_BUILTIN("fail", 0, ctrino_fail);
   ADD_BUILTIN("get_builtin_type", 1, ctrino_get_builtin_type);
   ADD_BUILTIN("log_info", 1, ctrino_log_info);
   ADD_BUILTIN("print_ln", 1, ctrino_print_ln);
