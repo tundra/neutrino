@@ -71,12 +71,15 @@ static uint32_t get_score_subscore(value_t score) {
   return ((uint64_t) get_custom_tagged_payload(score)) & kMask;
 }
 
+// Returns true if a is a better score than b.
+static bool is_score_better(value_t a, value_t b) {
+  return a.encoded < b.encoded;
+}
+
 // Works the same way as the ordering compare but returns -1, 0, and 1 instead
 // of relation values.
 static int compare_tagged_scores(value_t a, value_t b) {
-  int64_t a_payload = get_custom_tagged_payload(a);
-  int64_t b_payload = get_custom_tagged_payload(b);
-  return b_payload < a_payload ? -1 : (a_payload == b_payload ? 0 : 1);
+  return is_score_better(a, b) ? 1 : (is_same_value(a, b) ? 0 : -1);
 }
 
 // Returns a score that belongs to the same category as the given one with a
@@ -84,12 +87,14 @@ static int compare_tagged_scores(value_t a, value_t b) {
 // than.
 static value_t get_score_successor(value_t value) {
   CHECK_PHYLUM(tpScore, value);
-  return new_score(get_score_category(value), get_score_subscore(value) + 1);
+  value_t result;
+  result.encoded = value.encoded + kCustomTaggedPayloadOne;
+  return result;
 }
 
 // Returns true if the given score represents a match.
 static bool is_score_match(value_t score) {
-  return get_score_category(score) < scNone;
+  return is_score_better(score, new_score(scNone, 0));
 }
 
 

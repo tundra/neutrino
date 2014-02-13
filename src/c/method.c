@@ -198,11 +198,10 @@ join_status_t join_score_vectors(value_t *target, value_t *source, size_t length
   // The bit fiddling here works because of how the enum values are chosen.
   join_status_t result = jsEqual;
   for (size_t i = 0; i < length; i++) {
-    int cmp = compare_tagged_scores(source[i], target[i]);
-    if (cmp < 0) {
+    if (is_score_better(target[i], source[i])) {
       // The source was strictly worse than the target.
       result = SET_ENUM_FLAG(join_status_t, result, jsWorse);
-    } else if (cmp > 0) {
+    } else if (is_score_better(source[i], target[i])) {
       // The source was strictly better than the target; override.
       result = SET_ENUM_FLAG(join_status_t, result, jsBetter);
       target[i] = source[i];
