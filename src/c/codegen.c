@@ -393,12 +393,13 @@ value_t assembler_emit_stack_piece_bottom(assembler_t *assm) {
 }
 
 value_t assembler_emit_invocation(assembler_t *assm, value_t fragment,
-    value_t record, opcode_t opcode) {
+    value_t record, opcode_t opcode, value_t helper) {
   CHECK_FAMILY(ofModuleFragment, fragment);
   CHECK_FAMILY(ofInvocationRecord, record);
   assembler_emit_opcode(assm, opcode);
   TRY(assembler_emit_value(assm, record));
   TRY(assembler_emit_value(assm, fragment));
+  TRY(assembler_emit_value(assm, helper));
   // The result will be pushed onto the stack on top of the arguments.
   assembler_adjust_stack_height(assm, 1);
   size_t argc = get_invocation_record_argument_count(record);

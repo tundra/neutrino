@@ -765,6 +765,15 @@ static value_t lookup_through_fragment(signature_map_lookup_state_t *state,
   return success();
 }
 
+static value_t lookup_through_fragment_with_helper(signature_map_lookup_state_t *state,
+    value_t fragment, value_t helper) {
+  CHECK_FAMILY(ofModuleFragment, fragment);
+  CHECK_FAMILY(ofSignatureMap, helper);
+  value_t space = get_module_fragment_methodspace(fragment);
+  TRY(continue_signature_map_lookup(state, helper, space));
+  return success();
+}
+
 // Perform a method lookup in the subject's module of origin.
 static value_t lookup_subject_methods(signature_map_lookup_state_t *state) {
   // Look for a subject value, if there is none there is nothing to do.
@@ -795,6 +804,7 @@ static value_t lookup_subject_methods(signature_map_lookup_state_t *state) {
 // A pair of a value and an argument map. If only C had generic types.
 typedef struct {
   value_t value;
+  value_t helper;
   value_t *arg_map_out;
 } value_and_argument_map_t;
 
@@ -804,7 +814,7 @@ static value_t do_full_method_lookup(signature_map_lookup_state_t *state) {
   value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
   CHECK_FAMILY(ofModuleFragment, data->value);
   TOPIC_INFO(Lookup, "Performing fragment lookup %v", state->input.record);
-  TRY(lookup_through_fragment(state, data->value));
+  TRY(lookup_through_fragment_with_helper(state, data->value, data->helper));
   TOPIC_INFO(Lookup, "Performing subject lookup");
   TRY(lookup_subject_methods(state));
   TOPIC_INFO(Lookup, "Lookup result: %v", state->result);
@@ -813,9 +823,10 @@ static value_t do_full_method_lookup(signature_map_lookup_state_t *state) {
 }
 
 value_t lookup_method_full(value_t ambience, value_t fragment,
-    value_t record, frame_t *frame, value_t *arg_map_out) {
+    value_t record, frame_t *frame, value_t helper, value_t *arg_map_out) {
   value_and_argument_map_t data;
   data.value = fragment;
+  data.helper = helper;
   data.arg_map_out = arg_map_out;
   return do_signature_map_lookup(ambience, record, frame, do_full_method_lookup,
       &data);

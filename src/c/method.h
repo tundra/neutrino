@@ -310,7 +310,7 @@ value_t add_methodspace_method(runtime_t *runtime, value_t self,
 // TODO: this is an approximation of the intended lookup mechanism and should be
 //   revised later on, for instance to not hard-code the subject origin lookup.
 value_t lookup_method_full(value_t ambience, value_t fragment,
-    value_t record, frame_t *frame, value_t *arg_map_out);
+    value_t record, frame_t *frame, value_t helper, value_t *arg_map_out);
 
 value_t lookup_methodspace_method(value_t ambience, value_t methodspace,
     value_t record, frame_t *frame, value_t *arg_map_out);
