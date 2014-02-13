@@ -10,9 +10,6 @@
 #include "process.h"
 #include "value-inl.h"
 
-// A guard score against a value.
-typedef uint32_t score_t;
-
 // Input to a signature map lookup. This is the stuff that's fixed across the
 // whole lookup. This is kept in a separate struct such that it can be passed
 // to any part of the lookup that needs it separately from the rest of the
@@ -94,7 +91,7 @@ static const size_t kNoOffset = ~((size_t) 0);
 // including the score vector and parameter-argument mapping.
 typedef struct {
   // On a successful match the scores will be stored here.
-  score_t *scores;
+  value_t *scores;
   // On a successful match the parameter offsets will be stored here. Any
   // arguments that don't correspond to a parameter will be set to kNoOffset.
   size_t *offsets;
@@ -103,7 +100,7 @@ typedef struct {
 } match_info_t;
 
 // Initializes a match info struct.
-void match_info_init(match_info_t *info, score_t *scores, size_t *offsets,
+void match_info_init(match_info_t *info, value_t *scores, size_t *offsets,
     size_t capacity);
 
 // Matches the given invocation against this signature. You should not base
@@ -132,7 +129,7 @@ typedef enum {
 
 // Joins two score vectors together, writing the result into the target vector.
 // The returned value identifies what the outcome of the join was.
-join_status_t join_score_vectors(score_t *target, score_t *source, size_t length);
+join_status_t join_score_vectors(value_t *target, value_t *source, size_t length);
 
 
 // --- P a r a m e t e r ---
@@ -180,36 +177,12 @@ ACCESSORS_DECL(guard, value);
 // The type of match to perform for this guard.
 TYPED_ACCESSORS_DECL(guard, guard_type_t, type);
 
-// This guard matched perfectly.
-static const score_t gsIdenticalMatch = 0;
-
-// It's not an identical match but the closest possible instanceof-match.
-static const score_t gsPerfectIsMatch = 1;
-
-// Score that signifies that a guard didn't match at all.
-static const score_t gsNoMatch = 0xFFFFFFFF;
-
-// There was a match but only because extra arguments are allowed so anything
-// more specific would match better.
-static const score_t gsExtraMatch = 0xFFFFFFFE;
-
-// The guard matched the given value but only because it matches any value so
-// anything more specific would match better.
-static const score_t gsAnyMatch = 0xFFFFFFFD;
-
 // Matches the given guard against the given value, returning a condition that
 // indicates whether the match was successful and, if it was, storing the score
 // in the out argument for how well it matched within the given method space.
 value_t guard_match(value_t guard, value_t value,
     signature_map_lookup_input_t *lookup_input, value_t methodspace,
-    score_t *score_out);
-
-// Returns true if the given score represents a match.
-bool is_score_match(score_t score);
-
-// Compares which score is best. If a is better than b then it will compare
-// smaller, equally good compares equal, and worse compares greater than.
-int compare_scores(score_t a, score_t b);
+    value_t *score_out);
 
 
 // --- M e t h o d ---
