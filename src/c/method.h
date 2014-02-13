@@ -116,10 +116,10 @@ void match_info_init(match_info_t *info, value_t *scores, size_t *offsets,
 value_t match_signature(value_t self, signature_map_lookup_input_t *input,
     value_t space, match_info_t *match_info, match_result_t *match_out);
 
-// Matches the given invocation record set against this signature. If this
-// signature can be matched successfully against some invocation with these
-// tags this will store a successful match value in the match out parameter,
-// otherwise it will store a failure value.
+// Matches the given invocation record against this signature. If this
+// signature can be matched successfully against some invocation with this
+// record this will store a successful match value in the match out parameter,
+// otherwise it will store a match failure value.
 value_t match_signature_tags(value_t self, value_t record,
     match_result_t *match_out);
 

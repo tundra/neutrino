@@ -106,6 +106,10 @@ static value_t new_any_match_score() {
 
 value_t match_signature(value_t self, signature_map_lookup_input_t *input,
     value_t space, match_info_t *match_info, match_result_t *result_out) {
+  // This implementation matches match_signature_tags very closely. Ideally the
+  // same implementation could be used for both purposes but the flow is
+  // different enough that having two near-identical copies is actually easier
+  // to manage. Make sure to keep them in sync.
   CHECK_FAMILY(ofSignature, self);
   CHECK_FAMILY_OPT(ofMethodspace, space);
   TOPIC_INFO(Lookup, "Matching against %4v", self);
@@ -198,11 +202,12 @@ value_t match_signature(value_t self, signature_map_lookup_input_t *input,
 
 value_t match_signature_tags(value_t self, value_t record,
     match_result_t *result_out) {
-  CHECK_FAMILY(ofSignature, self);
-  CHECK_FAMILY(ofInvocationRecord, record);
   // This implementation matches match_signature very closely. Ideally the same
   // implementation could be used for both purposes but the flow is different
   // enough that having two near-identical copies is actually easier to manage.
+  // Make sure to keep them in sync.
+  CHECK_FAMILY(ofSignature, self);
+  CHECK_FAMILY(ofInvocationRecord, record);
   TOPIC_INFO(Lookup, "Matching tags against %4v", self);
   size_t argument_count = get_invocation_record_argument_count(record);
   // Fast case if fewer than that minimum number of arguments is given.
@@ -255,7 +260,7 @@ value_t match_signature_tags(value_t self, value_t record,
       *result_out = mrRedundantArgument;
       return success();
     }
-    // We got a match! Record the result and move on to the next.
+    // We got a match! Move on to the next.
     bit_vector_set_at(&params_seen, index, true);
     if (!get_parameter_is_optional(param))
       mandatory_seen_count++;
