@@ -166,6 +166,11 @@ static value_t new_integer(int64_t value) {
   return result;
 }
 
+// If given an argument that is compile-time constant expands to a compile-time
+// constant value that is equal to the encoded value of an integer object with
+// the given value. Don't use this if you can avoid it.
+#define NEW_STATIC_INTEGER(V) (((int64_t) (V)) << 3)
+
 // Returns the integer value stored in a tagged integer.
 static int64_t get_integer_value(value_t value) {
   CHECK_DOMAIN(vdInteger, value);
@@ -238,106 +243,110 @@ static value_t new_moved_object(value_t target) {
 //       state stored in the species?
 //   - Ow: do objects of this family use some other objects in their
 //       implementation that they own?
+//   - N: ordinal used to calculate the family enum values.
 //
-// CamelName                 underscore_name            Cm Id Pt Sr Nl Fu Em Md Ow
+// CamelName                 underscore_name            Cm Id Pt Sr Nl Fu Em Md Ow N
 
 // Enumerates the special species, the ones that require special handling during
 // startup.
 #define ENUM_SPECIAL_OBJECT_FAMILIES(F)                                           \
-  F(Species,                 species,                   _, _, _, _, X, _, _, X, _)
+  F(Species,                 species,                   _, _, _, _, X, _, _, X, _,  0)
 
 // Enumerates the compact object species. The order these appear in is the order
 // in which the families sort relative to each other (higher families sort
 // before lower ones). Families whose sort order is irrelevant must be in
 // alphabetical order.
 #define ENUM_OTHER_OBJECT_FAMILIES(F)                                             \
-  F(Key,                     key,                       X, _, _, X, _, _, _, X, _)\
+  F(Key,                     key,                       X, _, _, X, _, _, _, X, _,  1)\
   /*   ---   Correctness depends on the sort order of families above      ---   */\
   /*   ---   this divider. The relative sort order of the families        ---   */\
   /*   ---   below must not affect correctness. If it does they must be   ---   */\
   /*   ---   moved above the line (or a corresponding line must be made   ---   */\
   /*   ---   at the bottom).                                              ---   */\
-  F(Ambience,                ambience,                  _, _, _, _, X, _, _, _, _)\
-  F(ArgumentAst,             argument_ast,              _, _, X, X, _, _, _, _, _)\
-  F(ArgumentMapTrie,         argument_map_trie,         _, _, _, _, _, _, _, X, X)\
-  F(Array,                   array,                     _, X, _, X, X, _, _, X, _)\
-  F(ArrayAst,                array_ast,                 _, _, X, X, _, _, X, _, _)\
-  F(ArrayBuffer,             array_buffer,              _, _, _, X, _, _, _, X, X)\
-  F(Backtrace,               backtrace,                 _, _, _, X, _, _, _, _, _)\
-  F(BacktraceEntry,          backtrace_entry,           _, _, _, _, _, _, _, _, _)\
-  F(Blob,                    blob,                      _, _, _, X, X, _, _, _, _)\
-  F(BuiltinImplementation,   builtin_implementation,    _, _, _, _, _, _, _, X, _)\
-  F(BuiltinMarker,           builtin_marker,            _, _, _, X, _, _, _, _, _)\
-  F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X)\
-  F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _)\
-  F(CurrentModuleAst,        current_module_ast,        _, _, X, _, _, _, X, _, _)\
-  F(DecimalFraction,         decimal_fraction,          _, _, X, _, _, _, _, _, _)\
-  F(Escape,                  escape,                    _, _, _, X, _, _, _, _, _)\
-  F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _)\
-  F(Function,                function,                  _, _, _, X, _, _, _, X, _)\
-  F(GlobalField,             global_field,              _, _, _, X, _, _, _, _, _)\
-  F(Guard,                   guard,                     _, _, _, _, _, _, _, X, _)\
-  F(GuardAst,                guard_ast,                 _, _, X, X, _, _, _, _, _)\
-  F(Identifier,              identifier,                X, X, X, _, _, _, _, _, _)\
-  F(IdHashMap,               id_hash_map,               _, _, _, X, _, X, _, X, X)\
-  F(Instance,                instance,                  _, _, X, X, _, _, _, _, _)\
-  F(InstanceManager,         instance_manager,          _, _, _, X, _, _, _, _, _)\
-  F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _, _)\
-  F(InvocationRecord,        invocation_record,         _, _, _, _, _, _, _, X, X)\
-  F(IsDeclarationAst,        is_declaration_ast,        _, _, X, _, _, _, _, _, _)\
-  F(Lambda,                  lambda,                    _, _, _, X, _, _, _, X, X)\
-  F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, _, _)\
-  F(Library,                 library,                   _, _, X, _, _, _, _, _, _)\
-  F(LiteralAst,              literal_ast,               _, _, X, X, _, _, X, _, _)\
-  F(LocalDeclarationAst,     local_declaration_ast,     _, _, X, X, _, _, X, _, _)\
-  F(LocalVariableAst,        local_variable_ast,        _, _, X, X, _, _, X, _, _)\
-  F(Method,                  method,                    _, _, _, _, _, _, _, X, _)\
-  F(MethodAst,               method_ast,                _, _, X, X, _, _, _, X, _)\
-  F(MethodDeclarationAst,    method_declaration_ast,    _, _, X, _, _, _, _, _, _)\
-  F(Methodspace,             methodspace,               _, _, _, _, _, _, _, X, X)\
-  F(Module,                  module,                    _, _, _, _, _, _, _, X, X)\
-  F(ModuleFragment,          module_fragment,           _, _, _, _, _, _, _, X, X)\
-  F(ModuleFragmentPrivate,   module_fragment_private,   _, _, _, X, _, _, _, X, _)\
-  F(ModuleLoader,            module_loader,             _, _, _, _, _, _, _, _, _)\
-  F(MutableRoots,            mutable_roots,             _, _, _, _, _, _, _, X, X)\
-  F(Namespace,               namespace,                 _, _, _, _, _, _, _, X, X)\
-  F(NamespaceDeclarationAst, namespace_declaration_ast, _, _, X, _, _, _, _, _, _)\
-  F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _)\
-  F(Operation,               operation,                 _, X, X, _, _, _, _, X, _)\
-  F(Options,                 options,                   _, _, X, _, _, _, _, _, _)\
-  F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _)\
-  F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _)\
-  F(Path,                    path,                      X, X, X, X, _, _, _, X, _)\
-  F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, _, _)\
-  F(Reference,               reference,                 _, _, _, _, _, _, _, X, _)\
-  F(Roots,                   roots,                     _, _, _, _, _, _, _, X, X)\
-  F(SequenceAst,             sequence_ast,              _, _, X, X, _, _, X, _, _)\
-  F(SignalAst,               signal_ast,                _, _, X, X, _, _, X, _, _)\
-  F(Signature,               signature,                 _, _, _, _, _, _, _, X, X)\
-  F(SignatureAst,            signature_ast,             _, _, X, X, _, _, _, _, _)\
-  F(SignatureMap,            signature_map,             _, _, _, _, _, _, _, X, X)\
-  F(Stack,                   stack,                     _, _, _, _, _, _, _, _, _)\
-  F(StackPiece,              stack_piece,               _, _, _, _, _, _, _, _, _)\
-  F(String,                  string,                    X, X, _, X, X, _, _, _, _)\
-  F(SymbolAst,               symbol_ast,                _, _, X, X, _, _, _, _, _)\
-  F(Type,                    type,                      _, _, X, X, _, _, _, X, _)\
-  F(UnboundModule,           unbound_module,            _, _, X, _, _, _, _, _, _)\
-  F(UnboundModuleFragment,   unbound_module_fragment,   _, _, X, _, _, _, _, _, _)\
-  F(Unknown,                 unknown,                   _, _, X, _, _, _, _, _, _)\
-  F(VariableAssignmentAst,   variable_assignment_ast,   _, _, X, _, _, _, X, _, _)\
-  F(VoidP,                   void_p,                    _, _, _, _, X, _, _, _, _)\
-  F(WithEscapeAst,           with_escape_ast,           _, _, X, _, _, _, X, _, _)
+  F(Ambience,                ambience,                  _, _, _, _, X, _, _, _, _,  2)\
+  F(ArgumentAst,             argument_ast,              _, _, X, X, _, _, _, _, _,  3)\
+  F(ArgumentMapTrie,         argument_map_trie,         _, _, _, _, _, _, _, X, X,  4)\
+  F(Array,                   array,                     _, X, _, X, X, _, _, X, _,  5)\
+  F(ArrayAst,                array_ast,                 _, _, X, X, _, _, X, _, _,  6)\
+  F(ArrayBuffer,             array_buffer,              _, _, _, X, _, _, _, X, X,  7)\
+  F(Backtrace,               backtrace,                 _, _, _, X, _, _, _, _, _,  8)\
+  F(BacktraceEntry,          backtrace_entry,           _, _, _, _, _, _, _, _, _,  9)\
+  F(Blob,                    blob,                      _, _, _, X, X, _, _, _, _, 10)\
+  F(BuiltinImplementation,   builtin_implementation,    _, _, _, _, _, _, _, X, _, 11)\
+  F(BuiltinMarker,           builtin_marker,            _, _, _, X, _, _, _, _, _, 12)\
+  F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X, 13)\
+  F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _, 14)\
+  F(CurrentModuleAst,        current_module_ast,        _, _, X, _, _, _, X, _, _, 15)\
+  F(DecimalFraction,         decimal_fraction,          _, _, X, _, _, _, _, _, _, 16)\
+  F(Escape,                  escape,                    _, _, _, X, _, _, _, _, _, 17)\
+  F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _, 18)\
+  F(Function,                function,                  _, _, _, X, _, _, _, X, _, 19)\
+  F(GlobalField,             global_field,              _, _, _, X, _, _, _, _, _, 20)\
+  F(Guard,                   guard,                     _, _, _, _, _, _, _, X, _, 21)\
+  F(GuardAst,                guard_ast,                 _, _, X, X, _, _, _, _, _, 22)\
+  F(Identifier,              identifier,                X, X, X, _, _, _, _, _, _, 23)\
+  F(IdHashMap,               id_hash_map,               _, _, _, X, _, X, _, X, X, 24)\
+  F(Instance,                instance,                  _, _, X, X, _, _, _, _, _, 25)\
+  F(InstanceManager,         instance_manager,          _, _, _, X, _, _, _, _, _, 26)\
+  F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _, _, 27)\
+  F(InvocationRecord,        invocation_record,         _, _, _, _, _, _, _, X, X, 28)\
+  F(IsDeclarationAst,        is_declaration_ast,        _, _, X, _, _, _, _, _, _, 29)\
+  F(Lambda,                  lambda,                    _, _, _, X, _, _, _, X, X, 30)\
+  F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, _, _, 31)\
+  F(Library,                 library,                   _, _, X, _, _, _, _, _, _, 32)\
+  F(LiteralAst,              literal_ast,               _, _, X, X, _, _, X, _, _, 33)\
+  F(LocalDeclarationAst,     local_declaration_ast,     _, _, X, X, _, _, X, _, _, 34)\
+  F(LocalVariableAst,        local_variable_ast,        _, _, X, X, _, _, X, _, _, 35)\
+  F(Method,                  method,                    _, _, _, _, _, _, _, X, _, 36)\
+  F(MethodAst,               method_ast,                _, _, X, X, _, _, _, X, _, 37)\
+  F(MethodDeclarationAst,    method_declaration_ast,    _, _, X, _, _, _, _, _, _, 38)\
+  F(Methodspace,             methodspace,               _, _, _, _, _, _, _, X, X, 39)\
+  F(Module,                  module,                    _, _, _, _, _, _, _, X, X, 40)\
+  F(ModuleFragment,          module_fragment,           _, _, _, _, _, _, _, X, X, 41)\
+  F(ModuleFragmentPrivate,   module_fragment_private,   _, _, _, X, _, _, _, X, _, 42)\
+  F(ModuleLoader,            module_loader,             _, _, _, _, _, _, _, _, _, 43)\
+  F(MutableRoots,            mutable_roots,             _, _, _, _, _, _, _, X, X, 44)\
+  F(Namespace,               namespace,                 _, _, _, _, _, _, _, X, X, 45)\
+  F(NamespaceDeclarationAst, namespace_declaration_ast, _, _, X, _, _, _, _, _, _, 46)\
+  F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _, 47)\
+  F(Operation,               operation,                 _, X, X, _, _, _, _, X, _, 48)\
+  F(Options,                 options,                   _, _, X, _, _, _, _, _, _, 49)\
+  F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _, 50)\
+  F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _, 51)\
+  F(Path,                    path,                      X, X, X, X, _, _, _, X, _, 52)\
+  F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, _, _, 53)\
+  F(Reference,               reference,                 _, _, _, _, _, _, _, X, _, 54)\
+  F(Roots,                   roots,                     _, _, _, _, _, _, _, X, X, 55)\
+  F(SequenceAst,             sequence_ast,              _, _, X, X, _, _, X, _, _, 56)\
+  F(SignalAst,               signal_ast,                _, _, X, X, _, _, X, _, _, 57)\
+  F(Signature,               signature,                 _, _, _, _, _, _, _, X, X, 58)\
+  F(SignatureAst,            signature_ast,             _, _, X, X, _, _, _, _, _, 59)\
+  F(SignatureMap,            signature_map,             _, _, _, _, _, _, _, X, X, 60)\
+  F(Stack,                   stack,                     _, _, _, _, _, _, _, _, _, 61)\
+  F(StackPiece,              stack_piece,               _, _, _, _, _, _, _, _, _, 62)\
+  F(String,                  string,                    X, X, _, X, X, _, _, _, _, 63)\
+  F(SymbolAst,               symbol_ast,                _, _, X, X, _, _, _, _, _, 64)\
+  F(Type,                    type,                      _, _, X, X, _, _, _, X, _, 65)\
+  F(UnboundModule,           unbound_module,            _, _, X, _, _, _, _, _, _, 66)\
+  F(UnboundModuleFragment,   unbound_module_fragment,   _, _, X, _, _, _, _, _, _, 67)\
+  F(Unknown,                 unknown,                   _, _, X, _, _, _, _, _, _, 68)\
+  F(VariableAssignmentAst,   variable_assignment_ast,   _, _, X, _, _, _, X, _, _, 69)\
+  F(VoidP,                   void_p,                    _, _, _, _, X, _, _, _, _, 70)\
+  F(WithEscapeAst,           with_escape_ast,           _, _, X, _, _, _, X, _, _, 71)
 
 // Enumerates all the object families.
 #define ENUM_OBJECT_FAMILIES(F)                                                \
     ENUM_OTHER_OBJECT_FAMILIES(F)                                              \
     ENUM_SPECIAL_OBJECT_FAMILIES(F)
 
-// Enum identifying the different families of heap objects.
+// Enum identifying the different families of heap objects. The integer values
+// of the enums are tagged as integers which means that they can be stored in
+// the heap without wrapping and unwrapping and the gc will just leave them
+// alone.
 typedef enum {
   __ofFirst__ = -1
-  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW) \
-  , of##Family
+  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N) \
+  , of##Family = NEW_STATIC_INTEGER(N)
   ENUM_OBJECT_FAMILIES(__DECLARE_OBJECT_FAMILY_ENUM__)
   #undef __DECLARE_OBJECT_FAMILY_ENUM__
   // This is a special value separate from any of the others that can be used
@@ -384,31 +393,35 @@ static value_t new_object(address_t addr) {
   return result;
 }
 
-// Bit cast a value to a void*.
-static void *value_to_pointer_bit_cast(value_t value) {
-  void *result = 0;
-  memcpy(&result, &value.encoded, sizeof(void*));
-  return result;
-}
+// Bit cast a value to a void*. Defined as a macro because this is an extremely
+// hot operation so we need to be sure it gets inlined even in debug mode.
+#define value_to_pointer_bit_cast(VALUE) ((void*) (address_arith_t) (VALUE).encoded)
 
+#ifdef EXPENSIVE_CHECKS
 // Returns the address of the object pointed to by a tagged object value
-// pointer.
+// pointer. This version does some extra sanity checking which is only enabled
+// in expensive check mode.
 static address_t get_object_address(value_t value) {
-  CHECK_DOMAIN(vdObject, value);
+  CHECK_DOMAIN_HOT(vdObject, value);
   address_t tagged_address = (address_t) value_to_pointer_bit_cast(value);
   return tagged_address - ((address_arith_t) vdObject);
 }
+#else
+// Returns the address of the object pointed to by a tagged object value
+// pointer. This version is used outside expensive check mode since the overhead
+// of a call in debug mode is huge even when the check is disabled.
+#define get_object_address(VALUE) (((address_t) value_to_pointer_bit_cast(VALUE)) - ((address_arith_t) vdObject))
+#endif
 
 // Returns a pointer to the index'th field in the given heap object. Check
-// fails if the value is not a heap object.
-static value_t *access_object_field(value_t value, size_t index) {
-  CHECK_DOMAIN(vdObject, value);
-  address_t addr = get_object_address(value);
-  return (value_t*) (addr + index);
-}
+// fails if the value is not a heap object when expensive checks are enabled.
+// This is a hot operation so it's a macro.
+#define access_object_field(VALUE, INDEX)                                      \
+  ((value_t*) (((address_t) get_object_address(VALUE)) + ((size_t) (INDEX))))
 
-// Returns the object type of the object the given value points to.
-object_family_t get_object_family(value_t value);
+// Returns the object type of the object the given value points to. This is a
+// macro because it is a hot function.
+#define get_object_family(VALUE) get_species_instance_family(get_object_species(VALUE))
 
 // Returns true iff the given value belongs to a syntax family.
 bool in_syntax_family(value_t value);
@@ -464,6 +477,13 @@ INTEGER_GETTER_DECL(receiver, field)
 
 // The species of this object.
 ACCESSORS_DECL(object, species);
+
+// Sets the species pointer for this object.
+void set_object_species(value_t value, value_t species);
+
+// Yields the species of the given object. This is a hot operation so it's a
+// macro rather than a proper function.
+#define get_object_species(VALUE) (*access_object_field((VALUE), kObjectHeaderOffset))
 
 // The header of the given object value. During normal execution this will be
 // the species but during GC it may be a forward pointer. Only use these calls
@@ -588,8 +608,14 @@ static const size_t kSpeciesDivisionBehaviorOffset = OBJECT_FIELD_OFFSET(2);
 // from 0 and not counting the species header fields.
 #define SPECIES_FIELD_OFFSET(N) (kSpeciesHeaderSize + (N * kValueSize))
 
-// The object family of instances of this species.
-TYPED_ACCESSORS_DECL(species, object_family_t, instance_family);
+// Sets the object family of instances of this species.
+void set_species_instance_family(value_t self, object_family_t family);
+
+// Returns the object family of instances of this species. The way this works is
+// all sorts of weird magic, especially the enum values actually being encoded
+// integers, but this operation is really hot so it's worth making it fast.
+#define get_species_instance_family(VALUE)                                     \
+  ((object_family_t) (access_object_field((VALUE), kSpeciesInstanceFamilyOffset)->encoded))
 
 // Returns the object family behavior of this species belongs to.
 family_behavior_t *get_species_family_behavior(value_t species);

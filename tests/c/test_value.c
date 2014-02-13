@@ -78,6 +78,41 @@ TEST(value, tagged_integers) {
   ASSERT_EQ(0, get_integer_value(v2));
 }
 
+// Creates a new integer value using NEW_STATIC_INTEGER.
+static value_t new_static_integer(int64_t value) {
+  value_t result;
+  result.encoded = NEW_STATIC_INTEGER(value);
+  return result;
+}
+
+TEST(value, static_tagged_integers) {
+  value_t v0 = new_static_integer(10);
+  ASSERT_DOMAIN(vdInteger, v0);
+  ASSERT_EQ(10, get_integer_value(v0));
+  value_t v1 = new_static_integer(-10);
+  ASSERT_DOMAIN(vdInteger, v1);
+  ASSERT_EQ(-10, get_integer_value(v1));
+  value_t v2 = new_static_integer(0);
+  ASSERT_DOMAIN(vdInteger, v2);
+  ASSERT_EQ(0, get_integer_value(v2));
+}
+
+TEST(value, family_values) {
+  // Test that the integer values of the family enums are integers when viewed
+  // as encoded value_ts.
+  value_t value;
+  value.encoded = ofAmbience;
+  ASSERT_DOMAIN(vdInteger, value);
+  value.encoded = ofGlobalField;
+  ASSERT_DOMAIN(vdInteger, value);
+  value.encoded = ofLambda;
+  ASSERT_DOMAIN(vdInteger, value);
+  value.encoded = ofReference;
+  ASSERT_DOMAIN(vdInteger, value);
+  value.encoded = ofWithEscapeAst;
+  ASSERT_DOMAIN(vdInteger, value);
+}
+
 TEST(value, conditions) {
   value_t v0 = new_condition(ccHeapExhausted);
   ASSERT_DOMAIN(vdCondition, v0);

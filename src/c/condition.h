@@ -93,7 +93,7 @@ typedef enum {
 typedef union {
   struct {
     value_domain_t domain : 8;
-    object_family_t family : 8;
+    object_family_t family : 16;
     unsupported_behavior_cause_t cause : 8;
   } decoded;
   uint32_t encoded;
