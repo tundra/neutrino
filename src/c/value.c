@@ -34,7 +34,7 @@ int get_value_domain_ordinal(value_domain_t domain) {
 
 const char *get_object_family_name(object_family_t family) {
   switch (family) {
-#define __GEN_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)       \
+#define __GEN_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)    \
     case of##Family: return #Family;
     ENUM_OBJECT_FAMILIES(__GEN_CASE__)
 #undef __GEN_CASE__
@@ -157,20 +157,11 @@ void set_object_species(value_t value, value_t species) {
   set_object_header(value, species);
 }
 
-value_t get_object_species(value_t value) {
-  return *access_object_field(value, kObjectHeaderOffset);
-}
-
-object_family_t get_object_family(value_t value) {
-  value_t species = get_object_species(value);
-  return get_species_instance_family(species);
-}
-
 bool in_syntax_family(value_t value) {
   if (get_value_domain(value) != vdObject)
     return false;
   switch (get_object_family(value)) {
-#define __MAKE_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW)      \
+#define __MAKE_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)   \
   EM(                                                                          \
     case of##Family: return true;,                                             \
     )
@@ -214,15 +205,13 @@ value_t add_object_builtin_implementations(runtime_t *runtime, safe_value_t s_ma
 
 TRIVIAL_PRINT_ON_IMPL(Species, species);
 
-void set_species_instance_family(value_t value,
-    object_family_t instance_family) {
-  *access_object_field(value, kSpeciesInstanceFamilyOffset) =
-      new_integer(instance_family);
-}
-
-object_family_t get_species_instance_family(value_t value) {
-  value_t family = *access_object_field(value, kSpeciesInstanceFamilyOffset);
-  return (object_family_t) get_integer_value(family);
+void set_species_instance_family(value_t self, object_family_t family) {
+  value_t as_value;
+  // This is only possible because of the way the family enum values are
+  // constructed.
+  as_value.encoded = family;
+  CHECK_DOMAIN(vdInteger, as_value);
+  *access_object_field(self, kSpeciesInstanceFamilyOffset) = as_value;
 }
 
 void set_species_family_behavior(value_t value, family_behavior_t *behavior) {

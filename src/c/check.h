@@ -126,6 +126,11 @@ IF_CHECKS_ENABLED(CHECK_EQ(M, E, false))
 #define CHECK_DOMAIN(vdDomain, EXPR)                                           \
 IF_CHECKS_ENABLED(__CHECK_CLASS__(value_domain_t, vdDomain, EXPR, get_value_domain))
 
+// Works the same way as CHECK_DOMAIN but can be used in hot code because it
+// gets enabled and disabled as an expensive check.
+#define CHECK_DOMAIN_HOT(vdDomain, EXPR)                                       \
+IF_EXPENSIVE_CHECKS_ENABLED(CHECK_DOMAIN(vdDomain, EXPR))
+
 // Check that fails unless the object is in the specified family or nothing.
 #define CHECK_DOMAIN_OPT(vdDomain, EXPR)                                       \
 IF_CHECKS_ENABLED(__CHECK_CLASS_OPT__(value_domain_t, vdDomain, EXPR, get_value_domain))
