@@ -765,6 +765,8 @@ static value_t lookup_through_fragment(signature_map_lookup_state_t *state,
   return success();
 }
 
+// Does the same as lookup_through_fragment but faster by using the helper data
+// provided by the compiler.
 static value_t lookup_through_fragment_with_helper(signature_map_lookup_state_t *state,
     value_t fragment, value_t helper) {
   CHECK_FAMILY(ofModuleFragment, fragment);

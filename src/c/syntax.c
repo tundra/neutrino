@@ -226,6 +226,7 @@ FIXED_GET_MODE_IMPL(invocation_ast, vmMutable);
 ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, ofArray, Arguments,
     arguments);
 
+// Creates the invocation helper object to be used to speed up invocation.
 static value_t create_invocation_helper(assembler_t *assm, value_t record) {
   value_t method_cache = get_or_create_module_fragment_methodspaces_cache(
       assm->runtime, assm->fragment);
