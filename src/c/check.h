@@ -147,6 +147,10 @@ IF_CHECKS_ENABLED(__CHECK_CLASS__(object_family_t, ofFamily, EXPR, get_object_fa
 #define CHECK_MUTABLE(EXPR)                                                    \
 IF_CHECKS_ENABLED(CHECK_TRUE("mutable", is_mutable(EXPR)))
 
+// Check that fails unless the given expression is in a mutable mode.
+#define CHECK_DEEP_FROZEN(EXPR)                                                \
+IF_CHECKS_ENABLED(CHECK_TRUE("deep frozen", peek_deep_frozen(EXPR)))
+
 // Check that fails unless the object is in the specified family or nothing.
 #define CHECK_FAMILY_OPT(ofFamily, EXPR)                                       \
 IF_CHECKS_ENABLED(__CHECK_CLASS_OPT__(object_family_t, ofFamily, EXPR, get_object_family))

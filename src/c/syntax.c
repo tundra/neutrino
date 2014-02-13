@@ -226,6 +226,28 @@ FIXED_GET_MODE_IMPL(invocation_ast, vmMutable);
 ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, ofArray, Arguments,
     arguments);
 
+// Creates the invocation helper object to be used to speed up invocation.
+static value_t create_invocation_helper(assembler_t *assm, value_t record) {
+  value_t method_cache = get_or_create_module_fragment_methodspaces_cache(
+      assm->runtime, assm->fragment);
+  TRY_DEF(helper, new_heap_signature_map(assm->runtime));
+  for (size_t i = 0; i < get_array_buffer_length(method_cache); i++) {
+    value_t space = get_array_buffer_at(method_cache, i);
+    value_t sigmap = get_methodspace_methods(space);
+    value_t entries = get_signature_map_entries(sigmap);
+    for (size_t j = 0; j < get_pair_array_buffer_length(entries); j++) {
+      value_t signature = get_pair_array_buffer_first_at(entries, j);
+      match_result_t result = __mrNone__;
+      TRY(match_signature_tags(signature, record, &result));
+      if (match_result_is_match(result)) {
+        value_t method = get_pair_array_buffer_second_at(entries, j);
+        TRY(add_to_signature_map(assm->runtime, helper, signature, method));
+      }
+    }
+  }
+  return helper;
+}
+
 // Invokes an invocation given an array of argument asts. The type of invocation
 // to emit is given in the opcode argument.
 static value_t emit_abstract_invocation(value_t arguments, assembler_t *assm,
@@ -245,7 +267,10 @@ static value_t emit_abstract_invocation(value_t arguments, assembler_t *assm,
   }
   TRY(co_sort_pair_array(arg_vector));
   TRY_DEF(record, new_heap_invocation_record(assm->runtime, afFreeze, arg_vector));
-  TRY(assembler_emit_invocation(assm, assm->fragment, record, opcode));
+  value_t helper = nothing();
+  if (opcode == ocInvoke)
+    TRY_SET(helper, create_invocation_helper(assm, record));
+  TRY(assembler_emit_invocation(assm, assm->fragment, record, opcode, helper));
   return success();
 }
 

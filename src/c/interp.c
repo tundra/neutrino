@@ -209,9 +209,11 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         CHECK_FAMILY(ofInvocationRecord, record);
         value_t fragment = read_next_value(&state);
         CHECK_FAMILY(ofModuleFragment, fragment);
+        value_t helper = read_next_value(&state);
+        CHECK_FAMILY(ofSignatureMap, helper);
         value_t arg_map;
         value_t method = lookup_method_full(ambience, fragment, record, &frame,
-            &arg_map);
+            helper, &arg_map);
         if (is_condition(ccLookupError, method)) {
           log_lookup_error(method, record, &frame);
           return method;
@@ -233,6 +235,8 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         CHECK_FAMILY(ofInvocationRecord, record);
         value_t fragment = read_next_value(&state);
         CHECK_FAMILY(ofModuleFragment, fragment);
+        value_t helper = read_next_value(&state);
+        CHECK_PHYLUM(tpNothing, helper);
         // Push the signal frame onto the stack to record the state of it for
         // the enclosing code.
         interpreter_state_store(&state, &frame);
