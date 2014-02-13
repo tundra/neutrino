@@ -106,6 +106,8 @@ static value_t new_any_match_score() {
 
 value_t match_signature(value_t self, signature_map_lookup_input_t *input,
     value_t space, match_info_t *match_info, match_result_t *result_out) {
+  CHECK_FAMILY(ofSignature, self);
+  CHECK_FAMILY_OPT(ofMethodspace, space);
   TOPIC_INFO(Lookup, "Matching against %4v", self);
   size_t argument_count = get_invocation_record_argument_count(input->record);
   CHECK_REL("score array too short", argument_count, <=, match_info->capacity);
@@ -178,6 +180,83 @@ value_t match_signature(value_t self, signature_map_lookup_input_t *input,
     bit_vector_set_at(&params_seen, index, true);
     match_info->scores[i] = score;
     match_info->offsets[index] = get_invocation_record_offset_at(input->record, i);
+    if (!get_parameter_is_optional(param))
+      mandatory_seen_count++;
+  }
+  bit_vector_dispose(&params_seen);
+  if (mandatory_seen_count < get_signature_mandatory_count(self)) {
+    // All arguments matched but there were mandatory arguments missing so it's
+    // no good.
+    *result_out = mrMissingArgument;
+    return success();
+  } else {
+    // Everything matched including all mandatories. We're golden.
+    *result_out = on_match;
+    return success();
+  }
+}
+
+value_t match_signature_tags(value_t self, value_t record,
+    match_result_t *result_out) {
+  CHECK_FAMILY(ofSignature, self);
+  CHECK_FAMILY(ofInvocationRecord, record);
+  // This implementation matches match_signature very closely. Ideally the same
+  // implementation could be used for both purposes but the flow is different
+  // enough that having two near-identical copies is actually easier to manage.
+  TOPIC_INFO(Lookup, "Matching tags against %4v", self);
+  size_t argument_count = get_invocation_record_argument_count(record);
+  // Fast case if fewer than that minimum number of arguments is given.
+  size_t mandatory_count = get_signature_mandatory_count(self);
+  if (argument_count < mandatory_count) {
+    *result_out = mrMissingArgument;
+    return success();
+  }
+  // Fast case if too many arguments are given.
+  size_t param_count = get_signature_parameter_count(self);
+  bool allow_extra = get_signature_allow_extra(self);
+  if (!allow_extra && (argument_count > param_count)) {
+    *result_out = mrUnexpectedArgument;
+    return success();
+  }
+  // Vector of parameters seen. This is used to ensure that we only see each
+  // parameter once.
+  bit_vector_t params_seen;
+  bit_vector_init(&params_seen, param_count, false);
+  // Count how many mandatory parameters we see so we can check that we see all
+  // of them.
+  size_t mandatory_seen_count = 0;
+  // The value to return if there is a match.
+  match_result_t on_match = mrMatch;
+  // Scan through the arguments and look them up in the signature.
+  value_t tags = get_signature_tags(self);
+  for (size_t i = 0; i < argument_count; i++) {
+    value_t tag = get_invocation_record_tag_at(record, i);
+    // TODO: propagate any errors caused by this.
+    value_t param = binary_search_pair_array(tags, tag);
+    if (is_condition(ccNotFound, param)) {
+      // The tag wasn't found in this signature.
+      if (allow_extra) {
+        // It's fine, this signature allows extra arguments.
+        on_match = mrExtraMatch;
+        continue;
+      } else {
+        // This signature doesn't allow extra arguments so we bail out.
+        bit_vector_dispose(&params_seen);
+        *result_out = mrUnexpectedArgument;
+        return success();
+      }
+    }
+    CHECK_FALSE("binary search failed", get_value_domain(tags) == vdCondition);
+    // The tag matched one in this signature.
+    size_t index = get_parameter_index(param);
+    if (bit_vector_get_at(&params_seen, index)) {
+      // We've now seen two tags that match the same parameter. Bail out.
+      bit_vector_dispose(&params_seen);
+      *result_out = mrRedundantArgument;
+      return success();
+    }
+    // We got a match! Record the result and move on to the next.
+    bit_vector_set_at(&params_seen, index, true);
     if (!get_parameter_is_optional(param))
       mandatory_seen_count++;
   }

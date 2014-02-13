@@ -419,16 +419,23 @@ void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
   memset(offsets, 0xFF, kLength * sizeof(size_t));
   match_info_t match_info;
   match_info_init(&match_info, scores, offsets, kLength);
-  match_result_t result;
+  match_result_t result = __mrNone__;
   signature_map_lookup_input_t input;
   signature_map_lookup_input_init(&input, ambience, record, &frame, NULL);
-  ASSERT_SUCCESS(match_signature(signature, &input, new_integer(0), &match_info,
+  ASSERT_SUCCESS(match_signature(signature, &input, nothing(), &match_info,
       &result));
   ASSERT_EQ(expected_result, result);
   if (expected_offsets != NULL) {
     for (size_t i = 0; i < arg_count; i++)
       ASSERT_EQ(expected_offsets[i], offsets[i]);
   }
+  if (expected_result == mrGuardRejected)
+    // Only test tag matching in the cases where the result doesn't depend on
+    // how the guards match.
+    return;
+  result = __mrNone__;
+  ASSERT_SUCCESS(match_signature_tags(signature, record, &result));
+  ASSERT_EQ(expected_result, result);
 }
 
 // Attempts to do a match and checks that the result is as expected, ignoring

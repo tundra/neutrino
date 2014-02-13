@@ -65,6 +65,9 @@ value_t get_signature_parameter_at(value_t self, size_t index);
 
 // The status of a match -- whether it succeeded and if not why.
 typedef enum {
+  // A match result that is distinct from all the others and never set by a
+  // match function; can be used for initialization and testing.
+  __mrNone__,
   // There was an argument we didn't expect.
   mrUnexpectedArgument,
   // Multiple arguments were passed for the same parameter.
@@ -112,6 +115,13 @@ void match_info_init(match_info_t *info, value_t *scores, size_t *offsets,
 // it fails the state is unspecified.
 value_t match_signature(value_t self, signature_map_lookup_input_t *input,
     value_t space, match_info_t *match_info, match_result_t *match_out);
+
+// Matches the given invocation record set against this signature. If this
+// signature can be matched successfully against some invocation with these
+// tags this will store a successful match value in the match out parameter,
+// otherwise it will store a failure value.
+value_t match_signature_tags(value_t self, value_t record,
+    match_result_t *match_out);
 
 // The outcome of joining two score vectors. The values encode how they matched:
 // if the first bit is set the target was strictly better at some point, if the
