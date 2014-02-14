@@ -71,12 +71,14 @@ static void interpreter_state_restore(interpreter_state_t *state, frame_t *frame
   // Restore the state to the stack/stack piece objects. We need those values
   // to be consistent with the frame so write them there and then update the
   // frame based on those values.
-  set_stack_piece_top_stack_pointer(stack_piece, get_integer_value(stack_pointer));
-  set_stack_piece_top_frame_pointer(stack_piece, get_integer_value(frame_pointer));
-  set_stack_piece_top_capacity(stack_piece, get_integer_value(capacity));
-  set_stack_piece_top_flags(stack_piece, flags);
-  set_stack_top_piece(stack, stack_piece);
-  get_stack_top_frame(stack, frame);
+  if (!is_same_value(stack_piece, frame->stack_piece)) {
+    set_stack_top_piece(stack, stack_piece);
+    open_stack_piece(stack_piece, frame);
+  }
+  frame->stack_pointer = get_integer_value(stack_pointer);
+  frame->frame_pointer = get_integer_value(frame_pointer);
+  frame->capacity = get_integer_value(capacity);
+  frame->flags = flags;
   // Restore the interpreter state from the now restored frame.
   state->pc = get_integer_value(pc);
   value_t code_block = get_frame_code_block(frame);
@@ -171,6 +173,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
   get_stack_top_frame(stack, &frame);
   interpreter_state_t state;
   interpreter_state_load(&state, &frame);
+  E_BEGIN_TRY_FINALLY();
   while (true) {
     opcode_t opcode = (opcode_t) read_next_short(&state);
     TOPIC_INFO(Interpreter, "Opcode: %s (%i)", get_opcode_name(opcode),
@@ -195,7 +198,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
       }
       case ocNewArray: {
         size_t length = read_next_short(&state);
-        TRY_DEF(array, new_heap_array(runtime, length));
+        E_TRY_DEF(array, new_heap_array(runtime, length));
         for (size_t i = 0; i < length; i++) {
           value_t element = frame_pop_value(&frame);
           set_array_at(array, length - i - 1, element);
@@ -219,10 +222,10 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           return method;
         }
         // The lookup may have failed with a different condition. Check for that.
-        TRY(method);
+        E_TRY(method);
         // Push a new activation.
         interpreter_state_store(&state, &frame);
-        TRY_DEF(code_block, ensure_method_code(runtime, method));
+        E_TRY_DEF(code_block, ensure_method_code(runtime, method));
         push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block),
             arg_map);
         set_frame_code_block(&frame, code_block);
@@ -240,11 +243,11 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         // Push the signal frame onto the stack to record the state of it for
         // the enclosing code.
         interpreter_state_store(&state, &frame);
-        TRY(push_stack_frame(runtime, stack, &frame, 1, nothing()));
+        E_TRY(push_stack_frame(runtime, stack, &frame, 1, nothing()));
         // The stack tracing code expects all frames to have a valid code block
         // object. The rest makes less of a difference.
         set_frame_code_block(&frame, ROOT(runtime, empty_code_block));
-        return new_signal_condition();
+        E_RETURN(new_signal_condition());
       }
       case ocDelegateToLambda: {
         // Get the lambda to delegate to.
@@ -269,8 +272,8 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           return method;
         }
         // The lookup may have failed with a different condition. Check for that.
-        TRY(method);
-        TRY_DEF(code_block, ensure_method_code(runtime, method));
+        E_TRY(method);
+        E_TRY_DEF(code_block, ensure_method_code(runtime, method));
         push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block),
             arg_map);
         set_frame_code_block(&frame, code_block);
@@ -318,10 +321,10 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
       case ocNewReference: {
         // Create the reference first so that if it fails we haven't clobbered
         // the stack yet.
-        TRY_DEF(ref, new_heap_reference(runtime, nothing()));
+        E_TRY_DEF(ref, new_heap_reference(runtime, nothing()));
         value_t value = frame_pop_value(&frame);
         set_reference_value(ref, value);
-        TRY(frame_push_value(&frame, ref));
+        E_TRY(frame_push_value(&frame, ref));
         break;
       }
       case ocSetReference: {
@@ -335,7 +338,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         value_t ref = frame_pop_value(&frame);
         CHECK_FAMILY(ofReference, ref);
         value_t value = get_reference_value(ref);
-        TRY(frame_push_value(&frame, value));
+        E_TRY(frame_push_value(&frame, value));
         break;
       }
       case ocLoadLocal: {
@@ -350,7 +353,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         value_t fragment = read_next_value(&state);
         CHECK_FAMILY(ofModuleFragment, fragment);
         value_t module = get_module_fragment_module(fragment);
-        TRY_DEF(value, module_lookup_identifier(runtime, module,
+        E_TRY_DEF(value, module_lookup_identifier(runtime, module,
             get_identifier_stage(ident), get_identifier_path(ident)));
         frame_push_value(&frame, value);
         break;
@@ -377,11 +380,11 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         if (outer_count == 0) {
           outers = ROOT(runtime, empty_array);
         } else {
-          TRY_SET(outers, new_heap_array(runtime, outer_count));
+          E_TRY_SET(outers, new_heap_array(runtime, outer_count));
           for (size_t i = 0; i < outer_count; i++)
             set_array_at(outers, i, frame_pop_value(&frame));
         }
-        TRY_DEF(lambda, new_heap_lambda(runtime, space, outers));
+        E_TRY_DEF(lambda, new_heap_lambda(runtime, space, outers));
         frame_push_value(&frame, lambda);
         break;
       }
@@ -392,7 +395,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         value_t location = new_integer(interpreter_state_push(&state, &frame,
             dest_offset, kCapturedStateSize + 1));
         value_t stack_piece = frame.stack_piece;
-        TRY_DEF(escape, new_heap_escape(runtime, yes(), stack_piece, location));
+        E_TRY_DEF(escape, new_heap_escape(runtime, yes(), stack_piece, location));
         frame_push_value(&frame, escape);
         break;
       }
@@ -420,7 +423,10 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         break;
     }
   }
-  return success();
+  E_RETURN(success());
+  E_FINALLY();
+    close_stack_piece(&frame);
+  E_END_TRY_FINALLY();
 }
 
 static value_t run_stack(value_t ambience, value_t stack) {
@@ -448,12 +454,18 @@ const char *get_opcode_name(opcode_t opcode) {
 }
 
 value_t run_code_block_until_condition(value_t ambience, value_t code) {
+  // Create the stack to run the code on.
   runtime_t *runtime = get_ambience_runtime(ambience);
   TRY_DEF(stack, new_heap_stack(runtime, 1024));
+  // Push an activation onto the empty stack to get execution going.
+  value_t top_piece = get_stack_top_piece(stack);
   frame_t frame;
   size_t frame_size = get_code_block_high_water_mark(code);
+  open_stack_piece(top_piece, &frame);
   TRY(push_stack_frame(runtime, stack, &frame, frame_size, ROOT(runtime, empty_array)));
   set_frame_code_block(&frame, code);
+  close_stack_piece(&frame);
+  // Run the stack.
   return run_stack(ambience, stack);
 }
 
@@ -464,12 +476,14 @@ value_t run_code_block(safe_value_t s_ambience, safe_value_t code) {
     // Build a stack to run the code on.
     E_S_TRY_DEF(s_stack, protect(pool, new_heap_stack(runtime, 1024)));
     {
+      frame_t frame;
+      open_stack_piece(get_stack_top_piece(deref(s_stack)), &frame);
       // Set up the initial frame.
       size_t frame_size = get_code_block_high_water_mark(deref(code));
-      frame_t frame;
       E_TRY(push_stack_frame(runtime, deref(s_stack), &frame, frame_size,
           ROOT(runtime, empty_array)));
       set_frame_code_block(&frame, deref(code));
+      close_stack_piece(&frame);
     }
     // Run until completion.
     E_RETURN(run_stack(deref(s_ambience), deref(s_stack)));

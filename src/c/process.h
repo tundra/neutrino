@@ -11,13 +11,16 @@
 
 // --- S t a c k   p i e c e ---
 
-static const size_t kStackPieceSize = OBJECT_SIZE(6);
+#define CHECK_STACK_PIECE_DISCIPLINE true
+
+static const size_t kStackPieceSize = OBJECT_SIZE(7);
 static const size_t kStackPieceStorageOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kStackPiecePreviousOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kStackPieceTopFramePointerOffset = OBJECT_FIELD_OFFSET(2);
 static const size_t kStackPieceTopStackPointerOffset = OBJECT_FIELD_OFFSET(3);
 static const size_t kStackPieceTopCapacityOffset = OBJECT_FIELD_OFFSET(4);
 static const size_t kStackPieceTopFlagsOffset = OBJECT_FIELD_OFFSET(5);
+static const size_t kStackPieceIsClosedOffset = OBJECT_FIELD_OFFSET(6);
 
 // The plain array used for storage for this stack piece.
 ACCESSORS_DECL(stack_piece, storage);
@@ -36,6 +39,10 @@ INTEGER_ACCESSORS_DECL(stack_piece, top_capacity);
 
 // A tiny bit set that describes the top frame.
 ACCESSORS_DECL(stack_piece, top_flags);
+
+// Is this stack piece closed such that it must be opened before execution on it
+// can continue?
+ACCESSORS_DECL(stack_piece, is_closed);
 
 // Flags that describe a stack frame.
 typedef enum {
@@ -95,6 +102,14 @@ static const size_t kFrameHeaderArgumentMapOffset = 5;
 // Returns true iff allocation succeeds.
 bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame,
     size_t capacity, uint32_t flags);
+
+// Puts the given stack piece in the open state and stores the state required to
+// interact with it in the given frame.
+void open_stack_piece(value_t stack_piece, frame_t *frame);
+
+// Records the state stored in the given frame in its stack piece and closes
+// the stack piece.
+void close_stack_piece(frame_t *frame);
 
 // Pops the top frame off the given stack piece, storing the next frame in the
 // given frame struct. Returns true if there are more frames to pop off the stack,
