@@ -65,6 +65,10 @@ IF_CHECKS_ENABLED(__COND_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause,              \
 #define CHECK_TRUE(M, E)                                                       \
 IF_CHECKS_ENABLED(CHECK_EQ(M, E, true))
 
+// Fails if the given expression doesn't evaluate to the true boolean value_t.
+#define CHECK_TRUE_VALUE(M, E)                                                 \
+IF_CHECKS_ENABLED(CHECK_EQ(M, get_boolean_value(E), true))
+
 // Used by CHECK_REL. Don't call directly.
 #define __CHECK_REL_HELPER__(M, A, OP, B) do {                                 \
   int64_t __a__ = (int64_t) (A);                                               \
@@ -94,6 +98,10 @@ IF_CHECKS_ENABLED(COND_CHECK_EQ(M, scCause, E, true))
 // Fails if the given expression doesn't evaluate to false.
 #define CHECK_FALSE(M, E)                                                      \
 IF_CHECKS_ENABLED(CHECK_EQ(M, E, false))
+
+// Fails if the given expression doesn't evaluate to the false value_t.
+#define CHECK_FALSE_VALUE(M, E)                                                \
+IF_CHECKS_ENABLED(CHECK_EQ(M, get_boolean_value(E), false))
 
 // Check that a given value belongs to a particular class, where the class is
 // given by calling a particular getter on the value. You generally don't want
