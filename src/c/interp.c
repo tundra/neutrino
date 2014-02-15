@@ -51,7 +51,7 @@ static size_t interpreter_state_push(interpreter_state_t *state, frame_t *frame,
   size_t location = snapshot.stack_pointer;
   frame_push_value(frame, new_integer(snapshot.stack_pointer + sp_offset));
   frame_push_value(frame, new_integer(snapshot.frame_pointer));
-  frame_push_value(frame, new_integer(snapshot.capacity));
+  frame_push_value(frame, new_integer(snapshot.limit_pointer));
   frame_push_value(frame, snapshot.flags);
   frame_push_value(frame, new_integer(state->pc + pc_offset));
   return location;
@@ -65,7 +65,7 @@ static void interpreter_state_restore(interpreter_state_t *state, frame_t *frame
   value_t storage = get_stack_piece_storage(stack_piece);
   value_t stack_pointer = get_array_at(storage, location);
   value_t frame_pointer = get_array_at(storage, location + 1);
-  value_t capacity = get_array_at(storage, location + 2);
+  value_t limit_pointer = get_array_at(storage, location + 2);
   value_t flags = get_array_at(storage, location + 3);
   value_t pc = get_array_at(storage, location + 4);
   // Restore the state to the stack/stack piece objects. We need those values
@@ -77,7 +77,7 @@ static void interpreter_state_restore(interpreter_state_t *state, frame_t *frame
   }
   frame->stack_pointer = get_integer_value(stack_pointer);
   frame->frame_pointer = get_integer_value(frame_pointer);
-  frame->capacity = get_integer_value(capacity);
+  frame->limit_pointer = get_integer_value(limit_pointer);
   frame->flags = flags;
   // Restore the interpreter state from the now restored frame.
   state->pc = get_integer_value(pc);

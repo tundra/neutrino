@@ -18,7 +18,7 @@ ACCESSORS_IMPL(StackPiece, stack_piece, acInFamily, ofArray, Storage, storage);
 ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt, ofStackPiece, Previous, previous);
 INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopFramePointer, top_frame_pointer);
 INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopStackPointer, top_stack_pointer);
-INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopCapacity, top_capacity);
+INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopLimitPointer, top_limit_pointer);
 ACCESSORS_IMPL(StackPiece, stack_piece, acInPhylum, tpFlagSet, TopFlags, top_flags);
 ACCESSORS_IMPL(StackPiece, stack_piece, acInPhylum, tpBoolean, IsClosed, is_closed);
 
@@ -87,7 +87,7 @@ static void read_stack_piece_lid(value_t piece, frame_t *frame) {
   frame->stack_piece = piece;
   frame->frame_pointer = get_stack_piece_top_frame_pointer(piece);
   frame->stack_pointer = get_stack_piece_top_stack_pointer(piece);
-  frame->capacity = get_stack_piece_top_capacity(piece);
+  frame->limit_pointer = get_stack_piece_top_limit_pointer(piece);
   frame->flags = get_stack_piece_top_flags(piece);
 }
 
@@ -102,7 +102,7 @@ void close_frame(frame_t *frame) {
   CHECK_FALSE_VALUE("stack piece already closed", get_stack_piece_is_closed(piece));
   set_stack_piece_top_stack_pointer(piece, frame->stack_pointer);
   set_stack_piece_top_frame_pointer(piece, frame->frame_pointer);
-  set_stack_piece_top_capacity(piece, frame->capacity);
+  set_stack_piece_top_limit_pointer(piece, frame->limit_pointer);
   set_stack_piece_top_flags(piece, frame->flags);
   set_stack_piece_is_closed(piece, yes());
 }
@@ -151,7 +151,7 @@ static void frame_walk_down_stack(frame_t *frame) {
   frame_t snapshot = *frame;
   // Get the frame pointer and capacity from the frame's header.
   frame->frame_pointer = frame_get_previous_frame_pointer(&snapshot);
-  frame->capacity = frame_get_previous_capacity(&snapshot);
+  frame->limit_pointer = frame_get_previous_limit_pointer(&snapshot);
   frame->flags = frame_get_previous_flags(&snapshot);
   // The stack pointer will be the first field of the top frame's header.
   frame->stack_pointer = snapshot.frame_pointer - kFrameHeaderSize;
@@ -211,12 +211,12 @@ bool try_push_new_frame(frame_t *frame, size_t frame_capacity, uint32_t flags) {
   size_t new_frame_pointer = old_frame.stack_pointer + kFrameHeaderSize;
   // Store the new frame's info in the frame struct.
   frame->stack_pointer = frame->frame_pointer = new_frame_pointer;
-  frame->capacity = frame_capacity;
+  frame->limit_pointer = (new_frame_pointer + frame_capacity);
   frame->flags = new_flag_set(flags);
   // Record the relevant information about the previous frame in the new frame's
   // header.
   frame_set_previous_frame_pointer(frame, old_frame.frame_pointer);
-  frame_set_previous_capacity(frame, old_frame.capacity);
+  frame_set_previous_limit_pointer(frame, old_frame.limit_pointer);
   frame_set_previous_flags(frame, old_frame.flags);
   frame_set_pc(frame, 0);
   frame_set_code_block(frame, nothing());
@@ -244,7 +244,7 @@ static value_t *access_frame_header_field(frame_t *frame, size_t offset) {
 // Returns true if the given absolute offset is within the fields available to
 // the given frame.
 static bool is_offset_within_frame(frame_t *frame, size_t offset) {
-  return (offset - frame->frame_pointer) < frame->capacity;
+  return (frame->frame_pointer <= offset) && (offset < frame->limit_pointer);
 }
 
 // Accesses a frame field, that is, a local to the current call. The offset is
@@ -266,14 +266,14 @@ size_t frame_get_previous_frame_pointer(frame_t *frame) {
       kFrameHeaderPreviousFramePointerOffset));
 }
 
-void frame_set_previous_capacity(frame_t *frame, size_t value) {
-  *access_frame_header_field(frame, kFrameHeaderPreviousCapacityOffset) =
+void frame_set_previous_limit_pointer(frame_t *frame, size_t value) {
+  *access_frame_header_field(frame, kFrameHeaderPreviousLimitPointerOffset) =
       new_integer(value);
 }
 
-size_t frame_get_previous_capacity(frame_t *frame) {
+size_t frame_get_previous_limit_pointer(frame_t *frame) {
   return get_integer_value(*access_frame_header_field(frame,
-      kFrameHeaderPreviousCapacityOffset));
+      kFrameHeaderPreviousLimitPointerOffset));
 }
 
 void frame_set_previous_flags(frame_t *frame, value_t flags) {
