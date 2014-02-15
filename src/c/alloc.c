@@ -491,15 +491,13 @@ value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
 // the execution we bottom out at a well-defined place and all instructions
 // (particularly return) can assume that there's at least one frame below them.
 static void push_stack_bottom_frame(runtime_t *runtime, value_t stack) {
-  value_t piece = get_stack_top_piece(stack);
-  frame_t bottom;
   value_t code_block = ROOT(runtime, stack_bottom_code_block);
-  open_stack_piece(piece, &bottom);
-  bool pushed = try_push_stack_piece_frame(piece, &bottom,
+  frame_t bottom = open_stack(stack);
+  bool pushed = try_push_new_frame(&bottom,
       get_code_block_high_water_mark(code_block), ffSynthetic | ffStackBottom);
   CHECK_TRUE("pushing bottom frame", pushed);
-  set_frame_code_block(&bottom, code_block);
-  close_stack_piece(&bottom);
+  frame_set_code_block(&bottom, code_block);
+  close_frame(&bottom);
 }
 
 value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {

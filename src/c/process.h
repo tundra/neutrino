@@ -11,8 +11,6 @@
 
 // --- S t a c k   p i e c e ---
 
-#define CHECK_STACK_PIECE_DISCIPLINE true
-
 static const size_t kStackPieceSize = OBJECT_SIZE(7);
 static const size_t kStackPieceStorageOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kStackPiecePreviousOffset = OBJECT_FIELD_OFFSET(1);
@@ -98,61 +96,59 @@ static const size_t kFrameHeaderCodeBlockOffset = 3;
 static const size_t kFrameHeaderPcOffset = 4;
 static const size_t kFrameHeaderArgumentMapOffset = 5;
 
-// Tries to allocate a new frame on the given stack piece of the given capacity.
+// Tries to allocate a new frame above the given frame of the given capacity.
 // Returns true iff allocation succeeds.
-bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame,
-    size_t capacity, uint32_t flags);
+bool try_push_new_frame(frame_t *frame, size_t capacity, uint32_t flags);
 
 // Puts the given stack piece in the open state and stores the state required to
-// interact with it in the given frame.
-void open_stack_piece(value_t stack_piece, frame_t *frame);
+// interact with it in the given frame struct.
+void open_stack_piece(value_t piece, frame_t *frame);
 
 // Records the state stored in the given frame in its stack piece and closes
 // the stack piece.
-void close_stack_piece(frame_t *frame);
+void close_frame(frame_t *frame);
 
-// Pops the top frame off the given stack piece, storing the next frame in the
-// given frame struct. Returns true if there are more frames to pop off the stack,
-// false if the one popped off was the last one. If false is returned the frame
-// is invalid.
-void pop_stack_piece_frame(value_t stack_piece, frame_t *frame);
+// Pops the given frame off, storing the next frame. The stack piece that holds
+// the given frame must have more frames, otherwise the behavior is undefined
+// (or fails when checks are enabled).
+void frame_pop_within_stack_piece(frame_t *frame);
 
 // Record the frame pointer for the previous stack frame, the one below this one.
-void set_frame_previous_frame_pointer(frame_t *frame, size_t value);
+void frame_set_previous_frame_pointer(frame_t *frame, size_t value);
 
 // Returns the frame pointer for the previous stack frame, the one below this
 // one.
-size_t get_frame_previous_frame_pointer(frame_t *frame);
+size_t frame_get_previous_frame_pointer(frame_t *frame);
 
 // Record the capacity of the previous stack frame.
-void set_frame_previous_capacity(frame_t *frame, size_t capacity);
+void frame_set_previous_capacity(frame_t *frame, size_t capacity);
 
 // Returns the capacity of the previous stack frame.
-size_t get_frame_previous_capacity(frame_t *frame);
+size_t frame_get_previous_capacity(frame_t *frame);
 
 // Record the flags of the previous stack frame.
-void set_frame_previous_flags(frame_t *frame, value_t flags);
+void frame_set_previous_flags(frame_t *frame, value_t flags);
 
 // Returns the flags of the previous stack frame.
-value_t get_frame_previous_flags(frame_t *frame);
+value_t frame_get_previous_flags(frame_t *frame);
 
 // Sets the code block this frame is executing.
-void set_frame_code_block(frame_t *frame, value_t code_block);
+void frame_set_code_block(frame_t *frame, value_t code_block);
 
 // Returns the code block this frame is executing.
-value_t get_frame_code_block(frame_t *frame);
+value_t frame_get_code_block(frame_t *frame);
 
 // Sets the program counter for this frame.
-void set_frame_pc(frame_t *frame, size_t pc);
+void frame_set_pc(frame_t *frame, size_t pc);
 
 // Returns the program counter for this frame.
-size_t get_frame_pc(frame_t *frame);
+size_t frame_get_pc(frame_t *frame);
 
 // Sets the mapping from parameters to argument indices for this frame.
-void set_frame_argument_map(frame_t *frame, value_t map);
+void frame_set_argument_map(frame_t *frame, value_t map);
 
 // Returns the mapping from parameter to argument indices for this frame.
-value_t get_frame_argument_map(frame_t *frame);
+value_t frame_get_argument_map(frame_t *frame);
 
 // Pushes a value onto this stack frame. The returned value will always be
 // success except on bounds check failures in soft check failure mode where it
@@ -186,10 +182,6 @@ typedef struct {
   // The currently active frame.
   frame_t current;
 } frame_iter_t;
-
-// Initializes the given frame iterator. After this call the current frame will
-// be the top frame of the stack.
-void frame_iter_init_from_stack(frame_iter_t *iter, value_t stack);
 
 // Initializes the given frame iterator. After this call the current frame will
 // be the one passed as an argument.
@@ -232,8 +224,8 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
 // given flags set. There must be such a frame on the stack.
 void drop_to_stack_frame(value_t stack, frame_t *frame, frame_flag_t flags);
 
-// Reads the top frame off the given stack into the given frame.
-void get_stack_top_frame(value_t stack, frame_t *frame);
+// Opens the top stack piece of the given stack into the given frame.
+frame_t open_stack(value_t stack);
 
 
 // --- E s c a p e ---

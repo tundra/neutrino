@@ -14,8 +14,8 @@ TEST(process, frame_bounds) {
   // Check that push/pop outside the frame boundaries causes a check failure.
   frame_t frame;
   open_stack_piece(stack_piece, &frame);
-  ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 4, ffOrganic));
-  close_stack_piece(&frame);
+  ASSERT_TRUE(try_push_new_frame(&frame, 4, ffOrganic));
+  close_frame(&frame);
   ASSERT_CHECK_FAILURE(ccOutOfBounds, frame_pop_value(&frame));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(6)));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(5)));
@@ -41,7 +41,7 @@ TEST(process, simple_frames) {
 
   for (int i = 0; i < 256; i++) {
     if (i % 16 == 0)
-      ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 16, ffOrganic));
+      ASSERT_TRUE(try_push_new_frame(&frame, 16, ffOrganic));
     frame_push_value(&frame, new_integer(i));
   }
   for (int i = 255; i >= 0; i--) {
@@ -49,12 +49,12 @@ TEST(process, simple_frames) {
     value_t found = frame_pop_value(&frame);
     ASSERT_VALEQ(expected, found);
     if (i % 16 == 0) {
-      pop_stack_piece_frame(stack_piece, &frame);
+      frame_pop_within_stack_piece(&frame);
       ASSERT_EQ(i == 0, frame_has_flag(&frame, ffStackPieceEmpty));
     }
   }
 
-  close_stack_piece(&frame);
+  close_frame(&frame);
 
   DISPOSE_RUNTIME();
 }
@@ -66,18 +66,18 @@ TEST(process, frame_capacity) {
   frame_t frame;
   open_stack_piece(stack_piece, &frame);
   for (int i = 0; i < 16; i++) {
-    ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, i, ffOrganic));
+    ASSERT_TRUE(try_push_new_frame(&frame, i, ffOrganic));
     ASSERT_EQ((size_t) i, frame.capacity);
   }
 
   for (int i = 14; i >= 0; i--) {
-    pop_stack_piece_frame(stack_piece, &frame);
+    frame_pop_within_stack_piece(&frame);
     ASSERT_FALSE(frame_has_flag(&frame, ffStackPieceEmpty));
     ASSERT_EQ((size_t) i, frame.capacity);
   }
-  pop_stack_piece_frame(stack_piece, &frame);
+  frame_pop_within_stack_piece(&frame);
   ASSERT_TRUE(frame_has_flag(&frame, ffStackPieceEmpty));
-  close_stack_piece(&frame);
+  close_frame(&frame);
 
   DISPOSE_RUNTIME();
 }
@@ -89,11 +89,11 @@ TEST(process, bottom_frame) {
   frame_t frame;
   // Push two frames onto the stack piece.
   open_stack_piece(stack_piece, &frame);
-  ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 10, ffOrganic));
-  ASSERT_TRUE(try_push_stack_piece_frame(stack_piece, &frame, 10, ffOrganic));
-  pop_stack_piece_frame(stack_piece, &frame);
+  ASSERT_TRUE(try_push_new_frame(&frame, 10, ffOrganic));
+  ASSERT_TRUE(try_push_new_frame(&frame, 10, ffOrganic));
+  frame_pop_within_stack_piece(&frame);
   ASSERT_FALSE(frame_has_flag(&frame, ffStackPieceEmpty));
-  pop_stack_piece_frame(stack_piece, &frame);
+  frame_pop_within_stack_piece(&frame);
   ASSERT_TRUE(frame_has_flag(&frame, ffStackPieceEmpty));
 
   DISPOSE_RUNTIME();
@@ -103,8 +103,7 @@ TEST(process, stack_frames) {
   CREATE_RUNTIME();
 
   value_t stack = new_heap_stack(runtime, 16);
-  frame_t frame;
-  open_stack_piece(get_stack_top_piece(stack), &frame);
+  frame_t frame = open_stack(stack);
   for (size_t i = 0; i < 256; i++) {
     ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, i + 1, ROOT(runtime, empty_array)));
     frame_push_value(&frame, new_integer(i * 3));
@@ -120,7 +119,7 @@ TEST(process, stack_frames) {
   drop_to_stack_frame(stack, &frame, ffSynthetic);
   // Finally we should be at the very bottom.
   ASSERT_TRUE(frame_has_flag(&frame, ffStackBottom));
-  close_stack_piece(&frame);
+  close_frame(&frame);
 
   DISPOSE_RUNTIME();
 }
@@ -129,8 +128,7 @@ TEST(process, walk_stack_frames) {
   CREATE_RUNTIME();
 
   value_t stack = new_heap_stack(runtime, 16);
-  frame_t frame;
-  open_stack_piece(get_stack_top_piece(stack), &frame);
+  frame_t frame = open_stack(stack);
 
   for (size_t i = 0; i < 64; i++) {
     ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 1,
@@ -148,7 +146,7 @@ TEST(process, walk_stack_frames) {
     ASSERT_FALSE(frame_iter_advance(&iter));
   }
 
-  close_stack_piece(&frame);
+  close_frame(&frame);
 
   DISPOSE_RUNTIME();
 }
@@ -158,26 +156,25 @@ TEST(process, get_argument_one_piece) {
   CREATE_TEST_ARENA();
 
   value_t stack = new_heap_stack(runtime, 3 + 3 * kFrameHeaderSize);
-  frame_t frame;
-  open_stack_piece(get_stack_top_piece(stack), &frame);
+  frame_t frame = open_stack(stack);
 
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3, null()));
   frame_push_value(&frame, new_integer(6));
   frame_push_value(&frame, new_integer(5));
   frame_push_value(&frame, new_integer(4));
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 0, null()));
-  set_frame_argument_map(&frame,
+  frame_set_argument_map(&frame,
       C(vArray(vInt(0), vInt(1), vInt(2))));
   ASSERT_VALEQ(new_integer(4), frame_get_argument(&frame, 0));
   ASSERT_VALEQ(new_integer(5), frame_get_argument(&frame, 1));
   ASSERT_VALEQ(new_integer(6), frame_get_argument(&frame, 2));
-  set_frame_argument_map(&frame,
+  frame_set_argument_map(&frame,
       C(vArray(vInt(2), vInt(1), vInt(0))));
   ASSERT_VALEQ(new_integer(6), frame_get_argument(&frame, 0));
   ASSERT_VALEQ(new_integer(5), frame_get_argument(&frame, 1));
   ASSERT_VALEQ(new_integer(4), frame_get_argument(&frame, 2));
 
-  close_stack_piece(&frame);
+  close_frame(&frame);
 
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
@@ -188,8 +185,7 @@ TEST(process, get_argument_multi_pieces) {
   CREATE_TEST_ARENA();
 
   value_t stack = new_heap_stack(runtime, 16);
-  frame_t frame;
-  open_stack_piece(get_stack_top_piece(stack), &frame);
+  frame_t frame = open_stack(stack);
 
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3, null()));
   frame_push_value(&frame, new_integer(6));
@@ -201,7 +197,7 @@ TEST(process, get_argument_multi_pieces) {
   ASSERT_VALEQ(new_integer(5), frame_get_argument(&frame, 1));
   ASSERT_VALEQ(new_integer(6), frame_get_argument(&frame, 2));
 
-  close_stack_piece(&frame);
+  close_frame(&frame);
 
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
@@ -211,8 +207,7 @@ TEST(process, get_local) {
   CREATE_RUNTIME();
 
   value_t stack = new_heap_stack(runtime, 16);
-  frame_t frame;
-  open_stack_piece(get_stack_top_piece(stack), &frame);
+  frame_t frame = open_stack(stack);
 
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3, null()));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(6)));
@@ -228,7 +223,7 @@ TEST(process, get_local) {
   ASSERT_VALEQ(new_integer(5), frame_get_local(&frame, 1));
   ASSERT_VALEQ(new_integer(4), frame_get_local(&frame, 2));
 
-  close_stack_piece(&frame);
+  close_frame(&frame);
 
   DISPOSE_RUNTIME();
 }

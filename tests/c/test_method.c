@@ -245,8 +245,7 @@ TEST(method, record_with_stack) {
   CREATE_TEST_ARENA();
 
   value_t stack = new_heap_stack(runtime, 16);
-  frame_t frame;
-  open_stack_piece(get_stack_top_piece(stack), &frame);
+  frame_t frame = open_stack(stack);
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3, null()));
   value_t record = make_invocation_record(runtime, vArray(vStr("b"), vStr("c"),
       vStr("a")));
@@ -404,8 +403,7 @@ void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
   runtime_t *runtime = get_ambience_runtime(ambience);
   value_t tags = new_heap_array(runtime, arg_count);
   value_t stack = new_heap_stack(runtime, 16);
-  frame_t frame;
-  open_stack_piece(get_stack_top_piece(stack), &frame);
+  frame_t frame = open_stack(stack);
   push_stack_frame(runtime, stack, &frame, arg_count, null());
   for (size_t i = 0; i < arg_count; i++) {
     test_argument_t *arg = args[i];
@@ -721,8 +719,7 @@ static void test_lookup(value_t ambience, value_t expected, value_t first,
   runtime_t *runtime = get_ambience_runtime(ambience);
   value_t stack = new_heap_stack(runtime, 16);
   value_t vector = new_heap_pair_array(runtime, 3);
-  frame_t frame;
-  open_stack_piece(get_stack_top_piece(stack), &frame);
+  frame_t frame = open_stack(stack);
   push_stack_frame(runtime, stack, &frame, 3, null());
   value_t values[3] = {first, second, third};
   for (size_t i = 0; i < 3; i++) {

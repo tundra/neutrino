@@ -72,38 +72,34 @@ static void push_stack_piece_bottom_frame(runtime_t *runtime, value_t stack_piec
   // passed from this frame so we have to "allocate" enough room for them on
   // the stack.
   open_stack_piece(stack_piece, &bottom);
-  bool pushed = try_push_stack_piece_frame(stack_piece, &bottom,
+  bool pushed = try_push_new_frame(&bottom,
       get_code_block_high_water_mark(code_block) + arg_count,
       ffSynthetic | ffStackPieceBottom);
   CHECK_TRUE("pushing bottom frame", pushed);
-  close_stack_piece(&bottom);
-  set_frame_code_block(&bottom, code_block);
+  close_frame(&bottom);
+  frame_set_code_block(&bottom, code_block);
 }
 
 // Reads the state of the stack piece lid into the given frame; doesn't modify
 // the piece in any way though.
-void read_stack_piece_lid(value_t stack_piece, frame_t *frame) {
-  if (CHECK_STACK_PIECE_DISCIPLINE)
-    CHECK_TRUE_VALUE("stack piece not closed", get_stack_piece_is_closed(stack_piece));
-  frame->stack_piece = stack_piece;
-  frame->frame_pointer = get_stack_piece_top_frame_pointer(stack_piece);
-  frame->stack_pointer = get_stack_piece_top_stack_pointer(stack_piece);
-  frame->capacity = get_stack_piece_top_capacity(stack_piece);
-  frame->flags = get_stack_piece_top_flags(stack_piece);
+static void read_stack_piece_lid(value_t piece, frame_t *frame) {
+  CHECK_TRUE_VALUE("stack piece not closed", get_stack_piece_is_closed(piece));
+  frame->stack_piece = piece;
+  frame->frame_pointer = get_stack_piece_top_frame_pointer(piece);
+  frame->stack_pointer = get_stack_piece_top_stack_pointer(piece);
+  frame->capacity = get_stack_piece_top_capacity(piece);
+  frame->flags = get_stack_piece_top_flags(piece);
 }
 
-// Sets the given frame to be the top frame of the given stack piece.
-void open_stack_piece(value_t stack_piece, frame_t *frame) {
-  CHECK_FAMILY(ofStackPiece, stack_piece);
-  read_stack_piece_lid(stack_piece, frame);
-  set_stack_piece_is_closed(stack_piece, no());
+void open_stack_piece(value_t piece, frame_t *frame) {
+  CHECK_FAMILY(ofStackPiece, piece);
+  read_stack_piece_lid(piece, frame);
+  set_stack_piece_is_closed(piece, no());
 }
 
-// Records the current registers in the given frame in the stack piece.
-void close_stack_piece(frame_t *frame) {
+void close_frame(frame_t *frame) {
   value_t piece = frame->stack_piece;
-  if (CHECK_STACK_PIECE_DISCIPLINE)
-    CHECK_FALSE_VALUE("stack piece already closed", get_stack_piece_is_closed(piece));
+  CHECK_FALSE_VALUE("stack piece already closed", get_stack_piece_is_closed(piece));
   set_stack_piece_top_stack_pointer(piece, frame->stack_pointer);
   set_stack_piece_top_frame_pointer(piece, frame->frame_pointer);
   set_stack_piece_top_capacity(piece, frame->capacity);
@@ -115,9 +111,8 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     size_t frame_capacity, value_t arg_map) {
   CHECK_FAMILY(ofStack, stack);
   value_t top_piece = get_stack_top_piece(stack);
-  if (CHECK_STACK_PIECE_DISCIPLINE)
-    CHECK_FALSE_VALUE("stack piece closed", get_stack_piece_is_closed(top_piece));
-  if (!try_push_stack_piece_frame(top_piece, frame, frame_capacity, ffOrganic)) {
+  CHECK_FALSE_VALUE("stack piece closed", get_stack_piece_is_closed(top_piece));
+  if (!try_push_new_frame(frame, frame_capacity, ffOrganic)) {
     // There wasn't room to push this frame onto the top stack piece so
     // allocate a new top piece that definitely has room.
     size_t default_capacity = get_stack_default_piece_capacity(stack);
@@ -138,26 +133,26 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     set_stack_top_piece(stack, new_piece);
 
     // Close the previous stack piece, recording the frame state.
-    close_stack_piece(frame);
+    close_frame(frame);
 
     // Finally, create a new frame on the new stack which includes updating the
     // struct. The required_capacity calculation ensures that this call will
     // succeed.
     open_stack_piece(new_piece, frame);
-    bool pushed_stack_piece = try_push_stack_piece_frame(new_piece,
-        frame, frame_capacity, ffOrganic);
+    bool pushed_stack_piece = try_push_new_frame(frame, frame_capacity,
+        ffOrganic);
     CHECK_TRUE("pushing on new piece failed", pushed_stack_piece);
   }
-  set_frame_argument_map(frame, arg_map);
+  frame_set_argument_map(frame, arg_map);
   return success();
 }
 
 static void frame_walk_down_stack(frame_t *frame) {
   frame_t snapshot = *frame;
   // Get the frame pointer and capacity from the frame's header.
-  frame->frame_pointer = get_frame_previous_frame_pointer(&snapshot);
-  frame->capacity = get_frame_previous_capacity(&snapshot);
-  frame->flags = get_frame_previous_flags(&snapshot);
+  frame->frame_pointer = frame_get_previous_frame_pointer(&snapshot);
+  frame->capacity = frame_get_previous_capacity(&snapshot);
+  frame->flags = frame_get_previous_flags(&snapshot);
   // The stack pointer will be the first field of the top frame's header.
   frame->stack_pointer = snapshot.frame_pointer - kFrameHeaderSize;
 }
@@ -188,21 +183,21 @@ bool frame_has_flag(frame_t *frame, frame_flag_t flag) {
   return get_flag_set_at(frame->flags, flag);
 }
 
-void get_stack_top_frame(value_t stack, frame_t *frame) {
+frame_t open_stack(value_t stack) {
   CHECK_FAMILY(ofStack, stack);
-  value_t top_piece = get_stack_top_piece(stack);
-  open_stack_piece(top_piece, frame);
+  frame_t result;
+  open_stack_piece(get_stack_top_piece(stack), &result);
+  return result;
 }
 
 
 // --- F r a m e ---
 
-bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame,
-    size_t frame_capacity, uint32_t flags) {
-  if (CHECK_STACK_PIECE_DISCIPLINE)
-    CHECK_FALSE_VALUE("pushing closed stack piece", get_stack_piece_is_closed(stack_piece));
+bool try_push_new_frame(frame_t *frame, size_t frame_capacity, uint32_t flags) {
+  value_t stack_piece = frame->stack_piece;
+  CHECK_FALSE_VALUE("pushing closed stack piece", get_stack_piece_is_closed(stack_piece));
   // First record the current state of the old top frame so we can store it in
-  // the header if the new frame.
+  // the header of the new frame.
   frame_t old_frame = *frame;
   // The amount of space required to make this frame.
   size_t size = frame_capacity + kFrameHeaderSize;
@@ -218,21 +213,20 @@ bool try_push_stack_piece_frame(value_t stack_piece, frame_t *frame,
   frame->stack_pointer = frame->frame_pointer = new_frame_pointer;
   frame->capacity = frame_capacity;
   frame->flags = new_flag_set(flags);
-  frame->stack_piece = stack_piece;
   // Record the relevant information about the previous frame in the new frame's
   // header.
-  set_frame_previous_frame_pointer(frame, old_frame.frame_pointer);
-  set_frame_previous_capacity(frame, old_frame.capacity);
-  set_frame_previous_flags(frame, old_frame.flags);
-  set_frame_pc(frame, 0);
-  set_frame_code_block(frame, whatever());
-  set_frame_argument_map(frame, whatever());
+  frame_set_previous_frame_pointer(frame, old_frame.frame_pointer);
+  frame_set_previous_capacity(frame, old_frame.capacity);
+  frame_set_previous_flags(frame, old_frame.flags);
+  frame_set_pc(frame, 0);
+  frame_set_code_block(frame, nothing());
+  frame_set_argument_map(frame, nothing());
   return true;
 }
 
-void pop_stack_piece_frame(value_t stack_piece, frame_t *frame) {
-  if (CHECK_STACK_PIECE_DISCIPLINE)
-    CHECK_FALSE_VALUE("popping closed stack piece", get_stack_piece_is_closed(stack_piece));
+void frame_pop_within_stack_piece(frame_t *frame) {
+  CHECK_FALSE_VALUE("popping closed stack piece",
+      get_stack_piece_is_closed(frame->stack_piece));
   CHECK_FALSE("stack piece empty", frame_has_flag(frame, ffStackPieceEmpty));
   frame_walk_down_stack(frame);
 }
@@ -262,58 +256,58 @@ static value_t *access_frame_field(frame_t *frame, size_t offset) {
   return get_array_elements(storage) + offset;
 }
 
-void set_frame_previous_frame_pointer(frame_t *frame, size_t value) {
+void frame_set_previous_frame_pointer(frame_t *frame, size_t value) {
   *access_frame_header_field(frame, kFrameHeaderPreviousFramePointerOffset) =
       new_integer(value);
 }
 
-size_t get_frame_previous_frame_pointer(frame_t *frame) {
+size_t frame_get_previous_frame_pointer(frame_t *frame) {
   return get_integer_value(*access_frame_header_field(frame,
       kFrameHeaderPreviousFramePointerOffset));
 }
 
-void set_frame_previous_capacity(frame_t *frame, size_t value) {
+void frame_set_previous_capacity(frame_t *frame, size_t value) {
   *access_frame_header_field(frame, kFrameHeaderPreviousCapacityOffset) =
       new_integer(value);
 }
 
-size_t get_frame_previous_capacity(frame_t *frame) {
+size_t frame_get_previous_capacity(frame_t *frame) {
   return get_integer_value(*access_frame_header_field(frame,
       kFrameHeaderPreviousCapacityOffset));
 }
 
-void set_frame_previous_flags(frame_t *frame, value_t flags) {
+void frame_set_previous_flags(frame_t *frame, value_t flags) {
   *access_frame_header_field(frame, kFrameHeaderPreviousFlagsOffset) = flags;
 }
 
-value_t get_frame_previous_flags(frame_t *frame) {
+value_t frame_get_previous_flags(frame_t *frame) {
   return *access_frame_header_field(frame, kFrameHeaderPreviousFlagsOffset);
 }
 
-void set_frame_code_block(frame_t *frame, value_t code_block) {
+void frame_set_code_block(frame_t *frame, value_t code_block) {
   *access_frame_header_field(frame, kFrameHeaderCodeBlockOffset) =
       code_block;
 }
 
-value_t get_frame_code_block(frame_t *frame) {
+value_t frame_get_code_block(frame_t *frame) {
   return *access_frame_header_field(frame, kFrameHeaderCodeBlockOffset);
 }
 
-void set_frame_argument_map(frame_t *frame, value_t argument_map) {
+void frame_set_argument_map(frame_t *frame, value_t argument_map) {
   *access_frame_header_field(frame, kFrameHeaderArgumentMapOffset) =
       argument_map;
 }
 
-value_t get_frame_argument_map(frame_t *frame) {
+value_t frame_get_argument_map(frame_t *frame) {
   return *access_frame_header_field(frame, kFrameHeaderArgumentMapOffset);
 }
 
-void set_frame_pc(frame_t *frame, size_t pc) {
+void frame_set_pc(frame_t *frame, size_t pc) {
   *access_frame_header_field(frame, kFrameHeaderPcOffset) =
       new_integer(pc);
 }
 
-size_t get_frame_pc(frame_t *frame) {
+size_t frame_get_pc(frame_t *frame) {
   return get_integer_value(*access_frame_header_field(frame,
       kFrameHeaderPcOffset));
 }
@@ -347,7 +341,7 @@ value_t frame_get_argument(frame_t *frame, size_t param_index) {
   value_t storage;
   stack_pointer = frame->frame_pointer - kFrameHeaderSize;
   storage = get_stack_piece_storage(frame->stack_piece);
-  value_t arg_map = get_frame_argument_map(frame);
+  value_t arg_map = frame_get_argument_map(frame);
   size_t offset = get_integer_value(get_array_at(arg_map, param_index));
   value_t *elements = get_array_elements(storage);
   return elements[stack_pointer - offset - 1];
@@ -362,10 +356,6 @@ value_t frame_get_local(frame_t *frame, size_t index) {
 
 
 // --- F r a m e   i t e r a t o r ---
-
-void frame_iter_init_from_stack(frame_iter_t *iter, value_t stack) {
-  get_stack_top_frame(stack, &iter->current);
-}
 
 void frame_iter_init_from_frame(frame_iter_t *iter, frame_t *frame) {
   iter->current = *frame;
@@ -576,9 +566,9 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
   // Check whether the program counter stored for this frame points immediately
   // after an invoke instruction. If it does we'll use that instruction to
   // construct the entry.
-  value_t code_block = get_frame_code_block(frame);
+  value_t code_block = frame_get_code_block(frame);
   value_t bytecode = get_code_block_bytecode(code_block);
-  size_t pc = get_frame_pc(frame);
+  size_t pc = frame_get_pc(frame);
   if (pc <= kInvokeOperationSize)
     return nothing();
   blob_t data;
