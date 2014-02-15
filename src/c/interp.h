@@ -10,42 +10,45 @@
 #include "utils.h"
 #include "value.h"
 
-// Invokes the given macro for each opcode name.
+// Invokes the given macro for each opcode name and argument count.
 #define ENUM_OPCODES(F)                                                        \
-  F(Builtin)                                                                   \
-  F(CheckStackHeight)                                                          \
-  F(CaptureEscape)                                                             \
-  F(DelegateToLambda)                                                          \
-  F(FireEscape)                                                                \
-  F(GetReference)                                                              \
-  F(Invoke)                                                                    \
-  F(KillEscape)                                                                \
-  F(Lambda)                                                                    \
-  F(LoadArgument)                                                              \
-  F(LoadGlobal)                                                                \
-  F(LoadLocal)                                                                 \
-  F(LoadOuter)                                                                 \
-  F(NewArray)                                                                  \
-  F(NewReference)                                                              \
-  F(Pop)                                                                       \
-  F(Push)                                                                      \
-  F(Return)                                                                    \
-  F(SetReference)                                                              \
-  F(Signal)                                                                    \
-  F(Slap)                                                                      \
-  F(StackBottom)                                                               \
-  F(StackPieceBottom)
+  F(Builtin,                    2)                                             \
+  F(CheckStackHeight,           2)                                             \
+  F(CaptureEscape,              2)                                             \
+  F(DelegateToLambda,           1)                                             \
+  F(FireEscape,                 1)                                             \
+  F(GetReference,               1)                                             \
+  F(Invoke,                     4)                                             \
+  F(KillEscape,                 1)                                             \
+  F(Lambda,                     3)                                             \
+  F(LoadArgument,               2)                                             \
+  F(LoadGlobal,                 3)                                             \
+  F(LoadLocal,                  2)                                             \
+  F(LoadOuter,                  2)                                             \
+  F(NewArray,                   2)                                             \
+  F(NewReference,               1)                                             \
+  F(Pop,                        2)                                             \
+  F(Push,                       2)                                             \
+  F(Return,                     1)                                             \
+  F(SetReference,               1)                                             \
+  F(Signal,                     4)                                             \
+  F(Slap,                       2)                                             \
+  F(StackBottom,                1)                                             \
+  F(StackPieceBottom,           1)
 
 // The enum of all opcodes.
 typedef enum {
   __ocFirst__ = -1
-#define __DECLARE_OPCODE__(Name) , oc##Name
+#define __DECLARE_OPCODE__(Name, ARGC) , oc##Name
   ENUM_OPCODES(__DECLARE_OPCODE__)
 #undef __DECLARE_OPCODE__
 } opcode_t;
 
-// The number of values in an invoke operation.
-static const size_t kInvokeOperationSize = 4;
+// Declare the opcode size constants.
+#define __DECLARE_OPCODE_SIZE__(Name, ARGC)                                    \
+  static const size_t k##Name##OperationSize = (ARGC);
+  ENUM_OPCODES(__DECLARE_OPCODE_SIZE__)
+#undef __DECLARE_OPCODE_SIZE__
 
 // Returns the string name of the opcode with the given index.
 const char *get_opcode_name(opcode_t opcode);
