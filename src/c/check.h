@@ -66,7 +66,7 @@ IF_CHECKS_ENABLED(__COND_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause,              \
 IF_CHECKS_ENABLED(CHECK_EQ(M, E, true))
 
 // Fails if the given expression doesn't evaluate to the true boolean value_t.
-#define CHECK_TRUE_VALUE(M, E)                                                       \
+#define CHECK_TRUE_VALUE(M, E)                                                 \
 IF_CHECKS_ENABLED(CHECK_EQ(M, get_boolean_value(E), true))
 
 // Used by CHECK_REL. Don't call directly.
