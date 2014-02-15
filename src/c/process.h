@@ -66,11 +66,11 @@ typedef enum {
 // intended to be, it's intended to work and be fully general.
 typedef struct {
   // Pointer to the next available field on the stack.
-  size_t stack_pointer;
+  value_t *stack_pointer;
   // Pointer to the bottom of the stack fields.
-  size_t frame_pointer;
+  value_t *frame_pointer;
   // The limit beyond which no more data can be written for this frame.
-  size_t limit_pointer;
+  value_t *limit_pointer;
   // The flags describing this frame.
   value_t flags;
   // The stack piece that contains this frame.
@@ -173,6 +173,10 @@ value_t frame_get_local(frame_t *frame, size_t index);
 // Is this frame synthetic, that is, does it correspond to an activation
 // inserted by the runtime and not caused by an invocation?
 bool frame_has_flag(frame_t *frame, frame_flag_t flag);
+
+// Returns a pointer to the bottom of the stack piece on which this frame is
+// currently executing.
+value_t *frame_get_stack_piece_bottom(frame_t *frame);
 
 
 // --- F r a m e   i t e r a t o r ---

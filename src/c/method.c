@@ -514,7 +514,7 @@ value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
   for (size_t current = 0; current < entry_count; current++) {
     value_t signature = get_pair_array_buffer_first_at(entries, current);
     value_t value = get_pair_array_buffer_second_at(entries, current);
-    match_result_t match;
+    match_result_t match = __mrNone__;
     TRY(match_signature(signature, &state->input, space, &match_info, &match));
     if (!match_result_is_match(match))
       continue;
