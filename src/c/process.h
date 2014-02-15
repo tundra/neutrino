@@ -16,7 +16,7 @@ static const size_t kStackPieceStorageOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kStackPiecePreviousOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kStackPieceTopFramePointerOffset = OBJECT_FIELD_OFFSET(2);
 static const size_t kStackPieceTopStackPointerOffset = OBJECT_FIELD_OFFSET(3);
-static const size_t kStackPieceTopCapacityOffset = OBJECT_FIELD_OFFSET(4);
+static const size_t kStackPieceTopLimitPointerOffset = OBJECT_FIELD_OFFSET(4);
 static const size_t kStackPieceTopFlagsOffset = OBJECT_FIELD_OFFSET(5);
 static const size_t kStackPieceIsClosedOffset = OBJECT_FIELD_OFFSET(6);
 
@@ -32,8 +32,8 @@ INTEGER_ACCESSORS_DECL(stack_piece, top_frame_pointer);
 // The current stack pointer for the top frame.
 INTEGER_ACCESSORS_DECL(stack_piece, top_stack_pointer);
 
-// The capacity for the top frame.
-INTEGER_ACCESSORS_DECL(stack_piece, top_capacity);
+// The limit pointer for the top frame.
+INTEGER_ACCESSORS_DECL(stack_piece, top_limit_pointer);
 
 // A tiny bit set that describes the top frame.
 ACCESSORS_DECL(stack_piece, top_flags);
@@ -69,8 +69,8 @@ typedef struct {
   size_t stack_pointer;
   // Pointer to the bottom of the stack fields.
   size_t frame_pointer;
-  // The total frame capacity available.
-  size_t capacity;
+  // The limit beyond which no more data can be written for this frame.
+  size_t limit_pointer;
   // The flags describing this frame.
   value_t flags;
   // The stack piece that contains this frame.
@@ -90,7 +90,7 @@ static const size_t kFrameHeaderSize
 
 // Offsets _down_ from the frame pointer to the header fields.
 static const size_t kFrameHeaderPreviousFramePointerOffset = 0;
-static const size_t kFrameHeaderPreviousCapacityOffset = 1;
+static const size_t kFrameHeaderPreviousLimitPointerOffset = 1;
 static const size_t kFrameHeaderPreviousFlagsOffset = 2;
 static const size_t kFrameHeaderCodeBlockOffset = 3;
 static const size_t kFrameHeaderPcOffset = 4;
@@ -120,11 +120,11 @@ void frame_set_previous_frame_pointer(frame_t *frame, size_t value);
 // one.
 size_t frame_get_previous_frame_pointer(frame_t *frame);
 
-// Record the capacity of the previous stack frame.
-void frame_set_previous_capacity(frame_t *frame, size_t capacity);
+// Record the limit pointer of the previous stack frame.
+void frame_set_previous_limit_pointer(frame_t *frame, size_t value);
 
-// Returns the capacity of the previous stack frame.
-size_t frame_get_previous_capacity(frame_t *frame);
+// Returns the limit pointer of the previous stack frame.
+size_t frame_get_previous_limit_pointer(frame_t *frame);
 
 // Record the flags of the previous stack frame.
 void frame_set_previous_flags(frame_t *frame, value_t flags);

@@ -15,7 +15,6 @@ TEST(process, frame_bounds) {
   frame_t frame;
   open_stack_piece(stack_piece, &frame);
   ASSERT_TRUE(try_push_new_frame(&frame, 4, ffOrganic));
-  close_frame(&frame);
   ASSERT_CHECK_FAILURE(ccOutOfBounds, frame_pop_value(&frame));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(6)));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(5)));
@@ -28,6 +27,7 @@ TEST(process, frame_bounds) {
   ASSERT_VALEQ(new_integer(6), frame_pop_value(&frame));
   ASSERT_CHECK_FAILURE(ccOutOfBounds, frame_pop_value(&frame));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(0)));
+  close_frame(&frame);
 
   DISPOSE_RUNTIME();
 }
@@ -67,13 +67,13 @@ TEST(process, frame_capacity) {
   open_stack_piece(stack_piece, &frame);
   for (int i = 0; i < 16; i++) {
     ASSERT_TRUE(try_push_new_frame(&frame, i, ffOrganic));
-    ASSERT_EQ((size_t) i, frame.capacity);
+    ASSERT_EQ(frame.frame_pointer + i, frame.limit_pointer);
   }
 
   for (int i = 14; i >= 0; i--) {
     frame_pop_within_stack_piece(&frame);
     ASSERT_FALSE(frame_has_flag(&frame, ffStackPieceEmpty));
-    ASSERT_EQ((size_t) i, frame.capacity);
+    ASSERT_EQ(frame.frame_pointer + i, frame.limit_pointer);
   }
   frame_pop_within_stack_piece(&frame);
   ASSERT_TRUE(frame_has_flag(&frame, ffStackPieceEmpty));
@@ -110,7 +110,7 @@ TEST(process, stack_frames) {
   }
 
   for (int i = 255; i > 0; i--) {
-    ASSERT_EQ((size_t) i + 1, frame.capacity);
+    ASSERT_EQ(frame.frame_pointer + i + 1, frame.limit_pointer);
     value_t value = frame_pop_value(&frame);
     ASSERT_EQ(i * 3, get_integer_value(value));
     drop_to_stack_frame(stack, &frame, ffOrganic);
