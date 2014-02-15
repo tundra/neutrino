@@ -89,15 +89,14 @@ static void interpreter_state_restore(interpreter_state_t *state, frame_t *frame
   state->value_pool = get_code_block_value_pool(code_block);
 }
 
-// Reads over and returns the next word in the bytecode stream.
-static short_t read_next_short(interpreter_state_t *state) {
-  return blob_short_at(&state->bytecode, state->pc++);
+// Returns the short value at the given offset from the current pc.
+static short_t read_short(interpreter_state_t *state, size_t offset) {
+  return blob_short_at(&state->bytecode, state->pc + offset);
 }
 
-// Reads over the next value index from the code and returns the associated
-// value pool value.
-static value_t read_next_value(interpreter_state_t *state) {
-  size_t index = read_next_short(state);
+// Returns the value at the given offset from the current pc.
+static value_t read_value(interpreter_state_t *state, size_t offset) {
+  size_t index = read_short(state, offset);
   return get_array_at(state->value_pool, index);
 }
 
@@ -176,44 +175,48 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
   interpreter_state_load(&state, &frame);
   E_BEGIN_TRY_FINALLY();
     while (true) {
-      opcode_t opcode = (opcode_t) read_next_short(&state);
+      opcode_t opcode = (opcode_t) read_short(&state, 0);
       TOPIC_INFO(Interpreter, "Opcode: %s (%i)", get_opcode_name(opcode),
           opcode_counter++);
       switch (opcode) {
         case ocPush: {
-          value_t value = read_next_value(&state);
+          value_t value = read_value(&state, 1);
           frame_push_value(&frame, value);
+          state.pc += kPushOperationSize;
           break;
         }
         case ocPop: {
-          size_t count = read_next_short(&state);
+          size_t count = read_short(&state, 1);
           for (size_t i = 0; i < count; i++)
             frame_pop_value(&frame);
+          state.pc += kPopOperationSize;
           break;
         }
         case ocCheckStackHeight: {
-          size_t expected = read_next_short(&state);
+          size_t expected = read_short(&state, 1);
           size_t height = frame.stack_pointer - frame.frame_pointer;
           CHECK_EQ("stack height", expected, height);
+          state.pc += kCheckStackHeightOperationSize;
           break;
         }
         case ocNewArray: {
-          size_t length = read_next_short(&state);
+          size_t length = read_short(&state, 1);
           E_TRY_DEF(array, new_heap_array(runtime, length));
           for (size_t i = 0; i < length; i++) {
             value_t element = frame_pop_value(&frame);
             set_array_at(array, length - i - 1, element);
           }
           frame_push_value(&frame, array);
+          state.pc += kNewArrayOperationSize;
           break;
         }
         case ocInvoke: {
           // Look up the method in the method space.
-          value_t record = read_next_value(&state);
+          value_t record = read_value(&state, 1);
           CHECK_FAMILY(ofInvocationRecord, record);
-          value_t fragment = read_next_value(&state);
+          value_t fragment = read_value(&state, 2);
           CHECK_FAMILY(ofModuleFragment, fragment);
-          value_t helper = read_next_value(&state);
+          value_t helper = read_value(&state, 3);
           CHECK_FAMILY(ofSignatureMap, helper);
           value_t arg_map;
           value_t method = lookup_method_full(ambience, fragment, record, &frame,
@@ -224,23 +227,29 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           }
           // The lookup may have failed with a different condition. Check for that.
           E_TRY(method);
+          E_TRY_DEF(code_block, ensure_method_code(runtime, method));
+          // We should now have done everything that can fail so we advance the
+          // pc over this instruction. In reality we haven't, the frame push op
+          // below can fail so we should really push the next frame before
+          // storing the pc for this one. Laters.
+          state.pc += kInvokeOperationSize;
           // Push a new activation.
           interpreter_state_store(&state, &frame);
-          E_TRY_DEF(code_block, ensure_method_code(runtime, method));
-          push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block),
-              arg_map);
+          E_TRY(push_stack_frame(runtime, stack, &frame,
+              get_code_block_high_water_mark(code_block), arg_map));
           frame_set_code_block(&frame, code_block);
           interpreter_state_load(&state, &frame);
           break;
         }
         case ocSignal: {
           // Look up the method in the method space.
-          value_t record = read_next_value(&state);
+          value_t record = read_value(&state, 1);
           CHECK_FAMILY(ofInvocationRecord, record);
-          value_t fragment = read_next_value(&state);
+          value_t fragment = read_value(&state, 2);
           CHECK_FAMILY(ofModuleFragment, fragment);
-          value_t helper = read_next_value(&state);
+          value_t helper = read_value(&state, 3);
           CHECK_PHYLUM(tpNothing, helper);
+          state.pc += kSignalOperationSize;
           // Push the signal frame onto the stack to record the state of it for
           // the enclosing code.
           interpreter_state_store(&state, &frame);
@@ -282,12 +291,13 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           break;
         }
         case ocBuiltin: {
-          value_t wrapper = read_next_value(&state);
+          value_t wrapper = read_value(&state, 1);
           builtin_method_t impl = (builtin_method_t) get_void_p_value(wrapper);
           builtin_arguments_t args;
           builtin_arguments_init(&args, runtime, &frame);
-          value_t result = impl(&args);
+          E_TRY_DEF(result, impl(&args));
           frame_push_value(&frame, result);
+          state.pc += kBuiltinOperationSize;
           break;
         }
         case ocReturn: {
@@ -313,10 +323,11 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         }
         case ocSlap: {
           value_t value = frame_pop_value(&frame);
-          size_t argc = read_next_short(&state);
+          size_t argc = read_short(&state, 1);
           for (size_t i = 0; i < argc; i++)
             frame_pop_value(&frame);
           frame_push_value(&frame, value);
+          state.pc += kSlapOperationSize;
           break;
         }
         case ocNewReference: {
@@ -325,7 +336,8 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           E_TRY_DEF(ref, new_heap_reference(runtime, nothing()));
           value_t value = frame_pop_value(&frame);
           set_reference_value(ref, value);
-          E_TRY(frame_push_value(&frame, ref));
+          frame_push_value(&frame, ref);
+          state.pc += kNewReferenceOperationSize;
           break;
         }
         case ocSetReference: {
@@ -333,71 +345,86 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           CHECK_FAMILY(ofReference, ref);
           value_t value = frame_peek_value(&frame, 0);
           set_reference_value(ref, value);
+          state.pc += kSetReferenceOperationSize;
           break;
         }
         case ocGetReference: {
           value_t ref = frame_pop_value(&frame);
           CHECK_FAMILY(ofReference, ref);
           value_t value = get_reference_value(ref);
-          E_TRY(frame_push_value(&frame, value));
+          frame_push_value(&frame, value);
+          state.pc += kGetReferenceOperationSize;
           break;
         }
         case ocLoadLocal: {
-          size_t index = read_next_short(&state);
+          size_t index = read_short(&state, 1);
           value_t value = frame_get_local(&frame, index);
           frame_push_value(&frame, value);
+          state.pc += kLoadLocalOperationSize;
           break;
         }
         case ocLoadGlobal: {
-          value_t ident = read_next_value(&state);
+          value_t ident = read_value(&state, 1);
           CHECK_FAMILY(ofIdentifier, ident);
-          value_t fragment = read_next_value(&state);
+          value_t fragment = read_value(&state, 2);
           CHECK_FAMILY(ofModuleFragment, fragment);
           value_t module = get_module_fragment_module(fragment);
           E_TRY_DEF(value, module_lookup_identifier(runtime, module,
               get_identifier_stage(ident), get_identifier_path(ident)));
           frame_push_value(&frame, value);
+          state.pc += kLoadGlobalOperationSize;
           break;
         }
         case ocLoadArgument: {
-          size_t param_index = read_next_short(&state);
+          size_t param_index = read_short(&state, 1);
           value_t value = frame_get_argument(&frame, param_index);
           frame_push_value(&frame, value);
+          state.pc += kLoadArgumentOperationSize;
           break;
         }
         case ocLoadOuter: {
-          size_t index = read_next_short(&state);
+          size_t index = read_short(&state, 1);
           value_t subject = frame_get_argument(&frame, 0);
           CHECK_FAMILY(ofLambda, subject);
           value_t value = get_lambda_outer(subject, index);
           frame_push_value(&frame, value);
+          state.pc += kLoadOuterOperationSize;
           break;
         }
         case ocLambda: {
-          value_t space = read_next_value(&state);
+          value_t space = read_value(&state, 1);
           CHECK_FAMILY(ofMethodspace, space);
-          size_t outer_count = read_next_short(&state);
+          size_t outer_count = read_short(&state, 2);
           value_t outers;
+          E_TRY_DEF(lambda, new_heap_lambda(runtime, space, nothing()));
           if (outer_count == 0) {
             outers = ROOT(runtime, empty_array);
+            state.pc += kLambdaOperationSize;
           } else {
             E_TRY_SET(outers, new_heap_array(runtime, outer_count));
+            // The pc gets incremented here because it is after we've done all
+            // the allocation but before anything has been popped off the stack.
+            // This way all the above is idempotent, and the below is guaranteed
+            // to succeed.
+            state.pc += kLambdaOperationSize;
             for (size_t i = 0; i < outer_count; i++)
               set_array_at(outers, i, frame_pop_value(&frame));
           }
-          E_TRY_DEF(lambda, new_heap_lambda(runtime, space, outers));
+          set_lambda_outers(lambda, outers);
           frame_push_value(&frame, lambda);
           break;
         }
         case ocCaptureEscape: {
-          size_t dest_offset = read_next_short(&state);
+          size_t dest_offset = read_short(&state, 1);
           // Push the interpreter state at the end of this instruction onto the
           // stack.
-          value_t location = new_integer(interpreter_state_push(&state, &frame,
-              dest_offset, kCapturedStateSize + 1));
           value_t stack_piece = frame.stack_piece;
-          E_TRY_DEF(escape, new_heap_escape(runtime, yes(), stack_piece, location));
+          E_TRY_DEF(escape, new_heap_escape(runtime, yes(), stack_piece, nothing()));
+          value_t location = new_integer(interpreter_state_push(&state, &frame,
+              dest_offset + kCaptureEscapeOperationSize, kCapturedStateSize + 1));
+          set_escape_stack_pointer(escape, location);
           frame_push_value(&frame, escape);
+          state.pc += kCaptureEscapeOperationSize;
           break;
         }
         case ocFireEscape: {
@@ -416,6 +443,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           CHECK_FAMILY(ofEscape, escape);
           set_escape_is_live(escape, no());
           frame_push_value(&frame, value);
+          state.pc += kKillEscapeOperationSize;
           break;
         }
         default:
@@ -442,7 +470,7 @@ static value_t run_stack(value_t ambience, value_t stack) {
 
 const char *get_opcode_name(opcode_t opcode) {
   switch (opcode) {
-#define __EMIT_CASE__(Name)                                                    \
+#define __EMIT_CASE__(Name, ARGC)                                              \
     case oc##Name:                                                             \
       return #Name;
   ENUM_OPCODES(__EMIT_CASE__)
