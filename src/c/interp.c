@@ -48,10 +48,11 @@ static void interpreter_state_load(interpreter_state_t *state, frame_t *frame) {
 static size_t interpreter_state_push(interpreter_state_t *state, frame_t *frame,
     size_t pc_offset, int sp_offset) {
   frame_t snapshot = *frame;
-  size_t location = snapshot.stack_pointer;
-  frame_push_value(frame, new_integer(snapshot.stack_pointer + sp_offset));
-  frame_push_value(frame, new_integer(snapshot.frame_pointer));
-  frame_push_value(frame, new_integer(snapshot.limit_pointer));
+  value_t *stack_start = frame_get_stack_piece_bottom(frame);
+  size_t location = snapshot.stack_pointer - stack_start;
+  frame_push_value(frame, new_integer(snapshot.stack_pointer + sp_offset - stack_start));
+  frame_push_value(frame, new_integer(snapshot.frame_pointer - stack_start));
+  frame_push_value(frame, new_integer(snapshot.limit_pointer - stack_start));
   frame_push_value(frame, snapshot.flags);
   frame_push_value(frame, new_integer(state->pc + pc_offset));
   return location;
@@ -75,9 +76,10 @@ static void interpreter_state_restore(interpreter_state_t *state, frame_t *frame
     set_stack_top_piece(stack, stack_piece);
     open_stack_piece(stack_piece, frame);
   }
-  frame->stack_pointer = get_integer_value(stack_pointer);
-  frame->frame_pointer = get_integer_value(frame_pointer);
-  frame->limit_pointer = get_integer_value(limit_pointer);
+  value_t *stack_start = frame_get_stack_piece_bottom(frame);
+  frame->stack_pointer = stack_start + get_integer_value(stack_pointer);
+  frame->frame_pointer = stack_start + get_integer_value(frame_pointer);
+  frame->limit_pointer = stack_start + get_integer_value(limit_pointer);
   frame->flags = flags;
   // Restore the interpreter state from the now restored frame.
   state->pc = get_integer_value(pc);
