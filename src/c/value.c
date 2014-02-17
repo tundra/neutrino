@@ -2400,7 +2400,7 @@ value_t ambience_validate(value_t self) {
 
 void get_ambience_layout(value_t value, object_layout_t *layout) {
   // An ambience has no value fields.
-  object_layout_set(layout, kAmbienceSize, kAmbienceSize);
+  object_layout_set(layout, kAmbienceSize, OBJECT_FIELD_OFFSET(1));
 }
 
 void set_ambience_runtime(value_t self, runtime_t *runtime) {
