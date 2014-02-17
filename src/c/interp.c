@@ -436,7 +436,8 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
   E_END_TRY_FINALLY();
 }
 
-static value_t run_stack(value_t ambience, value_t stack) {
+// Runs the given stack until it hits a condition or completes successfully.
+static value_t run_stack_until_condition(value_t ambience, value_t stack) {
   value_t result = run_stack_pushing_signals(ambience, stack);
   if (is_condition(ccSignal, result)) {
     runtime_t *runtime = get_ambience_runtime(ambience);
@@ -445,6 +446,23 @@ static value_t run_stack(value_t ambience, value_t stack) {
     print_ln("%9v", trace);
   }
   return result;
+}
+
+// Runs the given stack until it hits a signal or completes successfully. If the
+// heap becomes exhausted this function will try garbage collecting and
+// continuing.
+static value_t run_stack_until_signal(safe_value_t s_ambience, safe_value_t s_stack) {
+  loop: do {
+    value_t ambience = deref(s_ambience);
+    value_t stack = deref(s_stack);
+    value_t result = run_stack_until_condition(ambience, stack);
+    if (is_condition(ccHeapExhausted, result)) {
+      runtime_t *runtime = get_ambience_runtime(ambience);
+      runtime_garbage_collect(runtime);
+      goto loop;
+    }
+    return result;
+  } while (false);
 }
 
 const char *get_opcode_name(opcode_t opcode) {
@@ -470,7 +488,7 @@ value_t run_code_block_until_condition(value_t ambience, value_t code) {
   frame_set_code_block(&frame, code);
   close_frame(&frame);
   // Run the stack.
-  return run_stack(ambience, stack);
+  return run_stack_until_condition(ambience, stack);
 }
 
 value_t run_code_block(safe_value_t s_ambience, safe_value_t code) {
@@ -489,7 +507,7 @@ value_t run_code_block(safe_value_t s_ambience, safe_value_t code) {
       close_frame(&frame);
     }
     // Run until completion.
-    E_RETURN(run_stack(deref(s_ambience), deref(s_stack)));
+    E_RETURN(run_stack_until_signal(s_ambience, s_stack));
   E_FINALLY();
     DISPOSE_SAFE_VALUE_POOL(pool);
   E_END_TRY_FINALLY();

@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "runtime.h"
+#include "safe-inl.h"
 #include "test.h"
 #include "value-inl.h"
 
@@ -155,5 +156,29 @@ TEST(runtime, modal_species_change) {
   check_species_with_mode(runtime, deep_frozen, vmFrozen);
   check_species_with_mode(runtime, deep_frozen, vmDeepFrozen);
 
+  DISPOSE_RUNTIME();
+}
+
+TEST(runtime, ambience_gc) {
+  CREATE_RUNTIME();
+  CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
+
+  value_t stage = new_stage_offset(11);
+  safe_value_t s_ambience = protect(pool, ambience);
+  ASSERT_FAMILY(ofAmbience, deref(s_ambience));
+  safe_value_t s_fragment = protect(pool, new_heap_module_fragment(runtime,
+      nothing(), stage, nothing(), nothing(), nothing()));
+  set_ambience_present_core_fragment(ambience, deref(s_fragment));
+  ASSERT_FAMILY(ofModuleFragment, deref(s_fragment));
+
+  runtime_garbage_collect(runtime);
+
+  ASSERT_FAMILY(ofAmbience, deref(s_ambience));
+  ASSERT_FAMILY(ofModuleFragment, deref(s_fragment));
+  ASSERT_SAME(deref(s_fragment),
+      get_ambience_present_core_fragment(deref(s_ambience)));
+  ASSERT_SAME(stage, get_module_fragment_stage(deref(s_fragment)));
+
+  DISPOSE_SAFE_VALUE_POOL(pool);
   DISPOSE_RUNTIME();
 }
