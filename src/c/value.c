@@ -2395,11 +2395,12 @@ ACCESSORS_IMPL(Ambience, ambience, acInFamilyOpt, ofModuleFragment,
 
 value_t ambience_validate(value_t self) {
   VALIDATE_FAMILY(ofAmbience, self);
+  VALIDATE_FAMILY_OPT(ofModuleFragment, get_ambience_present_core_fragment(self));
   return success();
 }
 
 void get_ambience_layout(value_t value, object_layout_t *layout) {
-  // An ambience has no value fields.
+  // An ambience has one non-value field.
   object_layout_set(layout, kAmbienceSize, OBJECT_FIELD_OFFSET(1));
 }
 
