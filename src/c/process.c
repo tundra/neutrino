@@ -16,8 +16,7 @@ FIXED_GET_MODE_IMPL(stack_piece, vmMutable);
 
 ACCESSORS_IMPL(StackPiece, stack_piece, acInFamily, ofArray, Storage, storage);
 ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt, ofStackPiece, Previous, previous);
-INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, LidFramePointer, lid_frame_pointer);
-ACCESSORS_IMPL(StackPiece, stack_piece, acInPhylum, tpBoolean, IsClosed, is_closed);
+ACCESSORS_IMPL(StackPiece, stack_piece, acNoCheck, 0, LidFramePointer, lid_frame_pointer);
 
 value_t stack_piece_validate(value_t value) {
   VALIDATE_FAMILY(ofStackPiece, value);
@@ -30,6 +29,10 @@ void stack_piece_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofStackPiece, value);
   string_buffer_printf(context->buf, "#<stack piece ~%w: st@%i>", value,
       get_array_length(get_stack_piece_storage(value)));
+}
+
+bool is_stack_piece_closed(value_t self) {
+  return in_domain(vdInteger, get_stack_piece_lid_frame_pointer(self));
 }
 
 
@@ -79,35 +82,33 @@ static void push_stack_piece_bottom_frame(runtime_t *runtime, value_t stack_piec
 // Reads the state of the stack piece lid into the given frame; doesn't modify
 // the piece in any way though.
 static void read_stack_piece_lid(value_t piece, frame_t *frame) {
-  CHECK_TRUE_VALUE("stack piece not closed", get_stack_piece_is_closed(piece));
+  CHECK_TRUE("stack piece not closed", is_stack_piece_closed(piece));
   frame->stack_piece = piece;
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
-  frame->frame_pointer = stack_start + get_stack_piece_lid_frame_pointer(piece);
+  frame->frame_pointer = stack_start + get_integer_value(get_stack_piece_lid_frame_pointer(piece));
   frame_walk_down_stack(frame);
 }
 
 void open_stack_piece(value_t piece, frame_t *frame) {
   CHECK_FAMILY(ofStackPiece, piece);
   read_stack_piece_lid(piece, frame);
-  set_stack_piece_is_closed(piece, no());
-  set_stack_piece_lid_frame_pointer(piece, 0);
+  set_stack_piece_lid_frame_pointer(piece, nothing());
 }
 
 void close_frame(frame_t *frame) {
   value_t piece = frame->stack_piece;
-  CHECK_FALSE_VALUE("stack piece already closed", get_stack_piece_is_closed(piece));
+  CHECK_FALSE("stack piece already closed", is_stack_piece_closed(piece));
   bool pushed = try_push_new_frame(frame, 0, ffLid | ffSynthetic, true);
   CHECK_TRUE("Failed to close frame", pushed);
-  set_stack_piece_is_closed(piece, yes());
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
-  set_stack_piece_lid_frame_pointer(piece, frame->frame_pointer - stack_start);
+  set_stack_piece_lid_frame_pointer(piece, new_integer(frame->frame_pointer - stack_start));
 }
 
 value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     size_t frame_capacity, value_t arg_map) {
   CHECK_FAMILY(ofStack, stack);
   value_t top_piece = get_stack_top_piece(stack);
-  CHECK_FALSE_VALUE("stack piece closed", get_stack_piece_is_closed(top_piece));
+  CHECK_FALSE("stack piece closed", is_stack_piece_closed(top_piece));
   if (!try_push_new_frame(frame, frame_capacity, ffOrganic, false)) {
     // There wasn't room to push this frame onto the top stack piece so
     // allocate a new top piece that definitely has room.
@@ -198,7 +199,7 @@ frame_t open_stack(value_t stack) {
 bool try_push_new_frame(frame_t *frame, size_t frame_capacity, uint32_t flags,
     bool is_lid) {
   value_t stack_piece = frame->stack_piece;
-  CHECK_FALSE_VALUE("pushing closed stack piece", get_stack_piece_is_closed(stack_piece));
+  CHECK_FALSE("pushing closed stack piece", is_stack_piece_closed(stack_piece));
   // First record the current state of the old top frame so we can store it in
   // the header of the new frame.
   frame_t old_frame = *frame;
@@ -233,8 +234,8 @@ bool try_push_new_frame(frame_t *frame, size_t frame_capacity, uint32_t flags,
 }
 
 void frame_pop_within_stack_piece(frame_t *frame) {
-  CHECK_FALSE_VALUE("popping closed stack piece",
-      get_stack_piece_is_closed(frame->stack_piece));
+  CHECK_FALSE("popping closed stack piece",
+      is_stack_piece_closed(frame->stack_piece));
   CHECK_FALSE("stack piece empty", frame_has_flag(frame, ffStackPieceEmpty));
   frame_walk_down_stack(frame);
 }
