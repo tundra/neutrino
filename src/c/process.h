@@ -173,9 +173,6 @@ value_t *frame_get_stack_piece_bottom(frame_t *frame);
 // stack.
 void frame_walk_down_stack(frame_t *frame);
 
-// Dumps the contents of a frame to stdout.
-void frame_debug_print(frame_t *frame);
-
 
 // --- F r a m e   i t e r a t o r ---
 

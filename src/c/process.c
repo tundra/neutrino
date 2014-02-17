@@ -96,7 +96,7 @@ void open_stack_piece(value_t piece, frame_t *frame) {
 void close_frame(frame_t *frame) {
   value_t piece = frame->stack_piece;
   CHECK_FALSE_VALUE("stack piece already closed", get_stack_piece_is_closed(piece));
-  bool pushed = try_push_new_frame(frame, 0, ffLid, true);
+  bool pushed = try_push_new_frame(frame, 0, ffLid | ffSynthetic, true);
   CHECK_TRUE("Failed to close frame", pushed);
   set_stack_piece_is_closed(piece, yes());
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
@@ -189,16 +189,6 @@ frame_t open_stack(value_t stack) {
   frame_t result;
   open_stack_piece(get_stack_top_piece(stack), &result);
   return result;
-}
-
-void frame_debug_print(frame_t *frame) {
-  value_t piece = frame->stack_piece;
-  INFO("Frame (piece %w):", piece);
-  value_t *start = get_array_elements(get_stack_piece_storage(piece));
-  INFO("  FP: %i", frame->frame_pointer - start);
-  INFO("  SP: %i", frame->stack_pointer - start);
-  INFO("  LP: %i", frame->limit_pointer - start);
-  INFO("  Fs: %v", frame->flags);
 }
 
 

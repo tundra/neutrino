@@ -104,12 +104,12 @@ TEST(process, stack_frames) {
 
   value_t stack = new_heap_stack(runtime, 16);
   frame_t frame = open_stack(stack);
-  for (size_t i = 0; i < 4; i++) {
+  for (size_t i = 0; i < 256; i++) {
     ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, i + 1, ROOT(runtime, empty_array)));
     frame_push_value(&frame, new_integer(i * 3));
   }
 
-  for (int i = 3; i > 0; i--) {
+  for (int i = 255; i > 0; i--) {
     ASSERT_PTREQ(frame.frame_pointer + i + 1, frame.limit_pointer);
     value_t value = frame_pop_value(&frame);
     ASSERT_EQ(i * 3, get_integer_value(value));
