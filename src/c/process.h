@@ -65,6 +65,8 @@ typedef struct {
   value_t flags;
   // The stack piece that contains this frame.
   value_t stack_piece;
+  // The program counter.
+  size_t pc;
 } frame_t;
 
 // The number of word-size fields in a frame.
@@ -82,8 +84,8 @@ static const size_t kFrameHeaderSize
 static const size_t kFrameHeaderPreviousFramePointerOffset = 0;
 static const size_t kFrameHeaderPreviousLimitPointerOffset = 1;
 static const size_t kFrameHeaderPreviousFlagsOffset = 2;
-static const size_t kFrameHeaderCodeBlockOffset = 3;
-static const size_t kFrameHeaderPcOffset = 4;
+static const size_t kFrameHeaderPreviousPcOffset = 3;
+static const size_t kFrameHeaderCodeBlockOffset = 4;
 static const size_t kFrameHeaderArgumentMapOffset = 5;
 
 // Tries to allocate a new frame above the given frame of the given capacity.
@@ -130,10 +132,10 @@ void frame_set_code_block(frame_t *frame, value_t code_block);
 value_t frame_get_code_block(frame_t *frame);
 
 // Sets the program counter for this frame.
-void frame_set_pc(frame_t *frame, size_t pc);
+void frame_set_previous_pc(frame_t *frame, size_t pc);
 
 // Returns the program counter for this frame.
-size_t frame_get_pc(frame_t *frame);
+size_t frame_get_previous_pc(frame_t *frame);
 
 // Sets the mapping from parameters to argument indices for this frame.
 void frame_set_argument_map(frame_t *frame, value_t map);
