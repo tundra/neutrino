@@ -16,17 +16,13 @@ FIXED_GET_MODE_IMPL(stack_piece, vmMutable);
 
 ACCESSORS_IMPL(StackPiece, stack_piece, acInFamily, ofArray, Storage, storage);
 ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt, ofStackPiece, Previous, previous);
-INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopFramePointer, top_frame_pointer);
-INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopStackPointer, top_stack_pointer);
-INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, TopLimitPointer, top_limit_pointer);
-ACCESSORS_IMPL(StackPiece, stack_piece, acInPhylum, tpFlagSet, TopFlags, top_flags);
+INTEGER_ACCESSORS_IMPL(StackPiece, stack_piece, LidFramePointer, lid_frame_pointer);
 ACCESSORS_IMPL(StackPiece, stack_piece, acInPhylum, tpBoolean, IsClosed, is_closed);
 
 value_t stack_piece_validate(value_t value) {
   VALIDATE_FAMILY(ofStackPiece, value);
   VALIDATE_FAMILY(ofArray, get_stack_piece_storage(value));
   VALIDATE_FAMILY_OPT(ofStackPiece, get_stack_piece_previous(value));
-  VALIDATE_PHYLUM(tpFlagSet, get_stack_piece_top_flags(value));
   return success();
 }
 
@@ -55,13 +51,13 @@ value_t stack_validate(value_t value) {
 // points to) to the bottom of the new stack segment.
 static void transfer_top_arguments(value_t new_piece, frame_t *frame,
     size_t arg_count) {
-  value_t *stack_start = get_array_elements(get_stack_piece_storage(new_piece));
-  value_t *old_sp = stack_start + get_stack_piece_top_stack_pointer(new_piece);
+  frame_t new_frame;
+  open_stack_piece(new_piece, &new_frame);
   for (size_t i = 0; i < arg_count; i++) {
     value_t value = frame_peek_value(frame, arg_count - i - 1);
-    old_sp[i] = value;
+    frame_push_value(&new_frame, value);
   }
-  set_stack_piece_top_stack_pointer(new_piece, (old_sp + arg_count) - stack_start);
+  close_frame(&new_frame);
 }
 
 static void push_stack_piece_bottom_frame(runtime_t *runtime, value_t stack_piece,
@@ -74,10 +70,10 @@ static void push_stack_piece_bottom_frame(runtime_t *runtime, value_t stack_piec
   open_stack_piece(stack_piece, &bottom);
   bool pushed = try_push_new_frame(&bottom,
       get_code_block_high_water_mark(code_block) + arg_count,
-      ffSynthetic | ffStackPieceBottom);
+      ffSynthetic | ffStackPieceBottom, false);
   CHECK_TRUE("pushing bottom frame", pushed);
-  close_frame(&bottom);
   frame_set_code_block(&bottom, code_block);
+  close_frame(&bottom);
 }
 
 // Reads the state of the stack piece lid into the given frame; doesn't modify
@@ -86,27 +82,25 @@ static void read_stack_piece_lid(value_t piece, frame_t *frame) {
   CHECK_TRUE_VALUE("stack piece not closed", get_stack_piece_is_closed(piece));
   frame->stack_piece = piece;
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
-  frame->frame_pointer = stack_start + get_stack_piece_top_frame_pointer(piece);
-  frame->stack_pointer = stack_start + get_stack_piece_top_stack_pointer(piece);
-  frame->limit_pointer = stack_start + get_stack_piece_top_limit_pointer(piece);
-  frame->flags = get_stack_piece_top_flags(piece);
+  frame->frame_pointer = stack_start + get_stack_piece_lid_frame_pointer(piece);
+  frame_walk_down_stack(frame);
 }
 
 void open_stack_piece(value_t piece, frame_t *frame) {
   CHECK_FAMILY(ofStackPiece, piece);
   read_stack_piece_lid(piece, frame);
   set_stack_piece_is_closed(piece, no());
+  set_stack_piece_lid_frame_pointer(piece, 0);
 }
 
 void close_frame(frame_t *frame) {
   value_t piece = frame->stack_piece;
   CHECK_FALSE_VALUE("stack piece already closed", get_stack_piece_is_closed(piece));
-  value_t *stack_start = frame_get_stack_piece_bottom(frame);
-  set_stack_piece_top_frame_pointer(piece, frame->frame_pointer - stack_start);
-  set_stack_piece_top_stack_pointer(piece, frame->stack_pointer - stack_start);
-  set_stack_piece_top_limit_pointer(piece, frame->limit_pointer - stack_start);
-  set_stack_piece_top_flags(piece, frame->flags);
+  bool pushed = try_push_new_frame(frame, 0, ffLid, true);
+  CHECK_TRUE("Failed to close frame", pushed);
   set_stack_piece_is_closed(piece, yes());
+  value_t *stack_start = frame_get_stack_piece_bottom(frame);
+  set_stack_piece_lid_frame_pointer(piece, frame->frame_pointer - stack_start);
 }
 
 value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
@@ -114,7 +108,7 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
   CHECK_FAMILY(ofStack, stack);
   value_t top_piece = get_stack_top_piece(stack);
   CHECK_FALSE_VALUE("stack piece closed", get_stack_piece_is_closed(top_piece));
-  if (!try_push_new_frame(frame, frame_capacity, ffOrganic)) {
+  if (!try_push_new_frame(frame, frame_capacity, ffOrganic, false)) {
     // There wasn't room to push this frame onto the top stack piece so
     // allocate a new top piece that definitely has room.
     size_t default_capacity = get_stack_default_piece_capacity(stack);
@@ -142,14 +136,14 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     // succeed.
     open_stack_piece(new_piece, frame);
     bool pushed_stack_piece = try_push_new_frame(frame, frame_capacity,
-        ffOrganic);
+        ffOrganic, false);
     CHECK_TRUE("pushing on new piece failed", pushed_stack_piece);
   }
   frame_set_argument_map(frame, arg_map);
   return success();
 }
 
-static void frame_walk_down_stack(frame_t *frame) {
+void frame_walk_down_stack(frame_t *frame) {
   frame_t snapshot = *frame;
   // Get the frame pointer and capacity from the frame's header.
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
@@ -197,10 +191,21 @@ frame_t open_stack(value_t stack) {
   return result;
 }
 
+void frame_debug_print(frame_t *frame) {
+  value_t piece = frame->stack_piece;
+  INFO("Frame (piece %w):", piece);
+  value_t *start = get_array_elements(get_stack_piece_storage(piece));
+  INFO("  FP: %i", frame->frame_pointer - start);
+  INFO("  SP: %i", frame->stack_pointer - start);
+  INFO("  LP: %i", frame->limit_pointer - start);
+  INFO("  Fs: %v", frame->flags);
+}
+
 
 // --- F r a m e ---
 
-bool try_push_new_frame(frame_t *frame, size_t frame_capacity, uint32_t flags) {
+bool try_push_new_frame(frame_t *frame, size_t frame_capacity, uint32_t flags,
+    bool is_lid) {
   value_t stack_piece = frame->stack_piece;
   CHECK_FALSE_VALUE("pushing closed stack piece", get_stack_piece_is_closed(stack_piece));
   // First record the current state of the old top frame so we can store it in
@@ -210,6 +215,12 @@ bool try_push_new_frame(frame_t *frame, size_t frame_capacity, uint32_t flags) {
   value_t storage = get_stack_piece_storage(stack_piece);
   value_t *stack_piece_start = get_array_elements(storage);
   value_t *stack_piece_limit = stack_piece_start + get_array_length(storage);
+  // There must always be room on a stack piece for the lid frame because it
+  // must always be possible to close a stack if a condition occurs, which we
+  // assume it can at any time. So we hold back a frame header's worth of stack
+  // except when allocating the lid.
+  if (!is_lid)
+    stack_piece_limit -= kFrameHeaderSize;
   value_t *new_frame_pointer = old_frame.stack_pointer + kFrameHeaderSize;
   value_t *new_frame_limit = new_frame_pointer + frame_capacity;
   if (new_frame_limit > stack_piece_limit)

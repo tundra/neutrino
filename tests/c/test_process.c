@@ -14,7 +14,7 @@ TEST(process, frame_bounds) {
   // Check that push/pop outside the frame boundaries causes a check failure.
   frame_t frame;
   open_stack_piece(stack_piece, &frame);
-  ASSERT_TRUE(try_push_new_frame(&frame, 4, ffOrganic));
+  ASSERT_TRUE(try_push_new_frame(&frame, 4, ffOrganic, false));
   ASSERT_CHECK_FAILURE(ccOutOfBounds, frame_pop_value(&frame));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(6)));
   ASSERT_SUCCESS(frame_push_value(&frame, new_integer(5)));
@@ -41,7 +41,7 @@ TEST(process, simple_frames) {
 
   for (int i = 0; i < 256; i++) {
     if (i % 16 == 0)
-      ASSERT_TRUE(try_push_new_frame(&frame, 16, ffOrganic));
+      ASSERT_TRUE(try_push_new_frame(&frame, 16, ffOrganic, false));
     frame_push_value(&frame, new_integer(i));
   }
   for (int i = 255; i >= 0; i--) {
@@ -66,7 +66,7 @@ TEST(process, frame_capacity) {
   frame_t frame;
   open_stack_piece(stack_piece, &frame);
   for (int i = 0; i < 16; i++) {
-    ASSERT_TRUE(try_push_new_frame(&frame, i, ffOrganic));
+    ASSERT_TRUE(try_push_new_frame(&frame, i, ffOrganic, false));
     ASSERT_PTREQ(frame.frame_pointer + i, frame.limit_pointer);
   }
 
@@ -89,8 +89,8 @@ TEST(process, bottom_frame) {
   frame_t frame;
   // Push two frames onto the stack piece.
   open_stack_piece(stack_piece, &frame);
-  ASSERT_TRUE(try_push_new_frame(&frame, 10, ffOrganic));
-  ASSERT_TRUE(try_push_new_frame(&frame, 10, ffOrganic));
+  ASSERT_TRUE(try_push_new_frame(&frame, 10, ffOrganic, false));
+  ASSERT_TRUE(try_push_new_frame(&frame, 10, ffOrganic, false));
   frame_pop_within_stack_piece(&frame);
   ASSERT_FALSE(frame_has_flag(&frame, ffStackPieceEmpty));
   frame_pop_within_stack_piece(&frame);
@@ -104,12 +104,12 @@ TEST(process, stack_frames) {
 
   value_t stack = new_heap_stack(runtime, 16);
   frame_t frame = open_stack(stack);
-  for (size_t i = 0; i < 256; i++) {
+  for (size_t i = 0; i < 4; i++) {
     ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, i + 1, ROOT(runtime, empty_array)));
     frame_push_value(&frame, new_integer(i * 3));
   }
 
-  for (int i = 255; i > 0; i--) {
+  for (int i = 3; i > 0; i--) {
     ASSERT_PTREQ(frame.frame_pointer + i + 1, frame.limit_pointer);
     value_t value = frame_pop_value(&frame);
     ASSERT_EQ(i * 3, get_integer_value(value));
