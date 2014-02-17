@@ -11,11 +11,10 @@
 
 // --- S t a c k   p i e c e ---
 
-static const size_t kStackPieceSize = OBJECT_SIZE(4);
+static const size_t kStackPieceSize = OBJECT_SIZE(3);
 static const size_t kStackPieceStorageOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kStackPiecePreviousOffset= OBJECT_FIELD_OFFSET(1);
 static const size_t kStackPieceLidFramePointerOffset = OBJECT_FIELD_OFFSET(2);
-static const size_t kStackPieceIsClosedOffset = OBJECT_FIELD_OFFSET(3);
 
 // The plain array used for storage for this stack piece.
 ACCESSORS_DECL(stack_piece, storage);
@@ -24,11 +23,10 @@ ACCESSORS_DECL(stack_piece, storage);
 ACCESSORS_DECL(stack_piece, previous);
 
 // The frame pointer for the lid frame. Only set if the piece is closed.
-INTEGER_ACCESSORS_DECL(stack_piece, lid_frame_pointer);
+ACCESSORS_DECL(stack_piece, lid_frame_pointer);
 
-// Is this stack piece closed such that it must be opened before execution on it
-// can continue?
-ACCESSORS_DECL(stack_piece, is_closed);
+// Returns true if the given stack piece is in the closed state.
+bool is_stack_piece_closed(value_t self);
 
 // Flags that describe a stack frame.
 typedef enum {

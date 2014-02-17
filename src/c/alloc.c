@@ -479,7 +479,7 @@ value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
       ROOT(runtime, stack_piece_species)));
   set_stack_piece_storage(result, storage);
   set_stack_piece_previous(result, previous);
-  set_stack_piece_is_closed(result, no());
+  set_stack_piece_lid_frame_pointer(result, nothing());
   value_t *stack_start = get_array_elements(storage);
   frame_t bottom;
   bottom.stack_piece = result;
