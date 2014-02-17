@@ -487,6 +487,7 @@ value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
   bottom.stack_pointer = stack_start;
   bottom.limit_pointer = stack_start;
   bottom.flags = new_flag_set(ffSynthetic | ffStackPieceEmpty);
+  bottom.pc = 0;
   close_frame(&bottom);
   return post_create_sanity_check(result, size);
 }

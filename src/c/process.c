@@ -150,6 +150,7 @@ void frame_walk_down_stack(frame_t *frame) {
   frame->frame_pointer = stack_start + frame_get_previous_frame_pointer(&snapshot);
   frame->limit_pointer = stack_start + frame_get_previous_limit_pointer(&snapshot);
   frame->flags = frame_get_previous_flags(&snapshot);
+  frame->pc = frame_get_previous_pc(&snapshot);
   // The stack pointer will be the first field of the top frame's header.
   frame->stack_pointer = snapshot.frame_pointer - kFrameHeaderSize;
 }
@@ -219,12 +220,13 @@ bool try_push_new_frame(frame_t *frame, size_t frame_capacity, uint32_t flags,
   frame->stack_pointer = frame->frame_pointer = new_frame_pointer;
   frame->limit_pointer = new_frame_limit;
   frame->flags = new_flag_set(flags);
+  frame->pc = 0;
   // Record the relevant information about the previous frame in the new frame's
   // header.
   frame_set_previous_frame_pointer(frame, old_frame.frame_pointer - stack_piece_start);
   frame_set_previous_limit_pointer(frame, old_frame.limit_pointer - stack_piece_start);
   frame_set_previous_flags(frame, old_frame.flags);
-  frame_set_pc(frame, 0);
+  frame_set_previous_pc(frame, old_frame.pc);
   frame_set_code_block(frame, nothing());
   frame_set_argument_map(frame, nothing());
   return true;
@@ -298,14 +300,14 @@ value_t frame_get_argument_map(frame_t *frame) {
   return *access_frame_header_field(frame, kFrameHeaderArgumentMapOffset);
 }
 
-void frame_set_pc(frame_t *frame, size_t pc) {
-  *access_frame_header_field(frame, kFrameHeaderPcOffset) =
+void frame_set_previous_pc(frame_t *frame, size_t pc) {
+  *access_frame_header_field(frame, kFrameHeaderPreviousPcOffset) =
       new_integer(pc);
 }
 
-size_t frame_get_pc(frame_t *frame) {
+size_t frame_get_previous_pc(frame_t *frame) {
   return get_integer_value(*access_frame_header_field(frame,
-      kFrameHeaderPcOffset));
+      kFrameHeaderPreviousPcOffset));
 }
 
 value_t frame_push_value(frame_t *frame, value_t value) {
@@ -555,7 +557,7 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
   // construct the entry.
   value_t code_block = frame_get_code_block(frame);
   value_t bytecode = get_code_block_bytecode(code_block);
-  size_t pc = frame_get_pc(frame);
+  size_t pc = frame->pc;
   if (pc <= kInvokeOperationSize)
     return nothing();
   blob_t data;
