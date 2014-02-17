@@ -420,9 +420,9 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           // stack.
           value_t stack_piece = frame.stack_piece;
           E_TRY_DEF(escape, new_heap_escape(runtime, yes(), stack_piece, nothing()));
-          value_t location = new_integer(interpreter_state_push(&state, &frame,
-              dest_offset + kCaptureEscapeOperationSize, kCapturedStateSize + 1));
-          set_escape_stack_pointer(escape, location);
+          size_t location = interpreter_state_push(&state, &frame,
+              dest_offset + kCaptureEscapeOperationSize, kCapturedStateSize + 1);
+          set_escape_stack_pointer(escape, new_integer(location));
           frame_push_value(&frame, escape);
           state.pc += kCaptureEscapeOperationSize;
           break;

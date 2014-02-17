@@ -474,16 +474,20 @@ value_t new_heap_ambience(runtime_t *runtime) {
 value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
     value_t previous) {
   size_t size = kStackPieceSize;
-  TRY_DEF(storage, new_heap_array(runtime, storage_size));
+  TRY_DEF(storage, new_heap_array(runtime, storage_size + kFrameHeaderSize));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, stack_piece_species)));
   set_stack_piece_storage(result, storage);
   set_stack_piece_previous(result, previous);
-  set_stack_piece_top_frame_pointer(result, 0);
-  set_stack_piece_top_stack_pointer(result, 0);
-  set_stack_piece_top_limit_pointer(result, 0);
-  set_stack_piece_top_flags(result, new_flag_set(ffSynthetic | ffStackPieceEmpty));
-  set_stack_piece_is_closed(result, yes());
+  set_stack_piece_is_closed(result, no());
+  value_t *stack_start = get_array_elements(storage);
+  frame_t bottom;
+  bottom.stack_piece = result;
+  bottom.frame_pointer = stack_start;
+  bottom.stack_pointer = stack_start;
+  bottom.limit_pointer = stack_start;
+  bottom.flags = new_flag_set(ffSynthetic | ffStackPieceEmpty);
+  close_frame(&bottom);
   return post_create_sanity_check(result, size);
 }
 
@@ -494,7 +498,8 @@ static void push_stack_bottom_frame(runtime_t *runtime, value_t stack) {
   value_t code_block = ROOT(runtime, stack_bottom_code_block);
   frame_t bottom = open_stack(stack);
   bool pushed = try_push_new_frame(&bottom,
-      get_code_block_high_water_mark(code_block), ffSynthetic | ffStackBottom);
+      get_code_block_high_water_mark(code_block), ffSynthetic | ffStackBottom,
+      false);
   CHECK_TRUE("pushing bottom frame", pushed);
   frame_set_code_block(&bottom, code_block);
   close_frame(&bottom);
