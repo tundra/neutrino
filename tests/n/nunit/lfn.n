@@ -1,0 +1,14 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+
+# A method that does something, anything.
+def $test_local_function() {
+  def $v := (lfn $foo($x) => ($x + 1) in $foo(3) + $foo(4));
+  $assert:equals(9, $v);
+}
+
+do {
+  $test_local_function();
+}

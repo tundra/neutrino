@@ -20,6 +20,7 @@ file_names = [
   "integer.n",
   "interval.n",
   "is.n",
+  "lfn.n",
   "module.n",
   "object.n",
   "string.n",

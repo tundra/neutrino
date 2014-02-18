@@ -46,6 +46,9 @@ class Visitor(object):
 
   def visit_local_declaration(self, that):
     self.visit_ast(that)
+  
+  def visit_local_lambda(self, that):
+    self.visit_ast(that)
 
   def visit_with_escape(self, that):
     self.visit_ast(that)
@@ -320,6 +323,32 @@ class LocalDeclaration(object):
     else:
       type = "var"
     return "(%s %s := %s in %s)" % (type, self.ident, self.value, self.body)
+
+
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "LocalLambda"))
+class LocalLambda(object):
+
+  @plankton.field("symbol")
+  @plankton.field("method")
+  @plankton.field("body")
+  def __init__(self, ident, method, body):
+    self.ident = ident
+    self.symbol = None
+    self.method = method
+    self.body = body
+
+  def accept(self, visitor):
+    return visitor.visit_local_lambda(self)
+
+  def traverse(self, visitor):
+    self.method.accept(visitor)
+    self.body.accept(visitor)
+
+  def get_name(self):
+    return self.ident.get_name()
+
+  def __str__(self):
+    return "lfn %s %s in %s)" % (type, self.ident, self.method, self.body)
 
 
 # A local escape capture.
