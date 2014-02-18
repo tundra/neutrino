@@ -162,13 +162,13 @@ static const size_t kLocalLambdaAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kLocalLambdaAstMethodOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kLocalLambdaAstBodyOffset = OBJECT_FIELD_OFFSET(2);
 
-// The declaration's symbol.
+// The local's symbol.
 ACCESSORS_DECL(local_lambda_ast, symbol);
 
-// The lambda's method.
+// The local lambda's method.
 ACCESSORS_DECL(local_lambda_ast, method);
 
-// The expression that's in scope of the lambda.
+// The expression that's in scope of the local lambda.
 ACCESSORS_DECL(local_lambda_ast, body);
 
 

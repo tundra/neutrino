@@ -454,6 +454,8 @@ class Parser(object):
       value = self.parse_word_expression(False)
     return ast.Lambda(ast.Method(signature, value))
 
+  # <local lambda expression>
+  #   -> "lfn" <ident> <method tail> "in" <expression>
   def parse_local_lambda_expression(self):
     self.expect_word('lfn')
     name = self.expect_type(Token.IDENTIFIER)

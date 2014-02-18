@@ -348,7 +348,7 @@ class LocalLambda(object):
     return self.ident.get_name()
 
   def __str__(self):
-    return "lfn %s %s in %s)" % (type, self.ident, self.method, self.body)
+    return "(lfn %s %s in %s)" % (type, self.ident, self.method, self.body)
 
 
 # A local escape capture.

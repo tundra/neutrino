@@ -511,14 +511,10 @@ value_t emit_local_lambda_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofLocalLambdaAst, self);
   // Record the stack offset where the value is being pushed.
   size_t offset = assm->stack_height;
-  // Emit the value, wrapping it in a reference if this is a mutable local. The
-  // reference approach is really inefficient but gives the correct semantics
-  // with little effort.
   value_t method_ast = get_local_lambda_ast_method(self);
   TRY(emit_lambda_from_method(method_ast, assm, true));
   // Record in the scope chain that the symbol is bound and where the value is
-  // located on the stack. It is the responsibility of anyone reading or writing
-  // the variable to dereference the value as appropriate.
+  // located on the stack.
   value_t symbol = get_local_lambda_ast_symbol(self);
   CHECK_FAMILY(ofSymbolAst, symbol);
   if (assembler_is_symbol_bound(assm, symbol))
@@ -951,6 +947,9 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
 
 value_t emit_lambda_from_method(value_t method_ast, assembler_t *assm,
     bool is_local) {
+  // Emitting a lambda takes a fair amount of code but most of it is
+  // straightforward -- it's more just verbose than actually complex.
+
   // Push a capture scope that captures any symbols accessed outside the lambda.
   capture_scope_t capture_scope;
   TRY(assembler_push_capture_scope(assm, &capture_scope, is_local));
@@ -996,8 +995,6 @@ value_t emit_lambda_from_method(value_t method_ast, assembler_t *assm,
 }
 
 value_t emit_lambda_ast(value_t value, assembler_t *assm) {
-  // Emitting a lambda takes a fair amount of code but most of it is
-  // straightforward -- it's more just verbose than actually complex.
   CHECK_FAMILY(ofLambdaAst, value);
   value_t method_ast = get_lambda_ast_method(value);
   return emit_lambda_from_method(method_ast, assm, false);
