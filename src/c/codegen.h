@@ -19,7 +19,9 @@ typedef enum {
   // An argument to the current immediate function.
   btArgument,
   // A symbol captured by an enclosing method.
-  btCaptured
+  btCaptured,
+  // A symbol captured from a local method.
+  btLocalCaptured
 } binding_type_t;
 
 // A collection of information about a binding. This is going to be encoded as
@@ -188,14 +190,20 @@ value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index);
 // Emits a load of a captured outer variable in the subject object.
 value_t assembler_emit_load_outer(assembler_t *assm, size_t index);
 
+// Emits a load of an outer variable captured by a local method.
+value_t assembler_emit_load_local_outer(assembler_t *assm, size_t index);
+
 // Emits a lambda that understands the given methods and which expects the given
 // number of outer variables to be present on the stack.
 value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
-    size_t outer_count);
+    size_t outer_count, opcode_t opcode);
 
 // Hacky implementation of calling lambdas. Later this should be replaced by a
 // more general delegate operation.
 value_t assembler_emit_delegate_lambda_call(assembler_t *assm);
+
+// Ditto for local lambdas.
+value_t assembler_emit_delegate_local_lambda_call(assembler_t *assm);
 
 // Capture an escape, pushing it onto the stack. The offset_out is a cursor
 // where the offset to jump to when returning to the escape should be written.
@@ -209,6 +217,11 @@ value_t assembler_emit_fire_escape(assembler_t *assm);
 // this expects there to be a value above the escape, so this in effect does a
 // slap-1, not a pop-1.
 value_t assembler_emit_kill_escape(assembler_t *assm);
+
+// Pops off the local lambda currently on the stack and marks it as dead. Note
+// that this expects there to be a value above the lambda, so this in effect
+// does a slap-1, not a pop-1.
+value_t assembler_emit_kill_local_lambda(assembler_t *assm);
 
 // Emits a stack bottom instruction that indicates that we're done executing.
 value_t assembler_emit_stack_bottom(assembler_t *assm);
@@ -276,10 +289,13 @@ typedef struct {
   value_t captures;
   // The assembler this scope belongs to.
   assembler_t *assembler;
+  // Are these variables being captured by a local lambda?
+  bool is_local;
 } capture_scope_t;
 
 // Pushes a capture scope onto the scope stack.
-value_t assembler_push_capture_scope(assembler_t *assm, capture_scope_t *scope);
+value_t assembler_push_capture_scope(assembler_t *assm, capture_scope_t *scope,
+    bool is_local);
 
 // Pops a map symbol scope off the scope stack.
 void assembler_pop_capture_scope(assembler_t *assm, capture_scope_t *scope);

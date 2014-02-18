@@ -390,19 +390,15 @@ value_t escape_validate(value_t value) {
   return success();
 }
 
-value_t emit_fire_escape(assembler_t *assm) {
+static value_t emit_fire_escape(assembler_t *assm) {
   TRY(assembler_emit_fire_escape(assm));
   return success();
 }
 
-value_t escape_is_live(builtin_arguments_t *args) {
+static value_t escape_is_live(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofEscape, self);
   return get_escape_is_live(self);
-}
-
-value_t add_escape_builtin_methods(runtime_t *runtime, safe_value_t s_space) {
-  return success();
 }
 
 value_t add_escape_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {

@@ -268,6 +268,8 @@ class Parser(object):
   def parse_word_expression(self, expect_delim):
     if self.at_word('fn'):
       return self.parse_lambda_expression()
+    elif self.at_word('lfn'):
+      return self.parse_local_lambda_expression()
     elif self.at_word('new'):
       return self.parse_new_expression(expect_delim)
     elif self.at_word('if'):
@@ -451,6 +453,21 @@ class Parser(object):
       self.expect_punctuation('=>')
       value = self.parse_word_expression(False)
     return ast.Lambda(ast.Method(signature, value))
+
+  # <local lambda expression>
+  #   -> "lfn" <ident> <method tail> "in" <expression>
+  def parse_local_lambda_expression(self):
+    self.expect_word('lfn')
+    name = self.expect_type(Token.IDENTIFIER)
+    signature = self.parse_signature()
+    if self.at_punctuation('{'):
+      value = self.parse_sequence_expression()
+    else:
+      self.expect_punctuation('=>')
+      value = self.parse_word_expression(False)
+    self.expect_word('in')
+    body = self.parse_word_expression(False)
+    return ast.LocalLambda(name, ast.Method(signature, value), body)
 
   # Are we currently at a token that is allowed as the first token of a
   # parameter?

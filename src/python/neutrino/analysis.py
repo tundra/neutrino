@@ -51,6 +51,11 @@ class ScopeVisitor(ast.Visitor):
     that.value.accept(self)
     self.visit_generic_declaration(that)
 
+  def visit_local_lambda(self, that):
+    assert that.symbol is None
+    that.method.accept(self)
+    self.visit_generic_declaration(that)
+
   def visit_with_escape(self, that):
     assert that.symbol is None
     self.visit_generic_declaration(that)

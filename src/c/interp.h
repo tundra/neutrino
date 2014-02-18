@@ -16,15 +16,19 @@
   F(CheckStackHeight,           2)                                             \
   F(CaptureEscape,              2)                                             \
   F(DelegateToLambda,           1)                                             \
+  F(DelegateToLocalLambda,      1)                                             \
   F(FireEscape,                 1)                                             \
   F(GetReference,               1)                                             \
   F(Invoke,                     4)                                             \
   F(KillEscape,                 1)                                             \
+  F(KillLocalLambda,            1)                                             \
   F(Lambda,                     3)                                             \
   F(LoadArgument,               2)                                             \
   F(LoadGlobal,                 3)                                             \
   F(LoadLocal,                  2)                                             \
+  F(LoadLocalOuter,             2)                                             \
   F(LoadOuter,                  2)                                             \
+  F(LocalLambda,                3)                                             \
   F(NewArray,                   2)                                             \
   F(NewReference,               1)                                             \
   F(Pop,                        2)                                             \
