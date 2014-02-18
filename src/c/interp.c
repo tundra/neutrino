@@ -268,6 +268,38 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           code_cache_refresh(&cache, &frame);
           break;
         }
+        case ocDelegateToLocalLambda: {
+          // Get the lambda to delegate to.
+          value_t lambda = frame_get_argument(&frame, 0);
+          CHECK_FAMILY(ofLocalLambda, lambda);
+          CHECK_TRUE_VALUE("calling dead local lambda", get_local_lambda_is_live(lambda));
+          value_t space = get_local_lambda_methods(lambda);
+          // Pop off the top frame since we're repeating the previous call.
+          drop_to_stack_frame(stack, &frame, ffOrganic);
+          code_cache_refresh(&cache, &frame);
+          // Extract the invocation record from the calling instruction.
+          CHECK_EQ("invalid calling instruction", ocInvoke,
+              peek_previous_short(&cache, &frame, kInvokeOperationSize, 0));
+          value_t record = peek_previous_value(&cache, &frame, kInvokeOperationSize, 1);
+          CHECK_FAMILY(ofInvocationRecord, record);
+          // From this point we do the same as invoke except using the space from
+          // the lambda rather than the space from the invoke instruction.
+          value_t arg_map;
+          value_t method = lookup_methodspace_method(ambience, space, record,
+              &frame, &arg_map);
+          if (in_condition_cause(ccLookupError, method)) {
+            log_lookup_error(method, record, &frame);
+            E_RETURN(method);
+          }
+          // The lookup may have failed with a different condition. Check for that.
+          E_TRY(method);
+          E_TRY_DEF(code_block, ensure_method_code(runtime, method));
+          push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block),
+              arg_map);
+          frame_set_code_block(&frame, code_block);
+          code_cache_refresh(&cache, &frame);
+          break;
+        }
         case ocBuiltin: {
           value_t wrapper = read_value(&cache, &frame, 1);
           builtin_method_t impl = (builtin_method_t) get_void_p_value(wrapper);
@@ -369,6 +401,15 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame.pc += kLoadOuterOperationSize;
           break;
         }
+        case ocLoadLocalOuter: {
+          size_t index = read_short(&cache, &frame, 1);
+          value_t subject = frame_get_argument(&frame, 0);
+          CHECK_FAMILY(ofLocalLambda, subject);
+          value_t value = get_local_lambda_outer(subject, index);
+          frame_push_value(&frame, value);
+          frame.pc += kLoadLocalOuterOperationSize;
+          break;
+        }
         case ocLambda: {
           value_t space = read_value(&cache, &frame, 1);
           CHECK_FAMILY(ofMethodspace, space);
@@ -390,6 +431,30 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           }
           set_lambda_outers(lambda, outers);
           frame_push_value(&frame, lambda);
+          break;
+        }
+        case ocLocalLambda: {
+          value_t space = read_value(&cache, &frame, 1);
+          CHECK_FAMILY(ofMethodspace, space);
+          size_t outer_count = read_short(&cache, &frame, 2);
+          value_t outers;
+          E_TRY_DEF(local_lambda, new_heap_local_lambda(runtime, space,
+              nothing(), yes()));
+          if (outer_count == 0) {
+            outers = ROOT(runtime, empty_array);
+            frame.pc += kLocalLambdaOperationSize;
+          } else {
+            E_TRY_SET(outers, new_heap_array(runtime, outer_count));
+            // The pc gets incremented here because it is after we've done all
+            // the allocation but before anything has been popped off the stack.
+            // This way all the above is idempotent, and the below is guaranteed
+            // to succeed.
+            frame.pc += kLocalLambdaOperationSize;
+            for (size_t i = 0; i < outer_count; i++)
+              set_array_at(outers, i, frame_pop_value(&frame));
+          }
+          set_local_lambda_outers(local_lambda, outers);
+          frame_push_value(&frame, local_lambda);
           break;
         }
         case ocCaptureEscape: {
@@ -423,6 +488,15 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           set_escape_is_live(escape, no());
           frame_push_value(&frame, value);
           frame.pc += kKillEscapeOperationSize;
+          break;
+        }
+        case ocKillLocalLambda: {
+          value_t value = frame_pop_value(&frame);
+          value_t local_lambda = frame_pop_value(&frame);
+          CHECK_FAMILY(ofLocalLambda, local_lambda);
+          set_local_lambda_is_live(local_lambda, no());
+          frame_push_value(&frame, value);
+          frame.pc += kKillLocalLambdaOperationSize;
           break;
         }
         default:

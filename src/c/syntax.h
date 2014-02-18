@@ -155,6 +155,23 @@ ACCESSORS_DECL(local_declaration_ast, value);
 ACCESSORS_DECL(local_declaration_ast, body);
 
 
+// --- L o c a l   l a m b d a   a s t ---
+
+static const size_t kLocalLambdaAstSize = OBJECT_SIZE(3);
+static const size_t kLocalLambdaAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kLocalLambdaAstMethodOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kLocalLambdaAstBodyOffset = OBJECT_FIELD_OFFSET(2);
+
+// The declaration's symbol.
+ACCESSORS_DECL(local_lambda_ast, symbol);
+
+// The lambda's method.
+ACCESSORS_DECL(local_lambda_ast, method);
+
+// The expression that's in scope of the lambda.
+ACCESSORS_DECL(local_lambda_ast, body);
+
+
 // --- W i t h   e s c a p e   a s t ---
 
 static const size_t kWithEscapeAstSize = OBJECT_SIZE(2);
@@ -219,6 +236,11 @@ static const size_t kLambdaAstMethodOffset = OBJECT_FIELD_OFFSET(0);
 
 // The method that implements this lambda.
 ACCESSORS_DECL(lambda_ast, method);
+
+// Given a method, emits code that causes a lambda to be pushed onto the stack
+// which responds to the given method.
+value_t emit_lambda_from_method(value_t method_ast, assembler_t *assm,
+    bool is_local);
 
 
 // --- P a r a m e t e r   a s t ---

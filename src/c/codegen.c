@@ -119,12 +119,13 @@ static value_t capture_scope_lookup(value_t symbol, void *data,
   capture_scope_t *scope = (capture_scope_t*) data;
   size_t capture_count_before = get_array_buffer_length(scope->captures);
   // See if we've captured this variable before.
+  binding_type_t type = scope->is_local ? btLocalCaptured : btCaptured;
   for (size_t i = 0; i < capture_count_before; i++) {
     value_t captured = get_array_buffer_at(scope->captures, i);
     if (value_identity_compare(captured, symbol)) {
       // Found it. Record that we did if necessary and return success.
       if (info_out != NULL) {
-        info_out->type = btCaptured;
+        info_out->type = type;
         info_out->data = i;
       }
       return success();
@@ -141,17 +142,19 @@ static value_t capture_scope_lookup(value_t symbol, void *data,
       TRY_SET(scope->captures, new_heap_array_buffer(runtime, 2));
     }
     TRY(add_to_array_buffer(runtime, scope->captures, symbol));
-    info_out->type = btCaptured;
+    info_out->type = type;
     info_out->data = capture_count_before;
   }
   return value;
 }
 
-value_t assembler_push_capture_scope(assembler_t *assm, capture_scope_t *scope) {
+value_t assembler_push_capture_scope(assembler_t *assm, capture_scope_t *scope,
+    bool is_local) {
   scope_lookup_callback_init(&scope->callback, capture_scope_lookup, scope);
   scope->outer = assembler_set_scope_callback(assm, &scope->callback);
   scope->captures = ROOT(assm->runtime, empty_array_buffer);
   scope->assembler = assm;
+  scope->is_local = is_local;
   return success();
 }
 
@@ -359,6 +362,12 @@ value_t assembler_emit_delegate_lambda_call(assembler_t *assm) {
   return success();
 }
 
+value_t assembler_emit_delegate_local_lambda_call(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocDelegateToLocalLambda);
+  assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
 value_t assembler_emit_capture_escape(assembler_t *assm,
     short_buffer_cursor_t *offset_out) {
   assembler_emit_opcode(assm, ocCaptureEscape);
@@ -378,6 +387,12 @@ value_t assembler_emit_fire_escape(assembler_t *assm) {
 
 value_t assembler_emit_kill_escape(assembler_t *assm) {
   assembler_emit_opcode(assm, ocKillEscape);
+  assembler_adjust_stack_height(assm, -1);
+  return success();
+}
+
+value_t assembler_emit_kill_local_lambda(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocKillLocalLambda);
   assembler_adjust_stack_height(assm, -1);
   return success();
 }
@@ -476,9 +491,16 @@ value_t assembler_emit_load_outer(assembler_t *assm, size_t index) {
   return success();
 }
 
+value_t assembler_emit_load_local_outer(assembler_t *assm, size_t index) {
+  assembler_emit_opcode(assm, ocLoadLocalOuter);
+  assembler_emit_short(assm, index);
+  assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
 value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
-    size_t outer_count) {
-  assembler_emit_opcode(assm, ocLambda);
+    size_t outer_count, opcode_t opcode) {
+  assembler_emit_opcode(assm, opcode);
   TRY(assembler_emit_value(assm, methods));
   assembler_emit_short(assm, outer_count);
   // Pop off all the outers and push back the lambda.

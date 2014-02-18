@@ -1,7 +1,7 @@
 # Copyright 2014 the Neutrino authors (see AUTHORS).
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-## The built-in type of runtime-native object arrays.
+## The built-in type of runtime-native lambdas.
 def @Lambda := @ctrino.get_builtin_type("Lambda");
 
 def type @Lambda is @Object;
@@ -9,3 +9,17 @@ def type @Lambda is @Object;
 ## Invokes this function.
 @ctrino.builtin("lambda()")
 def ($this is @Lambda)(*);
+
+
+## The built-in type of runtime-native local lambdas.
+def @LocalLambda := @ctrino.get_builtin_type("LocalLambda");
+
+def type @LocalLambda is @Object;
+
+## Invokes this local function.
+@ctrino.builtin("local_lambda()")
+def ($this is @LocalLambda)(*);
+
+## Returns true iff this lambda is still live, that is, can be invoked.
+@ctrino.builtin("local_lambda.is_live")
+def ($this is @LocalLambda).is_live;
