@@ -119,7 +119,7 @@ static value_t apply_method_declaration(value_t ambience, value_t decl,
   // the fact if it's a builtin.
   value_t method_ast = get_method_declaration_ast_method(decl);
   TRY_DEF(method, compile_method_ast_to_method(runtime, method_ast, fragment));
-  if (!is_condition(ccNotFound, builtin_name)) {
+  if (!in_condition_cause(ccNotFound, builtin_name)) {
     // This is a builtin so patch the method with the builtin implementation.
     TRY_DEF(impl, runtime_get_builtin_implementation(runtime, builtin_name));
     value_t impl_code = get_builtin_implementation_code(impl);
@@ -301,14 +301,14 @@ static value_t execute_binding_schedule(binding_context_t *context, value_t sche
     value_t stage = get_identifier_stage(next);
     // Create the bound module if it doesn't already exist.
     value_t bound_module = get_id_hash_map_at(context->bound_module_map, path);
-    if (is_condition(ccNotFound, bound_module)) {
+    if (in_condition_cause(ccNotFound, bound_module)) {
       TRY_SET(bound_module, new_heap_empty_module(runtime, path));
       TRY(set_id_hash_map_at(runtime, context->bound_module_map, path,
           bound_module));
     }
     // Create the bound fragment.
     value_t bound_fragment = get_module_fragment_at(bound_module, stage);
-    if (is_condition(ccNotFound, bound_fragment)) {
+    if (in_condition_cause(ccNotFound, bound_fragment)) {
       TRY_SET(bound_fragment, new_empty_module_fragment(runtime, stage,
           bound_module));
       TRY(add_module_fragment(runtime, bound_module, bound_fragment));
@@ -349,7 +349,7 @@ value_t build_bound_module(value_t ambience, value_t unbound_module) {
   TRY(execute_binding_schedule(&context, schedule));
   value_t path = get_unbound_module_path(unbound_module);
   value_t result = get_id_hash_map_at(context.bound_module_map, path);
-  CHECK_FALSE("module missing", is_condition(ccNotFound, result));
+  CHECK_FALSE("module missing", in_condition_cause(ccNotFound, result));
   return result;
 }
 
@@ -543,7 +543,7 @@ static bool should_fragment_be_bound(binding_context_t *context, value_t schedul
   }
   // Check if there is a preceding fragment and whether it has been bound.
   value_t entry_before = get_fragment_entry_before(module, stage);
-  if (is_condition(ccNotFound, entry_before)) {
+  if (in_condition_cause(ccNotFound, entry_before)) {
     return true;
   } else {
     value_t before_ident = get_fragment_entry_identifier(entry_before);
@@ -625,7 +625,7 @@ void module_loader_print_on(value_t value, print_on_context_t *context) {
 value_t module_loader_lookup_module(value_t self, value_t path) {
   value_t modules = get_module_loader_modules(self);
   value_t result = get_id_hash_map_at(modules, path);
-  if (is_condition(ccNotFound, result))
+  if (in_condition_cause(ccNotFound, result))
     WARN("Module %v not found.", path);
   return result;
 }

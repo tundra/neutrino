@@ -15,7 +15,7 @@
 
 static value_t resolve_syntax_factory(value_t key, runtime_t *runtime, void *data) {
   value_t result = get_id_hash_map_at(ROOT(runtime, plankton_environment), key);
-  if (is_condition(ccNotFound, result)) {
+  if (in_condition_cause(ccNotFound, result)) {
     return new_heap_unknown(runtime, RSTR(runtime, environment_reference), key);
   } else {
     return result;
@@ -61,7 +61,7 @@ size_t get_parameter_order_index_for_array(value_t tags) {
   size_t result = kMaxOrderIndex;
   for (size_t i = 0; i < get_array_length(tags); i++) {
     value_t tag = get_array_at(tags, i);
-    if (in_domain(vdInteger, tag)) {
+    if (is_integer(tag)) {
       result = min_size(result, 2 + get_integer_value(tag));
     } else if (in_family(ofKey, tag)) {
       size_t id = get_key_id(tag);
@@ -591,7 +591,7 @@ static value_t assembler_access_symbol(value_t symbol, assembler_t *assm,
     bool *is_ref_out) {
   CHECK_FAMILY(ofSymbolAst, symbol);
   binding_info_t binding;
-  if (is_condition(ccNotFound, assembler_lookup_symbol(assm, symbol, &binding)))
+  if (in_condition_cause(ccNotFound, assembler_lookup_symbol(assm, symbol, &binding)))
     // We're trying to access a symbol that hasn't been defined here. That's
     // not valid.
     return new_invalid_syntax_condition(isSymbolNotBound);

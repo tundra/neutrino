@@ -148,7 +148,7 @@ value_t match_signature(value_t self, signature_map_lookup_input_t *input,
     value_t tag = get_invocation_record_tag_at(input->record, i);
     // TODO: propagate any errors caused by this.
     value_t param = binary_search_pair_array(tags, tag);
-    if (is_condition(ccNotFound, param)) {
+    if (in_condition_cause(ccNotFound, param)) {
       // The tag wasn't found in this signature.
       if (allow_extra) {
         // It's fine, this signature allows extra arguments.
@@ -238,7 +238,7 @@ value_t match_signature_tags(value_t self, value_t record,
     value_t tag = get_invocation_record_tag_at(record, i);
     // TODO: propagate any errors caused by this.
     value_t param = binary_search_pair_array(tags, tag);
-    if (is_condition(ccNotFound, param)) {
+    if (in_condition_cause(ccNotFound, param)) {
       // The tag wasn't found in this signature.
       if (allow_extra) {
         // It's fine, this signature allows extra arguments.
@@ -627,7 +627,7 @@ value_t add_methodspace_inheritance(runtime_t *runtime, value_t self,
   CHECK_FAMILY(ofType, supertype);
   value_t inheritance = get_methodspace_inheritance(self);
   value_t parents = get_id_hash_map_at(inheritance, subtype);
-  if (is_condition(ccNotFound, parents)) {
+  if (in_condition_cause(ccNotFound, parents)) {
     // Make the parents buffer small since most types don't have many direct
     // parents. If this fails nothing has happened.
     TRY_SET(parents, new_heap_array_buffer(runtime, 4));
@@ -661,7 +661,7 @@ value_t add_methodspace_method(runtime_t *runtime, value_t self,
 value_t get_type_parents(runtime_t *runtime, value_t space, value_t type) {
   value_t inheritance = get_methodspace_inheritance(space);
   value_t parents = get_id_hash_map_at(inheritance, type);
-  if (is_condition(ccNotFound, parents)) {
+  if (in_condition_cause(ccNotFound, parents)) {
     return ROOT(runtime, empty_array_buffer);
   } else {
     return parents;
@@ -738,7 +738,7 @@ value_t get_or_create_module_fragment_methodspaces_cache(runtime_t *runtime,
   // dependencies.
   value_t module = get_module_fragment_module(fragment);
   value_t current = fragment;
-  while (!is_condition(ccNotFound, current)) {
+  while (!in_condition_cause(ccNotFound, current)) {
     value_t methodspace = get_module_fragment_methodspace(current);
     TRY(ensure_methodspace_transitive_dependencies(runtime, methodspace, cache));
     value_t stage = get_module_fragment_stage(current);
@@ -781,12 +781,12 @@ static value_t lookup_subject_methods(signature_map_lookup_state_t *state) {
   // Look for a subject value, if there is none there is nothing to do.
   value_t subject = get_invocation_subject_with_shortcut(state);
   TOPIC_INFO(Lookup, "Subject value: %v", subject);
-  if (is_condition(ccNotFound, subject)) {
+  if (in_condition_cause(ccNotFound, subject)) {
     // Just in case, check that the shortcut version gave the correct answer.
     // The case where it returns a non-condition is trivially correct (FLW) so this
     // is the only case there can be any doubt about.
     IF_EXPENSIVE_CHECKS_ENABLED(CHECK_TRUE("Subject shortcut didn't work",
-        is_condition(ccNotFound, get_invocation_subject_no_shortcut(state))));
+        in_condition_cause(ccNotFound, get_invocation_subject_no_shortcut(state))));
     return success();
   }
   // Extract the origin of the subject.

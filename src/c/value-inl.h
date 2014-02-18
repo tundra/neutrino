@@ -11,15 +11,37 @@
 #include "utils-inl.h"
 #include "value.h"
 
+// There are two flavors of tests: in-tests and is-tests. Both tests whether
+// a value is within a particular group of values but where in-tests take the
+// group to test for as an argument, is-tests hardcode a particular group. So
+// is-tests are really just shorthands for an in-test with a particular argument
+// but are shorter and it may be possible to optimize them when the value is
+// hardcoded.
+
 // Returns true if the value of the given expression is in the specified
 // domain.
 static inline bool in_domain(value_domain_t domain, value_t value) {
   return get_value_domain(value) == domain;
 }
 
+// Is the given value a tagged integer?
+static inline bool is_integer(value_t value) {
+  return in_domain(vdInteger, value);
+}
+
+// Returns true iff the given value is a condition.
+static inline bool is_condition(value_t value) {
+  return in_domain(vdCondition, value);
+}
+
+// Returns true iff the given value is an object.
+static inline bool is_object(value_t value) {
+  return in_domain(vdObject, value);
+}
+
 // Returns true iff the given value is an object within the given family.
 static inline bool in_family(object_family_t family, value_t value) {
-  return in_domain(vdObject, value) && (get_object_family(value) == family);
+  return is_object(value) && (get_object_family(value) == family);
 }
 
 // Returns true iff the given value is either nothing or an object within the
@@ -34,8 +56,8 @@ static inline bool in_division(species_division_t division, value_t value) {
 }
 
 // Returns true iff the value is a condition with the specified cause.
-static inline bool is_condition(consition_cause_t cause, value_t value) {
-  return in_domain(vdCondition, value) && (get_condition_cause(value) == cause);
+static inline bool in_condition_cause(consition_cause_t cause, value_t value) {
+  return is_condition(value) && (get_condition_cause(value) == cause);
 }
 
 
@@ -151,7 +173,7 @@ SWALLOW_SEMI(gi)
 // the value is not a condition will be performed in any case since that is a
 // global invariant.
 #define acNoCheck(UNUSED, VALUE)                                               \
-  CHECK_FALSE("storing condition in heap", in_domain(vdCondition, (VALUE)))
+  CHECK_FALSE("storing condition in heap", is_condition(VALUE))
 
 // Accessor check that indicates that the argument should belong to the family
 // specified in the argument.
@@ -252,7 +274,7 @@ SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
 // --- P l a n k t o n ---
 
 #define __CHECK_MAP_ENTRY_FOUND__(name) do {                                   \
-  if (is_condition(ccNotFound, name)) {                                           \
+  if (in_condition_cause(ccNotFound, name)) {                                           \
     string_hint_t __hint__ = STRING_HINT_INIT(#name);                          \
     return new_invalid_input_condition_with_hint(__hint__);                       \
   }                                                                            \

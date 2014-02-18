@@ -3,7 +3,7 @@
 
 #include "condition.h"
 #include "log.h"
-#include "value.h"
+#include "value-inl.h"
 
 // Declare a unit test method. The suite name must match the file the test
 // case is declared in.
@@ -173,7 +173,7 @@ ASSERT_CLASS(consition_cause_t, scCause, EXPR, get_condition_cause)
 // Fails if the given value is a condition.
 #define ASSERT_SUCCESS(EXPR) do {                                              \
   value_t __value__ = (EXPR);                                                  \
-  if (get_value_domain(__value__) == vdCondition) {                            \
+  if (is_condition(__value__)) {                                               \
     fail(__FILE__, __LINE__, "Assertion failed: is_condition(%s).\n  Was condition: %s",\
         #EXPR, get_condition_cause_name(get_condition_cause(__value__)));      \
   }                                                                            \

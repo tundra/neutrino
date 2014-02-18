@@ -209,3 +209,9 @@ TEST(tagged, score_successor) {
   ASSERT_SAME(new_score(scIs, 2), get_score_successor(new_score(scIs, 1)));
   ASSERT_SAME(new_score(scIs, 0xFFFFFFFF), get_score_successor(new_score(scIs, 0xFFFFFFFE)));
 }
+
+TEST(tagged, nothing) {
+  value_t not = nothing();
+  ASSERT_EQ(ENCODED_NOTHING, not.encoded);
+  ASSERT_TRUE(is_nothing(not));
+}

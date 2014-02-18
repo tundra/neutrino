@@ -8,7 +8,7 @@
 #define _SAFE_INL
 
 #include "safe.h"
-#include "value.h"
+#include "value-inl.h"
 
 // Returns true if the value of the given safe value protects a value that is in
 // the specified domain.

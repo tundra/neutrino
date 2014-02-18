@@ -242,7 +242,7 @@ TEST(value, exhaust_id_hash_map) {
     value_t value = new_integer(1024 - i);
     value_t result = set_id_hash_map_at(runtime, map, key, value);
     ASSERT_SUCCESS(object_validate(map));
-    if (is_condition(ccHeapExhausted, result))
+    if (in_condition_cause(ccHeapExhausted, result))
       break;
     ASSERT_SUCCESS(result);
   }
@@ -552,7 +552,7 @@ TEST(value, map_delete) {
       // Check that getting the values directly works.
       for (size_t i = 0; i < kRange; i++) {
         value_t key = new_integer(i);
-        bool in_map = !is_condition(ccNotFound, get_id_hash_map_at(map, key));
+        bool in_map = !in_condition_cause(ccNotFound, get_id_hash_map_at(map, key));
         ASSERT_EQ(bit_vector_get_at(&bits, i), in_map);
       }
       // Check that iteration works.

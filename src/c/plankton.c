@@ -161,11 +161,11 @@ static void register_serialized_object(value_t value, serialize_state_t *state) 
 static value_t instance_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofInstance, value);
   value_t ref = get_id_hash_map_at(state->ref_map, value);
-  if (is_condition(ccNotFound, ref)) {
+  if (in_condition_cause(ccNotFound, ref)) {
     // We haven't seen this object before. First we check if it should be an
     // environment object.
     value_t raw_resolved = value_mapping_apply(state->resolver, value, state->runtime);
-    if (is_condition(ccNothing, raw_resolved)) {
+    if (in_condition_cause(ccNothing, raw_resolved)) {
       // It's not an environment object. Just serialize it directly.
       byte_buffer_append(state->buf, pObject);
       byte_buffer_append(state->buf, pNull);
@@ -385,7 +385,7 @@ static value_t reference_deserialize(deserialize_state_t *state) {
   size_t offset = uint32_deserialize(state->in);
   size_t index = state->object_offset - offset - 1;
   value_t result = get_id_hash_map_at(state->ref_map, new_integer(index));
-  CHECK_FALSE("missing reference", is_condition(ccNotFound, result));
+  CHECK_FALSE("missing reference", in_condition_cause(ccNotFound, result));
   return result;
 }
 
