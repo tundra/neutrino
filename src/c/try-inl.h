@@ -14,7 +14,7 @@
 // ignores the value.
 #define TRY(EXPR) do {                                                         \
   value_t __result__ = (EXPR);                                                 \
-  if (in_domain(vdCondition, __result__))                                      \
+  if (is_condition(__result__))                                                \
     return __result__;                                                         \
 } while (false)
 
@@ -70,7 +70,7 @@ S_TRY_SET(name, INIT)
 // is executed before bailing out on a condition.
 #define E_TRY(EXPR) do {                                                       \
   value_t __result__ = (EXPR);                                                 \
-  if (in_domain(vdCondition, __result__))                                      \
+  if (is_condition(__result__))                                                \
     E_RETURN(__result__);                                                      \
 } while (false)
 

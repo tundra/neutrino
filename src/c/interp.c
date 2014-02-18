@@ -201,7 +201,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t arg_map;
           value_t method = lookup_method_full(ambience, fragment, record, &frame,
               helper, &arg_map);
-          if (is_condition(ccLookupError, method)) {
+          if (in_condition_cause(ccLookupError, method)) {
             log_lookup_error(method, record, &frame);
             E_RETURN(method);
           }
@@ -255,7 +255,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t arg_map;
           value_t method = lookup_methodspace_method(ambience, space, record,
               &frame, &arg_map);
-          if (is_condition(ccLookupError, method)) {
+          if (in_condition_cause(ccLookupError, method)) {
             log_lookup_error(method, record, &frame);
             E_RETURN(method);
           }
@@ -439,7 +439,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
 // Runs the given stack until it hits a condition or completes successfully.
 static value_t run_stack_until_condition(value_t ambience, value_t stack) {
   value_t result = run_stack_pushing_signals(ambience, stack);
-  if (is_condition(ccSignal, result)) {
+  if (in_condition_cause(ccSignal, result)) {
     runtime_t *runtime = get_ambience_runtime(ambience);
     frame_t frame = open_stack(stack);
     TRY_DEF(trace, capture_backtrace(runtime, &frame));
@@ -456,7 +456,7 @@ static value_t run_stack_until_signal(safe_value_t s_ambience, safe_value_t s_st
     value_t ambience = deref(s_ambience);
     value_t stack = deref(s_stack);
     value_t result = run_stack_until_condition(ambience, stack);
-    if (is_condition(ccHeapExhausted, result)) {
+    if (in_condition_cause(ccHeapExhausted, result)) {
       runtime_t *runtime = get_ambience_runtime(ambience);
       runtime_garbage_collect(runtime);
       goto loop;

@@ -8,7 +8,7 @@
 
 
 bool safe_value_is_immediate(safe_value_t s_value) {
-  return get_value_domain(s_value.as_value) != vdObject;
+  return !is_object(s_value.as_value);
 }
 
 safe_value_t object_tracker_to_safe_value(object_tracker_t *handle) {

@@ -274,7 +274,7 @@ static bool test_eventual_detection(cycle_detector_t *outer, size_t depth) {
     return false;
   cycle_detector_t inner;
   value_t entered = cycle_detector_enter(outer, &inner, new_integer(depth % 17));
-  if (get_value_domain(entered) == vdCondition)
+  if (is_condition(entered))
     return true;
   return test_eventual_detection(&inner, depth - 1);
 }

@@ -911,19 +911,19 @@ static value_t extend_id_hash_map(runtime_t *runtime, value_t map) {
     value_t extension = try_set_id_hash_map_at(map, key, value, false);
     // Since we were able to successfully add these pairs to the old smaller
     // map it can't fail this time around.
-    CHECK_TRUE("rehashing failed", get_value_domain(extension) != vdCondition);
+    CHECK_FALSE("rehashing failed", is_condition(extension));
   }
   return success();
 }
 
 value_t set_id_hash_map_at(runtime_t *runtime, value_t map, value_t key, value_t value) {
   value_t first_try = try_set_id_hash_map_at(map, key, value, false);
-  if (is_condition(ccMapFull, first_try)) {
+  if (in_condition_cause(ccMapFull, first_try)) {
     TRY(extend_id_hash_map(runtime, map));
     value_t second_try = try_set_id_hash_map_at(map, key, value, false);
     // It should be impossible for the second try to fail if the first try could
     // hash the key and extending was successful.
-    CHECK_TRUE("second try failure", get_value_domain(second_try) != vdCondition);
+    CHECK_FALSE("second try failure", is_condition(second_try));
     return second_try;
   } else {
     return first_try;

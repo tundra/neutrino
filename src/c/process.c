@@ -32,7 +32,7 @@ void stack_piece_print_on(value_t value, print_on_context_t *context) {
 }
 
 bool is_stack_piece_closed(value_t self) {
-  return in_domain(vdInteger, get_stack_piece_lid_frame_pointer(self));
+  return is_integer(get_stack_piece_lid_frame_pointer(self));
 }
 
 
@@ -315,7 +315,7 @@ value_t frame_push_value(frame_t *frame, value_t value) {
   // Check that the stack is in sync with this frame.
   COND_CHECK_TRUE("push out of frame bounds", ccOutOfBounds,
       is_offset_within_frame(frame, frame->stack_pointer));
-  CHECK_FALSE("pushing condition", get_value_domain(value) == vdCondition);
+  CHECK_FALSE("pushing condition", is_condition(value));
   *(frame->stack_pointer++) = value;
   return success();
 }
@@ -488,13 +488,13 @@ void backtrace_entry_invocation_print_on(value_t invocation, bool is_signal,
   // (which is not supposed to be there anyway) and just print abort.
   if (is_signal) {
     string_buffer_printf(context->buf, "abort");
-  } else if (!is_condition(ccNotFound, subject)) {
+  } else if (!in_condition_cause(ccNotFound, subject)) {
     value_print_inner_on(subject, context, -1);
   }
   // Begin the selector.
   if (in_family(ofOperation, selector)) {
     operation_print_open_on(selector, context);
-  } else if (!is_condition(ccNotFound, selector)) {
+  } else if (!in_condition_cause(ccNotFound, selector)) {
     value_print_inner_on(selector, context, -1);
   }
   // Number of positional arguments.
@@ -505,7 +505,7 @@ void backtrace_entry_invocation_print_on(value_t invocation, bool is_signal,
   for (posc = argc = 0; true; posc++, argc++) {
     value_t key = new_integer(posc);
     value_t value = get_id_hash_map_at(invocation, key);
-    if (is_condition(ccNotFound, value))
+    if (in_condition_cause(ccNotFound, value))
       break;
     if (argc > 0)
       string_buffer_printf(context->buf, ", ");
@@ -524,7 +524,7 @@ void backtrace_entry_invocation_print_on(value_t invocation, bool is_signal,
       if (id == 0 || id == 1)
         // Don't print the subject/selector again.
         continue;
-    } else if (in_domain(vdInteger, key) && ((size_t) get_integer_value(key)) < posc) {
+    } else if (is_integer(key) && ((size_t) get_integer_value(key)) < posc) {
       // Don't print any of the positional arguments again. The size_t cast of
       // the integer value means that negative values will become very large
       // positive ones and hence compare greater than posc.

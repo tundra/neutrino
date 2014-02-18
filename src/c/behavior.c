@@ -97,7 +97,7 @@ NL(                                                                            \
 // --- M o d e ---
 
 value_mode_t get_value_mode(value_t self) {
-  if (get_value_domain(self) == vdObject) {
+  if (is_object(self)) {
     family_behavior_t *behavior = get_object_family_behavior(self);
     return (behavior->get_mode)(self);
   } else {
@@ -123,7 +123,7 @@ value_t set_value_mode(runtime_t *runtime, value_t self, value_mode_t mode) {
 }
 
 value_t set_value_mode_unchecked(runtime_t *runtime, value_t self, value_mode_t mode) {
-  if (get_value_domain(self) == vdObject) {
+  if (is_object(self)) {
     family_behavior_t *behavior = get_object_family_behavior(self);
     return (behavior->set_mode_unchecked)(runtime, self, mode);
   } else {
@@ -223,7 +223,7 @@ bool value_identity_compare(value_t a, value_t b) {
   cycle_detector_t detector;
   cycle_detector_init_bottom(&detector);
   value_t ptected = value_identity_compare_cycle_protect(a, b, &detector);
-  return is_condition(ccCircular, ptected) ? false : get_boolean_value(ptected);
+  return in_condition_cause(ccCircular, ptected) ? false : get_boolean_value(ptected);
 }
 
 value_t value_identity_compare_cycle_protect(value_t a, value_t b,

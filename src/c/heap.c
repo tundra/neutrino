@@ -312,7 +312,7 @@ value_t heap_complete_garbage_collection(heap_t *heap) {
 }
 
 void value_field_iter_init(value_field_iter_t *iter, value_t value) {
-  if (get_value_domain(value) != vdObject) {
+  if (!is_object(value)) {
     iter->limit = iter->next = NULL;
     return;
   }

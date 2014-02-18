@@ -266,7 +266,7 @@ static value_t neutrino_main(int argc, char **argv) {
 int main(int argc, char *argv[]) {
   install_crash_handler();
   value_t result = neutrino_main(argc, argv);
-  if (get_value_domain(result) == vdCondition) {
+  if (is_condition(result)) {
     print_ln("Error: %v", result);
     return 1;
   } else {

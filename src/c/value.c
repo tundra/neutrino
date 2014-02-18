@@ -158,7 +158,7 @@ void set_object_species(value_t value, value_t species) {
 }
 
 bool in_syntax_family(value_t value) {
-  if (get_value_domain(value) != vdObject)
+  if (!is_object(value))
     return false;
   switch (get_object_family(value)) {
 #define __MAKE_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)   \
@@ -333,7 +333,7 @@ value_t ensure_shallow_frozen(runtime_t *runtime, value_t value) {
 value_t ensure_frozen(runtime_t *runtime, value_t value) {
   if (get_value_mode(value) == vmDeepFrozen)
     return success();
-  if (get_value_domain(value) == vdObject) {
+  if (is_object(value)) {
     TRY(ensure_shallow_frozen(runtime, value));
     family_behavior_t *behavior = get_object_family_behavior(value);
     value_t (*freeze_owned)(runtime_t*, value_t) = behavior->ensure_owned_values_frozen;
@@ -364,7 +364,7 @@ value_t transitively_validate_deep_frozen(runtime_t *runtime, value_t value,
   while (value_field_iter_next(&iter, &field)) {
     // Try to deep freeze the field's value.
     value_t ensured = validate_deep_frozen(runtime, *field, offender_out);
-    if (get_value_domain(ensured) == vdCondition) {
+    if (is_condition(ensured)) {
       // Deep freezing failed for some reason. Restore the object to its previous
       // state and bail.
       set_value_mode_unchecked(runtime, value, vmFrozen);
@@ -395,8 +395,8 @@ value_t validate_deep_frozen(runtime_t *runtime, value_t value,
 value_t try_validate_deep_frozen(runtime_t *runtime, value_t value,
     value_t *offender_out) {
   value_t ensured = validate_deep_frozen(runtime, value, offender_out);
-  if (get_value_domain(ensured) == vdCondition) {
-    if (is_condition(ccNotDeepFrozen, ensured)) {
+  if (is_condition(ensured)) {
+    if (in_condition_cause(ccNotDeepFrozen, ensured)) {
       // A NotFrozen condition indicates that there is something mutable somewhere
       // in the object graph.
       return no();
@@ -698,7 +698,7 @@ static int value_compare_function(const void *vp_a, const void *vp_b) {
   value_t a = *((const value_t*) vp_a);
   value_t b = *((const value_t*) vp_b);
   value_t comparison = value_ordering_compare(a, b);
-  CHECK_FALSE("not comparable", in_domain(vdCondition, comparison));
+  CHECK_FALSE("not comparable", is_condition(comparison));
   return relation_to_integer(comparison);
 }
 
@@ -1194,11 +1194,11 @@ value_t get_id_hash_map_at(value_t map, value_t key) {
 
 value_t get_id_hash_map_at_with_default(value_t map, value_t key, value_t defawlt) {
   value_t result = get_id_hash_map_at(map, key);
-  return is_condition(ccNotFound, result) ? defawlt : result;
+  return in_condition_cause(ccNotFound, result) ? defawlt : result;
 }
 
 bool has_id_hash_map_at(value_t map, value_t key) {
-  return !is_condition(ccNotFound, get_id_hash_map_at(map, key));
+  return !in_condition_cause(ccNotFound, get_id_hash_map_at(map, key));
 }
 
 
@@ -1265,7 +1265,7 @@ void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_object,
     // okay because at the end it will be in the same state it was in before
     // so it's not really mutating it.
     value_t added = try_set_id_hash_map_at(new_object, key, value, true);
-    CHECK_FALSE("rehash failed to set", get_value_domain(added) == vdCondition);
+    CHECK_FALSE("rehash failed to set", is_condition(added));
   }
 }
 
@@ -1683,7 +1683,7 @@ value_t get_namespace_binding_at(value_t self, value_t path) {
   value_t tail = get_path_tail(path);
   value_t bindings = get_namespace_bindings(self);
   value_t subspace = get_id_hash_map_at(bindings, head);
-  if (is_condition(ccNotFound, subspace))
+  if (in_condition_cause(ccNotFound, subspace))
     return subspace;
   return get_namespace_binding_at(subspace, tail);
 }
@@ -1704,7 +1704,7 @@ value_t set_namespace_binding_at(runtime_t *runtime, value_t nspace,
     value_t tail = get_path_tail(path);
     value_t bindings = get_namespace_bindings(nspace);
     value_t subspace = get_id_hash_map_at(bindings, head);
-    if (is_condition(ccNotFound, subspace)) {
+    if (in_condition_cause(ccNotFound, subspace)) {
       TRY_SET(subspace, new_heap_namespace(runtime, nothing()));
       TRY(set_id_hash_map_at(runtime, bindings, head, subspace));
     }
@@ -1759,7 +1759,7 @@ value_t get_module_fragment_at(value_t self, value_t stage) {
 value_t get_or_create_module_fragment_at(runtime_t *runtime, value_t self,
     value_t stage) {
   value_t existing = get_module_fragment_at(self, stage);
-  if (!is_condition(ccNotFound, existing))
+  if (!in_condition_cause(ccNotFound, existing))
     return existing;
   // No fragment has been created yet. Create one but leave it uninitialized
   // since we don't have the context do that properly here.
@@ -1772,7 +1772,7 @@ value_t get_or_create_module_fragment_at(runtime_t *runtime, value_t self,
 
 value_t add_module_fragment(runtime_t *runtime, value_t self, value_t fragment) {
   value_t fragments = get_module_fragments(self);
-  CHECK_TRUE("fragment already exists", is_condition(ccNotFound,
+  CHECK_TRUE("fragment already exists", in_condition_cause(ccNotFound,
       get_module_fragment_at(self, get_module_fragment_stage(fragment))));
   return add_to_array_buffer(runtime, fragments, fragment);
 }
@@ -1794,7 +1794,7 @@ value_t get_module_fragment_before(value_t self, value_t stage) {
 }
 
 bool has_module_fragment_at(value_t self, value_t stage) {
-  return !is_condition(ccNotFound, get_module_fragment_at(self, stage));
+  return !in_condition_cause(ccNotFound, get_module_fragment_at(self, stage));
 }
 
 static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
@@ -1807,7 +1807,7 @@ static value_t module_fragment_lookup_path_in_imports(runtime_t *runtime,
   value_t head = get_path_head(path);
   value_t importspace = get_module_fragment_imports(self);
   value_t fragment = get_id_hash_map_at(importspace, head);
-  if (is_condition(ccNotFound, fragment))
+  if (in_condition_cause(ccNotFound, fragment))
     return fragment;
   // We found a binding for the head in the imports. However, we don't continue
   // the lookup directly in the fragment since we also want to be able to find
@@ -1838,7 +1838,7 @@ static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
   // First check the imports.
   value_t as_import = module_fragment_lookup_path_in_imports(runtime, self,
       path);
-  if (!is_condition(ccNotFound, as_import))
+  if (!in_condition_cause(ccNotFound, as_import))
     return as_import;
   // If not an import try looking up in the appropriate namespace.
   return module_fragment_lookup_path_in_namespace(runtime, self, path);
@@ -1856,10 +1856,10 @@ value_t module_lookup_identifier(runtime_t *runtime, value_t self,
   value_t fragment = get_module_fragment_at(self, stage);
   while (true) {
     value_t binding = module_fragment_lookup_path(runtime, fragment, path);
-    if (!is_condition(ccNotFound, binding))
+    if (!in_condition_cause(ccNotFound, binding))
       return binding;
     fragment = get_module_fragment_before(self, stage);
-    if (is_condition(ccNotFound, fragment))
+    if (in_condition_cause(ccNotFound, fragment))
       break;
     stage = get_module_fragment_stage(fragment);
   }
@@ -2272,10 +2272,10 @@ value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key,
     if (!in_family(ofIdHashMap, payload))
       continue;
     value_t element_key = get_id_hash_map_at(payload, RSTR(runtime, key));
-    if (is_condition(ccNotFound, element_key) || !value_identity_compare(element_key, key))
+    if (in_condition_cause(ccNotFound, element_key) || !value_identity_compare(element_key, key))
       continue;
     value_t element_value = get_id_hash_map_at(payload, RSTR(runtime, value));
-    if (!is_condition(ccNotFound, element_value))
+    if (!in_condition_cause(ccNotFound, element_value))
       return element_value;
   }
   return defawlt;
@@ -2356,7 +2356,7 @@ static value_t global_field_get(builtin_arguments_t *args) {
   value_t instance = get_builtin_argument(args, 0);
   // TODO: This should really result in an exception/signal, not a silent null.
   value_t value = get_instance_field(instance, self);
-  return is_condition(ccNotFound, value) ? null() : value;
+  return in_condition_cause(ccNotFound, value) ? null() : value;
 }
 
 value_t add_global_field_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {

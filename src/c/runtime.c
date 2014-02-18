@@ -547,7 +547,7 @@ static value_t migrate_field_shallow(value_t *field, field_callback_t *callback)
 //  runtime_t *runtime = field_callback_get_data(callback);
   value_t old_object = *field;
   // If this is not a heap object there's nothing to do.
-  if (get_value_domain(old_object) != vdObject)
+  if (!is_object(old_object))
     return success();
   // Check if this object has already been moved.
   value_t old_header = get_object_header(old_object);
@@ -652,7 +652,7 @@ value_t runtime_dispose(runtime_t *runtime) {
 }
 
 safe_value_t runtime_protect_value(runtime_t *runtime, value_t value) {
-  if (get_value_domain(value) == vdObject) {
+  if (is_object(value)) {
     object_tracker_t *gc_safe = heap_new_object_tracker(&runtime->heap, value);
     return object_tracker_to_safe_value(gc_safe);
   } else {
@@ -698,7 +698,7 @@ value_t get_modal_species_sibling_with_mode(runtime_t *runtime, value_t species,
 value_t runtime_get_builtin_implementation(runtime_t *runtime, value_t name) {
   value_t builtins = ROOT(runtime, builtin_impls);
   value_t impl = get_id_hash_map_at(builtins, name);
-  if (is_condition(ccNotFound, impl)) {
+  if (in_condition_cause(ccNotFound, impl)) {
     WARN("Unknown builtin %v", name);
     return new_unknown_builtin_condition();
   } else {

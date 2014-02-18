@@ -176,7 +176,7 @@ static bool id_hash_map_structural_equal(value_t a, value_t b) {
     value_t a_value;
     id_hash_map_iter_get_current(&iter, &key, &a_value);
     value_t b_value = get_id_hash_map_at(b, key);
-    if (is_condition(ccNotFound, b_value))
+    if (in_condition_cause(ccNotFound, b_value))
       return false;
     if (!value_structural_equal(a_value, b_value))
       return false;
