@@ -1,0 +1,66 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+# Accessing different numbers of arguments from an immediately enclosing scope.
+def $test_outer_immediate_arguments() {
+  $assert:equals(10, (fn ($a) => bk $foo() => $a in $foo())(10));
+  $assert:equals(11, (fn ($a, $b) => bk $foo() => $a in $foo())(11, 12));
+  $assert:equals(14, (fn ($a, $b) => bk $foo() => $b in $foo())(13, 14));
+  $assert:equals(15, (fn ($a, $b, $c) => bk $foo() => $a in $foo())(15, 16, 17));
+  $assert:equals(37, (fn ($a, $b, $c) => bk $foo() => ($a + $b) in $foo())(18, 19, 20));
+  $assert:equals(66, (fn ($a, $b, $c) => bk $foo() => ($a + $b + $c) in $foo())(21, 22, 23));
+}
+
+# Accessing different numbers of arguments from a one-level indirect enclosing scope.
+def $test_outer_one_level_indirect_arguments() {
+  $assert:equals(24, (fn ($a) => bk $foo() => (bk $bar() => $a in $bar()) in $foo())(24));
+  $assert:equals(25, (fn ($a, $b) => bk $foo() => (bk $bar() => $a in $bar()) in $foo())(25, 26));
+  $assert:equals(28, (fn ($a, $b) => bk $foo() => (bk $bar() => $b in $bar()) in $foo())(27, 28));
+  $assert:equals(29, (fn ($a, $b, $c) => bk $foo() => (bk $bar() => $a in $bar()) in $foo())(29, 30, 31));
+  $assert:equals(65, (fn ($a, $b, $c) => bk $foo() => (bk $bar() => ($a + $b) in $bar()) in $foo())(32, 33, 34));
+  $assert:equals(108, (fn ($a, $b, $c) => bk $foo() => (bk $bar() => ($a + $b + $c) in $bar()) in $foo())(35, 36, 37));
+}
+
+# Accessing different numbers of arguments from a two-level indirect enclosing
+# scope.
+def $test_outer_two_level_indirect_arguments() {
+  $assert:equals(38, (fn ($a) => bk $foo() => (bk $bar() => (bk $baz() => $a in $baz()) in $bar()) in $foo())(38));
+  $assert:equals(39, (fn ($a, $b) => bk $foo() => (bk $bar() => (bk $baz() => $a in $baz()) in $bar()) in $foo())(39, 40));
+  $assert:equals(42, (fn ($a, $b) => bk $foo() => (bk $bar() => (bk $baz() => $b in $baz()) in $bar()) in $foo())(41, 42));
+  $assert:equals(43, (fn ($a, $b, $c) => bk $foo() => (bk $bar() => (bk $baz() => $a in $baz()) in $bar()) in $foo())(43, 44, 45));
+  $assert:equals(93, (fn ($a, $b, $c) => bk $foo() => (bk $bar() => (bk $baz() => ($a + $b) in $baz()) in $bar()) in $foo())(46, 47, 48));
+  $assert:equals(150, (fn ($a, $b, $c) => bk $foo() => (bk $bar() => (bk $baz() => ($a + $b + $c) in $baz()) in $bar()) in $foo())(49, 50, 51));
+}
+
+# Accessing different numbers of arguments from a two-level indirect enclosing
+# scope with one level of lambdas.
+def $test_outer_two_level_mixed_indirect_arguments_one() {
+  $assert:equals(38, (fn ($a) => bk $foo() => (fn() => (bk $baz() => $a in $baz()))() in $foo())(38));
+  $assert:equals(39, (fn ($a, $b) => bk $foo() => (fn() => (bk $baz() => $a in $baz()))() in $foo())(39, 40));
+  $assert:equals(42, (fn ($a, $b) => bk $foo() => (fn() => (bk $baz() => $b in $baz()))() in $foo())(41, 42));
+  $assert:equals(43, (fn ($a, $b, $c) => bk $foo() => (fn() => (bk $baz() => $a in $baz()))() in $foo())(43, 44, 45));
+  $assert:equals(93, (fn ($a, $b, $c) => bk $foo() => (fn() => (bk $baz() => ($a + $b) in $baz()))() in $foo())(46, 47, 48));
+  $assert:equals(150, (fn ($a, $b, $c) => bk $foo() => (fn() => (bk $baz() => ($a + $b + $c) in $baz()))() in $foo())(49, 50, 51));
+}
+
+# Accessing different numbers of arguments from a two-level indirect enclosing
+# scope with one level of lambdas in a different place then _one.
+def $test_outer_two_level_mixed_indirect_arguments_two() {
+  $assert:equals(38, (fn ($a) => bk $foo() => (bk $bar() => (fn() => $a)() in $bar()) in $foo())(38));
+  $assert:equals(39, (fn ($a, $b) => bk $foo() => (bk $bar() => (fn() => $a)() in $bar()) in $foo())(39, 40));
+  $assert:equals(42, (fn ($a, $b) => bk $foo() => (bk $bar() => (fn() => $b)() in $bar()) in $foo())(41, 42));
+  $assert:equals(43, (fn ($a, $b, $c) => bk $foo() => (bk $bar() => (fn() => $a)() in $bar()) in $foo())(43, 44, 45));
+  $assert:equals(93, (fn ($a, $b, $c) => bk $foo() => (bk $bar() => (fn() => ($a + $b))() in $bar()) in $foo())(46, 47, 48));
+  $assert:equals(150, (fn ($a, $b, $c) => bk $foo() => (bk $bar() => (fn() => ($a + $b + $c))() in $bar()) in $foo())(49, 50, 51));
+}
+
+do {
+  $test_outer_immediate_arguments();
+  $test_outer_one_level_indirect_arguments();
+  $test_outer_two_level_indirect_arguments();
+  $test_outer_two_level_mixed_indirect_arguments_one();
+  $test_outer_two_level_mixed_indirect_arguments_two();
+}

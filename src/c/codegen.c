@@ -170,9 +170,6 @@ void assembler_pop_lambda_scope(assembler_t *assm, lambda_scope_t *scope) {
 // inside a block by changing the binding to be looked up through the block
 // rather than directly.
 static bool refract_block_scope_lookup(binding_info_t *info_out) {
-  if (info_out->block_depth > 0)
-    // Reading indirect outers is not supported yet.
-    return false;
   switch (info_out->type) {
   case btArgument:
     info_out->block_depth++;
