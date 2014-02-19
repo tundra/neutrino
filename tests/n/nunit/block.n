@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 import $assert;
+import $core;
 
 # A method that does something, anything.
 def $test_simple_local_functions() {
@@ -53,7 +54,44 @@ def $test_nested_outers() {
   $assert:equals(7, $v5);
 }
 
+# Blocks with different numbers of arguments.
+def $test_argument_counts() {
+  $assert:equals(0, bk $foo() => 0 in $foo());
+  $assert:equals(1, bk $foo($a) => $a in $foo(1));
+  $assert:equals(5, bk $foo($a, $b) => ($a + $b) in $foo(2, 3));
+  $assert:equals(15, bk $foo($a, $b, $c) => ($a + $b + $c) in $foo(4, 5, 6));
+}
+
+# Blocks with different numbers of outers.
+def $test_outer_counts() {
+  def $a := 7;
+  $assert:equals(7, bk $foo() => $a in $foo());
+  def $b := 8;
+  $assert:equals(15, bk $foo() => ($a + $b) in $foo());
+  def $c := 9;
+  $assert:equals(24, bk $foo() => ($a + $b + $c) in $foo());
+}
+
+def $call_at_n($i, $block, $arg) =>
+  if $i == 0
+    then $block($arg)
+    else $call_at_n($i - 1, $block, $arg + 1);
+
+# Calling the same block at different depths.
+def $test_call_depths() {
+  bk $foo($v) => $v in {
+    $assert:equals(0, $call_at_n(0, $foo, 0));
+    $assert:equals(2, $call_at_n(1, $foo, 1));
+    $assert:equals(4, $call_at_n(2, $foo, 2));
+    $assert:equals(13, $call_at_n(10, $foo, 3));
+    $assert:equals(104, $call_at_n(100, $foo, 4));
+  }
+}
+
 do {
   $test_simple_local_functions();
   $test_nested_outers();
+  $test_argument_counts();
+  $test_outer_counts();
+  $test_call_depths();
 }
