@@ -304,13 +304,11 @@ value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t outers) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_block(runtime_t *runtime, value_t methods, value_t outers,
-    value_t is_live, value_t home_stack_piece, value_t home_state_pointer) {
+value_t new_heap_block(runtime_t *runtime, value_t is_live,
+    value_t home_stack_piece, value_t home_state_pointer) {
   size_t size = kBlockSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_block_species)));
-  set_block_methods(result, methods);
-  set_block_outers(result, outers);
   set_block_is_live(result, is_live);
   set_block_home_stack_piece(result, home_stack_piece);
   set_block_home_state_pointer(result, home_state_pointer);

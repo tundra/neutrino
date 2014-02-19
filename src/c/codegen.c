@@ -393,7 +393,9 @@ value_t assembler_emit_kill_escape(assembler_t *assm) {
 
 value_t assembler_emit_kill_block(assembler_t *assm) {
   assembler_emit_opcode(assm, ocKillBlock);
-  assembler_adjust_stack_height(assm, -1);
+  assembler_adjust_stack_height(assm,
+      - kBlockStackStateSize // The block state stored on the stack
+      - 1);                  // The block object itself
   return success();
 }
 
@@ -514,6 +516,9 @@ value_t assembler_emit_block(assembler_t *assm, value_t methods,
   TRY(assembler_emit_value(assm, methods));
   assembler_emit_short(assm, outer_count);
   // Pop off all the outers and push back the lambda.
-  assembler_adjust_stack_height(assm, -outer_count+1);
+  assembler_adjust_stack_height(assm,
+      - outer_count          // The outers get popped off
+      + kBlockStackStateSize // The block state
+      + 1);                  // The block object
   return success();
 }
