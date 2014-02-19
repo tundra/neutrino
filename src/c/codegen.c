@@ -394,8 +394,8 @@ value_t assembler_emit_kill_escape(assembler_t *assm) {
 value_t assembler_emit_kill_block(assembler_t *assm) {
   assembler_emit_opcode(assm, ocKillBlock);
   assembler_adjust_stack_height(assm,
-      - kBlockStackStateSize // The block state stored on the stack
-      - 1);                  // The block object itself
+      - 1                      // The block object itself
+      - kBlockStackStateSize); // The block state stored on the stack
   return success();
 }
 
