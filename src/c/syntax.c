@@ -987,8 +987,11 @@ value_t emit_lambda_from_method(value_t method_ast, assembler_t *assm,
         assm, NULL);
 
   // Finally emit the bytecode that will create the lambda.
-  opcode_t opcode = is_block ? ocBlock : ocLambda;
-  TRY(assembler_emit_lambda(assm, space, capture_count, opcode));
+  if (is_block) {
+    TRY(assembler_emit_block(assm, space, capture_count));
+  } else {
+    TRY(assembler_emit_lambda(assm, space, capture_count));
+  }
   return success();
 }
 

@@ -140,7 +140,7 @@ value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t outers);
 // Creates a new block value that supports the given method space methods
 // and that holds the given captured variables.
 value_t new_heap_block(runtime_t *runtime, value_t methods, value_t outers,
-    value_t is_live);
+    value_t is_live, value_t home_stack_piece, value_t home_state_pointer);
 
 // Creates a new empty namespace object.
 value_t new_heap_namespace(runtime_t *runtime, value_t value);

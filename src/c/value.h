@@ -1168,10 +1168,12 @@ value_t get_lambda_outer(value_t self, size_t index);
 
 // --- B l o c k ---
 
-static const size_t kBlockSize = OBJECT_SIZE(3);
+static const size_t kBlockSize = OBJECT_SIZE(5);
 static const size_t kBlockMethodsOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kBlockIsLiveOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kBlockOutersOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kBlockHomeStackPieceOffset = OBJECT_FIELD_OFFSET(3);
+static const size_t kBlockHomeStatePointerOffset = OBJECT_FIELD_OFFSET(4);
 
 // Returns the method space where the methods supported by this block live.
 ACCESSORS_DECL(block, methods);
@@ -1181,6 +1183,12 @@ ACCESSORS_DECL(block, is_live);
 
 // Returns the array of outer variables for this block.
 ACCESSORS_DECL(block, outers);
+
+// Returns the array of outer variables for this block.
+ACCESSORS_DECL(block, home_stack_piece);
+
+// Returns the array of outer variables for this block.
+ACCESSORS_DECL(block, home_state_pointer);
 
 // Returns the index'th outer value captured by the given block.
 value_t get_block_outer(value_t self, size_t index);
