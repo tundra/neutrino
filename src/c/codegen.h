@@ -196,7 +196,12 @@ value_t assembler_emit_load_block_outer(assembler_t *assm, size_t index);
 // Emits a lambda that understands the given methods and which expects the given
 // number of outer variables to be present on the stack.
 value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
-    size_t outer_count, opcode_t opcode);
+    size_t outer_count);
+
+// Emits a block that understands the given methods and which expects the given
+// number of outer variables to be present on the stack.
+value_t assembler_emit_block(assembler_t *assm, value_t methods,
+    size_t outer_count);
 
 // Hacky implementation of calling lambdas. Later this should be replaced by a
 // more general delegate operation.

@@ -273,6 +273,13 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t block = frame_get_argument(&frame, 0);
           CHECK_FAMILY(ofBlock, block);
           CHECK_TRUE_VALUE("calling dead local lambda", get_block_is_live(block));
+          // Locate the place on the stack that holds this block's state.
+          value_t home_stack_piece = get_block_home_stack_piece(block);
+          value_t home_state_pointer = get_block_home_state_pointer(block);
+          value_t *home = get_array_elements(get_stack_piece_storage(home_stack_piece))
+              + get_integer_value(home_state_pointer);
+          value_t home_block = home[0];
+          CHECK_TRUE("invalid block home pointer", is_same_value(block, home_block));
           value_t space = get_block_methods(block);
           // Pop off the top frame since we're repeating the previous call.
           drop_to_stack_frame(stack, &frame, ffOrganic);
@@ -438,7 +445,8 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           CHECK_FAMILY(ofMethodspace, space);
           size_t outer_count = read_short(&cache, &frame, 2);
           value_t outers;
-          E_TRY_DEF(block, new_heap_block(runtime, space, nothing(), yes()));
+          E_TRY_DEF(block, new_heap_block(runtime, space, nothing(), yes(),
+              frame.stack_piece, nothing()));
           if (outer_count == 0) {
             outers = ROOT(runtime, empty_array);
             frame.pc += kBlockOperationSize;
@@ -454,6 +462,9 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           }
           set_block_outers(block, outers);
           frame_push_value(&frame, block);
+          value_t *state_pointer = frame.stack_pointer - 1;
+          value_t *stack_bottom = frame_get_stack_piece_bottom(&frame);
+          set_block_home_state_pointer(block, new_integer(state_pointer - stack_bottom));
           break;
         }
         case ocCaptureEscape: {

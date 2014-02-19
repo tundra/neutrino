@@ -499,8 +499,18 @@ value_t assembler_emit_load_block_outer(assembler_t *assm, size_t index) {
 }
 
 value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
-    size_t outer_count, opcode_t opcode) {
-  assembler_emit_opcode(assm, opcode);
+    size_t outer_count) {
+  assembler_emit_opcode(assm, ocLambda);
+  TRY(assembler_emit_value(assm, methods));
+  assembler_emit_short(assm, outer_count);
+  // Pop off all the outers and push back the lambda.
+  assembler_adjust_stack_height(assm, -outer_count+1);
+  return success();
+}
+
+value_t assembler_emit_block(assembler_t *assm, value_t methods,
+    size_t outer_count) {
+  assembler_emit_opcode(assm, ocBlock);
   TRY(assembler_emit_value(assm, methods));
   assembler_emit_short(assm, outer_count);
   // Pop off all the outers and push back the lambda.

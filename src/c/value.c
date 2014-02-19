@@ -1654,19 +1654,22 @@ value_t ensure_lambda_owned_values_frozen(runtime_t *runtime, value_t self) {
 }
 
 
-// --- L o c a l   l a m b d a ---
+// --- B l o c k ---
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(block);
 
 ACCESSORS_IMPL(Block, block, acInFamilyOpt, ofMethodspace, Methods, methods);
 ACCESSORS_IMPL(Block, block, acInPhylum, tpBoolean, IsLive, is_live);
 ACCESSORS_IMPL(Block, block, acInFamilyOpt, ofArray, Outers, outers);
+ACCESSORS_IMPL(Block, block, acInFamily, ofStackPiece, HomeStackPiece, home_stack_piece);
+ACCESSORS_IMPL(Block, block, acNoCheck, 0, HomeStatePointer, home_state_pointer);
 
 value_t block_validate(value_t self) {
   VALIDATE_FAMILY(ofBlock, self);
   VALIDATE_FAMILY_OPT(ofMethodspace, get_block_methods(self));
   VALIDATE_PHYLUM(tpBoolean, get_block_is_live(self));
   VALIDATE_FAMILY_OPT(ofArray, get_block_outers(self));
+  VALIDATE_FAMILY(ofStackPiece, get_block_home_stack_piece(self));
   return success();
 }
 
