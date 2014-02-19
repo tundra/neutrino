@@ -5,6 +5,7 @@ module $core {
 
   source [
     "array.n",
+    "block.n",
     "bool.n",
     "control.n",
     "core.n",

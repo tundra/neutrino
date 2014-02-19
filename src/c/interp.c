@@ -268,12 +268,12 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           code_cache_refresh(&cache, &frame);
           break;
         }
-        case ocDelegateToLocalLambda: {
+        case ocDelegateToBlock: {
           // Get the lambda to delegate to.
-          value_t lambda = frame_get_argument(&frame, 0);
-          CHECK_FAMILY(ofLocalLambda, lambda);
-          CHECK_TRUE_VALUE("calling dead local lambda", get_local_lambda_is_live(lambda));
-          value_t space = get_local_lambda_methods(lambda);
+          value_t block = frame_get_argument(&frame, 0);
+          CHECK_FAMILY(ofBlock, block);
+          CHECK_TRUE_VALUE("calling dead local lambda", get_block_is_live(block));
+          value_t space = get_block_methods(block);
           // Pop off the top frame since we're repeating the previous call.
           drop_to_stack_frame(stack, &frame, ffOrganic);
           code_cache_refresh(&cache, &frame);
@@ -392,22 +392,22 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame.pc += kLoadArgumentOperationSize;
           break;
         }
-        case ocLoadOuter: {
+        case ocLoadLambdaOuter: {
           size_t index = read_short(&cache, &frame, 1);
           value_t subject = frame_get_argument(&frame, 0);
           CHECK_FAMILY(ofLambda, subject);
           value_t value = get_lambda_outer(subject, index);
           frame_push_value(&frame, value);
-          frame.pc += kLoadOuterOperationSize;
+          frame.pc += kLoadLambdaOuterOperationSize;
           break;
         }
-        case ocLoadLocalOuter: {
+        case ocLoadBlockOuter: {
           size_t index = read_short(&cache, &frame, 1);
           value_t subject = frame_get_argument(&frame, 0);
-          CHECK_FAMILY(ofLocalLambda, subject);
-          value_t value = get_local_lambda_outer(subject, index);
+          CHECK_FAMILY(ofBlock, subject);
+          value_t value = get_block_outer(subject, index);
           frame_push_value(&frame, value);
-          frame.pc += kLoadLocalOuterOperationSize;
+          frame.pc += kLoadBlockOuterOperationSize;
           break;
         }
         case ocLambda: {
@@ -433,28 +433,27 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame_push_value(&frame, lambda);
           break;
         }
-        case ocLocalLambda: {
+        case ocBlock: {
           value_t space = read_value(&cache, &frame, 1);
           CHECK_FAMILY(ofMethodspace, space);
           size_t outer_count = read_short(&cache, &frame, 2);
           value_t outers;
-          E_TRY_DEF(local_lambda, new_heap_local_lambda(runtime, space,
-              nothing(), yes()));
+          E_TRY_DEF(block, new_heap_block(runtime, space, nothing(), yes()));
           if (outer_count == 0) {
             outers = ROOT(runtime, empty_array);
-            frame.pc += kLocalLambdaOperationSize;
+            frame.pc += kBlockOperationSize;
           } else {
             E_TRY_SET(outers, new_heap_array(runtime, outer_count));
             // The pc gets incremented here because it is after we've done all
             // the allocation but before anything has been popped off the stack.
             // This way all the above is idempotent, and the below is guaranteed
             // to succeed.
-            frame.pc += kLocalLambdaOperationSize;
+            frame.pc += kBlockOperationSize;
             for (size_t i = 0; i < outer_count; i++)
               set_array_at(outers, i, frame_pop_value(&frame));
           }
-          set_local_lambda_outers(local_lambda, outers);
-          frame_push_value(&frame, local_lambda);
+          set_block_outers(block, outers);
+          frame_push_value(&frame, block);
           break;
         }
         case ocCaptureEscape: {
@@ -490,13 +489,13 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame.pc += kKillEscapeOperationSize;
           break;
         }
-        case ocKillLocalLambda: {
+        case ocKillBlock: {
           value_t value = frame_pop_value(&frame);
-          value_t local_lambda = frame_pop_value(&frame);
-          CHECK_FAMILY(ofLocalLambda, local_lambda);
-          set_local_lambda_is_live(local_lambda, no());
+          value_t block = frame_pop_value(&frame);
+          CHECK_FAMILY(ofBlock, block);
+          set_block_is_live(block, no());
           frame_push_value(&frame, value);
-          frame.pc += kKillLocalLambdaOperationSize;
+          frame.pc += kKillBlockOperationSize;
           break;
         }
         default:

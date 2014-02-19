@@ -119,7 +119,7 @@ static value_t capture_scope_lookup(value_t symbol, void *data,
   capture_scope_t *scope = (capture_scope_t*) data;
   size_t capture_count_before = get_array_buffer_length(scope->captures);
   // See if we've captured this variable before.
-  binding_type_t type = scope->is_local ? btLocalCaptured : btCaptured;
+  binding_type_t type = scope->is_block ? btBlockCaptured : btLambdaCaptured;
   for (size_t i = 0; i < capture_count_before; i++) {
     value_t captured = get_array_buffer_at(scope->captures, i);
     if (value_identity_compare(captured, symbol)) {
@@ -149,12 +149,12 @@ static value_t capture_scope_lookup(value_t symbol, void *data,
 }
 
 value_t assembler_push_capture_scope(assembler_t *assm, capture_scope_t *scope,
-    bool is_local) {
+    bool is_block) {
   scope_lookup_callback_init(&scope->callback, capture_scope_lookup, scope);
   scope->outer = assembler_set_scope_callback(assm, &scope->callback);
   scope->captures = ROOT(assm->runtime, empty_array_buffer);
   scope->assembler = assm;
-  scope->is_local = is_local;
+  scope->is_block = is_block;
   return success();
 }
 
@@ -362,8 +362,8 @@ value_t assembler_emit_delegate_lambda_call(assembler_t *assm) {
   return success();
 }
 
-value_t assembler_emit_delegate_local_lambda_call(assembler_t *assm) {
-  assembler_emit_opcode(assm, ocDelegateToLocalLambda);
+value_t assembler_emit_delegate_block_call(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocDelegateToBlock);
   assembler_adjust_stack_height(assm, +1);
   return success();
 }
@@ -391,8 +391,8 @@ value_t assembler_emit_kill_escape(assembler_t *assm) {
   return success();
 }
 
-value_t assembler_emit_kill_local_lambda(assembler_t *assm) {
-  assembler_emit_opcode(assm, ocKillLocalLambda);
+value_t assembler_emit_kill_block(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocKillBlock);
   assembler_adjust_stack_height(assm, -1);
   return success();
 }
@@ -484,15 +484,15 @@ value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index) {
   return success();
 }
 
-value_t assembler_emit_load_outer(assembler_t *assm, size_t index) {
-  assembler_emit_opcode(assm, ocLoadOuter);
+value_t assembler_emit_load_lambda_outer(assembler_t *assm, size_t index) {
+  assembler_emit_opcode(assm, ocLoadLambdaOuter);
   assembler_emit_short(assm, index);
   assembler_adjust_stack_height(assm, +1);
   return success();
 }
 
-value_t assembler_emit_load_local_outer(assembler_t *assm, size_t index) {
-  assembler_emit_opcode(assm, ocLoadLocalOuter);
+value_t assembler_emit_load_block_outer(assembler_t *assm, size_t index) {
+  assembler_emit_opcode(assm, ocLoadBlockOuter);
   assembler_emit_short(assm, index);
   assembler_adjust_stack_height(assm, +1);
   return success();

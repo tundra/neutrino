@@ -47,7 +47,7 @@ class Visitor(object):
   def visit_local_declaration(self, that):
     self.visit_ast(that)
   
-  def visit_local_lambda(self, that):
+  def visit_block(self, that):
     self.visit_ast(that)
 
   def visit_with_escape(self, that):
@@ -325,8 +325,8 @@ class LocalDeclaration(object):
     return "(%s %s := %s in %s)" % (type, self.ident, self.value, self.body)
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "LocalLambda"))
-class LocalLambda(object):
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Block"))
+class Block(object):
 
   @plankton.field("symbol")
   @plankton.field("method")
@@ -338,7 +338,7 @@ class LocalLambda(object):
     self.body = body
 
   def accept(self, visitor):
-    return visitor.visit_local_lambda(self)
+    return visitor.visit_block(self)
 
   def traverse(self, visitor):
     self.method.accept(visitor)

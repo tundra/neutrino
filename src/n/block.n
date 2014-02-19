@@ -1,0 +1,15 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## The built-in type of runtime-native blocks.
+def @Block := @ctrino.get_builtin_type("Block");
+
+def type @Block is @Object;
+
+## Invokes this local function.
+@ctrino.builtin("block()")
+def ($this is @Block)(*);
+
+## Returns true iff this block is still live, that is, can be invoked.
+@ctrino.builtin("block.is_live")
+def ($this is @Block).is_live;

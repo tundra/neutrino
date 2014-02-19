@@ -137,9 +137,9 @@ value_t new_heap_function(runtime_t *runtime, alloc_flags_t flags,
 // that holds the given captured variables.
 value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t outers);
 
-// Creates a new local_lambda value that supports the given method space methods
+// Creates a new block value that supports the given method space methods
 // and that holds the given captured variables.
-value_t new_heap_local_lambda(runtime_t *runtime, value_t methods, value_t outers,
+value_t new_heap_block(runtime_t *runtime, value_t methods, value_t outers,
     value_t is_live);
 
 // Creates a new empty namespace object.
@@ -285,9 +285,9 @@ value_t new_heap_sequence_ast(runtime_t *runtime, value_t values);
 value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
     value_t is_mutable, value_t value, value_t body);
 
-// Creates a new local lambda syntax tree with the given attributes.
-value_t new_heap_local_lambda_ast(runtime_t *runtime, value_t symbol,
-    value_t method, value_t body);
+// Creates a new block syntax tree with the given attributes.
+value_t new_heap_block_ast(runtime_t *runtime, value_t symbol, value_t method,
+    value_t body);
 
 // Creates a new with_escape syntax tree with the given attributes.
 value_t new_heap_with_escape_ast(runtime_t *runtime, value_t symbol,

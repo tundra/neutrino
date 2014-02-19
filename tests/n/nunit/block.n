@@ -5,9 +5,9 @@ import $assert;
 
 # A method that does something, anything.
 def $test_simple_local_functions() {
-  def $v0 := (lfn $foo($x) => ($x + 1) in $foo(3) + $foo(4));
+  def $v0 := (bk $foo($x) => ($x + 1) in $foo(3) + $foo(4));
   $assert:equals(9, $v0);
-  def $v1 := (lfn $foo() => null in {
+  def $v1 := (bk $foo() => null in {
     $assert:that($foo.is_live);
     $foo;
   });
@@ -18,14 +18,14 @@ def $test_nested_outers() {
   # Capturing an outer.
   def $v2 := {
     def $x := 4;
-    lfn $foo() => $x in $foo()
+    bk $foo() => $x in $foo()
   }
   $assert:equals(4, $v2);
   # Accessing an outer by calling an outer local lambda.
   def $v3 := {
     def $x := 5;
-    lfn $foo() => $x in {
-      lfn $bar() => $foo() in {
+    bk $foo() => $x in {
+      bk $bar() => $foo() in {
         $bar();
       }
     }
@@ -34,8 +34,8 @@ def $test_nested_outers() {
   # Accessing a outer's outer.
   def $v4 := {
     def $x := 6;
-    lfn $foo($v) => $v in {
-      lfn $bar($w) => $foo($w) in {
+    bk $foo($v) => $v in {
+      bk $bar($w) => $foo($w) in {
         $bar($x);
       }
     }
@@ -44,8 +44,8 @@ def $test_nested_outers() {
   # Insanity
   def $v5 := {
     def $x := 7;
-    lfn $foo($thunk) => $thunk() in {
-      lfn $bar() => $x in {
+    bk $foo($thunk) => $thunk() in {
+      bk $bar() => $x in {
         $foo($bar);
       }
     }
