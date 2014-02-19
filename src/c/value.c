@@ -1656,51 +1656,51 @@ value_t ensure_lambda_owned_values_frozen(runtime_t *runtime, value_t self) {
 
 // --- L o c a l   l a m b d a ---
 
-GET_FAMILY_PRIMARY_TYPE_IMPL(local_lambda);
+GET_FAMILY_PRIMARY_TYPE_IMPL(block);
 
-ACCESSORS_IMPL(LocalLambda, local_lambda, acInFamilyOpt, ofMethodspace, Methods, methods);
-ACCESSORS_IMPL(LocalLambda, local_lambda, acInPhylum, tpBoolean, IsLive, is_live);
-ACCESSORS_IMPL(LocalLambda, local_lambda, acInFamilyOpt, ofArray, Outers, outers);
+ACCESSORS_IMPL(Block, block, acInFamilyOpt, ofMethodspace, Methods, methods);
+ACCESSORS_IMPL(Block, block, acInPhylum, tpBoolean, IsLive, is_live);
+ACCESSORS_IMPL(Block, block, acInFamilyOpt, ofArray, Outers, outers);
 
-value_t local_lambda_validate(value_t self) {
-  VALIDATE_FAMILY(ofLocalLambda, self);
-  VALIDATE_FAMILY_OPT(ofMethodspace, get_local_lambda_methods(self));
-  VALIDATE_PHYLUM(tpBoolean, get_local_lambda_is_live(self));
-  VALIDATE_FAMILY_OPT(ofArray, get_local_lambda_outers(self));
+value_t block_validate(value_t self) {
+  VALIDATE_FAMILY(ofBlock, self);
+  VALIDATE_FAMILY_OPT(ofMethodspace, get_block_methods(self));
+  VALIDATE_PHYLUM(tpBoolean, get_block_is_live(self));
+  VALIDATE_FAMILY_OPT(ofArray, get_block_outers(self));
   return success();
 }
 
-void local_lambda_print_on(value_t value, print_on_context_t *context) {
-  CHECK_FAMILY(ofLocalLambda, value);
-  string_buffer_printf(context->buf, "\u039B~%w", value); // Unicode capital lambda.
+void block_print_on(value_t value, print_on_context_t *context) {
+  CHECK_FAMILY(ofBlock, value);
+  string_buffer_printf(context->buf, "\u03B2~%w", value); // Unicode beta.
 }
 
-static value_t emit_local_lambda_call_trampoline(assembler_t *assm) {
-  TRY(assembler_emit_delegate_local_lambda_call(assm));
+static value_t emit_block_call_trampoline(assembler_t *assm) {
+  TRY(assembler_emit_delegate_block_call(assm));
   return success();
 }
 
-static value_t local_lambda_is_live(builtin_arguments_t *args) {
+static value_t block_is_live(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  CHECK_FAMILY(ofLocalLambda, self);
-  return get_local_lambda_is_live(self);
+  CHECK_FAMILY(ofBlock, self);
+  return get_block_is_live(self);
 }
 
-value_t add_local_lambda_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  TRY(add_custom_method_impl(runtime, deref(s_map), "local_lambda()", 0,
-      emit_local_lambda_call_trampoline));
-  ADD_BUILTIN_IMPL("local_lambda.is_live", 0, local_lambda_is_live);
+value_t add_block_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  TRY(add_custom_method_impl(runtime, deref(s_map), "block()", 0,
+      emit_block_call_trampoline));
+  ADD_BUILTIN_IMPL("block.is_live", 0, block_is_live);
   return success();
 }
 
-value_t get_local_lambda_outer(value_t self, size_t index) {
-  CHECK_FAMILY(ofLocalLambda, self);
-  value_t outers = get_local_lambda_outers(self);
+value_t get_block_outer(value_t self, size_t index) {
+  CHECK_FAMILY(ofBlock, self);
+  value_t outers = get_block_outers(self);
   return get_array_at(outers, index);
 }
 
-value_t ensure_local_lambda_owned_values_frozen(runtime_t *runtime, value_t self) {
-  TRY(ensure_frozen(runtime, get_local_lambda_outers(self)));
+value_t ensure_block_owned_values_frozen(runtime_t *runtime, value_t self) {
+  TRY(ensure_frozen(runtime, get_block_outers(self)));
   return success();
 }
 

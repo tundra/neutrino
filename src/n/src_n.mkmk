@@ -7,6 +7,7 @@ files = get_group("files")
 core_file_names = [
   "array.n",
   "assert.n",
+  "block.n",
   "bool.n",
   "control.n",
   "core.n",

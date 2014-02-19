@@ -155,21 +155,21 @@ ACCESSORS_DECL(local_declaration_ast, value);
 ACCESSORS_DECL(local_declaration_ast, body);
 
 
-// --- L o c a l   l a m b d a   a s t ---
+// --- B l o c k   a s t ---
 
-static const size_t kLocalLambdaAstSize = OBJECT_SIZE(3);
-static const size_t kLocalLambdaAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kLocalLambdaAstMethodOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kLocalLambdaAstBodyOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kBlockAstSize = OBJECT_SIZE(3);
+static const size_t kBlockAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kBlockAstMethodOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kBlockAstBodyOffset = OBJECT_FIELD_OFFSET(2);
 
-// The local's symbol.
-ACCESSORS_DECL(local_lambda_ast, symbol);
+// The block's symbol.
+ACCESSORS_DECL(block_ast, symbol);
 
-// The local lambda's method.
-ACCESSORS_DECL(local_lambda_ast, method);
+// The block's method.
+ACCESSORS_DECL(block_ast, method);
 
-// The expression that's in scope of the local lambda.
-ACCESSORS_DECL(local_lambda_ast, body);
+// The expression that's in scope of the block.
+ACCESSORS_DECL(block_ast, body);
 
 
 // --- W i t h   e s c a p e   a s t ---
@@ -240,7 +240,7 @@ ACCESSORS_DECL(lambda_ast, method);
 // Given a method, emits code that causes a lambda to be pushed onto the stack
 // which responds to the given method.
 value_t emit_lambda_from_method(value_t method_ast, assembler_t *assm,
-    bool is_local);
+    bool is_block);
 
 
 // --- P a r a m e t e r   a s t ---

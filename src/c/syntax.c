@@ -494,60 +494,58 @@ value_t plankton_new_local_declaration_ast(runtime_t *runtime) {
 }
 
 
-// --- L o c a l   l a m b d a   a s t ---
+// --- B l o c k   a s t ---
 
-GET_FAMILY_PRIMARY_TYPE_IMPL(local_lambda_ast);
-NO_BUILTIN_METHODS(local_lambda_ast);
-FIXED_GET_MODE_IMPL(local_lambda_ast, vmMutable);
-TRIVIAL_PRINT_ON_IMPL(LocalLambdaAst, local_lambda_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(block_ast);
+NO_BUILTIN_METHODS(block_ast);
+FIXED_GET_MODE_IMPL(block_ast, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(BlockAst, block_ast);
 
-ACCESSORS_IMPL(LocalLambdaAst, local_lambda_ast, acInFamilyOpt, ofSymbolAst,
-    Symbol, symbol);
-ACCESSORS_IMPL(LocalLambdaAst, local_lambda_ast, acInFamilyOpt, ofMethodAst,
-    Method, method);
-ACCESSORS_IMPL(LocalLambdaAst, local_lambda_ast, acIsSyntaxOpt, 0, Body, body);
+ACCESSORS_IMPL(BlockAst, block_ast, acInFamilyOpt, ofSymbolAst, Symbol, symbol);
+ACCESSORS_IMPL(BlockAst, block_ast, acInFamilyOpt, ofMethodAst, Method, method);
+ACCESSORS_IMPL(BlockAst, block_ast, acIsSyntaxOpt, 0, Body, body);
 
-value_t emit_local_lambda_ast(value_t self, assembler_t *assm) {
-  CHECK_FAMILY(ofLocalLambdaAst, self);
+value_t emit_block_ast(value_t self, assembler_t *assm) {
+  CHECK_FAMILY(ofBlockAst, self);
   // Record the stack offset where the value is being pushed.
   size_t offset = assm->stack_height;
-  value_t method_ast = get_local_lambda_ast_method(self);
+  value_t method_ast = get_block_ast_method(self);
   TRY(emit_lambda_from_method(method_ast, assm, true));
   // Record in the scope chain that the symbol is bound and where the value is
   // located on the stack.
-  value_t symbol = get_local_lambda_ast_symbol(self);
+  value_t symbol = get_block_ast_symbol(self);
   CHECK_FAMILY(ofSymbolAst, symbol);
   if (assembler_is_symbol_bound(assm, symbol))
     // We're trying to redefine an already defined symbol. That's not valid.
     return new_invalid_syntax_condition(isSymbolAlreadyBound);
   single_symbol_scope_t scope;
   assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal, offset);
-  value_t body = get_local_lambda_ast_body(self);
+  value_t body = get_block_ast_body(self);
   // Emit the body in scope of the local.
   TRY(emit_value(body, assm));
   assembler_pop_single_symbol_scope(assm, &scope);
   // Ensure that the lambda is dead now that we're leaving its scope.
-  TRY(assembler_emit_kill_local_lambda(assm));
+  TRY(assembler_emit_kill_block(assm));
   return success();
 }
 
-value_t local_lambda_ast_validate(value_t self) {
-  VALIDATE_FAMILY(ofLocalLambdaAst, self);
-  VALIDATE_FAMILY_OPT(ofSymbolAst, get_local_lambda_ast_symbol(self));
+value_t block_ast_validate(value_t self) {
+  VALIDATE_FAMILY(ofBlockAst, self);
+  VALIDATE_FAMILY_OPT(ofSymbolAst, get_block_ast_symbol(self));
   return success();
 }
 
-value_t plankton_set_local_lambda_ast_contents(value_t object,
+value_t plankton_set_block_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
   UNPACK_PLANKTON_MAP(contents, symbol, method, body);
-  set_local_lambda_ast_symbol(object, symbol);
-  set_local_lambda_ast_method(object, method);
-  set_local_lambda_ast_body(object, body);
+  set_block_ast_symbol(object, symbol);
+  set_block_ast_method(object, method);
+  set_block_ast_body(object, body);
   return success();
 }
 
-value_t plankton_new_local_lambda_ast(runtime_t *runtime) {
-  return new_heap_local_lambda_ast(runtime, nothing(), nothing(), nothing());
+value_t plankton_new_block_ast(runtime_t *runtime) {
+  return new_heap_block_ast(runtime, nothing(), nothing(), nothing());
 }
 
 
@@ -659,11 +657,11 @@ static value_t assembler_access_symbol(value_t symbol, assembler_t *assm,
     case btArgument:
       TRY(assembler_emit_load_argument(assm, binding.data));
       break;
-    case btCaptured:
-      TRY(assembler_emit_load_outer(assm, binding.data));
+    case btLambdaCaptured:
+      TRY(assembler_emit_load_lambda_outer(assm, binding.data));
       break;
-    case btLocalCaptured:
-      TRY(assembler_emit_load_local_outer(assm, binding.data));
+    case btBlockCaptured:
+      TRY(assembler_emit_load_block_outer(assm, binding.data));
       break;
     default:
       WARN("Unknown binding type %i", binding.type);
@@ -946,13 +944,13 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
 }
 
 value_t emit_lambda_from_method(value_t method_ast, assembler_t *assm,
-    bool is_local) {
+    bool is_block) {
   // Emitting a lambda takes a fair amount of code but most of it is
   // straightforward -- it's more just verbose than actually complex.
 
   // Push a capture scope that captures any symbols accessed outside the lambda.
   capture_scope_t capture_scope;
-  TRY(assembler_push_capture_scope(assm, &capture_scope, is_local));
+  TRY(assembler_push_capture_scope(assm, &capture_scope, is_block));
 
   runtime_t *runtime = assm->runtime;
 
@@ -989,7 +987,7 @@ value_t emit_lambda_from_method(value_t method_ast, assembler_t *assm,
         assm, NULL);
 
   // Finally emit the bytecode that will create the lambda.
-  opcode_t opcode = is_local ? ocLocalLambda : ocLambda;
+  opcode_t opcode = is_block ? ocBlock : ocLambda;
   TRY(assembler_emit_lambda(assm, space, capture_count, opcode));
   return success();
 }
@@ -1396,6 +1394,7 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   value_t ast = RSTR(runtime, ast);
   TRY(add_plankton_factory(map, ast, "Argument", plankton_new_argument_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Array", plankton_new_array_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Block", plankton_new_block_ast, runtime));
   TRY(add_plankton_factory(map, ast, "CurrentModule", plankton_new_current_module_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Guard", plankton_new_guard_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Invocation", plankton_new_invocation_ast, runtime));
@@ -1403,7 +1402,6 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "Lambda", plankton_new_lambda_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Literal", plankton_new_literal_ast, runtime));
   TRY(add_plankton_factory(map, ast, "LocalDeclaration", plankton_new_local_declaration_ast, runtime));
-  TRY(add_plankton_factory(map, ast, "LocalLambda", plankton_new_local_lambda_ast, runtime));
   TRY(add_plankton_factory(map, ast, "LocalVariable", plankton_new_local_variable_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Method", plankton_new_method_ast, runtime));
   TRY(add_plankton_factory(map, ast, "MethodDeclaration", plankton_new_method_declaration_ast, runtime));

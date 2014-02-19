@@ -304,14 +304,14 @@ value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t outers) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_local_lambda(runtime_t *runtime, value_t methods, value_t outers,
+value_t new_heap_block(runtime_t *runtime, value_t methods, value_t outers,
     value_t is_live) {
-  size_t size = kLocalLambdaSize;
+  size_t size = kBlockSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, mutable_local_lambda_species)));
-  set_local_lambda_methods(result, methods);
-  set_local_lambda_outers(result, outers);
-  set_local_lambda_is_live(result, is_live);
+      ROOT(runtime, mutable_block_species)));
+  set_block_methods(result, methods);
+  set_block_outers(result, outers);
+  set_block_is_live(result, is_live);
   return post_create_sanity_check(result, size);
 }
 
@@ -732,14 +732,14 @@ value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_local_lambda_ast(runtime_t *runtime, value_t symbol,
+value_t new_heap_block_ast(runtime_t *runtime, value_t symbol,
     value_t method, value_t body) {
-  size_t size = kLocalLambdaAstSize;
+  size_t size = kBlockAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, local_lambda_ast_species)));
-  set_local_lambda_ast_symbol(result, symbol);
-  set_local_lambda_ast_method(result, method);
-  set_local_lambda_ast_body(result, body);
+      ROOT(runtime, block_ast_species)));
+  set_block_ast_symbol(result, symbol);
+  set_block_ast_method(result, method);
+  set_block_ast_body(result, body);
   return post_create_sanity_check(result, size);
 }
 

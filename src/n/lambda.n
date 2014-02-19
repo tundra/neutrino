@@ -9,17 +9,3 @@ def type @Lambda is @Object;
 ## Invokes this function.
 @ctrino.builtin("lambda()")
 def ($this is @Lambda)(*);
-
-
-## The built-in type of runtime-native local lambdas.
-def @LocalLambda := @ctrino.get_builtin_type("LocalLambda");
-
-def type @LocalLambda is @Object;
-
-## Invokes this local function.
-@ctrino.builtin("local_lambda()")
-def ($this is @LocalLambda)(*);
-
-## Returns true iff this lambda is still live, that is, can be invoked.
-@ctrino.builtin("local_lambda.is_live")
-def ($this is @LocalLambda).is_live;
