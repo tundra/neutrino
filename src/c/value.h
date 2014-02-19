@@ -272,7 +272,7 @@ static value_t new_moved_object(value_t target) {
   F(Backtrace,               backtrace,                 _, _, _, X, _, _, _, _, _, 54)\
   F(BacktraceEntry,          backtrace_entry,           _, _, _, _, _, _, _, _, _, 64)\
   F(Blob,                    blob,                      _, _, _, X, X, _, _, _, _, 63)\
-  F(Block,                   block,                     _, _, _, X, _, _, _, X, X, 73)\
+  F(Block,                   block,                     _, _, _, X, _, _, _, X, _, 73)\
   F(BlockAst,                block_ast,                 _, _, X, X, _, _, X, _, _, 72)\
   F(BuiltinImplementation,   builtin_implementation,    _, _, _, _, _, _, _, X, _,  6)\
   F(BuiltinMarker,           builtin_marker,            _, _, _, X, _, _, _, _, _, 43)\
@@ -1168,21 +1168,16 @@ value_t get_lambda_outer(value_t self, size_t index);
 
 // --- B l o c k ---
 
-static const size_t kBlockSize = OBJECT_SIZE(5);
-static const size_t kBlockMethodsOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kBlockIsLiveOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kBlockOutersOffset = OBJECT_FIELD_OFFSET(2);
-static const size_t kBlockHomeStackPieceOffset = OBJECT_FIELD_OFFSET(3);
-static const size_t kBlockHomeStatePointerOffset = OBJECT_FIELD_OFFSET(4);
+static const size_t kBlockSize = OBJECT_SIZE(3);
+static const size_t kBlockIsLiveOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kBlockHomeStackPieceOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kBlockHomeStatePointerOffset = OBJECT_FIELD_OFFSET(2);
 
-// Returns the method space where the methods supported by this block live.
-ACCESSORS_DECL(block, methods);
+// The amount of state stored on the stack when creating a block.
+static const uint32_t kBlockStackStateSize = 2;
 
 // Returns the flag indicating whether this block is still live.
 ACCESSORS_DECL(block, is_live);
-
-// Returns the array of outer variables for this block.
-ACCESSORS_DECL(block, outers);
 
 // Returns the array of outer variables for this block.
 ACCESSORS_DECL(block, home_stack_piece);
@@ -1192,6 +1187,9 @@ ACCESSORS_DECL(block, home_state_pointer);
 
 // Returns the index'th outer value captured by the given block.
 value_t get_block_outer(value_t self, size_t index);
+
+// Returns a pointer to the home data for the given block.
+value_t *get_block_home(value_t self);
 
 
 // --- N a m e s p a c e ---

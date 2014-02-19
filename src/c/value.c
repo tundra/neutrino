@@ -1658,17 +1658,13 @@ value_t ensure_lambda_owned_values_frozen(runtime_t *runtime, value_t self) {
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(block);
 
-ACCESSORS_IMPL(Block, block, acInFamilyOpt, ofMethodspace, Methods, methods);
 ACCESSORS_IMPL(Block, block, acInPhylum, tpBoolean, IsLive, is_live);
-ACCESSORS_IMPL(Block, block, acInFamilyOpt, ofArray, Outers, outers);
 ACCESSORS_IMPL(Block, block, acInFamily, ofStackPiece, HomeStackPiece, home_stack_piece);
 ACCESSORS_IMPL(Block, block, acNoCheck, 0, HomeStatePointer, home_state_pointer);
 
 value_t block_validate(value_t self) {
   VALIDATE_FAMILY(ofBlock, self);
-  VALIDATE_FAMILY_OPT(ofMethodspace, get_block_methods(self));
   VALIDATE_PHYLUM(tpBoolean, get_block_is_live(self));
-  VALIDATE_FAMILY_OPT(ofArray, get_block_outers(self));
   VALIDATE_FAMILY(ofStackPiece, get_block_home_stack_piece(self));
   return success();
 }
@@ -1698,13 +1694,21 @@ value_t add_block_builtin_implementations(runtime_t *runtime, safe_value_t s_map
 
 value_t get_block_outer(value_t self, size_t index) {
   CHECK_FAMILY(ofBlock, self);
-  value_t outers = get_block_outers(self);
+  value_t *home = get_block_home(self);
+  value_t outers = home[2];
+  CHECK_FAMILY(ofArray, outers);
   return get_array_at(outers, index);
 }
 
-value_t ensure_block_owned_values_frozen(runtime_t *runtime, value_t self) {
-  TRY(ensure_frozen(runtime, get_block_outers(self)));
-  return success();
+value_t *get_block_home(value_t self) {
+  CHECK_FAMILY(ofBlock, self);
+  CHECK_TRUE_VALUE("calling dead block", get_block_is_live(self));
+  value_t home_stack_piece = get_block_home_stack_piece(self);
+  value_t home_state_pointer = get_block_home_state_pointer(self);
+  value_t *home = get_array_elements(get_stack_piece_storage(home_stack_piece))
+                    + get_integer_value(home_state_pointer);
+  CHECK_TRUE("invalid block home", is_same_value(self, home[0]));
+  return home;
 }
 
 
