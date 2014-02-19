@@ -1711,6 +1711,17 @@ value_t *get_block_home(value_t self) {
   return home;
 }
 
+void get_block_incomplete_home_frame(value_t self, frame_t *frame) {
+  CHECK_FAMILY(ofBlock, self);
+  value_t *home = get_block_home(self);
+  size_t fp = get_integer_value(home[3]);
+  frame->stack_piece = get_block_home_stack_piece(self);
+  frame->frame_pointer = frame_get_stack_piece_bottom(frame) + fp;
+  frame->limit_pointer = NULL;
+  frame->stack_pointer = NULL;
+  frame->flags = nothing();
+}
+
 
 // --- N a m e s p a c e ---
 

@@ -505,12 +505,118 @@ ACCESSORS_IMPL(BlockAst, block_ast, acInFamilyOpt, ofSymbolAst, Symbol, symbol);
 ACCESSORS_IMPL(BlockAst, block_ast, acInFamilyOpt, ofMethodAst, Method, method);
 ACCESSORS_IMPL(BlockAst, block_ast, acIsSyntaxOpt, 0, Body, body);
 
+static value_t build_methodspace_from_method_ast(value_t method_ast,
+    assembler_t *assm) {
+  runtime_t *runtime = assm->runtime;
+
+  // Compile the signature and, if we're in a nontrivial inner scope, the
+  // body of the lambda.
+  value_t body_code = nothing();
+  if (assm->scope_callback != scope_lookup_callback_get_bottom())
+    TRY_SET(body_code, compile_method_body(assm, method_ast));
+  TRY_DEF(signature, build_method_signature(assm->runtime, assm->fragment,
+      assembler_get_scratch_memory(assm), get_method_ast_signature(method_ast)));
+
+  // Build a method space in which to store the method.
+  TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
+      nothing(), body_code, nothing()));
+  TRY_DEF(space, new_heap_methodspace(runtime));
+  TRY(add_methodspace_method(runtime, space, method));
+
+  return space;
+}
+
+// Pushes the binding of a symbol onto the stack. If the symbol is mutable this
+// will push the reference, not the value. It is the caller's responsibility to
+// dereference the value as appropriate. The is_ref out argument indicates
+// whether that is relevant.
+static value_t assembler_access_symbol(value_t symbol, assembler_t *assm,
+    bool *is_ref_out) {
+  CHECK_FAMILY(ofSymbolAst, symbol);
+  binding_info_t binding;
+  if (in_condition_cause(ccNotFound, assembler_lookup_symbol(assm, symbol, &binding)))
+    // We're trying to access a symbol that hasn't been defined here. That's
+    // not valid.
+    return new_invalid_syntax_condition(isSymbolNotBound);
+  if (binding.block_depth == 0) {
+    // Direct reads from the current scope.
+    switch (binding.type) {
+      case btLocal:
+        TRY(assembler_emit_load_local(assm, binding.data));
+        break;
+      case btArgument:
+        TRY(assembler_emit_load_argument(assm, binding.data));
+        break;
+      case btLambdaCaptured:
+        TRY(assembler_emit_load_lambda_outer(assm, binding.data));
+        break;
+      case btBlockCaptured:
+        TRY(assembler_emit_load_block_outer(assm, binding.data));
+        break;
+      default:
+        WARN("Unknown binding type %i", binding.type);
+        UNREACHABLE("unknown binding type");
+        break;
+    }
+  } else {
+    // Indirect reads through one or more blocks into an enclosing scope.
+    switch (binding.type) {
+      case btArgument:
+        TRY(assembler_emit_load_outer_argument(assm, binding.data,
+            binding.block_depth));
+        break;
+      default:
+        WARN("Unknown block binding type %i", binding.type);
+        UNREACHABLE("unknown block binding type");
+        break;
+    }
+  }
+  if (is_ref_out != NULL) {
+    value_t origin = get_symbol_ast_origin(symbol);
+    if (in_family(ofLocalDeclarationAst, origin)) {
+      value_t is_mutable = get_local_declaration_ast_is_mutable(origin);
+      *is_ref_out = get_boolean_value(is_mutable);
+    }
+  }
+  return success();
+}
+
+static value_t emit_block_value(value_t method_ast, assembler_t *assm) {
+  // Push a capture scope that captures any symbols accessed outside the lambda.
+  block_scope_t block_scope;
+  TRY(assembler_push_block_scope(assm, &block_scope));
+
+  TRY_DEF(space, build_methodspace_from_method_ast(method_ast, assm));
+
+  // Pop the capturing scope off, we're done capturing.
+  assembler_pop_block_scope(assm, &block_scope);
+
+  // Push the captured variables onto the stack so they can to be stored in the
+  // lambda.
+  value_t captures = block_scope.captures;
+  size_t capture_count = get_array_buffer_length(captures);
+  for (size_t i = 0; i < capture_count; i++)
+    // Push the captured symbols onto the stack in reverse order just to make
+    // it simpler to pop them into the capture array at runtime. It makes no
+    // difference, loading a symbol has no side-effects.
+    //
+    // For mutable variables this will push the reference, not the value, which
+    // is what we want. Reading and writing will work as expected because
+    // captured or not the symbol knows if it's a value or a reference.
+    assembler_access_symbol(get_array_buffer_at(captures, capture_count - i - 1),
+        assm, NULL);
+
+  // Finally emit the bytecode that will create the lambda.
+  TRY(assembler_emit_block(assm, space, capture_count));
+  return success();
+}
+
 value_t emit_block_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofBlockAst, self);
   // Record the stack offset where the value is being pushed.
   size_t offset = assm->stack_height;
   value_t method_ast = get_block_ast_method(self);
-  TRY(emit_lambda_from_method(method_ast, assm, true));
+  TRY(emit_block_value(method_ast, assm));
   // Record in the scope chain that the symbol is bound and where the value is
   // located on the stack.
   value_t symbol = get_block_ast_symbol(self);
@@ -636,46 +742,6 @@ value_t plankton_set_variable_assignment_ast_contents(value_t object,
 
 value_t plankton_new_variable_assignment_ast(runtime_t *runtime) {
   return new_heap_variable_assignment_ast(runtime, nothing(), nothing());
-}
-
-// Pushes the binding of a symbol onto the stack. If the symbol is mutable this
-// will push the reference, not the value. It is the caller's responsibility to
-// dereference the value as appropriate. The is_ref out argument indicates
-// whether that is relevant.
-static value_t assembler_access_symbol(value_t symbol, assembler_t *assm,
-    bool *is_ref_out) {
-  CHECK_FAMILY(ofSymbolAst, symbol);
-  binding_info_t binding;
-  if (in_condition_cause(ccNotFound, assembler_lookup_symbol(assm, symbol, &binding)))
-    // We're trying to access a symbol that hasn't been defined here. That's
-    // not valid.
-    return new_invalid_syntax_condition(isSymbolNotBound);
-  switch (binding.type) {
-    case btLocal:
-      TRY(assembler_emit_load_local(assm, binding.data));
-      break;
-    case btArgument:
-      TRY(assembler_emit_load_argument(assm, binding.data));
-      break;
-    case btLambdaCaptured:
-      TRY(assembler_emit_load_lambda_outer(assm, binding.data));
-      break;
-    case btBlockCaptured:
-      TRY(assembler_emit_load_block_outer(assm, binding.data));
-      break;
-    default:
-      WARN("Unknown binding type %i", binding.type);
-      UNREACHABLE("unknown binding type");
-      break;
-  }
-  if (is_ref_out != NULL) {
-    value_t origin = get_symbol_ast_origin(symbol);
-    if (in_family(ofLocalDeclarationAst, origin)) {
-      value_t is_mutable = get_local_declaration_ast_is_mutable(origin);
-      *is_ref_out = get_boolean_value(is_mutable);
-    }
-  }
-  return success();
 }
 
 // Loads the value of the given symbol onto the stack. If the variable is
@@ -943,37 +1009,22 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
   return result;
 }
 
-value_t emit_lambda_from_method(value_t method_ast, assembler_t *assm,
-    bool is_block) {
-  // Emitting a lambda takes a fair amount of code but most of it is
-  // straightforward -- it's more just verbose than actually complex.
+value_t emit_lambda_ast(value_t value, assembler_t *assm) {
+  CHECK_FAMILY(ofLambdaAst, value);
+  value_t method_ast = get_lambda_ast_method(value);
 
   // Push a capture scope that captures any symbols accessed outside the lambda.
-  capture_scope_t capture_scope;
-  TRY(assembler_push_capture_scope(assm, &capture_scope, is_block));
+  lambda_scope_t lambda_scope;
+  TRY(assembler_push_lambda_scope(assm, &lambda_scope));
 
-  runtime_t *runtime = assm->runtime;
-
-  // Compile the signature and, if we're in a nontrivial inner scope, the
-  // body of the lambda.
-  value_t body_code = nothing();
-  if (assm->scope_callback != scope_lookup_callback_get_bottom())
-    TRY_SET(body_code, compile_method_body(assm, method_ast));
-  TRY_DEF(signature, build_method_signature(assm->runtime, assm->fragment,
-      assembler_get_scratch_memory(assm), get_method_ast_signature(method_ast)));
-
-  // Build a method space in which to store the method.
-  TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
-      nothing(), body_code, nothing()));
-  TRY_DEF(space, new_heap_methodspace(runtime));
-  TRY(add_methodspace_method(runtime, space, method));
+  TRY_DEF(space, build_methodspace_from_method_ast(method_ast, assm));
 
   // Pop the capturing scope off, we're done capturing.
-  assembler_pop_capture_scope(assm, &capture_scope);
+  assembler_pop_lambda_scope(assm, &lambda_scope);
 
   // Push the captured variables onto the stack so they can to be stored in the
   // lambda.
-  value_t captures = capture_scope.captures;
+  value_t captures = lambda_scope.captures;
   size_t capture_count = get_array_buffer_length(captures);
   for (size_t i = 0; i < capture_count; i++)
     // Push the captured symbols onto the stack in reverse order just to make
@@ -987,18 +1038,8 @@ value_t emit_lambda_from_method(value_t method_ast, assembler_t *assm,
         assm, NULL);
 
   // Finally emit the bytecode that will create the lambda.
-  if (is_block) {
-    TRY(assembler_emit_block(assm, space, capture_count));
-  } else {
-    TRY(assembler_emit_lambda(assm, space, capture_count));
-  }
+  TRY(assembler_emit_lambda(assm, space, capture_count));
   return success();
-}
-
-value_t emit_lambda_ast(value_t value, assembler_t *assm) {
-  CHECK_FAMILY(ofLambdaAst, value);
-  value_t method_ast = get_lambda_ast_method(value);
-  return emit_lambda_from_method(method_ast, assm, false);
 }
 
 value_t lambda_ast_validate(value_t self) {

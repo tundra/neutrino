@@ -88,10 +88,27 @@ def $test_call_depths() {
   }
 }
 
+# Accessing different numbers of arguments from an immediately enclosing scope.
+def $test_outer_immediate_arguments() {
+  $assert:equals(10, (fn ($a) => bk $foo() => $a in $foo())(10));
+  $assert:equals(11, (fn ($a, $b) => bk $foo() => $a in $foo())(11, 12));
+  $assert:equals(14, (fn ($a, $b) => bk $foo() => $b in $foo())(13, 14));
+  $assert:equals(15, (fn ($a, $b, $c) => bk $foo() => $a in $foo())(15, 16, 17));
+  $assert:equals(37, (fn ($a, $b, $c) => bk $foo() => ($a + $b) in $foo())(18, 19, 20));
+  $assert:equals(66, (fn ($a, $b, $c) => bk $foo() => ($a + $b + $c) in $foo())(21, 22, 23));
+}
+
+# Accessing different numbers of arguments from an immediately enclosing scope.
+def $test_outer_indirect_arguments() {
+  $assert:equals(24, (fn ($a) => bk $foo() => (bk $bar() => $a in $bar()) in $foo())(24));
+}
+
 do {
   $test_simple_local_functions();
   $test_nested_outers();
   $test_argument_counts();
   $test_outer_counts();
+  $test_outer_immediate_arguments();
+  $test_outer_indirect_arguments();
   $test_call_depths();
 }
