@@ -4,8 +4,19 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "codegen.h"
+#include "log.h"
 #include "try-inl.h"
 #include "value-inl.h"
+
+
+// --- B i n d i n g   i n f o ---
+
+void binding_info_set(binding_info_t *info, binding_type_t type, uint16_t data,
+    uint16_t block_depth) {
+  info->type = type;
+  info->data = data;
+  info->block_depth = block_depth;
+}
 
 
 // --- S c o p e s ---
@@ -55,8 +66,7 @@ void assembler_push_single_symbol_scope(assembler_t *assm,
     single_symbol_scope_t *scope, value_t symbol, binding_type_t type,
     uint32_t data) {
   scope->symbol = symbol;
-  scope->binding.type = type;
-  scope->binding.data = data;
+  binding_info_set(&scope->binding, type, data, 0);
   scope_lookup_callback_init(&scope->callback, single_symbol_scope_lookup, scope);
   scope->outer = assembler_set_scope_callback(assm, &scope->callback);
 }
@@ -107,27 +117,23 @@ void assembler_pop_map_scope(assembler_t *assm, map_scope_t *scope) {
 value_t map_scope_bind(map_scope_t *scope, value_t symbol, binding_type_t type,
     uint32_t data) {
   binding_info_codec_t codec;
-  codec.decoded.type = type;
-  codec.decoded.data = data;
+  binding_info_set(&codec.decoded, type, data, 0);
   value_t value = new_integer(codec.encoded);
   TRY(set_id_hash_map_at(scope->assembler->runtime, scope->map, symbol, value));
   return success();
 }
 
-static value_t capture_scope_lookup(value_t symbol, void *data,
+static value_t lambda_scope_lookup(value_t symbol, void *data,
     binding_info_t *info_out) {
-  capture_scope_t *scope = (capture_scope_t*) data;
+  lambda_scope_t *scope = (lambda_scope_t*) data;
   size_t capture_count_before = get_array_buffer_length(scope->captures);
   // See if we've captured this variable before.
-  binding_type_t type = scope->is_block ? btBlockCaptured : btLambdaCaptured;
   for (size_t i = 0; i < capture_count_before; i++) {
     value_t captured = get_array_buffer_at(scope->captures, i);
     if (value_identity_compare(captured, symbol)) {
       // Found it. Record that we did if necessary and return success.
-      if (info_out != NULL) {
-        info_out->type = type;
-        info_out->data = i;
-      }
+      if (info_out != NULL)
+        binding_info_set(info_out, btLambdaCaptured, i, 0);
       return success();
     }
   }
@@ -142,23 +148,83 @@ static value_t capture_scope_lookup(value_t symbol, void *data,
       TRY_SET(scope->captures, new_heap_array_buffer(runtime, 2));
     }
     TRY(add_to_array_buffer(runtime, scope->captures, symbol));
-    info_out->type = type;
-    info_out->data = capture_count_before;
+    binding_info_set(info_out, btLambdaCaptured, capture_count_before, 0);
   }
   return value;
 }
 
-value_t assembler_push_capture_scope(assembler_t *assm, capture_scope_t *scope,
-    bool is_block) {
-  scope_lookup_callback_init(&scope->callback, capture_scope_lookup, scope);
+value_t assembler_push_lambda_scope(assembler_t *assm, lambda_scope_t *scope) {
+  scope_lookup_callback_init(&scope->callback, lambda_scope_lookup, scope);
   scope->outer = assembler_set_scope_callback(assm, &scope->callback);
   scope->captures = ROOT(assm->runtime, empty_array_buffer);
   scope->assembler = assm;
-  scope->is_block = is_block;
   return success();
 }
 
-void assembler_pop_capture_scope(assembler_t *assm, capture_scope_t *scope) {
+void assembler_pop_lambda_scope(assembler_t *assm, lambda_scope_t *scope) {
+  CHECK_PTREQ("scopes out of sync", assm->scope_callback, &scope->callback);
+  assm->scope_callback = scope->outer;
+}
+
+// "Refract" the given successful look. Refracting a lookup means bringing it
+// inside a block by changing the binding to be looked up through the block
+// rather than directly.
+static bool refract_block_scope_lookup(binding_info_t *info_out) {
+  if (info_out->block_depth > 0)
+    // Reading indirect outers is not supported yet.
+    return false;
+  switch (info_out->type) {
+  case btArgument:
+    info_out->block_depth++;
+    return true;
+  default:
+    break;
+  }
+  return false;
+}
+
+static value_t block_scope_lookup(value_t symbol, void *data,
+    binding_info_t *info_out) {
+  block_scope_t *scope = (block_scope_t*) data;
+  size_t capture_count_before = get_array_buffer_length(scope->captures);
+  // See if we've captured this variable before.
+  for (size_t i = 0; i < capture_count_before; i++) {
+    value_t captured = get_array_buffer_at(scope->captures, i);
+    if (value_identity_compare(captured, symbol)) {
+      // Found it. Record that we did if necessary and return success.
+      if (info_out != NULL)
+        binding_info_set(info_out, btBlockCaptured, i, 0);
+      return success();
+    }
+  }
+  // We haven't seen this one before so look it up outside.
+  value_t value = scope_lookup_callback_call(scope->outer, symbol, info_out);
+  if (info_out != NULL && !in_condition_cause(ccNotFound, value)) {
+    if (refract_block_scope_lookup(info_out))
+      // Try to refract this lookup rather than capture it.
+      return value;
+    // We found something and this is a read. Add it to the list of captures.
+    runtime_t *runtime = scope->assembler->runtime;
+    if (get_array_buffer_length(scope->captures) == 0) {
+      // The first time we add something we have to create a new array buffer
+      // since all empty capture scopes share the singleton empty buffer.
+      TRY_SET(scope->captures, new_heap_array_buffer(runtime, 2));
+    }
+    TRY(add_to_array_buffer(runtime, scope->captures, symbol));
+    binding_info_set(info_out, btBlockCaptured, capture_count_before, 0);
+  }
+  return value;
+}
+
+value_t assembler_push_block_scope(assembler_t *assm, block_scope_t *scope) {
+  scope_lookup_callback_init(&scope->callback, block_scope_lookup, scope);
+  scope->outer = assembler_set_scope_callback(assm, &scope->callback);
+  scope->captures = ROOT(assm->runtime, empty_array_buffer);
+  scope->assembler = assm;
+  return success();
+}
+
+void assembler_pop_block_scope(assembler_t *assm, block_scope_t *scope) {
   CHECK_PTREQ("scopes out of sync", assm->scope_callback, &scope->callback);
   assm->scope_callback = scope->outer;
 }
@@ -482,6 +548,16 @@ value_t assembler_emit_load_global(assembler_t *assm, value_t name,
 value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index) {
   assembler_emit_opcode(assm, ocLoadArgument);
   assembler_emit_short(assm, param_index);
+  assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
+value_t assembler_emit_load_outer_argument(assembler_t *assm, size_t param_index,
+    size_t block_depth) {
+  CHECK_REL("direct block argument read", block_depth, >, 0);
+  assembler_emit_opcode(assm, ocLoadOuterArgument);
+  assembler_emit_short(assm, param_index);
+  assembler_emit_short(assm, block_depth);
   assembler_adjust_stack_height(assm, +1);
   return success();
 }

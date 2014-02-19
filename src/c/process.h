@@ -52,7 +52,7 @@ typedef enum {
 
 // A transient stack frame. The current structure isn't clever but it's not
 // intended to be, it's intended to work and be fully general.
-typedef struct {
+typedef struct frame_t {
   // Pointer to the next available field on the stack.
   value_t *stack_pointer;
   // Pointer to the bottom of the stack fields.

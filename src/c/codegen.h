@@ -31,8 +31,15 @@ typedef struct {
   // The type of the binding.
   binding_type_t type;
   // Extra data about the binding.
-  uint32_t data;
+  uint16_t data;
+  // Counter that indicates how many layers of blocks to traverse to find the
+  // value.
+  uint16_t block_depth;
 } binding_info_t;
+
+// Sets the fields of a binding info struct.
+void binding_info_set(binding_info_t *info, binding_type_t type, uint16_t data,
+    uint16_t block_depth);
 
 // A function that performs a scoped lookup. If the info_out argument is NULL
 // we're only checking whether the binding exists, not actually accessing it.
@@ -187,6 +194,10 @@ value_t assembler_emit_load_global(assembler_t *assm, value_t name,
 // Emits an argument load of the argument with the given parameter index.
 value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index);
 
+// Emits an argument load of the argument with the given parameter index.
+value_t assembler_emit_load_outer_argument(assembler_t *assm, size_t param_index,
+    size_t block_depth);
+
 // Emits a load of a captured outer variable in the subject lambda.
 value_t assembler_emit_load_lambda_outer(assembler_t *assm, size_t index);
 
@@ -294,16 +305,32 @@ typedef struct {
   value_t captures;
   // The assembler this scope belongs to.
   assembler_t *assembler;
-  // Are these variables being captured by a block?
-  bool is_block;
-} capture_scope_t;
+} lambda_scope_t;
 
-// Pushes a capture scope onto the scope stack.
-value_t assembler_push_capture_scope(assembler_t *assm, capture_scope_t *scope,
-    bool is_block);
+// Pushes a lambda scope onto the scope stack.
+value_t assembler_push_lambda_scope(assembler_t *assm, lambda_scope_t *scope);
 
-// Pops a map symbol scope off the scope stack.
-void assembler_pop_capture_scope(assembler_t *assm, capture_scope_t *scope);
+// Pops a lambda scope off the scope stack.
+void assembler_pop_lambda_scope(assembler_t *assm, lambda_scope_t *scope);
+
+
+// A scope that turns direct access to symbols into indirect block reads.
+typedef struct {
+  // The callback that performs lookup in this scope.
+  scope_lookup_callback_t callback;
+  // Then enclosing scope.
+  scope_lookup_callback_t *outer;
+  // The list of captured symbols.
+  value_t captures;
+  // The assembler this scope belongs to.
+  assembler_t *assembler;
+} block_scope_t;
+
+// Pushes a block scope onto the scope stack.
+value_t assembler_push_block_scope(assembler_t *assm, block_scope_t *scope);
+
+// Pops a block scope off the scope stack.
+void assembler_pop_block_scope(assembler_t *assm, block_scope_t *scope);
 
 
 // Looks up a symbol in the current and surrounding scopes. Returns a condition if

@@ -237,11 +237,6 @@ static const size_t kLambdaAstMethodOffset = OBJECT_FIELD_OFFSET(0);
 // The method that implements this lambda.
 ACCESSORS_DECL(lambda_ast, method);
 
-// Given a method, emits code that causes a lambda to be pushed onto the stack
-// which responds to the given method.
-value_t emit_lambda_from_method(value_t method_ast, assembler_t *assm,
-    bool is_block);
-
 
 // --- P a r a m e t e r   a s t ---
 

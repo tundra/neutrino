@@ -1174,7 +1174,7 @@ static const size_t kBlockHomeStackPieceOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kBlockHomeStatePointerOffset = OBJECT_FIELD_OFFSET(2);
 
 // The amount of state stored on the stack when creating a block.
-static const uint32_t kBlockStackStateSize = 2;
+static const uint32_t kBlockStackStateSize = 3;
 
 // Returns the flag indicating whether this block is still live.
 ACCESSORS_DECL(block, is_live);
@@ -1190,6 +1190,12 @@ value_t get_block_outer(value_t self, size_t index);
 
 // Returns a pointer to the home data for the given block.
 value_t *get_block_home(value_t self);
+
+struct frame_t;
+
+// Returns an incomplete frame that provides access to arguments and locals for
+// the home frame that produced the given block.
+void get_block_incomplete_home_frame(value_t self, struct frame_t *frame_out);
 
 
 // --- N a m e s p a c e ---

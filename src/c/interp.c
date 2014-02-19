@@ -395,6 +395,19 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame.pc += kLoadArgumentOperationSize;
           break;
         }
+        case ocLoadOuterArgument: {
+          size_t param_index = read_short(&cache, &frame, 1);
+          size_t block_depth = read_short(&cache, &frame, 2);
+          CHECK_REL("reading nested outer argument", block_depth, <, 2);
+          value_t subject = frame_get_argument(&frame, 0);
+          CHECK_FAMILY(ofBlock, subject);
+          frame_t home;
+          get_block_incomplete_home_frame(subject, &home);
+          value_t value = frame_get_argument(&home, param_index);
+          frame_push_value(&frame, value);
+          frame.pc += kLoadOuterArgumentOperationSize;
+          break;
+        }
         case ocLoadLambdaOuter: {
           size_t index = read_short(&cache, &frame, 1);
           value_t subject = frame_get_argument(&frame, 0);
@@ -457,11 +470,12 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
               set_array_at(outers, i, frame_pop_value(&frame));
           }
           value_t *state_pointer = frame.stack_pointer;
+          value_t *stack_bottom = frame_get_stack_piece_bottom(&frame);
+          set_block_home_state_pointer(block, new_integer(state_pointer - stack_bottom));
           frame_push_value(&frame, block);
           frame_push_value(&frame, space);
           frame_push_value(&frame, outers);
-          value_t *stack_bottom = frame_get_stack_piece_bottom(&frame);
-          set_block_home_state_pointer(block, new_integer(state_pointer - stack_bottom));
+          frame_push_value(&frame, new_integer(frame.frame_pointer - stack_bottom));
           break;
         }
         case ocCaptureEscape: {
@@ -499,6 +513,8 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         }
         case ocKillBlock: {
           value_t value = frame_pop_value(&frame);
+          value_t fp = frame_pop_value(&frame);
+          CHECK_DOMAIN(vdInteger, fp);
           value_t outers = frame_pop_value(&frame);
           CHECK_FAMILY(ofArray, outers);
           value_t space = frame_pop_value(&frame);
