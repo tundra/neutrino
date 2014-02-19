@@ -1174,7 +1174,7 @@ static const size_t kBlockHomeStackPieceOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kBlockHomeStatePointerOffset = OBJECT_FIELD_OFFSET(2);
 
 // The amount of state stored on the stack when creating a block.
-static const size_t kBlockStackStateSize = 2;
+static const uint32_t kBlockStackStateSize = 2;
 
 // Returns the flag indicating whether this block is still live.
 ACCESSORS_DECL(block, is_live);
