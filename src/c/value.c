@@ -1711,12 +1711,19 @@ value_t *get_block_home(value_t self) {
   return home;
 }
 
-void get_block_incomplete_home_frame(value_t self, frame_t *frame) {
-  CHECK_FAMILY(ofBlock, self);
-  value_t *home = get_block_home(self);
-  size_t fp = get_integer_value(home[3]);
-  frame->stack_piece = get_block_home_stack_piece(self);
-  frame->frame_pointer = frame_get_stack_piece_bottom(frame) + fp;
+void get_block_incomplete_outer_frame(value_t self, size_t block_depth,
+    frame_t *frame) {
+  CHECK_REL("block not nested", block_depth, >, 0);
+  value_t current = self;
+  for (size_t i = block_depth; i > 0; i--) {
+    CHECK_FAMILY(ofBlock, current);
+    value_t *home = get_block_home(current);
+    size_t fp = get_integer_value(home[3]);
+    frame->stack_piece = get_block_home_stack_piece(current);
+    frame->frame_pointer = frame_get_stack_piece_bottom(frame) + fp;
+    if (i > 1)
+      current = frame_get_argument(frame, 0);
+  }
   frame->limit_pointer = NULL;
   frame->stack_pointer = NULL;
   frame->flags = nothing();

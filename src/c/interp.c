@@ -398,11 +398,10 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         case ocLoadOuterArgument: {
           size_t param_index = read_short(&cache, &frame, 1);
           size_t block_depth = read_short(&cache, &frame, 2);
-          CHECK_REL("reading nested outer argument", block_depth, <, 2);
           value_t subject = frame_get_argument(&frame, 0);
           CHECK_FAMILY(ofBlock, subject);
           frame_t home;
-          get_block_incomplete_home_frame(subject, &home);
+          get_block_incomplete_outer_frame(subject, block_depth, &home);
           value_t value = frame_get_argument(&home, param_index);
           frame_push_value(&frame, value);
           frame.pc += kLoadOuterArgumentOperationSize;

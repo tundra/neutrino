@@ -1194,8 +1194,9 @@ value_t *get_block_home(value_t self);
 struct frame_t;
 
 // Returns an incomplete frame that provides access to arguments and locals for
-// the home frame that produced the given block.
-void get_block_incomplete_home_frame(value_t self, struct frame_t *frame_out);
+// the frame that is located block_depth scopes outside the given block.
+void get_block_incomplete_outer_frame(value_t self, size_t block_depth,
+    struct frame_t *frame_out);
 
 
 // --- N a m e s p a c e ---
