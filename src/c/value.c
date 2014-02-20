@@ -1718,7 +1718,7 @@ void get_block_refracted_frame(value_t self, size_t block_depth,
   for (size_t i = block_depth; i > 0; i--) {
     CHECK_FAMILY(ofBlock, current);
     value_t *home = get_block_home(current);
-    size_t fp = get_integer_value(home[3]);
+    size_t fp = get_integer_value(home[2]);
     frame->stack_piece = get_block_home_stack_piece(current);
     frame->frame_pointer = frame_get_stack_piece_bottom(frame) + fp;
     if (i > 1)

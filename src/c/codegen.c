@@ -166,59 +166,21 @@ void assembler_pop_lambda_scope(assembler_t *assm, lambda_scope_t *scope) {
   assm->scope_callback = scope->outer;
 }
 
-// "Refract" the given successful look. Refracting a lookup means bringing it
-// inside a block by changing the binding to be looked up through the block
-// rather than directly.
-static bool refract_block_scope_lookup(binding_info_t *info_out) {
-  switch (info_out->type) {
-  case btArgument:
-  case btLocal:
-  case btLambdaCaptured:
-    info_out->block_depth++;
-    return true;
-  default:
-    break;
-  }
-  return false;
-}
-
 static value_t block_scope_lookup(value_t symbol, void *data,
     binding_info_t *info_out) {
   block_scope_t *scope = (block_scope_t*) data;
-  size_t capture_count_before = get_array_buffer_length(scope->captures);
-  // See if we've captured this variable before.
-  for (size_t i = 0; i < capture_count_before; i++) {
-    value_t captured = get_array_buffer_at(scope->captures, i);
-    if (value_identity_compare(captured, symbol)) {
-      // Found it. Record that we did if necessary and return success.
-      if (info_out != NULL)
-        binding_info_set(info_out, btBlockCaptured, i, 0);
-      return success();
-    }
-  }
-  // We haven't seen this one before so look it up outside.
+  // Look up outside this scope.
   value_t value = scope_lookup_callback_call(scope->outer, symbol, info_out);
-  if (info_out != NULL && !in_condition_cause(ccNotFound, value)) {
-    if (refract_block_scope_lookup(info_out))
-      // Try to refract this lookup rather than capture it.
-      return value;
-    // We found something and this is a read. Add it to the list of captures.
-    runtime_t *runtime = scope->assembler->runtime;
-    if (get_array_buffer_length(scope->captures) == 0) {
-      // The first time we add something we have to create a new array buffer
-      // since all empty capture scopes share the singleton empty buffer.
-      TRY_SET(scope->captures, new_heap_array_buffer(runtime, 2));
-    }
-    TRY(add_to_array_buffer(runtime, scope->captures, symbol));
-    binding_info_set(info_out, btBlockCaptured, capture_count_before, 0);
-  }
+  if (info_out != NULL && !in_condition_cause(ccNotFound, value))
+    // If we found a binding refract it increasing the block depth but otherwise
+    // leaving the binding as it is.
+    info_out->block_depth++;
   return value;
 }
 
 value_t assembler_push_block_scope(assembler_t *assm, block_scope_t *scope) {
   scope_lookup_callback_init(&scope->callback, block_scope_lookup, scope);
   scope->outer = assembler_set_scope_callback(assm, &scope->callback);
-  scope->captures = ROOT(assm->runtime, empty_array_buffer);
   scope->assembler = assm;
   return success();
 }
@@ -586,13 +548,6 @@ value_t assembler_emit_load_refracted_capture(assembler_t *assm, size_t index,
   return success();
 }
 
-value_t assembler_emit_load_block_capture(assembler_t *assm, size_t index) {
-  assembler_emit_opcode(assm, ocLoadBlockCapture);
-  assembler_emit_short(assm, index);
-  assembler_adjust_stack_height(assm, +1);
-  return success();
-}
-
 value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
     size_t capture_count) {
   assembler_emit_opcode(assm, ocLambda);
@@ -603,15 +558,12 @@ value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
   return success();
 }
 
-value_t assembler_emit_block(assembler_t *assm, value_t methods,
-    size_t capture_count) {
+value_t assembler_emit_block(assembler_t *assm, value_t methods) {
   assembler_emit_opcode(assm, ocBlock);
   TRY(assembler_emit_value(assm, methods));
-  assembler_emit_short(assm, capture_count);
   // Pop off all the captuers and push back the lambda.
   assembler_adjust_stack_height(assm,
-      - capture_count        // The captures get popped off
-      + kBlockStackStateSize // The block state
+      kBlockStackStateSize // The block state
       + 1);                  // The block object
   return success();
 }
