@@ -511,14 +511,18 @@ class Lambda(object):
   # Creates a no-argument lambda with the given expression as the body.
   @staticmethod
   def thunk(body):
+    method = Lambda.method(body, data.Operation.call())
+    return Lambda([method])
+
+  @staticmethod
+  def method(body, op):
     signature = Signature([
       Parameter(data.Identifier(0, data.Path(['self'])), [data._SUBJECT],
         Guard.any()),
       Parameter(data.Identifier(0, data.Path(['name'])), [data._SELECTOR],
-        Guard.eq(Literal(data.Operation.call())))
+        Guard.eq(Literal(op)))
     ], False)
-    method = Method(signature, body)
-    return Lambda([method])
+    return Method(signature, body)
 
 
 # Yields the current bound module fragment.
