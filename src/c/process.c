@@ -186,6 +186,11 @@ value_t *frame_get_stack_piece_bottom(frame_t *frame) {
   return get_array_elements(get_stack_piece_storage(frame->stack_piece));
 }
 
+value_t *frame_get_stack_piece_top(frame_t *frame) {
+  value_t storage = get_stack_piece_storage(frame->stack_piece);
+  return get_array_elements(storage) + get_array_length(storage);
+}
+
 frame_t open_stack(value_t stack) {
   CHECK_FAMILY(ofStack, stack);
   frame_t result;

@@ -10,6 +10,7 @@ file_names = [
   "anything.n",
   "array.n",
   "block-arguments.n",
+  "block-locals.n",
   "block-simple.n",
   "def.n",
   "escape.n",

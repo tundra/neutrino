@@ -1,0 +1,51 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+# Accessing different numbers of locals from an immediately enclosing scope.
+def $test_outer_immediate_locals() {
+  def $a := 10;
+  $assert:equals(10, bk $foo() => $a in $foo());
+  def $b := 11;
+  $assert:equals(10, bk $foo() => $a in $foo());
+  $assert:equals(11, bk $foo() => $b in $foo());
+  def $c := 12;
+  $assert:equals(10, bk $foo() => $a in $foo());
+  $assert:equals(21, bk $foo() => ($a + $b) in $foo());
+  $assert:equals(33, bk $foo() => ($a + $b + $c) in $foo());
+}
+
+# Accessing different numbers of arguments from a one-level indirect enclosing scope.
+def $test_outer_one_level_indirect_locals() {
+  def $a := 24;
+  $assert:equals(24, bk $foo() => (bk $bar() => $a in $bar()) in $foo());
+  def $b := 25;
+  $assert:equals(24, bk $foo() => (bk $bar() => $a in $bar()) in $foo());
+  $assert:equals(25, bk $foo() => (bk $bar() => $b in $bar()) in $foo());
+  def $c := 26;
+  $assert:equals(24, bk $foo() => (bk $bar() => $a in $bar()) in $foo());
+  $assert:equals(49, bk $foo() => (bk $bar() => ($a + $b) in $bar()) in $foo());
+  $assert:equals(75, bk $foo() => (bk $bar() => ($a + $b + $c) in $bar()) in $foo());
+}
+
+# Accessing different numbers of arguments from a two-level indirect enclosing
+# scope.
+def $test_outer_two_level_indirect_locals() {
+  def $a := 38;
+  $assert:equals(38, bk $foo() => (bk $bar() => (bk $baz() => $a in $baz()) in $bar()) in $foo());
+  def $b := 39;
+  $assert:equals(38, bk $foo() => (bk $bar() => (bk $baz() => $a in $baz()) in $bar()) in $foo());
+  $assert:equals(39, bk $foo() => (bk $bar() => (bk $baz() => $b in $baz()) in $bar()) in $foo());
+  def $c := 40;
+  $assert:equals(38, bk $foo() => (bk $bar() => (bk $baz() => $a in $baz()) in $bar()) in $foo());
+  $assert:equals(77, bk $foo() => (bk $bar() => (bk $baz() => ($a + $b) in $baz()) in $bar()) in $foo());
+  $assert:equals(117, bk $foo() => (bk $bar() => (bk $baz() => ($a + $b + $c) in $baz()) in $bar()) in $foo());
+}
+
+do {
+  $test_outer_immediate_locals();
+  $test_outer_one_level_indirect_locals();
+  $test_outer_two_level_indirect_locals();
+}

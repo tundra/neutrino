@@ -29,6 +29,7 @@
   F(LoadLocal,                  2)                                             \
   F(LoadLambdaOuter,            2)                                             \
   F(LoadOuterArgument,          3)                                             \
+  F(LoadOuterLocal,             3)                                             \
   F(Block,                      3)                                             \
   F(NewArray,                   2)                                             \
   F(NewReference,               1)                                             \

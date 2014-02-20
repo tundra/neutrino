@@ -186,6 +186,11 @@ value_t assembler_emit_new_reference(assembler_t *assm);
 // Emits a local variable load of the local with the given index.
 value_t assembler_emit_load_local(assembler_t *assm, size_t index);
 
+// Emits an outer local load of the local with the given index in the frame
+// block_depth nesting levels from the current location.
+value_t assembler_emit_load_outer_local(assembler_t *assm, size_t index,
+    size_t block_depth);
+
 // Emits a global variable load of the local with the given name within the
 // given module.
 value_t assembler_emit_load_global(assembler_t *assm, value_t name,
@@ -194,7 +199,8 @@ value_t assembler_emit_load_global(assembler_t *assm, value_t name,
 // Emits an argument load of the argument with the given parameter index.
 value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index);
 
-// Emits an argument load of the argument with the given parameter index.
+// Emits an argument load of the argument with the given parameter index from
+// the frame block_depth nesting levels from the current location.
 value_t assembler_emit_load_outer_argument(assembler_t *assm, size_t param_index,
     size_t block_depth);
 

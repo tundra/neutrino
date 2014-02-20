@@ -169,6 +169,10 @@ bool frame_has_flag(frame_t *frame, frame_flag_t flag);
 // currently executing.
 value_t *frame_get_stack_piece_bottom(frame_t *frame);
 
+// Returns a pointer to te top of the stack piece which this frame is currently
+// executing.
+value_t *frame_get_stack_piece_top(frame_t *frame);
+
 // Points the frame struct to the next frame on the stack without writing to the
 // stack.
 void frame_walk_down_stack(frame_t *frame);
