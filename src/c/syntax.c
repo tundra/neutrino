@@ -548,10 +548,10 @@ static value_t assembler_access_symbol(value_t symbol, assembler_t *assm,
         TRY(assembler_emit_load_argument(assm, binding.data));
         break;
       case btLambdaCaptured:
-        TRY(assembler_emit_load_lambda_outer(assm, binding.data));
+        TRY(assembler_emit_load_lambda_capture(assm, binding.data));
         break;
       case btBlockCaptured:
-        TRY(assembler_emit_load_block_outer(assm, binding.data));
+        TRY(assembler_emit_load_block_capture(assm, binding.data));
         break;
       default:
         WARN("Unknown binding type %i", binding.type);
@@ -562,15 +562,15 @@ static value_t assembler_access_symbol(value_t symbol, assembler_t *assm,
     // Indirect reads through one or more blocks into an enclosing scope.
     switch (binding.type) {
       case btArgument:
-        TRY(assembler_emit_load_outer_argument(assm, binding.data,
+        TRY(assembler_emit_load_refracted_argument(assm, binding.data,
             binding.block_depth));
         break;
       case btLocal:
-        TRY(assembler_emit_load_outer_local(assm, binding.data,
+        TRY(assembler_emit_load_refracted_local(assm, binding.data,
             binding.block_depth));
         break;
       default:
-        WARN("Unknown block binding type %i", binding.type);
+        WARN("Unknown refracted binding type %i", binding.type);
         UNREACHABLE("unknown block binding type");
         break;
     }

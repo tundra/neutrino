@@ -533,9 +533,9 @@ value_t assembler_emit_load_local(assembler_t *assm, size_t index) {
   return success();
 }
 
-value_t assembler_emit_load_outer_local(assembler_t *assm, size_t index,
+value_t assembler_emit_load_refracted_local(assembler_t *assm, size_t index,
     size_t block_depth) {
-  assembler_emit_opcode(assm, ocLoadOuterLocal);
+  assembler_emit_opcode(assm, ocLoadRefractedLocal);
   assembler_emit_short(assm, index);
   assembler_emit_short(assm, block_depth);
   assembler_adjust_stack_height(assm, +1);
@@ -559,48 +559,48 @@ value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index) {
   return success();
 }
 
-value_t assembler_emit_load_outer_argument(assembler_t *assm, size_t param_index,
-    size_t block_depth) {
+value_t assembler_emit_load_refracted_argument(assembler_t *assm,
+    size_t param_index, size_t block_depth) {
   CHECK_REL("direct block argument read", block_depth, >, 0);
-  assembler_emit_opcode(assm, ocLoadOuterArgument);
+  assembler_emit_opcode(assm, ocLoadRefractedArgument);
   assembler_emit_short(assm, param_index);
   assembler_emit_short(assm, block_depth);
   assembler_adjust_stack_height(assm, +1);
   return success();
 }
 
-value_t assembler_emit_load_lambda_outer(assembler_t *assm, size_t index) {
-  assembler_emit_opcode(assm, ocLoadLambdaOuter);
+value_t assembler_emit_load_lambda_capture(assembler_t *assm, size_t index) {
+  assembler_emit_opcode(assm, ocLoadLambdaCapture);
   assembler_emit_short(assm, index);
   assembler_adjust_stack_height(assm, +1);
   return success();
 }
 
-value_t assembler_emit_load_block_outer(assembler_t *assm, size_t index) {
-  assembler_emit_opcode(assm, ocLoadBlockOuter);
+value_t assembler_emit_load_block_capture(assembler_t *assm, size_t index) {
+  assembler_emit_opcode(assm, ocLoadBlockCapture);
   assembler_emit_short(assm, index);
   assembler_adjust_stack_height(assm, +1);
   return success();
 }
 
 value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
-    size_t outer_count) {
+    size_t capture_count) {
   assembler_emit_opcode(assm, ocLambda);
   TRY(assembler_emit_value(assm, methods));
-  assembler_emit_short(assm, outer_count);
-  // Pop off all the outers and push back the lambda.
-  assembler_adjust_stack_height(assm, -outer_count+1);
+  assembler_emit_short(assm, capture_count);
+  // Pop off all the captures and push back the lambda.
+  assembler_adjust_stack_height(assm, -capture_count+1);
   return success();
 }
 
 value_t assembler_emit_block(assembler_t *assm, value_t methods,
-    size_t outer_count) {
+    size_t capture_count) {
   assembler_emit_opcode(assm, ocBlock);
   TRY(assembler_emit_value(assm, methods));
-  assembler_emit_short(assm, outer_count);
-  // Pop off all the outers and push back the lambda.
+  assembler_emit_short(assm, capture_count);
+  // Pop off all the captuers and push back the lambda.
   assembler_adjust_stack_height(assm,
-      - outer_count          // The outers get popped off
+      - capture_count        // The captures get popped off
       + kBlockStackStateSize // The block state
       + 1);                  // The block object
   return success();

@@ -1154,16 +1154,16 @@ value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, value_t ke
 
 static const size_t kLambdaSize = OBJECT_SIZE(2);
 static const size_t kLambdaMethodsOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kLambdaOutersOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kLambdaCapturesOffset = OBJECT_FIELD_OFFSET(1);
 
 // Returns the method space where the methods supported by this lambda live.
 ACCESSORS_DECL(lambda, methods);
 
-// Returns the array of outer variables for this lambda.
-ACCESSORS_DECL(lambda, outers);
+// Returns the array of captured outers for this lambda.
+ACCESSORS_DECL(lambda, captures);
 
 // Returns the index'th outer value captured by the given lambda.
-value_t get_lambda_outer(value_t self, size_t index);
+value_t get_lambda_capture(value_t self, size_t index);
 
 
 // --- B l o c k ---
@@ -1186,7 +1186,8 @@ ACCESSORS_DECL(block, home_stack_piece);
 ACCESSORS_DECL(block, home_state_pointer);
 
 // Returns the index'th outer value captured by the given block.
-value_t get_block_outer(value_t self, size_t index);
+// TODO: remove when all outers can be accessed through refraction.
+value_t get_block_capture(value_t self, size_t index);
 
 // Returns a pointer to the home data for the given block.
 value_t *get_block_home(value_t self);
@@ -1195,7 +1196,7 @@ struct frame_t;
 
 // Returns an incomplete frame that provides access to arguments and locals for
 // the frame that is located block_depth scopes outside the given block.
-void get_block_incomplete_outer_frame(value_t self, size_t block_depth,
+void get_block_refracted_frame(value_t self, size_t block_depth,
     struct frame_t *frame_out);
 
 

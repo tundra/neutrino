@@ -395,97 +395,97 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame.pc += kLoadArgumentOperationSize;
           break;
         }
-        case ocLoadOuterArgument: {
+        case ocLoadRefractedArgument: {
           size_t param_index = read_short(&cache, &frame, 1);
           size_t block_depth = read_short(&cache, &frame, 2);
           value_t subject = frame_get_argument(&frame, 0);
           CHECK_FAMILY(ofBlock, subject);
           frame_t home;
-          get_block_incomplete_outer_frame(subject, block_depth, &home);
+          get_block_refracted_frame(subject, block_depth, &home);
           value_t value = frame_get_argument(&home, param_index);
           frame_push_value(&frame, value);
-          frame.pc += kLoadOuterArgumentOperationSize;
+          frame.pc += kLoadRefractedArgumentOperationSize;
           break;
         }
-        case ocLoadOuterLocal: {
+        case ocLoadRefractedLocal: {
           size_t index = read_short(&cache, &frame, 1);
           size_t block_depth = read_short(&cache, &frame, 2);
           value_t subject = frame_get_argument(&frame, 0);
           CHECK_FAMILY(ofBlock, subject);
           frame_t home;
-          get_block_incomplete_outer_frame(subject, block_depth, &home);
+          get_block_refracted_frame(subject, block_depth, &home);
           value_t value = frame_get_local(&home, index);
           frame_push_value(&frame, value);
-          frame.pc += kLoadOuterLocalOperationSize;
+          frame.pc += kLoadRefractedLocalOperationSize;
           break;
         }
-        case ocLoadLambdaOuter: {
+        case ocLoadLambdaCapture: {
           size_t index = read_short(&cache, &frame, 1);
           value_t subject = frame_get_argument(&frame, 0);
           CHECK_FAMILY(ofLambda, subject);
-          value_t value = get_lambda_outer(subject, index);
+          value_t value = get_lambda_capture(subject, index);
           frame_push_value(&frame, value);
-          frame.pc += kLoadLambdaOuterOperationSize;
+          frame.pc += kLoadLambdaCaptureOperationSize;
           break;
         }
-        case ocLoadBlockOuter: {
+        case ocLoadBlockCapture: {
           size_t index = read_short(&cache, &frame, 1);
           value_t subject = frame_get_argument(&frame, 0);
           CHECK_FAMILY(ofBlock, subject);
-          value_t value = get_block_outer(subject, index);
+          value_t value = get_block_capture(subject, index);
           frame_push_value(&frame, value);
-          frame.pc += kLoadBlockOuterOperationSize;
+          frame.pc += kLoadBlockCaptureOperationSize;
           break;
         }
         case ocLambda: {
           value_t space = read_value(&cache, &frame, 1);
           CHECK_FAMILY(ofMethodspace, space);
-          size_t outer_count = read_short(&cache, &frame, 2);
-          value_t outers;
+          size_t capture_count = read_short(&cache, &frame, 2);
+          value_t captures;
           E_TRY_DEF(lambda, new_heap_lambda(runtime, space, nothing()));
-          if (outer_count == 0) {
-            outers = ROOT(runtime, empty_array);
+          if (capture_count == 0) {
+            captures = ROOT(runtime, empty_array);
             frame.pc += kLambdaOperationSize;
           } else {
-            E_TRY_SET(outers, new_heap_array(runtime, outer_count));
+            E_TRY_SET(captures, new_heap_array(runtime, capture_count));
             // The pc gets incremented here because it is after we've done all
             // the allocation but before anything has been popped off the stack.
             // This way all the above is idempotent, and the below is guaranteed
             // to succeed.
             frame.pc += kLambdaOperationSize;
-            for (size_t i = 0; i < outer_count; i++)
-              set_array_at(outers, i, frame_pop_value(&frame));
+            for (size_t i = 0; i < capture_count; i++)
+              set_array_at(captures, i, frame_pop_value(&frame));
           }
-          set_lambda_outers(lambda, outers);
+          set_lambda_captures(lambda, captures);
           frame_push_value(&frame, lambda);
           break;
         }
         case ocBlock: {
           value_t space = read_value(&cache, &frame, 1);
           CHECK_FAMILY(ofMethodspace, space);
-          size_t outer_count = read_short(&cache, &frame, 2);
-          value_t outers;
+          size_t capture_count = read_short(&cache, &frame, 2);
+          value_t captures;
           E_TRY_DEF(block, new_heap_block(runtime, yes(), frame.stack_piece,
               nothing()));
-          if (outer_count == 0) {
-            outers = ROOT(runtime, empty_array);
+          if (capture_count == 0) {
+            captures = ROOT(runtime, empty_array);
             frame.pc += kBlockOperationSize;
           } else {
-            E_TRY_SET(outers, new_heap_array(runtime, outer_count));
+            E_TRY_SET(captures, new_heap_array(runtime, capture_count));
             // The pc gets incremented here because it is after we've done all
             // the allocation but before anything has been popped off the stack.
             // This way all the above is idempotent, and the below is guaranteed
             // to succeed.
             frame.pc += kBlockOperationSize;
-            for (size_t i = 0; i < outer_count; i++)
-              set_array_at(outers, i, frame_pop_value(&frame));
+            for (size_t i = 0; i < capture_count; i++)
+              set_array_at(captures, i, frame_pop_value(&frame));
           }
           value_t *state_pointer = frame.stack_pointer;
           value_t *stack_bottom = frame_get_stack_piece_bottom(&frame);
           set_block_home_state_pointer(block, new_integer(state_pointer - stack_bottom));
           frame_push_value(&frame, block);
           frame_push_value(&frame, space);
-          frame_push_value(&frame, outers);
+          frame_push_value(&frame, captures);
           frame_push_value(&frame, new_integer(frame.frame_pointer - stack_bottom));
           break;
         }
@@ -526,8 +526,8 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t value = frame_pop_value(&frame);
           value_t fp = frame_pop_value(&frame);
           CHECK_DOMAIN(vdInteger, fp);
-          value_t outers = frame_pop_value(&frame);
-          CHECK_FAMILY(ofArray, outers);
+          value_t captures = frame_pop_value(&frame);
+          CHECK_FAMILY(ofArray, captures);
           value_t space = frame_pop_value(&frame);
           CHECK_FAMILY(ofMethodspace, space);
           value_t block = frame_pop_value(&frame);

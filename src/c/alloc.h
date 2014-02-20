@@ -135,7 +135,7 @@ value_t new_heap_function(runtime_t *runtime, alloc_flags_t flags,
 
 // Creates a new lambda value that supports the given method space methods and
 // that holds the given captured variables.
-value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t outers);
+value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t captures);
 
 // Creates a new block value whose state is located at the given location.
 value_t new_heap_block(runtime_t *runtime, value_t is_live,
