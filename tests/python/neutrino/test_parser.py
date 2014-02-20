@@ -5,7 +5,7 @@ import unittest
 
 ar = lambda *e: ast.Array(e)
 df = lambda i, v, b: ast.LocalDeclaration(i, False, v, b)
-lm = lambda s, b: ast.Lambda(ast.Method(s, b))
+lm = lambda s, b: ast.Lambda([ast.Method(s, b)])
 lt = ast.Literal
 nd = lambda n, v: ast.NamespaceDeclaration([], n, v)
 md = lambda s, b: ast.MethodDeclaration(ast.Method(s, b))
