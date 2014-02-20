@@ -12,6 +12,7 @@ file_names = [
   "block-arguments.n",
   "block-locals.n",
   "block-simple.n",
+  "block-vars.n",
   "def.n",
   "escape.n",
   "field.n",

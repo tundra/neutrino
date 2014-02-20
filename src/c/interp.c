@@ -442,15 +442,6 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame.pc += kLoadRefractedLocalOperationSize;
           break;
         }
-        case ocLoadBlockCapture: {
-          size_t index = read_short(&cache, &frame, 1);
-          value_t subject = frame_get_argument(&frame, 0);
-          CHECK_FAMILY(ofBlock, subject);
-          value_t value = get_block_capture(subject, index);
-          frame_push_value(&frame, value);
-          frame.pc += kLoadBlockCaptureOperationSize;
-          break;
-        }
         case ocLambda: {
           value_t space = read_value(&cache, &frame, 1);
           CHECK_FAMILY(ofMethodspace, space);
@@ -477,30 +468,15 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         case ocBlock: {
           value_t space = read_value(&cache, &frame, 1);
           CHECK_FAMILY(ofMethodspace, space);
-          size_t capture_count = read_short(&cache, &frame, 2);
-          value_t captures;
           E_TRY_DEF(block, new_heap_block(runtime, yes(), frame.stack_piece,
               nothing()));
-          if (capture_count == 0) {
-            captures = ROOT(runtime, empty_array);
-            frame.pc += kBlockOperationSize;
-          } else {
-            E_TRY_SET(captures, new_heap_array(runtime, capture_count));
-            // The pc gets incremented here because it is after we've done all
-            // the allocation but before anything has been popped off the stack.
-            // This way all the above is idempotent, and the below is guaranteed
-            // to succeed.
-            frame.pc += kBlockOperationSize;
-            for (size_t i = 0; i < capture_count; i++)
-              set_array_at(captures, i, frame_pop_value(&frame));
-          }
           value_t *state_pointer = frame.stack_pointer;
           value_t *stack_bottom = frame_get_stack_piece_bottom(&frame);
           set_block_home_state_pointer(block, new_integer(state_pointer - stack_bottom));
           frame_push_value(&frame, block);
           frame_push_value(&frame, space);
-          frame_push_value(&frame, captures);
           frame_push_value(&frame, new_integer(frame.frame_pointer - stack_bottom));
+          frame.pc += kBlockOperationSize;
           break;
         }
         case ocCaptureEscape: {
@@ -540,8 +516,6 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t value = frame_pop_value(&frame);
           value_t fp = frame_pop_value(&frame);
           CHECK_DOMAIN(vdInteger, fp);
-          value_t captures = frame_pop_value(&frame);
-          CHECK_FAMILY(ofArray, captures);
           value_t space = frame_pop_value(&frame);
           CHECK_FAMILY(ofMethodspace, space);
           value_t block = frame_pop_value(&frame);

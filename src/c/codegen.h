@@ -39,9 +39,7 @@ typedef enum {
   // An argument to the current immediate function.
   btArgument,
   // A symbol captured by an enclosing method.
-  btLambdaCaptured,
-  // A symbol captured from a block.
-  btBlockCaptured
+  btLambdaCaptured
 } binding_type_t;
 
 // A collection of information about a binding. This is going to be encoded as
@@ -232,18 +230,13 @@ value_t assembler_emit_load_lambda_capture(assembler_t *assm, size_t index);
 value_t assembler_emit_load_refracted_capture(assembler_t *assm, size_t index,
     size_t block_depth);
 
-// Emits a load of an outer variable captured by a block.
-value_t assembler_emit_load_block_capture(assembler_t *assm, size_t index);
-
 // Emits a lambda that understands the given methods and which expects the given
 // number of captured variables to be present on the stack.
 value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
     size_t capture_count);
 
-// Emits a block that understands the given methods and which expects the given
-// number of outer variables to be present on the stack.
-value_t assembler_emit_block(assembler_t *assm, value_t methods,
-    size_t capture_count);
+// Emits a block that understands the given methods.
+value_t assembler_emit_block(assembler_t *assm, value_t methods);
 
 // Hacky implementation of calling lambdas. Later this should be replaced by a
 // more general delegate operation.
@@ -351,8 +344,6 @@ typedef struct {
   scope_lookup_callback_t callback;
   // Then enclosing scope.
   scope_lookup_callback_t *outer;
-  // The list of captured symbols.
-  value_t captures;
   // The assembler this scope belongs to.
   assembler_t *assembler;
 } block_scope_t;

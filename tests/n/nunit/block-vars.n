@@ -1,0 +1,44 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def $test_outer_immediate_vars() {
+  var $a := 10;
+  $assert:equals(11, bk $foo() => ($a := $a + 1) in $foo());
+  $assert:equals(11, bk $foo() => $a in $foo());
+  var $b := 20;
+  $assert:equals(12, bk $foo() => ($a := $a + 1) in $foo());
+  $assert:equals(12, bk $foo() => $a in $foo());
+  $assert:equals(21, bk $foo() => ($b := $b + 1) in $foo());
+  $assert:equals(21, bk $foo() => $b in $foo());
+}
+
+def $test_outer_one_level_indirect_vars() {
+  var $a := 24;
+  $assert:equals(25, bk $foo() => (bk $bar() => ($a := $a + 1) in $bar()) in $foo());
+  $assert:equals(25, bk $foo() => (bk $bar() => $a in $bar()) in $foo());
+  var $b := 35;
+  $assert:equals(26, bk $foo() => (bk $bar() => ($a := $a + 1) in $bar()) in $foo());
+  $assert:equals(26, bk $foo() => (bk $bar() => $a in $bar()) in $foo());
+  $assert:equals(36, bk $foo() => (bk $bar() => ($b := $b + 1) in $bar()) in $foo());
+  $assert:equals(36, bk $foo() => (bk $bar() => $b in $bar()) in $foo());
+}
+
+def $test_outer_two_level_indirect_vars() {
+  var $a := 38;
+  $assert:equals(39, bk $foo() => (bk $bar() => (bk $baz() => ($a := $a + 1) in $baz()) in $bar()) in $foo());
+  $assert:equals(39, bk $foo() => (bk $bar() => (bk $baz() => $a in $baz()) in $bar()) in $foo());
+  var $b := 49;
+  $assert:equals(40, bk $foo() => (bk $bar() => (bk $baz() => ($a := $a + 1) in $baz()) in $bar()) in $foo());
+  $assert:equals(40, bk $foo() => (bk $bar() => (bk $baz() => $a in $baz()) in $bar()) in $foo());
+  $assert:equals(50, bk $foo() => (bk $bar() => (bk $baz() => ($b := $b + 1) in $baz()) in $bar()) in $foo());
+  $assert:equals(50, bk $foo() => (bk $bar() => (bk $baz() => $b in $baz()) in $bar()) in $foo());
+}
+
+do {
+  $test_outer_immediate_vars();
+  $test_outer_one_level_indirect_vars();
+  $test_outer_two_level_indirect_vars();
+}

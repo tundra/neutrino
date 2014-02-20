@@ -24,14 +24,13 @@
   F(KillBlock,                  1)                                             \
   F(Lambda,                     3)                                             \
   F(LoadArgument,               2)                                             \
-  F(LoadBlockCapture,           2)                                             \
   F(LoadGlobal,                 3)                                             \
   F(LoadLocal,                  2)                                             \
   F(LoadLambdaCapture,          2)                                             \
   F(LoadRefractedArgument,      3)                                             \
   F(LoadRefractedCapture,       3)                                             \
   F(LoadRefractedLocal,         3)                                             \
-  F(Block,                      3)                                             \
+  F(Block,                      2)                                             \
   F(NewArray,                   2)                                             \
   F(NewReference,               1)                                             \
   F(Pop,                        2)                                             \
