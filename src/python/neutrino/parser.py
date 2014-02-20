@@ -427,6 +427,8 @@ class Parser(object):
   #   -> "fn" <parameters> <functino tail>
   def parse_lambda_expression(self):
     self.expect_word('fn')
+    if self.at_word('on'):
+      self.expect_word('on')    
     signature = self.parse_functino_signature(self.get_functino_subject(), False)
     methods = self.parse_functino_tail(signature)
     return ast.Lambda(methods)
@@ -447,7 +449,14 @@ class Parser(object):
   def parse_functino_tail(self, first_signature):
     first_body = self.parse_method_tail(False)
     first_method = ast.Method(first_signature, first_body)
-    return [first_method]
+    methods = [first_method]
+    while self.at_word('on'):
+      self.expect_word('on')
+      next_signature = self.parse_functino_signature(self.get_functino_subject(), False)
+      next_body = self.parse_method_tail(False)
+      next_method = ast.Method(next_signature, next_body)
+      methods.append(next_method)
+    return methods
 
   # Parses the part that comes after the "fn" or name of the block or method.
   # This is a mess, it should be cleaned up when the parser is rewritten.

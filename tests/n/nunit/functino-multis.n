@@ -1,0 +1,37 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+
+def $test_lambda_selectors() {
+  def $a := (fn on.foo => 8 on.bar => 9);
+  $assert:equals(8, $a.foo);
+  $assert:equals(9, $a.bar);
+  def $b := (fn on() => 10 on($x) => 11 on($x, $y) => 12);
+  $assert:equals(10, $b());
+  $assert:equals(11, $b(0));  
+  $assert:equals(12, $b(0, 1));
+  def $c := (fn.bop() => 13 on.fop() => 14);
+  $assert:equals(13, $c.bop());
+  $assert:equals(14, $c.fop());
+}
+
+def $test_block_selectors() {
+  bk $foo.foo => 8 
+       on.bar => 9 in {
+    $assert:equals(8, $foo.foo);
+    $assert:equals(9, $foo.bar);
+  }
+  bk $foo() => 10 
+       on($x) => 11
+       on($x, $y) => 12 in {
+    $assert:equals(10, $foo());
+    $assert:equals(11, $foo(0));  
+    $assert:equals(12, $foo(0, 1));
+  }
+}
+
+do {
+  $test_lambda_selectors();
+  $test_block_selectors();
+}
