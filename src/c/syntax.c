@@ -502,7 +502,7 @@ FIXED_GET_MODE_IMPL(block_ast, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(BlockAst, block_ast);
 
 ACCESSORS_IMPL(BlockAst, block_ast, acInFamilyOpt, ofSymbolAst, Symbol, symbol);
-ACCESSORS_IMPL(BlockAst, block_ast, acInFamilyOpt, ofMethodAst, Method, method);
+ACCESSORS_IMPL(BlockAst, block_ast, acInFamilyOpt, ofArray, Methods, methods);
 ACCESSORS_IMPL(BlockAst, block_ast, acIsSyntaxOpt, 0, Body, body);
 
 static value_t build_methodspace_from_method_ast(value_t method_ast,
@@ -605,7 +605,7 @@ value_t emit_block_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofBlockAst, self);
   // Record the stack offset where the value is being pushed.
   size_t offset = assm->stack_height;
-  value_t method_ast = get_block_ast_method(self);
+  value_t method_ast = get_array_at(get_block_ast_methods(self), 0);
   TRY(emit_block_value(method_ast, assm));
   // Record in the scope chain that the symbol is bound and where the value is
   // located on the stack.
@@ -633,9 +633,9 @@ value_t block_ast_validate(value_t self) {
 
 value_t plankton_set_block_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, symbol, method, body);
+  UNPACK_PLANKTON_MAP(contents, symbol, methods, body);
   set_block_ast_symbol(object, symbol);
-  set_block_ast_method(object, method);
+  set_block_ast_methods(object, methods);
   set_block_ast_body(object, body);
   return success();
 }
@@ -874,8 +874,8 @@ NO_BUILTIN_METHODS(lambda_ast);
 TRIVIAL_PRINT_ON_IMPL(LambdaAst, lambda_ast);
 FIXED_GET_MODE_IMPL(lambda_ast, vmMutable);
 
-ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, ofMethodAst, Method,
-    method);
+ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, ofArray, Methods,
+    methods);
 
 value_t quick_and_dirty_evaluate_syntax(runtime_t *runtime, value_t fragment,
     value_t value_ast) {
@@ -1001,7 +1001,7 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
 
 value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofLambdaAst, value);
-  value_t method_ast = get_lambda_ast_method(value);
+  value_t method_ast = get_array_at(get_lambda_ast_methods(value), 0);
 
   // Push a capture scope that captures any symbols accessed outside the lambda.
   lambda_scope_t lambda_scope;
@@ -1034,14 +1034,14 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
 
 value_t lambda_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofLambdaAst, self);
-  VALIDATE_FAMILY_OPT(ofMethodAst, get_lambda_ast_method(self));
+  VALIDATE_FAMILY_OPT(ofArray, get_lambda_ast_methods(self));
   return success();
 }
 
 value_t plankton_set_lambda_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, method);
-  set_lambda_ast_method(object, method);
+  UNPACK_PLANKTON_MAP(contents, methods);
+  set_lambda_ast_methods(object, methods);
   return success();
 }
 

@@ -159,14 +159,14 @@ ACCESSORS_DECL(local_declaration_ast, body);
 
 static const size_t kBlockAstSize = OBJECT_SIZE(3);
 static const size_t kBlockAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kBlockAstMethodOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kBlockAstMethodsOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kBlockAstBodyOffset = OBJECT_FIELD_OFFSET(2);
 
 // The block's symbol.
 ACCESSORS_DECL(block_ast, symbol);
 
-// The block's method.
-ACCESSORS_DECL(block_ast, method);
+// The block's methods.
+ACCESSORS_DECL(block_ast, methods);
 
 // The expression that's in scope of the block.
 ACCESSORS_DECL(block_ast, body);
@@ -232,10 +232,10 @@ ACCESSORS_DECL(symbol_ast, origin);
 // --- L a m b d a   a s t ---
 
 static const size_t kLambdaAstSize = OBJECT_SIZE(1);
-static const size_t kLambdaAstMethodOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kLambdaAstMethodsOffset = OBJECT_FIELD_OFFSET(0);
 
-// The method that implements this lambda.
-ACCESSORS_DECL(lambda_ast, method);
+// The methods that implements this lambda.
+ACCESSORS_DECL(lambda_ast, methods);
 
 
 // --- P a r a m e t e r   a s t ---

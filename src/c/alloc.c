@@ -733,12 +733,12 @@ value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
 }
 
 value_t new_heap_block_ast(runtime_t *runtime, value_t symbol,
-    value_t method, value_t body) {
+    value_t methods, value_t body) {
   size_t size = kBlockAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, block_ast_species)));
   set_block_ast_symbol(result, symbol);
-  set_block_ast_method(result, method);
+  set_block_ast_methods(result, methods);
   set_block_ast_body(result, body);
   return post_create_sanity_check(result, size);
 }
@@ -789,11 +789,11 @@ value_t new_heap_symbol_ast(runtime_t *runtime, value_t name, value_t origin) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_lambda_ast(runtime_t *runtime, value_t method) {
+value_t new_heap_lambda_ast(runtime_t *runtime, value_t methods) {
   size_t size = kLambdaAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, lambda_ast_species)));
-  set_lambda_ast_method(result, method);
+  set_lambda_ast_methods(result, methods);
   return post_create_sanity_check(result, size);
 }
 
