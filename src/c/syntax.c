@@ -505,23 +505,27 @@ ACCESSORS_IMPL(BlockAst, block_ast, acInFamilyOpt, ofSymbolAst, Symbol, symbol);
 ACCESSORS_IMPL(BlockAst, block_ast, acInFamilyOpt, ofArray, Methods, methods);
 ACCESSORS_IMPL(BlockAst, block_ast, acIsSyntaxOpt, 0, Body, body);
 
-static value_t build_methodspace_from_method_ast(value_t method_ast,
+static value_t build_methodspace_from_method_asts(value_t method_asts,
     assembler_t *assm) {
+  CHECK_FAMILY(ofArray, method_asts);
   runtime_t *runtime = assm->runtime;
-
-  // Compile the signature and, if we're in a nontrivial inner scope, the
-  // body of the lambda.
-  value_t body_code = nothing();
-  if (assm->scope_callback != scope_lookup_callback_get_bottom())
-    TRY_SET(body_code, compile_method_body(assm, method_ast));
-  TRY_DEF(signature, build_method_signature(assm->runtime, assm->fragment,
-      assembler_get_scratch_memory(assm), get_method_ast_signature(method_ast)));
-
-  // Build a method space in which to store the method.
-  TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
-      nothing(), body_code, nothing()));
   TRY_DEF(space, new_heap_methodspace(runtime));
-  TRY(add_methodspace_method(runtime, space, method));
+
+  for (size_t i = 0; i < get_array_length(method_asts); i++) {
+    value_t method_ast = get_array_at(method_asts, i);
+    // Compile the signature and, if we're in a nontrivial inner scope, the
+    // body of the lambda.
+    value_t body_code = nothing();
+    if (assm->scope_callback != scope_lookup_callback_get_bottom())
+      TRY_SET(body_code, compile_method_body(assm, method_ast));
+    TRY_DEF(signature, build_method_signature(assm->runtime, assm->fragment,
+        assembler_get_scratch_memory(assm), get_method_ast_signature(method_ast)));
+
+    // Build a method space in which to store the method.
+    TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
+        nothing(), body_code, nothing()));
+    TRY(add_methodspace_method(runtime, space, method));
+  }
 
   return space;
 }
@@ -586,12 +590,12 @@ static value_t assembler_access_symbol(value_t symbol, assembler_t *assm,
   return success();
 }
 
-static value_t emit_block_value(value_t method_ast, assembler_t *assm) {
+static value_t emit_block_value(value_t method_asts, assembler_t *assm) {
   // Push a capture scope that captures any symbols accessed outside the lambda.
   block_scope_t block_scope;
   TRY(assembler_push_block_scope(assm, &block_scope));
 
-  TRY_DEF(space, build_methodspace_from_method_ast(method_ast, assm));
+  TRY_DEF(space, build_methodspace_from_method_asts(method_asts, assm));
 
   // Pop the capturing scope off, we're done capturing.
   assembler_pop_block_scope(assm, &block_scope);
@@ -605,8 +609,8 @@ value_t emit_block_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofBlockAst, self);
   // Record the stack offset where the value is being pushed.
   size_t offset = assm->stack_height;
-  value_t method_ast = get_array_at(get_block_ast_methods(self), 0);
-  TRY(emit_block_value(method_ast, assm));
+  value_t method_asts = get_block_ast_methods(self);
+  TRY(emit_block_value(method_asts, assm));
   // Record in the scope chain that the symbol is bound and where the value is
   // located on the stack.
   value_t symbol = get_block_ast_symbol(self);
@@ -1001,13 +1005,13 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
 
 value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofLambdaAst, value);
-  value_t method_ast = get_array_at(get_lambda_ast_methods(value), 0);
+  value_t method_asts = get_lambda_ast_methods(value);
 
   // Push a capture scope that captures any symbols accessed outside the lambda.
   lambda_scope_t lambda_scope;
   TRY(assembler_push_lambda_scope(assm, &lambda_scope));
 
-  TRY_DEF(space, build_methodspace_from_method_ast(method_ast, assm));
+  TRY_DEF(space, build_methodspace_from_method_asts(method_asts, assm));
 
   // Pop the capturing scope off, we're done capturing.
   assembler_pop_lambda_scope(assm, &lambda_scope);
