@@ -285,7 +285,7 @@ value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
     value_t is_mutable, value_t value, value_t body);
 
 // Creates a new block syntax tree with the given attributes.
-value_t new_heap_block_ast(runtime_t *runtime, value_t symbol, value_t method,
+value_t new_heap_block_ast(runtime_t *runtime, value_t symbol, value_t methods,
     value_t body);
 
 // Creates a new with_escape syntax tree with the given attributes.
@@ -306,7 +306,7 @@ value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t ident);
 value_t new_heap_symbol_ast(runtime_t *runtime, value_t name, value_t origin);
 
 // Creates a new lambda syntax tree with the given attributes.
-value_t new_heap_lambda_ast(runtime_t *runtime, value_t method);
+value_t new_heap_lambda_ast(runtime_t *runtime, value_t methods);
 
 // Creates a new parameter syntax tree with the given attributes.
 value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags,

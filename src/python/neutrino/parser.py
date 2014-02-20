@@ -148,7 +148,7 @@ class Parser(object):
           # def <ident> (
           subject = ast.Parameter(name, [data._SUBJECT], ast.Guard.eq(ast.Variable(name.shift_back())))
           (params, operation, allow_extra) = self.parse_parameters(Parser._SAUSAGES)
-          body = self.parse_method_tail()
+          body = self.parse_method_tail(True)
           selector = self.name_as_selector(operation)
           signature = ast.Signature([subject, selector] + params, allow_extra)
           return ast.FunctionDeclaration(name, ast.Method(signature, body))
@@ -171,46 +171,24 @@ class Parser(object):
     else:
       # def (<parameter>)
       subject = self.parse_subject()
-    if (not is_prefix) and self.at_type(Token.OPERATION):
-      name = self.expect_type(Token.OPERATION)
-    if name:
-      default_operation = data.Operation.infix(name)
-    else:
-      default_operation = Parser._SAUSAGES
-    (params, param_operation, allow_extra) = self.parse_parameters(default_operation)
-    if is_prefix:
-      op = data.Operation.prefix(name)
-      params = []
-    elif params is None:
-      op = data.Operation.property(name)
-      params = []
-    else:
-      op = param_operation
-    if self.at_punctuation(':='):
-      self.expect_punctuation(':=')
-      (assign_params, assign_op, allow_extra) = self.parse_parameters(None, start_index=len(params))
-      params += assign_params
-      op = data.Operation.assign(op)
-    selector = self.name_as_selector(op)
-    body = self.parse_method_tail()
-    signature = ast.Signature([subject, selector] + params, allow_extra)
+    signature = self.parse_functino_signature(subject, is_prefix, name)
+    body = self.parse_method_tail(True)
     stage = self.get_subject_stage(subject)
     return ast.MethodDeclaration(stage + 1, annots, ast.Method(signature, body))
 
   # Parse the tail of a method, the part after the parameters.
-  def parse_method_tail(self):
+  def parse_method_tail(self, expect_delim):
     if self.at_punctuation('=>'):
       self.expect_punctuation('=>')
       body = self.parse_expression(False)
-      self.expect_statement_delimiter(True)
-      return body
     elif self.at_punctuation('{'):
-      return self.parse_sequence_expression()
+      body = self.parse_sequence_expression()
     elif self.at_punctuation(';'):
-      self.expect_statement_delimiter(True)
-      return ast.Literal(None)
+      body = ast.Literal(None)
     else:
       raise self.new_syntax_error()
+    self.expect_statement_delimiter(expect_delim)
+    return body
 
 
   # <toplevel-import>
@@ -411,7 +389,7 @@ class Parser(object):
     elms = self.parse_expression(False)
     self.expect_word('do')
     body = self.parse_expression(expect_delim)
-    thunk = ast.Lambda(ast.Method(sig, body))
+    thunk = ast.Lambda([ast.Method(sig, body)])
     return ast.Invocation([
       ast.Argument(data._SUBJECT, ast.Variable(data.Identifier(-1, data.Path(["core", "for"])))),
       ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES)),
@@ -441,33 +419,66 @@ class Parser(object):
     self.expect_statement_delimiter(expect_delim)
     return result
 
+  # Returns a parameter that can be used as the subject of a lambda or block.
+  def get_functino_subject(self):
+    return self.name_as_subject(data.Identifier(0, data.Path(['self'])))
+
   # <lambda expression>
-  #   -> "fn" <parameters> "=>" <word expression>
-  #   -> "fn" <parameters> <sequence expression>
+  #   -> "fn" <parameters> <functino tail>
   def parse_lambda_expression(self):
     self.expect_word('fn')
-    signature = self.parse_signature()
-    if self.at_punctuation('{'):
-      value = self.parse_sequence_expression()
-    else:
-      self.expect_punctuation('=>')
-      value = self.parse_word_expression(False)
-    return ast.Lambda(ast.Method(signature, value))
+    signature = self.parse_functino_signature(self.get_functino_subject(), False)
+    methods = self.parse_functino_tail(signature)
+    return ast.Lambda(methods)
 
   # <block expression>
-  #   -> "bk" <ident> <method tail> "in" <expression>
+  #   -> "bk" <ident> <functino tail> "in" <expression>
   def parse_block_expression(self):
     self.expect_word('bk')
     name = self.expect_type(Token.IDENTIFIER)
-    signature = self.parse_signature()
-    if self.at_punctuation('{'):
-      value = self.parse_sequence_expression()
-    else:
-      self.expect_punctuation('=>')
-      value = self.parse_word_expression(False)
+    signature = self.parse_functino_signature(self.get_functino_subject(), False)
+    methods = self.parse_functino_tail(signature)
     self.expect_word('in')
     body = self.parse_word_expression(False)
-    return ast.Block(name, ast.Method(signature, value), body)
+    return ast.Block(name, methods, body)
+
+  # <functino tail>
+  #   -> <method tail>
+  def parse_functino_tail(self, first_signature):
+    first_body = self.parse_method_tail(False)
+    first_method = ast.Method(first_signature, first_body)
+    return [first_method]
+
+  def parse_functino_signature(self, subject, is_prefix, default_name=None):
+    name = default_name
+    if (not is_prefix) and self.at_type(Token.OPERATION):
+      name = self.expect_type(Token.OPERATION)
+    if name:
+      default_operation = data.Operation.infix(name)
+    else:
+      default_operation = Parser._SAUSAGES
+    (params, param_operation, allow_extra) = self.parse_parameters(default_operation)
+    if is_prefix:
+      op = data.Operation.prefix(name)
+      params = []
+    elif params is None:
+      params = []
+      if name is None:
+        op = Parser._SAUSAGES
+      else:
+        op = data.Operation.property(name)
+    else:
+      op = param_operation
+    if self.at_punctuation(':='):
+      self.expect_punctuation(':=')
+      (assign_params, assign_op, allow_extra) = self.parse_parameters(None, start_index=len(params))
+      params += assign_params
+      op = data.Operation.assign(op)
+    if allow_extra:
+      selector = self.any_selector()
+    else:
+      selector = self.name_as_selector(op)
+    return ast.Signature([subject, selector] + params, allow_extra)
 
   # Are we currently at a token that is allowed as the first token of a
   # parameter?
@@ -479,6 +490,11 @@ class Parser(object):
     assert isinstance(name, data.Operation)
     return ast.Parameter(data.Identifier(0, data.Path(['name'])), [data._SELECTOR],
       ast.Guard.eq(ast.Literal(name)))
+
+  # Returns a parameter that matches any selector.
+  def any_selector(self):
+    return ast.Parameter(data.Identifier(0, data.Path(['name'])), [data._SELECTOR],
+      ast.Guard.any())
 
   def name_as_subject(self, name):
     return ast.Parameter(name, [data._SUBJECT], ast.Guard.any())

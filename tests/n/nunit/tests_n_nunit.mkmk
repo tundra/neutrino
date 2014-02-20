@@ -19,6 +19,7 @@ file_names = [
   "float32.n",
   "for.n",
   "function.n",
+  "functino-selectors.n",
   "hanoi.n",
   "if.n",
   "integer.n",

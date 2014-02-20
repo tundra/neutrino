@@ -53,7 +53,8 @@ class ScopeVisitor(ast.Visitor):
 
   def visit_block(self, that):
     assert that.symbol is None
-    that.method.accept(self)
+    for method in that.methods:
+      method.accept(self)
     self.visit_generic_declaration(that)
 
   def visit_with_escape(self, that):

@@ -329,26 +329,27 @@ class LocalDeclaration(object):
 class Block(object):
 
   @plankton.field("symbol")
-  @plankton.field("method")
+  @plankton.field("methods")
   @plankton.field("body")
-  def __init__(self, ident, method, body):
+  def __init__(self, ident, methods, body):
     self.ident = ident
     self.symbol = None
-    self.method = method
+    self.methods = methods
     self.body = body
 
   def accept(self, visitor):
     return visitor.visit_block(self)
 
   def traverse(self, visitor):
-    self.method.accept(visitor)
+    for method in self.methods:
+      method.accept(visitor)
     self.body.accept(visitor)
 
   def get_name(self):
     return self.ident.get_name()
 
   def __str__(self):
-    return "(lfn %s %s in %s)" % (type, self.ident, self.method, self.body)
+    return "(lfn %s %s in %s)" % (type, self.ident, self.methods[0], self.body)
 
 
 # A local escape capture.
@@ -492,18 +493,20 @@ class Guard(object):
 @plankton.serializable(plankton.EnvironmentReference.path("ast", "Lambda"))
 class Lambda(object):
 
-  @plankton.field("method")
-  def __init__(self, method):
-    self.method = method
+  @plankton.field("methods")
+  def __init__(self, methods):
+    assert isinstance(methods, list)
+    self.methods = methods
 
   def accept(self, visitor):
     return visitor.visit_lambda(self)
 
   def traverse(self, visitor):
-    self.method.accept(visitor)
+    for method in self.methods:
+      method.accept(visitor)
 
   def __str__(self):
-    return "(fn (%s) => %s)" % (self.method.signature, self.method.body)
+    return "(fn (%s) => %s)" % (self.methods[0].signature, self.methods[0].body)
 
   # Creates a no-argument lambda with the given expression as the body.
   @staticmethod
@@ -514,7 +517,8 @@ class Lambda(object):
       Parameter(data.Identifier(0, data.Path(['name'])), [data._SELECTOR],
         Guard.eq(Literal(data.Operation.call())))
     ], False)
-    return Lambda(Method(signature, body))
+    method = Method(signature, body)
+    return Lambda([method])
 
 
 # Yields the current bound module fragment.

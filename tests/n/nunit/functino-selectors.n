@@ -1,0 +1,39 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+
+def $test_lambda_selectors() {
+  def $a := (fn => 8);
+  $assert:equals(8, $a());
+  def $b := (fn() => 9);
+  $assert:equals(9, $b());
+  def $c := (fn.foo() => 10);
+  $assert:equals(10, $c.foo());
+  def $d := (fn.bar => 11);
+  $assert:equals(11, $d.bar);
+  def $e := (fn[] => 12);
+  $assert:equals(12, $e[]);
+  def $f := (fn.bar():=($v) => ($v + 13));
+  $assert:equals(19, $f.bar() := 6);
+}
+
+def $test_block_selectors() {
+  def $a := (bk $foo => 8 in $foo());
+  $assert:equals(8, $a);
+  def $b := (bk $foo() => 9 in $foo());
+  $assert:equals(9, $b);
+  def $c := (bk $foo.foo() => 10 in $foo.foo());
+  $assert:equals(10, $c);
+  def $d := (bk $foo.bar => 11 in $foo.bar);
+  $assert:equals(11, $d);
+  def $e := (bk $foo[] => 12 in $foo[]);
+  $assert:equals(12, $e);
+  def $f := (bk $foo.bar():=($v) => ($v + 13) in $foo.bar() := 6);
+  $assert:equals(19, $f);
+}
+
+do {
+  $test_lambda_selectors();
+  $test_block_selectors();
+}

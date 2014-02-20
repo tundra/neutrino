@@ -168,9 +168,10 @@ TEST(interp, lookup_error) {
           new_heap_literal_ast(runtime, ROOT(runtime, op_call)))));
   value_t basic_signature = new_heap_signature_ast(runtime, basic_signature_params, no());
 
-  value_t lam = new_heap_lambda_ast(runtime,
-      new_heap_method_ast(runtime, basic_signature,
-          new_heap_literal_ast(runtime, new_integer(13))));
+  value_t methods = new_heap_array(runtime, 1);
+  set_array_at(methods, 0, new_heap_method_ast(runtime, basic_signature,
+      new_heap_literal_ast(runtime, new_integer(13))));
+  value_t lam = new_heap_lambda_ast(runtime, methods);
   value_t subject_arg = new_heap_argument_ast(runtime, ROOT(runtime, subject_key),
       lam);
   value_t selector_arg = new_heap_argument_ast(runtime, ROOT(runtime, selector_key),
