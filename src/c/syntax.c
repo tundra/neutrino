@@ -565,6 +565,10 @@ static value_t assembler_access_symbol(value_t symbol, assembler_t *assm,
         TRY(assembler_emit_load_refracted_argument(assm, binding.data,
             binding.block_depth));
         break;
+      case btLambdaCaptured:
+        TRY(assembler_emit_load_refracted_capture(assm, binding.data,
+            binding.block_depth));
+        break;
       case btLocal:
         TRY(assembler_emit_load_refracted_local(assm, binding.data,
             binding.block_depth));

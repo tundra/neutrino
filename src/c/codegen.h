@@ -227,6 +227,11 @@ value_t assembler_emit_load_refracted_argument(assembler_t *assm,
 // Emits a load of a captured outer variable in the subject lambda.
 value_t assembler_emit_load_lambda_capture(assembler_t *assm, size_t index);
 
+// Emits a load of a captured outer variable in the subject lambda from the
+// frame block_depth nesting levels from the current scope.
+value_t assembler_emit_load_refracted_capture(assembler_t *assm, size_t index,
+    size_t block_depth);
+
 // Emits a load of an outer variable captured by a block.
 value_t assembler_emit_load_block_capture(assembler_t *assm, size_t index);
 

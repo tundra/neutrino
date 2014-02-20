@@ -428,6 +428,20 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame.pc += kLoadLambdaCaptureOperationSize;
           break;
         }
+        case ocLoadRefractedCapture: {
+          size_t index = read_short(&cache, &frame, 1);
+          size_t block_depth = read_short(&cache, &frame, 2);
+          value_t block = frame_get_argument(&frame, 0);
+          CHECK_FAMILY(ofBlock, block);
+          frame_t home;
+          get_block_refracted_frame(block, block_depth, &home);
+          value_t lambda = frame_get_argument(&home, 0);
+          CHECK_FAMILY(ofLambda, lambda);
+          value_t value = get_lambda_capture(lambda, index);
+          frame_push_value(&frame, value);
+          frame.pc += kLoadRefractedLocalOperationSize;
+          break;
+        }
         case ocLoadBlockCapture: {
           size_t index = read_short(&cache, &frame, 1);
           value_t subject = frame_get_argument(&frame, 0);

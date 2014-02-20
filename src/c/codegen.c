@@ -173,6 +173,7 @@ static bool refract_block_scope_lookup(binding_info_t *info_out) {
   switch (info_out->type) {
   case btArgument:
   case btLocal:
+  case btLambdaCaptured:
     info_out->block_depth++;
     return true;
   default:
@@ -572,6 +573,15 @@ value_t assembler_emit_load_refracted_argument(assembler_t *assm,
 value_t assembler_emit_load_lambda_capture(assembler_t *assm, size_t index) {
   assembler_emit_opcode(assm, ocLoadLambdaCapture);
   assembler_emit_short(assm, index);
+  assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
+value_t assembler_emit_load_refracted_capture(assembler_t *assm, size_t index,
+    size_t block_depth) {
+  assembler_emit_opcode(assm, ocLoadRefractedCapture);
+  assembler_emit_short(assm, index);
+  assembler_emit_short(assm, block_depth);
   assembler_adjust_stack_height(assm, +1);
   return success();
 }

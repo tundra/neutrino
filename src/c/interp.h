@@ -29,6 +29,7 @@
   F(LoadLocal,                  2)                                             \
   F(LoadLambdaCapture,          2)                                             \
   F(LoadRefractedArgument,      3)                                             \
+  F(LoadRefractedCapture,       3)                                             \
   F(LoadRefractedLocal,         3)                                             \
   F(Block,                      3)                                             \
   F(NewArray,                   2)                                             \
