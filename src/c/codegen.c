@@ -172,6 +172,7 @@ void assembler_pop_lambda_scope(assembler_t *assm, lambda_scope_t *scope) {
 static bool refract_block_scope_lookup(binding_info_t *info_out) {
   switch (info_out->type) {
   case btArgument:
+  case btLocal:
     info_out->block_depth++;
     return true;
   default:
@@ -528,6 +529,15 @@ value_t assembler_emit_new_reference(assembler_t *assm) {
 value_t assembler_emit_load_local(assembler_t *assm, size_t index) {
   assembler_emit_opcode(assm, ocLoadLocal);
   assembler_emit_short(assm, index);
+  assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
+value_t assembler_emit_load_outer_local(assembler_t *assm, size_t index,
+    size_t block_depth) {
+  assembler_emit_opcode(assm, ocLoadOuterLocal);
+  assembler_emit_short(assm, index);
+  assembler_emit_short(assm, block_depth);
   assembler_adjust_stack_height(assm, +1);
   return success();
 }

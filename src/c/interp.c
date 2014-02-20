@@ -407,6 +407,18 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame.pc += kLoadOuterArgumentOperationSize;
           break;
         }
+        case ocLoadOuterLocal: {
+          size_t index = read_short(&cache, &frame, 1);
+          size_t block_depth = read_short(&cache, &frame, 2);
+          value_t subject = frame_get_argument(&frame, 0);
+          CHECK_FAMILY(ofBlock, subject);
+          frame_t home;
+          get_block_incomplete_outer_frame(subject, block_depth, &home);
+          value_t value = frame_get_local(&home, index);
+          frame_push_value(&frame, value);
+          frame.pc += kLoadOuterLocalOperationSize;
+          break;
+        }
         case ocLoadLambdaOuter: {
           size_t index = read_short(&cache, &frame, 1);
           value_t subject = frame_get_argument(&frame, 0);

@@ -1724,8 +1724,12 @@ void get_block_incomplete_outer_frame(value_t self, size_t block_depth,
     if (i > 1)
       current = frame_get_argument(frame, 0);
   }
-  frame->limit_pointer = NULL;
-  frame->stack_pointer = NULL;
+  // We don't know the limit or stack pointers so the best estimate is that they
+  // definitely don't go past the stack piece.
+  frame->limit_pointer = frame_get_stack_piece_top(frame);
+  frame->stack_pointer = frame_get_stack_piece_top(frame);
+  // We also don't know what the flags should be so set this to nothing such
+  // that trying to access them as flags fails.
   frame->flags = nothing();
 }
 

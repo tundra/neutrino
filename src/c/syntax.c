@@ -565,6 +565,10 @@ static value_t assembler_access_symbol(value_t symbol, assembler_t *assm,
         TRY(assembler_emit_load_outer_argument(assm, binding.data,
             binding.block_depth));
         break;
+      case btLocal:
+        TRY(assembler_emit_load_outer_local(assm, binding.data,
+            binding.block_depth));
+        break;
       default:
         WARN("Unknown block binding type %i", binding.type);
         UNREACHABLE("unknown block binding type");
