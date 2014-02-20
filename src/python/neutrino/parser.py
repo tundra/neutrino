@@ -449,6 +449,8 @@ class Parser(object):
     first_method = ast.Method(first_signature, first_body)
     return [first_method]
 
+  # Parses the part that comes after the "fn" or name of the block or method.
+  # This is a mess, it should be cleaned up when the parser is rewritten.
   def parse_functino_signature(self, subject, is_prefix, default_name=None):
     name = default_name
     if (not is_prefix) and self.at_type(Token.OPERATION):
