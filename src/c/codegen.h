@@ -11,6 +11,26 @@
 #include "value.h"
 
 
+// A word on the terminology used about bindings.
+//
+//  - An _outer_ binding is one that is defined in an enclosing frame. Outer
+//    bindings happen when a lambda or block use a variable from an enclosing
+//    scope. Outer is the broadest concept.
+//  - A _captured_ binding is a special case of outer bindings. It refers to the
+//    implementation technique whereby all a lambda's outer variables are copied
+//    into the heap. This way they can survive after their originating scope
+//    exits.
+//  - A _refracted_ binding is also an outer binding but one that doesn't use
+//    copying. Instead, outer variables accessed by blocks are read from their
+//    original location on the stack since they are guaranteed to be present
+//    when the block runs.
+//
+// Captured and refracted bindings can be combined: a refracted binding can be
+// outer to a lambda and hence captured, and a captured binding can be outer to
+// a block and accessed through refraction. The code tries to make the
+// distinction as clear as possible by avoiding the term "outer" unless it
+// really refers to both types.
+
 
 // Identifies what kind of binding a bound symbol represents.
 typedef enum {
@@ -188,7 +208,7 @@ value_t assembler_emit_load_local(assembler_t *assm, size_t index);
 
 // Emits an outer local load of the local with the given index in the frame
 // block_depth nesting levels from the current location.
-value_t assembler_emit_load_outer_local(assembler_t *assm, size_t index,
+value_t assembler_emit_load_refracted_local(assembler_t *assm, size_t index,
     size_t block_depth);
 
 // Emits a global variable load of the local with the given name within the
@@ -201,24 +221,24 @@ value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index);
 
 // Emits an argument load of the argument with the given parameter index from
 // the frame block_depth nesting levels from the current location.
-value_t assembler_emit_load_outer_argument(assembler_t *assm, size_t param_index,
-    size_t block_depth);
+value_t assembler_emit_load_refracted_argument(assembler_t *assm,
+    size_t param_index, size_t block_depth);
 
 // Emits a load of a captured outer variable in the subject lambda.
-value_t assembler_emit_load_lambda_outer(assembler_t *assm, size_t index);
+value_t assembler_emit_load_lambda_capture(assembler_t *assm, size_t index);
 
 // Emits a load of an outer variable captured by a block.
-value_t assembler_emit_load_block_outer(assembler_t *assm, size_t index);
+value_t assembler_emit_load_block_capture(assembler_t *assm, size_t index);
 
 // Emits a lambda that understands the given methods and which expects the given
-// number of outer variables to be present on the stack.
+// number of captured variables to be present on the stack.
 value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
-    size_t outer_count);
+    size_t capture_count);
 
 // Emits a block that understands the given methods and which expects the given
 // number of outer variables to be present on the stack.
 value_t assembler_emit_block(assembler_t *assm, value_t methods,
-    size_t outer_count);
+    size_t capture_count);
 
 // Hacky implementation of calling lambdas. Later this should be replaced by a
 // more general delegate operation.

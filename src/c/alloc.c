@@ -295,12 +295,12 @@ value_t new_heap_argument_map_trie(runtime_t *runtime, value_t value) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t outers) {
+value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t captures) {
   size_t size = kLambdaSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_lambda_species)));
   set_lambda_methods(result, methods);
-  set_lambda_outers(result, outers);
+  set_lambda_captures(result, captures);
   return post_create_sanity_check(result, size);
 }
 

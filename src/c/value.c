@@ -1617,12 +1617,12 @@ value_t ensure_argument_map_trie_owned_values_frozen(runtime_t *runtime,
 GET_FAMILY_PRIMARY_TYPE_IMPL(lambda);
 
 ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, ofMethodspace, Methods, methods);
-ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, ofArray, Outers, outers);
+ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, ofArray, Captures, captures);
 
 value_t lambda_validate(value_t self) {
   VALIDATE_FAMILY(ofLambda, self);
   VALIDATE_FAMILY_OPT(ofMethodspace, get_lambda_methods(self));
-  VALIDATE_FAMILY_OPT(ofArray, get_lambda_outers(self));
+  VALIDATE_FAMILY_OPT(ofArray, get_lambda_captures(self));
   return success();
 }
 
@@ -1642,14 +1642,14 @@ value_t add_lambda_builtin_implementations(runtime_t *runtime, safe_value_t s_ma
   return success();
 }
 
-value_t get_lambda_outer(value_t self, size_t index) {
+value_t get_lambda_capture(value_t self, size_t index) {
   CHECK_FAMILY(ofLambda, self);
-  value_t outers = get_lambda_outers(self);
-  return get_array_at(outers, index);
+  value_t captures = get_lambda_captures(self);
+  return get_array_at(captures, index);
 }
 
 value_t ensure_lambda_owned_values_frozen(runtime_t *runtime, value_t self) {
-  TRY(ensure_frozen(runtime, get_lambda_outers(self)));
+  TRY(ensure_frozen(runtime, get_lambda_captures(self)));
   return success();
 }
 
@@ -1692,12 +1692,12 @@ value_t add_block_builtin_implementations(runtime_t *runtime, safe_value_t s_map
   return success();
 }
 
-value_t get_block_outer(value_t self, size_t index) {
+value_t get_block_capture(value_t self, size_t index) {
   CHECK_FAMILY(ofBlock, self);
   value_t *home = get_block_home(self);
-  value_t outers = home[2];
-  CHECK_FAMILY(ofArray, outers);
-  return get_array_at(outers, index);
+  value_t captures = home[2];
+  CHECK_FAMILY(ofArray, captures);
+  return get_array_at(captures, index);
 }
 
 value_t *get_block_home(value_t self) {
@@ -1711,7 +1711,7 @@ value_t *get_block_home(value_t self) {
   return home;
 }
 
-void get_block_incomplete_outer_frame(value_t self, size_t block_depth,
+void get_block_refracted_frame(value_t self, size_t block_depth,
     frame_t *frame) {
   CHECK_REL("block not nested", block_depth, >, 0);
   value_t current = self;
