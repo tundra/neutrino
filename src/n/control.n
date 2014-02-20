@@ -1,15 +1,10 @@
 # Copyright 2013 the Neutrino authors (see AUTHORS).
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-## Long conditional. If $cond is true executes the $then thunk, otherwise
-## executes the $else thunk.
-def @if($cond == true, $then, $else) => $then();
-def @if($cond == false, $then, $else) => $else();
-
-## Short conditional. If $cond is true executes the $then thunk, otherwise
-## returns null.
-def @if($cond == true, $then) => $then();
-def @if($cond == false, $then) => null;
+## Long conditional. If $cond is true executes the .then method on the thunk,
+## thunk, otherwise executes the .else method.
+def @if($cond == true, $thunk) => $thunk.then();
+def @if($cond == false, $thunk) => $thunk.else();
 
 ## Executes the $cond and $body thunks alternately until the $cond thunk returns
 ## true. Always returns null. (Alternatively could return the last value of the
@@ -19,10 +14,9 @@ def @if($cond == false, $then) => null;
 ## TODO: this implementation grows the stack for each iteration which is a
 ##   really Bad Thing(TM). Should be fixed, in the inlined version by custom
 ##   generated code and in the non-inlined by tail call elimination.
-def @while($cond, $body) => @if($cond(), fn {
-  $body();
-  @while($cond, $body);
-});
+def @while($thunk) => @if($thunk.keep_running(), fn
+  on.then() => { $thunk.run(); @while($thunk); }
+  on.else() => null);
 
 ## Executes $thunk for each element in $coll using the .for method.
 def @for($coll, $thunk) => $coll.for($thunk);

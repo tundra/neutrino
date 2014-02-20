@@ -11,10 +11,13 @@ def ($this == @Array).new($length) => @ctrino.new_array($length);
 ## Invokes the given thunk for each element in this array.
 def ($this is @Array).for($thunk) {
   var $i := 0;
-  @while(fn => $i < ($this.length), fn {
-    $thunk($this[$i]);
-    $i := $i + 1;
-  });
+  bk
+    $callback.keep_running() => $i < ($this.length)
+    on.run() {
+      $thunk($this[$i]);
+      $i := $i + 1;
+    }
+  in @while($callback);
 }
 
 ## Returns the $index'th element of this array.

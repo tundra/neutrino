@@ -247,7 +247,7 @@ class Parser(object):
     if self.at_word('fn'):
       return self.parse_lambda_expression()
     elif self.at_word('bk'):
-      return self.parse_block_expression()
+      return self.parse_block_expression(expect_delim)
     elif self.at_word('new'):
       return self.parse_new_expression(expect_delim)
     elif self.at_word('if'):
@@ -346,15 +346,17 @@ class Parser(object):
       self.expect_word('else')
       else_part = self.parse_expression(expect_delim)
     else:
-      else_part = None
+      else_part = ast.Literal(None)
+    methods = [
+      ast.Lambda.method(then_part, data.Operation.infix('then')),
+      ast.Lambda.method(else_part, data.Operation.infix('else'))
+    ]
     args = [
       ast.Argument(data._SUBJECT, ast.Variable(data.Identifier(-1, data.Path(["core", "if"])))),
       ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES)),
       ast.Argument(0, cond),
-      ast.Argument(1, ast.Lambda.thunk(then_part)),
+      ast.Argument(1, ast.Lambda(methods))
     ]
-    if not else_part is None:
-      args.append(ast.Argument(2, ast.Lambda.thunk(else_part)))
     result = ast.Invocation(args)
     return result
 
@@ -365,11 +367,14 @@ class Parser(object):
     cond = self.parse_expression(False)
     self.expect_word('do')
     body = self.parse_expression(expect_delim)
+    methods = [
+      ast.Lambda.method(cond, data.Operation.infix('keep_running')),
+      ast.Lambda.method(body, data.Operation.infix('run'))
+    ]
     return ast.Invocation([
       ast.Argument(data._SUBJECT, ast.Variable(data.Identifier(-1, data.Path(["core", "while"])))),
       ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES)),
-      ast.Argument(0, ast.Lambda.thunk(cond)),
-      ast.Argument(1, ast.Lambda.thunk(body)),
+      ast.Argument(0, ast.Lambda(methods)),
     ])
 
   # <abort expression>
@@ -435,13 +440,13 @@ class Parser(object):
 
   # <block expression>
   #   -> "bk" <ident> <functino tail> "in" <expression>
-  def parse_block_expression(self):
+  def parse_block_expression(self, expect_delim):
     self.expect_word('bk')
     name = self.expect_type(Token.IDENTIFIER)
     signature = self.parse_functino_signature(self.get_functino_subject(), False)
     methods = self.parse_functino_tail(signature)
     self.expect_word('in')
-    body = self.parse_word_expression(False)
+    body = self.parse_word_expression(expect_delim)
     return ast.Block(name, methods, body)
 
   # <functino tail>

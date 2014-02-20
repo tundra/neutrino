@@ -19,7 +19,7 @@ def $test_nested_outers() {
   # Capturing an outer.
   def $v2 := {
     def $x := 4;
-    bk $foo() => $x in $foo()
+    bk $foo() => $x in $foo();
   }
   $assert:equals(4, $v2);
   # Accessing an outer by calling an outer local lambda.

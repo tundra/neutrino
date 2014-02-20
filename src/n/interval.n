@@ -8,10 +8,9 @@ type @Interval {
   def $this.for($thunk) {
     var $i := @from_field[$this];
     def $limit := @to_field[$this];
-    @while(fn => $i < $limit, fn {
-      $thunk($i);
-      $i := $i.successor;
-    });
+    bk $callback.keep_running() => $i < $limit
+       on.run() => { $thunk($i); $i := $i.successor; }
+    in @while($callback);
   }
 
 }

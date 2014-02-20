@@ -6,13 +6,18 @@ import $core;
 
 def $test_while_call() {
   var $i := 0;
-  @core:while(fn => $i < 10, fn {
-    $assert:that($i < 10);
-    $i := $i + 1;
-  });
+  @core:while(fn 
+    on.keep_running() => $i < 10
+    on.run() {
+      $assert:that($i < 10);
+      $i := $i + 1;
+    }
+  );
   $assert:equals(10, $i);
   $i := 0;
-  def $v := @core:while(fn => $i < 10, fn => $i := $i + 1);
+  def $v := @core:while(fn
+    on.keep_running() => $i < 10
+    on.run() => $i := $i + 1);
   $assert:equals(10, $i);
   $assert:equals(null, $v);
 }
