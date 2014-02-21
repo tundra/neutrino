@@ -44,6 +44,7 @@
   F(names,                      "names")                                       \
   F(namespace,                  "namespace")                                   \
   F(numerator,                  "numerator")                                   \
+  F(on_exit,                    "on_exit")                                     \
   F(options,                    "options")                                     \
   F(origin,                     "origin")                                      \
   F(parameters,                 "parameters")                                  \

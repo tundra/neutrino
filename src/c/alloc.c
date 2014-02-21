@@ -703,6 +703,15 @@ value_t new_heap_signal_ast(runtime_t *runtime, value_t arguments) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_ensure_ast(runtime_t *runtime, value_t body, value_t on_exit) {
+  size_t size = kEnsureAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, ensure_ast_species)));
+  set_ensure_ast_body(result, body);
+  set_ensure_ast_on_exit(result, on_exit);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_argument_ast(runtime_t *runtime, value_t tag, value_t value) {
   size_t size = kArgumentAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,

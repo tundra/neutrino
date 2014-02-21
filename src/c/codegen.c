@@ -567,3 +567,13 @@ value_t assembler_emit_block(assembler_t *assm, value_t methods) {
       + 1);                  // The block object
   return success();
 }
+
+value_t assembler_emit_block(assembler_t *assm, value_t methods) {
+  assembler_emit_opcode(assm, ocBlock);
+  TRY(assembler_emit_value(assm, methods));
+  // Pop off all the captuers and push back the lambda.
+  assembler_adjust_stack_height(assm,
+      kBlockStackStateSize // The block state
+      + 1);                  // The block object
+  return success();
+}

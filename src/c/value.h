@@ -280,6 +280,7 @@ static value_t new_moved_object(value_t target) {
   F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _, 67)\
   F(CurrentModuleAst,        current_module_ast,        _, _, X, _, _, _, X, _, _, 61)\
   F(DecimalFraction,         decimal_fraction,          _, _, X, _, _, _, _, _, _, 25)\
+  F(EnsureAst,               ensure_ast,                _, _, X, X, _, _, X, _, _, 74)\
   F(Escape,                  escape,                    _, _, _, X, _, _, _, _, _, 50)\
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _,  5)\
   F(Function,                function,                  _, _, _, X, _, _, _, X, _, 56)\
@@ -338,7 +339,7 @@ static value_t new_moved_object(value_t target) {
 
 // The next ordinal to use when adding a family. This isn't actually used in the
 // code it's just a reminder. Remember to update it when adding families.
-static const int kNextFamilyOrdinal = 74;
+static const int kNextFamilyOrdinal = 75;
 
 // Enumerates all the object families.
 #define ENUM_OBJECT_FAMILIES(F)                                                \

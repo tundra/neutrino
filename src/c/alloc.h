@@ -274,6 +274,9 @@ value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments);
 // Creates a new signal syntax tree with the given arguments.
 value_t new_heap_signal_ast(runtime_t *runtime, value_t arguments);
 
+// Creates a new ensure syntax tree with the given components.
+value_t new_heap_ensure_ast(runtime_t *runtime, value_t body, value_t on_exit);
+
 // Creates a new argument syntax tree with the given tag and value.
 value_t new_heap_argument_ast(runtime_t *runtime, value_t tag, value_t value);
 

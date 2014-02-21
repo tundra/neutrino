@@ -298,7 +298,7 @@ value_t plankton_new_invocation_ast(runtime_t *runtime) {
 }
 
 
-// --- S i g n a l ---
+// --- S i g n a l   a s t ---
 
 TRIVIAL_PRINT_ON_IMPL(SignalAst, signal_ast);
 GET_FAMILY_PRIMARY_TYPE_IMPL(signal_ast);
@@ -329,6 +329,60 @@ value_t plankton_set_signal_ast_contents(value_t object, runtime_t *runtime,
 
 value_t plankton_new_signal_ast(runtime_t *runtime) {
   return new_heap_signal_ast(runtime, nothing());
+}
+
+
+// --- E n s u r e   a s t ---
+
+TRIVIAL_PRINT_ON_IMPL(EnsureAst, ensure_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(ensure_ast);
+NO_BUILTIN_METHODS(ensure_ast);
+FIXED_GET_MODE_IMPL(ensure_ast, vmMutable);
+
+ACCESSORS_IMPL(EnsureAst, ensure_ast, acIsSyntaxOpt, 0, Body, body);
+ACCESSORS_IMPL(EnsureAst, ensure_ast, acIsSyntaxOpt, 0, OnExit, on_exit);
+
+static value_t emit_naked_block(value_t code, assembler_t *assm) {
+  // Push a block scope that refracts any symbols accessed outside the block.
+  block_scope_t block_scope;
+  TRY(assembler_push_block_scope(assm, &block_scope));
+
+  TRY_DEF(code_block, compile_expression(assm->runtime, code, assm->fragment,
+        &block_scope));
+
+  // Pop the block scope off, we're done refracting.
+  assembler_pop_block_scope(assm, &block_scope);
+
+  // Finally emit the bytecode that will create the block.
+  TRY(assembler_emit_block(assm, space));
+  return success();
+}
+
+value_t emit_ensure_ast(value_t self, assembler_t *assm) {
+  CHECK_FAMILY(ofEnsureAst, self);
+  value_t body = get_ensure_ast_body(self);
+  value_t on_exit = get_ensure_ast_on_exit(self);
+  TRY(emit_value(on_exit, assm));
+  TRY(assembler_emit_pop(assm, 1));
+  TRY(emit_value(body, assm));
+  return success();
+}
+
+value_t ensure_ast_validate(value_t value) {
+  VALIDATE_FAMILY(ofEnsureAst, value);
+  return success();
+}
+
+value_t plankton_set_ensure_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
+  UNPACK_PLANKTON_MAP(contents, body, on_exit);
+  set_ensure_ast_body(object, body);
+  set_ensure_ast_on_exit(object, on_exit);
+  return success();
+}
+
+value_t plankton_new_ensure_ast(runtime_t *runtime) {
+  return new_heap_ensure_ast(runtime, nothing(), nothing());
 }
 
 
@@ -591,13 +645,13 @@ static value_t assembler_access_symbol(value_t symbol, assembler_t *assm,
 }
 
 static value_t emit_block_value(value_t method_asts, assembler_t *assm) {
-  // Push a capture scope that captures any symbols accessed outside the lambda.
+  // Push a block scope that refracts any symbols accessed outside the block.
   block_scope_t block_scope;
   TRY(assembler_push_block_scope(assm, &block_scope));
 
   TRY_DEF(space, build_methodspace_from_method_asts(method_asts, assm));
 
-  // Pop the capturing scope off, we're done capturing.
+  // Pop the block scope off, we're done refracting.
   assembler_pop_block_scope(assm, &block_scope);
 
   // Finally emit the bytecode that will create the block.
@@ -1434,6 +1488,7 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "Array", plankton_new_array_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Block", plankton_new_block_ast, runtime));
   TRY(add_plankton_factory(map, ast, "CurrentModule", plankton_new_current_module_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "Ensure", plankton_new_ensure_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Guard", plankton_new_guard_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Invocation", plankton_new_invocation_ast, runtime));
   TRY(add_plankton_factory(map, ast, "IsDeclaration", plankton_new_is_declaration_ast, runtime));
