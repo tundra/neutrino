@@ -277,9 +277,11 @@ static value_t new_moved_object(value_t target) {
   F(BuiltinImplementation,   builtin_implementation,    _, _, _, _, _, _, _, X, _,  6)\
   F(BuiltinMarker,           builtin_marker,            _, _, _, X, _, _, _, _, _, 43)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X, 49)\
+  F(CodeShard,               code_shard,                _, _, _, _, _, _, _, _, _, 75)\
   F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _, 67)\
   F(CurrentModuleAst,        current_module_ast,        _, _, X, _, _, _, X, _, _, 61)\
   F(DecimalFraction,         decimal_fraction,          _, _, X, _, _, _, _, _, _, 25)\
+  F(EnsureAst,               ensure_ast,                _, _, X, X, _, _, X, _, _, 74)\
   F(Escape,                  escape,                    _, _, _, X, _, _, _, _, _, 50)\
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _,  5)\
   F(Function,                function,                  _, _, _, X, _, _, _, X, _, 56)\
@@ -338,7 +340,7 @@ static value_t new_moved_object(value_t target) {
 
 // The next ordinal to use when adding a family. This isn't actually used in the
 // code it's just a reminder. Remember to update it when adding families.
-static const int kNextFamilyOrdinal = 74;
+static const int kNextFamilyOrdinal = 76;
 
 // Enumerates all the object families.
 #define ENUM_OBJECT_FAMILIES(F)                                                \
@@ -1150,7 +1152,13 @@ ACCESSORS_DECL(argument_map_trie, children);
 value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, value_t key);
 
 
-// --- L a m b d a ---
+/// ## Lambda
+///
+/// Long-lived (or potentially long lived) code objects that are visible to the
+/// surface language. Because a lambda can live indefinitely there's no
+/// guarantee that it won't be called after the scope that defines its outer
+/// state has exited. Hence, pessimistically capture all their outer state on
+/// construction.
 
 static const size_t kLambdaSize = OBJECT_SIZE(2);
 static const size_t kLambdaMethodsOffset = OBJECT_FIELD_OFFSET(0);
@@ -1166,12 +1174,65 @@ ACCESSORS_DECL(lambda, captures);
 value_t get_lambda_capture(value_t self, size_t index);
 
 
-// --- B l o c k ---
+/// ## Block
+///
+/// Code objects visible at the surface level which only live as long as the
+/// scope that defined them. Because blocks can only be executed while the scope
+/// is still alive they can access their outer state through the stack through
+/// a mechanism called _refraction_. Whenever a block is created a section is
+/// pushed onto the stack, the block's _home_.
+///
+///                                     (block 1)
+///           :            :           +----------+
+///           +============+     +---  |   home   |
+///     +---  |     fp     |     |     +----------+
+///     |     +------------+     |
+///     |     |   methods  |     |
+///     |     +------------+     |
+///     |     |   block 1  |  <--+
+///     |     +============+
+///     |     :            :
+///     |     :   locals   :
+///     |     :            :
+///     +-->  +============+
+///           |   subject  |  ---+
+///           +------------+     |
+///           :  possibly  :     |
+///           :    many    :     |      (block 2)
+///           :   frames   :     +-->  +----------+
+///           +============+           |   home   |
+///     +---  |     fp     |     +---  +----------+
+///     |     +------------+     |
+///     |     |   methods  |     |
+///     |     +------------+     |
+///     |     |   block 2  |  <--+
+///     |     +============+
+///     |     :            :
+///     |     :   locals   :
+///     |     :            :
+///     +-->  +============+
+///
+/// To access say a local variable in an enclosing scope from a block you follow
+/// the block's pointer back to its home section. There the frame pointer of the
+/// frame that created the block which is all you need to access state in that
+/// frame. To access scopes yet further down the stack, in the case where you
+/// have nested blocks within blocks, you can peel off the scopes one at a time
+/// by first going through the block itself into the frame that created it, then
+/// the next enclosing block which will be the subject of that frame, and so on
+/// until all the layers of blocks scopes have been peeled off. This process of
+/// going through (potentially) successive blocks' originating scopes is what
+/// is referred to as refraction.
+///
+/// Because blocks don't need to capture state they're cheap to create, just
+/// a few pushes and then a fixed-size object that points into the stack with
+/// a flag that can be used to disable the block when its scope exits.
 
 static const size_t kBlockSize = OBJECT_SIZE(3);
-static const size_t kBlockIsLiveOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kBlockHomeStackPieceOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kBlockHomeStatePointerOffset = OBJECT_FIELD_OFFSET(2);
+// These two must be at the same offsets as the other refractors, currently
+// code shards.
+static const size_t kBlockHomeStackPieceOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kBlockHomeStatePointerOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kBlockIsLiveOffset = OBJECT_FIELD_OFFSET(2);
 
 // The amount of state stored on the stack when creating a block.
 static const uint32_t kBlockStackStateSize = 2;
@@ -1185,19 +1246,45 @@ ACCESSORS_DECL(block, home_stack_piece);
 // Returns the array of outer variables for this block.
 ACCESSORS_DECL(block, home_state_pointer);
 
-// Returns the index'th outer value captured by the given block.
-// TODO: remove when all outers can be accessed through refraction.
-value_t get_block_capture(value_t self, size_t index);
-
 // Returns a pointer to the home data for the given block.
-value_t *get_block_home(value_t self);
+value_t *get_refractor_home(value_t self);
 
 struct frame_t;
 
 // Returns an incomplete frame that provides access to arguments and locals for
 // the frame that is located block_depth scopes outside the given block.
-void get_block_refracted_frame(value_t self, size_t block_depth,
+void get_refractor_refracted_frame(value_t self, size_t block_depth,
     struct frame_t *frame_out);
+
+// Returns the home stack piece field of a refractor, that is, either a code
+// shard or a block.
+value_t get_refractor_home_stack_piece(value_t value);
+
+// Returns the home state pointer of a refractor, that is, either a code shard
+// or a block.
+value_t get_refractor_home_state_pointer(value_t value);
+
+
+/// ## Code shard
+///
+/// Code shards are scoped closures like blocks but are internal to the runtime
+/// so they don't need as many safeguards. They also can't be called with
+/// different methods, they have just one block of code which will always be
+/// the one to be called. This, for instance, is how ensure-blocks work.
+///
+/// Code shards use refraction exactly the same way blocks do.
+
+static const size_t kCodeShardSize = OBJECT_SIZE(2);
+// These two must be at the same offsets as the other refractors, currently
+// blocks.
+static const size_t kCodeShardHomeStackPieceOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kCodeShardHomeStatePointerOffset = OBJECT_FIELD_OFFSET(1);
+
+// Returns the stack piece that contains this code shard's home.
+ACCESSORS_DECL(code_shard, home_stack_piece);
+
+// Returns a pointer within the stack piece to where this code shard's home is.
+ACCESSORS_DECL(code_shard, home_state_pointer);
 
 
 // --- N a m e s p a c e ---

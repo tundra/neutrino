@@ -567,3 +567,31 @@ value_t assembler_emit_block(assembler_t *assm, value_t methods) {
       + 1);                  // The block object
   return success();
 }
+
+value_t assembler_emit_code_shard(assembler_t *assm, value_t code_block) {
+  assembler_emit_opcode(assm, ocCodeShard);
+  TRY(assembler_emit_value(assm, code_block));
+  // Pop off all the captuers and push back the lambda.
+  assembler_adjust_stack_height(assm,
+      kBlockStackStateSize // The shard state
+      + 1);                // The shard object
+  return success();
+}
+
+value_t assembler_emit_call_code_shard(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocCallCodeShard);
+  assembler_adjust_stack_height(assm,
+      1     // the code shard being pushed as the subject argument to the code
+      + 1); // the return value from the shard
+  return success();
+}
+
+value_t assembler_emit_pop_code_shard(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocPopCodeShard);
+  assembler_adjust_stack_height(assm,
+      -kBlockStackStateSize // the code shard's home
+      - 1                   // the shard itself
+      - 1                   // the copy of the start used as subject
+      - 1);                 // the result from running the code shard
+  return success();
+}

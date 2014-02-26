@@ -1,0 +1,22 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def $test_simple_ensure() {
+  var $v := 9;
+  $assert:equals(10, with_escape $escape do {
+    try {
+      $assert:equals(9, $v);
+      10;
+    } ensure {
+      $v := 7;
+    }
+  });
+  $assert:equals(7, $v);
+}
+
+do {
+  $test_simple_ensure();
+}

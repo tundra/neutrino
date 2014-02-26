@@ -13,7 +13,9 @@
 // Invokes the given macro for each opcode name and argument count.
 #define ENUM_OPCODES(F)                                                        \
   F(Builtin,                    2)                                             \
+  F(CallCodeShard,              1)                                             \
   F(CheckStackHeight,           2)                                             \
+  F(CodeShard,                  2)                                             \
   F(CaptureEscape,              2)                                             \
   F(DelegateToLambda,           1)                                             \
   F(DelegateToBlock,            1)                                             \
@@ -34,6 +36,7 @@
   F(NewArray,                   2)                                             \
   F(NewReference,               1)                                             \
   F(Pop,                        2)                                             \
+  F(PopCodeShard,               1)                                             \
   F(Push,                       2)                                             \
   F(Return,                     1)                                             \
   F(SetReference,               1)                                             \

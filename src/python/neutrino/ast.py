@@ -38,6 +38,9 @@ class Visitor(object):
   def visit_signal(self, that):
     self.visit_ast(that)
 
+  def visit_ensure(self, that):
+    self.visit_ast(that)
+
   def visit_argument(self, that):
     self.visit_ast(that)
 
@@ -230,6 +233,23 @@ class Signal(object):
   def traverse(self, visitor):
     for argument in self.arguments:
       argument.accept(visitor)
+
+
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "Ensure"))
+class Ensure(object):
+
+  @plankton.field("body")
+  @plankton.field("on_exit")
+  def __init__(self, body, on_exit):
+    self.body = body
+    self.on_exit = on_exit
+
+  def accept(self, visitor):
+    return visitor.visit_ensure(self)
+
+  def traverse(self, visitor):
+    self.body.accept(visitor)
+    self.on_exit.accept(visitor)
 
 
 # An individual argument to an invocation.

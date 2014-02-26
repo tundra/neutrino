@@ -315,6 +315,16 @@ value_t new_heap_block(runtime_t *runtime, value_t is_live,
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_code_shard(runtime_t *runtime, value_t home_stack_piece,
+    value_t home_state_pointer) {
+  size_t size = kCodeShardSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, code_shard_species)));
+  set_code_shard_home_stack_piece(result, home_stack_piece);
+  set_code_shard_home_state_pointer(result, home_state_pointer);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_namespace(runtime_t *runtime, value_t value) {
   TRY_DEF(bindings, new_heap_id_hash_map(runtime, 16));
   size_t size = kNamespaceSize;
@@ -700,6 +710,15 @@ value_t new_heap_signal_ast(runtime_t *runtime, value_t arguments) {
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, signal_ast_species)));
   set_signal_ast_arguments(result, arguments);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_ensure_ast(runtime_t *runtime, value_t body, value_t on_exit) {
+  size_t size = kEnsureAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, ensure_ast_species)));
+  set_ensure_ast_body(result, body);
+  set_ensure_ast_on_exit(result, on_exit);
   return post_create_sanity_check(result, size);
 }
 

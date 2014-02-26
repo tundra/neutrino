@@ -94,7 +94,7 @@ static const size_t kArrayAstElementsOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(array_ast, elements);
 
 
-// --- I n v o c a t i o n   a s t ---
+// --- S i g n a l   a s t ---
 
 static const size_t kSignalAstSize = OBJECT_SIZE(1);
 static const size_t kSignalAstArgumentsOffset = OBJECT_FIELD_OFFSET(0);
@@ -103,7 +103,20 @@ static const size_t kSignalAstArgumentsOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(signal_ast, arguments);
 
 
-// --- S i g n a l   a s t ---
+// --- E n s u r e   a s t ---
+
+static const size_t kEnsureAstSize = OBJECT_SIZE(2);
+static const size_t kEnsureAstBodyOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kEnsureAstOnExitOffset = OBJECT_FIELD_OFFSET(1);
+
+// The body to execute normally.
+ACCESSORS_DECL(ensure_ast, body);
+
+// The code to execute after the body completes, either normally or by escaping.
+ACCESSORS_DECL(ensure_ast, on_exit);
+
+
+// --- I n v o c a t i o n   a s t ---
 
 static const size_t kInvocationAstSize = OBJECT_SIZE(1);
 static const size_t kInvocationAstArgumentsOffset = OBJECT_FIELD_OFFSET(0);

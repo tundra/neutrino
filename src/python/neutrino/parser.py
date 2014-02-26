@@ -260,6 +260,8 @@ class Parser(object):
       return self.parse_with_escape_expression(expect_delim)
     elif self.at_word('abort'):
       return self.parse_abort_expression(expect_delim)
+    elif self.at_word('try'):
+      return self.parse_try_expression(expect_delim)
     else:
       return self.parse_assignment_expression(expect_delim)
 
@@ -401,6 +403,15 @@ class Parser(object):
       ast.Argument(0, elms),
       ast.Argument(1, thunk),
     ])
+
+  # <try expression>
+  #   -> "try" <expression> "ensure" <expression>
+  def parse_try_expression(self, expect_delim):
+    self.expect_word('try')
+    body = self.parse_expression(False)
+    self.expect_word('ensure')
+    on_exit = self.parse_expression(expect_delim)
+    return ast.Ensure(body, on_exit)
 
   # <with escape expression>
   #   -> "with_escape" <ident> "do" <expression>
