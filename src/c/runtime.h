@@ -69,6 +69,7 @@
 // generated from the family list).
 #define ENUM_ROOT_SINGLETONS(F)                                                \
   F(any_guard)                                                                 \
+  F(array_of_zero)                                                             \
   F(builtin_impls)                                                             \
   F(ctrino)                                                                    \
   F(empty_array_buffer)                                                        \
@@ -80,8 +81,8 @@
   F(op_call)                                                                   \
   F(plankton_environment)                                                      \
   F(selector_key)                                                              \
-  F(stack_piece_bottom_code_block)                                             \
   F(stack_bottom_code_block)                                                   \
+  F(stack_piece_bottom_code_block)                                             \
   F(subject_key)
 
 // Enum where each entry corresponds to a field in the roots object. The naming

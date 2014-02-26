@@ -118,6 +118,9 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   // values below.
   TRY_DEF(empty_array, new_heap_array(runtime, 0));
   RAW_ROOT(roots, empty_array) = empty_array;
+  TRY_DEF(array_of_zero, new_heap_array(runtime, 1));
+  set_array_at(array_of_zero, 0, new_integer(0));
+  RAW_ROOT(roots, array_of_zero) = array_of_zero;
   TRY_DEF(empty_blob, new_heap_blob(runtime, 0));
   TRY_SET(RAW_ROOT(roots, empty_code_block), new_heap_code_block(runtime,
       empty_blob, empty_array, 0));
@@ -248,6 +251,8 @@ value_t roots_validate(value_t roots) {
 
   // Validate singletons manually.
   VALIDATE_OBJECT(ofArray, RAW_ROOT(roots, empty_array));
+  VALIDATE_OBJECT(ofArray, RAW_ROOT(roots, array_of_zero));
+  VALIDATE_CHECK_EQ(1, get_array_length(RAW_ROOT(roots, array_of_zero)));
   VALIDATE_OBJECT(ofArrayBuffer, RAW_ROOT(roots, empty_array_buffer));
   VALIDATE_CHECK_EQ(0, get_array_buffer_length(RAW_ROOT(roots, empty_array_buffer)));
   VALIDATE_OBJECT(ofPath, RAW_ROOT(roots, empty_path));

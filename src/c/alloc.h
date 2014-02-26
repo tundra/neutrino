@@ -141,6 +141,10 @@ value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t captures);
 value_t new_heap_block(runtime_t *runtime, value_t is_live,
     value_t home_stack_piece, value_t home_state_pointer);
 
+// Creates a new code shard whoses state is located at the given location.
+value_t new_heap_code_shard(runtime_t *runtime, value_t home_stack_piece,
+    value_t home_state_pointer);
+
 // Creates a new empty namespace object.
 value_t new_heap_namespace(runtime_t *runtime, value_t value);
 

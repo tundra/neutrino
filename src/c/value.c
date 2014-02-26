@@ -1654,7 +1654,7 @@ value_t ensure_lambda_owned_values_frozen(runtime_t *runtime, value_t self) {
 }
 
 
-// --- B l o c k ---
+/// ## Block
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(block);
 
@@ -1692,34 +1692,24 @@ value_t add_block_builtin_implementations(runtime_t *runtime, safe_value_t s_map
   return success();
 }
 
-value_t get_block_capture(value_t self, size_t index) {
-  CHECK_FAMILY(ofBlock, self);
-  value_t *home = get_block_home(self);
-  value_t captures = home[2];
-  CHECK_FAMILY(ofArray, captures);
-  return get_array_at(captures, index);
-}
-
-value_t *get_block_home(value_t self) {
-  CHECK_FAMILY(ofBlock, self);
-  CHECK_TRUE_VALUE("calling dead block", get_block_is_live(self));
-  value_t home_stack_piece = get_block_home_stack_piece(self);
-  value_t home_state_pointer = get_block_home_state_pointer(self);
+value_t *get_refractor_home(value_t self) {
+  value_t home_stack_piece = get_refractor_home_stack_piece(self);
+  value_t home_state_pointer = get_refractor_home_state_pointer(self);
   value_t *home = get_array_elements(get_stack_piece_storage(home_stack_piece))
                     + get_integer_value(home_state_pointer);
   CHECK_TRUE("invalid block home", is_same_value(self, home[0]));
   return home;
 }
 
-void get_block_refracted_frame(value_t self, size_t block_depth,
+void get_refractor_refracted_frame(value_t self, size_t block_depth,
     frame_t *frame) {
-  CHECK_REL("block not nested", block_depth, >, 0);
+  CHECK_REL("refractor not nested", block_depth, >, 0);
   value_t current = self;
   for (size_t i = block_depth; i > 0; i--) {
-    CHECK_FAMILY(ofBlock, current);
-    value_t *home = get_block_home(current);
+    CHECK_TRUE("not refractor", is_refractor(current));
+    value_t *home = get_refractor_home(current);
     size_t fp = get_integer_value(home[2]);
-    frame->stack_piece = get_block_home_stack_piece(current);
+    frame->stack_piece = get_refractor_home_stack_piece(current);
     frame->frame_pointer = frame_get_stack_piece_bottom(frame) + fp;
     if (i > 1)
       current = frame_get_argument(frame, 0);
@@ -1731,6 +1721,37 @@ void get_block_refracted_frame(value_t self, size_t block_depth,
   // We also don't know what the flags should be so set this to nothing such
   // that trying to access them as flags fails.
   frame->flags = nothing();
+}
+
+value_t get_refractor_home_stack_piece(value_t value) {
+  CHECK_TRUE("not refractor", is_refractor(value));
+  return *access_object_field(value, kBlockHomeStackPieceOffset);
+}
+
+value_t get_refractor_home_state_pointer(value_t value) {
+  CHECK_TRUE("not refractor", is_refractor(value));
+  return *access_object_field(value, kBlockHomeStatePointerOffset);
+}
+
+
+/// ## Code shard
+
+FIXED_GET_MODE_IMPL(code_shard, vmMutable);
+
+ACCESSORS_IMPL(CodeShard, code_shard, acInFamily, ofStackPiece, HomeStackPiece,
+    home_stack_piece);
+ACCESSORS_IMPL(CodeShard, code_shard, acNoCheck, 0, HomeStatePointer,
+    home_state_pointer);
+
+value_t code_shard_validate(value_t self) {
+  VALIDATE_FAMILY(ofCodeShard, self);
+  VALIDATE_FAMILY(ofStackPiece, get_code_shard_home_stack_piece(self));
+  return success();
+}
+
+void code_shard_print_on(value_t value, print_on_context_t *context) {
+  CHECK_FAMILY(ofCodeShard, value);
+  string_buffer_printf(context->buf, "\u03C3~%w", value); // Unicode sigma.
 }
 
 

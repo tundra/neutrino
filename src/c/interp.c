@@ -274,7 +274,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           CHECK_FAMILY(ofBlock, block);
           CHECK_TRUE_VALUE("calling dead local lambda", get_block_is_live(block));
           // Locate the place on the stack that holds this block's state.
-          value_t *home = get_block_home(block);
+          value_t *home = get_refractor_home(block);
           value_t space = home[1];
           CHECK_FAMILY(ofMethodspace, space);
           // Pop off the top frame since we're repeating the previous call.
@@ -401,7 +401,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t subject = frame_get_argument(&frame, 0);
           CHECK_FAMILY(ofBlock, subject);
           frame_t home;
-          get_block_refracted_frame(subject, block_depth, &home);
+          get_refractor_refracted_frame(subject, block_depth, &home);
           value_t value = frame_get_argument(&home, param_index);
           frame_push_value(&frame, value);
           frame.pc += kLoadRefractedArgumentOperationSize;
@@ -411,9 +411,9 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           size_t index = read_short(&cache, &frame, 1);
           size_t block_depth = read_short(&cache, &frame, 2);
           value_t subject = frame_get_argument(&frame, 0);
-          CHECK_FAMILY(ofBlock, subject);
+          CHECK_TRUE("refracting through non-refractor", is_refractor(subject));
           frame_t home;
-          get_block_refracted_frame(subject, block_depth, &home);
+          get_refractor_refracted_frame(subject, block_depth, &home);
           value_t value = frame_get_local(&home, index);
           frame_push_value(&frame, value);
           frame.pc += kLoadRefractedLocalOperationSize;
@@ -434,7 +434,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t block = frame_get_argument(&frame, 0);
           CHECK_FAMILY(ofBlock, block);
           frame_t home;
-          get_block_refracted_frame(block, block_depth, &home);
+          get_refractor_refracted_frame(block, block_depth, &home);
           value_t lambda = frame_get_argument(&home, 0);
           CHECK_FAMILY(ofLambda, lambda);
           value_t value = get_lambda_capture(lambda, index);
@@ -477,6 +477,51 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame_push_value(&frame, space);
           frame_push_value(&frame, new_integer(frame.frame_pointer - stack_bottom));
           frame.pc += kBlockOperationSize;
+          break;
+        }
+        case ocCodeShard: {
+          value_t code_block = read_value(&cache, &frame, 1);
+          CHECK_FAMILY(ofCodeBlock, code_block);
+          E_TRY_DEF(shard, new_heap_code_shard(runtime, frame.stack_piece,
+              nothing()));
+          value_t *state_pointer = frame.stack_pointer;
+          value_t *stack_bottom = frame_get_stack_piece_bottom(&frame);
+          set_code_shard_home_state_pointer(shard, new_integer(state_pointer - stack_bottom));
+          frame_push_value(&frame, shard);
+          frame_push_value(&frame, code_block);
+          frame_push_value(&frame, new_integer(frame.frame_pointer - stack_bottom));
+          frame.pc += kCodeShardOperationSize;
+          break;
+        }
+        case ocCallCodeShard: {
+          value_t shard = frame_peek_value(&frame, kBlockStackStateSize + 1);
+          CHECK_FAMILY(ofCodeShard, shard);
+          value_t code_block = frame_peek_value(&frame, kBlockStackStateSize);
+          CHECK_FAMILY(ofCodeBlock, code_block);
+          // Push the shard onto the stack as the subject since we may need it
+          // to refract access to outer variables.
+          frame_push_value(&frame, shard);
+          frame.pc += kCallCodeShardOperationSize;
+          value_t argmap = ROOT(runtime, array_of_zero);
+          push_stack_frame(runtime, stack, &frame,
+              get_code_block_high_water_mark(code_block), argmap);
+          frame_set_code_block(&frame, code_block);
+          code_cache_refresh(&cache, &frame);
+          break;
+        }
+        case ocPopCodeShard: {
+          frame_pop_value(&frame);
+          value_t shard = frame_pop_value(&frame);
+          CHECK_FAMILY(ofCodeShard, shard);
+          value_t value = frame_pop_value(&frame);
+          value_t fp = frame_pop_value(&frame);
+          CHECK_DOMAIN(vdInteger, fp);
+          value_t code_block = frame_pop_value(&frame);
+          CHECK_FAMILY(ofCodeBlock, code_block);
+          value_t shard_again = frame_pop_value(&frame);
+          CHECK_TRUE("invalid code shard home", is_same_value(shard, shard_again));
+          frame_push_value(&frame, value);
+          frame.pc += kPopCodeShardOperationSize;
           break;
         }
         case ocCaptureEscape: {

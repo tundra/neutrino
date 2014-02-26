@@ -1,15 +1,44 @@
-// Copyright 2013 the Neutrino authors (see AUTHORS).
-// Licensed under the Apache License, Version 2.0 (see LICENSE).
+//- Copyright 2013 the Neutrino authors (see AUTHORS).
+//- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-// Objects and functionality related to processes and execution.
-
+/// # Process and execution objects
+///
+/// Types related to process execution are defined in this header. The code that
+/// actually executes bytecode lives in {{interp.h}}.
+///
+/// The aim has been to have a few different execution mechanisms that work as
+/// a foundation for the control abstractions provided by the surface language.
+/// The main abstractions are:
+///
+///   - Segmented {{#Stack}}(Stacks). A stack segment is known as a
+///     {{#StackPiece}}(stack piece). A stack segment is basically a dumb object
+///     array, both of these types have very little functionality on their own.
+///   - The {{#Frame}}(frame) type provides access to a segmented stack, both
+///     for inspection and modification. This is a stack-allocated type, not
+///     heap allocated.
+///   - {{#Escape}}(Escapes) capture the information you need to do a non-local
+///     return. They can be thought of as pointers into the stack which allow
+///     you top abort execution and jump back to the place they're pointing to.
+///     If you know `setjmp`/`longjmp` from
+///     [setjmp.h](http://en.wikipedia.org/wiki/Setjmp.h), this is basically the
+///     same thing.
+///   - Various closures: {{value.h#Lambda}}(lambdas), {{value.h#Block}}(blocks),
+///     and {{value.h#CodeShard}}(code shards). These are similar but work
+///     slightly differently:
+///     lambdas and blocks are visible at the surface language level; they're
+///     different in that lambdas can outlive their scope so they have to
+///     capture the values they close over whereas blocks are killed when their
+///     scope exits and so can access outer values directly through the stack.
+///     Code shards are like blocks but are not visible on the surface so they
+///     don't need to be killed because the runtime knows they won't outlive
+///     their scope.
 
 #ifndef _PROCESS
 #define _PROCESS
 
 #include "value-inl.h"
 
-// --- S t a c k   p i e c e ---
+/// ## Stack piece
 
 static const size_t kStackPieceSize = OBJECT_SIZE(3);
 static const size_t kStackPieceStorageOffset = OBJECT_FIELD_OFFSET(0);
@@ -48,7 +77,7 @@ typedef enum {
 } frame_flag_t;
 
 
-// --- F r a m e ---
+/// ## Frame
 
 // A transient stack frame. The current structure isn't clever but it's not
 // intended to be, it's intended to work and be fully general.
@@ -178,7 +207,10 @@ value_t *frame_get_stack_piece_top(frame_t *frame);
 void frame_walk_down_stack(frame_t *frame);
 
 
-// --- F r a m e   i t e r a t o r ---
+/// ### Frame iterator
+///
+/// Utility for scanning through the frames in a stack without mutating the
+/// stack.
 
 // Data used while iterating the frames of a stack.
 typedef struct {
@@ -200,7 +232,7 @@ frame_t *frame_iter_get_current(frame_iter_t *iter);
 bool frame_iter_advance(frame_iter_t *iter);
 
 
-// --- S t a c k ---
+/// ## Stack
 
 static const size_t kStackSize = OBJECT_SIZE(2);
 static const size_t kStackTopPieceOffset = OBJECT_FIELD_OFFSET(0);
