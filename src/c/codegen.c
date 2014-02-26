@@ -588,6 +588,10 @@ value_t assembler_emit_call_code_shard(assembler_t *assm) {
 
 value_t assembler_emit_pop_code_shard(assembler_t *assm) {
   assembler_emit_opcode(assm, ocPopCodeShard);
-  assembler_adjust_stack_height(assm, -(kBlockStackStateSize + 3));
+  assembler_adjust_stack_height(assm,
+      -kBlockStackStateSize // the code shard's home
+      - 1                   // the shard itself
+      - 1                   // the copy of the start used as subject
+      - 1);                 // the result from running the code shard
   return success();
 }
