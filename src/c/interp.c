@@ -399,7 +399,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           size_t param_index = read_short(&cache, &frame, 1);
           size_t block_depth = read_short(&cache, &frame, 2);
           value_t subject = frame_get_argument(&frame, 0);
-          CHECK_FAMILY(ofBlock, subject);
+          CHECK_TRUE("refracting through non-refractor", is_refractor(subject));
           frame_t home;
           get_refractor_refracted_frame(subject, block_depth, &home);
           value_t value = frame_get_argument(&home, param_index);
@@ -431,10 +431,10 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         case ocLoadRefractedCapture: {
           size_t index = read_short(&cache, &frame, 1);
           size_t block_depth = read_short(&cache, &frame, 2);
-          value_t block = frame_get_argument(&frame, 0);
-          CHECK_FAMILY(ofBlock, block);
+          value_t subject = frame_get_argument(&frame, 0);
+          CHECK_TRUE("refracting through non-refractor", is_refractor(subject));
           frame_t home;
-          get_refractor_refracted_frame(block, block_depth, &home);
+          get_refractor_refracted_frame(subject, block_depth, &home);
           value_t lambda = frame_get_argument(&home, 0);
           CHECK_FAMILY(ofLambda, lambda);
           value_t value = get_lambda_capture(lambda, index);

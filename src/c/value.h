@@ -1228,6 +1228,8 @@ value_t get_lambda_capture(value_t self, size_t index);
 /// a flag that can be used to disable the block when its scope exits.
 
 static const size_t kBlockSize = OBJECT_SIZE(3);
+// These two must be at the same offsets as the other refractors, currently
+// code shards.
 static const size_t kBlockHomeStackPieceOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kBlockHomeStatePointerOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kBlockIsLiveOffset = OBJECT_FIELD_OFFSET(2);
@@ -1273,6 +1275,8 @@ value_t get_refractor_home_state_pointer(value_t value);
 /// Code shards use refraction exactly the same way blocks do.
 
 static const size_t kCodeShardSize = OBJECT_SIZE(2);
+// These two must be at the same offsets as the other refractors, currently
+// blocks.
 static const size_t kCodeShardHomeStackPieceOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kCodeShardHomeStatePointerOffset = OBJECT_FIELD_OFFSET(1);
 
