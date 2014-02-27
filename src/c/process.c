@@ -380,7 +380,7 @@ bool frame_iter_advance(frame_iter_t *iter) {
 }
 
 
-// --- E s c a p e ---
+// ## Escape
 
 FIXED_GET_MODE_IMPL(escape, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(Escape, escape);
@@ -413,6 +413,148 @@ value_t add_escape_builtin_implementations(runtime_t *runtime, safe_value_t s_ma
   return success();
 }
 
+
+// ## Lambda
+
+GET_FAMILY_PRIMARY_TYPE_IMPL(lambda);
+
+ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, ofMethodspace, Methods, methods);
+ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt, ofArray, Captures, captures);
+
+value_t lambda_validate(value_t self) {
+  VALIDATE_FAMILY(ofLambda, self);
+  VALIDATE_FAMILY_OPT(ofMethodspace, get_lambda_methods(self));
+  VALIDATE_FAMILY_OPT(ofArray, get_lambda_captures(self));
+  return success();
+}
+
+void lambda_print_on(value_t value, print_on_context_t *context) {
+  CHECK_FAMILY(ofLambda, value);
+  string_buffer_printf(context->buf, "\u03BB~%w", value); // Unicode lambda.
+}
+
+value_t emit_lambda_call_trampoline(assembler_t *assm) {
+  TRY(assembler_emit_delegate_lambda_call(assm));
+  return success();
+}
+
+value_t add_lambda_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  TRY(add_custom_method_impl(runtime, deref(s_map), "lambda()", 0,
+      emit_lambda_call_trampoline));
+  return success();
+}
+
+value_t get_lambda_capture(value_t self, size_t index) {
+  CHECK_FAMILY(ofLambda, self);
+  value_t captures = get_lambda_captures(self);
+  return get_array_at(captures, index);
+}
+
+value_t ensure_lambda_owned_values_frozen(runtime_t *runtime, value_t self) {
+  TRY(ensure_frozen(runtime, get_lambda_captures(self)));
+  return success();
+}
+
+
+/// ## Block
+
+GET_FAMILY_PRIMARY_TYPE_IMPL(block);
+
+ACCESSORS_IMPL(Block, block, acInPhylum, tpBoolean, IsLive, is_live);
+ACCESSORS_IMPL(Block, block, acInFamily, ofStackPiece, HomeStackPiece, home_stack_piece);
+ACCESSORS_IMPL(Block, block, acNoCheck, 0, HomeStatePointer, home_state_pointer);
+
+value_t block_validate(value_t self) {
+  VALIDATE_FAMILY(ofBlock, self);
+  VALIDATE_PHYLUM(tpBoolean, get_block_is_live(self));
+  VALIDATE_FAMILY(ofStackPiece, get_block_home_stack_piece(self));
+  return success();
+}
+
+void block_print_on(value_t value, print_on_context_t *context) {
+  CHECK_FAMILY(ofBlock, value);
+  string_buffer_printf(context->buf, "\u03B2~%w", value); // Unicode beta.
+}
+
+static value_t emit_block_call_trampoline(assembler_t *assm) {
+  TRY(assembler_emit_delegate_block_call(assm));
+  return success();
+}
+
+static value_t block_is_live(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofBlock, self);
+  return get_block_is_live(self);
+}
+
+value_t add_block_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  TRY(add_custom_method_impl(runtime, deref(s_map), "block()", 0,
+      emit_block_call_trampoline));
+  ADD_BUILTIN_IMPL("block.is_live", 0, block_is_live);
+  return success();
+}
+
+value_t *get_refractor_home(value_t self) {
+  value_t home_stack_piece = get_refractor_home_stack_piece(self);
+  value_t home_state_pointer = get_refractor_home_state_pointer(self);
+  value_t *home = get_array_elements(get_stack_piece_storage(home_stack_piece))
+                    + get_integer_value(home_state_pointer);
+  CHECK_TRUE("invalid block home", is_same_value(self, home[0]));
+  return home;
+}
+
+void get_refractor_refracted_frame(value_t self, size_t block_depth,
+    frame_t *frame) {
+  CHECK_REL("refractor not nested", block_depth, >, 0);
+  value_t current = self;
+  for (size_t i = block_depth; i > 0; i--) {
+    CHECK_TRUE("not refractor", is_refractor(current));
+    value_t *home = get_refractor_home(current);
+    size_t fp = get_integer_value(home[2]);
+    frame->stack_piece = get_refractor_home_stack_piece(current);
+    frame->frame_pointer = frame_get_stack_piece_bottom(frame) + fp;
+    if (i > 1)
+      current = frame_get_argument(frame, 0);
+  }
+  // We don't know the limit or stack pointers so the best estimate is that they
+  // definitely don't go past the stack piece.
+  frame->limit_pointer = frame_get_stack_piece_top(frame);
+  frame->stack_pointer = frame_get_stack_piece_top(frame);
+  // We also don't know what the flags should be so set this to nothing such
+  // that trying to access them as flags fails.
+  frame->flags = nothing();
+}
+
+value_t get_refractor_home_stack_piece(value_t value) {
+  CHECK_TRUE("not refractor", is_refractor(value));
+  return *access_object_field(value, kBlockHomeStackPieceOffset);
+}
+
+value_t get_refractor_home_state_pointer(value_t value) {
+  CHECK_TRUE("not refractor", is_refractor(value));
+  return *access_object_field(value, kBlockHomeStatePointerOffset);
+}
+
+
+/// ## Code shard
+
+FIXED_GET_MODE_IMPL(code_shard, vmMutable);
+
+ACCESSORS_IMPL(CodeShard, code_shard, acInFamily, ofStackPiece, HomeStackPiece,
+    home_stack_piece);
+ACCESSORS_IMPL(CodeShard, code_shard, acNoCheck, 0, HomeStatePointer,
+    home_state_pointer);
+
+value_t code_shard_validate(value_t self) {
+  VALIDATE_FAMILY(ofCodeShard, self);
+  VALIDATE_FAMILY(ofStackPiece, get_code_shard_home_stack_piece(self));
+  return success();
+}
+
+void code_shard_print_on(value_t value, print_on_context_t *context) {
+  CHECK_FAMILY(ofCodeShard, value);
+  string_buffer_printf(context->buf, "\u03C3~%w", value); // Unicode sigma.
+}
 
 
 // --- B a c k t r a c e ---
