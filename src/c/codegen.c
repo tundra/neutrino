@@ -408,7 +408,9 @@ value_t assembler_emit_fire_escape(assembler_t *assm) {
   assembler_emit_opcode(assm, ocFireEscape);
   // This instruction occurs in a special method which doesn't use its stack
   // since this instruction bails out so the stack height is neither necessary
-  // nor well defined.
+  // nor well defined. However, to make the stack height check happy we'll
+  // adjust the stack height so it looks like there's one value at the end.
+  assembler_adjust_stack_height(assm, +1);
   return success();
 }
 
@@ -420,7 +422,7 @@ value_t assembler_emit_kill_escape(assembler_t *assm) {
 
 value_t assembler_emit_kill_block(assembler_t *assm) {
   assembler_emit_opcode(assm, ocKillBlock);
-  assembler_adjust_stack_height(assm, -kRefractionPointSize);
+  assembler_adjust_stack_height(assm, -kRefractingBarrierSize);
   return success();
 }
 
@@ -462,6 +464,7 @@ value_t assembler_emit_builtin(assembler_t *assm, builtin_method_t builtin) {
 }
 
 value_t assembler_emit_return(assembler_t *assm) {
+  CHECK_EQ("invalid stack height", 1, assm->stack_height);
   assembler_emit_opcode(assm, ocReturn);
   return success();
 }
@@ -560,7 +563,7 @@ value_t assembler_emit_block(assembler_t *assm, value_t methods) {
   assembler_emit_opcode(assm, ocBlock);
   TRY(assembler_emit_value(assm, methods));
   // Pop off all the captuers and push back the lambda.
-  assembler_adjust_stack_height(assm, kRefractionPointSize);
+  assembler_adjust_stack_height(assm, kRefractingBarrierSize);
   return success();
 }
 
@@ -568,15 +571,19 @@ value_t assembler_emit_code_shard(assembler_t *assm, value_t code_block) {
   assembler_emit_opcode(assm, ocCodeShard);
   TRY(assembler_emit_value(assm, code_block));
   // Pop off all the captuers and push back the lambda.
-  assembler_adjust_stack_height(assm, kRefractionPointSize);
+  assembler_adjust_stack_height(assm, kRefractingBarrierSize);
   return success();
 }
 
 value_t assembler_emit_call_code_shard(assembler_t *assm) {
   assembler_emit_opcode(assm, ocCallCodeShard);
   assembler_adjust_stack_height(assm,
-      1     // the code shard being pushed as the subject argument to the code
-      + 1); // the return value from the shard
+      1                   // the code shard being pushed as the subject argument
+                          //   to the code
+      + 1                 // the return value from the shard
+      - kStackBarrierSize // the stack barrier gets unhooked
+      + kRefractingBarrierOverlapSize); // except the part that's left for the
+                                        //   refraction point.
   return success();
 }
 

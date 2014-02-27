@@ -534,6 +534,8 @@ value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {
       ROOT(runtime, stack_species)));
   set_stack_top_piece(result, piece);
   set_stack_default_piece_capacity(result, default_piece_capacity);
+  set_stack_top_barrier_piece(result, nothing());
+  set_stack_top_barrier_pointer(result, nothing());
   push_stack_bottom_frame(runtime, result);
   return post_create_sanity_check(result, size);
 }
