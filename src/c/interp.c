@@ -274,8 +274,8 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           CHECK_FAMILY(ofBlock, block);
           CHECK_TRUE_VALUE("calling dead local lambda", get_block_is_live(block));
           // Locate the place on the stack that holds this block's state.
-          value_t *home = get_refractor_home(block);
-          value_t space = home[1];
+          refraction_point_t home = get_refractor_home(block);
+          value_t space = get_refraction_point_data(&home);
           CHECK_FAMILY(ofMethodspace, space);
           // Pop off the top frame since we're repeating the previous call.
           drop_to_stack_frame(stack, &frame, ffOrganic);
@@ -470,12 +470,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           CHECK_FAMILY(ofMethodspace, space);
           E_TRY_DEF(block, new_heap_block(runtime, yes(), frame.stack_piece,
               nothing()));
-          value_t *state_pointer = frame.stack_pointer;
-          value_t *stack_bottom = frame_get_stack_piece_bottom(&frame);
-          set_block_home_state_pointer(block, new_integer(state_pointer - stack_bottom));
-          frame_push_value(&frame, block);
-          frame_push_value(&frame, space);
-          frame_push_value(&frame, new_integer(frame.frame_pointer - stack_bottom));
+          frame_push_refraction_point(&frame, block, space);
           frame.pc += kBlockOperationSize;
           break;
         }
@@ -484,19 +479,14 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           CHECK_FAMILY(ofCodeBlock, code_block);
           E_TRY_DEF(shard, new_heap_code_shard(runtime, frame.stack_piece,
               nothing()));
-          value_t *state_pointer = frame.stack_pointer;
-          value_t *stack_bottom = frame_get_stack_piece_bottom(&frame);
-          set_code_shard_home_state_pointer(shard, new_integer(state_pointer - stack_bottom));
-          frame_push_value(&frame, shard);
-          frame_push_value(&frame, code_block);
-          frame_push_value(&frame, new_integer(frame.frame_pointer - stack_bottom));
+          frame_push_refraction_point(&frame, shard, code_block);
           frame.pc += kCodeShardOperationSize;
           break;
         }
         case ocCallCodeShard: {
-          value_t shard = frame_peek_value(&frame, kBlockStackStateSize + 1);
+          value_t shard = frame_peek_value(&frame, kRefractionPointSize - kRefractionPointRefractorOffset);
           CHECK_FAMILY(ofCodeShard, shard);
-          value_t code_block = frame_peek_value(&frame, kBlockStackStateSize);
+          value_t code_block = frame_peek_value(&frame, kRefractionPointSize - kRefractionPointDataOffset);
           CHECK_FAMILY(ofCodeBlock, code_block);
           // Push the shard onto the stack as the subject since we may need it
           // to refract access to outer variables.
@@ -514,12 +504,8 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t shard = frame_pop_value(&frame);
           CHECK_FAMILY(ofCodeShard, shard);
           value_t value = frame_pop_value(&frame);
-          value_t fp = frame_pop_value(&frame);
-          CHECK_DOMAIN(vdInteger, fp);
-          value_t code_block = frame_pop_value(&frame);
-          CHECK_FAMILY(ofCodeBlock, code_block);
-          value_t shard_again = frame_pop_value(&frame);
-          CHECK_TRUE("invalid code shard home", is_same_value(shard, shard_again));
+          value_t shard_again = frame_pop_refraction_point(&frame);
+          CHECK_TRUE("invalid refraction point", is_same_value(shard, shard_again));
           frame_push_value(&frame, value);
           frame.pc += kPopCodeShardOperationSize;
           break;
@@ -559,11 +545,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         }
         case ocKillBlock: {
           value_t value = frame_pop_value(&frame);
-          value_t fp = frame_pop_value(&frame);
-          CHECK_DOMAIN(vdInteger, fp);
-          value_t space = frame_pop_value(&frame);
-          CHECK_FAMILY(ofMethodspace, space);
-          value_t block = frame_pop_value(&frame);
+          value_t block = frame_pop_refraction_point(&frame);
           CHECK_FAMILY(ofBlock, block);
           set_block_is_live(block, no());
           frame_push_value(&frame, value);

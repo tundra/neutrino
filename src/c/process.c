@@ -198,6 +198,26 @@ frame_t open_stack(value_t stack) {
   return result;
 }
 
+void frame_push_refraction_point(frame_t *frame, value_t refractor, value_t data) {
+  CHECK_TRUE("not refractor", is_refractor(refractor));
+  value_t *state_pointer = frame->stack_pointer;
+  value_t *stack_bottom = frame_get_stack_piece_bottom(frame);
+  set_refractor_home_state_pointer(refractor,
+      new_integer(state_pointer - stack_bottom));
+  frame_push_value(frame, refractor);
+  frame_push_value(frame, data);
+  frame_push_value(frame, new_integer(frame->frame_pointer - stack_bottom));
+}
+
+value_t frame_pop_refraction_point(frame_t *frame) {
+  value_t fp = frame_pop_value(frame);
+  CHECK_DOMAIN(vdInteger, fp);
+  frame_pop_value(frame); // data
+  value_t refractor = frame_pop_value(frame);
+  CHECK_TRUE("not refractor", is_refractor(refractor));
+  return refractor;
+}
+
 
 // --- F r a m e ---
 
@@ -494,13 +514,28 @@ value_t add_block_builtin_implementations(runtime_t *runtime, safe_value_t s_map
   return success();
 }
 
-value_t *get_refractor_home(value_t self) {
+refraction_point_t get_refractor_home(value_t self) {
   value_t home_stack_piece = get_refractor_home_stack_piece(self);
   value_t home_state_pointer = get_refractor_home_state_pointer(self);
   value_t *home = get_array_elements(get_stack_piece_storage(home_stack_piece))
                     + get_integer_value(home_state_pointer);
-  CHECK_TRUE("invalid block home", is_same_value(self, home[0]));
-  return home;
+  refraction_point_t result = {home};
+  CHECK_TRUE("invalid refractor", is_same_value(self,
+      get_refraction_point_refractor(&result)));
+  return result;
+}
+
+value_t get_refraction_point_data(refraction_point_t *point) {
+  return point->base[kRefractionPointDataOffset];
+}
+
+size_t get_refraction_point_frame_pointer(refraction_point_t *point) {
+  value_t value = point->base[kRefractionPointFramePointerOffset];
+  return get_integer_value(value);
+}
+
+value_t get_refraction_point_refractor(refraction_point_t *point) {
+  return point->base[kRefractionPointRefractorOffset];
 }
 
 void get_refractor_refracted_frame(value_t self, size_t block_depth,
@@ -509,8 +544,8 @@ void get_refractor_refracted_frame(value_t self, size_t block_depth,
   value_t current = self;
   for (size_t i = block_depth; i > 0; i--) {
     CHECK_TRUE("not refractor", is_refractor(current));
-    value_t *home = get_refractor_home(current);
-    size_t fp = get_integer_value(home[2]);
+    refraction_point_t home = get_refractor_home(current);
+    size_t fp = get_refraction_point_frame_pointer(&home);
     frame->stack_piece = get_refractor_home_stack_piece(current);
     frame->frame_pointer = frame_get_stack_piece_bottom(frame) + fp;
     if (i > 1)
@@ -530,9 +565,14 @@ value_t get_refractor_home_stack_piece(value_t value) {
   return *access_object_field(value, kBlockHomeStackPieceOffset);
 }
 
-value_t get_refractor_home_state_pointer(value_t value) {
-  CHECK_TRUE("not refractor", is_refractor(value));
-  return *access_object_field(value, kBlockHomeStatePointerOffset);
+value_t get_refractor_home_state_pointer(value_t self) {
+  CHECK_TRUE("not refractor", is_refractor(self));
+  return *access_object_field(self, kBlockHomeStatePointerOffset);
+}
+
+void set_refractor_home_state_pointer(value_t self, value_t value) {
+  CHECK_TRUE("not refractor", is_refractor(self));
+  *access_object_field(self, kBlockHomeStatePointerOffset) = value;
 }
 
 
