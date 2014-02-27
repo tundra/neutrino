@@ -470,7 +470,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           CHECK_FAMILY(ofMethodspace, space);
           E_TRY_DEF(block, new_heap_block(runtime, yes(), frame.stack_piece,
               nothing()));
-          frame_push_refraction_point(&frame, block, space);
+          frame_push_refracting_barrier(&frame, block, space);
           frame.pc += kBlockOperationSize;
           break;
         }
@@ -479,14 +479,18 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           CHECK_FAMILY(ofCodeBlock, code_block);
           E_TRY_DEF(shard, new_heap_code_shard(runtime, frame.stack_piece,
               nothing()));
-          frame_push_refraction_point(&frame, shard, code_block);
+          frame_push_refracting_barrier(&frame, shard, code_block);
           frame.pc += kCodeShardOperationSize;
           break;
         }
         case ocCallCodeShard: {
-          value_t shard = frame_peek_value(&frame, kRefractionPointSize - kRefractionPointRefractorOffset);
+          value_t value = frame_pop_value(&frame);
+          frame_pop_partial_barrier(&frame);
+          frame_push_value(&frame, value);
+          refraction_point_t home = {frame.stack_pointer - 2};
+          value_t shard = get_refraction_point_refractor(&home);
           CHECK_FAMILY(ofCodeShard, shard);
-          value_t code_block = frame_peek_value(&frame, kRefractionPointSize - kRefractionPointDataOffset);
+          value_t code_block = get_refraction_point_data(&home);
           CHECK_FAMILY(ofCodeBlock, code_block);
           // Push the shard onto the stack as the subject since we may need it
           // to refract access to outer variables.
@@ -545,7 +549,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         }
         case ocKillBlock: {
           value_t value = frame_pop_value(&frame);
-          value_t block = frame_pop_refraction_point(&frame);
+          value_t block = frame_pop_refracting_barrier(&frame);
           CHECK_FAMILY(ofBlock, block);
           set_block_is_live(block, no());
           frame_push_value(&frame, value);

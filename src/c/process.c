@@ -43,10 +43,14 @@ TRIVIAL_PRINT_ON_IMPL(Stack, stack);
 
 ACCESSORS_IMPL(Stack, stack, acInFamily, ofStackPiece, TopPiece, top_piece);
 INTEGER_ACCESSORS_IMPL(Stack, stack, DefaultPieceCapacity, default_piece_capacity);
+ACCESSORS_IMPL(Stack, stack, acInFamilyOpt, ofStackPiece, TopBarrierPiece,
+    top_barrier_piece);
+ACCESSORS_IMPL(Stack, stack, acNoCheck, 0, TopBarrierPointer, top_barrier_pointer);
 
-value_t stack_validate(value_t value) {
-  VALIDATE_FAMILY(ofStack, value);
-  VALIDATE_FAMILY(ofStackPiece, get_stack_top_piece(value));
+value_t stack_validate(value_t self) {
+  VALIDATE_FAMILY(ofStack, self);
+  VALIDATE_FAMILY(ofStackPiece, get_stack_top_piece(self));
+  VALIDATE_FAMILY_OPT(ofStackPiece, get_stack_top_barrier_piece(self));
   return success();
 }
 
@@ -198,24 +202,39 @@ frame_t open_stack(value_t stack) {
   return result;
 }
 
-void frame_push_refraction_point(frame_t *frame, value_t refractor, value_t data) {
+void frame_push_refracting_barrier(frame_t *frame, value_t refractor,
+    value_t data) {
   CHECK_TRUE("not refractor", is_refractor(refractor));
-  value_t *state_pointer = frame->stack_pointer;
+  value_t *state_pointer = frame->stack_pointer + kRefractionPointSize - 1;
   value_t *stack_bottom = frame_get_stack_piece_bottom(frame);
   set_refractor_home_state_pointer(refractor,
       new_integer(state_pointer - stack_bottom));
-  frame_push_value(frame, refractor);
-  frame_push_value(frame, data);
   frame_push_value(frame, new_integer(frame->frame_pointer - stack_bottom));
+  frame_push_value(frame, data);
+  frame_push_value(frame, refractor);
+  frame_push_value(frame, nothing());
+  frame_push_value(frame, nothing());
 }
 
 value_t frame_pop_refraction_point(frame_t *frame) {
-  value_t fp = frame_pop_value(frame);
-  CHECK_DOMAIN(vdInteger, fp);
-  frame_pop_value(frame); // data
   value_t refractor = frame_pop_value(frame);
   CHECK_TRUE("not refractor", is_refractor(refractor));
+  frame_pop_value(frame); // data
+  value_t fp = frame_pop_value(frame);
+  CHECK_DOMAIN(vdInteger, fp);
   return refractor;
+}
+
+void frame_pop_partial_barrier(frame_t *frame) {
+  value_t first = frame_pop_value(frame);
+  CHECK_TRUE("invalid barrier", is_nothing(first));
+  value_t second = frame_pop_value(frame);
+  CHECK_TRUE("invalid barrier", is_nothing(second));
+}
+
+value_t frame_pop_refracting_barrier(frame_t *frame) {
+  frame_pop_partial_barrier(frame);
+  return frame_pop_refraction_point(frame);
 }
 
 
@@ -526,16 +545,16 @@ refraction_point_t get_refractor_home(value_t self) {
 }
 
 value_t get_refraction_point_data(refraction_point_t *point) {
-  return point->base[kRefractionPointDataOffset];
+  return point->top[-kRefractionPointDataOffset];
 }
 
 size_t get_refraction_point_frame_pointer(refraction_point_t *point) {
-  value_t value = point->base[kRefractionPointFramePointerOffset];
+  value_t value = point->top[-kRefractionPointFramePointerOffset];
   return get_integer_value(value);
 }
 
 value_t get_refraction_point_refractor(refraction_point_t *point) {
-  return point->base[kRefractionPointRefractorOffset];
+  return point->top[-kRefractionPointRefractorOffset];
 }
 
 void get_refractor_refracted_frame(value_t self, size_t block_depth,

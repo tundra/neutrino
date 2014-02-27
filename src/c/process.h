@@ -219,13 +219,20 @@ value_t *frame_get_stack_piece_top(frame_t *frame);
 // stack.
 void frame_walk_down_stack(frame_t *frame);
 
-// Creates a refraction point in the given frame that refracts for the given
-// refractor object.
-void frame_push_refraction_point(frame_t *frame, value_t refractor, value_t data);
+// Creates a joint refraction point and barrier in the given frame that refracts
+// for the given refractor object.
+void frame_push_refracting_barrier(frame_t *frame, value_t refractor, value_t data);
 
 // Pops a refraction point off the stack. Returns the refractor that created
 // the point.
 value_t frame_pop_refraction_point(frame_t *frame);
+
+// Pops a joint refraction point and barrier off the stack. Returns the
+// refractor that created the point.
+value_t frame_pop_refracting_barrier(frame_t *frame);
+
+// Pops the barrier part off a refracting barrier.
+void frame_pop_partial_barrier(frame_t *frame);
 
 
 /// ### Frame iterator
@@ -254,16 +261,41 @@ bool frame_iter_advance(frame_iter_t *iter);
 
 
 /// ## Stack
+///
+/// Most of the execution works with individual stack pieces, not the stack, but
+/// but whenever we need to manipulate the pieces, create new ones for instance,
+/// that's the stack's responsibility.
+///
+/// The stack is also responsible for the _barriers_ that are threaded all the
+/// way through the stack pieces. A barrier is a section of a stack piece that
+/// must be processed before the scope that created the barrier exits. During
+/// normal execution the scope's code ensures that the barrier is processed
+/// whereas when escaping the barriers are traversed and processed from the
+/// outside. This is how ensure blocks are implemented: a barrier is pushed that
+/// when processed executes the code corresponding to the ensure block.
+///
+/// Each barrier contains a pointer to the next one so the stack only needs to
+/// keep track of the top one and it'll point to the others. That's convenient
+/// because it means that all the space required to hold the barriers can be
+/// stack allocated.
 
-static const size_t kStackSize = OBJECT_SIZE(2);
+static const size_t kStackSize = OBJECT_SIZE(4);
 static const size_t kStackTopPieceOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kStackDefaultPieceCapacityOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kStackTopBarrierPieceOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kStackTopBarrierPointerOffset = OBJECT_FIELD_OFFSET(3);
 
 // The top stack piece of this stack.
 ACCESSORS_DECL(stack, top_piece);
 
 // The default capacity of the stack pieces that make up this stack.
 INTEGER_ACCESSORS_DECL(stack, default_piece_capacity);
+
+// The stack piece that holds the current top barrier.
+ACCESSORS_DECL(stack, top_barrier_piece);
+
+// Pointer to the location in the top barrier piece where the top barrier is.
+ACCESSORS_DECL(stack, top_barrier_pointer);
 
 // Allocates a new frame on this stack. If allocating fails, for instance if a
 // new stack piece is required and we're out of memory, a condition is returned.
@@ -282,6 +314,31 @@ void drop_to_stack_frame(value_t stack, frame_t *frame, frame_flag_t flags);
 
 // Opens the top stack piece of the given stack into the given frame.
 frame_t open_stack(value_t stack);
+
+
+/// ### Stack barrier
+///
+/// Helper type that encapsulates a region of the stack that holds a stack
+/// barrier.
+
+typedef struct {
+  value_t *bottom;
+} stack_barrier_t;
+
+static const int32_t kStackBarrierSize = 3;
+static const size_t kStackBarrierHandlerOffset = 0;
+static const size_t kStackBarrierNextPieceOffset = 1;
+static const size_t kStackBarrierNextPointerOffset = 2;
+
+// Returns the handler value for this barrier that determines what the barrier
+// actually does.
+value_t stack_barrier_get_handler(stack_barrier_t *barrier);
+
+// The stack piece of the next barrier.
+value_t stack_barrier_get_next_piece(stack_barrier_t *barrier);
+
+// The stack pointer of the next barrier.
+value_t stack_barrier_get_next_pointer(stack_barrier_t *barrier);
 
 
 /// ## Escape
@@ -382,6 +439,38 @@ value_t get_lambda_capture(value_t self, size_t index);
 /// Because blocks don't need to capture state they're cheap to create, just
 /// a few pushes and then a fixed-size object that points into the stack with
 /// a flag that can be used to disable the block when its scope exits.
+///
+/// ### Block barriers
+///
+/// Because blocks need to be killed when their scope exits there has to be a
+/// stack barrier for each block that ensure that this happens whichever way the
+/// scope exits. Blocks also need a refraction point which is also pushed onto
+/// the stack and which contains some of the state also needed by the barrier.
+/// To avoid pushing the same state multiple times barriers and refraction
+/// points are laid out such that they can share state:
+///
+//%           :            :
+//%           +------------+
+//%   N+2     |  prev ptr  | --+
+//%           +------------+   |
+//%   N+1     | prev piece |   |  barrier
+//%           +------------+   |
+//%    N      |    block   | <-+ <-+
+//%           +------------+       |
+//%   N-1     |    data    |       |  refraction point
+//%           +------------+       |
+//%   N-2     |     fp     |     --+
+//%           +------------+
+//%           :            :
+///
+/// This is why refraction points count fields from the top whereas barriers
+/// count them from the bottom. The same trick applies with code shards.
+///
+/// The reason the barrier is above the refraction point is such that it can
+/// be removed before calling the block when exiting the scope normally.
+/// Otherwise if the block fired an escape while the barrier was still in place
+/// you'd just end up calling the same block again (and potentially endlessly).
+
 
 static const size_t kBlockSize = OBJECT_SIZE(3);
 // These two must be at the same offsets as the other refractors, currently
@@ -457,13 +546,18 @@ ACCESSORS_DECL(code_shard, home_state_pointer);
 
 typedef struct {
   // Base pointer into the stack where the refraction point's state is.
-  value_t *base;
+  value_t *top;
 } refraction_point_t;
 
 static const int32_t kRefractionPointSize = 3;
 static const size_t kRefractionPointRefractorOffset = 0;
 static const size_t kRefractionPointDataOffset = 1;
 static const size_t kRefractionPointFramePointerOffset = 2;
+
+static const size_t kRefractingBarrierOverlapSize = 1;
+
+// Are you serious that this has to be a macro!?!
+#define kRefractingBarrierSize (kRefractionPointSize + kStackBarrierSize - kRefractingBarrierOverlapSize)
 
 // Returns the home refraction point for the given refractor.
 refraction_point_t get_refractor_home(value_t self);
