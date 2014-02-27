@@ -460,7 +460,7 @@ typedef struct {
   value_t *base;
 } refraction_point_t;
 
-static const size_t kRefractionPointSize = 3;
+static const int32_t kRefractionPointSize = 3;
 static const size_t kRefractionPointRefractorOffset = 0;
 static const size_t kRefractionPointDataOffset = 1;
 static const size_t kRefractionPointFramePointerOffset = 2;
