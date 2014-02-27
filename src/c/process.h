@@ -22,9 +22,8 @@
 ///     If you know `setjmp`/`longjmp` from
 ///     [setjmp.h](http://en.wikipedia.org/wiki/Setjmp.h), this is basically the
 ///     same thing.
-///   - Various closures: {{value.h#Lambda}}(lambdas), {{value.h#Block}}(blocks),
-///     and {{value.h#CodeShard}}(code shards). These are similar but work
-///     slightly differently:
+///   - Various closures: {{#Lambda}}(lambdas), {{#Block}}(blocks), and
+///     {{#CodeShard}}(code shards). These are similar but work slightly differently:
 ///     lambdas and blocks are visible at the surface language level; they're
 ///     different in that lambdas can outlive their scope so they have to
 ///     capture the values they close over whereas blocks are killed when their
@@ -39,6 +38,20 @@
 #include "value-inl.h"
 
 /// ## Stack piece
+///
+/// A stack piece is a contiguous segment of a segmented call stack. The actual
+/// backing store of a stack piece is just an array. All values on the stack are
+/// properly tagged so a stack piece can be gc'ed trivially.
+///
+/// ### Open vs. closed
+///
+/// A stack piece can be either _open_ or _closed_. All interaction with a stack
+/// piece happens through a `frame_t` which holds information about the piece's
+/// top frame. Opening a stack piece means writing information about the top
+/// frame into a `frame_t`. Closing it means writing the information back into
+/// the piece. Saving information about the current top frame also happens when
+/// invoking a method and the same code is responsible for doing both. The fake
+/// frame that is at the top of a closed stack piece is called the _lid_.
 
 static const size_t kStackPieceSize = OBJECT_SIZE(3);
 static const size_t kStackPieceStorageOffset = OBJECT_FIELD_OFFSET(0);
@@ -263,7 +276,7 @@ void drop_to_stack_frame(value_t stack, frame_t *frame, frame_flag_t flags);
 frame_t open_stack(value_t stack);
 
 
-// --- E s c a p e ---
+/// ## Escape
 
 static const size_t kEscapeSize = OBJECT_SIZE(3);
 static const size_t kEscapeIsLiveOffset = OBJECT_FIELD_OFFSET(0);
@@ -285,6 +298,149 @@ ACCESSORS_DECL(escape, stack_piece);
 // The stack pointer that indicates where the stored state is located on the
 // stack piece.
 ACCESSORS_DECL(escape, stack_pointer);
+
+
+/// ## Lambda
+///
+/// Long-lived (or potentially long lived) code objects that are visible to the
+/// surface language. Because a lambda can live indefinitely there's no
+/// guarantee that it won't be called after the scope that defines its outer
+/// state has exited. Hence, pessimistically capture all their outer state on
+/// construction.
+
+static const size_t kLambdaSize = OBJECT_SIZE(2);
+static const size_t kLambdaMethodsOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kLambdaCapturesOffset = OBJECT_FIELD_OFFSET(1);
+
+// Returns the method space where the methods supported by this lambda live.
+ACCESSORS_DECL(lambda, methods);
+
+// Returns the array of captured outers for this lambda.
+ACCESSORS_DECL(lambda, captures);
+
+// Returns the index'th outer value captured by the given lambda.
+value_t get_lambda_capture(value_t self, size_t index);
+
+
+/// ## Block
+///
+/// Code objects visible at the surface level which only live as long as the
+/// scope that defined them. Because blocks can only be executed while the scope
+/// is still alive they can access their outer state through the stack through
+/// a mechanism called _refraction_. Whenever a block is created a section is
+/// pushed onto the stack, the block's _home_.
+///
+//%                                     (block 1)
+//%           :            :           +----------+
+//%           +============+     +---  |   home   |
+//%     +---  |     fp     |     |     +----------+
+//%     |     +------------+     |
+//%     |     |   methods  |     |
+//%     |     +------------+     |
+//%     |     |   block 1  |  <--+
+//%     |     +============+
+//%     |     :            :
+//%     |     :   locals   :
+//%     |     :            :
+//%     +-->  +============+
+//%           |   subject  |  ---+
+//%           +------------+     |
+//%           :  possibly  :     |
+//%           :    many    :     |      (block 2)
+//%           :   frames   :     +-->  +----------+
+//%           +============+           |   home   |
+//%     +---  |     fp     |     +---  +----------+
+//%     |     +------------+     |
+//%     |     |   methods  |     |
+//%     |     +------------+     |
+//%     |     |   block 2  |  <--+
+//%     |     +============+
+//%     |     :            :
+//%     |     :   locals   :
+//%     |     :            :
+//%     +-->  +============+
+///
+/// To access say a local variable in an enclosing scope from a block you follow
+/// the block's pointer back to its home section. There the frame pointer of the
+/// frame that created the block which is all you need to access state in that
+/// frame. To access scopes yet further down the stack, in the case where you
+/// have nested blocks within blocks, you can peel off the scopes one at a time
+/// by first going through the block itself into the frame that created it, then
+/// the next enclosing block which will be the subject of that frame, and so on
+/// until all the layers of blocks scopes have been peeled off. This process of
+/// going through (potentially) successive blocks' originating scopes is what
+/// is referred to as refraction.
+///
+/// Because blocks don't need to capture state they're cheap to create, just
+/// a few pushes and then a fixed-size object that points into the stack with
+/// a flag that can be used to disable the block when its scope exits.
+
+static const size_t kBlockSize = OBJECT_SIZE(3);
+// These two must be at the same offsets as the other refractors, currently
+// code shards.
+static const size_t kBlockHomeStackPieceOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kBlockHomeStatePointerOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kBlockIsLiveOffset = OBJECT_FIELD_OFFSET(2);
+
+// The amount of state stored on the stack when creating a block.
+static const uint32_t kBlockStackStateSize = 2;
+
+// Returns the flag indicating whether this block is still live.
+ACCESSORS_DECL(block, is_live);
+
+// Returns the array of outer variables for this block.
+ACCESSORS_DECL(block, home_stack_piece);
+
+// Returns the array of outer variables for this block.
+ACCESSORS_DECL(block, home_state_pointer);
+
+/// ### Refractor accessors
+///
+/// Because blocks and code shards are so similar it's convenient in a few
+/// places to be able to interact with them without knowing which of the two
+/// you've got. The refractor methods work on both types because the objects
+/// offsets that hold the home pointer are in the same positions in both types
+/// of objects.
+
+// Returns a pointer to the home data for the given block.
+value_t *get_refractor_home(value_t self);
+
+struct frame_t;
+
+// Returns an incomplete frame that provides access to arguments and locals for
+// the frame that is located block_depth scopes outside the given block.
+void get_refractor_refracted_frame(value_t self, size_t block_depth,
+    struct frame_t *frame_out);
+
+// Returns the home stack piece field of a refractor, that is, either a code
+// shard or a block.
+value_t get_refractor_home_stack_piece(value_t value);
+
+// Returns the home state pointer of a refractor, that is, either a code shard
+// or a block.
+value_t get_refractor_home_state_pointer(value_t value);
+
+
+/// ## Code shard
+///
+/// Code shards are scoped closures like blocks but are internal to the runtime
+/// so they don't need as many safeguards. They also can't be called with
+/// different methods, they have just one block of code which will always be
+/// the one to be called. This, for instance, is how ensure-blocks work.
+///
+/// Code shards use refraction exactly the same way blocks do.
+
+static const size_t kCodeShardSize = OBJECT_SIZE(2);
+// These two must be at the same offsets as the other refractors, currently
+// blocks.
+static const size_t kCodeShardHomeStackPieceOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kCodeShardHomeStatePointerOffset = OBJECT_FIELD_OFFSET(1);
+
+// Returns the stack piece that contains this code shard's home.
+ACCESSORS_DECL(code_shard, home_stack_piece);
+
+// Returns a pointer within the stack piece to where this code shard's home is.
+ACCESSORS_DECL(code_shard, home_state_pointer);
 
 
 // --- B a c k t r a c e ---
