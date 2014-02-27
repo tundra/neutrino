@@ -557,7 +557,7 @@ static const size_t kRefractionPointFramePointerOffset = 2;
 static const size_t kRefractingBarrierOverlapSize = 1;
 
 // Are you serious that this has to be a macro!?!
-#define kRefractingBarrierSize (kRefractionPointSize + kStackBarrierSize - kRefractingBarrierOverlapSize)
+#define kRefractingBarrierSize ((int32_t) (kRefractionPointSize + kStackBarrierSize - kRefractingBarrierOverlapSize))
 
 // Returns the home refraction point for the given refractor.
 refraction_point_t get_refractor_home(value_t self);
