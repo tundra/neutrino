@@ -420,9 +420,7 @@ value_t assembler_emit_kill_escape(assembler_t *assm) {
 
 value_t assembler_emit_kill_block(assembler_t *assm) {
   assembler_emit_opcode(assm, ocKillBlock);
-  assembler_adjust_stack_height(assm,
-      - 1                      // The block object itself
-      - kBlockStackStateSize); // The block state stored on the stack
+  assembler_adjust_stack_height(assm, -kRefractionPointSize);
   return success();
 }
 
@@ -562,9 +560,7 @@ value_t assembler_emit_block(assembler_t *assm, value_t methods) {
   assembler_emit_opcode(assm, ocBlock);
   TRY(assembler_emit_value(assm, methods));
   // Pop off all the captuers and push back the lambda.
-  assembler_adjust_stack_height(assm,
-      kBlockStackStateSize // The block state
-      + 1);                  // The block object
+  assembler_adjust_stack_height(assm, kRefractionPointSize);
   return success();
 }
 
@@ -572,9 +568,7 @@ value_t assembler_emit_code_shard(assembler_t *assm, value_t code_block) {
   assembler_emit_opcode(assm, ocCodeShard);
   TRY(assembler_emit_value(assm, code_block));
   // Pop off all the captuers and push back the lambda.
-  assembler_adjust_stack_height(assm,
-      kBlockStackStateSize // The shard state
-      + 1);                // The shard object
+  assembler_adjust_stack_height(assm, kRefractionPointSize);
   return success();
 }
 
@@ -589,9 +583,8 @@ value_t assembler_emit_call_code_shard(assembler_t *assm) {
 value_t assembler_emit_pop_code_shard(assembler_t *assm) {
   assembler_emit_opcode(assm, ocPopCodeShard);
   assembler_adjust_stack_height(assm,
-      -kBlockStackStateSize // the code shard's home
-      - 1                   // the shard itself
-      - 1                   // the copy of the start used as subject
-      - 1);                 // the result from running the code shard
+      - kRefractionPointSize // the code shard's refraction point
+      - 1                   // the copy of the shard used as subject
+      - 1);                 // the result from running the code block
   return success();
 }

@@ -219,6 +219,14 @@ value_t *frame_get_stack_piece_top(frame_t *frame);
 // stack.
 void frame_walk_down_stack(frame_t *frame);
 
+// Creates a refraction point in the given frame that refracts for the given
+// refractor object.
+void frame_push_refraction_point(frame_t *frame, value_t refractor, value_t data);
+
+// Pops a refraction point off the stack. Returns the refractor that created
+// the point.
+value_t frame_pop_refraction_point(frame_t *frame);
+
 
 /// ### Frame iterator
 ///
@@ -382,9 +390,6 @@ static const size_t kBlockHomeStackPieceOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kBlockHomeStatePointerOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kBlockIsLiveOffset = OBJECT_FIELD_OFFSET(2);
 
-// The amount of state stored on the stack when creating a block.
-static const uint32_t kBlockStackStateSize = 2;
-
 // Returns the flag indicating whether this block is still live.
 ACCESSORS_DECL(block, is_live);
 
@@ -402,9 +407,6 @@ ACCESSORS_DECL(block, home_state_pointer);
 /// offsets that hold the home pointer are in the same positions in both types
 /// of objects.
 
-// Returns a pointer to the home data for the given block.
-value_t *get_refractor_home(value_t self);
-
 struct frame_t;
 
 // Returns an incomplete frame that provides access to arguments and locals for
@@ -418,7 +420,10 @@ value_t get_refractor_home_stack_piece(value_t value);
 
 // Returns the home state pointer of a refractor, that is, either a code shard
 // or a block.
-value_t get_refractor_home_state_pointer(value_t value);
+value_t get_refractor_home_state_pointer(value_t self);
+
+// Sets the home state pointer of a refractor.
+void set_refractor_home_state_pointer(value_t self, value_t value);
 
 
 /// ## Code shard
@@ -441,6 +446,39 @@ ACCESSORS_DECL(code_shard, home_stack_piece);
 
 // Returns a pointer within the stack piece to where this code shard's home is.
 ACCESSORS_DECL(code_shard, home_state_pointer);
+
+
+/// ## Refraction points
+///
+/// Refraction points are the areas of the stack through which refractors look
+/// up their outer variables. The code for working with refraction points gets
+/// used in a few different places so it's convenient to wrap it in an explicit
+/// abstraction.
+
+typedef struct {
+  // Base pointer into the stack where the refraction point's state is.
+  value_t *base;
+} refraction_point_t;
+
+static const int32_t kRefractionPointSize = 3;
+static const size_t kRefractionPointRefractorOffset = 0;
+static const size_t kRefractionPointDataOffset = 1;
+static const size_t kRefractionPointFramePointerOffset = 2;
+
+// Returns the home refraction point for the given refractor.
+refraction_point_t get_refractor_home(value_t self);
+
+// Returns the extra data that was specified when the refraction point was
+// created.
+value_t get_refraction_point_data(refraction_point_t *point);
+
+// Returns the frame pointer of the frame that contains the given refraction
+// point.
+size_t get_refraction_point_frame_pointer(refraction_point_t *point);
+
+// Returns the refractor object (block or code shard) whose creation caused this
+// refraction point.
+value_t get_refraction_point_refractor(refraction_point_t *point);
 
 
 // --- B a c k t r a c e ---
