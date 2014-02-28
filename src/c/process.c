@@ -16,12 +16,14 @@ FIXED_GET_MODE_IMPL(stack_piece, vmMutable);
 
 ACCESSORS_IMPL(StackPiece, stack_piece, acInFamily, ofArray, Storage, storage);
 ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt, ofStackPiece, Previous, previous);
+ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt, ofStack, Stack, stack);
 ACCESSORS_IMPL(StackPiece, stack_piece, acNoCheck, 0, LidFramePointer, lid_frame_pointer);
 
 value_t stack_piece_validate(value_t value) {
   VALIDATE_FAMILY(ofStackPiece, value);
   VALIDATE_FAMILY(ofArray, get_stack_piece_storage(value));
   VALIDATE_FAMILY_OPT(ofStackPiece, get_stack_piece_previous(value));
+  VALIDATE_FAMILY_OPT(ofStack, get_stack_piece_stack(value));
   return success();
 }
 
@@ -51,6 +53,12 @@ value_t stack_validate(value_t self) {
   VALIDATE_FAMILY(ofStack, self);
   VALIDATE_FAMILY(ofStackPiece, get_stack_top_piece(self));
   VALIDATE_FAMILY_OPT(ofStackPiece, get_stack_top_barrier_piece(self));
+  value_t current = get_stack_top_barrier_piece(self);
+  while (!is_nothing(current)) {
+    value_t stack = get_stack_piece_stack(current);
+    VALIDATE(is_same_value(stack, self));
+    current = get_stack_piece_previous(current);
+  }
   return success();
 }
 
@@ -128,7 +136,8 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
 
     // Create and initialize the new stack segment. The frame struct is still
     // pointing to the old frame.
-    TRY_DEF(new_piece, new_heap_stack_piece(runtime, new_capacity, top_piece));
+    TRY_DEF(new_piece, new_heap_stack_piece(runtime, new_capacity, top_piece,
+        stack));
     push_stack_piece_bottom_frame(runtime, new_piece, transfer_arg_count);
     transfer_top_arguments(new_piece, frame, transfer_arg_count);
     set_stack_top_piece(stack, new_piece);

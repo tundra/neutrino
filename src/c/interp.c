@@ -143,6 +143,21 @@ static void log_lookup_error(value_t condition, value_t record, frame_t *frame) 
 // logging is enabled. Can be helpful for debugging but is kind of a lame hack.
 static uint64_t opcode_counter = 0;
 
+// Counter that is used to schedule validation interrupts in expensive checks
+// mode.
+static uint64_t interrupt_counter = 0;
+
+// Interval between forced validations. Must be a power of 2.
+#define kForceValidateInterval 2048
+
+// Expands to a block that checks whether it's time to force validation.
+#define MAYBE_INTERRUPT() do {                                                 \
+  if ((++interrupt_counter & (kForceValidateInterval - 1)) == 0) {             \
+    size_t serial = interrupt_counter / kForceValidateInterval;                \
+    E_RETURN(new_force_validate_condition(serial));                            \
+  }                                                                            \
+} while (false)
+
 // Runs the given stack within the given ambience until a condition is
 // encountered or evaluation completes. This function also bails on and leaves
 // it to the surrounding code to report error messages.
@@ -158,6 +173,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
       opcode_t opcode = (opcode_t) read_short(&cache, &frame, 0);
       TOPIC_INFO(Interpreter, "Opcode: %s (%i)", get_opcode_name(opcode),
           opcode_counter++);
+      IF_EXPENSIVE_CHECKS_ENABLED(MAYBE_INTERRUPT());
       switch (opcode) {
         case ocPush: {
           value_t value = read_value(&cache, &frame, 1);
@@ -591,6 +607,10 @@ static value_t run_stack_until_signal(safe_value_t s_ambience, safe_value_t s_st
       runtime_t *runtime = get_ambience_runtime(ambience);
       runtime_garbage_collect(runtime);
       goto loop;
+    } else if (in_condition_cause(ccForceValidate, result)) {
+      runtime_t *runtime = get_ambience_runtime(ambience);
+      runtime_validate(runtime, result);
+      goto loop;
     }
     return result;
   } while (false);
@@ -619,7 +639,15 @@ value_t run_code_block_until_condition(value_t ambience, value_t code) {
   frame_set_code_block(&frame, code);
   close_frame(&frame);
   // Run the stack.
-  return run_stack_until_condition(ambience, stack);
+  loop: do {
+    value_t result = run_stack_until_condition(ambience, stack);
+    if (in_condition_cause(ccForceValidate, result)) {
+      runtime_t *runtime = get_ambience_runtime(ambience);
+      runtime_validate(runtime, result);
+      goto loop;
+    }
+    return result;
+  } while (false);
 }
 
 value_t run_code_block(safe_value_t s_ambience, safe_value_t code) {

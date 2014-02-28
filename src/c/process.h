@@ -52,17 +52,29 @@
 /// the piece. Saving information about the current top frame also happens when
 /// invoking a method and the same code is responsible for doing both. The fake
 /// frame that is at the top of a closed stack piece is called the _lid_.
+///
+/// ### Stack pointer
+///
+/// Stack pieces have a pointer back to the stack they're a part of (unless
+/// they're not a member of one in which case the pointer is nothing). Stack
+/// validation checks that all pieces point to the stack so make sure to always
+/// set the stack pointer on a piece first before putting the piece into the
+/// stack.
 
-static const size_t kStackPieceSize = OBJECT_SIZE(3);
+static const size_t kStackPieceSize = OBJECT_SIZE(4);
 static const size_t kStackPieceStorageOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kStackPiecePreviousOffset= OBJECT_FIELD_OFFSET(1);
-static const size_t kStackPieceLidFramePointerOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kStackPieceStackOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kStackPieceLidFramePointerOffset = OBJECT_FIELD_OFFSET(3);
 
 // The plain array used for storage for this stack piece.
 ACCESSORS_DECL(stack_piece, storage);
 
 // The previous, lower, stack piece.
 ACCESSORS_DECL(stack_piece, previous);
+
+// The stack this piece is a part of.
+ACCESSORS_DECL(stack_piece, stack);
 
 // The frame pointer for the lid frame. Only set if the piece is closed.
 ACCESSORS_DECL(stack_piece, lid_frame_pointer);

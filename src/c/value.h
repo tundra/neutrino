@@ -53,6 +53,7 @@ int get_value_domain_ordinal(value_domain_t domain);
   F(BuiltinBindingFailed)                                                      \
   F(Circular)                                                                  \
   F(EmptyPath)                                                                 \
+  F(ForceValidate)                                                             \
   F(HeapExhausted)                                                             \
   F(InternalFamily)                                                            \
   F(InvalidCast)                                                               \
@@ -62,17 +63,17 @@ int get_value_domain_ordinal(value_domain_t domain);
   F(LookupError)                                                               \
   F(MapFull)                                                                   \
   F(NotComparable)                                                             \
-  F(NotFound)                                                                  \
   F(NotDeepFrozen)                                                             \
+  F(NotFound)                                                                  \
   F(Nothing)                                                                   \
   F(OutOfBounds)                                                               \
   F(OutOfMemory)                                                               \
+  F(SafePoolFull)                                                              \
   F(Signal)                                                                    \
   F(SystemError)                                                               \
   F(UnknownBuiltin)                                                            \
   F(UnsupportedBehavior)                                                       \
   F(ValidationFailed)                                                          \
-  F(SafePoolFull)                                                              \
   F(Wat)
 
 // Enum identifying the type of a condition.

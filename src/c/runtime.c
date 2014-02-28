@@ -364,7 +364,7 @@ static value_t runtime_hard_init(runtime_t *runtime, const runtime_config_t *con
   TRY(roots_init(runtime->roots, runtime));
   TRY_SET(runtime->mutable_roots, new_heap_mutable_roots(runtime));
   // Check that everything looks sane.
-  return runtime_validate(runtime);
+  return runtime_validate(runtime, nothing());
 }
 
 // Perform "soft" initialization, the stuff where we're starting to rely on the
@@ -378,7 +378,7 @@ static value_t runtime_soft_init(runtime_t *runtime) {
         ROOT(runtime, builtin_impls));
     E_TRY(add_builtin_implementations(runtime, s_builtin_impls));
     E_TRY(init_plankton_environment_mapping(&runtime->plankton_mapping, runtime));
-    E_RETURN(runtime_validate(runtime));
+    E_RETURN(runtime_validate(runtime, nothing()));
   E_FINALLY();
     DISPOSE_SAFE_VALUE_POOL(pool);
   E_END_TRY_FINALLY();
@@ -409,7 +409,7 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
   TRY(runtime_hard_init(runtime, config));
   TRY(runtime_soft_init(runtime));
   TRY(runtime_freeze_shared_state(runtime));
-  TRY(runtime_validate(runtime));
+  TRY(runtime_validate(runtime, nothing()));
   // Set up gc fuzzing. For now do this after the initialization to exempt that
   // from being fuzzed. Longer term (probably after this has been rewritten) we
   // want more of this to be gc safe.
@@ -429,7 +429,7 @@ static value_t runtime_validate_object(value_t value, value_callback_t *self) {
   return object_validate(value);
 }
 
-value_t runtime_validate(runtime_t *runtime) {
+value_t runtime_validate(runtime_t *runtime, value_t cause) {
   TRY(heap_validate(&runtime->heap));
   value_callback_t validate_callback;
   value_callback_init(&validate_callback, runtime_validate_object, NULL);
@@ -608,7 +608,7 @@ static void runtime_apply_fixups(garbage_collection_state_t *state) {
 
 value_t runtime_garbage_collect(runtime_t *runtime) {
   // Validate that everything's healthy before we start.
-  TRY(runtime_validate(runtime));
+  TRY(runtime_validate(runtime, nothing()));
   // Create to-space and swap it in, making the current to-space into from-space.
   TRY(heap_prepare_garbage_collection(&runtime->heap));
   // Initialize the state we'll maintain during collection.
@@ -632,7 +632,7 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
   // Now everything has been migrated so we can throw away from-space.
   TRY(heap_complete_garbage_collection(&runtime->heap));
   // Validate that everything's still healthy.
-  return runtime_validate(runtime);
+  return runtime_validate(runtime, nothing());
 }
 
 void runtime_clear(runtime_t *runtime) {
@@ -646,7 +646,7 @@ void runtime_clear(runtime_t *runtime) {
 }
 
 value_t runtime_dispose(runtime_t *runtime) {
-  TRY(runtime_validate(runtime));
+  TRY(runtime_validate(runtime, nothing()));
   dispose_safe_value(runtime, runtime->module_loader);
   heap_dispose(&runtime->heap);
   if (runtime->gc_fuzzer != NULL) {

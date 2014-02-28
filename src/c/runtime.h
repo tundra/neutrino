@@ -240,8 +240,10 @@ value_t runtime_garbage_collect(runtime_t *runtime);
 
 // Run a series of sanity checks on the runtime to check that it is consistent.
 // Returns a condition iff something is wrong. A runtime will only validate if it
-// has been initialized successfully.
-value_t runtime_validate(runtime_t *runtime);
+// has been initialized successfully. The cause is an optional value that
+// identifies why the runtime is being validated. Can be useful for logging and
+// debugging.
+value_t runtime_validate(runtime_t *runtime, value_t cause);
 
 // Creates a gc-safe reference to the given value.
 safe_value_t runtime_protect_value(runtime_t *runtime, value_t value);
