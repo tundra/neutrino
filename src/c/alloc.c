@@ -493,13 +493,16 @@ value_t new_heap_ambience(runtime_t *runtime) {
 // --- P r o c e s s ---
 
 value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
-    value_t previous) {
+    value_t previous, value_t stack) {
+  CHECK_FAMILY_OPT(ofStackPiece, previous);
+  CHECK_FAMILY_OPT(ofStack, stack);
   size_t size = kStackPieceSize;
   TRY_DEF(storage, new_heap_array(runtime, storage_size + kFrameHeaderSize));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, stack_piece_species)));
   set_stack_piece_storage(result, storage);
   set_stack_piece_previous(result, previous);
+  set_stack_piece_stack(result, stack);
   set_stack_piece_lid_frame_pointer(result, nothing());
   value_t *stack_start = get_array_elements(storage);
   frame_t bottom;
@@ -529,9 +532,11 @@ static void push_stack_bottom_frame(runtime_t *runtime, value_t stack) {
 
 value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {
   size_t size = kStackSize;
-  TRY_DEF(piece, new_heap_stack_piece(runtime, default_piece_capacity, nothing()));
+  TRY_DEF(piece, new_heap_stack_piece(runtime, default_piece_capacity, nothing(),
+      nothing()));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, stack_species)));
+  set_stack_piece_stack(piece, result);
   set_stack_top_piece(result, piece);
   set_stack_default_piece_capacity(result, default_piece_capacity);
   set_stack_top_barrier_piece(result, nothing());

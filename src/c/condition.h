@@ -226,4 +226,11 @@ static value_t new_signal_condition() {
   return new_condition(ccSignal);
 }
 
+// Artificial condition that signals that the runtime should be validated. The
+// serial number can be used to identify the condition which can be useful for
+// logging and debugging.
+static value_t new_force_validate_condition(size_t serial) {
+  return new_condition_with_details(ccForceValidate, serial);
+}
+
 #endif // _CONDITION

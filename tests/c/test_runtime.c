@@ -40,23 +40,23 @@ TEST(runtime, singletons) {
 
 TEST(runtime, runtime_validation) {
   CREATE_RUNTIME();
-  ASSERT_SUCCESS(runtime_validate(runtime));
+  ASSERT_SUCCESS(runtime_validate(runtime, nothing()));
 
   // Break a root.
   value_t old_empty_array = ROOT(runtime, empty_array);
   ROOT(runtime, empty_array) = new_integer(0);
-  ASSERT_CHECK_FAILURE(ccValidationFailed, runtime_validate(runtime));
+  ASSERT_CHECK_FAILURE(ccValidationFailed, runtime_validate(runtime, nothing()));
   ROOT(runtime, empty_array) = old_empty_array;
-  ASSERT_SUCCESS(runtime_validate(runtime));
+  ASSERT_SUCCESS(runtime_validate(runtime, nothing()));
 
   // Break a non-root.
   size_t capacity = 16;
   value_t map = new_heap_id_hash_map(runtime, capacity);
-  ASSERT_SUCCESS(runtime_validate(runtime));
+  ASSERT_SUCCESS(runtime_validate(runtime, nothing()));
   set_id_hash_map_capacity(map, capacity + 1);
-  ASSERT_CHECK_FAILURE(ccValidationFailed, runtime_validate(runtime));
+  ASSERT_CHECK_FAILURE(ccValidationFailed, runtime_validate(runtime, nothing()));
   set_id_hash_map_capacity(map, capacity);
-  ASSERT_SUCCESS(runtime_validate(runtime));
+  ASSERT_SUCCESS(runtime_validate(runtime, nothing()));
 
   DISPOSE_RUNTIME();
 }
