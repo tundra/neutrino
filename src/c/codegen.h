@@ -236,16 +236,16 @@ value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
     size_t capture_count);
 
 // Emits a block that understands the given methods.
-value_t assembler_emit_block(assembler_t *assm, value_t methods);
+value_t assembler_emit_create_block(assembler_t *assm, value_t methods);
 
 // Emits a code shard that executes the given block of code.
-value_t assembler_emit_code_shard(assembler_t *assm, value_t code_block);
+value_t assembler_emit_create_code_shard(assembler_t *assm, value_t code_block);
 
 // Calls the code shard below the top stack value.
 value_t assembler_emit_call_code_shard(assembler_t *assm);
 
 // Cleans up after a code shard call.
-value_t assembler_emit_pop_code_shard(assembler_t *assm);
+value_t assembler_emit_dispose_code_shard(assembler_t *assm);
 
 // Hacky implementation of calling lambdas. Later this should be replaced by a
 // more general delegate operation.
@@ -256,7 +256,7 @@ value_t assembler_emit_delegate_block_call(assembler_t *assm);
 
 // Capture an escape, pushing it onto the stack. The offset_out is a cursor
 // where the offset to jump to when returning to the escape should be written.
-value_t assembler_emit_capture_escape(assembler_t *assm,
+value_t assembler_emit_create_escape(assembler_t *assm,
     short_buffer_cursor_t *offset_out);
 
 // Fire an escape object, unwinding to where it was captured.
@@ -265,12 +265,12 @@ value_t assembler_emit_fire_escape(assembler_t *assm);
 // Pops off the escape currently on the stack and marks it as dead. Note that
 // this expects there to be a value above the escape, so this in effect does a
 // slap-1, not a pop-1.
-value_t assembler_emit_kill_escape(assembler_t *assm);
+value_t assembler_emit_dispose_escape(assembler_t *assm);
 
 // Pops off the local lambda currently on the stack and marks it as dead. Note
 // that this expects there to be a value above the lambda, so this in effect
 // does a slap-1, not a pop-1.
-value_t assembler_emit_kill_block(assembler_t *assm);
+value_t assembler_emit_dispose_block(assembler_t *assm);
 
 // Emits a stack bottom instruction that indicates that we're done executing.
 value_t assembler_emit_stack_bottom(assembler_t *assm);

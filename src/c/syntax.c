@@ -354,7 +354,7 @@ static value_t emit_code_shard(value_t code, assembler_t *assm) {
   assembler_pop_block_scope(assm, &block_scope);
 
   // Finally emit the bytecode that will create the block.
-  TRY(assembler_emit_code_shard(assm, code_block));
+  TRY(assembler_emit_create_code_shard(assm, code_block));
   return success();
 }
 
@@ -367,7 +367,7 @@ value_t emit_ensure_ast(value_t self, assembler_t *assm) {
   TRY(emit_code_shard(on_exit, assm));
   TRY(emit_value(body, assm));
   TRY(assembler_emit_call_code_shard(assm));
-  TRY(assembler_emit_pop_code_shard(assm));
+  TRY(assembler_emit_dispose_code_shard(assm));
   return success();
 }
 
@@ -658,7 +658,7 @@ static value_t emit_block_value(value_t method_asts, assembler_t *assm) {
   assembler_pop_block_scope(assm, &block_scope);
 
   // Finally emit the bytecode that will create the block.
-  TRY(assembler_emit_block(assm, space));
+  TRY(assembler_emit_create_block(assm, space));
   return success();
 }
 
@@ -681,8 +681,8 @@ value_t emit_block_ast(value_t self, assembler_t *assm) {
   // Emit the body in scope of the local.
   TRY(emit_value(body, assm));
   assembler_pop_single_symbol_scope(assm, &scope);
-  // Ensure that the lambda is dead now that we're leaving its scope.
-  TRY(assembler_emit_kill_block(assm));
+  // Ensure that the block is dead now that we're leaving its scope.
+  TRY(assembler_emit_dispose_block(assm));
   return success();
 }
 
@@ -725,7 +725,7 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofWithEscapeAst, self);
   // Capture the escape.
   short_buffer_cursor_t dest;
-  TRY(assembler_emit_capture_escape(assm, &dest));
+  TRY(assembler_emit_create_escape(assm, &dest));
   size_t code_start_offset = assembler_get_code_cursor(assm);
   // The capture will be pushed as the top element so its offset is one below
   // the current top.
@@ -750,7 +750,7 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   short_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
   // Ensure that the escape is dead then slap the value and the captured state
   // off, leaving just the value of the body or the escaped value.
-  TRY(assembler_emit_kill_escape(assm));
+  TRY(assembler_emit_dispose_escape(assm));
   TRY(assembler_emit_slap(assm, kCapturedStateSize));
   return success();
 }
