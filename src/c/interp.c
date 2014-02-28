@@ -465,22 +465,22 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame_push_value(&frame, lambda);
           break;
         }
-        case ocBlock: {
+        case ocCreateBlock: {
           value_t space = read_value(&cache, &frame, 1);
           CHECK_FAMILY(ofMethodspace, space);
           E_TRY_DEF(block, new_heap_block(runtime, yes(), frame.stack_piece,
               nothing()));
           frame_push_refracting_barrier(&frame, block, space);
-          frame.pc += kBlockOperationSize;
+          frame.pc += kCreateBlockOperationSize;
           break;
         }
-        case ocCodeShard: {
+        case ocCreateCodeShard: {
           value_t code_block = read_value(&cache, &frame, 1);
           CHECK_FAMILY(ofCodeBlock, code_block);
           E_TRY_DEF(shard, new_heap_code_shard(runtime, frame.stack_piece,
               nothing()));
           frame_push_refracting_barrier(&frame, shard, code_block);
-          frame.pc += kCodeShardOperationSize;
+          frame.pc += kCreateCodeShardOperationSize;
           break;
         }
         case ocCallCodeShard: {
@@ -503,7 +503,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           code_cache_refresh(&cache, &frame);
           break;
         }
-        case ocPopCodeShard: {
+        case ocDisposeCodeShard: {
           frame_pop_value(&frame);
           value_t shard = frame_pop_value(&frame);
           CHECK_FAMILY(ofCodeShard, shard);
@@ -511,20 +511,20 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t shard_again = frame_pop_refraction_point(&frame);
           CHECK_TRUE("invalid refraction point", is_same_value(shard, shard_again));
           frame_push_value(&frame, value);
-          frame.pc += kPopCodeShardOperationSize;
+          frame.pc += kDisposeCodeShardOperationSize;
           break;
         }
-        case ocCaptureEscape: {
+        case ocCreateEscape: {
           size_t dest_offset = read_short(&cache, &frame, 1);
           // Push the interpreter state at the end of this instruction onto the
           // stack.
           value_t stack_piece = frame.stack_piece;
           E_TRY_DEF(escape, new_heap_escape(runtime, yes(), stack_piece, nothing()));
           size_t location = push_escape_state(&frame,
-              dest_offset + kCaptureEscapeOperationSize, kCapturedStateSize + 1);
+              dest_offset + kCreateEscapeOperationSize, kCapturedStateSize + 1);
           set_escape_stack_pointer(escape, new_integer(location));
           frame_push_value(&frame, escape);
-          frame.pc += kCaptureEscapeOperationSize;
+          frame.pc += kCreateEscapeOperationSize;
           break;
         }
         case ocFireEscape: {
@@ -538,22 +538,22 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame_push_value(&frame, value);
           break;
         }
-        case ocKillEscape: {
+        case ocDisposeEscape: {
           value_t value = frame_pop_value(&frame);
           value_t escape = frame_pop_value(&frame);
           CHECK_FAMILY(ofEscape, escape);
           set_escape_is_live(escape, no());
           frame_push_value(&frame, value);
-          frame.pc += kKillEscapeOperationSize;
+          frame.pc += kDisposeEscapeOperationSize;
           break;
         }
-        case ocKillBlock: {
+        case ocDisposeBlock: {
           value_t value = frame_pop_value(&frame);
           value_t block = frame_pop_refracting_barrier(&frame);
           CHECK_FAMILY(ofBlock, block);
           set_block_is_live(block, no());
           frame_push_value(&frame, value);
-          frame.pc += kKillBlockOperationSize;
+          frame.pc += kDisposeBlockOperationSize;
           break;
         }
         default:

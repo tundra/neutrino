@@ -395,35 +395,36 @@ value_t get_lambda_capture(value_t self, size_t index);
 /// a mechanism called _refraction_. Whenever a block is created a section is
 /// pushed onto the stack, the block's _home_.
 ///
-//%                                     (block 1)
-//%           :            :           +----------+
-//%           +============+     +---  |   home   |
-//%     +---  |     fp     |     |     +----------+
-//%     |     +------------+     |
-//%     |     |   methods  |     |
-//%     |     +------------+     |
-//%     |     |   block 1  |  <--+
-//%     |     +============+
-//%     |     :            :
-//%     |     :   locals   :
-//%     |     :            :
-//%     +-->  +============+
-//%           |   subject  |  ---+
-//%           +------------+     |
-//%           :  possibly  :     |
-//%           :    many    :     |      (block 2)
-//%           :   frames   :     +-->  +----------+
-//%           +============+           |   home   |
-//%     +---  |     fp     |     +---  +----------+
-//%     |     +------------+     |
-//%     |     |   methods  |     |
-//%     |     +------------+     |
-//%     |     |   block 2  |  <--+
-//%     |     +============+
-//%     |     :            :
-//%     |     :   locals   :
-//%     |     :            :
-//%     +-->  +============+
+//%                                  (block 1)
+//%          :            :         +----------+
+//%          +============+    +--- |   home   |
+//%     +--- |     fp     |    |    +----------+
+//%     |    +------------+    |
+//%     |    |   methods  |    |
+//%     |    +------------+    |
+//%     |    |   block 1  | <--+
+//%     |    +============+
+//%     |    :            :
+//%     |    :   locals   :
+//%     |    :            :
+//%     +--> +============+
+//%          |   subject  | ---+
+//%          +------------+    |
+//%          :  possibly  :    |
+//%          :    many    :    |     (block 2)
+//%          :   frames   :    +--> +----------+
+//%          +============+         |   home   |
+//%     +--- |     fp     |    +--- +----------+
+//%     |    +------------+    |
+//%     |    |   methods  |    |
+//%     |    +------------+    |
+//%     |    |   block 2  | <--+
+//%     |    +============+
+//%     |    :            :
+//%     |    :   locals   :
+//%     |    :            :
+//%     +--> +============+
+//%          :            :
 ///
 /// To access say a local variable in an enclosing scope from a block you follow
 /// the block's pointer back to its home section. There the frame pointer of the

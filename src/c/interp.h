@@ -15,15 +15,17 @@
   F(Builtin,                    2)                                             \
   F(CallCodeShard,              1)                                             \
   F(CheckStackHeight,           2)                                             \
-  F(CodeShard,                  2)                                             \
-  F(CaptureEscape,              2)                                             \
+  F(CreateBlock,                2)                                             \
+  F(CreateCodeShard,            2)                                             \
+  F(CreateEscape,               2)                                             \
   F(DelegateToLambda,           1)                                             \
   F(DelegateToBlock,            1)                                             \
+  F(DisposeBlock,               1)                                             \
+  F(DisposeCodeShard,           1)                                             \
+  F(DisposeEscape,              1)                                             \
   F(FireEscape,                 1)                                             \
   F(GetReference,               1)                                             \
   F(Invoke,                     4)                                             \
-  F(KillEscape,                 1)                                             \
-  F(KillBlock,                  1)                                             \
   F(Lambda,                     3)                                             \
   F(LoadArgument,               2)                                             \
   F(LoadGlobal,                 3)                                             \
@@ -32,11 +34,9 @@
   F(LoadRefractedArgument,      3)                                             \
   F(LoadRefractedCapture,       3)                                             \
   F(LoadRefractedLocal,         3)                                             \
-  F(Block,                      2)                                             \
   F(NewArray,                   2)                                             \
   F(NewReference,               1)                                             \
   F(Pop,                        2)                                             \
-  F(PopCodeShard,               1)                                             \
   F(Push,                       2)                                             \
   F(Return,                     1)                                             \
   F(SetReference,               1)                                             \

@@ -395,9 +395,9 @@ value_t assembler_emit_delegate_block_call(assembler_t *assm) {
   return success();
 }
 
-value_t assembler_emit_capture_escape(assembler_t *assm,
+value_t assembler_emit_create_escape(assembler_t *assm,
     short_buffer_cursor_t *offset_out) {
-  assembler_emit_opcode(assm, ocCaptureEscape);
+  assembler_emit_opcode(assm, ocCreateEscape);
   assembler_emit_cursor(assm, offset_out);
   // We'll record the complete state and also push the capture object.
   assembler_adjust_stack_height(assm, (1 + kCapturedStateSize));
@@ -414,14 +414,14 @@ value_t assembler_emit_fire_escape(assembler_t *assm) {
   return success();
 }
 
-value_t assembler_emit_kill_escape(assembler_t *assm) {
-  assembler_emit_opcode(assm, ocKillEscape);
+value_t assembler_emit_dispose_escape(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocDisposeEscape);
   assembler_adjust_stack_height(assm, -1);
   return success();
 }
 
-value_t assembler_emit_kill_block(assembler_t *assm) {
-  assembler_emit_opcode(assm, ocKillBlock);
+value_t assembler_emit_dispose_block(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocDisposeBlock);
   assembler_adjust_stack_height(assm, -kRefractingBarrierSize);
   return success();
 }
@@ -559,16 +559,16 @@ value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
   return success();
 }
 
-value_t assembler_emit_block(assembler_t *assm, value_t methods) {
-  assembler_emit_opcode(assm, ocBlock);
+value_t assembler_emit_create_block(assembler_t *assm, value_t methods) {
+  assembler_emit_opcode(assm, ocCreateBlock);
   TRY(assembler_emit_value(assm, methods));
   // Pop off all the captuers and push back the lambda.
   assembler_adjust_stack_height(assm, kRefractingBarrierSize);
   return success();
 }
 
-value_t assembler_emit_code_shard(assembler_t *assm, value_t code_block) {
-  assembler_emit_opcode(assm, ocCodeShard);
+value_t assembler_emit_create_code_shard(assembler_t *assm, value_t code_block) {
+  assembler_emit_opcode(assm, ocCreateCodeShard);
   TRY(assembler_emit_value(assm, code_block));
   // Pop off all the captuers and push back the lambda.
   assembler_adjust_stack_height(assm, kRefractingBarrierSize);
@@ -587,8 +587,8 @@ value_t assembler_emit_call_code_shard(assembler_t *assm) {
   return success();
 }
 
-value_t assembler_emit_pop_code_shard(assembler_t *assm) {
-  assembler_emit_opcode(assm, ocPopCodeShard);
+value_t assembler_emit_dispose_code_shard(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocDisposeCodeShard);
   assembler_adjust_stack_height(assm,
       - kRefractionPointSize // the code shard's refraction point
       - 1                   // the copy of the shard used as subject
