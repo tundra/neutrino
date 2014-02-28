@@ -216,13 +216,16 @@ void frame_push_refracting_barrier(frame_t *frame, value_t refractor,
   CHECK_TRUE("not refractor", is_refractor(refractor));
   value_t *state_pointer = frame->stack_pointer + kRefractionPointSize - 1;
   value_t *stack_bottom = frame_get_stack_piece_bottom(frame);
-  set_refractor_home_state_pointer(refractor,
-      new_integer(state_pointer - stack_bottom));
+  value_t state_pointer_value = new_integer(state_pointer - stack_bottom);
+  set_refractor_home_state_pointer(refractor, state_pointer_value);
   frame_push_value(frame, new_integer(frame->frame_pointer - stack_bottom));
   frame_push_value(frame, data);
   frame_push_value(frame, refractor);
-  frame_push_value(frame, nothing());
-  frame_push_value(frame, nothing());
+  value_t stack = get_stack_piece_stack(frame->stack_piece);
+  frame_push_value(frame, get_stack_top_barrier_piece(stack));
+  frame_push_value(frame, get_stack_top_barrier_pointer(stack));
+  set_stack_top_barrier_piece(stack, frame->stack_piece);
+  set_stack_top_barrier_pointer(stack, state_pointer_value);
 }
 
 value_t frame_pop_refraction_point(frame_t *frame) {
@@ -234,11 +237,30 @@ value_t frame_pop_refraction_point(frame_t *frame) {
   return refractor;
 }
 
+// Returns true iff the frame's stack is immediately at the stack's top barrier.
+static bool at_top_barrier(frame_t *frame) {
+  // This is a really defensive check and when there's better coverage in the
+  // nunit tests it should probably be removed. If the barrier logic doesn't
+  // work we'll know even without this.
+  value_t stack = get_stack_piece_stack(frame->stack_piece);
+  value_t current_piece = get_stack_top_piece(stack);
+  value_t current_pointer = get_stack_top_barrier_pointer(stack);
+  value_t *stack_bottom = frame_get_stack_piece_bottom(frame);
+  value_t *home = stack_bottom + get_integer_value(current_pointer);
+  return is_same_value(current_piece, frame->stack_piece)
+      && home == (frame->stack_pointer - kStackBarrierSize);
+}
+
 void frame_pop_partial_barrier(frame_t *frame) {
-  value_t first = frame_pop_value(frame);
-  CHECK_TRUE("invalid barrier", is_nothing(first));
-  value_t second = frame_pop_value(frame);
-  CHECK_TRUE("invalid barrier", is_nothing(second));
+  IF_EXPENSIVE_CHECKS_ENABLED(CHECK_TRUE("not at top barrier",
+      at_top_barrier(frame)));
+  value_t prev_pointer = frame_pop_value(frame);
+  CHECK_DOMAIN_OPT(vdInteger, prev_pointer);
+  value_t prev_piece = frame_pop_value(frame);
+  CHECK_FAMILY_OPT(ofStackPiece, prev_piece);
+  value_t stack = get_stack_piece_stack(frame->stack_piece);
+  set_stack_top_barrier_piece(stack, prev_piece);
+  set_stack_top_barrier_pointer(stack, prev_pointer);
 }
 
 value_t frame_pop_refracting_barrier(frame_t *frame) {
