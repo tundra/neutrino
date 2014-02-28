@@ -140,7 +140,7 @@ static void log_lookup_error(value_t condition, value_t record, frame_t *frame) 
 }
 
 // Validates that the stack looks correct after execution completes normally.
-static void validate_stack_on_exit(frame_t *frame) {
+static void validate_stack_on_normal_exit(frame_t *frame) {
   value_t stack = get_stack_piece_stack(frame->stack_piece);
   CHECK_TRUE("leftover barriers", is_nothing(get_stack_top_barrier_piece(stack)));
   CHECK_TRUE("leftover barriers", is_nothing(get_stack_top_barrier_pointer(stack)));
@@ -345,7 +345,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         }
         case ocStackBottom: {
           value_t result = frame_pop_value(&frame);
-          validate_stack_on_exit(&frame);
+          validate_stack_on_normal_exit(&frame);
           E_RETURN(result);
         }
         case ocStackPieceBottom: {
