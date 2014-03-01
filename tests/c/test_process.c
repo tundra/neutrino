@@ -12,7 +12,7 @@ TEST(process, frame_bounds) {
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
 
   // Check that push/pop outside the frame boundaries causes a check failure.
-  frame_t frame;
+  frame_t frame = frame_empty();
   open_stack_piece(stack_piece, &frame);
   ASSERT_TRUE(try_push_new_frame(&frame, 4, ffOrganic, false));
   ASSERT_CHECK_FAILURE(ccOutOfBounds, frame_pop_value(&frame));
@@ -36,7 +36,7 @@ TEST(process, simple_frames) {
   CREATE_RUNTIME();
 
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
-  frame_t frame;
+  frame_t frame = frame_empty();
   open_stack_piece(stack_piece, &frame);
 
   for (int i = 0; i < 256; i++) {
@@ -63,7 +63,7 @@ TEST(process, frame_capacity) {
   CREATE_RUNTIME();
 
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
-  frame_t frame;
+  frame_t frame = frame_empty();
   open_stack_piece(stack_piece, &frame);
   for (int i = 0; i < 16; i++) {
     ASSERT_TRUE(try_push_new_frame(&frame, i, ffOrganic, false));
@@ -86,7 +86,7 @@ TEST(process, bottom_frame) {
   CREATE_RUNTIME();
 
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
-  frame_t frame;
+  frame_t frame = frame_empty();
   // Push two frames onto the stack piece.
   open_stack_piece(stack_piece, &frame);
   ASSERT_TRUE(try_push_new_frame(&frame, 10, ffOrganic, false));

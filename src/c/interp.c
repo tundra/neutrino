@@ -155,7 +155,7 @@ static uint64_t opcode_counter = 0;
 static uint64_t interrupt_counter = 0;
 
 // Interval between forced validations. Must be a power of 2.
-#define kForceValidateInterval 2048
+#define kForceValidateInterval 65536
 
 // Expands to a block that checks whether it's time to force validation.
 #define MAYBE_INTERRUPT() do {                                                 \
@@ -288,13 +288,22 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         }
         case ocStackBottom: {
           value_t result = frame_pop_value(&frame);
+          frame_pop_barrier(&frame);
           validate_stack_on_normal_exit(&frame);
           E_RETURN(result);
         }
         case ocStackPieceBottom: {
+          value_t top_piece = frame.stack_piece;
+          HEST("Leaving stack piece %w (prev %w)", top_piece, get_stack_piece_previous(top_piece));
           value_t result = frame_pop_value(&frame);
-          value_t top_piece = get_stack_top_piece(stack);
+          value_t arg_map = frame_get_argument_map(&frame);
+          for (size_t i = 0; i < get_array_length(arg_map); i++)
+            frame_pop_value(&frame);
+          value_t handler = frame_pop_barrier(&frame);
+          CHECK_TRUE("invalid stack piece bottom barrier", is_same_value(handler,
+              top_piece));
           value_t next_piece = get_stack_piece_previous(top_piece);
+          HEST("Next piece: %w", next_piece);
           set_stack_top_piece(stack, next_piece);
           frame = open_stack(stack);
           code_cache_refresh(&cache, &frame);
@@ -367,7 +376,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           size_t block_depth = read_short(&cache, &frame, 2);
           value_t subject = frame_get_argument(&frame, 0);
           CHECK_TRUE("refracting through non-refractor", is_refractor(subject));
-          frame_t home;
+          frame_t home = frame_empty();
           get_refractor_refracted_frame(subject, block_depth, &home);
           value_t value = frame_get_argument(&home, param_index);
           frame_push_value(&frame, value);
@@ -379,7 +388,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           size_t block_depth = read_short(&cache, &frame, 2);
           value_t subject = frame_get_argument(&frame, 0);
           CHECK_TRUE("refracting through non-refractor", is_refractor(subject));
-          frame_t home;
+          frame_t home = frame_empty();
           get_refractor_refracted_frame(subject, block_depth, &home);
           value_t value = frame_get_local(&home, index);
           frame_push_value(&frame, value);
@@ -400,7 +409,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           size_t block_depth = read_short(&cache, &frame, 2);
           value_t subject = frame_get_argument(&frame, 0);
           CHECK_TRUE("refracting through non-refractor", is_refractor(subject));
-          frame_t home;
+          frame_t home = frame_empty();
           get_refractor_refracted_frame(subject, block_depth, &home);
           value_t lambda = frame_get_argument(&home, 0);
           CHECK_FAMILY(ofLambda, lambda);
@@ -494,16 +503,64 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame.pc += kCreateEscapeOperationSize;
           break;
         }
-        case ocFireEscape: {
+        case ocFireEscapeOrBarrier: {
           value_t escape = frame_get_argument(&frame, 0);
           CHECK_FAMILY(ofEscape, escape);
-          value_t value = frame_get_argument(&frame, 2);
-          size_t location = get_integer_value(get_escape_stack_pointer(escape));
-          value_t stack_piece = get_escape_stack_piece(escape);
-          restore_escape_state(&frame, stack, stack_piece, location);
-          code_cache_refresh(&cache, &frame);
-          frame_push_value(&frame, value);
-          break;
+          value_t stack = get_stack_piece_stack(frame.stack_piece);
+          value_t barrier_piece = get_stack_top_barrier_piece(stack);
+          value_t barrier_pointer = get_stack_top_barrier_pointer(stack);
+          value_t escape_piece = get_escape_stack_piece(escape);
+          value_t escape_pointer = get_escape_stack_pointer(escape);
+          HEST("Escaping to %w@%v; top barrier %w@%v", escape_piece,
+              escape_pointer, barrier_piece, barrier_pointer);
+          if (is_same_value(barrier_piece, escape_piece)) {
+            HEST("Escaping to same piece");
+            // The barrier is in the same stack piece that we're escaping to.
+            // Check whether it's above or below.
+            if (get_integer_value(barrier_pointer) > get_integer_value(escape_pointer)) {
+              // The next barrier is above the escape so we have to process it
+              // before escaping.
+              goto fire_next_barrier;
+            } else {
+              // The barrier is below the point we're escaping to so it's safe
+              // to do the escape.
+              goto fire_escape;
+            }
+          } else {
+            HEST("Escaping to different piece");
+            // The next barrier is different from where we're escaping to. Since
+            // all stack pieces have at least one barrier it must be above the
+            // one we're escaping to, otherwise we would have met a barrier on
+            // the one we're escaping to and would have fired the escape then,
+            // so this barrier has to be fired before we can escape.
+            goto fire_next_barrier;
+          }
+          fire_next_barrier: {
+            HEST("Side-popping barrier %w@%v", barrier_piece, barrier_pointer);
+            value_t *barrier_piece_bottom =
+                get_array_elements(get_stack_piece_storage(barrier_piece));
+            value_t *barrier_bottom = barrier_piece_bottom + get_integer_value(barrier_pointer);
+            stack_barrier_t barrier = {barrier_bottom};
+            value_t handler = stack_barrier_get_handler(&barrier);
+            if (in_family(ofStackPiece, handler)) {
+              HEST("Passing stack piece: %v", handler);
+            } else {
+              HEST("Unknown handler: %v", handler);
+            }
+            value_t next_piece = stack_barrier_get_next_piece(&barrier);
+            value_t next_pointer = stack_barrier_get_next_pointer(&barrier);
+            set_stack_top_barrier_piece(stack, next_piece);
+            set_stack_top_barrier_pointer(stack, next_pointer);
+            break;
+          }
+          fire_escape: {
+            value_t value = frame_get_argument(&frame, 2);
+            size_t location = get_integer_value(escape_pointer);
+            restore_escape_state(&frame, stack, escape_piece, location);
+            code_cache_refresh(&cache, &frame);
+            frame_push_value(&frame, value);
+            break;
+          }
         }
         case ocDisposeEscape: {
           value_t value = frame_pop_value(&frame);

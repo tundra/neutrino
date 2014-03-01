@@ -66,7 +66,7 @@ value_t stack_validate(value_t self) {
 // points to) to the bottom of the new stack segment.
 static void transfer_top_arguments(value_t new_piece, frame_t *frame,
     size_t arg_count) {
-  frame_t new_frame;
+  frame_t new_frame = frame_empty();
   open_stack_piece(new_piece, &new_frame);
   for (size_t i = 0; i < arg_count; i++) {
     value_t value = frame_peek_value(frame, arg_count - i - 1);
@@ -76,18 +76,21 @@ static void transfer_top_arguments(value_t new_piece, frame_t *frame,
 }
 
 static void push_stack_piece_bottom_frame(runtime_t *runtime, value_t stack_piece,
-    size_t arg_count) {
-  frame_t bottom;
+    value_t arg_map) {
+  frame_t bottom = frame_empty();
   value_t code_block = ROOT(runtime, stack_piece_bottom_code_block);
   // The transferred arguments are going to appear as if they were arguments
   // passed from this frame so we have to "allocate" enough room for them on
   // the stack.
   open_stack_piece(stack_piece, &bottom);
+  size_t arg_count = get_array_length(arg_map);
   bool pushed = try_push_new_frame(&bottom,
       get_code_block_high_water_mark(code_block) + arg_count,
       ffSynthetic | ffStackPieceBottom, false);
   CHECK_TRUE("pushing bottom frame", pushed);
   frame_set_code_block(&bottom, code_block);
+  frame_set_argument_map(&bottom, arg_map);
+  frame_push_barrier(&bottom, stack_piece);
   close_frame(&bottom);
 }
 
@@ -95,6 +98,7 @@ static void push_stack_piece_bottom_frame(runtime_t *runtime, value_t stack_piec
 // the piece in any way though.
 static void read_stack_piece_lid(value_t piece, frame_t *frame) {
   CHECK_TRUE("stack piece not closed", is_stack_piece_closed(piece));
+  HEST("Opening stack piece %w, replacing %w", piece, frame->stack_piece);
   frame->stack_piece = piece;
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
   frame->frame_pointer = stack_start + get_integer_value(get_stack_piece_lid_frame_pointer(piece));
@@ -108,12 +112,16 @@ void open_stack_piece(value_t piece, frame_t *frame) {
 }
 
 void close_frame(frame_t *frame) {
+  HEST("Closing stack piece %w", frame->stack_piece);
   value_t piece = frame->stack_piece;
   CHECK_FALSE("stack piece already closed", is_stack_piece_closed(piece));
   bool pushed = try_push_new_frame(frame, 0, ffLid | ffSynthetic, true);
   CHECK_TRUE("Failed to close frame", pushed);
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
   set_stack_piece_lid_frame_pointer(piece, new_integer(frame->frame_pointer - stack_start));
+  frame->stack_piece = nothing();
+  frame->frame_pointer = frame->limit_pointer = frame->stack_pointer = 0;
+  frame->pc = 0;
 }
 
 value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
@@ -122,6 +130,7 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
   value_t top_piece = get_stack_top_piece(stack);
   CHECK_FALSE("stack piece closed", is_stack_piece_closed(top_piece));
   if (!try_push_new_frame(frame, frame_capacity, ffOrganic, false)) {
+    HEST("Creating %w %w", top_piece, frame->stack_piece);
     // There wasn't room to push this frame onto the top stack piece so
     // allocate a new top piece that definitely has room.
     size_t default_capacity = get_stack_default_piece_capacity(stack);
@@ -138,7 +147,8 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     // pointing to the old frame.
     TRY_DEF(new_piece, new_heap_stack_piece(runtime, new_capacity, top_piece,
         stack));
-    push_stack_piece_bottom_frame(runtime, new_piece, transfer_arg_count);
+    HEST("Created stack piece %w on top of %w", new_piece, top_piece);
+    push_stack_piece_bottom_frame(runtime, new_piece, arg_map);
     transfer_top_arguments(new_piece, frame, transfer_arg_count);
     set_stack_top_piece(stack, new_piece);
 
@@ -151,6 +161,7 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     open_stack_piece(new_piece, frame);
     bool pushed_stack_piece = try_push_new_frame(frame, frame_capacity,
         ffOrganic, false);
+    HEST("Prepared frame %w", frame->stack_piece);
     CHECK_TRUE("pushing on new piece failed", pushed_stack_piece);
   }
   frame_set_argument_map(frame, arg_map);
@@ -184,9 +195,29 @@ value_t *frame_get_stack_piece_top(frame_t *frame) {
 
 frame_t open_stack(value_t stack) {
   CHECK_FAMILY(ofStack, stack);
-  frame_t result;
+  frame_t result = frame_empty();
   open_stack_piece(get_stack_top_piece(stack), &result);
   return result;
+}
+
+size_t barrier_serial = 0;
+
+// Push the top part of a barrier assuming that the handler has already been
+// pushed.
+static void frame_push_partial_barrier(frame_t *frame) {
+  value_t *state_pointer = frame->stack_pointer - 1;
+  value_t *stack_bottom = frame_get_stack_piece_bottom(frame);
+  value_t state_pointer_value = new_integer(state_pointer - stack_bottom);
+  value_t stack = get_stack_piece_stack(frame->stack_piece);
+  value_t prev_barrier_piece = get_stack_top_barrier_piece(stack);
+  value_t prev_barrier_pointer = get_stack_top_barrier_pointer(stack);
+  frame_push_value(frame, prev_barrier_piece);
+  frame_push_value(frame, prev_barrier_pointer);
+  HEST("%i Pushing barrier at %w@%v (prev %w@%v)", barrier_serial++,
+      frame->stack_piece, state_pointer_value, prev_barrier_piece,
+      prev_barrier_pointer);
+  set_stack_top_barrier_piece(stack, frame->stack_piece);
+  set_stack_top_barrier_pointer(stack, state_pointer_value);
 }
 
 void frame_push_refracting_barrier(frame_t *frame, value_t refractor,
@@ -199,11 +230,18 @@ void frame_push_refracting_barrier(frame_t *frame, value_t refractor,
   frame_push_value(frame, new_integer(frame->frame_pointer - stack_bottom));
   frame_push_value(frame, data);
   frame_push_value(frame, refractor);
-  value_t stack = get_stack_piece_stack(frame->stack_piece);
-  frame_push_value(frame, get_stack_top_barrier_piece(stack));
-  frame_push_value(frame, get_stack_top_barrier_pointer(stack));
-  set_stack_top_barrier_piece(stack, frame->stack_piece);
-  set_stack_top_barrier_pointer(stack, state_pointer_value);
+  frame_push_partial_barrier(frame);
+}
+
+void frame_push_barrier(frame_t *frame, value_t handler) {
+  frame_push_value(frame, handler);
+  frame_push_partial_barrier(frame);
+}
+
+value_t frame_pop_barrier(frame_t *frame) {
+  frame_pop_partial_barrier(frame);
+  value_t handler = frame_pop_value(frame);
+  return handler;
 }
 
 value_t frame_pop_refraction_point(frame_t *frame) {
@@ -221,7 +259,7 @@ static bool at_top_barrier(frame_t *frame) {
   // nunit tests it should probably be removed. If the barrier logic doesn't
   // work we'll know even without this.
   value_t stack = get_stack_piece_stack(frame->stack_piece);
-  value_t current_piece = get_stack_top_piece(stack);
+  value_t current_piece = get_stack_top_barrier_piece(stack);
   value_t current_pointer = get_stack_top_barrier_pointer(stack);
   value_t *stack_bottom = frame_get_stack_piece_bottom(frame);
   value_t *home = stack_bottom + get_integer_value(current_pointer);
@@ -230,11 +268,15 @@ static bool at_top_barrier(frame_t *frame) {
 }
 
 void frame_pop_partial_barrier(frame_t *frame) {
+  HEST("%i Popping barrier at %w %w@%v", barrier_serial++, frame->stack_piece,
+      get_stack_top_barrier_piece(get_stack_piece_stack(frame->stack_piece)),
+      get_stack_top_barrier_pointer(get_stack_piece_stack(frame->stack_piece)));
   IF_EXPENSIVE_CHECKS_ENABLED(CHECK_TRUE("not at top barrier",
       at_top_barrier(frame)));
   value_t prev_pointer = frame_pop_value(frame);
   CHECK_DOMAIN_OPT(vdInteger, prev_pointer);
   value_t prev_piece = frame_pop_value(frame);
+  HEST("Prev barrier at %w%v", prev_piece, prev_pointer);
   CHECK_FAMILY_OPT(ofStackPiece, prev_piece);
   value_t stack = get_stack_piece_stack(frame->stack_piece);
   set_stack_top_barrier_piece(stack, prev_piece);
@@ -244,6 +286,20 @@ void frame_pop_partial_barrier(frame_t *frame) {
 value_t frame_pop_refracting_barrier(frame_t *frame) {
   frame_pop_partial_barrier(frame);
   return frame_pop_refraction_point(frame);
+}
+
+/// ## Barrier
+
+value_t stack_barrier_get_handler(stack_barrier_t *barrier) {
+  return barrier->bottom[kStackBarrierHandlerOffset];
+}
+
+value_t stack_barrier_get_next_piece(stack_barrier_t *barrier) {
+  return barrier->bottom[kStackBarrierNextPieceOffset];
+}
+
+value_t stack_barrier_get_next_pointer(stack_barrier_t *barrier) {
+  return barrier->bottom[kStackBarrierNextPointerOffset];
 }
 
 
@@ -444,7 +500,7 @@ value_t escape_validate(value_t value) {
 }
 
 static value_t emit_fire_escape(assembler_t *assm) {
-  TRY(assembler_emit_fire_escape(assm));
+  TRY(assembler_emit_fire_escape_or_barrier(assm));
   return success();
 }
 

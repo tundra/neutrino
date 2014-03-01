@@ -404,8 +404,8 @@ value_t assembler_emit_create_escape(assembler_t *assm,
   return success();
 }
 
-value_t assembler_emit_fire_escape(assembler_t *assm) {
-  assembler_emit_opcode(assm, ocFireEscape);
+value_t assembler_emit_fire_escape_or_barrier(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocFireEscapeOrBarrier);
   // This instruction occurs in a special method which doesn't use its stack
   // since this instruction bails out so the stack height is neither necessary
   // nor well defined. However, to make the stack height check happy we'll

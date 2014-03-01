@@ -259,8 +259,9 @@ value_t assembler_emit_delegate_block_call(assembler_t *assm);
 value_t assembler_emit_create_escape(assembler_t *assm,
     short_buffer_cursor_t *offset_out);
 
-// Fire an escape object, unwinding to where it was captured.
-value_t assembler_emit_fire_escape(assembler_t *assm);
+// Either fire the next barrier if the current escape lies below it, or fire
+// the current escape if there are no more barriers to fire.
+value_t assembler_emit_fire_escape_or_barrier(assembler_t *assm);
 
 // Pops off the escape currently on the stack and marks it as dead. Note that
 // this expects there to be a value above the escape, so this in effect does a

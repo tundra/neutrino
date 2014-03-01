@@ -27,7 +27,9 @@ static value_t create_stack_bottom_code_block(runtime_t *runtime) {
   short_buffer_flush(&assm.code, &blob);
   TRY_DEF(bytecode, new_heap_blob_with_data(runtime, &blob));
   assembler_dispose(&assm);
-  return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array), 1);
+  size_t high_water_mark = 1 + kStackBarrierSize;
+  return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array),
+      high_water_mark);
 }
 
 // Creates the code block object that gets executed when returning across stack
@@ -40,7 +42,9 @@ static value_t create_stack_piece_bottom_code_block(runtime_t *runtime) {
   short_buffer_flush(&assm.code, &blob);
   TRY_DEF(bytecode, new_heap_blob_with_data(runtime, &blob));
   assembler_dispose(&assm);
-  return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array), 1);
+  size_t high_water_mark = 1 + kStackBarrierSize;
+  return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array),
+      high_water_mark);
 }
 
 // Create the fragment that holds the ctrino methods which will be made the
@@ -430,6 +434,7 @@ static value_t runtime_validate_object(value_t value, value_callback_t *self) {
 }
 
 value_t runtime_validate(runtime_t *runtime, value_t cause) {
+  HEST("Validating: %v", cause);
   TRY(heap_validate(&runtime->heap));
   value_callback_t validate_callback;
   value_callback_init(&validate_callback, runtime_validate_object, NULL);
