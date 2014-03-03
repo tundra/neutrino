@@ -399,33 +399,32 @@ value_t assembler_emit_create_escape(assembler_t *assm,
     short_buffer_cursor_t *offset_out) {
   assembler_emit_opcode(assm, ocCreateEscape);
   assembler_emit_cursor(assm, offset_out);
-  // We'll record the complete state and also push the capture object.
-  assembler_adjust_stack_height(assm, (1 + kCapturedStateSize));
+  // We'll record the complete state and also push a barrier containing the
+  // escape.
+  assembler_adjust_stack_height(assm, (kStackBarrierSize + kCapturedStateSize));
   return success();
 }
 
 value_t assembler_emit_fire_escape_or_barrier(assembler_t *assm) {
+  // A tiny bit of stack space is required to fire some barriers so the first
+  // step here is to push null that take up that space. That way, each time
+  // around this op gets executed, if it needs any space it can just pop off
+  // the nulls and push on the values it needs to store. The neat part is that
+  // this way you never need to know whether any previous instructions have been
+  // executed to know if you need to clean up -- there's always junk on the
+  // stack so you always have to clean it up.
+  assembler_emit_push(assm, null());
+  assembler_emit_push(assm, null());
   assembler_emit_opcode(assm, ocFireEscapeOrBarrier);
-  // This instruction occurs in a special method which doesn't use its stack
-  // since this instruction bails out so the stack height is neither necessary
-  // nor well defined. However, to make the stack height check happy we'll
-  // adjust the stack height so it looks like there's one value at the end.
-  //
-  // Also, we'll be using the stack a little bit when firing barriers so to
-  // ensure that the high watermark is high enough we _first_ adjust up by the
-  // max amount we may need and _then_ adjust down to make the final balance
-  // +1.
-  //
-  // It's a bit of a mess but hey at least here's this comment describing how
-  // much of a mess it is so that's something.
-  assembler_adjust_stack_height(assm, +2);
+  // This op never allows execution past it but it simplifies some sanity checks
+  // if the stack height looks like it's 1 at the end of the method.
   assembler_adjust_stack_height(assm, -1);
   return success();
 }
 
 value_t assembler_emit_dispose_escape(assembler_t *assm) {
   assembler_emit_opcode(assm, ocDisposeEscape);
-  assembler_adjust_stack_height(assm, -1);
+  assembler_adjust_stack_height(assm, -kStackBarrierSize);
   return success();
 }
 

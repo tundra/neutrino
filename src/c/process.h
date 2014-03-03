@@ -362,6 +362,79 @@ value_t stack_barrier_get_next_pointer(stack_barrier_t *barrier);
 
 
 /// ## Escape
+///
+/// An escape is a scoped object that encapsulates the execution state at a
+/// a point immediately after the place where the escape was created
+/// (_captured_). When fired, the escape restores the state effectively
+/// returning, possibly non-locally, to immediately after the capture point.
+/// This is how constructs like return, break, continue, etc., is implemented.
+///
+/// ### Escape home
+///
+/// Since an escape is scoped, that is, it is invalidated as soon as the scope
+/// that created it exits, most of its state can be stored on the stack. The
+/// escape itself is just a pointer to its state on the stack together with a
+/// flag indicating whether it is still valid. The stack state is organized like
+/// this:
+///
+//%                                       (escape)
+//%              :            :         +----------+
+//%              +============+    +--- |   home   |
+//%         +--- |  prev ptr  |    |    +----------+
+//%         |    +------------+    |
+//% barrier |    | prev piece |    |
+//%         |    +------------+    |
+//%         +--> |   escape   | <--+
+//%              +============+
+//%              :            :
+//%              :  escape's  :
+//%              :   state    :
+//%              :            :
+//%              +============+
+//%              :            :
+///
+/// An escape uses two stack regions: the state to return to when fired and a
+/// barrier which ensures that the escape object is invalidated however the
+/// scope exits.
+///
+/// ### Escaping through barriers
+///
+/// When an escape is fired we can't jump directly back to where it was created,
+/// we first have to execute all barriers between the current point of execution
+/// and the escape's origin. This is done by "parking" the interpreter at a
+/// bytecode and never advancing the program counter. At each turn around the
+/// interpreter the same instruction is executed which fetches the next barrier
+/// comparing it with the escape's origin, and if the barrier is above it the
+/// associated handler is executed.
+///
+/// Barrier pointers are always counted from the bottom of the barrier region,
+/// which in this case is the point that holds the escape object. Incidentally
+/// that is also the place the escape object points to so we can always just
+/// peel off barriers until we find one at the exact address of the escape and
+/// then we'll have arrived. This is why escapes point into the middle of their
+/// associated stack region, not to the top or bottom. Also, it's a convenient
+/// sanity check to have each escape point to a place that holds itself.
+///
+/// ### Returning multiple times through the same escape
+///
+/// To a first approximation escapes can only be fired once because firing an
+/// escape causes execution to exit the scope that created it -- that's the
+/// whole point -- which causes the escape to be invalidated. However, that is
+/// actually not the whole story. Since escapes don't jump directly out but
+/// process barriers first it is possible for a barrier to interrupt the escape
+/// by firing a _different_ escape that doesn't escape as far out as the
+/// original did. So a more accurate way to think of the escape process (though
+/// not necessarily more useful in practice) is not as a direct jump to the
+/// origin but as an _attempt_ to escape there, an attempt that can be stopped
+/// by barriers along the way. The same escape can be attempted as many times
+/// as you want -- as long as it doesn't succeed, once it's succeeded it is
+/// immediately invalidated.
+///
+/// Is this the behavior you want? I think it probably is. In any case, it falls
+/// out if you take a straightforward formulation of escapes and barriers so
+/// to get a different behavior you'd have to either change how escapes or
+/// barriers work more generally, or have a special case here which would make
+/// them less orthogonal.
 
 static const size_t kEscapeSize = OBJECT_SIZE(3);
 static const size_t kEscapeIsLiveOffset = OBJECT_FIELD_OFFSET(0);
