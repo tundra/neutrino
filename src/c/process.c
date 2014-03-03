@@ -137,6 +137,7 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
         + kFrameHeaderSize    // the new frame's header
         + 1                   // the synthetic bottom frame's one local
         + kFrameHeaderSize    // the synthetic bottom frame's header
+        + kStackBarrierSize   // the barrier at the bottom of the stack piece
         + transfer_arg_count; // any arguments to be copied onto the piece
     size_t new_capacity = max_size(default_capacity, required_capacity);
 
