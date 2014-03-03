@@ -58,7 +58,7 @@ static value_t add_ctrino_method(runtime_t *runtime, value_t space,
     E_TRY_DEF(selector, new_heap_operation(runtime, afFreeze, otInfix, name));
     E_TRY_DEF(signature, build_ctrino_method_signature(runtime, selector, posc));
     E_TRY_DEF(method,new_heap_method(runtime, afFreeze, signature, nothing(),
-        code_block, nothing()));
+        code_block, nothing(), new_flag_set(kFlagSetAllOff)));
     // And in the methodspace bind them.
     E_RETURN(add_methodspace_method(runtime, space, method));
   E_FINALLY();

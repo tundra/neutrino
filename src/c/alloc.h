@@ -246,8 +246,9 @@ value_t new_heap_signature_map(runtime_t *runtime);
 value_t new_heap_methodspace(runtime_t *runtime);
 
 // Creates a new method with the given signature and implementation.
-value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signature,
-    value_t syntax, value_t code, value_t fragment);
+value_t new_heap_method(runtime_t *runtime, alloc_flags_t alloc_flags,
+    value_t signature, value_t syntax, value_t code, value_t fragment,
+    value_t method_flags);
 
 // Creates an invocation record with the given argument vector.
 value_t new_heap_invocation_record(runtime_t *runtime, alloc_flags_t flags,
@@ -261,7 +262,7 @@ value_t new_heap_builtin_marker(runtime_t *runtime, value_t name);
 // by the given code object and whose surface binding must take exactly posc
 // positional arguments.
 value_t new_heap_builtin_implementation(runtime_t *runtime, alloc_flags_t flags,
-    value_t name, value_t code, size_t posc);
+    value_t name, value_t code, size_t posc, value_t method_flags);
 
 
 // --- S y n t a x ---

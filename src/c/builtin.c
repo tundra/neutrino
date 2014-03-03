@@ -41,7 +41,7 @@ value_t add_builtin_method_impl(runtime_t *runtime, value_t map,
     string_init(&name_str, name_c_str);
     E_TRY_DEF(name, new_heap_string(runtime, &name_str));
     E_TRY_DEF(builtin, new_heap_builtin_implementation(runtime, afFreeze,
-        name, code_block, arg_count));
+        name, code_block, arg_count, new_flag_set(kFlagSetAllOff)));
     E_RETURN(set_id_hash_map_at(runtime, map, name, builtin));
   E_FINALLY();
     assembler_dispose(&assm);
@@ -49,7 +49,8 @@ value_t add_builtin_method_impl(runtime_t *runtime, value_t map,
 }
 
 value_t add_custom_method_impl(runtime_t *runtime, value_t map,
-    const char *name_c_str, size_t posc, custom_method_emitter_t emitter) {
+    const char *name_c_str, size_t posc, value_t method_flags,
+    custom_method_emitter_t emitter) {
   CHECK_FAMILY(ofIdHashMap, map);
   // Build the implementation.
   assembler_t assm;
@@ -63,7 +64,7 @@ value_t add_custom_method_impl(runtime_t *runtime, value_t map,
   string_init(&name_str, name_c_str);
   TRY_DEF(name, new_heap_string(runtime, &name_str));
   TRY_DEF(builtin, new_heap_builtin_implementation(runtime, afFreeze,
-      name, code_block, posc));
+      name, code_block, posc, method_flags));
   return set_id_hash_map_at(runtime, map, name, builtin);
 }
 

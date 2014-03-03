@@ -25,7 +25,7 @@ VALIDATE(in_phylum(tpPhylum, EXPR))
   CHECK_PHYLUM(tpPhylum, (VALUE))
 
 
-// --- F l a g   s e t ---
+/// ## Flag set
 
 // Returns true iff any of the given flags are set in this flag set. The typical
 // case is giving a single flag in which case the result is the value of that
@@ -47,6 +47,12 @@ static value_t enable_flag_set_flags(value_t self, uint32_t flags) {
 static value_t disable_flag_set_flags(value_t self, uint32_t flags) {
   CHECK_PHYLUM(tpFlagSet, self);
   return new_custom_tagged(tpFlagSet, get_custom_tagged_payload(self) & ~flags);
+}
+
+// Returns true iff the given flag set has no flags set at all.
+static bool is_flag_set_empty(value_t self) {
+  CHECK_PHYLUM(tpFlagSet, self);
+  return get_custom_tagged_payload(self) == 0;
 }
 
 // Returns a flag set identical to the given set on all other flags than the

@@ -48,7 +48,8 @@ typedef value_t (*custom_method_emitter_t)(struct assembler_t *assm);
 // number of arguments by delegating to the given emitter to generate
 // the code.
 value_t add_custom_method_impl(runtime_t *runtime, value_t map,
-    const char *name_c_str, size_t posc, custom_method_emitter_t emitter);
+    const char *name_c_str, size_t posc, value_t method_flags,
+    custom_method_emitter_t emitter);
 
 // Adds all the builtin method implementations to the given map.
 value_t add_builtin_implementations(runtime_t *runtime, safe_value_t s_map);

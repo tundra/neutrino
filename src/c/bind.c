@@ -125,6 +125,8 @@ static value_t apply_method_declaration(value_t ambience, value_t decl,
     value_t impl_code = get_builtin_implementation_code(impl);
     TRY(validate_builtin_method_binding(method, impl));
     set_method_code(method, impl_code);
+    value_t impl_flags = get_builtin_implementation_method_flags(impl);
+    set_method_flags(method, impl_flags);
   }
   value_t methodspace = get_module_fragment_methodspace(fragment);
   TRY(add_methodspace_method(runtime, methodspace, method));

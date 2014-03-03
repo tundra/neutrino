@@ -25,11 +25,13 @@ typedef struct {
   frame_t *frame;
   // Optional extra data to pass around.
   void *data;
+  // Cache of the number of arguments.
+  size_t argc;
 } signature_map_lookup_input_t;
 
 // Initializes an input struct appropriately.
 void signature_map_lookup_input_init(signature_map_lookup_input_t *input,
-    value_t ambience, value_t record, frame_t *frame, void *data);
+    value_t ambience, value_t record, frame_t *frame, void *data, size_t argc);
 
 
 // --- S i g n a t u r e ---
@@ -195,13 +197,26 @@ value_t guard_match(value_t guard, value_t value,
     value_t *score_out);
 
 
-// --- M e t h o d ---
+// ## Method
 
-static const size_t kMethodSize = OBJECT_SIZE(4);
+// Flags that describe a method.
+typedef enum {
+  // This method delegates to a lambda. If lookup results in a method with this
+  // flag the lookup process should take an extra step to resolve the method in
+  // the subject lambda.
+  mfLambdaDelegate = 0x01,
+  // This method delegates to a block. If lookup results in a method with this
+  // flag the lookup process should take an extra step to resolve the method in
+  // the subject block's home methodspace.
+  mfBlockDelegate = 0x02
+} method_flag_t;
+
+static const size_t kMethodSize = OBJECT_SIZE(5);
 static const size_t kMethodSignatureOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kMethodCodeOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kMethodSyntaxOffset = OBJECT_FIELD_OFFSET(2);
 static const size_t kMethodModuleFragmentOffset = OBJECT_FIELD_OFFSET(3);
+static const size_t kMethodFlagsOffset = OBJECT_FIELD_OFFSET(4);
 
 // The method's signature, the arguments it matches.
 ACCESSORS_DECL(method, signature);
@@ -214,6 +229,9 @@ ACCESSORS_DECL(method, syntax);
 
 // The module fragment that provides context for this method.
 ACCESSORS_DECL(method, module_fragment);
+
+// Flags describing this method.
+ACCESSORS_DECL(method, flags);
 
 // Compiles a method syntax tree into a method object.
 value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
@@ -404,12 +422,13 @@ static const size_t kBuiltinMarkerNameOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(builtin_marker, name);
 
 
-// --- B u i l t i n   i m p l e m e n t a t i o n ---
+/// ## Builtin implementation
 
-static const size_t kBuiltinImplementationSize = OBJECT_SIZE(3);
+static const size_t kBuiltinImplementationSize = OBJECT_SIZE(4);
 static const size_t kBuiltinImplementationNameOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kBuiltinImplementationCodeOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kBuiltinImplementationArgumentCountOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kBuiltinImplementationMethodFlagsOffset = OBJECT_FIELD_OFFSET(3);
 
 // The name of this builtin.
 ACCESSORS_DECL(builtin_implementation, name);
@@ -420,6 +439,10 @@ ACCESSORS_DECL(builtin_implementation, code);
 // The number of positional arguments expected by the implementation of this
 // builtin.
 INTEGER_ACCESSORS_DECL(builtin_implementation, argument_count);
+
+// The code block that implements this builtin.
+ACCESSORS_DECL(builtin_implementation, method_flags);
+
 
 
 #endif // _METHOD
