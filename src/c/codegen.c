@@ -404,13 +404,22 @@ value_t assembler_emit_create_escape(assembler_t *assm,
   return success();
 }
 
-value_t assembler_emit_fire_escape(assembler_t *assm) {
-  assembler_emit_opcode(assm, ocFireEscape);
+value_t assembler_emit_fire_escape_or_barrier(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocFireEscapeOrBarrier);
   // This instruction occurs in a special method which doesn't use its stack
   // since this instruction bails out so the stack height is neither necessary
   // nor well defined. However, to make the stack height check happy we'll
   // adjust the stack height so it looks like there's one value at the end.
-  assembler_adjust_stack_height(assm, +1);
+  //
+  // Also, we'll be using the stack a little bit when firing barriers so to
+  // ensure that the high watermark is high enough we _first_ adjust up by the
+  // max amount we may need and _then_ adjust down to make the final balance
+  // +1.
+  //
+  // It's a bit of a mess but hey at least here's this comment describing how
+  // much of a mess it is so that's something.
+  assembler_adjust_stack_height(assm, +2);
+  assembler_adjust_stack_height(assm, -1);
   return success();
 }
 

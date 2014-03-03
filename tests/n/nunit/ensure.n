@@ -15,6 +15,16 @@ def $test_simple_ensure() {
     }
   });
   $assert:equals(7, $v);
+  $assert:equals(11, with_escape $escape do {
+    try {
+      $assert:equals(7, $v);
+      $escape(11);
+      12;
+    } ensure {
+      $v := 5;
+    }
+  });
+  $assert:equals(5, $v);
 }
 
 do {

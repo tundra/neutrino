@@ -505,7 +505,7 @@ value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
   set_stack_piece_stack(result, stack);
   set_stack_piece_lid_frame_pointer(result, nothing());
   value_t *stack_start = get_array_elements(storage);
-  frame_t bottom;
+  frame_t bottom = frame_empty();
   bottom.stack_piece = result;
   bottom.frame_pointer = stack_start;
   bottom.stack_pointer = stack_start;
@@ -527,6 +527,7 @@ static void push_stack_bottom_frame(runtime_t *runtime, value_t stack) {
       false);
   CHECK_TRUE("pushing bottom frame", pushed);
   frame_set_code_block(&bottom, code_block);
+  frame_push_barrier(&bottom, bottom.stack_piece);
   close_frame(&bottom);
 }
 

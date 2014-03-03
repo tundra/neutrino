@@ -121,6 +121,12 @@ typedef struct frame_t {
   size_t pc;
 } frame_t;
 
+// Returns an empty frame to use for initialization.
+static frame_t frame_empty() {
+  frame_t result = {NULL, NULL, NULL, nothing(), nothing(), 0};
+  return result;
+}
+
 // The number of word-size fields in a frame.
 #define kFrameFieldCount 5
 
@@ -234,6 +240,12 @@ void frame_walk_down_stack(frame_t *frame);
 // Creates a joint refraction point and barrier in the given frame that refracts
 // for the given refractor object.
 void frame_push_refracting_barrier(frame_t *frame, value_t refractor, value_t data);
+
+// Creates a plain barrier in the given frame with the given handler.
+void frame_push_barrier(frame_t *frame, value_t handler);
+
+// Pops a barrier off the stack. Returns the handler.
+value_t frame_pop_barrier(frame_t *frame);
 
 // Pops a refraction point off the stack. Returns the refractor that created
 // the point.

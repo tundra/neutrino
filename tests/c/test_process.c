@@ -12,7 +12,7 @@ TEST(process, frame_bounds) {
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
 
   // Check that push/pop outside the frame boundaries causes a check failure.
-  frame_t frame;
+  frame_t frame = frame_empty();
   open_stack_piece(stack_piece, &frame);
   ASSERT_TRUE(try_push_new_frame(&frame, 4, ffOrganic, false));
   ASSERT_CHECK_FAILURE(ccOutOfBounds, frame_pop_value(&frame));
@@ -36,7 +36,7 @@ TEST(process, simple_frames) {
   CREATE_RUNTIME();
 
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
-  frame_t frame;
+  frame_t frame = frame_empty();
   open_stack_piece(stack_piece, &frame);
 
   for (int i = 0; i < 256; i++) {
@@ -63,7 +63,7 @@ TEST(process, frame_capacity) {
   CREATE_RUNTIME();
 
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
-  frame_t frame;
+  frame_t frame = frame_empty();
   open_stack_piece(stack_piece, &frame);
   for (int i = 0; i < 16; i++) {
     ASSERT_TRUE(try_push_new_frame(&frame, i, ffOrganic, false));
@@ -86,7 +86,7 @@ TEST(process, bottom_frame) {
   CREATE_RUNTIME();
 
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
-  frame_t frame;
+  frame_t frame = frame_empty();
   // Push two frames onto the stack piece.
   open_stack_piece(stack_piece, &frame);
   ASSERT_TRUE(try_push_new_frame(&frame, 10, ffOrganic, false));
@@ -128,7 +128,7 @@ static void drop_to_stack_frame(value_t stack, frame_t *frame, frame_flag_t flag
 TEST(process, stack_frames) {
   CREATE_RUNTIME();
 
-  value_t stack = new_heap_stack(runtime, 16);
+  value_t stack = new_heap_stack(runtime, 24);
   frame_t frame = open_stack(stack);
   for (size_t i = 0; i < 256; i++) {
     ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, i + 1, ROOT(runtime, empty_array)));
@@ -181,7 +181,7 @@ TEST(process, get_argument_one_piece) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
-  value_t stack = new_heap_stack(runtime, 3 + 3 * kFrameHeaderSize);
+  value_t stack = new_heap_stack(runtime, 3 + 3 * kFrameHeaderSize + kStackBarrierSize);
   frame_t frame = open_stack(stack);
 
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3, null()));
@@ -210,7 +210,7 @@ TEST(process, get_argument_multi_pieces) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
-  value_t stack = new_heap_stack(runtime, 16);
+  value_t stack = new_heap_stack(runtime, 20);
   frame_t frame = open_stack(stack);
 
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3, null()));
@@ -232,7 +232,7 @@ TEST(process, get_argument_multi_pieces) {
 TEST(process, get_local) {
   CREATE_RUNTIME();
 
-  value_t stack = new_heap_stack(runtime, 16);
+  value_t stack = new_heap_stack(runtime, 20);
   frame_t frame = open_stack(stack);
 
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3, null()));

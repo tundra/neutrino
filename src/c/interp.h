@@ -23,7 +23,7 @@
   F(DisposeBlock,               1)                                             \
   F(DisposeCodeShard,           1)                                             \
   F(DisposeEscape,              1)                                             \
-  F(FireEscape,                 1)                                             \
+  F(FireEscapeOrBarrier,        1)                                             \
   F(GetReference,               1)                                             \
   F(Invoke,                     4)                                             \
   F(Lambda,                     3)                                             \
