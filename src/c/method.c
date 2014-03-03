@@ -553,11 +553,11 @@ value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
   return success();
 }
 
+// Reset the scores of a lookup state struct. The pointer fields are assumed to
+// already have been set, this only resets them.
 static void signature_map_lookup_state_reset(signature_map_lookup_state_t *state) {
   state->result = new_lookup_error_condition(lcNoMatch);
   state->max_is_synthetic = false;
-  // The following code will assume the max score has a meaningful value so
-  // reset it explicitly.
   for (size_t i = 0; i < state->input.argc; i++)
     state->max_score[i] = new_no_match_score();
 }
@@ -891,7 +891,8 @@ static value_t do_full_method_lookup(signature_map_lookup_state_t *state) {
   if (in_family(ofMethod, state->result)) {
     value_t result_flags = get_method_flags(state->result);
     if (!is_flag_set_empty(result_flags)) {
-      // The result has at least one special flag set.
+      // The result has at least one special flag set so we have to give this
+      // lookup special treatment.
       if (get_flag_set_at(result_flags, mfLambdaDelegate)) {
         return complete_special_lambda_lookup(state, subject);
       } else if (get_flag_set_at(result_flags, mfBlockDelegate)) {

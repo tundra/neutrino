@@ -260,16 +260,13 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame_set_code_block(&frame, ROOT(runtime, empty_code_block));
           E_RETURN(new_signal_condition());
         }
-        case ocDelegateToLambda: {
-          // This method only appears in the lambda delegator method. It should
-          // never be executed because the delegation happens during method
-          // lookup. If we hit here something's badly wrong.
-          UNREACHABLE("delegate to lambda");
-          return new_condition(ccWat);
-        }
+        case ocDelegateToLambda:
         case ocDelegateToBlock: {
-          // This shouldn't happen for reasons parallel to the above case.
-          UNREACHABLE("delegate to block");
+          // This op only appears in the lambda and block delegator methods.
+          // They should never be executed because the delegation happens during
+          // method lookup. If we hit here something's likely wrong with the
+          // lookup process.
+          UNREACHABLE("delegate to lambda");
           return new_condition(ccWat);
         }
         case ocBuiltin: {

@@ -99,6 +99,10 @@ TEST(process, bottom_frame) {
   DISPOSE_RUNTIME();
 }
 
+// Pops frames off the given stack until one is reached that has one of the
+// given flags set. There must be such a frame on the stack. Note that this
+// ignores barriers so the resulting stack may be some form of invalid wrt.
+// barriers.
 static void drop_to_stack_frame(value_t stack, frame_t *frame, frame_flag_t flags) {
   value_t piece = get_stack_top_piece(stack);
   frame_loop: while (true) {
