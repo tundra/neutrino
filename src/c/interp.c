@@ -155,7 +155,7 @@ static uint64_t opcode_counter = 0;
 static uint64_t interrupt_counter = 0;
 
 // Interval between forced validations. Must be a power of 2.
-#define kForceValidateInterval 65536
+#define kForceValidateInterval 2048
 
 // Expands to a block that checks whether it's time to force validation.
 #define MAYBE_INTERRUPT() do {                                                 \
