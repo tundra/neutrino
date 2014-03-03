@@ -320,10 +320,6 @@ ACCESSORS_DECL(stack, top_barrier_pointer);
 value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     size_t frame_capacity, value_t arg_map);
 
-// Pops frames off the given stack until one is reached that has one of the
-// given flags set. There must be such a frame on the stack.
-void drop_to_stack_frame(value_t stack, frame_t *frame, frame_flag_t flags);
-
 // Opens the top stack piece of the given stack into the given frame.
 frame_t open_stack(value_t stack);
 

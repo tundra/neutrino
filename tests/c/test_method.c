@@ -12,7 +12,7 @@
   value_t match;                                                               \
   signature_map_lookup_input_t lookup_input;                                   \
   signature_map_lookup_input_init(&lookup_input, ambience, whatever(), NULL,   \
-    NULL);                                                                     \
+    NULL, 0);                                                                  \
   ASSERT_SUCCESS(guard_match(guard, value, &lookup_input, space, &match));     \
   ASSERT_EQ(is_match, is_score_match(match));                                  \
 } while (false)
@@ -124,7 +124,7 @@ TEST(method, simple_is) {
   value_t score_a;                                                             \
   signature_map_lookup_input_t lookup_input;                                   \
   signature_map_lookup_input_init(&lookup_input, ambience, whatever(), NULL,   \
-    NULL);                                                                     \
+    NULL, 0);                                                                  \
   ASSERT_SUCCESS(guard_match(GA, VA, &lookup_input, space, &score_a));         \
   value_t score_b;                                                             \
   ASSERT_SUCCESS(guard_match(GB, VB, &lookup_input, space, &score_b));         \
@@ -421,7 +421,8 @@ void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
   match_info_init(&match_info, scores, offsets, kLength);
   match_result_t result = __mrNone__;
   signature_map_lookup_input_t input;
-  signature_map_lookup_input_init(&input, ambience, record, &frame, NULL);
+  signature_map_lookup_input_init(&input, ambience, record, &frame, NULL,
+      arg_count);
   ASSERT_SUCCESS(match_signature(signature, &input, nothing(), &match_info,
       &result));
   ASSERT_EQ(expected_result, result);
@@ -777,7 +778,7 @@ TEST(method, dense_perfect_lookup) {
             PARAM(guards[second], false, vArray(vInt(1))),
             PARAM(guards[third], false, vArray(vInt(2)))));
         value_t method = new_heap_method(runtime, afFreeze, signature,
-            nothing(), dummy_code, nothing());
+            nothing(), dummy_code, nothing(), new_flag_set(kFlagSetAllOff));
         add_methodspace_method(runtime, space, method);
         methods[first][second][third] = method;
       }

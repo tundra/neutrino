@@ -12,12 +12,14 @@
 
 
 void signature_map_lookup_input_init(signature_map_lookup_input_t *input,
-    value_t ambience, value_t record, frame_t *frame, void *data) {
+    value_t ambience, value_t record, frame_t *frame, void *data,
+    size_t argc) {
   input->runtime = get_ambience_runtime(ambience);
   input->ambience = ambience;
   input->record = record;
   input->frame = frame;
   input->data = data;
+  input->argc = argc;
 }
 
 
@@ -400,13 +402,14 @@ void guard_print_on(value_t self, print_on_context_t *context) {
 }
 
 
-// --- M e t h o d ---
+// ## Method
 
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofSignature, Signature, signature);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofCodeBlock, Code, code);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofMethodAst, Syntax, syntax);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofModuleFragment, ModuleFragment,
     module_fragment);
+ACCESSORS_IMPL(Method, method, acInPhylum, tpFlagSet, Flags, flags);
 
 value_t method_validate(value_t self) {
   VALIDATE_FAMILY(ofMethod, self);
@@ -414,6 +417,7 @@ value_t method_validate(value_t self) {
   VALIDATE_FAMILY_OPT(ofCodeBlock, get_method_code(self));
   VALIDATE_FAMILY_OPT(ofMethodAst, get_method_syntax(self));
   VALIDATE_FAMILY_OPT(ofModuleFragment, get_method_module_fragment(self));
+  VALIDATE_PHYLUM(tpFlagSet, get_method_flags(self));
   return success();
 }
 
@@ -435,7 +439,7 @@ value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
     E_TRY_DEF(signature, build_method_signature(runtime, fragment, &scratch,
         get_method_ast_signature(method_ast)));
     E_TRY_DEF(method, new_heap_method(runtime, afMutable, signature, method_ast,
-        nothing(), fragment));
+        nothing(), fragment, new_flag_set(kFlagSetAllOff)));
     E_RETURN(method);
   E_FINALLY();
     reusable_scratch_memory_dispose(&scratch);
@@ -549,6 +553,15 @@ value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
   return success();
 }
 
+// Reset the scores of a lookup state struct. The pointer fields are assumed to
+// already have been set, this only resets them.
+static void signature_map_lookup_state_reset(signature_map_lookup_state_t *state) {
+  state->result = new_lookup_error_condition(lcNoMatch);
+  state->max_is_synthetic = false;
+  for (size_t i = 0; i < state->input.argc; i++)
+    state->max_score[i] = new_no_match_score();
+}
+
 value_t do_signature_map_lookup(value_t ambience, value_t record, frame_t *frame,
     signature_map_lookup_callback_t callback, void *data) {
   // For now we only handle lookups of a certain size. Hopefully by the time
@@ -557,19 +570,15 @@ value_t do_signature_map_lookup(value_t ambience, value_t record, frame_t *frame
   CHECK_REL("too many arguments", arg_count, <=, kSmallLookupLimit);
   // Initialize the lookup state using stack-allocated space.
   value_t max_score[kSmallLookupLimit];
-  // The following code will assume the max score has a meaningful value so
-  // reset it explicitly.
-  for (size_t i = 0; i < arg_count; i++)
-    max_score[i] = new_no_match_score();
   size_t offsets_one[kSmallLookupLimit];
   size_t offsets_two[kSmallLookupLimit];
   signature_map_lookup_state_t state;
-  signature_map_lookup_input_init(&state.input, ambience, record, frame, data);
-  state.result = new_lookup_error_condition(lcNoMatch);
-  state.max_is_synthetic = false;
+  signature_map_lookup_input_init(&state.input, ambience, record, frame, data,
+      arg_count);
   state.max_score = max_score;
   state.result_offsets = offsets_one;
   state.scratch_offsets = offsets_two;
+  signature_map_lookup_state_reset(&state);
   TRY(callback(&state));
   return state.result;
 }
@@ -777,9 +786,10 @@ static value_t lookup_through_fragment_with_helper(signature_map_lookup_state_t 
 }
 
 // Perform a method lookup in the subject's module of origin.
-static value_t lookup_subject_methods(signature_map_lookup_state_t *state) {
+static value_t lookup_subject_methods(signature_map_lookup_state_t *state,
+    value_t *subject_out) {
   // Look for a subject value, if there is none there is nothing to do.
-  value_t subject = get_invocation_subject_with_shortcut(state);
+  value_t subject = *subject_out = get_invocation_subject_with_shortcut(state);
   TOPIC_INFO(Lookup, "Subject value: %v", subject);
   if (in_condition_cause(ccNotFound, subject)) {
     // Just in case, check that the shortcut version gave the correct answer.
@@ -809,30 +819,6 @@ typedef struct {
   value_t helper;
   value_t *arg_map_out;
 } value_and_argument_map_t;
-
-// Performs a full method lookup through the current module and the subject's
-// module of origin.
-static value_t do_full_method_lookup(signature_map_lookup_state_t *state) {
-  value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
-  CHECK_FAMILY(ofModuleFragment, data->value);
-  TOPIC_INFO(Lookup, "Performing fragment lookup %v", state->input.record);
-  TRY(lookup_through_fragment_with_helper(state, data->value, data->helper));
-  TOPIC_INFO(Lookup, "Performing subject lookup");
-  TRY(lookup_subject_methods(state));
-  TOPIC_INFO(Lookup, "Lookup result: %v", state->result);
-  TRY_SET(*data->arg_map_out, get_signature_map_lookup_argument_map(state));
-  return success();
-}
-
-value_t lookup_method_full(value_t ambience, value_t fragment,
-    value_t record, frame_t *frame, value_t helper, value_t *arg_map_out) {
-  value_and_argument_map_t data;
-  data.value = fragment;
-  data.helper = helper;
-  data.arg_map_out = arg_map_out;
-  return do_signature_map_lookup(ambience, record, frame, do_full_method_lookup,
-      &data);
-}
 
 // Do a transitive method lookup in the given method space, that is, look up
 // locally and in any imported spaces.
@@ -864,6 +850,68 @@ value_t lookup_methodspace_method(value_t ambience, value_t methodspace,
   data.arg_map_out = arg_map_out;
   return do_signature_map_lookup(ambience, record, frame,
       do_methodspace_method_lookup, &data);
+}
+
+// Performs the extra lookup for lambda methods that happens when the lambda
+// delegate method is found in the normal lookup.
+static value_t complete_special_lambda_lookup(signature_map_lookup_state_t *state,
+    value_t subject) {
+  CHECK_FAMILY(ofLambda, subject);
+  value_t lambda_space = get_lambda_methods(subject);
+  signature_map_lookup_state_reset(state);
+  value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
+  data->value = lambda_space;
+  return do_methodspace_method_lookup(state);
+}
+
+// Performs the extra lookup for block methods that happens when the block
+// delegate method is found in the normal lookup.
+static value_t complete_special_block_lookup(signature_map_lookup_state_t *state,
+    value_t subject) {
+  CHECK_FAMILY(ofBlock, subject);
+  refraction_point_t home = get_refractor_home(subject);
+  value_t block_space = get_refraction_point_data(&home);
+  signature_map_lookup_state_reset(state);
+  value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
+  data->value = block_space;
+  return do_methodspace_method_lookup(state);
+}
+
+// Performs a full method lookup through the current module and the subject's
+// module of origin.
+static value_t do_full_method_lookup(signature_map_lookup_state_t *state) {
+  value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
+  CHECK_FAMILY(ofModuleFragment, data->value);
+  TOPIC_INFO(Lookup, "Performing fragment lookup %v", state->input.record);
+  TRY(lookup_through_fragment_with_helper(state, data->value, data->helper));
+  TOPIC_INFO(Lookup, "Performing subject lookup");
+  value_t subject = whatever();
+  TRY(lookup_subject_methods(state, &subject));
+  TOPIC_INFO(Lookup, "Lookup result: %v", state->result);
+  if (in_family(ofMethod, state->result)) {
+    value_t result_flags = get_method_flags(state->result);
+    if (!is_flag_set_empty(result_flags)) {
+      // The result has at least one special flag set so we have to give this
+      // lookup special treatment.
+      if (get_flag_set_at(result_flags, mfLambdaDelegate)) {
+        return complete_special_lambda_lookup(state, subject);
+      } else if (get_flag_set_at(result_flags, mfBlockDelegate)) {
+        return complete_special_block_lookup(state, subject);
+      }
+    }
+  }
+  TRY_SET(*data->arg_map_out, get_signature_map_lookup_argument_map(state));
+  return success();
+}
+
+value_t lookup_method_full(value_t ambience, value_t fragment,
+    value_t record, frame_t *frame, value_t helper, value_t *arg_map_out) {
+  value_and_argument_map_t data;
+  data.value = fragment;
+  data.helper = helper;
+  data.arg_map_out = arg_map_out;
+  return do_signature_map_lookup(ambience, record, frame,
+      do_full_method_lookup, &data);
 }
 
 value_t plankton_new_methodspace(runtime_t *runtime) {
@@ -1146,7 +1194,7 @@ void builtin_marker_print_on(value_t self, print_on_context_t *context) {
 }
 
 
-// --- B u i l t i n   i m p l e m e n t a t i o n ---
+/// ## Builtin implementation
 
 FIXED_GET_MODE_IMPL(builtin_implementation, vmMutable);
 
@@ -1156,11 +1204,14 @@ ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation, acInFamily,
     ofCodeBlock, Code, code);
 INTEGER_ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation,
     ArgumentCount, argument_count);
+ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation, acInPhylum,
+    tpFlagSet, MethodFlags, method_flags);
 
 value_t builtin_implementation_validate(value_t self) {
   VALIDATE_FAMILY(ofBuiltinImplementation, self);
   VALIDATE_FAMILY(ofString, get_builtin_implementation_name(self));
   VALIDATE_FAMILY(ofCodeBlock, get_builtin_implementation_code(self));
+  VALIDATE_PHYLUM(tpFlagSet, get_builtin_implementation_method_flags(self));
   return success();
 }
 

@@ -580,7 +580,7 @@ static value_t build_methodspace_from_method_asts(value_t method_asts,
 
     // Build a method space in which to store the method.
     TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
-        nothing(), body_code, nothing()));
+        nothing(), body_code, nothing(), new_flag_set(kFlagSetAllOff)));
     TRY(add_methodspace_method(runtime, space, method));
   }
 

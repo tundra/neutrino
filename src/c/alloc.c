@@ -639,10 +639,12 @@ value_t new_heap_methodspace(runtime_t *runtime) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signature,
-    value_t syntax, value_t code, value_t fragment) {
+value_t new_heap_method(runtime_t *runtime, alloc_flags_t alloc_flags,
+    value_t signature, value_t syntax, value_t code, value_t fragment,
+    value_t method_flags) {
   CHECK_FAMILY_OPT(ofSignature, signature);
   CHECK_FAMILY_OPT(ofCodeBlock, code);
+  CHECK_PHYLUM(tpFlagSet, method_flags);
   size_t size = kMethodSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_method_species)));
@@ -650,7 +652,8 @@ value_t new_heap_method(runtime_t *runtime, alloc_flags_t flags, value_t signatu
   set_method_code(result, code);
   set_method_syntax(result, syntax);
   set_method_module_fragment(result, fragment);
-  TRY(post_process_result(runtime, result, flags));
+  set_method_flags(result, method_flags);
+  TRY(post_process_result(runtime, result, alloc_flags));
   return post_create_sanity_check(result, size);
 }
 
@@ -674,13 +677,14 @@ value_t new_heap_builtin_marker(runtime_t *runtime, value_t name) {
 }
 
 value_t new_heap_builtin_implementation(runtime_t *runtime, alloc_flags_t flags,
-    value_t name, value_t code, size_t posc) {
+    value_t name, value_t code, size_t posc, value_t method_flags) {
   size_t size = kBuiltinImplementationSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_builtin_implementation_species)));
   set_builtin_implementation_name(result, name);
   set_builtin_implementation_code(result, code);
   set_builtin_implementation_argument_count(result, posc);
+  set_builtin_implementation_method_flags(result, method_flags);
   TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }

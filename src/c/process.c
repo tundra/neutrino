@@ -169,28 +169,6 @@ void frame_walk_down_stack(frame_t *frame) {
   frame->stack_pointer = snapshot.frame_pointer - kFrameHeaderSize;
 }
 
-void drop_to_stack_frame(value_t stack, frame_t *frame, frame_flag_t flags) {
-  value_t piece = get_stack_top_piece(stack);
-  frame_loop: while (true) {
-    CHECK_FALSE("stack piece empty", frame_has_flag(frame, ffStackPieceEmpty));
-    frame_walk_down_stack(frame);
-    if (frame_has_flag(frame, ffStackPieceEmpty)) {
-      // If we're at the bottom of a stack piece walk down another frame to
-      // get to the next one.
-      piece = get_stack_piece_previous(piece);
-      CHECK_FALSE("bottom of stack", is_nothing(piece));
-      set_stack_top_piece(stack, piece);
-      open_stack_piece(piece, frame);
-      CHECK_FALSE("stack piece empty", frame_has_flag(frame, ffStackPieceEmpty));
-    }
-    if (!frame_has_flag(frame, flags)) {
-      goto frame_loop;
-    } else {
-      return;
-    }
-  }
-}
-
 bool frame_has_flag(frame_t *frame, frame_flag_t flag) {
   return get_flag_set_at(frame->flags, flag);
 }
@@ -478,7 +456,7 @@ static value_t escape_is_live(builtin_arguments_t *args) {
 
 value_t add_escape_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   TRY(add_custom_method_impl(runtime, deref(s_map), "escape()", 1,
-      emit_fire_escape));
+      new_flag_set(kFlagSetAllOff), emit_fire_escape));
   ADD_BUILTIN_IMPL("escape.is_live", 0, escape_is_live);
   return success();
 }
@@ -510,7 +488,7 @@ value_t emit_lambda_call_trampoline(assembler_t *assm) {
 
 value_t add_lambda_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   TRY(add_custom_method_impl(runtime, deref(s_map), "lambda()", 0,
-      emit_lambda_call_trampoline));
+      new_flag_set(mfLambdaDelegate), emit_lambda_call_trampoline));
   return success();
 }
 
@@ -559,7 +537,7 @@ static value_t block_is_live(builtin_arguments_t *args) {
 
 value_t add_block_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   TRY(add_custom_method_impl(runtime, deref(s_map), "block()", 0,
-      emit_block_call_trampoline));
+      new_flag_set(mfBlockDelegate), emit_block_call_trampoline));
   ADD_BUILTIN_IMPL("block.is_live", 0, block_is_live);
   return success();
 }

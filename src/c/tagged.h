@@ -241,11 +241,18 @@ static size_t get_ambience_redirect_offset(value_t self) {
 }
 
 
-// --- F l a g   S e t ---
+/// ## Flag set
+///
+/// A flag set is a custom tagged set of up to 32 different flags. In principle
+/// you could just use an int but having this as a separate type allows them to
+/// be type checked at runtime and provides a convenient place to have the
+/// functions that work with flag bits.
+///
+/// The max number of bits that can be stored in a flag set, 32, is deliberately
+/// somewhat smaller than the payload size because this way it is a round number
+/// and we don't have to worry about boundary conditions.
 
-// The max number of bits that can be stored in a tiny bit set. This is
-// deliberately somewhat smaller than the payload size because this way it is
-// a round number and we don't have to worry about boundary conditions.
+// The max number of flags in a flag set.
 static const size_t kFlagSetMaxSize = 32;
 
 // Initializer that has all flags of a flag set enabled.

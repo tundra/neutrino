@@ -260,71 +260,14 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame_set_code_block(&frame, ROOT(runtime, empty_code_block));
           E_RETURN(new_signal_condition());
         }
-        case ocDelegateToLambda: {
-          // Get the lambda to delegate to.
-          value_t lambda = frame_get_argument(&frame, 0);
-          CHECK_FAMILY(ofLambda, lambda);
-          value_t space = get_lambda_methods(lambda);
-          // Pop off the top frame since we're repeating the previous call.
-          drop_to_stack_frame(stack, &frame, ffOrganic);
-          code_cache_refresh(&cache, &frame);
-          // Extract the invocation record from the calling instruction.
-          CHECK_EQ("invalid calling instruction", ocInvoke,
-              peek_previous_short(&cache, &frame, kInvokeOperationSize, 0));
-          value_t record = peek_previous_value(&cache, &frame, kInvokeOperationSize, 1);
-          CHECK_FAMILY(ofInvocationRecord, record);
-          // From this point we do the same as invoke except using the space from
-          // the lambda rather than the space from the invoke instruction.
-          value_t arg_map;
-          value_t method = lookup_methodspace_method(ambience, space, record,
-              &frame, &arg_map);
-          if (in_condition_cause(ccLookupError, method)) {
-            log_lookup_error(method, record, &frame);
-            E_RETURN(method);
-          }
-          // The lookup may have failed with a different condition. Check for that.
-          E_TRY(method);
-          E_TRY_DEF(code_block, ensure_method_code(runtime, method));
-          push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block),
-              arg_map);
-          frame_set_code_block(&frame, code_block);
-          code_cache_refresh(&cache, &frame);
-          break;
-        }
+        case ocDelegateToLambda:
         case ocDelegateToBlock: {
-          // Get the lambda to delegate to.
-          value_t block = frame_get_argument(&frame, 0);
-          CHECK_FAMILY(ofBlock, block);
-          CHECK_TRUE_VALUE("calling dead local lambda", get_block_is_live(block));
-          // Locate the place on the stack that holds this block's state.
-          refraction_point_t home = get_refractor_home(block);
-          value_t space = get_refraction_point_data(&home);
-          CHECK_FAMILY(ofMethodspace, space);
-          // Pop off the top frame since we're repeating the previous call.
-          drop_to_stack_frame(stack, &frame, ffOrganic);
-          code_cache_refresh(&cache, &frame);
-          // Extract the invocation record from the calling instruction.
-          CHECK_EQ("invalid calling instruction", ocInvoke,
-              peek_previous_short(&cache, &frame, kInvokeOperationSize, 0));
-          value_t record = peek_previous_value(&cache, &frame, kInvokeOperationSize, 1);
-          CHECK_FAMILY(ofInvocationRecord, record);
-          // From this point we do the same as invoke except using the space from
-          // the lambda rather than the space from the invoke instruction.
-          value_t arg_map;
-          value_t method = lookup_methodspace_method(ambience, space, record,
-              &frame, &arg_map);
-          if (in_condition_cause(ccLookupError, method)) {
-            log_lookup_error(method, record, &frame);
-            E_RETURN(method);
-          }
-          // The lookup may have failed with a different condition. Check for that.
-          E_TRY(method);
-          E_TRY_DEF(code_block, ensure_method_code(runtime, method));
-          push_stack_frame(runtime, stack, &frame, get_code_block_high_water_mark(code_block),
-              arg_map);
-          frame_set_code_block(&frame, code_block);
-          code_cache_refresh(&cache, &frame);
-          break;
+          // This op only appears in the lambda and block delegator methods.
+          // They should never be executed because the delegation happens during
+          // method lookup. If we hit here something's likely wrong with the
+          // lookup process.
+          UNREACHABLE("delegate to lambda");
+          return new_condition(ccWat);
         }
         case ocBuiltin: {
           value_t wrapper = read_value(&cache, &frame, 1);

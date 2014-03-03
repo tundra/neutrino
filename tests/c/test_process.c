@@ -99,6 +99,32 @@ TEST(process, bottom_frame) {
   DISPOSE_RUNTIME();
 }
 
+// Pops frames off the given stack until one is reached that has one of the
+// given flags set. There must be such a frame on the stack. Note that this
+// ignores barriers so the resulting stack may be some form of invalid wrt.
+// barriers.
+static void drop_to_stack_frame(value_t stack, frame_t *frame, frame_flag_t flags) {
+  value_t piece = get_stack_top_piece(stack);
+  frame_loop: while (true) {
+    CHECK_FALSE("stack piece empty", frame_has_flag(frame, ffStackPieceEmpty));
+    frame_walk_down_stack(frame);
+    if (frame_has_flag(frame, ffStackPieceEmpty)) {
+      // If we're at the bottom of a stack piece walk down another frame to
+      // get to the next one.
+      piece = get_stack_piece_previous(piece);
+      CHECK_FALSE("bottom of stack", is_nothing(piece));
+      set_stack_top_piece(stack, piece);
+      open_stack_piece(piece, frame);
+      CHECK_FALSE("stack piece empty", frame_has_flag(frame, ffStackPieceEmpty));
+    }
+    if (!frame_has_flag(frame, flags)) {
+      goto frame_loop;
+    } else {
+      return;
+    }
+  }
+}
+
 TEST(process, stack_frames) {
   CREATE_RUNTIME();
 
