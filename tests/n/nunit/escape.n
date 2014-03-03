@@ -62,16 +62,15 @@ def $escape_at_n($i, $n) {
 
 def $test_various_depth_escape() {
   # TODO: increase the number of iterations when the interpreter is faster.
-  for $i in (3).to(20) do {
-    $core:info($i);
+  for $i in (0).to(20) do {
     $escape_at_n(0, 5 * $i);
   }
 }
 
 do {
-  # $test_simple_escape();
-  # $test_direct_kill();
-  # $test_deep_escape();
+  $test_simple_escape();
+  $test_direct_kill();
+  $test_deep_escape();
   $test_various_depth_escape();
   # TODO: check that
   #   - escaping past another escape kills both (indirect killing).

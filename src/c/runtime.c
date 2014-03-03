@@ -434,7 +434,6 @@ static value_t runtime_validate_object(value_t value, value_callback_t *self) {
 }
 
 value_t runtime_validate(runtime_t *runtime, value_t cause) {
-  HEST("Validating: %v", cause);
   TRY(heap_validate(&runtime->heap));
   value_callback_t validate_callback;
   value_callback_init(&validate_callback, runtime_validate_object, NULL);

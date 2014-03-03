@@ -294,7 +294,6 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         }
         case ocStackPieceBottom: {
           value_t top_piece = frame.stack_piece;
-          HEST("Leaving stack piece %w (prev %w)", top_piece, get_stack_piece_previous(top_piece));
           value_t result = frame_pop_value(&frame);
           value_t arg_map = frame_get_argument_map(&frame);
           for (size_t i = 0; i < get_array_length(arg_map); i++)
@@ -303,7 +302,6 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           CHECK_TRUE("invalid stack piece bottom barrier", is_same_value(handler,
               top_piece));
           value_t next_piece = get_stack_piece_previous(top_piece);
-          HEST("Next piece: %w", next_piece);
           set_stack_top_piece(stack, next_piece);
           frame = open_stack(stack);
           code_cache_refresh(&cache, &frame);
@@ -511,10 +509,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t barrier_pointer = get_stack_top_barrier_pointer(stack);
           value_t escape_piece = get_escape_stack_piece(escape);
           value_t escape_pointer = get_escape_stack_pointer(escape);
-          HEST("Escaping to %w@%v; top barrier %w@%v", escape_piece,
-              escape_pointer, barrier_piece, barrier_pointer);
           if (is_same_value(barrier_piece, escape_piece)) {
-            HEST("Escaping to same piece");
             // The barrier is in the same stack piece that we're escaping to.
             // Check whether it's above or below.
             if (get_integer_value(barrier_pointer) > get_integer_value(escape_pointer)) {
@@ -527,7 +522,6 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
               goto fire_escape;
             }
           } else {
-            HEST("Escaping to different piece");
             // The next barrier is different from where we're escaping to. Since
             // all stack pieces have at least one barrier it must be above the
             // one we're escaping to, otherwise we would have met a barrier on
@@ -536,21 +530,36 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
             goto fire_next_barrier;
           }
           fire_next_barrier: {
-            HEST("Side-popping barrier %w@%v", barrier_piece, barrier_pointer);
+            // Grab the next barrier's handler.
             value_t *barrier_piece_bottom =
                 get_array_elements(get_stack_piece_storage(barrier_piece));
             value_t *barrier_bottom = barrier_piece_bottom + get_integer_value(barrier_pointer);
             stack_barrier_t barrier = {barrier_bottom};
             value_t handler = stack_barrier_get_handler(&barrier);
-            if (in_family(ofStackPiece, handler)) {
-              HEST("Passing stack piece: %v", handler);
-            } else {
-              HEST("Unknown handler: %v", handler);
-            }
+            // Unhook the barrier from the barrier stack.
             value_t next_piece = stack_barrier_get_next_piece(&barrier);
             value_t next_pointer = stack_barrier_get_next_pointer(&barrier);
             set_stack_top_barrier_piece(stack, next_piece);
             set_stack_top_barrier_pointer(stack, next_pointer);
+            if (in_family(ofStackPiece, handler)) {
+              // Ignore. The purpose of this barrier is bookkeeping, not
+              // execution.
+            } else if (in_family(ofCodeShard, handler)) {
+              // The handler is a code shard. Execute it.
+              refraction_point_t home = {barrier_bottom};
+              value_t shard = get_refraction_point_refractor(&home);
+              CHECK_TRUE("invalid refraction point", is_same_value(shard, handler));
+              value_t code_block = get_refraction_point_data(&home);
+              CHECK_FAMILY(ofCodeBlock, code_block);
+              // Push the shard onto the stack as the subject since we may need it
+              // to refract access to outer variables.
+              frame_push_value(&frame, handler);
+              value_t argmap = ROOT(runtime, array_of_zero);
+              push_stack_frame(runtime, stack, &frame,
+                  get_code_block_high_water_mark(code_block), argmap);
+              frame_set_code_block(&frame, code_block);
+              code_cache_refresh(&cache, &frame);
+            }
             break;
           }
           fire_escape: {

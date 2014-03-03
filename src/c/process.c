@@ -98,7 +98,6 @@ static void push_stack_piece_bottom_frame(runtime_t *runtime, value_t stack_piec
 // the piece in any way though.
 static void read_stack_piece_lid(value_t piece, frame_t *frame) {
   CHECK_TRUE("stack piece not closed", is_stack_piece_closed(piece));
-  HEST("Opening stack piece %w, replacing %w", piece, frame->stack_piece);
   frame->stack_piece = piece;
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
   frame->frame_pointer = stack_start + get_integer_value(get_stack_piece_lid_frame_pointer(piece));
@@ -112,7 +111,6 @@ void open_stack_piece(value_t piece, frame_t *frame) {
 }
 
 void close_frame(frame_t *frame) {
-  HEST("Closing stack piece %w", frame->stack_piece);
   value_t piece = frame->stack_piece;
   CHECK_FALSE("stack piece already closed", is_stack_piece_closed(piece));
   bool pushed = try_push_new_frame(frame, 0, ffLid | ffSynthetic, true);
@@ -130,7 +128,6 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
   value_t top_piece = get_stack_top_piece(stack);
   CHECK_FALSE("stack piece closed", is_stack_piece_closed(top_piece));
   if (!try_push_new_frame(frame, frame_capacity, ffOrganic, false)) {
-    HEST("Creating %w %w", top_piece, frame->stack_piece);
     // There wasn't room to push this frame onto the top stack piece so
     // allocate a new top piece that definitely has room.
     size_t default_capacity = get_stack_default_piece_capacity(stack);
@@ -147,7 +144,6 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     // pointing to the old frame.
     TRY_DEF(new_piece, new_heap_stack_piece(runtime, new_capacity, top_piece,
         stack));
-    HEST("Created stack piece %w on top of %w", new_piece, top_piece);
     push_stack_piece_bottom_frame(runtime, new_piece, arg_map);
     transfer_top_arguments(new_piece, frame, transfer_arg_count);
     set_stack_top_piece(stack, new_piece);
@@ -161,7 +157,6 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     open_stack_piece(new_piece, frame);
     bool pushed_stack_piece = try_push_new_frame(frame, frame_capacity,
         ffOrganic, false);
-    HEST("Prepared frame %w", frame->stack_piece);
     CHECK_TRUE("pushing on new piece failed", pushed_stack_piece);
   }
   frame_set_argument_map(frame, arg_map);
@@ -200,8 +195,6 @@ frame_t open_stack(value_t stack) {
   return result;
 }
 
-size_t barrier_serial = 0;
-
 // Push the top part of a barrier assuming that the handler has already been
 // pushed.
 static void frame_push_partial_barrier(frame_t *frame) {
@@ -213,9 +206,6 @@ static void frame_push_partial_barrier(frame_t *frame) {
   value_t prev_barrier_pointer = get_stack_top_barrier_pointer(stack);
   frame_push_value(frame, prev_barrier_piece);
   frame_push_value(frame, prev_barrier_pointer);
-  HEST("%i Pushing barrier at %w@%v (prev %w@%v)", barrier_serial++,
-      frame->stack_piece, state_pointer_value, prev_barrier_piece,
-      prev_barrier_pointer);
   set_stack_top_barrier_piece(stack, frame->stack_piece);
   set_stack_top_barrier_pointer(stack, state_pointer_value);
 }
@@ -268,15 +258,11 @@ static bool at_top_barrier(frame_t *frame) {
 }
 
 void frame_pop_partial_barrier(frame_t *frame) {
-  HEST("%i Popping barrier at %w %w@%v", barrier_serial++, frame->stack_piece,
-      get_stack_top_barrier_piece(get_stack_piece_stack(frame->stack_piece)),
-      get_stack_top_barrier_pointer(get_stack_piece_stack(frame->stack_piece)));
   IF_EXPENSIVE_CHECKS_ENABLED(CHECK_TRUE("not at top barrier",
       at_top_barrier(frame)));
   value_t prev_pointer = frame_pop_value(frame);
   CHECK_DOMAIN_OPT(vdInteger, prev_pointer);
   value_t prev_piece = frame_pop_value(frame);
-  HEST("Prev barrier at %w%v", prev_piece, prev_pointer);
   CHECK_FAMILY_OPT(ofStackPiece, prev_piece);
   value_t stack = get_stack_piece_stack(frame->stack_piece);
   set_stack_top_barrier_piece(stack, prev_piece);
