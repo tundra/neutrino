@@ -62,8 +62,64 @@ def $escape_at_n($i, $n) {
 
 def $test_various_depth_escape() {
   # TODO: increase the number of iterations when the interpreter is faster.
-  for $i in (0).to(20) do {
+  for $i in (0).to(30) do {
     $escape_at_n(0, 5 * $i);
+  }
+}
+
+def $test_nested_escape() {
+  var $outer := null;
+  var $inner := null;
+  with_escape $o do {
+    $outer := $o;
+    with_escape $i do {
+      $inner := $i;
+      $assert:that($inner.is_live);
+      $assert:that($outer.is_live);
+    }
+  }
+  $assert:not($inner.is_live);
+  $assert:not($outer.is_live);
+  with_escape $o do {
+    $outer := $o;
+    with_escape $i do {
+      $inner := $i;
+      $outer(null);
+    }
+  }
+  $assert:not($inner.is_live);
+  $assert:not($outer.is_live);
+  with_escape $o do {
+    $outer := $o;
+    try {
+      with_escape $i do {
+        $inner := $i;
+        try {
+          $o(null);
+        } ensure {
+          $assert:that($inner.is_live);
+          $assert:that($outer.is_live);
+        }
+      }
+    } ensure {
+      $assert:not($inner.is_live);
+      $assert:that($outer.is_live);
+    }
+  }
+}
+
+def $test_interrupted_escape() {
+  var $escaped := null;
+  with_escape $outer do {
+    $assert:equals(11, with_escape $inner do {
+      try {
+        $outer(10);
+      } ensure {
+        $inner(11);
+      }
+    });
+    $escaped := false;
+    $assert:that($outer.is_live);
   }
 }
 
@@ -72,7 +128,8 @@ do {
   $test_direct_kill();
   $test_deep_escape();
   $test_various_depth_escape();
+  $test_nested_escape();
+  $test_interrupted_escape();
   # TODO: check that
-  #   - escaping past another escape kills both (indirect killing).
   #   - escaping fails if called from a different process.
 }

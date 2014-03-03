@@ -27,6 +27,35 @@ def $test_simple_ensure() {
   $assert:equals(5, $v);
 }
 
+def $test_deeply_nested_ensure() {
+  var $v := 0;
+  $assert:equals(180, with_escape $escape do {
+    try {
+      try {
+        try {
+          try {
+            $escape(180);
+          } ensure {
+            $assert:equals($v, 0);
+            $v := $v + 8;
+          }
+        } ensure {
+          $assert:equals($v, 8);
+          $v := $v + 5;
+        }
+      } ensure {
+        $assert:equals($v, 13);
+        $v := $v + 3;
+      }
+    } ensure {
+      $assert:equals($v, 16);
+      $v := $v + 2;
+    }
+  });
+  $assert:equals(18, $v);
+}
+
 do {
   $test_simple_ensure();
+  $test_deeply_nested_ensure();
 }

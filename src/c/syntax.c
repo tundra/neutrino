@@ -727,9 +727,9 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   short_buffer_cursor_t dest;
   TRY(assembler_emit_create_escape(assm, &dest));
   size_t code_start_offset = assembler_get_code_cursor(assm);
-  // The capture will be pushed as the top element so its offset is one below
-  // the current top.
-  size_t stack_offset = assm->stack_height - 1;
+  // The capture will be pushed as the bottom value of the stack barrier, so
+  // stack-barrier-size down from the current stack height.
+  size_t stack_offset = assm->stack_height - kStackBarrierSize;
   // Record in the scope chain that the symbol is bound and where the value is
   // located on the stack.
   value_t symbol = get_with_escape_ast_symbol(self);
