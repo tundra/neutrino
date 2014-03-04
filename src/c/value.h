@@ -218,7 +218,9 @@ static value_t new_moved_object(value_t target) {
 }
 
 
-// --- O b j e c t ---
+/// ## Object
+///
+/// Objects are heap-allocated values.
 
 // Indicates that a family has a particular attribute.
 #define X(T, F) T
@@ -226,32 +228,37 @@ static value_t new_moved_object(value_t target) {
 // Indicates that a family does not have a particular attribute.
 #define _(T, F) F
 
-// The columns are,
-//
-//   - CamelName: the name of the family in upper camel case.
-//   - underscore_name: the name of the family in lower underscore case.
-//   - Cm: do the values support ordered comparison?
-//   - Id: do the values have a custom identity comparison function?
-//   - Pt: can this be read from plankton?
-//   - Sr: is this type exposed to the surface language?
-//   - Nl: does this type have a nontrivial layout, either non-value fields or
-//       variable size.
-//   - Fu: does this type require a post-migration fixup during garbage
-//       collection?
-//   - Em: is this family a syntax tree that can be emitted as code? Not all
-//       syntax tree nodes can be emitted.
-//   - Md: is this family in the modal division, that is, is the mutability
-//       state stored in the species?
-//   - Ow: do objects of this family use some other objects in their
-//       implementation that they own?
-//   - Sc: are objects of this family scoped, that is, can they be used as
-//       barrier handlers that are closed when their scope exits?
-//   - N: ordinal used to calculate the family enum values. The ordinals are
-//       shuffled on purpose such that new ones can be added in the middle
-//       without messing up the sort order, there being no order to begin with.
-//       The only exception is the families that must have a special sort order,
-//       whose ordinals are given by where they fit in the order.
-//
+/// ### Family property index
+///
+/// This macro nightmare is the index of family properties. Each `_` or `X`
+/// corresponds to a property either being present (`X`) or absent (`_`) and is
+/// used elsewhere to declare or set functions, particularly in the object
+/// family behavior structs. The columns are,
+///
+///   - _CamelName_: the name of the family in upper camel case.
+///   - _underscore_name_: the name of the family in lower underscore case.
+///   - _Cm_: do the values support ordered comparison?
+///   - _Id_: do the values have a custom identity comparison function?
+///   - _Pt_: can this be read from plankton?
+///   - _Sr_: is this type exposed to the surface language?
+///   - _Nl_: does this type have a nontrivial layout, either non-value fields
+///       or variable size.
+///   - _Fu_: does this type require a post-migration fixup during garbage
+///       collection?
+///   - _Em_: is this family a syntax tree that can be emitted as code? Not
+///       all syntax tree nodes can be emitted.
+///   - _Md_: is this family in the modal division, that is, is the mutability
+///       state stored in the species?
+///   - _Ow_: do objects of this family use some other objects in their
+///       implementation that they own?
+///   - _Sc_: are objects of this family scoped, that is, can they be used as
+///       barrier handlers that are closed when their scope exits?
+///   - _N_: ordinal used to calculate the family enum values. The ordinals are
+///       shuffled on purpose such that new ones can be added in the middle
+///       without messing up the sort order, there being no order to begin with.
+///       The only exception is the families that must have a special sort order,
+///       whose ordinals are given by where they fit in the order.
+
 // CamelName                 underscore_name            Cm Id Pt Sr Nl Fu Em Md Ow Sc N
 
 // Enumerates the special species, the ones that require special handling during
@@ -329,8 +336,8 @@ static value_t new_moved_object(value_t target) {
   F(Signature,               signature,                 _, _, _, _, _, _, _, X, X, _, 53)\
   F(SignatureAst,            signature_ast,             _, _, X, X, _, _, _, _, _, _, 19)\
   F(SignatureMap,            signature_map,             _, _, _, _, _, _, _, X, X, _, 45)\
-  F(Stack,                   stack,                     _, _, _, _, _, _, _, _, _, _, 71)\
-  F(StackPiece,              stack_piece,               _, _, _, _, _, _, _, _, _, X, 58)\
+  F(Stack,                   stack,                     _, _, _, _, _, _, _, _, _, X, 71)\
+  F(StackPiece,              stack_piece,               _, _, _, _, _, _, _, _, _, _, 58)\
   F(String,                  string,                    X, X, _, X, X, _, _, _, _, _, 57)\
   F(SymbolAst,               symbol_ast,                _, _, X, X, _, _, _, _, _, _, 33)\
   F(Type,                    type,                      _, _, X, X, _, _, _, X, _, _, 32)\
@@ -356,10 +363,10 @@ static const int kNextFamilyOrdinal = 76;
 // alone.
 typedef enum {
   __ofFirst__ = -1
-  #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N) \
+#define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N) \
   , of##Family = NEW_STATIC_INTEGER(N)
   ENUM_OBJECT_FAMILIES(__DECLARE_OBJECT_FAMILY_ENUM__)
-  #undef __DECLARE_OBJECT_FAMILY_ENUM__
+#undef __DECLARE_OBJECT_FAMILY_ENUM__
   // This is a special value separate from any of the others that can be used
   // to indicate no family.
   , __ofUnknown__

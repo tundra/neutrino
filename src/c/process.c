@@ -37,10 +37,6 @@ bool is_stack_piece_closed(value_t self) {
   return is_integer(get_stack_piece_lid_frame_pointer(self));
 }
 
-void on_stack_piece_scope_exit(value_t self) {
-  // Ignore. The purpose of this barrier is bookkeeping, not execution.
-}
-
 
 // --- S t a c k   ---
 
@@ -64,6 +60,13 @@ value_t stack_validate(value_t self) {
     current = get_stack_piece_previous(current);
   }
   return success();
+}
+
+void on_stack_scope_exit(value_t self) {
+  // This is just for bookkeeping to ensure that there is always a well-defined
+  // next scope when dealing with barriers further up the stack. It should never
+  // actually be invoked.
+  UNREACHABLE("exiting stack");
 }
 
 // Transfers the arguments from the top of the previous piece (which the frame
@@ -94,7 +97,6 @@ static void push_stack_piece_bottom_frame(runtime_t *runtime, value_t stack_piec
   CHECK_TRUE("pushing bottom frame", pushed);
   frame_set_code_block(&bottom, code_block);
   frame_set_argument_map(&bottom, arg_map);
-  frame_push_barrier(&bottom, stack_piece);
   close_frame(&bottom);
 }
 
