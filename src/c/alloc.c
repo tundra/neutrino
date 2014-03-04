@@ -527,7 +527,7 @@ static void push_stack_bottom_frame(runtime_t *runtime, value_t stack) {
       false);
   CHECK_TRUE("pushing bottom frame", pushed);
   frame_set_code_block(&bottom, code_block);
-  frame_push_barrier(&bottom, bottom.stack_piece);
+  frame_push_barrier(&bottom, stack);
   close_frame(&bottom);
 }
 

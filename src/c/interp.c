@@ -299,12 +299,6 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         case ocStackPieceBottom: {
           value_t top_piece = frame.stack_piece;
           value_t result = frame_pop_value(&frame);
-          value_t arg_map = frame_get_argument_map(&frame);
-          for (size_t i = 0; i < get_array_length(arg_map); i++)
-            frame_pop_value(&frame);
-          value_t handler = frame_pop_barrier(&frame);
-          CHECK_TRUE("invalid stack piece bottom barrier", is_same_value(handler,
-              top_piece));
           value_t next_piece = get_stack_piece_previous(top_piece);
           set_stack_top_piece(stack, next_piece);
           frame = open_stack(stack);
