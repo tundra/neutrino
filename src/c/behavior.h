@@ -101,6 +101,11 @@ struct family_behavior_t {
   // fail because of mode discipline but may fail if interacting with the
   // runtime fails.
   value_t (*ensure_owned_values_frozen)(runtime_t *runtime, value_t self);
+  // Perform the on-scope-exit action associated with this scoped object. If
+  // this family is not scoped the value is NULL. It's a bit of a mess if these
+  // can fail since the barrier gets unhooked from the chain before we call this
+  // so they should always succeed, otherwise use a full code block.
+  void (*on_scope_exit)(value_t self);
 };
 
 // Validates an object. Check fails if validation fails except in soft check
@@ -189,19 +194,25 @@ value_t set_object_contents(runtime_t *runtime, value_t object,
 // Returns the primary type of the given value.
 value_t get_primary_type(value_t value, runtime_t *runtime);
 
+// Performs the on-scope-exit action for the given object.
+void object_on_scope_exit(value_t value);
+
+// Returns true iff the given value is a scoped object.
+bool is_scoped_object(value_t value);
+
 // Returns a value suitable to be returned as a hash from the address of an
 // object.
 #define OBJ_ADDR_HASH(VAL) new_integer((VAL).encoded)
 
 // Declare the behavior structs for all the families on one fell swoop.
-#define DECLARE_FAMILY_BEHAVIOR(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N) \
+#define DECLARE_FAMILY_BEHAVIOR(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N) \
 extern family_behavior_t k##Family##Behavior;
 ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 #undef DECLARE_FAMILY_BEHAVIOR
 
 // Declare the functions that implement the behaviors too, that way they can be
 // implemented wherever.
-#define __DECLARE_FAMILY_FUNCTIONS__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N) \
+#define __DECLARE_FAMILY_FUNCTIONS__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N) \
 value_t family##_validate(value_t value);                                      \
 ID(                                                                            \
   value_t family##_transient_identity_hash(value_t value,                      \
@@ -239,9 +250,14 @@ FU(                                                                            \
 MD(,                                                                           \
   value_mode_t get_##family##_mode(value_t self);                              \
   value_t set_##family##_mode_unchecked(runtime_t *runtime, value_t self,      \
-      value_mode_t mode);)                                                     \
+      value_mode_t mode);                                                      \
+  )                                                                            \
 OW(                                                                            \
-  value_t ensure_##family##_owned_values_frozen(runtime_t *runtime, value_t self);,\
+  value_t ensure_##family##_owned_values_frozen(runtime_t *runtime,            \
+      value_t self);,                                                          \
+  )                                                                            \
+SC(                                                                            \
+  void on_##family##_scope_exit(value_t self);,                                \
   )
 ENUM_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
 #undef __DECLARE_FAMILY_FUNCTIONS__

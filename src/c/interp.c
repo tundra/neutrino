@@ -547,11 +547,11 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
             value_t next_pointer = stack_barrier_get_next_pointer(&barrier);
             set_stack_top_barrier_piece(stack, next_piece);
             set_stack_top_barrier_pointer(stack, next_pointer);
-            if (in_family(ofStackPiece, handler)) {
-              // Ignore. The purpose of this barrier is bookkeeping, not
-              // execution.
-            } else if (in_family(ofCodeShard, handler)) {
-              // The handler is a code shard. Execute it.
+            // Fire the exit action for the handler object.
+            if (in_family(ofCodeShard, handler)) {
+              // The handler is a code shard. Code shards are scoped but must
+              // be handled specially so we don't use the behavior-based scoped
+              // object infrastructure for them.
               refraction_point_t home = {barrier_bottom};
               value_t shard = get_refraction_point_refractor(&home);
               CHECK_TRUE("invalid refraction point", is_same_value(shard, handler));
@@ -570,14 +570,8 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
                   get_code_block_high_water_mark(code_block), argmap);
               frame_set_code_block(&frame, code_block);
               code_cache_refresh(&cache, &frame);
-            } else if (in_family(ofEscape, handler)) {
-              // The handler is an escape; mark it as dead.
-              set_escape_is_live(handler, no());
-            } else if (in_family(ofBlock, handler)) {
-              // The handler is a block; mark it as dead.
-              set_block_is_live(handler, no());
             } else {
-              ERROR("Unknown barrier handler %v", handler);
+              object_on_scope_exit(handler);
             }
             break;
           }
