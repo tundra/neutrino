@@ -340,7 +340,7 @@ value_t get_or_create_module_fragment_methodspaces_cache(runtime_t *runtime,
     value_t fragment);
 
 
-// --- I n v o c a t i o n   R e c o r d ---
+/// ## Invocation Record
 
 static const size_t kInvocationRecordSize = OBJECT_SIZE(1);
 static const size_t kInvocationRecordArgumentVectorOffset = OBJECT_FIELD_OFFSET(0);

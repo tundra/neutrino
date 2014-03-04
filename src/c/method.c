@@ -501,7 +501,7 @@ static void signature_map_lookup_state_swap_offsets(signature_map_lookup_state_t
 
 // The max amount of arguments for which we'll allocate the lookup state on the
 // stack.
-#define kSmallLookupLimit 16
+#define kSmallLookupLimit 8
 
 value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
     value_t sigmap, value_t space) {
@@ -1019,6 +1019,23 @@ value_t ensure_invocation_record_owned_values_frozen(runtime_t *runtime,
   TRY(ensure_frozen(runtime, get_invocation_record_argument_vector(self)));
   return success();
 }
+
+value_t invocation_record_transient_identity_hash(value_t value, hash_stream_t *stream,
+    cycle_detector_t *outer) {
+  cycle_detector_t inner;
+  TRY(cycle_detector_enter(outer, &inner, value));
+  value_t args = get_invocation_record_argument_vector(value);
+  return value_transient_identity_hash_cycle_protect(args, stream, &inner);
+}
+
+value_t invocation_record_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
+  cycle_detector_t inner;
+  TRY(cycle_detector_enter(outer, &inner, a));
+  value_t a_args = get_invocation_record_argument_vector(a);
+  value_t b_args = get_invocation_record_argument_vector(b);
+  return value_identity_compare_cycle_protect(a_args, b_args, &inner);
+}
+
 
 // --- O p e r a t i o n ---
 

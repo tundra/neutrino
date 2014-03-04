@@ -303,7 +303,7 @@ static value_t new_moved_object(value_t target) {
   F(Instance,                instance,                  _, _, X, X, _, _, _, _, _, _, 60)\
   F(InstanceManager,         instance_manager,          _, _, _, X, _, _, _, _, _, _,  3)\
   F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _, _, _,  4)\
-  F(InvocationRecord,        invocation_record,         _, _, _, _, _, _, _, X, X, _, 66)\
+  F(InvocationRecord,        invocation_record,         _, X, _, _, _, _, _, X, X, _, 66)\
   F(IsDeclarationAst,        is_declaration_ast,        _, _, X, _, _, _, _, _, _, _, 21)\
   F(Lambda,                  lambda,                    _, _, _, X, _, _, _, X, X, _, 47)\
   F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, _, _, _, 69)\
