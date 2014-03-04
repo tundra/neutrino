@@ -37,6 +37,10 @@ bool is_stack_piece_closed(value_t self) {
   return is_integer(get_stack_piece_lid_frame_pointer(self));
 }
 
+void on_stack_piece_scope_exit(value_t self) {
+  // Ignore. The purpose of this barrier is bookkeeping, not execution.
+}
+
 
 // --- S t a c k   ---
 
@@ -225,6 +229,7 @@ void frame_push_refracting_barrier(frame_t *frame, value_t refractor,
 }
 
 void frame_push_barrier(frame_t *frame, value_t handler) {
+  CHECK_TRUE("pushing non-scoped value as barrier", is_scoped_object(handler));
   frame_push_value(frame, handler);
   frame_push_partial_barrier(frame);
 }
@@ -504,6 +509,10 @@ value_t add_escape_builtin_implementations(runtime_t *runtime, safe_value_t s_ma
   return success();
 }
 
+void on_escape_scope_exit(value_t self) {
+  set_escape_is_live(self, no());
+}
+
 
 // ## Lambda
 
@@ -576,6 +585,10 @@ static value_t block_is_live(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofBlock, self);
   return get_block_is_live(self);
+}
+
+void on_block_scope_exit(value_t self) {
+  set_block_is_live(self, no());
 }
 
 value_t add_block_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
