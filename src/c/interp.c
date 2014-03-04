@@ -573,6 +573,11 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
             } else if (in_family(ofEscape, handler)) {
               // The handler is an escape; mark it as dead.
               set_escape_is_live(handler, no());
+            } else if (in_family(ofBlock, handler)) {
+              // The handler is a block; mark it as dead.
+              set_block_is_live(handler, no());
+            } else {
+              ERROR("Unknown barrier handler %v", handler);
             }
             break;
           }
