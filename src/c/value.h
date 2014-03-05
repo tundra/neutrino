@@ -1412,7 +1412,14 @@ static const size_t kReferenceValueOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(reference, value);
 
 
-// --- A m b i e n c e ---
+/// ## Ambience
+///
+/// An _ambience_ is the ambient, pervasive, state that is available everywhere
+/// within one process. Ambient state is really a slightly saner version of
+/// global state, but not sane enough that it's actually a good thing. The less
+/// ambient state we can get away with the better, especially ambient state that
+/// is visible at the surface level. Hidden ambient state (like caches) are
+/// okay.
 
 static const size_t kAmbienceSize = OBJECT_SIZE(2);
 static const size_t kAmbienceRuntimeOffset = OBJECT_FIELD_OFFSET(0);

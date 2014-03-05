@@ -866,3 +866,44 @@ TEST(method, tag_sorting) {
 
   DISPOSE_RUNTIME();
 }
+
+TEST(method, invocation_record_compare) {
+  CREATE_RUNTIME();
+  CREATE_TEST_ARENA();
+
+  value_t r0 = make_invocation_record(runtime, vArray(vStr("z"), vStr("x"),
+      vStr("y")));
+  value_t h0 = value_transient_identity_hash(r0);
+  value_t r1 = make_invocation_record(runtime, vArray(vStr("z"), vStr("x"),
+      vStr("y")));
+  value_t h1 = value_transient_identity_hash(r1);
+  ASSERT_FALSE(is_same_value(r0, r1));
+  ASSERT_TRUE(value_identity_compare(r0, r1));
+  ASSERT_VALEQ(h0, h1);
+
+  value_t r2 = make_invocation_record(runtime, vArray(vStr("x"), vStr("z"),
+      vStr("y")));
+  value_t h2 = value_transient_identity_hash(r2);
+  ASSERT_FALSE(value_identity_compare(r1, r2));
+  ASSERT_FALSE(is_same_value(h1, h2));
+
+  value_t r3 = make_invocation_record(runtime, vArray(vStr("z"), vStr("x")));
+  value_t h3 = value_transient_identity_hash(r3);
+  ASSERT_FALSE(value_identity_compare(r1, r3));
+  ASSERT_FALSE(value_identity_compare(r2, r3));
+  ASSERT_FALSE(is_same_value(h1, h3));
+  ASSERT_FALSE(is_same_value(h2, h3));
+
+  value_t r4 = make_invocation_record(runtime, vArray(vStr("x"), vStr("z"),
+      vStr("y"), vStr("y")));
+  value_t h4 = value_transient_identity_hash(r4);
+  ASSERT_FALSE(value_identity_compare(r1, r4));
+  ASSERT_FALSE(value_identity_compare(r2, r4));
+  ASSERT_FALSE(value_identity_compare(r3, r4));
+  ASSERT_FALSE(is_same_value(h1, h4));
+  ASSERT_FALSE(is_same_value(h2, h4));
+  ASSERT_FALSE(is_same_value(h3, h4));
+
+  DISPOSE_TEST_ARENA();
+  DISPOSE_RUNTIME();
+}
