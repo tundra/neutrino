@@ -238,7 +238,15 @@ value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
     value_t fragment);
 
 
-// --- S i g n a t u r e   m a p ---
+/// ## Signature map
+///
+/// A signature map is a mapping from signatures to values. Lookup works by
+/// giving an invocation which is then matched against the map's signatures and
+/// the value of the best match is the result. Method lookup is one example of
+/// signature map lookup but the mechanism is more general than that.
+///
+/// Typically a signature map lookup happens across multiple maps, for instance
+/// all the sets of methods imported into a particular scope.
 
 static const size_t kSignatureMapSize = OBJECT_SIZE(1);
 static const size_t kSignatureMapEntriesOffset = OBJECT_FIELD_OFFSET(0);
@@ -340,7 +348,32 @@ value_t get_or_create_module_fragment_methodspaces_cache(runtime_t *runtime,
     value_t fragment);
 
 
-// --- I n v o c a t i o n   R e c o r d ---
+/// ## Invocation Record
+///
+/// An invocation record is a mapping from parameter tag names to the offset
+/// of the corresponding argument in the evaluation order. For instance, the
+/// invocation
+///
+///     (z: $a, x: $b, y: $c)
+///
+/// would evaluate its argument in order `$a`, then `$b`, then `$c` so the
+/// invocation record would be
+///
+///     {z: 0, x: 1, y: 2}
+///
+/// except that evaluation order is counted backwards (that is, it is counted
+/// by where the argument ends up on the stack relative to the top. So the
+/// actual mapping is
+///
+///     {z: 2, x: 1, y: 0}
+///
+/// To make lookup more efficient, however, invocation records are sorted by tag
+/// so in reality it's a pair array of
+///
+///     [(x, 1), (y, 0), (z, 2)]
+///
+/// Because signatures are also sorted by tag they can be matched just by
+/// scanning through both sequentially.
 
 static const size_t kInvocationRecordSize = OBJECT_SIZE(1);
 static const size_t kInvocationRecordArgumentVectorOffset = OBJECT_FIELD_OFFSET(0);
@@ -360,7 +393,7 @@ size_t get_invocation_record_offset_at(value_t self, size_t index);
 
 // Constructs an argument vector based on the given array of tags. For instance,
 // if given ["c", "a", "b"] returns a vector corresponding to ["a": 1, "b": 0,
-// "c": 2] (arguments are counted backwards, 0 being the lasst).
+// "c": 2] (arguments are counted backwards, 0 being the last).
 value_t build_invocation_record_vector(runtime_t *runtime, value_t tags);
 
 // Returns the index'th argument to an invocation using this record in sorted

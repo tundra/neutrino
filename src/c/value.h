@@ -303,7 +303,7 @@ static value_t new_moved_object(value_t target) {
   F(Instance,                instance,                  _, _, X, X, _, _, _, _, _, _, 60)\
   F(InstanceManager,         instance_manager,          _, _, _, X, _, _, _, _, _, _,  3)\
   F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _, _, _,  4)\
-  F(InvocationRecord,        invocation_record,         _, _, _, _, _, _, _, X, X, _, 66)\
+  F(InvocationRecord,        invocation_record,         _, X, _, _, _, _, _, X, X, _, 66)\
   F(IsDeclarationAst,        is_declaration_ast,        _, _, X, _, _, _, _, _, _, _, 21)\
   F(Lambda,                  lambda,                    _, _, _, X, _, _, _, X, X, _, 47)\
   F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, _, _, _, 69)\
@@ -1412,7 +1412,14 @@ static const size_t kReferenceValueOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(reference, value);
 
 
-// --- A m b i e n c e ---
+/// ## Ambience
+///
+/// An _ambience_ is the ambient, pervasive, state that is available everywhere
+/// within one process. Ambient state is really a slightly saner version of
+/// global state, but not sane enough that it's actually a good thing. The less
+/// ambient state we can get away with the better, especially ambient state that
+/// is visible at the surface level. Hidden ambient state (like caches) are
+/// okay.
 
 static const size_t kAmbienceSize = OBJECT_SIZE(2);
 static const size_t kAmbienceRuntimeOffset = OBJECT_FIELD_OFFSET(0);

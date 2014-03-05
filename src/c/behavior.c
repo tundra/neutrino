@@ -220,6 +220,8 @@ static value_t object_identity_compare(value_t a, value_t b,
 }
 
 bool value_identity_compare(value_t a, value_t b) {
+  if (is_same_value(a, b))
+    return true;
   cycle_detector_t detector;
   cycle_detector_init_bottom(&detector);
   value_t ptected = value_identity_compare_cycle_protect(a, b, &detector);
