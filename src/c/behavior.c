@@ -371,6 +371,10 @@ static void condition_print_on(value_t value, string_buffer_t *buf) {
       }
       break;
     }
+    case ccSignal: {
+      string_buffer_printf(buf, is_signal_escape(value) ? "escape" : "non-escape");
+      break;
+    }
     default: {
       string_buffer_printf(buf, "dt@%i", details);
       break;

@@ -222,8 +222,13 @@ static value_t new_unknown_builtin_condition() {
 }
 
 // Creates a new condition indicating that a signal was raised.
-static value_t new_signal_condition() {
-  return new_condition(ccSignal);
+static value_t new_signal_condition(bool escape) {
+  return new_condition_with_details(ccSignal, escape);
+}
+
+// Given a signal condition, returns true iff it escapes.
+static bool is_signal_escape(value_t self) {
+  return !!get_condition_details(self);
 }
 
 // Artificial condition that signals that the runtime should be validated. The

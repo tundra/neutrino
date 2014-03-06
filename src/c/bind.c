@@ -652,7 +652,7 @@ value_t plankton_new_library(runtime_t *runtime) {
 value_t plankton_set_library_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, modules);
-  set_library_modules(object, modules);
+  set_library_modules(object, modules_value);
   return success();
 }
 
@@ -687,8 +687,8 @@ value_t plankton_new_unbound_module(runtime_t *runtime) {
 value_t plankton_set_unbound_module_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, path, fragments);
-  set_unbound_module_path(object, path);
-  set_unbound_module_fragments(object, fragments);
+  set_unbound_module_path(object, path_value);
+  set_unbound_module_fragments(object, fragments_value);
   return success();
 }
 
@@ -727,9 +727,9 @@ value_t plankton_new_unbound_module_fragment(runtime_t *runtime) {
 value_t plankton_set_unbound_module_fragment_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, stage, imports, elements);
-  set_unbound_module_fragment_stage(object, new_stage_offset(get_integer_value(stage)));
-  set_unbound_module_fragment_imports(object, imports);
-  set_unbound_module_fragment_elements(object, elements);
+  set_unbound_module_fragment_stage(object, new_stage_offset(get_integer_value(stage_value)));
+  set_unbound_module_fragment_imports(object, imports_value);
+  set_unbound_module_fragment_elements(object, elements_value);
   return success();
 }
 

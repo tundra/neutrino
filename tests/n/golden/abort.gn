@@ -7,5 +7,5 @@ do $fire_abort();
 - abort.get_me_outta_here(10, "foo")
 - :really_fire_abort()
 - :fire_abort()
-Error: %<condition: Signal(dt@0)>
+Error: %<condition: Signal(escape)>
 -- END

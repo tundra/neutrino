@@ -25,6 +25,7 @@
   F(DisposeEscape,              1)                                             \
   F(FireEscapeOrBarrier,        1)                                             \
   F(GetReference,               1)                                             \
+  F(Goto,                       2)                                             \
   F(Invoke,                     4)                                             \
   F(Lambda,                     3)                                             \
   F(LoadArgument,               2)                                             \
@@ -40,7 +41,8 @@
   F(Push,                       2)                                             \
   F(Return,                     1)                                             \
   F(SetReference,               1)                                             \
-  F(Signal,                     4)                                             \
+  F(SignalEscape,               4)                                             \
+  F(SignalContinue,             4)                                             \
   F(Slap,                       2)                                             \
   F(StackBottom,                1)                                             \
   F(StackPieceBottom,           1)

@@ -223,9 +223,13 @@ class Invocation(object):
 @plankton.serializable(plankton.EnvironmentReference.path("ast", "Signal"))
 class Signal(object):
 
+  @plankton.field("escape")
   @plankton.field("arguments")
-  def __init__(self, arguments):
+  @plankton.field("default")
+  def __init__(self, escape, arguments, default):
+    self.escape = escape
     self.arguments = arguments
+    self.default = default
 
   def accept(self, visitor):
     return visitor.visit_signal(self)
@@ -233,6 +237,8 @@ class Signal(object):
   def traverse(self, visitor):
     for argument in self.arguments:
       argument.accept(visitor)
+    if not self.default is None:
+      self.default.accept(visitor)
 
 
 @plankton.serializable(plankton.EnvironmentReference.path("ast", "Ensure"))

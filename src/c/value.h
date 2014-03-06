@@ -462,7 +462,7 @@ void set_object_species(value_t value, value_t species);
 
 // Expands to the declaration of a setter that takes the specified value type.
 #define TYPED_SETTER_DECL(receiver, type_t, field)                             \
-void set_##receiver##_##field(value_t self, type_t value);
+void set_##receiver##_##field(value_t self, type_t value)
 
 // Expands to the declaration of a getter that returns the specified value type.
 #define TYPED_GETTER_DECL(receiver, type_t, field)                             \

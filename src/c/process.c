@@ -727,15 +727,15 @@ FIXED_GET_MODE_IMPL(backtrace_entry, vmMutable);
 
 ACCESSORS_IMPL(BacktraceEntry, backtrace_entry, acNoCheck, 0, Invocation,
     invocation);
-ACCESSORS_IMPL(BacktraceEntry, backtrace_entry, acNoCheck, 0, IsSignal,
-    is_signal);
+ACCESSORS_IMPL(BacktraceEntry, backtrace_entry, acNoCheck, 0, Opcode,
+    opcode);
 
 value_t backtrace_entry_validate(value_t value) {
   VALIDATE_FAMILY(ofBacktraceEntry, value);
   return success();
 }
 
-void backtrace_entry_invocation_print_on(value_t invocation, bool is_signal,
+void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
     print_on_context_t *context) {
   value_t subject = new_not_found_condition();
   value_t selector = new_not_found_condition();
@@ -755,8 +755,10 @@ void backtrace_entry_invocation_print_on(value_t invocation, bool is_signal,
   }
   // Print the subject as the first thing. For aborts we ignore the subject
   // (which is not supposed to be there anyway) and just print abort.
-  if (is_signal) {
+  if (opcode == ocSignalEscape) {
     string_buffer_printf(context->buf, "abort");
+  } else if (opcode == ocSignalContinue) {
+    string_buffer_printf(context->buf, "signal");
   } else if (!in_condition_cause(ccNotFound, subject)) {
     value_print_inner_on(subject, context, -1);
   }
@@ -817,8 +819,19 @@ void backtrace_entry_invocation_print_on(value_t invocation, bool is_signal,
 void backtrace_entry_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofBacktraceEntry, value);
   value_t invocation = get_backtrace_entry_invocation(value);
-  bool is_signal = get_boolean_value(get_backtrace_entry_is_signal(value));
-  backtrace_entry_invocation_print_on(invocation, is_signal, context);
+  int32_t opcode = get_integer_value(get_backtrace_entry_opcode(value));
+  backtrace_entry_invocation_print_on(invocation, opcode, context);
+}
+
+static bool is_invocation_opcode(opcode_t op) {
+  switch (op) {
+  case ocInvoke:
+  case ocSignalEscape:
+  case ocSignalContinue:
+    return true;
+  default:
+    return false;
+  }
 }
 
 value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
@@ -833,7 +846,7 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
   blob_t data;
   get_blob_data(bytecode, &data);
   opcode_t op = blob_short_at(&data, pc - kInvokeOperationSize);
-  if (!((op == ocInvoke) || (op == ocSignal)))
+  if (!is_invocation_opcode(op))
     return nothing();
   // Okay so we have an invoke we can use. Grab the invocation record.
   size_t record_index = blob_short_at(&data, pc - kInvokeOperationSize + 1);
@@ -848,6 +861,5 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
     TRY(set_id_hash_map_at(runtime, invocation, tag, arg));
   }
   // Wrap the result in a backtrace entry.
-  bool is_signal = (op == ocSignal);
-  return new_heap_backtrace_entry(runtime, invocation, new_boolean(is_signal));
+  return new_heap_backtrace_entry(runtime, invocation, new_integer(op));
 }

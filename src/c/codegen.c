@@ -340,9 +340,7 @@ static void assembler_emit_stack_height_check(assembler_t *assm) {
   assembler_emit_short(assm, assm->stack_height);
 }
 
-// Adds the given delta to the recorded stack height and updates the high water
-// mark if necessary.
-static void assembler_adjust_stack_height(assembler_t *assm, int delta) {
+void assembler_adjust_stack_height(assembler_t *assm, int delta) {
   assm->stack_height += delta;
   assm->high_water_mark = max_size(assm->high_water_mark, assm->stack_height);
   IF_EXPENSIVE_CHECKS_ENABLED(assembler_emit_stack_height_check(assm));
@@ -405,6 +403,13 @@ value_t assembler_emit_create_escape(assembler_t *assm,
   return success();
 }
 
+value_t assembler_emit_goto_forward(assembler_t *assm,
+    short_buffer_cursor_t *offset_out) {
+  assembler_emit_opcode(assm, ocGoto);
+  assembler_emit_cursor(assm, offset_out);
+  return success();
+}
+
 value_t assembler_emit_fire_escape_or_barrier(assembler_t *assm) {
   // A tiny bit of stack space is required to fire some barriers so the first
   // step here is to push null that take up that space. That way, each time
@@ -445,20 +450,26 @@ value_t assembler_emit_stack_piece_bottom(assembler_t *assm) {
 }
 
 value_t assembler_emit_invocation(assembler_t *assm, value_t fragment,
-    value_t record, opcode_t opcode, value_t helper) {
+    value_t record, value_t helper) {
   CHECK_FAMILY(ofModuleFragment, fragment);
   CHECK_FAMILY(ofInvocationRecord, record);
-  assembler_emit_opcode(assm, opcode);
+  assembler_emit_opcode(assm, ocInvoke);
   TRY(assembler_emit_value(assm, record));
   TRY(assembler_emit_value(assm, fragment));
   TRY(assembler_emit_value(assm, helper));
   // The result will be pushed onto the stack on top of the arguments.
   assembler_adjust_stack_height(assm, 1);
-  size_t argc = get_invocation_record_argument_count(record);
-  assembler_emit_opcode(assm, ocSlap);
-  assembler_emit_short(assm, argc);
-  // Pop off all the arguments.
-  assembler_adjust_stack_height(assm, -argc);
+  return success();
+}
+
+value_t assembler_emit_signal(assembler_t *assm, opcode_t opcode, value_t record) {
+  CHECK_FAMILY(ofInvocationRecord, record);
+  assembler_emit_opcode(assm, opcode);
+  TRY(assembler_emit_value(assm, record));
+  // Pad the instruction to give it the same length as the other invoke ops.
+  assembler_emit_short(assm, 0);
+  assembler_emit_short(assm, 0);
+  // Do Not Adjust Your Stack Height.
   return success();
 }
 

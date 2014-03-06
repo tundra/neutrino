@@ -94,13 +94,21 @@ static const size_t kArrayAstElementsOffset = OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(array_ast, elements);
 
 
-// --- S i g n a l   a s t ---
+/// ## Signal ast
 
-static const size_t kSignalAstSize = OBJECT_SIZE(1);
-static const size_t kSignalAstArgumentsOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kSignalAstSize = OBJECT_SIZE(3);
+static const size_t kSignalAstEscapeOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kSignalAstArgumentsOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kSignalAstDefaultOffset = OBJECT_FIELD_OFFSET(2);
+
+// Escape after executing the handler or keep running?
+ACCESSORS_DECL(signal_ast, escape);
 
 // The array of element expressions.
 ACCESSORS_DECL(signal_ast, arguments);
+
+// The optional default expression to execute if there are no handlers.
+ACCESSORS_DECL(signal_ast, default);
 
 
 // --- E n s u r e   a s t ---

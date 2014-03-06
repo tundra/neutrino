@@ -222,7 +222,7 @@ value_t new_heap_backtrace(runtime_t *runtime, value_t entries);
 
 // Creates a new backtrace entry.
 value_t new_heap_backtrace_entry(runtime_t *runtime, value_t invocation,
-    value_t is_signal);
+    value_t opcode);
 
 
 // --- M e t h o d ---
@@ -277,7 +277,8 @@ value_t new_heap_array_ast(runtime_t *runtime, value_t elements);
 value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments);
 
 // Creates a new signal syntax tree with the given arguments.
-value_t new_heap_signal_ast(runtime_t *runtime, value_t arguments);
+value_t new_heap_signal_ast(runtime_t *runtime, value_t escape, value_t arguments,
+    value_t defawlt);
 
 // Creates a new ensure syntax tree with the given components.
 value_t new_heap_ensure_ast(runtime_t *runtime, value_t body, value_t on_exit);

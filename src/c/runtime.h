@@ -22,11 +22,13 @@
   F(body,                       "body")                                        \
   F(core,                       "core")                                        \
   F(ctrino,                     "ctrino")                                      \
+  F(default,                    "default")                                     \
   F(denominator,                "denominator")                                 \
   F(display_name,               "display_name")                                \
   F(elements,                   "elements")                                    \
   F(entry_point,                "entry_point")                                 \
   F(environment_reference,      "environment_reference")                       \
+  F(escape,                     "escape")                                      \
   F(FlagElement,                "FlagElement")                                 \
   F(fragments,                  "fragments")                                   \
   F(guard,                      "guard")                                       \

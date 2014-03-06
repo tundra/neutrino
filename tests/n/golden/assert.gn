@@ -12,7 +12,7 @@ do $assert:that(false);
 - abort.assert_failed()
 - :fail()
 - :that(false)
-Error: %<condition: Signal(dt@0)>
+Error: %<condition: Signal(escape)>
 -- END
 
 -- INPUT:
@@ -30,5 +30,5 @@ do $assert:equals(1, 2);
 - :fail()
 - :that(false)
 - :equals(1, 2)
-Error: %<condition: Signal(dt@0)>
+Error: %<condition: Signal(escape)>
 -- END

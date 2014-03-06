@@ -258,8 +258,8 @@ class Parser(object):
       return self.parse_for_expression(expect_delim)
     elif self.at_word('with_escape'):
       return self.parse_with_escape_expression(expect_delim)
-    elif self.at_word('abort'):
-      return self.parse_abort_expression(expect_delim)
+    elif self.at_word('abort') or self.at_word('signal'):
+      return self.parse_signal_expression(expect_delim)
     elif self.at_word('try'):
       return self.parse_try_expression(expect_delim)
     else:
@@ -379,13 +379,25 @@ class Parser(object):
       ast.Argument(0, ast.Lambda(methods)),
     ])
 
-  # <abort expression>
-  #   -> "abort" <expression> "do" <expression>
-  def parse_abort_expression(self, expect_delim):
-    self.expect_word('abort')
+  # <signal expression>
+  #   -> ("signal" | "abort") <operator tail> ("default" <expression>)?
+  def parse_signal_expression(self, expect_delim):
+    if self.at_word('abort'):
+      is_abort = True
+      self.expect_word('abort')
+    else:
+      is_abort = False
+      self.expect_word('signal')
     (selector, rest) = self.parse_operator_tail()
-    self.expect_statement_delimiter(expect_delim)
-    return ast.Signal([ast.Argument(data._SELECTOR, ast.Literal(selector))] + rest)
+    if self.at_word('default'):
+      self.expect_word('default')
+      default = self.parse_expression(expect_delim)
+    else:
+      default = None
+      self.expect_statement_delimiter(expect_delim)
+    return ast.Signal(is_abort,
+      [ast.Argument(data._SELECTOR, ast.Literal(selector))] + rest,
+      default)
 
   # <for expression>
   #   -> "for" <signature> "in" <expression> "do" <expression>

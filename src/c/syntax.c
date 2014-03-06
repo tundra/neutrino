@@ -164,7 +164,7 @@ value_t plankton_new_literal_ast(runtime_t *runtime) {
 value_t plankton_set_literal_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, value);
-  set_literal_ast_value(object, value);
+  set_literal_ast_value(object, value_value);
   return success();
 }
 
@@ -207,7 +207,7 @@ void array_ast_print_on(value_t value, print_on_context_t *context) {
 value_t plankton_set_array_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, elements);
-  set_array_ast_elements(object, elements);
+  set_array_ast_elements(object, elements_value);
   return success();
 }
 
@@ -248,10 +248,7 @@ static value_t create_invocation_helper(assembler_t *assm, value_t record) {
   return helper;
 }
 
-// Invokes an invocation given an array of argument asts. The type of invocation
-// to emit is given in the opcode argument.
-static value_t emit_abstract_invocation(value_t arguments, assembler_t *assm,
-    opcode_t opcode) {
+static value_t create_invocation_record(value_t arguments, assembler_t *assm) {
   size_t arg_count = get_array_length(arguments);
   // Build the invocation record and emit the values at the same time.
   TRY_DEF(arg_vector, new_heap_pair_array(assm->runtime, arg_count));
@@ -266,18 +263,18 @@ static value_t emit_abstract_invocation(value_t arguments, assembler_t *assm,
     TRY(emit_value(value, assm));
   }
   TRY(co_sort_pair_array(arg_vector));
-  TRY_DEF(record, new_heap_invocation_record(assm->runtime, afFreeze, arg_vector));
-  value_t helper = nothing();
-  if (opcode == ocInvoke)
-    TRY_SET(helper, create_invocation_helper(assm, record));
-  TRY(assembler_emit_invocation(assm, assm->fragment, record, opcode, helper));
-  return success();
+  return new_heap_invocation_record(assm->runtime, afFreeze, arg_vector);
 }
 
 value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofInvocationAst, value);
   value_t arguments = get_invocation_ast_arguments(value);
-  return emit_abstract_invocation(arguments, assm, ocInvoke);
+  TRY_DEF(record, create_invocation_record(arguments, assm));
+  TRY_DEF(helper, create_invocation_helper(assm, record));
+  TRY(assembler_emit_invocation(assm, assm->fragment, record, helper));
+  size_t argc = get_invocation_record_argument_count(record);
+  TRY(assembler_emit_slap(assm, argc));
+  return success();
 }
 
 value_t invocation_ast_validate(value_t value) {
@@ -289,7 +286,7 @@ value_t invocation_ast_validate(value_t value) {
 value_t plankton_set_invocation_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, arguments);
-  set_invocation_ast_arguments(object, arguments);
+  set_invocation_ast_arguments(object, arguments_value);
   return success();
 }
 
@@ -307,11 +304,43 @@ FIXED_GET_MODE_IMPL(signal_ast, vmMutable);
 
 ACCESSORS_IMPL(SignalAst, signal_ast, acInFamilyOpt, ofArray, Arguments,
     arguments);
+ACCESSORS_IMPL(SignalAst, signal_ast, acNoCheck, 0, Escape, escape);
+ACCESSORS_IMPL(SignalAst, signal_ast, acNoCheck, 0, Default, default);
 
 value_t emit_signal_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofSignalAst, value);
+  bool escape = get_boolean_value(get_signal_ast_escape(value));
+  // First emit the signal arguments.
   value_t arguments = get_signal_ast_arguments(value);
-  return emit_abstract_invocation(arguments, assm, ocSignal);
+  value_t record = create_invocation_record(arguments, assm);
+  opcode_t opcode = escape ? ocSignalEscape : ocSignalContinue;
+  // Try invoking the handler.
+  TRY(assembler_emit_signal(assm, opcode, record));
+  // At this point, either the handler will have been executed in which case
+  // there's an extra result on the stack, or no handler was found in which
+  // case the goto that's coming up will be skipped. In either case we'll arrive
+  // at the goto's destination with a new argument on the stack.
+  size_t argc = get_invocation_record_argument_count(record);
+  short_buffer_cursor_t dest;
+  TRY(assembler_emit_goto_forward(assm, &dest));
+  size_t code_start_offset = assembler_get_code_cursor(assm);
+  // This is the default part where no handler was executed.
+  value_t defawlt = get_signal_ast_default(value);
+  if (is_nothing(defawlt)) {
+    // TODO: this is the case where there is no explicit default handler and
+    //   no handler was found. This works but longer term it should probably
+    //   generate an escaping signal.
+    assembler_emit_push(assm, null());
+  } else {
+    TRY(emit_value(defawlt, assm));
+  }
+  size_t code_end_offset = assembler_get_code_cursor(assm);
+  short_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
+  // We've now either executed the handler (the goto will have jumped here)
+  // or there was no handler and the default will have been executed. In either
+  // case there's a result on top of the arguments so slap them off the stack.
+  assembler_emit_slap(assm, argc);
+  return success();
 }
 
 value_t signal_ast_validate(value_t value) {
@@ -322,13 +351,17 @@ value_t signal_ast_validate(value_t value) {
 
 value_t plankton_set_signal_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, arguments);
-  set_signal_ast_arguments(object, arguments);
+  UNPACK_PLANKTON_MAP(contents, arguments, escape, default);
+  set_signal_ast_escape(object, escape_value);
+  set_signal_ast_arguments(object, arguments_value);
+  // Convert nulls (which can be represented in plankton) into nothings (which
+  // can't).
+  set_signal_ast_default(object, is_null(default_value) ? nothing() : default_value);
   return success();
 }
 
 value_t plankton_new_signal_ast(runtime_t *runtime) {
-  return new_heap_signal_ast(runtime, nothing());
+  return new_heap_signal_ast(runtime, nothing(), nothing(), nothing());
 }
 
 
@@ -379,8 +412,8 @@ value_t ensure_ast_validate(value_t value) {
 value_t plankton_set_ensure_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, body, on_exit);
-  set_ensure_ast_body(object, body);
-  set_ensure_ast_on_exit(object, on_exit);
+  set_ensure_ast_body(object, body_value);
+  set_ensure_ast_on_exit(object, on_exit_value);
   return success();
 }
 
@@ -407,8 +440,8 @@ value_t argument_ast_validate(value_t value) {
 value_t plankton_set_argument_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, tag, value);
-  set_argument_ast_tag(object, tag);
-  set_argument_ast_value(object, value);
+  set_argument_ast_tag(object, tag_value);
+  set_argument_ast_value(object, value_value);
   return success();
 }
 
@@ -464,7 +497,7 @@ void sequence_ast_print_on(value_t value, print_on_context_t *context) {
 value_t plankton_set_sequence_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, values);
-  set_sequence_ast_values(object, values);
+  set_sequence_ast_values(object, values_value);
   return success();
 }
 
@@ -538,10 +571,10 @@ void local_declaration_ast_print_on(value_t value, print_on_context_t *context) 
 value_t plankton_set_local_declaration_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
   UNPACK_PLANKTON_MAP(contents, symbol, is_mutable, value, body);
-  set_local_declaration_ast_symbol(object, symbol);
-  set_local_declaration_ast_is_mutable(object, is_mutable);
-  set_local_declaration_ast_value(object, value);
-  set_local_declaration_ast_body(object, body);
+  set_local_declaration_ast_symbol(object, symbol_value);
+  set_local_declaration_ast_is_mutable(object, is_mutable_value);
+  set_local_declaration_ast_value(object, value_value);
+  set_local_declaration_ast_body(object, body_value);
   return success();
 }
 
@@ -695,9 +728,9 @@ value_t block_ast_validate(value_t self) {
 value_t plankton_set_block_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
   UNPACK_PLANKTON_MAP(contents, symbol, methods, body);
-  set_block_ast_symbol(object, symbol);
-  set_block_ast_methods(object, methods);
-  set_block_ast_body(object, body);
+  set_block_ast_symbol(object, symbol_value);
+  set_block_ast_methods(object, methods_value);
+  set_block_ast_body(object, body_value);
   return success();
 }
 
@@ -758,8 +791,8 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
 value_t plankton_set_with_escape_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
   UNPACK_PLANKTON_MAP(contents, symbol, body);
-  set_with_escape_ast_symbol(object, symbol);
-  set_with_escape_ast_body(object, body);
+  set_with_escape_ast_symbol(object, symbol_value);
+  set_with_escape_ast_body(object, body_value);
   return success();
 }
 
@@ -786,8 +819,8 @@ value_t variable_assignment_ast_validate(value_t self) {
 value_t plankton_set_variable_assignment_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
   UNPACK_PLANKTON_MAP(contents, target, value);
-  set_variable_assignment_ast_target(object, target);
-  set_variable_assignment_ast_value(object, value);
+  set_variable_assignment_ast_target(object, target_value);
+  set_variable_assignment_ast_value(object, value_value);
   return success();
 }
 
@@ -853,7 +886,7 @@ void local_variable_ast_print_on(value_t value, print_on_context_t *context) {
 value_t plankton_set_local_variable_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
   UNPACK_PLANKTON_MAP(contents, symbol);
-  set_local_variable_ast_symbol(object, symbol);
+  set_local_variable_ast_symbol(object, symbol_value);
   return success();
 }
 
@@ -886,7 +919,7 @@ value_t namespace_variable_ast_validate(value_t self) {
 value_t plankton_set_namespace_variable_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
   UNPACK_PLANKTON_MAP(contents, name);
-  set_namespace_variable_ast_identifier(object, name);
+  set_namespace_variable_ast_identifier(object, name_value);
   return success();
 }
 
@@ -918,8 +951,8 @@ void symbol_ast_print_on(value_t value, print_on_context_t *context) {
 value_t plankton_set_symbol_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, name, origin);
-  set_symbol_ast_name(object, name);
-  set_symbol_ast_origin(object, origin);
+  set_symbol_ast_name(object, name_value);
+  set_symbol_ast_origin(object, origin_value);
   return success();
 }
 
@@ -1102,7 +1135,7 @@ value_t lambda_ast_validate(value_t self) {
 value_t plankton_set_lambda_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, methods);
-  set_lambda_ast_methods(object, methods);
+  set_lambda_ast_methods(object, methods_value);
   return success();
 }
 
@@ -1133,9 +1166,9 @@ value_t parameter_ast_validate(value_t self) {
 value_t plankton_set_parameter_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, symbol, tags, guard);
-  set_parameter_ast_symbol(object, symbol);
-  set_parameter_ast_tags(object, tags);
-  set_parameter_ast_guard(object, guard);
+  set_parameter_ast_symbol(object, symbol_value);
+  set_parameter_ast_tags(object, tags_value);
+  set_parameter_ast_guard(object, guard_value);
   return success();
 }
 
@@ -1173,8 +1206,8 @@ value_t plankton_set_guard_ast_contents(value_t object, runtime_t *runtime,
   guard_type_t type_enum;
   // Maybe passing an integer enum will be good enough? Or does that conflict
   // with being self-describing?
-  EXPECT_FAMILY(ccInvalidInput, ofString, type);
-  char type_char = get_string_chars(type)[0];
+  EXPECT_FAMILY(ccInvalidInput, ofString, type_value);
+  char type_char = get_string_chars(type_value)[0];
   switch (type_char) {
     case '=': type_enum = gtEq; break;
     case 'i': type_enum = gtIs; break;
@@ -1182,7 +1215,7 @@ value_t plankton_set_guard_ast_contents(value_t object, runtime_t *runtime,
     default: return new_invalid_input_condition();
   }
   set_guard_ast_type(object, type_enum);
-  set_guard_ast_value(object, value);
+  set_guard_ast_value(object, value_value);
   return success();
 }
 
@@ -1230,8 +1263,8 @@ value_t signature_ast_validate(value_t self) {
 value_t plankton_set_signature_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, parameters, allow_extra);
-  set_signature_ast_parameters(object, parameters);
-  set_signature_ast_allow_extra(object, allow_extra);
+  set_signature_ast_parameters(object, parameters_value);
+  set_signature_ast_allow_extra(object, allow_extra_value);
   return success();
 }
 
@@ -1269,8 +1302,8 @@ value_t method_ast_validate(value_t self) {
 value_t plankton_set_method_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, signature, body);
-  set_method_ast_signature(object, signature);
-  set_method_ast_body(object, body);
+  set_method_ast_signature(object, signature_value);
+  set_method_ast_body(object, body_value);
   return success();
 }
 
@@ -1311,9 +1344,9 @@ value_t namespace_declaration_ast_validate(value_t self) {
 value_t plankton_set_namespace_declaration_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
   UNPACK_PLANKTON_MAP(contents, path, value, annotations);
-  set_namespace_declaration_ast_annotations(object, annotations);
-  set_namespace_declaration_ast_path(object, path);
-  set_namespace_declaration_ast_value(object, value);
+  set_namespace_declaration_ast_annotations(object, annotations_value);
+  set_namespace_declaration_ast_path(object, path_value);
+  set_namespace_declaration_ast_value(object, value_value);
   return success();
 }
 
@@ -1350,8 +1383,8 @@ value_t method_declaration_ast_validate(value_t self) {
 value_t plankton_set_method_declaration_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
   UNPACK_PLANKTON_MAP(contents, method, annotations);
-  set_method_declaration_ast_annotations(object, annotations);
-  set_method_declaration_ast_method(object, method);
+  set_method_declaration_ast_annotations(object, annotations_value);
+  set_method_declaration_ast_method(object, method_value);
   return success();
 }
 
@@ -1383,8 +1416,8 @@ value_t is_declaration_ast_validate(value_t self) {
 value_t plankton_set_is_declaration_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
   UNPACK_PLANKTON_MAP(contents, subtype, supertype);
-  set_is_declaration_ast_subtype(object, subtype);
-  set_is_declaration_ast_supertype(object, supertype);
+  set_is_declaration_ast_subtype(object, subtype_value);
+  set_is_declaration_ast_supertype(object, supertype_value);
   return success();
 }
 
@@ -1416,8 +1449,8 @@ value_t program_ast_validate(value_t self) {
 value_t plankton_set_program_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, entry_point, module);
-  set_program_ast_entry_point(object, entry_point);
-  set_program_ast_module(object, module);
+  set_program_ast_entry_point(object, entry_point_value);
+  set_program_ast_module(object, module_value);
   return success();
 }
 

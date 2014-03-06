@@ -1540,7 +1540,7 @@ value_t plankton_new_type(runtime_t *runtime) {
 value_t plankton_set_type_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, name);
-  set_type_display_name(object, name);
+  set_type_display_name(object, name_value);
   return success();
 }
 
@@ -1975,11 +1975,11 @@ value_t plankton_new_path(runtime_t *runtime) {
 value_t plankton_set_path_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, names);
-  if (get_array_length(names) == 0) {
+  if (get_array_length(names_value) == 0) {
     CHECK_TRUE("new path was non-empty", is_path_empty(object));
   } else {
-    value_t head = get_array_at(names, 0);
-    TRY_DEF(tail, new_heap_path_with_names(runtime, names, 1));
+    value_t head = get_array_at(names_value, 0);
+    TRY_DEF(tail, new_heap_path_with_names(runtime, names_value, 1));
     set_path_raw_head(object, head);
     set_path_raw_tail(object, tail);
   }
@@ -2076,8 +2076,8 @@ value_t plankton_new_identifier(runtime_t *runtime) {
 value_t plankton_set_identifier_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, stage, path);
-  set_identifier_stage(object, new_stage_offset(get_integer_value(stage)));
-  set_identifier_path(object, path);
+  set_identifier_stage(object, new_stage_offset(get_integer_value(stage_value)));
+  set_identifier_path(object, path_value);
   return success();
 }
 
@@ -2189,7 +2189,7 @@ value_t plankton_new_options(runtime_t *runtime) {
 value_t plankton_set_options_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, elements);
-  set_options_elements(object, elements);
+  set_options_elements(object, elements_value);
   return success();
 }
 
@@ -2269,9 +2269,9 @@ void decimal_fraction_print_on(value_t value, print_on_context_t *context) {
 value_t plankton_set_decimal_fraction_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, numerator, denominator, precision);
-  set_decimal_fraction_numerator(object, numerator);
-  set_decimal_fraction_denominator(object, denominator);
-  set_decimal_fraction_precision(object, precision);
+  set_decimal_fraction_numerator(object, numerator_value);
+  set_decimal_fraction_denominator(object, denominator_value);
+  set_decimal_fraction_precision(object, precision_value);
   return success();
 }
 
