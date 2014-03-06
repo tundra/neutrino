@@ -852,6 +852,17 @@ value_t lookup_methodspace_method(value_t ambience, value_t methodspace,
       do_methodspace_method_lookup, &data);
 }
 
+// Performs a lookup through the signal handlers on the stack.
+static value_t do_signal_handler_lookup(signature_map_lookup_state_t *state) {
+  return new_lookup_error_condition(lcNoMatch);
+}
+
+value_t lookup_signal_handler(value_t ambience, value_t record, frame_t *frame,
+    value_t *arg_map_out) {
+  return do_signature_map_lookup(ambience, record, frame, do_signal_handler_lookup,
+      arg_map_out);
+}
+
 // Performs the extra lookup for lambda methods that happens when the lambda
 // delegate method is found in the normal lookup.
 static value_t complete_special_lambda_lookup(signature_map_lookup_state_t *state,
@@ -921,9 +932,9 @@ value_t plankton_new_methodspace(runtime_t *runtime) {
 value_t plankton_set_methodspace_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, methods, inheritance, imports);
-  set_methodspace_methods(object, methods);
-  set_methodspace_inheritance(object, inheritance);
-  set_methodspace_imports(object, imports);
+  set_methodspace_methods(object, methods_value);
+  set_methodspace_inheritance(object, inheritance_value);
+  set_methodspace_imports(object, imports_value);
   return success();
 }
 
@@ -1184,8 +1195,8 @@ value_t plankton_new_operation(runtime_t *runtime) {
 value_t plankton_set_operation_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, type, value);
-  set_operation_type(object, get_integer_value(type));
-  set_operation_value(object, value);
+  set_operation_type(object, get_integer_value(type_value));
+  set_operation_value(object, value_value);
   return success();
 }
 

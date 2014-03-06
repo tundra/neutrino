@@ -163,6 +163,10 @@ value_t assembler_flush(assembler_t *assm);
 // for reusable_scratch_memory_t).
 reusable_scratch_memory_t *assembler_get_scratch_memory(assembler_t *assm);
 
+// Adds the given delta to the recorded stack height and updates the high water
+// mark if necessary.
+void assembler_adjust_stack_height(assembler_t *assm, int delta);
+
 // Returns the offset in words of the next location in the code stream which
 // will be written, that is, one past the last written instruction.
 size_t assembler_get_code_cursor(assembler_t *assm);
@@ -183,7 +187,10 @@ value_t assembler_emit_new_array(assembler_t *assm, size_t length);
 
 // Emits an invocation using the given record.
 value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t record,
-    opcode_t opcode, value_t helper);
+    value_t helper);
+
+// Emits a signal opcode using the given record.
+value_t assembler_emit_signal(assembler_t *assm, opcode_t opcode, value_t record);
 
 // Emits a raw call to a builtin with the given implementation and number of
 // arguments.
@@ -257,6 +264,10 @@ value_t assembler_emit_delegate_block_call(assembler_t *assm);
 // Capture an escape, pushing it onto the stack. The offset_out is a cursor
 // where the offset to jump to when returning to the escape should be written.
 value_t assembler_emit_create_escape(assembler_t *assm,
+    short_buffer_cursor_t *offset_out);
+
+// Emits a goto instruction that moves an as yet undetermined amount forward.
+value_t assembler_emit_goto_forward(assembler_t *assm,
     short_buffer_cursor_t *offset_out);
 
 // Either fire the next barrier if the current escape lies below it, or fire

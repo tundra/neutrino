@@ -30,6 +30,7 @@ file_names = [
   "is.n",
   "module.n",
   "object.n",
+  "signal.n",
   "string.n",
   "trace.n",
   "var.n",

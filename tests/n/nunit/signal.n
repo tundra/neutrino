@@ -1,0 +1,20 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def $test_unhandled_signal() {
+  $assert:equals(9, (signal.foo() default 9));
+  $assert:equals(10, (signal.foo(1) default 10));
+  $assert:equals(11, (signal.foo(2, 3) default 11));
+  # TODO: decide on a more appropriate default behavior for unhandles signals.
+  #   Probably some sort for unhandled-signal signal.
+  $assert:equals(null, signal.foo());
+  $assert:equals(null, signal.foo(4));
+  $assert:equals(null, signal.foo(5, 6));
+}
+
+do {
+  $test_unhandled_signal();
+}

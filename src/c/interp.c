@@ -247,22 +247,40 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           code_cache_refresh(&cache, &frame);
           break;
         }
-        case ocSignal: {
+        case ocSignalContinue: case ocSignalEscape: {
           // Look up the method in the method space.
           value_t record = read_value(&cache, &frame, 1);
           CHECK_FAMILY(ofInvocationRecord, record);
-          value_t fragment = read_value(&cache, &frame, 2);
-          CHECK_FAMILY(ofModuleFragment, fragment);
-          value_t helper = read_value(&cache, &frame, 3);
-          CHECK_PHYLUM(tpNothing, helper);
-          frame.pc += kSignalOperationSize;
-          // Push the signal frame onto the stack to record the state of it for
-          // the enclosing code.
-          E_TRY(push_stack_frame(runtime, stack, &frame, 1, nothing()));
-          // The stack tracing code expects all frames to have a valid code block
-          // object. The rest makes less of a difference.
-          frame_set_code_block(&frame, ROOT(runtime, empty_code_block));
-          E_RETURN(new_signal_condition());
+          frame.pc += kSignalEscapeOperationSize;
+          value_t arg_map;
+          value_t handler = lookup_signal_handler(ambience, record, &frame, &arg_map);
+          bool is_escape = (opcode == ocSignalEscape);
+          if (in_condition_cause(ccLookupError, handler)) {
+            if (is_escape) {
+              // There was no handler for this so we have to escape out of the
+              // interpreter altogether. Push the signal frame onto the stack to
+              // record the state of it for the enclosing code.
+              E_TRY(push_stack_frame(runtime, stack, &frame, 1, nothing()));
+              // The stack tracing code expects all frames to have a valid code block
+              // object. The rest makes less of a difference.
+              frame_set_code_block(&frame, ROOT(runtime, empty_code_block));
+              E_RETURN(new_signal_condition(is_escape));
+            } else {
+              // There was no handler but this is not an escape so we skip over
+              // the post-handler goto to the default block.
+              CHECK_EQ("signal not followed by goto", ocGoto,
+                  read_short(&cache, &frame, 0));
+              frame.pc += kGotoOperationSize;
+            }
+          } else {
+            E_TRY(handler);
+            E_TRY_DEF(code_block, ensure_method_code(runtime, handler));
+            E_TRY(push_stack_frame(runtime, stack, &frame,
+                get_code_block_high_water_mark(code_block), arg_map));
+            frame_set_code_block(&frame, code_block);
+            code_cache_refresh(&cache, &frame);
+          }
+          break;
         }
         case ocDelegateToLambda:
         case ocDelegateToBlock: {
@@ -609,13 +627,20 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
 
 // Runs the given stack until it hits a condition or completes successfully.
 static value_t run_stack_until_condition(value_t ambience, value_t stack) {
-  value_t result = run_stack_pushing_signals(ambience, stack);
-  if (in_condition_cause(ccSignal, result)) {
-    runtime_t *runtime = get_ambience_runtime(ambience);
-    frame_t frame = open_stack(stack);
-    TRY_DEF(trace, capture_backtrace(runtime, &frame));
-    print_ln("%9v", trace);
-  }
+  value_t result = whatever();
+  do {
+    result = run_stack_pushing_signals(ambience, stack);
+    if (in_condition_cause(ccSignal, result)) {
+      if (is_signal_escape(result)) {
+        runtime_t *runtime = get_ambience_runtime(ambience);
+        frame_t frame = open_stack(stack);
+        TRY_DEF(trace, capture_backtrace(runtime, &frame));
+        print_ln("%9v", trace);
+      } else {
+        // TODO
+      }
+    }
+  } while (false);
   return result;
 }
 
