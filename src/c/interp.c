@@ -627,20 +627,13 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
 
 // Runs the given stack until it hits a condition or completes successfully.
 static value_t run_stack_until_condition(value_t ambience, value_t stack) {
-  value_t result = whatever();
-  do {
-    result = run_stack_pushing_signals(ambience, stack);
-    if (in_condition_cause(ccSignal, result)) {
-      if (is_signal_escape(result)) {
-        runtime_t *runtime = get_ambience_runtime(ambience);
-        frame_t frame = open_stack(stack);
-        TRY_DEF(trace, capture_backtrace(runtime, &frame));
-        print_ln("%9v", trace);
-      } else {
-        // TODO
-      }
-    }
-  } while (false);
+  value_t result = run_stack_pushing_signals(ambience, stack);
+  if (in_condition_cause(ccSignal, result)) {
+    runtime_t *runtime = get_ambience_runtime(ambience);
+    frame_t frame = open_stack(stack);
+    TRY_DEF(trace, capture_backtrace(runtime, &frame));
+    print_ln("%9v", trace);
+  }
   return result;
 }
 
