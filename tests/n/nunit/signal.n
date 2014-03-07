@@ -5,9 +5,9 @@ import $assert;
 import $core;
 
 def $test_unhandled_signal() {
-  $assert:equals(9, (signal.foo() default 9));
-  $assert:equals(10, (signal.foo(1) default 10));
-  $assert:equals(11, (signal.foo(2, 3) default 11));
+  $assert:equals(9, (signal.foo() else 9));
+  $assert:equals(10, (signal.foo(1) else 10));
+  $assert:equals(11, (signal.foo(2, 3) else 11));
   # TODO: decide on a more appropriate default behavior for unhandles signals.
   #   Probably some sort for unhandled-signal signal.
   $assert:equals(null, signal.foo());
@@ -27,44 +27,44 @@ def $test_simple_handled_signal() {
 }
 
 def $test_nested_signals() {
-  $assert:equals(9, signal.foo() default 9);
+  $assert:equals(9, signal.foo() else 9);
   try {
-    $assert:equals(10, signal.foo() default 12);
+    $assert:equals(10, signal.foo() else 12);
     try {
-      $assert:equals(11, signal.foo() default 13);
+      $assert:equals(11, signal.foo() else 13);
     } on.foo() {
       11;
     }
-    $assert:equals(10, signal.foo() default 14);
+    $assert:equals(10, signal.foo() else 14);
   } on.foo() {
     10;
   }
-  $assert:equals(15, signal.foo() default 15);
+  $assert:equals(15, signal.foo() else 15);
 
   try {
     try {
       try {
-        $assert:equals(1, signal.a() default 0);
-        $assert:equals(2, signal.b() default 0);
-        $assert:equals(3, signal.c() default 0);
+        $assert:equals(1, signal.a() else 0);
+        $assert:equals(2, signal.b() else 0);
+        $assert:equals(3, signal.c() else 0);
       } on.c() {
         3;
       }
-      $assert:equals(1, signal.a() default 0);
-      $assert:equals(2, signal.b() default 0);
-      $assert:equals(0, signal.c() default 0);
+      $assert:equals(1, signal.a() else 0);
+      $assert:equals(2, signal.b() else 0);
+      $assert:equals(0, signal.c() else 0);
     } on.b() {
       2;
     }
-    $assert:equals(1, signal.a() default 0);
-    $assert:equals(0, signal.b() default 0);
-    $assert:equals(0, signal.c() default 0);
+    $assert:equals(1, signal.a() else 0);
+    $assert:equals(0, signal.b() else 0);
+    $assert:equals(0, signal.c() else 0);
   } on.a() {
     1;
   }
-  $assert:equals(0, signal.a() default 0);
-  $assert:equals(0, signal.b() default 0);
-  $assert:equals(0, signal.c() default 0);
+  $assert:equals(0, signal.a() else 0);
+  $assert:equals(0, signal.b() else 0);
+  $assert:equals(0, signal.c() else 0);
 }
 
 def $test_nested_outers() {
@@ -74,27 +74,27 @@ def $test_nested_outers() {
     try {
       def $x := 3;
       try {
-        $assert:equals(1, signal.a() default 0);
-        $assert:equals(2, signal.b() default 0);
-        $assert:equals(3, signal.c() default 0);
+        $assert:equals(1, signal.a() else 0);
+        $assert:equals(2, signal.b() else 0);
+        $assert:equals(3, signal.c() else 0);
       } on.c() {
         $x;
       }
-      $assert:equals(1, signal.a() default 0);
-      $assert:equals(2, signal.b() default 0);
-      $assert:equals(0, signal.c() default 0);
+      $assert:equals(1, signal.a() else 0);
+      $assert:equals(2, signal.b() else 0);
+      $assert:equals(0, signal.c() else 0);
     } on.b() {
       $y;
     }
-    $assert:equals(1, signal.a() default 0);
-    $assert:equals(0, signal.b() default 0);
-    $assert:equals(0, signal.c() default 0);
+    $assert:equals(1, signal.a() else 0);
+    $assert:equals(0, signal.b() else 0);
+    $assert:equals(0, signal.c() else 0);
   } on.a() {
     $z;
   }
-  $assert:equals(0, signal.a() default 0);
-  $assert:equals(0, signal.b() default 0);
-  $assert:equals(0, signal.c() default 0);
+  $assert:equals(0, signal.a() else 0);
+  $assert:equals(0, signal.b() else 0);
+  $assert:equals(0, signal.c() else 0);
 }
 
 def $test_nested_ons() {
@@ -146,7 +146,7 @@ def $test_escape() {
       20;
     }
   }
-  $assert:equals(0, signal.hup() default 0);
+  $assert:equals(0, signal.hup() else 0);
   var $clicks := 0;
   $assert:equals(10, with_escape $e do {
     try {
@@ -157,7 +157,7 @@ def $test_escape() {
       $e(10);
     } ensure {
       $assert:equals(2, $clicks := $clicks + 1);
-      $assert:equals(3, signal.hup() default 3);
+      $assert:equals(3, signal.hup() else 3);
     }
   });
   $assert:equals(2, $clicks);
