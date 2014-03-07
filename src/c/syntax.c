@@ -322,8 +322,8 @@ value_t emit_signal_ast(value_t value, assembler_t *assm) {
   // at the goto's destination with a new argument on the stack.
   size_t argc = get_invocation_record_argument_count(record);
   short_buffer_cursor_t dest;
-  TRY(assembler_emit_goto_forward(assm, &dest));
   size_t code_start_offset = assembler_get_code_cursor(assm);
+  TRY(assembler_emit_goto_forward(assm, &dest));
   // This is the default part where no handler was executed.
   value_t defawlt = get_signal_ast_default(value);
   if (is_nothing(defawlt)) {
