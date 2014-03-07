@@ -646,7 +646,7 @@ void set_refractor_home_state_pointer(value_t self, value_t value);
 
 static const size_t kCodeShardSize = OBJECT_SIZE(2);
 // These two must be at the same offsets as the other refractors, currently
-// blocks.
+// blocks and signal handlers.
 static const size_t kCodeShardHomeStackPieceOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kCodeShardHomeStatePointerOffset = OBJECT_FIELD_OFFSET(1);
 
@@ -705,6 +705,8 @@ refraction_point_t stack_barrier_as_refraction_point(stack_barrier_t *barrier);
 /// used
 
 static const size_t kSignalHandlerSize = OBJECT_SIZE(2);
+// These two must be at the same offsets as the other refractors, currently
+// blocks and code shards.
 static const size_t kSignalHandlerHomeStackPieceOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kSignalHandlerHomeStatePointerOffset = OBJECT_FIELD_OFFSET(1);
 
