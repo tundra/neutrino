@@ -614,3 +614,16 @@ value_t assembler_emit_dispose_code_shard(assembler_t *assm) {
       - 1);                 // the result from running the code block
   return success();
 }
+
+value_t assembler_emit_install_signal_handler(assembler_t *assm, value_t space) {
+  assembler_emit_opcode(assm, ocInstallSignalHandler);
+  TRY(assembler_emit_value(assm, space));
+  assembler_adjust_stack_height(assm, kRefractingBarrierSize);
+  return success();
+}
+
+value_t assembler_emit_uninstall_signal_handler(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocUninstallSignalHandler);
+  assembler_adjust_stack_height(assm, -kRefractingBarrierSize);
+  return success();
+}

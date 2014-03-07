@@ -297,6 +297,36 @@ value_t stack_barrier_get_next_pointer(stack_barrier_t *barrier) {
 }
 
 
+/// ### Barrier iter
+
+void barrier_iter_init(barrier_iter_t *iter, frame_t *frame) {
+  value_t stack = get_stack_piece_stack(frame->stack_piece);
+  value_t current_piece = get_stack_top_barrier_piece(stack);
+  value_t current_pointer = get_stack_top_barrier_pointer(stack);
+  value_t *stack_bottom = get_array_elements(get_stack_piece_storage(current_piece));
+  value_t *home = stack_bottom + get_integer_value(current_pointer);
+  iter->current.bottom = home;
+}
+
+stack_barrier_t *barrier_iter_get_current(barrier_iter_t *iter) {
+  return &iter->current;
+}
+
+bool barrier_iter_advance(barrier_iter_t *iter) {
+  value_t next_piece = stack_barrier_get_next_piece(&iter->current);
+  if (is_nothing(next_piece)) {
+    iter->current.bottom = NULL;
+    return false;
+  } else {
+    value_t next_pointer = stack_barrier_get_next_pointer(&iter->current);
+    value_t *stack_bottom = get_array_elements(get_stack_piece_storage(next_piece));
+    value_t *next_home = stack_bottom + get_integer_value(next_pointer);
+    iter->current.bottom = next_home;
+    return true;
+  }
+}
+
+
 // --- F r a m e ---
 
 bool try_push_new_frame(frame_t *frame, size_t frame_capacity, uint32_t flags,
@@ -438,6 +468,13 @@ value_t frame_get_argument(frame_t *frame, size_t param_index) {
   value_t arg_map = frame_get_argument_map(frame);
   size_t offset = get_integer_value(get_array_at(arg_map, param_index));
   return stack_pointer[-(offset + 1)];
+}
+
+void frame_set_argument(frame_t *frame, size_t param_index, value_t value) {
+  value_t *stack_pointer = frame->frame_pointer - kFrameHeaderSize;
+  value_t arg_map = frame_get_argument_map(frame);
+  size_t offset = get_integer_value(get_array_at(arg_map, param_index));
+  stack_pointer[-(offset + 1)] = value;
 }
 
 value_t frame_get_local(frame_t *frame, size_t index) {
@@ -624,6 +661,11 @@ value_t get_refraction_point_refractor(refraction_point_t *point) {
   return point->top[-kRefractionPointRefractorOffset];
 }
 
+refraction_point_t stack_barrier_as_refraction_point(stack_barrier_t *barrier) {
+  refraction_point_t result = { barrier->bottom };
+  return result;
+}
+
 void get_refractor_refracted_frame(value_t self, size_t block_depth,
     frame_t *frame) {
   CHECK_REL("refractor not nested", block_depth, >, 0);
@@ -680,6 +722,28 @@ value_t code_shard_validate(value_t self) {
 void code_shard_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofCodeShard, value);
   string_buffer_printf(context->buf, "\u03C3~%w", value); // Unicode sigma.
+}
+
+
+/// ## Signal handler
+
+FIXED_GET_MODE_IMPL(signal_handler, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(SignalHandler, signal_handler);
+
+ACCESSORS_IMPL(SignalHandler, signal_handler, acInFamily, ofStackPiece,
+    HomeStackPiece, home_stack_piece);
+ACCESSORS_IMPL(SignalHandler, signal_handler, acNoCheck, 0, HomeStatePointer,
+    home_state_pointer);
+
+value_t signal_handler_validate(value_t self) {
+  VALIDATE_FAMILY(ofSignalHandler, self);
+  VALIDATE_FAMILY(ofStackPiece, get_signal_handler_home_stack_piece(self));
+  return success();
+}
+
+void on_signal_handler_scope_exit(value_t self) {
+  // Signal handlers are implemented by using handler as barriers; entering
+  // and exiting doesn't actually change them.
 }
 
 

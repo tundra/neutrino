@@ -46,7 +46,14 @@ static inline bool in_family(object_family_t family, value_t value) {
 
 // Is the given value a code object that refracts lookup?
 static inline bool is_refractor(value_t value) {
-  return in_family(ofBlock, value) || in_family(ofCodeShard, value);
+  switch (get_object_family(value)) {
+    case ofBlock:
+    case ofCodeShard:
+    case ofSignalHandler:
+      return true;
+    default:
+      return false;
+  }
 }
 
 // Returns true iff the given value is either nothing or an object within the

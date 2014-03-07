@@ -15,6 +15,18 @@ def $test_unhandled_signal() {
   $assert:equals(null, signal.foo(5, 6));
 }
 
+def $test_simple_handled_signal() {
+  $assert:equals(4, try (signal.foo()) + 1 on.foo() => 3);
+  def $x := 4;
+  def $y := 5;
+  $assert:equals(9, try (signal.foo()) + $y on.foo() => $x);
+  $assert:equals(9, try
+    (signal.foo()) + (signal.bar())
+    on.foo() => $x
+    on.bar() => $y);
+}
+
 do {
   $test_unhandled_signal();
+  $test_simple_handled_signal();
 }

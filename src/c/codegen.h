@@ -254,6 +254,12 @@ value_t assembler_emit_call_code_shard(assembler_t *assm);
 // Cleans up after a code shard call.
 value_t assembler_emit_dispose_code_shard(assembler_t *assm);
 
+// Installs a methodspace as a scoped signal handler.
+value_t assembler_emit_install_signal_handler(assembler_t *assm, value_t space);
+
+// Uninstalls a methodspace as a scoped signal handler.
+value_t assembler_emit_uninstall_signal_handler(assembler_t *assm);
+
 // Hacky implementation of calling lambdas. Later this should be replaced by a
 // more general delegate operation.
 value_t assembler_emit_delegate_lambda_call(assembler_t *assm);

@@ -171,7 +171,7 @@ class Parser(object):
     else:
       # def (<parameter>)
       subject = self.parse_subject()
-    signature = self.parse_functino_signature(subject, is_prefix, name)
+    signature = self.parse_functino_signature([subject], is_prefix, name)
     body = self.parse_method_tail(True)
     stage = self.get_subject_stage(subject)
     return ast.MethodDeclaration(stage + 1, annots, ast.Method(signature, body))
@@ -395,9 +395,10 @@ class Parser(object):
     else:
       default = None
       self.expect_statement_delimiter(expect_delim)
-    return ast.Signal(is_abort,
-      [ast.Argument(data._SELECTOR, ast.Literal(selector))] + rest,
-      default)
+    return ast.Signal(is_abort, [
+      ast.Argument(data._SUBJECT, ast.Literal(None)),
+      ast.Argument(data._SELECTOR, ast.Literal(selector))
+    ] + rest, default)
 
   # <for expression>
   #   -> "for" <signature> "in" <expression> "do" <expression>
@@ -421,9 +422,17 @@ class Parser(object):
   def parse_try_expression(self, expect_delim):
     self.expect_word('try')
     body = self.parse_expression(False)
-    self.expect_word('ensure')
-    on_exit = self.parse_expression(expect_delim)
-    return ast.Ensure(body, on_exit)
+    if self.at_word('on'):
+      self.expect_word('on')
+      subject = [self.get_functino_subject()]
+      signature = self.parse_functino_signature(subject, False)
+      methods = self.parse_functino_tail(signature, subject)
+      body = ast.SignalHandler(body, methods)
+    if self.at_word('ensure'):
+      self.expect_word('ensure')
+      on_exit = self.parse_expression(expect_delim)
+      body = ast.Ensure(body, on_exit)
+    return body
 
   # <with escape expression>
   #   -> "with_escape" <ident> "do" <expression>
@@ -456,9 +465,10 @@ class Parser(object):
   def parse_lambda_expression(self):
     self.expect_word('fn')
     if self.at_word('on'):
-      self.expect_word('on')    
-    signature = self.parse_functino_signature(self.get_functino_subject(), False)
-    methods = self.parse_functino_tail(signature)
+      self.expect_word('on')
+    subject = [self.get_functino_subject()]
+    signature = self.parse_functino_signature(subject, False)
+    methods = self.parse_functino_tail(signature, subject)
     return ast.Lambda(methods)
 
   # <block expression>
@@ -466,21 +476,22 @@ class Parser(object):
   def parse_block_expression(self, expect_delim):
     self.expect_word('bk')
     name = self.expect_type(Token.IDENTIFIER)
-    signature = self.parse_functino_signature(self.get_functino_subject(), False)
-    methods = self.parse_functino_tail(signature)
+    subject = [self.get_functino_subject()]
+    signature = self.parse_functino_signature(subject, False)
+    methods = self.parse_functino_tail(signature, subject)
     self.expect_word('in')
     body = self.parse_word_expression(expect_delim)
     return ast.Block(name, methods, body)
 
   # <functino tail>
   #   -> <method tail>
-  def parse_functino_tail(self, first_signature):
+  def parse_functino_tail(self, first_signature, subject):
     first_body = self.parse_method_tail(False)
     first_method = ast.Method(first_signature, first_body)
     methods = [first_method]
     while self.at_word('on'):
       self.expect_word('on')
-      next_signature = self.parse_functino_signature(self.get_functino_subject(), False)
+      next_signature = self.parse_functino_signature(subject, False)
       next_body = self.parse_method_tail(False)
       next_method = ast.Method(next_signature, next_body)
       methods.append(next_method)
@@ -517,7 +528,7 @@ class Parser(object):
       selector = self.any_selector()
     else:
       selector = self.name_as_selector(op)
-    return ast.Signature([subject, selector] + params, allow_extra)
+    return ast.Signature(subject + [selector] + params, allow_extra)
 
   # Are we currently at a token that is allowed as the first token of a
   # parameter?

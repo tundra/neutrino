@@ -295,7 +295,7 @@ value_t plankton_new_invocation_ast(runtime_t *runtime) {
 }
 
 
-// --- S i g n a l   a s t ---
+/// ## Signal ast
 
 TRIVIAL_PRINT_ON_IMPL(SignalAst, signal_ast);
 GET_FAMILY_PRIMARY_TYPE_IMPL(signal_ast);
@@ -362,6 +362,76 @@ value_t plankton_set_signal_ast_contents(value_t object, runtime_t *runtime,
 
 value_t plankton_new_signal_ast(runtime_t *runtime) {
   return new_heap_signal_ast(runtime, nothing(), nothing(), nothing());
+}
+
+
+/// ## Signal handler ast
+
+TRIVIAL_PRINT_ON_IMPL(SignalHandlerAst, signal_handler_ast);
+GET_FAMILY_PRIMARY_TYPE_IMPL(signal_handler_ast);
+NO_BUILTIN_METHODS(signal_handler_ast);
+FIXED_GET_MODE_IMPL(signal_handler_ast, vmMutable);
+
+ACCESSORS_IMPL(SignalHandlerAst, signal_handler_ast, acIsSyntaxOpt, 0, Body, body);
+ACCESSORS_IMPL(SignalHandlerAst, signal_handler_ast, acInFamilyOpt, ofArray,
+    Handlers, handlers);
+
+static value_t build_methodspace_from_method_asts(value_t method_asts,
+    assembler_t *assm) {
+  CHECK_FAMILY(ofArray, method_asts);
+  runtime_t *runtime = assm->runtime;
+  TRY_DEF(space, new_heap_methodspace(runtime));
+
+  for (size_t i = 0; i < get_array_length(method_asts); i++) {
+    value_t method_ast = get_array_at(method_asts, i);
+    // Compile the signature and, if we're in a nontrivial inner scope, the
+    // body of the lambda.
+    value_t body_code = nothing();
+    if (assm->scope_callback != scope_lookup_callback_get_bottom())
+      TRY_SET(body_code, compile_method_body(assm, method_ast));
+    TRY_DEF(signature, build_method_signature(assm->runtime, assm->fragment,
+        assembler_get_scratch_memory(assm), get_method_ast_signature(method_ast)));
+
+    // Build a method space in which to store the method.
+    TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
+        nothing(), body_code, nothing(), new_flag_set(kFlagSetAllOff)));
+    TRY(add_methodspace_method(runtime, space, method));
+  }
+
+  return space;
+}
+
+value_t emit_signal_handler_ast(value_t value, assembler_t *assm) {
+  // Create the methodspace that holds the handlers.
+  block_scope_t block_scope;
+  TRY(assembler_push_block_scope(assm, &block_scope));
+  value_t handler_asts = get_signal_handler_ast_handlers(value);
+  TRY_DEF(space, build_methodspace_from_method_asts(handler_asts, assm));
+  assembler_pop_block_scope(assm, &block_scope);
+
+  TRY(assembler_emit_install_signal_handler(assm, space));
+  TRY(emit_value(get_signal_handler_ast_body(value), assm));
+  TRY(assembler_emit_uninstall_signal_handler(assm));
+
+  return success();
+}
+
+value_t signal_handler_ast_validate(value_t value) {
+  VALIDATE_FAMILY(ofSignalHandlerAst, value);
+  VALIDATE_FAMILY_OPT(ofArray, get_signal_handler_ast_handlers(value));
+  return success();
+}
+
+value_t plankton_set_signal_handler_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
+  UNPACK_PLANKTON_MAP(contents, body, handlers);
+  set_signal_handler_ast_body(object, body_value);
+  set_signal_handler_ast_handlers(object, handlers_value);
+  return success();
+}
+
+value_t plankton_new_signal_handler_ast(runtime_t *runtime) {
+  return new_heap_signal_handler_ast(runtime, nothing(), nothing());
 }
 
 
@@ -594,31 +664,6 @@ TRIVIAL_PRINT_ON_IMPL(BlockAst, block_ast);
 ACCESSORS_IMPL(BlockAst, block_ast, acInFamilyOpt, ofSymbolAst, Symbol, symbol);
 ACCESSORS_IMPL(BlockAst, block_ast, acInFamilyOpt, ofArray, Methods, methods);
 ACCESSORS_IMPL(BlockAst, block_ast, acIsSyntaxOpt, 0, Body, body);
-
-static value_t build_methodspace_from_method_asts(value_t method_asts,
-    assembler_t *assm) {
-  CHECK_FAMILY(ofArray, method_asts);
-  runtime_t *runtime = assm->runtime;
-  TRY_DEF(space, new_heap_methodspace(runtime));
-
-  for (size_t i = 0; i < get_array_length(method_asts); i++) {
-    value_t method_ast = get_array_at(method_asts, i);
-    // Compile the signature and, if we're in a nontrivial inner scope, the
-    // body of the lambda.
-    value_t body_code = nothing();
-    if (assm->scope_callback != scope_lookup_callback_get_bottom())
-      TRY_SET(body_code, compile_method_body(assm, method_ast));
-    TRY_DEF(signature, build_method_signature(assm->runtime, assm->fragment,
-        assembler_get_scratch_memory(assm), get_method_ast_signature(method_ast)));
-
-    // Build a method space in which to store the method.
-    TRY_DEF(method, new_heap_method(runtime, afFreeze, signature,
-        nothing(), body_code, nothing(), new_flag_set(kFlagSetAllOff)));
-    TRY(add_methodspace_method(runtime, space, method));
-  }
-
-  return space;
-}
 
 // Pushes the binding of a symbol onto the stack. If the symbol is mutable this
 // will push the reference, not the value. It is the caller's responsibility to
@@ -1540,6 +1585,7 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "Program", plankton_new_program_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Sequence", plankton_new_sequence_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Signal", plankton_new_signal_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "SignalHandler", plankton_new_signal_handler_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Signature", plankton_new_signature_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Symbol", plankton_new_symbol_ast, runtime));
   TRY(add_plankton_factory(map, ast, "VariableAssignment", plankton_new_variable_assignment_ast, runtime));

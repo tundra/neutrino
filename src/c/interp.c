@@ -252,10 +252,12 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t record = read_value(&cache, &frame, 1);
           CHECK_FAMILY(ofInvocationRecord, record);
           frame.pc += kSignalEscapeOperationSize;
-          value_t arg_map;
-          value_t handler = lookup_signal_handler(ambience, record, &frame, &arg_map);
+          value_t arg_map = whatever();
+          value_t handler = whatever();
+          value_t method = lookup_signal_handler_method(ambience, record, &frame,
+              &handler, &arg_map);
           bool is_escape = (opcode == ocSignalEscape);
-          if (in_condition_cause(ccLookupError, handler)) {
+          if (in_condition_cause(ccLookupError, method)) {
             if (is_escape) {
               // There was no handler for this so we have to escape out of the
               // interpreter altogether. Push the signal frame onto the stack to
@@ -273,13 +275,21 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
               frame.pc += kGotoOperationSize;
             }
           } else {
-            E_TRY(handler);
-            E_TRY_DEF(code_block, ensure_method_code(runtime, handler));
+            // We found a method. Invoke it.
+            E_TRY(method);
+            E_TRY_DEF(code_block, ensure_method_code(runtime, method));
             E_TRY(push_stack_frame(runtime, stack, &frame,
                 get_code_block_high_water_mark(code_block), arg_map));
             frame_set_code_block(&frame, code_block);
+            CHECK_TRUE("subject not null", is_null(frame_get_argument(&frame, 0)));
+            frame_set_argument(&frame, 0, handler);
             code_cache_refresh(&cache, &frame);
           }
+          break;
+        }
+        case ocGoto: {
+          size_t delta = read_short(&cache, &frame, 1);
+          frame.pc += delta;
           break;
         }
         case ocDelegateToLambda:
@@ -502,6 +512,23 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           CHECK_TRUE("invalid refraction point", is_same_value(shard, shard_again));
           frame_push_value(&frame, value);
           frame.pc += kDisposeCodeShardOperationSize;
+          break;
+        }
+        case ocInstallSignalHandler: {
+          value_t space = read_value(&cache, &frame, 1);
+          CHECK_FAMILY(ofMethodspace, space);
+          E_TRY_DEF(handler, new_heap_signal_handler(runtime, frame.stack_piece,
+              nothing()));
+          frame_push_refracting_barrier(&frame, handler, space);
+          frame.pc += kInstallSignalHandlerOperationSize;
+          break;
+        }
+        case ocUninstallSignalHandler: {
+          value_t value = frame_pop_value(&frame);
+          value_t handler = frame_pop_refracting_barrier(&frame);
+          CHECK_FAMILY(ofSignalHandler, handler);
+          frame_push_value(&frame, value);
+          frame.pc += kUninstallSignalHandlerOperationSize;
           break;
         }
         case ocCreateEscape: {
