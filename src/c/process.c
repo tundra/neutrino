@@ -820,7 +820,7 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
   // Print the subject as the first thing. For aborts we ignore the subject
   // (which is not supposed to be there anyway) and just print abort.
   if (opcode == ocSignalEscape) {
-    string_buffer_printf(context->buf, "abort");
+    string_buffer_printf(context->buf, "leave");
   } else if (opcode == ocSignalContinue) {
     string_buffer_printf(context->buf, "signal");
   } else if (!in_condition_cause(ccNotFound, subject)) {

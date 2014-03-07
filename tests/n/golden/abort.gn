@@ -1,10 +1,10 @@
 -- INPUT:
-def $really_fire_abort() => abort.get_me_outta_here(10, "foo");
+def $really_fire_abort() => leave.get_me_outta_here(10, "foo");
 def $fire_abort() => $really_fire_abort();
 do $fire_abort();
 -- OUTPUT:
 --- backtrace ---
-- abort.get_me_outta_here(10, "foo")
+- leave.get_me_outta_here(10, "foo")
 - :really_fire_abort()
 - :fire_abort()
 Error: %<condition: Signal(escape)>

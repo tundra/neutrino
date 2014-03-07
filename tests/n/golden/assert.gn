@@ -9,7 +9,7 @@ import $assert;
 do $assert:that(false);
 -- OUTPUT:
 --- backtrace ---
-- abort.assert_failed()
+- leave.assert_failed()
 - :fail()
 - :that(false)
 Error: %<condition: Signal(escape)>
@@ -26,7 +26,7 @@ import $assert;
 do $assert:equals(1, 2);
 -- OUTPUT:
 --- backtrace ---
-- abort.assert_failed()
+- leave.assert_failed()
 - :fail()
 - :that(false)
 - :equals(1, 2)

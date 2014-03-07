@@ -258,7 +258,7 @@ class Parser(object):
       return self.parse_for_expression(expect_delim)
     elif self.at_word('with_escape'):
       return self.parse_with_escape_expression(expect_delim)
-    elif self.at_word('abort') or self.at_word('signal'):
+    elif self.at_word('leave') or self.at_word('signal'):
       return self.parse_signal_expression(expect_delim)
     elif self.at_word('try'):
       return self.parse_try_expression(expect_delim)
@@ -382,15 +382,15 @@ class Parser(object):
   # <signal expression>
   #   -> ("signal" | "abort") <operator tail> ("default" <expression>)?
   def parse_signal_expression(self, expect_delim):
-    if self.at_word('abort'):
+    if self.at_word('leave'):
       is_abort = True
-      self.expect_word('abort')
+      self.expect_word('leave')
     else:
       is_abort = False
       self.expect_word('signal')
     (selector, rest) = self.parse_operator_tail()
-    if self.at_word('default'):
-      self.expect_word('default')
+    if self.at_word('else'):
+      self.expect_word('else')
       default = self.parse_expression(expect_delim)
     else:
       default = None
