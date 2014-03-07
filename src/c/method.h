@@ -27,11 +27,11 @@ typedef struct {
   void *data;
   // Cache of the number of arguments.
   size_t argc;
-} signature_map_lookup_input_t;
+} sigmap_input_t;
 
 // Initializes an input struct appropriately.
-void signature_map_lookup_input_init(signature_map_lookup_input_t *input,
-    value_t ambience, value_t record, frame_t *frame, void *data, size_t argc);
+void sigmap_input_init(sigmap_input_t *input, value_t ambience, value_t record,
+    frame_t *frame, void *data, size_t argc);
 
 
 // --- S i g n a t u r e ---
@@ -115,8 +115,8 @@ void match_info_init(match_info_t *info, value_t *scores, size_t *offsets,
 // The capacity of the match_info argument must be at least large enough to hold
 // info about all the arguments. If the match succeeds it holds the info, if
 // it fails the state is unspecified.
-value_t match_signature(value_t self, signature_map_lookup_input_t *input,
-    value_t space, match_info_t *match_info, match_result_t *match_out);
+value_t match_signature(value_t self, sigmap_input_t *input, value_t space,
+    match_info_t *match_info, match_result_t *match_out);
 
 // Matches the given invocation record against this signature. If this
 // signature can be matched successfully against some invocation with this
@@ -192,9 +192,8 @@ TYPED_ACCESSORS_DECL(guard, guard_type_t, type);
 // Matches the given guard against the given value, returning a condition that
 // indicates whether the match was successful and, if it was, storing the score
 // in the out argument for how well it matched within the given method space.
-value_t guard_match(value_t guard, value_t value,
-    signature_map_lookup_input_t *lookup_input, value_t methodspace,
-    value_t *score_out);
+value_t guard_match(value_t guard, value_t value, sigmap_input_t *lookup_input,
+    value_t methodspace, value_t *score_out);
 
 
 // ## Method
@@ -264,29 +263,31 @@ value_t add_to_signature_map(runtime_t *runtime, value_t map, value_t signature,
     value_t value);
 
 // Opaque datatype used during signature map lookup.
-FORWARD(signature_map_lookup_state_t);
+FORWARD(sigmap_state_t);
+FORWARD(sigmap_result_collector_t);
 
 // A callback called by do_signature_map_lookup to perform the traversal that
 // produces the signature maps to lookup within.
-typedef value_t (signature_map_lookup_callback_t)(signature_map_lookup_state_t *state);
+typedef value_t (sigmap_state_callback_t)(sigmap_state_t *state);
 
 // Prepares a signature map lookup and then calls the callback which must
 // traverse the signature maps to include in the lookup and invoke
 // continue_signature_map_lookup for each of them. When the callback returns
 // this function completes the lookup and returns the result or a condition as
 // appropriate.
-value_t do_signature_map_lookup(value_t ambience, value_t record, frame_t *frame,
-    signature_map_lookup_callback_t *callback, void *data);
+value_t do_sigmap_lookup(value_t ambience, value_t record, frame_t *frame,
+    sigmap_state_callback_t *callback, sigmap_result_collector_t *collector,
+    void *data);
 
 // Includes the given signature map in the lookup associated with the given
 // lookup state.
-value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
-    value_t sigmap, value_t space);
+value_t continue_sigmap_lookup(sigmap_state_t *state, value_t sigmap,
+    value_t space);
 
 // Returns the argument map that describes the location of the arguments of the
 // signature map lookup match recorded in the given lookup state. If there is
 // no match recorded an arbitrary non-condition value will be returned.
-value_t get_signature_map_lookup_argument_map(signature_map_lookup_state_t *state);
+value_t get_sigmap_lookup_argument_map(sigmap_state_t *state);
 
 
 // --- M e t h o d   s p a c e ---

@@ -26,7 +26,149 @@ def $test_simple_handled_signal() {
     on.bar() => $y);
 }
 
+def $test_nested_signals() {
+  $assert:equals(9, signal.foo() default 9);
+  try {
+    $assert:equals(10, signal.foo() default 12);
+    try {
+      $assert:equals(11, signal.foo() default 13);
+    } on.foo() {
+      11;
+    }
+    $assert:equals(10, signal.foo() default 14);
+  } on.foo() {
+    10;
+  }
+  $assert:equals(15, signal.foo() default 15);
+
+  try {
+    try {
+      try {
+        $assert:equals(1, signal.a() default 0);
+        $assert:equals(2, signal.b() default 0);
+        $assert:equals(3, signal.c() default 0);
+      } on.c() {
+        3;
+      }
+      $assert:equals(1, signal.a() default 0);
+      $assert:equals(2, signal.b() default 0);
+      $assert:equals(0, signal.c() default 0);
+    } on.b() {
+      2;
+    }
+    $assert:equals(1, signal.a() default 0);
+    $assert:equals(0, signal.b() default 0);
+    $assert:equals(0, signal.c() default 0);
+  } on.a() {
+    1;
+  }
+  $assert:equals(0, signal.a() default 0);
+  $assert:equals(0, signal.b() default 0);
+  $assert:equals(0, signal.c() default 0);
+}
+
+def $test_nested_outers() {
+  def $z := 1;
+  try {
+    def $y := 2;
+    try {
+      def $x := 3;
+      try {
+        $assert:equals(1, signal.a() default 0);
+        $assert:equals(2, signal.b() default 0);
+        $assert:equals(3, signal.c() default 0);
+      } on.c() {
+        $x;
+      }
+      $assert:equals(1, signal.a() default 0);
+      $assert:equals(2, signal.b() default 0);
+      $assert:equals(0, signal.c() default 0);
+    } on.b() {
+      $y;
+    }
+    $assert:equals(1, signal.a() default 0);
+    $assert:equals(0, signal.b() default 0);
+    $assert:equals(0, signal.c() default 0);
+  } on.a() {
+    $z;
+  }
+  $assert:equals(0, signal.a() default 0);
+  $assert:equals(0, signal.b() default 0);
+  $assert:equals(0, signal.c() default 0);
+}
+
+def $test_nested_ons() {
+  var $x := 3;
+  var $y := 7;
+  var $z := 5;
+  try {
+    $assert:equals(15, signal.zip());
+  } on.zip() {
+    try {
+      $z + (signal.zap());
+    } on.zap() {
+      try {
+        $y + (signal.zup());
+      } on.zup() {
+        $x;
+      }
+    }
+  }
+}
+
+def $test_on_args() {
+  var $clicks := 0;
+  try {
+    signal.hey();
+    signal.hey(x: 1, y: 2);
+    signal.hey(3, 4, 5);
+  } on.hey() {
+    $assert:equals(1, $clicks := $clicks + 1);
+  } on.hey(x: $x, y: $y) {
+    $assert:equals(2, $clicks := $clicks + 1);
+    $assert:equals(1, $x);
+    $assert:equals(2, $y);
+  } on.hey($a, $b, $c) {
+    $assert:equals(3, $clicks := $clicks + 1);
+    $assert:equals(3, $a);
+    $assert:equals(4, $b);
+    $assert:equals(5, $c);
+  }
+  $assert:equals(3, $clicks);
+}
+
+def $test_escape() {
+  with_escape $e do {
+    try {
+      $assert:equals(20, signal.hup());
+      $e(null);
+    } on.hup() {
+      20;
+    }
+  }
+  $assert:equals(0, signal.hup() default 0);
+  var $clicks := 0;
+  $assert:equals(10, with_escape $e do {
+    try {
+      signal.hup();
+      $assert:fail();
+    } on.hup() {
+      $assert:equals(1, $clicks := $clicks + 1);
+      $e(10);
+    } ensure {
+      $assert:equals(2, $clicks := $clicks + 1);
+      $assert:equals(3, signal.hup() default 3);
+    }
+  });
+  $assert:equals(2, $clicks);
+}
+
 do {
   $test_unhandled_signal();
   $test_simple_handled_signal();
+  $test_nested_signals();
+  $test_nested_outers();
+  $test_nested_ons();
+  $test_on_args();
+  $test_escape();
 }
