@@ -11,9 +11,8 @@
 #include "value-inl.h"
 
 
-void signature_map_lookup_input_init(signature_map_lookup_input_t *input,
-    value_t ambience, value_t record, frame_t *frame, void *data,
-    size_t argc) {
+void sigmap_input_init(sigmap_input_t *input, value_t ambience, value_t record,
+    frame_t *frame, void *data, size_t argc) {
   input->runtime = get_ambience_runtime(ambience);
   input->ambience = ambience;
   input->record = record;
@@ -106,7 +105,7 @@ static value_t new_any_match_score() {
   return  new_score(scAny, 0);
 }
 
-value_t match_signature(value_t self, signature_map_lookup_input_t *input,
+value_t match_signature(value_t self, sigmap_input_t *input,
     value_t space, match_info_t *match_info, match_result_t *result_out) {
   // This implementation matches match_signature_tags very closely. Ideally the
   // same implementation could be used for both purposes but the flow is
@@ -357,8 +356,8 @@ static value_t find_best_match(runtime_t *runtime, value_t current,
   }
 }
 
-value_t guard_match(value_t guard, value_t value,
-    signature_map_lookup_input_t *lookup_input, value_t space, value_t *score_out) {
+value_t guard_match(value_t guard, value_t value, sigmap_input_t *lookup_input,
+    value_t space, value_t *score_out) {
   CHECK_FAMILY(ofGuard, guard);
   switch (get_guard_type(guard)) {
     case gtEq: {
@@ -473,10 +472,34 @@ value_t ensure_signature_map_owned_values_frozen(runtime_t *runtime, value_t sel
   return success();
 }
 
-// The state maintained while doing signature map lookup.
-struct signature_map_lookup_state_t {
-  // The resulting value to return, or an appropriate condition.
-  value_t result;
+// Function called with additional matches that are not strictly better or worse
+// than the best seen so far.
+typedef value_t (*sigmap_add_ambiguous_callback_t)(void *data, value_t value);
+
+// Function called the first time a result is found that is strictly better
+// than any matches previously seen.
+typedef value_t (*sigmap_add_better_callback_t)(void *data, value_t value);
+
+// Returns the result of this lookup.
+typedef value_t (*sigmap_get_result_callback_t)(void *data);
+
+// Resets the lookup state.
+typedef void (*sigmap_reset_callback_t)(void *data);
+
+// Collection of virtual functions for working with a result collector.
+struct sigmap_result_collector_t {
+  sigmap_add_ambiguous_callback_t add_ambiguous;
+  sigmap_add_better_callback_t add_better;
+  sigmap_get_result_callback_t get_result;
+  sigmap_reset_callback_t reset;
+};
+
+// The state maintained while doing signature map lookup. Originally called
+// signature_map_lookup_state but it, and particularly the derived names, got
+// so long that it's now called the less descriptive sigmap_state_t.
+struct sigmap_state_t {
+  // The result collector used to collect results in whatever way is appropriate.
+  sigmap_result_collector_t *collector;
   // Running argument-wise max over all the entries that have matched.
   value_t *max_score;
   // We use two scratch offsets vectors such that we can keep the best in one
@@ -489,11 +512,11 @@ struct signature_map_lookup_state_t {
   // max?
   bool max_is_synthetic;
   // The input data used as the basis of the lookup.
-  signature_map_lookup_input_t input;
+  sigmap_input_t input;
 };
 
 // Swaps around the result and scratch offsets.
-static void signature_map_lookup_state_swap_offsets(signature_map_lookup_state_t *state) {
+static void sigmap_state_swap_offsets(sigmap_state_t *state) {
   size_t *temp = state->result_offsets;
   state->result_offsets = state->scratch_offsets;
   state->scratch_offsets = temp;
@@ -503,8 +526,7 @@ static void signature_map_lookup_state_swap_offsets(signature_map_lookup_state_t
 // stack.
 #define kSmallLookupLimit 8
 
-value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
-    value_t sigmap, value_t space) {
+value_t continue_sigmap_lookup(sigmap_state_t *state, value_t sigmap, value_t space) {
   CHECK_FAMILY(ofSignatureMap, sigmap);
   CHECK_FAMILY(ofMethodspace, space);
   TOPIC_INFO(Lookup, "Looking up in signature map %v", sigmap);
@@ -528,24 +550,19 @@ value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
       // This score is either better than the previous best, or it is equal to
       // the max which is itself synthetic and hence better than any of the
       // entries we've seen so far.
-      state->result = value;
+      TRY((state->collector->add_better)(state->collector, value));
       // Now the max definitely isn't synthetic.
       state->max_is_synthetic = false;
       // The offsets for the result is now stored in scratch_offsets and we have
       // no more use for the previous result_offsets so we swap them around.
-      signature_map_lookup_state_swap_offsets(state);
+      sigmap_state_swap_offsets(state);
       // And then we have to update the match info with the new scratch offsets.
       match_info_init(&match_info, scratch_score, state->scratch_offsets,
           kSmallLookupLimit);
     } else if (status != jsWorse) {
-      // If we hit the exact same entry more than once, which can happen if
-      // the same signature map is traversed more than once, that's okay we just
-      // skip.
-      if (is_same_value(value, state->result))
-        continue;
       // The next score was not strictly worse than the best we've seen so we
       // don't have a unique best.
-      state->result = new_lookup_error_condition(lcAmbiguity);
+      TRY((state->collector->add_ambiguous)(state->collector, value));
       // If the result is ambiguous that means the max is now synthetic.
       state->max_is_synthetic = (status == jsAmbiguous);
     }
@@ -555,15 +572,16 @@ value_t continue_signature_map_lookup(signature_map_lookup_state_t *state,
 
 // Reset the scores of a lookup state struct. The pointer fields are assumed to
 // already have been set, this only resets them.
-static void signature_map_lookup_state_reset(signature_map_lookup_state_t *state) {
-  state->result = new_lookup_error_condition(lcNoMatch);
+static void sigmap_state_reset(sigmap_state_t *state) {
+  (state->collector->reset)(state->collector);
   state->max_is_synthetic = false;
   for (size_t i = 0; i < state->input.argc; i++)
     state->max_score[i] = new_no_match_score();
 }
 
-value_t do_signature_map_lookup(value_t ambience, value_t record, frame_t *frame,
-    signature_map_lookup_callback_t callback, void *data) {
+value_t do_sigmap_lookup(value_t ambience, value_t record, frame_t *frame,
+    sigmap_state_callback_t callback, sigmap_result_collector_t *collector,
+    void *data) {
   // For now we only handle lookups of a certain size. Hopefully by the time
   // this is too small this implementation will be gone anyway.
   size_t arg_count = get_invocation_record_argument_count(record);
@@ -572,15 +590,15 @@ value_t do_signature_map_lookup(value_t ambience, value_t record, frame_t *frame
   value_t max_score[kSmallLookupLimit];
   size_t offsets_one[kSmallLookupLimit];
   size_t offsets_two[kSmallLookupLimit];
-  signature_map_lookup_state_t state;
-  signature_map_lookup_input_init(&state.input, ambience, record, frame, data,
-      arg_count);
+  sigmap_state_t state;
+  sigmap_input_init(&state.input, ambience, record, frame, data, arg_count);
+  state.collector = collector;
   state.max_score = max_score;
   state.result_offsets = offsets_one;
   state.scratch_offsets = offsets_two;
-  signature_map_lookup_state_reset(&state);
+  sigmap_state_reset(&state);
   TRY(callback(&state));
-  return state.result;
+  return (state.collector->get_result)(state.collector);
 }
 
 // Given an array of offsets, builds and returns an argument map that performs
@@ -595,8 +613,9 @@ static value_t build_argument_map(runtime_t *runtime, size_t offsetc, size_t *of
   return get_argument_map_trie_value(current_node);
 }
 
-value_t get_signature_map_lookup_argument_map(signature_map_lookup_state_t *state) {
-  if (in_domain(vdCondition, state->result)) {
+value_t get_sigmap_lookup_argument_map(sigmap_state_t *state) {
+  value_t result = (state->collector->get_result)(state->collector);
+  if (in_domain(vdCondition, result)) {
     return whatever();
   } else {
     size_t arg_count = get_invocation_record_argument_count(state->input.record);
@@ -679,8 +698,7 @@ value_t get_type_parents(runtime_t *runtime, value_t space, value_t type) {
 
 // Does a full exhaustive lookup through the tags of the invocation for the
 // subject of this call. Returns a not found condition if there is no subject.
-static value_t get_invocation_subject_no_shortcut(
-    signature_map_lookup_state_t *state) {
+static value_t get_invocation_subject_no_shortcut(sigmap_state_t *state) {
   value_t record = state->input.record;
   size_t argc = get_invocation_record_argument_count(record);
   for (size_t i = 0; i < argc; i++) {
@@ -699,8 +717,7 @@ static value_t get_invocation_subject_no_shortcut(
 // invocation record. Potentially confusingly, the argument index will actually
 // almost always be 0 as well but that's not what we're using here (since we're
 // hardcoding the index we need _always_ always, not _almost_ always).
-static value_t get_invocation_subject_with_shortcut(
-    signature_map_lookup_state_t *state) {
+static value_t get_invocation_subject_with_shortcut(sigmap_state_t *state) {
   value_t record = state->input.record;
   value_t tag_zero = get_invocation_record_tag_at(record, 0);
   if (is_same_value(tag_zero, ROOT(state->input.runtime, subject_key)))
@@ -760,8 +777,7 @@ value_t get_or_create_module_fragment_methodspaces_cache(runtime_t *runtime,
 
 // Performs a method lookup through the given fragment, that is, in the fragment
 // itself and any of the siblings before it.
-static value_t lookup_through_fragment(signature_map_lookup_state_t *state,
-    value_t fragment) {
+static value_t lookup_through_fragment(sigmap_state_t *state, value_t fragment) {
   CHECK_FAMILY(ofModuleFragment, fragment);
   value_t space = get_module_fragment_methodspace(fragment);
   TRY_DEF(methodspaces, get_or_create_module_fragment_methodspaces_cache(
@@ -769,25 +785,24 @@ static value_t lookup_through_fragment(signature_map_lookup_state_t *state,
   for (size_t i = 0; i < get_array_buffer_length(methodspaces); i++) {
     value_t methodspace = get_array_buffer_at(methodspaces, i);
     value_t sigmap = get_methodspace_methods(methodspace);
-    TRY(continue_signature_map_lookup(state, sigmap, space));
+    TRY(continue_sigmap_lookup(state, sigmap, space));
   }
   return success();
 }
 
 // Does the same as lookup_through_fragment but faster by using the helper data
 // provided by the compiler.
-static value_t lookup_through_fragment_with_helper(signature_map_lookup_state_t *state,
+static value_t lookup_through_fragment_with_helper(sigmap_state_t *state,
     value_t fragment, value_t helper) {
   CHECK_FAMILY(ofModuleFragment, fragment);
   CHECK_FAMILY(ofSignatureMap, helper);
   value_t space = get_module_fragment_methodspace(fragment);
-  TRY(continue_signature_map_lookup(state, helper, space));
+  TRY(continue_sigmap_lookup(state, helper, space));
   return success();
 }
 
 // Perform a method lookup in the subject's module of origin.
-static value_t lookup_subject_methods(signature_map_lookup_state_t *state,
-    value_t *subject_out) {
+static value_t lookup_subject_methods(sigmap_state_t *state, value_t *subject_out) {
   // Look for a subject value, if there is none there is nothing to do.
   value_t subject = *subject_out = get_invocation_subject_with_shortcut(state);
   TOPIC_INFO(Lookup, "Subject value: %v", subject);
@@ -820,12 +835,53 @@ typedef struct {
   value_t *arg_map_out;
 } value_and_argument_map_t;
 
+// Lookup match collector that keeps the best result seen so far and returns
+// an ambiguity signal if there's no unique best match.
+typedef struct {
+  sigmap_result_collector_t vtable;
+  value_t result;
+} sigmap_best_match_collector_t;
+
+static value_t sigmap_best_match_collector_add_ambiguous(void *ptr, value_t value) {
+  sigmap_best_match_collector_t *data = (sigmap_best_match_collector_t*) ptr;
+  if (!is_same_value(value, data->result))
+    // If we hit the exact same entry more than once, which can happen if
+    // the same signature map is traversed more than once, that's okay we just
+    // skip. Otherwise we've found a genuine ambiguity.
+    data->result = new_lookup_error_condition(lcAmbiguity);
+  return success();
+}
+
+static value_t sigmap_best_match_collector_add_better(void *ptr, value_t value) {
+  sigmap_best_match_collector_t *data = (sigmap_best_match_collector_t*) ptr;
+  data->result = value;
+  return success();
+}
+
+static value_t sigmap_best_match_collector_get_result(void *ptr) {
+  sigmap_best_match_collector_t *data = (sigmap_best_match_collector_t*) ptr;
+  return data->result;
+}
+
+static void sigmap_best_match_collector_reset(void *ptr) {
+  sigmap_best_match_collector_t *data = (sigmap_best_match_collector_t*) ptr;
+  data->result = new_lookup_error_condition(lcNoMatch);
+}
+
+static void sigmap_best_match_collector_init(sigmap_best_match_collector_t *collector) {
+  collector->vtable.add_ambiguous = sigmap_best_match_collector_add_ambiguous;
+  collector->vtable.add_better = sigmap_best_match_collector_add_better;
+  collector->vtable.get_result = sigmap_best_match_collector_get_result;
+  collector->vtable.reset = sigmap_best_match_collector_reset;
+  sigmap_best_match_collector_reset(collector);
+}
+
 // Do a transitive method lookup in the given method space, that is, look up
 // locally and in any imported spaces.
-static value_t lookup_methodspace_transitive_method(signature_map_lookup_state_t *state,
+static value_t lookup_methodspace_transitive_method(sigmap_state_t *state,
     value_t space) {
   value_t local_methods = get_methodspace_methods(space);
-  TRY(continue_signature_map_lookup(state, local_methods, space));
+  TRY(continue_sigmap_lookup(state, local_methods, space));
   value_t imports = get_methodspace_imports(space);
   for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
     value_t import = get_array_buffer_at(imports, i);
@@ -835,11 +891,11 @@ static value_t lookup_methodspace_transitive_method(signature_map_lookup_state_t
 }
 
 // Performs a method lookup within a single methodspace.
-static value_t do_methodspace_method_lookup(signature_map_lookup_state_t *state) {
+static value_t do_methodspace_method_lookup(sigmap_state_t *state) {
   value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
   CHECK_FAMILY(ofMethodspace, data->value);
   TRY(lookup_methodspace_transitive_method(state, data->value));
-  TRY_SET(*data->arg_map_out, get_signature_map_lookup_argument_map(state));
+  TRY_SET(*data->arg_map_out, get_sigmap_lookup_argument_map(state));
   return success();
 }
 
@@ -848,8 +904,10 @@ value_t lookup_methodspace_method(value_t ambience, value_t methodspace,
   value_and_argument_map_t data;
   data.value = methodspace;
   data.arg_map_out = arg_map_out;
-  return do_signature_map_lookup(ambience, record, frame,
-      do_methodspace_method_lookup, &data);
+  sigmap_best_match_collector_t collector;
+  sigmap_best_match_collector_init(&collector);
+  return do_sigmap_lookup(ambience, record, frame, do_methodspace_method_lookup,
+      (sigmap_result_collector_t*) &collector, &data);
 }
 
 // A pair of an argument map and a handler output parameter.
@@ -858,8 +916,55 @@ typedef struct {
   value_t *arg_map_out;
 } handler_and_arg_map_t;
 
+// Lookup match collector that keeps the most specific signal handler as well as
+// the handler it originates from.
+typedef struct {
+  // Vtable that allows this to be cast to a handler.
+  sigmap_result_collector_t vtable;
+  // The current best result.
+  value_t result;
+  // The handler of the current best result.
+  value_t result_handler;
+  // The current handler being looked through.
+  value_t current_handler;
+} sigmap_signal_handler_collector_t;
+
+static value_t sigmap_signal_handler_collector_add_ambiguous(void *ptr, value_t value) {
+  // We're only interested in the first best match, subsequent as-good matches
+  // are ignored as less relevant due to them being further down the stack.
+  return success();
+}
+
+static value_t sigmap_signal_handler_collector_add_better(void *ptr, value_t value) {
+  sigmap_signal_handler_collector_t *data = (sigmap_signal_handler_collector_t*) ptr;
+  data->result = value;
+  data->result_handler = data->current_handler;
+  return success();
+}
+
+static value_t sigmap_signal_handler_collector_get_result(void *ptr) {
+  sigmap_signal_handler_collector_t *data = (sigmap_signal_handler_collector_t*) ptr;
+  return data->result;
+}
+
+static void sigmap_signal_handler_collector_reset(void *ptr) {
+  sigmap_signal_handler_collector_t *data = (sigmap_signal_handler_collector_t*) ptr;
+  data->result = new_lookup_error_condition(lcNoMatch);
+  data->current_handler = data->result_handler = nothing();
+}
+
+static void sigmap_signal_handler_collector_init(sigmap_signal_handler_collector_t *collector) {
+  collector->vtable.add_ambiguous = sigmap_signal_handler_collector_add_ambiguous;
+  collector->vtable.add_better = sigmap_signal_handler_collector_add_better;
+  collector->vtable.get_result = sigmap_signal_handler_collector_get_result;
+  collector->vtable.reset = sigmap_signal_handler_collector_reset;
+  sigmap_signal_handler_collector_reset(collector);
+}
+
 // Performs a lookup through the signal handlers on the stack.
-static value_t do_signal_handler_method_lookup(signature_map_lookup_state_t *state) {
+static value_t do_signal_handler_method_lookup(sigmap_state_t *state) {
+  sigmap_signal_handler_collector_t *collector =
+      (sigmap_signal_handler_collector_t*) state->collector;
   barrier_iter_t barrier_iter;
   barrier_iter_init(&barrier_iter, state->input.frame);
   handler_and_arg_map_t *data = (handler_and_arg_map_t*) state->input.data;
@@ -867,16 +972,15 @@ static value_t do_signal_handler_method_lookup(signature_map_lookup_state_t *sta
     stack_barrier_t *barrier = barrier_iter_get_current(&barrier_iter);
     value_t handler = stack_barrier_get_handler(barrier);
     if (in_family(ofSignalHandler, handler)) {
+      collector->current_handler = handler;
       refraction_point_t refract = stack_barrier_as_refraction_point(barrier);
       value_t methods = get_refraction_point_data(&refract);
       value_t sigmap = get_methodspace_methods(methods);
-      TRY(continue_signature_map_lookup(state, sigmap, methods));
-      // TODO: this _only_ works if there is just one handler. This needs to be
-      //   fixed, it's totally broken.
-      *data->handler_out = handler;
+      TRY(continue_sigmap_lookup(state, sigmap, methods));
     }
   } while (barrier_iter_advance(&barrier_iter));
-  TRY_SET(*data->arg_map_out, get_signature_map_lookup_argument_map(state));
+  TRY_SET(*data->arg_map_out, get_sigmap_lookup_argument_map(state));
+  *data->handler_out = collector->result_handler;
   return success();
 }
 
@@ -885,17 +989,20 @@ value_t lookup_signal_handler_method(value_t ambience, value_t record,
   handler_and_arg_map_t data;
   data.handler_out = handler_out;
   data.arg_map_out = arg_map_out;
-  return do_signature_map_lookup(ambience, record, frame,
-      do_signal_handler_method_lookup, &data);
+  sigmap_signal_handler_collector_t collector;
+  sigmap_signal_handler_collector_init(&collector);
+  return do_sigmap_lookup(ambience, record, frame,
+      do_signal_handler_method_lookup, (sigmap_result_collector_t*) &collector,
+      &data);
 }
 
 // Performs the extra lookup for lambda methods that happens when the lambda
 // delegate method is found in the normal lookup.
-static value_t complete_special_lambda_lookup(signature_map_lookup_state_t *state,
+static value_t complete_special_lambda_lookup(sigmap_state_t *state,
     value_t subject) {
   CHECK_FAMILY(ofLambda, subject);
   value_t lambda_space = get_lambda_methods(subject);
-  signature_map_lookup_state_reset(state);
+  sigmap_state_reset(state);
   value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
   data->value = lambda_space;
   return do_methodspace_method_lookup(state);
@@ -903,12 +1010,12 @@ static value_t complete_special_lambda_lookup(signature_map_lookup_state_t *stat
 
 // Performs the extra lookup for block methods that happens when the block
 // delegate method is found in the normal lookup.
-static value_t complete_special_block_lookup(signature_map_lookup_state_t *state,
+static value_t complete_special_block_lookup(sigmap_state_t *state,
     value_t subject) {
   CHECK_FAMILY(ofBlock, subject);
   refraction_point_t home = get_refractor_home(subject);
   value_t block_space = get_refraction_point_data(&home);
-  signature_map_lookup_state_reset(state);
+  sigmap_state_reset(state);
   value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
   data->value = block_space;
   return do_methodspace_method_lookup(state);
@@ -916,7 +1023,7 @@ static value_t complete_special_block_lookup(signature_map_lookup_state_t *state
 
 // Performs a full method lookup through the current module and the subject's
 // module of origin.
-static value_t do_full_method_lookup(signature_map_lookup_state_t *state) {
+static value_t do_full_method_lookup(sigmap_state_t *state) {
   value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
   CHECK_FAMILY(ofModuleFragment, data->value);
   TOPIC_INFO(Lookup, "Performing fragment lookup %v", state->input.record);
@@ -924,9 +1031,10 @@ static value_t do_full_method_lookup(signature_map_lookup_state_t *state) {
   TOPIC_INFO(Lookup, "Performing subject lookup");
   value_t subject = whatever();
   TRY(lookup_subject_methods(state, &subject));
-  TOPIC_INFO(Lookup, "Lookup result: %v", state->result);
-  if (in_family(ofMethod, state->result)) {
-    value_t result_flags = get_method_flags(state->result);
+  value_t result = (state->collector->get_result)(state->collector);
+  TOPIC_INFO(Lookup, "Lookup result: %v", result);
+  if (in_family(ofMethod, result)) {
+    value_t result_flags = get_method_flags(result);
     if (!is_flag_set_empty(result_flags)) {
       // The result has at least one special flag set so we have to give this
       // lookup special treatment.
@@ -937,7 +1045,7 @@ static value_t do_full_method_lookup(signature_map_lookup_state_t *state) {
       }
     }
   }
-  TRY_SET(*data->arg_map_out, get_signature_map_lookup_argument_map(state));
+  TRY_SET(*data->arg_map_out, get_sigmap_lookup_argument_map(state));
   return success();
 }
 
@@ -947,8 +1055,10 @@ value_t lookup_method_full(value_t ambience, value_t fragment,
   data.value = fragment;
   data.helper = helper;
   data.arg_map_out = arg_map_out;
-  return do_signature_map_lookup(ambience, record, frame,
-      do_full_method_lookup, &data);
+  sigmap_best_match_collector_t collector;
+  sigmap_best_match_collector_init(&collector);
+  return do_sigmap_lookup(ambience, record, frame, do_full_method_lookup,
+      (sigmap_result_collector_t*) &collector, &data);
 }
 
 value_t plankton_new_methodspace(runtime_t *runtime) {
