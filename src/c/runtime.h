@@ -32,6 +32,7 @@
   F(FlagElement,                "FlagElement")                                 \
   F(fragments,                  "fragments")                                   \
   F(guard,                      "guard")                                       \
+  F(handlers,                   "handlers")                                    \
   F(imports,                    "imports")                                     \
   F(inheritance,                "inheritance")                                 \
   F(is_mutable,                 "is_mutable")                                  \

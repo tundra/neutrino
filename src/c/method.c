@@ -852,15 +852,41 @@ value_t lookup_methodspace_method(value_t ambience, value_t methodspace,
       do_methodspace_method_lookup, &data);
 }
 
+// A pair of an argument map and a handler output parameter.
+typedef struct {
+  value_t *handler_out;
+  value_t *arg_map_out;
+} handler_and_arg_map_t;
+
 // Performs a lookup through the signal handlers on the stack.
-static value_t do_signal_handler_lookup(signature_map_lookup_state_t *state) {
-  return new_lookup_error_condition(lcNoMatch);
+static value_t do_signal_handler_method_lookup(signature_map_lookup_state_t *state) {
+  barrier_iter_t barrier_iter;
+  barrier_iter_init(&barrier_iter, state->input.frame);
+  handler_and_arg_map_t *data = (handler_and_arg_map_t*) state->input.data;
+  do {
+    stack_barrier_t *barrier = barrier_iter_get_current(&barrier_iter);
+    value_t handler = stack_barrier_get_handler(barrier);
+    if (in_family(ofSignalHandler, handler)) {
+      refraction_point_t refract = stack_barrier_as_refraction_point(barrier);
+      value_t methods = get_refraction_point_data(&refract);
+      value_t sigmap = get_methodspace_methods(methods);
+      TRY(continue_signature_map_lookup(state, sigmap, methods));
+      // TODO: this _only_ works if there is just one handler. This needs to be
+      //   fixed, it's totally broken.
+      *data->handler_out = handler;
+    }
+  } while (barrier_iter_advance(&barrier_iter));
+  TRY_SET(*data->arg_map_out, get_signature_map_lookup_argument_map(state));
+  return success();
 }
 
-value_t lookup_signal_handler(value_t ambience, value_t record, frame_t *frame,
-    value_t *arg_map_out) {
-  return do_signature_map_lookup(ambience, record, frame, do_signal_handler_lookup,
-      arg_map_out);
+value_t lookup_signal_handler_method(value_t ambience, value_t record,
+    frame_t *frame, value_t *handler_out, value_t *arg_map_out) {
+  handler_and_arg_map_t data;
+  data.handler_out = handler_out;
+  data.arg_map_out = arg_map_out;
+  return do_signature_map_lookup(ambience, record, frame,
+      do_signal_handler_method_lookup, &data);
 }
 
 // Performs the extra lookup for lambda methods that happens when the lambda

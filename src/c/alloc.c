@@ -325,6 +325,16 @@ value_t new_heap_code_shard(runtime_t *runtime, value_t home_stack_piece,
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_signal_handler(runtime_t *runtime, value_t home_stack_piece,
+    value_t home_state_pointer) {
+  size_t size = kSignalHandlerSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, signal_handler_species)));
+  set_signal_handler_home_stack_piece(result, home_stack_piece);
+  set_signal_handler_home_state_pointer(result, home_state_pointer);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_namespace(runtime_t *runtime, value_t value) {
   TRY_DEF(bindings, new_heap_id_hash_map(runtime, 16));
   size_t size = kNamespaceSize;
@@ -725,6 +735,16 @@ value_t new_heap_signal_ast(runtime_t *runtime, value_t escape, value_t argument
   set_signal_ast_escape(result, escape);
   set_signal_ast_arguments(result, arguments);
   set_signal_ast_default(result, defawlt);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_signal_handler_ast(runtime_t *runtime, value_t body,
+    value_t handlers) {
+  size_t size = kSignalHandlerAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, signal_handler_ast_species)));
+  set_signal_handler_ast_body(result, body);
+  set_signal_handler_ast_handlers(result, handlers);
   return post_create_sanity_check(result, size);
 }
 

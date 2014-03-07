@@ -141,8 +141,12 @@ value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t captures);
 value_t new_heap_block(runtime_t *runtime, value_t is_live,
     value_t home_stack_piece, value_t home_state_pointer);
 
-// Creates a new code shard whoses state is located at the given location.
+// Creates a new code shard whose state is located at the given location.
 value_t new_heap_code_shard(runtime_t *runtime, value_t home_stack_piece,
+    value_t home_state_pointer);
+
+// Creates a new signal handler whose state is located at the given location.
+value_t new_heap_signal_handler(runtime_t *runtime, value_t home_stack_piece,
     value_t home_state_pointer);
 
 // Creates a new empty namespace object.
@@ -279,6 +283,10 @@ value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments);
 // Creates a new signal syntax tree with the given arguments.
 value_t new_heap_signal_ast(runtime_t *runtime, value_t escape, value_t arguments,
     value_t defawlt);
+
+// Creates a new signal handler syntax tree.
+value_t new_heap_signal_handler_ast(runtime_t *runtime, value_t body,
+    value_t handlers);
 
 // Creates a new ensure syntax tree with the given components.
 value_t new_heap_ensure_ast(runtime_t *runtime, value_t body, value_t on_exit);

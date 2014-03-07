@@ -218,6 +218,10 @@ value_t frame_peek_value(frame_t *frame, size_t index);
 // Returns the value of the index'th parameter.
 value_t frame_get_argument(frame_t *frame, size_t param_index);
 
+// Sets the value of the index'th parameter. This is kind of a dubious thing to
+// be doing so avoid if at all possible.
+void frame_set_argument(frame_t *frame, size_t param_index, value_t value);
+
 // Returns the value of the index'th local variable in this frame.
 value_t frame_get_local(frame_t *frame, size_t index);
 
@@ -359,6 +363,28 @@ value_t stack_barrier_get_next_piece(stack_barrier_t *barrier);
 
 // The stack pointer of the next barrier.
 value_t stack_barrier_get_next_pointer(stack_barrier_t *barrier);
+
+
+/// ### Barrier iterator
+///
+/// Utility for scanning through the barriers on a stack without modifying them.
+
+typedef struct {
+  stack_barrier_t current;
+} barrier_iter_t;
+
+// Initializes the given barrier iterator. After this call the current barrier
+// will be the top one.
+void barrier_iter_init(barrier_iter_t *iter, frame_t *frame);
+
+// Returns a pointer to the current stack barrier. The result is well-defined
+// until the first call to barrier_iter_advance that returns false.
+stack_barrier_t *barrier_iter_get_current(barrier_iter_t *iter);
+
+// Advances the iterator to the next barrier, downwards towards the bottom of
+// the call stack. Returns true iff advancing was successful, in which case
+// barrier_iter_get_current can be called to get the next barrier.
+bool barrier_iter_advance(barrier_iter_t *iter);
 
 
 /// ## Escape
@@ -568,7 +594,7 @@ value_t get_lambda_capture(value_t self, size_t index);
 
 static const size_t kBlockSize = OBJECT_SIZE(3);
 // These two must be at the same offsets as the other refractors, currently
-// code shards.
+// code shards and signal handlers.
 static const size_t kBlockHomeStackPieceOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kBlockHomeStatePointerOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kBlockIsLiveOffset = OBJECT_FIELD_OFFSET(2);
@@ -620,7 +646,7 @@ void set_refractor_home_state_pointer(value_t self, value_t value);
 
 static const size_t kCodeShardSize = OBJECT_SIZE(2);
 // These two must be at the same offsets as the other refractors, currently
-// blocks.
+// blocks and signal handlers.
 static const size_t kCodeShardHomeStackPieceOffset = OBJECT_FIELD_OFFSET(0);
 static const size_t kCodeShardHomeStatePointerOffset = OBJECT_FIELD_OFFSET(1);
 
@@ -667,6 +693,29 @@ size_t get_refraction_point_frame_pointer(refraction_point_t *point);
 // Returns the refractor object (block or code shard) whose creation caused this
 // refraction point.
 value_t get_refraction_point_refractor(refraction_point_t *point);
+
+// Given a stack barrier that is part of a refracting stack barrier, returns the
+// corresponding refraction point.
+refraction_point_t stack_barrier_as_refraction_point(stack_barrier_t *barrier);
+
+
+/// ## Signal handler
+///
+/// A signal handler is a scoped object that holds a set of methods which are
+/// used
+
+static const size_t kSignalHandlerSize = OBJECT_SIZE(2);
+// These two must be at the same offsets as the other refractors, currently
+// blocks and code shards.
+static const size_t kSignalHandlerHomeStackPieceOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kSignalHandlerHomeStatePointerOffset = OBJECT_FIELD_OFFSET(1);
+
+// Returns the stack piece that contains this signal handler's home.
+ACCESSORS_DECL(signal_handler, home_stack_piece);
+
+// Returns a pointer within the stack piece to where this signal handler's home
+// is.
+ACCESSORS_DECL(signal_handler, home_state_pointer);
 
 
 // --- B a c k t r a c e ---

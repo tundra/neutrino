@@ -26,6 +26,8 @@
   F(FireEscapeOrBarrier,        1)                                             \
   F(GetReference,               1)                                             \
   F(Goto,                       2)                                             \
+  F(InstallSignalHandler,       2)                                             \
+  F(UninstallSignalHandler,     1)                                             \
   F(Invoke,                     4)                                             \
   F(Lambda,                     3)                                             \
   F(LoadArgument,               2)                                             \

@@ -111,6 +111,19 @@ ACCESSORS_DECL(signal_ast, arguments);
 ACCESSORS_DECL(signal_ast, default);
 
 
+/// ## Signal handler ast
+
+static const size_t kSignalHandlerAstSize = OBJECT_SIZE(2);
+static const size_t kSignalHandlerAstBodyOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kSignalHandlerAstHandlersOffset = OBJECT_FIELD_OFFSET(1);
+
+// The body of this expression.
+ACCESSORS_DECL(signal_handler_ast, body);
+
+// The signal handlers to install before running the body.
+ACCESSORS_DECL(signal_handler_ast, handlers);
+
+
 // --- E n s u r e   a s t ---
 
 static const size_t kEnsureAstSize = OBJECT_SIZE(2);

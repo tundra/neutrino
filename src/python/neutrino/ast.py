@@ -38,6 +38,9 @@ class Visitor(object):
   def visit_signal(self, that):
     self.visit_ast(that)
 
+  def visit_signal_handler(self, that):
+    self.visit_ast(that)
+
   def visit_ensure(self, that):
     self.visit_ast(that)
 
@@ -239,6 +242,24 @@ class Signal(object):
       argument.accept(visitor)
     if not self.default is None:
       self.default.accept(visitor)
+
+
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "SignalHandler"))
+class SignalHandler(object):
+
+  @plankton.field("body")
+  @plankton.field("handlers")
+  def __init__(self, body, handlers):
+    self.body = body
+    self.handlers = handlers
+
+  def accept(self, visitor):
+    visitor.visit_signal_handler(self)
+
+  def traverse(self, visitor):
+    self.body.accept(visitor)
+    for handler in self.handlers:
+      handler.accept(visitor)
 
 
 @plankton.serializable(plankton.EnvironmentReference.path("ast", "Ensure"))
