@@ -1,0 +1,51 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def $test_simple_leave() {
+  $assert:equals(103, try { leave.foo(); $assert:fail(); } on.foo() => 103);
+}
+
+def $test_ensures() {
+  var $clicks := 0;
+  $assert:equals(104, try {
+    try {
+      leave.foo();
+    } ensure {
+      $assert:equals(1, $clicks := $clicks + 1);
+    }
+  } on.foo() {
+    104;
+  } ensure {
+    $assert:equals(2, $clicks := $clicks + 1);
+  });
+  $assert:equals(2, $clicks);
+}
+
+def $test_multi_levels() {
+  var $clicks := 0;
+  $assert:equals(105, try {
+    try {
+      $assert:equals(105, signal.foo());
+      $assert:equals(106, signal.bar());
+      leave.foo();
+      $assert:fail();
+    } on.bar() {
+      $assert:equals(105, signal.foo());
+      106;
+    }
+    $assert:fail();
+  } on.foo() {
+    105;
+  });
+  $assert:equals(1, signal.foo() else 1);
+  $assert:equals(2, signal.bar() else 2);
+}
+
+do {
+  $test_simple_leave();
+  $test_ensures();
+  $test_multi_levels();
+}

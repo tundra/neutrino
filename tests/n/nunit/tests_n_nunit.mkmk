@@ -28,6 +28,7 @@ file_names = [
   "integer.n",
   "interval.n",
   "is.n",
+  "leave.n",
   "module.n",
   "object.n",
   "signal.n",

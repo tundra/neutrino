@@ -255,7 +255,8 @@ value_t assembler_emit_call_code_shard(assembler_t *assm);
 value_t assembler_emit_dispose_code_shard(assembler_t *assm);
 
 // Installs a methodspace as a scoped signal handler.
-value_t assembler_emit_install_signal_handler(assembler_t *assm, value_t space);
+value_t assembler_emit_install_signal_handler(assembler_t *assm, value_t space,
+    short_buffer_cursor_t *continue_offset_out);
 
 // Uninstalls a methodspace as a scoped signal handler.
 value_t assembler_emit_uninstall_signal_handler(assembler_t *assm);
@@ -279,6 +280,10 @@ value_t assembler_emit_goto_forward(assembler_t *assm,
 // Either fire the next barrier if the current escape lies below it, or fire
 // the current escape if there are no more barriers to fire.
 value_t assembler_emit_fire_escape_or_barrier(assembler_t *assm);
+
+// Either fire the next barrier if the current signal handler lies below it, or
+// leave for there if there are no more barriers to fire.
+value_t assembler_emit_leave_or_fire_barrier(assembler_t *assm, size_t argc);
 
 // Pops off the escape currently on the stack and marks it as dead. Note that
 // this expects there to be a value above the escape, so this in effect does a

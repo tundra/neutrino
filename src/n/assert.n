@@ -18,5 +18,5 @@ def $equals(expected: $a, found: $b) => $that($a == $b);
 
 ## Aborts the test with a failure.
 def $fail() {
-  abort.assert_failed();
+  leave.assert_failed();
 }
