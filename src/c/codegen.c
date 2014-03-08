@@ -427,6 +427,16 @@ value_t assembler_emit_fire_escape_or_barrier(assembler_t *assm) {
   return success();
 }
 
+value_t assembler_emit_leave_or_fire_barrier(assembler_t *assm, size_t argc) {
+  // This op works the same way as assembler_emit_fire_escape_or_barrier.
+  assembler_emit_push(assm, null());
+  assembler_emit_push(assm, null());
+  assembler_emit_opcode(assm, ocLeaveOrFireBarrier);
+  assembler_emit_short(assm, argc);
+  assembler_adjust_stack_height(assm, -2);
+  return success();
+}
+
 value_t assembler_emit_dispose_escape(assembler_t *assm) {
   assembler_emit_opcode(assm, ocDisposeEscape);
   assembler_adjust_stack_height(assm, -kStackBarrierSize);
@@ -615,15 +625,17 @@ value_t assembler_emit_dispose_code_shard(assembler_t *assm) {
   return success();
 }
 
-value_t assembler_emit_install_signal_handler(assembler_t *assm, value_t space) {
+value_t assembler_emit_install_signal_handler(assembler_t *assm, value_t space,
+    short_buffer_cursor_t *continue_offset_out) {
   assembler_emit_opcode(assm, ocInstallSignalHandler);
   TRY(assembler_emit_value(assm, space));
-  assembler_adjust_stack_height(assm, kRefractingBarrierSize);
+  assembler_emit_cursor(assm, continue_offset_out);
+  assembler_adjust_stack_height(assm, kRefractingBarrierSize + kCapturedStateSize);
   return success();
 }
 
 value_t assembler_emit_uninstall_signal_handler(assembler_t *assm) {
   assembler_emit_opcode(assm, ocUninstallSignalHandler);
-  assembler_adjust_stack_height(assm, -kRefractingBarrierSize);
+  assembler_adjust_stack_height(assm, -kRefractingBarrierSize - kCapturedStateSize);
   return success();
 }

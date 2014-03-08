@@ -316,26 +316,38 @@ value_t emit_signal_ast(value_t value, assembler_t *assm) {
   opcode_t opcode = escape ? ocSignalEscape : ocSignalContinue;
   // Try invoking the handler.
   TRY(assembler_emit_signal(assm, opcode, record));
-  // At this point, either the handler will have been executed in which case
-  // there's an extra result on the stack, or no handler was found in which
-  // case the goto that's coming up will be skipped. In either case we'll arrive
-  // at the goto's destination with a new argument on the stack.
+  // At this point there are three possible cases.
+  //
+  //   - Either the handler will have been executed in which case there's an
+  //     extra result on the stack.
+  //   - No handler was found and this is a continuing signal, in which case the
+  //     goto that's coming up will be skipped and the else-part executed.
+  //   - No handler was found and this is an escaping signal, in which case
+  //     execution will have been abandoned.
+  //
+  // Either way, if execution does continue we'll arrive at the goto's
+  // destination with a new argument on the stack.
   size_t argc = get_invocation_record_argument_count(record);
-  short_buffer_cursor_t dest;
-  size_t code_start_offset = assembler_get_code_cursor(assm);
-  TRY(assembler_emit_goto_forward(assm, &dest));
-  // This is the default part where no handler was executed.
-  value_t defawlt = get_signal_ast_default(value);
-  if (is_nothing(defawlt)) {
-    // TODO: this is the case where there is no explicit default handler and
-    //   no handler was found. This works but longer term it should probably
-    //   generate an escaping signal.
-    assembler_emit_push(assm, null());
+  if (escape) {
+    assembler_adjust_stack_height(assm, +1);
+    TRY(assembler_emit_leave_or_fire_barrier(assm, argc));
   } else {
-    TRY(emit_value(defawlt, assm));
+    short_buffer_cursor_t dest;
+    size_t code_start_offset = assembler_get_code_cursor(assm);
+    TRY(assembler_emit_goto_forward(assm, &dest));
+    // This is the default part where no handler was executed.
+    value_t defawlt = get_signal_ast_default(value);
+    if (is_nothing(defawlt)) {
+      // TODO: this is the case where there is no explicit default handler and
+      //   no handler was found. This works but longer term it should probably
+      //   generate an escaping signal.
+      assembler_emit_push(assm, null());
+    } else {
+      TRY(emit_value(defawlt, assm));
+    }
+    size_t code_end_offset = assembler_get_code_cursor(assm);
+    short_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
   }
-  size_t code_end_offset = assembler_get_code_cursor(assm);
-  short_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
   // We've now either executed the handler (the goto will have jumped here)
   // or there was no handler and the default will have been executed. In either
   // case there's a result on top of the arguments so slap them off the stack.
@@ -409,8 +421,12 @@ value_t emit_signal_handler_ast(value_t value, assembler_t *assm) {
   TRY_DEF(space, build_methodspace_from_method_asts(handler_asts, assm));
   assembler_pop_block_scope(assm, &block_scope);
 
-  TRY(assembler_emit_install_signal_handler(assm, space));
+  short_buffer_cursor_t cursor;
+  size_t start_offset = assembler_get_code_cursor(assm);
+  TRY(assembler_emit_install_signal_handler(assm, space, &cursor));
   TRY(emit_value(get_signal_handler_ast_body(value), assm));
+  size_t end_offset = assembler_get_code_cursor(assm);
+  short_buffer_cursor_set(&cursor, end_offset - start_offset);
   TRY(assembler_emit_uninstall_signal_handler(assm));
 
   return success();

@@ -701,8 +701,32 @@ refraction_point_t stack_barrier_as_refraction_point(stack_barrier_t *barrier);
 
 /// ## Signal handler
 ///
-/// A signal handler is a scoped object that holds a set of methods which are
-/// used
+/// A signal handler is a scoped object whose home holds a set of methods which
+/// are available as signal handlers. Signal handlers are the "heaviest" of the
+/// barrier-related objects since they both need refraction (for when a handler
+/// is run) a barrier (to make the handler object visible to handler lookup)
+/// and escape state (for the case where either the handler or the caller ask
+/// for control to escape after the handler has run). The layout of the stack
+/// state associated with a signal handler is:
+///
+//%           :            :
+//%           +============+
+//%           :            :
+//%           :   escape   :
+//%           :   state    :
+//%           :            :
+//%           +------------+
+//%           |  prev ptr  | --+
+//%           +------------+   |
+//%           | prev piece |   |  barrier
+//%           +------------+   |           +-----------+
+//%           |  handler   | <-+ <-+ <---- |  handler  |
+//%           +------------+       |       +-----------+
+//%           |    data    |       |
+//%           +------------+       |  refraction point
+//%           |     fp     |     --+
+//%           +============+
+//%           :            :
 
 static const size_t kSignalHandlerSize = OBJECT_SIZE(2);
 // These two must be at the same offsets as the other refractors, currently
