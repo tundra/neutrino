@@ -549,6 +549,8 @@ static bool needs_post_migrate_fixup(value_t old_object) {
   return get_heap_object_family_behavior_unchecked(old_object)->post_migrate_fixup != NULL;
 }
 
+/// ## Field migration
+
 // Callback that migrates an object from from to to space, if it hasn't been
 // migrated already.
 static value_t migrate_field_shallow(value_t *field, field_callback_t *callback) {
