@@ -538,7 +538,7 @@ void hash_stream_init(hash_stream_t *stream) {
 }
 
 void hash_stream_write_tags(hash_stream_t *stream, value_domain_t domain,
-    object_family_t family) {
+    heap_object_family_t family) {
   hash_stream_write_int64(stream, (family << 8) | domain);
 }
 

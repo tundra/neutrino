@@ -336,7 +336,7 @@ void hash_stream_init(hash_stream_t *stream);
 // different hash values for different types of objects even when their contents
 // are the same.
 void hash_stream_write_tags(hash_stream_t *stream, value_domain_t domain,
-    object_family_t family);
+    heap_object_family_t family);
 
 // Writes a 64-bit integer into the hash.
 void hash_stream_write_int64(hash_stream_t *stream, int64_t value);

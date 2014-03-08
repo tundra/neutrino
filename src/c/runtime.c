@@ -74,10 +74,10 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
       vmFrozen, rk_fluid_species_species));
   TRY_DEF(deep_frozen_meta, new_heap_modal_species_unchecked(runtime, &kSpeciesBehavior,
       vmDeepFrozen, rk_fluid_species_species));
-  set_object_header(fluid_meta, mutable_meta);
-  set_object_header(mutable_meta, mutable_meta);
-  set_object_header(frozen_meta, mutable_meta);
-  set_object_header(deep_frozen_meta, mutable_meta);
+  set_heap_object_header(fluid_meta, mutable_meta);
+  set_heap_object_header(mutable_meta, mutable_meta);
+  set_heap_object_header(frozen_meta, mutable_meta);
+  set_heap_object_header(deep_frozen_meta, mutable_meta);
   RAW_ROOT(roots, fluid_species_species) = fluid_meta;
   RAW_ROOT(roots, mutable_species_species) = mutable_meta;
   RAW_ROOT(roots, frozen_species_species) = frozen_meta;
@@ -98,14 +98,14 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
       runtime, &k##Family##Behavior, vmDeepFrozen, rk_fluid_##family##_species));
 #define __CREATE_OTHER_SPECIES__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N)\
   MD(__CREATE_MODAL_SPECIES__(Family, family),__CREATE_COMPACT_SPECIES__(Family, family))
-  ENUM_OTHER_OBJECT_FAMILIES(__CREATE_OTHER_SPECIES__)
+  ENUM_OTHER_HEAP_OBJECT_FAMILIES(__CREATE_OTHER_SPECIES__)
 #undef __CREATE_OTHER_SPECIES__
 #undef __CREATE_COMPACT_SPECIES__
 #undef __CREATE_MODAL_SPECIES__
 
   // At this point we'll have created the root species so we can set its header.
-  CHECK_EQ("roots already initialized", vdInteger, get_value_domain(get_object_header(roots)));
-  set_object_species(roots, RAW_ROOT(roots, mutable_roots_species));
+  CHECK_EQ("roots already initialized", vdInteger, get_value_domain(get_heap_object_header(roots)));
+  set_heap_object_species(roots, RAW_ROOT(roots, mutable_roots_species));
 
   // Generates code for initializing a string table entry.
 #define __CREATE_STRING_TABLE_ENTRY__(name, value)                             \
@@ -157,7 +157,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   __CREATE_TYPE__(Integer, integer);
 #define __CREATE_FAMILY_TYPE_OPT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N)\
   SR(__CREATE_TYPE__(Family, family),)
-  ENUM_OBJECT_FAMILIES(__CREATE_FAMILY_TYPE_OPT__)
+  ENUM_HEAP_OBJECT_FAMILIES(__CREATE_FAMILY_TYPE_OPT__)
 #undef __CREATE_FAMILY_TYPE_OPT__
 
   // Set the origin of the ctrino object manually. Because of the role the
@@ -174,7 +174,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   __FREEZE_TYPE__(Integer, integer);
 #define __FREEZE_FAMILY_TYPE_OPT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N)\
   SR(__FREEZE_TYPE__(Family, family),)
-  ENUM_OBJECT_FAMILIES(__FREEZE_FAMILY_TYPE_OPT__)
+  ENUM_HEAP_OBJECT_FAMILIES(__FREEZE_FAMILY_TYPE_OPT__)
 #undef __FREEZE_FAMILY_TYPE_OPT__
 #undef __FREEZE_TYPE__
 
@@ -205,17 +205,17 @@ COND_CHECK_EQ("validation", ccValidationFailed, A, B)
 value_t roots_validate(value_t roots) {
   // Checks whether the argument is within the specified family, otherwise
   // signals a validation failure.
-  #define VALIDATE_OBJECT(ofFamily, value) do {                                \
+  #define VALIDATE_HEAP_OBJECT(ofFamily, value) do {                           \
     VALIDATE_CHECK_TRUE(in_family(ofFamily, (value)));                         \
-    TRY(object_validate(value));                                               \
+    TRY(heap_object_validate(value));                                          \
   } while (false)
 
   // Checks that the given value is a species with the specified instance
   // family.
   #define VALIDATE_SPECIES(ofFamily, value) do {                               \
-    VALIDATE_OBJECT(ofSpecies, value);                                         \
+    VALIDATE_HEAP_OBJECT(ofSpecies, value);                                    \
     VALIDATE_CHECK_EQ(get_species_instance_family(value), ofFamily);           \
-    TRY(object_validate(value));                                               \
+    TRY(heap_object_validate(value));                                          \
   } while (false)
 
   // Checks all the species that belong to the given modal family.
@@ -239,40 +239,40 @@ value_t roots_validate(value_t roots) {
     VALIDATE_ALL_MODAL_SPECIES(of##Family, family),                            \
     VALIDATE_SPECIES(of##Family, RAW_ROOT(roots, family##_species)));          \
   SR(                                                                          \
-    VALIDATE_OBJECT(ofType, RAW_ROOT(roots, family##_type));,                  \
+    VALIDATE_HEAP_OBJECT(ofType, RAW_ROOT(roots, family##_type));,             \
     )
-  ENUM_OBJECT_FAMILIES(__VALIDATE_PER_FAMILY_FIELDS__)
+  ENUM_HEAP_OBJECT_FAMILIES(__VALIDATE_PER_FAMILY_FIELDS__)
 #undef __VALIDATE_PER_FAMILY_FIELDS__
 
   // Generate validation for phylums.
 #define __VALIDATE_PER_PHYLUM_FIELDS__(Phylum, phylum, CM, SR)                 \
   SR(                                                                          \
-    VALIDATE_OBJECT(ofType, RAW_ROOT(roots, phylum##_type));,                  \
+    VALIDATE_HEAP_OBJECT(ofType, RAW_ROOT(roots, phylum##_type));,             \
     )
   ENUM_CUSTOM_TAGGED_PHYLUMS(__VALIDATE_PER_PHYLUM_FIELDS__)
 #undef __VALIDATE_PER_PHYLUM_FIELDS__
 
   // Validate singletons manually.
-  VALIDATE_OBJECT(ofArray, RAW_ROOT(roots, empty_array));
-  VALIDATE_OBJECT(ofArray, RAW_ROOT(roots, array_of_zero));
+  VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, empty_array));
+  VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, array_of_zero));
   VALIDATE_CHECK_EQ(1, get_array_length(RAW_ROOT(roots, array_of_zero)));
-  VALIDATE_OBJECT(ofArrayBuffer, RAW_ROOT(roots, empty_array_buffer));
+  VALIDATE_HEAP_OBJECT(ofArrayBuffer, RAW_ROOT(roots, empty_array_buffer));
   VALIDATE_CHECK_EQ(0, get_array_buffer_length(RAW_ROOT(roots, empty_array_buffer)));
-  VALIDATE_OBJECT(ofPath, RAW_ROOT(roots, empty_path));
+  VALIDATE_HEAP_OBJECT(ofPath, RAW_ROOT(roots, empty_path));
   VALIDATE_CHECK_TRUE(is_path_empty(RAW_ROOT(roots, empty_path)));
-  VALIDATE_OBJECT(ofGuard, RAW_ROOT(roots, any_guard));
+  VALIDATE_HEAP_OBJECT(ofGuard, RAW_ROOT(roots, any_guard));
   VALIDATE_CHECK_EQ(gtAny, get_guard_type(RAW_ROOT(roots, any_guard)));
-  VALIDATE_OBJECT(ofType, RAW_ROOT(roots, integer_type));
-  VALIDATE_OBJECT(ofSpecies, RAW_ROOT(roots, empty_instance_species));
-  VALIDATE_OBJECT(ofKey, RAW_ROOT(roots, subject_key));
+  VALIDATE_HEAP_OBJECT(ofType, RAW_ROOT(roots, integer_type));
+  VALIDATE_HEAP_OBJECT(ofSpecies, RAW_ROOT(roots, empty_instance_species));
+  VALIDATE_HEAP_OBJECT(ofKey, RAW_ROOT(roots, subject_key));
   VALIDATE_CHECK_EQ(0, get_key_id(RAW_ROOT(roots, subject_key)));
-  VALIDATE_OBJECT(ofKey, RAW_ROOT(roots, selector_key));
+  VALIDATE_HEAP_OBJECT(ofKey, RAW_ROOT(roots, selector_key));
   VALIDATE_CHECK_EQ(1, get_key_id(RAW_ROOT(roots, selector_key)));
-  VALIDATE_OBJECT(ofIdHashMap, RAW_ROOT(roots, builtin_impls));
-  VALIDATE_OBJECT(ofOperation, RAW_ROOT(roots, op_call));
+  VALIDATE_HEAP_OBJECT(ofIdHashMap, RAW_ROOT(roots, builtin_impls));
+  VALIDATE_HEAP_OBJECT(ofOperation, RAW_ROOT(roots, op_call));
   VALIDATE_CHECK_EQ(otCall, get_operation_type(RAW_ROOT(roots, op_call)));
 
-#define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_OBJECT(ofString, RAW_RSTR(roots, name));
+#define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_HEAP_OBJECT(ofString, RAW_RSTR(roots, name));
   ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)
 #undef __VALIDATE_STRING_TABLE_ENTRY__
 
@@ -298,7 +298,7 @@ TRIVIAL_PRINT_ON_IMPL(MutableRoots, mutable_roots);
 
 value_t mutable_roots_validate(value_t self) {
   VALIDATE_FAMILY(ofMutableRoots, self);
-  VALIDATE_OBJECT(ofArgumentMapTrie, RAW_MROOT(self, argument_map_trie_root));
+  VALIDATE_HEAP_OBJECT(ofArgumentMapTrie, RAW_MROOT(self, argument_map_trie_root));
   return success();
 }
 
@@ -428,8 +428,8 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
 
 // Adaptor function for passing object validate as a value callback.
 static value_t runtime_validate_object(value_t value, value_callback_t *self) {
-  CHECK_DOMAIN(vdObject, value);
-  return object_validate(value);
+  CHECK_DOMAIN(vdHeapObject, value);
+  return heap_object_validate(value);
 }
 
 value_t runtime_validate(runtime_t *runtime, value_t cause) {
@@ -444,7 +444,7 @@ value_t runtime_validate(runtime_t *runtime, value_t cause) {
 typedef struct {
   // The new object that we're migrating to. All fields have already been
   // migrated and the object will be fully functional at the time of the fixup.
-  value_t new_object;
+  value_t new_heap_object;
   // The old object that is about to be discarded but which is intact except
   // that the header has been overwritten by a forward pointer. This object
   // will not be used in any way after this so it can also just be used as a
@@ -531,22 +531,22 @@ static void garbage_collection_state_dispose(garbage_collection_state_t *state) 
 // memory, leaving fields unmigrated.
 static value_t migrate_object_shallow(value_t object, space_t *space) {
   // Ask the object to describe its layout.
-  object_layout_t layout;
-  get_object_layout(object, &layout);
+  heap_object_layout_t layout;
+  get_heap_object_layout(object, &layout);
   // Allocate new room for the object.
-  address_t source = get_object_address(object);
+  address_t source = get_heap_object_address(object);
   address_t target = NULL;
   bool alloc_succeeded = space_try_alloc(space, layout.size, &target);
   CHECK_TRUE("clone alloc failed", alloc_succeeded);
   // Do a raw copy of the object to the target.
   memcpy(target, source, layout.size);
   // Tag the new location as an object and return it.
-  return new_object(target);
+  return new_heap_object(target);
 }
 
 // Returns true if the given object needs to apply a fixup after migration.
 static bool needs_post_migrate_fixup(value_t old_object) {
-  return get_object_family_behavior_unchecked(old_object)->post_migrate_fixup != NULL;
+  return get_heap_object_family_behavior_unchecked(old_object)->post_migrate_fixup != NULL;
 }
 
 // Callback that migrates an object from from to to space, if it hasn't been
@@ -555,49 +555,49 @@ static value_t migrate_field_shallow(value_t *field, field_callback_t *callback)
 //  runtime_t *runtime = field_callback_get_data(callback);
   value_t old_object = *field;
   // If this is not a heap object there's nothing to do.
-  if (!is_object(old_object))
+  if (!is_heap_object(old_object))
     return success();
   // Check if this object has already been moved.
-  value_t old_header = get_object_header(old_object);
-  value_t new_object;
+  value_t old_header = get_heap_object_header(old_object);
+  value_t new_heap_object;
   if (get_value_domain(old_header) == vdMovedObject) {
     // This object has already been moved and the header points to the new
     // location so we just get out the location of the migrated object and update
     // the field.
-    new_object = get_moved_object_target(old_header);
+    new_heap_object = get_moved_object_target(old_header);
   } else {
     // The header indicates that this object hasn't been moved yet. First make
     // a raw clone of the object in to-space.
-    CHECK_DOMAIN(vdObject, old_header);
+    CHECK_DOMAIN(vdHeapObject, old_header);
     garbage_collection_state_t *state =
         (garbage_collection_state_t*) field_callback_get_data(callback);
     // Check with the object whether it needs post processing. This is the last
     // time the object is intact so it's the last point we can call methods on
     // it to find out.
     bool needs_fixup = needs_post_migrate_fixup(old_object);
-    new_object = migrate_object_shallow(old_object, &state->runtime->heap.to_space);
-    CHECK_DOMAIN(vdObject, new_object);
+    new_heap_object = migrate_object_shallow(old_object, &state->runtime->heap.to_space);
+    CHECK_DOMAIN(vdHeapObject, new_heap_object);
     // Now that we know where the new object is going to be we can schedule the
     // fixup if necessary.
     if (needs_fixup) {
-      pending_fixup_t fixup = {new_object, old_object};
+      pending_fixup_t fixup = {new_heap_object, old_object};
       TRY(pending_fixup_worklist_add(&state->pending_fixups, &fixup));
     }
     // Point the old object to the new one so we know to use the new clone
     // instead of ever cloning it again.
-    value_t forward_pointer = new_moved_object(new_object);
-    set_object_header(old_object, forward_pointer);
+    value_t forward_pointer = new_moved_object(new_heap_object);
+    set_heap_object_header(old_object, forward_pointer);
     // At this point the cloned object still needs some work to update the
     // fields but we rely on traversing the heap to do that eventually.
   }
-  *field = new_object;
+  *field = new_heap_object;
   return success();
 }
 
 // Applies a post-migration fixup scheduled when migrating the given object.
-static void apply_fixup(runtime_t *runtime, value_t new_object, value_t old_object) {
-  family_behavior_t *behavior = get_object_family_behavior_unchecked(new_object);
-  (behavior->post_migrate_fixup)(runtime, new_object, old_object);
+static void apply_fixup(runtime_t *runtime, value_t new_heap_object, value_t old_object) {
+  family_behavior_t *behavior = get_heap_object_family_behavior_unchecked(new_heap_object);
+  (behavior->post_migrate_fixup)(runtime, new_heap_object, old_object);
 }
 
 // Perform any fixups that have been scheduled during object migration.
@@ -605,7 +605,7 @@ static void runtime_apply_fixups(garbage_collection_state_t *state) {
   pending_fixup_worklist_t *worklist = &state->pending_fixups;
   for (size_t i = 0; i < worklist->length; i++) {
     pending_fixup_t *fixup = &worklist->fixups[i];
-    apply_fixup(state->runtime, fixup->new_object, fixup->old_object);
+    apply_fixup(state->runtime, fixup->new_heap_object, fixup->old_object);
   }
 }
 
@@ -660,8 +660,8 @@ value_t runtime_dispose(runtime_t *runtime) {
 }
 
 safe_value_t runtime_protect_value(runtime_t *runtime, value_t value) {
-  if (is_object(value)) {
-    object_tracker_t *gc_safe = heap_new_object_tracker(&runtime->heap, value);
+  if (is_heap_object(value)) {
+    object_tracker_t *gc_safe = heap_new_heap_object_tracker(&runtime->heap, value);
     return object_tracker_to_safe_value(gc_safe);
   } else {
     return protect_immediate(value);

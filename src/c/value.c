@@ -32,11 +32,11 @@ int get_value_domain_ordinal(value_domain_t domain) {
   }
 }
 
-const char *get_object_family_name(object_family_t family) {
+const char *get_heap_object_family_name(heap_object_family_t family) {
   switch (family) {
 #define __GEN_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N)\
     case of##Family: return #Family;
-    ENUM_OBJECT_FAMILIES(__GEN_CASE__)
+    ENUM_HEAP_OBJECT_FAMILIES(__GEN_CASE__)
 #undef __GEN_CASE__
     default:
       return "invalid family";
@@ -144,28 +144,28 @@ value_t add_integer_builtin_implementations(runtime_t *runtime, safe_value_t s_m
 
 // --- O b j e c t ---
 
-void set_object_header(value_t value, value_t species) {
-  *access_object_field(value, kObjectHeaderOffset) = species;
+void set_heap_object_header(value_t value, value_t species) {
+  *access_heap_object_field(value, kHeapObjectHeaderOffset) = species;
 }
 
-value_t get_object_header(value_t value) {
-  return *access_object_field(value, kObjectHeaderOffset);
+value_t get_heap_object_header(value_t value) {
+  return *access_heap_object_field(value, kHeapObjectHeaderOffset);
 }
 
-void set_object_species(value_t value, value_t species) {
+void set_heap_object_species(value_t value, value_t species) {
   CHECK_FAMILY(ofSpecies, species);
-  set_object_header(value, species);
+  set_heap_object_header(value, species);
 }
 
 bool in_syntax_family(value_t value) {
-  if (!is_object(value))
+  if (!is_heap_object(value))
     return false;
-  switch (get_object_family(value)) {
+  switch (get_heap_object_family(value)) {
 #define __MAKE_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N)\
   EM(                                                                          \
     case of##Family: return true;,                                             \
     )
-    ENUM_OBJECT_FAMILIES(__MAKE_CASE__)
+    ENUM_HEAP_OBJECT_FAMILIES(__MAKE_CASE__)
 #undef __MAKE_CASE__
     default:
       return false;
@@ -176,16 +176,16 @@ const char *in_syntax_family_name(bool value) {
   return value ? "true" : "false";
 }
 
-family_behavior_t *get_object_family_behavior(value_t self) {
-  CHECK_DOMAIN(vdObject, self);
-  value_t species = get_object_species(self);
+family_behavior_t *get_heap_object_family_behavior(value_t self) {
+  CHECK_DOMAIN(vdHeapObject, self);
+  value_t species = get_heap_object_species(self);
   CHECK_TRUE("invalid object header", in_family(ofSpecies, species));
   return get_species_family_behavior(species);
 }
 
-family_behavior_t *get_object_family_behavior_unchecked(value_t self) {
-  CHECK_DOMAIN(vdObject, self);
-  value_t species = get_object_species(self);
+family_behavior_t *get_heap_object_family_behavior_unchecked(value_t self) {
+  CHECK_DOMAIN(vdHeapObject, self);
+  value_t species = get_heap_object_species(self);
   return get_species_family_behavior(species);
 }
 
@@ -195,7 +195,7 @@ static value_t object_is_identical(builtin_arguments_t *args) {
   return new_boolean(value_identity_compare(self, that));
 }
 
-value_t add_object_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+value_t add_heap_object_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   ADD_BUILTIN_IMPL("obj.is_identical()", 1, object_is_identical);
   return success();
 }
@@ -205,30 +205,30 @@ value_t add_object_builtin_implementations(runtime_t *runtime, safe_value_t s_ma
 
 TRIVIAL_PRINT_ON_IMPL(Species, species);
 
-void set_species_instance_family(value_t self, object_family_t family) {
+void set_species_instance_family(value_t self, heap_object_family_t family) {
   value_t as_value;
   // This is only possible because of the way the family enum values are
   // constructed.
   as_value.encoded = family;
   CHECK_DOMAIN(vdInteger, as_value);
-  *access_object_field(self, kSpeciesInstanceFamilyOffset) = as_value;
+  *access_heap_object_field(self, kSpeciesInstanceFamilyOffset) = as_value;
 }
 
 void set_species_family_behavior(value_t value, family_behavior_t *behavior) {
-  *access_object_field(value, kSpeciesFamilyBehaviorOffset) = pointer_to_value_bit_cast(behavior);
+  *access_heap_object_field(value, kSpeciesFamilyBehaviorOffset) = pointer_to_value_bit_cast(behavior);
 }
 
 family_behavior_t *get_species_family_behavior(value_t value) {
-  void *ptr = value_to_pointer_bit_cast(*access_object_field(value, kSpeciesFamilyBehaviorOffset));
+  void *ptr = value_to_pointer_bit_cast(*access_heap_object_field(value, kSpeciesFamilyBehaviorOffset));
   return (family_behavior_t*) ptr;
 }
 
 void set_species_division_behavior(value_t value, division_behavior_t *behavior) {
-  *access_object_field(value, kSpeciesDivisionBehaviorOffset) = pointer_to_value_bit_cast(behavior);
+  *access_heap_object_field(value, kSpeciesDivisionBehaviorOffset) = pointer_to_value_bit_cast(behavior);
 }
 
 division_behavior_t *get_species_division_behavior(value_t value) {
-  void *ptr = value_to_pointer_bit_cast(*access_object_field(value, kSpeciesDivisionBehaviorOffset));
+  void *ptr = value_to_pointer_bit_cast(*access_heap_object_field(value, kSpeciesDivisionBehaviorOffset));
   return (division_behavior_t*) ptr;
 }
 
@@ -236,8 +236,8 @@ species_division_t get_species_division(value_t value) {
   return get_species_division_behavior(value)->division;
 }
 
-species_division_t get_object_division(value_t value) {
-  return get_species_division(get_object_species(value));
+species_division_t get_heap_object_division(value_t value) {
+  return get_species_division(get_heap_object_species(value));
 }
 
 value_t species_validate(value_t value) {
@@ -245,7 +245,7 @@ value_t species_validate(value_t value) {
   return success();
 }
 
-void get_species_layout(value_t value, object_layout_t *layout) {
+void get_species_layout(value_t value, heap_object_layout_t *layout) {
   division_behavior_t *behavior = get_species_division_behavior(value);
   (behavior->get_species_layout)(value, layout);
 }
@@ -253,18 +253,18 @@ void get_species_layout(value_t value, object_layout_t *layout) {
 
 // --- C o m p a c t   s p e c i e s ---
 
-void get_compact_species_layout(value_t species, object_layout_t *layout) {
+void get_compact_species_layout(value_t species, heap_object_layout_t *layout) {
   // Compact species have no value fields.
-  object_layout_set(layout, kCompactSpeciesSize, kCompactSpeciesSize);
+  heap_object_layout_set(layout, kCompactSpeciesSize, kCompactSpeciesSize);
 }
 
 
 // --- I n s t a n c e   s p e c i e s ---
 
-void get_instance_species_layout(value_t species, object_layout_t *layout) {
+void get_instance_species_layout(value_t species, heap_object_layout_t *layout) {
   // The object is kInstanceSpeciesSize large and the values start after the
   // header.
-  object_layout_set(layout, kInstanceSpeciesSize, kSpeciesHeaderSize);
+  heap_object_layout_set(layout, kInstanceSpeciesSize, kSpeciesHeaderSize);
 }
 
 CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance,
@@ -275,43 +275,43 @@ CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance,
 
 // --- M o d a l   s p e c i e s ---
 
-void get_modal_species_layout(value_t species, object_layout_t *layout) {
+void get_modal_species_layout(value_t species, heap_object_layout_t *layout) {
   // The object is kModalSpeciesSize large and there are no values. Well okay
   // the mode is stored as a tagged integer but that doesn't count.
-  object_layout_set(layout, kModalSpeciesSize, kModalSpeciesSize);
+  heap_object_layout_set(layout, kModalSpeciesSize, kModalSpeciesSize);
 }
 
 value_mode_t get_modal_species_mode(value_t value) {
-  value_t mode = *access_object_field(value, kModalSpeciesModeOffset);
+  value_t mode = *access_heap_object_field(value, kModalSpeciesModeOffset);
   return (value_mode_t) get_integer_value(mode);
 }
 
 void set_modal_species_mode(value_t value, value_mode_t mode) {
-  *access_object_field(value, kModalSpeciesModeOffset) = new_integer(mode);
+  *access_heap_object_field(value, kModalSpeciesModeOffset) = new_integer(mode);
 }
 
-value_mode_t get_modal_object_mode(value_t value) {
-  value_t species = get_object_species(value);
+value_mode_t get_modal_heap_object_mode(value_t value) {
+  value_t species = get_heap_object_species(value);
   CHECK_DIVISION(sdModal, species);
   return get_modal_species_mode(species);
 }
 
-value_t set_modal_object_mode_unchecked(runtime_t *runtime, value_t self,
+value_t set_modal_heap_object_mode_unchecked(runtime_t *runtime, value_t self,
     value_mode_t mode) {
-  value_t old_species = get_object_species(self);
+  value_t old_species = get_heap_object_species(self);
   value_t new_species = get_modal_species_sibling_with_mode(runtime, old_species,
       mode);
-  set_object_species(self, new_species);
+  set_heap_object_species(self, new_species);
   return success();
 }
 
 size_t get_modal_species_base_root(value_t value) {
-  value_t base_root = *access_object_field(value, kModalSpeciesBaseRootOffset);
+  value_t base_root = *access_heap_object_field(value, kModalSpeciesBaseRootOffset);
   return get_integer_value(base_root);
 }
 
 void set_modal_species_base_root(value_t value, size_t base_root) {
-  *access_object_field(value, kModalSpeciesBaseRootOffset) = new_integer(base_root);
+  *access_heap_object_field(value, kModalSpeciesBaseRootOffset) = new_integer(base_root);
 }
 
 bool is_mutable(value_t value) {
@@ -333,9 +333,9 @@ value_t ensure_shallow_frozen(runtime_t *runtime, value_t value) {
 value_t ensure_frozen(runtime_t *runtime, value_t value) {
   if (get_value_mode(value) == vmDeepFrozen)
     return success();
-  if (is_object(value)) {
+  if (is_heap_object(value)) {
     TRY(ensure_shallow_frozen(runtime, value));
-    family_behavior_t *behavior = get_object_family_behavior(value);
+    family_behavior_t *behavior = get_heap_object_family_behavior(value);
     value_t (*freeze_owned)(runtime_t*, value_t) = behavior->ensure_owned_values_frozen;
     if (freeze_owned == NULL) {
       return success();
@@ -353,7 +353,7 @@ value_t ensure_frozen(runtime_t *runtime, value_t value) {
 // we can leave it deep frozen.
 value_t transitively_validate_deep_frozen(runtime_t *runtime, value_t value,
     value_t *offender_out) {
-  CHECK_DOMAIN(vdObject, value);
+  CHECK_DOMAIN(vdHeapObject, value);
   CHECK_EQ("tentatively freezing non-frozen", vmFrozen, get_value_mode(value));
   // Deep freeze the object.
   set_value_mode_unchecked(runtime, value, vmDeepFrozen);
@@ -419,7 +419,7 @@ FIXED_GET_MODE_IMPL(string, vmDeepFrozen);
 size_t calc_string_size(size_t char_count) {
   // We need to fix one extra byte, the terminating null.
   size_t bytes = char_count + 1;
-  return kObjectHeaderSize               // header
+  return kHeapObjectHeaderSize               // header
        + kValueSize                      // length
        + align_size(kValueSize, bytes);  // contents
 }
@@ -428,7 +428,7 @@ INTEGER_ACCESSORS_IMPL(String, string, Length, length);
 
 char *get_string_chars(value_t value) {
   CHECK_FAMILY(ofString, value);
-  return (char*) access_object_field(value, kStringCharsOffset);
+  return (char*) access_heap_object_field(value, kStringCharsOffset);
 }
 
 void get_string_contents(value_t value, string_t *out) {
@@ -444,10 +444,10 @@ value_t string_validate(value_t value) {
   return success();
 }
 
-void get_string_layout(value_t value, object_layout_t *layout) {
+void get_string_layout(value_t value, heap_object_layout_t *layout) {
   // Strings have no value fields.
   size_t size = calc_string_size(get_string_length(value));
-  object_layout_set(layout, size, size);
+  heap_object_layout_set(layout, size, size);
 }
 
 value_t string_transient_identity_hash(value_t value, hash_stream_t *stream,
@@ -563,7 +563,7 @@ NO_BUILTIN_METHODS(blob);
 FIXED_GET_MODE_IMPL(blob, vmDeepFrozen);
 
 size_t calc_blob_size(size_t size) {
-  return kObjectHeaderSize              // header
+  return kHeapObjectHeaderSize              // header
        + kValueSize                     // length
        + align_size(kValueSize, size);  // contents
 }
@@ -573,7 +573,7 @@ INTEGER_ACCESSORS_IMPL(Blob, blob, Length, length);
 void get_blob_data(value_t value, blob_t *blob_out) {
   CHECK_FAMILY(ofBlob, value);
   size_t length = get_blob_length(value);
-  byte_t *data = (byte_t*) access_object_field(value, kBlobDataOffset);
+  byte_t *data = (byte_t*) access_heap_object_field(value, kBlobDataOffset);
   blob_init(blob_out, data, length);
 }
 
@@ -582,10 +582,10 @@ value_t blob_validate(value_t value) {
   return success();
 }
 
-void get_blob_layout(value_t value, object_layout_t *layout) {
+void get_blob_layout(value_t value, heap_object_layout_t *layout) {
   // Blobs have no value fields.
   size_t size = calc_blob_size(get_blob_length(value));
-  object_layout_set(layout, size, size);
+  heap_object_layout_set(layout, size, size);
 }
 
 void blob_print_on(value_t value, print_on_context_t *context) {
@@ -613,12 +613,12 @@ FIXED_GET_MODE_IMPL(void_p, vmDeepFrozen);
 
 void set_void_p_value(value_t value, void *ptr) {
   CHECK_FAMILY(ofVoidP, value);
-  *access_object_field(value, kVoidPValueOffset) = pointer_to_value_bit_cast(ptr);
+  *access_heap_object_field(value, kVoidPValueOffset) = pointer_to_value_bit_cast(ptr);
 }
 
 void *get_void_p_value(value_t value) {
   CHECK_FAMILY(ofVoidP, value);
-  return value_to_pointer_bit_cast(*access_object_field(value, kVoidPValueOffset));
+  return value_to_pointer_bit_cast(*access_heap_object_field(value, kVoidPValueOffset));
 }
 
 value_t void_p_validate(value_t value) {
@@ -626,9 +626,9 @@ value_t void_p_validate(value_t value) {
   return success();
 }
 
-void get_void_p_layout(value_t value, object_layout_t *layout) {
+void get_void_p_layout(value_t value, heap_object_layout_t *layout) {
   // A void-p has no value fields.
-  object_layout_set(layout, kVoidPSize, kVoidPSize);
+  heap_object_layout_set(layout, kVoidPSize, kVoidPSize);
 }
 
 
@@ -637,7 +637,7 @@ void get_void_p_layout(value_t value, object_layout_t *layout) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(array);
 
 size_t calc_array_size(size_t length) {
-  return kObjectHeaderSize       // header
+  return kHeapObjectHeaderSize       // header
        + kValueSize              // length
        + (length * kValueSize);  // contents
 }
@@ -664,7 +664,7 @@ value_t *get_array_elements(value_t value) {
 }
 
 value_t *get_array_elements_unchecked(value_t value) {
-  return access_object_field(value, kArrayElementsOffset);
+  return access_heap_object_field(value, kArrayElementsOffset);
 }
 
 value_t array_validate(value_t value) {
@@ -672,9 +672,9 @@ value_t array_validate(value_t value) {
   return success();
 }
 
-void get_array_layout(value_t value, object_layout_t *layout) {
+void get_array_layout(value_t value, heap_object_layout_t *layout) {
   size_t size = calc_array_size(get_array_length(value));
-  object_layout_set(layout, size, kArrayElementsOffset);
+  heap_object_layout_set(layout, size, kArrayElementsOffset);
 }
 
 void array_print_on(value_t value, print_on_context_t *context) {
@@ -1221,7 +1221,7 @@ value_t delete_id_hash_map_at(runtime_t *runtime, value_t map, value_t key) {
   }
 }
 
-void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_object,
+void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_heap_object,
     value_t old_object) {
   // In this fixup we rehash the migrated hash map since the hash values are
   // allowed to change during garbage collection. We do it by copying the
@@ -1231,14 +1231,14 @@ void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_object,
   // works.
 
   // Get the raw entry array from the new map.
-  value_t new_entry_array = get_id_hash_map_entry_array(new_object);
+  value_t new_entry_array = get_id_hash_map_entry_array(new_heap_object);
   size_t entry_array_length = get_array_length(new_entry_array);
   value_t *new_entries = get_array_elements(new_entry_array);
   // Get the raw entry array from the old map. This requires going directly
   // through the object since the nice accessors do sanity checking and the
   // state of the object at this point is, well, not sane.
-  value_t old_entry_array = *access_object_field(old_object, kIdHashMapEntryArrayOffset);
-  CHECK_DOMAIN(vdMovedObject, get_object_header(old_entry_array));
+  value_t old_entry_array = *access_heap_object_field(old_object, kIdHashMapEntryArrayOffset);
+  CHECK_DOMAIN(vdMovedObject, get_heap_object_header(old_entry_array));
   value_t *old_entries = get_array_elements_unchecked(old_entry_array);
   // Copy the contents of the new entry array into the old one and clear it as
   // we go so it's ready to have elements added back.
@@ -1247,13 +1247,13 @@ void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_object,
     new_entries[i] = null();
   }
   // Reset the map's fields. It is now empty.
-  set_id_hash_map_size(new_object, 0);
-  set_id_hash_map_occupied_count(new_object, 0);
+  set_id_hash_map_size(new_heap_object, 0);
+  set_id_hash_map_occupied_count(new_heap_object, 0);
   // Fake an iterator that scans over the old array.
   id_hash_map_iter_t iter;
   iter.entries = old_entries;
   iter.cursor = 0;
-  iter.capacity = get_id_hash_map_capacity(new_object);
+  iter.capacity = get_id_hash_map_capacity(new_heap_object);
   iter.current = NULL;
   // Then simple scan over the entries and add them one at a time. Since they
   // come from the map originally adding them again must succeed.
@@ -1264,7 +1264,7 @@ void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_object,
     // We need to be able to add elements even if the map is frozen and it's
     // okay because at the end it will be in the same state it was in before
     // so it's not really mutating it.
-    value_t added = try_set_id_hash_map_at(new_object, key, value, true);
+    value_t added = try_set_id_hash_map_at(new_heap_object, key, value, true);
     CHECK_FALSE("rehash failed to set", is_condition(added));
   }
 }
@@ -1849,11 +1849,11 @@ ACCESSORS_IMPL(ModuleFragment, module_fragment, acNoCheck, 0, MethodspacesCache,
     methodspaces_cache);
 
 void set_module_fragment_epoch(value_t self, module_fragment_epoch_t value) {
-  *access_object_field(self, kModuleFragmentEpochOffset) = new_integer(value);
+  *access_heap_object_field(self, kModuleFragmentEpochOffset) = new_integer(value);
 }
 
 module_fragment_epoch_t get_module_fragment_epoch(value_t self) {
-  value_t epoch = *access_object_field(self, kModuleFragmentEpochOffset);
+  value_t epoch = *access_heap_object_field(self, kModuleFragmentEpochOffset);
   return (module_fragment_epoch_t) get_integer_value(epoch);
 }
 
@@ -2357,19 +2357,19 @@ value_t ambience_validate(value_t self) {
   return success();
 }
 
-void get_ambience_layout(value_t value, object_layout_t *layout) {
+void get_ambience_layout(value_t value, heap_object_layout_t *layout) {
   // An ambience has one non-value field.
-  object_layout_set(layout, kAmbienceSize, OBJECT_FIELD_OFFSET(1));
+  heap_object_layout_set(layout, kAmbienceSize, HEAP_OBJECT_FIELD_OFFSET(1));
 }
 
 void set_ambience_runtime(value_t self, runtime_t *runtime) {
   CHECK_FAMILY(ofAmbience, self);
-  *access_object_field(self, kAmbienceRuntimeOffset) = pointer_to_value_bit_cast(runtime);
+  *access_heap_object_field(self, kAmbienceRuntimeOffset) = pointer_to_value_bit_cast(runtime);
 }
 
 runtime_t *get_ambience_runtime(value_t self) {
   CHECK_FAMILY(ofAmbience, self);
-  return value_to_pointer_bit_cast(*access_object_field(self, kAmbienceRuntimeOffset));
+  return value_to_pointer_bit_cast(*access_heap_object_field(self, kAmbienceRuntimeOffset));
 }
 
 value_t follow_ambience_redirect(value_t self, value_t redirect) {
@@ -2377,7 +2377,7 @@ value_t follow_ambience_redirect(value_t self, value_t redirect) {
   CHECK_PHYLUM(tpAmbienceRedirect, redirect);
   size_t offset = get_ambience_redirect_offset(redirect);
   CHECK_REL("invalid redirect", offset, <, kAmbienceSize);
-  return *access_object_field(self, offset);
+  return *access_heap_object_field(self, offset);
 }
 
 

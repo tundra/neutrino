@@ -114,7 +114,7 @@ typedef enum {
   SR(                                                                          \
     __EMIT_FAMILY_TYPE__(family),                                              \
     )
-  ENUM_OBJECT_FAMILIES(__EMIT_PER_FAMILY_ENUMS__)
+  ENUM_HEAP_OBJECT_FAMILIES(__EMIT_PER_FAMILY_ENUMS__)
 #undef __EMIT_PER_FAMILY_ENUMS__
 #undef __EMIT_MODAL_SPECIES__
 #undef __EMIT_COMPACT_SPECIES__
@@ -140,11 +140,11 @@ typedef enum {
 // The total number of root entries.
 #define kRootCount __rk_last__
 
-static const size_t kRootsSize = OBJECT_SIZE(kRootCount);
+static const size_t kRootsSize = HEAP_OBJECT_SIZE(kRootCount);
 
 // Returns a pointer to the key'th root value.
 static inline value_t *access_roots_entry_at(value_t roots, root_key_t key) {
-  return access_object_field(roots, OBJECT_FIELD_OFFSET(key));
+  return access_heap_object_field(roots, HEAP_OBJECT_FIELD_OFFSET(key));
 }
 
 // Returns the specified root.
@@ -170,12 +170,12 @@ typedef enum {
 // The total number of root entries.
 #define kMutableRootCount __mk_last__
 
-static const size_t kMutableRootsSize = OBJECT_SIZE(kMutableRootCount);
+static const size_t kMutableRootsSize = HEAP_OBJECT_SIZE(kMutableRootCount);
 
 // Returns a pointer to the key'th mutable root value.
 static inline value_t *access_mutable_roots_entry_at(value_t roots,
     mutable_root_key_t key) {
-  return access_object_field(roots, OBJECT_FIELD_OFFSET(key));
+  return access_heap_object_field(roots, HEAP_OBJECT_FIELD_OFFSET(key));
 }
 
 // Data associated with garbage collection fuzzing.

@@ -192,8 +192,8 @@ static value_t instance_serialize(value_t value, serialize_state_t *state) {
 }
 
 static value_t object_serialize(value_t value, serialize_state_t *state) {
-  CHECK_DOMAIN(vdObject, value);
-  switch (get_object_family(value)) {
+  CHECK_DOMAIN(vdHeapObject, value);
+  switch (get_heap_object_family(value)) {
     case ofArray:
       return array_serialize(value, state);
     case ofIdHashMap:
@@ -224,7 +224,7 @@ static value_t value_serialize(value_t data, serialize_state_t *state) {
   switch (domain) {
     case vdInteger:
       return integer_serialize(data, state->buf);
-    case vdObject:
+    case vdHeapObject:
       return object_serialize(data, state);
     case vdCustomTagged:
       return custom_tagged_serialize(data, state);
@@ -364,11 +364,11 @@ static value_t object_deserialize(deserialize_state_t *state) {
   size_t offset = acquire_object_index(state);
   // Read the header before creating the instance.
   TRY_DEF(header, value_deserialize(state));
-  TRY_DEF(result, new_object_with_type(state->runtime, header));
+  TRY_DEF(result, new_heap_object_with_type(state->runtime, header));
   TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
       result));
   TRY_DEF(payload, value_deserialize(state));
-  TRY(set_object_contents(state->runtime, result, payload));
+  TRY(set_heap_object_contents(state->runtime, result, payload));
   return result;
 }
 

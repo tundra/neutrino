@@ -10,7 +10,7 @@ TEST(alloc, heap_string) {
 
   string_t chars = new_string("Hut!");
   value_t str = new_heap_string(runtime, &chars);
-  ASSERT_DOMAIN(vdObject, str);
+  ASSERT_DOMAIN(vdHeapObject, str);
   ASSERT_FAMILY(ofString, str);
   ASSERT_EQ(4, get_string_length(str));
   string_t out;
@@ -24,7 +24,7 @@ TEST(alloc, heap_blob) {
   CREATE_RUNTIME();
 
   value_t blob = new_heap_blob(runtime, 9);
-  ASSERT_DOMAIN(vdObject, blob);
+  ASSERT_DOMAIN(vdHeapObject, blob);
   ASSERT_FAMILY(ofBlob, blob);
   ASSERT_EQ(9, get_blob_length(blob));
   blob_t data;
@@ -51,7 +51,7 @@ TEST(alloc, heap_species) {
   CREATE_RUNTIME();
 
   value_t species = new_heap_compact_species(runtime, &kStringBehavior);
-  ASSERT_DOMAIN(vdObject, species);
+  ASSERT_DOMAIN(vdHeapObject, species);
   ASSERT_FAMILY(ofSpecies, species);
   ASSERT_EQ(ofString, get_species_instance_family(species));
 

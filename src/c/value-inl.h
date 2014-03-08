@@ -35,18 +35,18 @@ static inline bool is_condition(value_t value) {
 }
 
 // Returns true iff the given value is an object.
-static inline bool is_object(value_t value) {
-  return in_domain(vdObject, value);
+static inline bool is_heap_object(value_t value) {
+  return in_domain(vdHeapObject, value);
 }
 
 // Returns true iff the given value is an object within the given family.
-static inline bool in_family(object_family_t family, value_t value) {
-  return is_object(value) && (get_object_family(value) == family);
+static inline bool in_family(heap_object_family_t family, value_t value) {
+  return is_heap_object(value) && (get_heap_object_family(value) == family);
 }
 
 // Is the given value a code object that refracts lookup?
 static inline bool is_refractor(value_t value) {
-  switch (get_object_family(value)) {
+  switch (get_heap_object_family(value)) {
     case ofBlock:
     case ofCodeShard:
     case ofSignalHandler:
@@ -58,7 +58,7 @@ static inline bool is_refractor(value_t value) {
 
 // Returns true iff the given value is either nothing or an object within the
 // given family.
-static inline bool in_family_opt(object_family_t family, value_t value) {
+static inline bool in_family_opt(heap_object_family_t family, value_t value) {
   return is_nothing(value) || in_family(family, value);
 }
 
@@ -162,7 +162,7 @@ SWALLOW_SEMI(gfpti)
 value_mode_t get_##family##_mode(value_t self) {                               \
   return vmMode;                                                               \
 }                                                                              \
-value_t set_##family##_mode_unchecked(runtime_t *rt, value_t self, value_mode_t mode) {  \
+value_t set_##family##_mode_unchecked(runtime_t *rt, value_t self, value_mode_t mode) { \
   CHECK_TRUE("invalid mode change",                                            \
       mode == vmMode || ((mode == vmFrozen) && (vmMode == vmDeepFrozen)));     \
   return success();                                                            \
@@ -177,7 +177,7 @@ SWALLOW_SEMI(fgmi)
 #define GETTER_IMPL(Receiver, receiver, Field, field)                          \
 value_t get_##receiver##_##field(value_t self) {                               \
   CHECK_FAMILY(of##Receiver, self);                                            \
-  return *access_object_field(self, k##Receiver##Field##Offset);               \
+  return *access_heap_object_field(self, k##Receiver##Field##Offset);          \
 }                                                                              \
 SWALLOW_SEMI(gi)
 
@@ -203,11 +203,11 @@ SWALLOW_SEMI(gi)
   CHECK_SYNTAX_FAMILY_OPT(VALUE)
 
 // Expands to an unchecked setter and a getter for the specified types.
-#define ACCESSORS_IMPL(Receiver, receiver, acValueCheck, VALUE_CHECK_ARG, Field, field)  \
+#define ACCESSORS_IMPL(Receiver, receiver, acValueCheck, VALUE_CHECK_ARG, Field, field) \
 void set_##receiver##_##field(value_t self, value_t value) {                   \
   CHECK_FAMILY(of##Receiver, self);                                            \
   acValueCheck(VALUE_CHECK_ARG, value);                                        \
-  *access_object_field(self, k##Receiver##Field##Offset) = value;              \
+  *access_heap_object_field(self, k##Receiver##Field##Offset) = value;         \
 }                                                                              \
 GETTER_IMPL(Receiver, receiver, Field, field)
 
@@ -217,14 +217,14 @@ GETTER_IMPL(Receiver, receiver, Field, field)
 #define __MAPPING_SETTER_IMPL__(Receiver, receiver, type_t, Field, field, MAP) \
 void set_##receiver##_##field(value_t self, type_t value) {                    \
   CHECK_FAMILY(of##Receiver, self);                                            \
-  *access_object_field(self, k##Receiver##Field##Offset) = MAP(type_t, value); \
+  *access_heap_object_field(self, k##Receiver##Field##Offset) = MAP(type_t, value); \
 }                                                                              \
 SWALLOW_SEMI(msi)
 
 #define __MAPPING_GETTER_IMPL__(Receiver, receiver, type_t, Field, field, MAP) \
 type_t get_##receiver##_##field(value_t self) {                                \
   CHECK_FAMILY(of##Receiver, self);                                            \
-  return (type_t) MAP(type_t, *access_object_field(self, k##Receiver##Field##Offset));  \
+  return (type_t) MAP(type_t, *access_heap_object_field(self, k##Receiver##Field##Offset)); \
 }                                                                              \
 SWALLOW_SEMI(mgi)
 
@@ -255,12 +255,12 @@ __MAPPING_GETTER_IMPL__(Receiver, receiver, type_t, Field, field,              \
 value_t get_##receiver_species##_species_##field(value_t self) {               \
   CHECK_FAMILY(ofSpecies, self);                                               \
   CHECK_DIVISION(sd##ReceiverSpecies, self);                                   \
-  return *access_object_field(self,                                            \
+  return *access_heap_object_field(self,                                       \
       k##ReceiverSpecies##Species##Field##Offset);                             \
 }                                                                              \
 value_t get_##receiver##_##field(value_t self) {                               \
   CHECK_FAMILY(of##Receiver, self);                                            \
-  return get_##receiver_species##_species_##field(get_object_species(self));   \
+  return get_##receiver_species##_species_##field(get_heap_object_species(self)); \
 }                                                                              \
 SWALLOW_SEMI(sgi)
 
@@ -271,7 +271,7 @@ SWALLOW_SEMI(sgi)
 void set_##receiver_species##_species_##field(value_t self, value_t value) {   \
   CHECK_DIVISION(sd##ReceiverSpecies, self);                                   \
   acValueCheck(VALUE_CHECK_ARG, value);                                        \
-  *access_object_field(self, k##ReceiverSpecies##Species##Field##Offset) = value; \
+  *access_heap_object_field(self, k##ReceiverSpecies##Species##Field##Offset) = value; \
 }                                                                              \
 SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
     Field, field)
@@ -286,9 +286,9 @@ SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
 // --- P l a n k t o n ---
 
 #define __CHECK_MAP_ENTRY_FOUND__(name) do {                                   \
-  if (in_condition_cause(ccNotFound, name)) {                                           \
+  if (in_condition_cause(ccNotFound, name)) {                                  \
     string_hint_t __hint__ = STRING_HINT_INIT(#name);                          \
-    return new_invalid_input_condition_with_hint(__hint__);                       \
+    return new_invalid_input_condition_with_hint(__hint__);                    \
   }                                                                            \
 } while (false)
 
