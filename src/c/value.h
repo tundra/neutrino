@@ -1,7 +1,35 @@
-// Copyright 2013 the Neutrino authors (see AUTHORS).
-// Licensed under the Apache License, Version 2.0 (see LICENSE).
+//- Copyright 2013 the Neutrino authors (see AUTHORS).
+//- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-// The basic types of values.
+/// # Values
+///
+/// Neutrino's value layout and the functionality that services it is at the
+/// core of the runtime.
+///
+/// The highest level of abstraction are _values_. A value is any piece of data
+/// used by the runtime, both those visible to the surface language like tagged
+/// integers and heap objects and those internal to the runtime like moved
+/// object forward pointers and conditions. A value is represented by `value_t`
+/// in the source code.
+///
+/// A value is a 64-bit unsigned integer value. The lowest 3 bits is a tag value
+/// used to distinguish the different flavors of value, the remaining 61 bits
+/// are the payload. For tagged integers the integer value is stored directly in
+/// the payload. For conditions it is the condition cause. For heap objects it
+/// is a pointer to the memory address where the object is located. These
+/// different types are called _domains_. Given a value you can ask for its
+/// domain and you'll get `vdTaggedInteger`, `vdHeapObject`, etc. back. There
+/// are other sub-categories of values, for instance heap objects are divided
+/// into _families_. Generally the various categories are named after biological
+/// groupings (for no other reason than that they have a large vocabulary of
+/// them).
+///
+/// Details about each of the different domains are below:
+///
+///   - {{#Integers}}(Tagged integers)
+///   - {{#MovedObjects}}(Moved objects)
+///   - {{#HeapObjects}}(Heap objects)
+///   - {{#CustomTaggedValues}}(Custom tagged values)
 
 
 #ifndef _VALUE
@@ -32,7 +60,8 @@ FORWARD(string_buffer_t);
   F(HeapObject,        0x1,    0)                                              \
   F(Condition,         0x2,    2)                                              \
   F(MovedObject,       0x3,    3)                                              \
-  F(CustomTagged,      0x4,    4)
+  F(CustomTagged,      0x4,    4)                                              \
+  F(DerivedObject,     0x5,    5)
 
 // Value domain identifiers.
 typedef enum {
@@ -139,22 +168,30 @@ static bool is_same_value(value_t a, value_t b) {
 }
 
 
-// --- I n t e g e r ---
+/// ## Integers
+///
+/// 61-bit signed integers encoded directly as a value. We store signed values
+/// as integers by shifting away the three most significant bits, keeping the
+/// sign bit, and restore them by shifting the other way with sign extension.
+/// This only works if the three most significant bits are the same as the sign
+/// bit, in other words only if the four most significant bits are the same,
+/// which they are for a contiguous range around 0.
+///
+/// Currently arithmetic with tagged integers crashes if it overflows. Longer
+/// term we should transparently spill into heap allocated bigints.
 
 // Returns true if the given value can be stored as a tagged integer.
 static bool fits_as_tagged_integer(int64_t value) {
-  // We store signed values as integers by shifting away the three most
-  // significant bits, keeping the sign bit, and restore them by shifting the
-  // other way with sign extension. This only works if the three most significant
-  // bits are the same as the sign bit, in other words only if the four most
-  // significant bits are the same: 0b1111... or 0b0000.... The way we recognize
-  // whether this is the case is to add 0b0001 to the top nibble, which in the
-  // case we want to recognize yields a top nibble of 0b0000 and 0b0001 (that
-  // is, a number of the form 0x0............... and 0x1...............). This
-  // relies on 0b1111+0b0001 overflowing to 0b0000. The largest possible value
-  // of this form is if the following part is all 1s, 0x1FFFFFFFFFFFFFFF, so if
-  // the value is that or smaller then we know the value will fit. We test that
-  // by checking if it's strictly smaller than the next value, 0x2000000000000000.
+  // Check whether the three most significant bits are the same as the sign bit,
+  // in other words only if the four most significant bits are the same:
+  // 0b1111... or 0b0000.... The way we recognize whether this is the case is to
+  // add 0b0001 to the top nibble, which in the case we want to recognize yields
+  // a top nibble of 0b0000 and 0b0001 (that is, a number of the form
+  // 0x0............... and 0x1...............). This relies on 0b1111+0b0001
+  // overflowing to 0b0000. The largest possible value of this form is if the
+  // following part is all 1s, 0x1FFFFFFFFFFFFFFF, so if the value is that or
+  // smaller then we know the value will fit. We test that by checking if it's
+  // strictly smaller than the next value, 0x2000000000000000.
   uint64_t uvalue = value;
   return (uvalue + 0x1000000000000000) < 0x2000000000000000;
 }
@@ -191,7 +228,18 @@ static value_t whatever() {
 }
 
 
-// --- M o v e d   o b j e c t ---
+/// ## Moved objects
+///
+/// Moved objects work just like normal heap objects, they're just a tagged
+/// heap pointer, but they're tagged differently such that the GC can tell that
+/// the object they're pointing to has already been moved; conversely, heap
+/// object tagged pointers are known to not have been moved. See
+/// {{runtime.c#FieldMigration}}(field migration).
+///
+/// Since conditions can't be stored in the heap moved objects could share their
+/// tag without ambiguity which would free an extra tag value. That's a change
+/// that can be made pretty easily later so as long as there's plenty of tags
+/// they get a separate one.
 
 // Given an encoded value, returns the corresponding value_t struct.
 static value_t decode_value(encoded_value_t value) {
@@ -218,9 +266,88 @@ static value_t new_moved_object(value_t target) {
 }
 
 
-/// ## Heap object
+/// ## Heap objects
 ///
-/// Heap-allocated values.
+/// Heap-allocated values. Most "interesting" objects are heap objects. A heap
+/// object is a tagged pointer into the C heap. The set of heap objects is
+/// divided into a number of _families_, for instance `ofString`, `ofArray`,
+/// etc., where each family has their own layout and behavior. The families are
+/// listed in the {{#FamilyPropertyIndex}}(index) below.
+///
+/// The layout of all objects is:
+///
+//%       +-------------+          --\
+//%       |   header    |            |
+//%       +-------------+            |
+//%       :             :            |
+//%       :  non-value  :            |
+//%       :   fields    :            |
+//%       :             :            | layout.size
+//%       +-------------+  <--+      |
+//%       :             :     |      |
+//%       :    value    :   layout.  |
+//%       :    fields   :   value_   |
+//%       :             :   offset   |
+//%       +-------------+          --/
+///
+/// The non-value fields section holds data the gc should just copy and
+/// otherwise not touch, typically pointers into the C heap and that kind of
+/// thing. For most families this section is empty. The value fields hold
+/// `value_t`s which the gc has full reign over. Both sections can be variable
+/// size within a family, arrays for instance have a variable-length value
+/// section and blobs and strings have a variable-length non-value section.
+///
+/// This layout makes it easy for the gc to traverse an object: visit the header
+/// and scan from the `.value_offset` to `.size` in the layout and you're done.
+/// It does restrict how objects can be laid out but it's not been an issue so
+/// far.
+///
+/// The header of an object is itself an object that belongs to the
+/// {{#Species}}(species) family.
+///
+/// ### Modes
+///
+/// Any value can be in one of four modes. These modes indicate which operations
+/// are legal. A value starts out least restricted and can then move towards
+/// more restrictions, never fewer. The modes are:
+///
+///   - _Fluid_: Any changes can be made to this object, including changing
+///      which type it belogs to and which global fields it has.
+///   - _Mutable_: The object's fields can be set but no changes can be made to
+///      which global fields exist or which primary type it has.
+///   - _Frozen_: The object cannot be changed but can reference other objects
+///     that can.
+///   - _Deep frozen_: The object cannot change and neither can any objects it
+///     references.
+///
+/// Not all values can be in all states. For instance, integers and strings
+/// start out deep frozen so the less restricted states don't apply to them.
+///
+/// You can explicitly move an object to the mutable or frozen mode if you know
+/// the object is in a less restricted mode but you can't make it deep frozen,
+/// and you don't need to. Being deep frozen is a property of a full object
+/// graph so you can ask if an object is deep frozen and the object graph will
+/// be traversed for you to determine whether it is. That traversal may cause
+/// the object to be marked as deep frozen.
+///
+/// ### Ownership
+///
+/// Some values are considered to logically *own* other values. For instance,
+/// an id hash map owns its entry array, an array buffer owns it storage array,
+/// and the roots object owns all the roots. Basically, if creating one object
+/// requires another object to be created that isn't passed to it from elsewhere
+/// then the object is owned. The place you see this is mainly around freezing.
+/// If you freeze an object (not shallow-freeze, freeze) then the object is
+/// responsible for freezing any objects it owns. You can think of it as a
+/// matter of encapsulation. If an object needs some other objects to function
+/// which it otherwise doesn't expose to you then that's that object's business
+/// and it should be transparent when freezing it that those other objects
+/// exist. If freezing it didn't recursively freeze those you could tell they
+/// existed because they would prevent it from being deep frozen.
+///
+/// Ownership is strictly linear: if object _a_ owns object _b_ then _b_ may
+/// itself own other objects, but it must not be the case that _b_ or something
+/// transitively owned by _b_ considers itself to own _a_.
 
 // Indicates that a family has a particular attribute.
 #define X(T, F) T
@@ -511,13 +638,35 @@ void set_heap_object_species(value_t value, value_t species);
 ACCESSORS_DECL(heap_object, header);
 
 
-// --- C u s t o m   d o m a i n ---
+/// ## Custom tagged values
+///
+/// Custom tagged values are similar to tagged integers in that they represent
+/// data encoded directly in the value pointer. But whereas the toplevel value
+/// type has only 8 different tags with 61 bits of payload, custom tagged values
+/// reserve 8 bits for an additional tag, so that's 11 bits reserved just for
+/// tags, and then makes 48 bits available for payload. So you get less state
+/// but you can encode 256 disjoint types of values. Among custom tagged types
+/// are `tpBool` (needs only one bit of state), `tpNull`, and `tpFloat32` (needs
+/// only 32 bits).
+///
+/// In keeping with the biological groupings, a particular type of custom tagged
+/// value is called a _phylum_. So `Bool` is a phylum, etc.
+///
+/// At the surface language level you can't tell that these are not heap
+/// objects, it's a purely internal thing. But it turns out to be incredibly
+/// convenient that some of these types can be full objects but not require
+/// heap allocation.
+///
+/// ### Phylum property index
+///
+/// As with heap objects there is a custom tagged value index.
+///
+///   - _CamelName_: the name of the phylum in upper camel case.
+///   - _underscore_name_: the name of the phylum in lower underscore case.
+///   - _Cm_: do the values support ordered comparison?
+///   - _Sr_: is this type exposed to the surface language?
+///
 
-//   - CamelName: the name of the phylum in upper camel case.
-//   - underscore_name: the name of the phylum in lower underscore case.
-//   - Cm: do the values support ordered comparison?
-//   - Sr: is this type exposed to the surface language?
-//
 //  CamelName                underscore_name            Cm Sr
 #define ENUM_CUSTOM_TAGGED_PHYLUMS(F)                                          \
   F(AmbienceRedirect,        ambience_redirect,         _, _)                  \
@@ -533,10 +682,10 @@ ACCESSORS_DECL(heap_object, header);
 // Enum identifying the different phylums of custom tagged values.
 typedef enum {
   __tpFirst__ = -1
-  #define __DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__(Phylum, phylum, CM, SR)        \
+#define __DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__(Phylum, phylum, CM, SR)        \
   , tp##Phylum
   ENUM_CUSTOM_TAGGED_PHYLUMS(__DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__)
-  #undef __DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__
+#undef __DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__
   // This is a special value separate from any of the others that can be used
   // to indicate no phylum.
   , __tpUnknown__
@@ -592,7 +741,41 @@ static int64_t get_custom_tagged_payload(value_t value) {
 }
 
 
-// --- S p e c i e s ---
+/// ## Species
+///
+/// A species is a meta-object that provides behavior and introspection over
+/// instances from a particular family. A lot of the core infrastructure for
+/// working with heap objects operates without ever knowing which family the
+/// objects belong to and that's possible because all objects point to their
+/// species which will operate on the object for you so you don't need to know
+/// the details of how the object works.
+///
+/// ### Behavior
+///
+/// The core part of a species is its _behavior_. A behvior is just like a
+/// vtable in C++, it's a struct of function pointers. For instance, to get the
+/// heap size of an object you grab the object's species, grab the behavior
+/// struct, and call the `get_heap_object_layout` function passing in the 
+/// object. You won't know what kind of object you were working with but you'll
+/// get back the heap size.
+///
+/// You rarely actually see the behavior structs. The code that creates them is
+/// generated by macros based on the {{#FamilyPropertyIndex}}(family index), as
+/// are forward declarations for the functions you need to implement based on
+/// the attributes of the family in the index.
+///
+///
+/// ### Divisions
+///
+/// There is only one behavior struct per family but there can be any number of
+/// species. Also, species can themselves hold state that is shared between
+/// their instances.  Different families need different kinds of shared state,
+/// species objects can themselves be structured in different ways. For
+/// instance: the species of an array holds no extra state, whereas the species
+/// of a user-defined type holds information about the type and the species of a
+/// string holds information about the string's encoding. These types are in
+/// different _divisions_, so strings are in one division, user-defined types in
+/// another, and arrays, blobs, etc. are all in a third one.
 
 #define ENUM_SPECIES_DIVISIONS(F)                                              \
   F(Compact, compact)                                                          \
