@@ -127,11 +127,11 @@ bool space_try_alloc(space_t *space, size_t size, address_t *memory_out) {
 value_t space_for_each_object(space_t *space, value_callback_t *callback) {
   address_t current = space->start;
   while (current < space->next_free) {
-    value_t value = new_object(current);
+    value_t value = new_heap_object(current);
     TRY(value_callback_call(callback, value));
-    object_layout_t layout;
-    object_layout_init(&layout);
-    get_object_layout(value, &layout);
+    heap_object_layout_t layout;
+    heap_object_layout_init(&layout);
+    get_heap_object_layout(value, &layout);
     size_t size = layout.size;
     CHECK_TRUE("object heap size alignment", is_size_aligned(kValueSize, size));
     current += size;
@@ -176,8 +176,8 @@ static void object_tracker_iter_advance(object_tracker_iter_t *iter) {
   iter->current = iter->current->next;
 }
 
-object_tracker_t *heap_new_object_tracker(heap_t *heap, value_t value) {
-  CHECK_DOMAIN(vdObject, value);
+object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value) {
+  CHECK_DOMAIN(vdHeapObject, value);
   memory_block_t memory = allocator_default_malloc(sizeof(object_tracker_t));
   object_tracker_t *new_tracker = (object_tracker_t*) memory.memory;
   object_tracker_t *next = heap->root_object_tracker.next;
@@ -265,12 +265,12 @@ value_t heap_for_each_object(heap_t *heap, value_callback_t *callback) {
 static value_t visit_object_fields(value_t object, value_callback_t *value_callback) {
   // Visit the object's species first.
   field_callback_t *field_callback = (field_callback_t*) value_callback_get_data(value_callback);
-  value_t *header = access_object_field(object, kObjectHeaderOffset);
+  value_t *header = access_heap_object_field(object, kHeapObjectHeaderOffset);
   // Check that the header isn't a forward pointer -- traversing a space that's
   // being migrated from doesn't work so all headers must be objects. We also
   // know they must be species but the heap may not be in a state that allows
   // us to easily check that.
-  CHECK_DOMAIN(vdObject, *header);
+  CHECK_DOMAIN(vdHeapObject, *header);
   field_callback_call(field_callback, header);
   value_field_iter_t iter;
   value_field_iter_init(&iter, object);
@@ -312,13 +312,13 @@ value_t heap_complete_garbage_collection(heap_t *heap) {
 }
 
 void value_field_iter_init(value_field_iter_t *iter, value_t value) {
-  if (!is_object(value)) {
+  if (!is_heap_object(value)) {
     iter->limit = iter->next = NULL;
     return;
   }
-  object_layout_t layout;
-  get_object_layout(value, &layout);
-  address_t object_start = get_object_address(value);
+  heap_object_layout_t layout;
+  get_heap_object_layout(value, &layout);
+  address_t object_start = get_heap_object_address(value);
   // The first address past this object.
   iter->limit = object_start + layout.size;
   // The address of the first value field (or, if there are no fields, the

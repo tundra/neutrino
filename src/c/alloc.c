@@ -15,10 +15,10 @@
 // Run a couple of sanity checks before returning the value from a constructor.
 // Returns a condition if the check fails, otherwise returns the given value.
 static value_t post_create_sanity_check(value_t value, size_t size) {
-  TRY(object_validate(value));
-  object_layout_t layout;
-  object_layout_init(&layout);
-  get_object_layout(value, &layout);
+  TRY(heap_object_validate(value));
+  heap_object_layout_t layout;
+  heap_object_layout_init(&layout);
+  get_heap_object_layout(value, &layout);
   COND_CHECK_EQ("post create sanity", ccValidationFailed, layout.size, size);
   return value;
 }
@@ -36,7 +36,7 @@ value_t new_heap_uninitialized_roots(runtime_t *runtime) {
   size_t size = kRootsSize;
   TRY_DEF(result, alloc_heap_object(runtime, size, whatever()));
   for (size_t i = 0; i < kRootCount; i++)
-    *access_object_field(result, OBJECT_FIELD_OFFSET(i)) = whatever();
+    *access_heap_object_field(result, HEAP_OBJECT_FIELD_OFFSET(i)) = whatever();
   return result;
 }
 
@@ -961,8 +961,8 @@ value_t alloc_heap_object(runtime_t *runtime, size_t bytes, value_t species) {
   }
   if (!heap_try_alloc(&runtime->heap, bytes, &addr))
     return new_heap_exhausted_condition(bytes);
-  value_t result = new_object(addr);
-  set_object_header(result, species);
+  value_t result = new_heap_object(addr);
+  set_heap_object_header(result, species);
   return result;
 }
 

@@ -136,9 +136,9 @@ TEST(value, objects) {
 
   address_t addr;
   ASSERT_TRUE(heap_try_alloc(&heap, 16, &addr));
-  value_t v0 = new_object(addr);
-  ASSERT_DOMAIN(vdObject, v0);
-  ASSERT_PTREQ(addr, get_object_address(v0));
+  value_t v0 = new_heap_object(addr);
+  ASSERT_DOMAIN(vdHeapObject, v0);
+  ASSERT_PTREQ(addr, get_heap_object_address(v0));
 
   heap_dispose(&heap);
 }
@@ -215,7 +215,7 @@ TEST(value, large_id_hash_maps) {
     value_t key = new_integer(i);
     value_t value = new_integer(1024 - i);
     ASSERT_SUCCESS(set_id_hash_map_at(runtime, map, key, value));
-    ASSERT_SUCCESS(object_validate(map));
+    ASSERT_SUCCESS(heap_object_validate(map));
     for (size_t j = 0; j <= i; j++) {
       value_t check_key = new_integer(j);
       value_t check_value = get_id_hash_map_at(map, check_key);
@@ -241,7 +241,7 @@ TEST(value, exhaust_id_hash_map) {
     value_t key = new_integer(i);
     value_t value = new_integer(1024 - i);
     value_t result = set_id_hash_map_at(runtime, map, key, value);
-    ASSERT_SUCCESS(object_validate(map));
+    ASSERT_SUCCESS(heap_object_validate(map));
     if (in_condition_cause(ccHeapExhausted, result))
       break;
     ASSERT_SUCCESS(result);
@@ -869,10 +869,10 @@ TEST(value, ownership_freezing) {
 TEST(value, unsupported) {
   CHECK_UNSUPPORTED(vdInteger, __ofUnknown__, ubUnspecified,
       "%<condition: UnsupportedBehavior(Unspecified of Integer)>");
-  CHECK_UNSUPPORTED(vdObject, __ofUnknown__, ubSetContents,
-      "%<condition: UnsupportedBehavior(SetContents of Object)>");
-  CHECK_UNSUPPORTED(vdObject, ofArray, ubPlanktonSerialize,
-      "%<condition: UnsupportedBehavior(PlanktonSerialize of Object/Array)>");
+  CHECK_UNSUPPORTED(vdHeapObject, __ofUnknown__, ubSetContents,
+      "%<condition: UnsupportedBehavior(SetContents of HeapObject)>");
+  CHECK_UNSUPPORTED(vdHeapObject, ofArray, ubPlanktonSerialize,
+      "%<condition: UnsupportedBehavior(PlanktonSerialize of HeapObject/Array)>");
 }
 
 TEST(value, invalid_input) {

@@ -36,11 +36,11 @@ void sigmap_input_init(sigmap_input_t *input, value_t ambience, value_t record,
 
 // --- S i g n a t u r e ---
 
-static const size_t kSignatureSize = OBJECT_SIZE(4);
-static const size_t kSignatureTagsOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kSignatureParameterCountOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kSignatureMandatoryCountOffset = OBJECT_FIELD_OFFSET(2);
-static const size_t kSignatureAllowExtraOffset = OBJECT_FIELD_OFFSET(3);
+static const size_t kSignatureSize = HEAP_OBJECT_SIZE(4);
+static const size_t kSignatureTagsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kSignatureParameterCountOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kSignatureMandatoryCountOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kSignatureAllowExtraOffset = HEAP_OBJECT_FIELD_OFFSET(3);
 
 // The sorted array of signature tags and parameters.
 ACCESSORS_DECL(signature, tags);
@@ -146,11 +146,11 @@ join_status_t join_score_vectors(value_t *target, value_t *source, size_t length
 
 // --- P a r a m e t e r ---
 
-static const size_t kParameterSize = OBJECT_SIZE(4);
-static const size_t kParameterGuardOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kParameterIsOptionalOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kParameterIndexOffset = OBJECT_FIELD_OFFSET(2);
-static const size_t kParameterTagsOffset = OBJECT_FIELD_OFFSET(3);
+static const size_t kParameterSize = HEAP_OBJECT_SIZE(4);
+static const size_t kParameterGuardOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kParameterIsOptionalOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kParameterIndexOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kParameterTagsOffset = HEAP_OBJECT_FIELD_OFFSET(3);
 
 // This parameter's guard.
 ACCESSORS_DECL(parameter, guard);
@@ -179,9 +179,9 @@ typedef enum {
   gtAny
 } guard_type_t;
 
-static const size_t kGuardSize = OBJECT_SIZE(2);
-static const size_t kGuardTypeOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kGuardValueOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kGuardSize = HEAP_OBJECT_SIZE(2);
+static const size_t kGuardTypeOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kGuardValueOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The value of this guard used to match by gtId and gtIs and unused for gtAny.
 ACCESSORS_DECL(guard, value);
@@ -210,12 +210,12 @@ typedef enum {
   mfBlockDelegate = 0x02
 } method_flag_t;
 
-static const size_t kMethodSize = OBJECT_SIZE(5);
-static const size_t kMethodSignatureOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kMethodCodeOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kMethodSyntaxOffset = OBJECT_FIELD_OFFSET(2);
-static const size_t kMethodModuleFragmentOffset = OBJECT_FIELD_OFFSET(3);
-static const size_t kMethodFlagsOffset = OBJECT_FIELD_OFFSET(4);
+static const size_t kMethodSize = HEAP_OBJECT_SIZE(5);
+static const size_t kMethodSignatureOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kMethodCodeOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kMethodSyntaxOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kMethodModuleFragmentOffset = HEAP_OBJECT_FIELD_OFFSET(3);
+static const size_t kMethodFlagsOffset = HEAP_OBJECT_FIELD_OFFSET(4);
 
 // The method's signature, the arguments it matches.
 ACCESSORS_DECL(method, signature);
@@ -247,8 +247,8 @@ value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
 /// Typically a signature map lookup happens across multiple maps, for instance
 /// all the sets of methods imported into a particular scope.
 
-static const size_t kSignatureMapSize = OBJECT_SIZE(1);
-static const size_t kSignatureMapEntriesOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kSignatureMapSize = HEAP_OBJECT_SIZE(1);
+static const size_t kSignatureMapEntriesOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The size of the method array buffer in an empty signature map.
 static const size_t kMethodArrayInitialSize = 16;
@@ -292,10 +292,10 @@ value_t get_sigmap_lookup_argument_map(sigmap_state_t *state);
 
 // --- M e t h o d   s p a c e ---
 
-static const size_t kMethodspaceSize = OBJECT_SIZE(3);
-static const size_t kMethodspaceInheritanceOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kMethodspaceMethodsOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kMethodspaceImportsOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kMethodspaceSize = HEAP_OBJECT_SIZE(3);
+static const size_t kMethodspaceInheritanceOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kMethodspaceMethodsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kMethodspaceImportsOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // The size of the inheritance map in an empty method space.
 static const size_t kInheritanceMapInitialSize = 16;
@@ -382,8 +382,8 @@ value_t get_or_create_module_fragment_methodspaces_cache(runtime_t *runtime,
 /// Because signatures are also sorted by tag they can be matched just by
 /// scanning through both sequentially.
 
-static const size_t kInvocationRecordSize = OBJECT_SIZE(1);
-static const size_t kInvocationRecordArgumentVectorOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kInvocationRecordSize = HEAP_OBJECT_SIZE(1);
+static const size_t kInvocationRecordArgumentVectorOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The array giving the mapping between tag sort order and argument evaulation
 // order.
@@ -431,9 +431,9 @@ typedef enum {
   otSuffix = 7
 } operation_type_t;
 
-static const size_t kOperationSize = OBJECT_SIZE(2);
-static const size_t kOperationTypeOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kOperationValueOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kOperationSize = HEAP_OBJECT_SIZE(2);
+static const size_t kOperationTypeOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kOperationValueOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The tag enum that identifies which kind of operation this is.
 INTEGER_ACCESSORS_DECL(operation, type);
@@ -454,8 +454,8 @@ void operation_print_close_on(value_t self, print_on_context_t *context);
 
 // --- B u i l t i n   m a r k e r ---
 
-static const size_t kBuiltinMarkerSize = OBJECT_SIZE(1);
-static const size_t kBuiltinMarkerNameOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kBuiltinMarkerSize = HEAP_OBJECT_SIZE(1);
+static const size_t kBuiltinMarkerNameOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The name of the builtin that applies to the element annotated with this
 // marker.
@@ -464,11 +464,11 @@ ACCESSORS_DECL(builtin_marker, name);
 
 /// ## Builtin implementation
 
-static const size_t kBuiltinImplementationSize = OBJECT_SIZE(4);
-static const size_t kBuiltinImplementationNameOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kBuiltinImplementationCodeOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kBuiltinImplementationArgumentCountOffset = OBJECT_FIELD_OFFSET(2);
-static const size_t kBuiltinImplementationMethodFlagsOffset = OBJECT_FIELD_OFFSET(3);
+static const size_t kBuiltinImplementationSize = HEAP_OBJECT_SIZE(4);
+static const size_t kBuiltinImplementationNameOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kBuiltinImplementationCodeOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kBuiltinImplementationArgumentCountOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kBuiltinImplementationMethodFlagsOffset = HEAP_OBJECT_FIELD_OFFSET(3);
 
 // The name of this builtin.
 ACCESSORS_DECL(builtin_implementation, name);

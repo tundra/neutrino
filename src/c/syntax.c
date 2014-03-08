@@ -135,7 +135,7 @@ size_t *calc_parameter_ast_ordering(reusable_scratch_memory_t *scratch,
     EM(                                                                            \
       value_t emit_##family(value_t, assembler_t *);,                              \
       )
-    ENUM_OBJECT_FAMILIES(__EMIT_SYNTAX_FAMILY_EMIT__)
+    ENUM_HEAP_OBJECT_FAMILIES(__EMIT_SYNTAX_FAMILY_EMIT__)
 #undef __EMIT_SYNTAX_FAMILY_EMIT__
 
 // --- L i t e r a l ---
@@ -1034,7 +1034,7 @@ ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, ofArray, Methods,
 
 value_t quick_and_dirty_evaluate_syntax(runtime_t *runtime, value_t fragment,
     value_t value_ast) {
-  switch (get_object_family(value_ast)) {
+  switch (get_heap_object_family(value_ast)) {
     case ofLiteralAst:
       return get_literal_ast_value(value_ast);
     case ofNamespaceVariableAst: {
@@ -1558,9 +1558,9 @@ value_t emit_current_module_ast(value_t value, assembler_t *assm) {
 // --- C o d e   g e n e r a t i o n ---
 
 value_t emit_value(value_t value, assembler_t *assm) {
-  if (!in_domain(vdObject, value))
+  if (!in_domain(vdHeapObject, value))
     return new_invalid_syntax_condition(isNotSyntax);
-  switch (get_object_family(value)) {
+  switch (get_heap_object_family(value)) {
 #define __EMIT_SYNTAX_FAMILY_CASE_HELPER__(Family, family)                     \
     case of##Family:                                                           \
       return emit_##family(value, assm);
@@ -1568,7 +1568,7 @@ value_t emit_value(value_t value, assembler_t *assm) {
     EM(                                                                        \
       __EMIT_SYNTAX_FAMILY_CASE_HELPER__(Family, family),                      \
       )
-    ENUM_OBJECT_FAMILIES(__EMIT_SYNTAX_FAMILY_CASE__)
+    ENUM_HEAP_OBJECT_FAMILIES(__EMIT_SYNTAX_FAMILY_CASE__)
 #undef __EMIT_SYNTAX_FAMILY_CASE__
 #undef __EMIT_SYNTAX_FAMILY_CASE_HELPER__
     default:

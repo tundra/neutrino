@@ -96,7 +96,7 @@ static value_t ctrino_get_builtin_type(builtin_arguments_t *args) {
   // Match against the built-in families.
 #define __CHECK_BUILTIN_FAMILY_OPT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N) \
   SR(__CHECK_BUILTIN_TYPE__(family),)
-  ENUM_OBJECT_FAMILIES(__CHECK_BUILTIN_FAMILY_OPT__)
+  ENUM_HEAP_OBJECT_FAMILIES(__CHECK_BUILTIN_FAMILY_OPT__)
 #undef __CHECK_BUILTIN_FAMILY_OPT__
   // Match against the built-in phylums.
 #define __CHECK_BUILTIN_PHYLUM_OPT__(Phylum, phylum, CM, SR)                   \

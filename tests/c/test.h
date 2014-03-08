@@ -155,7 +155,7 @@ ASSERT_CLASS(value_domain_t, vdDomain, EXPR, get_value_domain)
 
 // Fails unless the given value is within the given family.
 #define ASSERT_FAMILY(ofFamily, EXPR) \
-ASSERT_CLASS(object_family_t, ofFamily, EXPR, get_object_family)
+ASSERT_CLASS(heap_object_family_t, ofFamily, EXPR, get_heap_object_family)
 
 // Fails unless the given value is a condition of the given type.
 #define ASSERT_CONDITION(scCause, EXPR) \

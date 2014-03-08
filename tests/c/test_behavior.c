@@ -13,11 +13,11 @@ TEST(behavior, string_validation) {
   value_t str = new_heap_string(runtime, &chars);
 
   // String starts out validating.
-  ASSERT_SUCCESS(object_validate(str));
+  ASSERT_SUCCESS(heap_object_validate(str));
   // Zap the null terminator.
   get_string_chars(str)[4] = 'x';
   // Now the string no longer terminates.
-  ASSERT_CHECK_FAILURE(ccValidationFailed, object_validate(str));
+  ASSERT_CHECK_FAILURE(ccValidationFailed, heap_object_validate(str));
   get_string_chars(str)[4] = '\0';
 
   DISPOSE_RUNTIME();
@@ -138,12 +138,12 @@ TEST(behavior, new_instance) {
 
   value_t dummy_fact = new_heap_factory(runtime, dummy_constructor);
   ASSERT_SUCCESS(dummy_fact);
-  value_t instance = new_object_with_type(runtime, dummy_fact);
+  value_t instance = new_heap_object_with_type(runtime, dummy_fact);
   ASSERT_VALEQ(new_integer(434), instance);
 
   value_t condition_fact = new_heap_factory(runtime, condition_constructor);
   ASSERT_SUCCESS(condition_fact);
-  value_t cond = new_object_with_type(runtime, condition_fact);
+  value_t cond = new_heap_object_with_type(runtime, condition_fact);
   ASSERT_CONDITION(ccNothing, cond);
 
   DISPOSE_RUNTIME();

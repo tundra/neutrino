@@ -14,13 +14,13 @@
 // --- V a l i d a t e ---
 
 // Is the given family in a modal division?
-static bool in_modal_division(object_family_t family) {
+static bool in_modal_division(heap_object_family_t family) {
   switch (family) {
 #define __GEN_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N)\
     MD(                                                                        \
       case of##Family: return true;,                                           \
       )
-    ENUM_OBJECT_FAMILIES(__GEN_CASE__)
+    ENUM_HEAP_OBJECT_FAMILIES(__GEN_CASE__)
 #undef __GEN_CASE__
     default:
       return false;
@@ -29,7 +29,7 @@ static bool in_modal_division(object_family_t family) {
 
 // Validate that a given deep frozen object only points to other deep frozen
 // objects.
-static void deep_frozen_object_validate(value_t value) {
+static void deep_frozen_heap_heap_object_validate(value_t value) {
   value_field_iter_t iter;
   value_field_iter_init(&iter, value);
   value_t *field = NULL;
@@ -41,46 +41,46 @@ static void deep_frozen_object_validate(value_t value) {
   }
 }
 
-value_t object_validate(value_t value) {
-  family_behavior_t *behavior = get_object_family_behavior(value);
+value_t heap_object_validate(value_t value) {
+  family_behavior_t *behavior = get_heap_object_family_behavior(value);
   CHECK_FALSE("Modal value with non-modal species",
-      in_modal_division(behavior->family) && get_object_division(value) != sdModal);
+      in_modal_division(behavior->family) && get_heap_object_division(value) != sdModal);
   if (peek_deep_frozen(value))
-    deep_frozen_object_validate(value);
+    deep_frozen_heap_heap_object_validate(value);
   return (behavior->validate)(value);
 }
 
 
 // --- L a y o u t ---
 
-void object_layout_init(object_layout_t *layout) {
+void heap_object_layout_init(heap_object_layout_t *layout) {
   layout->size = 0;
   layout->value_offset = 0;
 }
 
-void object_layout_set(object_layout_t *layout, size_t size, size_t value_offset) {
+void heap_object_layout_set(heap_object_layout_t *layout, size_t size, size_t value_offset) {
   layout->size = size;
   layout->value_offset = value_offset;
 }
 
-void get_object_layout(value_t self, object_layout_t *layout_out) {
+void get_heap_object_layout(value_t self, heap_object_layout_t *layout_out) {
   // This has to work during gc so some of the normal behavior checks are
   // disabled.
-  CHECK_DOMAIN(vdObject, self);
+  CHECK_DOMAIN(vdHeapObject, self);
   // We only get the layout of objects that have already been moved so this
   // gives a proper species.
-  value_t species = get_object_species(self);
+  value_t species = get_heap_object_species(self);
   // The species itself may have been moved but in any its memory will still be
   // intact enough that we can get the behavior out.
   family_behavior_t *behavior = get_species_family_behavior(species);
-  (behavior->get_object_layout)(self, layout_out);
+  (behavior->get_heap_object_layout)(self, layout_out);
 }
 
 // Declares the heap size functions for a fixed-size object that don't have any
 // non-value fields.
 #define __TRIVIAL_LAYOUT_FUNCTION__(Family, family)                            \
-static void get_##family##_layout(value_t value, object_layout_t *layout_out) {\
-  object_layout_set(layout_out, k##Family##Size, kObjectHeaderSize);           \
+static void get_##family##_layout(value_t value, heap_object_layout_t *layout_out) {\
+  heap_object_layout_set(layout_out, k##Family##Size, kHeapObjectHeaderSize);           \
 }
 
 // Generate all the trivial layout functions since we know what they'll look
@@ -89,7 +89,7 @@ static void get_##family##_layout(value_t value, object_layout_t *layout_out) {\
 NL(                                                                            \
   ,                                                                            \
   __TRIVIAL_LAYOUT_FUNCTION__(Family, family))
-  ENUM_OBJECT_FAMILIES(__DEFINE_TRIVIAL_LAYOUT_FUNCTION__)
+  ENUM_HEAP_OBJECT_FAMILIES(__DEFINE_TRIVIAL_LAYOUT_FUNCTION__)
 #undef __DEFINE_TRIVIAL_LAYOUT_FUNCTION__
 #undef __TRIVIAL_LAYOUT_FUNCTION__
 
@@ -97,8 +97,8 @@ NL(                                                                            \
 // --- M o d e ---
 
 value_mode_t get_value_mode(value_t self) {
-  if (is_object(self)) {
-    family_behavior_t *behavior = get_object_family_behavior(self);
+  if (is_heap_object(self)) {
+    family_behavior_t *behavior = get_heap_object_family_behavior(self);
     return (behavior->get_mode)(self);
   } else {
     return vmDeepFrozen;
@@ -123,8 +123,8 @@ value_t set_value_mode(runtime_t *runtime, value_t self, value_mode_t mode) {
 }
 
 value_t set_value_mode_unchecked(runtime_t *runtime, value_t self, value_mode_t mode) {
-  if (is_object(self)) {
-    family_behavior_t *behavior = get_object_family_behavior(self);
+  if (is_heap_object(self)) {
+    family_behavior_t *behavior = get_heap_object_family_behavior(self);
     return (behavior->set_mode_unchecked)(runtime, self, mode);
   } else {
     CHECK_EQ("non-object not frozen", vmDeepFrozen, get_value_mode(self));
@@ -153,19 +153,19 @@ static value_t custom_tagged_transient_identity_hash(value_t self,
   return success();
 }
 
-static value_t default_object_transient_identity_hash(value_t value,
+static value_t default_heap_heap_object_transient_identity_hash(value_t value,
     hash_stream_t *stream, cycle_detector_t *detector) {
-  // object_transient_identity_hash has already written the tags.
+  // heap_object_transient_identity_hash has already written the tags.
   hash_stream_write_int64(stream, value.encoded);
   return success();
 }
 
-static value_t object_transient_identity_hash(value_t self,
+static value_t heap_object_transient_identity_hash(value_t self,
     hash_stream_t *stream, cycle_detector_t *detector) {
   // The toplevel delegator functions are responsible for writing the tags,
   // that way the individual hashing functions don't all have to do that.
-  family_behavior_t *behavior = get_object_family_behavior(self);
-  hash_stream_write_tags(stream, vdObject, behavior->family);
+  family_behavior_t *behavior = get_heap_object_family_behavior(self);
+  hash_stream_write_tags(stream, vdHeapObject, behavior->family);
   return (behavior->transient_identity_hash)(self, stream, detector);
 }
 
@@ -186,8 +186,8 @@ value_t value_transient_identity_hash_cycle_protect(value_t value,
   switch (domain) {
     case vdInteger:
       return integer_transient_identity_hash(value, stream);
-    case vdObject:
-      return object_transient_identity_hash(value, stream, detector);
+    case vdHeapObject:
+      return heap_object_transient_identity_hash(value, stream, detector);
     case vdCustomTagged:
       return custom_tagged_transient_identity_hash(value, stream);
     default:
@@ -199,23 +199,23 @@ value_t value_transient_identity_hash_cycle_protect(value_t value,
 
 // --- I d e n t i t y ---
 
-static value_t default_object_identity_compare(value_t a, value_t b,
+static value_t default_heap_heap_object_identity_compare(value_t a, value_t b,
     cycle_detector_t *detector) {
   return new_boolean(is_same_value(a, b));
 }
 
-static value_t object_identity_compare(value_t a, value_t b,
+static value_t heap_object_identity_compare(value_t a, value_t b,
     cycle_detector_t *detector) {
-  CHECK_DOMAIN(vdObject, a);
-  CHECK_DOMAIN(vdObject, b);
+  CHECK_DOMAIN(vdHeapObject, a);
+  CHECK_DOMAIN(vdHeapObject, b);
   // Fast case when a and b are the same object.
   if (is_same_value(a, b))
     return yes();
-  object_family_t a_family = get_object_family(a);
-  object_family_t b_family = get_object_family(b);
+  heap_object_family_t a_family = get_heap_object_family(a);
+  heap_object_family_t b_family = get_heap_object_family(b);
   if (a_family != b_family)
     return no();
-  family_behavior_t *behavior = get_object_family_behavior(a);
+  family_behavior_t *behavior = get_heap_object_family_behavior(a);
   return (behavior->identity_compare)(a, b, detector);
 }
 
@@ -241,8 +241,8 @@ value_t value_identity_compare_cycle_protect(value_t a, value_t b,
     case vdInteger:
     case vdCustomTagged:
       return new_boolean(is_same_value(a, b));
-    case vdObject:
-      return object_identity_compare(a, b, detector);
+    case vdHeapObject:
+      return heap_object_identity_compare(a, b, detector);
     default:
       return no();
   }
@@ -256,15 +256,15 @@ static value_t integer_ordering_compare(value_t a, value_t b) {
 }
 
 static value_t object_ordering_compare(value_t a, value_t b) {
-  CHECK_DOMAIN(vdObject, a);
-  CHECK_DOMAIN(vdObject, b);
-  object_family_t a_family = get_object_family(a);
-  object_family_t b_family = get_object_family(b);
+  CHECK_DOMAIN(vdHeapObject, a);
+  CHECK_DOMAIN(vdHeapObject, b);
+  heap_object_family_t a_family = get_heap_object_family(a);
+  heap_object_family_t b_family = get_heap_object_family(b);
   if (a_family != b_family)
     // This may cause us to return a valid result even when a and b are not
     // comparable.
     return compare_signed_integers(a_family, b_family);
-  family_behavior_t *behavior = get_object_family_behavior(a);
+  family_behavior_t *behavior = get_heap_object_family_behavior(a);
   value_t (*ordering_compare)(value_t a, value_t b) = behavior->ordering_compare;
   if (ordering_compare == NULL) {
     return unordered();
@@ -300,7 +300,7 @@ value_t value_ordering_compare(value_t a, value_t b) {
     switch (a_domain) {
       case vdInteger:
         return integer_ordering_compare(a, b);
-      case vdObject:
+      case vdHeapObject:
         return object_ordering_compare(a, b);
       case vdCustomTagged:
         return custom_tagged_ordering_compare(a, b);
@@ -344,9 +344,9 @@ static void condition_print_on(value_t value, string_buffer_t *buf) {
       string_buffer_printf(buf, "%s", get_unsupported_behavior_cause_name(cause));
       value_domain_t domain = codec.decoded.domain;
       string_buffer_printf(buf, " of %s", get_value_domain_name(domain));
-      object_family_t family = codec.decoded.family;
+      heap_object_family_t family = codec.decoded.family;
       if (family != __ofUnknown__)
-        string_buffer_printf(buf, "/%s", get_object_family_name(family));
+        string_buffer_printf(buf, "/%s", get_heap_object_family_name(family));
       break;
     }
     case ccLookupError: {
@@ -384,7 +384,7 @@ static void condition_print_on(value_t value, string_buffer_t *buf) {
 }
 
 static void object_print_on(value_t value, print_on_context_t *context) {
-  family_behavior_t *behavior = get_object_family_behavior(value);
+  family_behavior_t *behavior = get_heap_object_family_behavior(value);
   (behavior->print_on)(value, context);
 }
 
@@ -399,7 +399,7 @@ void value_print_on_cycle_detect(value_t value, print_on_context_t *context) {
     case vdInteger:
       integer_print_on(value, context->buf);
       break;
-    case vdObject:
+    case vdHeapObject:
       object_print_on(value, context);
       break;
     case vdCondition:
@@ -462,8 +462,8 @@ static value_t new_instance_of_type(runtime_t *runtime, value_t type) {
   return result;
 }
 
-static value_t new_object_with_object_type(runtime_t *runtime, value_t type) {
-  object_family_t family = get_object_family(type);
+static value_t new_heap_object_with_object_type(runtime_t *runtime, value_t type) {
+  heap_object_family_t family = get_heap_object_family(type);
   switch (family) {
     case ofType:
       return new_instance_of_type(runtime, type);
@@ -475,7 +475,7 @@ static value_t new_object_with_object_type(runtime_t *runtime, value_t type) {
   }
 }
 
-static value_t new_object_with_custom_tagged_type(runtime_t *runtime, value_t type) {
+static value_t new_heap_object_with_custom_tagged_type(runtime_t *runtime, value_t type) {
   custom_tagged_phylum_t phylum = get_custom_tagged_phylum(type);
   switch (phylum) {
     case tpNull:
@@ -487,13 +487,13 @@ static value_t new_object_with_custom_tagged_type(runtime_t *runtime, value_t ty
   }
 }
 
-value_t new_object_with_type(runtime_t *runtime, value_t type) {
+value_t new_heap_object_with_type(runtime_t *runtime, value_t type) {
   value_domain_t domain = get_value_domain(type);
   switch (domain) {
-    case vdObject:
-      return new_object_with_object_type(runtime, type);
+    case vdHeapObject:
+      return new_heap_object_with_object_type(runtime, type);
     case vdCustomTagged:
-      return new_object_with_custom_tagged_type(runtime, type);
+      return new_heap_object_with_custom_tagged_type(runtime, type);
     default:
       return new_unsupported_behavior_condition(domain, __ofUnknown__,
           ubNewObjectWithType);
@@ -503,25 +503,25 @@ value_t new_object_with_type(runtime_t *runtime, value_t type) {
 
 // --- P a y l o a d ---
 
-value_t set_object_contents(runtime_t *runtime, value_t object, value_t payload) {
-  family_behavior_t *behavior = get_object_family_behavior(object);
+value_t set_heap_object_contents(runtime_t *runtime, value_t object, value_t payload) {
+  family_behavior_t *behavior = get_heap_object_family_behavior(object);
   TRY((behavior->set_contents)(object, runtime, payload));
-  TRY(object_validate(object));
+  TRY(heap_object_validate(object));
   return success();
 }
 
 // A function compatible with set_contents that always returns unsupported.
 static value_t plankton_set_contents_unsupported(value_t value, runtime_t *runtime,
     value_t contents) {
-  return new_unsupported_behavior_condition(vdObject, get_object_family(value),
+  return new_unsupported_behavior_condition(vdHeapObject, get_heap_object_family(value),
       ubSetContents);
 }
 
 
 // --- P r o t o c o l ---
 
-static value_t get_object_primary_type(value_t self, runtime_t *runtime) {
-  family_behavior_t *behavior = get_object_family_behavior(self);
+static value_t get_heap_object_primary_type(value_t self, runtime_t *runtime) {
+  family_behavior_t *behavior = get_heap_object_family_behavior(self);
   return (behavior->get_primary_type)(self, runtime);
 }
 
@@ -535,8 +535,8 @@ value_t get_primary_type(value_t self, runtime_t *runtime) {
   switch (domain) {
     case vdInteger:
       return ROOT(runtime, integer_type);
-    case vdObject:
-      return get_object_primary_type(self, runtime);
+    case vdHeapObject:
+      return get_heap_object_primary_type(self, runtime);
     case vdCustomTagged:
       return get_custom_tagged_primary_type(self, runtime);
     default:
@@ -554,12 +554,12 @@ static value_t get_internal_object_type(value_t self, runtime_t *runtime) {
 
 void object_on_scope_exit(value_t self) {
   CHECK_TRUE("exiting non-scoped object", is_scoped_object(self));
-  family_behavior_t *behavior = get_object_family_behavior(self);
+  family_behavior_t *behavior = get_heap_object_family_behavior(self);
   (behavior->on_scope_exit)(self);
 }
 
 bool is_scoped_object(value_t self) {
-  return is_object(self) && (get_object_family_behavior(self)->on_scope_exit != NULL);
+  return is_heap_object(self) && (get_heap_object_family_behavior(self)->on_scope_exit != NULL);
 }
 
 
@@ -574,10 +574,10 @@ family_behavior_t k##Family##Behavior = {                                      \
   &family##_validate,                                                          \
   ID(                                                                          \
     &family##_transient_identity_hash,                                         \
-    default_object_transient_identity_hash),                                   \
+    default_heap_heap_object_transient_identity_hash),                                   \
   ID(                                                                          \
     &family##_identity_compare,                                                \
-    &default_object_identity_compare),                                         \
+    &default_heap_heap_object_identity_compare),                                         \
   CM(                                                                          \
     &family##_ordering_compare,                                                \
     NULL),                                                                     \
@@ -593,10 +593,10 @@ family_behavior_t k##Family##Behavior = {                                      \
     &fixup_##family##_post_migrate,                                            \
     NULL),                                                                     \
   MD(                                                                          \
-    get_modal_object_mode,                                                     \
+    get_modal_heap_object_mode,                                                \
     get_##family##_mode),                                                      \
   MD(                                                                          \
-    set_modal_object_mode_unchecked,                                           \
+    set_modal_heap_object_mode_unchecked,                                      \
     set_##family##_mode_unchecked),                                            \
   OW(                                                                          \
     ensure_##family##_owned_values_frozen,                                     \
@@ -605,7 +605,7 @@ family_behavior_t k##Family##Behavior = {                                      \
     on_##family##_scope_exit,                                                  \
     NULL)                                                                      \
 };
-ENUM_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
+ENUM_HEAP_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #undef DEFINE_FAMILY_BEHAVIOR
 
 // Define all the division behaviors. Similarly to families, when you add a new

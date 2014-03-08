@@ -8,11 +8,11 @@
 
 
 bool safe_value_is_immediate(safe_value_t s_value) {
-  return !is_object(s_value.as_value);
+  return !is_heap_object(s_value.as_value);
 }
 
 safe_value_t object_tracker_to_safe_value(object_tracker_t *handle) {
-  value_t as_object = new_object((address_t) handle);
+  value_t as_object = new_heap_object((address_t) handle);
   safe_value_t s_result;
   s_result.as_value = as_object;;
   CHECK_FALSE("cast into condition", safe_value_is_immediate(s_result));
@@ -21,11 +21,11 @@ safe_value_t object_tracker_to_safe_value(object_tracker_t *handle) {
 
 object_tracker_t *safe_value_to_object_tracker(safe_value_t s_value) {
   CHECK_FALSE("using immediate as indirect", safe_value_is_immediate(s_value));
-  return (object_tracker_t*) get_object_address(s_value.as_value);
+  return (object_tracker_t*) get_heap_object_address(s_value.as_value);
 }
 
 safe_value_t protect_immediate(value_t value) {
-  CHECK_FALSE("value not immediate", get_value_domain(value) == vdObject);
+  CHECK_FALSE("value not immediate", get_value_domain(value) == vdHeapObject);
   safe_value_t s_result;
   s_result.as_value = value;
   CHECK_TRUE("cast out of condition", safe_value_is_immediate(s_result));

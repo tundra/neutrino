@@ -690,17 +690,17 @@ void get_refractor_refracted_frame(value_t self, size_t block_depth,
 
 value_t get_refractor_home_stack_piece(value_t value) {
   CHECK_TRUE("not refractor", is_refractor(value));
-  return *access_object_field(value, kBlockHomeStackPieceOffset);
+  return *access_heap_object_field(value, kBlockHomeStackPieceOffset);
 }
 
 value_t get_refractor_home_state_pointer(value_t self) {
   CHECK_TRUE("not refractor", is_refractor(self));
-  return *access_object_field(self, kBlockHomeStatePointerOffset);
+  return *access_heap_object_field(self, kBlockHomeStatePointerOffset);
 }
 
 void set_refractor_home_state_pointer(value_t self, value_t value) {
   CHECK_TRUE("not refractor", is_refractor(self));
-  *access_object_field(self, kBlockHomeStatePointerOffset) = value;
+  *access_heap_object_field(self, kBlockHomeStatePointerOffset) = value;
 }
 
 

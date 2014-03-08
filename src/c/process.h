@@ -61,11 +61,11 @@
 /// set the stack pointer on a piece first before putting the piece into the
 /// stack.
 
-static const size_t kStackPieceSize = OBJECT_SIZE(4);
-static const size_t kStackPieceStorageOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kStackPiecePreviousOffset= OBJECT_FIELD_OFFSET(1);
-static const size_t kStackPieceStackOffset = OBJECT_FIELD_OFFSET(2);
-static const size_t kStackPieceLidFramePointerOffset = OBJECT_FIELD_OFFSET(3);
+static const size_t kStackPieceSize = HEAP_OBJECT_SIZE(4);
+static const size_t kStackPieceStorageOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kStackPiecePreviousOffset= HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kStackPieceStackOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kStackPieceLidFramePointerOffset = HEAP_OBJECT_FIELD_OFFSET(3);
 
 // The plain array used for storage for this stack piece.
 ACCESSORS_DECL(stack_piece, storage);
@@ -307,11 +307,11 @@ bool frame_iter_advance(frame_iter_t *iter);
 /// because it means that all the space required to hold the barriers can be
 /// stack allocated.
 
-static const size_t kStackSize = OBJECT_SIZE(4);
-static const size_t kStackTopPieceOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kStackDefaultPieceCapacityOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kStackTopBarrierPieceOffset = OBJECT_FIELD_OFFSET(2);
-static const size_t kStackTopBarrierPointerOffset = OBJECT_FIELD_OFFSET(3);
+static const size_t kStackSize = HEAP_OBJECT_SIZE(4);
+static const size_t kStackTopPieceOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kStackDefaultPieceCapacityOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kStackTopBarrierPieceOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kStackTopBarrierPointerOffset = HEAP_OBJECT_FIELD_OFFSET(3);
 
 // The top stack piece of this stack.
 ACCESSORS_DECL(stack, top_piece);
@@ -462,10 +462,10 @@ bool barrier_iter_advance(barrier_iter_t *iter);
 /// barriers work more generally, or have a special case here which would make
 /// them less orthogonal.
 
-static const size_t kEscapeSize = OBJECT_SIZE(3);
-static const size_t kEscapeIsLiveOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kEscapeStackPieceOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kEscapeStackPointerOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kEscapeSize = HEAP_OBJECT_SIZE(3);
+static const size_t kEscapeIsLiveOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kEscapeStackPieceOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kEscapeStackPointerOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // The number of stack entries it takes to record the complete state of a frame.
 static const int32_t kCapturedStateSize
@@ -492,9 +492,9 @@ ACCESSORS_DECL(escape, stack_pointer);
 /// state has exited. Hence, pessimistically capture all their outer state on
 /// construction.
 
-static const size_t kLambdaSize = OBJECT_SIZE(2);
-static const size_t kLambdaMethodsOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kLambdaCapturesOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kLambdaSize = HEAP_OBJECT_SIZE(2);
+static const size_t kLambdaMethodsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kLambdaCapturesOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // Returns the method space where the methods supported by this lambda live.
 ACCESSORS_DECL(lambda, methods);
@@ -592,12 +592,12 @@ value_t get_lambda_capture(value_t self, size_t index);
 /// you'd just end up calling the same block again (and potentially endlessly).
 
 
-static const size_t kBlockSize = OBJECT_SIZE(3);
+static const size_t kBlockSize = HEAP_OBJECT_SIZE(3);
 // These two must be at the same offsets as the other refractors, currently
 // code shards and signal handlers.
-static const size_t kBlockHomeStackPieceOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kBlockHomeStatePointerOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kBlockIsLiveOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kBlockHomeStackPieceOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kBlockHomeStatePointerOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kBlockIsLiveOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // Returns the flag indicating whether this block is still live.
 ACCESSORS_DECL(block, is_live);
@@ -644,11 +644,11 @@ void set_refractor_home_state_pointer(value_t self, value_t value);
 ///
 /// Code shards use refraction exactly the same way blocks do.
 
-static const size_t kCodeShardSize = OBJECT_SIZE(2);
+static const size_t kCodeShardSize = HEAP_OBJECT_SIZE(2);
 // These two must be at the same offsets as the other refractors, currently
 // blocks and signal handlers.
-static const size_t kCodeShardHomeStackPieceOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kCodeShardHomeStatePointerOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kCodeShardHomeStackPieceOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kCodeShardHomeStatePointerOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // Returns the stack piece that contains this code shard's home.
 ACCESSORS_DECL(code_shard, home_stack_piece);
@@ -728,11 +728,11 @@ refraction_point_t stack_barrier_as_refraction_point(stack_barrier_t *barrier);
 //%           +============+
 //%           :            :
 
-static const size_t kSignalHandlerSize = OBJECT_SIZE(2);
+static const size_t kSignalHandlerSize = HEAP_OBJECT_SIZE(2);
 // These two must be at the same offsets as the other refractors, currently
 // blocks and code shards.
-static const size_t kSignalHandlerHomeStackPieceOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kSignalHandlerHomeStatePointerOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kSignalHandlerHomeStackPieceOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kSignalHandlerHomeStatePointerOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // Returns the stack piece that contains this signal handler's home.
 ACCESSORS_DECL(signal_handler, home_stack_piece);
@@ -744,8 +744,8 @@ ACCESSORS_DECL(signal_handler, home_state_pointer);
 
 // --- B a c k t r a c e ---
 
-static const size_t kBacktraceSize = OBJECT_SIZE(1);
-static const size_t kBacktraceEntriesOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kBacktraceSize = HEAP_OBJECT_SIZE(1);
+static const size_t kBacktraceEntriesOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The array buffer of backtrace entries.
 ACCESSORS_DECL(backtrace, entries);
@@ -757,9 +757,9 @@ value_t capture_backtrace(runtime_t *runtime, frame_t *frame);
 
 // --- B a c k t r a c e   e n t r y ---
 
-static const size_t kBacktraceEntrySize = OBJECT_SIZE(2);
-static const size_t kBacktraceEntryInvocationOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kBacktraceEntryOpcodeOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kBacktraceEntrySize = HEAP_OBJECT_SIZE(2);
+static const size_t kBacktraceEntryInvocationOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kBacktraceEntryOpcodeOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The invocation record for this entry.
 ACCESSORS_DECL(backtrace_entry, invocation);

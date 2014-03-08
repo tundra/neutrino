@@ -19,7 +19,7 @@ typedef struct {
   // The offset in bytes within the object where the contiguous block of value
   // pointers start.
   size_t value_offset;
-} object_layout_t;
+} heap_object_layout_t;
 
 // Returns the current mode of the given value.
 value_mode_t get_value_mode(value_t value);
@@ -36,10 +36,10 @@ value_t set_value_mode_unchecked(runtime_t *runtime, value_t self,
     value_mode_t mode);
 
 // Initializes the fields of an object layout struct.
-void object_layout_init(object_layout_t *layout);
+void heap_object_layout_init(heap_object_layout_t *layout);
 
 // Sets the fields of an object layout struct.
-void object_layout_set(object_layout_t *layout, size_t size, size_t value_offset);
+void heap_object_layout_set(heap_object_layout_t *layout, size_t size, size_t value_offset);
 
 // Flags that control how values are printed. These can be or'ed together.
 typedef enum {
@@ -61,7 +61,7 @@ typedef struct {
 // objects behave.
 struct family_behavior_t {
   // The family this behavior belongs to.
-  object_family_t family;
+  heap_object_family_t family;
   // Function for validating an object.
   value_t (*validate)(value_t value);
   // Calculates the transient identity hash.
@@ -79,7 +79,7 @@ struct family_behavior_t {
   // If you use value_print_inner_on this is handled for you.
   void (*print_on)(value_t value, print_on_context_t *context);
   // Stores the layout of the given object in the output layout struct.
-  void (*get_object_layout)(value_t value, object_layout_t *layout_out);
+  void (*get_heap_object_layout)(value_t value, heap_object_layout_t *layout_out);
   // Sets the contents of the given value from the given serialized contents.
   value_t (*set_contents)(value_t value, runtime_t *runtime,
       value_t contents);
@@ -89,7 +89,7 @@ struct family_behavior_t {
   // old object which is still intact except for a forward-pointer instead of
   // a header. The old object will not be used again so it can also just be
   // used as a block of memory.
-  void (*post_migrate_fixup)(runtime_t *runtime, value_t new_object,
+  void (*post_migrate_fixup)(runtime_t *runtime, value_t new_heap_object,
       value_t old_object);
   // Returns the current mode of the given value.
   value_mode_t (*get_mode)(value_t self);
@@ -110,10 +110,10 @@ struct family_behavior_t {
 
 // Validates an object. Check fails if validation fails except in soft check
 // failure mode where a ValidationFailed condition is returned.
-value_t object_validate(value_t value);
+value_t heap_object_validate(value_t value);
 
 // Returns the size in bytes of the given object on the heap.
-void get_object_layout(value_t value, object_layout_t *layout_out);
+void get_heap_object_layout(value_t value, heap_object_layout_t *layout_out);
 
 // Returns the transient identity hash of the given value. This hash is
 // transient in the sense that it may be changed by garbage collection. It
@@ -182,13 +182,13 @@ void value_print_inner_on(value_t value, print_on_context_t *context,
 
 // Creates a new empty instance of the given type. Not all types support this,
 // in which case an unsupported behavior condition is returned.
-value_t new_object_with_type(runtime_t *runtime, value_t type);
+value_t new_heap_object_with_type(runtime_t *runtime, value_t type);
 
 // Sets the payload of an object, passing in the object to set and the data to
 // inject as the object payload. If somehow the payload is not as the object
 // expects a condition should be returned (as well as if anything else fails
 // obviously).
-value_t set_object_contents(runtime_t *runtime, value_t object,
+value_t set_heap_object_contents(runtime_t *runtime, value_t object,
     value_t payload);
 
 // Returns the primary type of the given value.
@@ -207,7 +207,7 @@ bool is_scoped_object(value_t value);
 // Declare the behavior structs for all the families on one fell swoop.
 #define DECLARE_FAMILY_BEHAVIOR(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N) \
 extern family_behavior_t k##Family##Behavior;
-ENUM_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
+ENUM_HEAP_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 #undef DECLARE_FAMILY_BEHAVIOR
 
 // Declare the functions that implement the behaviors too, that way they can be
@@ -227,7 +227,7 @@ CM(                                                                            \
   )                                                                            \
 void family##_print_on(value_t value, print_on_context_t *context);            \
 NL(                                                                            \
-  void get_##family##_layout(value_t value, object_layout_t *layout_out);,     \
+  void get_##family##_layout(value_t value, heap_object_layout_t *layout_out);,     \
   )                                                                            \
 PT(                                                                            \
   value_t plankton_set_##family##_contents(value_t value, runtime_t *runtime,  \
@@ -244,7 +244,7 @@ SR(                                                                            \
     safe_value_t s_map);,                                                      \
   )                                                                            \
 FU(                                                                            \
-  void fixup_##family##_post_migrate(runtime_t *runtime, value_t new_object,   \
+  void fixup_##family##_post_migrate(runtime_t *runtime, value_t new_heap_object,   \
     value_t old_object);,                                                      \
   )                                                                            \
 MD(,                                                                           \
@@ -259,7 +259,7 @@ OW(                                                                            \
 SC(                                                                            \
   void on_##family##_scope_exit(value_t self);,                                \
   )
-ENUM_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
+ENUM_HEAP_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
 #undef __DECLARE_FAMILY_FUNCTIONS__
 
 // Add the integer built-ins to the given map.
@@ -268,14 +268,14 @@ value_t add_integer_builtin_implementations(runtime_t *runtime, safe_value_t s_m
 // Add the object built-ins to the given map. There is no built-in object type,
 // that is defined purely by the surface language, so there is no corresponding
 // family this can live under.
-value_t add_object_builtin_implementations(runtime_t *runtime, safe_value_t s_map);
+value_t add_heap_object_builtin_implementations(runtime_t *runtime, safe_value_t s_map);
 
 // Virtual methods that control how the species of a particular division behave.
 struct division_behavior_t {
   // The division this behavior belongs to.
   species_division_t division;
   // Returns the size in bytes on the heap of species for this division.
-  void (*get_species_layout)(value_t species, object_layout_t *layout_out);
+  void (*get_species_layout)(value_t species, heap_object_layout_t *layout_out);
 };
 
 // Declare the division behavior structs.
@@ -286,7 +286,7 @@ ENUM_SPECIES_DIVISIONS(DECLARE_DIVISION_BEHAVIOR)
 
 // Declare all the division behaviors.
 #define DECLARE_DIVISION_BEHAVIOR_IMPLS(Division, division)                    \
-void get_##division##_species_layout(value_t species, object_layout_t *layout_out);
+void get_##division##_species_layout(value_t species, heap_object_layout_t *layout_out);
 ENUM_SPECIES_DIVISIONS(DECLARE_DIVISION_BEHAVIOR_IMPLS)
 #undef DECLARE_DIVISION_BEHAVIOR_IMPLS
 

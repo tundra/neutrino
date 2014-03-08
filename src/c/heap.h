@@ -189,7 +189,7 @@ value_t heap_prepare_garbage_collection(heap_t *heap);
 value_t heap_complete_garbage_collection(heap_t *heap);
 
 // Creates a new object tracker that holds the specified value.
-object_tracker_t *heap_new_object_tracker(heap_t *heap, value_t value);
+object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value);
 
 // Disposes an object tracker.
 void heap_dispose_object_tracker(heap_t *heap, object_tracker_t *gc_safe);

@@ -191,10 +191,10 @@ static bool instance_structural_equal(value_t a, value_t b) {
 }
 
 static bool object_structural_equal(value_t a, value_t b) {
-  CHECK_DOMAIN(vdObject, a);
-  CHECK_DOMAIN(vdObject, b);
-  object_family_t a_family = get_object_family(a);
-  object_family_t b_family = get_object_family(b);
+  CHECK_DOMAIN(vdHeapObject, a);
+  CHECK_DOMAIN(vdHeapObject, b);
+  heap_object_family_t a_family = get_heap_object_family(a);
+  heap_object_family_t b_family = get_heap_object_family(b);
   if (a_family != b_family)
     return false;
   switch (a_family) {
@@ -217,7 +217,7 @@ bool value_structural_equal(value_t a, value_t b) {
   if (a_domain != b_domain)
     return false;
   switch (a_domain) {
-    case vdObject:
+    case vdHeapObject:
       return object_structural_equal(a, b);
     default:
       return value_identity_compare(a, b);

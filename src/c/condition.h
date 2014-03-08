@@ -93,7 +93,7 @@ typedef enum {
 typedef union {
   struct {
     value_domain_t domain : 8;
-    object_family_t family : 16;
+    heap_object_family_t family : 16;
     unsupported_behavior_cause_t cause : 8;
   } decoded;
   uint32_t encoded;
@@ -101,7 +101,7 @@ typedef union {
 
 // Creates a new UnsupportedBehavior condition for the given type of behavior.
 static value_t new_unsupported_behavior_condition(value_domain_t domain,
-    object_family_t family, unsupported_behavior_cause_t cause) {
+    heap_object_family_t family, unsupported_behavior_cause_t cause) {
   unsupported_behavior_details_codec_t codec;
   codec.decoded.domain = domain;
   codec.decoded.family = family;

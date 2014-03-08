@@ -41,8 +41,8 @@ value_t build_binding_schedule(binding_context_t *context);
 
 // --- M o d u l e   L o a d e r ---
 
-static const size_t kModuleLoaderSize = OBJECT_SIZE(1);
-static const size_t kModuleLoaderModulesOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kModuleLoaderSize = HEAP_OBJECT_SIZE(1);
+static const size_t kModuleLoaderModulesOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The path that identifies this module.
 ACCESSORS_DECL(module_loader, modules);
@@ -58,9 +58,9 @@ value_t module_loader_lookup_module(value_t self, value_t path);
 
 // --- L i b r a r y ---
 
-static const size_t kLibrarySize = OBJECT_SIZE(2);
-static const size_t kLibraryDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kLibraryModulesOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kLibrarySize = HEAP_OBJECT_SIZE(2);
+static const size_t kLibraryDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kLibraryModulesOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The name used to identify the library in logging etc.
 ACCESSORS_DECL(library, display_name);
@@ -71,9 +71,9 @@ ACCESSORS_DECL(library, modules);
 
 // --- U n b o u n d   m o d u l e ---
 
-static const size_t kUnboundModuleSize = OBJECT_SIZE(2);
-static const size_t kUnboundModulePathOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kUnboundModuleFragmentsOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kUnboundModuleSize = HEAP_OBJECT_SIZE(2);
+static const size_t kUnboundModulePathOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kUnboundModuleFragmentsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The path that identifies this module.
 ACCESSORS_DECL(unbound_module, path);
@@ -84,10 +84,10 @@ ACCESSORS_DECL(unbound_module, fragments);
 
 // --- U n b o u n d   m o d u l e   f r a g m e n t ---
 
-static const size_t kUnboundModuleFragmentSize = OBJECT_SIZE(3);
-static const size_t kUnboundModuleFragmentStageOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kUnboundModuleFragmentImportsOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kUnboundModuleFragmentElementsOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kUnboundModuleFragmentSize = HEAP_OBJECT_SIZE(3);
+static const size_t kUnboundModuleFragmentStageOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kUnboundModuleFragmentImportsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kUnboundModuleFragmentElementsOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // Which stage does this fragment represent?
 ACCESSORS_DECL(unbound_module_fragment, stage);

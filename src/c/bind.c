@@ -151,7 +151,7 @@ static value_t apply_is_declaration(runtime_t *runtime, value_t decl,
 static value_t apply_unbound_fragment_element(value_t ambience, value_t element,
     value_t fragment) {
   CHECK_FAMILY(ofAmbience, ambience);
-  object_family_t family = get_object_family(element);
+  heap_object_family_t family = get_heap_object_family(element);
   switch (family) {
     case ofNamespaceDeclarationAst:
       return apply_namespace_declaration(ambience, element, fragment);
@@ -160,7 +160,7 @@ static value_t apply_unbound_fragment_element(value_t ambience, value_t element,
     case ofIsDeclarationAst:
       return apply_is_declaration(get_ambience_runtime(ambience), element, fragment);
     default:
-      ERROR("Invalid toplevel element %s", get_object_family_name(family));
+      ERROR("Invalid toplevel element %s", get_heap_object_family_name(family));
       return success();
   }
 }

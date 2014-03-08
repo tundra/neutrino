@@ -29,7 +29,7 @@ FORWARD(string_buffer_t);
 //  Name               Tag     Ordinal
 #define FOR_EACH_VALUE_DOMAIN(F)                                               \
   F(Integer,           0x0,    1)                                              \
-  F(Object,            0x1,    0)                                              \
+  F(HeapObject,        0x1,    0)                                              \
   F(Condition,         0x2,    2)                                              \
   F(MovedObject,       0x3,    3)                                              \
   F(CustomTagged,      0x4,    4)
@@ -204,23 +204,23 @@ static value_t decode_value(encoded_value_t value) {
 // moved to.
 static value_t get_moved_object_target(value_t value) {
   CHECK_DOMAIN(vdMovedObject, value);
-  value_t target = decode_value(value.encoded - (vdMovedObject-vdObject));
-  CHECK_DOMAIN(vdObject, target);
+  value_t target = decode_value(value.encoded - (vdMovedObject-vdHeapObject));
+  CHECK_DOMAIN(vdHeapObject, target);
   return target;
 }
 
 // Creates a new moved object pointer pointing to the given target object.
 static value_t new_moved_object(value_t target) {
-  CHECK_DOMAIN(vdObject, target);
-  value_t moved = decode_value(target.encoded + (vdMovedObject-vdObject));
+  CHECK_DOMAIN(vdHeapObject, target);
+  value_t moved = decode_value(target.encoded + (vdMovedObject-vdHeapObject));
   CHECK_DOMAIN(vdMovedObject, moved);
   return moved;
 }
 
 
-/// ## Object
+/// ## Heap object
 ///
-/// Objects are heap-allocated values.
+/// Heap-allocated values.
 
 // Indicates that a family has a particular attribute.
 #define X(T, F) T
@@ -263,11 +263,11 @@ static value_t new_moved_object(value_t target) {
 
 // Enumerates the special species, the ones that require special handling during
 // startup.
-#define ENUM_SPECIAL_OBJECT_FAMILIES(F)                                        \
+#define ENUM_SPECIAL_HEAP_OBJECT_FAMILIES(F)                                   \
   F(Species,                 species,                   _, _, _, _, X, _, _, X, _, _, 70)
 
 // Enumerates the compact object species.
-#define ENUM_OTHER_OBJECT_FAMILIES(F)                                          \
+#define ENUM_OTHER_HEAP_OBJECT_FAMILIES(F)                                     \
   F(Key,                     key,                       X, _, _, X, _, _, _, X, _, _,  0)\
   /*     ---     Correctness depends on the sort order of families above        ---    */\
   /*     ---     this divider. The relative sort order of the families          ---    */\
@@ -355,9 +355,9 @@ static value_t new_moved_object(value_t target) {
 static const int kNextFamilyOrdinal = 78;
 
 // Enumerates all the object families.
-#define ENUM_OBJECT_FAMILIES(F)                                                \
-    ENUM_OTHER_OBJECT_FAMILIES(F)                                              \
-    ENUM_SPECIAL_OBJECT_FAMILIES(F)
+#define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \
+    ENUM_OTHER_HEAP_OBJECT_FAMILIES(F)                                         \
+    ENUM_SPECIAL_HEAP_OBJECT_FAMILIES(F)
 
 // Enum identifying the different families of heap objects. The integer values
 // of the enums are tagged as integers which means that they can be stored in
@@ -367,29 +367,29 @@ typedef enum {
   __ofFirst__ = -1
 #define __DECLARE_OBJECT_FAMILY_ENUM__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N) \
   , of##Family = NEW_STATIC_INTEGER(N)
-  ENUM_OBJECT_FAMILIES(__DECLARE_OBJECT_FAMILY_ENUM__)
+  ENUM_HEAP_OBJECT_FAMILIES(__DECLARE_OBJECT_FAMILY_ENUM__)
 #undef __DECLARE_OBJECT_FAMILY_ENUM__
   // This is a special value separate from any of the others that can be used
   // to indicate no family.
   , __ofUnknown__
-} object_family_t;
+} heap_object_family_t;
 
 // Returns the string name of the given family.
-const char *get_object_family_name(object_family_t family);
+const char *get_heap_object_family_name(heap_object_family_t family);
 
 // Number of bytes in an object header.
-#define kObjectHeaderSize kValueSize
+#define kHeapObjectHeaderSize kValueSize
 
 // Returns the size in bytes of an object with N fields, where the header
 // is not counted as a field.
-#define OBJECT_SIZE(N) ((N * kValueSize) + kObjectHeaderSize)
+#define HEAP_OBJECT_SIZE(N) ((N * kValueSize) + kHeapObjectHeaderSize)
 
 // Returns the offset of the N'th field in an object, starting from 0 so the
 // header fields aren't included.
-#define OBJECT_FIELD_OFFSET(N) ((N * kValueSize) + kObjectHeaderSize)
+#define HEAP_OBJECT_FIELD_OFFSET(N) ((N * kValueSize) + kHeapObjectHeaderSize)
 
 // The offset of the object header.
-static const size_t kObjectHeaderOffset = 0;
+static const size_t kHeapObjectHeaderOffset = 0;
 
 // Forward declaration of the object behavior structs (see behavior.h).
 FORWARD(family_behavior_t);
@@ -407,9 +407,9 @@ static value_t pointer_to_value_bit_cast(void *ptr) {
 }
 
 // Converts a pointer to an object into an tagged object value pointer.
-static value_t new_object(address_t addr) {
-  value_t result = pointer_to_value_bit_cast(addr + vdObject);
-  CHECK_DOMAIN(vdObject, result);
+static value_t new_heap_object(address_t addr) {
+  value_t result = pointer_to_value_bit_cast(addr + vdHeapObject);
+  CHECK_DOMAIN(vdHeapObject, result);
   return result;
 }
 
@@ -421,27 +421,27 @@ static value_t new_object(address_t addr) {
 // Returns the address of the object pointed to by a tagged object value
 // pointer. This version does some extra sanity checking which is only enabled
 // in expensive check mode.
-static address_t get_object_address(value_t value) {
-  CHECK_DOMAIN_HOT(vdObject, value);
+static address_t get_heap_object_address(value_t value) {
+  CHECK_DOMAIN_HOT(vdHeapObject, value);
   address_t tagged_address = (address_t) value_to_pointer_bit_cast(value);
-  return tagged_address - ((address_arith_t) vdObject);
+  return tagged_address - ((address_arith_t) vdHeapObject);
 }
 #else
 // Returns the address of the object pointed to by a tagged object value
 // pointer. This version is used outside expensive check mode since the overhead
 // of a call in debug mode is huge even when the check is disabled.
-#define get_object_address(VALUE) (((address_t) value_to_pointer_bit_cast(VALUE)) - ((address_arith_t) vdObject))
+#define get_heap_object_address(VALUE) (((address_t) value_to_pointer_bit_cast(VALUE)) - ((address_arith_t) vdHeapObject))
 #endif
 
 // Returns a pointer to the index'th field in the given heap object. Check
 // fails if the value is not a heap object when expensive checks are enabled.
 // This is a hot operation so it's a macro.
-#define access_object_field(VALUE, INDEX)                                      \
-  ((value_t*) (((address_t) get_object_address(VALUE)) + ((size_t) (INDEX))))
+#define access_heap_object_field(VALUE, INDEX)                                 \
+  ((value_t*) (((address_t) get_heap_object_address(VALUE)) + ((size_t) (INDEX))))
 
 // Returns the object type of the object the given value points to. This is a
 // macro because it is a hot function.
-#define get_object_family(VALUE) get_species_instance_family(get_object_species(VALUE))
+#define get_heap_object_family(VALUE) get_species_instance_family(get_heap_object_species(VALUE))
 
 // Returns true iff the given value belongs to a syntax family.
 bool in_syntax_family(value_t value);
@@ -451,16 +451,16 @@ bool in_syntax_family(value_t value);
 const char *in_syntax_family_name(bool value);
 
 // Returns the family behavior for the given object.
-family_behavior_t *get_object_family_behavior(value_t self);
+family_behavior_t *get_heap_object_family_behavior(value_t self);
 
-// Does the same as get_object_family_behavior but with checks of the species
+// Does the same as get_heap_object_family_behavior but with checks of the species
 // disabled. This allows it to be called during garbage collection on objects
 // whose species have already been migrated. The behavior is still there but
 // the species won't survive any sanity checks.
-family_behavior_t *get_object_family_behavior_unchecked(value_t self);
+family_behavior_t *get_heap_object_family_behavior_unchecked(value_t self);
 
 // Sets the species pointer of an object to the specified species value.
-void set_object_species(value_t value, value_t species);
+void set_heap_object_species(value_t value, value_t species);
 
 // Expands to the declaration of a setter that takes the specified value type.
 #define TYPED_SETTER_DECL(receiver, type_t, field)                             \
@@ -496,19 +496,19 @@ INTEGER_SETTER_DECL(receiver, field);                                          \
 INTEGER_GETTER_DECL(receiver, field)
 
 // The species of this object.
-ACCESSORS_DECL(object, species);
+ACCESSORS_DECL(heap_object, species);
 
 // Sets the species pointer for this object.
-void set_object_species(value_t value, value_t species);
+void set_heap_object_species(value_t value, value_t species);
 
 // Yields the species of the given object. This is a hot operation so it's a
 // macro rather than a proper function.
-#define get_object_species(VALUE) (*access_object_field((VALUE), kObjectHeaderOffset))
+#define get_heap_object_species(VALUE) (*access_heap_object_field((VALUE), kHeapObjectHeaderOffset))
 
 // The header of the given object value. During normal execution this will be
 // the species but during GC it may be a forward pointer. Only use these calls
 // during GC, anywhere else use the species accessors which does more checking.
-ACCESSORS_DECL(object, header);
+ACCESSORS_DECL(heap_object, header);
 
 
 // --- C u s t o m   d o m a i n ---
@@ -611,14 +611,14 @@ ENUM_SPECIES_DIVISIONS(DECLARE_SPECIES_DIVISION_ENUM)
 const char *get_species_division_name(species_division_t division);
 
 // The size of the species header, the part that's the same for all species.
-#define kSpeciesHeaderSize OBJECT_SIZE(3)
+#define kSpeciesHeaderSize HEAP_OBJECT_SIZE(3)
 
 // The instance family could be stored within the family struct but we need it
 // so often that it's worth the extra space to have it as close at hand as
 // possible.
-static const size_t kSpeciesInstanceFamilyOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kSpeciesFamilyBehaviorOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kSpeciesDivisionBehaviorOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kSpeciesInstanceFamilyOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kSpeciesFamilyBehaviorOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kSpeciesDivisionBehaviorOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // Expands to the size of a species with N field in addition to the species
 // header.
@@ -629,13 +629,13 @@ static const size_t kSpeciesDivisionBehaviorOffset = OBJECT_FIELD_OFFSET(2);
 #define SPECIES_FIELD_OFFSET(N) (kSpeciesHeaderSize + (N * kValueSize))
 
 // Sets the object family of instances of this species.
-void set_species_instance_family(value_t self, object_family_t family);
+void set_species_instance_family(value_t self, heap_object_family_t family);
 
 // Returns the object family of instances of this species. The way this works is
 // all sorts of weird magic, especially the enum values actually being encoded
 // integers, but this operation is really hot so it's worth making it fast.
 #define get_species_instance_family(VALUE)                                     \
-  ((object_family_t) (access_object_field((VALUE), kSpeciesInstanceFamilyOffset)->encoded))
+  ((heap_object_family_t) (access_heap_object_field((VALUE), kSpeciesInstanceFamilyOffset)->encoded))
 
 // Returns the object family behavior of this species belongs to.
 family_behavior_t *get_species_family_behavior(value_t species);
@@ -653,7 +653,7 @@ void set_species_division_behavior(value_t species, division_behavior_t *behavio
 species_division_t get_species_division(value_t value);
 
 // Returns the division the given object belongs to.
-species_division_t get_object_division(value_t value);
+species_division_t get_heap_object_division(value_t value);
 
 
 // --- C o m p a c t   s p e c i e s ---
@@ -698,11 +698,11 @@ static const size_t kModalSpeciesBaseRootOffset = SPECIES_FIELD_OFFSET(1);
 value_mode_t get_modal_species_mode(value_t value);
 
 // Returns the mode for a value in the modal division.
-value_mode_t get_modal_object_mode(value_t value);
+value_mode_t get_modal_heap_object_mode(value_t value);
 
 // Sets the mode for a modal object by switching to the species with the
 // appropriate mode.
-value_t set_modal_object_mode_unchecked(runtime_t *runtime, value_t self,
+value_t set_modal_heap_object_mode_unchecked(runtime_t *runtime, value_t self,
     value_mode_t mode);
 
 // Sets the mode this species indicates.
@@ -773,8 +773,8 @@ value_t validate_deep_frozen(runtime_t *runtime, value_t value,
 
 // --- S t r i n g ---
 
-static const size_t kStringLengthOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kStringCharsOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kStringLengthOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kStringCharsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // Returns the size of a heap string with the given number of characters.
 size_t calc_string_size(size_t char_count);
@@ -794,8 +794,8 @@ void string_buffer_append_string(string_buffer_t *buf, value_t value);
 
 // --- B l o b ---
 
-static const size_t kBlobLengthOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kBlobDataOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kBlobLengthOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kBlobDataOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // Returns the size of a heap blob with the given number of bytes.
 size_t calc_blob_size(size_t size);
@@ -810,8 +810,8 @@ void get_blob_data(value_t value, blob_t *blob_out);
 
 // --- V o i d   P ---
 
-static const size_t kVoidPSize = OBJECT_SIZE(1);
-static const size_t kVoidPValueOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kVoidPSize = HEAP_OBJECT_SIZE(1);
+static const size_t kVoidPValueOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // Sets the pointer stored in a void-p.
 void set_void_p_value(value_t value, void *ptr);
@@ -822,8 +822,8 @@ void *get_void_p_value(value_t value);
 
 // --- A r r a y ---
 
-static const size_t kArrayLengthOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kArrayElementsOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kArrayLengthOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kArrayElementsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // Calculates the size of a heap array with the given number of elements.
 size_t calc_array_size(size_t length);
@@ -902,9 +902,9 @@ value_t get_tuple_at(value_t self, size_t index);
 // An array buffer is similar to an array but can grow as elements are added
 // to it.
 
-static const size_t kArrayBufferSize = OBJECT_SIZE(2);
-static const size_t kArrayBufferElementsOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kArrayBufferLengthOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kArrayBufferSize = HEAP_OBJECT_SIZE(2);
+static const size_t kArrayBufferElementsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kArrayBufferLengthOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The array storing the elements in this buffer.
 ACCESSORS_DECL(array_buffer, elements);
@@ -969,11 +969,11 @@ size_t get_pair_array_buffer_length(value_t self);
 
 // --- I d e n t i t y   h a s h   m a p ---
 
-static const size_t kIdHashMapSize = OBJECT_SIZE(4);
-static const size_t kIdHashMapSizeOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kIdHashMapCapacityOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kIdHashMapOccupiedCountOffset = OBJECT_FIELD_OFFSET(2);
-static const size_t kIdHashMapEntryArrayOffset = OBJECT_FIELD_OFFSET(3);
+static const size_t kIdHashMapSize = HEAP_OBJECT_SIZE(4);
+static const size_t kIdHashMapSizeOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kIdHashMapCapacityOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kIdHashMapOccupiedCountOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kIdHashMapEntryArrayOffset = HEAP_OBJECT_FIELD_OFFSET(3);
 
 static const size_t kIdHashMapEntryFieldCount = 3;
 static const size_t kIdHashMapEntryKeyOffset = 0;
@@ -1052,9 +1052,9 @@ void id_hash_map_iter_get_current(id_hash_map_iter_t *iter, value_t *key_out,
 
 // --- K e y ---
 
-static const size_t kKeySize = OBJECT_SIZE(2);
-static const size_t kKeyIdOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kKeyDisplayNameOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kKeySize = HEAP_OBJECT_SIZE(2);
+static const size_t kKeyIdOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kKeyDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The unique id for this key (unique across this runtime).
 INTEGER_ACCESSORS_DECL(key, id);
@@ -1066,8 +1066,8 @@ ACCESSORS_DECL(key, display_name);
 
 // --- I n s t a n c e ---
 
-static const size_t kInstanceSize = OBJECT_SIZE(1);
-static const size_t kInstanceFieldsOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kInstanceSize = HEAP_OBJECT_SIZE(1);
+static const size_t kInstanceFieldsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The field map for this instance.
 ACCESSORS_DECL(instance, fields);
@@ -1082,8 +1082,8 @@ value_t try_set_instance_field(value_t instance, value_t key, value_t value);
 
 // --- I n s t a n c e   m a n a g e r ---
 
-static const size_t kInstanceManagerSize = OBJECT_SIZE(1);
-static const size_t kInstanceManagerDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kInstanceManagerSize = HEAP_OBJECT_SIZE(1);
+static const size_t kInstanceManagerDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The display name to show for this instance manager.
 ACCESSORS_DECL(instance_manager, display_name);
@@ -1097,8 +1097,8 @@ ACCESSORS_DECL(instance_manager, display_name);
 // The type of constructor functions stored in a factory.
 typedef value_t (factory_constructor_t)(runtime_t *runtime);
 
-static const size_t kFactorySize = OBJECT_SIZE(1);
-static const size_t kFactoryConstructorOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kFactorySize = HEAP_OBJECT_SIZE(1);
+static const size_t kFactoryConstructorOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The constructor function for this factory wrapped in a void-p.
 ACCESSORS_DECL(factory, constructor);
@@ -1106,10 +1106,10 @@ ACCESSORS_DECL(factory, constructor);
 
 //  --- C o d e   b l o c k ---
 
-static const size_t kCodeBlockSize = OBJECT_SIZE(3);
-static const size_t kCodeBlockBytecodeOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kCodeBlockValuePoolOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kCodeBlockHighWaterMarkOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kCodeBlockSize = HEAP_OBJECT_SIZE(3);
+static const size_t kCodeBlockBytecodeOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kCodeBlockValuePoolOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kCodeBlockHighWaterMarkOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // The binary blob of bytecode for this code block.
 ACCESSORS_DECL(code_block, bytecode);
@@ -1123,9 +1123,9 @@ INTEGER_ACCESSORS_DECL(code_block, high_water_mark);
 
 // --- T y p e ---
 
-static const size_t kTypeSize = OBJECT_SIZE(2);
-static const size_t kTypeRawOriginOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kTypeDisplayNameOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kTypeSize = HEAP_OBJECT_SIZE(2);
+static const size_t kTypeRawOriginOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kTypeDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The originating module fragment for this type or a value indicating that
 // there is no fragment or that it is available through the ambience. For most
@@ -1147,9 +1147,9 @@ value_t get_type_origin(value_t self, value_t ambience);
 // A trie that allows you to construct and reuse argument maps such that there's
 // only one instance of each argument map.
 
-static const size_t kArgumentMapTrieSize = OBJECT_SIZE(2);
-static const size_t kArgumentMapTrieValueOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kArgumentMapTrieChildrenOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kArgumentMapTrieSize = HEAP_OBJECT_SIZE(2);
+static const size_t kArgumentMapTrieValueOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kArgumentMapTrieChildrenOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The value of this argument trie node whose contents match the path taken to
 // reach this node.
@@ -1166,9 +1166,9 @@ value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, value_t ke
 
 // --- N a m e s p a c e ---
 
-static const size_t kNamespaceSize = OBJECT_SIZE(2);
-static const size_t kNamespaceBindingsOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kNamespaceValueOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kNamespaceSize = HEAP_OBJECT_SIZE(2);
+static const size_t kNamespaceBindingsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kNamespaceValueOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // Returns the bindings map for this namespace.
 ACCESSORS_DECL(NAMESPACE, bindings);
@@ -1202,15 +1202,15 @@ typedef enum {
   feComplete
 } module_fragment_epoch_t;
 
-static const size_t kModuleFragmentSize = OBJECT_SIZE(8);
-static const size_t kModuleFragmentStageOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kModuleFragmentModuleOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kModuleFragmentNamespaceOffset = OBJECT_FIELD_OFFSET(2);
-static const size_t kModuleFragmentMethodspaceOffset = OBJECT_FIELD_OFFSET(3);
-static const size_t kModuleFragmentImportsOffset = OBJECT_FIELD_OFFSET(4);
-static const size_t kModuleFragmentEpochOffset = OBJECT_FIELD_OFFSET(5);
-static const size_t kModuleFragmentPrivateOffset = OBJECT_FIELD_OFFSET(6);
-static const size_t kModuleFragmentMethodspacesCacheOffset = OBJECT_FIELD_OFFSET(7);
+static const size_t kModuleFragmentSize = HEAP_OBJECT_SIZE(8);
+static const size_t kModuleFragmentStageOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kModuleFragmentModuleOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kModuleFragmentNamespaceOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kModuleFragmentMethodspaceOffset = HEAP_OBJECT_FIELD_OFFSET(3);
+static const size_t kModuleFragmentImportsOffset = HEAP_OBJECT_FIELD_OFFSET(4);
+static const size_t kModuleFragmentEpochOffset = HEAP_OBJECT_FIELD_OFFSET(5);
+static const size_t kModuleFragmentPrivateOffset = HEAP_OBJECT_FIELD_OFFSET(6);
+static const size_t kModuleFragmentMethodspacesCacheOffset = HEAP_OBJECT_FIELD_OFFSET(7);
 
 // The index of the stage this fragment belongs to.
 ACCESSORS_DECL(module_fragment, stage);
@@ -1248,8 +1248,8 @@ bool is_module_fragment_bound(value_t fragment);
 
 // --- M o d u l e   f r a g m e n t   p r i v a t e ---
 
-static const size_t kModuleFragmentPrivateSize = OBJECT_SIZE(1);
-static const size_t kModuleFragmentPrivateOwnerOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kModuleFragmentPrivateSize = HEAP_OBJECT_SIZE(1);
+static const size_t kModuleFragmentPrivateOwnerOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // Returns the module fragment that this private object provides access to.
 ACCESSORS_DECL(module_fragment_private, owner);
@@ -1257,9 +1257,9 @@ ACCESSORS_DECL(module_fragment_private, owner);
 
 // --- M o d u l e   ---
 
-static const size_t kModuleSize = OBJECT_SIZE(2);
-static const size_t kModulePathOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kModuleFragmentsOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kModuleSize = HEAP_OBJECT_SIZE(2);
+static const size_t kModulePathOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kModuleFragmentsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // This module's namespace path.
 ACCESSORS_DECL(module, path);
@@ -1299,9 +1299,9 @@ bool has_module_fragment_at(value_t self, value_t stage);
 
 // --- P a t h ---
 
-static const size_t kPathSize = OBJECT_SIZE(2);
-static const size_t kPathRawHeadOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kPathRawTailOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kPathSize = HEAP_OBJECT_SIZE(2);
+static const size_t kPathRawHeadOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kPathRawTailOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The first part of the path. For instance, the head of a:b:c is a. This can
 // be safely called on any path; for the empty path the nothing object will
@@ -1329,9 +1329,9 @@ bool is_path_empty(value_t path);
 
 // --- I d e n t i f i e r ---
 
-static const size_t kIdentifierSize = OBJECT_SIZE(2);
-static const size_t kIdentifierPathOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kIdentifierStageOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kIdentifierSize = HEAP_OBJECT_SIZE(2);
+static const size_t kIdentifierPathOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kIdentifierStageOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The path (ie. x:y:z etc.) of this identifier.
 ACCESSORS_DECL(identifier, path);
@@ -1342,8 +1342,8 @@ ACCESSORS_DECL(identifier, stage);
 
 // --- F u n c t i o n ---
 
-static const size_t kFunctionSize = OBJECT_SIZE(1);
-static const size_t kFunctionDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kFunctionSize = HEAP_OBJECT_SIZE(1);
+static const size_t kFunctionDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The display name of this function.
 ACCESSORS_DECL(function, display_name);
@@ -1351,9 +1351,9 @@ ACCESSORS_DECL(function, display_name);
 
 // --- U n k n o w n ---
 
-static const size_t kUnknownSize = OBJECT_SIZE(2);
-static const size_t kUnknownHeaderOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kUnknownPayloadOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kUnknownSize = HEAP_OBJECT_SIZE(2);
+static const size_t kUnknownHeaderOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kUnknownPayloadOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The header of this object of unknown type.
 ACCESSORS_DECL(unknown, header);
@@ -1366,8 +1366,8 @@ ACCESSORS_DECL(unknown, payload);
 
 // This should so be an instance-type object defined in a library. But alas it's
 // currently part of the implementation of libraries so maybe later.
-static const size_t kOptionsSize = OBJECT_SIZE(1);
-static const size_t kOptionsElementsOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kOptionsSize = HEAP_OBJECT_SIZE(1);
+static const size_t kOptionsElementsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The elements array of this set of options.
 ACCESSORS_DECL(options, elements);
@@ -1380,10 +1380,10 @@ value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key,
 
 // --- D e c i m a l   f r a c t i o n ---
 
-static const size_t kDecimalFractionSize = OBJECT_SIZE(3);
-static const size_t kDecimalFractionNumeratorOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kDecimalFractionDenominatorOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kDecimalFractionPrecisionOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kDecimalFractionSize = HEAP_OBJECT_SIZE(3);
+static const size_t kDecimalFractionNumeratorOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kDecimalFractionDenominatorOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kDecimalFractionPrecisionOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // The fraction numerator.
 ACCESSORS_DECL(decimal_fraction, numerator);
@@ -1398,8 +1398,8 @@ ACCESSORS_DECL(decimal_fraction, precision);
 
 // --- G l o b a l   f i e l d ---
 
-static const size_t kGlobalFieldSize = OBJECT_SIZE(1);
-static const size_t kGlobalFieldDisplayNameOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kGlobalFieldSize = HEAP_OBJECT_SIZE(1);
+static const size_t kGlobalFieldDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The display name which is used to identify the field.
 ACCESSORS_DECL(global_field, display_name);
@@ -1407,8 +1407,8 @@ ACCESSORS_DECL(global_field, display_name);
 
 // --- R e f e r e n c e ---
 
-static const size_t kReferenceSize = OBJECT_SIZE(1);
-static const size_t kReferenceValueOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kReferenceSize = HEAP_OBJECT_SIZE(1);
+static const size_t kReferenceValueOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The raw value currently held by this reference.
 ACCESSORS_DECL(reference, value);
@@ -1423,9 +1423,9 @@ ACCESSORS_DECL(reference, value);
 /// is visible at the surface level. Hidden ambient state (like caches) are
 /// okay.
 
-static const size_t kAmbienceSize = OBJECT_SIZE(2);
-static const size_t kAmbienceRuntimeOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kAmbiencePresentCoreFragmentOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kAmbienceSize = HEAP_OBJECT_SIZE(2);
+static const size_t kAmbienceRuntimeOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kAmbiencePresentCoreFragmentOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // Returns the runtime struct underlying this ambience.
 runtime_t *get_ambience_runtime(value_t self);

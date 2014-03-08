@@ -78,8 +78,8 @@ value_t quick_and_dirty_evaluate_syntax(runtime_t *runtime, value_t fragment,
 
 // --- L i t e r a l   a s t ---
 
-static const size_t kLiteralAstSize = OBJECT_SIZE(1);
-static const size_t kLiteralAstValueOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kLiteralAstSize = HEAP_OBJECT_SIZE(1);
+static const size_t kLiteralAstValueOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The value this literal syntax tree represents.
 ACCESSORS_DECL(literal_ast, value);
@@ -87,8 +87,8 @@ ACCESSORS_DECL(literal_ast, value);
 
 // --- A r r a y   a s t ---
 
-static const size_t kArrayAstSize = OBJECT_SIZE(1);
-static const size_t kArrayAstElementsOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kArrayAstSize = HEAP_OBJECT_SIZE(1);
+static const size_t kArrayAstElementsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The array of element expressions.
 ACCESSORS_DECL(array_ast, elements);
@@ -96,10 +96,10 @@ ACCESSORS_DECL(array_ast, elements);
 
 /// ## Signal ast
 
-static const size_t kSignalAstSize = OBJECT_SIZE(3);
-static const size_t kSignalAstEscapeOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kSignalAstArgumentsOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kSignalAstDefaultOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kSignalAstSize = HEAP_OBJECT_SIZE(3);
+static const size_t kSignalAstEscapeOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kSignalAstArgumentsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kSignalAstDefaultOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // Escape after executing the handler or keep running?
 ACCESSORS_DECL(signal_ast, escape);
@@ -113,9 +113,9 @@ ACCESSORS_DECL(signal_ast, default);
 
 /// ## Signal handler ast
 
-static const size_t kSignalHandlerAstSize = OBJECT_SIZE(2);
-static const size_t kSignalHandlerAstBodyOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kSignalHandlerAstHandlersOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kSignalHandlerAstSize = HEAP_OBJECT_SIZE(2);
+static const size_t kSignalHandlerAstBodyOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kSignalHandlerAstHandlersOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The body of this expression.
 ACCESSORS_DECL(signal_handler_ast, body);
@@ -126,9 +126,9 @@ ACCESSORS_DECL(signal_handler_ast, handlers);
 
 // --- E n s u r e   a s t ---
 
-static const size_t kEnsureAstSize = OBJECT_SIZE(2);
-static const size_t kEnsureAstBodyOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kEnsureAstOnExitOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kEnsureAstSize = HEAP_OBJECT_SIZE(2);
+static const size_t kEnsureAstBodyOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kEnsureAstOnExitOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The body to execute normally.
 ACCESSORS_DECL(ensure_ast, body);
@@ -139,8 +139,8 @@ ACCESSORS_DECL(ensure_ast, on_exit);
 
 // --- I n v o c a t i o n   a s t ---
 
-static const size_t kInvocationAstSize = OBJECT_SIZE(1);
-static const size_t kInvocationAstArgumentsOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kInvocationAstSize = HEAP_OBJECT_SIZE(1);
+static const size_t kInvocationAstArgumentsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The array of element expressions.
 ACCESSORS_DECL(invocation_ast, arguments);
@@ -148,9 +148,9 @@ ACCESSORS_DECL(invocation_ast, arguments);
 
 // --- A r g u m e n t   a s t ---
 
-static const size_t kArgumentAstSize = OBJECT_SIZE(2);
-static const size_t kArgumentAstTagOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kArgumentAstValueOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kArgumentAstSize = HEAP_OBJECT_SIZE(2);
+static const size_t kArgumentAstTagOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kArgumentAstValueOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The argument tag.
 ACCESSORS_DECL(argument_ast, tag);
@@ -161,8 +161,8 @@ ACCESSORS_DECL(argument_ast, value);
 
 // --- S e q u e n c e   a s t ---
 
-static const size_t kSequenceAstSize = OBJECT_SIZE(1);
-static const size_t kSequenceAstValuesOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kSequenceAstSize = HEAP_OBJECT_SIZE(1);
+static const size_t kSequenceAstValuesOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The array of values to evaluate in sequence.
 ACCESSORS_DECL(sequence_ast, values);
@@ -170,11 +170,11 @@ ACCESSORS_DECL(sequence_ast, values);
 
 // --- L o c a l   d e c l a r a t i o n   a s t ---
 
-static const size_t kLocalDeclarationAstSize = OBJECT_SIZE(4);
-static const size_t kLocalDeclarationAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kLocalDeclarationAstIsMutableOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kLocalDeclarationAstValueOffset = OBJECT_FIELD_OFFSET(2);
-static const size_t kLocalDeclarationAstBodyOffset = OBJECT_FIELD_OFFSET(3);
+static const size_t kLocalDeclarationAstSize = HEAP_OBJECT_SIZE(4);
+static const size_t kLocalDeclarationAstSymbolOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kLocalDeclarationAstIsMutableOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kLocalDeclarationAstValueOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kLocalDeclarationAstBodyOffset = HEAP_OBJECT_FIELD_OFFSET(3);
 
 // The declaration's symbol.
 ACCESSORS_DECL(local_declaration_ast, symbol);
@@ -191,10 +191,10 @@ ACCESSORS_DECL(local_declaration_ast, body);
 
 // --- B l o c k   a s t ---
 
-static const size_t kBlockAstSize = OBJECT_SIZE(3);
-static const size_t kBlockAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kBlockAstMethodsOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kBlockAstBodyOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kBlockAstSize = HEAP_OBJECT_SIZE(3);
+static const size_t kBlockAstSymbolOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kBlockAstMethodsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kBlockAstBodyOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // The block's symbol.
 ACCESSORS_DECL(block_ast, symbol);
@@ -208,9 +208,9 @@ ACCESSORS_DECL(block_ast, body);
 
 // --- W i t h   e s c a p e   a s t ---
 
-static const size_t kWithEscapeAstSize = OBJECT_SIZE(2);
-static const size_t kWithEscapeAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kWithEscapeAstBodyOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kWithEscapeAstSize = HEAP_OBJECT_SIZE(2);
+static const size_t kWithEscapeAstSymbolOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kWithEscapeAstBodyOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The symbol that represents the captured escape.
 ACCESSORS_DECL(with_escape_ast, symbol);
@@ -221,9 +221,9 @@ ACCESSORS_DECL(with_escape_ast, body);
 
 // --- V a r i a b l e   a s s i g n m e n t   a s t ---
 
-static const size_t kVariableAssignmentAstSize = OBJECT_SIZE(2);
-static const size_t kVariableAssignmentAstTargetOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kVariableAssignmentAstValueOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kVariableAssignmentAstSize = HEAP_OBJECT_SIZE(2);
+static const size_t kVariableAssignmentAstTargetOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kVariableAssignmentAstValueOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The variable to store the value in.
 ACCESSORS_DECL(variable_assignment_ast, target);
@@ -234,8 +234,8 @@ ACCESSORS_DECL(variable_assignment_ast, value);
 
 // --- L o c a l   v a r i a b l e   a s t ---
 
-static const size_t kLocalVariableAstSize = OBJECT_SIZE(1);
-static const size_t kLocalVariableAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kLocalVariableAstSize = HEAP_OBJECT_SIZE(1);
+static const size_t kLocalVariableAstSymbolOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The symbol referenced by this local variable.
 ACCESSORS_DECL(local_variable_ast, symbol);
@@ -243,8 +243,8 @@ ACCESSORS_DECL(local_variable_ast, symbol);
 
 // --- N a m e s p a c e   v a r i a b l e   a s t ---
 
-static const size_t kNamespaceVariableAstSize = OBJECT_SIZE(1);
-static const size_t kNamespaceVariableAstIdentifierOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kNamespaceVariableAstSize = HEAP_OBJECT_SIZE(1);
+static const size_t kNamespaceVariableAstIdentifierOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The identifier to look up through this namespace variable.
 ACCESSORS_DECL(namespace_variable_ast, identifier);
@@ -252,9 +252,9 @@ ACCESSORS_DECL(namespace_variable_ast, identifier);
 
 // --- S y m b o l ---
 
-static const size_t kSymbolAstSize = OBJECT_SIZE(2);
-static const size_t kSymbolAstNameOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kSymbolAstOriginOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kSymbolAstSize = HEAP_OBJECT_SIZE(2);
+static const size_t kSymbolAstNameOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kSymbolAstOriginOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The display name of this symbol
 ACCESSORS_DECL(symbol_ast, name);
@@ -265,8 +265,8 @@ ACCESSORS_DECL(symbol_ast, origin);
 
 // --- L a m b d a   a s t ---
 
-static const size_t kLambdaAstSize = OBJECT_SIZE(1);
-static const size_t kLambdaAstMethodsOffset = OBJECT_FIELD_OFFSET(0);
+static const size_t kLambdaAstSize = HEAP_OBJECT_SIZE(1);
+static const size_t kLambdaAstMethodsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The methods that implements this lambda.
 ACCESSORS_DECL(lambda_ast, methods);
@@ -274,10 +274,10 @@ ACCESSORS_DECL(lambda_ast, methods);
 
 // --- P a r a m e t e r   a s t ---
 
-static const size_t kParameterAstSize = OBJECT_SIZE(3);
-static const size_t kParameterAstSymbolOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kParameterAstTagsOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kParameterAstGuardOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kParameterAstSize = HEAP_OBJECT_SIZE(3);
+static const size_t kParameterAstSymbolOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kParameterAstTagsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kParameterAstGuardOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // The symbol that identifies this parameter.
 ACCESSORS_DECL(parameter_ast, symbol);
@@ -291,9 +291,9 @@ ACCESSORS_DECL(parameter_ast, guard);
 
 // --- G u a r d   a s t ---
 
-static const size_t kGuardAstSize = OBJECT_SIZE(2);
-static const size_t kGuardAstTypeOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kGuardAstValueOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kGuardAstSize = HEAP_OBJECT_SIZE(2);
+static const size_t kGuardAstTypeOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kGuardAstValueOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The value of this guard used to match by gtId and gtIs and unused for gtAny.
 ACCESSORS_DECL(guard_ast, value);
@@ -304,9 +304,9 @@ TYPED_ACCESSORS_DECL(guard_ast, guard_type_t, type);
 
 // --- S i g n a t u r e   a s t ---
 
-static const size_t kSignatureAstSize = OBJECT_SIZE(2);
-static const size_t kSignatureAstParametersOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kSignatureAstAllowExtraOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kSignatureAstSize = HEAP_OBJECT_SIZE(2);
+static const size_t kSignatureAstParametersOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kSignatureAstAllowExtraOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The array of parameters for this signature.
 ACCESSORS_DECL(signature_ast, parameters);
@@ -317,9 +317,9 @@ ACCESSORS_DECL(signature_ast, allow_extra);
 
 // --- M e t h o d   a s t ---
 
-static const size_t kMethodAstSize = OBJECT_SIZE(2);
-static const size_t kMethodAstSignatureOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kMethodAstBodyOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kMethodAstSize = HEAP_OBJECT_SIZE(2);
+static const size_t kMethodAstSignatureOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kMethodAstBodyOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The signature ast of this method ast.
 ACCESSORS_DECL(method_ast, signature);
@@ -330,10 +330,10 @@ ACCESSORS_DECL(method_ast, body);
 
 // --- N a m e s p a c e   d e c l a r a t i o n   a s t ---
 
-static const size_t kNamespaceDeclarationAstSize = OBJECT_SIZE(3);
-static const size_t kNamespaceDeclarationAstAnnotationsOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kNamespaceDeclarationAstPathOffset = OBJECT_FIELD_OFFSET(1);
-static const size_t kNamespaceDeclarationAstValueOffset = OBJECT_FIELD_OFFSET(2);
+static const size_t kNamespaceDeclarationAstSize = HEAP_OBJECT_SIZE(3);
+static const size_t kNamespaceDeclarationAstAnnotationsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kNamespaceDeclarationAstPathOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kNamespaceDeclarationAstValueOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // The list of annotations attached to this declaration.
 ACCESSORS_DECL(namespace_declaration_ast, annotations);
@@ -347,9 +347,9 @@ ACCESSORS_DECL(namespace_declaration_ast, value);
 
 // --- M e t h o d   d e c l a r a t i o n   a s t ---
 
-static const size_t kMethodDeclarationAstSize = OBJECT_SIZE(2);
-static const size_t kMethodDeclarationAstAnnotationsOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kMethodDeclarationAstMethodOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kMethodDeclarationAstSize = HEAP_OBJECT_SIZE(2);
+static const size_t kMethodDeclarationAstAnnotationsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kMethodDeclarationAstMethodOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The list of annotations attached to this declaration.
 ACCESSORS_DECL(method_declaration_ast, annotations);
@@ -360,9 +360,9 @@ ACCESSORS_DECL(method_declaration_ast, method);
 
 // --- I s   d e c l a r a t i o n   a s t ---
 
-static const size_t kIsDeclarationAstSize = OBJECT_SIZE(2);
-static const size_t kIsDeclarationAstSubtypeOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kIsDeclarationAstSupertypeOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kIsDeclarationAstSize = HEAP_OBJECT_SIZE(2);
+static const size_t kIsDeclarationAstSubtypeOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kIsDeclarationAstSupertypeOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The subtype being declared.
 ACCESSORS_DECL(is_declaration_ast, subtype);
@@ -373,9 +373,9 @@ ACCESSORS_DECL(is_declaration_ast, supertype);
 
 // --- P r o g r a m -  a s t --
 
-static const size_t kProgramAstSize = OBJECT_SIZE(2);
-static const size_t kProgramAstEntryPointOffset = OBJECT_FIELD_OFFSET(0);
-static const size_t kProgramAstModuleOffset = OBJECT_FIELD_OFFSET(1);
+static const size_t kProgramAstSize = HEAP_OBJECT_SIZE(2);
+static const size_t kProgramAstEntryPointOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kProgramAstModuleOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The program entry-point expression.
 ACCESSORS_DECL(program_ast, entry_point);
@@ -386,7 +386,7 @@ ACCESSORS_DECL(program_ast, module);
 
 // --- C u r r e n t   m o d u l e   a s t ---
 
-static const size_t kCurrentModuleAstSize = OBJECT_SIZE(0);
+static const size_t kCurrentModuleAstSize = HEAP_OBJECT_SIZE(0);
 
 
 #endif // _SYNTAX
