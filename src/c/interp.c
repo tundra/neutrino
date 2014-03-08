@@ -167,6 +167,9 @@ static void validate_stack_on_normal_exit(frame_t *frame) {
   CHECK_TRUE("leftover barriers", is_nothing(get_stack_top_barrier_pointer(stack)));
 }
 
+// Checks whether to fire the next barrier on the way to the given destination.
+// If there is a barrier to fire, fire it. Returns false iff a barrier was fired,
+// true if we've arrived at the destination.
 static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
     runtime_t *runtime, value_t stack, value_t dest_piece, value_t dest_pointer) {
   value_t barrier_piece = get_stack_top_barrier_piece(stack);
@@ -177,7 +180,7 @@ static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
     if (get_integer_value(barrier_pointer) == get_integer_value(dest_pointer)) {
       // The barrier is below the point we're escaping to so it's safe
             // to do the escape.
-      return false;
+      return true;
     } else {
       CHECK_TRUE("missed escape barrier",
           get_integer_value(barrier_pointer) > get_integer_value(dest_pointer));
@@ -228,7 +231,7 @@ static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
   } else {
     object_on_scope_exit(handler);
   }
-  return true;
+  return false;
 }
 
 // Counter that increments for each opcode executed when interpreter topic
@@ -640,7 +643,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           CHECK_FAMILY(ofSignalHandler, handler);
           value_t home_piece = get_signal_handler_home_stack_piece(handler);
           value_t home_pointer = get_signal_handler_home_state_pointer(handler);
-          if (!maybe_fire_next_barrier(&cache, &frame, runtime, stack, home_piece,
+          if (maybe_fire_next_barrier(&cache, &frame, runtime, stack, home_piece,
               home_pointer)) {
             size_t home_location = get_integer_value(home_pointer);
             size_t escape_location = home_location + kStackBarrierSize + kCapturedStateSize;
@@ -664,7 +667,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t escape_pointer = get_escape_stack_pointer(escape);
           // Fire the next barrier or, if there are no more barriers, apply the
           // escape.
-          if (!maybe_fire_next_barrier(&cache, &frame, runtime, stack, escape_piece,
+          if (maybe_fire_next_barrier(&cache, &frame, runtime, stack, escape_piece,
               escape_pointer)) {
             value_t value = frame_get_argument(&frame, 2);
             size_t location = get_integer_value(escape_pointer);

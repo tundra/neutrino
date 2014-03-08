@@ -468,7 +468,7 @@ static const size_t kEscapeStackPieceOffset = OBJECT_FIELD_OFFSET(1);
 static const size_t kEscapeStackPointerOffset = OBJECT_FIELD_OFFSET(2);
 
 // The number of stack entries it takes to record the complete state of a frame.
-static const size_t kCapturedStateSize
+static const int32_t kCapturedStateSize
     = (kFrameFieldCount - 1) // Everything from the frame except the stack piece.
     + 1;                     // The PC.
 
