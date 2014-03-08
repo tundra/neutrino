@@ -276,7 +276,7 @@ static value_t new_moved_object(value_t target) {
 ///
 /// The layout of all objects is:
 ///
-//%       +-------------+          --\
+//%       +-------------+          --+
 //%       |   header    |            |
 //%       +-------------+            |
 //%       :             :            |
@@ -288,7 +288,7 @@ static value_t new_moved_object(value_t target) {
 //%       :    value    :   layout.  |
 //%       :    fields   :   value_   |
 //%       :             :   offset   |
-//%       +-------------+          --/
+//%       +-------------+          --+
 ///
 /// The non-value fields section holds data the gc should just copy and
 /// otherwise not touch, typically pointers into the C heap and that kind of
