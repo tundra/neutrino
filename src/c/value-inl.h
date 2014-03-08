@@ -162,7 +162,7 @@ SWALLOW_SEMI(gfpti)
 value_mode_t get_##family##_mode(value_t self) {                               \
   return vmMode;                                                               \
 }                                                                              \
-value_t set_##family##_mode_unchecked(runtime_t *rt, value_t self, value_mode_t mode) {  \
+value_t set_##family##_mode_unchecked(runtime_t *rt, value_t self, value_mode_t mode) { \
   CHECK_TRUE("invalid mode change",                                            \
       mode == vmMode || ((mode == vmFrozen) && (vmMode == vmDeepFrozen)));     \
   return success();                                                            \
@@ -177,7 +177,7 @@ SWALLOW_SEMI(fgmi)
 #define GETTER_IMPL(Receiver, receiver, Field, field)                          \
 value_t get_##receiver##_##field(value_t self) {                               \
   CHECK_FAMILY(of##Receiver, self);                                            \
-  return *access_heap_object_field(self, k##Receiver##Field##Offset);               \
+  return *access_heap_object_field(self, k##Receiver##Field##Offset);          \
 }                                                                              \
 SWALLOW_SEMI(gi)
 
@@ -203,11 +203,11 @@ SWALLOW_SEMI(gi)
   CHECK_SYNTAX_FAMILY_OPT(VALUE)
 
 // Expands to an unchecked setter and a getter for the specified types.
-#define ACCESSORS_IMPL(Receiver, receiver, acValueCheck, VALUE_CHECK_ARG, Field, field)  \
+#define ACCESSORS_IMPL(Receiver, receiver, acValueCheck, VALUE_CHECK_ARG, Field, field) \
 void set_##receiver##_##field(value_t self, value_t value) {                   \
   CHECK_FAMILY(of##Receiver, self);                                            \
   acValueCheck(VALUE_CHECK_ARG, value);                                        \
-  *access_heap_object_field(self, k##Receiver##Field##Offset) = value;              \
+  *access_heap_object_field(self, k##Receiver##Field##Offset) = value;         \
 }                                                                              \
 GETTER_IMPL(Receiver, receiver, Field, field)
 
@@ -224,7 +224,7 @@ SWALLOW_SEMI(msi)
 #define __MAPPING_GETTER_IMPL__(Receiver, receiver, type_t, Field, field, MAP) \
 type_t get_##receiver##_##field(value_t self) {                                \
   CHECK_FAMILY(of##Receiver, self);                                            \
-  return (type_t) MAP(type_t, *access_heap_object_field(self, k##Receiver##Field##Offset));  \
+  return (type_t) MAP(type_t, *access_heap_object_field(self, k##Receiver##Field##Offset)); \
 }                                                                              \
 SWALLOW_SEMI(mgi)
 
@@ -255,12 +255,12 @@ __MAPPING_GETTER_IMPL__(Receiver, receiver, type_t, Field, field,              \
 value_t get_##receiver_species##_species_##field(value_t self) {               \
   CHECK_FAMILY(ofSpecies, self);                                               \
   CHECK_DIVISION(sd##ReceiverSpecies, self);                                   \
-  return *access_heap_object_field(self,                                            \
+  return *access_heap_object_field(self,                                       \
       k##ReceiverSpecies##Species##Field##Offset);                             \
 }                                                                              \
 value_t get_##receiver##_##field(value_t self) {                               \
   CHECK_FAMILY(of##Receiver, self);                                            \
-  return get_##receiver_species##_species_##field(get_heap_object_species(self));   \
+  return get_##receiver_species##_species_##field(get_heap_object_species(self)); \
 }                                                                              \
 SWALLOW_SEMI(sgi)
 
@@ -286,9 +286,9 @@ SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
 // --- P l a n k t o n ---
 
 #define __CHECK_MAP_ENTRY_FOUND__(name) do {                                   \
-  if (in_condition_cause(ccNotFound, name)) {                                           \
+  if (in_condition_cause(ccNotFound, name)) {                                  \
     string_hint_t __hint__ = STRING_HINT_INIT(#name);                          \
-    return new_invalid_input_condition_with_hint(__hint__);                       \
+    return new_invalid_input_condition_with_hint(__hint__);                    \
   }                                                                            \
 } while (false)
 

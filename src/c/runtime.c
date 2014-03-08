@@ -205,17 +205,17 @@ COND_CHECK_EQ("validation", ccValidationFailed, A, B)
 value_t roots_validate(value_t roots) {
   // Checks whether the argument is within the specified family, otherwise
   // signals a validation failure.
-  #define VALIDATE_HEAP_OBJECT(ofFamily, value) do {                                \
+  #define VALIDATE_HEAP_OBJECT(ofFamily, value) do {                           \
     VALIDATE_CHECK_TRUE(in_family(ofFamily, (value)));                         \
-    TRY(heap_object_validate(value));                                               \
+    TRY(heap_object_validate(value));                                          \
   } while (false)
 
   // Checks that the given value is a species with the specified instance
   // family.
   #define VALIDATE_SPECIES(ofFamily, value) do {                               \
-    VALIDATE_HEAP_OBJECT(ofSpecies, value);                                         \
+    VALIDATE_HEAP_OBJECT(ofSpecies, value);                                    \
     VALIDATE_CHECK_EQ(get_species_instance_family(value), ofFamily);           \
-    TRY(heap_object_validate(value));                                               \
+    TRY(heap_object_validate(value));                                          \
   } while (false)
 
   // Checks all the species that belong to the given modal family.
@@ -239,7 +239,7 @@ value_t roots_validate(value_t roots) {
     VALIDATE_ALL_MODAL_SPECIES(of##Family, family),                            \
     VALIDATE_SPECIES(of##Family, RAW_ROOT(roots, family##_species)));          \
   SR(                                                                          \
-    VALIDATE_HEAP_OBJECT(ofType, RAW_ROOT(roots, family##_type));,                  \
+    VALIDATE_HEAP_OBJECT(ofType, RAW_ROOT(roots, family##_type));,             \
     )
   ENUM_HEAP_OBJECT_FAMILIES(__VALIDATE_PER_FAMILY_FIELDS__)
 #undef __VALIDATE_PER_FAMILY_FIELDS__
@@ -247,7 +247,7 @@ value_t roots_validate(value_t roots) {
   // Generate validation for phylums.
 #define __VALIDATE_PER_PHYLUM_FIELDS__(Phylum, phylum, CM, SR)                 \
   SR(                                                                          \
-    VALIDATE_HEAP_OBJECT(ofType, RAW_ROOT(roots, phylum##_type));,                  \
+    VALIDATE_HEAP_OBJECT(ofType, RAW_ROOT(roots, phylum##_type));,             \
     )
   ENUM_CUSTOM_TAGGED_PHYLUMS(__VALIDATE_PER_PHYLUM_FIELDS__)
 #undef __VALIDATE_PER_PHYLUM_FIELDS__

@@ -80,7 +80,7 @@ void get_heap_object_layout(value_t self, heap_object_layout_t *layout_out) {
 // non-value fields.
 #define __TRIVIAL_LAYOUT_FUNCTION__(Family, family)                            \
 static void get_##family##_layout(value_t value, heap_object_layout_t *layout_out) {\
-  heap_object_layout_set(layout_out, k##Family##Size, kHeapObjectHeaderSize);           \
+  heap_object_layout_set(layout_out, k##Family##Size, kHeapObjectHeaderSize);  \
 }
 
 // Generate all the trivial layout functions since we know what they'll look
@@ -574,10 +574,10 @@ family_behavior_t k##Family##Behavior = {                                      \
   &family##_validate,                                                          \
   ID(                                                                          \
     &family##_transient_identity_hash,                                         \
-    default_heap_heap_object_transient_identity_hash),                                   \
+    default_heap_heap_object_transient_identity_hash),                         \
   ID(                                                                          \
     &family##_identity_compare,                                                \
-    &default_heap_heap_object_identity_compare),                                         \
+    &default_heap_heap_object_identity_compare),                               \
   CM(                                                                          \
     &family##_ordering_compare,                                                \
     NULL),                                                                     \

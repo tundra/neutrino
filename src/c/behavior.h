@@ -227,7 +227,7 @@ CM(                                                                            \
   )                                                                            \
 void family##_print_on(value_t value, print_on_context_t *context);            \
 NL(                                                                            \
-  void get_##family##_layout(value_t value, heap_object_layout_t *layout_out);,     \
+  void get_##family##_layout(value_t value, heap_object_layout_t *layout_out);,\
   )                                                                            \
 PT(                                                                            \
   value_t plankton_set_##family##_contents(value_t value, runtime_t *runtime,  \
@@ -244,7 +244,7 @@ SR(                                                                            \
     safe_value_t s_map);,                                                      \
   )                                                                            \
 FU(                                                                            \
-  void fixup_##family##_post_migrate(runtime_t *runtime, value_t new_heap_object,   \
+  void fixup_##family##_post_migrate(runtime_t *runtime, value_t new_heap_object,\
     value_t old_object);,                                                      \
   )                                                                            \
 MD(,                                                                           \
