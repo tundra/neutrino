@@ -292,4 +292,27 @@ static value_t new_score(score_category_t category, uint32_t subscore) {
 }
 
 
+/// ## Derived descriptor
+
+// Creates a new derived descriptor for an object of the given genus that's
+// located at the given offset within the host.
+static value_t new_derived_descriptor(derived_object_genus_t genus, size_t host_offset) {
+  int64_t payload = (host_offset << kDerivedObjectGenusTagSize) | genus;
+  return new_custom_tagged(tpDerivedDescriptor, payload);
+}
+
+// Returns the genus of the given derived descriptor.
+static derived_object_genus_t get_derived_descriptor_genus(value_t self) {
+  CHECK_PHYLUM(tpDerivedDescriptor, self);
+  int64_t payload = get_custom_tagged_payload(self);
+  return payload & ((1 << kDerivedObjectGenusTagSize) - 1);
+}
+
+static size_t get_derived_descriptor_host_offset(value_t self) {
+  CHECK_PHYLUM(tpDerivedDescriptor, self);
+  int64_t payload = get_custom_tagged_payload(self);
+  return payload >> kDerivedObjectGenusTagSize;
+}
+
+
 #endif // _TAGGED

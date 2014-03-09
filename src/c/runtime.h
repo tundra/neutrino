@@ -130,6 +130,10 @@ typedef enum {
 #undef __EMIT_PER_PHYLUM_ENUMS__
 #undef __EMIT_PHYLUM_TYPE__
 
+  // Derived object related roots.
+#define __EMIT_DERIVED_OBJECT_SPECIES__(Family, family)                        \
+
+
   // The string table
 #define __EMIT_STRING_TABLE_ENUM__(name, value) , rk_string_table_##name
   ENUM_STRING_TABLE(__EMIT_STRING_TABLE_ENUM__)

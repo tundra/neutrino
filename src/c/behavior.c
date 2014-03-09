@@ -4,6 +4,7 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "ctrino.h"
+#include "derived.h"
 #include "log.h"
 #include "runtime.h"
 #include "syntax.h"

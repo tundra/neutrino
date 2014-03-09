@@ -30,6 +30,7 @@
 ///   - {{#MovedObjects}}(Moved objects)
 ///   - {{#HeapObjects}}(Heap objects)
 ///   - {{#CustomTaggedValues}}(Custom tagged values)
+///   - {{#DerivedObjects}}(Derived objects)
 
 
 #ifndef _VALUE
@@ -678,7 +679,8 @@ ACCESSORS_DECL(heap_object, header);
   F(Null,                    null,                      _, X)                  \
   F(Relation,                relation,                  _, _)                  \
   F(Score,                   score,                     X, _)                  \
-  F(StageOffset,             stage_offset,              X, _)
+  F(StageOffset,             stage_offset,              X, _)                  \
+  F(DerivedDescriptor,       derived_descriptor,        _, _)
 
 // Enum identifying the different phylums of custom tagged values.
 typedef enum {
@@ -741,6 +743,93 @@ static int64_t get_custom_tagged_payload(value_t value) {
   return (data >> (kCustomTaggedPhylumTagSize + kDomainTagSize));
 }
 
+
+/// ## Derived objects
+///
+/// Derived objects are objects embedded in other objects. Basically it's a
+/// pointer into the interior of some other object. The primary use for this
+/// is stack-allocated objects but they're more general than that.
+///
+/// Derived objects are tagged differently from other objects and the set of
+/// families that can be represented by a derived object is disjoint from the
+/// set that can be represented by heap objects. So you can't have a derived
+/// array just like you can't have a heap allocated stack pointer.
+///
+/// Derived objects are really convenient -- they allow you to make stack space
+/// look like "proper" objects which is the key to implementing ensure/try-on
+/// with no heap allocation at all -- but you also have to be very careful with
+/// them. It's easy to scribble the underlying object and few of the safeguards
+/// that apply to proper heap objects work for derived objects because when you
+/// start changing the host there's no local record of it having objects derived
+/// from it.
+///
+/// The existence of a derived object will keep the host object alive, and the
+/// fields of the object will be updated automatically when the host is updated,
+/// the existence of a derived pointer makes no difference to that.
+///
+/// The layout of a derived object is roughly like this:
+///
+//%            host
+//%  +--> +------------+
+//%  |    :            :
+//%  |    :    host    :
+//%  |    :    state   :
+//%  |    :            :
+//%  |    +============+
+//%  +--- | descriptor | <----- derived
+//%       +============+
+//%       |  field 0   |
+//%       +------------+
+//%       :    ...     :
+//%       +------------+
+//%       |  field N   |
+//%       +------------+
+//%       :            :
+//%       :  more host :
+//%       :    state   :
+//%       :            :
+//%       +------------+
+///
+/// A derived object has a one-word header, the descriptor, like a species for
+/// heap objects but different enough that it would be confusing to call it a
+/// species. The descriptor is a custom tagged value packed with two values:
+/// the genus of the derived object and the offset within the host object. There
+/// is 6 bits of genus so it's possible to have 64 types of derived objects,
+/// which leaves 42 bits of offset so derived values must be within the first
+/// 512 GB of an object. I hesitate to say that should be enough for everyone,
+/// and if it has to be bumped it should be possible to squeeze out some more
+/// bits for the offset. If all else fails it can be encoded in a tagged int
+/// which would give 55 bits of offset (64 - 3 tag bits - 6 genus bits).
+///
+/// The host has to be the object that immediately contains the derived pointer
+/// -- so for a stack-allocated object the host is not the stack or the stack
+/// piece, it is the stack piece's storage array. But don't worry, this aspect
+/// gets checked defensively.
+///
+/// The type of a derived object is called its _genus_ (plural _genera_). Yeah
+/// I'm running out of taxonomic ranks.
+
+// Calls the given macro for each UpperCase and lower_camel_case genus of
+// derived objects.
+#define ENUM_DERIVED_OBJECT_GENERA(F)                                          \
+  F(StackPointer,            stack_pointer)
+
+// Enum identifying the different families of derived objects.
+typedef enum {
+  __dgFirst__ = -1
+#define __DECLARE_DERIVED_GENUS_ENUM__(Genus, genus)                           \
+  , dg##Genus
+  ENUM_DERIVED_OBJECT_GENERA(__DECLARE_DERIVED_GENUS_ENUM__)
+#undef __DECLARE_DERIVED_GENUS_ENUM__
+  // This is a special value separate from any of the others that can be used
+  // to indicate no family.
+  , __dgUnknown__
+} derived_object_genus_t;
+
+// The number of bits it takes to hold a genus. This is a tricky one to change
+// since it indirectly dictates the max size of objects that can hold a derived
+// pointer and you don't typically want to fiddle with that kind of limit.
+static const size_t kDerivedObjectGenusTagSize = 6;
 
 /// ## Species
 ///

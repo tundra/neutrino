@@ -34,9 +34,14 @@ static inline bool is_condition(value_t value) {
   return in_domain(vdCondition, value);
 }
 
-// Returns true iff the given value is an object.
+// Returns true iff the given value is a heap object.
 static inline bool is_heap_object(value_t value) {
   return in_domain(vdHeapObject, value);
+}
+
+// Returns true iff the given value is a derived object.
+static inline bool is_derived_object(value_t value) {
+  return in_domain(vdDerivedObject, value);
 }
 
 // Returns true iff the given value is an object within the given family.
@@ -83,6 +88,15 @@ static value_t get_tuple_first(value_t self) {
 // Returns the second entry in the given tuple.
 static value_t get_tuple_second(value_t self) {
   return get_tuple_at(self, 1);
+}
+
+
+/// ## Array
+
+// Returns a value array pointing at the given range within the given array.
+static value_array_t alloc_array_block(value_t self, size_t start, size_t length) {
+  CHECK_REL("out of bounds", start + length, <=, get_array_length(self));
+  return new_value_array(get_array_elements(self) + start, length);
 }
 
 

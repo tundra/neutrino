@@ -184,8 +184,6 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   ENUM_CUSTOM_TAGGED_PHYLUMS(__CREATE_PHYLUM_TYPE__)
 #undef __CREATE_PHYLUM_TYPE__
 
-#undef __CREATE_TYPE__
-
   TRY_DEF(plankton_environment, new_heap_id_hash_map(runtime, 16));
   init_plankton_core_factories(plankton_environment, runtime);
   init_plankton_syntax_factories(plankton_environment, runtime);

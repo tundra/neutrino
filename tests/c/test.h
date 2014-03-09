@@ -1,8 +1,10 @@
 // Copyright 2013 the Neutrino authors (see AUTHORS).
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "alloc.h"
 #include "condition.h"
 #include "log.h"
+#include "runtime.h"
 #include "value-inl.h"
 
 // Declare a unit test method. The suite name must match the file the test
@@ -152,6 +154,10 @@ static int64_t ptr_to_int_bit_cast(void *value) {
 // Fails unless the given value is within the given domain.
 #define ASSERT_DOMAIN(vdDomain, EXPR) \
 ASSERT_CLASS(value_domain_t, vdDomain, EXPR, get_value_domain)
+
+// Fails unless the given value is within the given genus.
+#define ASSERT_GENUS(dgGenus, EXPR) \
+ASSERT_CLASS(derived_object_genus_t, dgGenus, EXPR, get_derived_object_genus)
 
 // Fails unless the given value is within the given family.
 #define ASSERT_FAMILY(ofFamily, EXPR) \

@@ -1,0 +1,41 @@
+// Copyright 2014 the Neutrino authors (see AUTHORS).
+// Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+#include "behavior.h"
+#include "derived-inl.h"
+#include "test.h"
+
+TEST(derived, array) {
+  CREATE_RUNTIME();
+
+  value_t host = new_heap_array(runtime, 100);
+
+  for (size_t i = 0; i + kStackPointerSize <= 100; i += kStackPointerFieldCount) {
+    value_array_t b0 = alloc_array_block(host, i, kStackPointerFieldCount);
+    value_t p0 = new_derived_stack_pointer(runtime, &b0, host);
+    ASSERT_DOMAIN(vdDerivedObject, p0);
+    ASSERT_TRUE(is_derived_object(p0));
+    ASSERT_SAME(host, get_derived_object_host(p0));
+    ASSERT_GENUS(dgStackPointer, p0);
+    ASSERT_TRUE(in_genus(dgStackPointer, p0));
+  }
+
+  DISPOSE_RUNTIME();
+}
+
+TEST(derived, descriptors) {
+  value_t d0 = new_derived_descriptor(dgStackPointer, 0);
+  ASSERT_EQ(0, get_derived_descriptor_host_offset(d0));
+
+  size_t v1 = (size_t) (1ULL << 32);
+  value_t d1 = new_derived_descriptor(dgStackPointer, v1);
+  ASSERT_EQ(v1, get_derived_descriptor_host_offset(d1));
+
+  size_t v2 = (size_t) (1ULL << 42);
+  value_t d2 = new_derived_descriptor(dgStackPointer, v2);
+  ASSERT_EQ(v2, get_derived_descriptor_host_offset(d2));
+
+  size_t v3 = ((size_t) (1ULL << (kCustomTaggedPayloadSize - kDerivedObjectGenusTagSize - 1)));
+  value_t d3 = new_derived_descriptor(dgStackPointer, v3);
+  ASSERT_EQ(v3, get_derived_descriptor_host_offset(d3));
+}

@@ -11,6 +11,7 @@ library_file_names = [
   "condition.c",
   "crash.c",
   "ctrino.c",
+  "derived.c",
   "file.c",
   "heap.c",
   "interp.c",
