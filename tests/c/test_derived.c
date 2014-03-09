@@ -27,15 +27,17 @@ TEST(derived, descriptors) {
   value_t d0 = new_derived_descriptor(dgStackPointer, 0);
   ASSERT_EQ(0, get_derived_descriptor_host_offset(d0));
 
-  size_t v1 = (size_t) (1ULL << 32);
+  uint64_t v1 = 1LLU << 31;
   value_t d1 = new_derived_descriptor(dgStackPointer, v1);
   ASSERT_EQ(v1, get_derived_descriptor_host_offset(d1));
 
-  size_t v2 = (size_t) (1ULL << 42);
+#ifndef IS_32_BIT
+  uint64_t v2 = 1LLU << 42;
   value_t d2 = new_derived_descriptor(dgStackPointer, v2);
   ASSERT_EQ(v2, get_derived_descriptor_host_offset(d2));
 
-  size_t v3 = ((size_t) (1ULL << (kCustomTaggedPayloadSize - kDerivedObjectGenusTagSize - 1)));
+  uint64_t v3 = LLU << (kCustomTaggedPayloadSize - kDerivedObjectGenusTagSize - 1);
   value_t d3 = new_derived_descriptor(dgStackPointer, v3);
   ASSERT_EQ(v3, get_derived_descriptor_host_offset(d3));
+#endif
 }
