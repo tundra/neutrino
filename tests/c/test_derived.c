@@ -36,7 +36,7 @@ TEST(derived, descriptors) {
   value_t d2 = new_derived_descriptor(dgStackPointer, v2);
   ASSERT_EQ(v2, get_derived_descriptor_host_offset(d2));
 
-  uint64_t v3 = LLU << (kCustomTaggedPayloadSize - kDerivedObjectGenusTagSize - 1);
+  uint64_t v3 = 1LLU << (kCustomTaggedPayloadSize - kDerivedObjectGenusTagSize - 1);
   value_t d3 = new_derived_descriptor(dgStackPointer, v3);
   ASSERT_EQ(v3, get_derived_descriptor_host_offset(d3));
 #endif
