@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "alloc.h"
+#include "derived.h"
 #include "runtime.h"
 #include "safe-inl.h"
 #include "test.h"
@@ -109,6 +110,46 @@ TEST(safe, pool_overflow) {
   protect(pool, new_heap_array(runtime, 4));
   ASSERT_CHECK_FAILURE_NO_VALUE(ccSafePoolFull, protect(pool, new_heap_array(runtime, 4)));
   DISPOSE_SAFE_VALUE_POOL(pool);
+
+  DISPOSE_RUNTIME();
+}
+
+TEST(safe, derived) {
+  CREATE_RUNTIME();
+
+  // Create some derived objects.
+  value_t before_array = new_heap_array(runtime, 2);
+  value_t p0 = new_derived_stack_pointer(runtime, alloc_array_block(before_array, 0, 1),
+      before_array);
+  ASSERT_GENUS(dgStackPointer, p0);
+  value_t p1 = new_derived_stack_pointer(runtime, alloc_array_block(before_array, 1, 1),
+      before_array);
+  ASSERT_GENUS(dgStackPointer, p1);
+
+  // GC protect them.
+  safe_value_t s_p0 = runtime_protect_value(runtime, p0);
+  ASSERT_GENUS(dgStackPointer, deref(s_p0));
+  ASSERT_FALSE(safe_value_is_immediate(s_p0));
+  safe_value_t s_p1 = runtime_protect_value(runtime, p1);
+  ASSERT_GENUS(dgStackPointer, deref(s_p1));
+  ASSERT_FALSE(safe_value_is_immediate(s_p1));
+
+  // Run gc.
+  runtime_garbage_collect(runtime);
+
+  // They should have moved during gc.
+  ASSERT_FALSE(is_same_value(p0, deref(s_p0)));
+  ASSERT_GENUS(dgStackPointer, deref(s_p0));
+  ASSERT_FALSE(is_same_value(p1, deref(s_p1)));
+  ASSERT_GENUS(dgStackPointer, deref(s_p1));
+
+  value_t after_array = get_derived_object_host(deref(s_p0));
+  ASSERT_FALSE(is_same_value(after_array, before_array));
+  ASSERT_EQ(2, get_array_length(after_array));
+  ASSERT_TRUE(is_same_value(after_array, get_derived_object_host(deref(s_p1))));
+
+  dispose_safe_value(runtime, s_p0);
+  dispose_safe_value(runtime, s_p1);
 
   DISPOSE_RUNTIME();
 }

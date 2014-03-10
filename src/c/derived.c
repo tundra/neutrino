@@ -34,7 +34,7 @@ const char *get_derived_object_genus_name(derived_object_genus_t genus) {
 
 /// ## Allocation
 
-value_t new_derived_stack_pointer(runtime_t *runtime, value_array_t *memory, value_t host) {
+value_t new_derived_stack_pointer(runtime_t *runtime, value_array_t memory, value_t host) {
   return alloc_derived_object(memory, kStackPointerFieldCount, dgStackPointer,
       host);
 }
@@ -47,18 +47,18 @@ static bool is_within_host(value_t host, size_t offset, size_t words) {
   return (offset <= layout.size) && (offset + words <= layout.size);
 }
 
-value_t alloc_derived_object(value_array_t *memory, size_t field_count,
+value_t alloc_derived_object(value_array_t memory, size_t field_count,
     derived_object_genus_t genus, value_t host) {
-  CHECK_EQ("invalid derived alloc", memory->length, field_count);
+  CHECK_EQ("invalid derived alloc", memory.length, field_count);
   // The anchor stores the offset of the derived object within the host
   // so we have to determine that. Note that we're juggling both field counts
   // and byte offsets and it's important that they don't get mixed up.
   address_t host_start = get_heap_object_address(host);
-  size_t host_offset = ((address_t) memory->start) - host_start;
+  size_t host_offset = ((address_t) memory.start) - host_start;
   size_t size = field_count * kValueSize;
   CHECK_TRUE("derived not within object", is_within_host(host, host_offset, size));
   value_t anchor = new_derived_object_anchor(genus, host_offset);
-  value_t result = new_derived_object((address_t) memory->start);
+  value_t result = new_derived_object((address_t) memory.start);
   set_derived_object_anchor(result, anchor);
   CHECK_TRUE("derived mispoint", is_same_value(get_derived_object_host(result),
       host));

@@ -12,7 +12,7 @@ TEST(derived, array) {
 
   for (size_t i = 0; i + kStackPointerSize <= 100; i += kStackPointerFieldCount) {
     value_array_t b0 = alloc_array_block(host, i, kStackPointerFieldCount);
-    value_t p0 = new_derived_stack_pointer(runtime, &b0, host);
+    value_t p0 = new_derived_stack_pointer(runtime, b0, host);
     ASSERT_DOMAIN(vdDerivedObject, p0);
     ASSERT_TRUE(is_derived_object(p0));
     ASSERT_SAME(host, get_derived_object_host(p0));

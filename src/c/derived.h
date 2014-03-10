@@ -78,7 +78,7 @@ static const size_t kStackPointerFieldCount = DERIVED_OBJECT_FIELD_COUNT(0);
 /// ## Allocation
 
 // Returns a new stack pointer value within the given memory.
-value_t new_derived_stack_pointer(runtime_t *runtime, value_array_t *memory,
+value_t new_derived_stack_pointer(runtime_t *runtime, value_array_t memory,
     value_t host);
 
 // Allocates a new derived object in the given block of memory and initializes
@@ -87,7 +87,7 @@ value_t new_derived_stack_pointer(runtime_t *runtime, value_array_t *memory,
 //
 // Beware that the "size" is not a size in bytes, unlike other allocation
 // functions, it is the number of value-size fields of the object.
-value_t alloc_derived_object(value_array_t *mem, size_t field_count,
+value_t alloc_derived_object(value_array_t memory, size_t field_count,
     derived_object_genus_t genus, value_t host);
 
 

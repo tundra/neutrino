@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "check.h"
 #include "ctrino.h"
+#include "derived.h"
 #include "log.h"
 #include "runtime-inl.h"
 #include "safe-inl.h"
@@ -428,8 +429,15 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
 
 // Adaptor function for passing object validate as a value callback.
 static value_t runtime_validate_object(value_t value, value_callback_t *self) {
-  CHECK_DOMAIN(vdHeapObject, value);
-  return heap_object_validate(value);
+  switch (get_value_domain(value)) {
+    case vdHeapObject:
+      return heap_object_validate(value);
+    case vdDerivedObject:
+      return derived_object_validate(value);
+    default:
+      UNREACHABLE("validating non-object");
+      return whatever();
+  }
 }
 
 value_t runtime_validate(runtime_t *runtime, value_t cause) {
@@ -551,22 +559,14 @@ static bool needs_post_migrate_fixup(value_t old_object) {
 
 /// ## Field migration
 
-// Callback that migrates an object from from to to space, if it hasn't been
-// migrated already.
-static value_t migrate_field_shallow(value_t *field, field_callback_t *callback) {
-//  runtime_t *runtime = field_callback_get_data(callback);
-  value_t old_object = *field;
-  // If this is not a heap object there's nothing to do.
-  if (!is_heap_object(old_object))
-    return success();
+static value_t ensure_heap_object_migrated(value_t old_object, field_callback_t *callback) {
   // Check if this object has already been moved.
   value_t old_header = get_heap_object_header(old_object);
-  value_t new_heap_object;
   if (get_value_domain(old_header) == vdMovedObject) {
     // This object has already been moved and the header points to the new
     // location so we just get out the location of the migrated object and update
     // the field.
-    new_heap_object = get_moved_object_target(old_header);
+    return get_moved_object_target(old_header);
   } else {
     // The header indicates that this object hasn't been moved yet. First make
     // a raw clone of the object in to-space.
@@ -577,22 +577,45 @@ static value_t migrate_field_shallow(value_t *field, field_callback_t *callback)
     // time the object is intact so it's the last point we can call methods on
     // it to find out.
     bool needs_fixup = needs_post_migrate_fixup(old_object);
-    new_heap_object = migrate_object_shallow(old_object, &state->runtime->heap.to_space);
-    CHECK_DOMAIN(vdHeapObject, new_heap_object);
+    value_t new_object = migrate_object_shallow(old_object, &state->runtime->heap.to_space);
+    CHECK_DOMAIN(vdHeapObject, new_object);
     // Now that we know where the new object is going to be we can schedule the
     // fixup if necessary.
     if (needs_fixup) {
-      pending_fixup_t fixup = {new_heap_object, old_object};
+      pending_fixup_t fixup = {new_object, old_object};
       TRY(pending_fixup_worklist_add(&state->pending_fixups, &fixup));
     }
     // Point the old object to the new one so we know to use the new clone
     // instead of ever cloning it again.
-    value_t forward_pointer = new_moved_object(new_heap_object);
+    value_t forward_pointer = new_moved_object(new_object);
     set_heap_object_header(old_object, forward_pointer);
     // At this point the cloned object still needs some work to update the
     // fields but we rely on traversing the heap to do that eventually.
+    return new_object;
   }
-  *field = new_heap_object;
+}
+
+static value_t ensure_derived_object_migrated(value_t old_derived,
+    field_callback_t *callback) {
+  value_t old_host = get_derived_object_host(old_derived);
+  value_t new_host = ensure_heap_object_migrated(old_host, callback);
+  value_t anchor = get_derived_object_anchor(old_derived);
+  size_t host_offset = get_derived_object_anchor_host_offset(anchor);
+  return new_derived_object(get_heap_object_address(new_host) + host_offset);
+}
+
+// Callback that migrates an object from from to to space, if it hasn't been
+// migrated already.
+static value_t migrate_field_shallow(value_t *field, field_callback_t *callback) {
+//  runtime_t *runtime = field_callback_get_data(callback);
+  value_t old_value = *field;
+  // If this is not a heap object there's nothing to do.
+  value_domain_t domain = get_value_domain(old_value);
+  if (domain == vdHeapObject) {
+    TRY_SET(*field, ensure_heap_object_migrated(old_value, callback));
+  } else if (domain == vdDerivedObject) {
+    TRY_SET(*field, ensure_derived_object_migrated(old_value, callback));
+  }
   return success();
 }
 
@@ -661,12 +684,22 @@ value_t runtime_dispose(runtime_t *runtime) {
   return success();
 }
 
+bool value_is_immediate(value_t value) {
+  switch (get_value_domain(value)) {
+    case vdHeapObject:
+    case vdDerivedObject:
+      return false;
+    default:
+      return true;
+  }
+}
+
 safe_value_t runtime_protect_value(runtime_t *runtime, value_t value) {
-  if (is_heap_object(value)) {
+  if (value_is_immediate(value)) {
+    return protect_immediate(value);
+  } else {
     object_tracker_t *gc_safe = heap_new_heap_object_tracker(&runtime->heap, value);
     return object_tracker_to_safe_value(gc_safe);
-  } else {
-    return protect_immediate(value);
   }
 }
 

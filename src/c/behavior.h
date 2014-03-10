@@ -108,9 +108,13 @@ struct family_behavior_t {
   void (*on_scope_exit)(value_t self);
 };
 
-// Validates an object. Check fails if validation fails except in soft check
+// Validates a heap object. Check fails if validation fails except in soft check
 // failure mode where a ValidationFailed condition is returned.
 value_t heap_object_validate(value_t value);
+
+// Validates a derived object. Check fails if validation fails except in soft
+// check failure mode where a ValidationFailed condition is returned.
+value_t derived_object_validate(value_t value);
 
 // Returns the size in bytes of the given object on the heap.
 void get_heap_object_layout(value_t value, heap_object_layout_t *layout_out);
