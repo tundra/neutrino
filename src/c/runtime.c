@@ -559,6 +559,8 @@ static bool needs_post_migrate_fixup(value_t old_object) {
 
 /// ## Field migration
 
+// Ensures that the given object has a clone in to-space, returning a pointer to
+// it. If there is no pre-existing clone a shallow one will be created.
 static value_t ensure_heap_object_migrated(value_t old_object, field_callback_t *callback) {
   // Check if this object has already been moved.
   value_t old_header = get_heap_object_header(old_object);
@@ -576,6 +578,8 @@ static value_t ensure_heap_object_migrated(value_t old_object, field_callback_t 
     // Check with the object whether it needs post processing. This is the last
     // time the object is intact so it's the last point we can call methods on
     // it to find out.
+    CHECK_TRUE("migrating clone", space_contains(&state->runtime->heap.from_space,
+        get_heap_object_address(old_object)));
     bool needs_fixup = needs_post_migrate_fixup(old_object);
     value_t new_object = migrate_object_shallow(old_object, &state->runtime->heap.to_space);
     CHECK_DOMAIN(vdHeapObject, new_object);
@@ -595,13 +599,18 @@ static value_t ensure_heap_object_migrated(value_t old_object, field_callback_t 
   }
 }
 
-static value_t ensure_derived_object_migrated(value_t old_derived,
+// Returns a new derived object pointer identical to the given one except that
+// it points to the new clone of the host rather than the old one.
+static value_t migrate_derived_object(value_t old_derived,
     field_callback_t *callback) {
+  // Ensure that the host has been migrated.
   value_t old_host = get_derived_object_host(old_derived);
   value_t new_host = ensure_heap_object_migrated(old_host, callback);
+  // Calculate the new address derived from the new host.
   value_t anchor = get_derived_object_anchor(old_derived);
   size_t host_offset = get_derived_object_anchor_host_offset(anchor);
-  return new_derived_object(get_heap_object_address(new_host) + host_offset);
+  address_t new_addr = get_heap_object_address(new_host) + host_offset;
+  return new_derived_object(new_addr);
 }
 
 // Callback that migrates an object from from to to space, if it hasn't been
@@ -614,7 +623,7 @@ static value_t migrate_field_shallow(value_t *field, field_callback_t *callback)
   if (domain == vdHeapObject) {
     TRY_SET(*field, ensure_heap_object_migrated(old_value, callback));
   } else if (domain == vdDerivedObject) {
-    TRY_SET(*field, ensure_derived_object_migrated(old_value, callback));
+    TRY_SET(*field, migrate_derived_object(old_value, callback));
   }
   return success();
 }

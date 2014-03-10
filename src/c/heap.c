@@ -124,6 +124,11 @@ bool space_try_alloc(space_t *space, size_t size, address_t *memory_out) {
   }
 }
 
+bool space_contains(space_t *space, address_t addr) {
+  CHECK_FALSE("space is empty", space_is_empty(space));
+  return (((address_t) space->memory.memory) <= addr) && (addr < space->next_free);
+}
+
 value_t space_for_each_object(space_t *space, value_callback_t *callback) {
   address_t current = space->start;
   while (current < space->next_free) {
