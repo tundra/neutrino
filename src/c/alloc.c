@@ -4,6 +4,7 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "ctrino.h"
+#include "derived.h"
 #include "process.h"
 #include "tagged.h"
 #include "try-inl.h"

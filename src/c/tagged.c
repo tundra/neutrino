@@ -3,6 +3,7 @@
 
 #include "behavior.h"
 #include "builtin.h"
+#include "derived.h"
 #include "runtime.h"
 #include "stdc-inl.h"
 #include "tagged-inl.h"
@@ -210,4 +211,15 @@ value_t score_ordering_compare(value_t a, value_t b) {
   // inheritance tree the worse the match is considered to be, so an scIs match
   // with subscore 100 is much worse than one with subscore 0.
   return compare_signed_integers(get_custom_tagged_payload(b), get_custom_tagged_payload(a));
+}
+
+
+/// ## Derived object anchor
+
+void derived_object_anchor_print_on(value_t value, print_on_context_t *context) {
+  derived_object_genus_t genus = get_derived_object_anchor_genus(value);
+  const char *genus_name = get_derived_object_genus_name(genus);
+  size_t host_offset = get_derived_object_anchor_host_offset(value);
+  string_buffer_printf(context->buf, "#<anchor %s @+%i>",
+      genus_name, host_offset);
 }
