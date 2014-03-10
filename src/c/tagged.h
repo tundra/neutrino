@@ -296,7 +296,7 @@ static value_t new_score(score_category_t category, uint32_t subscore) {
 ///
 /// A derived object anchor describes a derived object. It's like a species for
 /// a derived object. The anchor is embedded in the derived object's host, which
-// is why it's called an "anchor".
+/// is why it's called an "anchor".
 
 // We only allow 41 bits for the offset because the 42nd bit is the sign and
 // it's not worth the hassle to handle full unsigned custom tagged payloads
