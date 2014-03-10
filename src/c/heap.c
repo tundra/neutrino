@@ -124,6 +124,11 @@ bool space_try_alloc(space_t *space, size_t size, address_t *memory_out) {
   }
 }
 
+bool space_contains(space_t *space, address_t addr) {
+  CHECK_FALSE("space is empty", space_is_empty(space));
+  return (((address_t) space->memory.memory) <= addr) && (addr < space->next_free);
+}
+
 value_t space_for_each_object(space_t *space, value_callback_t *callback) {
   address_t current = space->start;
   while (current < space->next_free) {
@@ -177,7 +182,7 @@ static void object_tracker_iter_advance(object_tracker_iter_t *iter) {
 }
 
 object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value) {
-  CHECK_DOMAIN(vdHeapObject, value);
+  CHECK_FALSE("tracker for immediate", value_is_immediate(value));
   memory_block_t memory = allocator_default_malloc(sizeof(object_tracker_t));
   object_tracker_t *new_tracker = (object_tracker_t*) memory.memory;
   object_tracker_t *next = heap->root_object_tracker.next;

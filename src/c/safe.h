@@ -56,6 +56,9 @@ value_t deref_immediate(safe_value_t s_value);
 // Is this safe-value an immediate?
 bool safe_value_is_immediate(safe_value_t s_value);
 
+// Is this value one that can be stored as an immediate safe value?
+bool value_is_immediate(value_t value);
+
 // Returns the value stored in a safe value reference.
 value_t deref(safe_value_t s_value);
 

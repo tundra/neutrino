@@ -140,6 +140,9 @@ value_t space_for_each_object(space_t *space, value_callback_t *callback);
 // aligned to an 'alignment' boundary.
 address_t align_address(address_arith_t alignment, address_t ptr);
 
+// Returns true if the given address is within the given space.
+bool space_contains(space_t *space, address_t addr);
+
 
 // A full garbage-collectable heap.
 typedef struct {

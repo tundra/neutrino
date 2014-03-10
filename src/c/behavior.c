@@ -51,6 +51,12 @@ value_t heap_object_validate(value_t value) {
   return (behavior->validate)(value);
 }
 
+value_t derived_object_validate(value_t value) {
+  value_t anchor = get_derived_object_anchor(value);
+  CHECK_PHYLUM(tpDerivedObjectAnchor, anchor);
+  return success();
+}
+
 
 // --- L a y o u t ---
 
