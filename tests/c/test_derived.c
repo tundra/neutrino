@@ -23,15 +23,15 @@ TEST(derived, array) {
   DISPOSE_RUNTIME();
 }
 
-TEST(derived, descriptors) {
-  value_t d0 = new_derived_descriptor(dgStackPointer, 0);
-  ASSERT_EQ(0, get_derived_descriptor_host_offset(d0));
+TEST(derived, anchors) {
+  value_t d0 = new_derived_object_anchor(dgStackPointer, 0);
+  ASSERT_EQ(0, get_derived_object_anchor_host_offset(d0));
 
   uint64_t v1 = 1LLU << 31;
-  value_t d1 = new_derived_descriptor(dgStackPointer, v1);
-  ASSERT_EQ(v1, get_derived_descriptor_host_offset(d1));
+  value_t d1 = new_derived_object_anchor(dgStackPointer, v1);
+  ASSERT_EQ(v1, get_derived_object_anchor_host_offset(d1));
 
-  uint64_t v2 = kDerivedDescriptorOffsetLimit - 1;
-  value_t d2 = new_derived_descriptor(dgStackPointer, v2);
-  ASSERT_EQ(v2, get_derived_descriptor_host_offset(d2));
+  uint64_t v2 = kDerivedObjectAnchorOffsetLimit - 1;
+  value_t d2 = new_derived_object_anchor(dgStackPointer, v2);
+  ASSERT_EQ(v2, get_derived_object_anchor_host_offset(d2));
 }

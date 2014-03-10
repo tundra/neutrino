@@ -680,7 +680,7 @@ ACCESSORS_DECL(heap_object, header);
   F(Relation,                relation,                  _, _)                  \
   F(Score,                   score,                     X, _)                  \
   F(StageOffset,             stage_offset,              X, _)                  \
-  F(DerivedDescriptor,       derived_descriptor,        _, _)
+  F(DerivedObjectAnchor,     derived_object_anchor,     _, _)
 
 // Enum identifying the different phylums of custom tagged values.
 typedef enum {
@@ -776,7 +776,7 @@ static int64_t get_custom_tagged_payload(value_t value) {
 //%  |    :    state   :
 //%  |    :            :
 //%  |    +============+
-//%  +--- | descriptor | <----- derived
+//%  +--- |   anchor   | <----- derived
 //%       +============+
 //%       |  field 0   |
 //%       +------------+
@@ -790,9 +790,9 @@ static int64_t get_custom_tagged_payload(value_t value) {
 //%       :            :
 //%       +------------+
 ///
-/// A derived object has a one-word header, the descriptor, like a species for
+/// A derived object has a one-word header, the anchor, like a species for
 /// heap objects but different enough that it would be confusing to call it a
-/// species. The descriptor is a custom tagged value packed with two values:
+/// species. The anchor is a custom tagged value packed with two values:
 /// the genus of the derived object and the offset within the host object. There
 /// is 6 bits of genus so it's possible to have 64 types of derived objects,
 /// which leaves 42 bits of offset so derived values must be within the first

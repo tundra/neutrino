@@ -292,31 +292,37 @@ static value_t new_score(score_category_t category, uint32_t subscore) {
 }
 
 
-/// ## Derived descriptor
+/// ## Derived object anchor
+///
+/// A derived object anchor describes a derived object. It's like a species for
+/// a derived object. The anchor is embedded in the derived object's host, which
+// is why it's called an "anchor".
 
 // We only allow 41 bits for the offset because the 42nd bit is the sign and
 // it's not worth the hassle to handle full unsigned custom tagged payloads
 // correctly yet.
-static const uint64_t kDerivedDescriptorOffsetLimit = 1LLU << 41;
+static const uint64_t kDerivedObjectAnchorOffsetLimit = 1LLU << 41;
 
-// Creates a new derived descriptor for an object of the given genus that's
+// Creates a new derived object anchor for an object of the given genus that's
 // located at the given offset within the host.
-static value_t new_derived_descriptor(derived_object_genus_t genus,
+static value_t new_derived_object_anchor(derived_object_genus_t genus,
     uint64_t host_offset) {
-  CHECK_REL("derived offset too wide", host_offset, <, kDerivedDescriptorOffsetLimit);
+  CHECK_REL("derived offset too wide", host_offset, <, kDerivedObjectAnchorOffsetLimit);
   int64_t payload = (host_offset << kDerivedObjectGenusTagSize) | genus;
-  return new_custom_tagged(tpDerivedDescriptor, payload);
+  return new_custom_tagged(tpDerivedObjectAnchor, payload);
 }
 
-// Returns the genus of the given derived descriptor.
-static derived_object_genus_t get_derived_descriptor_genus(value_t self) {
-  CHECK_PHYLUM(tpDerivedDescriptor, self);
+// Returns the genus of the given derived object anchor.
+static derived_object_genus_t get_derived_object_anchor_genus(value_t self) {
+  CHECK_PHYLUM(tpDerivedObjectAnchor, self);
   int64_t payload = get_custom_tagged_payload(self);
   return payload & ((1 << kDerivedObjectGenusTagSize) - 1);
 }
 
-static size_t get_derived_descriptor_host_offset(value_t self) {
-  CHECK_PHYLUM(tpDerivedDescriptor, self);
+// Returns the raw offset (in bytes) within the host of the derived object which
+// is anchored by the given anchor.
+static size_t get_derived_object_anchor_host_offset(value_t self) {
+  CHECK_PHYLUM(tpDerivedObjectAnchor, self);
   int64_t payload = get_custom_tagged_payload(self);
   return payload >> kDerivedObjectGenusTagSize;
 }

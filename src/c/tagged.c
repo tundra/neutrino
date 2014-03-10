@@ -214,12 +214,12 @@ value_t score_ordering_compare(value_t a, value_t b) {
 }
 
 
-/// ## Derived descriptor
+/// ## Derived object anchor
 
-void derived_descriptor_print_on(value_t value, print_on_context_t *context) {
-  derived_object_genus_t genus = get_derived_descriptor_genus(value);
+void derived_object_anchor_print_on(value_t value, print_on_context_t *context) {
+  derived_object_genus_t genus = get_derived_object_anchor_genus(value);
   const char *genus_name = get_derived_object_genus_name(genus);
-  size_t host_offset = get_derived_descriptor_host_offset(value);
-  string_buffer_printf(context->buf, "#<derived descriptor %s @+%i>",
+  size_t host_offset = get_derived_object_anchor_host_offset(value);
+  string_buffer_printf(context->buf, "#<anchor %s @+%i>",
       genus_name, host_offset);
 }

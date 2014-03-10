@@ -43,20 +43,20 @@ static address_t get_derived_object_address(value_t value) {
 // the header fields aren't included.
 #define DERIVED_OBJECT_FIELD_OFFSET(N) ((N * kValueSize) + kDerivedObjectHeaderSize)
 
-// The offset of the derived object header.
-static const size_t kDerivedObjectDescriptorOffset = 0 * kValueSize;
+// The offset of the derived object anchor.
+static const size_t kDerivedObjectAnchorOffset = 0 * kValueSize;
 
 // Returns a pointer to the index'th field in the given derived object. This is
 // a hot operation so it's a macro.
 #define access_derived_object_field(VALUE, INDEX)                              \
   ((value_t*) (((address_t) get_derived_object_address(VALUE)) + ((size_t) (INDEX))))
 
-static void set_derived_object_descriptor(value_t self, value_t value) {
-  *access_derived_object_field(self, kDerivedObjectDescriptorOffset) = value;
+static void set_derived_object_anchor(value_t self, value_t value) {
+  *access_derived_object_field(self, kDerivedObjectAnchorOffset) = value;
 }
 
-static value_t get_derived_object_descriptor(value_t self) {
-  return *access_derived_object_field(self, kDerivedObjectDescriptorOffset);
+static value_t get_derived_object_anchor(value_t self) {
+  return *access_derived_object_field(self, kDerivedObjectAnchorOffset);
 }
 
 // Returns the genus of the given value which must be a derived object.
@@ -82,7 +82,7 @@ value_t new_derived_stack_pointer(runtime_t *runtime, value_array_t *memory,
     value_t host);
 
 // Allocates a new derived object in the given block of memory and initializes
-// it with the given host and descriptor but requires the caller to complete
+// it with the given genus and host but requires the caller to complete
 // initialization.
 //
 // Beware that the "size" is not a size in bytes, unlike other allocation
