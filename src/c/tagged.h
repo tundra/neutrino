@@ -321,7 +321,7 @@ static derived_object_genus_t get_derived_object_anchor_genus(value_t self) {
 
 // Returns the raw offset (in bytes) within the host of the derived object which
 // is anchored by the given anchor.
-static size_t get_derived_object_anchor_host_offset(value_t self) {
+static uint64_t get_derived_object_anchor_host_offset(value_t self) {
   CHECK_PHYLUM(tpDerivedObjectAnchor, self);
   int64_t payload = get_custom_tagged_payload(self);
   return payload >> kDerivedObjectGenusTagSize;
