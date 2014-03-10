@@ -294,10 +294,17 @@ static value_t new_score(score_category_t category, uint32_t subscore) {
 
 /// ## Derived descriptor
 
+// We only allow 41 bits for the offset because the 42nd bit is the sign and
+// it's not worth the hassle to handle full unsigned custom tagged payloads
+// correctly yet.
+static const uint64_t kDerivedDescriptorOffsetLimit = 1LLU << 41;
+
 // Creates a new derived descriptor for an object of the given genus that's
 // located at the given offset within the host.
-static value_t new_derived_descriptor(derived_object_genus_t genus, size_t host_offset) {
-  int64_t payload = (((uint64_t) host_offset) << kDerivedObjectGenusTagSize) | genus;
+static value_t new_derived_descriptor(derived_object_genus_t genus,
+    uint64_t host_offset) {
+  CHECK_REL("derived offset too wide", host_offset, <, kDerivedDescriptorOffsetLimit);
+  int64_t payload = (host_offset << kDerivedObjectGenusTagSize) | genus;
   return new_custom_tagged(tpDerivedDescriptor, payload);
 }
 
