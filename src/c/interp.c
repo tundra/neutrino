@@ -160,6 +160,8 @@ static void log_lookup_error(value_t condition, value_t record, frame_t *frame) 
   string_buffer_dispose(&buf);
 }
 
+// TEST
+
 // Validates that the stack looks correct after execution completes normally.
 static void validate_stack_on_normal_exit(frame_t *frame) {
   value_t stack = get_stack_piece_stack(frame->stack_piece);
