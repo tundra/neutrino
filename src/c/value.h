@@ -761,7 +761,8 @@ static int64_t get_custom_tagged_payload(value_t value) {
 /// them. It's easy to scribble the underlying object and few of the safeguards
 /// that apply to proper heap objects work for derived objects because when you
 /// start changing the host there's no local record of it having objects derived
-/// from it.
+/// from it except for the anchor, which may be arbitrarily far from where the
+/// host is changed.
 ///
 /// The existence of a derived object will keep the host object alive, and the
 /// fields of the object will be updated automatically when the host is updated,
@@ -775,24 +776,30 @@ static int64_t get_custom_tagged_payload(value_t value) {
 //%  |    :    host    :
 //%  |    :    state   :
 //%  |    :            :
-//%  |    +============+
+//%  |    +------------+ ---+
+//%  |    |  field -M  |    |
+//%  |    +------------+    |
+//%  |    :    ...     :    | before-fields
+//%  |    +------------+    |
+//%  |    |  field -1  |    |
+//%  |    +============+ ---+
 //%  +--- |   anchor   | <----- derived
-//%       +============+
-//%       |  field 0   |
-//%       +------------+
-//%       :    ...     :
-//%       +------------+
-//%       |  field N   |
-//%       +------------+
+//%       +============+ ---+
+//%       |  field 1   |    |
+//%       +------------+    |
+//%       :    ...     :    | after-fields
+//%       +------------+    |
+//%       |  field N   |    |
+//%       +------------+ ---+
 //%       :            :
 //%       :  more host :
 //%       :    state   :
 //%       :            :
 //%       +------------+
 ///
-/// A derived object has a one-word header, the anchor, like a species for
-/// heap objects but different enough that it would be confusing to call it a
-/// species. The anchor is a custom tagged value packed with two values:
+/// A derived object has a one-word internal marker, the anchor, like a species
+/// for heap objects but different enough that it would be confusing to call it
+/// a species. The anchor is a custom tagged value packed with two values:
 /// the genus of the derived object and the offset within the host object. There
 /// is 6 bits of genus so it's possible to have 64 types of derived objects,
 /// which leaves 42 bits of offset so derived values must be within the first
@@ -800,6 +807,13 @@ static int64_t get_custom_tagged_payload(value_t value) {
 /// and if it has to be bumped it should be possible to squeeze out some more
 /// bits for the offset. If all else fails it can be encoded in a tagged int
 /// which would give 55 bits of offset (64 - 3 tag bits - 6 genus bits).
+///
+/// A derived object can have fields both before and after the anchor. This is
+/// because it's really convenient to be able to use the same layout for
+/// different kinds of derived objects and use them without knowing which kind
+/// you're using. Having fields on both sides increases this ability because
+/// it permits derived objects that overlap in two different regions rather than
+/// just one.
 ///
 /// The host has to be the object that immediately contains the derived pointer
 /// -- so for a stack-allocated object the host is not the stack or the stack
