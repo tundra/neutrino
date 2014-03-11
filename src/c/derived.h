@@ -14,6 +14,21 @@
 
 /// ## Derived objects
 
+// A description of the behavior and layout of a genus.
+typedef struct {
+  // The genus being described.
+  derived_object_genus_t genus;
+  // The number of fields of this genus include the anchor.
+  size_t field_count;
+  // The number of fields before the anchor.
+  size_t before_field_count;
+  // The number of fields after the anchor.
+  size_t after_field_count;
+} genus_descriptor_t;
+
+// Returns the behavior struct that describes the given genus.
+genus_descriptor_t *get_genus_descriptor(derived_object_genus_t genus);
+
 // Converts a pointer to a derived object into an tagged derived object value
 // pointer.
 static value_t new_derived_object(address_t addr) {
@@ -71,8 +86,8 @@ const char *get_derived_object_genus_name(derived_object_genus_t genus);
 
 /// ## Stack pointer
 
-static const size_t kStackPointerSize = DERIVED_OBJECT_SIZE(0);
-static const size_t kStackPointerFieldCount = DERIVED_OBJECT_FIELD_COUNT(0);
+#define kStackPointerBeforeFieldCount 0
+#define kStackPointerAfterFieldCount 0
 
 
 /// ## Allocation
@@ -87,8 +102,16 @@ value_t new_derived_stack_pointer(runtime_t *runtime, value_array_t memory,
 //
 // Beware that the "size" is not a size in bytes, unlike other allocation
 // functions, it is the number of value-size fields of the object.
-value_t alloc_derived_object(value_array_t memory, size_t field_count,
-    derived_object_genus_t genus, value_t host);
+value_t alloc_derived_object(value_array_t memory, genus_descriptor_t *desc,
+    value_t host);
+
+
+/// ## Genus descriptors
+
+#define __GENUS_STRUCT__(Genus, genus)                                         \
+extern genus_descriptor_t k##Genus##Descriptor;
+ENUM_DERIVED_OBJECT_GENERA(__GENUS_STRUCT__)
+#undef __GENUS_STRUCT__
 
 
 #endif // _DERIVED

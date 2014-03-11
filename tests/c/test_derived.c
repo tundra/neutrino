@@ -9,9 +9,10 @@ TEST(derived, array) {
   CREATE_RUNTIME();
 
   value_t host = new_heap_array(runtime, 100);
+  genus_descriptor_t *desc = &kStackPointerDescriptor;
 
-  for (size_t i = 0; i + kStackPointerSize <= 100; i += kStackPointerFieldCount) {
-    value_array_t b0 = alloc_array_block(host, i, kStackPointerFieldCount);
+  for (size_t i = 0; i + desc->field_count <= 100; i += desc->field_count) {
+    value_array_t b0 = alloc_array_block(host, i, desc->field_count);
     value_t p0 = new_derived_stack_pointer(runtime, b0, host);
     ASSERT_DOMAIN(vdDerivedObject, p0);
     ASSERT_TRUE(is_derived_object(p0));

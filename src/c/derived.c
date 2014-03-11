@@ -6,6 +6,7 @@
 #include "runtime.h"
 #include "value-inl.h"
 
+
 /// ## Derived object anchor
 
 derived_object_genus_t get_derived_object_genus(value_t self) {
@@ -35,8 +36,7 @@ const char *get_derived_object_genus_name(derived_object_genus_t genus) {
 /// ## Allocation
 
 value_t new_derived_stack_pointer(runtime_t *runtime, value_array_t memory, value_t host) {
-  return alloc_derived_object(memory, kStackPointerFieldCount, dgStackPointer,
-      host);
+  return alloc_derived_object(memory, &kStackPointerDescriptor, host);
 }
 
 // Returns true iff the given offset is within the bounds of the given host
@@ -47,20 +47,44 @@ static bool is_within_host(value_t host, size_t offset, size_t words) {
   return (offset <= layout.size) && (offset + words <= layout.size);
 }
 
-value_t alloc_derived_object(value_array_t memory, size_t field_count,
-    derived_object_genus_t genus, value_t host) {
-  CHECK_EQ("invalid derived alloc", memory.length, field_count);
+value_t alloc_derived_object(value_array_t memory, genus_descriptor_t *desc,
+    value_t host) {
+  CHECK_EQ("invalid derived alloc", memory.length, desc->field_count);
   // The anchor stores the offset of the derived object within the host
   // so we have to determine that. Note that we're juggling both field counts
   // and byte offsets and it's important that they don't get mixed up.
+  value_t *anchor_ptr = memory.start + desc->before_field_count;
   address_t host_start = get_heap_object_address(host);
-  size_t host_offset = ((address_t) memory.start) - host_start;
-  size_t size = field_count * kValueSize;
+  size_t host_offset = ((address_t) anchor_ptr) - host_start;
+  size_t size = desc->field_count * kValueSize;
   CHECK_TRUE("derived not within object", is_within_host(host, host_offset, size));
-  value_t anchor = new_derived_object_anchor(genus, host_offset);
-  value_t result = new_derived_object((address_t) memory.start);
+  value_t anchor = new_derived_object_anchor(desc->genus, host_offset);
+  value_t result = new_derived_object((address_t) anchor_ptr);
   set_derived_object_anchor(result, anchor);
   CHECK_TRUE("derived mispoint", is_same_value(get_derived_object_host(result),
       host));
   return result;
+}
+
+
+/// ## Descriptors
+
+#define __GENUS_STRUCT__(Genus, genus)                                         \
+genus_descriptor_t k##Genus##Descriptor = {                                    \
+  dg##Genus,                                                                   \
+  (k##Genus##BeforeFieldCount + k##Genus##AfterFieldCount + 1),                \
+  k##Genus##BeforeFieldCount,                                                  \
+  k##Genus##AfterFieldCount                                                    \
+};
+ENUM_DERIVED_OBJECT_GENERA(__GENUS_STRUCT__)
+#undef __GENUS_STRUCT__
+
+genus_descriptor_t *get_genus_descriptor(derived_object_genus_t genus) {
+  switch (genus) {
+#define __GENUS_CASE__(Genus, genus) case dg##Genus: return &k##Genus##Descriptor;
+ENUM_DERIVED_OBJECT_GENERA(__GENUS_CASE__)
+#undef __GENUS_CASE__
+    default:
+      return NULL;
+  }
 }
