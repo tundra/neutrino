@@ -53,13 +53,15 @@ value_t alloc_derived_object(value_array_t memory, genus_descriptor_t *desc,
   // The anchor stores the offset of the derived object within the host
   // so we have to determine that. Note that we're juggling both field counts
   // and byte offsets and it's important that they don't get mixed up.
-  value_t *anchor_ptr = memory.start + desc->before_field_count;
-  address_t host_start = get_heap_object_address(host);
-  size_t host_offset = ((address_t) anchor_ptr) - host_start;
+  // The offset is measured not from the start of the derived object but the
+  // location of the anchor, which is before_field_count fields into the object.
+  address_t anchor_addr = (address_t) (memory.start + desc->before_field_count);
+  address_t host_addr = get_heap_object_address(host);
+  size_t host_offset = anchor_addr - host_addr;
   size_t size = desc->field_count * kValueSize;
   CHECK_TRUE("derived not within object", is_within_host(host, host_offset, size));
   value_t anchor = new_derived_object_anchor(desc->genus, host_offset);
-  value_t result = new_derived_object((address_t) anchor_ptr);
+  value_t result = new_derived_object(anchor_addr);
   set_derived_object_anchor(result, anchor);
   CHECK_TRUE("derived mispoint", is_same_value(get_derived_object_host(result),
       host));
