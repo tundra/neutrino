@@ -210,10 +210,10 @@ void on_block_section_exit(value_t self) {
 
 /// ## Code shard section
 
-TRIVIAL_DERIVED_PRINT_ON_IMPL(CodeShardSection, code_shard_section);
+TRIVIAL_DERIVED_PRINT_ON_IMPL(EnsureSection, ensure_section);
 
-value_t code_shard_section_validate(value_t self) {
-  VALIDATE_GENUS(dgCodeShardSection, self);
+value_t ensure_section_validate(value_t self) {
+  VALIDATE_GENUS(dgEnsureSection, self);
   TRY(barrier_state_validate(self));
   TRY(refraction_point_validate(self));
   VALIDATE_FAMILY_OPT(ofCodeBlock, get_barrier_state_payload(self));

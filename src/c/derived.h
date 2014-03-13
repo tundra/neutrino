@@ -222,10 +222,10 @@ ACCESSORS_DECL(refraction_point, frame_pointer);
 void refraction_point_init(value_t self, frame_t *frame);
 
 
-/// ## Code shard section
+/// ## Ensure section
 
-#define kCodeShardSectionBeforeFieldCount kBarrierStateFieldCount
-#define kCodeShardSectionAfterFieldCount kRefractionPointFieldCount
+#define kEnsureSectionBeforeFieldCount kBarrierStateFieldCount
+#define kEnsureSectionAfterFieldCount kRefractionPointFieldCount
 
 
 /// ## Block section
@@ -264,7 +264,7 @@ value_t alloc_derived_object(value_array_t memory, genus_descriptor_t *desc,
 #define __GENUS_STRUCT__(Genus, genus, SC)                                     \
 value_t genus##_validate(value_t value);                                       \
 void genus##_print_on(value_t value, print_on_context_t *context);             \
-SC(void on_##genus##_exit(value_t value);,)                                    \
+SC(void on_##genus##_exit(value_t value);,)
 ENUM_DERIVED_OBJECT_GENERA(__GENUS_STRUCT__)
 #undef __GENUS_STRUCT__
 extern genus_descriptor_t kGenusDescriptors[kDerivedObjectGenusCount];

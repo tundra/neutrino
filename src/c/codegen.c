@@ -306,7 +306,6 @@ static void assembler_emit_short(assembler_t *assm, size_t value) {
 
 // Writes an opcode to this assembler.
 static void assembler_emit_opcode(assembler_t *assm, opcode_t opcode) {
-  // HEST("Emit %s %i", get_opcode_name(opcode), assm->stack_height);
   assembler_emit_short(assm, opcode);
 }
 
@@ -601,25 +600,25 @@ value_t assembler_emit_create_block(assembler_t *assm, value_t methods) {
   return success();
 }
 
-value_t assembler_emit_create_code_shard(assembler_t *assm, value_t code_block) {
-  assembler_emit_opcode(assm, ocCreateCodeShard);
+value_t assembler_emit_create_ensurer(assembler_t *assm, value_t code_block) {
+  assembler_emit_opcode(assm, ocCreateEnsurer);
   TRY(assembler_emit_value(assm, code_block));
   // Pop off all the captuers and push back the lambda.
-  assembler_adjust_stack_height(assm, get_genus_descriptor(dgCodeShardSection)->field_count + 1);
+  assembler_adjust_stack_height(assm, get_genus_descriptor(dgEnsureSection)->field_count + 1);
   return success();
 }
 
-value_t assembler_emit_call_code_shard(assembler_t *assm) {
-  assembler_emit_opcode(assm, ocCallCodeShard);
+value_t assembler_emit_call_ensurer(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocCallEnsurer);
   assembler_adjust_stack_height(assm,
       + 1);               // the return value from the shard
   return success();
 }
 
-value_t assembler_emit_dispose_code_shard(assembler_t *assm) {
-  assembler_emit_opcode(assm, ocDisposeCodeShard);
+value_t assembler_emit_dispose_ensurer(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocDisposeEnsurer);
   assembler_adjust_stack_height(assm,
-      - get_genus_descriptor(dgCodeShardSection)->field_count // the code shard's section
+      - get_genus_descriptor(dgEnsureSection)->field_count // the ensure section
       - 1                                       // the code shard pointer
       - 1);                                     // the result
   return success();

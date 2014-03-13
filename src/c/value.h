@@ -460,8 +460,7 @@ static value_t new_moved_object(value_t target) {
   F(Roots,                   roots,                     _, _, _, _, _, _, _, X, X, _,  2)\
   F(SequenceAst,             sequence_ast,              _, _, X, X, _, _, X, _, _, _, 35)\
   F(SignalAst,               signal_ast,                _, _, X, X, _, _, X, _, _, _, 48)\
-  F(SignalHandlerAst,        signal_handler_ast,        _, _, X, X, _, _, X, _, _, _, 76)\
-  F(SignalHandler,           signal_handler,            _, _, _, _, _, _, _, _, _, X, 77)\
+  F(SignalHandlerAst,        signal_handler_ast,        _, _, X, X, _, _, X, _, _, _, 75)\
   F(Signature,               signature,                 _, _, _, _, _, _, _, X, X, _, 53)\
   F(SignatureAst,            signature_ast,             _, _, X, X, _, _, _, _, _, _, 19)\
   F(SignatureMap,            signature_map,             _, _, _, _, _, _, _, X, X, _, 45)\
@@ -479,7 +478,7 @@ static value_t new_moved_object(value_t target) {
 
 // The next ordinal to use when adding a family. This isn't actually used in the
 // code it's just a reminder. Remember to update it when adding families.
-static const int kNextFamilyOrdinal = 78;
+static const int kNextFamilyOrdinal = 76;
 
 // Enumerates all the object families.
 #define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \
@@ -829,7 +828,7 @@ static int64_t get_custom_tagged_payload(value_t value) {
 #define ENUM_DERIVED_OBJECT_GENERA(F)                                          \
   F(StackPointer,            stack_pointer,             _)                     \
   F(EscapeSection,           escape_section,            X)                     \
-  F(CodeShardSection,        code_shard_section,        _)                     \
+  F(EnsureSection,           ensure_section,            _)                     \
   F(BlockSection,            block_section,             X)                     \
   F(SignalHandlerSection,    signal_handler_section,    X)
 

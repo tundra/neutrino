@@ -569,17 +569,12 @@ value_t add_block_builtin_implementations(runtime_t *runtime, safe_value_t s_map
   return success();
 }
 
-value_t get_refractor_home(value_t self) {
+// Returns the refraction point data (that is, a derived object which holds
+// refraction point state) for the given value.
+static value_t get_refraction_point(value_t self) {
   if (is_heap_object(self)) {
-    heap_object_family_t family = get_heap_object_family(self);
-    switch (family) {
-    case ofBlock:
-      return get_block_section(self);
-    default:
-      ERROR("Unexpected refractor family %s", get_heap_object_family_name(family));
-      UNREACHABLE("unexpected refractor family");
-      return nothing();
-    }
+    CHECK_FAMILY(ofBlock, self);
+    return get_block_section(self);
   } else {
     CHECK_DOMAIN(vdDerivedObject, self);
     return self;
@@ -591,10 +586,11 @@ void get_refractor_refracted_frame(value_t self, size_t block_depth,
   CHECK_REL("refractor not nested", block_depth, >, 0);
   value_t current = self;
   for (size_t i = block_depth; i > 0; i--) {
-    CHECK_TRUE("not refractor", is_refractor(current));
-    value_t refraction_point = get_refractor_home(current);
+    // Locate the next refraction point.
+    value_t refraction_point = get_refraction_point(current);
     value_t fp_val = get_refraction_point_frame_pointer(refraction_point);
     size_t fp = get_integer_value(fp_val);
+    // Update the frame state to point to it.
     frame->stack_piece = get_derived_object_host(refraction_point);
     frame->frame_pointer = get_stack_piece_storage(frame->stack_piece) + fp;
     if (i > 1)
@@ -607,28 +603,6 @@ void get_refractor_refracted_frame(value_t self, size_t block_depth,
   // We also don't know what the flags should be so set this to nothing such
   // that trying to access them as flags fails.
   frame->flags = nothing();
-}
-
-
-/// ## Signal handler
-
-FIXED_GET_MODE_IMPL(signal_handler, vmMutable);
-TRIVIAL_PRINT_ON_IMPL(SignalHandler, signal_handler);
-
-ACCESSORS_IMPL(SignalHandler, signal_handler, acInFamily, ofStackPiece,
-    HomeStackPiece, home_stack_piece);
-ACCESSORS_IMPL(SignalHandler, signal_handler, acNoCheck, 0, HomeStatePointer,
-    home_state_pointer);
-
-value_t signal_handler_validate(value_t self) {
-  VALIDATE_FAMILY(ofSignalHandler, self);
-  VALIDATE_FAMILY(ofStackPiece, get_signal_handler_home_stack_piece(self));
-  return success();
-}
-
-void on_signal_handler_scope_exit(value_t self) {
-  // Signal handlers are implemented by using handler as barriers; entering
-  // and exiting doesn't actually change them.
 }
 
 

@@ -625,19 +625,6 @@ void get_refractor_refracted_frame(value_t self, size_t block_depth,
 //%           +============+
 //%           :            :
 
-static const size_t kSignalHandlerSize = HEAP_OBJECT_SIZE(2);
-// These two must be at the same offsets as the other refractors, currently
-// blocks and code shards.
-static const size_t kSignalHandlerHomeStackPieceOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kSignalHandlerHomeStatePointerOffset = HEAP_OBJECT_FIELD_OFFSET(1);
-
-// Returns the stack piece that contains this signal handler's home.
-ACCESSORS_DECL(signal_handler, home_stack_piece);
-
-// Returns a pointer within the stack piece to where this signal handler's home
-// is.
-ACCESSORS_DECL(signal_handler, home_state_pointer);
-
 
 // --- B a c k t r a c e ---
 

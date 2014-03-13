@@ -140,10 +140,6 @@ value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t captures);
 // Creates a new block value whose state is located at the given location.
 value_t new_heap_block(runtime_t *runtime, value_t section);
 
-// Creates a new signal handler whose state is located at the given location.
-value_t new_heap_signal_handler(runtime_t *runtime, value_t home_stack_piece,
-    value_t home_state_pointer);
-
 // Creates a new empty namespace object.
 value_t new_heap_namespace(runtime_t *runtime, value_t value);
 

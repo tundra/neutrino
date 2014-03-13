@@ -461,7 +461,7 @@ FIXED_GET_MODE_IMPL(ensure_ast, vmMutable);
 ACCESSORS_IMPL(EnsureAst, ensure_ast, acIsSyntaxOpt, 0, Body, body);
 ACCESSORS_IMPL(EnsureAst, ensure_ast, acIsSyntaxOpt, 0, OnExit, on_exit);
 
-static value_t emit_code_shard(value_t code, assembler_t *assm) {
+static value_t emit_ensurer(value_t code, assembler_t *assm) {
   // Push a block scope that refracts any symbols accessed outside the block.
   block_scope_t block_scope;
   TRY(assembler_push_block_scope(assm, &block_scope));
@@ -473,7 +473,7 @@ static value_t emit_code_shard(value_t code, assembler_t *assm) {
   assembler_pop_block_scope(assm, &block_scope);
 
   // Finally emit the bytecode that will create the block.
-  TRY(assembler_emit_create_code_shard(assm, code_block));
+  TRY(assembler_emit_create_ensurer(assm, code_block));
   return success();
 }
 
@@ -481,12 +481,10 @@ value_t emit_ensure_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofEnsureAst, self);
   value_t body = get_ensure_ast_body(self);
   value_t on_exit = get_ensure_ast_on_exit(self);
-  // TODO: hook the shard into the barrier stack to ensure that it gets called
-  //   however we return.
-  TRY(emit_code_shard(on_exit, assm));
+  TRY(emit_ensurer(on_exit, assm));
   TRY(emit_value(body, assm));
-  TRY(assembler_emit_call_code_shard(assm));
-  TRY(assembler_emit_dispose_code_shard(assm));
+  TRY(assembler_emit_call_ensurer(assm));
+  TRY(assembler_emit_dispose_ensurer(assm));
   return success();
 }
 

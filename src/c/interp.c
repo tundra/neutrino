@@ -179,7 +179,7 @@ static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
   // Unhook the barrier from the barrier stack.
   set_stack_top_barrier(stack, previous);
   // Fire the exit action for the handler object.
-  if (in_genus(dgCodeShardSection, barrier)) {
+  if (in_genus(dgEnsureSection, barrier)) {
     // Pop any previous state off the stack. If we've executed any
     // code shards before the first will be the result from the shard
     // the second will be the shard itself.
@@ -449,7 +449,6 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           size_t param_index = read_short(&cache, &frame, 1);
           size_t block_depth = read_short(&cache, &frame, 2);
           value_t subject = frame_get_argument(&frame, 0);
-          CHECK_TRUE("refracting through non-refractor", is_refractor(subject));
           frame_t home = frame_empty();
           get_refractor_refracted_frame(subject, block_depth, &home);
           value_t value = frame_get_argument(&home, param_index);
@@ -461,7 +460,6 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           size_t index = read_short(&cache, &frame, 1);
           size_t block_depth = read_short(&cache, &frame, 2);
           value_t subject = frame_get_argument(&frame, 0);
-          CHECK_TRUE("refracting through non-refractor", is_refractor(subject));
           frame_t home = frame_empty();
           get_refractor_refracted_frame(subject, block_depth, &home);
           value_t value = frame_get_local(&home, index);
@@ -482,7 +480,6 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           size_t index = read_short(&cache, &frame, 1);
           size_t block_depth = read_short(&cache, &frame, 2);
           value_t subject = frame_get_argument(&frame, 0);
-          CHECK_TRUE("refracting through non-refractor", is_refractor(subject));
           frame_t home = frame_empty();
           get_refractor_refracted_frame(subject, block_depth, &home);
           value_t lambda = frame_get_argument(&home, 0);
@@ -533,27 +530,27 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame.pc += kCreateBlockOperationSize;
           break;
         }
-        case ocCreateCodeShard: {
+        case ocCreateEnsurer: {
           value_t code_block = read_value(&cache, &frame, 1);
           value_t section = frame_alloc_derived_object(&frame,
-              get_genus_descriptor(dgCodeShardSection));
+              get_genus_descriptor(dgEnsureSection));
           barrier_state_register(section, stack, code_block);
           refraction_point_init(section, &frame);
           value_validate(section);
           frame_push_value(&frame, section);
-          frame.pc += kCreateCodeShardOperationSize;
+          frame.pc += kCreateEnsurerOperationSize;
           break;
         }
-        case ocCallCodeShard: {
+        case ocCallEnsurer: {
           value_t value = frame_pop_value(&frame);
           value_t shard = frame_pop_value(&frame);
           frame_push_value(&frame, value);
           frame_push_value(&frame, shard);
-          CHECK_GENUS(dgCodeShardSection, shard);
+          CHECK_GENUS(dgEnsureSection, shard);
           value_t code_block = get_barrier_state_payload(shard);
           CHECK_FAMILY(ofCodeBlock, code_block);
           barrier_state_unregister(shard, stack);
-          frame.pc += kCallCodeShardOperationSize;
+          frame.pc += kCallEnsurerOperationSize;
           value_t argmap = ROOT(runtime, array_of_zero);
           push_stack_frame(runtime, stack, &frame,
               get_code_block_high_water_mark(code_block), argmap);
@@ -561,14 +558,14 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           code_cache_refresh(&cache, &frame);
           break;
         }
-        case ocDisposeCodeShard: {
+        case ocDisposeEnsurer: {
           frame_pop_value(&frame);
           value_t shard = frame_pop_value(&frame);
-          CHECK_GENUS(dgCodeShardSection, shard);
+          CHECK_GENUS(dgEnsureSection, shard);
           value_t value = frame_pop_value(&frame);
-          frame_destroy_derived_object(&frame, get_genus_descriptor(dgCodeShardSection));
+          frame_destroy_derived_object(&frame, get_genus_descriptor(dgEnsureSection));
           frame_push_value(&frame, value);
-          frame.pc += kDisposeCodeShardOperationSize;
+          frame.pc += kDisposeEnsurerOperationSize;
           break;
         }
         case ocInstallSignalHandler: {
@@ -656,7 +653,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t section = get_escape_section(escape);
           value_validate(section);
           barrier_state_unregister(section, stack);
-          set_escape_section(escape, nothing());
+          on_escape_section_exit(section);
           frame_destroy_derived_object(&frame, get_genus_descriptor(dgEscapeSection));
           frame_push_value(&frame, value);
           frame.pc += kDisposeEscapeOperationSize;
@@ -666,8 +663,9 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t value = frame_pop_value(&frame);
           value_t block = frame_pop_value(&frame);
           CHECK_FAMILY(ofBlock, block);
-          barrier_state_unregister(get_block_section(block), stack);
-          set_block_section(block, nothing());
+          value_t section = get_block_section(block);
+          barrier_state_unregister(section, stack);
+          on_block_section_exit(section);
           frame_destroy_derived_object(&frame, get_genus_descriptor(dgBlockSection));
           frame_push_value(&frame, value);
           frame.pc += kDisposeBlockOperationSize;

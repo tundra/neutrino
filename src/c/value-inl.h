@@ -50,29 +50,6 @@ static inline bool in_family(heap_object_family_t family, value_t value) {
   return is_heap_object(value) && (get_heap_object_family(value) == family);
 }
 
-// Is the given value a code object that refracts lookup?
-static inline bool is_refractor(value_t value) {
-  if (is_derived_object(value)) {
-    switch (get_derived_object_genus(value)) {
-    case dgCodeShardSection:
-    case dgSignalHandlerSection:
-      return true;
-    default:
-      return false;
-    }
-  } else if (is_heap_object(value)) {
-    switch (get_heap_object_family(value)) {
-      case ofBlock:
-      case ofSignalHandler:
-        return true;
-      default:
-        return false;
-    }
-  } else {
-    return false;
-  }
-}
-
 // Returns true iff the given value is either nothing or an object within the
 // given family.
 static inline bool in_family_opt(heap_object_family_t family, value_t value) {

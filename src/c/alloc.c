@@ -313,16 +313,6 @@ value_t new_heap_block(runtime_t *runtime, value_t section) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_signal_handler(runtime_t *runtime, value_t home_stack_piece,
-    value_t home_state_pointer) {
-  size_t size = kSignalHandlerSize;
-  TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, signal_handler_species)));
-  set_signal_handler_home_stack_piece(result, home_stack_piece);
-  set_signal_handler_home_state_pointer(result, home_state_pointer);
-  return post_create_sanity_check(result, size);
-}
-
 value_t new_heap_namespace(runtime_t *runtime, value_t value) {
   TRY_DEF(bindings, new_heap_id_hash_map(runtime, 16));
   size_t size = kNamespaceSize;
