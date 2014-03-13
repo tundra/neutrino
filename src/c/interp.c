@@ -179,7 +179,7 @@ static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
   // Unhook the barrier from the barrier stack.
   set_stack_top_barrier(stack, previous);
   // Fire the exit action for the handler object.
-  if (in_genus(dgCodeShardSection, payload)) {
+  if (in_genus(dgCodeShardSection, barrier)) {
     // Pop any previous state off the stack. If we've executed any
     // code shards before the first will be the result from the shard
     // the second will be the shard itself.
@@ -187,15 +187,15 @@ static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
     frame_pop_value(frame);
     // Push the shard onto the stack as the subject since we may need it
     // to refract access to outer variables.
-    frame_push_value(frame, payload);
+    frame_push_value(frame, barrier);
     value_t argmap = ROOT(runtime, array_of_zero);
-    value_t code_block = get_code_shard_section_code(payload);
+    value_t code_block = payload;
     push_stack_frame(runtime, stack, frame,
         get_code_block_high_water_mark(code_block), argmap);
     frame_set_code_block(frame, code_block);
     code_cache_refresh(cache, frame);
   } else {
-    value_on_scope_exit(payload);
+    value_on_scope_exit(barrier);
   }
   return false;
 }
@@ -537,9 +537,8 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t code_block = read_value(&cache, &frame, 1);
           value_t section = frame_alloc_derived_object(&frame,
               get_genus_descriptor(dgCodeShardSection));
-          barrier_state_register(section, stack, section);
+          barrier_state_register(section, stack, code_block);
           refraction_point_init(section, &frame);
-          set_code_shard_section_code(section, code_block);
           value_validate(section);
           frame_push_value(&frame, section);
           frame.pc += kCreateCodeShardOperationSize;
@@ -551,7 +550,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame_push_value(&frame, value);
           frame_push_value(&frame, shard);
           CHECK_GENUS(dgCodeShardSection, shard);
-          value_t code_block = get_code_shard_section_code(shard);
+          value_t code_block = get_barrier_state_payload(shard);
           CHECK_FAMILY(ofCodeBlock, code_block);
           barrier_state_unregister(shard, stack);
           frame.pc += kCallCodeShardOperationSize;
@@ -579,11 +578,10 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame_t snapshot = frame;
           value_t section = frame_alloc_derived_object(&frame,
               get_genus_descriptor(dgSignalHandlerSection));
-          barrier_state_register(section, stack, section);
+          barrier_state_register(section, stack, space);
           refraction_point_init(section, &frame);
           init_escape_state(section, &snapshot, dest_offset,
               get_genus_descriptor(dgSignalHandlerSection)->field_count + 1);
-          set_signal_handler_section_methods(section, space);
           value_validate(section);
           frame_push_value(&frame, section);
           frame.pc += kInstallSignalHandlerOperationSize;

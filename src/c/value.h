@@ -828,9 +828,9 @@ static int64_t get_custom_tagged_payload(value_t value) {
 //  CamelName                underscore_name            Sc
 #define ENUM_DERIVED_OBJECT_GENERA(F)                                          \
   F(StackPointer,            stack_pointer,             _)                     \
-  F(EscapeSection,           escape_section,            _)                     \
+  F(EscapeSection,           escape_section,            X)                     \
   F(CodeShardSection,        code_shard_section,        _)                     \
-  F(BlockSection,            block_section,             _)                     \
+  F(BlockSection,            block_section,             X)                     \
   F(SignalHandlerSection,    signal_handler_section,    X)
 
 // Enum identifying the different families of derived objects.

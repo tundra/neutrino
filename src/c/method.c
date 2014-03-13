@@ -971,10 +971,9 @@ static value_t do_signal_handler_method_lookup(sigmap_state_t *state) {
   handler_and_arg_map_t *data = (handler_and_arg_map_t*) state->input.data;
   value_t barrier = barrier_iter_get_current(&barrier_iter);
   while (!is_nothing(barrier)) {
-    value_t handler = get_barrier_state_payload(barrier);
-    if (in_genus(dgSignalHandlerSection, handler)) {
-      collector->current_handler = handler;
-      value_t methods = get_signal_handler_section_methods(barrier);
+    if (in_genus(dgSignalHandlerSection, barrier)) {
+      collector->current_handler = barrier;
+      value_t methods = get_barrier_state_payload(barrier);
       CHECK_FAMILY(ofMethodspace, methods);
       value_t sigmap = get_methodspace_methods(methods);
       TRY(continue_sigmap_lookup(state, sigmap, methods));

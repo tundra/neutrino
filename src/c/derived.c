@@ -162,6 +162,12 @@ value_t escape_section_validate(value_t self) {
   return success();
 }
 
+void on_escape_section_exit(value_t self) {
+  value_t escape = get_barrier_state_payload(self);
+  CHECK_FAMILY(ofEscape, escape);
+  set_escape_section(escape, nothing());
+}
+
 
 /// ## Refraction point
 
@@ -195,19 +201,22 @@ value_t block_section_validate(value_t self) {
   return success();
 }
 
+void on_block_section_exit(value_t self) {
+  value_t block = get_barrier_state_payload(self);
+  CHECK_FAMILY(ofBlock, block);
+  set_block_section(block, nothing());
+}
+
 
 /// ## Code shard section
 
 TRIVIAL_DERIVED_PRINT_ON_IMPL(CodeShardSection, code_shard_section);
 
-DERIVED_ACCESSORS_IMPL(CodeShardSection, code_shard_section, acInFamily,
-    ofCodeBlock, Code, code);
-
 value_t code_shard_section_validate(value_t self) {
   VALIDATE_GENUS(dgCodeShardSection, self);
   TRY(barrier_state_validate(self));
   TRY(refraction_point_validate(self));
-  VALIDATE_FAMILY_OPT(ofCodeBlock, get_code_shard_section_code(self));
+  VALIDATE_FAMILY_OPT(ofCodeBlock, get_barrier_state_payload(self));
   return success();
 }
 
@@ -216,14 +225,11 @@ value_t code_shard_section_validate(value_t self) {
 
 TRIVIAL_DERIVED_PRINT_ON_IMPL(SignalHandlerSection, signal_handler_section);
 
-DERIVED_ACCESSORS_IMPL(SignalHandlerSection, signal_handler_section, acInFamily,
-    ofMethodspace, Methods, methods);
-
 value_t signal_handler_section_validate(value_t self) {
   VALIDATE_GENUS(dgSignalHandlerSection, self);
   TRY(escape_state_validate(self));
   TRY(refraction_point_validate(self));
-  VALIDATE_FAMILY_OPT(ofMethodspace, get_signal_handler_section_methods(self));
+  VALIDATE_FAMILY_OPT(ofMethodspace, get_barrier_state_payload(self));
   return success();
 }
 
@@ -234,6 +240,7 @@ void on_signal_handler_section_exit(value_t self) {
 
 /// ## Descriptors
 
+// All the genus descriptors get piled into this one array.
 genus_descriptor_t kGenusDescriptors[kDerivedObjectGenusCount] = {
 #define __GENUS_STRUCT__(Genus, genus, SC) {                                   \
   dg##Genus,                                                                   \

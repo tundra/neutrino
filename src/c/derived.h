@@ -114,6 +114,12 @@ const char *get_derived_object_genus_name(derived_object_genus_t genus);
 //%       |   anchor   | <----- derived
 //%       +============+
 //%       :    ...     :
+///
+/// A barrier consists of three parts: the anchor identifies the type of the
+/// barrier which is what controls what happens when we leave the barrier. The
+/// previous pointer points to the previous barrier. The payload is some extra
+/// data that can be used during barrier exit in whatever way the handler wants.
+/// For escape barriers, for instance, it is the escape object to kill.
 
 #define kBarrierStateFieldCount 2
 static const size_t kBarrierStatePayloadOffset = DERIVED_OBJECT_FIELD_OFFSET(-1);
@@ -219,10 +225,7 @@ void refraction_point_init(value_t self, frame_t *frame);
 /// ## Code shard section
 
 #define kCodeShardSectionBeforeFieldCount kBarrierStateFieldCount
-#define kCodeShardSectionAfterFieldCount kRefractionPointFieldCount + 1
-static const size_t kCodeShardSectionCodeOffset = DERIVED_OBJECT_FIELD_OFFSET(2);
-
-ACCESSORS_DECL(code_shard_section, code);
+#define kCodeShardSectionAfterFieldCount kRefractionPointFieldCount
 
 
 /// ## Block section
@@ -237,10 +240,7 @@ ACCESSORS_DECL(block_section, methodspace);
 /// ## Signal handler section
 
 #define kSignalHandlerSectionBeforeFieldCount kEscapeStateFieldCount
-#define kSignalHandlerSectionAfterFieldCount kRefractionPointFieldCount + 1
-static const size_t kSignalHandlerSectionMethodsOffset = DERIVED_OBJECT_FIELD_OFFSET(2);
-
-ACCESSORS_DECL(signal_handler_section, methods);
+#define kSignalHandlerSectionAfterFieldCount kRefractionPointFieldCount
 
 
 /// ## Allocation
@@ -270,7 +270,7 @@ ENUM_DERIVED_OBJECT_GENERA(__GENUS_STRUCT__)
 extern genus_descriptor_t kGenusDescriptors[kDerivedObjectGenusCount];
 
 // Accessor for the descriptor corresponding to the given genus. We need these
-// pretty often.
+// pretty often so it's convenient that access is really cheap.
 #define get_genus_descriptor(GENUS) (&kGenusDescriptors[GENUS])
 
 #endif // _DERIVED
