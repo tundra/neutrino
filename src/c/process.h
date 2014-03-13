@@ -249,26 +249,8 @@ value_t *frame_get_stack_piece_top(frame_t *frame);
 // stack.
 void frame_walk_down_stack(frame_t *frame);
 
-// Creates a joint refraction point and barrier in the given frame that refracts
-// for the given refractor object.
-void frame_push_refracting_barrier(frame_t *frame, value_t refractor, value_t data);
-
 // Creates a plain barrier in the given frame with the given handler.
 void frame_push_barrier(frame_t *frame, value_t handler);
-
-// Pops a barrier off the stack. Returns the handler.
-value_t frame_pop_barrier(frame_t *frame);
-
-// Pops a refraction point off the stack. Returns the refractor that created
-// the point.
-value_t frame_pop_refraction_point(frame_t *frame);
-
-// Pops a joint refraction point and barrier off the stack. Returns the
-// refractor that created the point.
-value_t frame_pop_refracting_barrier(frame_t *frame);
-
-// Pops the barrier part off a refracting barrier.
-void frame_pop_partial_barrier(frame_t *frame);
 
 // Allocates a contiguous chunk of this frame.
 value_array_t frame_alloc_array(frame_t *frame, size_t size);

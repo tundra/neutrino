@@ -157,12 +157,11 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     size_t default_capacity = get_stack_default_piece_capacity(stack);
     size_t transfer_arg_count = get_array_length(arg_map);
     size_t required_capacity
-        = frame_capacity      // the new frame's locals
-        + kFrameHeaderSize    // the new frame's header
-        + 1                   // the synthetic bottom frame's one local
-        + kFrameHeaderSize    // the synthetic bottom frame's header
-        + kStackBarrierSize   // the barrier at the bottom of the stack piece
-        + transfer_arg_count; // any arguments to be copied onto the piece
+        = frame_capacity          // the new frame's locals
+        + kFrameHeaderSize        // the new frame's header
+        + 1                       // the synthetic bottom frame's one local
+        + kFrameHeaderSize        // the synthetic bottom frame's header
+        + transfer_arg_count;     // any arguments to be copied onto the piece
     size_t new_capacity = max_size(default_capacity, required_capacity);
 
     // Create and initialize the new stack segment. The frame struct is still
@@ -182,6 +181,9 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     open_stack_piece(new_piece, frame);
     bool pushed_stack_piece = try_push_new_frame(frame, frame_capacity,
         ffOrganic, false);
+    if (!pushed_stack_piece)
+      try_push_new_frame(frame, frame_capacity,
+              ffOrganic, false);
     CHECK_TRUE("pushing on new piece failed", pushed_stack_piece);
   }
   frame_set_argument_map(frame, arg_map);
@@ -218,94 +220,6 @@ frame_t open_stack(value_t stack) {
   frame_t result = frame_empty();
   open_stack_piece(get_stack_top_piece(stack), &result);
   return result;
-}
-
-// Push the top part of a barrier assuming that the handler has already been
-// pushed.
-static void frame_push_partial_barrier(frame_t *frame) {
-  UNREACHABLE("asdfsd");
-  /*
-  value_t *state_pointer = frame->stack_pointer - 1;
-  value_t *stack_bottom = frame_get_stack_piece_bottom(frame);
-  value_t state_pointer_value = new_integer(state_pointer - stack_bottom);
-  value_t stack = get_stack_piece_stack(frame->stack_piece);
-  value_t prev_barrier_piece = get_stack_top_barrier_piece(stack);
-  value_t prev_barrier_pointer = get_stack_top_barrier_pointer(stack);
-  frame_push_value(frame, prev_barrier_piece);
-  frame_push_value(frame, prev_barrier_pointer);
-  set_stack_top_barrier_piece(stack, frame->stack_piece);
-  set_stack_top_barrier_pointer(stack, state_pointer_value);
-  */
-}
-
-void frame_push_refracting_barrier(frame_t *frame, value_t refractor,
-    value_t data) {
-  CHECK_TRUE("not refractor", is_refractor(refractor));
-  value_t *state_pointer = frame->stack_pointer + kRefractionPointSize - 1;
-  value_t *stack_bottom = frame_get_stack_piece_bottom(frame);
-  value_t state_pointer_value = new_integer(state_pointer - stack_bottom);
-  set_refractor_home_state_pointer(refractor, state_pointer_value);
-  frame_push_value(frame, new_integer(frame->frame_pointer - stack_bottom));
-  frame_push_value(frame, data);
-  frame_push_value(frame, refractor);
-  frame_push_partial_barrier(frame);
-}
-
-void frame_push_barrier(frame_t *frame, value_t handler) {
-  CHECK_TRUE("pushing non-scoped value as barrier", is_scoped_object(handler));
-  frame_push_value(frame, handler);
-  frame_push_partial_barrier(frame);
-}
-
-value_t frame_pop_barrier(frame_t *frame) {
-  frame_pop_partial_barrier(frame);
-  value_t handler = frame_pop_value(frame);
-  return handler;
-}
-
-value_t frame_pop_refraction_point(frame_t *frame) {
-  value_t refractor = frame_pop_value(frame);
-  CHECK_TRUE("not refractor", is_refractor(refractor));
-  frame_pop_value(frame); // data
-  value_t fp = frame_pop_value(frame);
-  CHECK_DOMAIN(vdInteger, fp);
-  return refractor;
-}
-
-// Returns true iff the frame's stack is immediately at the stack's top barrier.
-static bool at_top_barrier(frame_t *frame) {
-  UNREACHABLE("ASDgasdf");
-  // This is a really defensive check and when there's better coverage in the
-  // nunit tests it should probably be removed. If the barrier logic doesn't
-  // work we'll know even without this.
-  /*
-  value_t stack = get_stack_piece_stack(frame->stack_piece);
-  value_t current_piece = get_stack_top_barrier_piece(stack);
-  value_t current_pointer = get_stack_top_barrier_pointer(stack);
-  value_t *stack_bottom = frame_get_stack_piece_bottom(frame);
-  value_t *home = stack_bottom + get_integer_value(current_pointer);
-  return is_same_value(current_piece, frame->stack_piece)
-      && home == (frame->stack_pointer - kStackBarrierSize);
-   */
-  return true;
-}
-
-void frame_pop_partial_barrier(frame_t *frame) {
-  IF_EXPENSIVE_CHECKS_ENABLED(CHECK_TRUE("not at top barrier",
-      at_top_barrier(frame)));
-  value_t prev_pointer = frame_pop_value(frame);
-  CHECK_DOMAIN_OPT(vdInteger, prev_pointer);
-  value_t prev_piece = frame_pop_value(frame);
-  CHECK_FAMILY_OPT(ofStackPiece, prev_piece);
-  value_t stack = get_stack_piece_stack(frame->stack_piece);
-  UNREACHABLE("Aasdfa");
-  // set_stack_top_barrier_piece(stack, prev_piece);
-  // set_stack_top_barrier_pointer(stack, prev_pointer);
-}
-
-value_t frame_pop_refracting_barrier(frame_t *frame) {
-  frame_pop_partial_barrier(frame);
-  return frame_pop_refraction_point(frame);
 }
 
 
@@ -352,7 +266,8 @@ bool try_push_new_frame(frame_t *frame, size_t frame_capacity, uint32_t flags,
   frame_t old_frame = *frame;
   // Determine how much room is left in the stack piece.
   value_t *stack_piece_start = get_stack_piece_storage(stack_piece);
-  value_t *stack_piece_limit = stack_piece_start + get_integer_value(get_stack_piece_capacity(stack_piece));
+  size_t capacity = get_integer_value(get_stack_piece_capacity(stack_piece));
+  value_t *stack_piece_limit = stack_piece_start + capacity;
   // There must always be room on a stack piece for the lid frame because it
   // must always be possible to close a stack if a condition occurs, which we
   // assume it can at any time. So we hold back a frame header's worth of stack

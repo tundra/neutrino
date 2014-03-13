@@ -490,19 +490,21 @@ value_t new_heap_ambience(runtime_t *runtime) {
 
 // --- P r o c e s s ---
 
-value_t new_heap_stack_piece(runtime_t *runtime, size_t capacity,
+value_t new_heap_stack_piece(runtime_t *runtime, size_t user_capacity,
     value_t previous, value_t stack) {
   CHECK_FAMILY_OPT(ofStackPiece, previous);
   CHECK_FAMILY_OPT(ofStack, stack);
-  size_t size = calc_stack_piece_size(capacity);
+  // Make room for the lid frame.
+  size_t full_capacity = user_capacity + kFrameHeaderSize;
+  size_t size = calc_stack_piece_size(full_capacity);
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, stack_piece_species)));
-  set_stack_piece_capacity(result, new_integer(capacity));
+  set_stack_piece_capacity(result, new_integer(full_capacity));
   set_stack_piece_previous(result, previous);
   set_stack_piece_stack(result, stack);
   set_stack_piece_lid_frame_pointer(result, nothing());
   value_t *storage = get_stack_piece_storage(result);
-  for (size_t i = 0; i < capacity; i++)
+  for (size_t i = 0; i < full_capacity; i++)
     storage[i] = nothing();
   frame_t bottom = frame_empty();
   bottom.stack_piece = result;
