@@ -601,17 +601,6 @@ struct frame_t;
 void get_refractor_refracted_frame(value_t self, size_t block_depth,
     struct frame_t *frame_out);
 
-// Returns the home stack piece field of a refractor, that is, either a code
-// shard or a block.
-value_t get_refractor_home_stack_piece(value_t value);
-
-// Returns the home state pointer of a refractor, that is, either a code shard
-// or a block.
-value_t get_refractor_home_state_pointer(value_t self);
-
-// Sets the home state pointer of a refractor.
-void set_refractor_home_state_pointer(value_t self, value_t value);
-
 
 /// ## Refraction points
 ///

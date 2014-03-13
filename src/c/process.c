@@ -637,18 +637,6 @@ void get_refractor_refracted_frame(value_t self, size_t block_depth,
   frame->flags = nothing();
 }
 
-value_t get_refractor_home_stack_piece(value_t value) {
-  UNREACHABLE("asdfas");
-}
-
-value_t get_refractor_home_state_pointer(value_t self) {
-  UNREACHABLE("asdasfd");
-}
-
-void set_refractor_home_state_pointer(value_t self, value_t value) {
-  UNREACHABLE("asdfsad");
-}
-
 
 /// ## Signal handler
 
