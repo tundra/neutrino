@@ -48,7 +48,7 @@ static void init_escape_state(value_t self, frame_t *frame, size_t pc_offset,
 // after pushing the state that must be included when restoring the state.
 static value_t push_escape_section(frame_t *frame, size_t pc_offset, int sp_offset) {
   frame_t snapshot = *frame;
-  value_t result = frame_alloc_derived_object(frame, &kEscapeSectionDescriptor);
+  value_t result = frame_alloc_derived_object(frame, get_genus_descriptor(dgEscapeSection));
   init_escape_state(result, &snapshot, pc_offset, sp_offset);
   return result;
 }
@@ -219,15 +219,6 @@ static uint64_t interrupt_counter = 0;
   }                                                                            \
 } while (false)
 
-static void validate_barriers(frame_t *frame) {
-  barrier_iter_t iter;
-  barrier_iter_init(&iter, frame);
-  value_t current = barrier_iter_get_current(&iter);
-  while (!is_nothing(current)) {
-    value_validate(current);
-    current = get_barrier_state_previous(current);
-  }
-}
 
 // Runs the given stack within the given ambience until a condition is
 // encountered or evaluation completes. This function also bails on and leaves
@@ -241,7 +232,6 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
   code_cache_refresh(&cache, &frame);
   E_BEGIN_TRY_FINALLY();
     while (true) {
-      validate_barriers(&frame);
       opcode_t opcode = (opcode_t) read_short(&cache, &frame, 0);
       TOPIC_INFO(Interpreter, "Opcode: %s (%i)", get_opcode_name(opcode),
           opcode_counter++);
@@ -531,7 +521,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           // Create the block object.
           E_TRY_DEF(block, new_heap_block(runtime, nothing()));
           // Create the stack section that describes the block.
-          value_t section = frame_alloc_derived_object(&frame, &kBlockSectionDescriptor);
+          value_t section = frame_alloc_derived_object(&frame, get_genus_descriptor(dgBlockSection));
           barrier_state_register(section, stack, block);
           refraction_point_init(section, &frame);
           set_block_section_methodspace(section, space);
@@ -546,7 +536,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         case ocCreateCodeShard: {
           value_t code_block = read_value(&cache, &frame, 1);
           value_t section = frame_alloc_derived_object(&frame,
-              &kCodeShardSectionDescriptor);
+              get_genus_descriptor(dgCodeShardSection));
           barrier_state_register(section, stack, section);
           refraction_point_init(section, &frame);
           set_code_shard_section_code(section, code_block);
@@ -577,7 +567,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t shard = frame_pop_value(&frame);
           CHECK_GENUS(dgCodeShardSection, shard);
           value_t value = frame_pop_value(&frame);
-          frame_destroy_derived_object(&frame, &kCodeShardSectionDescriptor);
+          frame_destroy_derived_object(&frame, get_genus_descriptor(dgCodeShardSection));
           frame_push_value(&frame, value);
           frame.pc += kDisposeCodeShardOperationSize;
           break;
@@ -588,11 +578,11 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           size_t dest_offset = read_short(&cache, &frame, 2);
           frame_t snapshot = frame;
           value_t section = frame_alloc_derived_object(&frame,
-              &kSignalHandlerSectionDescriptor);
+              get_genus_descriptor(dgSignalHandlerSection));
           barrier_state_register(section, stack, section);
           refraction_point_init(section, &frame);
           init_escape_state(section, &snapshot, dest_offset,
-              kSignalHandlerSectionDescriptor.field_count + 1);
+              get_genus_descriptor(dgSignalHandlerSection)->field_count + 1);
           set_signal_handler_section_methods(section, space);
           value_validate(section);
           frame_push_value(&frame, section);
@@ -605,7 +595,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t section = frame_pop_value(&frame);
           CHECK_GENUS(dgSignalHandlerSection, section);
           barrier_state_unregister(section, stack);
-          frame_destroy_derived_object(&frame, &kSignalHandlerSectionDescriptor);
+          frame_destroy_derived_object(&frame, get_genus_descriptor(dgSignalHandlerSection));
           frame_push_value(&frame, value);
           frame.pc += kUninstallSignalHandlerOperationSize;
           break;
@@ -617,7 +607,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           E_TRY_DEF(escape, new_heap_escape(runtime, nothing()));
           value_t section = push_escape_section(&frame,
               dest_offset + kCreateEscapeOperationSize,
-              kEscapeSectionDescriptor.field_count + 1);
+              get_genus_descriptor(dgEscapeSection)->field_count + 1);
           barrier_state_register(section, stack, escape);
           set_escape_section(escape, section);
           value_validate(escape);
@@ -669,7 +659,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_validate(section);
           barrier_state_unregister(section, stack);
           set_escape_section(escape, nothing());
-          frame_destroy_derived_object(&frame, &kEscapeSectionDescriptor);
+          frame_destroy_derived_object(&frame, get_genus_descriptor(dgEscapeSection));
           frame_push_value(&frame, value);
           frame.pc += kDisposeEscapeOperationSize;
           break;
@@ -680,7 +670,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           CHECK_FAMILY(ofBlock, block);
           barrier_state_unregister(get_block_section(block), stack);
           set_block_section(block, nothing());
-          frame_destroy_derived_object(&frame, &kBlockSectionDescriptor);
+          frame_destroy_derived_object(&frame, get_genus_descriptor(dgBlockSection));
           frame_push_value(&frame, value);
           frame.pc += kDisposeBlockOperationSize;
           break;

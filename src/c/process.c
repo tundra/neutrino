@@ -223,21 +223,6 @@ frame_t open_stack(value_t stack) {
 }
 
 
-/// ## Barrier
-
-value_t stack_barrier_get_handler(stack_barrier_t *barrier) {
-  return barrier->bottom[kStackBarrierHandlerOffset];
-}
-
-value_t stack_barrier_get_next_piece(stack_barrier_t *barrier) {
-  return barrier->bottom[kStackBarrierNextPieceOffset];
-}
-
-value_t stack_barrier_get_next_pointer(stack_barrier_t *barrier) {
-  return barrier->bottom[kStackBarrierNextPointerOffset];
-}
-
-
 /// ### Barrier iter
 
 void barrier_iter_init(barrier_iter_t *iter, frame_t *frame) {
@@ -599,19 +584,6 @@ value_t get_refractor_home(value_t self) {
     CHECK_DOMAIN(vdDerivedObject, self);
     return self;
   }
-}
-
-value_t get_refraction_point_data(refraction_point_t *point) {
-  return point->top[-kRefractionPointDataOffset];
-}
-
-value_t get_refraction_point_refractor(refraction_point_t *point) {
-  return point->top[-kRefractionPointRefractorOffset];
-}
-
-refraction_point_t stack_barrier_as_refraction_point(stack_barrier_t *barrier) {
-  refraction_point_t result = { barrier->bottom };
-  return result;
 }
 
 void get_refractor_refracted_frame(value_t self, size_t block_depth,

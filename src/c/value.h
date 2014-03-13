@@ -842,7 +842,7 @@ typedef enum {
 #undef __DECLARE_DERIVED_GENUS_ENUM__
   // This is a special value separate from any of the others that can be used
   // to indicate no family.
-  , __dgUnknown__
+  , kDerivedObjectGenusCount
 } derived_object_genus_t;
 
 // The number of bits it takes to hold a genus. This is a tricky one to change

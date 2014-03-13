@@ -759,7 +759,7 @@ static value_t emit_block_value(value_t method_asts, assembler_t *assm) {
 value_t emit_block_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofBlockAst, self);
   // Record the stack offset where the value is being pushed.
-  size_t offset = assm->stack_height + kBlockSectionDescriptor.field_count;
+  size_t offset = assm->stack_height + get_genus_descriptor(dgBlockSection)->field_count;
   value_t method_asts = get_block_ast_methods(self);
   TRY(emit_block_value(method_asts, assm));
   // Record in the scope chain that the symbol is bound and where the value is

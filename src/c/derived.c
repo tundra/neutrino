@@ -38,7 +38,7 @@ const char *get_derived_object_genus_name(derived_object_genus_t genus) {
 /// ## Allocation
 
 value_t new_derived_stack_pointer(runtime_t *runtime, value_array_t memory, value_t host) {
-  return alloc_derived_object(memory, &kStackPointerDescriptor, host);
+  return alloc_derived_object(memory, get_genus_descriptor(dgStackPointer), host);
 }
 
 // Returns true iff the given offset is within the bounds of the given host
@@ -120,11 +120,16 @@ value_t barrier_state_validate(value_t self) {
 
 /// ## Escape state
 
-DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, acNoCheck, 0, StackPointer, stack_pointer);
-DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, acNoCheck, 0, FramePointer, frame_pointer);
-DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, acNoCheck, 0, LimitPointer, limit_pointer);
-DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, acNoCheck, 0, Flags, flags);
-DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, acNoCheck, 0, Pc, pc);
+DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, acInDomainOpt, vdInteger,
+    StackPointer, stack_pointer);
+DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, acInDomainOpt, vdInteger,
+    FramePointer, frame_pointer);
+DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, acInDomainOpt, vdInteger,
+    LimitPointer, limit_pointer);
+DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, acInPhylumOpt, tpFlagSet,
+    Flags, flags);
+DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, acInDomainOpt, vdInteger,
+    Pc, pc);
 
 value_t escape_state_validate(value_t self) {
   TRY(barrier_state_validate(self));
@@ -160,8 +165,8 @@ value_t escape_section_validate(value_t self) {
 
 /// ## Refraction point
 
-DERIVED_ACCESSORS_IMPL(RefractionPoint, refraction_point, acNoCheck, 0, FramePointer,
-    frame_pointer);
+DERIVED_ACCESSORS_IMPL(RefractionPoint, refraction_point, acInDomainOpt,
+    vdInteger, FramePointer, frame_pointer);
 
 void refraction_point_init(value_t self, frame_t *frame) {
   value_t *stack_bottom = frame_get_stack_piece_bottom(frame);
@@ -229,8 +234,8 @@ void on_signal_handler_section_exit(value_t self) {
 
 /// ## Descriptors
 
-#define __GENUS_STRUCT__(Genus, genus, SC)                                     \
-genus_descriptor_t k##Genus##Descriptor = {                                    \
+genus_descriptor_t kGenusDescriptors[kDerivedObjectGenusCount] = {
+#define __GENUS_STRUCT__(Genus, genus, SC) {                                   \
   dg##Genus,                                                                   \
   (k##Genus##BeforeFieldCount + k##Genus##AfterFieldCount + 1),                \
   k##Genus##BeforeFieldCount,                                                  \
@@ -238,16 +243,7 @@ genus_descriptor_t k##Genus##Descriptor = {                                    \
   genus##_validate,                                                            \
   genus##_print_on,                                                            \
   SC(on_##genus##_exit, NULL)                                                  \
-};
+},
 ENUM_DERIVED_OBJECT_GENERA(__GENUS_STRUCT__)
 #undef __GENUS_STRUCT__
-
-genus_descriptor_t *get_genus_descriptor(derived_object_genus_t genus) {
-  switch (genus) {
-#define __GENUS_CASE__(Genus, genus, SC) case dg##Genus: return &k##Genus##Descriptor;
-ENUM_DERIVED_OBJECT_GENERA(__GENUS_CASE__)
-#undef __GENUS_CASE__
-    default:
-      return NULL;
-  }
-}
+};

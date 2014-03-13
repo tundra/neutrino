@@ -400,7 +400,7 @@ value_t assembler_emit_create_escape(assembler_t *assm,
   assembler_emit_cursor(assm, offset_out);
   // We'll record the complete state and also push a barrier containing the
   // escape.
-  assembler_adjust_stack_height(assm, kEscapeSectionDescriptor.field_count + 1);
+  assembler_adjust_stack_height(assm, get_genus_descriptor(dgEscapeSection)->field_count + 1);
   return success();
 }
 
@@ -440,14 +440,14 @@ value_t assembler_emit_leave_or_fire_barrier(assembler_t *assm, size_t argc) {
 
 value_t assembler_emit_dispose_escape(assembler_t *assm) {
   assembler_emit_opcode(assm, ocDisposeEscape);
-  assembler_adjust_stack_height(assm, -kEscapeSectionDescriptor.field_count - 1);
+  assembler_adjust_stack_height(assm, -get_genus_descriptor(dgEscapeSection)->field_count - 1);
   return success();
 }
 
 value_t assembler_emit_dispose_block(assembler_t *assm) {
   assembler_emit_opcode(assm, ocDisposeBlock);
   assembler_adjust_stack_height(assm,
-      -kBlockSectionDescriptor.field_count
+      -get_genus_descriptor(dgBlockSection)->field_count
       -1);
   return success();
 }
@@ -596,7 +596,7 @@ value_t assembler_emit_create_block(assembler_t *assm, value_t methods) {
   TRY(assembler_emit_value(assm, methods));
   // Pop off all the captuers and push back the lambda.
   assembler_adjust_stack_height(assm,
-      kBlockSectionDescriptor.field_count // The block section
+      get_genus_descriptor(dgBlockSection)->field_count // The block section
       +1);                                // The block object
   return success();
 }
@@ -605,7 +605,7 @@ value_t assembler_emit_create_code_shard(assembler_t *assm, value_t code_block) 
   assembler_emit_opcode(assm, ocCreateCodeShard);
   TRY(assembler_emit_value(assm, code_block));
   // Pop off all the captuers and push back the lambda.
-  assembler_adjust_stack_height(assm, kCodeShardSectionDescriptor.field_count + 1);
+  assembler_adjust_stack_height(assm, get_genus_descriptor(dgCodeShardSection)->field_count + 1);
   return success();
 }
 
@@ -619,7 +619,7 @@ value_t assembler_emit_call_code_shard(assembler_t *assm) {
 value_t assembler_emit_dispose_code_shard(assembler_t *assm) {
   assembler_emit_opcode(assm, ocDisposeCodeShard);
   assembler_adjust_stack_height(assm,
-      - kCodeShardSectionDescriptor.field_count // the code shard's section
+      - get_genus_descriptor(dgCodeShardSection)->field_count // the code shard's section
       - 1                                       // the code shard pointer
       - 1);                                     // the result
   return success();
@@ -630,12 +630,12 @@ value_t assembler_emit_install_signal_handler(assembler_t *assm, value_t space,
   assembler_emit_opcode(assm, ocInstallSignalHandler);
   TRY(assembler_emit_value(assm, space));
   assembler_emit_cursor(assm, continue_offset_out);
-  assembler_adjust_stack_height(assm, kSignalHandlerSectionDescriptor.field_count + 1);
+  assembler_adjust_stack_height(assm, get_genus_descriptor(dgSignalHandlerSection)->field_count + 1);
   return success();
 }
 
 value_t assembler_emit_uninstall_signal_handler(assembler_t *assm) {
   assembler_emit_opcode(assm, ocUninstallSignalHandler);
-  assembler_adjust_stack_height(assm, -kSignalHandlerSectionDescriptor.field_count - 1);
+  assembler_adjust_stack_height(assm, -get_genus_descriptor(dgSignalHandlerSection)->field_count - 1);
   return success();
 }

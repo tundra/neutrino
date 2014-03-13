@@ -341,24 +341,10 @@ frame_t open_stack(value_t stack);
 /// Helper type that encapsulates a region of the stack that holds a stack
 /// barrier.
 
-typedef struct {
-  value_t *bottom;
-} stack_barrier_t;
-
 static const int32_t kStackBarrierSize = 3;
 static const size_t kStackBarrierHandlerOffset = 0;
 static const size_t kStackBarrierNextPieceOffset = 1;
 static const size_t kStackBarrierNextPointerOffset = 2;
-
-// Returns the handler value for this barrier that determines what the barrier
-// actually does.
-value_t stack_barrier_get_handler(stack_barrier_t *barrier);
-
-// The stack piece of the next barrier.
-value_t stack_barrier_get_next_piece(stack_barrier_t *barrier);
-
-// The stack pointer of the next barrier.
-value_t stack_barrier_get_next_pointer(stack_barrier_t *barrier);
 
 
 /// ### Barrier iterator
@@ -608,20 +594,6 @@ void get_refractor_refracted_frame(value_t self, size_t block_depth,
 /// up their outer variables. The code for working with refraction points gets
 /// used in a few different places so it's convenient to wrap it in an explicit
 /// abstraction.
-
-typedef struct {
-  // Base pointer into the stack where the refraction point's state is.
-  value_t *top;
-} refraction_point_t;
-
-static const int32_t kRefractionPointSize = 3;
-static const size_t kRefractionPointRefractorOffset = 0;
-static const size_t kRefractionPointDataOffset = 1;
-
-static const size_t kRefractingBarrierOverlapSize = 1;
-
-// Are you serious that this has to be a macro!?!
-#define kRefractingBarrierSize ((int32_t) (kRefractionPointSize + kStackBarrierSize - kRefractingBarrierOverlapSize))
 
 
 /// ## Signal handler

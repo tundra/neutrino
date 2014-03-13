@@ -265,9 +265,12 @@ value_t alloc_derived_object(value_array_t memory, genus_descriptor_t *desc,
 value_t genus##_validate(value_t value);                                       \
 void genus##_print_on(value_t value, print_on_context_t *context);             \
 SC(void on_##genus##_exit(value_t value);,)                                    \
-extern genus_descriptor_t k##Genus##Descriptor;
 ENUM_DERIVED_OBJECT_GENERA(__GENUS_STRUCT__)
 #undef __GENUS_STRUCT__
+extern genus_descriptor_t kGenusDescriptors[kDerivedObjectGenusCount];
 
+// Accessor for the descriptor corresponding to the given genus. We need these
+// pretty often.
+#define get_genus_descriptor(GENUS) (&kGenusDescriptors[GENUS])
 
 #endif // _DERIVED
