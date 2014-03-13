@@ -4,7 +4,7 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "ctrino.h"
-#include "derived.h"
+#include "derived-inl.h"
 #include "log.h"
 #include "runtime.h"
 #include "syntax.h"
@@ -54,7 +54,19 @@ value_t heap_object_validate(value_t value) {
 value_t derived_object_validate(value_t value) {
   value_t anchor = get_derived_object_anchor(value);
   CHECK_PHYLUM(tpDerivedObjectAnchor, anchor);
-  return success();
+  genus_descriptor_t *desc = get_genus_descriptor(get_derived_object_anchor_genus(anchor));
+  return (desc->validate)(value);
+}
+
+value_t value_validate(value_t value) {
+  switch (get_value_domain(value)) {
+    case vdHeapObject:
+      return heap_object_validate(value);
+    case vdDerivedObject:
+      return derived_object_validate(value);
+    default:
+      return success();
+  }
 }
 
 
@@ -390,7 +402,8 @@ static void condition_print_on(value_t value, string_buffer_t *buf) {
   string_buffer_printf(buf, ")>");
 }
 
-static void object_print_on(value_t value, print_on_context_t *context) {
+static void heap_object_print_on(value_t value, print_on_context_t *context) {
+  CHECK_DOMAIN(vdHeapObject, value);
   family_behavior_t *behavior = get_heap_object_family_behavior(value);
   (behavior->print_on)(value, context);
 }
@@ -401,13 +414,23 @@ static void custom_tagged_print_on(value_t value, print_on_context_t *context) {
   (behavior->print_on)(value, context);
 }
 
+static void derived_object_print_on(value_t value, print_on_context_t *context) {
+  CHECK_DOMAIN(vdDerivedObject, value);
+  derived_object_genus_t genus = get_derived_object_genus(value);
+  genus_descriptor_t *descriptor = get_genus_descriptor(genus);
+  (descriptor->print_on)(value, context);
+}
+
 void value_print_on_cycle_detect(value_t value, print_on_context_t *context) {
   switch (get_value_domain(value)) {
     case vdInteger:
       integer_print_on(value, context->buf);
       break;
     case vdHeapObject:
-      object_print_on(value, context);
+      heap_object_print_on(value, context);
+      break;
+    case vdDerivedObject:
+      derived_object_print_on(value, context);
       break;
     case vdCondition:
       condition_print_on(value, context->buf);
@@ -559,10 +582,29 @@ static value_t get_internal_object_type(value_t self, runtime_t *runtime) {
 
 // ## Scoping
 
-void object_on_scope_exit(value_t self) {
-  CHECK_TRUE("exiting non-scoped object", is_scoped_object(self));
+void heap_object_on_scope_exit(value_t self) {
   family_behavior_t *behavior = get_heap_object_family_behavior(self);
+  CHECK_TRUE("heap object not scoped", behavior->on_scope_exit != NULL);
   (behavior->on_scope_exit)(self);
+}
+
+void derived_object_on_scope_exit(value_t self) {
+  genus_descriptor_t *descriptor = get_derived_object_descriptor(self);
+  CHECK_TRUE("derived object not scoped", descriptor->on_scope_exit != NULL);
+  (descriptor->on_scope_exit)(self);
+}
+
+void value_on_scope_exit(value_t value) {
+  switch (get_value_domain(value)) {
+  case vdHeapObject:
+    heap_object_on_scope_exit(value);
+    break;
+  case vdDerivedObject:
+    derived_object_on_scope_exit(value);
+    break;
+  default:
+    CHECK_TRUE("exiting non-scoped object", false);
+  }
 }
 
 bool is_scoped_object(value_t self) {

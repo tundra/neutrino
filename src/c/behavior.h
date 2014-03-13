@@ -116,6 +116,9 @@ value_t heap_object_validate(value_t value);
 // check failure mode where a ValidationFailed condition is returned.
 value_t derived_object_validate(value_t value);
 
+// Validates the given object appropriately.
+value_t value_validate(value_t value);
+
 // Returns the size in bytes of the given object on the heap.
 void get_heap_object_layout(value_t value, heap_object_layout_t *layout_out);
 
@@ -198,8 +201,14 @@ value_t set_heap_object_contents(runtime_t *runtime, value_t object,
 // Returns the primary type of the given value.
 value_t get_primary_type(value_t value, runtime_t *runtime);
 
-// Performs the on-scope-exit action for the given object.
-void object_on_scope_exit(value_t value);
+// Performs the on-scope-exit action for the given heap object.
+void heap_object_on_scope_exit(value_t value);
+
+// Performs the on-scope-exit action for the given derived object.
+void derived_object_on_scope_exit(value_t value);
+
+// Performs the on-scope-exit action for the given value.
+void value_on_scope_exit(value_t value);
 
 // Returns true iff the given value is a scoped object.
 bool is_scoped_object(value_t value);

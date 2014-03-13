@@ -4,6 +4,7 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "codegen.h"
+#include "derived-inl.h"
 #include "log.h"
 #include "method.h"
 #include "tagged-inl.h"
@@ -968,17 +969,19 @@ static value_t do_signal_handler_method_lookup(sigmap_state_t *state) {
   barrier_iter_t barrier_iter;
   barrier_iter_init(&barrier_iter, state->input.frame);
   handler_and_arg_map_t *data = (handler_and_arg_map_t*) state->input.data;
-  do {
-    stack_barrier_t *barrier = barrier_iter_get_current(&barrier_iter);
-    value_t handler = stack_barrier_get_handler(barrier);
-    if (in_family(ofSignalHandler, handler)) {
+  value_t barrier = barrier_iter_get_current(&barrier_iter);
+  while (!is_nothing(barrier)) {
+    value_t handler = get_barrier_state_payload(barrier);
+    if (in_genus(dgSignalHandlerSection, handler)) {
       collector->current_handler = handler;
-      refraction_point_t refract = stack_barrier_as_refraction_point(barrier);
-      value_t methods = get_refraction_point_data(&refract);
+      value_t methods = get_signal_handler_section_methods(barrier);
+      CHECK_FAMILY(ofMethodspace, methods);
       value_t sigmap = get_methodspace_methods(methods);
       TRY(continue_sigmap_lookup(state, sigmap, methods));
     }
-  } while (barrier_iter_advance(&barrier_iter));
+    barrier_iter_advance(&barrier_iter);
+    barrier = barrier_iter_get_current(&barrier_iter);
+  }
   TRY_SET(*data->arg_map_out, get_sigmap_lookup_argument_map(state));
   *data->handler_out = collector->result_handler;
   return success();
@@ -1013,8 +1016,8 @@ static value_t complete_special_lambda_lookup(sigmap_state_t *state,
 static value_t complete_special_block_lookup(sigmap_state_t *state,
     value_t subject) {
   CHECK_FAMILY(ofBlock, subject);
-  refraction_point_t home = get_refractor_home(subject);
-  value_t block_space = get_refraction_point_data(&home);
+  value_t section = get_block_section(subject);
+  value_t block_space = get_block_section_methodspace(section);
   sigmap_state_reset(state);
   value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
   data->value = block_space;

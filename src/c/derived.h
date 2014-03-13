@@ -7,6 +7,7 @@
 #ifndef _DERIVED
 #define _DERIVED
 
+#include "behavior.h"
 #include "check.h"
 #include "utils.h"
 #include "value.h"
@@ -24,6 +25,15 @@ typedef struct {
   size_t before_field_count;
   // The number of fields after the anchor.
   size_t after_field_count;
+  // Function for validating this genus.
+  value_t (*validate)(value_t value);
+  // Writes a string representation of the value on a string buffer.
+  void (*print_on)(value_t value, print_on_context_t *context);
+  // Perform the on-scope-exit action associated with this derived object. If
+  // this family is not scoped the value is NULL. It's a bit of a mess if these
+  // can fail since the barrier gets unhooked from the chain before we call this
+  // so they should always succeed, otherwise use a full code block.
+  void (*on_scope_exit)(value_t self);
 } genus_descriptor_t;
 
 // Returns the behavior struct that describes the given genus.
@@ -52,11 +62,11 @@ static address_t get_derived_object_address(value_t value) {
 
 // Returns the number of fields in a derived object with N fields, where the header
 // is not counted as a field.
-#define DERIVED_OBJECT_FIELD_COUNT(N) (1 + N)
+#define DERIVED_OBJECT_FIELD_COUNT(N) (N)
 
-// Returns the offset of the N'th field in a derived object, starting from 0 so
-// the header fields aren't included.
-#define DERIVED_OBJECT_FIELD_OFFSET(N) ((N * kValueSize) + kDerivedObjectHeaderSize)
+// Returns the offset of the N'th field in a derived object. The 0'th field is
+// the anchor.
+#define DERIVED_OBJECT_FIELD_OFFSET(N) (N * kValueSize)
 
 // The offset of the derived object anchor.
 static const size_t kDerivedObjectAnchorOffset = 0 * kValueSize;
@@ -90,6 +100,149 @@ const char *get_derived_object_genus_name(derived_object_genus_t genus);
 #define kStackPointerAfterFieldCount 0
 
 
+/// ## Barrier state
+///
+/// Barrier state is present in most of the sections below. It occupies the
+/// fields immediately before the anchor:
+///
+//%       :    ...     :
+//%       +------------+ ---+
+//%       |  previous  |    |
+//%       +------------+    | barrier state
+//%       |  payload   |    |
+//%       +============+ ---+
+//%       |   anchor   | <----- derived
+//%       +============+
+//%       :    ...     :
+
+#define kBarrierStateFieldCount 2
+static const size_t kBarrierStatePayloadOffset = DERIVED_OBJECT_FIELD_OFFSET(-1);
+static const size_t kBarrierStatePreviousOffset = DERIVED_OBJECT_FIELD_OFFSET(-2);
+
+// The data field in a barrier.
+ACCESSORS_DECL(barrier_state, payload);
+
+// The previous barrier.
+ACCESSORS_DECL(barrier_state, previous);
+
+FORWARD(frame_t);
+
+// Completes the initialization of a barrier state and registers it as the top
+// frame on the stack.
+void barrier_state_register(value_t self, value_t stack, value_t payload);
+
+// Unregisters the top barrier state.
+void barrier_state_unregister(value_t self, value_t stack);
+
+
+/// ## Escape state
+///
+/// State used by escapes. Escape state makes up escape sections but are also
+/// part of other sections. Like barrier state (which is part of escape state)
+/// everything is before the anchor:
+///
+//%       :    ...     :
+//%       +============+ ---+
+//%       :            :    |
+//%       :   exec     :    |
+//%       :   state    :    |
+//%       :            :    | escape state
+//%       +------------+    |
+//%       |            |    |
+//%       +- barrier  -+    |
+//%       |            |    |
+//%       +============+ ---+
+//%       |   anchor   | <----- derived
+//%       +============+
+//%       :    ...     :
+
+#define kEscapeStateFieldCount (kBarrierStateFieldCount + 5)
+static const size_t kEscapeStateStackPointerOffset = DERIVED_OBJECT_FIELD_OFFSET(-3);
+static const size_t kEscapeStateFramePointerOffset = DERIVED_OBJECT_FIELD_OFFSET(-4);
+static const size_t kEscapeStateLimitPointerOffset = DERIVED_OBJECT_FIELD_OFFSET(-5);
+static const size_t kEscapeStateFlagsOffset = DERIVED_OBJECT_FIELD_OFFSET(-6);
+static const size_t kEscapeStatePcOffset = DERIVED_OBJECT_FIELD_OFFSET(-7);
+
+// The recorded stack pointer.
+ACCESSORS_DECL(escape_state, stack_pointer);
+
+// The recorded frame pointer.
+ACCESSORS_DECL(escape_state, frame_pointer);
+
+// The recorded limit pointer.
+ACCESSORS_DECL(escape_state, limit_pointer);
+
+// The frame's flags.
+ACCESSORS_DECL(escape_state, flags);
+
+// The pc to return to.
+ACCESSORS_DECL(escape_state, pc);
+
+// Initializes the complete escape state of a section.
+void escape_state_init(value_t self, size_t stack_pointer, size_t frame_pointer,
+    size_t limit_pointer, value_t flags, size_t pc);
+
+
+/// ## Escape section
+///
+/// An escape section is the data associated with an escape object. It consists
+/// just of a block of escape state.
+
+#define kEscapeSectionBeforeFieldCount kEscapeStateFieldCount
+#define kEscapeSectionAfterFieldCount 0
+
+
+/// ## Refraction point
+///
+/// State related to refraction, like barrier state present in most of the
+/// control-related derived objects. Comes immediately after the anchor.
+///
+//%       :    ...     :
+//%       +============+
+//%       |   anchor   | <----- derived
+//%       +============+ +-+
+//%       |    fp      |   | refraction point
+//%       +------------+ --+
+//%       :    ...     :
+
+#define kRefractionPointFieldCount 1
+static const size_t kRefractionPointFramePointerOffset = DERIVED_OBJECT_FIELD_OFFSET(1);
+
+// The containing frame's frame pointer.
+ACCESSORS_DECL(refraction_point, frame_pointer);
+
+// Initializes the given refraction point such that it refracts for the given
+// frame.
+void refraction_point_init(value_t self, frame_t *frame);
+
+
+/// ## Code shard section
+
+#define kCodeShardSectionBeforeFieldCount kBarrierStateFieldCount
+#define kCodeShardSectionAfterFieldCount kRefractionPointFieldCount + 1
+static const size_t kCodeShardSectionCodeOffset = DERIVED_OBJECT_FIELD_OFFSET(2);
+
+ACCESSORS_DECL(code_shard_section, code);
+
+
+/// ## Block section
+
+#define kBlockSectionBeforeFieldCount kBarrierStateFieldCount
+#define kBlockSectionAfterFieldCount kRefractionPointFieldCount + 1
+static const size_t kBlockSectionMethodspaceOffset = DERIVED_OBJECT_FIELD_OFFSET(2);
+
+ACCESSORS_DECL(block_section, methodspace);
+
+
+/// ## Signal handler section
+
+#define kSignalHandlerSectionBeforeFieldCount kEscapeStateFieldCount
+#define kSignalHandlerSectionAfterFieldCount kRefractionPointFieldCount + 1
+static const size_t kSignalHandlerSectionMethodsOffset = DERIVED_OBJECT_FIELD_OFFSET(2);
+
+ACCESSORS_DECL(signal_handler_section, methods);
+
+
 /// ## Allocation
 
 // Returns a new stack pointer value within the given memory.
@@ -108,7 +261,10 @@ value_t alloc_derived_object(value_array_t memory, genus_descriptor_t *desc,
 
 /// ## Genus descriptors
 
-#define __GENUS_STRUCT__(Genus, genus)                                         \
+#define __GENUS_STRUCT__(Genus, genus, SC)                                     \
+value_t genus##_validate(value_t value);                                       \
+void genus##_print_on(value_t value, print_on_context_t *context);             \
+SC(void on_##genus##_exit(value_t value);,)                                    \
 extern genus_descriptor_t k##Genus##Descriptor;
 ENUM_DERIVED_OBJECT_GENERA(__GENUS_STRUCT__)
 #undef __GENUS_STRUCT__

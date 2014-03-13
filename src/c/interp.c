@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "alloc.h"
+#include "derived-inl.h"
 #include "interp.h"
 #include "log.h"
 #include "process.h"
@@ -27,6 +28,17 @@ static void code_cache_refresh(code_cache_t *cache, frame_t *frame) {
   cache->value_pool = get_code_block_value_pool(code_block);
 }
 
+static void init_escape_state(value_t self, frame_t *frame, size_t pc_offset,
+    int sp_offset) {
+  value_t *stack_start = frame_get_stack_piece_bottom(frame);
+  escape_state_init(self,
+      frame->stack_pointer + sp_offset - stack_start,
+      frame->frame_pointer - stack_start,
+      frame->limit_pointer - stack_start,
+      frame->flags,
+      frame->pc + pc_offset);
+}
+
 // Pushes the current state of the interpreter onto the stack such that it can
 // later be restored by invoking the associated escape. Returns a location value
 // that must later be passed to restore_escape_state when restoring the state.
@@ -34,40 +46,20 @@ static void code_cache_refresh(code_cache_t *cache, frame_t *frame) {
 // location to return to is not just the next instruction. The sp_offset is a
 // delta to add to the stack pointer to account for any changes that happen
 // after pushing the state that must be included when restoring the state.
-static size_t push_escape_state(frame_t *frame, size_t pc_offset, int sp_offset) {
+static value_t push_escape_section(frame_t *frame, size_t pc_offset, int sp_offset) {
   frame_t snapshot = *frame;
-  value_t *stack_start = frame_get_stack_piece_bottom(frame);
-  frame_push_value(frame, new_integer(snapshot.stack_pointer + sp_offset - stack_start));
-  frame_push_value(frame, new_integer(snapshot.frame_pointer - stack_start));
-  frame_push_value(frame, new_integer(snapshot.limit_pointer - stack_start));
-  frame_push_value(frame, snapshot.flags);
-  frame_push_value(frame, new_integer(snapshot.pc + pc_offset));
-  // The current stack pointer is where we're going to be pushing the escape
-  // object so that's the location to use.
-  return frame->stack_pointer - stack_start;
-}
-
-// Pops a block of escape state off the stack.
-static void discard_escape_state(frame_t *frame) {
-  value_t pc = frame_pop_value(frame);
-  CHECK_DOMAIN(vdInteger, pc);
-  value_t flags = frame_pop_value(frame);
-  CHECK_PHYLUM(tpFlagSet, flags);
-  value_t limit_pointer = frame_pop_value(frame);
-  CHECK_DOMAIN(vdInteger, limit_pointer);
-  value_t frame_pointer = frame_pop_value(frame);
-  CHECK_DOMAIN(vdInteger, frame_pointer);
-  value_t stack_pointer = frame_pop_value(frame);
-  CHECK_DOMAIN(vdInteger, stack_pointer);
+  value_t result = frame_alloc_derived_object(frame, &kEscapeSectionDescriptor);
+  init_escape_state(result, &snapshot, pc_offset, sp_offset);
+  return result;
 }
 
 // Restores the previous state of the interpreter that, when captured, returned
 // the given location value. Returns the value at the bottom of the escape
 // state which, if we're processing an actual escape object as opposed to an
 // implicit one related to signal handling, will be the escape itself.
-static value_t restore_escape_state(frame_t *frame, value_t stack,
-    value_t target_piece, size_t location) {
-  value_t storage = get_stack_piece_storage(target_piece);
+static void restore_escape_state(frame_t *frame, value_t stack,
+    value_t destination) {
+  value_t target_piece = get_derived_object_host(destination);
   // Restore the state to the stack/stack piece objects. We need those values
   // to be consistent with the frame so write them there and then update the
   // frame based on those values.
@@ -76,18 +68,16 @@ static value_t restore_escape_state(frame_t *frame, value_t stack,
     open_stack_piece(target_piece, frame);
   }
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
-  value_t bottom = stack_start[location];
-  value_t pc = get_array_at(storage, location - 1);
-  value_t flags = get_array_at(storage, location - 2);
-  value_t limit_pointer = get_array_at(storage, location - 3);
-  value_t frame_pointer = get_array_at(storage, location - 4);
-  value_t stack_pointer = get_array_at(storage, location - 5);
+  value_t pc = get_escape_state_pc(destination);
+  value_t flags = get_escape_state_flags(destination);
+  value_t limit_pointer = get_escape_state_limit_pointer(destination);
+  value_t frame_pointer = get_escape_state_frame_pointer(destination);
+  value_t stack_pointer = get_escape_state_stack_pointer(destination);
   frame->stack_pointer = stack_start + get_integer_value(stack_pointer);
   frame->frame_pointer = stack_start + get_integer_value(frame_pointer);
   frame->limit_pointer = stack_start + get_integer_value(limit_pointer);
   frame->flags = flags;
   frame->pc = get_integer_value(pc);
-  return bottom;
 }
 
 // Returns the short value at the given offset from the current pc.
@@ -160,35 +150,22 @@ static void log_lookup_error(value_t condition, value_t record, frame_t *frame) 
   string_buffer_dispose(&buf);
 }
 
-// TEST
-
 // Validates that the stack looks correct after execution completes normally.
 static void validate_stack_on_normal_exit(frame_t *frame) {
   value_t stack = get_stack_piece_stack(frame->stack_piece);
-  CHECK_TRUE("leftover barriers", is_nothing(get_stack_top_barrier_piece(stack)));
-  CHECK_TRUE("leftover barriers", is_nothing(get_stack_top_barrier_pointer(stack)));
+  CHECK_TRUE("leftover barriers", is_nothing(get_stack_top_barrier(stack)));
 }
 
 // Checks whether to fire the next barrier on the way to the given destination.
 // If there is a barrier to fire, fire it. Returns false iff a barrier was fired,
 // true if we've arrived at the destination.
 static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
-    runtime_t *runtime, value_t stack, value_t dest_piece, value_t dest_pointer) {
-  value_t barrier_piece = get_stack_top_barrier_piece(stack);
-  value_t barrier_pointer = get_stack_top_barrier_pointer(stack);
-  if (is_same_value(barrier_piece, dest_piece)) {
-    // The barrier is in the same stack piece that we're escaping to.
-    // Check whether it's above or below.
-    if (get_integer_value(barrier_pointer) == get_integer_value(dest_pointer)) {
-      // The barrier is below the point we're escaping to so it's safe
-            // to do the escape.
-      return true;
-    } else {
-      CHECK_TRUE("missed escape barrier",
-          get_integer_value(barrier_pointer) > get_integer_value(dest_pointer));
-      // The next barrier is above the escape so we have to process it
-      // before escaping.
-    }
+    runtime_t *runtime, value_t stack, value_t destination) {
+  CHECK_DOMAIN(vdDerivedObject, destination);
+  value_t barrier = get_stack_top_barrier(stack);
+  if (is_same_value(barrier, destination)) {
+    // We've arrived.
+    return true;
   } else {
     // The next barrier is different from where we're escaping to. Since
     // all stack pieces have at least one barrier it must be above the
@@ -197,26 +174,12 @@ static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
     // so this barrier has to be fired before we can escape.
   }
   // Grab the next barrier's handler.
-  value_t *barrier_piece_bottom =
-      get_array_elements(get_stack_piece_storage(barrier_piece));
-  value_t *barrier_bottom = barrier_piece_bottom + get_integer_value(barrier_pointer);
-  stack_barrier_t barrier = {barrier_bottom};
-  value_t handler = stack_barrier_get_handler(&barrier);
+  value_t payload = get_barrier_state_payload(barrier);
+  value_t previous = get_barrier_state_previous(barrier);
   // Unhook the barrier from the barrier stack.
-  value_t next_piece = stack_barrier_get_next_piece(&barrier);
-  value_t next_pointer = stack_barrier_get_next_pointer(&barrier);
-  set_stack_top_barrier_piece(stack, next_piece);
-  set_stack_top_barrier_pointer(stack, next_pointer);
+  set_stack_top_barrier(stack, previous);
   // Fire the exit action for the handler object.
-  if (in_family(ofCodeShard, handler)) {
-    // The handler is a code shard. Code shards are scoped but must
-    // be handled specially so we don't use the behavior-based scoped
-    // object infrastructure for them.
-    refraction_point_t home = {barrier_bottom};
-    value_t shard = get_refraction_point_refractor(&home);
-    CHECK_TRUE("invalid refraction point", is_same_value(shard, handler));
-    value_t code_block = get_refraction_point_data(&home);
-    CHECK_FAMILY(ofCodeBlock, code_block);
+  if (in_genus(dgCodeShardSection, payload)) {
     // Pop any previous state off the stack. If we've executed any
     // code shards before the first will be the result from the shard
     // the second will be the shard itself.
@@ -224,14 +187,15 @@ static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
     frame_pop_value(frame);
     // Push the shard onto the stack as the subject since we may need it
     // to refract access to outer variables.
-    frame_push_value(frame, handler);
+    frame_push_value(frame, payload);
     value_t argmap = ROOT(runtime, array_of_zero);
+    value_t code_block = get_code_shard_section_code(payload);
     push_stack_frame(runtime, stack, frame,
         get_code_block_high_water_mark(code_block), argmap);
     frame_set_code_block(frame, code_block);
     code_cache_refresh(cache, frame);
   } else {
-    object_on_scope_exit(handler);
+    value_on_scope_exit(payload);
   }
   return false;
 }
@@ -255,6 +219,16 @@ static uint64_t interrupt_counter = 0;
   }                                                                            \
 } while (false)
 
+static void validate_barriers(frame_t *frame) {
+  barrier_iter_t iter;
+  barrier_iter_init(&iter, frame);
+  value_t current = barrier_iter_get_current(&iter);
+  while (!is_nothing(current)) {
+    value_validate(current);
+    current = get_barrier_state_previous(current);
+  }
+}
+
 // Runs the given stack within the given ambience until a condition is
 // encountered or evaluation completes. This function also bails on and leaves
 // it to the surrounding code to report error messages.
@@ -267,6 +241,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
   code_cache_refresh(&cache, &frame);
   E_BEGIN_TRY_FINALLY();
     while (true) {
+      validate_barriers(&frame);
       opcode_t opcode = (opcode_t) read_short(&cache, &frame, 0);
       TOPIC_INFO(Interpreter, "Opcode: %s (%i)", get_opcode_name(opcode),
           opcode_counter++);
@@ -406,7 +381,6 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         }
         case ocStackBottom: {
           value_t result = frame_pop_value(&frame);
-          frame_pop_barrier(&frame);
           validate_stack_on_normal_exit(&frame);
           E_RETURN(result);
         }
@@ -554,33 +528,42 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         case ocCreateBlock: {
           value_t space = read_value(&cache, &frame, 1);
           CHECK_FAMILY(ofMethodspace, space);
-          E_TRY_DEF(block, new_heap_block(runtime, yes(), frame.stack_piece,
-              nothing()));
-          frame_push_refracting_barrier(&frame, block, space);
+          // Create the block object.
+          E_TRY_DEF(block, new_heap_block(runtime, nothing()));
+          // Create the stack section that describes the block.
+          value_t section = frame_alloc_derived_object(&frame, &kBlockSectionDescriptor);
+          barrier_state_register(section, stack, block);
+          refraction_point_init(section, &frame);
+          set_block_section_methodspace(section, space);
+          set_block_section(block, section);
+          value_validate(block);
+          value_validate(section);
+          // Push the block object.
+          frame_push_value(&frame, block);
           frame.pc += kCreateBlockOperationSize;
           break;
         }
         case ocCreateCodeShard: {
           value_t code_block = read_value(&cache, &frame, 1);
-          CHECK_FAMILY(ofCodeBlock, code_block);
-          E_TRY_DEF(shard, new_heap_code_shard(runtime, frame.stack_piece,
-              nothing()));
-          frame_push_refracting_barrier(&frame, shard, code_block);
+          value_t section = frame_alloc_derived_object(&frame,
+              &kCodeShardSectionDescriptor);
+          barrier_state_register(section, stack, section);
+          refraction_point_init(section, &frame);
+          set_code_shard_section_code(section, code_block);
+          value_validate(section);
+          frame_push_value(&frame, section);
           frame.pc += kCreateCodeShardOperationSize;
           break;
         }
         case ocCallCodeShard: {
           value_t value = frame_pop_value(&frame);
-          frame_pop_partial_barrier(&frame);
+          value_t shard = frame_pop_value(&frame);
           frame_push_value(&frame, value);
-          refraction_point_t home = {frame.stack_pointer - 2};
-          value_t shard = get_refraction_point_refractor(&home);
-          CHECK_FAMILY(ofCodeShard, shard);
-          value_t code_block = get_refraction_point_data(&home);
-          CHECK_FAMILY(ofCodeBlock, code_block);
-          // Push the shard onto the stack as the subject since we may need it
-          // to refract access to outer variables.
           frame_push_value(&frame, shard);
+          CHECK_GENUS(dgCodeShardSection, shard);
+          value_t code_block = get_code_shard_section_code(shard);
+          CHECK_FAMILY(ofCodeBlock, code_block);
+          barrier_state_unregister(shard, stack);
           frame.pc += kCallCodeShardOperationSize;
           value_t argmap = ROOT(runtime, array_of_zero);
           push_stack_frame(runtime, stack, &frame,
@@ -592,10 +575,9 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         case ocDisposeCodeShard: {
           frame_pop_value(&frame);
           value_t shard = frame_pop_value(&frame);
-          CHECK_FAMILY(ofCodeShard, shard);
+          CHECK_GENUS(dgCodeShardSection, shard);
           value_t value = frame_pop_value(&frame);
-          value_t shard_again = frame_pop_refraction_point(&frame);
-          CHECK_TRUE("invalid refraction point", is_same_value(shard, shard_again));
+          frame_destroy_derived_object(&frame, &kCodeShardSectionDescriptor);
           frame_push_value(&frame, value);
           frame.pc += kDisposeCodeShardOperationSize;
           break;
@@ -604,21 +586,26 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t space = read_value(&cache, &frame, 1);
           CHECK_FAMILY(ofMethodspace, space);
           size_t dest_offset = read_short(&cache, &frame, 2);
-          E_TRY_DEF(handler, new_heap_signal_handler(runtime, frame.stack_piece,
-              nothing()));
-          frame_push_refracting_barrier(&frame, handler, space);
-          push_escape_state(&frame,
-              dest_offset,         // Skip past the body to the uninstall op on escape.
-              kCapturedStateSize); // The sp will be immediately above the state
+          frame_t snapshot = frame;
+          value_t section = frame_alloc_derived_object(&frame,
+              &kSignalHandlerSectionDescriptor);
+          barrier_state_register(section, stack, section);
+          refraction_point_init(section, &frame);
+          init_escape_state(section, &snapshot, dest_offset,
+              kSignalHandlerSectionDescriptor.field_count + 1);
+          set_signal_handler_section_methods(section, space);
+          value_validate(section);
+          frame_push_value(&frame, section);
           frame.pc += kInstallSignalHandlerOperationSize;
           break;
         }
         case ocUninstallSignalHandler: {
           // The result has been left at the top of the stack.
           value_t value = frame_pop_value(&frame);
-          discard_escape_state(&frame);
-          value_t handler = frame_pop_refracting_barrier(&frame);
-          CHECK_FAMILY(ofSignalHandler, handler);
+          value_t section = frame_pop_value(&frame);
+          CHECK_GENUS(dgSignalHandlerSection, section);
+          barrier_state_unregister(section, stack);
+          frame_destroy_derived_object(&frame, &kSignalHandlerSectionDescriptor);
           frame_push_value(&frame, value);
           frame.pc += kUninstallSignalHandlerOperationSize;
           break;
@@ -627,12 +614,15 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           size_t dest_offset = read_short(&cache, &frame, 1);
           // Push the interpreter state at the end of this instruction onto the
           // stack.
-          value_t stack_piece = frame.stack_piece;
-          E_TRY_DEF(escape, new_heap_escape(runtime, yes(), stack_piece, nothing()));
-          size_t location = push_escape_state(&frame,
-              dest_offset + kCreateEscapeOperationSize, kCapturedStateSize + kStackBarrierSize);
-          set_escape_stack_pointer(escape, new_integer(location));
-          frame_push_barrier(&frame, escape);
+          E_TRY_DEF(escape, new_heap_escape(runtime, nothing()));
+          value_t section = push_escape_section(&frame,
+              dest_offset + kCreateEscapeOperationSize,
+              kEscapeSectionDescriptor.field_count + 1);
+          barrier_state_register(section, stack, escape);
+          set_escape_section(escape, section);
+          value_validate(escape);
+          value_validate(section);
+          frame_push_value(&frame, escape);
           frame.pc += kCreateEscapeOperationSize;
           break;
         }
@@ -642,20 +632,15 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           // to the handler method. Above the arguments are also two scratch
           // stack entries.
           value_t handler = frame_peek_value(&frame, argc + 2);
-          CHECK_FAMILY(ofSignalHandler, handler);
-          value_t home_piece = get_signal_handler_home_stack_piece(handler);
-          value_t home_pointer = get_signal_handler_home_state_pointer(handler);
-          if (maybe_fire_next_barrier(&cache, &frame, runtime, stack, home_piece,
-              home_pointer)) {
-            size_t home_location = get_integer_value(home_pointer);
-            size_t escape_location = home_location + kStackBarrierSize + kCapturedStateSize;
+          CHECK_GENUS(dgSignalHandlerSection, handler);
+          if (maybe_fire_next_barrier(&cache, &frame, runtime, stack, handler)) {
             // Pop the scratch entries off.
             frame_pop_value(&frame);
             frame_pop_value(&frame);
             // Pop the value off.
             value_t value = frame_pop_value(&frame);
             // Escape to the handler's home.
-            restore_escape_state(&frame, stack, home_piece, escape_location);
+            restore_escape_state(&frame, stack, handler);
             code_cache_refresh(&cache, &frame);
             // Push the value back on, now in the handler's home frame.
             frame_push_value(&frame, value);
@@ -665,16 +650,12 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         case ocFireEscapeOrBarrier: {
           value_t escape = frame_get_argument(&frame, 0);
           CHECK_FAMILY(ofEscape, escape);
-          value_t escape_piece = get_escape_stack_piece(escape);
-          value_t escape_pointer = get_escape_stack_pointer(escape);
+          value_t section = get_escape_section(escape);
           // Fire the next barrier or, if there are no more barriers, apply the
           // escape.
-          if (maybe_fire_next_barrier(&cache, &frame, runtime, stack, escape_piece,
-              escape_pointer)) {
+          if (maybe_fire_next_barrier(&cache, &frame, runtime, stack, section)) {
             value_t value = frame_get_argument(&frame, 2);
-            size_t location = get_integer_value(escape_pointer);
-            value_t bottom = restore_escape_state(&frame, stack, escape_piece, location);
-            CHECK_TRUE("invalid escape", is_same_value(escape, bottom));
+            restore_escape_state(&frame, stack, section);
             code_cache_refresh(&cache, &frame);
             frame_push_value(&frame, value);
           }
@@ -682,18 +663,24 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         }
         case ocDisposeEscape: {
           value_t value = frame_pop_value(&frame);
-          value_t escape = frame_pop_barrier(&frame);
+          value_t escape = frame_pop_value(&frame);
           CHECK_FAMILY(ofEscape, escape);
-          set_escape_is_live(escape, no());
+          value_t section = get_escape_section(escape);
+          value_validate(section);
+          barrier_state_unregister(section, stack);
+          set_escape_section(escape, nothing());
+          frame_destroy_derived_object(&frame, &kEscapeSectionDescriptor);
           frame_push_value(&frame, value);
           frame.pc += kDisposeEscapeOperationSize;
           break;
         }
         case ocDisposeBlock: {
           value_t value = frame_pop_value(&frame);
-          value_t block = frame_pop_refracting_barrier(&frame);
+          value_t block = frame_pop_value(&frame);
           CHECK_FAMILY(ofBlock, block);
-          set_block_is_live(block, no());
+          barrier_state_unregister(get_block_section(block), stack);
+          set_block_section(block, nothing());
+          frame_destroy_derived_object(&frame, &kBlockSectionDescriptor);
           frame_push_value(&frame, value);
           frame.pc += kDisposeBlockOperationSize;
           break;

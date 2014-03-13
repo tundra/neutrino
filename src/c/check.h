@@ -156,6 +156,14 @@ IF_CHECKS_ENABLED(__CHECK_CLASS_OPT__(custom_tagged_phylum_t, tpPhylum, EXPR, ge
 #define CHECK_FAMILY(ofFamily, EXPR)                                           \
 IF_CHECKS_ENABLED(__CHECK_CLASS__(heap_object_family_t, ofFamily, EXPR, get_heap_object_family))
 
+// Check that fails unless the object is in the specified family.
+#define CHECK_GENUS(dgGenus, EXPR)                                             \
+IF_CHECKS_ENABLED(__CHECK_CLASS__(derived_object_genus_t, dgGenus, EXPR, get_derived_object_genus))
+
+// Check that fails unless the object is nothing or in the specified genus.
+#define CHECK_GENUS_OPT(dgGenus, EXPR)                                         \
+IF_CHECKS_ENABLED(__CHECK_CLASS_OPT__(derived_object_genus_t, dgGenus, EXPR, get_derived_object_genus))
+
 // Check that fails unless the given expression is in a mutable mode.
 #define CHECK_MUTABLE(EXPR)                                                    \
 IF_CHECKS_ENABLED(CHECK_TRUE("mutable", is_mutable(EXPR)))

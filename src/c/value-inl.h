@@ -6,6 +6,7 @@
 #define _VALUE_INL
 
 #include "condition.h"
+#include "derived.h"
 #include "tagged.h"
 #include "try-inl.h"
 #include "utils-inl.h"
@@ -51,13 +52,24 @@ static inline bool in_family(heap_object_family_t family, value_t value) {
 
 // Is the given value a code object that refracts lookup?
 static inline bool is_refractor(value_t value) {
-  switch (get_heap_object_family(value)) {
-    case ofBlock:
-    case ofCodeShard:
-    case ofSignalHandler:
+  if (is_derived_object(value)) {
+    switch (get_derived_object_genus(value)) {
+    case dgCodeShardSection:
+    case dgSignalHandlerSection:
       return true;
     default:
       return false;
+    }
+  } else if (is_heap_object(value)) {
+    switch (get_heap_object_family(value)) {
+      case ofBlock:
+      case ofSignalHandler:
+        return true;
+      default:
+        return false;
+    }
+  } else {
+    return false;
   }
 }
 
@@ -65,6 +77,12 @@ static inline bool is_refractor(value_t value) {
 // given family.
 static inline bool in_family_opt(heap_object_family_t family, value_t value) {
   return is_nothing(value) || in_family(family, value);
+}
+
+// Returns true iff the given value is either nothing or a value within the
+// given domain.
+static inline bool in_domain_opt(value_domain_t domain, value_t value) {
+  return is_nothing(value) || in_domain(domain, value);
 }
 
 // Returns true iff the given species belongs to the given division.
@@ -144,6 +162,17 @@ VALIDATE(in_family(ofFamily, EXPR))
 #define VALIDATE_FAMILY_OPT(ofFamily, EXPR)                                    \
 VALIDATE(in_family_opt(ofFamily, EXPR))
 
+// Checks whether the value at the end of the given pointer belongs to the
+// specified domain. If not, returns a validation failure.
+#define VALIDATE_DOMAIN(vdDomain, EXPR)                                        \
+VALIDATE(in_domain(vdDomain, EXPR))
+
+// Checks whether the value at the end of the given pointer belongs to the
+// specified domain. If not, returns a validation failure.
+#define VALIDATE_DOMAIN_OPT(vdDomain, EXPR)                                    \
+VALIDATE(in_domain_opt(vdDomain, EXPR))
+
+
 // --- B e h a v i o r ---
 
 // Expands to a trivial implementation of print_on.
@@ -211,6 +240,16 @@ SWALLOW_SEMI(gi)
 #define acInFamilyOpt(ofFamily, VALUE)                                         \
   CHECK_FAMILY_OPT(ofFamily, (VALUE))
 
+// Accessor check that indicates that the argument should belong to the domain
+// specified in the argument.
+#define acInDomain(vdDomain, VALUE)                                            \
+  CHECK_DOMAIN(vdDomain, (VALUE))
+
+// Accessor check that indicates that the argument should either be nothing or
+// belong to the domain specified in the argument.
+#define acInDomainOpt(vdDomain, VALUE)                                         \
+  CHECK_DOMAIN_OPT(vdDomain, (VALUE))
+
 // Accessor check that indicates that the argument should either be nothing or
 // belong to a syntax family.
 #define acIsSyntaxOpt(UNUSED, VALUE)                                           \
@@ -224,6 +263,23 @@ void set_##receiver##_##field(value_t self, value_t value) {                   \
   *access_heap_object_field(self, k##Receiver##Field##Offset) = value;         \
 }                                                                              \
 GETTER_IMPL(Receiver, receiver, Field, field)
+
+
+// Expands to a function that gets the specified field in the specified object
+// family.
+#define DERIVED_GETTER_IMPL(Receiver, receiver, Field, field)                  \
+value_t get_##receiver##_##field(value_t self) {                               \
+  return *access_derived_object_field(self, k##Receiver##Field##Offset);       \
+}                                                                              \
+SWALLOW_SEMI(gi)
+
+// Expands to an unchecked setter and a getter for the specified types.
+#define DERIVED_ACCESSORS_IMPL(Receiver, receiver, acValueCheck, VALUE_CHECK_ARG, Field, field) \
+void set_##receiver##_##field(value_t self, value_t value) {                   \
+  acValueCheck(VALUE_CHECK_ARG, value);                                        \
+  *access_derived_object_field(self, k##Receiver##Field##Offset) = value;      \
+}                                                                              \
+DERIVED_GETTER_IMPL(Receiver, receiver, Field, field)
 
 
 // --- I n t e g e r / e n u m   a c c e s s o r s ---

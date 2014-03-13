@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "behavior.h"
+#include "derived-inl.h"
 #include "log.h"
 #include "process.h"
 #include "tagged-inl.h"
@@ -10,27 +11,47 @@
 #include "value-inl.h"
 
 
-// --- S t a c k   p i e c e ---
+/// ## Stack piece
 
 FIXED_GET_MODE_IMPL(stack_piece, vmMutable);
 
-ACCESSORS_IMPL(StackPiece, stack_piece, acInFamily, ofArray, Storage, storage);
+ACCESSORS_IMPL(StackPiece, stack_piece, acNoCheck, 0, Capacity, capacity);
 ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt, ofStackPiece, Previous, previous);
 ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt, ofStack, Stack, stack);
 ACCESSORS_IMPL(StackPiece, stack_piece, acNoCheck, 0, LidFramePointer, lid_frame_pointer);
 
+size_t calc_stack_piece_size(size_t capacity) {
+  return kStackPieceHeaderSize + (capacity * kValueSize);
+}
+
+value_t *get_stack_piece_storage(value_t value) {
+  CHECK_FAMILY(ofStackPiece, value);
+  return access_heap_object_field(value, kStackPieceStorageOffset);
+}
+
+int set_stack_piece_storage(value_t self, value_t value) {
+  UNREACHABLE("set_stack_piece_storage");
+  return 0;
+}
+
+void get_stack_piece_layout(value_t value, heap_object_layout_t *layout) {
+  size_t capacity = get_integer_value(get_stack_piece_capacity(value));
+  size_t size = calc_stack_piece_size(capacity);
+  heap_object_layout_set(layout, size, kHeapObjectHeaderSize);
+}
+
 value_t stack_piece_validate(value_t value) {
   VALIDATE_FAMILY(ofStackPiece, value);
-  VALIDATE_FAMILY(ofArray, get_stack_piece_storage(value));
   VALIDATE_FAMILY_OPT(ofStackPiece, get_stack_piece_previous(value));
   VALIDATE_FAMILY_OPT(ofStack, get_stack_piece_stack(value));
+  VALIDATE_DOMAIN(vdInteger, get_stack_piece_capacity(value));
   return success();
 }
 
 void stack_piece_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofStackPiece, value);
   string_buffer_printf(context->buf, "#<stack piece ~%w: st@%i>", value,
-      get_array_length(get_stack_piece_storage(value)));
+      get_stack_piece_capacity(value));
 }
 
 bool is_stack_piece_closed(value_t self) {
@@ -45,15 +66,12 @@ TRIVIAL_PRINT_ON_IMPL(Stack, stack);
 
 ACCESSORS_IMPL(Stack, stack, acInFamily, ofStackPiece, TopPiece, top_piece);
 INTEGER_ACCESSORS_IMPL(Stack, stack, DefaultPieceCapacity, default_piece_capacity);
-ACCESSORS_IMPL(Stack, stack, acInFamilyOpt, ofStackPiece, TopBarrierPiece,
-    top_barrier_piece);
-ACCESSORS_IMPL(Stack, stack, acNoCheck, 0, TopBarrierPointer, top_barrier_pointer);
+ACCESSORS_IMPL(Stack, stack, acNoCheck, 0, TopBarrier, top_barrier);
 
 value_t stack_validate(value_t self) {
   VALIDATE_FAMILY(ofStack, self);
   VALIDATE_FAMILY(ofStackPiece, get_stack_top_piece(self));
-  VALIDATE_FAMILY_OPT(ofStackPiece, get_stack_top_barrier_piece(self));
-  value_t current = get_stack_top_barrier_piece(self);
+  value_t current = get_stack_top_piece(self);
   while (!is_nothing(current)) {
     value_t stack = get_stack_piece_stack(current);
     VALIDATE(is_same_value(stack, self));
@@ -187,12 +205,12 @@ bool frame_has_flag(frame_t *frame, frame_flag_t flag) {
 }
 
 value_t *frame_get_stack_piece_bottom(frame_t *frame) {
-  return get_array_elements(get_stack_piece_storage(frame->stack_piece));
+  return get_stack_piece_storage(frame->stack_piece);
 }
 
 value_t *frame_get_stack_piece_top(frame_t *frame) {
-  value_t storage = get_stack_piece_storage(frame->stack_piece);
-  return get_array_elements(storage) + get_array_length(storage);
+  value_t *storage = get_stack_piece_storage(frame->stack_piece);
+  return storage + get_integer_value(get_stack_piece_capacity(frame->stack_piece));
 }
 
 frame_t open_stack(value_t stack) {
@@ -205,6 +223,8 @@ frame_t open_stack(value_t stack) {
 // Push the top part of a barrier assuming that the handler has already been
 // pushed.
 static void frame_push_partial_barrier(frame_t *frame) {
+  UNREACHABLE("asdfsd");
+  /*
   value_t *state_pointer = frame->stack_pointer - 1;
   value_t *stack_bottom = frame_get_stack_piece_bottom(frame);
   value_t state_pointer_value = new_integer(state_pointer - stack_bottom);
@@ -215,6 +235,7 @@ static void frame_push_partial_barrier(frame_t *frame) {
   frame_push_value(frame, prev_barrier_pointer);
   set_stack_top_barrier_piece(stack, frame->stack_piece);
   set_stack_top_barrier_pointer(stack, state_pointer_value);
+  */
 }
 
 void frame_push_refracting_barrier(frame_t *frame, value_t refractor,
@@ -253,9 +274,11 @@ value_t frame_pop_refraction_point(frame_t *frame) {
 
 // Returns true iff the frame's stack is immediately at the stack's top barrier.
 static bool at_top_barrier(frame_t *frame) {
+  UNREACHABLE("ASDgasdf");
   // This is a really defensive check and when there's better coverage in the
   // nunit tests it should probably be removed. If the barrier logic doesn't
   // work we'll know even without this.
+  /*
   value_t stack = get_stack_piece_stack(frame->stack_piece);
   value_t current_piece = get_stack_top_barrier_piece(stack);
   value_t current_pointer = get_stack_top_barrier_pointer(stack);
@@ -263,6 +286,8 @@ static bool at_top_barrier(frame_t *frame) {
   value_t *home = stack_bottom + get_integer_value(current_pointer);
   return is_same_value(current_piece, frame->stack_piece)
       && home == (frame->stack_pointer - kStackBarrierSize);
+   */
+  return true;
 }
 
 void frame_pop_partial_barrier(frame_t *frame) {
@@ -273,14 +298,16 @@ void frame_pop_partial_barrier(frame_t *frame) {
   value_t prev_piece = frame_pop_value(frame);
   CHECK_FAMILY_OPT(ofStackPiece, prev_piece);
   value_t stack = get_stack_piece_stack(frame->stack_piece);
-  set_stack_top_barrier_piece(stack, prev_piece);
-  set_stack_top_barrier_pointer(stack, prev_pointer);
+  UNREACHABLE("Aasdfa");
+  // set_stack_top_barrier_piece(stack, prev_piece);
+  // set_stack_top_barrier_pointer(stack, prev_pointer);
 }
 
 value_t frame_pop_refracting_barrier(frame_t *frame) {
   frame_pop_partial_barrier(frame);
   return frame_pop_refraction_point(frame);
 }
+
 
 /// ## Barrier
 
@@ -301,29 +328,16 @@ value_t stack_barrier_get_next_pointer(stack_barrier_t *barrier) {
 
 void barrier_iter_init(barrier_iter_t *iter, frame_t *frame) {
   value_t stack = get_stack_piece_stack(frame->stack_piece);
-  value_t current_piece = get_stack_top_barrier_piece(stack);
-  value_t current_pointer = get_stack_top_barrier_pointer(stack);
-  value_t *stack_bottom = get_array_elements(get_stack_piece_storage(current_piece));
-  value_t *home = stack_bottom + get_integer_value(current_pointer);
-  iter->current.bottom = home;
+  iter->current = get_stack_top_barrier(stack);
 }
 
-stack_barrier_t *barrier_iter_get_current(barrier_iter_t *iter) {
-  return &iter->current;
+value_t barrier_iter_get_current(barrier_iter_t *iter) {
+  return iter->current;
 }
 
 bool barrier_iter_advance(barrier_iter_t *iter) {
-  value_t next_piece = stack_barrier_get_next_piece(&iter->current);
-  if (is_nothing(next_piece)) {
-    iter->current.bottom = NULL;
-    return false;
-  } else {
-    value_t next_pointer = stack_barrier_get_next_pointer(&iter->current);
-    value_t *stack_bottom = get_array_elements(get_stack_piece_storage(next_piece));
-    value_t *next_home = stack_bottom + get_integer_value(next_pointer);
-    iter->current.bottom = next_home;
-    return true;
-  }
+  iter->current = get_barrier_state_previous(iter->current);
+  return !is_nothing(iter->current);
 }
 
 
@@ -337,9 +351,8 @@ bool try_push_new_frame(frame_t *frame, size_t frame_capacity, uint32_t flags,
   // the header of the new frame.
   frame_t old_frame = *frame;
   // Determine how much room is left in the stack piece.
-  value_t storage = get_stack_piece_storage(stack_piece);
-  value_t *stack_piece_start = get_array_elements(storage);
-  value_t *stack_piece_limit = stack_piece_start + get_array_length(storage);
+  value_t *stack_piece_start = get_stack_piece_storage(stack_piece);
+  value_t *stack_piece_limit = stack_piece_start + get_integer_value(get_stack_piece_capacity(stack_piece));
   // There must always be room on a stack piece for the lid frame because it
   // must always be possible to close a stack if a condition occurs, which we
   // assume it can at any time. So we hold back a frame header's worth of stack
@@ -453,6 +466,29 @@ value_t frame_push_value(frame_t *frame, value_t value) {
   return success();
 }
 
+value_array_t frame_alloc_array(frame_t *frame, size_t size) {
+  CHECK_TRUE("push out of frame bounds",
+      is_offset_within_frame(frame, frame->stack_pointer + (size - 1)));
+  value_t *start = frame->stack_pointer;
+  frame->stack_pointer += size;
+  return new_value_array(start, size);
+}
+
+value_t frame_alloc_derived_object(frame_t *frame, genus_descriptor_t *desc) {
+  value_array_t memory = frame_alloc_array(frame, desc->field_count);
+  return alloc_derived_object(memory, desc, frame->stack_piece);
+}
+
+void frame_destroy_derived_object(frame_t *frame, genus_descriptor_t *desc) {
+#ifdef EXPENSIVE_CHECKS
+  value_t *anchor_ptr = frame->stack_pointer - desc->after_field_count - 1;
+  value_t derived = new_derived_object((address_t) anchor_ptr);
+  value_validate(derived);
+#endif
+  for (size_t i = 0; i < desc->field_count; i++)
+    *(--frame->stack_pointer) = nothing();
+}
+
 value_t frame_pop_value(frame_t *frame) {
   COND_CHECK_TRUE("pop out of frame bounds", ccOutOfBounds,
       is_offset_within_frame(frame, frame->stack_pointer - 1));
@@ -521,12 +557,11 @@ FIXED_GET_MODE_IMPL(escape, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(Escape, escape);
 GET_FAMILY_PRIMARY_TYPE_IMPL(escape);
 
-ACCESSORS_IMPL(Escape, escape, acNoCheck, 0, IsLive, is_live);
-ACCESSORS_IMPL(Escape, escape, acInFamily, ofStackPiece, StackPiece, stack_piece);
-ACCESSORS_IMPL(Escape, escape, acNoCheck, 0, StackPointer, stack_pointer);
+ACCESSORS_IMPL(Escape, escape, acInGenusOpt, dgEscapeSection, Section, section);
 
 value_t escape_validate(value_t value) {
   VALIDATE_FAMILY(ofEscape, value);
+  VALIDATE_GENUS_OPT(dgEscapeSection, get_escape_section(value));
   return success();
 }
 
@@ -538,7 +573,7 @@ static value_t emit_fire_escape(assembler_t *assm) {
 static value_t escape_is_live(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofEscape, self);
-  return get_escape_is_live(self);
+  return new_boolean(!is_nothing(get_escape_section(self)));
 }
 
 value_t add_escape_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
@@ -549,7 +584,7 @@ value_t add_escape_builtin_implementations(runtime_t *runtime, safe_value_t s_ma
 }
 
 void on_escape_scope_exit(value_t self) {
-  set_escape_is_live(self, no());
+  set_escape_section(self, nothing());
 }
 
 
@@ -599,14 +634,11 @@ value_t ensure_lambda_owned_values_frozen(runtime_t *runtime, value_t self) {
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(block);
 
-ACCESSORS_IMPL(Block, block, acInPhylum, tpBoolean, IsLive, is_live);
-ACCESSORS_IMPL(Block, block, acInFamily, ofStackPiece, HomeStackPiece, home_stack_piece);
-ACCESSORS_IMPL(Block, block, acNoCheck, 0, HomeStatePointer, home_state_pointer);
+ACCESSORS_IMPL(Block, block, acNoCheck, 0, Section, section);
 
 value_t block_validate(value_t self) {
   VALIDATE_FAMILY(ofBlock, self);
-  VALIDATE_PHYLUM(tpBoolean, get_block_is_live(self));
-  VALIDATE_FAMILY(ofStackPiece, get_block_home_stack_piece(self));
+  VALIDATE_GENUS_OPT(dgBlockSection, get_block_section(self));
   return success();
 }
 
@@ -623,11 +655,11 @@ static value_t emit_block_call_trampoline(assembler_t *assm) {
 static value_t block_is_live(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofBlock, self);
-  return get_block_is_live(self);
+  return new_boolean(!is_nothing(get_block_section(self)));
 }
 
 void on_block_scope_exit(value_t self) {
-  set_block_is_live(self, no());
+  set_block_section(self, nothing());
 }
 
 value_t add_block_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
@@ -637,24 +669,25 @@ value_t add_block_builtin_implementations(runtime_t *runtime, safe_value_t s_map
   return success();
 }
 
-refraction_point_t get_refractor_home(value_t self) {
-  value_t home_stack_piece = get_refractor_home_stack_piece(self);
-  value_t home_state_pointer = get_refractor_home_state_pointer(self);
-  value_t *home = get_array_elements(get_stack_piece_storage(home_stack_piece))
-                    + get_integer_value(home_state_pointer);
-  refraction_point_t result = {home};
-  CHECK_TRUE("invalid refractor", is_same_value(self,
-      get_refraction_point_refractor(&result)));
-  return result;
+value_t get_refractor_home(value_t self) {
+  if (is_heap_object(self)) {
+    heap_object_family_t family = get_heap_object_family(self);
+    switch (family) {
+    case ofBlock:
+      return get_block_section(self);
+    default:
+      ERROR("Unexpected refractor family %s", get_heap_object_family_name(family));
+      UNREACHABLE("unexpected refractor family");
+      return nothing();
+    }
+  } else {
+    CHECK_DOMAIN(vdDerivedObject, self);
+    return self;
+  }
 }
 
 value_t get_refraction_point_data(refraction_point_t *point) {
   return point->top[-kRefractionPointDataOffset];
-}
-
-size_t get_refraction_point_frame_pointer(refraction_point_t *point) {
-  value_t value = point->top[-kRefractionPointFramePointerOffset];
-  return get_integer_value(value);
 }
 
 value_t get_refraction_point_refractor(refraction_point_t *point) {
@@ -672,10 +705,11 @@ void get_refractor_refracted_frame(value_t self, size_t block_depth,
   value_t current = self;
   for (size_t i = block_depth; i > 0; i--) {
     CHECK_TRUE("not refractor", is_refractor(current));
-    refraction_point_t home = get_refractor_home(current);
-    size_t fp = get_refraction_point_frame_pointer(&home);
-    frame->stack_piece = get_refractor_home_stack_piece(current);
-    frame->frame_pointer = frame_get_stack_piece_bottom(frame) + fp;
+    value_t refraction_point = get_refractor_home(current);
+    value_t fp_val = get_refraction_point_frame_pointer(refraction_point);
+    size_t fp = get_integer_value(fp_val);
+    frame->stack_piece = get_derived_object_host(refraction_point);
+    frame->frame_pointer = get_stack_piece_storage(frame->stack_piece) + fp;
     if (i > 1)
       current = frame_get_argument(frame, 0);
   }
@@ -689,39 +723,15 @@ void get_refractor_refracted_frame(value_t self, size_t block_depth,
 }
 
 value_t get_refractor_home_stack_piece(value_t value) {
-  CHECK_TRUE("not refractor", is_refractor(value));
-  return *access_heap_object_field(value, kBlockHomeStackPieceOffset);
+  UNREACHABLE("asdfas");
 }
 
 value_t get_refractor_home_state_pointer(value_t self) {
-  CHECK_TRUE("not refractor", is_refractor(self));
-  return *access_heap_object_field(self, kBlockHomeStatePointerOffset);
+  UNREACHABLE("asdasfd");
 }
 
 void set_refractor_home_state_pointer(value_t self, value_t value) {
-  CHECK_TRUE("not refractor", is_refractor(self));
-  *access_heap_object_field(self, kBlockHomeStatePointerOffset) = value;
-}
-
-
-/// ## Code shard
-
-FIXED_GET_MODE_IMPL(code_shard, vmMutable);
-
-ACCESSORS_IMPL(CodeShard, code_shard, acInFamily, ofStackPiece, HomeStackPiece,
-    home_stack_piece);
-ACCESSORS_IMPL(CodeShard, code_shard, acNoCheck, 0, HomeStatePointer,
-    home_state_pointer);
-
-value_t code_shard_validate(value_t self) {
-  VALIDATE_FAMILY(ofCodeShard, self);
-  VALIDATE_FAMILY(ofStackPiece, get_code_shard_home_stack_piece(self));
-  return success();
-}
-
-void code_shard_print_on(value_t value, print_on_context_t *context) {
-  CHECK_FAMILY(ofCodeShard, value);
-  string_buffer_printf(context->buf, "\u03C3~%w", value); // Unicode sigma.
+  UNREACHABLE("asdfsad");
 }
 
 

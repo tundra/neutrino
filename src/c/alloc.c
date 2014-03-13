@@ -305,24 +305,11 @@ value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t captures) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_block(runtime_t *runtime, value_t is_live,
-    value_t home_stack_piece, value_t home_state_pointer) {
+value_t new_heap_block(runtime_t *runtime, value_t section) {
   size_t size = kBlockSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_block_species)));
-  set_block_is_live(result, is_live);
-  set_block_home_stack_piece(result, home_stack_piece);
-  set_block_home_state_pointer(result, home_state_pointer);
-  return post_create_sanity_check(result, size);
-}
-
-value_t new_heap_code_shard(runtime_t *runtime, value_t home_stack_piece,
-    value_t home_state_pointer) {
-  size_t size = kCodeShardSize;
-  TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, code_shard_species)));
-  set_code_shard_home_stack_piece(result, home_stack_piece);
-  set_code_shard_home_state_pointer(result, home_state_pointer);
+  set_block_section(result, section);
   return post_create_sanity_check(result, size);
 }
 
@@ -503,24 +490,25 @@ value_t new_heap_ambience(runtime_t *runtime) {
 
 // --- P r o c e s s ---
 
-value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
+value_t new_heap_stack_piece(runtime_t *runtime, size_t capacity,
     value_t previous, value_t stack) {
   CHECK_FAMILY_OPT(ofStackPiece, previous);
   CHECK_FAMILY_OPT(ofStack, stack);
-  size_t size = kStackPieceSize;
-  TRY_DEF(storage, new_heap_array(runtime, storage_size + kFrameHeaderSize));
+  size_t size = calc_stack_piece_size(capacity);
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, stack_piece_species)));
-  set_stack_piece_storage(result, storage);
+  set_stack_piece_capacity(result, new_integer(capacity));
   set_stack_piece_previous(result, previous);
   set_stack_piece_stack(result, stack);
   set_stack_piece_lid_frame_pointer(result, nothing());
-  value_t *stack_start = get_array_elements(storage);
+  value_t *storage = get_stack_piece_storage(result);
+  for (size_t i = 0; i < capacity; i++)
+    storage[i] = nothing();
   frame_t bottom = frame_empty();
   bottom.stack_piece = result;
-  bottom.frame_pointer = stack_start;
-  bottom.stack_pointer = stack_start;
-  bottom.limit_pointer = stack_start;
+  bottom.frame_pointer = storage;
+  bottom.stack_pointer = storage;
+  bottom.limit_pointer = storage;
   bottom.flags = new_flag_set(ffSynthetic | ffStackPieceEmpty);
   bottom.pc = 0;
   close_frame(&bottom);
@@ -538,7 +526,6 @@ static void push_stack_bottom_frame(runtime_t *runtime, value_t stack) {
       false);
   CHECK_TRUE("pushing bottom frame", pushed);
   frame_set_code_block(&bottom, code_block);
-  frame_push_barrier(&bottom, stack);
   close_frame(&bottom);
 }
 
@@ -551,20 +538,16 @@ value_t new_heap_stack(runtime_t *runtime, size_t default_piece_capacity) {
   set_stack_piece_stack(piece, result);
   set_stack_top_piece(result, piece);
   set_stack_default_piece_capacity(result, default_piece_capacity);
-  set_stack_top_barrier_piece(result, nothing());
-  set_stack_top_barrier_pointer(result, nothing());
+  set_stack_top_barrier(result, nothing());
   push_stack_bottom_frame(runtime, result);
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_escape(runtime_t *runtime, value_t is_live, value_t stack_piece,
-    value_t stack_pointer) {
+value_t new_heap_escape(runtime_t *runtime, value_t section) {
   size_t size = kEscapeSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, escape_species)));
-  set_escape_is_live(result, is_live);
-  set_escape_stack_piece(result, stack_piece);
-  set_escape_stack_pointer(result, stack_pointer);
+  set_escape_section(result, section);
   return post_create_sanity_check(result, size);
 }
 

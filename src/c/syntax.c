@@ -759,7 +759,7 @@ static value_t emit_block_value(value_t method_asts, assembler_t *assm) {
 value_t emit_block_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofBlockAst, self);
   // Record the stack offset where the value is being pushed.
-  size_t offset = assm->stack_height + kRefractionPointSize - 1;
+  size_t offset = assm->stack_height + kBlockSectionDescriptor.field_count;
   value_t method_asts = get_block_ast_methods(self);
   TRY(emit_block_value(method_asts, assm));
   // Record in the scope chain that the symbol is bound and where the value is
@@ -823,7 +823,7 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   size_t code_start_offset = assembler_get_code_cursor(assm);
   // The capture will be pushed as the bottom value of the stack barrier, so
   // stack-barrier-size down from the current stack height.
-  size_t stack_offset = assm->stack_height - kStackBarrierSize;
+  size_t stack_offset = assm->stack_height - 1;
   // Record in the scope chain that the symbol is bound and where the value is
   // located on the stack.
   value_t symbol = get_with_escape_ast_symbol(self);
@@ -842,10 +842,9 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   // way whether you return normally or escape.
   size_t code_end_offset = assembler_get_code_cursor(assm);
   short_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
-  // Ensure that the escape is dead then slap the value and the captured state
-  // off, leaving just the value of the body or the escaped value.
+  // Ensure that the escape is dead and remove the section, leaving just the
+  // value of the body or the escaped value.
   TRY(assembler_emit_dispose_escape(assm));
-  TRY(assembler_emit_slap(assm, kCapturedStateSize));
   return success();
 }
 

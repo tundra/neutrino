@@ -138,12 +138,7 @@ value_t new_heap_function(runtime_t *runtime, alloc_flags_t flags,
 value_t new_heap_lambda(runtime_t *runtime, value_t methods, value_t captures);
 
 // Creates a new block value whose state is located at the given location.
-value_t new_heap_block(runtime_t *runtime, value_t is_live,
-    value_t home_stack_piece, value_t home_state_pointer);
-
-// Creates a new code shard whose state is located at the given location.
-value_t new_heap_code_shard(runtime_t *runtime, value_t home_stack_piece,
-    value_t home_state_pointer);
+value_t new_heap_block(runtime_t *runtime, value_t section);
 
 // Creates a new signal handler whose state is located at the given location.
 value_t new_heap_signal_handler(runtime_t *runtime, value_t home_stack_piece,
@@ -218,8 +213,7 @@ value_t new_heap_stack_piece(runtime_t *runtime, size_t storage_size,
 value_t new_heap_stack(runtime_t *runtime, size_t initial_capacity);
 
 // Creates a new captured escape value.
-value_t new_heap_escape(runtime_t *runtime, value_t is_live, value_t stack_piece,
-    value_t stack_pointer);
+value_t new_heap_escape(runtime_t *runtime, value_t section);
 
 // Creates a new backtrace object with the given set of entries.
 value_t new_heap_backtrace(runtime_t *runtime, value_t entries);

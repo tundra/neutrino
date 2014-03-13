@@ -428,12 +428,11 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
 }
 
 // Adaptor function for passing object validate as a value callback.
-static value_t runtime_validate_object(value_t value, value_callback_t *self) {
+static value_t runtime_validate_object(value_t value, value_callback_t *unused) {
   switch (get_value_domain(value)) {
     case vdHeapObject:
-      return heap_object_validate(value);
     case vdDerivedObject:
-      return derived_object_validate(value);
+      return value_validate(value);
     default:
       UNREACHABLE("validating non-object");
       return whatever();

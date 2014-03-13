@@ -415,7 +415,6 @@ static value_t new_moved_object(value_t target) {
   F(BuiltinImplementation,   builtin_implementation,    _, _, _, _, _, _, _, X, _, _,  6)\
   F(BuiltinMarker,           builtin_marker,            _, _, _, X, _, _, _, _, _, _, 43)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X, _, 49)\
-  F(CodeShard,               code_shard,                _, _, _, _, _, _, _, _, _, _, 75)\
   F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _, _, 67)\
   F(CurrentModuleAst,        current_module_ast,        _, _, X, _, _, _, X, _, _, _, 61)\
   F(DecimalFraction,         decimal_fraction,          _, _, X, _, _, _, _, _, _, _, 25)\
@@ -467,7 +466,7 @@ static value_t new_moved_object(value_t target) {
   F(SignatureAst,            signature_ast,             _, _, X, X, _, _, _, _, _, _, 19)\
   F(SignatureMap,            signature_map,             _, _, _, _, _, _, _, X, X, _, 45)\
   F(Stack,                   stack,                     _, _, _, _, _, _, _, _, _, X, 71)\
-  F(StackPiece,              stack_piece,               _, _, _, _, _, _, _, _, _, _, 58)\
+  F(StackPiece,              stack_piece,               _, _, _, _, X, _, _, _, _, _, 58)\
   F(String,                  string,                    X, X, _, X, X, _, _, _, _, _, 57)\
   F(SymbolAst,               symbol_ast,                _, _, X, X, _, _, _, _, _, _, 33)\
   F(Type,                    type,                      _, _, X, X, _, _, _, X, _, _, 32)\
@@ -825,13 +824,19 @@ static int64_t get_custom_tagged_payload(value_t value) {
 
 // Calls the given macro for each UpperCase and lower_camel_case genus of
 // derived objects.
+//
+//  CamelName                underscore_name            Sc
 #define ENUM_DERIVED_OBJECT_GENERA(F)                                          \
-  F(StackPointer,            stack_pointer)
+  F(StackPointer,            stack_pointer,             _)                     \
+  F(EscapeSection,           escape_section,            _)                     \
+  F(CodeShardSection,        code_shard_section,        _)                     \
+  F(BlockSection,            block_section,             _)                     \
+  F(SignalHandlerSection,    signal_handler_section,    X)
 
 // Enum identifying the different families of derived objects.
 typedef enum {
   __dgFirst__ = -1
-#define __DECLARE_DERIVED_GENUS_ENUM__(Genus, genus)                           \
+#define __DECLARE_DERIVED_GENUS_ENUM__(Genus, genus, SC)                       \
   , dg##Genus
   ENUM_DERIVED_OBJECT_GENERA(__DECLARE_DERIVED_GENUS_ENUM__)
 #undef __DECLARE_DERIVED_GENUS_ENUM__
