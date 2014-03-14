@@ -32,7 +32,7 @@ value_t get_builtin_subject(builtin_arguments_t *args);
 runtime_t *get_builtin_runtime(builtin_arguments_t *args);
 
 // Raises a signal, leaving execution. Typically you'll want to call this
-// through the ESCAPE_BUILTIN.
+// through the ESCAPE_BUILTIN macro.
 value_t escape_builtin(builtin_arguments_t *args, value_array_t values);
 
 // Convenience macro for escaping from a builtin. Builds the appropriate

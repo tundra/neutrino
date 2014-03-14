@@ -862,7 +862,7 @@ static value_t array_set_at(builtin_arguments_t *args) {
 }
 
 value_t add_array_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  ADD_BUILTIN_IMPL_MAY_ESCAPE("array[]", 1, 3, array_get_at);
+  ADD_BUILTIN_IMPL_MAY_ESCAPE("array[]", 1, 1, array_get_at);
   ADD_BUILTIN_IMPL("array[]:=()", 2, array_set_at);
   ADD_BUILTIN_IMPL("array.length", 0, array_length);
   return success();
