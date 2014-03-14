@@ -331,16 +331,17 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t result = impl(&args);
           if (in_condition_cause(ccSignal, result)) {
             // The builtin failed. Find the appropriate signal handler and call
-            // it. The invocation record is at the top of the stack. Leave it
-            // until we know whether there's a signal handler since if there
-            // isn't the backtrace code needs it.
-            value_t record = frame_peek_value(&frame, 0);
+            // it. The invocation record is at the top of the stack.
+            value_t record = frame_pop_value(&frame);
             CHECK_FAMILY(ofInvocationRecord, record);
             value_t arg_map = whatever();
             value_t handler = whatever();
             value_t method = lookup_signal_handler_method(ambience, record, &frame,
                 &handler, &arg_map);
             if (in_condition_cause(ccLookupError, method)) {
+              // Push the record back onto the stack to it's available to back
+              // tracing.
+              frame_push_value(&frame, record);
               frame.pc += kBuiltinMaybeEscapeOperationSize;
               // There was no handler for this so we have to escape out of the
               // interpreter altogether. Push the signal frame onto the stack to
@@ -353,9 +354,6 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
             }
             // Either found a signal or encountered a different condition.
             E_TRY(method);
-            // Found a handler so now we can pop the record off the stack in
-            // preparation for calling the handler.
-            frame_pop_value(&frame);
             // Skip forward to the point we want the signal to return to, the
             // leave-or-fire-barrier op that will do the leaving.
             size_t dest_offset = read_short(&cache, &frame, 2);
