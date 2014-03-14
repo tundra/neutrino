@@ -50,7 +50,10 @@ def $test_array_iteration() {
 
 def $test_bounds() {
   def $arr := @core:Array.new(3);
-  $assert:equals(null, try $arr[4] on.out_of_bounds($i) => null);
+  $assert:equals(22, try $arr[4] on.out_of_bounds($i) => 18 + $i);
+  $assert:equals(23, try ($arr[4] := null) on.out_of_bounds($i) => 19 + $i);
+  $assert:equals(19, try $arr[-1] on.out_of_bounds($i) => 20 + $i);
+  $assert:equals(20, try ($arr[-1] := null) on.out_of_bounds($i) => 21 + $i);
 }
 
 do {
