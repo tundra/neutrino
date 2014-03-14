@@ -647,6 +647,11 @@ value_t backtrace_entry_validate(value_t value) {
 
 void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
     print_on_context_t *context) {
+  // Ensure entries don't have arguments etc. so get them out of the way first.
+  if (opcode == ocCallEnsurer) {
+    string_buffer_printf(context->buf, "ensure");
+    return;
+  }
   value_t subject = new_not_found_condition();
   value_t selector = new_not_found_condition();
   id_hash_map_iter_t iter;
@@ -665,7 +670,7 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
   }
   // Print the subject as the first thing. For aborts we ignore the subject
   // (which is not supposed to be there anyway) and just print abort.
-  if (opcode == ocSignalEscape) {
+  if (opcode == ocSignalEscape || opcode == ocBuiltinMaybeEscape) {
     string_buffer_printf(context->buf, "leave");
   } else if (opcode == ocSignalContinue) {
     string_buffer_printf(context->buf, "signal");
@@ -738,6 +743,8 @@ static bool is_invocation_opcode(opcode_t op) {
   case ocInvoke:
   case ocSignalEscape:
   case ocSignalContinue:
+  case ocBuiltinMaybeEscape:
+  case ocCallEnsurer:
     return true;
   default:
     return false;
@@ -751,17 +758,28 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
   value_t code_block = frame_get_code_block(frame);
   value_t bytecode = get_code_block_bytecode(code_block);
   size_t pc = frame->pc;
-  if (pc <= kInvokeOperationSize)
+  if (pc < kInvokeOperationSize)
     return nothing();
   blob_t data;
   get_blob_data(bytecode, &data);
   opcode_t op = blob_short_at(&data, pc - kInvokeOperationSize);
   if (!is_invocation_opcode(op))
     return nothing();
-  // Okay so we have an invoke we can use. Grab the invocation record.
-  size_t record_index = blob_short_at(&data, pc - kInvokeOperationSize + 1);
-  value_t value_pool = get_code_block_value_pool(code_block);
-  value_t record = get_array_at(value_pool, record_index);
+  HEST("%s", get_opcode_name(op));
+  value_t record = whatever();
+  if (op == ocCallEnsurer) {
+    return new_heap_backtrace_entry(runtime, nothing(), new_integer(op));
+  } else if (op == ocBuiltinMaybeEscape) {
+    // A builtin escape leaves the record on the stack. Pop it off. This doesn't
+    // actually modify the stack only the frame.
+    record = frame_pop_value(frame);
+  } else {
+    // Okay so we have an invoke we can use. Grab the invocation record which
+    // is baked into the instruction.
+    size_t record_index = blob_short_at(&data, pc - kInvokeOperationSize + 1);
+    value_t value_pool = get_code_block_value_pool(code_block);
+    record = get_array_at(value_pool, record_index);
+  }
   // Scan through the record to build the invocation map.
   TRY_DEF(invocation, new_heap_id_hash_map(runtime, 16));
   size_t arg_count = get_invocation_record_argument_count(record);
