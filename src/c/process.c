@@ -765,7 +765,6 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
   opcode_t op = blob_short_at(&data, pc - kInvokeOperationSize);
   if (!is_invocation_opcode(op))
     return nothing();
-  HEST("%s", get_opcode_name(op));
   value_t record = whatever();
   if (op == ocCallEnsurer) {
     return new_heap_backtrace_entry(runtime, nothing(), new_integer(op));
