@@ -80,13 +80,6 @@ value_t stack_validate(value_t self) {
   return success();
 }
 
-void on_stack_scope_exit(value_t self) {
-  // This is just for bookkeeping to ensure that there is always a well-defined
-  // next scope when dealing with barriers further up the stack. It should never
-  // actually be invoked.
-  UNREACHABLE("exiting stack");
-}
-
 // Transfers the arguments from the top of the previous piece (which the frame
 // points to) to the bottom of the new stack segment.
 static void transfer_top_arguments(value_t new_piece, frame_t *frame,
@@ -376,7 +369,13 @@ value_array_t frame_alloc_array(frame_t *frame, size_t size) {
 
 value_t frame_alloc_derived_object(frame_t *frame, genus_descriptor_t *desc) {
   value_array_t memory = frame_alloc_array(frame, desc->field_count);
-  return alloc_derived_object(memory, desc, frame->stack_piece);
+  value_t result = alloc_derived_object(memory, desc, frame->stack_piece);
+  if (desc->on_scope_exit) {
+    value_t stack = get_stack_piece_stack(frame->stack_piece);
+    set_barrier_state_previous(result, get_stack_top_barrier(stack));
+    set_stack_top_barrier(stack, result);
+  }
+  return result;
 }
 
 void frame_destroy_derived_object(frame_t *frame, genus_descriptor_t *desc) {
@@ -483,10 +482,6 @@ value_t add_escape_builtin_implementations(runtime_t *runtime, safe_value_t s_ma
   return success();
 }
 
-void on_escape_scope_exit(value_t self) {
-  set_escape_section(self, nothing());
-}
-
 
 // ## Lambda
 
@@ -556,10 +551,6 @@ static value_t block_is_live(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofBlock, self);
   return new_boolean(!is_nothing(get_block_section(self)));
-}
-
-void on_block_scope_exit(value_t self) {
-  set_block_section(self, nothing());
 }
 
 value_t add_block_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {

@@ -28,35 +28,18 @@ static void code_cache_refresh(code_cache_t *cache, frame_t *frame) {
   cache->value_pool = get_code_block_value_pool(code_block);
 }
 
-static void init_escape_state(value_t self, frame_t *frame, size_t pc_offset,
-    int sp_offset) {
+static void capture_escape_state(value_t self, frame_t *frame, size_t pc_offset) {
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
   escape_state_init(self,
-      frame->stack_pointer + sp_offset - stack_start,
+      frame->stack_pointer - stack_start,
       frame->frame_pointer - stack_start,
       frame->limit_pointer - stack_start,
       frame->flags,
       frame->pc + pc_offset);
 }
 
-// Pushes the current state of the interpreter onto the stack such that it can
-// later be restored by invoking the associated escape. Returns a location value
-// that must later be passed to restore_escape_state when restoring the state.
-// The pc offset is a delta to add to the current pc in the case there the code
-// location to return to is not just the next instruction. The sp_offset is a
-// delta to add to the stack pointer to account for any changes that happen
-// after pushing the state that must be included when restoring the state.
-static value_t push_escape_section(frame_t *frame, size_t pc_offset, int sp_offset) {
-  frame_t snapshot = *frame;
-  value_t result = frame_alloc_derived_object(frame, get_genus_descriptor(dgEscapeSection));
-  init_escape_state(result, &snapshot, pc_offset, sp_offset);
-  return result;
-}
-
-// Restores the previous state of the interpreter that, when captured, returned
-// the given location value. Returns the value at the bottom of the escape
-// state which, if we're processing an actual escape object as opposed to an
-// implicit one related to signal handling, will be the escape itself.
+// Restores the previous state of the interpreter from the given derived
+// object's escape state.
 static void restore_escape_state(frame_t *frame, value_t stack,
     value_t destination) {
   value_t target_piece = get_derived_object_host(destination);
@@ -166,12 +149,6 @@ static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
   if (is_same_value(barrier, destination)) {
     // We've arrived.
     return true;
-  } else {
-    // The next barrier is different from where we're escaping to. Since
-    // all stack pieces have at least one barrier it must be above the
-    // one we're escaping to, otherwise we would have met a barrier on
-    // the one we're escaping to and would have fired the escape then,
-    // so this barrier has to be fired before we can escape.
   }
   // Grab the next barrier's handler.
   value_t payload = get_barrier_state_payload(barrier);
@@ -195,7 +172,7 @@ static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
     frame_set_code_block(frame, code_block);
     code_cache_refresh(cache, frame);
   } else {
-    value_on_scope_exit(barrier);
+    on_derived_object_exit(barrier);
   }
   return false;
 }
@@ -519,7 +496,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           E_TRY_DEF(block, new_heap_block(runtime, nothing()));
           // Create the stack section that describes the block.
           value_t section = frame_alloc_derived_object(&frame, get_genus_descriptor(dgBlockSection));
-          barrier_state_register(section, stack, block);
+          set_barrier_state_payload(section, block);
           refraction_point_init(section, &frame);
           set_block_section_methodspace(section, space);
           set_block_section(block, section);
@@ -534,7 +511,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t code_block = read_value(&cache, &frame, 1);
           value_t section = frame_alloc_derived_object(&frame,
               get_genus_descriptor(dgEnsureSection));
-          barrier_state_register(section, stack, code_block);
+          set_barrier_state_payload(section, code_block);
           refraction_point_init(section, &frame);
           value_validate(section);
           frame_push_value(&frame, section);
@@ -572,16 +549,20 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t space = read_value(&cache, &frame, 1);
           CHECK_FAMILY(ofMethodspace, space);
           size_t dest_offset = read_short(&cache, &frame, 2);
-          frame_t snapshot = frame;
+          // Allocate the derived object that's going to hold the signal handler
+          // state.
           value_t section = frame_alloc_derived_object(&frame,
               get_genus_descriptor(dgSignalHandlerSection));
-          barrier_state_register(section, stack, space);
+          // Initialize the handler.
+          set_barrier_state_payload(section, space);
           refraction_point_init(section, &frame);
-          init_escape_state(section, &snapshot, dest_offset,
-              get_genus_descriptor(dgSignalHandlerSection)->field_count + 1);
-          value_validate(section);
+          // Bring the frame state to the point we'll want to escape to (modulo
+          // the destination offset).
           frame_push_value(&frame, section);
           frame.pc += kInstallSignalHandlerOperationSize;
+          // Finally capture the escape state.
+          capture_escape_state(section, &frame, dest_offset);
+          value_validate(section);
           break;
         }
         case ocUninstallSignalHandler: {
@@ -597,18 +578,21 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         }
         case ocCreateEscape: {
           size_t dest_offset = read_short(&cache, &frame, 1);
-          // Push the interpreter state at the end of this instruction onto the
-          // stack.
+          // Create an initially empty escape object.
           E_TRY_DEF(escape, new_heap_escape(runtime, nothing()));
-          value_t section = push_escape_section(&frame,
-              dest_offset + kCreateEscapeOperationSize,
-              get_genus_descriptor(dgEscapeSection)->field_count + 1);
-          barrier_state_register(section, stack, escape);
+          // Allocate the escape section on the stack, hooking the barrier into
+          // the barrier chain.
+          value_t section = frame_alloc_derived_object(&frame, get_genus_descriptor(dgEscapeSection));
+          // Point the state and object to each other.
+          set_barrier_state_payload(section, escape);
           set_escape_section(escape, section);
-          value_validate(escape);
-          value_validate(section);
+          // Get execution ready for the next operation.
           frame_push_value(&frame, escape);
           frame.pc += kCreateEscapeOperationSize;
+          // This is the execution state the escape will escape to (modulo the
+          // destination offset) so this is what we want to capture.
+          capture_escape_state(section, &frame,
+              dest_offset);
           break;
         }
         case ocLeaveOrFireBarrier: {
@@ -629,6 +613,9 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
             code_cache_refresh(&cache, &frame);
             // Push the value back on, now in the handler's home frame.
             frame_push_value(&frame, value);
+          } else {
+            // If a barrier was fired we'll want to let the interpreter loop
+            // around again so just break without touching .pc.
           }
           break;
         }
@@ -643,6 +630,9 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
             restore_escape_state(&frame, stack, section);
             code_cache_refresh(&cache, &frame);
             frame_push_value(&frame, value);
+          } else {
+            // If a barrier was fired we'll want to let the interpreter loop
+            // around again so just break without touching .pc.
           }
           break;
         }

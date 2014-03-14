@@ -131,7 +131,7 @@ size_t *calc_parameter_ast_ordering(reusable_scratch_memory_t *scratch,
 }
 
 // Forward declare all the emit methods.
-#define __EMIT_SYNTAX_FAMILY_EMIT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N)\
+#define __EMIT_SYNTAX_FAMILY_EMIT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)\
     EM(                                                                            \
       value_t emit_##family(value_t, assembler_t *);,                              \
       )
@@ -422,8 +422,8 @@ value_t emit_signal_handler_ast(value_t value, assembler_t *assm) {
   assembler_pop_block_scope(assm, &block_scope);
 
   short_buffer_cursor_t cursor;
-  size_t start_offset = assembler_get_code_cursor(assm);
   TRY(assembler_emit_install_signal_handler(assm, space, &cursor));
+  size_t start_offset = assembler_get_code_cursor(assm);
   TRY(emit_value(get_signal_handler_ast_body(value), assm));
   size_t end_offset = assembler_get_code_cursor(assm);
   short_buffer_cursor_set(&cursor, end_offset - start_offset);
@@ -1561,7 +1561,7 @@ value_t emit_value(value_t value, assembler_t *assm) {
 #define __EMIT_SYNTAX_FAMILY_CASE_HELPER__(Family, family)                     \
     case of##Family:                                                           \
       return emit_##family(value, assm);
-#define __EMIT_SYNTAX_FAMILY_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N)\
+#define __EMIT_SYNTAX_FAMILY_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)\
     EM(                                                                        \
       __EMIT_SYNTAX_FAMILY_CASE_HELPER__(Family, family),                      \
       )

@@ -17,7 +17,7 @@
 // Is the given family in a modal division?
 static bool in_modal_division(heap_object_family_t family) {
   switch (family) {
-#define __GEN_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N)\
+#define __GEN_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)    \
     MD(                                                                        \
       case of##Family: return true;,                                           \
       )
@@ -104,7 +104,7 @@ static void get_##family##_layout(value_t value, heap_object_layout_t *layout_ou
 
 // Generate all the trivial layout functions since we know what they'll look
 // like.
-#define __DEFINE_TRIVIAL_LAYOUT_FUNCTION__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N) \
+#define __DEFINE_TRIVIAL_LAYOUT_FUNCTION__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N) \
 NL(                                                                            \
   ,                                                                            \
   __TRIVIAL_LAYOUT_FUNCTION__(Family, family))
@@ -582,33 +582,11 @@ static value_t get_internal_object_type(value_t self, runtime_t *runtime) {
 
 // ## Scoping
 
-void heap_object_on_scope_exit(value_t self) {
-  family_behavior_t *behavior = get_heap_object_family_behavior(self);
-  CHECK_TRUE("heap object not scoped", behavior->on_scope_exit != NULL);
-  (behavior->on_scope_exit)(self);
-}
-
-void derived_object_on_scope_exit(value_t self) {
+void on_derived_object_exit(value_t self) {
+  CHECK_DOMAIN(vdDerivedObject, self);
   genus_descriptor_t *descriptor = get_derived_object_descriptor(self);
   CHECK_TRUE("derived object not scoped", descriptor->on_scope_exit != NULL);
   (descriptor->on_scope_exit)(self);
-}
-
-void value_on_scope_exit(value_t value) {
-  switch (get_value_domain(value)) {
-  case vdHeapObject:
-    heap_object_on_scope_exit(value);
-    break;
-  case vdDerivedObject:
-    derived_object_on_scope_exit(value);
-    break;
-  default:
-    CHECK_TRUE("exiting non-scoped object", false);
-  }
-}
-
-bool is_scoped_object(value_t self) {
-  return is_heap_object(self) && (get_heap_object_family_behavior(self)->on_scope_exit != NULL);
 }
 
 
@@ -617,7 +595,7 @@ bool is_scoped_object(value_t self) {
 // Define all the family behaviors in one go. Because of this, as soon as you
 // add a new object type you'll get errors for all the behaviors you need to
 // implement.
-#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N) \
+#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N) \
 family_behavior_t k##Family##Behavior = {                                      \
   of##Family,                                                                  \
   &family##_validate,                                                          \
@@ -649,9 +627,6 @@ family_behavior_t k##Family##Behavior = {                                      \
     set_##family##_mode_unchecked),                                            \
   OW(                                                                          \
     ensure_##family##_owned_values_frozen,                                     \
-    NULL),                                                                     \
-  SC(                                                                          \
-    on_##family##_scope_exit,                                                  \
     NULL)                                                                      \
 };
 ENUM_HEAP_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)

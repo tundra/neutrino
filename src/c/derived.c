@@ -96,14 +96,6 @@ DERIVED_ACCESSORS_IMPL(BarrierState, barrier_state, acNoCheck, 0, Payload, paylo
 DERIVED_ACCESSORS_IMPL(BarrierState, barrier_state, acInDomainOpt, vdDerivedObject,
     Previous, previous);
 
-void barrier_state_register(value_t self, value_t stack, value_t payload) {
-  CHECK_DOMAIN(vdDerivedObject, self);
-  CHECK_FAMILY(ofStack, stack);
-  set_barrier_state_payload(self, payload);
-  set_barrier_state_previous(self, get_stack_top_barrier(stack));
-  set_stack_top_barrier(stack, self);
-}
-
 void barrier_state_unregister(value_t self, value_t stack) {
   CHECK_DOMAIN(vdDerivedObject, self);
   CHECK_FAMILY(ofStack, stack);
@@ -208,7 +200,7 @@ void on_block_section_exit(value_t self) {
 }
 
 
-/// ## Code shard section
+/// ## Ensure section
 
 TRIVIAL_DERIVED_PRINT_ON_IMPL(EnsureSection, ensure_section);
 
@@ -218,6 +210,12 @@ value_t ensure_section_validate(value_t self) {
   TRY(refraction_point_validate(self));
   VALIDATE_FAMILY_OPT(ofCodeBlock, get_barrier_state_payload(self));
   return success();
+}
+
+void on_ensure_section_exit(value_t self) {
+  // Ensure sections must be handled specially since they require the execution
+  // of arbitrary code.
+  UNREACHABLE("on_ensure_section_exit");
 }
 
 

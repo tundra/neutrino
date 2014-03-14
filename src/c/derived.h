@@ -133,10 +133,6 @@ ACCESSORS_DECL(barrier_state, previous);
 
 FORWARD(frame_t);
 
-// Completes the initialization of a barrier state and registers it as the top
-// frame on the stack.
-void barrier_state_register(value_t self, value_t stack, value_t payload);
-
 // Unregisters the top barrier state.
 void barrier_state_unregister(value_t self, value_t stack);
 
