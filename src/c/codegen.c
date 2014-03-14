@@ -335,14 +335,20 @@ static value_t assembler_emit_value(assembler_t *assm, value_t value) {
   return success();
 }
 
+// Adjusts the stack height and optionally inserts a check stack height op.
 static void assembler_emit_stack_height_check(assembler_t *assm) {
   assembler_emit_opcode(assm, ocCheckStackHeight);
   assembler_emit_short(assm, assm->stack_height);
 }
 
-void assembler_adjust_stack_height(assembler_t *assm, int delta) {
+// Adjusts the stack height without inserting a check stack height op.
+static void assembler_adjust_stack_height_nocheck(assembler_t *assm, int delta) {
   assm->stack_height += delta;
   assm->high_water_mark = max_size(assm->high_water_mark, assm->stack_height);
+}
+
+void assembler_adjust_stack_height(assembler_t *assm, int delta) {
+  assembler_adjust_stack_height_nocheck(assm, delta);
   IF_EXPENSIVE_CHECKS_ENABLED(assembler_emit_stack_height_check(assm));
 }
 
@@ -491,6 +497,24 @@ value_t assembler_emit_builtin(assembler_t *assm, builtin_method_t builtin) {
   TRY(assembler_emit_value(assm, wrapper));
   // Pushes the result.
   assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
+value_t assembler_emit_builtin_maybe_leave(assembler_t *assm,
+    builtin_method_t builtin, size_t leave_argc,
+    short_buffer_cursor_t *leave_offset_out) {
+  TRY_DEF(wrapper, new_heap_void_p(assm->runtime, builtin));
+  assembler_emit_opcode(assm, ocBuiltinMaybeLeave);
+  TRY(assembler_emit_value(assm, wrapper));
+  assembler_emit_cursor(assm, leave_offset_out);
+  // The builting will either succeed and leave one value on the stack or fail
+  // and leave argc signal params on the stack plus the appropriate invocation
+  // record.
+  assembler_adjust_stack_height_nocheck(assm, +1 + leave_argc);
+  // The failure case jumps over this code so we'll only get here if the call
+  // succeeded, in which case there's only one value on the stack so adjust
+  // for that.
+  assembler_adjust_stack_height(assm, -leave_argc);
   return success();
 }
 

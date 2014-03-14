@@ -1,0 +1,26 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def $test_array_bounds() {
+  def $arr := @core:Array.new(3);
+  var $clicks := 0;
+  $assert:equals(4, try {
+    try {
+      $arr[4];
+      $assert:fail();
+    } ensure {
+      $assert:equals(2, $clicks := $clicks + 1);      
+    }
+  } on.out_of_bounds($i) {
+    $assert:equals(1, $clicks := $clicks + 1);
+    $i;
+  });
+  $assert:equals(2, $clicks);
+}
+
+do {
+  $test_array_bounds();
+}
