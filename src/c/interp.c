@@ -28,6 +28,10 @@ static void code_cache_refresh(code_cache_t *cache, frame_t *frame) {
   cache->value_pool = get_code_block_value_pool(code_block);
 }
 
+// Records the current state of the given frame in the given escape state object
+// such that restoring from the state will bring the frame back to the state
+// it is now, modulo the given pc-offset which will have been added to the
+// frame's pc.
 static void capture_escape_state(value_t self, frame_t *frame, size_t pc_offset) {
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
   escape_state_init(self,
@@ -43,23 +47,19 @@ static void capture_escape_state(value_t self, frame_t *frame, size_t pc_offset)
 static void restore_escape_state(frame_t *frame, value_t stack,
     value_t destination) {
   value_t target_piece = get_derived_object_host(destination);
-  // Restore the state to the stack/stack piece objects. We need those values
-  // to be consistent with the frame so write them there and then update the
-  // frame based on those values.
   if (!is_same_value(target_piece, frame->stack_piece)) {
     set_stack_top_piece(stack, target_piece);
     open_stack_piece(target_piece, frame);
   }
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
-  value_t pc = get_escape_state_pc(destination);
-  value_t flags = get_escape_state_flags(destination);
-  value_t limit_pointer = get_escape_state_limit_pointer(destination);
-  value_t frame_pointer = get_escape_state_frame_pointer(destination);
   value_t stack_pointer = get_escape_state_stack_pointer(destination);
   frame->stack_pointer = stack_start + get_integer_value(stack_pointer);
+  value_t frame_pointer = get_escape_state_frame_pointer(destination);
   frame->frame_pointer = stack_start + get_integer_value(frame_pointer);
+  value_t limit_pointer = get_escape_state_limit_pointer(destination);
   frame->limit_pointer = stack_start + get_integer_value(limit_pointer);
-  frame->flags = flags;
+  frame->flags = get_escape_state_flags(destination);
+  value_t pc = get_escape_state_pc(destination);
   frame->pc = get_integer_value(pc);
 }
 
@@ -71,22 +71,6 @@ static short_t read_short(code_cache_t *cache, frame_t *frame, size_t offset) {
 // Returns the value at the given offset from the current pc.
 static value_t read_value(code_cache_t *cache, frame_t *frame, size_t offset) {
   size_t index = read_short(cache, frame, offset);
-  return get_array_at(cache->value_pool, index);
-}
-
-// Reads a word from the previous instruction, assuming that we're currently
-// at the first word of the next instruction. Size is the size of the
-// instruction, offset is the offset of the word we want to read.
-static short_t peek_previous_short(code_cache_t *state, frame_t *frame, size_t size,
-    size_t offset) {
-  return blob_short_at(&state->bytecode, frame->pc - size + offset);
-}
-
-// Reads a value pool value from the previous instruction, assuming that we're
-// currently at the first word of the next instruction.
-static value_t peek_previous_value(code_cache_t *cache, frame_t *frame, size_t size,
-    size_t offset) {
-  size_t index = peek_previous_short(cache, frame, size, offset);
   return get_array_at(cache->value_pool, index);
 }
 
@@ -145,18 +129,18 @@ static void validate_stack_on_normal_exit(frame_t *frame) {
 static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
     runtime_t *runtime, value_t stack, value_t destination) {
   CHECK_DOMAIN(vdDerivedObject, destination);
-  value_t barrier = get_stack_top_barrier(stack);
-  if (is_same_value(barrier, destination)) {
+  value_t next_barrier = get_stack_top_barrier(stack);
+  if (is_same_value(next_barrier, destination)) {
     // We've arrived.
     return true;
   }
   // Grab the next barrier's handler.
-  value_t payload = get_barrier_state_payload(barrier);
-  value_t previous = get_barrier_state_previous(barrier);
+  value_t payload = get_barrier_state_payload(next_barrier);
+  value_t previous = get_barrier_state_previous(next_barrier);
   // Unhook the barrier from the barrier stack.
   set_stack_top_barrier(stack, previous);
   // Fire the exit action for the handler object.
-  if (in_genus(dgEnsureSection, barrier)) {
+  if (in_genus(dgEnsureSection, next_barrier)) {
     // Pop any previous state off the stack. If we've executed any
     // code shards before the first will be the result from the shard
     // the second will be the shard itself.
@@ -164,7 +148,7 @@ static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
     frame_pop_value(frame);
     // Push the shard onto the stack as the subject since we may need it
     // to refract access to outer variables.
-    frame_push_value(frame, barrier);
+    frame_push_value(frame, next_barrier);
     value_t argmap = ROOT(runtime, array_of_zero);
     value_t code_block = payload;
     push_stack_frame(runtime, stack, frame,
@@ -172,7 +156,7 @@ static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
     frame_set_code_block(frame, code_block);
     code_cache_refresh(cache, frame);
   } else {
-    on_derived_object_exit(barrier);
+    on_derived_object_exit(next_barrier);
   }
   return false;
 }
@@ -526,6 +510,8 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           CHECK_GENUS(dgEnsureSection, shard);
           value_t code_block = get_barrier_state_payload(shard);
           CHECK_FAMILY(ofCodeBlock, code_block);
+          // Unregister the barrier before calling it, otherwise if we leave
+          // by escaping we'll end up calling it over again.
           barrier_state_unregister(shard, stack);
           frame.pc += kCallEnsurerOperationSize;
           value_t argmap = ROOT(runtime, array_of_zero);
@@ -536,6 +522,8 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           break;
         }
         case ocDisposeEnsurer: {
+          // Discard the result of the ensure block. If an ensure blocks needs
+          // to return a useful value it can do it via an escape.
           frame_pop_value(&frame);
           value_t shard = frame_pop_value(&frame);
           CHECK_GENUS(dgEnsureSection, shard);

@@ -202,7 +202,7 @@ void escape_state_init(value_t self, size_t stack_pointer, size_t frame_pointer,
 //%       :    ...     :
 //%       +============+
 //%       |   anchor   | <----- derived
-//%       +============+ +-+
+//%       +============+ --+
 //%       |    fp      |   | refraction point
 //%       +------------+ --+
 //%       :    ...     :
@@ -219,12 +219,19 @@ void refraction_point_init(value_t self, frame_t *frame);
 
 
 /// ## Ensure section
+///
+/// An ensure section has a barrier to ensure that it gets executed and a
+/// refraction point to give the code access to variables in its outer scope.
 
 #define kEnsureSectionBeforeFieldCount kBarrierStateFieldCount
 #define kEnsureSectionAfterFieldCount kRefractionPointFieldCount
 
 
 /// ## Block section
+///
+/// A block section has a barrier to ensure that the block gets killed on exit,
+/// a refraction point to give access to variables in its outer scope, and an
+/// extra field after the refraction point to hold the block's methods.
 
 #define kBlockSectionBeforeFieldCount kBarrierStateFieldCount
 #define kBlockSectionAfterFieldCount kRefractionPointFieldCount + 1
@@ -234,6 +241,11 @@ ACCESSORS_DECL(block_section, methodspace);
 
 
 /// ## Signal handler section
+///
+/// A signal handler section has everything: a barrier such that the signal
+/// propagation code can find the handler by traversing barriers, a refraction
+/// point to give the handler access to outer variables, and escape state to
+/// allow leave-signals to escape once the handler has been executed.
 
 #define kSignalHandlerSectionBeforeFieldCount kEscapeStateFieldCount
 #define kSignalHandlerSectionAfterFieldCount kRefractionPointFieldCount
@@ -246,17 +258,14 @@ value_t new_derived_stack_pointer(runtime_t *runtime, value_array_t memory,
     value_t host);
 
 // Allocates a new derived object in the given block of memory and initializes
-// it with the given genus and host but requires the caller to complete
-// initialization.
-//
-// Beware that the "size" is not a size in bytes, unlike other allocation
-// functions, it is the number of value-size fields of the object.
+// it with the given genus and host but leaves any other state uninitialized.
 value_t alloc_derived_object(value_array_t memory, genus_descriptor_t *desc,
     value_t host);
 
 
 /// ## Genus descriptors
 
+// Forward declarations of the genus-related behavior.
 #define __GENUS_STRUCT__(Genus, genus, SC)                                     \
 value_t genus##_validate(value_t value);                                       \
 void genus##_print_on(value_t value, print_on_context_t *context);             \

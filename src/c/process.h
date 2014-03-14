@@ -351,22 +351,17 @@ static const size_t kStackBarrierNextPointerOffset = 2;
 ///
 /// Utility for scanning through the barriers on a stack without modifying them.
 
+// Holds the barrier iteration state.
 typedef struct {
   value_t current;
 } barrier_iter_t;
 
-// Initializes the given barrier iterator. After this call the current barrier
-// will be the top one.
-void barrier_iter_init(barrier_iter_t *iter, frame_t *frame);
-
-// Returns a pointer to the current stack barrier. The result is well-defined
-// until the first call to barrier_iter_advance that returns false.
-value_t barrier_iter_get_current(barrier_iter_t *iter);
+// Initializes the given barrier iterator, returning the first barrier.
+value_t barrier_iter_init(barrier_iter_t *iter, frame_t *frame);
 
 // Advances the iterator to the next barrier, downwards towards the bottom of
-// the call stack. Returns true iff advancing was successful, in which case
-// barrier_iter_get_current can be called to get the next barrier.
-bool barrier_iter_advance(barrier_iter_t *iter);
+// the call stack. Returns the next barrier.
+value_t barrier_iter_advance(barrier_iter_t *iter);
 
 
 /// ## Escape
@@ -380,26 +375,9 @@ bool barrier_iter_advance(barrier_iter_t *iter);
 /// ### Escape home
 ///
 /// Since an escape is scoped, that is, it is invalidated as soon as the scope
-/// that created it exits, most of its state can be stored on the stack. The
-/// escape itself is just a pointer to its state on the stack together with a
-/// flag indicating whether it is still valid. The stack state is organized like
-/// this:
-///
-//%                                       (escape)
-//%              :            :         +----------+
-//%              +============+    +--- |   home   |
-//%         +--- |  prev ptr  |    |    +----------+
-//%         |    +------------+    |
-//% barrier |    | prev piece |    |
-//%         |    +------------+    |
-//%         +--> |   escape   | <--+
-//%              +============+
-//%              :            :
-//%              :  escape's  :
-//%              :   state    :
-//%              :            :
-//%              +============+
-//%              :            :
+/// that created it exits, most of its state can be stored on the stack as a
+/// derived escape section object. The escape itself is just a pointer to its
+/// state on the stack.
 ///
 /// An escape uses two stack regions: the state to return to when fired and a
 /// barrier which ensures that the escape object is invalidated however the
@@ -412,16 +390,8 @@ bool barrier_iter_advance(barrier_iter_t *iter);
 /// and the escape's origin. This is done by "parking" the interpreter at a
 /// bytecode and never advancing the program counter. At each turn around the
 /// interpreter the same instruction is executed which fetches the next barrier
-/// comparing it with the escape's origin, and if the barrier is above it the
-/// associated handler is executed.
-///
-/// Barrier pointers are always counted from the bottom of the barrier region,
-/// which in this case is the point that holds the escape object. Incidentally
-/// that is also the place the escape object points to so we can always just
-/// peel off barriers until we find one at the exact address of the escape and
-/// then we'll have arrived. This is why escapes point into the middle of their
-/// associated stack region, not to the top or bottom. Also, it's a convenient
-/// sanity check to have each escape point to a place that holds itself.
+/// comparing it with the escape's destination, and if the barrier is above it
+/// the associated handler is executed.
 ///
 /// ### Returning multiple times through the same escape
 ///
@@ -446,11 +416,6 @@ bool barrier_iter_advance(barrier_iter_t *iter);
 
 static const size_t kEscapeSize = HEAP_OBJECT_SIZE(1);
 static const size_t kEscapeSectionOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-
-// The number of stack entries it takes to record the complete state of a frame.
-static const int32_t kCapturedStateSize
-    = (kFrameFieldCount - 1) // Everything from the frame except the stack piece.
-    + 1;                     // The PC.
 
 // The escape section that contains the data for this escape object. Becomes
 // nothing when the escape is killed.
@@ -484,17 +449,16 @@ value_t get_lambda_capture(value_t self, size_t index);
 /// Code objects visible at the surface level which only live as long as the
 /// scope that defined them. Because blocks can only be executed while the scope
 /// is still alive they can access their outer state through the stack through
-/// a mechanism called _refraction_. Whenever a block is created a section is
-/// pushed onto the stack, the block's _home_.
+/// a mechanism called _refraction_. Whenever a block is created a derived
+/// section object is allocated on the stack, the block's _home_.
 ///
 //%                                  (block 1)
 //%          :            :         +----------+
-//%          +============+    +--- |   home   |
-//%     +--- |     fp     |    |    +----------+
-//%     |    +------------+    |
-//%     |    |   methods  |    |
-//%     |    +------------+    |
-//%     |    |   block 1  | <--+
+//%          +============+    +--- | section  |
+//%     +--- :            :    |    +----------+
+//%     |    :  block 1   :    |
+//%     |    :  section   : <--+
+//%     |    :            :
 //%     |    +============+
 //%     |    :            :
 //%     |    :   locals   :
@@ -505,12 +469,11 @@ value_t get_lambda_capture(value_t self, size_t index);
 //%          :  possibly  :    |
 //%          :    many    :    |     (block 2)
 //%          :   frames   :    +--> +----------+
-//%          +============+         |   home   |
-//%     +--- |     fp     |    +--- +----------+
-//%     |    +------------+    |
-//%     |    |   methods  |    |
-//%     |    +------------+    |
-//%     |    |   block 2  | <--+
+//%          +============+         | section  |
+//%     +--- :            :    +--- +----------+
+//%     |    :  block 2   :    |
+//%     |    :  section   : <--+
+//%     |    :            :
 //%     |    +============+
 //%     |    :            :
 //%     |    :   locals   :
@@ -519,51 +482,19 @@ value_t get_lambda_capture(value_t self, size_t index);
 //%          :            :
 ///
 /// To access say a local variable in an enclosing scope from a block you follow
-/// the block's pointer back to its home section. There the frame pointer of the
-/// frame that created the block which is all you need to access state in that
-/// frame. To access scopes yet further down the stack, in the case where you
-/// have nested blocks within blocks, you can peel off the scopes one at a time
-/// by first going through the block itself into the frame that created it, then
-/// the next enclosing block which will be the subject of that frame, and so on
-/// until all the layers of blocks scopes have been peeled off. This process of
-/// going through (potentially) successive blocks' originating scopes is what
-/// is referred to as refraction.
+/// the block's pointer back to its home section. There you can get the frame
+/// pointer of the frame that created the block which is all you need to access
+/// state in that frame. To access scopes yet further down the stack, in the
+/// case where you have nested blocks within blocks, you can peel off the scopes
+/// one at a time by first going through the block itself into the frame that
+/// created it, then the next enclosing block which will be the subject of that
+/// frame, and so on until all the layers of blocks scopes have been peeled off.
+/// This process of going through (potentially) successive blocks' originating
+/// scopes is what is referred to as refraction.
 ///
 /// Because blocks don't need to capture state they're cheap to create, just
-/// a few pushes and then a fixed-size object that points into the stack with
-/// a flag that can be used to disable the block when its scope exits.
-///
-/// ### Block barriers
-///
-/// Because blocks need to be killed when their scope exits there has to be a
-/// stack barrier for each block that ensure that this happens whichever way the
-/// scope exits. Blocks also need a refraction point which is also pushed onto
-/// the stack and which contains some of the state also needed by the barrier.
-/// To avoid pushing the same state multiple times barriers and refraction
-/// points are laid out such that they can share state:
-///
-//%           :            :
-//%           +------------+
-//%   N+2     |  prev ptr  | --+
-//%           +------------+   |
-//%   N+1     | prev piece |   |  barrier
-//%           +------------+   |
-//%    N      |    block   | <-+ <-+
-//%           +------------+       |
-//%   N-1     |    data    |       |  refraction point
-//%           +------------+       |
-//%   N-2     |     fp     |     --+
-//%           +------------+
-//%           :            :
-///
-/// This is why refraction points count fields from the top whereas barriers
-/// count them from the bottom. The same trick applies with code shards.
-///
-/// The reason the barrier is above the refraction point is such that it can
-/// be removed before calling the block when exiting the scope normally.
-/// Otherwise if the block fired an escape while the barrier was still in place
-/// you'd just end up calling the same block again (and potentially endlessly).
-
+/// a derived object allocation and a small heap object that wraps the derived
+/// object pointer such that it can be killed when the scope exits.
 
 static const size_t kBlockSize = HEAP_OBJECT_SIZE(1);
 static const size_t kBlockSectionOffset = HEAP_OBJECT_FIELD_OFFSET(0);
@@ -571,59 +502,10 @@ static const size_t kBlockSectionOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 // The section on the stack where this block's state lives.
 ACCESSORS_DECL(block, section);
 
-
-/// ### Refractor accessors
-///
-/// Because blocks and code shards are so similar it's convenient in a few
-/// places to be able to interact with them without knowing which of the two
-/// you've got. The refractor methods work on both types because the objects
-/// offsets that hold the home pointer are in the same positions in both types
-/// of objects.
-
-struct frame_t;
-
 // Returns an incomplete frame that provides access to arguments and locals for
 // the frame that is located block_depth scopes outside the given block.
 void get_refractor_refracted_frame(value_t self, size_t block_depth,
     struct frame_t *frame_out);
-
-
-/// ## Refraction points
-///
-/// Refraction points are the areas of the stack through which refractors look
-/// up their outer variables. The code for working with refraction points gets
-/// used in a few different places so it's convenient to wrap it in an explicit
-/// abstraction.
-
-
-/// ## Signal handler
-///
-/// A signal handler is a scoped object whose home holds a set of methods which
-/// are available as signal handlers. Signal handlers are the "heaviest" of the
-/// barrier-related objects since they both need refraction (for when a handler
-/// is run) a barrier (to make the handler object visible to handler lookup)
-/// and escape state (for the case where either the handler or the caller ask
-/// for control to escape after the handler has run). The layout of the stack
-/// state associated with a signal handler is:
-///
-//%           :            :
-//%           +============+
-//%           :            :
-//%           :   escape   :
-//%           :   state    :
-//%           :            :
-//%           +------------+
-//%           |  prev ptr  | --+
-//%           +------------+   |
-//%           | prev piece |   |  barrier
-//%           +------------+   |           +-----------+
-//%           |  handler   | <-+ <-+ <---- |  handler  |
-//%           +------------+       |       +-----------+
-//%           |    data    |       |
-//%           +------------+       |  refraction point
-//%           |     fp     |     --+
-//%           +============+
-//%           :            :
 
 
 // --- B a c k t r a c e ---

@@ -218,18 +218,14 @@ frame_t open_stack(value_t stack) {
 
 /// ### Barrier iter
 
-void barrier_iter_init(barrier_iter_t *iter, frame_t *frame) {
+value_t barrier_iter_init(barrier_iter_t *iter, frame_t *frame) {
   value_t stack = get_stack_piece_stack(frame->stack_piece);
-  iter->current = get_stack_top_barrier(stack);
+  return iter->current = get_stack_top_barrier(stack);
 }
 
-value_t barrier_iter_get_current(barrier_iter_t *iter) {
-  return iter->current;
-}
-
-bool barrier_iter_advance(barrier_iter_t *iter) {
+value_t barrier_iter_advance(barrier_iter_t *iter) {
   iter->current = get_barrier_state_previous(iter->current);
-  return !is_nothing(iter->current);
+  return iter->current;
 }
 
 

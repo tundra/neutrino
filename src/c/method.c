@@ -967,9 +967,8 @@ static value_t do_signal_handler_method_lookup(sigmap_state_t *state) {
   sigmap_signal_handler_collector_t *collector =
       (sigmap_signal_handler_collector_t*) state->collector;
   barrier_iter_t barrier_iter;
-  barrier_iter_init(&barrier_iter, state->input.frame);
   handler_and_arg_map_t *data = (handler_and_arg_map_t*) state->input.data;
-  value_t barrier = barrier_iter_get_current(&barrier_iter);
+  value_t barrier = barrier_iter_init(&barrier_iter, state->input.frame);
   while (!is_nothing(barrier)) {
     if (in_genus(dgSignalHandlerSection, barrier)) {
       collector->current_handler = barrier;
@@ -978,8 +977,7 @@ static value_t do_signal_handler_method_lookup(sigmap_state_t *state) {
       value_t sigmap = get_methodspace_methods(methods);
       TRY(continue_sigmap_lookup(state, sigmap, methods));
     }
-    barrier_iter_advance(&barrier_iter);
-    barrier = barrier_iter_get_current(&barrier_iter);
+    barrier = barrier_iter_advance(&barrier_iter);
   }
   TRY_SET(*data->arg_map_out, get_sigmap_lookup_argument_map(state));
   *data->handler_out = collector->result_handler;
