@@ -323,7 +323,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame.pc += kBuiltinOperationSize;
           break;
         }
-        case ocBuiltinMaybeLeave: {
+        case ocBuiltinMaybeEscape: {
           value_t wrapper = read_value(&cache, &frame, 1);
           builtin_method_t impl = (builtin_method_t) get_void_p_value(wrapper);
           builtin_arguments_t args;
@@ -331,17 +331,27 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t result = impl(&args);
           if (in_condition_cause(ccSignal, result)) {
             // The builtin failed. Find the appropriate signal handler and call
-            // it.
+            // it. The invocation record is at the top of the stack.
             value_t record = frame_pop_value(&frame);
             CHECK_FAMILY(ofInvocationRecord, record);
             value_t arg_map = whatever();
             value_t handler = whatever();
             value_t method = lookup_signal_handler_method(ambience, record, &frame,
                 &handler, &arg_map);
-            if (in_condition_cause(ccLookupError, method))
-              // There was no signal handler so we just bail.
-              // TODO: ensure that the signal is included in backtraces.
-              E_RETURN(result);
+            if (in_condition_cause(ccLookupError, method)) {
+              // Push the record back onto the stack to it's available to back
+              // tracing.
+              frame_push_value(&frame, record);
+              frame.pc += kBuiltinMaybeEscapeOperationSize;
+              // There was no handler for this so we have to escape out of the
+              // interpreter altogether. Push the signal frame onto the stack to
+              // record the state of it for the enclosing code.
+              E_TRY(push_stack_frame(runtime, stack, &frame, 1, nothing()));
+              // The stack tracing code expects all frames to have a valid code block
+              // object. The rest makes less of a difference.
+              frame_set_code_block(&frame, ROOT(runtime, empty_code_block));
+              E_RETURN(new_signal_condition(true));
+            }
             // Either found a signal or encountered a different condition.
             E_TRY(method);
             // Skip forward to the point we want the signal to return to, the
@@ -360,7 +370,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
             // The builtin didn't cause a condition so we can just keep going.
             E_TRY(result);
             frame_push_value(&frame, result);
-            frame.pc += kBuiltinMaybeLeaveOperationSize;
+            frame.pc += kBuiltinMaybeEscapeOperationSize;
           }
           break;
         }

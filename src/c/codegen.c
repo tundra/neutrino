@@ -500,13 +500,16 @@ value_t assembler_emit_builtin(assembler_t *assm, builtin_method_t builtin) {
   return success();
 }
 
-value_t assembler_emit_builtin_maybe_leave(assembler_t *assm,
+value_t assembler_emit_builtin_maybe_escape(assembler_t *assm,
     builtin_method_t builtin, size_t leave_argc,
     short_buffer_cursor_t *leave_offset_out) {
   TRY_DEF(wrapper, new_heap_void_p(assm->runtime, builtin));
-  assembler_emit_opcode(assm, ocBuiltinMaybeLeave);
+  assembler_emit_opcode(assm, ocBuiltinMaybeEscape);
   TRY(assembler_emit_value(assm, wrapper));
   assembler_emit_cursor(assm, leave_offset_out);
+  // Pad this op to be the same length as invoke ops since all ops that can
+  // produce a backtrace entry should have the same length.
+  assembler_emit_short(assm, 0);
   // The builting will either succeed and leave one value on the stack or fail
   // and leave argc signal params on the stack plus the appropriate invocation
   // record.
@@ -634,6 +637,10 @@ value_t assembler_emit_create_ensurer(assembler_t *assm, value_t code_block) {
 
 value_t assembler_emit_call_ensurer(assembler_t *assm) {
   assembler_emit_opcode(assm, ocCallEnsurer);
+  // Pad to make it invoke-length for the backtrace logic.
+  assembler_emit_short(assm, 0);
+  assembler_emit_short(assm, 0);
+  assembler_emit_short(assm, 0);
   assembler_adjust_stack_height(assm,
       + 1);               // the return value from the shard
   return success();

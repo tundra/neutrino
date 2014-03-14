@@ -13,8 +13,8 @@
 // Invokes the given macro for each opcode name and argument count.
 #define ENUM_OPCODES(F)                                                        \
   F(Builtin,                    2)                                             \
-  F(BuiltinMaybeLeave,          3)                                             \
-  F(CallEnsurer,                1)                                             \
+  F(BuiltinMaybeEscape,         4)                                             \
+  F(CallEnsurer,                4)                                             \
   F(CheckStackHeight,           2)                                             \
   F(CreateBlock,                2)                                             \
   F(CreateEnsurer,              2)                                             \

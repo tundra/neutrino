@@ -56,7 +56,7 @@ value_t add_builtin_method_impl(runtime_t *runtime, value_t map,
       size_t code_start_offset = assembler_get_code_cursor(&assm);
       // Invoke the builtin. This will either keep going or, if there is a
       // failure, jump to the destination.
-      E_TRY(assembler_emit_builtin_maybe_leave(&assm, impl, leave_argc, &dest));
+      E_TRY(assembler_emit_builtin_maybe_escape(&assm, impl, leave_argc, &dest));
       E_TRY(assembler_emit_return(&assm));
       size_t code_end_offset = assembler_get_code_cursor(&assm);
       short_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
