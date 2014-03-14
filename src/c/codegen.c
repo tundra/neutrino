@@ -506,10 +506,10 @@ value_t assembler_emit_builtin_maybe_escape(assembler_t *assm,
   TRY_DEF(wrapper, new_heap_void_p(assm->runtime, builtin));
   assembler_emit_opcode(assm, ocBuiltinMaybeEscape);
   TRY(assembler_emit_value(assm, wrapper));
+  assembler_emit_cursor(assm, leave_offset_out);
   // Pad this op to be the same length as invoke ops since all ops that can
   // produce a backtrace entry should have the same length.
   assembler_emit_short(assm, 0);
-  assembler_emit_cursor(assm, leave_offset_out);
   // The builting will either succeed and leave one value on the stack or fail
   // and leave argc signal params on the stack plus the appropriate invocation
   // record.
