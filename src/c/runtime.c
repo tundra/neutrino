@@ -54,7 +54,7 @@ static value_t create_stack_piece_bottom_code_block(runtime_t *runtime) {
 // for up to kMaxSize entries (including the subject and selector). These are
 // used for instance for raising signals from within builtins.
 static value_t create_escape_records(runtime_t *runtime) {
-  static const size_t kMaxSize = 3;
+  static const size_t kMaxSize = 4;
   TRY_DEF(result, new_heap_array(runtime, kMaxSize + 1));
   for (size_t i = 2; i <= kMaxSize; i++) {
     // Build the entries manually. The indexes are somewhat fiddly because they

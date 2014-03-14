@@ -2318,13 +2318,16 @@ static value_t global_field_get(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofGlobalField, self);
   value_t instance = get_builtin_argument(args, 0);
-  // TODO: This should really result in an exception/signal, not a silent null.
   value_t value = get_instance_field(instance, self);
-  return in_condition_cause(ccNotFound, value) ? null() : value;
+  if (in_condition_cause(ccNotFound, value)) {
+    ESCAPE_BUILTIN(args, no_such_field, self, instance);
+  } else {
+    return value;
+  }
 }
 
 value_t add_global_field_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  ADD_BUILTIN_IMPL("global_field[]", 1, global_field_get);
+  ADD_BUILTIN_IMPL_MAY_ESCAPE("global_field[]", 1, 2, global_field_get);
   ADD_BUILTIN_IMPL("global_field[]:=()", 2, global_field_set);
   return success();
 }

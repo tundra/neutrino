@@ -67,13 +67,11 @@ field ($this is @Pair).second;
 
 def $test_field_declarations() {
   def $p := @manager.new_instance(@Pair);
-  # TODO: longer term missing fields should cause a signal/abort, not a silent
-  #   null.
-  $assert:equals(null, $p.first);
-  $assert:equals(null, $p.second);  
+  $assert:equals(10, try $p.first on.no_such_field($k, $i) => 10);
+  $assert:equals(11, try $p.second on.no_such_field($k, $i) => 11);
   $p.first := 8;
   $assert:equals(8, $p.first);
-  $assert:equals(null, $p.second);
+  $assert:equals(12, try $p.second on.no_such_field($k, $i) => 12);
   $p.second := 9;
   $assert:equals(8, $p.first);
   $assert:equals(9, $p.second);
