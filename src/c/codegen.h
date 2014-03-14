@@ -192,9 +192,15 @@ value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t reco
 // Emits a signal opcode using the given record.
 value_t assembler_emit_signal(assembler_t *assm, opcode_t opcode, value_t record);
 
-// Emits a raw call to a builtin with the given implementation and number of
-// arguments.
+// Emits a raw call to a builtin with the given implementation which can't cause
+// signals.
 value_t assembler_emit_builtin(assembler_t *assm, builtin_method_t builtin);
+
+// Emits a raw call to a builtin with the given implementation that may cause
+// a leave signal to be returned which requires leave_argc slots on the stack.
+value_t assembler_emit_builtin_maybe_leave(assembler_t *assm,
+    builtin_method_t builtin, size_t leave_argc,
+    short_buffer_cursor_t *leave_offset_out);
 
 // Emits a return instruction.
 value_t assembler_emit_return(assembler_t *assm);

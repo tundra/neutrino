@@ -31,13 +31,33 @@ value_t get_builtin_subject(builtin_arguments_t *args);
 // Returns the runtime for this builtin invocation.
 runtime_t *get_builtin_runtime(builtin_arguments_t *args);
 
+// Raises a signal, leaving execution. Typically you'll want to call this
+// through the ESCAPE_BUILTIN.
+value_t escape_builtin(builtin_arguments_t *args, value_array_t values);
+
+// Convenience macro for escaping from a builtin. Builds the appropriate
+// arguments to escape_builtin, calls it and returns the result.
+#define __GEN_ESCAPE_ARG__(VAL) , (VAL)
+#define ESCAPE_BUILTIN(ARGS, selector, ...) do {                               \
+  builtin_arguments_t *__args__ = (ARGS);                                      \
+  runtime_t *__runtime__ = get_builtin_runtime(__args__);                      \
+  value_t values[VA_ARGC(__VA_ARGS__) + 2] = {                                 \
+    null(),                                                                    \
+    RSEL(__runtime__, selector)                                                \
+    FOR_EACH_VA_ARG(__GEN_ESCAPE_ARG__, __VA_ARGS__)                           \
+  };                                                                           \
+  return escape_builtin(__args__,                                              \
+      new_value_array(values, VA_ARGC(__VA_ARGS__) + 2));                      \
+} while (false)
+
 // Signature of a function that implements a built-in method.
 typedef value_t (*builtin_method_t)(builtin_arguments_t *args);
 
 // Add a builtin method implementation to the given map with the given name,
 // number of arguments, and implementation.
 value_t add_builtin_method_impl(runtime_t *runtime, value_t map,
-    const char *name_c_str, size_t arg_count, builtin_method_t method);
+    const char *name_c_str, size_t arg_count, builtin_method_t method,
+    int leave_arg_count);
 
 struct assembler_t;
 

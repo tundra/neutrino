@@ -48,8 +48,14 @@ def $test_array_iteration() {
   $assert:equals(6, $sum);
 }
 
+def $test_bounds() {
+  def $arr := @core:Array.new(3);
+  $assert:equals(null, try $arr[4] on.out_of_bounds($i) => null);
+}
+
 do {
   $test_simple_array_methods();
   $test_mutable_arrays();
   $test_array_iteration();
+  $test_bounds();
 }

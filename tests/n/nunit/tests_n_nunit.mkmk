@@ -14,6 +14,7 @@ file_names = [
   "block-locals.n",
   "block-simple.n",
   "block-vars.n",
+  "builtin-signals.n",
   "def.n",
   "ensure.n",
   "escape.n",

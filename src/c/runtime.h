@@ -68,6 +68,12 @@
   F(value,                      "value")                                       \
   F(values,                     "values")
 
+// Enumerates the string values of the infix operators in the runtime's selector
+// table. Use sparingly since they're basically API names hardcoded in the
+// runtime which is a Bad Thing(TM).
+#define ENUM_SELECTOR_TABLE(F)                                                 \
+  F(out_of_bounds,              "out_of_bounds")
+
 // Invokes the argument for each singleton root (that is, roots that are not
 // generated from the family list).
 #define ENUM_ROOT_SINGLETONS(F)                                                \
@@ -80,6 +86,7 @@
   F(empty_code_block)                                                          \
   F(empty_instance_species)                                                    \
   F(empty_path)                                                                \
+  F(escape_records)                                                            \
   F(integer_type)                                                              \
   F(op_call)                                                                   \
   F(plankton_environment)                                                      \
@@ -134,7 +141,12 @@ typedef enum {
 #define __EMIT_STRING_TABLE_ENUM__(name, value) , rk_string_table_##name
   ENUM_STRING_TABLE(__EMIT_STRING_TABLE_ENUM__)
 #undef __EMIT_STRING_TABLE_ENUM__
-  , __rk_last__
+
+  // The selector table
+#define __EMIT_SELECTOR_TABLE_ENUM__(name, value) , rk_selector_table_##name
+  ENUM_SELECTOR_TABLE(__EMIT_SELECTOR_TABLE_ENUM__)
+#undef __EMIT_SELECTOR_TABLE_ENUM__
+, __rk_last__
 } root_key_t;
 
 // The total number of root entries.
@@ -293,6 +305,14 @@ value_t roots_init(value_t roots, runtime_t *runtime);
 
 // Macro for accessing a named string table string. This can be used as an lval.
 #define RSTR(runtime, name) RAW_RSTR((runtime)->roots, name)
+
+// Accesses a selector table entry directly from the roots struct. Usually
+// you'll want to use RSEL instead.
+#define RAW_RSEL(roots, name) (*access_roots_entry_at((roots), rk_selector_table_##name))
+
+// Macro for accessing a named selector table string. This can be used as an
+// lval.
+#define RSEL(runtime, name) RAW_RSEL((runtime)->roots, name)
 
 // Accesses a named mutable root directly in the mutable roots object. Usually
 // you'll want to use MROOT instead.

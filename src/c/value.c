@@ -835,21 +835,23 @@ value_t array_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
   return yes();
 }
 
-value_t array_length(builtin_arguments_t *args) {
+static value_t array_length(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofArray, self);
   return new_integer(get_array_length(self));
 }
 
-value_t array_get_at(builtin_arguments_t *args) {
+static value_t array_get_at(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  value_t index = get_builtin_argument(args, 0);
-  CHECK_FAMILY(ofArray, self);
-  CHECK_DOMAIN(vdInteger, index);
-  return get_array_at(self, get_integer_value(index));
+  size_t index = get_integer_value(get_builtin_argument(args, 0));
+  if (index >= get_array_length(self)) {
+    ESCAPE_BUILTIN(args, out_of_bounds, new_integer(index));
+  } else {
+    return get_array_at(self, index);
+  }
 }
 
-value_t array_set_at(builtin_arguments_t *args) {
+static value_t array_set_at(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t index = get_builtin_argument(args, 0);
   value_t value = get_builtin_argument(args, 1);
@@ -860,7 +862,7 @@ value_t array_set_at(builtin_arguments_t *args) {
 }
 
 value_t add_array_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  ADD_BUILTIN_IMPL("array[]", 1, array_get_at);
+  ADD_BUILTIN_IMPL_MAY_ESCAPE("array[]", 1, 3, array_get_at);
   ADD_BUILTIN_IMPL("array[]:=()", 2, array_set_at);
   ADD_BUILTIN_IMPL("array.length", 0, array_length);
   return success();

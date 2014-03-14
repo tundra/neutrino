@@ -323,6 +323,47 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame.pc += kBuiltinOperationSize;
           break;
         }
+        case ocBuiltinMaybeLeave: {
+          value_t wrapper = read_value(&cache, &frame, 1);
+          builtin_method_t impl = (builtin_method_t) get_void_p_value(wrapper);
+          builtin_arguments_t args;
+          builtin_arguments_init(&args, runtime, &frame);
+          value_t result = impl(&args);
+          if (in_condition_cause(ccSignal, result)) {
+            // The builtin failed. Find the appropriate signal handler and call
+            // it.
+            value_t record = frame_pop_value(&frame);
+            CHECK_FAMILY(ofInvocationRecord, record);
+            value_t arg_map = whatever();
+            value_t handler = whatever();
+            value_t method = lookup_signal_handler_method(ambience, record, &frame,
+                &handler, &arg_map);
+            if (in_condition_cause(ccLookupError, method))
+              // There was no signal handler so we just bail.
+              // TODO: ensure that the signal is included in backtraces.
+              E_RETURN(result);
+            // Either found a signal or encountered a different condition.
+            E_TRY(method);
+            // Skip forward to the point we want the signal to return to, the
+            // leave-or-fire-barrier op that will do the leaving.
+            size_t dest_offset = read_short(&cache, &frame, 2);
+            frame.pc += dest_offset;
+            // Run the handler.
+            E_TRY_DEF(code_block, ensure_method_code(runtime, method));
+            E_TRY(push_stack_frame(runtime, stack, &frame,
+                get_code_block_high_water_mark(code_block), arg_map));
+            frame_set_code_block(&frame, code_block);
+            CHECK_TRUE("subject not null", is_null(frame_get_argument(&frame, 0)));
+            frame_set_argument(&frame, 0, handler);
+            code_cache_refresh(&cache, &frame);
+          } else {
+            // The builtin didn't cause a condition so we can just keep going.
+            E_TRY(result);
+            frame_push_value(&frame, result);
+            frame.pc += kBuiltinMaybeLeaveOperationSize;
+          }
+          break;
+        }
         case ocReturn: {
           value_t result = frame_pop_value(&frame);
           frame_pop_within_stack_piece(&frame);

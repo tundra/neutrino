@@ -47,6 +47,34 @@ static value_t create_stack_piece_bottom_code_block(runtime_t *runtime) {
       1);
 }
 
+// Creates an array of invocation records of the form
+//
+//   {%subject: N-1, %selector: N-2, 0: N-3, ...}
+//
+// for up to kMaxSize entries (including the subject and selector). These are
+// used for instance for raising signals from within builtins.
+static value_t create_escape_records(runtime_t *runtime) {
+  static const size_t kMaxSize = 3;
+  TRY_DEF(result, new_heap_array(runtime, kMaxSize + 1));
+  for (size_t i = 2; i <= kMaxSize; i++) {
+    // Build the entries manually. The indexes are somewhat fiddly because they
+    // are counted backwards from the size-1.
+    TRY_DEF(args, new_heap_pair_array(runtime, i));
+    set_pair_array_first_at(args, 0, ROOT(runtime, subject_key));
+    set_pair_array_second_at(args, 0, new_integer(i - 1));
+    set_pair_array_first_at(args, 1, ROOT(runtime, selector_key));
+    set_pair_array_second_at(args, 1, new_integer(i - 2));
+    for (size_t j = 2; j < i; j++) {
+      set_pair_array_first_at(args, j, new_integer(j - 2));
+      set_pair_array_second_at(args, j, new_integer(i - j - 1));
+    }
+    CHECK_TRUE("escape record not sorted", is_pair_array_sorted(args));
+    TRY_DEF(record, new_heap_invocation_record(runtime, afFreeze, args));
+    set_array_at(result, i, record);
+  }
+  return result;
+}
+
 // Create the fragment that holds the ctrino methods which will be made the
 // origin of the ctrino type.
 static value_t create_ctrino_origin(runtime_t *runtime) {
@@ -118,6 +146,18 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   ENUM_STRING_TABLE(__CREATE_STRING_TABLE_ENTRY__)
 #undef __CREATE_STRING_TABLE_ENTRY__
 
+  // Ditto selector table entry.
+#define __CREATE_SELECTOR_TABLE_ENTRY__(name, value)                           \
+  do {                                                                         \
+    string_t contents;                                                         \
+    string_init(&contents, value);                                             \
+    TRY_DEF(string, new_heap_string(runtime, &contents));                      \
+    TRY_SET(RAW_RSEL(roots, name), new_heap_operation(runtime, afFreeze,       \
+        otInfix, string));                                                     \
+  } while (false);
+  ENUM_SELECTOR_TABLE(__CREATE_SELECTOR_TABLE_ENTRY__)
+#undef __CREATE_SELECTOR_TABLE_ENTRY__
+
   // Initialize singletons first since we need those to create more complex
   // values below.
   TRY_DEF(empty_array, new_heap_array(runtime, 0));
@@ -145,6 +185,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
       create_stack_bottom_code_block(runtime));
   TRY_SET(RAW_ROOT(roots, stack_piece_bottom_code_block),
       create_stack_piece_bottom_code_block(runtime));
+  TRY_SET(RAW_ROOT(roots, escape_records), create_escape_records(runtime));
 
   // Generate initialization for the per-family types.
   value_t core_type_origin = get_ambience_present_core_fragment_redirect();
@@ -272,10 +313,15 @@ value_t roots_validate(value_t roots) {
   VALIDATE_HEAP_OBJECT(ofIdHashMap, RAW_ROOT(roots, builtin_impls));
   VALIDATE_HEAP_OBJECT(ofOperation, RAW_ROOT(roots, op_call));
   VALIDATE_CHECK_EQ(otCall, get_operation_type(RAW_ROOT(roots, op_call)));
+  VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, escape_records));
 
 #define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_HEAP_OBJECT(ofString, RAW_RSTR(roots, name));
   ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)
 #undef __VALIDATE_STRING_TABLE_ENTRY__
+
+#define __VALIDATE_SELECTOR_TABLE_ENTRY__(name, value) VALIDATE_HEAP_OBJECT(ofOperation, RAW_RSEL(roots, name));
+  ENUM_SELECTOR_TABLE(__VALIDATE_SELECTOR_TABLE_ENTRY__)
+#undef __VALIDATE_SELECTOR_TABLE_ENTRY__
 
   #undef VALIDATE_TYPE
   #undef VALIDATE_SPECIES
