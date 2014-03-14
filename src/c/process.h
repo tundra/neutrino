@@ -35,6 +35,7 @@
 #ifndef _PROCESS
 #define _PROCESS
 
+#include "derived.h"
 #include "value-inl.h"
 
 /// ## Stack piece
@@ -61,14 +62,18 @@
 /// set the stack pointer on a piece first before putting the piece into the
 /// stack.
 
-static const size_t kStackPieceSize = HEAP_OBJECT_SIZE(4);
-static const size_t kStackPieceStorageOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kStackPieceHeaderSize = HEAP_OBJECT_SIZE(4);
+static const size_t kStackPieceCapacityOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kStackPiecePreviousOffset= HEAP_OBJECT_FIELD_OFFSET(1);
 static const size_t kStackPieceStackOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 static const size_t kStackPieceLidFramePointerOffset = HEAP_OBJECT_FIELD_OFFSET(3);
+static const size_t kStackPieceStorageOffset = HEAP_OBJECT_FIELD_OFFSET(4);
 
-// The plain array used for storage for this stack piece.
-ACCESSORS_DECL(stack_piece, storage);
+// Calculates the size of a heap stack piece with the given capacity.
+size_t calc_stack_piece_size(size_t capacity);
+
+// The capacity of this stack piece.
+ACCESSORS_DECL(stack_piece, capacity);
 
 // The previous, lower, stack piece.
 ACCESSORS_DECL(stack_piece, previous);
@@ -78,6 +83,9 @@ ACCESSORS_DECL(stack_piece, stack);
 
 // The frame pointer for the lid frame. Only set if the piece is closed.
 ACCESSORS_DECL(stack_piece, lid_frame_pointer);
+
+// Returns the beginning of the storage portion of the given stack piece.
+value_t *get_stack_piece_storage(value_t self);
 
 // Returns true if the given stack piece is in the closed state.
 bool is_stack_piece_closed(value_t self);
@@ -106,7 +114,7 @@ typedef enum {
 
 // A transient stack frame. The current structure isn't clever but it's not
 // intended to be, it's intended to work and be fully general.
-typedef struct frame_t {
+struct frame_t {
   // Pointer to the next available field on the stack.
   value_t *stack_pointer;
   // Pointer to the bottom of the stack fields.
@@ -119,7 +127,7 @@ typedef struct frame_t {
   value_t stack_piece;
   // The program counter.
   size_t pc;
-} frame_t;
+};
 
 // Returns an empty frame to use for initialization.
 static frame_t frame_empty() {
@@ -241,26 +249,18 @@ value_t *frame_get_stack_piece_top(frame_t *frame);
 // stack.
 void frame_walk_down_stack(frame_t *frame);
 
-// Creates a joint refraction point and barrier in the given frame that refracts
-// for the given refractor object.
-void frame_push_refracting_barrier(frame_t *frame, value_t refractor, value_t data);
-
 // Creates a plain barrier in the given frame with the given handler.
 void frame_push_barrier(frame_t *frame, value_t handler);
 
-// Pops a barrier off the stack. Returns the handler.
-value_t frame_pop_barrier(frame_t *frame);
+// Allocates a contiguous chunk of this frame.
+value_array_t frame_alloc_array(frame_t *frame, size_t size);
 
-// Pops a refraction point off the stack. Returns the refractor that created
-// the point.
-value_t frame_pop_refraction_point(frame_t *frame);
+// Allocates a derived object section within the current frame, returning the
+// derived object pointer.
+value_t frame_alloc_derived_object(frame_t *frame, genus_descriptor_t *desc);
 
-// Pops a joint refraction point and barrier off the stack. Returns the
-// refractor that created the point.
-value_t frame_pop_refracting_barrier(frame_t *frame);
-
-// Pops the barrier part off a refracting barrier.
-void frame_pop_partial_barrier(frame_t *frame);
+// Pops the derived object currently at the top off the stack off.
+void frame_destroy_derived_object(frame_t *frame, genus_descriptor_t *desc);
 
 
 /// ### Frame iterator
@@ -307,11 +307,10 @@ bool frame_iter_advance(frame_iter_t *iter);
 /// because it means that all the space required to hold the barriers can be
 /// stack allocated.
 
-static const size_t kStackSize = HEAP_OBJECT_SIZE(4);
+static const size_t kStackSize = HEAP_OBJECT_SIZE(3);
 static const size_t kStackTopPieceOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kStackDefaultPieceCapacityOffset = HEAP_OBJECT_FIELD_OFFSET(1);
-static const size_t kStackTopBarrierPieceOffset = HEAP_OBJECT_FIELD_OFFSET(2);
-static const size_t kStackTopBarrierPointerOffset = HEAP_OBJECT_FIELD_OFFSET(3);
+static const size_t kStackTopBarrierOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // The top stack piece of this stack.
 ACCESSORS_DECL(stack, top_piece);
@@ -319,11 +318,8 @@ ACCESSORS_DECL(stack, top_piece);
 // The default capacity of the stack pieces that make up this stack.
 INTEGER_ACCESSORS_DECL(stack, default_piece_capacity);
 
-// The stack piece that holds the current top barrier.
-ACCESSORS_DECL(stack, top_barrier_piece);
-
-// Pointer to the location in the top barrier piece where the top barrier is.
-ACCESSORS_DECL(stack, top_barrier_pointer);
+// The current top barrier.
+ACCESSORS_DECL(stack, top_barrier);
 
 // Allocates a new frame on this stack. If allocating fails, for instance if a
 // new stack piece is required and we're out of memory, a condition is returned.
@@ -345,46 +341,27 @@ frame_t open_stack(value_t stack);
 /// Helper type that encapsulates a region of the stack that holds a stack
 /// barrier.
 
-typedef struct {
-  value_t *bottom;
-} stack_barrier_t;
-
 static const int32_t kStackBarrierSize = 3;
 static const size_t kStackBarrierHandlerOffset = 0;
 static const size_t kStackBarrierNextPieceOffset = 1;
 static const size_t kStackBarrierNextPointerOffset = 2;
-
-// Returns the handler value for this barrier that determines what the barrier
-// actually does.
-value_t stack_barrier_get_handler(stack_barrier_t *barrier);
-
-// The stack piece of the next barrier.
-value_t stack_barrier_get_next_piece(stack_barrier_t *barrier);
-
-// The stack pointer of the next barrier.
-value_t stack_barrier_get_next_pointer(stack_barrier_t *barrier);
 
 
 /// ### Barrier iterator
 ///
 /// Utility for scanning through the barriers on a stack without modifying them.
 
+// Holds the barrier iteration state.
 typedef struct {
-  stack_barrier_t current;
+  value_t current;
 } barrier_iter_t;
 
-// Initializes the given barrier iterator. After this call the current barrier
-// will be the top one.
-void barrier_iter_init(barrier_iter_t *iter, frame_t *frame);
-
-// Returns a pointer to the current stack barrier. The result is well-defined
-// until the first call to barrier_iter_advance that returns false.
-stack_barrier_t *barrier_iter_get_current(barrier_iter_t *iter);
+// Initializes the given barrier iterator, returning the first barrier.
+value_t barrier_iter_init(barrier_iter_t *iter, frame_t *frame);
 
 // Advances the iterator to the next barrier, downwards towards the bottom of
-// the call stack. Returns true iff advancing was successful, in which case
-// barrier_iter_get_current can be called to get the next barrier.
-bool barrier_iter_advance(barrier_iter_t *iter);
+// the call stack. Returns the next barrier.
+value_t barrier_iter_advance(barrier_iter_t *iter);
 
 
 /// ## Escape
@@ -398,26 +375,9 @@ bool barrier_iter_advance(barrier_iter_t *iter);
 /// ### Escape home
 ///
 /// Since an escape is scoped, that is, it is invalidated as soon as the scope
-/// that created it exits, most of its state can be stored on the stack. The
-/// escape itself is just a pointer to its state on the stack together with a
-/// flag indicating whether it is still valid. The stack state is organized like
-/// this:
-///
-//%                                       (escape)
-//%              :            :         +----------+
-//%              +============+    +--- |   home   |
-//%         +--- |  prev ptr  |    |    +----------+
-//%         |    +------------+    |
-//% barrier |    | prev piece |    |
-//%         |    +------------+    |
-//%         +--> |   escape   | <--+
-//%              +============+
-//%              :            :
-//%              :  escape's  :
-//%              :   state    :
-//%              :            :
-//%              +============+
-//%              :            :
+/// that created it exits, most of its state can be stored on the stack as a
+/// derived escape section object. The escape itself is just a pointer to its
+/// state on the stack.
 ///
 /// An escape uses two stack regions: the state to return to when fired and a
 /// barrier which ensures that the escape object is invalidated however the
@@ -430,16 +390,8 @@ bool barrier_iter_advance(barrier_iter_t *iter);
 /// and the escape's origin. This is done by "parking" the interpreter at a
 /// bytecode and never advancing the program counter. At each turn around the
 /// interpreter the same instruction is executed which fetches the next barrier
-/// comparing it with the escape's origin, and if the barrier is above it the
-/// associated handler is executed.
-///
-/// Barrier pointers are always counted from the bottom of the barrier region,
-/// which in this case is the point that holds the escape object. Incidentally
-/// that is also the place the escape object points to so we can always just
-/// peel off barriers until we find one at the exact address of the escape and
-/// then we'll have arrived. This is why escapes point into the middle of their
-/// associated stack region, not to the top or bottom. Also, it's a convenient
-/// sanity check to have each escape point to a place that holds itself.
+/// comparing it with the escape's destination, and if the barrier is above it
+/// the associated handler is executed.
 ///
 /// ### Returning multiple times through the same escape
 ///
@@ -462,26 +414,12 @@ bool barrier_iter_advance(barrier_iter_t *iter);
 /// barriers work more generally, or have a special case here which would make
 /// them less orthogonal.
 
-static const size_t kEscapeSize = HEAP_OBJECT_SIZE(3);
-static const size_t kEscapeIsLiveOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kEscapeStackPieceOffset = HEAP_OBJECT_FIELD_OFFSET(1);
-static const size_t kEscapeStackPointerOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kEscapeSize = HEAP_OBJECT_SIZE(1);
+static const size_t kEscapeSectionOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
-// The number of stack entries it takes to record the complete state of a frame.
-static const int32_t kCapturedStateSize
-    = (kFrameFieldCount - 1) // Everything from the frame except the stack piece.
-    + 1;                     // The PC.
-
-// Is it valid to invoke this escape, that is, are we still within the body of
-// the with_escape block that produced this escape?
-ACCESSORS_DECL(escape, is_live);
-
-// The stack piece to drop to when escaping.
-ACCESSORS_DECL(escape, stack_piece);
-
-// The stack pointer that indicates where the stored state is located on the
-// stack piece.
-ACCESSORS_DECL(escape, stack_pointer);
+// The escape section that contains the data for this escape object. Becomes
+// nothing when the escape is killed.
+ACCESSORS_DECL(escape, section);
 
 
 /// ## Lambda
@@ -511,17 +449,16 @@ value_t get_lambda_capture(value_t self, size_t index);
 /// Code objects visible at the surface level which only live as long as the
 /// scope that defined them. Because blocks can only be executed while the scope
 /// is still alive they can access their outer state through the stack through
-/// a mechanism called _refraction_. Whenever a block is created a section is
-/// pushed onto the stack, the block's _home_.
+/// a mechanism called _refraction_. Whenever a block is created a derived
+/// section object is allocated on the stack, the block's _home_.
 ///
 //%                                  (block 1)
 //%          :            :         +----------+
-//%          +============+    +--- |   home   |
-//%     +--- |     fp     |    |    +----------+
-//%     |    +------------+    |
-//%     |    |   methods  |    |
-//%     |    +------------+    |
-//%     |    |   block 1  | <--+
+//%          +============+    +--- | section  |
+//%     +--- :            :    |    +----------+
+//%     |    :  block 1   :    |
+//%     |    :  section   : <--+
+//%     |    :            :
 //%     |    +============+
 //%     |    :            :
 //%     |    :   locals   :
@@ -532,12 +469,11 @@ value_t get_lambda_capture(value_t self, size_t index);
 //%          :  possibly  :    |
 //%          :    many    :    |     (block 2)
 //%          :   frames   :    +--> +----------+
-//%          +============+         |   home   |
-//%     +--- |     fp     |    +--- +----------+
-//%     |    +------------+    |
-//%     |    |   methods  |    |
-//%     |    +------------+    |
-//%     |    |   block 2  | <--+
+//%          +============+         | section  |
+//%     +--- :            :    +--- +----------+
+//%     |    :  block 2   :    |
+//%     |    :  section   : <--+
+//%     |    :            :
 //%     |    +============+
 //%     |    :            :
 //%     |    :   locals   :
@@ -546,200 +482,30 @@ value_t get_lambda_capture(value_t self, size_t index);
 //%          :            :
 ///
 /// To access say a local variable in an enclosing scope from a block you follow
-/// the block's pointer back to its home section. There the frame pointer of the
-/// frame that created the block which is all you need to access state in that
-/// frame. To access scopes yet further down the stack, in the case where you
-/// have nested blocks within blocks, you can peel off the scopes one at a time
-/// by first going through the block itself into the frame that created it, then
-/// the next enclosing block which will be the subject of that frame, and so on
-/// until all the layers of blocks scopes have been peeled off. This process of
-/// going through (potentially) successive blocks' originating scopes is what
-/// is referred to as refraction.
+/// the block's pointer back to its home section. There you can get the frame
+/// pointer of the frame that created the block which is all you need to access
+/// state in that frame. To access scopes yet further down the stack, in the
+/// case where you have nested blocks within blocks, you can peel off the scopes
+/// one at a time by first going through the block itself into the frame that
+/// created it, then the next enclosing block which will be the subject of that
+/// frame, and so on until all the layers of blocks scopes have been peeled off.
+/// This process of going through (potentially) successive blocks' originating
+/// scopes is what is referred to as refraction.
 ///
 /// Because blocks don't need to capture state they're cheap to create, just
-/// a few pushes and then a fixed-size object that points into the stack with
-/// a flag that can be used to disable the block when its scope exits.
-///
-/// ### Block barriers
-///
-/// Because blocks need to be killed when their scope exits there has to be a
-/// stack barrier for each block that ensure that this happens whichever way the
-/// scope exits. Blocks also need a refraction point which is also pushed onto
-/// the stack and which contains some of the state also needed by the barrier.
-/// To avoid pushing the same state multiple times barriers and refraction
-/// points are laid out such that they can share state:
-///
-//%           :            :
-//%           +------------+
-//%   N+2     |  prev ptr  | --+
-//%           +------------+   |
-//%   N+1     | prev piece |   |  barrier
-//%           +------------+   |
-//%    N      |    block   | <-+ <-+
-//%           +------------+       |
-//%   N-1     |    data    |       |  refraction point
-//%           +------------+       |
-//%   N-2     |     fp     |     --+
-//%           +------------+
-//%           :            :
-///
-/// This is why refraction points count fields from the top whereas barriers
-/// count them from the bottom. The same trick applies with code shards.
-///
-/// The reason the barrier is above the refraction point is such that it can
-/// be removed before calling the block when exiting the scope normally.
-/// Otherwise if the block fired an escape while the barrier was still in place
-/// you'd just end up calling the same block again (and potentially endlessly).
+/// a derived object allocation and a small heap object that wraps the derived
+/// object pointer such that it can be killed when the scope exits.
 
+static const size_t kBlockSize = HEAP_OBJECT_SIZE(1);
+static const size_t kBlockSectionOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
-static const size_t kBlockSize = HEAP_OBJECT_SIZE(3);
-// These two must be at the same offsets as the other refractors, currently
-// code shards and signal handlers.
-static const size_t kBlockHomeStackPieceOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kBlockHomeStatePointerOffset = HEAP_OBJECT_FIELD_OFFSET(1);
-static const size_t kBlockIsLiveOffset = HEAP_OBJECT_FIELD_OFFSET(2);
-
-// Returns the flag indicating whether this block is still live.
-ACCESSORS_DECL(block, is_live);
-
-// Returns the array of outer variables for this block.
-ACCESSORS_DECL(block, home_stack_piece);
-
-// Returns the array of outer variables for this block.
-ACCESSORS_DECL(block, home_state_pointer);
-
-/// ### Refractor accessors
-///
-/// Because blocks and code shards are so similar it's convenient in a few
-/// places to be able to interact with them without knowing which of the two
-/// you've got. The refractor methods work on both types because the objects
-/// offsets that hold the home pointer are in the same positions in both types
-/// of objects.
-
-struct frame_t;
+// The section on the stack where this block's state lives.
+ACCESSORS_DECL(block, section);
 
 // Returns an incomplete frame that provides access to arguments and locals for
 // the frame that is located block_depth scopes outside the given block.
 void get_refractor_refracted_frame(value_t self, size_t block_depth,
     struct frame_t *frame_out);
-
-// Returns the home stack piece field of a refractor, that is, either a code
-// shard or a block.
-value_t get_refractor_home_stack_piece(value_t value);
-
-// Returns the home state pointer of a refractor, that is, either a code shard
-// or a block.
-value_t get_refractor_home_state_pointer(value_t self);
-
-// Sets the home state pointer of a refractor.
-void set_refractor_home_state_pointer(value_t self, value_t value);
-
-
-/// ## Code shard
-///
-/// Code shards are scoped closures like blocks but are internal to the runtime
-/// so they don't need as many safeguards. They also can't be called with
-/// different methods, they have just one block of code which will always be
-/// the one to be called. This, for instance, is how ensure-blocks work.
-///
-/// Code shards use refraction exactly the same way blocks do.
-
-static const size_t kCodeShardSize = HEAP_OBJECT_SIZE(2);
-// These two must be at the same offsets as the other refractors, currently
-// blocks and signal handlers.
-static const size_t kCodeShardHomeStackPieceOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kCodeShardHomeStatePointerOffset = HEAP_OBJECT_FIELD_OFFSET(1);
-
-// Returns the stack piece that contains this code shard's home.
-ACCESSORS_DECL(code_shard, home_stack_piece);
-
-// Returns a pointer within the stack piece to where this code shard's home is.
-ACCESSORS_DECL(code_shard, home_state_pointer);
-
-
-/// ## Refraction points
-///
-/// Refraction points are the areas of the stack through which refractors look
-/// up their outer variables. The code for working with refraction points gets
-/// used in a few different places so it's convenient to wrap it in an explicit
-/// abstraction.
-
-typedef struct {
-  // Base pointer into the stack where the refraction point's state is.
-  value_t *top;
-} refraction_point_t;
-
-static const int32_t kRefractionPointSize = 3;
-static const size_t kRefractionPointRefractorOffset = 0;
-static const size_t kRefractionPointDataOffset = 1;
-static const size_t kRefractionPointFramePointerOffset = 2;
-
-static const size_t kRefractingBarrierOverlapSize = 1;
-
-// Are you serious that this has to be a macro!?!
-#define kRefractingBarrierSize ((int32_t) (kRefractionPointSize + kStackBarrierSize - kRefractingBarrierOverlapSize))
-
-// Returns the home refraction point for the given refractor.
-refraction_point_t get_refractor_home(value_t self);
-
-// Returns the extra data that was specified when the refraction point was
-// created.
-value_t get_refraction_point_data(refraction_point_t *point);
-
-// Returns the frame pointer of the frame that contains the given refraction
-// point.
-size_t get_refraction_point_frame_pointer(refraction_point_t *point);
-
-// Returns the refractor object (block or code shard) whose creation caused this
-// refraction point.
-value_t get_refraction_point_refractor(refraction_point_t *point);
-
-// Given a stack barrier that is part of a refracting stack barrier, returns the
-// corresponding refraction point.
-refraction_point_t stack_barrier_as_refraction_point(stack_barrier_t *barrier);
-
-
-/// ## Signal handler
-///
-/// A signal handler is a scoped object whose home holds a set of methods which
-/// are available as signal handlers. Signal handlers are the "heaviest" of the
-/// barrier-related objects since they both need refraction (for when a handler
-/// is run) a barrier (to make the handler object visible to handler lookup)
-/// and escape state (for the case where either the handler or the caller ask
-/// for control to escape after the handler has run). The layout of the stack
-/// state associated with a signal handler is:
-///
-//%           :            :
-//%           +============+
-//%           :            :
-//%           :   escape   :
-//%           :   state    :
-//%           :            :
-//%           +------------+
-//%           |  prev ptr  | --+
-//%           +------------+   |
-//%           | prev piece |   |  barrier
-//%           +------------+   |           +-----------+
-//%           |  handler   | <-+ <-+ <---- |  handler  |
-//%           +------------+       |       +-----------+
-//%           |    data    |       |
-//%           +------------+       |  refraction point
-//%           |     fp     |     --+
-//%           +============+
-//%           :            :
-
-static const size_t kSignalHandlerSize = HEAP_OBJECT_SIZE(2);
-// These two must be at the same offsets as the other refractors, currently
-// blocks and code shards.
-static const size_t kSignalHandlerHomeStackPieceOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kSignalHandlerHomeStatePointerOffset = HEAP_OBJECT_FIELD_OFFSET(1);
-
-// Returns the stack piece that contains this signal handler's home.
-ACCESSORS_DECL(signal_handler, home_stack_piece);
-
-// Returns a pointer within the stack piece to where this signal handler's home
-// is.
-ACCESSORS_DECL(signal_handler, home_state_pointer);
 
 
 // --- B a c k t r a c e ---

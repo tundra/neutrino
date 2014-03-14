@@ -9,7 +9,7 @@ TEST(derived, array) {
   CREATE_RUNTIME();
 
   value_t host = new_heap_array(runtime, 100);
-  genus_descriptor_t *desc = &kStackPointerDescriptor;
+  genus_descriptor_t *desc = get_genus_descriptor(dgStackPointer);
 
   for (size_t i = 0; i + desc->field_count <= 100; i += desc->field_count) {
     value_array_t b0 = alloc_array_block(host, i, desc->field_count);

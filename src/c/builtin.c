@@ -73,7 +73,7 @@ value_t add_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   add_heap_object_builtin_implementations(runtime, s_map);
 
   // The family built-ins.
-#define __EMIT_FAMILY_BUILTINS_CALL__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N)\
+#define __EMIT_FAMILY_BUILTINS_CALL__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)\
   SR(                                                                          \
     TRY(add_##family##_builtin_implementations(runtime, s_map));,              \
     )

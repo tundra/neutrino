@@ -34,7 +34,7 @@ int get_value_domain_ordinal(value_domain_t domain) {
 
 const char *get_heap_object_family_name(heap_object_family_t family) {
   switch (family) {
-#define __GEN_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N)\
+#define __GEN_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)\
     case of##Family: return #Family;
     ENUM_HEAP_OBJECT_FAMILIES(__GEN_CASE__)
 #undef __GEN_CASE__
@@ -161,7 +161,7 @@ bool in_syntax_family(value_t value) {
   if (!is_heap_object(value))
     return false;
   switch (get_heap_object_family(value)) {
-#define __MAKE_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N)\
+#define __MAKE_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)   \
   EM(                                                                          \
     case of##Family: return true;,                                             \
     )

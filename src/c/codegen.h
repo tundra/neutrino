@@ -245,14 +245,14 @@ value_t assembler_emit_lambda(assembler_t *assm, value_t methods,
 // Emits a block that understands the given methods.
 value_t assembler_emit_create_block(assembler_t *assm, value_t methods);
 
-// Emits a code shard that executes the given block of code.
-value_t assembler_emit_create_code_shard(assembler_t *assm, value_t code_block);
+// Emits an ensure block that executes the given block of code.
+value_t assembler_emit_create_ensurer(assembler_t *assm, value_t code_block);
 
-// Calls the code shard below the top stack value.
-value_t assembler_emit_call_code_shard(assembler_t *assm);
+// Calls the ensure block below the top stack value.
+value_t assembler_emit_call_ensurer(assembler_t *assm);
 
-// Cleans up after a code shard call.
-value_t assembler_emit_dispose_code_shard(assembler_t *assm);
+// Cleans up after a ensure block call.
+value_t assembler_emit_dispose_ensurer(assembler_t *assm);
 
 // Installs a methodspace as a scoped signal handler.
 value_t assembler_emit_install_signal_handler(assembler_t *assm, value_t space,

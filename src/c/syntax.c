@@ -131,7 +131,7 @@ size_t *calc_parameter_ast_ordering(reusable_scratch_memory_t *scratch,
 }
 
 // Forward declare all the emit methods.
-#define __EMIT_SYNTAX_FAMILY_EMIT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N)\
+#define __EMIT_SYNTAX_FAMILY_EMIT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)\
     EM(                                                                            \
       value_t emit_##family(value_t, assembler_t *);,                              \
       )
@@ -422,8 +422,8 @@ value_t emit_signal_handler_ast(value_t value, assembler_t *assm) {
   assembler_pop_block_scope(assm, &block_scope);
 
   short_buffer_cursor_t cursor;
-  size_t start_offset = assembler_get_code_cursor(assm);
   TRY(assembler_emit_install_signal_handler(assm, space, &cursor));
+  size_t start_offset = assembler_get_code_cursor(assm);
   TRY(emit_value(get_signal_handler_ast_body(value), assm));
   size_t end_offset = assembler_get_code_cursor(assm);
   short_buffer_cursor_set(&cursor, end_offset - start_offset);
@@ -461,7 +461,7 @@ FIXED_GET_MODE_IMPL(ensure_ast, vmMutable);
 ACCESSORS_IMPL(EnsureAst, ensure_ast, acIsSyntaxOpt, 0, Body, body);
 ACCESSORS_IMPL(EnsureAst, ensure_ast, acIsSyntaxOpt, 0, OnExit, on_exit);
 
-static value_t emit_code_shard(value_t code, assembler_t *assm) {
+static value_t emit_ensurer(value_t code, assembler_t *assm) {
   // Push a block scope that refracts any symbols accessed outside the block.
   block_scope_t block_scope;
   TRY(assembler_push_block_scope(assm, &block_scope));
@@ -473,7 +473,7 @@ static value_t emit_code_shard(value_t code, assembler_t *assm) {
   assembler_pop_block_scope(assm, &block_scope);
 
   // Finally emit the bytecode that will create the block.
-  TRY(assembler_emit_create_code_shard(assm, code_block));
+  TRY(assembler_emit_create_ensurer(assm, code_block));
   return success();
 }
 
@@ -481,12 +481,10 @@ value_t emit_ensure_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofEnsureAst, self);
   value_t body = get_ensure_ast_body(self);
   value_t on_exit = get_ensure_ast_on_exit(self);
-  // TODO: hook the shard into the barrier stack to ensure that it gets called
-  //   however we return.
-  TRY(emit_code_shard(on_exit, assm));
+  TRY(emit_ensurer(on_exit, assm));
   TRY(emit_value(body, assm));
-  TRY(assembler_emit_call_code_shard(assm));
-  TRY(assembler_emit_dispose_code_shard(assm));
+  TRY(assembler_emit_call_ensurer(assm));
+  TRY(assembler_emit_dispose_ensurer(assm));
   return success();
 }
 
@@ -759,7 +757,7 @@ static value_t emit_block_value(value_t method_asts, assembler_t *assm) {
 value_t emit_block_ast(value_t self, assembler_t *assm) {
   CHECK_FAMILY(ofBlockAst, self);
   // Record the stack offset where the value is being pushed.
-  size_t offset = assm->stack_height + kRefractionPointSize - 1;
+  size_t offset = assm->stack_height + get_genus_descriptor(dgBlockSection)->field_count;
   value_t method_asts = get_block_ast_methods(self);
   TRY(emit_block_value(method_asts, assm));
   // Record in the scope chain that the symbol is bound and where the value is
@@ -823,7 +821,7 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   size_t code_start_offset = assembler_get_code_cursor(assm);
   // The capture will be pushed as the bottom value of the stack barrier, so
   // stack-barrier-size down from the current stack height.
-  size_t stack_offset = assm->stack_height - kStackBarrierSize;
+  size_t stack_offset = assm->stack_height - 1;
   // Record in the scope chain that the symbol is bound and where the value is
   // located on the stack.
   value_t symbol = get_with_escape_ast_symbol(self);
@@ -842,10 +840,9 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   // way whether you return normally or escape.
   size_t code_end_offset = assembler_get_code_cursor(assm);
   short_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
-  // Ensure that the escape is dead then slap the value and the captured state
-  // off, leaving just the value of the body or the escaped value.
+  // Ensure that the escape is dead and remove the section, leaving just the
+  // value of the body or the escaped value.
   TRY(assembler_emit_dispose_escape(assm));
-  TRY(assembler_emit_slap(assm, kCapturedStateSize));
   return success();
 }
 
@@ -1564,7 +1561,7 @@ value_t emit_value(value_t value, assembler_t *assm) {
 #define __EMIT_SYNTAX_FAMILY_CASE_HELPER__(Family, family)                     \
     case of##Family:                                                           \
       return emit_##family(value, assm);
-#define __EMIT_SYNTAX_FAMILY_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, SC, N)\
+#define __EMIT_SYNTAX_FAMILY_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)\
     EM(                                                                        \
       __EMIT_SYNTAX_FAMILY_CASE_HELPER__(Family, family),                      \
       )
