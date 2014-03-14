@@ -819,8 +819,16 @@ static int64_t get_custom_tagged_payload(value_t value) {
 /// The type of a derived object is called its _genus_ (plural _genera_). Yeah
 /// I'm running out of taxonomic ranks.
 
-// Calls the given macro for each UpperCase and lower_camel_case genus of
-// derived objects.
+/// ### Derived object index
+///
+/// Calls the given macro for each UpperCase and lower_camel_case genus of
+/// derived objects. The columns are:
+///
+///   - _CamelName_: the name of the family in upper camel case.
+///   - _underscore_name_: the name of the family in lower underscore case.
+///   - _Sc_: Is this derived object type scoped, that is, does it have an
+///     on-exit action when its scope exits?
+
 //
 //  CamelName                underscore_name            Sc
 #define ENUM_DERIVED_OBJECT_GENERA(F)                                          \
