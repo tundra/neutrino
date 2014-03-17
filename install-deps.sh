@@ -5,4 +5,4 @@
 set -e
 
 # Install plankton
-$(cd deps/plankton && python setup.py install)
+$(cd deps/plankton/src/python && python setup.py install)
