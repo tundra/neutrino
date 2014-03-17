@@ -1,3 +1,6 @@
 [submodule "deps/plankton"]
 	path = deps/plankton
 	url = https://github.com/goto-10/plankton.git
+[submodule "deps/mkmk"]
+	path = deps/mkmk
+	url = https://github.com/goto-10/mkmk.git
