@@ -13,12 +13,8 @@ file_names = [
 ]
 
 files = get_group("files")
-plankton_all = get_external("src", "python", "plankton", "all")
-plankton_root = get_root().get_child("src", "python", "plankton")
 
 for file_name in file_names:
   source_file = py.get_source_file(file_name)
-  source_file.add_dependency(plankton_all)
-  source_file.add_pythonpath(plankton_root)
   source_file.add_dependency(files)
   files.add_member(source_file)

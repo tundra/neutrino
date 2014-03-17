@@ -7,6 +7,15 @@ import platform
 import sys
 
 
+try:
+  import plankton
+except ImportError, e:
+  print "Couldn't import plankton. Before init'ing you have to run"
+  print ""
+  print "  sudo ./tools/install-deps.sh"
+  sys.exit(1)
+
+
 # Flags to pass through to mkmk when regenerating the makefile.
 _MKMK_FLAGS = [
   ('debug', False, 'store_true'),
