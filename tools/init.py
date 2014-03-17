@@ -7,6 +7,16 @@ import platform
 import sys
 
 
+try:
+  import planktoon
+except ImportError, e:
+  print "Couldn't import plankton. Before init'ing you have to do"
+  print ""
+  print "  cd deps/plankton && sudo python setup.py install"
+  sys.exit(1)
+
+
+
 # Flags to pass through to mkmk when regenerating the makefile.
 _MKMK_FLAGS = [
   ('debug', False, 'store_true'),
