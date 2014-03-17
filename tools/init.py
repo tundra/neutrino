@@ -8,7 +8,7 @@ import sys
 
 
 try:
-  import planktoon
+  import plankton
 except ImportError, e:
   print "Couldn't import plankton. Before init'ing you have to do"
   print ""
