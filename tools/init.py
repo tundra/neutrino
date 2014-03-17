@@ -10,9 +10,9 @@ import sys
 try:
   import plankton
 except ImportError, e:
-  print "Couldn't import plankton. Before init'ing you have to do"
+  print "Couldn't import plankton. Before init'ing you have to run"
   print ""
-  print "  cd deps/plankton && sudo python setup.py install"
+  print "  sudo ./install-deps.sh"
   sys.exit(1)
 
 
