@@ -75,7 +75,16 @@ if [ $INIT_CHANGED = "Changed" ]; then
 fi
 
 # Rebuild makefile every time.
-%(mkmk_tool)s --root "%(root_mkmk)s" --bindir "%(bindir)s" --makefile "%(Makefile.mkmk)s" %(variant_flags)s
+%(mkmk_tool)s                                                                  \
+  --config "%(root_mkmk)s"                                                     \
+  --bindir "%(bindir)s"                                                        \
+  --makefile "%(Makefile.mkmk)s"                                               \
+  --extension c                                                                \
+  --extension py                                                               \
+  --extension n                                                                \
+  --extension test                                                             \
+  --extension toc                                                              \
+  --buildflags "%(variant_flags)s"
 
 # Delegate to the resulting makefile.
 make -f "%(Makefile.mkmk)s" $*
@@ -111,7 +120,7 @@ if "%%init_changed%%" == "Changed" (
   echo #   %%0 %%*
   call %%0 %%*
 ) else (
-  python %(mkmk_tool)s --root "%(root_mkmk)s" --bindir "%(bindir)s" --makefile "%(Makefile.mkmk)s" --toolchain msvc %(variant_flags)s
+  python %(mkmk_tool)s --config "%(root_mkmk)s" --bindir "%(bindir)s" --makefile "%(Makefile.mkmk)s" --toolchain msvc %(variant_flags)s
   if %%errorlevel%% neq 0 exit /b %%errorlevel%%
 
   nmake /nologo -f "%(Makefile.mkmk)s" %%*
@@ -241,7 +250,7 @@ def generate_build_script(flags):
     "init_md5": init_md5,
     "init_tool": __file__,
     "init_args": " ".join(sys.argv[1:]),
-    "mkmk_tool": os.path.join(neutrino_root, "tools", "mkmk"),
+    "mkmk_tool": "mkmk",
     "root_mkmk": root_mkmk,
     "bindir": flags.bindir,
     "Makefile.mkmk": get_makefile_name(flags),
