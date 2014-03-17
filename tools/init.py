@@ -12,7 +12,7 @@ try:
 except ImportError, e:
   print "Couldn't import plankton. Before init'ing you have to run"
   print ""
-  print "  sudo ./install-deps.sh"
+  print "  sudo ./tools/install-deps.sh"
   sys.exit(1)
 
 

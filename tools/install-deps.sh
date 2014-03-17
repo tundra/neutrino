@@ -5,4 +5,8 @@
 set -e
 
 # Install plankton
-$(cd deps/plankton/src/python && python setup.py install)
+pushd .
+cd deps/plankton/src/python
+python setup.py install
+popd
+
