@@ -62,7 +62,7 @@ fi
 
 # Rebuild makefile every time.
 %(mkmk_tool)s                                                                  \
-  --config "%(root_mkmk)s"                                                     \
+  --config "%(config)s"                                                        \
   --bindir "%(bindir)s"                                                        \
   --makefile "%(Makefile.mkmk)s"                                               \
   --extension c                                                                \
@@ -107,7 +107,7 @@ if "%%init_changed%%" == "Changed" (
   echo #   %%0 %%*
   call %%0 %%*
 ) else (
-  python %(mkmk_tool)s --config "%(root_mkmk)s" --bindir "%(bindir)s" --makefile "%(Makefile.mkmk)s" --toolchain msvc %(variant_flags)s
+  python %(mkmk_tool)s --config "%(config)s" --bindir "%(bindir)s" --makefile "%(Makefile.mkmk)s" --toolchain msvc %(variant_flags)s
   if %%errorlevel%% neq 0 exit /b %%errorlevel%%
 
   nmake /nologo -f "%(Makefile.mkmk)s" %%*
@@ -216,9 +216,9 @@ def generate_build_script(flags, variant_flags):
   import os
   import os.path
   neutrino_root = get_neutrino_root(flags)
-  root_mkmk = os.path.join(neutrino_root, "neutrino.mkmk")
-  if not os.path.exists(root_mkmk):
-    raise Exception("Couldn't find the root build script as %s" % root_mkmk)
+  config = os.path.join(neutrino_root, "neutrino.mkmk")
+  if not os.path.exists(config):
+    raise Exception("Couldn't find the root build script as %s" % config)
   filename = get_script_name(flags)
   shell = _SHELLS[flags.shell]
   template = shell[0]
@@ -231,7 +231,7 @@ def generate_build_script(flags, variant_flags):
     "init_tool": __file__,
     "init_args": " ".join(sys.argv[1:]),
     "mkmk_tool": "mkmk",
-    "root_mkmk": root_mkmk,
+    "config": config,
     "bindir": flags.bindir,
     "Makefile.mkmk": get_makefile_name(flags),
     "variant_flags": " ".join(variant_flags),
