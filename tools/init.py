@@ -16,7 +16,6 @@ except ImportError, e:
   sys.exit(1)
 
 
-
 # Flags to pass through to mkmk when regenerating the makefile.
 _MKMK_FLAGS = [
   ('debug', False, 'store_true'),
