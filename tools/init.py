@@ -16,20 +16,6 @@ except ImportError, e:
   sys.exit(1)
 
 
-# Flags to pass through to mkmk when regenerating the makefile.
-_MKMK_FLAGS = [
-  ('debug', False, 'store_true'),
-  ('nochecks', False, 'store_true'),
-  ('warn', False, 'store_true'),
-  ('noisy', False, 'store_true'),
-  ('valgrind', False, 'store_true'),
-  ('gcc48', False, 'store_true'),
-  ('expchecks', False, 'store_true'),
-  ('gprof', False, 'store_true'),
-  ('time', False, 'store_true'),
-]
-
-
 # Returns the default value to use for the language.
 def get_default_shell():
   system = platform.system()
@@ -80,11 +66,12 @@ fi
   --bindir "%(bindir)s"                                                        \
   --makefile "%(Makefile.mkmk)s"                                               \
   --extension c                                                                \
-  --extension py                                                               \
   --extension n                                                                \
+  --extension py                                                               \
   --extension test                                                             \
   --extension toc                                                              \
-  --buildflags "%(variant_flags)s"
+  --buildflags "%(variant_flags)s"                                             \
+  %(cond_flags)s
 
 # Delegate to the resulting makefile.
 make -f "%(Makefile.mkmk)s" $*
@@ -138,17 +125,15 @@ _SHELLS = {
 
 # Parse command-line options, returning just the flags and discarding the args.
 def parse_options(argv):
-  import optparse
-  parser = optparse.OptionParser()
-  parser.add_option('--bindir', default='out')
-  parser.add_option('--shell', default=get_default_shell())
-  parser.add_option('--script', default=None)
-  parser.add_option('--root', default=None)
-  parser.add_option('--has_changed', default=None)
-  for (name, default, action) in _MKMK_FLAGS:
-    parser.add_option('--%s' % name, default=default, action=action)
-  (flags, args) = parser.parse_args(argv)
-  return flags
+  import argparse
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--bindir', default='out')
+  parser.add_argument('--shell', default=get_default_shell())
+  parser.add_argument('--script', default=None)
+  parser.add_argument('--root', default=None)
+  parser.add_argument('--has_changed', default=None)
+  parser.add_argument('--noisy', default=False, action='store_true')
+  return parser.parse_known_args(argv)
 
 
 # Returns a string in base64 containing the md5 hash of this script.
@@ -226,7 +211,7 @@ def get_makefile_name(flags):
 
 
 # Generates a build script of the appropriate type.
-def generate_build_script(flags):
+def generate_build_script(flags, variant_flags):
   validate_flags(flags)
   import os
   import os.path
@@ -237,15 +222,10 @@ def generate_build_script(flags):
   filename = get_script_name(flags)
   shell = _SHELLS[flags.shell]
   template = shell[0]
-  variant_flags = []
-  # Copy the mkmk flags over so they can be passed from the build script.
-  for (name, default, action) in _MKMK_FLAGS:
-    if (default == False) and (action == 'store_true'):
-      if getattr(flags, name):
-        variant_flags.append('--%s' % name)
-    else:
-      raise Exception("Don't know how to handle mkmk flag --%s" % name)
   init_md5 = get_self_md5()
+  cond_flags = []
+  if flags.noisy:
+    cond_flags.append('--noisy')
   makefile_src = template % {
     "init_md5": init_md5,
     "init_tool": __file__,
@@ -255,6 +235,7 @@ def generate_build_script(flags):
     "bindir": flags.bindir,
     "Makefile.mkmk": get_makefile_name(flags),
     "variant_flags": " ".join(variant_flags),
+    "cond_flags": " ".join(cond_flags)
   }
   with open(filename, "wt") as out:
     out.write(makefile_src)
@@ -265,11 +246,11 @@ def generate_build_script(flags):
 
 
 def main():
-  flags = parse_options(sys.argv[1:])
+  (flags, unknown) = parse_options(sys.argv[1:])
   if not flags.has_changed is None:
     run_change_check(flags.has_changed)
   else:
-    generate_build_script(flags)
+    generate_build_script(flags, unknown)
 
 
 if __name__ == "__main__":
