@@ -70,7 +70,7 @@ fi
   --extension py                                                               \
   --extension test                                                             \
   --extension toc                                                              \
-  --buildflags "%(variant_flags)s"                                             \
+  --buildflags="%(variant_flags)s"                                             \
   %(cond_flags)s
 
 # Delegate to the resulting makefile.
