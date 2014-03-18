@@ -73,7 +73,7 @@ static value_t set_flag_set_at(value_t self, uint32_t flags, bool value) {
 
 // Returns the category flag of the given score object.
 static score_category_t get_score_category(value_t score) {
-  return ((uint64_t) get_custom_tagged_payload(score)) >> kScoreSubscoreWidth;
+  return (score_category_t) (((uint64_t) get_custom_tagged_payload(score)) >> kScoreSubscoreWidth);
 }
 
 // Returns the subscore of the given score object.

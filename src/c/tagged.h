@@ -301,7 +301,7 @@ static value_t new_score(score_category_t category, uint32_t subscore) {
 // We only allow 41 bits for the offset because the 42nd bit is the sign and
 // it's not worth the hassle to handle full unsigned custom tagged payloads
 // correctly yet.
-static const uint64_t kDerivedObjectAnchorOffsetLimit = 1LLU << 41;
+static const uint64_t kDerivedObjectAnchorOffsetLimit = ((uint64_t) 1) << 41;
 
 // Creates a new derived object anchor for an object of the given genus that's
 // located at the given offset within the host.
@@ -316,7 +316,7 @@ static value_t new_derived_object_anchor(derived_object_genus_t genus,
 static derived_object_genus_t get_derived_object_anchor_genus(value_t self) {
   CHECK_PHYLUM(tpDerivedObjectAnchor, self);
   int64_t payload = get_custom_tagged_payload(self);
-  return payload & ((1 << kDerivedObjectGenusTagSize) - 1);
+  return (derived_object_genus_t) (payload & ((1 << kDerivedObjectGenusTagSize) - 1));
 }
 
 // Returns the raw offset (in bytes) within the host of the derived object which

@@ -2378,7 +2378,8 @@ void set_ambience_runtime(value_t self, runtime_t *runtime) {
 
 runtime_t *get_ambience_runtime(value_t self) {
   CHECK_FAMILY(ofAmbience, self);
-  return value_to_pointer_bit_cast(*access_heap_object_field(self, kAmbienceRuntimeOffset));
+  return (runtime_t*) value_to_pointer_bit_cast(
+      *access_heap_object_field(self, kAmbienceRuntimeOffset));
 }
 
 value_t follow_ambience_redirect(value_t self, value_t redirect) {

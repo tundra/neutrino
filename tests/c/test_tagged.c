@@ -217,11 +217,11 @@ TEST(tagged, nothing) {
 }
 
 TEST(tagged, payload) {
-  int64_t v0 = (1LLU << (kCustomTaggedPayloadSize - 1)) - 1;
-  value_t t0 = new_custom_tagged(0, v0);
+  int64_t v0 = (((int64_t) 1) << (kCustomTaggedPayloadSize - 1)) - 1;
+  value_t t0 = new_custom_tagged(tpNull, v0);
   ASSERT_EQ(v0, get_custom_tagged_payload(t0));
 
   int64_t v1 = -v0;
-  value_t t1 = new_custom_tagged(0, v1);
+  value_t t1 = new_custom_tagged(tpNull, v1);
   ASSERT_EQ(v1, get_custom_tagged_payload(t1));
 }
