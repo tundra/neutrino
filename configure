@@ -3,4 +3,4 @@
 # Install included dependencies
 sudo ./tools/install-deps.sh
 
-./tools/init.py "$@"
+./tools/init.sh "$@"
