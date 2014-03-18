@@ -66,7 +66,7 @@ static address_t get_derived_object_address(value_t value) {
 
 // Returns the offset of the N'th field in a derived object. The 0'th field is
 // the anchor.
-#define DERIVED_OBJECT_FIELD_OFFSET(N) (N * kValueSize)
+#define DERIVED_OBJECT_FIELD_OFFSET(N) (N * ((int64_t) kValueSize))
 
 // The offset of the derived object anchor.
 static const size_t kDerivedObjectAnchorOffset = 0 * kValueSize;
@@ -122,8 +122,8 @@ const char *get_derived_object_genus_name(derived_object_genus_t genus);
 /// For escape barriers, for instance, it is the escape object to kill.
 
 #define kBarrierStateFieldCount 2
-static const size_t kBarrierStatePayloadOffset = DERIVED_OBJECT_FIELD_OFFSET(-1);
-static const size_t kBarrierStatePreviousOffset = DERIVED_OBJECT_FIELD_OFFSET(-2);
+static const int64_t kBarrierStatePayloadOffset = DERIVED_OBJECT_FIELD_OFFSET(-1);
+static const int64_t kBarrierStatePreviousOffset = DERIVED_OBJECT_FIELD_OFFSET(-2);
 
 // The data field in a barrier.
 ACCESSORS_DECL(barrier_state, payload);
@@ -159,11 +159,11 @@ void barrier_state_unregister(value_t self, value_t stack);
 //%       :    ...     :
 
 #define kEscapeStateFieldCount (kBarrierStateFieldCount + 5)
-static const size_t kEscapeStateStackPointerOffset = DERIVED_OBJECT_FIELD_OFFSET(-3);
-static const size_t kEscapeStateFramePointerOffset = DERIVED_OBJECT_FIELD_OFFSET(-4);
-static const size_t kEscapeStateLimitPointerOffset = DERIVED_OBJECT_FIELD_OFFSET(-5);
-static const size_t kEscapeStateFlagsOffset = DERIVED_OBJECT_FIELD_OFFSET(-6);
-static const size_t kEscapeStatePcOffset = DERIVED_OBJECT_FIELD_OFFSET(-7);
+static const int64_t kEscapeStateStackPointerOffset = DERIVED_OBJECT_FIELD_OFFSET(-3);
+static const int64_t kEscapeStateFramePointerOffset = DERIVED_OBJECT_FIELD_OFFSET(-4);
+static const int64_t kEscapeStateLimitPointerOffset = DERIVED_OBJECT_FIELD_OFFSET(-5);
+static const int64_t kEscapeStateFlagsOffset = DERIVED_OBJECT_FIELD_OFFSET(-6);
+static const int64_t kEscapeStatePcOffset = DERIVED_OBJECT_FIELD_OFFSET(-7);
 
 // The recorded stack pointer.
 ACCESSORS_DECL(escape_state, stack_pointer);
@@ -208,7 +208,7 @@ void escape_state_init(value_t self, size_t stack_pointer, size_t frame_pointer,
 //%       :    ...     :
 
 #define kRefractionPointFieldCount 1
-static const size_t kRefractionPointFramePointerOffset = DERIVED_OBJECT_FIELD_OFFSET(1);
+static const int64_t kRefractionPointFramePointerOffset = DERIVED_OBJECT_FIELD_OFFSET(1);
 
 // The containing frame's frame pointer.
 ACCESSORS_DECL(refraction_point, frame_pointer);
@@ -235,7 +235,7 @@ void refraction_point_init(value_t self, frame_t *frame);
 
 #define kBlockSectionBeforeFieldCount kBarrierStateFieldCount
 #define kBlockSectionAfterFieldCount kRefractionPointFieldCount + 1
-static const size_t kBlockSectionMethodspaceOffset = DERIVED_OBJECT_FIELD_OFFSET(2);
+static const int64_t kBlockSectionMethodspaceOffset = DERIVED_OBJECT_FIELD_OFFSET(2);
 
 ACCESSORS_DECL(block_section, methodspace);
 

@@ -495,7 +495,7 @@ value_t lambda_validate(value_t self) {
 
 void lambda_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofLambda, value);
-  string_buffer_printf(context->buf, "\u03BB~%w", value); // Unicode lambda.
+  string_buffer_printf(context->buf, "lambda~%w", value); // Unicode lambda.
 }
 
 value_t emit_lambda_call_trampoline(assembler_t *assm) {
@@ -535,7 +535,7 @@ value_t block_validate(value_t self) {
 
 void block_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofBlock, value);
-  string_buffer_printf(context->buf, "\u03B2~%w", value); // Unicode beta.
+  string_buffer_printf(context->buf, "block~%w", value); // Unicode beta.
 }
 
 static value_t emit_block_call_trampoline(assembler_t *assm) {
@@ -762,7 +762,7 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
     return nothing();
   blob_t data;
   get_blob_data(bytecode, &data);
-  opcode_t op = blob_short_at(&data, pc - kInvokeOperationSize);
+  opcode_t op = (opcode_t) blob_short_at(&data, pc - kInvokeOperationSize);
   if (!is_invocation_opcode(op))
     return nothing();
   value_t record = whatever();
