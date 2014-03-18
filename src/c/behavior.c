@@ -576,6 +576,7 @@ value_t get_primary_type(value_t self, runtime_t *runtime) {
 }
 
 static value_t get_internal_object_type(value_t self, runtime_t *runtime) {
+  ERROR("Internal family: %v", self);
   return new_condition(ccInternalFamily);
 }
 
