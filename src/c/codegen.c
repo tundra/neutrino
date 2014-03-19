@@ -455,11 +455,11 @@ value_t assembler_emit_stack_piece_bottom(assembler_t *assm) {
 }
 
 value_t assembler_emit_invocation(assembler_t *assm, value_t fragment,
-    value_t record, value_t helper) {
+    value_t tags, value_t helper) {
   CHECK_FAMILY(ofModuleFragment, fragment);
-  CHECK_FAMILY(ofInvocationRecord, record);
+  CHECK_FAMILY(ofCallTags, tags);
   assembler_emit_opcode(assm, ocInvoke);
-  TRY(assembler_emit_value(assm, record));
+  TRY(assembler_emit_value(assm, tags));
   TRY(assembler_emit_value(assm, fragment));
   TRY(assembler_emit_value(assm, helper));
   // The result will be pushed onto the stack on top of the arguments.
@@ -467,10 +467,10 @@ value_t assembler_emit_invocation(assembler_t *assm, value_t fragment,
   return success();
 }
 
-value_t assembler_emit_signal(assembler_t *assm, opcode_t opcode, value_t record) {
-  CHECK_FAMILY(ofInvocationRecord, record);
+value_t assembler_emit_signal(assembler_t *assm, opcode_t opcode, value_t tags) {
+  CHECK_FAMILY(ofCallTags, tags);
   assembler_emit_opcode(assm, opcode);
-  TRY(assembler_emit_value(assm, record));
+  TRY(assembler_emit_value(assm, tags));
   // Pad the instruction to give it the same length as the other invoke ops.
   assembler_emit_short(assm, 0);
   assembler_emit_short(assm, 0);

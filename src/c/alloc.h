@@ -244,9 +244,9 @@ value_t new_heap_method(runtime_t *runtime, alloc_flags_t alloc_flags,
     value_t signature, value_t syntax, value_t code, value_t fragment,
     value_t method_flags);
 
-// Creates an invocation record with the given argument vector.
-value_t new_heap_invocation_record(runtime_t *runtime, alloc_flags_t flags,
-    value_t argument_vector);
+// Creates a new call tags object with the given argument vector.
+value_t new_heap_call_tags(runtime_t *runtime, alloc_flags_t flags,
+    value_t entries);
 
 // Creates a new builtin marker corresponding to the builtin with the given
 // name.

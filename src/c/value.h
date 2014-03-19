@@ -412,6 +412,7 @@ static value_t new_moved_object(value_t target) {
   F(BlockAst,                block_ast,                 _, _, X, X, _, _, X, _, _, 72)\
   F(BuiltinImplementation,   builtin_implementation,    _, _, _, _, _, _, _, X, _,  6)\
   F(BuiltinMarker,           builtin_marker,            _, _, _, X, _, _, _, _, _, 43)\
+  F(CallTags,                call_tags,                 _, X, _, _, _, _, _, X, X, 66)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X, 49)\
   F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _, 67)\
   F(CurrentModuleAst,        current_module_ast,        _, _, X, _, _, _, X, _, _, 61)\
@@ -428,7 +429,6 @@ static value_t new_moved_object(value_t target) {
   F(Instance,                instance,                  _, _, X, X, _, _, _, _, _, 60)\
   F(InstanceManager,         instance_manager,          _, _, _, X, _, _, _, _, _,  3)\
   F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _, _,  4)\
-  F(InvocationRecord,        invocation_record,         _, X, _, _, _, _, _, X, X, 66)\
   F(IsDeclarationAst,        is_declaration_ast,        _, _, X, _, _, _, _, _, _, 21)\
   F(Lambda,                  lambda,                    _, _, _, X, _, _, _, X, X, 47)\
   F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, _, _, 69)\

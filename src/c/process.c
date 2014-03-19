@@ -401,6 +401,12 @@ value_t frame_get_argument(frame_t *frame, size_t param_index) {
   return stack_pointer[-(offset + 1)];
 }
 
+value_t frame_get_pending_argument_at(frame_t *frame, value_t tags, size_t index) {
+  CHECK_FAMILY(ofCallTags, tags);
+  size_t offset = get_call_tags_offset_at(tags, index);
+  return frame_peek_value(frame, offset);
+}
+
 void frame_set_argument(frame_t *frame, size_t param_index, value_t value) {
   value_t *stack_pointer = frame->frame_pointer - kFrameHeaderSize;
   value_t arg_map = frame_get_argument_map(frame);
@@ -765,26 +771,26 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
   opcode_t op = (opcode_t) blob_short_at(&data, pc - kInvokeOperationSize);
   if (!is_invocation_opcode(op))
     return nothing();
-  value_t record = whatever();
+  value_t tags = whatever();
   if (op == ocCallEnsurer) {
     return new_heap_backtrace_entry(runtime, nothing(), new_integer(op));
   } else if (op == ocBuiltinMaybeEscape) {
     // A builtin escape leaves the record on the stack. Pop it off. This doesn't
     // actually modify the stack only the frame.
-    record = frame_pop_value(frame);
+    tags = frame_pop_value(frame);
   } else {
     // Okay so we have an invoke we can use. Grab the invocation record which
     // is baked into the instruction.
     size_t record_index = blob_short_at(&data, pc - kInvokeOperationSize + 1);
     value_t value_pool = get_code_block_value_pool(code_block);
-    record = get_array_at(value_pool, record_index);
+    tags = get_array_at(value_pool, record_index);
   }
   // Scan through the record to build the invocation map.
   TRY_DEF(invocation, new_heap_id_hash_map(runtime, 16));
-  size_t arg_count = get_invocation_record_argument_count(record);
+  size_t arg_count = get_call_tags_entry_count(tags);
   for (size_t i = 0;  i < arg_count; i++) {
-    value_t tag = get_invocation_record_tag_at(record, i);
-    value_t arg = get_invocation_record_argument_at(record, frame, i);
+    value_t tag = get_call_tags_tag_at(tags, i);
+    value_t arg = frame_get_pending_argument_at(frame, tags, i);
     TRY(set_id_hash_map_at(runtime, invocation, tag, arg));
   }
   // Wrap the result in a backtrace entry.

@@ -181,8 +181,8 @@ value_t assembler_emit_slap(assembler_t *assm, size_t count);
 // elements.
 value_t assembler_emit_new_array(assembler_t *assm, size_t length);
 
-// Emits an invocation using the given record.
-value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t record,
+// Emits an invocation using the given tags.
+value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t tags,
     value_t helper);
 
 // Emits a signal opcode using the given record.
