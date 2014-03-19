@@ -248,31 +248,31 @@ static value_t create_invocation_helper(assembler_t *assm, value_t record) {
   return helper;
 }
 
-static value_t create_invocation_record(value_t arguments, assembler_t *assm) {
+static value_t create_call_tags(value_t arguments, assembler_t *assm) {
   size_t arg_count = get_array_length(arguments);
   // Build the invocation record and emit the values at the same time.
-  TRY_DEF(arg_vector, new_heap_pair_array(assm->runtime, arg_count));
+  TRY_DEF(entries, new_heap_pair_array(assm->runtime, arg_count));
   for (size_t i = 0; i < arg_count; i++) {
     value_t argument = get_array_at(arguments, i);
     // Add the tag to the invocation record.
     value_t tag = get_argument_ast_tag(argument);
-    set_pair_array_first_at(arg_vector, i, tag);
-    set_pair_array_second_at(arg_vector, i, new_integer(arg_count - i - 1));
+    set_pair_array_first_at(entries, i, tag);
+    set_pair_array_second_at(entries, i, new_integer(arg_count - i - 1));
     // Emit the value.
     value_t value = get_argument_ast_value(argument);
     TRY(emit_value(value, assm));
   }
-  TRY(co_sort_pair_array(arg_vector));
-  return new_heap_invocation_record(assm->runtime, afFreeze, arg_vector);
+  TRY(co_sort_pair_array(entries));
+  return new_heap_call_tags(assm->runtime, afFreeze, entries);
 }
 
 value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofInvocationAst, value);
   value_t arguments = get_invocation_ast_arguments(value);
-  TRY_DEF(record, create_invocation_record(arguments, assm));
+  TRY_DEF(record, create_call_tags(arguments, assm));
   TRY_DEF(helper, create_invocation_helper(assm, record));
   TRY(assembler_emit_invocation(assm, assm->fragment, record, helper));
-  size_t argc = get_invocation_record_argument_count(record);
+  size_t argc = get_call_tags_entry_count(record);
   TRY(assembler_emit_slap(assm, argc));
   return success();
 }
@@ -312,7 +312,7 @@ value_t emit_signal_ast(value_t value, assembler_t *assm) {
   bool escape = get_boolean_value(get_signal_ast_escape(value));
   // First emit the signal arguments.
   value_t arguments = get_signal_ast_arguments(value);
-  value_t record = create_invocation_record(arguments, assm);
+  value_t record = create_call_tags(arguments, assm);
   opcode_t opcode = escape ? ocSignalEscape : ocSignalContinue;
   // Try invoking the handler.
   TRY(assembler_emit_signal(assm, opcode, record));
@@ -327,7 +327,7 @@ value_t emit_signal_ast(value_t value, assembler_t *assm) {
   //
   // Either way, if execution does continue we'll arrive at the goto's
   // destination with a new argument on the stack.
-  size_t argc = get_invocation_record_argument_count(record);
+  size_t argc = get_call_tags_entry_count(record);
   if (escape) {
     assembler_adjust_stack_height(assm, +1);
     TRY(assembler_emit_leave_or_fire_barrier(assm, argc));

@@ -59,17 +59,17 @@ static value_t create_escape_records(runtime_t *runtime) {
   for (size_t i = 2; i <= kMaxSize; i++) {
     // Build the entries manually. The indexes are somewhat fiddly because they
     // are counted backwards from the size-1.
-    TRY_DEF(args, new_heap_pair_array(runtime, i));
-    set_pair_array_first_at(args, 0, ROOT(runtime, subject_key));
-    set_pair_array_second_at(args, 0, new_integer(i - 1));
-    set_pair_array_first_at(args, 1, ROOT(runtime, selector_key));
-    set_pair_array_second_at(args, 1, new_integer(i - 2));
+    TRY_DEF(entries, new_heap_pair_array(runtime, i));
+    set_pair_array_first_at(entries, 0, ROOT(runtime, subject_key));
+    set_pair_array_second_at(entries, 0, new_integer(i - 1));
+    set_pair_array_first_at(entries, 1, ROOT(runtime, selector_key));
+    set_pair_array_second_at(entries, 1, new_integer(i - 2));
     for (size_t j = 2; j < i; j++) {
-      set_pair_array_first_at(args, j, new_integer(j - 2));
-      set_pair_array_second_at(args, j, new_integer(i - j - 1));
+      set_pair_array_first_at(entries, j, new_integer(j - 2));
+      set_pair_array_second_at(entries, j, new_integer(i - j - 1));
     }
-    CHECK_TRUE("escape record not sorted", is_pair_array_sorted(args));
-    TRY_DEF(record, new_heap_invocation_record(runtime, afFreeze, args));
+    CHECK_TRUE("escape record not sorted", is_pair_array_sorted(entries));
+    TRY_DEF(record, new_heap_call_tags(runtime, afFreeze, entries));
     set_array_at(result, i, record);
   }
   return result;

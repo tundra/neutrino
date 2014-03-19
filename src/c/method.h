@@ -20,7 +20,7 @@ typedef struct {
   // Cache of the ambience's runtime.
   runtime_t *runtime;
   // The invocation record that describes the invocation being looked up.
-  value_t record;
+  value_t tags;
   // The frame containing the invocation arguments.
   frame_t *frame;
   // Optional extra data to pass around.
@@ -32,6 +32,18 @@ typedef struct {
 // Initializes an input struct appropriately.
 void sigmap_input_init(sigmap_input_t *input, value_t ambience, value_t record,
     frame_t *frame, void *data, size_t argc);
+
+// Returns the number of arguments of this call.
+size_t sigmap_input_get_argument_count(sigmap_input_t *input);
+
+// Returns the tag of the index'th argument in sorted order.
+value_t sigmap_input_get_tag_at(sigmap_input_t *input, size_t index);
+
+// Returns the value of the index'th argument in sorted tag order.
+value_t sigmap_input_get_value_at(sigmap_input_t *input, size_t index);
+
+// Returns the stack offset of the index'th argument in sorted tag order.
+size_t sigmap_input_get_offset_at(sigmap_input_t *input, size_t index);
 
 
 // --- S i g n a t u r e ---
@@ -355,16 +367,16 @@ value_t get_or_create_module_fragment_methodspaces_cache(runtime_t *runtime,
     value_t fragment);
 
 
-/// ## Invocation Record
+/// ## Call tags
 ///
-/// An invocation record is a mapping from parameter tag names to the offset
+/// A call tags object is a mapping from parameter tag names to the offset
 /// of the corresponding argument in the evaluation order. For instance, the
 /// invocation
 ///
 ///     (z: $a, x: $b, y: $c)
 ///
 /// would evaluate its argument in order `$a`, then `$b`, then `$c` so the
-/// invocation record would be
+/// call tags would be
 ///
 ///     {z: 0, x: 1, y: 2}
 ///
@@ -374,41 +386,37 @@ value_t get_or_create_module_fragment_methodspaces_cache(runtime_t *runtime,
 ///
 ///     {z: 2, x: 1, y: 0}
 ///
-/// To make lookup more efficient, however, invocation records are sorted by tag
-/// so in reality it's a pair array of
+/// To make lookup more efficient, however, call tags are sorted by tag so in
+/// reality it's a pair array of
 ///
 ///     [(x, 1), (y, 0), (z, 2)]
 ///
 /// Because signatures are also sorted by tag they can be matched just by
 /// scanning through both sequentially.
 
-static const size_t kInvocationRecordSize = HEAP_OBJECT_SIZE(1);
-static const size_t kInvocationRecordArgumentVectorOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kCallTagsSize = HEAP_OBJECT_SIZE(1);
+static const size_t kCallTagsEntriesOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The array giving the mapping between tag sort order and argument evaulation
 // order.
-ACCESSORS_DECL(invocation_record, argument_vector);
+ACCESSORS_DECL(call_tags, entries);
 
-// Returns the number of argument in this invocation record.
-size_t get_invocation_record_argument_count(value_t self);
+// Returns the number of argument in this call tags object.
+size_t get_call_tags_entry_count(value_t self);
 
 // Returns the index'th tag in this invocation record.
-value_t get_invocation_record_tag_at(value_t self, size_t index);
+value_t get_call_tags_tag_at(value_t self, size_t index);
 
 // Returns the index'th argument offset in this invocation record.
-size_t get_invocation_record_offset_at(value_t self, size_t index);
+size_t get_call_tags_offset_at(value_t self, size_t index);
 
 // Constructs an argument vector based on the given array of tags. For instance,
 // if given ["c", "a", "b"] returns a vector corresponding to ["a": 1, "b": 0,
 // "c": 2] (arguments are counted backwards, 0 being the last).
-value_t build_invocation_record_vector(runtime_t *runtime, value_t tags);
-
-// Returns the index'th argument to an invocation using this record in sorted
-// tag order from the given frame.
-value_t get_invocation_record_argument_at(value_t self, frame_t *frame, size_t index);
+value_t build_call_tags_entries(runtime_t *runtime, value_t tags);
 
 // Prints an invocation record with a set of arguments.
-void print_invocation_on(value_t record, frame_t *frame, string_buffer_t *out);
+void print_call_on(value_t record, frame_t *frame, string_buffer_t *out);
 
 
 // --- O p e r a t i o n ---

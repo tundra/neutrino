@@ -98,16 +98,16 @@ static value_t ensure_method_code(runtime_t *runtime, value_t method) {
   return code;
 }
 
-static void log_lookup_error(value_t condition, value_t record, frame_t *frame) {
-  size_t arg_count = get_invocation_record_argument_count(record);
+static void log_lookup_error(value_t condition, value_t tags, frame_t *frame) {
+  size_t arg_count = get_call_tags_entry_count(tags);
   string_buffer_t buf;
   string_buffer_init(&buf);
   string_buffer_printf(&buf, "%v: {", condition);
   for (size_t i = 0; i < arg_count; i++) {
     if (i > 0)
       string_buffer_printf(&buf, ", ");
-    value_t tag = get_invocation_record_tag_at(record, i);
-    value_t value = get_invocation_record_argument_at(record, frame, i);
+    value_t tag = get_call_tags_tag_at(tags, i);
+    value_t value = frame_get_pending_argument_at(frame, tags, i);
     string_buffer_printf(&buf, "%v: %v", tag, value);
   }
   string_buffer_printf(&buf, "}");
@@ -231,17 +231,17 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         }
         case ocInvoke: {
           // Look up the method in the method space.
-          value_t record = read_value(&cache, &frame, 1);
-          CHECK_FAMILY(ofInvocationRecord, record);
+          value_t tags = read_value(&cache, &frame, 1);
+          CHECK_FAMILY(ofCallTags, tags);
           value_t fragment = read_value(&cache, &frame, 2);
           CHECK_FAMILY(ofModuleFragment, fragment);
           value_t helper = read_value(&cache, &frame, 3);
           CHECK_FAMILY(ofSignatureMap, helper);
           value_t arg_map;
-          value_t method = lookup_method_full(ambience, fragment, record, &frame,
+          value_t method = lookup_method_full(ambience, fragment, tags, &frame,
               helper, &arg_map);
           if (in_condition_cause(ccLookupError, method)) {
-            log_lookup_error(method, record, &frame);
+            log_lookup_error(method, tags, &frame);
             E_RETURN(method);
           }
           // The lookup may have failed with a different condition. Check for that.
@@ -261,12 +261,12 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
         }
         case ocSignalContinue: case ocSignalEscape: {
           // Look up the method in the method space.
-          value_t record = read_value(&cache, &frame, 1);
-          CHECK_FAMILY(ofInvocationRecord, record);
+          value_t tags = read_value(&cache, &frame, 1);
+          CHECK_FAMILY(ofCallTags, tags);
           frame.pc += kSignalEscapeOperationSize;
           value_t arg_map = whatever();
           value_t handler = whatever();
-          value_t method = lookup_signal_handler_method(ambience, record, &frame,
+          value_t method = lookup_signal_handler_method(ambience, tags, &frame,
               &handler, &arg_map);
           bool is_escape = (opcode == ocSignalEscape);
           if (in_condition_cause(ccLookupError, method)) {
@@ -332,16 +332,16 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           if (in_condition_cause(ccSignal, result)) {
             // The builtin failed. Find the appropriate signal handler and call
             // it. The invocation record is at the top of the stack.
-            value_t record = frame_pop_value(&frame);
-            CHECK_FAMILY(ofInvocationRecord, record);
+            value_t tags = frame_pop_value(&frame);
+            CHECK_FAMILY(ofCallTags, tags);
             value_t arg_map = whatever();
             value_t handler = whatever();
-            value_t method = lookup_signal_handler_method(ambience, record, &frame,
+            value_t method = lookup_signal_handler_method(ambience, tags, &frame,
                 &handler, &arg_map);
             if (in_condition_cause(ccLookupError, method)) {
               // Push the record back onto the stack to it's available to back
               // tracing.
-              frame_push_value(&frame, record);
+              frame_push_value(&frame, tags);
               frame.pc += kBuiltinMaybeEscapeOperationSize;
               // There was no handler for this so we have to escape out of the
               // interpreter altogether. Push the signal frame onto the stack to

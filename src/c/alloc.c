@@ -644,13 +644,13 @@ value_t new_heap_method(runtime_t *runtime, alloc_flags_t alloc_flags,
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_invocation_record(runtime_t *runtime, alloc_flags_t flags,
-    value_t argument_vector) {
-  size_t size = kInvocationRecordSize;
-  CHECK_TRUE("unsorted argument array", is_pair_array_sorted(argument_vector));
+value_t new_heap_call_tags(runtime_t *runtime, alloc_flags_t flags,
+    value_t entries) {
+  size_t size = kCallTagsSize;
+  CHECK_TRUE("unsorted argument array", is_pair_array_sorted(entries));
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, mutable_invocation_record_species)));
-  set_invocation_record_argument_vector(result, argument_vector);
+      ROOT(runtime, mutable_call_tags_species)));
+  set_call_tags_entries(result, entries);
   TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }

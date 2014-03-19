@@ -226,6 +226,12 @@ value_t frame_peek_value(frame_t *frame, size_t index);
 // Returns the value of the index'th parameter.
 value_t frame_get_argument(frame_t *frame, size_t param_index);
 
+// Returns the index'th argument to an invocation using the given tags in sorted
+// tag order from the given frame. The argument is pending in the sense that
+// the call hasn't actually been performed yet, the arguments are just on the
+// top of the stack.
+value_t frame_get_pending_argument_at(frame_t *frame, value_t self, size_t index);
+
 // Sets the value of the index'th parameter. This is kind of a dubious thing to
 // be doing so avoid if at all possible.
 void frame_set_argument(frame_t *frame, size_t param_index, value_t value);

@@ -194,19 +194,19 @@ TEST(method, signature) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, invocation_record) {
+TEST(method, call_tags) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
 #define kCount 8
   variant_t *raw_array = vArray(vInt(7), vInt(6), vInt(5), vInt(4), vInt(3),
       vInt(2), vInt(1), vInt(0));
-  value_t argument_vector = build_invocation_record_vector(runtime, C(raw_array));
-  value_t record = new_heap_invocation_record(runtime, afFreeze, argument_vector);
-  ASSERT_EQ(kCount, get_invocation_record_argument_count(record));
+  value_t entries = build_call_tags_entries(runtime, C(raw_array));
+  value_t tags = new_heap_call_tags(runtime, afFreeze, entries);
+  ASSERT_EQ(kCount, get_call_tags_entry_count(tags));
   for (size_t i = 0; i < kCount; i++) {
-    ASSERT_VALEQ(new_integer(i), get_invocation_record_tag_at(record, i));
-    ASSERT_EQ(i, get_invocation_record_offset_at(record, i));
+    ASSERT_VALEQ(new_integer(i), get_call_tags_tag_at(tags, i));
+    ASSERT_EQ(i, get_call_tags_offset_at(tags, i));
   }
 #undef kCount
 
@@ -214,45 +214,45 @@ TEST(method, invocation_record) {
   DISPOSE_RUNTIME();
 }
 
-// Makes an invocation record for the given array of tags, passed as a variant
+// Makes a call tags object for the given array of tags, passed as a variant
 // for convenience.
-static value_t make_invocation_record(runtime_t *runtime, variant_t *variant) {
-  TRY_DEF(argument_vector, build_invocation_record_vector(runtime, C(variant)));
-  return new_heap_invocation_record(runtime, afFreeze, argument_vector);
+static value_t make_call_tags(runtime_t *runtime, variant_t *variant) {
+  TRY_DEF(entries, build_call_tags_entries(runtime, C(variant)));
+  return new_heap_call_tags(runtime, afFreeze, entries);
 }
 
-TEST(method, make_invocation_record) {
+TEST(method, make_call_tags) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
-  value_t record = make_invocation_record(runtime, vArray(vStr("z"), vStr("x"),
+  value_t tags = make_call_tags(runtime, vArray(vStr("z"), vStr("x"),
       vStr("y")));
-  ASSERT_VAREQ(vStr("x"), get_invocation_record_tag_at(record, 0));
-  ASSERT_VAREQ(vStr("y"), get_invocation_record_tag_at(record, 1));
-  ASSERT_VAREQ(vStr("z"), get_invocation_record_tag_at(record, 2));
-  ASSERT_EQ(1, get_invocation_record_offset_at(record, 0));
-  ASSERT_EQ(0, get_invocation_record_offset_at(record, 1));
-  ASSERT_EQ(2, get_invocation_record_offset_at(record, 2));
+  ASSERT_VAREQ(vStr("x"), get_call_tags_tag_at(tags, 0));
+  ASSERT_VAREQ(vStr("y"), get_call_tags_tag_at(tags, 1));
+  ASSERT_VAREQ(vStr("z"), get_call_tags_tag_at(tags, 2));
+  ASSERT_EQ(1, get_call_tags_offset_at(tags, 0));
+  ASSERT_EQ(0, get_call_tags_offset_at(tags, 1));
+  ASSERT_EQ(2, get_call_tags_offset_at(tags, 2));
 
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }
 
-TEST(method, record_with_stack) {
+TEST(method, call_tags_with_stack) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
   value_t stack = new_heap_stack(runtime, 24);
   frame_t frame = open_stack(stack);
   ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 3, null()));
-  value_t record = make_invocation_record(runtime, vArray(vStr("b"), vStr("c"),
+  value_t tags = make_call_tags(runtime, vArray(vStr("b"), vStr("c"),
       vStr("a")));
   frame_push_value(&frame, new_integer(7));
   frame_push_value(&frame, new_integer(8));
   frame_push_value(&frame, new_integer(9));
-  ASSERT_VAREQ(vInt(9), get_invocation_record_argument_at(record, &frame, 0));
-  ASSERT_VAREQ(vInt(7), get_invocation_record_argument_at(record, &frame, 1));
-  ASSERT_VAREQ(vInt(8), get_invocation_record_argument_at(record, &frame, 2));
+  ASSERT_VAREQ(vInt(9), frame_get_pending_argument_at(&frame, tags, 0));
+  ASSERT_VAREQ(vInt(7), frame_get_pending_argument_at(&frame, tags, 1));
+  ASSERT_VAREQ(vInt(8), frame_get_pending_argument_at(&frame, tags, 2));
 
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
@@ -408,8 +408,8 @@ void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
     set_array_at(tags, i, C(arg->tag));
     frame_push_value(&frame, C(arg->value));
   }
-  value_t vector = build_invocation_record_vector(runtime, tags);
-  value_t record = new_heap_invocation_record(runtime, afFreeze, vector);
+  value_t entries = build_call_tags_entries(runtime, tags);
+  value_t call_tags = new_heap_call_tags(runtime, afFreeze, entries);
   static const size_t kLength = 16;
   value_t scores[16];
   size_t offsets[16];
@@ -419,7 +419,7 @@ void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
   match_info_init(&match_info, scores, offsets, kLength);
   match_result_t result = __mrNone__;
   sigmap_input_t input;
-  sigmap_input_init(&input, ambience, record, &frame, NULL,
+  sigmap_input_init(&input, ambience, call_tags, &frame, NULL,
       arg_count);
   ASSERT_SUCCESS(match_signature(signature, &input, nothing(), &match_info,
       &result));
@@ -433,7 +433,7 @@ void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
     // how the guards match.
     return;
   result = __mrNone__;
-  ASSERT_SUCCESS(match_signature_tags(signature, record, &result));
+  ASSERT_SUCCESS(match_signature_tags(signature, call_tags, &result));
   ASSERT_EQ(expected_result, result);
 }
 
@@ -717,18 +717,18 @@ static void test_lookup(value_t ambience, value_t expected, value_t first,
     value_t second, value_t third, value_t space) {
   runtime_t *runtime = get_ambience_runtime(ambience);
   value_t stack = new_heap_stack(runtime, 24);
-  value_t vector = new_heap_pair_array(runtime, 3);
+  value_t entries = new_heap_pair_array(runtime, 3);
   frame_t frame = open_stack(stack);
   push_stack_frame(runtime, stack, &frame, 3, null());
   value_t values[3] = {first, second, third};
   for (size_t i = 0; i < 3; i++) {
-    set_pair_array_first_at(vector, i, new_integer(i));
-    set_pair_array_second_at(vector, i, new_integer(2 - i));
+    set_pair_array_first_at(entries, i, new_integer(i));
+    set_pair_array_second_at(entries, i, new_integer(2 - i));
     frame_push_value(&frame, values[i]);
   }
-  value_t record = new_heap_invocation_record(runtime, afFreeze, vector);
+  value_t tags = new_heap_call_tags(runtime, afFreeze, entries);
   value_t arg_map;
-  value_t method = lookup_methodspace_method(ambience, space, record, &frame,
+  value_t method = lookup_methodspace_method(ambience, space, tags, &frame,
       &arg_map);
   ASSERT_VALEQ(expected, method);
 }
@@ -865,34 +865,34 @@ TEST(method, tag_sorting) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, invocation_record_compare) {
+TEST(method, call_tags_compare) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
-  value_t r0 = make_invocation_record(runtime, vArray(vStr("z"), vStr("x"),
+  value_t r0 = make_call_tags(runtime, vArray(vStr("z"), vStr("x"),
       vStr("y")));
   value_t h0 = value_transient_identity_hash(r0);
-  value_t r1 = make_invocation_record(runtime, vArray(vStr("z"), vStr("x"),
+  value_t r1 = make_call_tags(runtime, vArray(vStr("z"), vStr("x"),
       vStr("y")));
   value_t h1 = value_transient_identity_hash(r1);
   ASSERT_FALSE(is_same_value(r0, r1));
   ASSERT_TRUE(value_identity_compare(r0, r1));
   ASSERT_VALEQ(h0, h1);
 
-  value_t r2 = make_invocation_record(runtime, vArray(vStr("x"), vStr("z"),
+  value_t r2 = make_call_tags(runtime, vArray(vStr("x"), vStr("z"),
       vStr("y")));
   value_t h2 = value_transient_identity_hash(r2);
   ASSERT_FALSE(value_identity_compare(r1, r2));
   ASSERT_FALSE(is_same_value(h1, h2));
 
-  value_t r3 = make_invocation_record(runtime, vArray(vStr("z"), vStr("x")));
+  value_t r3 = make_call_tags(runtime, vArray(vStr("z"), vStr("x")));
   value_t h3 = value_transient_identity_hash(r3);
   ASSERT_FALSE(value_identity_compare(r1, r3));
   ASSERT_FALSE(value_identity_compare(r2, r3));
   ASSERT_FALSE(is_same_value(h1, h3));
   ASSERT_FALSE(is_same_value(h2, h3));
 
-  value_t r4 = make_invocation_record(runtime, vArray(vStr("x"), vStr("z"),
+  value_t r4 = make_call_tags(runtime, vArray(vStr("x"), vStr("z"),
       vStr("y"), vStr("y")));
   value_t h4 = value_transient_identity_hash(r4);
   ASSERT_FALSE(value_identity_compare(r1, r4));

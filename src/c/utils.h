@@ -187,6 +187,9 @@ void string_buffer_flush(string_buffer_t *buf, string_t *str_out);
 
 // --- B y t e   b u f f e r ---
 
+FORWARD(byte_buffer_t);
+FORWARD(byte_buffer_cursor_t);
+
 #define BUFFER_TYPE byte_t
 #define MAKE_BUFFER_NAME(SUFFIX) byte_buffer_##SUFFIX
 
@@ -197,6 +200,9 @@ void string_buffer_flush(string_buffer_t *buf, string_t *str_out);
 
 
 // --- S h o r t   b u f f e r ---
+
+FORWARD(short_buffer_t);
+FORWARD(short_buffer_cursor_t);
 
 #define BUFFER_TYPE short_t
 #define MAKE_BUFFER_NAME(SUFFIX) short_buffer_##SUFFIX

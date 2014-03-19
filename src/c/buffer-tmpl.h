@@ -13,12 +13,12 @@
 #endif
 
 // Buffer for building a block of BUFFER_TYPE incrementally.
-typedef struct {
+struct MAKE_BUFFER_NAME(t) {
   // Size of data currently in the buffer counted in elements, not bytes.
   size_t length;
   // The data block.
   memory_block_t memory;
-} MAKE_BUFFER_NAME(t);
+};
 
 // Initialize a buffer.
 void MAKE_BUFFER_NAME(init)(MAKE_BUFFER_NAME(t) *buf);
@@ -36,10 +36,10 @@ void MAKE_BUFFER_NAME(flush)(MAKE_BUFFER_NAME(t) *buf,
     blob_t *blob_out);
 
 // A pointer to a location within a buffer that can be written to directly.
-typedef struct {
-  MAKE_BUFFER_NAME(t) *buf;
+struct MAKE_BUFFER_NAME(cursor_t) {
+  struct MAKE_BUFFER_NAME(t) *buf;
   size_t offset;
-} MAKE_BUFFER_NAME(cursor_t);
+};
 
 // Writes 0 to the next location and stores a cursor for writing to that
 // location in the given out parameter. Obviously the cursor becomes invalid

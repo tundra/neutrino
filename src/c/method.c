@@ -12,14 +12,30 @@
 #include "value-inl.h"
 
 
-void sigmap_input_init(sigmap_input_t *input, value_t ambience, value_t record,
+void sigmap_input_init(sigmap_input_t *input, value_t ambience, value_t tags,
     frame_t *frame, void *data, size_t argc) {
   input->runtime = get_ambience_runtime(ambience);
   input->ambience = ambience;
-  input->record = record;
+  input->tags = tags;
   input->frame = frame;
   input->data = data;
   input->argc = argc;
+}
+
+size_t sigmap_input_get_argument_count(sigmap_input_t *input) {
+  return get_call_tags_entry_count(input->tags);
+}
+
+value_t sigmap_input_get_tag_at(sigmap_input_t *input, size_t index) {
+  return get_call_tags_tag_at(input->tags, index);
+}
+
+size_t sigmap_input_get_offset_at(sigmap_input_t *input, size_t index) {
+  return get_call_tags_offset_at(input->tags, index);
+}
+
+value_t sigmap_input_get_value_at(sigmap_input_t *input, size_t index) {
+  return frame_get_pending_argument_at(input->frame, input->tags, index);
 }
 
 
@@ -115,18 +131,18 @@ value_t match_signature(value_t self, sigmap_input_t *input,
   CHECK_FAMILY(ofSignature, self);
   CHECK_FAMILY_OPT(ofMethodspace, space);
   TOPIC_INFO(Lookup, "Matching against %4v", self);
-  size_t argument_count = get_invocation_record_argument_count(input->record);
-  CHECK_REL("score array too short", argument_count, <=, match_info->capacity);
+  size_t argc = sigmap_input_get_argument_count(input);
+  CHECK_REL("score array too short", argc, <=, match_info->capacity);
   // Fast case if fewer than that minimum number of arguments is given.
   size_t mandatory_count = get_signature_mandatory_count(self);
-  if (argument_count < mandatory_count) {
+  if (argc < mandatory_count) {
     *result_out = mrMissingArgument;
     return success();
   }
   // Fast case if too many arguments are given.
   size_t param_count = get_signature_parameter_count(self);
   bool allow_extra = get_signature_allow_extra(self);
-  if (!allow_extra && (argument_count > param_count)) {
+  if (!allow_extra && (argc > param_count)) {
     *result_out = mrUnexpectedArgument;
     return success();
   }
@@ -140,14 +156,14 @@ value_t match_signature(value_t self, sigmap_input_t *input,
   // The value to return if there is a match.
   match_result_t on_match = mrMatch;
   // Clear the score vector.
-  for (size_t i = 0; i < argument_count; i++) {
+  for (size_t i = 0; i < argc; i++) {
     match_info->scores[i] = new_no_match_score();
     match_info->offsets[i] = kNoOffset;
   }
   // Scan through the arguments and look them up in the signature.
   value_t tags = get_signature_tags(self);
-  for (size_t i = 0; i < argument_count; i++) {
-    value_t tag = get_invocation_record_tag_at(input->record, i);
+  for (size_t i = 0; i < argc; i++) {
+    value_t tag = sigmap_input_get_tag_at(input, i);
     // TODO: propagate any errors caused by this.
     value_t param = binary_search_pair_array(tags, tag);
     if (in_condition_cause(ccNotFound, param)) {
@@ -173,7 +189,7 @@ value_t match_signature(value_t self, sigmap_input_t *input,
       *result_out = mrRedundantArgument;
       return success();
     }
-    value_t value = get_invocation_record_argument_at(input->record, input->frame, i);
+    value_t value = sigmap_input_get_value_at(input, i);
     value_t score;
     TRY(guard_match(get_parameter_guard(param), value, input, space, &score));
     if (!is_score_match(score)) {
@@ -185,7 +201,7 @@ value_t match_signature(value_t self, sigmap_input_t *input,
     // We got a match! Record the result and move on to the next.
     bit_vector_set_at(&params_seen, index, true);
     match_info->scores[i] = score;
-    match_info->offsets[index] = get_invocation_record_offset_at(input->record, i);
+    match_info->offsets[index] = sigmap_input_get_offset_at(input, i);
     if (!get_parameter_is_optional(param))
       mandatory_seen_count++;
   }
@@ -202,16 +218,16 @@ value_t match_signature(value_t self, sigmap_input_t *input,
   }
 }
 
-value_t match_signature_tags(value_t self, value_t record,
+value_t match_signature_tags(value_t self, value_t call_tags,
     match_result_t *result_out) {
   // This implementation matches match_signature very closely. Ideally the same
   // implementation could be used for both purposes but the flow is different
   // enough that having two near-identical copies is actually easier to manage.
   // Make sure to keep them in sync.
   CHECK_FAMILY(ofSignature, self);
-  CHECK_FAMILY(ofInvocationRecord, record);
+  CHECK_FAMILY(ofCallTags, call_tags);
   TOPIC_INFO(Lookup, "Matching tags against %4v", self);
-  size_t argument_count = get_invocation_record_argument_count(record);
+  size_t argument_count = get_call_tags_entry_count(call_tags);
   // Fast case if fewer than that minimum number of arguments is given.
   size_t mandatory_count = get_signature_mandatory_count(self);
   if (argument_count < mandatory_count) {
@@ -235,11 +251,11 @@ value_t match_signature_tags(value_t self, value_t record,
   // The value to return if there is a match.
   match_result_t on_match = mrMatch;
   // Scan through the arguments and look them up in the signature.
-  value_t tags = get_signature_tags(self);
+  value_t sig_tags = get_signature_tags(self);
   for (size_t i = 0; i < argument_count; i++) {
-    value_t tag = get_invocation_record_tag_at(record, i);
+    value_t tag = get_call_tags_tag_at(call_tags, i);
     // TODO: propagate any errors caused by this.
-    value_t param = binary_search_pair_array(tags, tag);
+    value_t param = binary_search_pair_array(sig_tags, tag);
     if (in_condition_cause(ccNotFound, param)) {
       // The tag wasn't found in this signature.
       if (allow_extra) {
@@ -253,7 +269,7 @@ value_t match_signature_tags(value_t self, value_t record,
         return success();
       }
     }
-    CHECK_FALSE("binary search failed", get_value_domain(tags) == vdCondition);
+    CHECK_FALSE("binary search failed", get_value_domain(sig_tags) == vdCondition);
     // The tag matched one in this signature.
     size_t index = get_parameter_index(param);
     if (bit_vector_get_at(&params_seen, index)) {
@@ -515,7 +531,7 @@ value_t continue_sigmap_lookup(sigmap_state_t *state, value_t sigmap, value_t sp
   match_info_t match_info;
   match_info_init(&match_info, scratch_score, state->scratch_offsets,
       kSmallLookupLimit);
-  size_t arg_count = get_invocation_record_argument_count(state->input.record);
+  size_t argc = sigmap_input_get_argument_count(&state->input);
   for (size_t current = 0; current < entry_count; current++) {
     value_t signature = get_pair_array_buffer_first_at(entries, current);
     value_t value = get_pair_array_buffer_second_at(entries, current);
@@ -524,7 +540,7 @@ value_t continue_sigmap_lookup(sigmap_state_t *state, value_t sigmap, value_t sp
     if (!match_result_is_match(match))
       continue;
     join_status_t status = join_score_vectors(state->max_score, scratch_score,
-        arg_count);
+        argc);
     if (status == jsBetter || (state->max_is_synthetic && status == jsEqual)) {
       // This score is either better than the previous best, or it is equal to
       // the max which is itself synthetic and hence better than any of the
@@ -563,7 +579,7 @@ value_t do_sigmap_lookup(value_t ambience, value_t record, frame_t *frame,
     void *data) {
   // For now we only handle lookups of a certain size. Hopefully by the time
   // this is too small this implementation will be gone anyway.
-  size_t arg_count = get_invocation_record_argument_count(record);
+  size_t arg_count = get_call_tags_entry_count(record);
   CHECK_REL("too many arguments", arg_count, <=, kSmallLookupLimit);
   // Initialize the lookup state using stack-allocated space.
   value_t max_score[kSmallLookupLimit];
@@ -597,8 +613,8 @@ value_t get_sigmap_lookup_argument_map(sigmap_state_t *state) {
   if (in_domain(vdCondition, result)) {
     return whatever();
   } else {
-    size_t arg_count = get_invocation_record_argument_count(state->input.record);
-    return build_argument_map(state->input.runtime, arg_count, state->result_offsets);
+    size_t argc = sigmap_input_get_argument_count(&state->input);
+    return build_argument_map(state->input.runtime, argc, state->result_offsets);
   }
 }
 
@@ -677,13 +693,12 @@ value_t get_type_parents(runtime_t *runtime, value_t space, value_t type) {
 
 // Does a full exhaustive lookup through the tags of the invocation for the
 // subject of this call. Returns a not found condition if there is no subject.
-static value_t get_invocation_subject_no_shortcut(sigmap_state_t *state) {
-  value_t record = state->input.record;
-  size_t argc = get_invocation_record_argument_count(record);
+static value_t get_invocation_subject_no_shortcut(sigmap_input_t *input) {
+  size_t argc = sigmap_input_get_argument_count(input);
   for (size_t i = 0; i < argc; i++) {
-    value_t tag = get_invocation_record_tag_at(record, i);
-    if (is_same_value(tag, ROOT(state->input.runtime, subject_key)))
-      return get_invocation_record_argument_at(record, state->input.frame, i);
+    value_t tag = sigmap_input_get_tag_at(input, i);
+    if (is_same_value(tag, ROOT(input->runtime, subject_key)))
+      return sigmap_input_get_value_at(input, i);
   }
   return new_not_found_condition();
 }
@@ -696,11 +711,10 @@ static value_t get_invocation_subject_no_shortcut(sigmap_state_t *state) {
 // invocation record. Potentially confusingly, the argument index will actually
 // almost always be 0 as well but that's not what we're using here (since we're
 // hardcoding the index we need _always_ always, not _almost_ always).
-static value_t get_invocation_subject_with_shortcut(sigmap_state_t *state) {
-  value_t record = state->input.record;
-  value_t tag_zero = get_invocation_record_tag_at(record, 0);
-  if (is_same_value(tag_zero, ROOT(state->input.runtime, subject_key)))
-    return get_invocation_record_argument_at(record, state->input.frame, 0);
+static value_t get_invocation_subject_with_shortcut(sigmap_input_t *input) {
+  value_t tag_zero = sigmap_input_get_tag_at(input, 0);
+  if (is_same_value(tag_zero, ROOT(input->runtime, subject_key)))
+    return sigmap_input_get_value_at(input, 0);
   else
     return new_not_found_condition();
 }
@@ -783,14 +797,14 @@ static value_t lookup_through_fragment_with_helper(sigmap_state_t *state,
 // Perform a method lookup in the subject's module of origin.
 static value_t lookup_subject_methods(sigmap_state_t *state, value_t *subject_out) {
   // Look for a subject value, if there is none there is nothing to do.
-  value_t subject = *subject_out = get_invocation_subject_with_shortcut(state);
+  value_t subject = *subject_out = get_invocation_subject_with_shortcut(&state->input);
   TOPIC_INFO(Lookup, "Subject value: %v", subject);
   if (in_condition_cause(ccNotFound, subject)) {
     // Just in case, check that the shortcut version gave the correct answer.
     // The case where it returns a non-condition is trivially correct (FLW) so this
     // is the only case there can be any doubt about.
     IF_EXPENSIVE_CHECKS_ENABLED(CHECK_TRUE("Subject shortcut didn't work",
-        in_condition_cause(ccNotFound, get_invocation_subject_no_shortcut(state))));
+        in_condition_cause(ccNotFound, get_invocation_subject_no_shortcut(&state->input))));
     return success();
   }
   // Extract the origin of the subject.
@@ -1011,7 +1025,7 @@ static value_t complete_special_block_lookup(sigmap_state_t *state,
 static value_t do_full_method_lookup(sigmap_state_t *state) {
   value_and_argument_map_t *data = (value_and_argument_map_t*) state->input.data;
   CHECK_FAMILY(ofModuleFragment, data->value);
-  TOPIC_INFO(Lookup, "Performing fragment lookup %v", state->input.record);
+  TOPIC_INFO(Lookup, "Performing fragment lookup %v", state->input.tags);
   TRY(lookup_through_fragment_with_helper(state, data->value, data->helper));
   TOPIC_INFO(Lookup, "Performing subject lookup");
   value_t subject = whatever();
@@ -1071,34 +1085,33 @@ void methodspace_print_on(value_t self, print_on_context_t *context) {
 
 // --- I n v o c a t i o n   r e c o r d ---
 
-ACCESSORS_IMPL(InvocationRecord, invocation_record, acInFamily, ofArray,
-    ArgumentVector, argument_vector);
+ACCESSORS_IMPL(CallTags, call_tags, acInFamily, ofArray, Entries, entries);
 
-value_t invocation_record_validate(value_t self) {
-  VALIDATE_FAMILY(ofInvocationRecord, self);
-  VALIDATE_FAMILY(ofArray, get_invocation_record_argument_vector(self));
+value_t call_tags_validate(value_t self) {
+  VALIDATE_FAMILY(ofCallTags, self);
+  VALIDATE_FAMILY(ofArray, get_call_tags_entries(self));
   return success();
 }
 
-value_t get_invocation_record_tag_at(value_t self, size_t index) {
-  CHECK_FAMILY(ofInvocationRecord, self);
-  value_t argument_vector = get_invocation_record_argument_vector(self);
-  return get_pair_array_first_at(argument_vector, index);
+value_t get_call_tags_tag_at(value_t self, size_t index) {
+  CHECK_FAMILY(ofCallTags, self);
+  value_t entries = get_call_tags_entries(self);
+  return get_pair_array_first_at(entries, index);
 }
 
-size_t get_invocation_record_offset_at(value_t self, size_t index) {
-  CHECK_FAMILY(ofInvocationRecord, self);
-  value_t argument_vector = get_invocation_record_argument_vector(self);
-  return get_integer_value(get_pair_array_second_at(argument_vector, index));
+size_t get_call_tags_offset_at(value_t self, size_t index) {
+  CHECK_FAMILY(ofCallTags, self);
+  value_t entries = get_call_tags_entries(self);
+  return get_integer_value(get_pair_array_second_at(entries, index));
 }
 
-size_t get_invocation_record_argument_count(value_t self) {
-  CHECK_FAMILY(ofInvocationRecord, self);
-  value_t argument_vector = get_invocation_record_argument_vector(self);
-  return get_array_length(argument_vector) >> 1;
+size_t get_call_tags_entry_count(value_t self) {
+  CHECK_FAMILY(ofCallTags, self);
+  value_t entries = get_call_tags_entries(self);
+  return get_pair_array_length(entries);
 }
 
-value_t build_invocation_record_vector(runtime_t *runtime, value_t tags) {
+value_t build_call_tags_entries(runtime_t *runtime, value_t tags) {
   size_t tag_count = get_array_length(tags);
   TRY_DEF(result, new_heap_pair_array(runtime, tag_count));
   for (size_t i = 0; i < tag_count; i++) {
@@ -1113,17 +1126,12 @@ value_t build_invocation_record_vector(runtime_t *runtime, value_t tags) {
   return result;
 }
 
-value_t get_invocation_record_argument_at(value_t self, frame_t *frame, size_t index) {
-  size_t offset = get_invocation_record_offset_at(self, index);
-  return frame_peek_value(frame, offset);
-}
-
-void print_invocation_on(value_t record, frame_t *frame, string_buffer_t *buf) {
-  size_t arg_count = get_invocation_record_argument_count(record);
+void print_invocation_on(value_t tags, frame_t *frame, string_buffer_t *buf) {
+  size_t arg_count = get_call_tags_entry_count(tags);
   string_buffer_printf(buf, "{");
   for (size_t i = 0;  i < arg_count; i++) {
-    value_t tag = get_invocation_record_tag_at(record, i);
-    value_t arg = get_invocation_record_argument_at(record, frame, i);
+    value_t tag = get_call_tags_tag_at(tags, i);
+    value_t arg = frame_get_pending_argument_at(frame, tags, i);
     if (i > 0)
       string_buffer_printf(buf, ", ");
     string_buffer_printf(buf, "%v: %v", tag, arg);
@@ -1131,40 +1139,39 @@ void print_invocation_on(value_t record, frame_t *frame, string_buffer_t *buf) {
   string_buffer_printf(buf, "}");
 }
 
-void invocation_record_print_on(value_t self, print_on_context_t *context) {
+void call_tags_print_on(value_t self, print_on_context_t *context) {
   string_buffer_printf(context->buf, "{");
-  size_t arg_count = get_invocation_record_argument_count(self);
+  size_t arg_count = get_call_tags_entry_count(self);
   for (size_t i = 0; i < arg_count; i++) {
     if (i > 0)
       string_buffer_printf(context->buf, ", ");
-    value_t tag = get_invocation_record_tag_at(self, i);
-    size_t offset = get_invocation_record_offset_at(self, i);
+    value_t tag = get_call_tags_tag_at(self, i);
+    size_t offset = get_call_tags_offset_at(self, i);
     value_print_inner_on(tag, context, -1);
     string_buffer_printf(context->buf, "@%i", offset);
   }
   string_buffer_printf(context->buf, "}");
 }
 
-value_t ensure_invocation_record_owned_values_frozen(runtime_t *runtime,
-    value_t self) {
-  TRY(ensure_frozen(runtime, get_invocation_record_argument_vector(self)));
+value_t ensure_call_tags_owned_values_frozen(runtime_t *runtime, value_t self) {
+  TRY(ensure_frozen(runtime, get_call_tags_entries(self)));
   return success();
 }
 
-value_t invocation_record_transient_identity_hash(value_t value, hash_stream_t *stream,
+value_t call_tags_transient_identity_hash(value_t value, hash_stream_t *stream,
     cycle_detector_t *outer) {
   cycle_detector_t inner;
   TRY(cycle_detector_enter(outer, &inner, value));
-  value_t args = get_invocation_record_argument_vector(value);
-  return value_transient_identity_hash_cycle_protect(args, stream, &inner);
+  value_t entries = get_call_tags_entries(value);
+  return value_transient_identity_hash_cycle_protect(entries, stream, &inner);
 }
 
-value_t invocation_record_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
+value_t call_tags_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
   cycle_detector_t inner;
   TRY(cycle_detector_enter(outer, &inner, a));
-  value_t a_args = get_invocation_record_argument_vector(a);
-  value_t b_args = get_invocation_record_argument_vector(b);
-  return value_identity_compare_cycle_protect(a_args, b_args, &inner);
+  value_t a_entries = get_call_tags_entries(a);
+  value_t b_entries = get_call_tags_entries(b);
+  return value_identity_compare_cycle_protect(a_entries, b_entries, &inner);
 }
 
 
