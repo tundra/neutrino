@@ -28,12 +28,12 @@ value_t init_plankton_environment_mapping(value_mapping_t *mapping,
   return success();
 }
 
-value_t compile_expression(runtime_t *runtime, value_t program,
-    value_t fragment, scope_lookup_callback_t *scope_callback) {
+value_t compile_expression(runtime_t *runtime, value_t program, value_t fragment,
+    scope_o *scope) {
   assembler_t assm;
   // Don't try to execute cleanup if this fails since there'll not be an
   // assembler to dispose.
-  TRY(assembler_init(&assm, runtime, fragment, scope_callback));
+  TRY(assembler_init(&assm, runtime, fragment, scope));
   E_BEGIN_TRY_FINALLY();
     E_TRY_DEF(code_block, compile_expression_with_assembler(runtime, program,
         &assm));
@@ -52,9 +52,9 @@ value_t compile_expression_with_assembler(runtime_t *runtime, value_t program,
 }
 
 value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
-    safe_value_t module, scope_lookup_callback_t *scope_callback) {
+    safe_value_t module, scope_o *scope) {
   RETRY_ONCE_IMPL(runtime, compile_expression(runtime, deref(ast), deref(module),
-      scope_callback));
+      scope));
 }
 
 size_t get_parameter_order_index_for_array(value_t tags) {
@@ -399,7 +399,7 @@ static value_t build_methodspace_from_method_asts(value_t method_asts,
     // Compile the signature and, if we're in a nontrivial inner scope, the
     // body of the lambda.
     value_t body_code = nothing();
-    if (assm->scope_callback != scope_lookup_callback_get_bottom())
+    if (assm->scope != scope_get_bottom())
       TRY_SET(body_code, compile_method_body(assm, method_ast));
     TRY_DEF(signature, build_method_signature(assm->runtime, assm->fragment,
         assembler_get_scratch_memory(assm), get_method_ast_signature(method_ast)));
@@ -415,7 +415,7 @@ static value_t build_methodspace_from_method_asts(value_t method_asts,
 
 value_t emit_signal_handler_ast(value_t value, assembler_t *assm) {
   // Create the methodspace that holds the handlers.
-  block_scope_t block_scope;
+  block_scope_o block_scope;
   TRY(assembler_push_block_scope(assm, &block_scope));
   value_t handler_asts = get_signal_handler_ast_handlers(value);
   TRY_DEF(space, build_methodspace_from_method_asts(handler_asts, assm));
@@ -463,11 +463,11 @@ ACCESSORS_IMPL(EnsureAst, ensure_ast, acIsSyntaxOpt, 0, OnExit, on_exit);
 
 static value_t emit_ensurer(value_t code, assembler_t *assm) {
   // Push a block scope that refracts any symbols accessed outside the block.
-  block_scope_t block_scope;
+  block_scope_o block_scope;
   TRY(assembler_push_block_scope(assm, &block_scope));
 
   TRY_DEF(code_block, compile_expression(assm->runtime, code, assm->fragment,
-        &block_scope.callback));
+        (scope_o*) &block_scope));
 
   // Pop the block scope off, we're done refracting.
   assembler_pop_block_scope(assm, &block_scope);
@@ -625,7 +625,7 @@ value_t emit_local_declaration_ast(value_t self, assembler_t *assm) {
   if (assembler_is_symbol_bound(assm, symbol))
     // We're trying to redefine an already defined symbol. That's not valid.
     return new_invalid_syntax_condition(isSymbolAlreadyBound);
-  single_symbol_scope_t scope;
+  single_symbol_scope_o scope;
   assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal, offset);
   value_t body = get_local_declaration_ast_body(self);
   // Emit the body in scope of the local.
@@ -741,7 +741,7 @@ static value_t assembler_access_symbol(value_t symbol, assembler_t *assm,
 
 static value_t emit_block_value(value_t method_asts, assembler_t *assm) {
   // Push a block scope that refracts any symbols accessed outside the block.
-  block_scope_t block_scope;
+  block_scope_o block_scope;
   TRY(assembler_push_block_scope(assm, &block_scope));
 
   TRY_DEF(space, build_methodspace_from_method_asts(method_asts, assm));
@@ -767,7 +767,7 @@ value_t emit_block_ast(value_t self, assembler_t *assm) {
   if (assembler_is_symbol_bound(assm, symbol))
     // We're trying to redefine an already defined symbol. That's not valid.
     return new_invalid_syntax_condition(isSymbolAlreadyBound);
-  single_symbol_scope_t scope;
+  single_symbol_scope_o scope;
   assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal, offset);
   value_t body = get_block_ast_body(self);
   // Emit the body in scope of the local.
@@ -829,7 +829,7 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   if (assembler_is_symbol_bound(assm, symbol))
     // We're trying to redefine an already defined symbol. That's not valid.
     return new_invalid_syntax_condition(isSymbolAlreadyBound);
-  single_symbol_scope_t scope;
+  single_symbol_scope_o scope;
   assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal, stack_offset);
   value_t body = get_with_escape_ast_body(self);
   // Emit the body in scope of the local.
@@ -1116,7 +1116,7 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
   size_t param_astc = get_array_length(param_asts);
 
   // Push the scope that holds the parameters.
-  map_scope_t param_scope;
+  map_scope_o param_scope;
   TRY(assembler_push_map_scope(assm, &param_scope));
 
   // Calculate the parameter ordering. The offsets array will only be valid
@@ -1146,7 +1146,7 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
   // Compile the code.
   value_t body_ast = get_method_ast_body(method_ast);
   TRY_DEF(result, compile_expression(runtime, body_ast, assm->fragment,
-      assm->scope_callback));
+      assm->scope));
   assembler_pop_map_scope(assm, &param_scope);
   return result;
 }
@@ -1156,7 +1156,7 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   value_t method_asts = get_lambda_ast_methods(value);
 
   // Push a capture scope that captures any symbols accessed outside the lambda.
-  lambda_scope_t lambda_scope;
+  lambda_scope_o lambda_scope;
   TRY(assembler_push_lambda_scope(assm, &lambda_scope));
 
   TRY_DEF(space, build_methodspace_from_method_asts(method_asts, assm));

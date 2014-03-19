@@ -224,49 +224,47 @@ bool value_structural_equal(value_t a, value_t b) {
   }
 }
 
-static void recorder_abort_callback(void *data, abort_message_t *message) {
-  check_recorder_t *recorder = (check_recorder_t*) data;
-  recorder->count++;
-  recorder->last_cause = (consition_cause_t) message->condition_cause;
+static void recorder_abort_callback(check_recorder_t *self, abort_message_t *message) {
+  self->count++;
+  self->last_cause = (consition_cause_t) message->condition_cause;
 }
 
 void install_check_recorder(check_recorder_t *recorder) {
   recorder->count = 0;
   recorder->last_cause = __ccFirst__;
-  init_abort_callback(&recorder->callback, recorder_abort_callback, recorder);
-  recorder->previous = set_abort_callback(&recorder->callback);
+  recorder->super.vtable.abort = (abort_m) recorder_abort_callback;
+  recorder->previous = set_global_abort((abort_o*) recorder);
   CHECK_TRUE("no previous abort callback", recorder->previous != NULL);
 }
 
 void uninstall_check_recorder(check_recorder_t *recorder) {
   CHECK_TRUE("uninstalling again", recorder->previous != NULL);
-  set_abort_callback(recorder->previous);
+  set_global_abort(recorder->previous);
   recorder->previous = NULL;
 }
 
-void validator_log_callback(void *data, log_entry_t *entry) {
-  log_validator_t *validator = (log_validator_t*) data;
-  validator->count++;
+static void validator_log_callback(log_validator_o *self, log_entry_t *entry) {
+  self->count++;
   // Temporarily restore the previous log callback in case validation wants to
   // log (which it typically will on validation failure).
-  set_log_callback(validator->previous);
-  (validator->validate_callback)(validator->validate_data, entry);
-  set_log_callback(&validator->callback);
+  set_global_log(self->previous);
+  (self->validate_callback)((log_o*) self, entry);
+  set_global_log((log_o*) self);
 }
 
-void install_log_validator(log_validator_t *validator, log_function_t *callback,
+void install_log_validator(log_validator_o *validator, log_m callback,
     void *data) {
   validator->count = 0;
   validator->validate_callback = callback;
   validator->validate_data = data;
-  init_log_callback(&validator->callback, validator_log_callback, validator);
-  validator->previous = set_log_callback(&validator->callback);
+  validator->super.vtable.log = (log_m) validator_log_callback;
+  validator->previous = set_global_log((log_o*) validator);
   CHECK_TRUE("no previous log callback", validator->previous != NULL);
 }
 
-void uninstall_log_validator(log_validator_t *validator) {
+void uninstall_log_validator(log_validator_o *validator) {
   CHECK_TRUE("uninstalling again", validator->previous != NULL);
-  set_log_callback(validator->previous);
+  set_global_log(validator->previous);
   validator->previous = NULL;
 }
 

@@ -264,7 +264,7 @@ value_t add_to_signature_map(runtime_t *runtime, value_t map, value_t signature,
 
 // Opaque datatype used during signature map lookup.
 FORWARD(sigmap_state_t);
-FORWARD(sigmap_result_collector_t);
+FORWARD(sigmap_collector_o);
 
 // A callback called by do_signature_map_lookup to perform the traversal that
 // produces the signature maps to lookup within.
@@ -276,7 +276,7 @@ typedef value_t (sigmap_state_callback_t)(sigmap_state_t *state);
 // this function completes the lookup and returns the result or a condition as
 // appropriate.
 value_t do_sigmap_lookup(value_t ambience, value_t record, frame_t *frame,
-    sigmap_state_callback_t *callback, sigmap_result_collector_t *collector,
+    sigmap_state_callback_t *callback, sigmap_collector_o *collector,
     void *data);
 
 // Includes the given signature map in the lookup associated with the given
@@ -484,5 +484,33 @@ INTEGER_ACCESSORS_DECL(builtin_implementation, argument_count);
 ACCESSORS_DECL(builtin_implementation, method_flags);
 
 
+// ## Virtuals
+
+// Function called with additional matches that are not strictly better or worse
+// than the best seen so far.
+typedef value_t (*sigmap_collector_add_ambiguous_m)(sigmap_collector_o *self, value_t value);
+
+// Function called the first time a result is found that is strictly better
+// than any matches previously seen.
+typedef value_t (*sigmap_collector_add_better_m)(sigmap_collector_o *self, value_t value);
+
+// Returns the result of this lookup.
+typedef value_t (*sigmap_collector_get_result_m)(sigmap_collector_o *self);
+
+// Resets the lookup state.
+typedef void (*sigmap_collector_reset_m)(sigmap_collector_o *self);
+
+// Collection of virtual functions for working with a result collector.
+typedef struct {
+  sigmap_collector_add_ambiguous_m add_ambiguous;
+  sigmap_collector_add_better_m add_better;
+  sigmap_collector_get_result_m get_result;
+  sigmap_collector_reset_m reset;
+} sigmap_collector_vtable_t;
+
+// Virtual signature map lookup result collector.
+struct sigmap_collector_o {
+  sigmap_collector_vtable_t *vtable;
+};
 
 #endif // _METHOD

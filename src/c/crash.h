@@ -22,33 +22,31 @@ typedef struct {
 void abort_message_init(abort_message_t *message, const char *file, int line,
     int condition_cause, const char *text);
 
+FORWARD(abort_o);
+
 // Type of abort functions.
-typedef void (abort_function_t)(void *data, abort_message_t *message);
+typedef void (*abort_m)(abort_o *self, abort_message_t *message);
+
+typedef struct {
+  abort_m abort;
+} abort_vtable_t;
 
 // A callback used to abort execution.
-typedef struct {
-  // The function to call on abort.
-  abort_function_t *function;
-  // Additional data to pass to the function.
-  void *data;
-} abort_callback_t;
-
-// Initializes an abort callback.
-void init_abort_callback(abort_callback_t *callback, abort_function_t *function,
-    void *data);
+struct abort_o {
+  abort_vtable_t vtable;
+};
 
 // Invokes the given callback with the given arguments.
-void call_abort_callback(abort_callback_t *callback,
-    abort_message_t *message);
+void abort_call(abort_o *self, abort_message_t *message);
 
 // Sets the abort callback to use across this process. This should only be used
 // for testing. The specified callback is allowed to kill the vm, the state called
 // "hard check failures", or keep it running known as "soft check failures".
 // Returns the previous value such that it can be restored if necessary.
-abort_callback_t *set_abort_callback(abort_callback_t *value);
+abort_o *set_global_abort(abort_o *value);
 
 // Returns the current global abort callback.
-abort_callback_t *get_global_abort_callback();
+abort_o *get_global_abort();
 
 // Sets up handling of crashes.
 void install_crash_handler();

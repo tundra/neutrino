@@ -27,7 +27,7 @@ value_t emit_value(value_t value, assembler_t *assm);
 // allows this compilation to access symbols defined in an outer scope. If the
 // callback is null it is taken to mean that there is no outer scope.
 value_t compile_expression(runtime_t *runtime, value_t ast,
-    value_t fragment, scope_lookup_callback_t *scope_callback);
+    value_t fragment, scope_o *scope);
 
 // Does the same a compile_expression but takes an existing assembler rather
 // than create one.
@@ -39,7 +39,7 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast);
 
 // Retrying version of compile_expression.
 value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
-    safe_value_t module, scope_lookup_callback_t *scope_callback);
+    safe_value_t module, scope_o *scope);
 
 // Determines the parameter ordering to use given an array of parameter asts.
 //

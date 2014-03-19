@@ -13,10 +13,6 @@
 #include "value.h"
 
 
-FORWARD(value_callback_t);
-FORWARD(field_callback_t);
-
-
 static const byte_t kBlankHeapMarker = 0xBE;
 static const byte_t kAllocedHeapMarker = 0xFA;
 static const byte_t kFreedHeapMarker = 0xD0;
@@ -24,50 +20,42 @@ static const byte_t kFreedHeapMarker = 0xD0;
 
 // --- M i s c ---
 
-// The type of a value callback function.
-typedef value_t (value_callback_function_t)(value_t value, value_callback_t *self);
+FORWARD(value_visitor_o);
 
-// A callback along with a data pointer that can be used to iterate through a
-// set of objects.
-struct value_callback_t {
+// The type of a value callback function.
+typedef value_t (*value_visitor_visit_m)(value_visitor_o *self, value_t value);
+
+typedef struct {
+  value_visitor_visit_m visit;
+} value_visitor_vtable_t;
+
+// A virtual visitor type that can be used to traverse values in the heap.
+struct value_visitor_o {
   // The callback to invoke for each value.
-  value_callback_function_t *function;
-  // Some extra data accessible from the callback.
-  void *data;
+  value_visitor_vtable_t vtable;
 };
 
-// Initialize the given callback to call the given function with the given data.
-void value_callback_init(value_callback_t *callback, value_callback_function_t *function,
-    void *data);
-
 // Invokes the given callback with the given value.
-value_t value_callback_call(value_callback_t *callback, value_t value);
+value_t value_visitor_visit(value_visitor_o *self, value_t value);
 
-// Returns the data stored with this value callback.
-void *value_callback_get_data(value_callback_t *callback);
 
+FORWARD(field_visitor_o);
 
 // The type of a field (pointer to value) function.
-typedef value_t (field_callback_function_t)(value_t *field, field_callback_t *self);
+typedef value_t (*field_visitor_visit_m)(field_visitor_o *self, value_t *field);
+
+typedef struct {
+  field_visitor_visit_m visit;
+} field_visitor_vtable_t;
 
 // A callback along with a data pointer that can be used to iterate through a
 // set of fields.
-struct field_callback_t {
-  // The callback to invoke.
-  field_callback_function_t *function;
-  // Some extra data accessible from the callback.
-  void *data;
+struct field_visitor_o {
+  field_visitor_vtable_t vtable;
 };
 
-// Initializes the given callback to call the given function with the given data.
-void field_callback_init(field_callback_t *callback, field_callback_function_t *function,
-    void *data);
-
 // Invokes the given callback with the given value.
-value_t field_callback_call(field_callback_t *callback, value_t *value);
-
-// Returns the data stored with this field callback.
-void *field_callback_get_data(field_callback_t *callback);
+value_t field_visitor_visit(field_visitor_o *self, value_t *field);
 
 
 // Settings to apply when creating a runtime. This struct gets passed by value
@@ -134,7 +122,7 @@ bool space_try_alloc(space_t *space, size_t size, address_t *memory_out);
 // Invokes the given callback for each object in the space. It is safe to allocate
 // new objects while traversing the space, new objects will be visited in order
 // of allocation.
-value_t space_for_each_object(space_t *space, value_callback_t *callback);
+value_t space_for_each_object(space_t *space, value_visitor_o *visitor);
 
 // Returns a pointer greater than or equal to the given pointer which is
 // aligned to an 'alignment' boundary.
@@ -171,12 +159,12 @@ value_t heap_init(heap_t *heap, const runtime_config_t *config);
 bool heap_try_alloc(heap_t *heap, size_t size, address_t *memory_out);
 
 // Invokes the given callback for each object in the heap.
-value_t heap_for_each_object(heap_t *heap, value_callback_t *callback);
+value_t heap_for_each_object(heap_t *heap, value_visitor_o *visitor);
 
 // Invokes the given callback for each object field in the space. It is safe to
 // allocate new object while traversing the space, new objects will have their
 // fields visited in order of allocation.
-value_t heap_for_each_field(heap_t *heap, field_callback_t *callback);
+value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor);
 
 // Dispose of the given heap.
 void heap_dispose(heap_t *heap);

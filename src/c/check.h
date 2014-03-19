@@ -38,7 +38,7 @@ IF_CHECKS_ENABLED(CHECK_REL(M, A, ==, B))
 
 // Fails unless the two pointer values are equal.
 #define CHECK_PTREQ(M, A, B)                                                   \
-IF_CHECKS_ENABLED(CHECK_TRUE(M, (A) == (B)))
+IF_CHECKS_ENABLED(CHECK_TRUE(M, ((void*) (A)) == ((void*) (B))))
 
 #define __COND_CHECK_EQ_WITH_VALUE_HELPER__(M, scCause, VALUE, A, B) do {      \
   if (!((A) == (B))) {                                                         \

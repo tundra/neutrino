@@ -12,40 +12,33 @@
 
 // --- A b o r t ---
 
-static abort_callback_t kDefaultAbortCallback;
-static abort_callback_t *global_abort_callback = NULL;
+static abort_o kDefaultAbort;
+static abort_o *global_abort = NULL;
 
 // The default abort handler which prints the message to stderr and aborts
 // execution.
-static void default_abort(void *data, abort_message_t *message) {
+static void default_abort(abort_o *self, abort_message_t *message) {
   log_message(llError, message->file, message->line, "%s", message->text);
   fflush(stderr);
   abort();
 }
 
-abort_callback_t *get_global_abort_callback() {
-  if (global_abort_callback == NULL) {
-    init_abort_callback(&kDefaultAbortCallback, default_abort, NULL);
-    global_abort_callback = &kDefaultAbortCallback;
+abort_o *get_global_abort() {
+  if (global_abort == NULL) {
+    kDefaultAbort.vtable.abort = default_abort;
+    global_abort = &kDefaultAbort;
   }
-  return global_abort_callback;
-}
-
-void init_abort_callback(abort_callback_t *callback, abort_function_t *function,
-    void *data) {
-  callback->function = function;
-  callback->data = data;
+  return global_abort;
 }
 
 // Invokes the given callback with the given arguments.
-void call_abort_callback(abort_callback_t *callback,
-    abort_message_t *message) {
-  (callback->function)(callback->data, message);
+void abort_call(abort_o *self, abort_message_t *message) {
+  (self->vtable.abort)(self, message);
 }
 
-abort_callback_t *set_abort_callback(abort_callback_t *value) {
-  abort_callback_t *result = get_global_abort_callback();
-  global_abort_callback = value;
+abort_o *set_global_abort(abort_o *value) {
+  abort_o *result = get_global_abort();
+  global_abort = value;
   return result;
 }
 
@@ -74,7 +67,7 @@ static void vcheck_fail(const char *file, int line, int condition_cause,
   // Print the formatted error message.
   abort_message_t message;
   abort_message_init(&message, file, line, condition_cause, str.chars);
-  call_abort_callback(get_global_abort_callback(), &message);
+  abort_call(get_global_abort(), &message);
   string_buffer_dispose(&buf);
 }
 
