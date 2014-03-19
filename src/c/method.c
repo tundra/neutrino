@@ -574,19 +574,19 @@ static void sigmap_state_reset(sigmap_state_t *state) {
     state->max_score[i] = new_no_match_score();
 }
 
-value_t do_sigmap_lookup(value_t ambience, value_t record, frame_t *frame,
+value_t do_sigmap_lookup(value_t ambience, value_t tags, frame_t *frame,
     sigmap_state_callback_t callback, sigmap_collector_o *collector,
     void *data) {
   // For now we only handle lookups of a certain size. Hopefully by the time
   // this is too small this implementation will be gone anyway.
-  size_t arg_count = get_call_tags_entry_count(record);
+  size_t arg_count = get_call_tags_entry_count(tags);
   CHECK_REL("too many arguments", arg_count, <=, kSmallLookupLimit);
   // Initialize the lookup state using stack-allocated space.
   value_t max_score[kSmallLookupLimit];
   size_t offsets_one[kSmallLookupLimit];
   size_t offsets_two[kSmallLookupLimit];
   sigmap_state_t state;
-  sigmap_input_init(&state.input, ambience, record, frame, data, arg_count);
+  sigmap_input_init(&state.input, ambience, tags, frame, data, arg_count);
   state.collector = collector;
   state.max_score = max_score;
   state.result_offsets = offsets_one;
@@ -897,12 +897,12 @@ static value_t do_methodspace_method_lookup(sigmap_state_t *state) {
 }
 
 value_t lookup_methodspace_method(value_t ambience, value_t methodspace,
-    value_t record, frame_t *frame, value_t *arg_map_out) {
+    value_t tags, frame_t *frame, value_t *arg_map_out) {
   value_and_argument_map_t data;
   data.value = methodspace;
   data.arg_map_out = arg_map_out;
   best_match_collector_o collector = best_match_collector_new();
-  return do_sigmap_lookup(ambience, record, frame, do_methodspace_method_lookup,
+  return do_sigmap_lookup(ambience, tags, frame, do_methodspace_method_lookup,
       (sigmap_collector_o*) &collector, &data);
 }
 
@@ -984,13 +984,13 @@ static value_t do_signal_handler_method_lookup(sigmap_state_t *state) {
   return success();
 }
 
-value_t lookup_signal_handler_method(value_t ambience, value_t record,
+value_t lookup_signal_handler_method(value_t ambience, value_t tags,
     frame_t *frame, value_t *handler_out, value_t *arg_map_out) {
   handler_and_arg_map_t data;
   data.handler_out = handler_out;
   data.arg_map_out = arg_map_out;
   signal_handler_collector_o collector = signal_handler_collector_new();
-  return do_sigmap_lookup(ambience, record, frame,
+  return do_sigmap_lookup(ambience, tags, frame,
       do_signal_handler_method_lookup, (sigmap_collector_o*) &collector,
       &data);
 }
@@ -1049,13 +1049,13 @@ static value_t do_full_method_lookup(sigmap_state_t *state) {
 }
 
 value_t lookup_method_full(value_t ambience, value_t fragment,
-    value_t record, frame_t *frame, value_t helper, value_t *arg_map_out) {
+    value_t tags, frame_t *frame, value_t helper, value_t *arg_map_out) {
   value_and_argument_map_t data;
   data.value = fragment;
   data.helper = helper;
   data.arg_map_out = arg_map_out;
   best_match_collector_o collector = best_match_collector_new();
-  return do_sigmap_lookup(ambience, record, frame, do_full_method_lookup,
+  return do_sigmap_lookup(ambience, tags, frame, do_full_method_lookup,
       (sigmap_collector_o*) &collector, &data);
 }
 

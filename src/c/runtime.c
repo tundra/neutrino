@@ -69,8 +69,8 @@ static value_t create_escape_records(runtime_t *runtime) {
       set_pair_array_second_at(entries, j, new_integer(i - j - 1));
     }
     CHECK_TRUE("escape record not sorted", is_pair_array_sorted(entries));
-    TRY_DEF(record, new_heap_call_tags(runtime, afFreeze, entries));
-    set_array_at(result, i, record);
+    TRY_DEF(tags, new_heap_call_tags(runtime, afFreeze, entries));
+    set_array_at(result, i, tags);
   }
   return result;
 }
