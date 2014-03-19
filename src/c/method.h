@@ -486,8 +486,6 @@ ACCESSORS_DECL(builtin_implementation, method_flags);
 
 // ## Virtuals
 
-FORWARD(sigmap_collector_o);
-
 // Function called with additional matches that are not strictly better or worse
 // than the best seen so far.
 typedef value_t (*sigmap_collector_add_ambiguous_m)(sigmap_collector_o *self, value_t value);
