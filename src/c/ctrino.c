@@ -47,7 +47,7 @@ static value_t add_ctrino_method(runtime_t *runtime, value_t space,
   E_BEGIN_TRY_FINALLY();
     // Build the implementation.
     assembler_t assm;
-    E_TRY(assembler_init(&assm, runtime, nothing(), scope_lookup_callback_get_bottom()));
+    E_TRY(assembler_init(&assm, runtime, nothing(), scope_get_bottom()));
     E_TRY(assembler_emit_builtin(&assm, implementation));
     E_TRY(assembler_emit_return(&assm));
     E_TRY_DEF(code_block, assembler_flush(&assm));

@@ -55,12 +55,12 @@ void log_message(log_level_t level, const char *file, int line, const char *fmt,
   va_end(argp);
 }
 
-static log_callback_t kDefaultLogCallback;
-static log_callback_t *global_log_callback = NULL;
+static log_o kDefaultLog;
+static log_o *global_log = NULL;
 
 // The default abort handler which prints the message to stderr and aborts
 // execution.
-static void default_log(void *data, log_entry_t *entry) {
+static void default_log(log_o *log, log_entry_t *entry) {
   if (entry->file == NULL) {
     // This is typically used for testing where including the filename and line
     // makes the output unpredictable.
@@ -74,23 +74,17 @@ static void default_log(void *data, log_entry_t *entry) {
 }
 
 // Returns the current global abort callback.
-static log_callback_t *get_global_log_callback() {
-  if (global_log_callback == NULL) {
-    init_log_callback(&kDefaultLogCallback, default_log, NULL);
-    global_log_callback = &kDefaultLogCallback;
+static log_o *get_global_log() {
+  if (global_log == NULL) {
+    kDefaultLog.vtable.log = default_log;
+    global_log = &kDefaultLog;
   }
-  return global_log_callback;
+  return global_log;
 }
 
-void init_log_callback(log_callback_t *callback, log_function_t *function,
-    void *data) {
-  callback->function = function;
-  callback->data = data;
-}
-
-log_callback_t *set_log_callback(log_callback_t *value) {
-  log_callback_t *result = get_global_log_callback();
-  global_log_callback = value;
+log_o *set_global_log(log_o *value) {
+  log_o *result = get_global_log();
+  global_log = value;
   return result;
 }
 
@@ -128,7 +122,7 @@ void vlog_message(log_level_t level, const char *file, int line, const char *fmt
   log_entry_t entry;
   log_entry_init(&entry, destination, file, line, level, &message_str,
       &timestamp_str);
-  log_callback_t *callback = get_global_log_callback();
-  (callback->function)(callback->data, &entry);
+  log_o *log = get_global_log();
+  (log->vtable.log)(log, &entry);
   string_buffer_dispose(&buf);
 }

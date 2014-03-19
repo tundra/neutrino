@@ -34,14 +34,13 @@ ASSERT_SUCCESS(delete_runtime(runtime));
 
 // Data recorded about check failures.
 typedef struct {
+  abort_o super;
   // How many check failures were triggered?
   size_t count;
   // What was the cause of the last check failure triggered?
   consition_cause_t last_cause;
   // The abort callback to restore when we're done recording checks.
-  abort_callback_t *previous;
-  // This recorder's callback.
-  abort_callback_t callback;
+  abort_o *previous;
 } check_recorder_t;
 
 // Installs a check recorder and switch to soft check failure mode. This also
@@ -64,25 +63,24 @@ void uninstall_check_recorder(check_recorder_t *recorder);
 // stay alive so uninstalling can't dispose data. Anyway, this seems simpler,
 // do the validation immediately.
 typedef struct {
+  log_o super;
   // The number of entries that were logged.
   size_t count;
   // The abort callback to restore when we're done validating log messages.
-  log_callback_t *previous;
-  // This validator's callback.
-  log_callback_t callback;
+  log_o *previous;
   // The pointers used to trampoline to the validate function.
-  log_function_t *validate_callback;
+  log_m validate_callback;
   void *validate_data;
-} log_validator_t;
+} log_validator_o;
 
 // Installs a log validator. The struct stores data that can be used to
 // uninstall it again, the callback will be invoked for each log entry issued.
-void install_log_validator(log_validator_t *validator,
-    log_function_t *validate_callback, void *data);
+void install_log_validator(log_validator_o *validator,
+    log_m validate_callback, void *data);
 
 // Uninstalls the given log validator, which must be the currently active one,
 // and restores logging to the same state as before it was installed.
-void uninstall_log_validator(log_validator_t *validator);
+void uninstall_log_validator(log_validator_o *validator);
 
 
 // Fails unless the two values are equal.

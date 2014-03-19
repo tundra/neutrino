@@ -79,7 +79,7 @@ static value_t compile_method(runtime_t *runtime, value_t method) {
   value_t method_ast = get_method_syntax(method);
   value_t fragment = get_method_module_fragment(method);
   assembler_t assm;
-  TRY(assembler_init(&assm, runtime, fragment, scope_lookup_callback_get_bottom()));
+  TRY(assembler_init(&assm, runtime, fragment, scope_get_bottom()));
   E_BEGIN_TRY_FINALLY();
     E_TRY_DEF(code, compile_method_body(&assm, method_ast));
     E_RETURN(code);

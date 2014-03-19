@@ -45,8 +45,7 @@ value_t add_builtin_method_impl(runtime_t *runtime, value_t map,
   CHECK_FAMILY(ofIdHashMap, map);
   E_BEGIN_TRY_FINALLY();
     assembler_t assm;
-    E_TRY(assembler_init(&assm, runtime, nothing(),
-        scope_lookup_callback_get_bottom()));
+    E_TRY(assembler_init(&assm, runtime, nothing(), scope_get_bottom()));
     if (leave_argc == -1) {
       // Simple case where there can be no signals.
       E_TRY(assembler_emit_builtin(&assm, impl));
@@ -83,8 +82,7 @@ value_t add_custom_method_impl(runtime_t *runtime, value_t map,
   CHECK_FAMILY(ofIdHashMap, map);
   // Build the implementation.
   assembler_t assm;
-  TRY(assembler_init(&assm, runtime, nothing(),
-      scope_lookup_callback_get_bottom()));
+  TRY(assembler_init(&assm, runtime, nothing(), scope_get_bottom()));
   TRY(emitter(&assm));
   TRY(assembler_emit_return(&assm));
   TRY_DEF(code_block, assembler_flush(&assm));

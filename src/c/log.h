@@ -89,25 +89,24 @@ typedef struct {
 void log_entry_init(log_entry_t *entry, log_stream_t destination, const char *file,
     int line, log_level_t level, string_t *message, string_t *timestamp);
 
+FORWARD(log_o);
+
 // Type of log functions.
-typedef void (log_function_t)(void *data, log_entry_t *entry);
+typedef void (*log_m)(log_o *self, log_entry_t *entry);
+
+typedef struct {
+  log_m log;
+} log_vtable_t;
 
 // A callback used to issue log messages.
-typedef struct {
-  // The function to call on logging.
-  log_function_t *function;
-  // Additional data to pass to the function.
-  void *data;
-} log_callback_t;
-
-// Initializes a log callback.
-void init_log_callback(log_callback_t *callback, log_function_t *function,
-    void *data);
+struct log_o {
+  log_vtable_t vtable;
+};
 
 // Sets the log callback to use across this process. This should only be used
 // for testing. Returns the previous value such that it can be restored if
 // necessary.
-log_callback_t *set_log_callback(log_callback_t *value);
+log_o *set_global_log(log_o *log);
 
 // Emits a warning if the static log level is at least warning, otherwise does
 // nothing (including doesn't evaluate arguments).

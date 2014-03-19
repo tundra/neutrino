@@ -21,60 +21,51 @@ void binding_info_set(binding_info_t *info, binding_type_t type, uint16_t data,
 
 // --- S c o p e s ---
 
-static scope_lookup_callback_t kBottomCallback;
-static scope_lookup_callback_t *bottom_callback = NULL;
+static scope_o kBottomScope;
+static scope_o *bottom_scope = NULL;
 
-static value_t bottom_scope_lookup(value_t symbol, void *data,
-    binding_info_t *info_out) {
+static value_t bottom_scope_lookup(scope_o *self, value_t symbol, binding_info_t *info_out) {
   return new_not_found_condition();
 }
 
 // Returns the bottom callback that never finds symbols.
-scope_lookup_callback_t *scope_lookup_callback_get_bottom() {
-  if (bottom_callback == NULL) {
-    scope_lookup_callback_init(&kBottomCallback, bottom_scope_lookup, NULL);
-    bottom_callback = &kBottomCallback;
+scope_o *scope_get_bottom() {
+  if (bottom_scope == NULL) {
+    kBottomScope.vtable.lookup = bottom_scope_lookup;
+    bottom_scope = &kBottomScope;
   }
-  return bottom_callback;
+  return bottom_scope;
 }
 
-void scope_lookup_callback_init(scope_lookup_callback_t *callback,
-    scope_lookup_function_t function, void *data) {
-  callback->function = function;
-  callback->data = data;
-}
-
-value_t scope_lookup_callback_call(scope_lookup_callback_t *callback,
-    value_t symbol, binding_info_t *info_out) {
-  return (callback->function)(symbol, callback->data, info_out);
+value_t scope_lookup(scope_o *self, value_t symbol, binding_info_t *info_out) {
+  return (self->vtable.lookup)(self, symbol, info_out);
 }
 
 // Performs a lookup for a single symbol scope.
-static value_t single_symbol_scope_lookup(value_t symbol, void *data,
+static value_t single_symbol_scope_lookup(single_symbol_scope_o *self, value_t symbol,
     binding_info_t *info_out) {
-  single_symbol_scope_t *scope = (single_symbol_scope_t*) data;
-  if (value_identity_compare(symbol, scope->symbol)) {
+  if (value_identity_compare(symbol, self->symbol)) {
     if (info_out != NULL)
-      *info_out = scope->binding;
+      *info_out = self->binding;
     return success();
   } else {
-    return scope_lookup_callback_call(scope->outer, symbol, info_out);
+    return scope_lookup(self->outer, symbol, info_out);
   }
 }
 
 void assembler_push_single_symbol_scope(assembler_t *assm,
-    single_symbol_scope_t *scope, value_t symbol, binding_type_t type,
+    single_symbol_scope_o *scope, value_t symbol, binding_type_t type,
     uint32_t data) {
+  scope->super.vtable.lookup = (scope_lookup_m) single_symbol_scope_lookup;
   scope->symbol = symbol;
   binding_info_set(&scope->binding, type, data, 0);
-  scope_lookup_callback_init(&scope->callback, single_symbol_scope_lookup, scope);
-  scope->outer = assembler_set_scope_callback(assm, &scope->callback);
+  scope->outer = assembler_set_scope(assm, (scope_o*) scope);
 }
 
 void assembler_pop_single_symbol_scope(assembler_t *assm,
-    single_symbol_scope_t *scope) {
-  CHECK_PTREQ("scopes out of sync", assm->scope_callback, &scope->callback);
-  assm->scope_callback = scope->outer;
+    single_symbol_scope_o *scope) {
+  CHECK_PTREQ("scopes out of sync", assm->scope, scope);
+  assm->scope = scope->outer;
 }
 
 // Encoder-decoder union that lets a binding info struct be packed into an int64
@@ -85,12 +76,11 @@ typedef union {
 } binding_info_codec_t;
 
 // Performs a lookup for a single symbol scope.
-static value_t map_scope_lookup(value_t symbol, void *data,
+static value_t map_scope_lookup(map_scope_o *self, value_t symbol,
     binding_info_t *info_out) {
-  map_scope_t *scope = (map_scope_t*) data;
-  value_t value = get_id_hash_map_at(scope->map, symbol);
+  value_t value = get_id_hash_map_at(self->map, symbol);
   if (in_condition_cause(ccNotFound, value)) {
-    return scope_lookup_callback_call(scope->outer, symbol, info_out);
+    return scope_lookup(self->outer, symbol, info_out);
   } else {
     if (info_out != NULL) {
       binding_info_codec_t codec;
@@ -101,20 +91,20 @@ static value_t map_scope_lookup(value_t symbol, void *data,
   }
 }
 
-value_t assembler_push_map_scope(assembler_t *assm, map_scope_t *scope) {
+value_t assembler_push_map_scope(assembler_t *assm, map_scope_o *scope) {
   TRY_SET(scope->map, new_heap_id_hash_map(assm->runtime, 8));
-  scope_lookup_callback_init(&scope->callback, map_scope_lookup, scope);
-  scope->outer = assembler_set_scope_callback(assm, &scope->callback);
+  scope->super.vtable.lookup = (scope_lookup_m) map_scope_lookup;
+  scope->outer = assembler_set_scope(assm, (scope_o*) scope);
   scope->assembler = assm;
   return success();
 }
 
-void assembler_pop_map_scope(assembler_t *assm, map_scope_t *scope) {
-  CHECK_PTREQ("scopes out of sync", assm->scope_callback, &scope->callback);
-  assm->scope_callback = scope->outer;
+void assembler_pop_map_scope(assembler_t *assm, map_scope_o *scope) {
+  CHECK_PTREQ("scopes out of sync", assm->scope, scope);
+  assm->scope = scope->outer;
 }
 
-value_t map_scope_bind(map_scope_t *scope, value_t symbol, binding_type_t type,
+value_t map_scope_bind(map_scope_o *scope, value_t symbol, binding_type_t type,
     uint32_t data) {
   binding_info_codec_t codec;
   binding_info_set(&codec.decoded, type, data, 0);
@@ -123,13 +113,12 @@ value_t map_scope_bind(map_scope_t *scope, value_t symbol, binding_type_t type,
   return success();
 }
 
-static value_t lambda_scope_lookup(value_t symbol, void *data,
+static value_t lambda_scope_lookup(lambda_scope_o *self, value_t symbol,
     binding_info_t *info_out) {
-  lambda_scope_t *scope = (lambda_scope_t*) data;
-  size_t capture_count_before = get_array_buffer_length(scope->captures);
+  size_t capture_count_before = get_array_buffer_length(self->captures);
   // See if we've captured this variable before.
   for (size_t i = 0; i < capture_count_before; i++) {
-    value_t captured = get_array_buffer_at(scope->captures, i);
+    value_t captured = get_array_buffer_at(self->captures, i);
     if (value_identity_compare(captured, symbol)) {
       // Found it. Record that we did if necessary and return success.
       if (info_out != NULL)
@@ -138,39 +127,38 @@ static value_t lambda_scope_lookup(value_t symbol, void *data,
     }
   }
   // We haven't seen this one before so look it up outside.
-  value_t value = scope_lookup_callback_call(scope->outer, symbol, info_out);
+  value_t value = scope_lookup(self->outer, symbol, info_out);
   if (info_out != NULL && !in_condition_cause(ccNotFound, value)) {
     // We found something and this is a read. Add it to the list of captures.
-    runtime_t *runtime = scope->assembler->runtime;
-    if (get_array_buffer_length(scope->captures) == 0) {
+    runtime_t *runtime = self->assembler->runtime;
+    if (get_array_buffer_length(self->captures) == 0) {
       // The first time we add something we have to create a new array buffer
       // since all empty capture scopes share the singleton empty buffer.
-      TRY_SET(scope->captures, new_heap_array_buffer(runtime, 2));
+      TRY_SET(self->captures, new_heap_array_buffer(runtime, 2));
     }
-    TRY(add_to_array_buffer(runtime, scope->captures, symbol));
+    TRY(add_to_array_buffer(runtime, self->captures, symbol));
     binding_info_set(info_out, btLambdaCaptured, capture_count_before, 0);
   }
   return value;
 }
 
-value_t assembler_push_lambda_scope(assembler_t *assm, lambda_scope_t *scope) {
-  scope_lookup_callback_init(&scope->callback, lambda_scope_lookup, scope);
-  scope->outer = assembler_set_scope_callback(assm, &scope->callback);
+value_t assembler_push_lambda_scope(assembler_t *assm, lambda_scope_o *scope) {
+  scope->super.vtable.lookup = (scope_lookup_m) lambda_scope_lookup;
+  scope->outer = assembler_set_scope(assm, (scope_o*) scope);
   scope->captures = ROOT(assm->runtime, empty_array_buffer);
   scope->assembler = assm;
   return success();
 }
 
-void assembler_pop_lambda_scope(assembler_t *assm, lambda_scope_t *scope) {
-  CHECK_PTREQ("scopes out of sync", assm->scope_callback, &scope->callback);
-  assm->scope_callback = scope->outer;
+void assembler_pop_lambda_scope(assembler_t *assm, lambda_scope_o *scope) {
+  CHECK_PTREQ("scopes out of sync", assm->scope, scope);
+  assm->scope = scope->outer;
 }
 
-static value_t block_scope_lookup(value_t symbol, void *data,
+static value_t block_scope_lookup(block_scope_o *self, value_t symbol,
     binding_info_t *info_out) {
-  block_scope_t *scope = (block_scope_t*) data;
   // Look up outside this scope.
-  value_t value = scope_lookup_callback_call(scope->outer, symbol, info_out);
+  value_t value = scope_lookup(self->outer, symbol, info_out);
   if (info_out != NULL && !in_condition_cause(ccNotFound, value))
     // If we found a binding refract it increasing the block depth but otherwise
     // leaving the binding as it is.
@@ -178,21 +166,21 @@ static value_t block_scope_lookup(value_t symbol, void *data,
   return value;
 }
 
-value_t assembler_push_block_scope(assembler_t *assm, block_scope_t *scope) {
-  scope_lookup_callback_init(&scope->callback, block_scope_lookup, scope);
-  scope->outer = assembler_set_scope_callback(assm, &scope->callback);
+value_t assembler_push_block_scope(assembler_t *assm, block_scope_o *scope) {
+  scope->super.vtable.lookup = (scope_lookup_m) block_scope_lookup;
+  scope->outer = assembler_set_scope(assm, (scope_o*) scope);
   scope->assembler = assm;
   return success();
 }
 
-void assembler_pop_block_scope(assembler_t *assm, block_scope_t *scope) {
-  CHECK_PTREQ("scopes out of sync", assm->scope_callback, &scope->callback);
-  assm->scope_callback = scope->outer;
+void assembler_pop_block_scope(assembler_t *assm, block_scope_o *scope) {
+  CHECK_PTREQ("scopes out of sync", assm->scope, scope);
+  assm->scope = scope->outer;
 }
 
 value_t assembler_lookup_symbol(assembler_t *assm, value_t symbol,
     binding_info_t *info_out) {
-  return scope_lookup_callback_call(assm->scope_callback, symbol, info_out);
+  return scope_lookup(assm->scope, symbol, info_out);
 }
 
 bool assembler_is_symbol_bound(assembler_t *assm, value_t symbol) {
@@ -235,18 +223,18 @@ void reusable_scratch_memory_double_alloc(reusable_scratch_memory_t *memory,
 // --- A s s e m b l e r ---
 
 value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t fragment,
-    scope_lookup_callback_t *scope_callback) {
-  CHECK_FALSE("no scope callback", scope_callback == NULL);
+    scope_o *scope) {
+  CHECK_FALSE("no scope callback", scope == NULL);
   CHECK_FAMILY_OPT(ofModuleFragment, fragment);
   TRY(assembler_init_stripped_down(assm, runtime));
   TRY_SET(assm->value_pool, new_heap_id_hash_map(runtime, 16));
-  assm->scope_callback = scope_callback;
+  assm->scope = scope;
   assm->fragment = fragment;
   return success();
 }
 
 value_t assembler_init_stripped_down(assembler_t *assm, runtime_t *runtime) {
-  assm->scope_callback = NULL;
+  assm->scope = NULL;
   assm->runtime = runtime;
   assm->fragment = null();
   short_buffer_init(&assm->code);
@@ -260,10 +248,9 @@ void assembler_dispose(assembler_t *assm) {
   reusable_scratch_memory_dispose(&assm->scratch_memory);
 }
 
-scope_lookup_callback_t *assembler_set_scope_callback(assembler_t *assm,
-    scope_lookup_callback_t *callback) {
-  scope_lookup_callback_t *result = assm->scope_callback;
-  assm->scope_callback = callback;
+scope_o *assembler_set_scope(assembler_t *assm, scope_o *scope) {
+  scope_o *result = assm->scope;
+  assm->scope = scope;
   return result;
 }
 

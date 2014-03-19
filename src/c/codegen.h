@@ -59,42 +59,30 @@ typedef struct {
 void binding_info_set(binding_info_t *info, binding_type_t type, uint16_t data,
     uint16_t block_depth);
 
+FORWARD(scope_o);
+
 // A function that performs a scoped lookup. If the info_out argument is NULL
 // we're only checking whether the binding exists, not actually accessing it.
 // The return value should be a NotFound condition if the symbol could not be
 // resolved, a non-condition otherwise.
-typedef value_t (*scope_lookup_function_t)(value_t symbol, void *data,
-    binding_info_t *info_out);
-
-FORWARD(scope_o);
-
 typedef value_t (*scope_lookup_m)(scope_o *self, value_t symbol,
     binding_info_t *info_out);
 
-struct scope_o {
-  scope_lookup_m lookup;
-};
-
-// A callback that does scoped symbol resolution.
 typedef struct {
-  // The function that implements the callback.
-  scope_lookup_function_t function;
-  // Extra data that'll be passed to the function.
-  void *data;
-} scope_lookup_callback_t;
+  scope_lookup_m lookup;
+} scope_vtable_t;
 
-// Initializes a scope lookup callback.
-void scope_lookup_callback_init(scope_lookup_callback_t *callback,
-    scope_lookup_function_t function, void *data);
+struct scope_o {
+  scope_vtable_t vtable;
+};
 
 // Invokes a scope lookup callback with a symbol. The result will be stored in
 // the info-out parameter. If there's any problem the result will be a condition.
-value_t scope_lookup_callback_call(scope_lookup_callback_t *callback,
-    value_t symbol, binding_info_t *info_out);
+value_t scope_lookup(scope_o *self, value_t symbol, binding_info_t *info_out);
 
 // Returns a "bottom" scope lookup callback that is always empty. This will
 // always return the same value.
-scope_lookup_callback_t *scope_lookup_callback_get_bottom();
+scope_o *scope_get_bottom();
 
 // A block of reusable scratch memory. It can be used to grab a block of memory
 // of a given size without worrying about releasing it. Just be sure not to
@@ -140,7 +128,7 @@ typedef struct assembler_t {
   // The highest the stack has been at any point.
   size_t high_water_mark;
   // The callback for resolving local symbols.
-  scope_lookup_callback_t *scope_callback;
+  scope_o *scope;
   // A reusable memory block.
   reusable_scratch_memory_t scratch_memory;
   // The module fragment we're compiling within.
@@ -150,7 +138,7 @@ typedef struct assembler_t {
 // Initializes an assembler. If the given scope callback is NULL it is taken to
 // mean that there is no enclosing scope.
 value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t fragment,
-    scope_lookup_callback_t *scope_callback);
+    scope_o *scope);
 
 // Initializes an assembler to the bare minimum required to assembler code with
 // no value pool.
@@ -158,8 +146,7 @@ value_t assembler_init_stripped_down(assembler_t *assm, runtime_t *runtime);
 
 // Sets the scope callback for the given assembler, returning the previous
 // value.
-scope_lookup_callback_t *assembler_set_scope_callback(assembler_t *assm,
-    scope_lookup_callback_t *scope_callback);
+scope_o *assembler_set_scope(assembler_t *assm, scope_o *scope);
 
 // Disposes of an assembler.
 void assembler_dispose(assembler_t *assm);
@@ -320,86 +307,81 @@ value_t assembler_emit_stack_piece_bottom(assembler_t *assm);
 
 // A scope defining a single symbol.
 typedef struct {
+  scope_o super;
   // The symbol.
   value_t symbol;
   // The symbol's binding.
   binding_info_t binding;
-  // The callback that performs lookup in this scope.
-  scope_lookup_callback_t callback;
   // The enclosing scope.
-  scope_lookup_callback_t *outer;
-} single_symbol_scope_t;
+  scope_o *outer;
+} single_symbol_scope_o;
 
 // Pushes a single symbol scope onto the scope stack.
 void assembler_push_single_symbol_scope(assembler_t *assm,
-    single_symbol_scope_t *scope, value_t symbol, binding_type_t type,
-    uint32_t data);
+    single_symbol_scope_o *scope, value_t symbol, binding_type_t type, uint32_t data);
 
 // Pops a single symbol scope off the scope stack.
 void assembler_pop_single_symbol_scope(assembler_t *assm,
-    single_symbol_scope_t *scope);
+    single_symbol_scope_o *scope);
 
 
 // A scope whose symbols are defined in a hash map.
 typedef struct {
+  scope_o super;
   // The map of symbols.
   value_t map;
-  // The callback that performs lookup in this scope.
-  scope_lookup_callback_t callback;
   // The enclosing scope.
-  scope_lookup_callback_t *outer;
+  scope_o *outer;
   // The assembler this scope belongs to.
   assembler_t *assembler;
-} map_scope_t;
+} map_scope_o;
 
 // Pushes a map symbol scope onto the scope stack. This involves allocating a
 // map on the heap and if that fails a condition is returned.
-value_t assembler_push_map_scope(assembler_t *assm, map_scope_t *scope);
+value_t assembler_push_map_scope(assembler_t *assm, map_scope_o *scope);
 
 // Pops a map symbol scope off the scope stack.
-void assembler_pop_map_scope(assembler_t *assm, map_scope_t *scope);
+void assembler_pop_map_scope(assembler_t *assm, map_scope_o *scope);
 
 // Binds a symbol on the given map scope. The symbol must not already be bound
 // in this scope.
-value_t map_scope_bind(map_scope_t *scope, value_t symbol, binding_type_t type,
+value_t map_scope_bind(map_scope_o *scope, value_t symbol, binding_type_t type,
     uint32_t data);
 
 
 // A scope that records any variables looked up in an enclosing scope and turns
 // them into captures rather than direct access.
 typedef struct {
-  // The callback that performs lookup in this scope.
-  scope_lookup_callback_t callback;
+  scope_o super;
   // Then enclosing scope.
-  scope_lookup_callback_t *outer;
+  scope_o *outer;
   // The list of captured symbols.
   value_t captures;
   // The assembler this scope belongs to.
   assembler_t *assembler;
-} lambda_scope_t;
+} lambda_scope_o;
 
 // Pushes a lambda scope onto the scope stack.
-value_t assembler_push_lambda_scope(assembler_t *assm, lambda_scope_t *scope);
+value_t assembler_push_lambda_scope(assembler_t *assm, lambda_scope_o *scope);
 
 // Pops a lambda scope off the scope stack.
-void assembler_pop_lambda_scope(assembler_t *assm, lambda_scope_t *scope);
+void assembler_pop_lambda_scope(assembler_t *assm, lambda_scope_o *scope);
 
 
 // A scope that turns direct access to symbols into indirect block reads.
 typedef struct {
-  // The callback that performs lookup in this scope.
-  scope_lookup_callback_t callback;
+  scope_o super;
   // Then enclosing scope.
-  scope_lookup_callback_t *outer;
+  scope_o *outer;
   // The assembler this scope belongs to.
   assembler_t *assembler;
-} block_scope_t;
+} block_scope_o;
 
 // Pushes a block scope onto the scope stack.
-value_t assembler_push_block_scope(assembler_t *assm, block_scope_t *scope);
+value_t assembler_push_block_scope(assembler_t *assm, block_scope_o *scope);
 
 // Pops a block scope off the scope stack.
-void assembler_pop_block_scope(assembler_t *assm, block_scope_t *scope);
+void assembler_pop_block_scope(assembler_t *assm, block_scope_o *scope);
 
 
 // Looks up a symbol in the current and surrounding scopes. Returns a condition if

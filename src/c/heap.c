@@ -10,32 +10,12 @@
 
 // --- M i s c ---
 
-void value_callback_init(value_callback_t *callback, value_callback_function_t *function,
-    void *data) {
-  callback->function = function;
-  callback->data = data;
+value_t value_visitor_visit(value_visitor_o *self, value_t value) {
+  return (self->vtable.visit)(self, value);
 }
 
-value_t value_callback_call(value_callback_t *callback, value_t value) {
-  return (callback->function)(value, callback);
-}
-
-void *value_callback_get_data(value_callback_t *callback) {
-  return callback->data;
-}
-
-void field_callback_init(field_callback_t *callback, field_callback_function_t *function,
-    void *data) {
-  callback->function = function;
-  callback->data = data;
-}
-
-value_t field_callback_call(field_callback_t *callback, value_t *value) {
-  return (callback->function)(value, callback);
-}
-
-void *field_callback_get_data(field_callback_t *callback) {
-  return callback->data;
+value_t field_visitor_visit(field_visitor_o *self, value_t *value) {
+  return (self->vtable.visit)(self, value);
 }
 
 
@@ -129,11 +109,11 @@ bool space_contains(space_t *space, address_t addr) {
   return (((address_t) space->memory.memory) <= addr) && (addr < space->next_free);
 }
 
-value_t space_for_each_object(space_t *space, value_callback_t *callback) {
+value_t space_for_each_object(space_t *space, value_visitor_o *visitor) {
   address_t current = space->start;
   while (current < space->next_free) {
     value_t value = new_heap_object(current);
-    TRY(value_callback_call(callback, value));
+    TRY(value_visitor_visit(visitor, value));
     heap_object_layout_t layout;
     heap_object_layout_init(&layout);
     get_heap_object_layout(value, &layout);
@@ -253,49 +233,54 @@ void heap_dispose(heap_t *heap) {
   space_dispose(&heap->from_space);
 }
 
-value_t heap_for_each_object(heap_t *heap, value_callback_t *callback) {
+value_t heap_for_each_object(heap_t *heap, value_visitor_o *visitor) {
   CHECK_FALSE("traversing empty space", space_is_empty(&heap->to_space));
   object_tracker_iter_t iter;
   object_tracker_iter_init(&iter, heap);
   while (object_tracker_iter_has_current(&iter)) {
     object_tracker_t *current = object_tracker_iter_get_current(&iter);
-    value_callback_call(callback, current->value);
+    TRY(value_visitor_visit(visitor, current->value));
     object_tracker_iter_advance(&iter);
   }
-  return space_for_each_object(&heap->to_space, callback);
+  return space_for_each_object(&heap->to_space, visitor);
 }
+
+typedef struct {
+  value_visitor_o super;
+  field_visitor_o *field_visitor;
+} field_delegator_o;
 
 // Visitor method that invokes a field callback stored as data in the given value
 // callback for each value field in the given object.
-static value_t visit_object_fields(value_t object, value_callback_t *value_callback) {
+static value_t field_delegator_visit(field_delegator_o *self, value_t object) {
   // Visit the object's species first.
-  field_callback_t *field_callback = (field_callback_t*) value_callback_get_data(value_callback);
   value_t *header = access_heap_object_field(object, kHeapObjectHeaderOffset);
   // Check that the header isn't a forward pointer -- traversing a space that's
   // being migrated from doesn't work so all headers must be objects. We also
   // know they must be species but the heap may not be in a state that allows
   // us to easily check that.
   CHECK_DOMAIN(vdHeapObject, *header);
-  field_callback_call(field_callback, header);
+  field_visitor_visit(self->field_visitor, header);
   value_field_iter_t iter;
   value_field_iter_init(&iter, object);
   value_t *field;
   while (value_field_iter_next(&iter, &field))
-    TRY(field_callback_call(field_callback, field));
+    TRY(field_visitor_visit(self->field_visitor, field));
   return success();
 }
 
-value_t heap_for_each_field(heap_t *heap, field_callback_t *callback) {
+value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor) {
   object_tracker_iter_t iter;
   object_tracker_iter_init(&iter, heap);
   while (object_tracker_iter_has_current(&iter)) {
     object_tracker_t *current = object_tracker_iter_get_current(&iter);
-    field_callback_call(callback, &current->value);
+    field_visitor_visit(visitor, &current->value);
     object_tracker_iter_advance(&iter);
   }
-  value_callback_t object_field_visitor;
-  value_callback_init(&object_field_visitor, visit_object_fields, callback);
-  return space_for_each_object(&heap->to_space, &object_field_visitor);
+  field_delegator_o delegator;
+  delegator.super.vtable.visit = (value_visitor_visit_m) field_delegator_visit;
+  delegator.field_visitor = visitor;
+  return space_for_each_object(&heap->to_space, (value_visitor_o*) &delegator);
 }
 
 value_t heap_prepare_garbage_collection(heap_t *heap) {

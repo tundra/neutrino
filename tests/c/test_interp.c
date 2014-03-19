@@ -29,8 +29,7 @@ static value_t assert_ast_value(value_t ambience, variant_t *expected,
     value_t ast) {
   runtime_t *runtime = get_ambience_runtime(ambience);
   TRY_DEF(fragment, new_empty_module_fragment(runtime));
-  TRY_DEF(code_block, compile_expression(runtime, ast, fragment,
-      scope_lookup_callback_get_bottom()));
+  TRY_DEF(code_block, compile_expression(runtime, ast, fragment, scope_get_bottom()));
   TRY_DEF(result, run_code_block_until_condition(ambience, code_block));
   ASSERT_VAREQ(expected, result);
   return success();
@@ -109,8 +108,7 @@ TEST(interp, execution) {
 // specified condition.
 static void assert_compile_failure(runtime_t *runtime, value_t ast,
     invalid_syntax_cause_t cause) {
-  value_t result = compile_expression(runtime, ast,
-      nothing(), scope_lookup_callback_get_bottom());
+  value_t result = compile_expression(runtime, ast, nothing(), scope_get_bottom());
   ASSERT_CONDITION(ccInvalidSyntax, result);
   ASSERT_EQ(cause, get_invalid_syntax_condition_cause(result));
 }
@@ -140,7 +138,7 @@ TEST(interp, compile_errors) {
   DISPOSE_RUNTIME();
 }
 
-static void validate_lookup_error(void *unused, log_entry_t *entry) {
+static void validate_lookup_error(log_o *self, log_entry_t *entry) {
   // Ignore any logging to stdout, we're only interested in the error.
   if (entry->destination == lsStdout)
     return;
@@ -181,7 +179,7 @@ TEST(interp, lookup_error) {
   set_array_at(args, 1, selector_arg);
   value_t ast = new_heap_invocation_ast(runtime, args);
 
-  log_validator_t validator;
+  log_validator_o validator;
   install_log_validator(&validator, validate_lookup_error, NULL);
   ASSERT_CONDITION(ccLookupError, assert_ast_value(ambience, vInt(13), ast));
   uninstall_log_validator(&validator);

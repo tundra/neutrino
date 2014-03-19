@@ -51,7 +51,7 @@ static value_t safe_execute_syntax(runtime_t *runtime, safe_value_t s_ambience,
     safe_value_t s_module = protect(pool, module);
     safe_value_t s_entry_point = protect(pool, get_program_ast_entry_point(deref(s_program)));
     E_TRY_DEF(code_block, safe_compile_expression(runtime, s_entry_point,
-        s_module, scope_lookup_callback_get_bottom()));
+        s_module, scope_get_bottom()));
     E_RETURN(run_code_block(s_ambience, protect(pool, code_block)));
   E_FINALLY();
     DISPOSE_SAFE_VALUE_POOL(pool);

@@ -473,8 +473,8 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
   return success();
 }
 
-// Adaptor function for passing object validate as a value callback.
-static value_t runtime_validate_object(value_t value, value_callback_t *unused) {
+// Adaptor function for passing object validate as a value visitor.
+static value_t value_validator_visit(value_visitor_o *self, value_t value) {
   switch (get_value_domain(value)) {
     case vdHeapObject:
     case vdDerivedObject:
@@ -487,9 +487,9 @@ static value_t runtime_validate_object(value_t value, value_callback_t *unused) 
 
 value_t runtime_validate(runtime_t *runtime, value_t cause) {
   TRY(heap_validate(&runtime->heap));
-  value_callback_t validate_callback;
-  value_callback_init(&validate_callback, runtime_validate_object, NULL);
-  TRY(heap_for_each_object(&runtime->heap, &validate_callback));
+  value_visitor_o visitor;
+  visitor.vtable.visit = value_validator_visit;
+  TRY(heap_for_each_object(&runtime->heap, &visitor));
   return success();
 }
 
@@ -560,28 +560,35 @@ static void pending_fixup_worklist_dispose(pending_fixup_worklist_t *worklist) {
   }
 }
 
-// State maintained during garbage collection.
+// State maintained during garbage collection. Also functions as a field visitor
+// such that it's easy to traverse objects.
 typedef struct {
+  field_visitor_o super;
   // The runtime we're collecting.
   runtime_t *runtime;
   // List of objects to post-process after migration.
   pending_fixup_worklist_t pending_fixups;
-} garbage_collection_state_t;
-
-// Initializes a garbage collection state object.
-static void garbage_collection_state_init(garbage_collection_state_t *state,
-    runtime_t *runtime) {
-  state->runtime = runtime;
-  pending_fixup_worklist_init(&state->pending_fixups);
-}
-
-// Disposes a garbage collection state object.
-static void garbage_collection_state_dispose(garbage_collection_state_t *state) {
-  pending_fixup_worklist_dispose(&state->pending_fixups);
-}
+} garbage_collection_state_o;
 
 // Allocates memory in to-space for the given object and copies it raw into that
 // memory, leaving fields unmigrated.
+static value_t migrate_field_shallow(garbage_collection_state_o *self,
+    value_t *field);
+
+// Initializes a garbage collection state object.
+static garbage_collection_state_o garbage_collection_state_new(runtime_t *runtime) {
+  garbage_collection_state_o result;
+  result.runtime = runtime;
+  result.super.vtable.visit = (field_visitor_visit_m) migrate_field_shallow;
+  pending_fixup_worklist_init(&result.pending_fixups);
+  return result;
+}
+
+// Disposes a garbage collection state object.
+static void garbage_collection_state_dispose(garbage_collection_state_o *self) {
+  pending_fixup_worklist_dispose(&self->pending_fixups);
+}
+
 static value_t migrate_object_shallow(value_t object, space_t *space) {
   // Ask the object to describe its layout.
   heap_object_layout_t layout;
@@ -606,7 +613,8 @@ static bool needs_post_migrate_fixup(value_t old_object) {
 
 // Ensures that the given object has a clone in to-space, returning a pointer to
 // it. If there is no pre-existing clone a shallow one will be created.
-static value_t ensure_heap_object_migrated(value_t old_object, field_callback_t *callback) {
+static value_t ensure_heap_object_migrated(garbage_collection_state_o *self,
+    value_t old_object) {
   // Check if this object has already been moved.
   value_t old_header = get_heap_object_header(old_object);
   if (get_value_domain(old_header) == vdMovedObject) {
@@ -618,21 +626,19 @@ static value_t ensure_heap_object_migrated(value_t old_object, field_callback_t 
     // The header indicates that this object hasn't been moved yet. First make
     // a raw clone of the object in to-space.
     CHECK_DOMAIN(vdHeapObject, old_header);
-    garbage_collection_state_t *state =
-        (garbage_collection_state_t*) field_callback_get_data(callback);
     // Check with the object whether it needs post processing. This is the last
     // time the object is intact so it's the last point we can call methods on
     // it to find out.
-    CHECK_TRUE("migrating clone", space_contains(&state->runtime->heap.from_space,
+    CHECK_TRUE("migrating clone", space_contains(&self->runtime->heap.from_space,
         get_heap_object_address(old_object)));
     bool needs_fixup = needs_post_migrate_fixup(old_object);
-    value_t new_object = migrate_object_shallow(old_object, &state->runtime->heap.to_space);
+    value_t new_object = migrate_object_shallow(old_object, &self->runtime->heap.to_space);
     CHECK_DOMAIN(vdHeapObject, new_object);
     // Now that we know where the new object is going to be we can schedule the
     // fixup if necessary.
     if (needs_fixup) {
       pending_fixup_t fixup = {new_object, old_object};
-      TRY(pending_fixup_worklist_add(&state->pending_fixups, &fixup));
+      TRY(pending_fixup_worklist_add(&self->pending_fixups, &fixup));
     }
     // Point the old object to the new one so we know to use the new clone
     // instead of ever cloning it again.
@@ -646,11 +652,11 @@ static value_t ensure_heap_object_migrated(value_t old_object, field_callback_t 
 
 // Returns a new derived object pointer identical to the given one except that
 // it points to the new clone of the host rather than the old one.
-static value_t migrate_derived_object(value_t old_derived,
-    field_callback_t *callback) {
+static value_t migrate_derived_object(garbage_collection_state_o *self,
+    value_t old_derived) {
   // Ensure that the host has been migrated.
   value_t old_host = get_derived_object_host(old_derived);
-  value_t new_host = ensure_heap_object_migrated(old_host, callback);
+  value_t new_host = ensure_heap_object_migrated(self, old_host);
   // Calculate the new address derived from the new host.
   value_t anchor = get_derived_object_anchor(old_derived);
   size_t host_offset = get_derived_object_anchor_host_offset(anchor);
@@ -660,15 +666,16 @@ static value_t migrate_derived_object(value_t old_derived,
 
 // Callback that migrates an object from from to to space, if it hasn't been
 // migrated already.
-static value_t migrate_field_shallow(value_t *field, field_callback_t *callback) {
+static value_t migrate_field_shallow(garbage_collection_state_o *self,
+    value_t *field) {
 //  runtime_t *runtime = field_callback_get_data(callback);
   value_t old_value = *field;
   // If this is not a heap object there's nothing to do.
   value_domain_t domain = get_value_domain(old_value);
   if (domain == vdHeapObject) {
-    TRY_SET(*field, ensure_heap_object_migrated(old_value, callback));
+    TRY_SET(*field, ensure_heap_object_migrated(self, old_value));
   } else if (domain == vdDerivedObject) {
-    TRY_SET(*field, migrate_derived_object(old_value, callback));
+    TRY_SET(*field, migrate_derived_object(self, old_value));
   }
   return success();
 }
@@ -680,11 +687,11 @@ static void apply_fixup(runtime_t *runtime, value_t new_heap_object, value_t old
 }
 
 // Perform any fixups that have been scheduled during object migration.
-static void runtime_apply_fixups(garbage_collection_state_t *state) {
-  pending_fixup_worklist_t *worklist = &state->pending_fixups;
+static void runtime_apply_fixups(garbage_collection_state_o *self) {
+  pending_fixup_worklist_t *worklist = &self->pending_fixups;
   for (size_t i = 0; i < worklist->length; i++) {
     pending_fixup_t *fixup = &worklist->fixups[i];
-    apply_fixup(state->runtime, fixup->new_heap_object, fixup->old_object);
+    apply_fixup(self->runtime, fixup->new_heap_object, fixup->old_object);
   }
 }
 
@@ -694,19 +701,15 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
   // Create to-space and swap it in, making the current to-space into from-space.
   TRY(heap_prepare_garbage_collection(&runtime->heap));
   // Initialize the state we'll maintain during collection.
-  garbage_collection_state_t state;
-  garbage_collection_state_init(&state, runtime);
-  // Create the migrator callback that will be used to migrate objects from from
-  // to to space.
-  field_callback_t migrate_shallow_callback;
-  field_callback_init(&migrate_shallow_callback, migrate_field_shallow, &state);
+  garbage_collection_state_o state = garbage_collection_state_new(runtime);
+  field_visitor_o *visitor = (field_visitor_o*) &state;
   // Shallow migration of all the roots.
-  TRY(field_callback_call(&migrate_shallow_callback, &runtime->roots));
-  TRY(field_callback_call(&migrate_shallow_callback, &runtime->mutable_roots));
+  TRY(field_visitor_visit(visitor, &runtime->roots));
+  TRY(field_visitor_visit(visitor, &runtime->mutable_roots));
   // Shallow migration of everything currently stored in to-space which, since
   // we keep going until all objects have been migrated, effectively makes a deep
   // migration.
-  TRY(heap_for_each_field(&runtime->heap, &migrate_shallow_callback));
+  TRY(heap_for_each_field(&runtime->heap, visitor));
   // At this point everything has been migrated so we can run the fixups and
   // then we're done with the state.
   runtime_apply_fixups(&state);
