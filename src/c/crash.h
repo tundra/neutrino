@@ -36,10 +36,6 @@ struct abort_o {
   abort_vtable_t vtable;
 };
 
-// Initializes an abort callback.
-void init_abort_callback(abort_o *callback, abort_m *function,
-    void *data);
-
 // Invokes the given callback with the given arguments.
 void abort_call(abort_o *self, abort_message_t *message);
 
