@@ -66,6 +66,15 @@ void binding_info_set(binding_info_t *info, binding_type_t type, uint16_t data,
 typedef value_t (*scope_lookup_function_t)(value_t symbol, void *data,
     binding_info_t *info_out);
 
+FORWARD(scope_o);
+
+typedef value_t (*scope_lookup_m)(scope_o *self, value_t symbol,
+    binding_info_t *info_out);
+
+struct scope_o {
+  scope_lookup_m lookup;
+};
+
 // A callback that does scoped symbol resolution.
 typedef struct {
   // The function that implements the callback.

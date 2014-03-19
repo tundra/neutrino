@@ -473,34 +473,12 @@ value_t ensure_signature_map_owned_values_frozen(runtime_t *runtime, value_t sel
   return success();
 }
 
-// Function called with additional matches that are not strictly better or worse
-// than the best seen so far.
-typedef value_t (*sigmap_add_ambiguous_callback_t)(void *data, value_t value);
-
-// Function called the first time a result is found that is strictly better
-// than any matches previously seen.
-typedef value_t (*sigmap_add_better_callback_t)(void *data, value_t value);
-
-// Returns the result of this lookup.
-typedef value_t (*sigmap_get_result_callback_t)(void *data);
-
-// Resets the lookup state.
-typedef void (*sigmap_reset_callback_t)(void *data);
-
-// Collection of virtual functions for working with a result collector.
-struct sigmap_result_collector_t {
-  sigmap_add_ambiguous_callback_t add_ambiguous;
-  sigmap_add_better_callback_t add_better;
-  sigmap_get_result_callback_t get_result;
-  sigmap_reset_callback_t reset;
-};
-
 // The state maintained while doing signature map lookup. Originally called
 // signature_map_lookup_state but it, and particularly the derived names, got
 // so long that it's now called the less descriptive sigmap_state_t.
 struct sigmap_state_t {
   // The result collector used to collect results in whatever way is appropriate.
-  sigmap_result_collector_t *collector;
+  sigmap_collector_o *collector;
   // Running argument-wise max over all the entries that have matched.
   value_t *max_score;
   // We use two scratch offsets vectors such that we can keep the best in one
@@ -551,7 +529,7 @@ value_t continue_sigmap_lookup(sigmap_state_t *state, value_t sigmap, value_t sp
       // This score is either better than the previous best, or it is equal to
       // the max which is itself synthetic and hence better than any of the
       // entries we've seen so far.
-      TRY((state->collector->add_better)(state->collector, value));
+      TRY((state->collector->vtable->add_better)(state->collector, value));
       // Now the max definitely isn't synthetic.
       state->max_is_synthetic = false;
       // The offsets for the result is now stored in scratch_offsets and we have
@@ -563,7 +541,7 @@ value_t continue_sigmap_lookup(sigmap_state_t *state, value_t sigmap, value_t sp
     } else if (status != jsWorse) {
       // The next score was not strictly worse than the best we've seen so we
       // don't have a unique best.
-      TRY((state->collector->add_ambiguous)(state->collector, value));
+      TRY((state->collector->vtable->add_ambiguous)(state->collector, value));
       // If the result is ambiguous that means the max is now synthetic.
       state->max_is_synthetic = (status == jsAmbiguous);
     }
@@ -574,14 +552,14 @@ value_t continue_sigmap_lookup(sigmap_state_t *state, value_t sigmap, value_t sp
 // Reset the scores of a lookup state struct. The pointer fields are assumed to
 // already have been set, this only resets them.
 static void sigmap_state_reset(sigmap_state_t *state) {
-  (state->collector->reset)(state->collector);
+  (state->collector->vtable->reset)(state->collector);
   state->max_is_synthetic = false;
   for (size_t i = 0; i < state->input.argc; i++)
     state->max_score[i] = new_no_match_score();
 }
 
 value_t do_sigmap_lookup(value_t ambience, value_t record, frame_t *frame,
-    sigmap_state_callback_t callback, sigmap_result_collector_t *collector,
+    sigmap_state_callback_t callback, sigmap_collector_o *collector,
     void *data) {
   // For now we only handle lookups of a certain size. Hopefully by the time
   // this is too small this implementation will be gone anyway.
@@ -599,7 +577,7 @@ value_t do_sigmap_lookup(value_t ambience, value_t record, frame_t *frame,
   state.scratch_offsets = offsets_two;
   sigmap_state_reset(&state);
   TRY(callback(&state));
-  return (state.collector->get_result)(state.collector);
+  return (state.collector->vtable->get_result)(state.collector);
 }
 
 // Given an array of offsets, builds and returns an argument map that performs
@@ -615,7 +593,7 @@ static value_t build_argument_map(runtime_t *runtime, size_t offsetc, size_t *of
 }
 
 value_t get_sigmap_lookup_argument_map(sigmap_state_t *state) {
-  value_t result = (state->collector->get_result)(state->collector);
+  value_t result = (state->collector->vtable->get_result)(state->collector);
   if (in_domain(vdCondition, result)) {
     return whatever();
   } else {
@@ -839,42 +817,46 @@ typedef struct {
 // Lookup match collector that keeps the best result seen so far and returns
 // an ambiguity signal if there's no unique best match.
 typedef struct {
-  sigmap_result_collector_t vtable;
+  sigmap_collector_o super;
   value_t result;
-} sigmap_best_match_collector_t;
+} best_match_collector_o;
 
-static value_t sigmap_best_match_collector_add_ambiguous(void *ptr, value_t value) {
-  sigmap_best_match_collector_t *data = (sigmap_best_match_collector_t*) ptr;
-  if (!is_same_value(value, data->result))
+static value_t best_match_collector_add_ambiguous(best_match_collector_o *self,
+    value_t value) {
+  if (!is_same_value(value, self->result))
     // If we hit the exact same entry more than once, which can happen if
     // the same signature map is traversed more than once, that's okay we just
     // skip. Otherwise we've found a genuine ambiguity.
-    data->result = new_lookup_error_condition(lcAmbiguity);
+    self->result = new_lookup_error_condition(lcAmbiguity);
   return success();
 }
 
-static value_t sigmap_best_match_collector_add_better(void *ptr, value_t value) {
-  sigmap_best_match_collector_t *data = (sigmap_best_match_collector_t*) ptr;
-  data->result = value;
+static value_t best_match_collector_add_better(best_match_collector_o *self,
+    value_t value) {
+  self->result = value;
   return success();
 }
 
-static value_t sigmap_best_match_collector_get_result(void *ptr) {
-  sigmap_best_match_collector_t *data = (sigmap_best_match_collector_t*) ptr;
-  return data->result;
+static value_t best_match_collector_get_result(best_match_collector_o *self) {
+  return self->result;
 }
 
-static void sigmap_best_match_collector_reset(void *ptr) {
-  sigmap_best_match_collector_t *data = (sigmap_best_match_collector_t*) ptr;
-  data->result = new_lookup_error_condition(lcNoMatch);
+static void best_match_collector_reset(best_match_collector_o *self) {
+  self->result = new_lookup_error_condition(lcNoMatch);
 }
 
-static void sigmap_best_match_collector_init(sigmap_best_match_collector_t *collector) {
-  collector->vtable.add_ambiguous = sigmap_best_match_collector_add_ambiguous;
-  collector->vtable.add_better = sigmap_best_match_collector_add_better;
-  collector->vtable.get_result = sigmap_best_match_collector_get_result;
-  collector->vtable.reset = sigmap_best_match_collector_reset;
-  sigmap_best_match_collector_reset(collector);
+static sigmap_collector_vtable_t kBestMatchCollectorVTable = {
+  (sigmap_collector_add_ambiguous_m) best_match_collector_add_ambiguous,
+  (sigmap_collector_add_better_m) best_match_collector_add_better,
+  (sigmap_collector_get_result_m) best_match_collector_get_result,
+  (sigmap_collector_reset_m) best_match_collector_reset
+};
+
+static best_match_collector_o best_match_collector_new() {
+  best_match_collector_o result;
+  result.super.vtable = &kBestMatchCollectorVTable;
+  best_match_collector_reset(&result);
+  return result;
 }
 
 // Do a transitive method lookup in the given method space, that is, look up
@@ -905,10 +887,9 @@ value_t lookup_methodspace_method(value_t ambience, value_t methodspace,
   value_and_argument_map_t data;
   data.value = methodspace;
   data.arg_map_out = arg_map_out;
-  sigmap_best_match_collector_t collector;
-  sigmap_best_match_collector_init(&collector);
+  best_match_collector_o collector = best_match_collector_new();
   return do_sigmap_lookup(ambience, record, frame, do_methodspace_method_lookup,
-      (sigmap_result_collector_t*) &collector, &data);
+      (sigmap_collector_o*) &collector, &data);
 }
 
 // A pair of an argument map and a handler output parameter.
@@ -921,51 +902,56 @@ typedef struct {
 // the handler it originates from.
 typedef struct {
   // Vtable that allows this to be cast to a handler.
-  sigmap_result_collector_t vtable;
+  sigmap_collector_o super;
   // The current best result.
   value_t result;
   // The handler of the current best result.
   value_t result_handler;
   // The current handler being looked through.
   value_t current_handler;
-} sigmap_signal_handler_collector_t;
+} signal_handler_collector_o;
 
-static value_t sigmap_signal_handler_collector_add_ambiguous(void *ptr, value_t value) {
+static value_t signal_handler_collector_add_ambiguous(signal_handler_collector_o *self,
+    value_t value) {
   // We're only interested in the first best match, subsequent as-good matches
   // are ignored as less relevant due to them being further down the stack.
   return success();
 }
 
-static value_t sigmap_signal_handler_collector_add_better(void *ptr, value_t value) {
-  sigmap_signal_handler_collector_t *data = (sigmap_signal_handler_collector_t*) ptr;
-  data->result = value;
-  data->result_handler = data->current_handler;
+static value_t signal_handler_collector_add_better(signal_handler_collector_o *self,
+    value_t value) {
+  self->result = value;
+  self->result_handler = self->current_handler;
   return success();
 }
 
-static value_t sigmap_signal_handler_collector_get_result(void *ptr) {
-  sigmap_signal_handler_collector_t *data = (sigmap_signal_handler_collector_t*) ptr;
-  return data->result;
+static value_t signal_handler_collector_get_result(signal_handler_collector_o *self) {
+  return self->result;
 }
 
-static void sigmap_signal_handler_collector_reset(void *ptr) {
-  sigmap_signal_handler_collector_t *data = (sigmap_signal_handler_collector_t*) ptr;
-  data->result = new_lookup_error_condition(lcNoMatch);
-  data->current_handler = data->result_handler = nothing();
+static void signal_handler_collector_reset(signal_handler_collector_o *self) {
+  self->result = new_lookup_error_condition(lcNoMatch);
+  self->current_handler = self->result_handler = nothing();
 }
 
-static void sigmap_signal_handler_collector_init(sigmap_signal_handler_collector_t *collector) {
-  collector->vtable.add_ambiguous = sigmap_signal_handler_collector_add_ambiguous;
-  collector->vtable.add_better = sigmap_signal_handler_collector_add_better;
-  collector->vtable.get_result = sigmap_signal_handler_collector_get_result;
-  collector->vtable.reset = sigmap_signal_handler_collector_reset;
-  sigmap_signal_handler_collector_reset(collector);
+static sigmap_collector_vtable_t kSignalHandlerCollectorVTable = {
+  (sigmap_collector_add_ambiguous_m) signal_handler_collector_add_ambiguous,
+  (sigmap_collector_add_better_m) signal_handler_collector_add_better,
+  (sigmap_collector_get_result_m) signal_handler_collector_get_result,
+  (sigmap_collector_reset_m) signal_handler_collector_reset
+};
+
+static signal_handler_collector_o signal_handler_collector_new() {
+  signal_handler_collector_o result;
+  result.super.vtable = &kSignalHandlerCollectorVTable;
+  signal_handler_collector_reset(&result);
+  return result;
 }
 
 // Performs a lookup through the signal handlers on the stack.
 static value_t do_signal_handler_method_lookup(sigmap_state_t *state) {
-  sigmap_signal_handler_collector_t *collector =
-      (sigmap_signal_handler_collector_t*) state->collector;
+  signal_handler_collector_o *collector =
+      (signal_handler_collector_o*) state->collector;
   barrier_iter_t barrier_iter;
   handler_and_arg_map_t *data = (handler_and_arg_map_t*) state->input.data;
   value_t barrier = barrier_iter_init(&barrier_iter, state->input.frame);
@@ -989,10 +975,9 @@ value_t lookup_signal_handler_method(value_t ambience, value_t record,
   handler_and_arg_map_t data;
   data.handler_out = handler_out;
   data.arg_map_out = arg_map_out;
-  sigmap_signal_handler_collector_t collector;
-  sigmap_signal_handler_collector_init(&collector);
+  signal_handler_collector_o collector = signal_handler_collector_new();
   return do_sigmap_lookup(ambience, record, frame,
-      do_signal_handler_method_lookup, (sigmap_result_collector_t*) &collector,
+      do_signal_handler_method_lookup, (sigmap_collector_o*) &collector,
       &data);
 }
 
@@ -1031,7 +1016,7 @@ static value_t do_full_method_lookup(sigmap_state_t *state) {
   TOPIC_INFO(Lookup, "Performing subject lookup");
   value_t subject = whatever();
   TRY(lookup_subject_methods(state, &subject));
-  value_t result = (state->collector->get_result)(state->collector);
+  value_t result = (state->collector->vtable->get_result)(state->collector);
   TOPIC_INFO(Lookup, "Lookup result: %v", result);
   if (in_family(ofMethod, result)) {
     value_t result_flags = get_method_flags(result);
@@ -1055,10 +1040,9 @@ value_t lookup_method_full(value_t ambience, value_t fragment,
   data.value = fragment;
   data.helper = helper;
   data.arg_map_out = arg_map_out;
-  sigmap_best_match_collector_t collector;
-  sigmap_best_match_collector_init(&collector);
+  best_match_collector_o collector = best_match_collector_new();
   return do_sigmap_lookup(ambience, record, frame, do_full_method_lookup,
-      (sigmap_result_collector_t*) &collector, &data);
+      (sigmap_collector_o*) &collector, &data);
 }
 
 value_t plankton_new_methodspace(runtime_t *runtime) {
