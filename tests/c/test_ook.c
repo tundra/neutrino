@@ -72,7 +72,7 @@ TEST(ook, interaction) {
   ASSERT_FALSE(IS_INSTANCE(origin_o, pc));
   ASSERT_EQ(3, METHOD(pc, get_x)(pc));
   ASSERT_EQ(8, METHOD(pc, get_y)(pc));
-  DOWNCAST(cartesian_o, pc);
+  ASSERT_FALSE(DOWNCAST(cartesian_o, pc) == NULL);
 
   point_o z = origin_new();
   point_o *pz = &z;
@@ -80,5 +80,5 @@ TEST(ook, interaction) {
   ASSERT_FALSE(IS_INSTANCE(cartesian_o, pz));
   ASSERT_EQ(0, METHOD(pz, get_x)(pz));
   ASSERT_EQ(0, METHOD(pz, get_y)(pz));
-  DOWNCAST(origin_o, pz);
+  ASSERT_FALSE(DOWNCAST(origin_o, pz) == NULL);
 }
