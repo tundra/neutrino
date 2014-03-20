@@ -73,7 +73,7 @@ typedef struct {
 } scope_vtable_t;
 
 struct scope_o {
-  scope_vtable_t vtable;
+  scope_vtable_t *vtable;
 };
 
 // Invokes a scope lookup callback with a symbol. The result will be stored in

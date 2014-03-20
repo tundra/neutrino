@@ -100,7 +100,7 @@ typedef struct {
 
 // A callback used to issue log messages.
 struct log_o {
-  log_vtable_t vtable;
+  log_vtable_t *vtable;
 };
 
 // Sets the log callback to use across this process. This should only be used

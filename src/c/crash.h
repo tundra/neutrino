@@ -33,7 +33,7 @@ typedef struct {
 
 // A callback used to abort execution.
 struct abort_o {
-  abort_vtable_t vtable;
+  abort_vtable_t *vtable;
 };
 
 // Invokes the given callback with the given arguments.

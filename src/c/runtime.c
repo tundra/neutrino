@@ -7,6 +7,7 @@
 #include "ctrino.h"
 #include "derived.h"
 #include "log.h"
+#include "ook.h"
 #include "runtime-inl.h"
 #include "safe-inl.h"
 #include "try-inl.h"
@@ -485,10 +486,12 @@ static value_t value_validator_visit(value_visitor_o *self, value_t value) {
   }
 }
 
+static value_visitor_vtable_t kValueValidatorVTable = { value_validator_visit };
+
 value_t runtime_validate(runtime_t *runtime, value_t cause) {
   TRY(heap_validate(&runtime->heap));
   value_visitor_o visitor;
-  visitor.vtable.visit = value_validator_visit;
+  visitor.vtable = &kValueValidatorVTable;
   TRY(heap_for_each_object(&runtime->heap, &visitor));
   return success();
 }
@@ -575,11 +578,15 @@ typedef struct {
 static value_t migrate_field_shallow(garbage_collection_state_o *self,
     value_t *field);
 
+static field_visitor_vtable_t kGarbageCollectionStateVTable = {
+  (field_visitor_visit_m) migrate_field_shallow
+};
+
 // Initializes a garbage collection state object.
 static garbage_collection_state_o garbage_collection_state_new(runtime_t *runtime) {
   garbage_collection_state_o result;
   result.runtime = runtime;
-  result.super.vtable.visit = (field_visitor_visit_m) migrate_field_shallow;
+  result.super.vtable = &kGarbageCollectionStateVTable;
   pending_fixup_worklist_init(&result.pending_fixups);
   return result;
 }
@@ -702,7 +709,7 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
   TRY(heap_prepare_garbage_collection(&runtime->heap));
   // Initialize the state we'll maintain during collection.
   garbage_collection_state_o state = garbage_collection_state_new(runtime);
-  field_visitor_o *visitor = (field_visitor_o*) &state;
+  field_visitor_o *visitor = UPCAST(&state);
   // Shallow migration of all the roots.
   TRY(field_visitor_visit(visitor, &runtime->roots));
   TRY(field_visitor_visit(visitor, &runtime->mutable_roots));

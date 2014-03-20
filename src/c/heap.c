@@ -4,6 +4,7 @@
 #include "behavior.h"
 #include "check.h"
 #include "heap.h"
+#include "ook.h"
 #include "try-inl.h"
 #include "value-inl.h"
 
@@ -11,11 +12,11 @@
 // --- M i s c ---
 
 value_t value_visitor_visit(value_visitor_o *self, value_t value) {
-  return (self->vtable.visit)(self, value);
+  return METHOD(self, visit)(self, value);
 }
 
 value_t field_visitor_visit(field_visitor_o *self, value_t *value) {
-  return (self->vtable.visit)(self, value);
+  return METHOD(self, visit)(self, value);
 }
 
 
@@ -269,6 +270,10 @@ static value_t field_delegator_visit(field_delegator_o *self, value_t object) {
   return success();
 }
 
+static value_visitor_vtable_t kFieldDelegatorVTable = {
+  (value_visitor_visit_m) field_delegator_visit
+};
+
 value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor) {
   object_tracker_iter_t iter;
   object_tracker_iter_init(&iter, heap);
@@ -278,9 +283,9 @@ value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor) {
     object_tracker_iter_advance(&iter);
   }
   field_delegator_o delegator;
-  delegator.super.vtable.visit = (value_visitor_visit_m) field_delegator_visit;
+  delegator.super.vtable = &kFieldDelegatorVTable;
   delegator.field_visitor = visitor;
-  return space_for_each_object(&heap->to_space, (value_visitor_o*) &delegator);
+  return space_for_each_object(&heap->to_space, UPCAST(&delegator));
 }
 
 value_t heap_prepare_garbage_collection(heap_t *heap) {

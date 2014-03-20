@@ -6,11 +6,12 @@
 #include "check.h"
 #include "crash.h"
 #include "log.h"
+#include "ook.h"
 #include "runtime.h"
-#include "test.h"
-#include "utils.h"
 #include "tagged.h"
+#include "test.h"
 #include "try-inl.h"
+#include "utils.h"
 #include "value-inl.h"
 
 #include <stdio.h>
@@ -229,11 +230,13 @@ static void recorder_abort_callback(check_recorder_t *self, abort_message_t *mes
   self->last_cause = (consition_cause_t) message->condition_cause;
 }
 
+static abort_vtable_t kCheckRecorderVTable = { (abort_m) recorder_abort_callback };
+
 void install_check_recorder(check_recorder_t *recorder) {
   recorder->count = 0;
   recorder->last_cause = __ccFirst__;
-  recorder->super.vtable.abort = (abort_m) recorder_abort_callback;
-  recorder->previous = set_global_abort((abort_o*) recorder);
+  recorder->super.vtable = &kCheckRecorderVTable;
+  recorder->previous = set_global_abort(UPCAST(recorder));
   CHECK_TRUE("no previous abort callback", recorder->previous != NULL);
 }
 
@@ -243,22 +246,24 @@ void uninstall_check_recorder(check_recorder_t *recorder) {
   recorder->previous = NULL;
 }
 
-static void validator_log_callback(log_validator_o *self, log_entry_t *entry) {
+static void log_validator_log(log_validator_o *self, log_entry_t *entry) {
   self->count++;
   // Temporarily restore the previous log callback in case validation wants to
   // log (which it typically will on validation failure).
   set_global_log(self->previous);
-  (self->validate_callback)((log_o*) self, entry);
-  set_global_log((log_o*) self);
+  (self->validate_callback)(UPCAST(self), entry);
+  set_global_log(UPCAST(self));
 }
+
+static log_vtable_t kLogValidatorVTable = { (log_m) log_validator_log };
 
 void install_log_validator(log_validator_o *validator, log_m callback,
     void *data) {
   validator->count = 0;
   validator->validate_callback = callback;
   validator->validate_data = data;
-  validator->super.vtable.log = (log_m) validator_log_callback;
-  validator->previous = set_global_log((log_o*) validator);
+  validator->super.vtable = &kLogValidatorVTable;
+  validator->previous = set_global_log(UPCAST(validator));
   CHECK_TRUE("no previous log callback", validator->previous != NULL);
 }
 

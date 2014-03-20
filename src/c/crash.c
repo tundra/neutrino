@@ -3,6 +3,7 @@
 
 #include "crash.h"
 #include "log.h"
+#include "ook.h"
 
 #ifdef IS_GCC
 #include "crash-posix-opt.c"
@@ -23,9 +24,11 @@ static void default_abort(abort_o *self, abort_message_t *message) {
   abort();
 }
 
+static abort_vtable_t kDefaultAbortVTable = { default_abort };
+
 abort_o *get_global_abort() {
   if (global_abort == NULL) {
-    kDefaultAbort.vtable.abort = default_abort;
+    kDefaultAbort.vtable = &kDefaultAbortVTable;
     global_abort = &kDefaultAbort;
   }
   return global_abort;
@@ -33,7 +36,7 @@ abort_o *get_global_abort() {
 
 // Invokes the given callback with the given arguments.
 void abort_call(abort_o *self, abort_message_t *message) {
-  (self->vtable.abort)(self, message);
+  METHOD(self, abort)(self, message);
 }
 
 abort_o *set_global_abort(abort_o *value) {

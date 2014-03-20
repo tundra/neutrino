@@ -4,6 +4,7 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "log.h"
+#include "ook.h"
 #include "runtime-inl.h"
 #include "syntax.h"
 #include "try-inl.h"
@@ -467,7 +468,7 @@ static value_t emit_ensurer(value_t code, assembler_t *assm) {
   TRY(assembler_push_block_scope(assm, &block_scope));
 
   TRY_DEF(code_block, compile_expression(assm->runtime, code, assm->fragment,
-        (scope_o*) &block_scope));
+        UPCAST(&block_scope)));
 
   // Pop the block scope off, we're done refracting.
   assembler_pop_block_scope(assm, &block_scope);

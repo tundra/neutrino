@@ -32,7 +32,7 @@ typedef struct {
 // A virtual visitor type that can be used to traverse values in the heap.
 struct value_visitor_o {
   // The callback to invoke for each value.
-  value_visitor_vtable_t vtable;
+  value_visitor_vtable_t *vtable;
 };
 
 // Invokes the given callback with the given value.
@@ -51,7 +51,7 @@ typedef struct {
 // A callback along with a data pointer that can be used to iterate through a
 // set of fields.
 struct field_visitor_o {
-  field_visitor_vtable_t vtable;
+  field_visitor_vtable_t *vtable;
 };
 
 // Invokes the given callback with the given value.
