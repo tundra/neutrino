@@ -45,8 +45,8 @@ struct frame_sigmap_input_o {
   frame_t *frame;
 };
 
-void frame_sigmap_input_init(frame_sigmap_input_o *self, value_t ambience,
-    value_t tags, frame_t *frame);
+frame_sigmap_input_o frame_sigmap_input_new(value_t ambience, value_t tags,
+    frame_t *frame);
 
 // Returns the number of arguments of this call.
 size_t sigmap_input_get_argument_count(sigmap_input_o *self);
@@ -303,8 +303,8 @@ typedef value_t (sigmap_state_callback_t)(sigmap_state_t *state);
 // continue_signature_map_lookup for each of them. When the callback returns
 // this function completes the lookup and returns the result or a condition as
 // appropriate.
-value_t do_sigmap_lookup(value_t ambience, value_t tags, frame_t *frame,
-    sigmap_thunk_o *callback, sigmap_output_o *output);
+value_t do_sigmap_lookup(sigmap_thunk_o *callback, sigmap_input_o *input,
+    sigmap_output_o *output);
 
 // Includes the given signature map in the lookup associated with the given
 // lookup state.

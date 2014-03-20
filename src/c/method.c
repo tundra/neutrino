@@ -43,11 +43,13 @@ static sigmap_input_vtable_t kFrameSigmapVTable = {
   (sigmap_input_get_value_at_m) frame_sigmap_input_get_value_at
 };
 
-void frame_sigmap_input_init(frame_sigmap_input_o *self, value_t ambience,
-    value_t tags, frame_t *frame) {
-  self->super.vtable = &kFrameSigmapVTable;
-  self->frame = frame;
-  sigmap_input_init(&self->super, ambience, tags);
+frame_sigmap_input_o frame_sigmap_input_new(value_t ambience, value_t tags,
+    frame_t *frame) {
+  frame_sigmap_input_o result;
+  result.super.vtable = &kFrameSigmapVTable;
+  result.frame = frame;
+  sigmap_input_init(&result.super, ambience, tags);
+  return result;
 }
 
 FORWARD(sigmap_thunk_o);
@@ -601,27 +603,25 @@ static void sigmap_state_reset(sigmap_state_t *state) {
     state->max_score[i] = new_no_match_score();
 }
 
-value_t do_sigmap_lookup(value_t ambience, value_t tags, frame_t *frame,
-    sigmap_thunk_o *callback, sigmap_output_o *output) {
+value_t do_sigmap_lookup(sigmap_thunk_o *thunk, sigmap_input_o *input,
+    sigmap_output_o *output) {
   // For now we only handle lookups of a certain size. Hopefully by the time
   // this is too small this implementation will be gone anyway.
-  size_t arg_count = get_call_tags_entry_count(tags);
-  CHECK_REL("too many arguments", arg_count, <=, kSmallLookupLimit);
+  size_t argc = sigmap_input_get_argument_count(input);
+  CHECK_REL("too many arguments", argc, <=, kSmallLookupLimit);
   // Initialize the lookup state using stack-allocated space.
   value_t max_score[kSmallLookupLimit];
   size_t offsets_one[kSmallLookupLimit];
   size_t offsets_two[kSmallLookupLimit];
-  frame_sigmap_input_o input;
-  frame_sigmap_input_init(&input, ambience, tags, frame);
   sigmap_state_t state;
-  state.input = (sigmap_input_o*) &input;
+  state.input = input;
   state.output = output;
   state.max_score = max_score;
   state.result_offsets = offsets_one;
   state.scratch_offsets = offsets_two;
   sigmap_state_reset(&state);
-  callback->state = &state;
-  TRY((callback->vtable.callback)(callback));
+  thunk->state = &state;
+  TRY((thunk->vtable.callback)(thunk));
   return (state.output->vtable->get_result)(state.output);
 }
 
@@ -931,7 +931,8 @@ value_t lookup_methodspace_method(value_t ambience, value_t methodspace,
   thunk.methodspace = methodspace;
   thunk.arg_map_out = arg_map_out;
   unique_best_match_output_o output = unique_best_match_output_new();
-  return do_sigmap_lookup(ambience, tags, frame, (sigmap_thunk_o*) &thunk,
+  frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags, frame);
+  return do_sigmap_lookup((sigmap_thunk_o*) &thunk, (sigmap_input_o*) &input,
       (sigmap_output_o*) &output);
 }
 
@@ -1021,7 +1022,8 @@ value_t lookup_signal_handler_method(value_t ambience, value_t tags,
   thunk.arg_map_out = arg_map_out;
   thunk.frame = frame;
   signal_handler_output_o output = signal_handler_output_new();
-  return do_sigmap_lookup(ambience, tags, frame, (sigmap_thunk_o*) &thunk,
+  frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags, frame);
+  return do_sigmap_lookup((sigmap_thunk_o*) &thunk, (sigmap_input_o*) &input,
       (sigmap_output_o*) &output);
 }
 
@@ -1097,7 +1099,8 @@ value_t lookup_method_full(value_t ambience, value_t fragment,
   thunk.helper = helper;
   thunk.arg_map_out = arg_map_out;
   unique_best_match_output_o output = unique_best_match_output_new();
-  return do_sigmap_lookup(ambience, tags, frame, (sigmap_thunk_o*) &thunk,
+  frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags, frame);
+  return do_sigmap_lookup((sigmap_thunk_o*) &thunk, (sigmap_input_o*) &input,
       (sigmap_output_o*) &output);
 }
 
