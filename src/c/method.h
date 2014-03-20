@@ -15,8 +15,14 @@ INTERFACE(sigmap_input_o);
 // Returns the value of the index'th argument in sorted tag order.
 typedef value_t (*sigmap_input_get_value_at_m)(sigmap_input_o *self, size_t index);
 
+// Matches the index'th argument to this call against the given guard, storing
+// the result in the score_out parameter. If the match fails for whatever reason
+// a signal is returned.
+typedef value_t (*sigmap_input_match_value_at_m)(sigmap_input_o *self, size_t index,
+    value_t guard, value_t space, value_t *score_out);
+
 struct sigmap_input_o_vtable_t {
-  sigmap_input_get_value_at_m get_value_at;
+  sigmap_input_match_value_at_m match_value_at;
 };
 
 // Input to a signature map lookup. This is the stuff that's fixed across the
@@ -38,9 +44,19 @@ struct sigmap_input_o {
 // Initializes an input struct appropriately.
 void sigmap_input_init(sigmap_input_o *self, value_t ambience, value_t tags);
 
+// Returns the number of arguments of this call.
+size_t sigmap_input_get_argument_count(sigmap_input_o *self);
+
+// Returns the tag of the index'th argument in sorted order.
+value_t sigmap_input_get_tag_at(sigmap_input_o *self, size_t index);
+
+// Returns the stack offset of the index'th argument in sorted tag order.
+size_t sigmap_input_get_offset_at(sigmap_input_o *self, size_t index);
+
 
 IMPLEMENTATION(frame_sigmap_input_o, sigmap_input_o);
 
+// Sigmap input that gets the values of arguments from a frame.
 struct frame_sigmap_input_o {
   sigmap_input_o super;
   frame_t *frame;
@@ -49,17 +65,8 @@ struct frame_sigmap_input_o {
 frame_sigmap_input_o frame_sigmap_input_new(value_t ambience, value_t tags,
     frame_t *frame);
 
-// Returns the number of arguments of this call.
-size_t sigmap_input_get_argument_count(sigmap_input_o *self);
-
-// Returns the tag of the index'th argument in sorted order.
-value_t sigmap_input_get_tag_at(sigmap_input_o *self, size_t index);
-
 // Returns the value of the index'th argument in sorted tag order.
-value_t sigmap_input_get_value_at(sigmap_input_o *self, size_t index);
-
-// Returns the stack offset of the index'th argument in sorted tag order.
-size_t sigmap_input_get_offset_at(sigmap_input_o *self, size_t index);
+value_t frame_sigmap_input_get_value_at(frame_sigmap_input_o *self, size_t index);
 
 
 // --- S i g n a t u r e ---
