@@ -8,6 +8,7 @@
 #define _HEAP
 
 #include "globals.h"
+#include "ook.h"
 #include "safe.h"
 #include "utils.h"
 #include "value.h"
@@ -20,38 +21,37 @@ static const byte_t kFreedHeapMarker = 0xD0;
 
 // --- M i s c ---
 
-FORWARD(value_visitor_o);
+INTERFACE(value_visitor_o);
 
 // The type of a value callback function.
 typedef value_t (*value_visitor_visit_m)(value_visitor_o *self, value_t value);
 
-typedef struct {
+struct value_visitor_o_vtable_t {
   value_visitor_visit_m visit;
-} value_visitor_vtable_t;
+};
 
 // A virtual visitor type that can be used to traverse values in the heap.
 struct value_visitor_o {
-  // The callback to invoke for each value.
-  value_visitor_vtable_t vtable;
+  VTABLE_FIELD(value_visitor_o);
 };
 
 // Invokes the given callback with the given value.
 value_t value_visitor_visit(value_visitor_o *self, value_t value);
 
 
-FORWARD(field_visitor_o);
+INTERFACE(field_visitor_o);
 
 // The type of a field (pointer to value) function.
 typedef value_t (*field_visitor_visit_m)(field_visitor_o *self, value_t *field);
 
-typedef struct {
+struct field_visitor_o_vtable_t {
   field_visitor_visit_m visit;
-} field_visitor_vtable_t;
+};
 
 // A callback along with a data pointer that can be used to iterate through a
 // set of fields.
 struct field_visitor_o {
-  field_visitor_vtable_t vtable;
+  VTABLE_FIELD(field_visitor_o);
 };
 
 // Invokes the given callback with the given value.

@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "log.h"
+#include "ook.h"
 #include "utils.h"
 
 #include <time.h>
@@ -55,6 +56,8 @@ void log_message(log_level_t level, const char *file, int line, const char *fmt,
   va_end(argp);
 }
 
+IMPLEMENTATION(default_log_o, log_o);
+
 static log_o kDefaultLog;
 static log_o *global_log = NULL;
 
@@ -73,10 +76,12 @@ static void default_log(log_o *log, log_entry_t *entry) {
   }
 }
 
+VTABLE(default_log_o, log_o) { default_log };
+
 // Returns the current global abort callback.
 static log_o *get_global_log() {
   if (global_log == NULL) {
-    kDefaultLog.vtable.log = default_log;
+    VTABLE_INIT(default_log_o, &kDefaultLog);
     global_log = &kDefaultLog;
   }
   return global_log;
@@ -123,6 +128,6 @@ void vlog_message(log_level_t level, const char *file, int line, const char *fmt
   log_entry_init(&entry, destination, file, line, level, &message_str,
       &timestamp_str);
   log_o *log = get_global_log();
-  (log->vtable.log)(log, &entry);
+  METHOD(log, log)(log, &entry);
   string_buffer_dispose(&buf);
 }

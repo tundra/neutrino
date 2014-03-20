@@ -8,6 +8,7 @@
 #define _CODEGEN
 
 #include "interp.h"
+#include "ook.h"
 #include "value.h"
 
 
@@ -59,7 +60,7 @@ typedef struct {
 void binding_info_set(binding_info_t *info, binding_type_t type, uint16_t data,
     uint16_t block_depth);
 
-FORWARD(scope_o);
+INTERFACE(scope_o);
 
 // A function that performs a scoped lookup. If the info_out argument is NULL
 // we're only checking whether the binding exists, not actually accessing it.
@@ -68,12 +69,12 @@ FORWARD(scope_o);
 typedef value_t (*scope_lookup_m)(scope_o *self, value_t symbol,
     binding_info_t *info_out);
 
-typedef struct {
+struct scope_o_vtable_t {
   scope_lookup_m lookup;
-} scope_vtable_t;
+};
 
 struct scope_o {
-  scope_vtable_t vtable;
+  VTABLE_FIELD(scope_o);
 };
 
 // Invokes a scope lookup callback with a symbol. The result will be stored in
@@ -304,9 +305,10 @@ value_t assembler_emit_stack_bottom(assembler_t *assm);
 // bottom of one stack piece and should step down to the next piece.
 value_t assembler_emit_stack_piece_bottom(assembler_t *assm);
 
+IMPLEMENTATION(single_symbol_scope_o, scope_o);
 
 // A scope defining a single symbol.
-typedef struct {
+struct single_symbol_scope_o {
   scope_o super;
   // The symbol.
   value_t symbol;
@@ -314,7 +316,7 @@ typedef struct {
   binding_info_t binding;
   // The enclosing scope.
   scope_o *outer;
-} single_symbol_scope_o;
+};
 
 // Pushes a single symbol scope onto the scope stack.
 void assembler_push_single_symbol_scope(assembler_t *assm,
@@ -324,9 +326,10 @@ void assembler_push_single_symbol_scope(assembler_t *assm,
 void assembler_pop_single_symbol_scope(assembler_t *assm,
     single_symbol_scope_o *scope);
 
+IMPLEMENTATION(map_scope_o, scope_o);
 
 // A scope whose symbols are defined in a hash map.
-typedef struct {
+struct map_scope_o {
   scope_o super;
   // The map of symbols.
   value_t map;
@@ -334,7 +337,7 @@ typedef struct {
   scope_o *outer;
   // The assembler this scope belongs to.
   assembler_t *assembler;
-} map_scope_o;
+};
 
 // Pushes a map symbol scope onto the scope stack. This involves allocating a
 // map on the heap and if that fails a condition is returned.
@@ -348,10 +351,11 @@ void assembler_pop_map_scope(assembler_t *assm, map_scope_o *scope);
 value_t map_scope_bind(map_scope_o *scope, value_t symbol, binding_type_t type,
     uint32_t data);
 
+IMPLEMENTATION(lambda_scope_o, scope_o);
 
 // A scope that records any variables looked up in an enclosing scope and turns
 // them into captures rather than direct access.
-typedef struct {
+struct lambda_scope_o {
   scope_o super;
   // Then enclosing scope.
   scope_o *outer;
@@ -359,7 +363,7 @@ typedef struct {
   value_t captures;
   // The assembler this scope belongs to.
   assembler_t *assembler;
-} lambda_scope_o;
+};
 
 // Pushes a lambda scope onto the scope stack.
 value_t assembler_push_lambda_scope(assembler_t *assm, lambda_scope_o *scope);
@@ -367,15 +371,16 @@ value_t assembler_push_lambda_scope(assembler_t *assm, lambda_scope_o *scope);
 // Pops a lambda scope off the scope stack.
 void assembler_pop_lambda_scope(assembler_t *assm, lambda_scope_o *scope);
 
+IMPLEMENTATION(block_scope_o, scope_o);
 
 // A scope that turns direct access to symbols into indirect block reads.
-typedef struct {
+struct block_scope_o {
   scope_o super;
   // Then enclosing scope.
   scope_o *outer;
   // The assembler this scope belongs to.
   assembler_t *assembler;
-} block_scope_o;
+};
 
 // Pushes a block scope onto the scope stack.
 value_t assembler_push_block_scope(assembler_t *assm, block_scope_o *scope);

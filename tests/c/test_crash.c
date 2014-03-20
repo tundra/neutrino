@@ -10,7 +10,7 @@ static value_t do_check(bool value, consition_cause_t cause) {
 
 TEST(crash, soft_check_failures) {
   IF_CHECKS_DISABLED(return);
-  check_recorder_t recorder;
+  check_recorder_o recorder;
   install_check_recorder(&recorder);
 
   ASSERT_EQ(0, recorder.count);
@@ -26,7 +26,7 @@ TEST(crash, soft_check_failures) {
   ASSERT_EQ(2, recorder.count);
   ASSERT_EQ(ccNotFound, recorder.last_cause);
 
-  check_recorder_t inner;
+  check_recorder_o inner;
   install_check_recorder(&inner);
   ASSERT_CONDITION(ccOutOfBounds, do_check(false, ccOutOfBounds));
   ASSERT_EQ(2, recorder.count);

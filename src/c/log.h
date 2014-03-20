@@ -8,6 +8,7 @@
 #define _LOG
 
 #include "globals.h"
+#include "ook.h"
 #include "utils.h"
 
 #include <stdarg.h>
@@ -89,18 +90,18 @@ typedef struct {
 void log_entry_init(log_entry_t *entry, log_stream_t destination, const char *file,
     int line, log_level_t level, string_t *message, string_t *timestamp);
 
-FORWARD(log_o);
+INTERFACE(log_o);
 
 // Type of log functions.
 typedef void (*log_m)(log_o *self, log_entry_t *entry);
 
-typedef struct {
+struct log_o_vtable_t {
   log_m log;
-} log_vtable_t;
+};
 
 // A callback used to issue log messages.
 struct log_o {
-  log_vtable_t vtable;
+  VTABLE_FIELD(log_o);
 };
 
 // Sets the log callback to use across this process. This should only be used

@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "alloc.h"
+#include "ook.h"
 #include "runtime.h"
 #include "tagged-inl.h"
 #include "test.h"
@@ -10,9 +11,9 @@
 // Checks that scoring value against guard gives a match iff is_match is true.
 #define ASSERT_MATCH(is_match, guard, value) do {                              \
   value_t match;                                                               \
-  sigmap_input_t lookup_input;                                                 \
-  sigmap_input_init(&lookup_input, ambience, whatever(), NULL, NULL, 0);       \
-  ASSERT_SUCCESS(guard_match(guard, value, &lookup_input, space, &match));     \
+  frame_sigmap_input_o lookup_input = frame_sigmap_input_new(ambience, nothing(), NULL); \
+  sigmap_input_o *input = UPCAST(&lookup_input);                               \
+  ASSERT_SUCCESS(guard_match(guard, value, input, space, &match));             \
   ASSERT_EQ(is_match, is_score_match(match));                                  \
 } while (false)
 
@@ -121,11 +122,11 @@ TEST(method, simple_is) {
 // matching GB against VB.
 #define ASSERT_COMPARE(GA, VA, REL, GB, VB) do {                               \
   value_t score_a;                                                             \
-  sigmap_input_t lookup_input;                                                 \
-  sigmap_input_init(&lookup_input, ambience, whatever(), NULL, NULL, 0);       \
-  ASSERT_SUCCESS(guard_match(GA, VA, &lookup_input, space, &score_a));         \
+  frame_sigmap_input_o lookup_input = frame_sigmap_input_new(ambience, nothing(), NULL); \
+  sigmap_input_o *input = UPCAST(&lookup_input);                               \
+  ASSERT_SUCCESS(guard_match(GA, VA, input, space, &score_a));                 \
   value_t score_b;                                                             \
-  ASSERT_SUCCESS(guard_match(GB, VB, &lookup_input, space, &score_b));         \
+  ASSERT_SUCCESS(guard_match(GB, VB, input, space, &score_b));                 \
   ASSERT_TRUE(compare_tagged_scores(score_a, score_b) REL 0);                  \
 } while (false)
 
@@ -418,11 +419,9 @@ void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
   match_info_t match_info;
   match_info_init(&match_info, scores, offsets, kLength);
   match_result_t result = __mrNone__;
-  sigmap_input_t input;
-  sigmap_input_init(&input, ambience, call_tags, &frame, NULL,
-      arg_count);
-  ASSERT_SUCCESS(match_signature(signature, &input, nothing(), &match_info,
-      &result));
+  frame_sigmap_input_o input = frame_sigmap_input_new(ambience, call_tags, &frame);
+  ASSERT_SUCCESS(match_signature(signature, UPCAST(&input), nothing(),
+      &match_info, &result));
   ASSERT_EQ(expected_result, result);
   if (expected_offsets != NULL) {
     for (size_t i = 0; i < arg_count; i++)

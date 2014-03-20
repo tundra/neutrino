@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "codegen.h"
 #include "log.h"
+#include "ook-inl.h"
 #include "try-inl.h"
 #include "value-inl.h"
 
@@ -24,26 +25,31 @@ void binding_info_set(binding_info_t *info, binding_type_t type, uint16_t data,
 static scope_o kBottomScope;
 static scope_o *bottom_scope = NULL;
 
+IMPLEMENTATION(bottom_scope_o, scope_o);
+
 static value_t bottom_scope_lookup(scope_o *self, value_t symbol, binding_info_t *info_out) {
   return new_not_found_condition();
 }
 
+VTABLE(bottom_scope_o, scope_o) { bottom_scope_lookup };
+
 // Returns the bottom callback that never finds symbols.
 scope_o *scope_get_bottom() {
   if (bottom_scope == NULL) {
-    kBottomScope.vtable.lookup = bottom_scope_lookup;
+    VTABLE_INIT(bottom_scope_o, &kBottomScope);
     bottom_scope = &kBottomScope;
   }
   return bottom_scope;
 }
 
 value_t scope_lookup(scope_o *self, value_t symbol, binding_info_t *info_out) {
-  return (self->vtable.lookup)(self, symbol, info_out);
+  return METHOD(self, lookup)(self, symbol, info_out);
 }
 
 // Performs a lookup for a single symbol scope.
-static value_t single_symbol_scope_lookup(single_symbol_scope_o *self, value_t symbol,
+static value_t single_symbol_scope_lookup(scope_o *super_self, value_t symbol,
     binding_info_t *info_out) {
+  single_symbol_scope_o *self = DOWNCAST(single_symbol_scope_o, super_self);
   if (value_identity_compare(symbol, self->symbol)) {
     if (info_out != NULL)
       *info_out = self->binding;
@@ -53,13 +59,15 @@ static value_t single_symbol_scope_lookup(single_symbol_scope_o *self, value_t s
   }
 }
 
+VTABLE(single_symbol_scope_o, scope_o) { single_symbol_scope_lookup };
+
 void assembler_push_single_symbol_scope(assembler_t *assm,
     single_symbol_scope_o *scope, value_t symbol, binding_type_t type,
     uint32_t data) {
-  scope->super.vtable.lookup = (scope_lookup_m) single_symbol_scope_lookup;
+  VTABLE_INIT(single_symbol_scope_o, UPCAST(scope));
   scope->symbol = symbol;
   binding_info_set(&scope->binding, type, data, 0);
-  scope->outer = assembler_set_scope(assm, (scope_o*) scope);
+  scope->outer = assembler_set_scope(assm, UPCAST(scope));
 }
 
 void assembler_pop_single_symbol_scope(assembler_t *assm,
@@ -76,8 +84,9 @@ typedef union {
 } binding_info_codec_t;
 
 // Performs a lookup for a single symbol scope.
-static value_t map_scope_lookup(map_scope_o *self, value_t symbol,
+static value_t map_scope_lookup(scope_o *super_self, value_t symbol,
     binding_info_t *info_out) {
+  map_scope_o *self = DOWNCAST(map_scope_o, super_self);
   value_t value = get_id_hash_map_at(self->map, symbol);
   if (in_condition_cause(ccNotFound, value)) {
     return scope_lookup(self->outer, symbol, info_out);
@@ -91,10 +100,12 @@ static value_t map_scope_lookup(map_scope_o *self, value_t symbol,
   }
 }
 
+VTABLE(map_scope_o, scope_o) { map_scope_lookup };
+
 value_t assembler_push_map_scope(assembler_t *assm, map_scope_o *scope) {
   TRY_SET(scope->map, new_heap_id_hash_map(assm->runtime, 8));
-  scope->super.vtable.lookup = (scope_lookup_m) map_scope_lookup;
-  scope->outer = assembler_set_scope(assm, (scope_o*) scope);
+  VTABLE_INIT(map_scope_o, UPCAST(scope));
+  scope->outer = assembler_set_scope(assm, UPCAST(scope));
   scope->assembler = assm;
   return success();
 }
@@ -113,8 +124,9 @@ value_t map_scope_bind(map_scope_o *scope, value_t symbol, binding_type_t type,
   return success();
 }
 
-static value_t lambda_scope_lookup(lambda_scope_o *self, value_t symbol,
+static value_t lambda_scope_lookup(scope_o *super_self, value_t symbol,
     binding_info_t *info_out) {
+  lambda_scope_o *self = DOWNCAST(lambda_scope_o, super_self);
   size_t capture_count_before = get_array_buffer_length(self->captures);
   // See if we've captured this variable before.
   for (size_t i = 0; i < capture_count_before; i++) {
@@ -142,9 +154,11 @@ static value_t lambda_scope_lookup(lambda_scope_o *self, value_t symbol,
   return value;
 }
 
+VTABLE(lambda_scope_o, scope_o) { lambda_scope_lookup };
+
 value_t assembler_push_lambda_scope(assembler_t *assm, lambda_scope_o *scope) {
-  scope->super.vtable.lookup = (scope_lookup_m) lambda_scope_lookup;
-  scope->outer = assembler_set_scope(assm, (scope_o*) scope);
+  VTABLE_INIT(lambda_scope_o, UPCAST(scope));
+  scope->outer = assembler_set_scope(assm, UPCAST(scope));
   scope->captures = ROOT(assm->runtime, empty_array_buffer);
   scope->assembler = assm;
   return success();
@@ -155,8 +169,9 @@ void assembler_pop_lambda_scope(assembler_t *assm, lambda_scope_o *scope) {
   assm->scope = scope->outer;
 }
 
-static value_t block_scope_lookup(block_scope_o *self, value_t symbol,
+static value_t block_scope_lookup(scope_o *super_self, value_t symbol,
     binding_info_t *info_out) {
+  block_scope_o *self = DOWNCAST(block_scope_o, super_self);
   // Look up outside this scope.
   value_t value = scope_lookup(self->outer, symbol, info_out);
   if (info_out != NULL && !in_condition_cause(ccNotFound, value))
@@ -166,9 +181,11 @@ static value_t block_scope_lookup(block_scope_o *self, value_t symbol,
   return value;
 }
 
+VTABLE(block_scope_o, scope_o) { block_scope_lookup };
+
 value_t assembler_push_block_scope(assembler_t *assm, block_scope_o *scope) {
-  scope->super.vtable.lookup = (scope_lookup_m) block_scope_lookup;
-  scope->outer = assembler_set_scope(assm, (scope_o*) scope);
+  VTABLE_INIT(block_scope_o, UPCAST(scope));
+  scope->outer = assembler_set_scope(assm, UPCAST(scope));
   scope->assembler = assm;
   return success();
 }

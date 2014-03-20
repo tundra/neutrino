@@ -9,6 +9,7 @@
 #define _CRASH
 
 #include "globals.h"
+#include "ook.h"
 
 // Data used to construct the message displayed when the runtime aborts.
 typedef struct {
@@ -22,18 +23,18 @@ typedef struct {
 void abort_message_init(abort_message_t *message, const char *file, int line,
     int condition_cause, const char *text);
 
-FORWARD(abort_o);
+INTERFACE(abort_o);
 
 // Type of abort functions.
 typedef void (*abort_m)(abort_o *self, abort_message_t *message);
 
-typedef struct {
+struct abort_o_vtable_t {
   abort_m abort;
-} abort_vtable_t;
+};
 
 // A callback used to abort execution.
 struct abort_o {
-  abort_vtable_t vtable;
+  VTABLE_FIELD(abort_o);
 };
 
 // Invokes the given callback with the given arguments.

@@ -7,6 +7,7 @@
 #include "ctrino.h"
 #include "derived.h"
 #include "log.h"
+#include "ook-inl.h"
 #include "runtime-inl.h"
 #include "safe-inl.h"
 #include "try-inl.h"
@@ -473,6 +474,8 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
   return success();
 }
 
+IMPLEMENTATION(value_validator_o, value_visitor_o);
+
 // Adaptor function for passing object validate as a value visitor.
 static value_t value_validator_visit(value_visitor_o *self, value_t value) {
   switch (get_value_domain(value)) {
@@ -485,10 +488,12 @@ static value_t value_validator_visit(value_visitor_o *self, value_t value) {
   }
 }
 
+VTABLE(value_validator_o, value_visitor_o) { value_validator_visit };
+
 value_t runtime_validate(runtime_t *runtime, value_t cause) {
   TRY(heap_validate(&runtime->heap));
   value_visitor_o visitor;
-  visitor.vtable.visit = value_validator_visit;
+  VTABLE_INIT(value_validator_o, &visitor);
   TRY(heap_for_each_object(&runtime->heap, &visitor));
   return success();
 }
@@ -560,26 +565,23 @@ static void pending_fixup_worklist_dispose(pending_fixup_worklist_t *worklist) {
   }
 }
 
+IMPLEMENTATION(garbage_collection_state_o, field_visitor_o);
+
 // State maintained during garbage collection. Also functions as a field visitor
 // such that it's easy to traverse objects.
-typedef struct {
+struct garbage_collection_state_o {
   field_visitor_o super;
   // The runtime we're collecting.
   runtime_t *runtime;
   // List of objects to post-process after migration.
   pending_fixup_worklist_t pending_fixups;
-} garbage_collection_state_o;
-
-// Allocates memory in to-space for the given object and copies it raw into that
-// memory, leaving fields unmigrated.
-static value_t migrate_field_shallow(garbage_collection_state_o *self,
-    value_t *field);
+};
 
 // Initializes a garbage collection state object.
 static garbage_collection_state_o garbage_collection_state_new(runtime_t *runtime) {
   garbage_collection_state_o result;
   result.runtime = runtime;
-  result.super.vtable.visit = (field_visitor_visit_m) migrate_field_shallow;
+  VTABLE_INIT(garbage_collection_state_o, UPCAST(&result));
   pending_fixup_worklist_init(&result.pending_fixups);
   return result;
 }
@@ -666,9 +668,9 @@ static value_t migrate_derived_object(garbage_collection_state_o *self,
 
 // Callback that migrates an object from from to to space, if it hasn't been
 // migrated already.
-static value_t migrate_field_shallow(garbage_collection_state_o *self,
+static value_t migrate_field_shallow(field_visitor_o *super_self,
     value_t *field) {
-//  runtime_t *runtime = field_callback_get_data(callback);
+  garbage_collection_state_o *self = DOWNCAST(garbage_collection_state_o, super_self);
   value_t old_value = *field;
   // If this is not a heap object there's nothing to do.
   value_domain_t domain = get_value_domain(old_value);
@@ -679,6 +681,10 @@ static value_t migrate_field_shallow(garbage_collection_state_o *self,
   }
   return success();
 }
+
+VTABLE(garbage_collection_state_o, field_visitor_o) {
+  migrate_field_shallow
+};
 
 // Applies a post-migration fixup scheduled when migrating the given object.
 static void apply_fixup(runtime_t *runtime, value_t new_heap_object, value_t old_object) {
@@ -702,7 +708,7 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
   TRY(heap_prepare_garbage_collection(&runtime->heap));
   // Initialize the state we'll maintain during collection.
   garbage_collection_state_o state = garbage_collection_state_new(runtime);
-  field_visitor_o *visitor = (field_visitor_o*) &state;
+  field_visitor_o *visitor = UPCAST(&state);
   // Shallow migration of all the roots.
   TRY(field_visitor_visit(visitor, &runtime->roots));
   TRY(field_visitor_visit(visitor, &runtime->mutable_roots));
