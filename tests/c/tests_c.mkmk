@@ -14,6 +14,7 @@ test_file_names = [
   "test_heap.c",
   "test_interp.c",
   "test_method.c",
+  "test_ook.c",
   "test_plankton.c",
   "test_process.c",
   "test_runtime.c",

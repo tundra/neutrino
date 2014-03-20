@@ -56,6 +56,8 @@ void log_message(log_level_t level, const char *file, int line, const char *fmt,
   va_end(argp);
 }
 
+IMPLEMENTATION(default_log_o, log_o);
+
 static log_o kDefaultLog;
 static log_o *global_log = NULL;
 
@@ -74,12 +76,12 @@ static void default_log(log_o *log, log_entry_t *entry) {
   }
 }
 
-static log_vtable_t kDefaultLogVTable = { default_log };
+VTABLE(default_log_o, log_o) { default_log };
 
 // Returns the current global abort callback.
 static log_o *get_global_log() {
   if (global_log == NULL) {
-    kDefaultLog.vtable = &kDefaultLogVTable;
+    VTABLE_INIT(default_log_o, &kDefaultLog);
     global_log = &kDefaultLog;
   }
   return global_log;

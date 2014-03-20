@@ -3,7 +3,7 @@
 
 #include "crash.h"
 #include "log.h"
-#include "ook.h"
+#include "ook-inl.h"
 
 #ifdef IS_GCC
 #include "crash-posix-opt.c"
@@ -12,6 +12,8 @@
 #endif
 
 // --- A b o r t ---
+
+IMPLEMENTATION(default_abort_o, abort_o);
 
 static abort_o kDefaultAbort;
 static abort_o *global_abort = NULL;
@@ -24,11 +26,11 @@ static void default_abort(abort_o *self, abort_message_t *message) {
   abort();
 }
 
-static abort_vtable_t kDefaultAbortVTable = { default_abort };
+VTABLE(default_abort_o, abort_o) { default_abort };
 
 abort_o *get_global_abort() {
   if (global_abort == NULL) {
-    kDefaultAbort.vtable = &kDefaultAbortVTable;
+    VTABLE_INIT(default_abort_o, &kDefaultAbort);
     global_abort = &kDefaultAbort;
   }
   return global_abort;

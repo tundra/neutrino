@@ -6,7 +6,7 @@
 #include "check.h"
 #include "crash.h"
 #include "log.h"
-#include "ook.h"
+#include "ook-inl.h"
 #include "runtime.h"
 #include "tagged.h"
 #include "test.h"
@@ -225,28 +225,30 @@ bool value_structural_equal(value_t a, value_t b) {
   }
 }
 
-static void recorder_abort_callback(check_recorder_t *self, abort_message_t *message) {
+static void recorder_abort_callback(abort_o *super_self, abort_message_t *message) {
+  check_recorder_o *self = DOWNCAST(check_recorder_o, super_self);
   self->count++;
   self->last_cause = (consition_cause_t) message->condition_cause;
 }
 
-static abort_vtable_t kCheckRecorderVTable = { (abort_m) recorder_abort_callback };
+VTABLE(check_recorder_o, abort_o) { recorder_abort_callback };
 
-void install_check_recorder(check_recorder_t *recorder) {
+void install_check_recorder(check_recorder_o *recorder) {
   recorder->count = 0;
   recorder->last_cause = __ccFirst__;
-  recorder->super.vtable = &kCheckRecorderVTable;
+  VTABLE_INIT(check_recorder_o, UPCAST(recorder));
   recorder->previous = set_global_abort(UPCAST(recorder));
   CHECK_TRUE("no previous abort callback", recorder->previous != NULL);
 }
 
-void uninstall_check_recorder(check_recorder_t *recorder) {
+void uninstall_check_recorder(check_recorder_o *recorder) {
   CHECK_TRUE("uninstalling again", recorder->previous != NULL);
   set_global_abort(recorder->previous);
   recorder->previous = NULL;
 }
 
-static void log_validator_log(log_validator_o *self, log_entry_t *entry) {
+static void log_validator_log(log_o *super_self, log_entry_t *entry) {
+  log_validator_o *self = DOWNCAST(log_validator_o, super_self);
   self->count++;
   // Temporarily restore the previous log callback in case validation wants to
   // log (which it typically will on validation failure).
@@ -255,14 +257,14 @@ static void log_validator_log(log_validator_o *self, log_entry_t *entry) {
   set_global_log(UPCAST(self));
 }
 
-static log_vtable_t kLogValidatorVTable = { (log_m) log_validator_log };
+VTABLE(log_validator_o, log_o) { log_validator_log };
 
 void install_log_validator(log_validator_o *validator, log_m callback,
     void *data) {
+  VTABLE_INIT(log_validator_o, UPCAST(validator));
   validator->count = 0;
   validator->validate_callback = callback;
   validator->validate_data = data;
-  validator->super.vtable = &kLogValidatorVTable;
   validator->previous = set_global_log(UPCAST(validator));
   CHECK_TRUE("no previous log callback", validator->previous != NULL);
 }

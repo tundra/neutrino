@@ -4,6 +4,7 @@
 #include "alloc.h"
 #include "condition.h"
 #include "log.h"
+#include "ook.h"
 #include "runtime.h"
 #include "value-inl.h"
 
@@ -31,9 +32,10 @@ ASSERT_SUCCESS(ambience = new_heap_ambience(runtime));
 #define DISPOSE_RUNTIME()                                                      \
 ASSERT_SUCCESS(delete_runtime(runtime));
 
+IMPLEMENTATION(check_recorder_o, abort_o);
 
 // Data recorded about check failures.
-typedef struct {
+struct check_recorder_o {
   abort_o super;
   // How many check failures were triggered?
   size_t count;
@@ -41,19 +43,21 @@ typedef struct {
   consition_cause_t last_cause;
   // The abort callback to restore when we're done recording checks.
   abort_o *previous;
-} check_recorder_t;
+};
 
 // Installs a check recorder and switch to soft check failure mode. This also
 // resets the recorder so it's not necessary to explicitly initialize it in
 // advance. The initial cause is set to a value that is different from all
 // condition causes but the concrete value should not otherwise be relied on.
-void install_check_recorder(check_recorder_t *recorder);
+void install_check_recorder(check_recorder_o *recorder);
 
 // Uninstalls the given check recorder, which must be the currently active one,
 // and restores checks to the same state as before it was installed. The state
 // of the recorder is otherwise left undefined.
-void uninstall_check_recorder(check_recorder_t *recorder);
+void uninstall_check_recorder(check_recorder_o *recorder);
 
+
+IMPLEMENTATION(log_validator_o, log_o);
 
 // Data associated with validating log messages. Unlike the check recorder we
 // don't record log messages since there are some complicated issues around
@@ -62,7 +66,7 @@ void uninstall_check_recorder(check_recorder_t *recorder);
 // correctly but on the other hand you want the data you're going to check to
 // stay alive so uninstalling can't dispose data. Anyway, this seems simpler,
 // do the validation immediately.
-typedef struct {
+struct log_validator_o {
   log_o super;
   // The number of entries that were logged.
   size_t count;
@@ -71,7 +75,7 @@ typedef struct {
   // The pointers used to trampoline to the validate function.
   log_m validate_callback;
   void *validate_data;
-} log_validator_o;
+};
 
 // Installs a log validator. The struct stores data that can be used to
 // uninstall it again, the callback will be invoked for each log entry issued.
@@ -184,7 +188,7 @@ ASSERT_CLASS(consition_cause_t, scCause, EXPR, get_condition_cause)
 } while (false)
 
 #define __ASSERT_CHECK_FAILURE_NO_VALUE_HELPER__(scCause, E) do {              \
-  check_recorder_t __recorder__;                                               \
+  check_recorder_o __recorder__;                                               \
   install_check_recorder(&__recorder__);                                       \
   do { E; } while (false);                                                     \
   ASSERT_EQ(1, __recorder__.count);                                            \

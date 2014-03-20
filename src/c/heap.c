@@ -4,7 +4,7 @@
 #include "behavior.h"
 #include "check.h"
 #include "heap.h"
-#include "ook.h"
+#include "ook-inl.h"
 #include "try-inl.h"
 #include "value-inl.h"
 
@@ -246,14 +246,17 @@ value_t heap_for_each_object(heap_t *heap, value_visitor_o *visitor) {
   return space_for_each_object(&heap->to_space, visitor);
 }
 
-typedef struct {
+IMPLEMENTATION(field_delegator_o, value_visitor_o);
+
+struct field_delegator_o {
   value_visitor_o super;
   field_visitor_o *field_visitor;
-} field_delegator_o;
+};
 
 // Visitor method that invokes a field callback stored as data in the given value
 // callback for each value field in the given object.
-static value_t field_delegator_visit(field_delegator_o *self, value_t object) {
+static value_t field_delegator_visit(value_visitor_o *super_self, value_t object) {
+  field_delegator_o *self = DOWNCAST(field_delegator_o, super_self);
   // Visit the object's species first.
   value_t *header = access_heap_object_field(object, kHeapObjectHeaderOffset);
   // Check that the header isn't a forward pointer -- traversing a space that's
@@ -270,9 +273,7 @@ static value_t field_delegator_visit(field_delegator_o *self, value_t object) {
   return success();
 }
 
-static value_visitor_vtable_t kFieldDelegatorVTable = {
-  (value_visitor_visit_m) field_delegator_visit
-};
+VTABLE(field_delegator_o, value_visitor_o) { field_delegator_visit };
 
 value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor) {
   object_tracker_iter_t iter;
@@ -283,7 +284,7 @@ value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor) {
     object_tracker_iter_advance(&iter);
   }
   field_delegator_o delegator;
-  delegator.super.vtable = &kFieldDelegatorVTable;
+  VTABLE_INIT(field_delegator_o, UPCAST(&delegator));
   delegator.field_visitor = visitor;
   return space_for_each_object(&heap->to_space, UPCAST(&delegator));
 }

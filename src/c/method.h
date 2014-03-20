@@ -10,21 +10,21 @@
 #include "process.h"
 #include "value-inl.h"
 
-FORWARD(sigmap_input_o);
+INTERFACE(sigmap_input_o);
 
 // Returns the value of the index'th argument in sorted tag order.
 typedef value_t (*sigmap_input_get_value_at_m)(sigmap_input_o *self, size_t index);
 
-typedef struct {
+struct sigmap_input_o_vtable_t {
   sigmap_input_get_value_at_m get_value_at;
-} sigmap_input_vtable_t;
+};
 
 // Input to a signature map lookup. This is the stuff that's fixed across the
 // whole lookup. This is kept in a separate struct such that it can be passed
 // to any part of the lookup that needs it separately from the rest of the
 // lookup state which is more transient and less likely to be useful.
 struct sigmap_input_o {
-  sigmap_input_vtable_t *vtable;
+  VTABLE_FIELD(sigmap_input_o);
   // The ambience we're looking up within.
   value_t ambience;
   // Cache of the ambience's runtime.
@@ -38,7 +38,8 @@ struct sigmap_input_o {
 // Initializes an input struct appropriately.
 void sigmap_input_init(sigmap_input_o *self, value_t ambience, value_t tags);
 
-FORWARD(frame_sigmap_input_o);
+
+IMPLEMENTATION(frame_sigmap_input_o, sigmap_input_o);
 
 struct frame_sigmap_input_o {
   sigmap_input_o super;
@@ -291,8 +292,8 @@ value_t add_to_signature_map(runtime_t *runtime, value_t map, value_t signature,
 
 // Opaque datatype used during signature map lookup.
 FORWARD(sigmap_state_t);
-FORWARD(sigmap_output_o);
-FORWARD(sigmap_thunk_o);
+INTERFACE(sigmap_output_o);
+INTERFACE(sigmap_thunk_o);
 
 // A callback called by do_signature_map_lookup to perform the traversal that
 // produces the signature maps to lookup within.
@@ -524,16 +525,16 @@ typedef value_t (*sigmap_output_get_result_m)(sigmap_output_o *self);
 typedef void (*sigmap_output_reset_m)(sigmap_output_o *self);
 
 // Collection of virtual functions for working with a result collector.
-typedef struct {
+struct sigmap_output_o_vtable_t {
   sigmap_output_add_ambiguous_m add_ambiguous;
   sigmap_output_add_better_m add_better;
   sigmap_output_get_result_m get_result;
   sigmap_output_reset_m reset;
-} sigmap_output_vtable_t;
+};
 
 // Virtual signature map lookup result collector.
 struct sigmap_output_o {
-  sigmap_output_vtable_t *vtable;
+  VTABLE_FIELD(sigmap_output_o);
 };
 
 #endif // _METHOD

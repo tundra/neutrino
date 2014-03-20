@@ -6,10 +6,18 @@
 /// Primitive support for virtual object types in C. Because C has limited
 /// syntactic abstraction it's _very_ difficult to build a proper object system
 /// purely in C (hence C++) so this is just stuff to help what is essentially
-/// a completely by-convention object system. The conventions are as follows.
+/// a completely by-convention object system. The system is somewhat cumbersome
+/// and the primary concern has been to have reasonable support with a minimum
+/// of potential security issues, so a minimum of casting around.
+///
+/// There are interfaces and implementations. You forward declare them using the
+/// `INTERFACE` and `IMPLEMENTATION` macros,
+///
+///     INTERFACE(point_o);
+///     IMPLEMENTATION(cartesian_o, point_o);
 ///
 /// Object types have names that end with `_o` -- as in `point_o`. Each object
-/// type has a set of associated methods, for instance a point would have a
+/// type has a set of associated methods, for instance a `point_o` would have a
 /// `get_x` and `get_y` method with types:
 ///
 ///     // Returns the point's x coordinate.
@@ -22,15 +30,15 @@
 /// typename plus `vtable_t`,
 ///
 ///     // Vtable for point.
-///     typedef struct {
+///     struct point_o_vtable_t {
 ///       point_get_x_m get_x;
 ///       point_get_y_m get_y;
-///     } point_vtable_t;
+///     };
 ///
 /// The point type itself has a pointer to the vtable as its first field,
 ///
 ///     struct point_o {
-///       point_vtable_t *vtable;
+///       VTABLE_FIELD(point_o);
 ///     }
 ///
 /// Calling a point method is verbose; use the `METHOD` macro like so,
@@ -39,24 +47,25 @@
 ///     int32_t x = METHOD(p, get_x)(p);
 ///     int32_t x = METHOD(p, get_y)(p);
 ///
-/// To create a subclass you create implementations of all the methods;
-/// implementations are allowed to be covariant in the `self` parameter, so you
-/// can do,
+/// To create a subclass you create implementations of all the methods. The
+/// method signatures must be the same as the declared methods so you need to
+/// downcast the `self` parameter, which you can do safely using this pattern:
 ///
-///     static int32_t cartesian_get_x(cartesian_o *self) {
+///     static int32_t cartesian_get_x(point_o *super_self) {
+///       cartesian_o *self = DOWNCAST(cartesian_o, super_self);
 ///       return self->x;
 ///     }
 ///
-///     static int32_t cartesian_get_y(cartesian_o *self) {
+///     static int32_t cartesian_get_y(point_o *super_self) {
+///       cartesian_o *self = DOWNCAST(cartesian_o, super_self);
 ///       return self->y;
 ///     }
 ///
-/// You pack the methods into a vtable, casting as necessary to account for the
-/// covariance,
+/// You pack the methods into a vtable using the `VTABLE` macro,
 ///
-///     static point_vtable_t kCartesianVTable = {
-///       (point_get_x_m) cartesian_get_x,
-///       (point_get_y_m) cartesian_get_y
+///     VTABLE(cartesian_o, point_o) {
+///       cartesian_get_x,
+///       cartesian_get_y
 ///     };
 ///
 /// The type itself has the supertype inline as its first field,
@@ -72,7 +81,7 @@
 ///
 ///     cartesian_o cartesian_new(int32_t x, int32_t y) {
 ///       cartesian_o result;
-///       result.super.vtable = &kCartesianVTable;
+///       VTABLE_INIT(cartesian_o, UPCAST(&result));
 ///       result.x = x;
 ///       result.y = y;
 ///       return result;
@@ -81,7 +90,7 @@
 /// or initialize an instance like so,
 ///
 ///     void cartesian_init(cartesian_o *self, int32_t x, int32_t y) {
-///       self->super.vtable = &kCartesianVTable;
+///       VTABLE_INIT(cartesian_o, UPCAST(&self));
 ///       self->x = x;
 ///       self->y = y;
 ///     }
@@ -96,6 +105,25 @@
 
 #ifndef _OOK
 #define _OOK
+
+// Declares an interface of the given name.
+#define INTERFACE(name_o)                                                      \
+  FORWARD(name_o);                                                             \
+  FORWARD(name_o##_vtable_t)
+
+// Declares an implementation with the given name of the given interface.
+#define IMPLEMENTATION(name_o, super_o)                                        \
+  FORWARD(name_o);                                                             \
+  extern struct super_o##_vtable_t name_o##_vtable
+
+// Expands to a declaration of the vtable for the given implementation type.
+#define VTABLE(name_o, super_o) struct super_o##_vtable_t name_o##_vtable =
+
+// Expands to an initializer that sets the given object's vtable.
+#define VTABLE_INIT(name_o, OBJ) (OBJ)->vtable = &name_o##_vtable
+
+// Expands to the vtable field declaration for the specified interface type.
+#define VTABLE_FIELD(name_o) name_o##_vtable_t *vtable;
 
 // Returns the given object viewed as its immediate supertype.
 #define UPCAST(OBJ) &((OBJ)->super)
