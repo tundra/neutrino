@@ -34,7 +34,7 @@ struct abort_o_vtable_t {
 
 // A callback used to abort execution.
 struct abort_o {
-  VTABLE_FIELD(abort_o);
+  INTERFACE_HEADER(abort_o);
 };
 
 // Invokes the given callback with the given arguments.

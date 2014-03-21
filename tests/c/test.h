@@ -36,7 +36,7 @@ IMPLEMENTATION(check_recorder_o, abort_o);
 
 // Data recorded about check failures.
 struct check_recorder_o {
-  abort_o super;
+  IMPLEMENTATION_HEADER(check_recorder_o, abort_o);
   // How many check failures were triggered?
   size_t count;
   // What was the cause of the last check failure triggered?
@@ -67,7 +67,7 @@ IMPLEMENTATION(log_validator_o, log_o);
 // stay alive so uninstalling can't dispose data. Anyway, this seems simpler,
 // do the validation immediately.
 struct log_validator_o {
-  log_o super;
+  IMPLEMENTATION_HEADER(log_validator_o, log_o);
   // The number of entries that were logged.
   size_t count;
   // The abort callback to restore when we're done validating log messages.

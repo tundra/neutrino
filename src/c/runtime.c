@@ -570,7 +570,7 @@ IMPLEMENTATION(garbage_collection_state_o, field_visitor_o);
 // State maintained during garbage collection. Also functions as a field visitor
 // such that it's easy to traverse objects.
 struct garbage_collection_state_o {
-  field_visitor_o super;
+  IMPLEMENTATION_HEADER(garbage_collection_state_o, field_visitor_o);
   // The runtime we're collecting.
   runtime_t *runtime;
   // List of objects to post-process after migration.

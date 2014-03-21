@@ -249,7 +249,7 @@ value_t heap_for_each_object(heap_t *heap, value_visitor_o *visitor) {
 IMPLEMENTATION(field_delegator_o, value_visitor_o);
 
 struct field_delegator_o {
-  value_visitor_o super;
+  IMPLEMENTATION_HEADER(field_delegator_o, value_visitor_o);
   field_visitor_o *field_visitor;
 };
 

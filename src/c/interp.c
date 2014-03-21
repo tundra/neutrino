@@ -238,8 +238,10 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t helper = read_value(&cache, &frame, 3);
           CHECK_FAMILY(ofSignatureMap, helper);
           value_t arg_map;
-          value_t method = lookup_method_full(ambience, fragment, tags, &frame,
-              helper, &arg_map);
+          frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags,
+              &frame);
+          value_t method = lookup_method_full(UPCAST(&input), fragment, helper,
+              &arg_map);
           if (in_condition_cause(ccLookupError, method)) {
             log_lookup_error(method, tags, &frame);
             E_RETURN(method);
@@ -266,8 +268,9 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame.pc += kSignalEscapeOperationSize;
           value_t arg_map = whatever();
           value_t handler = whatever();
-          value_t method = lookup_signal_handler_method(ambience, tags, &frame,
-              &handler, &arg_map);
+          frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags, &frame);
+          value_t method = lookup_signal_handler_method(UPCAST(UPCAST(&input)),
+              &frame, &handler, &arg_map);
           bool is_escape = (opcode == ocSignalEscape);
           if (in_condition_cause(ccLookupError, method)) {
             if (is_escape) {
@@ -336,8 +339,10 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
             CHECK_FAMILY(ofCallTags, tags);
             value_t arg_map = whatever();
             value_t handler = whatever();
-            value_t method = lookup_signal_handler_method(ambience, tags, &frame,
-                &handler, &arg_map);
+            frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags,
+                &frame);
+            value_t method = lookup_signal_handler_method(UPCAST(UPCAST(&input)),
+                &frame, &handler, &arg_map);
             if (in_condition_cause(ccLookupError, method)) {
               // Push the record back onto the stack to it's available to back
               // tracing.

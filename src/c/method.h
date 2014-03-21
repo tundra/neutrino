@@ -12,9 +12,6 @@
 
 INTERFACE(sigmap_input_o);
 
-// Returns the value of the index'th argument in sorted tag order.
-typedef value_t (*sigmap_input_get_value_at_m)(sigmap_input_o *self, size_t index);
-
 // Matches the index'th argument to this call against the given guard, storing
 // the result in the score_out parameter. If the match fails for whatever reason
 // a signal is returned.
@@ -25,12 +22,11 @@ struct sigmap_input_o_vtable_t {
   sigmap_input_match_value_at_m match_value_at;
 };
 
-// Input to a signature map lookup. This is the stuff that's fixed across the
-// whole lookup. This is kept in a separate struct such that it can be passed
-// to any part of the lookup that needs it separately from the rest of the
-// lookup state which is more transient and less likely to be useful.
+// Input to a signature map lookup. This interface represents a potentially
+// partial input, that is, input where you can match against the values but not
+// necessarily get access to them.
 struct sigmap_input_o {
-  VTABLE_FIELD(sigmap_input_o);
+  INTERFACE_HEADER(sigmap_input_o);
   // The ambience we're looking up within.
   value_t ambience;
   // Cache of the ambience's runtime.
@@ -53,20 +49,37 @@ value_t sigmap_input_get_tag_at(sigmap_input_o *self, size_t index);
 // Returns the stack offset of the index'th argument in sorted tag order.
 size_t sigmap_input_get_offset_at(sigmap_input_o *self, size_t index);
 
+INTERFACE(total_sigmap_input_o);
 
-IMPLEMENTATION(frame_sigmap_input_o, sigmap_input_o);
+// Returns the value of the index'th argument in sorted tag order.
+typedef value_t (*total_sigmap_input_get_value_at_m)(total_sigmap_input_o *self,
+    size_t index);
 
-// Sigmap input that gets the values of arguments from a frame.
+struct total_sigmap_input_o_vtable_t {
+  sigmap_input_o_vtable_t super;
+  total_sigmap_input_get_value_at_m get_value_at;
+};
+
+// A total sigmap input is one that is not partial so that you can get access
+// to the values of all arguments.
+struct total_sigmap_input_o {
+  SUB_INTERFACE_HEADER(total_sigmap_input_o, sigmap_input_o);
+};
+
+// Returns the index'th argument value in sorted tag order.
+value_t total_sigmap_input_get_value_at(total_sigmap_input_o *self, size_t index);
+
+IMPLEMENTATION(frame_sigmap_input_o, total_sigmap_input_o);
+
+// Total sigmap input that gets the values of arguments from a frame.
 struct frame_sigmap_input_o {
-  sigmap_input_o super;
+  IMPLEMENTATION_HEADER(frame_sigmap_input_o, total_sigmap_input_o);
   frame_t *frame;
 };
 
+// Creates a new frame sigmap input.
 frame_sigmap_input_o frame_sigmap_input_new(value_t ambience, value_t tags,
     frame_t *frame);
-
-// Returns the value of the index'th argument in sorted tag order.
-value_t frame_sigmap_input_get_value_at(frame_sigmap_input_o *self, size_t index);
 
 
 // --- S i g n a t u r e ---
@@ -364,24 +377,24 @@ value_t get_type_parents(runtime_t *runtime, value_t space, value_t type);
 value_t add_methodspace_method(runtime_t *runtime, value_t self,
     value_t method);
 
-// Looks up a method in this method space given an invocation record and a stack
-// frame, as well as the origin of the subject type. If the match is successful,
-// as a side-effect stores an argument map that maps between the result's
-// parameters and argument offsets on the stack.
+// Looks up a method in the given fragment given a set of inputs. This is the
+// full lookup that also searches the subject's origin. If the match is
+// successful, as a side-effect stores an argument map that maps between the
+// result's parameters and argument offsets on the stack.
 //
 // TODO: this is an approximation of the intended lookup mechanism and should be
 //   revised later on, for instance to not hard-code the subject origin lookup.
-value_t lookup_method_full(value_t ambience, value_t fragment,
-    value_t tags, frame_t *frame, value_t helper, value_t *arg_map_out);
+value_t lookup_method_full(total_sigmap_input_o *input, value_t fragment,
+    value_t helper, value_t *arg_map_out);
 
-value_t lookup_methodspace_method(value_t ambience, value_t methodspace,
-    value_t tags, frame_t *frame, value_t *arg_map_out);
+value_t lookup_methodspace_method(sigmap_input_o *input, value_t methodspace,
+    value_t *arg_map_out);
 
 // Scans through the stack looking for signal handler methods, returning the
 // best match if there is one otherwise a LookupError condition. The signal
 // handler that contains the method is stored in handler_out.
-value_t lookup_signal_handler_method(value_t ambience, value_t tags,
-    frame_t *frame, value_t *handler_out, value_t *arg_map_out);
+value_t lookup_signal_handler_method(sigmap_input_o *input, frame_t *frame,
+    value_t *handler_out, value_t *arg_map_out);
 
 // Given a module fragment, returns the cache of methodspaces to look up within.
 // If the cache has not yet been created, create it. Creating the cache may
@@ -440,6 +453,21 @@ value_t build_call_tags_entries(runtime_t *runtime, value_t tags);
 
 // Prints a call tags object with a set of arguments.
 void print_call_on(value_t tags, frame_t *frame, string_buffer_t *out);
+
+
+/// ## Call data
+///
+/// Call data encapsulates both the tags and arguments of a call.
+
+static const size_t kCallDataSize = HEAP_OBJECT_SIZE(2);
+static const size_t kCallDataTagsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kCallDataValuesOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+
+// This call's tags.
+ACCESSORS_DECL(call_data, tags);
+
+// The arguments to this call as an array.
+ACCESSORS_DECL(call_data, values);
 
 
 // --- O p e r a t i o n ---
@@ -541,7 +569,7 @@ struct sigmap_output_o_vtable_t {
 
 // Virtual signature map lookup result collector.
 struct sigmap_output_o {
-  VTABLE_FIELD(sigmap_output_o);
+  INTERFACE_HEADER(sigmap_output_o);
 };
 
 #endif // _METHOD

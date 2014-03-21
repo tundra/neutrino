@@ -32,7 +32,7 @@ struct value_visitor_o_vtable_t {
 
 // A virtual visitor type that can be used to traverse values in the heap.
 struct value_visitor_o {
-  VTABLE_FIELD(value_visitor_o);
+  INTERFACE_HEADER(value_visitor_o);
 };
 
 // Invokes the given callback with the given value.
@@ -51,7 +51,7 @@ struct field_visitor_o_vtable_t {
 // A callback along with a data pointer that can be used to iterate through a
 // set of fields.
 struct field_visitor_o {
-  VTABLE_FIELD(field_visitor_o);
+  INTERFACE_HEADER(field_visitor_o);
 };
 
 // Invokes the given callback with the given value.
