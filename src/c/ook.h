@@ -35,10 +35,11 @@
 ///       point_get_y_m get_y;
 ///     };
 ///
-/// The point type itself has a pointer to the vtable as its first field,
+/// The point type itself has a pointer to the vtable in its header, which must
+/// be the first part of the struct,
 ///
 ///     struct point_o {
-///       VTABLE_FIELD(point_o);
+///       INTERFACE_HEADER(point_o);
 ///     }
 ///
 /// Calling a point method is verbose; use the `METHOD` macro like so,
@@ -68,10 +69,10 @@
 ///       cartesian_get_y
 ///     };
 ///
-/// The type itself has the supertype inline as its first field,
+/// The type itself has an implementation header inline as its first field,
 ///
 ///     struct cartesian_o {
-///       point_o super;
+///       IMPLEMENTATION_HEADER(cartesian_o, point_o);
 ///       int32_t x;
 ///       int32_t y;
 ///     }
@@ -120,15 +121,30 @@
 #define VTABLE(name_o, super_o) struct super_o##_vtable_t name_o##_vtable =
 
 // Expands to an initializer that sets the given object's vtable.
-#define VTABLE_INIT(name_o, OBJ) (OBJ)->vtable = &name_o##_vtable
+#define VTABLE_INIT(name_o, OBJ) (OBJ)->header.vtable = &name_o##_vtable
 
 // Expands to the vtable field declaration for the specified interface type.
-#define VTABLE_FIELD(name_o) name_o##_vtable_t *vtable;
+#define INTERFACE_HEADER(name_o) union {                                       \
+  name_o##_vtable_t *vtable;                                                   \
+} header;
+
+// Expands to the header for an interface type that extends the given super
+// type.
+#define SUB_INTERFACE_HEADER(name_o, super_o) union {                          \
+  name_o##_vtable_t *vtable;                                                   \
+  super_o super;                                                               \
+} header
+
+// Expands to the header for the specified implementation type.
+#define IMPLEMENTATION_HEADER(name_o, super_o) union {                         \
+  super_o##_vtable_t *vtable;                                                  \
+  super_o super;                                                               \
+} header
 
 // Returns the given object viewed as its immediate supertype.
-#define UPCAST(OBJ) &((OBJ)->super)
+#define UPCAST(OBJ) (&((OBJ)->header.super))
 
 // Returns a function pointer to the method with the given name.
-#define METHOD(OBJ, NAME) ((OBJ)->vtable->NAME)
+#define METHOD(OBJ, NAME) ((OBJ)->header.vtable->NAME)
 
 #endif // _OOK

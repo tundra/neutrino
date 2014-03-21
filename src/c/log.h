@@ -101,7 +101,7 @@ struct log_o_vtable_t {
 
 // A callback used to issue log messages.
 struct log_o {
-  VTABLE_FIELD(log_o);
+  INTERFACE_HEADER(log_o);
 };
 
 // Sets the log callback to use across this process. This should only be used

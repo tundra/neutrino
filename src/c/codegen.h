@@ -74,7 +74,7 @@ struct scope_o_vtable_t {
 };
 
 struct scope_o {
-  VTABLE_FIELD(scope_o);
+  INTERFACE_HEADER(scope_o);
 };
 
 // Invokes a scope lookup callback with a symbol. The result will be stored in
@@ -309,7 +309,7 @@ IMPLEMENTATION(single_symbol_scope_o, scope_o);
 
 // A scope defining a single symbol.
 struct single_symbol_scope_o {
-  scope_o super;
+  IMPLEMENTATION_HEADER(single_symbol_scope_o, scope_o);
   // The symbol.
   value_t symbol;
   // The symbol's binding.
@@ -330,7 +330,7 @@ IMPLEMENTATION(map_scope_o, scope_o);
 
 // A scope whose symbols are defined in a hash map.
 struct map_scope_o {
-  scope_o super;
+  IMPLEMENTATION_HEADER(map_scope_o, scope_o);
   // The map of symbols.
   value_t map;
   // The enclosing scope.
@@ -356,7 +356,7 @@ IMPLEMENTATION(lambda_scope_o, scope_o);
 // A scope that records any variables looked up in an enclosing scope and turns
 // them into captures rather than direct access.
 struct lambda_scope_o {
-  scope_o super;
+  IMPLEMENTATION_HEADER(lambda_scope_o, scope_o);
   // Then enclosing scope.
   scope_o *outer;
   // The list of captured symbols.
@@ -375,7 +375,7 @@ IMPLEMENTATION(block_scope_o, scope_o);
 
 // A scope that turns direct access to symbols into indirect block reads.
 struct block_scope_o {
-  scope_o super;
+  IMPLEMENTATION_HEADER(block_scope_o, scope_o);
   // Then enclosing scope.
   scope_o *outer;
   // The assembler this scope belongs to.

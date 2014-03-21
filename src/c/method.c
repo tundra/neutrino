@@ -20,7 +20,7 @@ void sigmap_input_init(sigmap_input_o *input, value_t ambience, value_t tags) {
 }
 
 size_t sigmap_input_get_argument_count(sigmap_input_o *input) {
-  return get_call_tags_entry_count(input->tags);
+  return input->argc;
 }
 
 value_t sigmap_input_get_tag_at(sigmap_input_o *input, size_t index) {
@@ -31,28 +31,47 @@ size_t sigmap_input_get_offset_at(sigmap_input_o *input, size_t index) {
   return get_call_tags_offset_at(input->tags, index);
 }
 
-value_t frame_sigmap_input_get_value_at(frame_sigmap_input_o *self, size_t index) {
-  return frame_get_pending_argument_at(self->frame, self->super.tags, index);
+value_t total_sigmap_input_get_value_at(total_sigmap_input_o *self, size_t index) {
+  return METHOD(self, get_value_at)(self, index);
 }
 
-value_t frame_sigmap_input_match_value_at(sigmap_input_o *super_self, size_t index,
-    value_t guard, value_t space, value_t *score_out) {
+// Returns the index'th argument passed in the frame of the given input in
+// sorted tag order.
+static value_t frame_sigmap_input_get_argument_at(frame_sigmap_input_o *self,
+    size_t index) {
+  return frame_get_pending_argument_at(self->frame, UPCAST(UPCAST(self))->tags,
+      index);
+}
+
+// Implementation of sigmap_input.match_value_at which works for
+// frame_sigmap_inputs.
+static value_t frame_sigmap_input_match_value_at(sigmap_input_o *super_self,
+    size_t index, value_t guard, value_t space, value_t *score_out) {
   frame_sigmap_input_o *self = DOWNCAST(frame_sigmap_input_o, super_self);
-  value_t value = frame_sigmap_input_get_value_at(self, index);
+  value_t value = frame_sigmap_input_get_argument_at(self, index);
   return guard_match(guard, value, super_self, space, score_out);
 }
 
+// Returns the value of the index'th argument to a frame_sigmap_input, viewed
+// as a total_sigmap_input, in sorted tag order.
+static value_t frame_sigmap_input_get_value_at(total_sigmap_input_o *super_self,
+    size_t index) {
+  frame_sigmap_input_o *self = DOWNCAST(frame_sigmap_input_o, super_self);
+  return frame_sigmap_input_get_argument_at(self, index);
+}
+
 // The singleton vtable for frame_sigmap_input_os.
-VTABLE(frame_sigmap_input_o, sigmap_input_o) {
-  frame_sigmap_input_match_value_at
+VTABLE(frame_sigmap_input_o, total_sigmap_input_o) {
+  { frame_sigmap_input_match_value_at },
+  frame_sigmap_input_get_value_at
 };
 
 frame_sigmap_input_o frame_sigmap_input_new(value_t ambience, value_t tags,
     frame_t *frame) {
   frame_sigmap_input_o result;
-  VTABLE_INIT(frame_sigmap_input_o, UPCAST(&result));
+  VTABLE_INIT(frame_sigmap_input_o, &result);
   result.frame = frame;
-  sigmap_input_init(UPCAST(&result), ambience, tags);
+  sigmap_input_init(UPCAST(UPCAST(&result)), ambience, tags);
   return result;
 }
 
@@ -68,7 +87,7 @@ struct sigmap_thunk_o_vtable_t {
 // process. Implementations can add the extra state they need for their
 // particular type of lookup.
 struct sigmap_thunk_o {
-  VTABLE_FIELD(sigmap_thunk_o);
+  INTERFACE_HEADER(sigmap_thunk_o);
   // The lookup state. This is set for the caller by the lookup process.
   sigmap_state_t *state;
 };
@@ -728,12 +747,12 @@ value_t get_type_parents(runtime_t *runtime, value_t space, value_t type) {
 
 // Does a full exhaustive lookup through the tags of the invocation for the
 // subject of this call. Returns a not found condition if there is no subject.
-static value_t get_invocation_subject_no_shortcut(frame_sigmap_input_o *input) {
-  size_t argc = sigmap_input_get_argument_count(&input->super);
+static value_t get_invocation_subject_no_shortcut(total_sigmap_input_o *input) {
+  size_t argc = sigmap_input_get_argument_count(UPCAST(input));
   for (size_t i = 0; i < argc; i++) {
-    value_t tag = sigmap_input_get_tag_at(&input->super, i);
-    if (is_same_value(tag, ROOT(input->super.runtime, subject_key)))
-      return frame_sigmap_input_get_value_at(input, i);
+    value_t tag = sigmap_input_get_tag_at(UPCAST(input), i);
+    if (is_same_value(tag, ROOT(UPCAST(input)->runtime, subject_key)))
+      return total_sigmap_input_get_value_at(input, i);
   }
   return new_not_found_condition();
 }
@@ -746,10 +765,10 @@ static value_t get_invocation_subject_no_shortcut(frame_sigmap_input_o *input) {
 // invocation record. Potentially confusingly, the argument index will actually
 // almost always be 0 as well but that's not what we're using here (since we're
 // hardcoding the index we need _always_ always, not _almost_ always).
-static value_t get_invocation_subject_with_shortcut(frame_sigmap_input_o *input) {
-  value_t tag_zero = sigmap_input_get_tag_at(&input->super, 0);
-  if (is_same_value(tag_zero, ROOT(input->super.runtime, subject_key)))
-    return frame_sigmap_input_get_value_at(input, 0);
+static value_t get_invocation_subject_with_shortcut(total_sigmap_input_o *input) {
+  value_t tag_zero = sigmap_input_get_tag_at(UPCAST(input), 0);
+  if (is_same_value(tag_zero, ROOT(UPCAST(input)->runtime, subject_key)))
+    return total_sigmap_input_get_value_at(input, 0);
   else
     return new_not_found_condition();
 }
@@ -833,7 +852,9 @@ IMPLEMENTATION(full_thunk_o, sigmap_thunk_o);
 
 // Thunk that carries data for a full method lookup.
 struct full_thunk_o {
-  sigmap_thunk_o super;
+  IMPLEMENTATION_HEADER(full_thunk_o, sigmap_thunk_o);
+  // The input viewed as a total_sigmap_input_o.
+  total_sigmap_input_o *input;
   // The fragment we're performing the lookup within.
   value_t fragment;
   // The helper data for this call.
@@ -845,8 +866,8 @@ struct full_thunk_o {
 // Perform a method lookup in the subject's module of origin.
 static value_t lookup_subject_methods(full_thunk_o *thunk, value_t *subject_out) {
   // Look for a subject value, if there is none there is nothing to do.
-  sigmap_state_t *state = thunk->super.state;
-  frame_sigmap_input_o *input = DOWNCAST(frame_sigmap_input_o, state->input);
+  sigmap_state_t *state = UPCAST(thunk)->state;
+  total_sigmap_input_o *input = thunk->input;
   value_t subject = *subject_out = get_invocation_subject_with_shortcut(input);
   TOPIC_INFO(Lookup, "Subject value: %v", subject);
   if (in_condition_cause(ccNotFound, subject)) {
@@ -858,10 +879,10 @@ static value_t lookup_subject_methods(full_thunk_o *thunk, value_t *subject_out)
     return success();
   }
   // Extract the origin of the subject.
-  value_t type = get_primary_type(subject, input->super.runtime);
+  value_t type = get_primary_type(subject, UPCAST(input)->runtime);
   TOPIC_INFO(Lookup, "Subject type: %v", type);
   CHECK_FAMILY(ofType, type);
-  value_t origin = get_type_origin(type, input->super.ambience);
+  value_t origin = get_type_origin(type, UPCAST(input)->ambience);
   TOPIC_INFO(Lookup, "Subject origin: %v", origin);
   if (is_nothing(origin))
     // Some types have no origin (at least at the moment) and that's okay, we
@@ -876,7 +897,7 @@ IMPLEMENTATION(unique_best_match_output_o, sigmap_output_o);
 // Sigmap output that keeps the best result seen so far and returns an ambiguity
 // signal if there's no unique best match.
 struct unique_best_match_output_o {
-  sigmap_output_o super;
+  IMPLEMENTATION_HEADER(unique_best_match_output_o, sigmap_output_o);
   value_t result;
 };
 
@@ -940,7 +961,7 @@ IMPLEMENTATION(methodspace_thunk_o, sigmap_thunk_o);
 
 // State used when looking up within a single methodspace.
 struct methodspace_thunk_o {
-  sigmap_thunk_o super;
+  IMPLEMENTATION_HEADER(methodspace_thunk_o, sigmap_thunk_o);
   // The methodspace to look up within.
   value_t methodspace;
   // The location to store the resulting arg map.
@@ -960,7 +981,7 @@ static methodspace_thunk_o methodspace_thunk_new(value_t methodspace,
 static value_t methodspace_thunk_call(sigmap_thunk_o *super_self) {
   methodspace_thunk_o *self = DOWNCAST(methodspace_thunk_o, super_self);
   CHECK_FAMILY(ofMethodspace, self->methodspace);
-  sigmap_state_t *state = self->super.state;
+  sigmap_state_t *state = UPCAST(self)->state;
   TRY(lookup_methodspace_transitive_method(state, self->methodspace));
   TRY_SET(*self->arg_map_out, get_sigmap_lookup_argument_map(state));
   return success();
@@ -968,12 +989,11 @@ static value_t methodspace_thunk_call(sigmap_thunk_o *super_self) {
 
 VTABLE(methodspace_thunk_o, sigmap_thunk_o) { methodspace_thunk_call };
 
-value_t lookup_methodspace_method(value_t ambience, value_t methodspace,
-    value_t tags, frame_t *frame, value_t *arg_map_out) {
+value_t lookup_methodspace_method(sigmap_input_o *input, value_t methodspace,
+    value_t *arg_map_out) {
   methodspace_thunk_o thunk = methodspace_thunk_new(methodspace, arg_map_out);
   unique_best_match_output_o output = unique_best_match_output_new();
-  frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags, frame);
-  return do_sigmap_lookup(UPCAST(&thunk), UPCAST(&input), UPCAST(&output));
+  return do_sigmap_lookup(UPCAST(&thunk), input, UPCAST(&output));
 }
 
 IMPLEMENTATION(signal_handler_output_o, sigmap_output_o);
@@ -981,8 +1001,7 @@ IMPLEMENTATION(signal_handler_output_o, sigmap_output_o);
 // Lookup match collector that keeps the most specific signal handler as well as
 // the handler it originates from.
 struct signal_handler_output_o {
-  // Vtable that allows this to be cast to a handler.
-  sigmap_output_o super;
+  IMPLEMENTATION_HEADER(signal_handler_output_o, sigmap_output_o);
   // The current best result.
   value_t result;
   // The handler of the current best result.
@@ -1036,7 +1055,7 @@ IMPLEMENTATION(signal_handler_thunk_o, sigmap_thunk_o);
 
 // State associated with looking up a signal handler.
 struct signal_handler_thunk_o {
-  sigmap_thunk_o super;
+  IMPLEMENTATION_HEADER(signal_handler_thunk_o, sigmap_thunk_o);
   // The handler that holds the resulting method.
   value_t *handler_out;
   // The resulting arg map.
@@ -1049,7 +1068,7 @@ struct signal_handler_thunk_o {
 static value_t signal_handler_thunk_call(sigmap_thunk_o *super_self) {
   signal_handler_thunk_o *self = DOWNCAST(signal_handler_thunk_o, super_self);
   barrier_iter_t barrier_iter;
-  sigmap_state_t *state = self->super.state;
+  sigmap_state_t *state = UPCAST(self)->state;
   signal_handler_output_o *output = DOWNCAST(signal_handler_output_o, state->output);
   value_t barrier = barrier_iter_init(&barrier_iter, self->frame);
   while (!is_nothing(barrier)) {
@@ -1069,7 +1088,7 @@ static value_t signal_handler_thunk_call(sigmap_thunk_o *super_self) {
 
 VTABLE(signal_handler_thunk_o, sigmap_thunk_o) { signal_handler_thunk_call };
 
-value_t lookup_signal_handler_method(value_t ambience, value_t tags,
+value_t lookup_signal_handler_method(sigmap_input_o *input,
     frame_t *frame, value_t *handler_out, value_t *arg_map_out) {
   signal_handler_thunk_o thunk;
   VTABLE_INIT(signal_handler_thunk_o, UPCAST(&thunk));
@@ -1077,8 +1096,7 @@ value_t lookup_signal_handler_method(value_t ambience, value_t tags,
   thunk.arg_map_out = arg_map_out;
   thunk.frame = frame;
   signal_handler_output_o output = signal_handler_output_new();
-  frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags, frame);
-  return do_sigmap_lookup(UPCAST(&thunk), UPCAST(&input), UPCAST(&output));
+  return do_sigmap_lookup(UPCAST(&thunk), input, UPCAST(&output));
 }
 
 // Performs the extra lookup for lambda methods that happens when the lambda
@@ -1088,9 +1106,9 @@ static value_t complete_special_lambda_lookup(full_thunk_o *thunk,
   CHECK_FAMILY(ofLambda, subject);
   methodspace_thunk_o subthunk = methodspace_thunk_new(
       get_lambda_methods(subject), thunk->arg_map_out);
-  sigmap_state_t *state = thunk->super.state;
+  sigmap_state_t *state = UPCAST(thunk)->state;
   sigmap_state_reset(state);
-  subthunk.super.state = state;
+  UPCAST(&subthunk)->state = state;
   return METHOD(UPCAST(&subthunk), call)(UPCAST(&subthunk));
 }
 
@@ -1102,9 +1120,9 @@ static value_t complete_special_block_lookup(full_thunk_o *thunk,
   value_t section = get_block_section(subject);
   methodspace_thunk_o subthunk = methodspace_thunk_new(
       get_block_section_methodspace(section), thunk->arg_map_out);
-  sigmap_state_t *state = thunk->super.state;
+  sigmap_state_t *state = UPCAST(thunk)->state;
   sigmap_state_reset(state);
-  subthunk.super.state = state;
+  UPCAST(&subthunk)->state = state;
   return METHOD(UPCAST(&subthunk), call)(UPCAST(&subthunk));
 }
 
@@ -1113,7 +1131,7 @@ static value_t complete_special_block_lookup(full_thunk_o *thunk,
 static value_t full_thunk_call(sigmap_thunk_o *super_self) {
   full_thunk_o *self = DOWNCAST(full_thunk_o, super_self);
   CHECK_FAMILY(ofModuleFragment, self->fragment);
-  sigmap_state_t *state = self->super.state;
+  sigmap_state_t *state = UPCAST(self)->state;
   TOPIC_INFO(Lookup, "Performing fragment lookup %v", state->input->tags);
   TRY(lookup_through_fragment_with_helper(state, self->fragment, self->helper));
   TOPIC_INFO(Lookup, "Performing subject lookup");
@@ -1139,16 +1157,16 @@ static value_t full_thunk_call(sigmap_thunk_o *super_self) {
 
 VTABLE(full_thunk_o, sigmap_thunk_o) { full_thunk_call };
 
-value_t lookup_method_full(value_t ambience, value_t fragment,
-    value_t tags, frame_t *frame, value_t helper, value_t *arg_map_out) {
+value_t lookup_method_full(total_sigmap_input_o *input, value_t fragment,
+    value_t helper, value_t *arg_map_out) {
   unique_best_match_output_o output = unique_best_match_output_new();
-  frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags, frame);
   full_thunk_o thunk;
   VTABLE_INIT(full_thunk_o, UPCAST(&thunk));
+  thunk.input = input;
   thunk.fragment = fragment;
   thunk.helper = helper;
   thunk.arg_map_out = arg_map_out;
-  return do_sigmap_lookup(UPCAST(&thunk), UPCAST(&input), UPCAST(&output));
+  return do_sigmap_lookup(UPCAST(&thunk), UPCAST(input), UPCAST(&output));
 }
 
 value_t plankton_new_methodspace(runtime_t *runtime) {
@@ -1175,7 +1193,7 @@ void methodspace_print_on(value_t self, print_on_context_t *context) {
 }
 
 
-// --- I n v o c a t i o n   r e c o r d ---
+/// ## Call tags
 
 ACCESSORS_IMPL(CallTags, call_tags, acInFamily, ofArray, Entries, entries);
 
@@ -1264,6 +1282,21 @@ value_t call_tags_identity_compare(value_t a, value_t b, cycle_detector_t *outer
   value_t a_entries = get_call_tags_entries(a);
   value_t b_entries = get_call_tags_entries(b);
   return value_identity_compare_cycle_protect(a_entries, b_entries, &inner);
+}
+
+
+/// ## Call data
+
+TRIVIAL_PRINT_ON_IMPL(CallData, call_data);
+
+ACCESSORS_IMPL(CallData, call_data, acInFamily, ofCallTags, Tags, tags);
+ACCESSORS_IMPL(CallData, call_data, acInFamily, ofArray, Values, values);
+
+value_t call_data_validate(value_t self) {
+  VALIDATE_FAMILY(ofCallData, self);
+  VALIDATE_FAMILY(ofCallTags, get_call_data_tags(self));
+  VALIDATE_FAMILY(ofArray, get_call_data_values(self));
+  return success();
 }
 
 

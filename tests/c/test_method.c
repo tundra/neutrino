@@ -12,7 +12,7 @@
 #define ASSERT_MATCH(is_match, guard, value) do {                              \
   value_t match;                                                               \
   frame_sigmap_input_o lookup_input = frame_sigmap_input_new(ambience, nothing(), NULL); \
-  sigmap_input_o *input = UPCAST(&lookup_input);                               \
+  sigmap_input_o *input = UPCAST(UPCAST(&lookup_input));                       \
   ASSERT_SUCCESS(guard_match(guard, value, input, space, &match));             \
   ASSERT_EQ(is_match, is_score_match(match));                                  \
 } while (false)
@@ -123,7 +123,7 @@ TEST(method, simple_is) {
 #define ASSERT_COMPARE(GA, VA, REL, GB, VB) do {                               \
   value_t score_a;                                                             \
   frame_sigmap_input_o lookup_input = frame_sigmap_input_new(ambience, nothing(), NULL); \
-  sigmap_input_o *input = UPCAST(&lookup_input);                               \
+  sigmap_input_o *input = UPCAST(UPCAST(&lookup_input));                       \
   ASSERT_SUCCESS(guard_match(GA, VA, input, space, &score_a));                 \
   value_t score_b;                                                             \
   ASSERT_SUCCESS(guard_match(GB, VB, input, space, &score_b));                 \
@@ -420,7 +420,7 @@ void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
   match_info_init(&match_info, scores, offsets, kLength);
   match_result_t result = __mrNone__;
   frame_sigmap_input_o input = frame_sigmap_input_new(ambience, call_tags, &frame);
-  ASSERT_SUCCESS(match_signature(signature, UPCAST(&input), nothing(),
+  ASSERT_SUCCESS(match_signature(signature, UPCAST(UPCAST(&input)), nothing(),
       &match_info, &result));
   ASSERT_EQ(expected_result, result);
   if (expected_offsets != NULL) {
@@ -727,7 +727,8 @@ static void test_lookup(value_t ambience, value_t expected, value_t first,
   }
   value_t tags = new_heap_call_tags(runtime, afFreeze, entries);
   value_t arg_map;
-  value_t method = lookup_methodspace_method(ambience, space, tags, &frame,
+  frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags, &frame);
+  value_t method = lookup_methodspace_method(UPCAST(UPCAST(&input)), space,
       &arg_map);
   ASSERT_VALEQ(expected, method);
 }

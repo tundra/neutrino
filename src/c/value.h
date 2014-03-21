@@ -412,6 +412,7 @@ static value_t new_moved_object(value_t target) {
   F(BlockAst,                block_ast,                 _, _, X, X, _, _, X, _, _, 72)\
   F(BuiltinImplementation,   builtin_implementation,    _, _, _, _, _, _, _, X, _,  6)\
   F(BuiltinMarker,           builtin_marker,            _, _, _, X, _, _, _, _, _, 43)\
+  F(CallData,                call_data,                 _, _, _, _, _, _, _, X, _, 76)\
   F(CallTags,                call_tags,                 _, X, _, _, _, _, _, X, X, 66)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X, 49)\
   F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _, 67)\
@@ -476,7 +477,7 @@ static value_t new_moved_object(value_t target) {
 
 // The next ordinal to use when adding a family. This isn't actually used in the
 // code it's just a reminder. Remember to update it when adding families.
-static const int kNextFamilyOrdinal = 76;
+static const int kNextFamilyOrdinal = 77;
 
 // Enumerates all the object families.
 #define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \
