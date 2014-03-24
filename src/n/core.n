@@ -14,3 +14,9 @@ def @manager := @ctrino.new_instance_manager(null);
 
 ## Freeze the given value.
 def $freeze($value) => @ctrino.freeze($value);
+
+## Is the given value frozen?
+def $is_frozen($value) => @ctrino.is_frozen($value);
+
+## Is the given value deep frozen?
+def $is_deep_frozen($value) => @ctrino.is_deep_frozen($value);

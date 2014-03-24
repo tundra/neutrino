@@ -200,11 +200,26 @@ static value_t ctrino_builtin(builtin_arguments_t *args) {
 
 static value_t ctrino_freeze(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofCtrino, self);
   value_t value = get_builtin_argument(args, 0);
   runtime_t *runtime = get_builtin_runtime(args);
-  CHECK_FAMILY(ofCtrino, self);
   TRY(ensure_frozen(runtime, value));
   return null();
+}
+
+static value_t ctrino_is_frozen(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofCtrino, self);
+  value_t value = get_builtin_argument(args, 0);
+  return new_boolean(is_frozen(value));
+}
+
+static value_t ctrino_is_deep_frozen(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofCtrino, self);
+  value_t value = get_builtin_argument(args, 0);
+  runtime_t *runtime = get_builtin_runtime(args);
+  return try_validate_deep_frozen(runtime, value, NULL);
 }
 
 #define ADD_BUILTIN(name, argc, impl)                                          \
@@ -215,6 +230,8 @@ value_t add_ctrino_builtin_methods(runtime_t *runtime, value_t space) {
   ADD_BUILTIN("freeze", 1, ctrino_freeze);
   ADD_BUILTIN("get_builtin_type", 1, ctrino_get_builtin_type);
   ADD_BUILTIN("get_current_backtrace", 0, ctrino_get_current_backtrace);
+  ADD_BUILTIN("is_deep_frozen", 1, ctrino_is_deep_frozen);
+  ADD_BUILTIN("is_frozen", 1, ctrino_is_frozen);
   ADD_BUILTIN("log_info", 1, ctrino_log_info);
   ADD_BUILTIN("new_array", 1, ctrino_new_array);
   ADD_BUILTIN("new_float_32", 1, ctrino_new_float_32);
