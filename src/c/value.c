@@ -1723,6 +1723,8 @@ value_t module_lookup_identifier(runtime_t *runtime, value_t self,
   value_t stage = start_stage;
   value_t fragment = get_module_fragment_at(self, stage);
   while (true) {
+    CHECK_TRUE("lookup in non-frozen fragment",
+        get_boolean_value(try_validate_deep_frozen(runtime, fragment, NULL)));
     value_t binding = module_fragment_lookup_path(runtime, fragment, path);
     if (!in_condition_cause(ccNotFound, binding))
       return binding;
