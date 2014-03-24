@@ -297,13 +297,12 @@ value_mode_t get_modal_heap_object_mode(value_t value) {
   return get_modal_species_mode(species);
 }
 
-value_t set_modal_heap_object_mode_unchecked(runtime_t *runtime, value_t self,
+void set_modal_heap_object_mode_unchecked(runtime_t *runtime, value_t self,
     value_mode_t mode) {
   value_t old_species = get_heap_object_species(self);
   value_t new_species = get_modal_species_sibling_with_mode(runtime, old_species,
       mode);
   set_heap_object_species(self, new_species);
-  return success();
 }
 
 size_t get_modal_species_base_root(value_t value) {
@@ -1334,11 +1333,9 @@ value_mode_t get_instance_mode(value_t self) {
   return vmMutable;
 }
 
-value_t set_instance_mode_unchecked(runtime_t *runtime, value_t self,
+void set_instance_mode_unchecked(runtime_t *runtime, value_t self,
     value_mode_t mode) {
-  // TODO: implement this.
   UNREACHABLE("setting instance mode not implemented");
-  return new_invalid_mode_change_condition(get_instance_mode(self));
 }
 
 

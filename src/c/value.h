@@ -960,7 +960,7 @@ value_mode_t get_modal_heap_object_mode(value_t value);
 
 // Sets the mode for a modal object by switching to the species with the
 // appropriate mode.
-value_t set_modal_heap_object_mode_unchecked(runtime_t *runtime, value_t self,
+void set_modal_heap_object_mode_unchecked(runtime_t *runtime, value_t self,
     value_mode_t mode);
 
 // Sets the mode this species indicates.

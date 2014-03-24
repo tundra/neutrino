@@ -89,24 +89,21 @@ value_t ensure_shallow_frozen(runtime_t *runtime, value_t value);
 // values. For instance, an array is not considered to own any of its elements.
 value_t ensure_frozen(runtime_t *runtime, value_t value);
 
-// If the given value is deep frozen, returns the internal true value. If it is
-// not attempts to make it deep frozen, that it, traverses the objects reachable
-// and checking whether they're all frozen or deep frozen and marking them as
-// deep frozen as we go. If this succeeds returns the internal true value,
-// otherwise the internal false value. Marking the objects as deep frozen may
-// under some circumstances involve allocation; if there is a problem there a
-// condition may be returned.
+// If the given value is deep frozen, returns true. If it is not attempts to
+// make it deep frozen, that it, traverses the objects reachable and checking
+// whether they're all frozen or deep frozen and marking them as deep frozen as
+// we go. If this succeeds returns true, otherwise false.
 //
 // If validation fails and the offender_out parameter is non-null, an arbitrary
 // mutable object from the object graph will be stored there. This is a
-// debugging aid, since it's arbitrary which object will be stored you should
+// debugging aid and since it's arbitrary which object will be stored you should
 // not depend on the particular value in any way.
 //
 // This is the only reliable way to check whether a value is deep frozen since
 // being deep frozen is a property of an object graph, not an individual object,
 // and using marking like this is the only efficient way to reliably determine
 // that property.
-value_t try_validate_deep_frozen(runtime_t *runtime, value_t value,
+bool try_validate_deep_frozen(runtime_t *runtime, value_t value,
     value_t *offender_out);
 
 // Works the same way as try_validate_deep_frozen but returns a non-condition

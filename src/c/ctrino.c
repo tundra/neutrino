@@ -219,7 +219,7 @@ static value_t ctrino_is_deep_frozen(builtin_arguments_t *args) {
   CHECK_FAMILY(ofCtrino, self);
   value_t value = get_builtin_argument(args, 0);
   runtime_t *runtime = get_builtin_runtime(args);
-  return try_validate_deep_frozen(runtime, value, NULL);
+  return new_boolean(try_validate_deep_frozen(runtime, value, NULL));
 }
 
 #define ADD_BUILTIN(name, argc, impl)                                          \

@@ -57,8 +57,7 @@ value_t transitively_validate_deep_frozen(runtime_t *runtime, value_t value,
     // Try to deep freeze the field's value.
     value_t ensured = validate_deep_frozen(runtime, *field, offender_out);
     if (is_condition(ensured)) {
-      // Deep freezing failed for some reason. Restore the object to its previous
-      // state and bail.
+      // Deep freezing failed. Restore the object to its previous state and bail.
       set_value_mode_unchecked(runtime, value, vmFrozen);
       TOPIC_INFO(Freeze, "Failed to validate deep frozen: %v", value);
       return ensured;
@@ -84,21 +83,17 @@ value_t validate_deep_frozen(runtime_t *runtime, value_t value,
   }
 }
 
-value_t try_validate_deep_frozen(runtime_t *runtime, value_t value,
+bool try_validate_deep_frozen(runtime_t *runtime, value_t value,
     value_t *offender_out) {
   value_t ensured = validate_deep_frozen(runtime, value, offender_out);
   if (is_condition(ensured)) {
-    if (in_condition_cause(ccNotDeepFrozen, ensured)) {
-      // A NotFrozen condition indicates that there is something mutable somewhere
-      // in the object graph.
-      return no();
-    } else {
-      // We got a different condition; propagate it.
-      return ensured;
-    }
+    CHECK_TRUE("deep freeze failed", in_condition_cause(ccNotDeepFrozen, ensured));
+    // A NotFrozen condition indicates that there is something mutable somewhere
+    // in the object graph.
+    return false;
   } else {
     // Non-condition so freezing must have succeeded.
-    return yes();
+    return true;
   }
 }
 
