@@ -73,7 +73,8 @@
 // runtime which is a Bad Thing(TM).
 #define ENUM_SELECTOR_TABLE(F)                                                 \
   F(out_of_bounds,              "out_of_bounds")                               \
-  F(no_such_field,              "no_such_field")
+  F(no_such_field,              "no_such_field")                               \
+  F(is_frozen,                  "is_frozen")
 
 // Invokes the argument for each singleton root (that is, roots that are not
 // generated from the family list).

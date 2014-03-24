@@ -763,6 +763,8 @@ static value_t array_set_at(builtin_arguments_t *args) {
   size_t index = get_integer_value(index_value);
   if (index >= get_array_length(self)) {
     ESCAPE_BUILTIN(args, out_of_bounds, index_value);
+  } else if (!is_mutable(self)) {
+    ESCAPE_BUILTIN(args, is_frozen, self);
   } else {
     value_t value = get_builtin_argument(args, 1);
     set_array_at(self, index, value);

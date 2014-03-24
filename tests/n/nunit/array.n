@@ -56,9 +56,36 @@ def $test_bounds() {
   $assert:equals(20, try ($arr[-1] := null) on.out_of_bounds($i) => 21 + $i);
 }
 
+def $test_frozen() {
+  def $arr := @core:Array.new(3);
+  $assert:equals(8, $arr[0] := 8);
+  $assert:equals(7, $arr[1] := 7);
+  $assert:equals(6, $arr[2] := 6);
+  $assert:equals(3, $arr.length);
+  $assert:equals(8, $arr[0]);
+  $assert:equals(7, $arr[1]);
+  $assert:equals(6, $arr[2]);
+  $assert:equals(false, @core:is_frozen($arr));
+  $assert:equals(false, @core:is_deep_frozen($arr));
+  @core:freeze($arr);
+  $assert:equals(true, @core:is_frozen($arr));
+  $assert:equals(true, @core:is_deep_frozen($arr));
+  $assert:equals(3, $arr.length);
+  $assert:equals(8, $arr[0]);
+  $assert:equals(7, $arr[1]);
+  $assert:equals(6, $arr[2]);
+  $assert:equals(28, try $arr[0] := 18 on.is_frozen($a) => 28);
+  $assert:equals(27, try $arr[1] := 17 on.is_frozen($a) => 27);
+  $assert:equals(26, try $arr[2] := 16 on.is_frozen($a) => 26);
+  $assert:equals(8, $arr[0]);
+  $assert:equals(7, $arr[1]);
+  $assert:equals(6, $arr[2]);
+}
+
 do {
   $test_simple_array_methods();
   $test_mutable_arrays();
   $test_array_iteration();
   $test_bounds();
+  $test_frozen();
 }
