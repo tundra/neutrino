@@ -444,8 +444,7 @@ static value_t runtime_freeze_shared_state(runtime_t *runtime) {
   TRY(ensure_frozen(runtime, roots));
 
   value_t offender = whatever();
-  TRY_DEF(froze, try_validate_deep_frozen(runtime, roots, &offender));
-  if (!get_boolean_value(froze)) {
+  if (!try_validate_deep_frozen(runtime, roots, &offender)) {
     ERROR("Could not freeze the roots object; offender: %v", offender);
     return new_not_deep_frozen_condition();
   }
