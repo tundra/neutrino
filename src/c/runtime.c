@@ -6,6 +6,7 @@
 #include "check.h"
 #include "ctrino.h"
 #include "derived.h"
+#include "freeze.h"
 #include "log.h"
 #include "ook-inl.h"
 #include "runtime-inl.h"

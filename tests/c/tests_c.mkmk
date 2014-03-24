@@ -10,6 +10,7 @@ test_file_names = [
   "test_bind.c",
   "test_crash.c",
   "test_derived.c",
+  "test_freeze.c",
   "test_globals.c",
   "test_heap.c",
   "test_interp.c",

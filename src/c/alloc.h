@@ -198,6 +198,9 @@ value_t new_heap_global_field(runtime_t *runtime, value_t display_name);
 // Creates a new ambience object within the given runtime.
 value_t new_heap_ambience(runtime_t *runtime);
 
+// Creates a new freeze cheat object.
+value_t new_heap_freeze_cheat(runtime_t *runtime, value_t value);
+
 
 // --- P r o c e s s ---
 

@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "codegen.h"
 #include "derived-inl.h"
+#include "freeze.h"
 #include "log.h"
 #include "method.h"
 #include "ook-inl.h"

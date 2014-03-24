@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "ctrino.h"
 #include "derived-inl.h"
+#include "freeze.h"
 #include "log.h"
 #include "runtime.h"
 #include "syntax.h"

@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "ctrino.h"
 #include "derived.h"
+#include "freeze.h"
 #include "process.h"
 #include "tagged.h"
 #include "try-inl.h"
@@ -474,6 +475,14 @@ value_t new_heap_ambience(runtime_t *runtime) {
       ROOT(runtime, ambience_species)));
   set_ambience_runtime(result, runtime);
   set_ambience_present_core_fragment(result, nothing());
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_freeze_cheat(runtime_t *runtime, value_t value) {
+  size_t size = kFreezeCheatSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, freeze_cheat_species)));
+  set_freeze_cheat_value(result, value);
   return post_create_sanity_check(result, size);
 }
 
