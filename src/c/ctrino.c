@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "builtin.h"
 #include "ctrino.h"
+#include "freeze.h"
 #include "log.h"
 #include "value-inl.h"
 
@@ -197,19 +198,29 @@ static value_t ctrino_builtin(builtin_arguments_t *args) {
   return new_heap_builtin_marker(runtime, name);
 }
 
+static value_t ctrino_freeze(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t value = get_builtin_argument(args, 0);
+  runtime_t *runtime = get_builtin_runtime(args);
+  CHECK_FAMILY(ofCtrino, self);
+  TRY(ensure_frozen(runtime, value));
+  return null();
+}
+
 #define ADD_BUILTIN(name, argc, impl)                                          \
   TRY(add_ctrino_method(runtime, space, name, argc, impl))
 
 value_t add_ctrino_builtin_methods(runtime_t *runtime, value_t space) {
+  ADD_BUILTIN("builtin", 1, ctrino_builtin);
+  ADD_BUILTIN("freeze", 1, ctrino_freeze);
   ADD_BUILTIN("get_builtin_type", 1, ctrino_get_builtin_type);
+  ADD_BUILTIN("get_current_backtrace", 0, ctrino_get_current_backtrace);
   ADD_BUILTIN("log_info", 1, ctrino_log_info);
-  ADD_BUILTIN("print_ln", 1, ctrino_print_ln);
   ADD_BUILTIN("new_array", 1, ctrino_new_array);
   ADD_BUILTIN("new_float_32", 1, ctrino_new_float_32);
   ADD_BUILTIN("new_function", 1, ctrino_new_function);
   ADD_BUILTIN("new_instance_manager", 1, ctrino_new_instance_manager);
+  ADD_BUILTIN("print_ln", 1, ctrino_print_ln);
   ADD_BUILTIN("to_string", 1, ctrino_to_string);
-  ADD_BUILTIN("get_current_backtrace", 0, ctrino_get_current_backtrace);
-  ADD_BUILTIN("builtin", 1, ctrino_builtin);
   return success();
 }

@@ -11,3 +11,6 @@ def $print_ln($value) => @ctrino.print_ln($value);
 
 ## Instance manager used within the core library.
 def @manager := @ctrino.new_instance_manager(null);
+
+## Freeze the given value.
+def $freeze($value) => @ctrino.freeze($value);
