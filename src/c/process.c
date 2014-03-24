@@ -4,6 +4,7 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "derived-inl.h"
+#include "freeze.h"
 #include "log.h"
 #include "process.h"
 #include "tagged-inl.h"
