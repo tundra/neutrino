@@ -195,7 +195,7 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
     while (true) {
       opcode_t opcode = (opcode_t) read_short(&cache, &frame, 0);
       TOPIC_INFO(Interpreter, "Opcode: %s (%i)", get_opcode_name(opcode),
-          opcode_counter++);
+          ++opcode_counter);
       IF_EXPENSIVE_CHECKS_ENABLED(MAYBE_INTERRUPT());
       switch (opcode) {
         case ocPush: {
@@ -444,13 +444,11 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           break;
         }
         case ocLoadGlobal: {
-          value_t ident = read_value(&cache, &frame, 1);
-          CHECK_FAMILY(ofIdentifier, ident);
+          value_t path = read_value(&cache, &frame, 1);
+          CHECK_FAMILY(ofPath, path);
           value_t fragment = read_value(&cache, &frame, 2);
-          CHECK_FAMILY(ofModuleFragment, fragment);
-          value_t module = get_module_fragment_module(fragment);
-          E_TRY_DEF(value, module_lookup_identifier(runtime, module,
-              get_identifier_stage(ident), get_identifier_path(ident)));
+          CHECK_FAMILY_OPT(ofModuleFragment, fragment);
+          E_TRY_DEF(value, module_fragment_lookup_path_full(runtime, fragment, path));
           frame_push_value(&frame, value);
           frame.pc += kLoadGlobalOperationSize;
           break;

@@ -810,13 +810,11 @@ value_t get_or_create_module_fragment_methodspaces_cache(runtime_t *runtime,
   set_module_fragment_methodspaces_cache(fragment, new_integer(0));
   // Scan through this fragment and its predecessors and add their transitive
   // dependencies.
-  value_t module = get_module_fragment_module(fragment);
   value_t current = fragment;
-  while (!in_condition_cause(ccNotFound, current)) {
+  while (!is_nothing(current)) {
     value_t methodspace = get_module_fragment_methodspace(current);
     TRY(ensure_methodspace_transitive_dependencies(runtime, methodspace, cache));
-    value_t stage = get_module_fragment_stage(current);
-    current = get_module_fragment_before(module, stage);
+    current = get_module_fragment_predecessor(current);
   }
   TRY(ensure_frozen(runtime, cache));
   set_module_fragment_methodspaces_cache(fragment, cache);
@@ -870,7 +868,7 @@ static value_t lookup_subject_methods(full_thunk_o *thunk, value_t *subject_out)
   sigmap_state_t *state = UPCAST(thunk)->state;
   total_sigmap_input_o *input = thunk->input;
   value_t subject = *subject_out = get_invocation_subject_with_shortcut(input);
-  TOPIC_INFO(Lookup, "Subject value: %v", subject);
+  TOPIC_INFO(Lookup, "Subject value: %9v", subject);
   if (in_condition_cause(ccNotFound, subject)) {
     // Just in case, check that the shortcut version gave the correct answer.
     // The case where it returns a non-condition is trivially correct (FLW) so this
@@ -881,10 +879,10 @@ static value_t lookup_subject_methods(full_thunk_o *thunk, value_t *subject_out)
   }
   // Extract the origin of the subject.
   value_t type = get_primary_type(subject, UPCAST(input)->runtime);
-  TOPIC_INFO(Lookup, "Subject type: %v", type);
+  TOPIC_INFO(Lookup, "Subject type: %9v", type);
   CHECK_FAMILY(ofType, type);
   value_t origin = get_type_origin(type, UPCAST(input)->ambience);
-  TOPIC_INFO(Lookup, "Subject origin: %v", origin);
+  TOPIC_INFO(Lookup, "Subject origin: %9v", origin);
   if (is_nothing(origin))
     // Some types have no origin (at least at the moment) and that's okay, we
     // just don't perform the extra lookup.

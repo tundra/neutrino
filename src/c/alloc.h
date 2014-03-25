@@ -144,11 +144,12 @@ value_t new_heap_block(runtime_t *runtime, value_t section);
 value_t new_heap_namespace(runtime_t *runtime, value_t value);
 
 // Creates a new module fragment object.
-value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t stage,
-    value_t nspace, value_t methodspace, value_t imports);
+value_t new_heap_module_fragment(runtime_t *runtime, value_t stage, value_t path,
+    value_t predecessor, value_t nspace, value_t methodspace, value_t imports);
 
 // Creates a new module fragment private access object.
-value_t new_heap_module_fragment_private(runtime_t *runtime, value_t owner);
+value_t new_heap_module_fragment_private(runtime_t *runtime, value_t owner,
+    value_t successor);
 
 // Creates a new empty bound module with the given path.
 value_t new_heap_empty_module(runtime_t *runtime, value_t path);

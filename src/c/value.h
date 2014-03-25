@@ -1406,21 +1406,25 @@ typedef enum {
   feComplete
 } module_fragment_epoch_t;
 
-static const size_t kModuleFragmentSize = HEAP_OBJECT_SIZE(8);
+static const size_t kModuleFragmentSize = HEAP_OBJECT_SIZE(9);
 static const size_t kModuleFragmentStageOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kModuleFragmentModuleOffset = HEAP_OBJECT_FIELD_OFFSET(1);
-static const size_t kModuleFragmentNamespaceOffset = HEAP_OBJECT_FIELD_OFFSET(2);
-static const size_t kModuleFragmentMethodspaceOffset = HEAP_OBJECT_FIELD_OFFSET(3);
-static const size_t kModuleFragmentImportsOffset = HEAP_OBJECT_FIELD_OFFSET(4);
-static const size_t kModuleFragmentEpochOffset = HEAP_OBJECT_FIELD_OFFSET(5);
-static const size_t kModuleFragmentPrivateOffset = HEAP_OBJECT_FIELD_OFFSET(6);
-static const size_t kModuleFragmentMethodspacesCacheOffset = HEAP_OBJECT_FIELD_OFFSET(7);
+static const size_t kModuleFragmentPathOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kModuleFragmentPredecessorOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kModuleFragmentNamespaceOffset = HEAP_OBJECT_FIELD_OFFSET(3);
+static const size_t kModuleFragmentMethodspaceOffset = HEAP_OBJECT_FIELD_OFFSET(4);
+static const size_t kModuleFragmentImportsOffset = HEAP_OBJECT_FIELD_OFFSET(5);
+static const size_t kModuleFragmentEpochOffset = HEAP_OBJECT_FIELD_OFFSET(6);
+static const size_t kModuleFragmentPrivateOffset = HEAP_OBJECT_FIELD_OFFSET(7);
+static const size_t kModuleFragmentMethodspacesCacheOffset = HEAP_OBJECT_FIELD_OFFSET(8);
 
 // The index of the stage this fragment belongs to.
 ACCESSORS_DECL(module_fragment, stage);
 
-// The module this is a fragment of.
-ACCESSORS_DECL(module_fragment, module);
+// The namespace path of this fragment.
+ACCESSORS_DECL(module_fragment, path);
+
+// The fragment that comes before this one, or nothing.
+ACCESSORS_DECL(module_fragment, predecessor);
 
 // The namespace that holds the module fragment's own bindings.
 ACCESSORS_DECL(module_fragment, namespace);
@@ -1449,14 +1453,23 @@ ACCESSORS_DECL(module_fragment, methodspaces_cache);
 // Returns true iff this fragment has been bound.
 bool is_module_fragment_bound(value_t fragment);
 
+// Returns the predecessor of the given fragment with the given stage or, if
+// none can be found, nothing. If the given fragment has the given stage then
+// it is considered to be its own predecessor and returned.
+value_t get_module_fragment_predecessor_at(value_t self, value_t stage);
+
 
 // --- M o d u l e   f r a g m e n t   p r i v a t e ---
 
-static const size_t kModuleFragmentPrivateSize = HEAP_OBJECT_SIZE(1);
+static const size_t kModuleFragmentPrivateSize = HEAP_OBJECT_SIZE(2);
 static const size_t kModuleFragmentPrivateOwnerOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kModuleFragmentPrivateSuccessorOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // Returns the module fragment that this private object provides access to.
 ACCESSORS_DECL(module_fragment_private, owner);
+
+// The owner's successor module.
+ACCESSORS_DECL(module_fragment_private, successor);
 
 
 // --- M o d u l e   ---
@@ -1476,7 +1489,7 @@ ACCESSORS_DECL(module, fragments);
 // the binding cannot be found a lookup error condition is returned. To avoid
 // having to construct new identifiers when shifting between stages this call
 // takes the stage and path of the identifier separately.
-value_t module_lookup_identifier(runtime_t *runtime, value_t self, value_t stage,
+value_t module_fragment_lookup_path_full(runtime_t *runtime, value_t fragment,
     value_t path);
 
 // Returns the fragment in the given module that corresponds to the specified
@@ -1487,7 +1500,7 @@ value_t get_module_fragment_at(value_t self, value_t stage);
 // stage. If there is no such fragment a new uninitialized one is created and
 // returned.
 value_t get_or_create_module_fragment_at(runtime_t *runtime, value_t self,
-    value_t stage);
+    value_t stage, bool *created);
 
 // Add a module fragment to the list of fragments held by this module.
 value_t add_module_fragment(runtime_t *runtime, value_t self, value_t fragment);

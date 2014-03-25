@@ -17,8 +17,8 @@ TEST(interp, binding_info_size) {
 static value_t new_empty_module_fragment(runtime_t *runtime) {
   TRY_DEF(module, new_heap_empty_module(runtime, nothing()));
   TRY_DEF(methodspace, new_heap_methodspace(runtime));
-  TRY_DEF(fragment, new_heap_module_fragment(runtime, module, present_stage(),
-      nothing(), methodspace, nothing()));
+  TRY_DEF(fragment, new_heap_module_fragment(runtime, present_stage(),
+      nothing(), nothing(), nothing(), methodspace, nothing()));
   TRY(add_to_array_buffer(runtime, get_module_fragments(module), fragment));
   return fragment;
 }

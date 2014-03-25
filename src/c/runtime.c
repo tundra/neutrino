@@ -87,8 +87,8 @@ static value_t create_ctrino_origin(runtime_t *runtime) {
   TRY_DEF(methodspace, new_heap_methodspace(runtime));
   TRY(add_ctrino_builtin_methods(runtime, methodspace));
   TRY(ensure_frozen(runtime, methodspace));
-  TRY_DEF(fragment, new_heap_module_fragment(runtime, module, present_stage(),
-      nothing(), methodspace, nothing()));
+  TRY_DEF(fragment, new_heap_module_fragment(runtime, present_stage(), nothing(),
+      nothing(), nothing(), methodspace, nothing()));
   TRY(get_or_create_module_fragment_methodspaces_cache(runtime, fragment));
   TRY(ensure_frozen(runtime, fragment));
   return fragment;

@@ -919,8 +919,8 @@ TEST(value, ambience) {
   ASSERT_VALEQ(nothing(), follow_ambience_redirect(ambience, redirect));
   ASSERT_VALEQ(nothing(), get_type_origin(ROOT(runtime, string_type), ambience));
 
-  value_t frag = new_heap_module_fragment(runtime, nothing(), present_stage(),
-      nothing(), nothing(), nothing());
+  value_t frag = new_heap_module_fragment(runtime, present_stage(), nothing(),
+      nothing(), nothing(), nothing(), nothing());
   set_ambience_present_core_fragment(ambience, frag);
   ASSERT_VALEQ(frag, get_ambience_present_core_fragment(ambience));
   ASSERT_VALEQ(frag, follow_ambience_redirect(ambience, redirect));
