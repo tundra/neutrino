@@ -23,10 +23,10 @@
       { "match": "[\\w_]+:",
         "name": "variable.parameter.neutrino"
       },
-      { "match": "\\.([\\w_]*)",
+      { "match": "(\\.|->)([\\w_]*)",
         "name": "entity.name.function.neutrino"
       },
-      { "match": "\\.?([!+=<>/*%-]+)",
+      { "match": "(\\.|->)?([!+=<>/*%-]+)",
         "captures": {
           "1": {"name": "keyword.operator.neutrino"}
         },

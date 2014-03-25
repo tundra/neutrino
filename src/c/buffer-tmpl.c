@@ -1,5 +1,5 @@
-// Copyright 2013 the Neutrino authors (see AUTHORS).
-// Licensed under the Apache License, Version 2.0 (see LICENSE).
+//- Copyright 2013 the Neutrino authors (see AUTHORS).
+//- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 // This is a make-your-own template; define the appropriate macros and include
 // this file and it will expand to the implementation of a buffer type that
