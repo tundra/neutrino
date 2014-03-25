@@ -1664,10 +1664,6 @@ value_t get_module_fragment_before(value_t self, value_t stage) {
   return best_fragment;
 }
 
-bool has_module_fragment_at(value_t self, value_t stage) {
-  return !in_condition_cause(ccNotFound, get_module_fragment_at(self, stage));
-}
-
 static value_t module_fragment_lookup_path_local(runtime_t *runtime, value_t self,
     value_t path);
 

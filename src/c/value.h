@@ -1471,6 +1471,12 @@ ACCESSORS_DECL(module_fragment_private, owner);
 // The owner's successor module.
 ACCESSORS_DECL(module_fragment_private, successor);
 
+// Looks up a path in the given fragment, scanning backwards through the
+// fragment's predecessors if necessary. If for any reason the binding cannot be
+// found a lookup error condition is returned.
+value_t module_fragment_lookup_path_full(runtime_t *runtime, value_t fragment,
+    value_t path);
+
 
 // --- M o d u l e   ---
 
@@ -1483,14 +1489,6 @@ ACCESSORS_DECL(module, path);
 
 // The fragments that make up this module.
 ACCESSORS_DECL(module, fragments);
-
-// Looks up an identifier in the given module by finding the fragment for the
-// appropriate stage and looking the path up in the namespace. If for any reason
-// the binding cannot be found a lookup error condition is returned. To avoid
-// having to construct new identifiers when shifting between stages this call
-// takes the stage and path of the identifier separately.
-value_t module_fragment_lookup_path_full(runtime_t *runtime, value_t fragment,
-    value_t path);
 
 // Returns the fragment in the given module that corresponds to the specified
 // stage. If there is no such fragment a NotFound condition is returned.
@@ -1508,10 +1506,6 @@ value_t add_module_fragment(runtime_t *runtime, value_t self, value_t fragment);
 // Returns the fragment in the given module that comes immediately before the
 // given stage.
 value_t get_module_fragment_before(value_t self, value_t stage);
-
-// Returns true iff the given module has a fragment for the given stage. If there
-// is no stage before this one NotFound is returned.
-bool has_module_fragment_at(value_t self, value_t stage);
 
 
 // --- P a t h ---
