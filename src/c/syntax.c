@@ -965,8 +965,11 @@ ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acInFamilyOpt,
     ofIdentifier, Identifier, identifier);
 
 value_t emit_namespace_variable_ast(value_t self, assembler_t *assm) {
-  assembler_emit_load_global(assm, get_namespace_variable_ast_identifier(self),
-      assm->fragment);
+  value_t ident = get_namespace_variable_ast_identifier(self);
+  value_t target = get_module_fragment_predecessor_at(assm->fragment,
+      get_identifier_stage(ident));
+  value_t path = get_identifier_path(ident);
+  assembler_emit_load_global(assm, path, target);
   return success();
 }
 
@@ -1037,9 +1040,9 @@ value_t quick_and_dirty_evaluate_syntax(runtime_t *runtime, value_t fragment,
       return get_literal_ast_value(value_ast);
     case ofNamespaceVariableAst: {
       value_t ident = get_namespace_variable_ast_identifier(value_ast);
-      value_t module = get_module_fragment_module(fragment);
-      return module_lookup_identifier(runtime, module,
-          get_identifier_stage(ident), get_identifier_path(ident));
+      value_t target = get_module_fragment_predecessor_at(fragment,
+          get_identifier_stage(ident));
+      return module_fragment_lookup_path_full(runtime, target, get_identifier_path(ident));
     }
     default:
       ERROR("Quick-and-dirty evaluation doesn't work for %v", value_ast);

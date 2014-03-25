@@ -1625,14 +1625,17 @@ value_t get_module_fragment_at(value_t self, value_t stage) {
 }
 
 value_t get_or_create_module_fragment_at(runtime_t *runtime, value_t self,
-    value_t stage) {
+    value_t stage, bool *created_out) {
   value_t existing = get_module_fragment_at(self, stage);
-  if (!in_condition_cause(ccNotFound, existing))
+  bool created = in_condition_cause(ccNotFound, existing);
+  if (created_out != NULL)
+    *created_out = created;
+  if (!created)
     return existing;
   // No fragment has been created yet. Create one but leave it uninitialized
   // since we don't have the context do that properly here.
-  TRY_DEF(new_fragment, new_heap_module_fragment(runtime, self, stage, nothing(),
-      nothing(), nothing()));
+  TRY_DEF(new_fragment, new_heap_module_fragment(runtime, stage,
+      get_module_path(self), nothing(), nothing(), nothing(), nothing()));
   set_module_fragment_epoch(new_fragment, feUninitialized);
   TRY(add_to_array_buffer(runtime, get_module_fragments(self), new_fragment));
   return new_fragment;
@@ -1661,11 +1664,7 @@ value_t get_module_fragment_before(value_t self, value_t stage) {
   return best_fragment;
 }
 
-bool has_module_fragment_at(value_t self, value_t stage) {
-  return !in_condition_cause(ccNotFound, get_module_fragment_at(self, stage));
-}
-
-static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
+static value_t module_fragment_lookup_path_local(runtime_t *runtime, value_t self,
     value_t path);
 
 // Look up a path in the import part of a fragment. If an import is found the
@@ -1684,9 +1683,7 @@ static value_t module_fragment_lookup_path_in_imports(runtime_t *runtime,
   // start the lookup in the fragment but if it doesn't find the result continue
   // backwards through the stages.
   value_t tail = get_path_tail(path);
-  value_t module = get_module_fragment_module(fragment);
-  value_t start_stage = get_module_fragment_stage(fragment);
-  return module_lookup_identifier(runtime, module, start_stage, tail);
+  return module_fragment_lookup_path_full(runtime, fragment, tail);
 }
 
 // Look up a path in the namespace part of a fragment.
@@ -1699,7 +1696,7 @@ static value_t module_fragment_lookup_path_in_namespace(runtime_t *runtime,
 // Look up a path locally in the given fragment. You generally don't want to
 // call this directly unless you explicitly continue backwards through the
 // predecessor fragments if this lookup doesn't find what you're looking for.
-static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
+static value_t module_fragment_lookup_path_local(runtime_t *runtime, value_t self,
     value_t path) {
   CHECK_FAMILY(ofPath, path);
   CHECK_FALSE("looking up empty path", is_path_empty(path));
@@ -1712,24 +1709,21 @@ static value_t module_fragment_lookup_path(runtime_t *runtime, value_t self,
   return module_fragment_lookup_path_in_namespace(runtime, self, path);
 }
 
-value_t module_lookup_identifier(runtime_t *runtime, value_t self,
-    value_t start_stage, value_t path) {
-  CHECK_PHYLUM(tpStageOffset, start_stage);
+value_t module_fragment_lookup_path_full(runtime_t *runtime, value_t self, value_t path) {
+  // The given fragment may be nothing but that only gives a meaningful result
+  // if the path is :ctrino.
+  CHECK_FAMILY_OPT(ofModuleFragment, self);
   CHECK_FAMILY(ofPath, path);
   value_t head = get_path_head(path);
   if (value_identity_compare(head, RSTR(runtime, ctrino)))
     return ROOT(runtime, ctrino);
   // Loop backwards through the fragments, starting from the specified stage.
-  value_t stage = start_stage;
-  value_t fragment = get_module_fragment_at(self, stage);
-  while (true) {
-    value_t binding = module_fragment_lookup_path(runtime, fragment, path);
+  value_t fragment = self;
+  while (!is_nothing(fragment)) {
+    value_t binding = module_fragment_lookup_path_local(runtime, fragment, path);
     if (!in_condition_cause(ccNotFound, binding))
       return binding;
-    fragment = get_module_fragment_before(self, stage);
-    if (in_condition_cause(ccNotFound, fragment))
-      break;
-    stage = get_module_fragment_stage(fragment);
+    fragment = get_module_fragment_predecessor(fragment);
   }
   WARN("Namespace lookup of %v failed", path);
   return new_lookup_error_condition(lcNamespace);
@@ -1741,12 +1735,14 @@ value_t ensure_module_owned_values_frozen(runtime_t *runtime, value_t self) {
 }
 
 
-
 // --- M o d u l e   f r a g m e n t ---
 
-ACCESSORS_IMPL(ModuleFragment, module_fragment, acNoCheck, 0, Stage, stage);
-ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofModule,
-    Module, module);
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acInPhylumOpt, tpStageOffset,
+    Stage, stage);
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofPath, Path,
+    path);
+ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofModuleFragment,
+    Predecessor, predecessor);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofNamespace,
     Namespace, namespace);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofMethodspace,
@@ -1778,8 +1774,7 @@ value_t module_fragment_validate(value_t value) {
 void module_fragment_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofModuleFragment, value);
   string_buffer_printf(context->buf, "#<fragment ");
-  value_t module = get_module_fragment_module(value);
-  value_print_inner_on(get_module_path(module), context, -1);
+  value_print_inner_on(get_module_fragment_path(value), context, -1);
   string_buffer_printf(context->buf, " ");
   value_t stage = get_module_fragment_stage(value);
   value_print_inner_on(stage, context, -1);
@@ -1788,6 +1783,13 @@ void module_fragment_print_on(value_t value, print_on_context_t *context) {
 
 bool is_module_fragment_bound(value_t fragment) {
   return get_module_fragment_epoch(fragment) == feComplete;
+}
+
+value_t get_module_fragment_predecessor_at(value_t self, value_t stage) {
+  value_t current = self;
+  while (!is_nothing(current) && !is_same_value(get_module_fragment_stage(current), stage))
+    current = get_module_fragment_predecessor(current);
+  return current;
 }
 
 value_t ensure_module_fragment_owned_values_frozen(runtime_t *runtime, value_t self) {
@@ -1804,10 +1806,13 @@ FIXED_GET_MODE_IMPL(module_fragment_private, vmMutable);
 
 ACCESSORS_IMPL(ModuleFragmentPrivate, module_fragment_private, acInFamilyOpt,
     ofModuleFragment, Owner, owner);
+ACCESSORS_IMPL(ModuleFragmentPrivate, module_fragment_private, acInFamilyOpt,
+    ofModuleFragment, Successor, successor);
 
 value_t module_fragment_private_validate(value_t value) {
   VALIDATE_FAMILY(ofModuleFragmentPrivate, value);
   VALIDATE_FAMILY_OPT(ofModuleFragment, get_module_fragment_private_owner(value));
+  VALIDATE_FAMILY_OPT(ofModuleFragment, get_module_fragment_private_successor(value));
   return success();
 }
 
@@ -1817,8 +1822,7 @@ void module_fragment_private_print_on(value_t value, print_on_context_t *context
   value_t fragment = get_module_fragment_private_owner(value);
   value_t stage = get_module_fragment_stage(fragment);
   value_print_inner_on(stage, context, -1);
-  value_t module = get_module_fragment_module(fragment);
-  value_t path = get_module_path(module);
+  value_t path = get_module_fragment_path(fragment);
   value_print_inner_on(path, context, -1);
   string_buffer_printf(context->buf, ">");
 }
@@ -1830,15 +1834,9 @@ static value_t module_fragment_private_new_type(builtin_arguments_t *args) {
   // The type is bound in the namespace of the fragment .new_type is called on
   // but its origin is the next module since that's where the methods for the
   // type are defined there.
-  value_t origin_fragment = get_module_fragment_private_owner(self);
-  value_t origin_stage = get_module_fragment_stage(origin_fragment);
-  value_t next_stage = get_stage_offset_successor(origin_stage);
-  value_t origin_module = get_module_fragment_module(origin_fragment);
   runtime_t *runtime = get_builtin_runtime(args);
-  value_t next_fragment = get_or_create_module_fragment_at(runtime,
-      origin_module, next_stage);
-  return new_heap_type(get_builtin_runtime(args), afMutable, next_fragment,
-      display_name);
+  value_t next_fragment = get_module_fragment_private_successor(self);
+  return new_heap_type(runtime, afMutable, next_fragment, display_name);
 }
 
 static value_t module_fragment_private_new_global_field(builtin_arguments_t *args) {

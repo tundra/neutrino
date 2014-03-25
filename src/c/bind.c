@@ -205,10 +205,22 @@ static value_t apply_module_fragment_elements(binding_context_t *context,
 
 // Binds an individual module fragment.
 static value_t bind_module_fragment(binding_context_t *context,
-    value_t entry, value_t bound_fragment) {
+    value_t entry, value_t bound_module, value_t bound_fragment) {
   CHECK_FAMILY(ofModuleFragment, bound_fragment);
   value_t unbound_fragment = get_fragment_entry_fragment(entry);
   value_t imports = get_fragment_entry_imports(entry);
+  // Try to set the fragment's predecessor.
+  value_t predecessor = get_module_fragment_before(bound_module,
+      get_module_fragment_stage(bound_fragment));
+  if (!in_condition_cause(ccNotFound, predecessor))
+    set_module_fragment_predecessor(bound_fragment, predecessor);
+  // Set the fragment's private successor.
+  value_t stage = get_module_fragment_stage(bound_fragment);
+  runtime_t *runtime = get_ambience_runtime(context->ambience);
+  value_t successor = get_or_create_module_fragment_at(runtime, bound_module,
+      get_stage_offset_successor(stage), NULL);
+  value_t phrivate = get_module_fragment_private(bound_fragment);
+  set_module_fragment_private_successor(phrivate, successor);
   if (!is_nothing(unbound_fragment)) {
     // This is a real fragment so we have to apply the entries.
     CHECK_FAMILY(ofUnboundModuleFragment, unbound_fragment);
@@ -272,8 +284,9 @@ static value_t init_empty_module_fragment(runtime_t *runtime, value_t fragment) 
 // Creates a new empty but suitably initialized bound module fragment.
 static value_t new_empty_module_fragment(runtime_t *runtime, value_t stage,
     value_t module) {
-  TRY_DEF(empty_fragment, new_heap_module_fragment(runtime, module, stage,
-      nothing(), nothing(), nothing()));
+  value_t path = get_module_path(module);
+  TRY_DEF(empty_fragment, new_heap_module_fragment(runtime, stage, path,
+      nothing(), nothing(), nothing(), nothing()));
   TRY(init_empty_module_fragment(runtime, empty_fragment));
   return empty_fragment;
 }
@@ -334,7 +347,7 @@ static value_t execute_binding_schedule(binding_context_t *context, value_t sche
     value_t module_entries = get_id_hash_map_at(context->fragment_entry_map, path);
     value_t fragment_entry = get_id_hash_map_at(module_entries, stage);
     // Bind the fragment based on the data from the entry.
-    TRY(bind_module_fragment(context, fragment_entry, bound_fragment));
+    TRY(bind_module_fragment(context, fragment_entry, bound_module, bound_fragment));
     TOPIC_INFO(Library, "Done binding %v", next);
   }
   return success();

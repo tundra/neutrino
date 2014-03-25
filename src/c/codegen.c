@@ -568,11 +568,12 @@ value_t assembler_emit_load_refracted_local(assembler_t *assm, size_t index,
   return success();
 }
 
-value_t assembler_emit_load_global(assembler_t *assm, value_t name,
+value_t assembler_emit_load_global(assembler_t *assm, value_t path,
     value_t fragment) {
-  CHECK_FAMILY(ofModuleFragment, fragment);
+  CHECK_FAMILY_OPT(ofModuleFragment, fragment);
+  CHECK_FAMILY(ofPath, path);
   assembler_emit_opcode(assm, ocLoadGlobal);
-  TRY(assembler_emit_value(assm, name));
+  TRY(assembler_emit_value(assm, path));
   TRY(assembler_emit_value(assm, fragment));
   assembler_adjust_stack_height(assm, +1);
   return success();

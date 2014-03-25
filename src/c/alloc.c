@@ -324,19 +324,21 @@ value_t new_heap_namespace(runtime_t *runtime, value_t value) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t stage,
-    value_t nspace, value_t methodspace, value_t imports) {
-  CHECK_FAMILY_OPT(ofModule, module);
+value_t new_heap_module_fragment(runtime_t *runtime, value_t stage, value_t path,
+    value_t predecessor, value_t nspace, value_t methodspace, value_t imports) {
   CHECK_PHYLUM(tpStageOffset, stage);
+  CHECK_FAMILY_OPT(ofPath, path);
+  CHECK_FAMILY_OPT(ofModuleFragment, predecessor);
   CHECK_FAMILY_OPT(ofNamespace, nspace);
   CHECK_FAMILY_OPT(ofMethodspace, methodspace);
   CHECK_FAMILY_OPT(ofIdHashMap, imports);
-  TRY_DEF(phrivate, new_heap_module_fragment_private(runtime, nothing()));
+  TRY_DEF(phrivate, new_heap_module_fragment_private(runtime, nothing(), nothing()));
   size_t size = kModuleFragmentSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_module_fragment_species)));
   set_module_fragment_stage(result, stage);
-  set_module_fragment_module(result, module);
+  set_module_fragment_path(result, path);
+  set_module_fragment_predecessor(result, predecessor);
   set_module_fragment_namespace(result, nspace);
   set_module_fragment_methodspace(result, methodspace);
   set_module_fragment_imports(result, imports);
@@ -347,11 +349,13 @@ value_t new_heap_module_fragment(runtime_t *runtime, value_t module, value_t sta
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_module_fragment_private(runtime_t *runtime, value_t owner) {
+value_t new_heap_module_fragment_private(runtime_t *runtime, value_t owner,
+    value_t successor) {
   size_t size = kModuleFragmentPrivateSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
         ROOT(runtime, mutable_module_fragment_private_species)));
   set_module_fragment_private_owner(result, owner);
+  set_module_fragment_private_successor(result, successor);
   return post_create_sanity_check(result, size);
 }
 
