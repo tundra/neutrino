@@ -244,6 +244,9 @@ value_t expand_variant_to_map(runtime_t *runtime, variant_value_t *value);
 value_t expand_variant_to_array_buffer(runtime_t *runtime, variant_value_t *value);
 value_t expand_variant_to_path(runtime_t *runtime, variant_value_t *value);
 value_t expand_variant_to_identifier(runtime_t *runtime, variant_value_t *value);
+value_t expand_variant_to_signature(runtime_t *runtime, variant_value_t *value);
+value_t expand_variant_to_parameter(runtime_t *runtime, variant_value_t *value);
+value_t expand_variant_to_guard(runtime_t *runtime, variant_value_t *value);
 
 // Type of expander functions that turn variants into values.
 typedef value_t (variant_expander_t)(runtime_t *runtime, variant_value_t *variant);
@@ -316,10 +319,6 @@ void *test_arena_copy_array(test_arena_t *arena, size_t size, size_t elmsize, ..
 static bool variant_is_marker(variant_t *variant) {
   return variant->expander == NULL;
 }
-
-// Alias for commas to use between elements as arguments to vArray. Commas mess
-// with macros, this fixes that.
-#define o ,
 
 // Creates a new variant in the given arena with the given expander and
 // payload.
@@ -430,6 +429,17 @@ variant_value_t var_array(test_arena_t *arena, size_t elmc, ...);
 // Expands to a variant representing an identifier with the given path and
 // stage.
 #define vIdentifier(S, P) vVariant(expand_variant_to_identifier, vArrayPayload(S, P))
+
+// Expands to a variant representing a signature with the given allow_extra and
+// parameters.
+#define vSignature(AE, ...) vVariant(expand_variant_to_signature, vArrayPayload(vBool(AE), __VA_ARGS__))
+
+// Expands to a variant representing a parameter with the given guard, is_optional,
+// and tags.
+#define vParameter(G, O, ...) vVariant(expand_variant_to_parameter, vArrayPayload(G, vBool(O), vArray(__VA_ARGS__)))
+
+// Expands to a variant representing a guard with the given type and value.
+#define vGuard(T, V) vVariant(expand_variant_to_guard, vArrayPayload(vInt(T), V))
 
 // Instantiates a variant value in the runtime stored in the variable 'runtime'.
 #define C(V) variant_to_value(runtime, (V))

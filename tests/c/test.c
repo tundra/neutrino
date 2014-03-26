@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "check.h"
 #include "crash.h"
+#include "freeze.h"
 #include "log.h"
 #include "ook-inl.h"
 #include "runtime.h"
@@ -454,6 +455,63 @@ value_t expand_variant_to_identifier(runtime_t *runtime, variant_value_t *value)
   TRY_DEF(stage, C(value->as_array.elements[0]));
   TRY_DEF(path, C(value->as_array.elements[1]));
   return new_heap_identifier(runtime, stage, path);
+}
+
+value_t expand_variant_to_signature(runtime_t *runtime, variant_value_t *value) {
+  TRY_DEF(args, expand_variant_to_array(runtime, value));
+  bool allow_extra = get_boolean_value(get_array_at(args, 0));
+  size_t param_count = get_array_length(args) - 1;
+  size_t mandatory_count = 0;
+  size_t tag_count = 0;
+  // First we just collect some information, then we'll build the signature.
+  for (size_t i = 0; i < param_count; i++) {
+    value_t param = get_array_at(args, i + 1);
+    value_t tags = get_parameter_tags(param);
+    if (!get_parameter_is_optional(param))
+      mandatory_count++;
+    tag_count += get_array_length(tags);
+  }
+  // Create an array with pairs of values, the first entry of which is the tag
+  // and the second is the parameter.
+  TRY_DEF(entries, new_heap_pair_array(runtime, tag_count));
+  // Loop over all the tags, t being the tag index across the whole signature.
+  size_t t = 0;
+  for (size_t i = 0; i < param_count; i++) {
+    value_t param = get_array_at(args, i + 1);
+    CHECK_EQ("param index already set", 0, get_parameter_index(param));
+    set_parameter_index(param, i);
+    ensure_frozen(runtime, param);
+    value_t tags = get_parameter_tags(param);
+    for (size_t j = 0; j < get_array_length(tags); j++, t++) {
+      value_t tag = get_array_at(tags, j);
+      set_pair_array_first_at(entries, t, tag);
+      set_pair_array_second_at(entries, t, param);
+    }
+  }
+  co_sort_pair_array(entries);
+  return new_heap_signature(runtime, afFreeze, entries, param_count,
+      mandatory_count, allow_extra);
+}
+
+value_t expand_variant_to_parameter(runtime_t *runtime, variant_value_t *value) {
+  TRY_DEF(args, expand_variant_to_array(runtime, value));
+  value_t guard = get_array_at(args, 0);
+  bool is_optional = get_boolean_value(get_array_at(args, 1));
+  value_t tags = get_array_at(args, 2);
+  // The parameter is kept mutable such that the signature construction code
+  // can set the index. Don't reuse parameters.
+  return new_heap_parameter(runtime, afMutable, guard, tags, is_optional, 0);
+}
+
+value_t expand_variant_to_guard(runtime_t *runtime, variant_value_t *value) {
+  TRY_DEF(args, expand_variant_to_array(runtime, value));
+  guard_type_t type = (guard_type_t) get_integer_value(get_array_at(args, 0));
+  switch (type) {
+  case gtAny:
+    return ROOT(runtime, any_guard);
+  default:
+    return new_heap_guard(runtime, afFreeze, type, get_array_at(args, 1));
+  }
 }
 
 value_t variant_to_value(runtime_t *runtime, variant_t *variant) {

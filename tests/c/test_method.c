@@ -2,6 +2,7 @@
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "alloc.h"
+#include "freeze.h"
 #include "ook.h"
 #include "runtime.h"
 #include "tagged-inl.h"
@@ -259,103 +260,62 @@ TEST(method, call_tags_with_stack) {
   DISPOSE_RUNTIME();
 }
 
-// Description of a parameter used for testing.
-typedef struct {
-  value_t guard;
-  bool is_optional;
-  variant_t *tags;
-} test_param_t;
-
-// Creates a new test param struct.
-static test_param_t *new_test_param(test_arena_t *arena, value_t guard,
-    bool is_optional, variant_t *tags) {
-  test_param_t *result = ARENA_MALLOC(arena, test_param_t);
-  result->guard = guard;
-  result->is_optional = is_optional;
-  result->tags = tags;
-  return result;
-}
-
-// Packs its arguments into a test_param_t struct so they can be passed on to
-// make_signature. This is all a bit of a mess but building complex literals is
-// tough in C.
-#define PARAM(guard, is_optional, tags)                                        \
-  new_test_param(&__test_arena__, guard, is_optional, tags)
-
-// Collects a set of parameters into an array that can be passed to
-// make_signature.
-#define PARAMS(N, ...)                                                         \
-  ARENA_ARRAY(&__test_arena__, test_param_t*, (N) + 1, __VA_ARGS__, PARAM(new_integer(0), false, vMarker))
-
-// Make a signature object out of the given input.
-static value_t make_signature(runtime_t *runtime, bool allow_extra,
-    test_param_t **params) {
-  size_t param_count = 0;
-  size_t mandatory_count = 0;
-  size_t tag_count = 0;
-  // Loop over the parameters, stop at the first non-array which will be the end
-  // marker added by the PARAMS macro. First we just collect some information,
-  // then we'll build the signature.
-  for (size_t i = 0; !variant_is_marker(params[i]->tags); i++) {
-    test_param_t *test_param = params[i];
-    param_count++;
-    if (!test_param->is_optional)
-      mandatory_count++;
-    tag_count += test_param->tags->value.as_array.length;
-  }
-  // Create an array with pairs of values, the first entry of which is the tag
-  // and the second is the parameter.
-  TRY_DEF(param_vector, new_heap_pair_array(runtime, tag_count));
-  // Loop over all the tags, t being the tag index across the whole signature.
-  size_t t = 0;
-  for (size_t i = 0; !variant_is_marker(params[i]->tags); i++) {
-    test_param_t *test_param = params[i];
-    TRY_DEF(tags_array, C(test_param->tags));
-    size_t param_tag_count = get_array_length(tags_array);
-    TRY_DEF(param, new_heap_parameter(runtime, afFreeze, test_param->guard,
-        ROOT(runtime, empty_array), test_param->is_optional, i));
-    for (size_t j = 0; j < param_tag_count; j++, t++) {
-      TRY_DEF(tag, get_array_at(tags_array, j));
-      set_pair_array_first_at(param_vector, t, tag);
-      set_pair_array_second_at(param_vector, t, param);
-    }
-  }
-  co_sort_pair_array(param_vector);
-  return new_heap_signature(runtime, afFreeze, param_vector, param_count,
-      mandatory_count, allow_extra);
-}
-
 TEST(method, make_signature) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
-  value_t any_guard = ROOT(runtime, any_guard);
-  value_t s0 = make_signature(runtime,
+  variant_t *any_guard = vGuard(gtAny, vNull());
+  value_t s0 = C(vSignature(
       false,
-      PARAMS(2,
-          PARAM(any_guard, false, vArray(vInt(0))),
-          PARAM(any_guard, false, vArray(vInt(1)))));
+      vParameter(
+          any_guard,
+          false,
+          vInt(0)),
+      vParameter(
+          any_guard,
+          false,
+          vInt(1))));
+
   ASSERT_EQ(2, get_signature_tag_count(s0));
   ASSERT_VAREQ(vInt(0), get_signature_tag_at(s0, 0));
   ASSERT_VAREQ(vInt(1), get_signature_tag_at(s0, 1));
 
-  value_t s1 = make_signature(runtime,
+  value_t s1 = C(vSignature(
       false,
-      PARAMS(3,
-          PARAM(any_guard, false, vArray(vInt(6))),
-          PARAM(any_guard, false, vArray(vInt(3))),
-          PARAM(any_guard, false, vArray(vInt(7)))));
+      vParameter(
+          any_guard,
+          false,
+          vInt(6)),
+      vParameter(
+          any_guard,
+          false,
+          vInt(3)),
+      vParameter(
+          any_guard,
+          false,
+          vInt(7))));
   ASSERT_EQ(3, get_signature_tag_count(s1));
   ASSERT_VAREQ(vInt(3), get_signature_tag_at(s1, 0));
   ASSERT_VAREQ(vInt(6), get_signature_tag_at(s1, 1));
   ASSERT_VAREQ(vInt(7), get_signature_tag_at(s1, 2));
 
-  value_t s2 = make_signature(runtime,
+  value_t s2 = C(vSignature(
       false,
-      PARAMS(3,
-          PARAM(any_guard, false, vArray(vInt(9), vInt(11))),
-          PARAM(any_guard, false, vArray(vInt(13))),
-          PARAM(any_guard, false, vArray(vInt(15), vInt(7), vInt(27)))));
+      vParameter(
+          any_guard,
+          false,
+          vInt(9),
+          vInt(11)),
+      vParameter(
+          any_guard,
+          false,
+          vInt(13)),
+      vParameter(
+          any_guard,
+          false,
+          vInt(15),
+          vInt(7),
+          vInt(27))));
   ASSERT_EQ(6, get_signature_tag_count(s2));
   ASSERT_VAREQ(vInt(7), get_signature_tag_at(s2, 0));
   ASSERT_VAREQ(vInt(9), get_signature_tag_at(s2, 1));
@@ -368,23 +328,9 @@ TEST(method, make_signature) {
   DISPOSE_RUNTIME();
 }
 
-// Description of an argument used in testing.
-typedef struct {
-  variant_t *tag;
-  variant_t *value;
-} test_argument_t;
+#define vPair(F, S) vVariant(expand_variant_to_array, vArrayPayload(F, S))
 
-// Creates a new test argument struct.
-static test_argument_t *new_test_argument(test_arena_t *arena, variant_t *tag,
-    variant_t *value) {
-  test_argument_t *result = ARENA_MALLOC(arena, test_argument_t);
-  result->tag = tag;
-  result->value = value;
-  return result;
-}
-
-// Packs its arguments into a test_argument_t struct.
-#define ARG(tag, value) new_test_argument(&__test_arena__, tag, value)
+#define vCallData(...) vVariant(expand_variant_to_call_data, vArrayPayload(__VA_ARGS__))
 
 // Collects a set of arguments into an array.
 #define ARGS(N, ...)                                                           \
@@ -393,21 +339,19 @@ static test_argument_t *new_test_argument(test_arena_t *arena, variant_t *tag,
 // Attempts to do a match and checks that the outcome is as expected. If the
 // expected offsets are NULL offsets won't be checked.
 void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
-    int64_t *expected_offsets, value_t signature, test_argument_t **args) {
-  // Count how many arguments there are.
-  size_t arg_count = 0;
-  for (size_t i = 0; args[i] != NULL; i++)
-    arg_count++;
-  // Build a descriptor from the tags and a stack from the values.
+    int64_t *expected_offsets, value_t signature, variant_t *args_var) {
   runtime_t *runtime = get_ambience_runtime(ambience);
+  value_t args = C(args_var);
+  size_t arg_count = get_array_length(args);
+  // Build a descriptor from the tags and a stack from the values.
   value_t tags = new_heap_array(runtime, arg_count);
   value_t stack = new_heap_stack(runtime, 24);
   frame_t frame = open_stack(stack);
   push_stack_frame(runtime, stack, &frame, arg_count, null());
   for (size_t i = 0; i < arg_count; i++) {
-    test_argument_t *arg = args[i];
-    set_array_at(tags, i, C(arg->tag));
-    frame_push_value(&frame, C(arg->value));
+    value_t arg = get_array_at(args, i);
+    set_array_at(tags, i, get_array_at(arg, 0));
+    frame_push_value(&frame, get_array_at(arg, 1));
   }
   value_t entries = build_call_tags_entries(runtime, tags);
   value_t call_tags = new_heap_call_tags(runtime, afFreeze, entries);
@@ -439,7 +383,7 @@ void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
 // Attempts to do a match and checks that the result is as expected, ignoring
 // the offsets and scores.
 void assert_match(value_t ambience, match_result_t expected, value_t signature,
-    test_argument_t **args) {
+    variant_t *args) {
   assert_match_with_offsets(ambience, expected, NULL, signature, args);
 }
 
@@ -447,28 +391,31 @@ TEST(method, simple_matching) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
-  value_t any_guard = ROOT(runtime, any_guard);
-  value_t sig = make_signature(runtime,
+  variant_t *any_guard = vGuard(gtAny, vNull());
+  value_t sig = C(vSignature(
       false,
-      PARAMS(2,
-          PARAM(any_guard, false, vArray(vInt(0))),
-          PARAM(any_guard, false, vArray(vInt(1)))));
-
-  test_argument_t *empty = NULL;
-  assert_match(ambience, mrMatch, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")),
-      ARG(vInt(1), vStr("bar"))));
-  assert_match(ambience, mrUnexpectedArgument, sig, ARGS(3,
-      ARG(vInt(0), vStr("foo")),
-      ARG(vInt(1), vStr("bar")),
-      ARG(vInt(2), vStr("baz"))));
-  assert_match(ambience, mrMissingArgument, sig, ARGS(1,
-      ARG(vInt(0), vStr("foo"))));
-  assert_match(ambience, mrMissingArgument, sig, ARGS(1,
-      ARG(vInt(1), vStr("bar"))));
-  assert_match(ambience, mrMissingArgument, sig, ARGS(1,
-      ARG(vInt(2), vStr("baz"))));
-  assert_match(ambience, mrMissingArgument, sig, &empty);
+      vParameter(
+          any_guard,
+          false,
+          vInt(0)),
+      vParameter(
+          any_guard,
+          false,
+          vInt(1))));
+  assert_match(ambience, mrMatch, sig, vArray(
+      vPair(vInt(0), vStr("foo")),
+      vPair(vInt(1), vStr("bar"))));
+  assert_match(ambience, mrUnexpectedArgument, sig, vArray(
+      vPair(vInt(0), vStr("foo")),
+      vPair(vInt(1), vStr("bar")),
+      vPair(vInt(2), vStr("baz"))));
+  assert_match(ambience, mrMissingArgument, sig, vArray(
+      vPair(vInt(0), vStr("foo"))));
+  assert_match(ambience, mrMissingArgument, sig, vArray(
+      vPair(vInt(1), vStr("bar"))));
+  assert_match(ambience, mrMissingArgument, sig, vArray(
+      vPair(vInt(2), vStr("baz"))));
+  assert_match(ambience, mrMissingArgument, sig, vEmptyArray());
 
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
@@ -478,24 +425,28 @@ TEST(method, simple_guard_matching) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
-  value_t any_guard = ROOT(runtime, any_guard);
-  value_t foo = C(vStr("foo"));
-  value_t guard = new_heap_guard(runtime, afFreeze, gtEq, foo);
-  value_t sig = make_signature(runtime,
+  variant_t *any_guard = vGuard(gtAny, vNull());
+  variant_t *guard = vGuard(gtEq, vStr("foo"));
+  value_t sig = C(vSignature(
       false,
-      PARAMS(2,
-          PARAM(guard, false, vArray(vInt(0))),
-          PARAM(any_guard, false, vArray(vInt(1)))));
+      vParameter(
+          guard,
+          false,
+          vInt(0)),
+      vParameter(
+          any_guard,
+          false,
+          vInt(1))));
 
-  assert_match(ambience, mrMatch, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")),
-      ARG(vInt(1), vStr("bar"))));
-  assert_match(ambience, mrMatch, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")),
-      ARG(vInt(1), vStr("boo"))));
-  assert_match(ambience, mrGuardRejected, sig, ARGS(2,
-      ARG(vInt(0), vStr("fop")),
-      ARG(vInt(1), vStr("boo"))));
+  assert_match(ambience, mrMatch, sig, vArray(
+      vPair(vInt(0), vStr("foo")),
+      vPair(vInt(1), vStr("bar"))));
+  assert_match(ambience, mrMatch, sig, vArray(
+      vPair(vInt(0), vStr("foo")),
+      vPair(vInt(1), vStr("boo"))));
+  assert_match(ambience, mrGuardRejected, sig, vArray(
+      vPair(vInt(0), vStr("fop")),
+      vPair(vInt(1), vStr("boo"))));
 
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
@@ -505,31 +456,38 @@ TEST(method, multi_tag_matching) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
-  value_t any_guard = ROOT(runtime, any_guard);
-  value_t sig = make_signature(runtime,
+  variant_t *any_guard = vGuard(gtAny, vNull());
+  value_t sig = C(vSignature(
       false,
-      PARAMS(2,
-          PARAM(any_guard, false, vArray(vInt(0) o vStr("x"))),
-          PARAM(any_guard, false, vArray(vInt(1) o vStr("y")))));
+      vParameter(
+          any_guard,
+          false,
+          vInt(0),
+          vStr("x")),
+      vParameter(
+          any_guard,
+          false,
+          vInt(1),
+          vStr("y"))));
 
-  assert_match(ambience, mrMatch, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")),
-      ARG(vInt(1), vStr("bar"))));
-  assert_match(ambience, mrMatch, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")),
-      ARG(vStr("y"), vStr("bar"))));
-  assert_match(ambience, mrMatch, sig, ARGS(2,
-      ARG(vInt(1), vStr("bar")),
-      ARG(vStr("x"), vStr("foo"))));
-  assert_match(ambience, mrMatch, sig, ARGS(2,
-      ARG(vStr("x"), vStr("foo")),
-      ARG(vStr("y"), vStr("bar"))));
-  assert_match(ambience, mrRedundantArgument, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")),
-      ARG(vStr("x"), vStr("foo"))));
-  assert_match(ambience, mrRedundantArgument, sig, ARGS(2,
-      ARG(vInt(1), vStr("bar")),
-      ARG(vStr("y"), vStr("bar"))));
+  assert_match(ambience, mrMatch, sig, vArray(
+      vPair(vInt(0), vStr("foo")),
+      vPair(vInt(1), vStr("bar"))));
+  assert_match(ambience, mrMatch, sig, vArray(
+      vPair(vInt(0), vStr("foo")),
+      vPair(vStr("y"), vStr("bar"))));
+  assert_match(ambience, mrMatch, sig, vArray(
+      vPair(vInt(1), vStr("bar")),
+      vPair(vStr("x"), vStr("foo"))));
+  assert_match(ambience, mrMatch, sig, vArray(
+      vPair(vStr("x"), vStr("foo")),
+      vPair(vStr("y"), vStr("bar"))));
+  assert_match(ambience, mrRedundantArgument, sig, vArray(
+      vPair(vInt(0), vStr("foo")),
+      vPair(vStr("x"), vStr("foo"))));
+  assert_match(ambience, mrRedundantArgument, sig, vArray(
+      vPair(vInt(1), vStr("bar")),
+      vPair(vStr("y"), vStr("bar"))));
 
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
@@ -539,50 +497,57 @@ TEST(method, extra_args) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
-  value_t any_guard = ROOT(runtime, any_guard);
-  value_t sig = make_signature(runtime,
+  variant_t *any_guard = vGuard(gtAny, vNull());
+  value_t sig = C(vSignature(
       true,
-      PARAMS(2,
-          PARAM(any_guard, false, vArray(vInt(0), vStr("x"))),
-          PARAM(any_guard, false, vArray(vInt(1), vStr("y")))));
+      vParameter(
+          any_guard,
+          false,
+          vInt(0),
+          vStr("x")),
+      vParameter(
+          any_guard,
+          false,
+          vInt(1),
+          vStr("y"))));
 
-  assert_match(ambience, mrMatch, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")),
-      ARG(vInt(1), vStr("bar"))));
-  assert_match(ambience, mrMatch, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")),
-      ARG(vStr("y"), vStr("bar"))));
-  assert_match(ambience, mrMatch, sig, ARGS(2,
-      ARG(vInt(1), vStr("bar")),
-      ARG(vStr("x"), vStr("foo"))));
-  assert_match(ambience, mrMatch, sig, ARGS(2,
-      ARG(vStr("x"), vStr("foo")),
-      ARG(vStr("y"), vStr("bar"))));
-  assert_match(ambience, mrRedundantArgument, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")),
-      ARG(vStr("x"), vStr("foo"))));
-  assert_match(ambience, mrRedundantArgument, sig, ARGS(2,
-      ARG(vInt(1), vStr("bar")),
-      ARG(vStr("y"), vStr("bar"))));
-  assert_match(ambience, mrExtraMatch, sig, ARGS(3,
-      ARG(vInt(0), vStr("foo")),
-      ARG(vInt(1), vStr("bar")),
-      ARG(vInt(2), vStr("baz"))));
-  assert_match(ambience, mrExtraMatch, sig, ARGS(4,
-      ARG(vInt(0), vStr("foo")),
-      ARG(vInt(1), vStr("bar")),
-      ARG(vInt(2), vStr("baz")),
-      ARG(vInt(3), vStr("quux"))));
-  assert_match(ambience, mrMissingArgument, sig, ARGS(2,
-      ARG(vInt(0), vStr("foo")),
-      ARG(vInt(2), vStr("baz"))));
-  assert_match(ambience, mrMissingArgument, sig, ARGS(2,
-      ARG(vInt(1), vStr("foo")),
-      ARG(vInt(2), vStr("baz"))));
-  assert_match(ambience, mrExtraMatch, sig, ARGS(3,
-      ARG(vInt(0), vStr("foo")),
-      ARG(vInt(1), vStr("bar")),
-      ARG(vStr("z"), vStr("baz"))));
+  assert_match(ambience, mrMatch, sig, vArray(
+      vPair(vInt(0), vStr("foo")),
+      vPair(vInt(1), vStr("bar"))));
+  assert_match(ambience, mrMatch, sig, vArray(
+      vPair(vInt(0), vStr("foo")),
+      vPair(vStr("y"), vStr("bar"))));
+  assert_match(ambience, mrMatch, sig, vArray(
+      vPair(vInt(1), vStr("bar")),
+      vPair(vStr("x"), vStr("foo"))));
+  assert_match(ambience, mrMatch, sig, vArray(
+      vPair(vStr("x"), vStr("foo")),
+      vPair(vStr("y"), vStr("bar"))));
+  assert_match(ambience, mrRedundantArgument, sig, vArray(
+      vPair(vInt(0), vStr("foo")),
+      vPair(vStr("x"), vStr("foo"))));
+  assert_match(ambience, mrRedundantArgument, sig, vArray(
+      vPair(vInt(1), vStr("bar")),
+      vPair(vStr("y"), vStr("bar"))));
+  assert_match(ambience, mrExtraMatch, sig, vArray(
+      vPair(vInt(0), vStr("foo")),
+      vPair(vInt(1), vStr("bar")),
+      vPair(vInt(2), vStr("baz"))));
+  assert_match(ambience, mrExtraMatch, sig, vArray(
+      vPair(vInt(0), vStr("foo")),
+      vPair(vInt(1), vStr("bar")),
+      vPair(vInt(2), vStr("baz")),
+      vPair(vInt(3), vStr("quux"))));
+  assert_match(ambience, mrMissingArgument, sig, vArray(
+      vPair(vInt(0), vStr("foo")),
+      vPair(vInt(2), vStr("baz"))));
+  assert_match(ambience, mrMissingArgument, sig, vArray(
+      vPair(vInt(1), vStr("foo")),
+      vPair(vInt(2), vStr("baz"))));
+  assert_match(ambience, mrExtraMatch, sig, vArray(
+      vPair(vInt(0), vStr("foo")),
+      vPair(vInt(1), vStr("bar")),
+      vPair(vStr("z"), vStr("baz"))));
 
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
@@ -592,14 +557,29 @@ TEST(method, match_argument_map) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
-  value_t any_guard = ROOT(runtime, any_guard);
-  value_t sig = make_signature(runtime,
+  variant_t *any_guard = vGuard(gtAny, vNull());
+  value_t sig = C(vSignature(
       true,
-      PARAMS(4,
-          PARAM(any_guard, false, vArray(vInt(0), vStr("w"))),
-          PARAM(any_guard, false, vArray(vInt(1), vStr("z"))),
-          PARAM(any_guard, false, vArray(vInt(2), vStr("y"))),
-          PARAM(any_guard, false, vArray(vInt(3), vStr("x")))));
+      vParameter(
+          any_guard,
+          false,
+          vInt(0),
+          vStr("w")),
+      vParameter(
+          any_guard,
+          false,
+          vInt(1),
+          vStr("z")),
+      vParameter(
+          any_guard,
+          false,
+          vInt(2),
+          vStr("y")),
+      vParameter(
+          any_guard,
+          false,
+          vInt(3),
+          vStr("x"))));
 
   // Evaluation order. We'll cycle through all permutations of this, starting
   // with the "obvious" order.
@@ -623,18 +603,18 @@ TEST(method, match_argument_map) {
     as[es[0]] = 3;
     // Integer tags.
     assert_match_with_offsets(ambience, mrMatch, as, sig,
-        ARGS(4,
-            ARG(vInt(es[0]), vInt(96)),
-            ARG(vInt(es[1]), vInt(97)),
-            ARG(vInt(es[2]), vInt(98)),
-            ARG(vInt(es[3]), vInt(99))));
+        vArray(
+            vPair(vInt(es[0]), vInt(96)),
+            vPair(vInt(es[1]), vInt(97)),
+            vPair(vInt(es[2]), vInt(98)),
+            vPair(vInt(es[3]), vInt(99))));
     // String tags.
     assert_match_with_offsets(ambience, mrMatch, as, sig,
-        ARGS(4,
-            ARG(ss[es[0]], vInt(104)),
-            ARG(ss[es[1]], vInt(103)),
-            ARG(ss[es[2]], vInt(102)),
-            ARG(ss[es[3]], vInt(101))));
+        vArray(
+            vPair(ss[es[0]], vInt(104)),
+            vPair(ss[es[1]], vInt(103)),
+            vPair(ss[es[2]], vInt(102)),
+            vPair(ss[es[3]], vInt(101))));
   } while (advance_lexical_permutation(es, 4));
 
   DISPOSE_TEST_ARENA();
@@ -771,10 +751,20 @@ TEST(method, dense_perfect_lookup) {
   for (size_t first = 0; first < 4; first++) {
     for (size_t second = 0; second < 4; second++) {
       for (size_t third = 0; third < 4; third++) {
-        value_t signature = make_signature(runtime, false, PARAMS(3,
-            PARAM(guards[first], false, vArray(vInt(0))),
-            PARAM(guards[second], false, vArray(vInt(1))),
-            PARAM(guards[third], false, vArray(vInt(2)))));
+        value_t signature = C(vSignature(
+            false,
+            vParameter(
+                vValue(guards[first]),
+                false,
+                vInt(0)),
+            vParameter(
+                vValue(guards[second]),
+                false,
+                vInt(1)),
+            vParameter(
+                vValue(guards[third]),
+                false,
+                vInt(2))));
         value_t method = new_heap_method(runtime, afFreeze, signature,
             nothing(), dummy_code, nothing(), new_flag_set(kFlagSetAllOff));
         add_methodspace_method(runtime, space, method);

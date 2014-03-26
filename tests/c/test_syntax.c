@@ -55,7 +55,7 @@ TEST(syntax, parameter_order_index) {
 }
 
 // Shorthand for running an ordering test.
-#define CHECK_ORDERING(N, PARAMS, EXPECTED) do {                               \
+#define CHECK_ORDERING(N, PARAMS, ...) do {                                    \
   value_t params = new_heap_array(runtime, (N));                               \
   variant_t *var_params = (PARAMS);                                            \
   variant_t **elms = var_params->value.as_array.elements;                      \
@@ -65,7 +65,7 @@ TEST(syntax, parameter_order_index) {
         nothing(), tags, any_guard_ast));                                      \
   }                                                                            \
   size_t *ordering = calc_parameter_ast_ordering(&scratch, params);            \
-  size_t expected[N] = {EXPECTED};                                             \
+  size_t expected[N] = {__VA_ARGS__};                                          \
   for (size_t i = 0; i < (N); i++)                                             \
     ASSERT_EQ(ordering[i], expected[i]);                                       \
 } while (false)
@@ -88,19 +88,19 @@ TEST(syntax, param_ordering) {
   variant_t *just_2 = vArray(vInt(2));
   variant_t *just_3 = vArray(vInt(3));
 
-  CHECK_ORDERING(4, vArray(just_0, just_1, just_2, just_3), 0 o 1 o 2 o 3);
-  CHECK_ORDERING(4, vArray(just_3, just_2, just_1, just_0), 3 o 2 o 1 o 0);
-  CHECK_ORDERING(4, vArray(just_2, just_0, just_3, just_1), 2 o 0 o 3 o 1);
-  CHECK_ORDERING(3, vArray(just_2, just_0, just_3), 1 o 0 o 2);
-  CHECK_ORDERING(2, vArray(just_2, just_3), 0 o 1);
+  CHECK_ORDERING(4, vArray(just_0, just_1, just_2, just_3), 0, 1, 2, 3);
+  CHECK_ORDERING(4, vArray(just_3, just_2, just_1, just_0), 3, 2, 1, 0);
+  CHECK_ORDERING(4, vArray(just_2, just_0, just_3, just_1), 2, 0, 3, 1);
+  CHECK_ORDERING(3, vArray(just_2, just_0, just_3), 1, 0, 2);
+  CHECK_ORDERING(2, vArray(just_2, just_3), 0, 1);
 
-  CHECK_ORDERING(3, vArray(just_2, vArray(vInt(0), vInt(1)), just_3), 1 o 0 o 2);
-  CHECK_ORDERING(3, vArray(just_2, vArray(vInt(0), vInt(4)), just_3), 1 o 0 o 2);
-  CHECK_ORDERING(3, vArray(just_2, vArray(vInt(5), vInt(4)), just_3), 0 o 2 o 1);
+  CHECK_ORDERING(3, vArray(just_2, vArray(vInt(0), vInt(1)), just_3), 1, 0, 2);
+  CHECK_ORDERING(3, vArray(just_2, vArray(vInt(0), vInt(4)), just_3), 1, 0, 2);
+  CHECK_ORDERING(3, vArray(just_2, vArray(vInt(5), vInt(4)), just_3), 0, 2, 1);
 
-  CHECK_ORDERING(4, vArray(just_0, just_1, just_2, just_sel), 1 o 2 o 3 o 0);
-  CHECK_ORDERING(4, vArray(just_0, just_sub, just_2, just_sel), 2 o 0 o 3 o 1);
-  CHECK_ORDERING(3, vArray(just_0, vArray(sub, sel), just_3), 1 o 0 o 2);
+  CHECK_ORDERING(4, vArray(just_0, just_1, just_2, just_sel), 1, 2, 3, 0);
+  CHECK_ORDERING(4, vArray(just_0, just_sub, just_2, just_sel), 2, 0, 3, 1);
+  CHECK_ORDERING(3, vArray(just_0, vArray(sub, sel), just_3), 1, 0, 2);
 
   reusable_scratch_memory_dispose(&scratch);
 
