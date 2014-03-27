@@ -252,6 +252,9 @@ value_t new_heap_method(runtime_t *runtime, alloc_flags_t alloc_flags,
 value_t new_heap_call_tags(runtime_t *runtime, alloc_flags_t flags,
     value_t entries);
 
+// Creates a new call data object.
+value_t new_heap_call_data(runtime_t *runtime, value_t tags, value_t values);
+
 // Creates a new builtin marker corresponding to the builtin with the given
 // name.
 value_t new_heap_builtin_marker(runtime_t *runtime, value_t name);

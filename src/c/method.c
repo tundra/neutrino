@@ -76,6 +76,38 @@ frame_sigmap_input_o frame_sigmap_input_new(value_t ambience, value_t tags,
   return result;
 }
 
+// Implementation of sigmap_input.match_value_at which works for
+// call_data_sigmap_inputs.
+static value_t call_data_sigmap_input_match_value_at(sigmap_input_o *super_self,
+    size_t index, value_t guard, value_t space, value_t *score_out) {
+  call_data_sigmap_input_o *self = DOWNCAST(call_data_sigmap_input_o, super_self);
+  value_t value = get_call_data_value_at(self->call_data, index);
+  return guard_match(guard, value, super_self, space, score_out);
+}
+
+// Returns the value of the index'th argument to a frame_sigmap_input, viewed
+// as a total_sigmap_input, in sorted tag order.
+static value_t call_data_sigmap_input_get_value_at(total_sigmap_input_o *super_self,
+    size_t index) {
+  call_data_sigmap_input_o *self = DOWNCAST(call_data_sigmap_input_o, super_self);
+  return get_call_data_value_at(self->call_data, index);
+}
+
+// The singleton vtable for frame_sigmap_input_os.
+VTABLE(call_data_sigmap_input_o, total_sigmap_input_o) {
+  { call_data_sigmap_input_match_value_at },
+  call_data_sigmap_input_get_value_at
+};
+
+call_data_sigmap_input_o call_data_sigmap_input_new(value_t ambience, value_t call_data) {
+  call_data_sigmap_input_o result;
+  VTABLE_INIT(call_data_sigmap_input_o, &result);
+  result.call_data = call_data;
+  value_t tags = get_call_data_tags(call_data);
+  sigmap_input_init(UPCAST(UPCAST(&result)), ambience, tags);
+  return result;
+}
+
 // A callback called by do_signature_map_lookup to perform the traversal that
 // produces the signature maps to lookup within.
 typedef value_t (*sigmap_thunk_call_m)(sigmap_thunk_o *thunk);
@@ -1296,6 +1328,11 @@ value_t call_data_validate(value_t self) {
   VALIDATE_FAMILY(ofCallTags, get_call_data_tags(self));
   VALIDATE_FAMILY(ofArray, get_call_data_values(self));
   return success();
+}
+
+value_t get_call_data_value_at(value_t self, size_t index) {
+  value_t values = get_call_data_values(self);
+  return get_array_at(values, index);
 }
 
 

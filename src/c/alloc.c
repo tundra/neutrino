@@ -668,6 +668,15 @@ value_t new_heap_call_tags(runtime_t *runtime, alloc_flags_t flags,
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_call_data(runtime_t *runtime, value_t tags, value_t values) {
+  size_t size = kCallDataSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_call_data_species)));
+  set_call_data_tags(result, tags);
+  set_call_data_values(result, values);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_builtin_marker(runtime_t *runtime, value_t name) {
   size_t size = kBuiltinMarkerSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,

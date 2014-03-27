@@ -330,12 +330,6 @@ TEST(method, make_signature) {
 
 #define vPair(F, S) vVariant(expand_variant_to_array, vArrayPayload(F, S))
 
-#define vCallData(...) vVariant(expand_variant_to_call_data, vArrayPayload(__VA_ARGS__))
-
-// Collects a set of arguments into an array.
-#define ARGS(N, ...)                                                           \
-  ARENA_ARRAY(&__test_arena__, test_argument_t*, (N) + 1, __VA_ARGS__, NULL)
-
 // Attempts to do a match and checks that the outcome is as expected. If the
 // expected offsets are NULL offsets won't be checked.
 void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
@@ -344,40 +338,64 @@ void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
   value_t args = C(args_var);
   size_t arg_count = get_array_length(args);
   // Build a descriptor from the tags and a stack from the values.
-  value_t tags = new_heap_array(runtime, arg_count);
-  value_t stack = new_heap_stack(runtime, 24);
-  frame_t frame = open_stack(stack);
-  push_stack_frame(runtime, stack, &frame, arg_count, null());
-  for (size_t i = 0; i < arg_count; i++) {
-    value_t arg = get_array_at(args, i);
-    set_array_at(tags, i, get_array_at(arg, 0));
-    frame_push_value(&frame, get_array_at(arg, 1));
+  for (size_t is_frame_test = 0; is_frame_test < 2; is_frame_test++) {
+    sigmap_input_o *input = NULL;
+    frame_t frame;
+    frame_sigmap_input_o frame_input;
+    call_data_sigmap_input_o call_data_input;
+    value_t call_tags = whatever();
+
+    if (is_frame_test) {
+      // Test type 0 means test using a frame sigmap input.
+      value_t tags = new_heap_array(runtime, arg_count);
+      value_t stack = new_heap_stack(runtime, 24);
+      frame = open_stack(stack);
+      push_stack_frame(runtime, stack, &frame, arg_count, null());
+      for (size_t i = 0; i < arg_count; i++) {
+        value_t arg = get_array_at(args, i);
+        set_array_at(tags, i, get_array_at(arg, 0));
+        frame_push_value(&frame, get_array_at(arg, 1));
+      }
+      value_t entries = build_call_tags_entries(runtime, tags);
+      call_tags = new_heap_call_tags(runtime, afFreeze, entries);
+      frame_input = frame_sigmap_input_new(ambience, call_tags, &frame);
+      input = UPCAST(UPCAST(&frame_input));
+    } else {
+      value_t tags = new_heap_array(runtime, arg_count);
+      value_t values = new_heap_array(runtime, arg_count);
+      for (size_t i = 0; i < arg_count; i++) {
+        value_t arg = get_array_at(args, i);
+        set_array_at(tags, i, get_array_at(arg, 0));
+        set_array_at(values, i, get_array_at(arg, 1));
+      }
+      value_t entries = build_call_tags_entries(runtime, tags);
+      call_tags = new_heap_call_tags(runtime, afFreeze, entries);
+      value_t call_data = new_heap_call_data(runtime, call_tags, values);
+      call_data_input = call_data_sigmap_input_new(ambience, call_data);
+      input = UPCAST(UPCAST(&call_data_input));
+    }
+
+    static const size_t kLength = 16;
+    value_t scores[16];
+    size_t offsets[16];
+    // Reset the offsets to a recognizable value (the size_t max).
+    memset(offsets, 0xFF, kLength * sizeof(size_t));
+    match_info_t match_info;
+    match_info_init(&match_info, scores, offsets, kLength);
+    match_result_t result = __mrNone__;
+    ASSERT_SUCCESS(match_signature(signature, input, nothing(),
+        &match_info, &result));
+    ASSERT_EQ(expected_result, result);
+    if (expected_offsets != NULL) {
+      for (size_t i = 0; i < arg_count; i++)
+        ASSERT_EQ(expected_offsets[i], offsets[i]);
+    }
+    if (expected_result != mrGuardRejected) {
+      result = __mrNone__;
+      ASSERT_SUCCESS(match_signature_tags(signature, call_tags, &result));
+      ASSERT_EQ(expected_result, result);
+    }
   }
-  value_t entries = build_call_tags_entries(runtime, tags);
-  value_t call_tags = new_heap_call_tags(runtime, afFreeze, entries);
-  static const size_t kLength = 16;
-  value_t scores[16];
-  size_t offsets[16];
-  // Reset the offsets to a recognizable value (the size_t max).
-  memset(offsets, 0xFF, kLength * sizeof(size_t));
-  match_info_t match_info;
-  match_info_init(&match_info, scores, offsets, kLength);
-  match_result_t result = __mrNone__;
-  frame_sigmap_input_o input = frame_sigmap_input_new(ambience, call_tags, &frame);
-  ASSERT_SUCCESS(match_signature(signature, UPCAST(UPCAST(&input)), nothing(),
-      &match_info, &result));
-  ASSERT_EQ(expected_result, result);
-  if (expected_offsets != NULL) {
-    for (size_t i = 0; i < arg_count; i++)
-      ASSERT_EQ(expected_offsets[i], offsets[i]);
-  }
-  if (expected_result == mrGuardRejected)
-    // Only test tag matching in the cases where the result doesn't depend on
-    // how the guards match.
-    return;
-  result = __mrNone__;
-  ASSERT_SUCCESS(match_signature_tags(signature, call_tags, &result));
-  ASSERT_EQ(expected_result, result);
 }
 
 // Attempts to do a match and checks that the result is as expected, ignoring
