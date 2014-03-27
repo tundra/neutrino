@@ -83,6 +83,8 @@ frame_sigmap_input_o frame_sigmap_input_new(value_t ambience, value_t tags,
 
 IMPLEMENTATION(call_data_sigmap_input_o, total_sigmap_input_o);
 
+// Total sigmap input that gets the values of arguments from a call data
+// object.
 struct call_data_sigmap_input_o {
   IMPLEMENTATION_HEADER(call_data_sigmap_input_o, total_sigmap_input_o);
   value_t call_data;

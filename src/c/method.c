@@ -85,7 +85,7 @@ static value_t call_data_sigmap_input_match_value_at(sigmap_input_o *super_self,
   return guard_match(guard, value, super_self, space, score_out);
 }
 
-// Returns the value of the index'th argument to a frame_sigmap_input, viewed
+// Returns the value of the index'th argument to a call_data_sigmap_input, viewed
 // as a total_sigmap_input, in sorted tag order.
 static value_t call_data_sigmap_input_get_value_at(total_sigmap_input_o *super_self,
     size_t index) {
@@ -93,7 +93,7 @@ static value_t call_data_sigmap_input_get_value_at(total_sigmap_input_o *super_s
   return get_call_data_value_at(self->call_data, index);
 }
 
-// The singleton vtable for frame_sigmap_input_os.
+// The singleton vtable for call_data_sigmap_input_os.
 VTABLE(call_data_sigmap_input_o, total_sigmap_input_o) {
   { call_data_sigmap_input_match_value_at },
   call_data_sigmap_input_get_value_at

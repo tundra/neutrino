@@ -669,6 +669,8 @@ value_t new_heap_call_tags(runtime_t *runtime, alloc_flags_t flags,
 }
 
 value_t new_heap_call_data(runtime_t *runtime, value_t tags, value_t values) {
+  CHECK_EQ("invalid call data", get_call_tags_entry_count(tags),
+      get_array_length(values));
   size_t size = kCallDataSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_call_data_species)));
