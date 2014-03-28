@@ -202,6 +202,9 @@ value_t new_heap_ambience(runtime_t *runtime);
 // Creates a new freeze cheat object.
 value_t new_heap_freeze_cheat(runtime_t *runtime, value_t value);
 
+// Creates a new pending promise.
+value_t new_heap_pending_promise(runtime_t *runtime);
+
 
 // --- P r o c e s s ---
 

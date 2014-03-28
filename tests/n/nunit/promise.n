@@ -1,0 +1,13 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def $test_simple_promise() {
+  def $p := @core:Promise.pending();
+  $assert:equals(false, $p.is_resolved);
+  $assert:equals(18, try $p.get() on.promise_not_resolved($p) => 18);
+}
+
+do $test_simple_promise();

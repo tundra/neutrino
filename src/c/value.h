@@ -416,6 +416,7 @@ static value_t new_moved_object(value_t target) {
   F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _,  8)\
   F(Path,                    path,                      X, X, X, X, _, _, _, X, _, 36)\
   F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, _, _, 17)\
+  F(Promise,                 promise,                   _, _, _, X, _, _, _, _, _, 78)\
   F(Reference,               reference,                 _, _, _, _, _, _, _, X, _, 68)\
   F(Roots,                   roots,                     _, _, _, _, _, _, _, X, X,  2)\
   F(SequenceAst,             sequence_ast,              _, _, X, X, _, _, X, _, _, 35)\
@@ -438,7 +439,7 @@ static value_t new_moved_object(value_t target) {
 
 // The next ordinal to use when adding a family. This isn't actually used in the
 // code it's just a reminder. Remember to update it when adding families.
-static const int kNextFamilyOrdinal = 78;
+static const int kNextFamilyOrdinal = 79;
 
 // Enumerates all the object families.
 #define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \
@@ -635,6 +636,7 @@ ACCESSORS_DECL(heap_object, header);
   F(Float32,                 float_32,                  X, X)                  \
   F(Nothing,                 nothing,                   _, _)                  \
   F(Null,                    null,                      _, X)                  \
+  F(PromiseState,            promise_state,             _, _)                  \
   F(Relation,                relation,                  _, _)                  \
   F(Score,                   score,                     X, _)                  \
   F(StageOffset,             stage_offset,              X, _)                  \
