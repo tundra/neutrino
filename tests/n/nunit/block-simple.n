@@ -9,10 +9,10 @@ def $test_simple_local_functions() {
   def $v0 := (bk $foo($x) => ($x + 1) in $foo(3) + $foo(4));
   $assert:equals(9, $v0);
   def $v1 := (bk $foo() => null in {
-    $assert:that($foo.is_live);
+    $assert:that($foo.is_live?);
     $foo;
   });
-  $assert:not($v1.is_live);
+  $assert:not($v1.is_live?);
 }
 
 def $test_nested_outers() {

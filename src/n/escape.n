@@ -12,5 +12,5 @@ def type @Escape is @Object;
 def ($this is @Escape)($value);
 
 ## Returns true iff this escape is still live, that is, can be fired.
-@ctrino.builtin("escape.is_live")
-def ($this is @Escape).is_live;
+@ctrino.builtin("escape.is_live?")
+def ($this is @Escape).is_live?;

@@ -167,7 +167,7 @@ class Tokenizer(object):
 
   # Is the given character legal as part of an identifier part
   def is_alpha(self, c):
-    return c.isalpha() or (c == '_')
+    return c.isalpha() or (c == '_') or (c == '?') or (c == '!')
 
   def is_word_char(self, c):
     return c.isdigit() or self.is_alpha(c)

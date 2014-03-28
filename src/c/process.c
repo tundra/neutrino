@@ -481,7 +481,7 @@ static value_t escape_is_live(builtin_arguments_t *args) {
 value_t add_escape_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   TRY(add_custom_method_impl(runtime, deref(s_map), "escape()", 1,
       new_flag_set(kFlagSetAllOff), emit_fire_escape));
-  ADD_BUILTIN_IMPL("escape.is_live", 0, escape_is_live);
+  ADD_BUILTIN_IMPL("escape.is_live?", 0, escape_is_live);
   return success();
 }
 
@@ -559,7 +559,7 @@ static value_t block_is_live(builtin_arguments_t *args) {
 value_t add_block_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   TRY(add_custom_method_impl(runtime, deref(s_map), "block()", 0,
       new_flag_set(mfBlockDelegate), emit_block_call_trampoline));
-  ADD_BUILTIN_IMPL("block.is_live", 0, block_is_live);
+  ADD_BUILTIN_IMPL("block.is_live?", 0, block_is_live);
   return success();
 }
 

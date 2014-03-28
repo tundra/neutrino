@@ -13,7 +13,7 @@
       { "match": "#.*",
         "name": "comment.line.number-sign.neutrino"
       },
-      { "match": "[$@]+([\\w_:]*)?",
+      { "match": "[$@]+([\\w_:?!]*)?",
         "name": "variable.neutrino",
         "comment": "We recognize a stage indicator with no name as a variable"
       },
@@ -23,7 +23,7 @@
       { "match": "[\\w_]+:",
         "name": "variable.parameter.neutrino"
       },
-      { "match": "(\\.|->)([\\w_]*)",
+      { "match": "(\\.|->)([\\w_\\?\\!]*)",
         "name": "entity.name.function.neutrino"
       },
       { "match": "(\\.|->)?([!+=<>/*%-]+)",

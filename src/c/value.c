@@ -197,7 +197,7 @@ static value_t object_is_identical(builtin_arguments_t *args) {
 }
 
 value_t add_heap_object_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  ADD_BUILTIN_IMPL("obj.is_identical()", 1, object_is_identical);
+  ADD_BUILTIN_IMPL("obj.is_identical?()", 1, object_is_identical);
   return success();
 }
 

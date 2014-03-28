@@ -30,38 +30,38 @@ def $test_simple_object_identity() {
   $assert:that($o1 == $o2);
   $assert:that($o2 == $o1);
   $assert:that($o2 == $o2);
-  $assert:that($o1 .is_identical $o1);
-  $assert:not($o1 .is_identical $o2);
-  $assert:not($o2 .is_identical $o1);
-  $assert:that($o2 .is_identical $o2);
+  $assert:that($o1 .is_identical? $o1);
+  $assert:not($o1 .is_identical? $o2);
+  $assert:not($o2 .is_identical? $o1);
+  $assert:that($o2 .is_identical? $o2);
   def $o3 := new @Comparative("b");
   $assert:that($o1 == $o1);
   $assert:not($o1 == $o3);
   $assert:not($o3 == $o1);
   $assert:that($o3 == $o3);
-  $assert:not($o1 .is_identical $o3);
-  $assert:not($o2 .is_identical $o3);
-  $assert:that($o3 .is_identical $o3);
+  $assert:not($o1 .is_identical? $o3);
+  $assert:not($o2 .is_identical? $o3);
+  $assert:that($o3 .is_identical? $o3);
 }
 
 def $test_integer_identity() {
   $assert:that(0 == 0);
-  $assert:that(0 .is_identical 0);
+  $assert:that(0 .is_identical? 0);
   $assert:not(0 == 1);
-  $assert:not(0 .is_identical 1);
+  $assert:not(0 .is_identical? 1);
   $assert:not(1 == 0);
-  $assert:not(1 .is_identical 0);
+  $assert:not(1 .is_identical? 0);
 }
 
 def $test_string_identity() {
   $assert:that("x" == "x");
-  $assert:that("x" .is_identical "x");
+  $assert:that("x" .is_identical? "x");
   $assert:not("x" == "y");
-  $assert:not("x" .is_identical "y");
+  $assert:not("x" .is_identical? "y");
   $assert:not("y" == "x");
-  $assert:not("y" .is_identical "x");
+  $assert:not("y" .is_identical? "x");
   $assert:that(("x" + "z") == ("x" + "z"));
-  $assert:that(("x" + "z") .is_identical ("x" + "z"));
+  $assert:that(("x" + "z") .is_identical? ("x" + "z"));
 }
 
 do {
