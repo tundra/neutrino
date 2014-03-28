@@ -60,10 +60,22 @@ static value_t promise_get(builtin_arguments_t *args) {
   }
 }
 
+static value_t promise_fulfill(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofPromise, self);
+  value_t value = get_builtin_argument(args, 0);
+  if (!is_promise_resolved(self)) {
+    set_promise_state(self, promise_state_fulfilled());
+    set_promise_value(self, value);
+  }
+  return value;
+}
+
 value_t add_promise_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   ADD_BUILTIN_IMPL("promise.state", 0, promise_state);
-  ADD_BUILTIN_IMPL("promise.is_resolved", 0, promise_is_resolved);
+  ADD_BUILTIN_IMPL("promise.is_resolved?", 0, promise_is_resolved);
   ADD_BUILTIN_IMPL_MAY_ESCAPE("promise.get", 0, 1, promise_get);
+  ADD_BUILTIN_IMPL("promise.fulfill!", 1, promise_fulfill);
   return success();
 }
 
