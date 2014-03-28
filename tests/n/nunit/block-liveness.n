@@ -10,19 +10,19 @@ def $test_killing() {
   # Normal exit
   bk $foo() => 8 in {
     $bk0 := $foo;
-    $assert:that($bk0.is_live);
+    $assert:that($bk0.is_live?);
   }
-  $assert:not($bk0.is_live);
+  $assert:not($bk0.is_live?);
 
   # Escaping one level.
   with_escape $e do {
     bk $foo() => 9 in {
       $bk0 := $foo;
-      $assert:that($bk0.is_live);
+      $assert:that($bk0.is_live?);
       $e(null);
     }
   }
-  $assert:not($bk0.is_live);
+  $assert:not($bk0.is_live?);
 
   # Escaping multiple levels.
   var $bk1 := null;
@@ -34,17 +34,17 @@ def $test_killing() {
         $bk1 := $f1;
         bk $f2() => 11 in {
           $bk2 := $f2;
-          $assert:that($bk0.is_live);
-          $assert:that($bk1.is_live);
-          $assert:that($bk2.is_live);
+          $assert:that($bk0.is_live?);
+          $assert:that($bk1.is_live?);
+          $assert:that($bk2.is_live?);
           $e(null);
         }
       }
     }
   }
-  $assert:not($bk0.is_live);
-  $assert:not($bk1.is_live);
-  $assert:not($bk2.is_live);
+  $assert:not($bk0.is_live?);
+  $assert:not($bk1.is_live?);
+  $assert:not($bk2.is_live?);
 
   # Let's get crazy; interaction with ensure blocks.
   var $step := 0;
@@ -59,46 +59,46 @@ def $test_killing() {
               bk $f2() => 11 in {
                 try {
                   $bk2 := $f2;
-                  $assert:that($bk0.is_live);
-                  $assert:that($bk1.is_live);
-                  $assert:that($bk2.is_live);
+                  $assert:that($bk0.is_live?);
+                  $assert:that($bk1.is_live?);
+                  $assert:that($bk2.is_live?);
                   $e(null);
                 } ensure {
                   $assert:equals(1, $step := $step + 1);
-                  $assert:that($bk0.is_live);
-                  $assert:that($bk1.is_live);
-                  $assert:that($bk2.is_live);
+                  $assert:that($bk0.is_live?);
+                  $assert:that($bk1.is_live?);
+                  $assert:that($bk2.is_live?);
                 }
               }
               $assert:fail();
             } ensure {
               $assert:equals(2, $step := $step + 1);
-              $assert:that($bk0.is_live);
-              $assert:that($bk1.is_live);
-              $assert:not($bk2.is_live);
+              $assert:that($bk0.is_live?);
+              $assert:that($bk1.is_live?);
+              $assert:not($bk2.is_live?);
             }
             $assert:fail();
           }
         } ensure {
           $assert:equals(3, $step := $step + 1);
-          $assert:that($bk0.is_live);
-          $assert:not($bk1.is_live);
-          $assert:not($bk2.is_live);
+          $assert:that($bk0.is_live?);
+          $assert:not($bk1.is_live?);
+          $assert:not($bk2.is_live?);
         }
         $assert:fail();
       }
     } ensure {
       $assert:equals(4, $step := $step + 1);
-      $assert:not($bk0.is_live);
-      $assert:not($bk1.is_live);
-      $assert:not($bk2.is_live);
+      $assert:not($bk0.is_live?);
+      $assert:not($bk1.is_live?);
+      $assert:not($bk2.is_live?);
     }
     $assert:fail();
   }
   $assert:equals(4, $step);
-  $assert:not($bk0.is_live);
-  $assert:not($bk1.is_live);
-  $assert:not($bk2.is_live);
+  $assert:not($bk0.is_live?);
+  $assert:not($bk1.is_live?);
+  $assert:not($bk2.is_live?);
 
 }
 

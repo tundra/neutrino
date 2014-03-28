@@ -11,5 +11,5 @@ def type @Block is @Object;
 def ($this is @Block)(*);
 
 ## Returns true iff this block is still live, that is, can be invoked.
-@ctrino.builtin("block.is_live")
-def ($this is @Block).is_live;
+@ctrino.builtin("block.is_live?")
+def ($this is @Block).is_live?;

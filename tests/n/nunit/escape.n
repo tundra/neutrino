@@ -28,23 +28,23 @@ def $test_deep_escape() {
 }
 
 def $test_direct_kill() {
-  $assert:equals(true, with_escape $break do $break.is_live);
-  $assert:equals(true, with_escape $break do $break($break.is_live));
-  $assert:equals(false, (with_escape $break do $break).is_live);
-  $assert:equals(false, (with_escape $break do $break($break)).is_live);
+  $assert:equals(true, with_escape $break do $break.is_live?);
+  $assert:equals(true, with_escape $break do $break($break.is_live?));
+  $assert:equals(false, (with_escape $break do $break).is_live?);
+  $assert:equals(false, (with_escape $break do $break($break)).is_live?);
   var $e := null;
   with_escape $break do {
     $e := $break;
-    $assert:equals(true, $e.is_live);
+    $assert:equals(true, $e.is_live?);
   }
-  $assert:equals(false, $e.is_live);
+  $assert:equals(false, $e.is_live?);
   var $f := null;
   with_escape $break do {
     $f := $break;
-    $assert:equals(true, $f.is_live);
+    $assert:equals(true, $f.is_live?);
     $break(null);
   }
-  $assert:equals(false, $f.is_live);  
+  $assert:equals(false, $f.is_live?);  
 }
 
 ## Call recursively $n - $i times then capture an escape, do a recursive call,
@@ -74,12 +74,12 @@ def $test_nested_escape() {
     $outer := $o;
     with_escape $i do {
       $inner := $i;
-      $assert:that($inner.is_live);
-      $assert:that($outer.is_live);
+      $assert:that($inner.is_live?);
+      $assert:that($outer.is_live?);
     }
   }
-  $assert:not($inner.is_live);
-  $assert:not($outer.is_live);
+  $assert:not($inner.is_live?);
+  $assert:not($outer.is_live?);
   with_escape $o do {
     $outer := $o;
     with_escape $i do {
@@ -87,8 +87,8 @@ def $test_nested_escape() {
       $outer(null);
     }
   }
-  $assert:not($inner.is_live);
-  $assert:not($outer.is_live);
+  $assert:not($inner.is_live?);
+  $assert:not($outer.is_live?);
   with_escape $o do {
     $outer := $o;
     try {
@@ -97,13 +97,13 @@ def $test_nested_escape() {
         try {
           $o(null);
         } ensure {
-          $assert:that($inner.is_live);
-          $assert:that($outer.is_live);
+          $assert:that($inner.is_live?);
+          $assert:that($outer.is_live?);
         }
       }
     } ensure {
-      $assert:not($inner.is_live);
-      $assert:that($outer.is_live);
+      $assert:not($inner.is_live?);
+      $assert:that($outer.is_live?);
     }
   }
 }
@@ -119,8 +119,9 @@ def $test_interrupted_escape() {
       }
     });
     $escaped := false;
-    $assert:that($outer.is_live);
+    $assert:that($outer.is_live?);
   }
+  $assert:not($escaped);
 }
 
 do {

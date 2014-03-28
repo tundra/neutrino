@@ -65,11 +65,11 @@ def $test_frozen() {
   $assert:equals(8, $arr[0]);
   $assert:equals(7, $arr[1]);
   $assert:equals(6, $arr[2]);
-  $assert:equals(false, @core:is_frozen($arr));
-  $assert:equals(false, @core:is_deep_frozen($arr));
+  $assert:equals(false, @core:is_frozen?($arr));
+  $assert:equals(false, @core:is_deep_frozen?($arr));
   @core:freeze($arr);
-  $assert:equals(true, @core:is_frozen($arr));
-  $assert:equals(true, @core:is_deep_frozen($arr));
+  $assert:equals(true, @core:is_frozen?($arr));
+  $assert:equals(true, @core:is_deep_frozen?($arr));
   $assert:equals(3, $arr.length);
   $assert:equals(8, $arr[0]);
   $assert:equals(7, $arr[1]);
