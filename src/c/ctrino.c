@@ -222,6 +222,13 @@ static value_t ctrino_is_deep_frozen(builtin_arguments_t *args) {
   return new_boolean(try_validate_deep_frozen(runtime, value, NULL));
 }
 
+static value_t ctrino_new_pending_promise(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofCtrino, self);
+  runtime_t *runtime = get_builtin_runtime(args);
+  return new_heap_pending_promise(runtime);
+}
+
 #define ADD_BUILTIN(name, argc, impl)                                          \
   TRY(add_ctrino_method(runtime, space, name, argc, impl))
 
@@ -237,6 +244,7 @@ value_t add_ctrino_builtin_methods(runtime_t *runtime, value_t space) {
   ADD_BUILTIN("new_float_32", 1, ctrino_new_float_32);
   ADD_BUILTIN("new_function", 1, ctrino_new_function);
   ADD_BUILTIN("new_instance_manager", 1, ctrino_new_instance_manager);
+  ADD_BUILTIN("new_pending_promise", 0, ctrino_new_pending_promise);
   ADD_BUILTIN("print_ln", 1, ctrino_print_ln);
   ADD_BUILTIN("to_string", 1, ctrino_to_string);
   return success();

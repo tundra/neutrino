@@ -7,6 +7,7 @@
 #include "derived.h"
 #include "freeze.h"
 #include "process.h"
+#include "sync.h"
 #include "tagged.h"
 #include "try-inl.h"
 #include "value-inl.h"
@@ -487,6 +488,15 @@ value_t new_heap_freeze_cheat(runtime_t *runtime, value_t value) {
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, freeze_cheat_species)));
   set_freeze_cheat_value(result, value);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_pending_promise(runtime_t *runtime) {
+  size_t size = kPromiseSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, promise_species)));
+  set_promise_state(result, promise_state_pending());
+  set_promise_value(result, nothing());
   return post_create_sanity_check(result, size);
 }
 

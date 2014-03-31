@@ -536,7 +536,7 @@ void get_void_p_layout(value_t value, heap_object_layout_t *layout) {
 }
 
 
-// --- A r r a y ---
+/// ## Array
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(array);
 

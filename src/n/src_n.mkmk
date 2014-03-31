@@ -19,6 +19,7 @@ core_file_names = [
   "lambda.n",
   "null.n",
   "object.n",
+  "promise.n",
   "string.n",
 ]
 

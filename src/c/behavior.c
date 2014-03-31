@@ -8,6 +8,7 @@
 #include "freeze.h"
 #include "log.h"
 #include "runtime.h"
+#include "sync.h"
 #include "syntax.h"
 #include "try-inl.h"
 #include "value-inl.h"

@@ -7,6 +7,7 @@
 
 #include "condition.h"
 #include "derived.h"
+#include "runtime.h"
 #include "tagged.h"
 #include "try-inl.h"
 #include "utils-inl.h"

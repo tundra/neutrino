@@ -1,0 +1,32 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## The built-in type of runtime-native blocks.
+def @Promise := @ctrino.get_builtin_type("Promise");
+
+## Creates a new mutable array of the given length with all elements initialized
+## to null.
+def ($this == @Promise).pending() => @ctrino.new_pending_promise();
+
+## Returns a value representing the state of the given promise, one of pending,
+## fulfilled, and rejected.
+@ctrino.builtin("promise.state")
+def ($this is @Promise).state;
+
+## Returns true iff this promise is in the fulfilled or rejected state.
+@ctrino.builtin("promise.is_resolved?")
+def ($this is @Promise).is_resolved?;
+
+## Returns the value of this promise if it has been resolved, otherwise signals
+## promise_not_resolved.
+@ctrino.builtin("promise.get")
+def ($this is @Promise).get();
+
+## Fulfills this promise. After this call the promise will return true for
+## is_resolved? and get() will return the given value. If the promise is already
+## resolved this call has no effect.
+##
+## TODO: maybe signal when the promise has already been resolved but by default
+##   do nothing?
+@ctrino.builtin("promise.fulfill!")
+def ($this is @Promise).fulfill!($value);
