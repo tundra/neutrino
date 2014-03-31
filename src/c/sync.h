@@ -30,29 +30,29 @@ bool is_promise_resolved(value_t self);
 
 // The possible states of a promise. See
 // https://github.com/domenic/promises-unwrapping/blob/master/docs/states-and-fates.md
-// which seems like a terribly reasonably terminology.
+// which seems like a terribly reasonable terminology.
 typedef enum {
   psPending = 0x1,
   psFulfilled = 0x2,
   psRejected = 0x4
 } promise_state_t;
 
-// Creates a relation value representing the given promise state.
+// Creates a promise state value representing the given promise state.
 static value_t new_promise_state(promise_state_t state) {
   return new_custom_tagged(tpPromiseState, state);
 }
 
-// Returns the empty promise state.
+// Returns the pending promise state.
 static value_t promise_state_pending() {
   return new_promise_state(psPending);
 }
 
-// Returns the resolved promise state.
+// Returns the fulfilled promise state.
 static value_t promise_state_fulfilled() {
   return new_promise_state(psFulfilled);
 }
 
-// Returns the failed promise state.
+// Returns the rejected promise state.
 static value_t promise_state_rejected() {
   return new_promise_state(psRejected);
 }
