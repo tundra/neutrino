@@ -410,7 +410,7 @@ static value_t new_moved_object(value_t target) {
   F(Namespace,               namespace,                 _, _, _, _, _, _, _, X, X, 28)\
   F(NamespaceDeclarationAst, namespace_declaration_ast, _, _, X, _, _, _, _, _, _, 44)\
   F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _, 42)\
-  F(Operation,               operation,                 _, X, X, _, _, _, _, X, _, 46)\
+  F(Operation,               operation,                 _, X, X, X, _, _, _, X, _, 46)\
   F(Options,                 options,                   _, _, X, _, _, _, _, _, _, 14)\
   F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _, 51)\
   F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _,  8)\

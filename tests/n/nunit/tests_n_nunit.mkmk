@@ -33,6 +33,7 @@ file_names = [
   "module.n",
   "object.n",
   "promise.n",
+  "selector.n",
   "signal.n",
   "string.n",
   "trace.n",

@@ -230,7 +230,7 @@ class Parser(object):
     return annots
 
   # <expression>
-  #   -> <operator expression>
+  #   -> <word expression>
   def parse_expression(self, expect_delim):
     return self.parse_word_expression(expect_delim)
 
@@ -262,8 +262,24 @@ class Parser(object):
       return self.parse_signal_expression(expect_delim)
     elif self.at_word('try'):
       return self.parse_try_expression(expect_delim)
+    elif self.at_word('op'):
+      return self.parse_naked_selector(expect_delim)
     else:
       return self.parse_assignment_expression(expect_delim)
+
+  # <naked selector>
+  #   -> "op" <selector> ("(" ")")?
+  def parse_naked_selector(self, expect_delim):
+    self.expect_word('op')
+    value = self.expect_type(Token.OPERATION)
+    if self.at_punctuation('('):
+      self.expect_punctuation('(')
+      self.expect_punctuation(')')
+      op = data.Operation.infix(value)
+    else:
+      op = data.Operation.property(value)
+    self.expect_statement_delimiter(expect_delim)
+    return ast.Literal(op)
 
   # <field declaration>
   #   -> "field" <subject> <operator> ";"

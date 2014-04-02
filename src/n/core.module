@@ -18,6 +18,7 @@ module $core {
     "null.n",
     "object.n",
     "promise.n",
+    "selector.n",
     "string.n"
   ]
 
