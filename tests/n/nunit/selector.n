@@ -12,10 +12,15 @@ def $check_selector($expected, $value is @core:Selector) {
 }
 
 def $test_simple_selectors() {
-  $check_selector(".foo()", .foo());
-  $check_selector(".foo", .foo);
-  $check_selector(".+()", .+());
-  $check_selector(".+", .+);
+  $check_selector(".foo()", op.foo());
+  $check_selector(".foo", op.foo);
+  $check_selector(".+()", op.+());
+  $check_selector(".+", op.+);
+  $check_selector(".+", op +);
+  $check_selector(".+()", op + ());
+  $check_selector(".duff?()", op .duff? ());
+  $check_selector(".duff!()", op .duff! ());
+
 }
 
 do {

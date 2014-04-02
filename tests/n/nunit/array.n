@@ -4,6 +4,7 @@
 import $assert;
 import $core;
 
+
 def $test_simple_array_methods() {
   def $a := [9, 8, 7];
   $assert:equals(3, $a.length);
