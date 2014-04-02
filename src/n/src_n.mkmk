@@ -20,6 +20,7 @@ core_file_names = [
   "null.n",
   "object.n",
   "promise.n",
+  "selector.n",
   "string.n",
 ]
 

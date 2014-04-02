@@ -1338,6 +1338,9 @@ value_t get_call_data_value_at(value_t self, size_t index) {
 
 // --- O p e r a t i o n ---
 
+GET_FAMILY_PRIMARY_TYPE_IMPL(operation);
+NO_BUILTIN_METHODS(operation);
+
 INTEGER_ACCESSORS_IMPL(Operation, operation, Type, type);
 ACCESSORS_IMPL(Operation, operation, acNoCheck, 0, Value, value);
 

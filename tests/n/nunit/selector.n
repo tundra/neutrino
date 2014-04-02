@@ -1,0 +1,23 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+## Checks that the selector argument is indeed a selector (through the is-clause)
+## and that its string representation is as expected.
+def $check_selector($expected, $value is @core:Selector) {
+  def $as_string := $value.to(@core:String);
+  $assert:equals($expected, $as_string);
+}
+
+def $test_simple_selectors() {
+  $check_selector(".foo()", .foo());
+  $check_selector(".foo", .foo);
+  $check_selector(".+()", .+());
+  $check_selector(".+", .+);
+}
+
+do {
+  $test_simple_selectors();
+}

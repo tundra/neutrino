@@ -230,9 +230,25 @@ class Parser(object):
     return annots
 
   # <expression>
-  #   -> <operator expression>
+  #   -> <naked selector>
+  #   -> <word expression>
   def parse_expression(self, expect_delim):
-    return self.parse_word_expression(expect_delim)
+    if self.at_type(Token.OPERATION):
+      return self.parse_naked_selector(expect_delim)
+    else:
+      return self.parse_word_expression(expect_delim)
+
+  def parse_naked_selector(self, expect_delim):
+    value = self.expect_type(Token.OPERATION)
+    if self.at_punctuation('('):
+      self.expect_punctuation('(')
+      self.expect_punctuation(')')
+      op = data.Operation.infix(value)
+    else:
+      op = data.Operation.property(value)
+    self.expect_statement_delimiter(expect_delim)
+    return ast.Literal(op)
+
 
   # Parses an expression and wraps it in a program appropriately to make it
   # executable.

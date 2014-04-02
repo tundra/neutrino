@@ -1,0 +1,7 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## The built-in type of runtime-native selectors.
+def @Selector := @ctrino.get_builtin_type("Operation");
+
+def type @Selector is @Object;
