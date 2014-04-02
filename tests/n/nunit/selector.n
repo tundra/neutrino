@@ -20,7 +20,11 @@ def $test_simple_selectors() {
   $check_selector(".+()", op + ());
   $check_selector(".duff?()", op .duff? ());
   $check_selector(".duff!()", op .duff! ());
-
+  $check_selector("()", op());
+  $check_selector("[]", op[]);
+  $check_selector(".foo:=", op .foo := ());
+  $check_selector("[]:=", op[] := ());
+  $check_selector(".foo():=", op .foo () := ());
 }
 
 do {

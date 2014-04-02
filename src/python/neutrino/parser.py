@@ -271,13 +271,29 @@ class Parser(object):
   #   -> "op" <selector> ("(" ")")?
   def parse_naked_selector(self, expect_delim):
     self.expect_word('op')
-    value = self.expect_type(Token.OPERATION)
-    if self.at_punctuation('('):
+    if self.at_type(Token.OPERATION):
+      value = self.expect_type(Token.OPERATION)
+      if self.at_punctuation('('):
+        self.expect_punctuation('(')
+        self.expect_punctuation(')')
+        op = data.Operation.infix(value)
+      else:
+        op = data.Operation.property(value)
+    elif self.at_punctuation('('):
       self.expect_punctuation('(')
       self.expect_punctuation(')')
-      op = data.Operation.infix(value)
+      op = data.Operation.call()
+    elif self.at_punctuation('['):
+      self.expect_punctuation('[')
+      self.expect_punctuation(']')
+      op = data.Operation.index()
     else:
-      op = data.Operation.property(value)
+      raise self.new_syntax_error()
+    if self.at_punctuation(':='):
+      self.expect_punctuation(':=')
+      self.expect_punctuation('(')
+      self.expect_punctuation(')')
+      op = data.Operation.assign(op)
     self.expect_statement_delimiter(expect_delim)
     return ast.Literal(op)
 
