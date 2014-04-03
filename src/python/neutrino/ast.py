@@ -35,6 +35,12 @@ class Visitor(object):
   def visit_invocation(self, that):
     self.visit_ast(that)
 
+  def visit_call_literal(self, that):
+    self.visit_ast(that)
+
+  def visit_call_literal_argument(self, that):
+    self.visit_ast(that)
+
   def visit_signal(self, that):
     self.visit_ast(that)
 
@@ -221,6 +227,43 @@ class Invocation(object):
 
   def __str__(self):
     return "(call %s)" % " ".join(map(str, self.arguments))
+
+
+# A reified multi-method call literal.
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "CallLiteral"))
+class CallLiteral(object):
+
+  @plankton.field("arguments")
+  def __init__(self, arguments):
+    self.arguments = arguments
+
+  def accept(self, visitor):
+    return visitor.visit_call_literal(self)
+
+  def traverse(self, visitor):
+    for argument in self.arguments:
+      argument.accept(visitor)
+
+
+# An individual argument to an invocation.
+@plankton.serializable(plankton.EnvironmentReference.path("ast", "CallLiteralArgument"))
+class CallLiteralArgument(object):
+
+  @plankton.field("tag")
+  @plankton.field("value")
+  def __init__(self, tag, value):
+    self.tag = tag
+    self.value = value
+
+  def accept(self, visitor):
+    return visitor.visit_call_literal_argument(self)
+
+  def traverse(self, visitor):
+    self.tag.accept(visitor)
+    self.value.accept(visitor)
+
+  def __str__(self):
+    return "(call literal argument %s %s)" % (self.tag, self.value)
 
 
 @plankton.serializable(plankton.EnvironmentReference.path("ast", "Signal"))

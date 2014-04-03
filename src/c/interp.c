@@ -703,6 +703,26 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           frame.pc += kDisposeBlockOperationSize;
           break;
         }
+        case ocCreateCallData: {
+          size_t argc = read_short(&cache, &frame, 1);
+          TRY_DEF(raw_tags, new_heap_array(runtime, argc));
+          for (size_t i = 0; i < argc; i++) {
+            value_t tag = frame_peek_value(&frame, 2 * (argc - i) - 1);
+            set_array_at(raw_tags, i, tag);
+          }
+          TRY_DEF(entries, build_call_tags_entries(runtime, raw_tags));
+          TRY_DEF(call_tags, new_heap_call_tags(runtime, afFreeze, entries));
+          value_t values = raw_tags;
+          for (size_t i = 0; i < argc; i++) {
+            value_t value = frame_pop_value(&frame);
+            frame_pop_value(&frame);
+            set_array_at(values, i, value);
+          }
+          TRY_DEF(call_data, new_heap_call_data(runtime, call_tags, values));
+          frame_push_value(&frame, call_data);
+          frame.pc += kCreateCallDataOperationSize;
+          break;
+        }
         default:
           ERROR("Unexpected opcode %i", opcode);
           UNREACHABLE("unexpected opcode");

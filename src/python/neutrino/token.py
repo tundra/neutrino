@@ -272,7 +272,7 @@ class Tokenizer(object):
       self.advance()
     end = self.cursor
     value = self.slice(start, end)
-    if value == ':=' or value == '=>':
+    if value == ':=' or value == '=>' or value == ':':
       return Token.punctuation(value, delim)
     else:
       return Token.operation(value, delim)

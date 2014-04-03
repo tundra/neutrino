@@ -17,6 +17,7 @@
   F(CallEnsurer,                4)                                             \
   F(CheckStackHeight,           2)                                             \
   F(CreateBlock,                2)                                             \
+  F(CreateCallData,             2)                                             \
   F(CreateEnsurer,              2)                                             \
   F(CreateEscape,               2)                                             \
   F(DelegateToLambda,           1)                                             \

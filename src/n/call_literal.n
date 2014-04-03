@@ -1,0 +1,15 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## The built-in type of runtime-native object arrays.
+def @CallLiteral := @ctrino.get_builtin_type("CallData");
+
+## Returns the number of explicit arguments to this call.
+@ctrino.builtin("call_data.length")
+def ($this is @CallLiteral).length;
+
+## Returns the value of the argument with the given tag.
+@ctrino.builtin("call_data[]")
+def ($this is @CallLiteral)[$index];
+
+def type @CallLiteral is @Object;

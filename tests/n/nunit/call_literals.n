@@ -1,0 +1,75 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def $test_keys() {
+  def $subj := subject;
+  $assert:not($subj == "this");
+  def $sel := selector;
+  $assert:not($sel == null);
+}
+
+def $test_simple_positional_calls() {
+  def $c0 := call();
+  $assert:equals(0, $c0.length);
+  def $c4 := call("x", "y", "z", "w");
+  $assert:equals(4, $c4.length);
+  $assert:equals("x", $c4[0]);
+  $assert:equals("y", $c4[1]);
+  $assert:equals("z", $c4[2]);
+  $assert:equals("w", $c4[3]);
+}
+
+def $test_simple_tagged_calls() {
+  def $cxy := call(x: "a", y: "b");
+  $assert:equals(2, $cxy.length);
+  $assert:equals("a", $cxy["x"]);
+  $assert:equals("b", $cxy["y"]);
+  def $c01 := call(0: "f", 1: "g");
+  $assert:equals(2, $c01.length);
+  $assert:equals("f", $c01[0]);
+  $assert:equals("g", $c01[1]);
+  def $c10 := call(1: "h", 0: "i");
+  $assert:equals(2, $c10.length);
+  $assert:equals("i", $c10[0]);
+  $assert:equals("h", $c10[1]);
+  def $cxyps := call(x: "a", y: "b", "c", "d");
+  $assert:equals(4, $cxyps.length);
+  $assert:equals("a", $cxyps["x"]);
+  $assert:equals("b", $cxyps["y"]);
+  $assert:equals("c", $cxyps[0]);
+  $assert:equals("d", $cxyps[1]);
+}
+
+def $test_computed_tags() {
+  def $0 := 0;
+  def $1 := 1;
+  def $c01 := call(($0): "a", ($1): "b");
+  $assert:equals(2, $c01.length);
+  $assert:equals("a", $c01[0]);
+  $assert:equals("b", $c01[1]);
+  def $csel := call((subject): 1, (selector): 2, 3);
+  $assert:equals(3, $csel.length);
+  $assert:equals(1, $csel[subject]);
+  $assert:equals(2, $csel[selector]);
+  $assert:equals(3, $csel[0]);
+}
+
+def $test_bounds() {
+  def $two := call("a", "b");
+  $assert:equals(2, $two.length);
+  $assert:equals("a", try $two[0] on.no_such_tag($t) => "f0");
+  $assert:equals("b", try $two[1] on.no_such_tag($t) => "f1");
+  $assert:equals("f2", try $two[2] on.no_such_tag($t) => "f2");
+  $assert:equals("fx", try $two["x"] on.no_such_tag($t) => "fx");
+}
+
+do {
+  $test_keys();
+  $test_simple_positional_calls();
+  $test_simple_tagged_calls();
+  $test_computed_tags();
+  $test_bounds();
+}

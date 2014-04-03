@@ -484,6 +484,15 @@ value_t assembler_emit_invocation(assembler_t *assm, value_t fragment,
   return success();
 }
 
+value_t assembler_emit_create_call_data(assembler_t *assm, size_t argc) {
+  assembler_emit_opcode(assm, ocCreateCallData);
+  assembler_emit_short(assm, argc);
+  assembler_adjust_stack_height(assm,
+      1            // the call data
+      - 2 * argc); // the entries in the call data
+  return success();
+}
+
 value_t assembler_emit_signal(assembler_t *assm, opcode_t opcode, value_t tags) {
   CHECK_FAMILY(ofCallTags, tags);
   assembler_emit_opcode(assm, opcode);

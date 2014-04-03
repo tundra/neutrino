@@ -737,6 +737,24 @@ value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_call_literal_ast(runtime_t *runtime, value_t arguments) {
+  size_t size = kCallLiteralAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, call_literal_ast_species)));
+  set_call_literal_ast_arguments(result, arguments);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_call_literal_argument_ast(runtime_t *runtime, value_t tag,
+    value_t value) {
+  size_t size = kCallLiteralArgumentAstSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, call_literal_argument_ast_species)));
+  set_call_literal_argument_ast_tag(result, tag);
+  set_call_literal_argument_ast_value(result, value);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_signal_ast(runtime_t *runtime, value_t escape, value_t arguments,
     value_t defawlt) {
   size_t size = kSignalAstSize;

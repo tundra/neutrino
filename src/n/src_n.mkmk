@@ -9,6 +9,7 @@ core_file_names = [
   "assert.n",
   "block.n",
   "bool.n",
+  "call_literal.n",
   "control.n",
   "core.n",
   "escape.n",
