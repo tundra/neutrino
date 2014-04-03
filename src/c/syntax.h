@@ -146,6 +146,28 @@ static const size_t kInvocationAstArgumentsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(invocation_ast, arguments);
 
 
+/// ## Call literal ast
+
+static const size_t kCallLiteralAstSize = HEAP_OBJECT_SIZE(1);
+static const size_t kCallLiteralAstArgumentsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+
+// The array of element expressions.
+ACCESSORS_DECL(call_literal_ast, arguments);
+
+
+/// ## Call literal argument ast
+
+static const size_t kCallLiteralArgumentAstSize = HEAP_OBJECT_SIZE(2);
+static const size_t kCallLiteralArgumentAstTagOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kCallLiteralArgumentAstValueOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+
+// The tag of this call argument.
+ACCESSORS_DECL(call_literal_argument_ast, tag);
+
+// The value of this call argument.
+ACCESSORS_DECL(call_literal_argument_ast, value);
+
+
 // --- A r g u m e n t   a s t ---
 
 static const size_t kArgumentAstSize = HEAP_OBJECT_SIZE(2);

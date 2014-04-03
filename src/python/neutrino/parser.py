@@ -11,6 +11,18 @@ import plankton
 from token import Token
 
 
+# Dispenses default tags for argument parsing.
+class TagDispenser(object):
+
+  def __init__(self):
+    self.current = 0
+
+  def get_next(self):
+    result = self.current
+    self.current += 1
+    return result
+
+
 # Neutrino parser.
 class Parser(object):
 
@@ -264,6 +276,8 @@ class Parser(object):
       return self.parse_try_expression(expect_delim)
     elif self.at_word('op'):
       return self.parse_naked_selector(expect_delim)
+    elif self.at_word('call'):
+      return self.parse_call_literal(expect_delim)
     else:
       return self.parse_assignment_expression(expect_delim)
 
@@ -296,6 +310,38 @@ class Parser(object):
       op = data.Operation.assign(op)
     self.expect_statement_delimiter(expect_delim)
     return ast.Literal(op)
+
+  def parse_call_literal_argument(self, tag_dispenser):
+    if self.at_type(Token.TAG):
+      tag_value = self.expect_type(Token.TAG)
+      tag = ast.Literal(tag_value)
+      value = self.parse_expression(False)
+    else:
+      value_or_tag = self.parse_expression(False)
+      if self.at_punctuation(':'):
+        self.expect_punctuation(':')
+        tag = value_or_tag
+        value = self.parse_expression(False)
+      else:
+        tag = ast.Literal(tag_dispenser.get_next())
+        value = value_or_tag
+    return ast.CallLiteralArgument(tag, value)
+
+  def parse_call_literal(self, expect_delim):
+    self.expect_word('call')
+    args = []
+    self.expect_punctuation('(')
+    tag_dispenser = TagDispenser()
+    if not self.at_punctuation(')'):
+      first = self.parse_call_literal_argument(tag_dispenser)
+      args.append(first)
+      while self.at_punctuation(','):
+        self.expect_punctuation(',')
+        next = self.parse_call_literal_argument(tag_dispenser)
+        args.append(next)
+    self.expect_punctuation(')')
+    self.expect_statement_delimiter(expect_delim)
+    return ast.CallLiteral(args)
 
   # <field declaration>
   #   -> "field" <subject> <operator> ";"
@@ -770,6 +816,8 @@ class Parser(object):
         or self.at_word('true')
         or self.at_word('false')
         or self.at_word('module')
+        or self.at_word('subject')
+        or self.at_word('selector')
         or self.at_type(Token.QUOTE))
 
   # <atomic expression>
@@ -810,6 +858,12 @@ class Parser(object):
     elif self.at_word('false'):
       self.expect_word('false')
       return ast.Literal(False)
+    elif self.at_word('subject'):
+      self.expect_word('subject')
+      return ast.Literal(data._SUBJECT)
+    elif self.at_word('selector'):
+      self.expect_word('selector')
+      return ast.Literal(data._SELECTOR)
     elif self.at_word('module'):
       self.expect_word('module')
       return ast.CurrentModule()

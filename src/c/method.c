@@ -1263,7 +1263,7 @@ value_t build_call_tags_entries(runtime_t *runtime, value_t tags) {
     size_t offset = tag_count - i - 1;
     set_pair_array_second_at(result, i, new_integer(offset));
   }
-  co_sort_pair_array(result);
+  TRY(co_sort_pair_array(result));
   return result;
 }
 
@@ -1318,6 +1318,7 @@ value_t call_tags_identity_compare(value_t a, value_t b, cycle_detector_t *outer
 
 /// ## Call data
 
+GET_FAMILY_PRIMARY_TYPE_IMPL(call_data);
 TRIVIAL_PRINT_ON_IMPL(CallData, call_data);
 
 ACCESSORS_IMPL(CallData, call_data, acInFamily, ofCallTags, Tags, tags);
@@ -1333,6 +1334,34 @@ value_t call_data_validate(value_t self) {
 value_t get_call_data_value_at(value_t self, size_t index) {
   value_t values = get_call_data_values(self);
   return get_array_at(values, index);
+}
+
+static value_t call_data_length(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofCallData, self);
+  value_t values = get_call_data_values(self);
+  return new_integer(get_array_length(values));
+}
+
+static value_t call_data_get(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofCallData, self);
+  value_t needle = get_builtin_argument(args, 0);
+  value_t tags = get_call_data_tags(self);
+  for (size_t i = 0; i < get_call_tags_entry_count(tags); i++) {
+    value_t tag = get_call_tags_tag_at(tags, i);
+    if (value_identity_compare(needle, tag)) {
+      size_t offset = get_call_tags_offset_at(tags, i);
+      return get_call_data_value_at(self, offset);
+    }
+  }
+  ESCAPE_BUILTIN(args, no_such_tag, needle);
+}
+
+value_t add_call_data_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("call_data.length", 0, call_data_length);
+  ADD_BUILTIN_IMPL_MAY_ESCAPE("call_data[]", 1, 1, call_data_get);
+  return success();
 }
 
 

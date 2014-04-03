@@ -186,6 +186,10 @@ value_t assembler_emit_new_array(assembler_t *assm, size_t length);
 value_t assembler_emit_invocation(assembler_t *assm, value_t space, value_t tags,
     value_t helper);
 
+// Create a call data object using the argc tag/value pairs currently on the
+// stack.
+value_t assembler_emit_create_call_data(assembler_t *assm, size_t argc);
+
 // Emits a signal opcode using the given record.
 value_t assembler_emit_signal(assembler_t *assm, opcode_t opcode, value_t record);
 

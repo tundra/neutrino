@@ -74,6 +74,7 @@
 #define ENUM_SELECTOR_TABLE(F)                                                 \
   F(out_of_bounds,              "out_of_bounds")                               \
   F(no_such_field,              "no_such_field")                               \
+  F(no_such_tag,                "no_such_tag")                                 \
   F(is_frozen,                  "is_frozen")                                   \
   F(promise_not_resolved,       "promise_not_resolved")
 

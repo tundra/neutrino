@@ -280,6 +280,13 @@ value_t new_heap_array_ast(runtime_t *runtime, value_t elements);
 // Creates a new invocation syntax tree with the given arguments.
 value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments);
 
+// Creates a new call literal syntax tree with the given arguments.
+value_t new_heap_call_literal_ast(runtime_t *runtime, value_t arguments);
+
+// Creates a new call literal argument.
+value_t new_heap_call_literal_argument_ast(runtime_t *runtime, value_t tag,
+    value_t value);
+
 // Creates a new signal syntax tree with the given arguments.
 value_t new_heap_signal_ast(runtime_t *runtime, value_t escape, value_t arguments,
     value_t defawlt);

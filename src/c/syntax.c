@@ -296,6 +296,77 @@ value_t plankton_new_invocation_ast(runtime_t *runtime) {
 }
 
 
+/// ## Call literal ast
+
+TRIVIAL_PRINT_ON_IMPL(CallLiteralAst, call_literal_ast);
+NO_BUILTIN_METHODS(call_literal_ast);
+FIXED_GET_MODE_IMPL(call_literal_ast, vmMutable);
+
+ACCESSORS_IMPL(CallLiteralAst, call_literal_ast, acInFamilyOpt, ofArray, Arguments,
+    arguments);
+
+value_t emit_call_literal_ast(value_t value, assembler_t *assm) {
+  value_t args = get_call_literal_ast_arguments(value);
+  size_t argc = get_array_length(args);
+  for (size_t i = 0; i < argc; i++) {
+    value_t arg = get_array_at(args, i);
+    value_t tag = get_call_literal_argument_ast_tag(arg);
+    value_t value = get_call_literal_argument_ast_value(arg);
+    TRY(emit_value(tag, assm));
+    TRY(emit_value(value, assm));
+  }
+  TRY(assembler_emit_create_call_data(assm, argc));
+  return success();
+}
+
+value_t call_literal_ast_validate(value_t value) {
+  VALIDATE_FAMILY(ofCallLiteralAst, value);
+  VALIDATE_FAMILY_OPT(ofArray, get_call_literal_ast_arguments(value));
+  return success();
+}
+
+value_t plankton_set_call_literal_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
+  UNPACK_PLANKTON_MAP(contents, arguments);
+  set_call_literal_ast_arguments(object, arguments_value);
+  return success();
+}
+
+value_t plankton_new_call_literal_ast(runtime_t *runtime) {
+  return new_heap_call_literal_ast(runtime, nothing());
+}
+
+
+/// ## Call literal argument ast
+
+TRIVIAL_PRINT_ON_IMPL(CallLiteralArgumentAst, call_literal_argument_ast);
+NO_BUILTIN_METHODS(call_literal_argument_ast);
+FIXED_GET_MODE_IMPL(call_literal_argument_ast, vmMutable);
+
+ACCESSORS_IMPL(CallLiteralArgumentAst, call_literal_argument_ast, acIsSyntaxOpt,
+    0, Tag, tag);
+
+ACCESSORS_IMPL(CallLiteralArgumentAst, call_literal_argument_ast, acIsSyntaxOpt,
+    0, Value, value);
+
+value_t call_literal_argument_ast_validate(value_t value) {
+  VALIDATE_FAMILY(ofCallLiteralArgumentAst, value);
+  return success();
+}
+
+value_t plankton_set_call_literal_argument_ast_contents(value_t object, runtime_t *runtime,
+    value_t contents) {
+  UNPACK_PLANKTON_MAP(contents, tag, value);
+  set_call_literal_argument_ast_tag(object, tag_value);
+  set_call_literal_argument_ast_value(object, value_value);
+  return success();
+}
+
+value_t plankton_new_call_literal_argument_ast(runtime_t *runtime) {
+  return new_heap_call_literal_argument_ast(runtime, nothing(), nothing());
+}
+
+
 /// ## Signal ast
 
 TRIVIAL_PRINT_ON_IMPL(SignalAst, signal_ast);
@@ -1585,6 +1656,8 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
   TRY(add_plankton_factory(map, ast, "Argument", plankton_new_argument_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Array", plankton_new_array_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Block", plankton_new_block_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "CallLiteral", plankton_new_call_literal_ast, runtime));
+  TRY(add_plankton_factory(map, ast, "CallLiteralArgument", plankton_new_call_literal_argument_ast, runtime));
   TRY(add_plankton_factory(map, ast, "CurrentModule", plankton_new_current_module_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Ensure", plankton_new_ensure_ast, runtime));
   TRY(add_plankton_factory(map, ast, "Guard", plankton_new_guard_ast, runtime));
