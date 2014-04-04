@@ -16,6 +16,7 @@ file_names = [
   "block_vars.n",
   "builtin_signals.n",
   "call_literals.n",
+  "call_literal_invoke.n",
   "def.n",
   "ensure.n",
   "escape.n",

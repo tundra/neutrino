@@ -206,6 +206,9 @@ value_t assembler_emit_builtin_maybe_escape(assembler_t *assm,
 // Emits a return instruction.
 value_t assembler_emit_return(assembler_t *assm);
 
+// Emits a return instruction without checking the stack height.
+value_t assembler_emit_unchecked_return(assembler_t *assm);
+
 // Emits a set-reference instruction.
 value_t assembler_emit_set_reference(assembler_t *assm);
 
@@ -274,6 +277,9 @@ value_t assembler_emit_delegate_lambda_call(assembler_t *assm);
 
 // Ditto for blocks.
 value_t assembler_emit_delegate_block_call(assembler_t *assm);
+
+// Invoke a call data in the given module.
+value_t assembler_emit_module_fragment_private_invoke(assembler_t *assm);
 
 // Capture an escape, pushing it onto the stack. The offset_out is a cursor
 // where the offset to jump to when returning to the escape should be written.

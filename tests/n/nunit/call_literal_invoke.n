@@ -4,9 +4,32 @@
 import $assert;
 import $core;
 
+def $fun($a, $b) => $a + $b;
+
 def $test_simple_invoke() {
+  $assert:equals(7, module.invoke(call((subject): $fun, (selector): op(), 3, 4)));
+  $assert:equals(11, module.invoke(call(5, 6, (subject): $fun, (selector): op())));
+  $assert:equals(15, module.invoke(call(7, (subject): $fun, (selector): op(), 8)));
+  $assert:equals(19, module.invoke(call(1: 9, 0: 10, (selector): op(),
+    (subject): $fun)));
+}
+
+def $test_op_invoke() {
+  $assert:equals(2, module.invoke(call((subject): 1, (selector): op+(), 1)));
+  $assert:equals(3, module.invoke(call((subject): 4, (selector): op-(), 1)));
+}
+
+def $test_functino_invoke() {
+  $assert:equals(132, module.invoke(call((subject): fn ($x, $y) => ($x * $y),
+    (selector): op(), 11, 12)));
+  bk $bk.umph($a, $b) => (8 * ($a - $b)) in {
+    $assert:equals(24, module.invoke(call((subject): $bk, (selector): op.umph(),
+      17, 14)));
+  }
 }
 
 do {
   $test_simple_invoke();
+  $test_op_invoke();
+  $test_functino_invoke();
 }

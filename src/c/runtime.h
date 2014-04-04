@@ -94,6 +94,7 @@
   F(integer_type)                                                              \
   F(op_call)                                                                   \
   F(plankton_environment)                                                      \
+  F(return_code_block)                                                         \
   F(selector_key)                                                              \
   F(stack_bottom_code_block)                                                   \
   F(stack_piece_bottom_code_block)                                             \

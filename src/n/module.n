@@ -11,3 +11,6 @@ def ($this is @ModuleFragmentPrivate).new_type($display_name);
 ## Creates a new global field key with the given display name.
 @ctrino.builtin("module_fragment_private.new_global_field")
 def ($this is @ModuleFragmentPrivate).new_global_field($display_name);
+
+@ctrino.builtin("module_fragment_private.invoke")
+def ($this is @ModuleFragmentPrivate).invoke($call);

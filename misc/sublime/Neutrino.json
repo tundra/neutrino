@@ -32,7 +32,7 @@
         },
         "comment": "Ditto, don't highlight the dot"
       },
-      { "match": "\\b(true|false|null|subject|selector)\\b",
+      { "match": "\\b(true|false|null|subject|selector|module)\\b",
         "name": "constant.language.neutrino"
       },
       { "match": "\\b(type|def|var|import)\\b",
