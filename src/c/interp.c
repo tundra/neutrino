@@ -98,16 +98,16 @@ static value_t ensure_method_code(runtime_t *runtime, value_t method) {
   return code;
 }
 
-static void log_lookup_error(value_t condition, value_t tags, frame_t *frame) {
-  size_t arg_count = get_call_tags_entry_count(tags);
+static void log_lookup_error(value_t condition, total_sigmap_input_o *input) {
+  size_t arg_count = sigmap_input_get_argument_count(UPCAST(input));
   string_buffer_t buf;
   string_buffer_init(&buf);
   string_buffer_printf(&buf, "%v: {", condition);
   for (size_t i = 0; i < arg_count; i++) {
     if (i > 0)
       string_buffer_printf(&buf, ", ");
-    value_t tag = get_call_tags_tag_at(tags, i);
-    value_t value = frame_get_pending_argument_at(frame, tags, i);
+    value_t tag = sigmap_input_get_tag_at(UPCAST(input), i);
+    value_t value = total_sigmap_input_get_value_at(input, i);
     string_buffer_printf(&buf, "%v: %v", tag, value);
   }
   string_buffer_printf(&buf, "}");
@@ -240,10 +240,10 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           value_t arg_map;
           frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags,
               &frame);
-          value_t method = lookup_method_full(UPCAST(&input), fragment, helper,
-              &arg_map);
+          value_t method = lookup_method_full_with_helper(UPCAST(&input),
+              fragment, helper, &arg_map);
           if (in_condition_cause(ccLookupError, method)) {
-            log_lookup_error(method, tags, &frame);
+            log_lookup_error(method, UPCAST(&input));
             E_RETURN(method);
           }
           // The lookup may have failed with a different condition. Check for that.
@@ -721,6 +721,43 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           TRY_DEF(call_data, new_heap_call_data(runtime, call_tags, values));
           frame_push_value(&frame, call_data);
           frame.pc += kCreateCallDataOperationSize;
+          break;
+        }
+        case ocModuleFragmentPrivateInvoke: {
+          // Perform the method lookup.
+          value_t phrivate = frame_get_argument(&frame, 0);
+          CHECK_FAMILY(ofModuleFragmentPrivate, phrivate);
+          value_t fragment = get_module_fragment_private_owner(phrivate);
+          value_t call_data = frame_get_argument(&frame, 2);
+          CHECK_FAMILY(ofCallData, call_data);
+          value_t arg_map;
+          call_data_sigmap_input_o input = call_data_sigmap_input_new(ambience,
+              call_data);
+          value_t method = lookup_method_full_with_helper(UPCAST(&input),
+              fragment, nothing(), &arg_map);
+          if (in_condition_cause(ccLookupError, method)) {
+            log_lookup_error(method, UPCAST(&input));
+            E_RETURN(method);
+          }
+          E_TRY(method);
+          E_TRY_DEF(code_block, ensure_method_code(runtime, method));
+          frame.pc += kModuleFragmentPrivateInvokeOperationSize;
+          // Method lookup succeeded. Build the frame that holds the arguments.
+          value_t values = get_call_data_values(call_data);
+          size_t argc = get_array_length(values);
+          // The argument frame needs room for all the arguments as well as
+          // the return value.
+          E_TRY(push_stack_frame(runtime, stack, &frame, argc + 1, nothing()));
+          frame_set_code_block(&frame, ROOT(runtime, return_code_block));
+          for (size_t i = 0; i < argc; i++)
+            frame_push_value(&frame, get_array_at(values, argc - i - 1));
+          // Then build the method's frame.
+          value_t pushed = push_stack_frame(runtime, stack, &frame,
+              get_code_block_high_water_mark(code_block), arg_map);
+          // This should be handled gracefully.
+          CHECK_FALSE("call literal invocation failed", is_condition(pushed));
+          frame_set_code_block(&frame, code_block);
+          code_cache_refresh(&cache, &frame);
           break;
         }
         default:

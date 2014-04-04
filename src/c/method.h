@@ -396,8 +396,8 @@ value_t add_methodspace_method(runtime_t *runtime, value_t self,
 //
 // TODO: this is an approximation of the intended lookup mechanism and should be
 //   revised later on, for instance to not hard-code the subject origin lookup.
-value_t lookup_method_full(total_sigmap_input_o *input, value_t fragment,
-    value_t helper, value_t *arg_map_out);
+value_t lookup_method_full_with_helper(total_sigmap_input_o *input,
+    value_t fragment, value_t helper, value_t *arg_map_out);
 
 value_t lookup_methodspace_method(sigmap_input_o *input, value_t methodspace,
     value_t *arg_map_out);
@@ -481,8 +481,8 @@ ACCESSORS_DECL(call_data, tags);
 // The arguments to this call as an array.
 ACCESSORS_DECL(call_data, values);
 
-// Returns this call data's index'th value.
-value_t get_call_data_value_at(value_t self, size_t index);
+// Returns the value given for the index'th parameter in this call data.
+value_t get_call_data_value_at(value_t self, size_t param_index);
 
 
 // --- O p e r a t i o n ---

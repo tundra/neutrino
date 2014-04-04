@@ -1846,12 +1846,19 @@ static value_t module_fragment_private_new_global_field(builtin_arguments_t *arg
   return new_heap_global_field(get_builtin_runtime(args), display_name);
 }
 
+value_t emit_module_fragment_private_invoke(assembler_t *assm) {
+  TRY(assembler_emit_module_fragment_private_invoke(assm));
+  return success();
+}
+
 value_t add_module_fragment_private_builtin_implementations(runtime_t *runtime,
     safe_value_t s_map) {
   ADD_BUILTIN_IMPL("module_fragment_private.new_type", 1,
       module_fragment_private_new_type);
   ADD_BUILTIN_IMPL("module_fragment_private.new_global_field", 1,
       module_fragment_private_new_global_field);
+  TRY(add_custom_method_impl(runtime, deref(s_map), "module_fragment_private.invoke",
+      1, new_flag_set(kFlagSetAllOff), emit_module_fragment_private_invoke));
   return success();
 }
 

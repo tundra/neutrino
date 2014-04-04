@@ -403,6 +403,12 @@ value_t assembler_emit_delegate_block_call(assembler_t *assm) {
   return success();
 }
 
+value_t assembler_emit_module_fragment_private_invoke(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocModuleFragmentPrivateInvoke);
+  assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
 value_t assembler_emit_create_escape(assembler_t *assm,
     short_buffer_cursor_t *offset_out) {
   assembler_emit_opcode(assm, ocCreateEscape);
@@ -536,6 +542,11 @@ value_t assembler_emit_builtin_maybe_escape(assembler_t *assm,
 
 value_t assembler_emit_return(assembler_t *assm) {
   CHECK_EQ("invalid stack height", 1, assm->stack_height);
+  TRY(assembler_emit_unchecked_return(assm));
+  return success();
+}
+
+value_t assembler_emit_unchecked_return(assembler_t *assm) {
   assembler_emit_opcode(assm, ocReturn);
   return success();
 }

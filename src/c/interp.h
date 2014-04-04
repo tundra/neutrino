@@ -40,6 +40,7 @@
   F(LoadRefractedArgument,      3)                                             \
   F(LoadRefractedCapture,       3)                                             \
   F(LoadRefractedLocal,         3)                                             \
+  F(ModuleFragmentPrivateInvoke,1)                                             \
   F(NewArray,                   2)                                             \
   F(NewReference,               1)                                             \
   F(Pop,                        2)                                             \

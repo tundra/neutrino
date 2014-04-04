@@ -49,6 +49,21 @@ static value_t create_stack_piece_bottom_code_block(runtime_t *runtime) {
       1);
 }
 
+// Creates a code block that holds just a single return instruction.
+static value_t create_return_code_block(runtime_t *runtime) {
+  assembler_t assm;
+  TRY(assembler_init_stripped_down(&assm, runtime));
+  // This is going to be used for frames that have various amounts of state on
+  // the stack so avoid checking the stack height.
+  TRY(assembler_emit_unchecked_return(&assm));
+  blob_t blob;
+  short_buffer_flush(&assm.code, &blob);
+  TRY_DEF(bytecode, new_heap_blob_with_data(runtime, &blob));
+  assembler_dispose(&assm);
+  return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array),
+      1);
+}
+
 // Creates an array of invocation records of the form
 //
 //   {%subject: N-1, %selector: N-2, 0: N-3, ...}
@@ -187,6 +202,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
       create_stack_bottom_code_block(runtime));
   TRY_SET(RAW_ROOT(roots, stack_piece_bottom_code_block),
       create_stack_piece_bottom_code_block(runtime));
+  TRY_SET(RAW_ROOT(roots, return_code_block), create_return_code_block(runtime));
   TRY_SET(RAW_ROOT(roots, escape_records), create_escape_records(runtime));
 
   // Generate initialization for the per-family types.
@@ -315,6 +331,10 @@ value_t roots_validate(value_t roots) {
   VALIDATE_HEAP_OBJECT(ofIdHashMap, RAW_ROOT(roots, builtin_impls));
   VALIDATE_HEAP_OBJECT(ofOperation, RAW_ROOT(roots, op_call));
   VALIDATE_CHECK_EQ(otCall, get_operation_type(RAW_ROOT(roots, op_call)));
+  VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, stack_piece_bottom_code_block));
+  VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, stack_bottom_code_block));
+  VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, return_code_block));
+  VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, empty_code_block));
   VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, escape_records));
 
 #define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_HEAP_OBJECT(ofString, RAW_RSTR(roots, name));

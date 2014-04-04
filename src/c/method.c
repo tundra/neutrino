@@ -217,7 +217,7 @@ value_t match_signature(value_t self, sigmap_input_o *input,
   // to manage. Make sure to keep them in sync.
   CHECK_FAMILY(ofSignature, self);
   CHECK_FAMILY_OPT(ofMethodspace, space);
-  TOPIC_INFO(Lookup, "Matching against %4v", self);
+  TOPIC_INFO(Lookup, "Matching against %5v", self);
   size_t argc = sigmap_input_get_argument_count(input);
   CHECK_REL("score array too short", argc, <=, match_info->capacity);
   // Fast case if fewer than that minimum number of arguments is given.
@@ -1164,7 +1164,11 @@ static value_t full_thunk_call(sigmap_thunk_o *super_self) {
   CHECK_FAMILY(ofModuleFragment, self->fragment);
   sigmap_state_t *state = UPCAST(self)->state;
   TOPIC_INFO(Lookup, "Performing fragment lookup %v", state->input->tags);
-  TRY(lookup_through_fragment_with_helper(state, self->fragment, self->helper));
+  if (is_nothing(self->helper)) {
+    TRY(lookup_through_fragment(state, self->fragment));
+  } else {
+    TRY(lookup_through_fragment_with_helper(state, self->fragment, self->helper));
+  }
   TOPIC_INFO(Lookup, "Performing subject lookup");
   value_t subject = whatever();
   TRY(lookup_subject_methods(self, &subject));
@@ -1188,8 +1192,8 @@ static value_t full_thunk_call(sigmap_thunk_o *super_self) {
 
 VTABLE(full_thunk_o, sigmap_thunk_o) { full_thunk_call };
 
-value_t lookup_method_full(total_sigmap_input_o *input, value_t fragment,
-    value_t helper, value_t *arg_map_out) {
+value_t lookup_method_full_with_helper(total_sigmap_input_o *input,
+    value_t fragment, value_t helper, value_t *arg_map_out) {
   unique_best_match_output_o output = unique_best_match_output_new();
   full_thunk_o thunk;
   VTABLE_INIT(full_thunk_o, UPCAST(&thunk));
@@ -1331,9 +1335,11 @@ value_t call_data_validate(value_t self) {
   return success();
 }
 
-value_t get_call_data_value_at(value_t self, size_t index) {
+value_t get_call_data_value_at(value_t self, size_t param_index) {
+  value_t tags = get_call_data_tags(self);
+  size_t offset = get_call_tags_offset_at(tags, param_index);
   value_t values = get_call_data_values(self);
-  return get_array_at(values, index);
+  return get_array_at(values, offset);
 }
 
 static value_t call_data_length(builtin_arguments_t *args) {
@@ -1350,10 +1356,8 @@ static value_t call_data_get(builtin_arguments_t *args) {
   value_t tags = get_call_data_tags(self);
   for (size_t i = 0; i < get_call_tags_entry_count(tags); i++) {
     value_t tag = get_call_tags_tag_at(tags, i);
-    if (value_identity_compare(needle, tag)) {
-      size_t offset = get_call_tags_offset_at(tags, i);
-      return get_call_data_value_at(self, offset);
-    }
+    if (value_identity_compare(needle, tag))
+      return get_call_data_value_at(self, i);
   }
   ESCAPE_BUILTIN(args, no_such_tag, needle);
 }
