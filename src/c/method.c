@@ -1356,10 +1356,8 @@ static value_t call_data_get(builtin_arguments_t *args) {
   value_t tags = get_call_data_tags(self);
   for (size_t i = 0; i < get_call_tags_entry_count(tags); i++) {
     value_t tag = get_call_tags_tag_at(tags, i);
-    if (value_identity_compare(needle, tag)) {
-      size_t offset = get_call_tags_offset_at(tags, i);
-      return get_call_data_value_at(self, offset);
-    }
+    if (value_identity_compare(needle, tag))
+      return get_call_data_value_at(self, i);
   }
   ESCAPE_BUILTIN(args, no_such_tag, needle);
 }
