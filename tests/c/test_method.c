@@ -366,7 +366,8 @@ void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
       for (size_t i = 0; i < arg_count; i++) {
         value_t arg = get_array_at(args, i);
         set_array_at(tags, i, get_array_at(arg, 0));
-        set_array_at(values, i, get_array_at(arg, 1));
+        // As always, arguments are counted in reverse order.
+        set_array_at(values, arg_count - i - 1, get_array_at(arg, 1));
       }
       value_t entries = build_call_tags_entries(runtime, tags);
       call_tags = new_heap_call_tags(runtime, afFreeze, entries);
