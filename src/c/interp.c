@@ -742,15 +742,19 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
           E_TRY(method);
           E_TRY_DEF(code_block, ensure_method_code(runtime, method));
           frame.pc += kModuleFragmentPrivateInvokeOperationSize;
-          // Method lookup succeeded. Build the frame.
+          // Method lookup succeeded. Build the frame that holds the arguments.
           value_t values = get_call_data_values(call_data);
           size_t argc = get_array_length(values);
+          // The argument frame needs room for all the arguments as well as
+          // the return value.
           E_TRY(push_stack_frame(runtime, stack, &frame, argc + 1, nothing()));
           frame_set_code_block(&frame, ROOT(runtime, return_code_block));
           for (size_t i = 0; i < argc; i++)
             frame_push_value(&frame, get_array_at(values, argc - i - 1));
+          // Then build the method's frame.
           value_t pushed = push_stack_frame(runtime, stack, &frame,
               get_code_block_high_water_mark(code_block), arg_map);
+          // This should be handled gracefully.
           CHECK_FALSE("call literal invocation failed", is_condition(pushed));
           frame_set_code_block(&frame, code_block);
           code_cache_refresh(&cache, &frame);

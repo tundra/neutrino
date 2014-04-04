@@ -12,5 +12,6 @@ def ($this is @ModuleFragmentPrivate).new_type($display_name);
 @ctrino.builtin("module_fragment_private.new_global_field")
 def ($this is @ModuleFragmentPrivate).new_global_field($display_name);
 
+## Executes the given call in the module fragment represented by this object.
 @ctrino.builtin("module_fragment_private.invoke")
 def ($this is @ModuleFragmentPrivate).invoke($call);

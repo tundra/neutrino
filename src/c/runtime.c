@@ -49,9 +49,12 @@ static value_t create_stack_piece_bottom_code_block(runtime_t *runtime) {
       1);
 }
 
+// Creates a code block that holds just a single return instruction.
 static value_t create_return_code_block(runtime_t *runtime) {
   assembler_t assm;
   TRY(assembler_init_stripped_down(&assm, runtime));
+  // This is going to be used for frames that have various amounts of state on
+  // the stack so avoid checking the stack height.
   TRY(assembler_emit_unchecked_return(&assm));
   blob_t blob;
   short_buffer_flush(&assm.code, &blob);
