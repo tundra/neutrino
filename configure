@@ -1,6 +1,6 @@
 #!/bin/sh
 
 # Install included dependencies
-sudo ./tools/install-deps.sh
+./tools/install-deps.sh
 
 ./tools/init.sh "$@"
