@@ -12,9 +12,12 @@ run_py_tests.add_member(get_external("tests", "python", "neutrino", "suite"))
 run_nunit_tests = add_alias("run-nunit-tests")
 run_nunit_tests.add_member(get_external("tests", "n", "nunit", "suite"))
 
+run_message_tests = add_alias("run-message-tests")
+run_message_tests.add_member(get_external("tests", "n", "message", "suite"))
+
 run_n_tests = add_alias("run-n-tests")
 run_n_tests.add_member(run_nunit_tests)
-run_n_tests.add_member(get_external("tests", "n", "golden", "suite"))
+run_n_tests.add_member(run_message_tests)
 
 run_c_tests = add_alias("run-c-tests")
 run_c_tests.add_member(get_external("tests", "c", "run-tests"))

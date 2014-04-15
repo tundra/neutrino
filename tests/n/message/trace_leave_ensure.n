@@ -1,0 +1,5 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+def $leave_plain_ensure() => try null ensure leave.outer();
+do $leave_plain_ensure();

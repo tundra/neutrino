@@ -1,5 +1,0 @@
-import $core;
-
-def $some_value := 6;
-
-def ($this).method_import_test() => "found it!";
