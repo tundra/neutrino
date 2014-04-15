@@ -1,0 +1,5 @@
+--- backtrace ---
+- leave.get_me_outta_here(10, "foo")
+- :really_fire_abort()
+- :fire_abort()
+Error: %<condition: Signal(escape)>

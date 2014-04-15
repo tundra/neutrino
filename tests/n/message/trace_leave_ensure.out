@@ -1,0 +1,5 @@
+--- backtrace ---
+- leave.outer()
+- ensure
+- :leave_plain_ensure()
+Error: %<condition: Signal(escape)>

@@ -4,6 +4,13 @@
 import $assert;
 import $core;
 
+def $test_local_defs() {
+  $assert:equals(4, {def $x := 4; $x;});
+  $assert:equals(8, {def $x := 4; $x + $x;});
+  $assert:equals(2, {def $x := 6; def $y := 8; $y - $x;});
+  $assert:equals(7, {def $x := 7; $x; def $y := 9; $x;});
+}
+
 def $test_def_value() {
   # The value of a definition is the value of its body, in the trivial case
   # null.
@@ -26,6 +33,7 @@ def $test_def_paths() {
 }
 
 do {
+  $test_local_defs();
   $test_def_value();
   $test_def_paths();
 }

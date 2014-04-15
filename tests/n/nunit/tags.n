@@ -1,0 +1,17 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+
+def $test_simple_tags() {
+  $assert:equals([2, 3], (fn (x: $x, y: $y) => [$x, $y])(2, 3));
+  $assert:equals([4, 5], (fn (x: $x, y: $y) => [$x, $y])(x: 4, y: 5));
+  $assert:equals([7, 6], (fn (x: $x, y: $y) => [$x, $y])(y: 6, x: 7));
+  $assert:equals([9, 8], (fn (x: $x, y: $y) => [$x, $y])(1: 8, 0: 9));
+  $assert:equals([11, 10], (fn ($x, $y) => [$x, $y])(1: 10, 0: 11));
+  $assert:equals(12, (fn x: $x => $x)(x: 12));
+}
+
+do {
+  $test_simple_tags();
+}

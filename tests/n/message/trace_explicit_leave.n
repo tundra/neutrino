@@ -1,0 +1,3 @@
+def $really_fire_abort() => leave.get_me_outta_here(10, "foo");
+def $fire_abort() => $really_fire_abort();
+do $fire_abort();

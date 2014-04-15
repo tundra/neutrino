@@ -2,4 +2,4 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 include('nunit', 'tests_n_nunit.mkmk')
-include('golden', 'tests_n_golden.mkmk')
+include('message', 'tests_n_message.mkmk')

@@ -1,0 +1,4 @@
+import $core;
+
+def $fail_builtin() => (@core:Array.new(1))[100];
+do $fail_builtin();

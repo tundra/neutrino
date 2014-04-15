@@ -1,0 +1,46 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+
+def $test_simple_lambdas() {
+  $assert:equals(4, (fn => 4)());
+  $assert:equals(7, (fn => fn => 7)()());
+  $assert:equals(4, (fn ($x) => 4)(8));
+  $assert:equals(5, (fn ($x, $y) => 5)(9, 10));
+  $assert:equals(6, (fn ($x, $y, $z) => 6)(11, 12, 13));
+  $assert:equals(8, (fn ($x) => $x)(8));
+  $assert:equals(9, (fn ($x, $y) => $x)(9, 10));
+  $assert:equals(10, (fn ($x, $y) => $y)(9, 10));
+  $assert:equals(9, (fn ($f, $x) => $f($x))(fn ($x) => ($x + 3), 6));
+}
+
+def $test_capturing_outers() {
+  $assert:equals(11, {
+    def $outer := (fn $x => fn $y => $x + $y);
+    def $inner := $outer(5);
+    $inner(6);
+  });
+  $assert:equals(10, {
+    def $grand_outer := (fn $x => fn $y => fn $z => $x - $y + $z);
+    def $outer := $grand_outer(9);
+    def $inner := $outer(10);
+    $inner(11);
+  });
+  $assert:equals(1, {
+    def $x := 4;
+    def $y := 5;
+    def $fun := (fn => $y - $x);
+    $fun();
+  });
+  $assert:equals(15, {
+    def $outer := 5;
+    def $fun := (fn => $outer + $outer + $outer);
+    $fun();
+  });
+}
+
+do {
+  $test_simple_lambdas();
+  $test_capturing_outers();
+}

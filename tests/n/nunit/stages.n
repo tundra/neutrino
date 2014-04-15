@@ -1,0 +1,91 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+# For the stack tests. This is not good.
+import @@@core;
+import $assert;
+
+def $ax := 4;
+def @ay := 8;
+
+def $test_single() {
+  $assert:equals(4, $ax);
+  $assert:equals(8, @ay);
+}
+
+def @bx := 12;
+def $by := @bx;
+def @bz := 16;
+
+def $test_simple_offset() {
+  $assert:equals(12, $by);
+  $assert:equals(19, ((fn ($y) => (@bz + $y))(3)));
+}
+
+def @@cppx := 12;
+def @@cppy := @@cppx + 1;
+def @@cppz := @@cppy + 2;
+def @cpx := @@cppx + 3;
+def @cpy := @cpx + 4;
+def @cpz := @cpy + 5;
+def $cx := @cpx + 6;
+def $cy := $cx + 7;
+def $cz := $cy + 8;
+
+def $test_disjoint_stack() {
+  $assert:equals(12, @@cppx);
+  $assert:equals(13, @@cppy);
+  $assert:equals(15, @@cppz);
+  $assert:equals(15, @cpx);
+  $assert:equals(19, @cpy);
+  $assert:equals(24, @cpz);
+  $assert:equals(21, $cx);
+  $assert:equals(28, $cy);
+  $assert:equals(36, $cz);
+}
+
+def $dx := @dx + "a";
+def $dy := @dy + "b";
+def $dz := @dz + "c";
+def @dx := @@dx + "d";
+def @dy := @@dy + "e";
+def @dz := @@dz + "f";
+def @@dx := "g";
+def @@dy := "h";
+def @@dz := "i";
+
+def $test_reverse_stack() {
+  $assert:equals("g", @@dx);
+  $assert:equals("h", @@dy);
+  $assert:equals("i", @@dz);
+  $assert:equals("gd", @dx);
+  $assert:equals("he", @dy);
+  $assert:equals("if", @dz);
+  $assert:equals("gda", $dx);
+  $assert:equals("heb", $dy);
+  $assert:equals("ifc", $dz);
+}
+
+def @@eppx := 12;
+def @@eppy := @@eppx + 1;
+def @@eppz := @@eppy + 2;
+
+def $test_past_alias() {
+  $assert:equals(12, @@eppx);
+  $assert:equals(13, @@eppy);
+  $assert:equals(15, @@eppz);
+  $assert:equals(12, @eppx);
+  $assert:equals(13, @eppy);
+  $assert:equals(15, @eppz);
+  $assert:equals(12, $eppx);
+  $assert:equals(13, $eppy);
+  $assert:equals(15, $eppz);
+}
+
+do {
+  $test_single();
+  $test_simple_offset();
+  $test_disjoint_stack();
+  $test_reverse_stack();
+  $test_past_alias();
+}
