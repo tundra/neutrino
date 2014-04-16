@@ -99,8 +99,6 @@ class Main(object):
   # script.
   def build_option_parser(self):
     parser = optparse.OptionParser()
-    parser.add_option('--expression', action='append', default=[])
-    parser.add_option('--program', action='append', default=[])
     parser.add_option('--file', action='append', default=[])
     parser.add_option('--filter', action='store_true', default=False)
     parser.add_option('--base64', action='store_true', default=False)
@@ -144,22 +142,10 @@ class Main(object):
     if self.run_filter():
       return
     # First load the units to compile without actually doing it.
-    self.schedule_expressions()
-    self.schedule_programs()
     self.schedule_files()
     self.schedule_libraries()
     # Then compile everything in the right order.
     self.scheduler.run()
-
-  # Processes any --expression arguments. These are used by the golden tests.
-  def schedule_expressions(self):
-    self.run_parse_input(self.flags.expression,
-        lambda tokens: parser.Parser(tokens, ast.Module("expression")).parse_expression_program())
-
-  # Processes any --program arguments. These are used by the golden tests.
-  def schedule_programs(self):
-    self.run_parse_input(self.flags.program,
-        lambda tokens: parser.Parser(tokens, ast.Module("program")).parse_program())
 
   # Processes any --file arguments. These are used by the nunit tests.
   def schedule_files(self):
