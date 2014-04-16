@@ -7,4 +7,4 @@
 set -e
 
 ROOT_REL=$(dirname $(dirname $0))
-mkmk init --config $ROOT_REL/neutrino.mkmk $*
+mkmk init --config "$ROOT_REL/neutrino.mkmk" "$@"
