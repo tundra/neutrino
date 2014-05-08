@@ -1,14 +1,17 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "freeze.h"
 #include "heap.h"
 #include "log.h"
 #include "runtime.h"
-#include "test.h"
 #include "try-inl.h"
 #include "value-inl.h"
+END_C_INCLUDES
 
 // Checks whether the value fits in a tagged integer by actually storing it,
 // getting the value back out, and testing whether it could be restored. This is
@@ -19,9 +22,9 @@ static bool try_tagging_as_integer(int64_t value) {
   return decoded == value;
 }
 
-TEST(value, fits_as_tagged_integer) {
+NEW_TEST(value, fits_as_tagged_integer) {
   struct test_case_t {
-    int64_t value;
+    uint64_t value;
     bool fits;
   };
 #define kTestCaseCount 17
@@ -42,7 +45,7 @@ TEST(value, fits_as_tagged_integer) {
       {0xE000000000000000, false},
       {0xEFFFFFFFFFFFFFFF, false},
       {0xF000000000000000, true},
-      {0xF000000000000001, true}
+      {0xF000000000000001U, true}
   };
   for (size_t i = 0; i < kTestCaseCount; i++) {
     struct test_case_t test_case = cases[i];
@@ -52,7 +55,7 @@ TEST(value, fits_as_tagged_integer) {
 #undef kTestCaseCount
 }
 
-TEST(value, encoding) {
+NEW_TEST(value, encoding) {
   ASSERT_EQ(sizeof(unknown_value_t), sizeof(encoded_value_t));
   ASSERT_EQ(sizeof(integer_value_t), sizeof(encoded_value_t));
   ASSERT_EQ(sizeof(condition_value_t), sizeof(encoded_value_t));
@@ -62,12 +65,12 @@ TEST(value, encoding) {
   ASSERT_EQ(vdInteger, v0.encoded & 0x7);
 }
 
-TEST(value, sizes) {
+NEW_TEST(value, sizes) {
   ASSERT_TRUE(sizeof(void*) <= sizeof(encoded_value_t));
 }
 
 // Really simple value tagging stuff.
-TEST(value, tagged_integers) {
+NEW_TEST(value, tagged_integers) {
   value_t v0 = new_integer(10);
   ASSERT_DOMAIN(vdInteger, v0);
   ASSERT_EQ(10, get_integer_value(v0));
@@ -86,7 +89,7 @@ static value_t new_static_integer(int64_t value) {
   return result;
 }
 
-TEST(value, static_tagged_integers) {
+NEW_TEST(value, static_tagged_integers) {
   value_t v0 = new_static_integer(10);
   ASSERT_DOMAIN(vdInteger, v0);
   ASSERT_EQ(10, get_integer_value(v0));
@@ -98,7 +101,7 @@ TEST(value, static_tagged_integers) {
   ASSERT_EQ(0, get_integer_value(v2));
 }
 
-TEST(value, family_values) {
+NEW_TEST(value, family_values) {
   // Test that the integer values of the family enums are integers when viewed
   // as encoded value_ts.
   value_t value;
@@ -114,13 +117,13 @@ TEST(value, family_values) {
   ASSERT_DOMAIN(vdInteger, value);
 }
 
-TEST(value, conditions) {
+NEW_TEST(value, conditions) {
   value_t v0 = new_condition(ccHeapExhausted);
   ASSERT_DOMAIN(vdCondition, v0);
   ASSERT_EQ(ccHeapExhausted, get_condition_cause(v0));
 }
 
-TEST(value, custom_tagged) {
+NEW_TEST(value, custom_tagged) {
   value_t n0 = new_custom_tagged(tpNull, 0);
   ASSERT_EQ(0, get_custom_tagged_payload(n0));
   value_t n1 = new_custom_tagged(tpNull, 255);
@@ -131,7 +134,7 @@ TEST(value, custom_tagged) {
   ASSERT_EQ(-(1LL << 46), get_custom_tagged_payload(n3));
 }
 
-TEST(value, objects) {
+NEW_TEST(value, objects) {
   heap_t heap;
   ASSERT_SUCCESS(heap_init(&heap, NULL));
 
@@ -144,7 +147,7 @@ TEST(value, objects) {
   heap_dispose(&heap);
 }
 
-TEST(value, id_hash_maps_simple) {
+NEW_TEST(value, id_hash_maps_simple) {
   CREATE_RUNTIME();
 
   // Create a map.
@@ -191,7 +194,7 @@ TEST(value, id_hash_maps_simple) {
 }
 
 
-TEST(value, id_hash_maps_strings) {
+NEW_TEST(value, id_hash_maps_strings) {
   CREATE_RUNTIME();
 
   string_t one_chars;
@@ -208,7 +211,7 @@ TEST(value, id_hash_maps_strings) {
 }
 
 
-TEST(value, large_id_hash_maps) {
+NEW_TEST(value, large_id_hash_maps) {
   CREATE_RUNTIME();
 
   value_t map = new_heap_id_hash_map(runtime, 4);
@@ -230,7 +233,7 @@ TEST(value, large_id_hash_maps) {
 }
 
 
-TEST(value, exhaust_id_hash_map) {
+NEW_TEST(value, exhaust_id_hash_map) {
   runtime_config_t config;
   runtime_config_init_defaults(&config);
   config.semispace_size_bytes = 65536;
@@ -252,7 +255,7 @@ TEST(value, exhaust_id_hash_map) {
 }
 
 
-TEST(value, array_bounds) {
+NEW_TEST(value, array_bounds) {
   CREATE_RUNTIME();
 
   value_t arr = new_heap_array(runtime, 4);
@@ -266,7 +269,7 @@ TEST(value, array_bounds) {
 }
 
 
-TEST(value, array_buffer) {
+NEW_TEST(value, array_buffer) {
   CREATE_RUNTIME();
 
   value_t buf = new_heap_array_buffer(runtime, 16);
@@ -292,7 +295,7 @@ TEST(value, array_buffer) {
   DISPOSE_RUNTIME();
 }
 
-TEST(value, array_buffer_empty) {
+NEW_TEST(value, array_buffer_empty) {
   CREATE_RUNTIME();
 
   value_t buf = new_heap_array_buffer_with_contents(runtime, ROOT(runtime, empty_array));
@@ -302,7 +305,7 @@ TEST(value, array_buffer_empty) {
   DISPOSE_RUNTIME();
 }
 
-TEST(value, get_primary_type) {
+NEW_TEST(value, get_primary_type) {
   CREATE_RUNTIME();
 
   value_t int_proto = get_primary_type(new_integer(2), runtime);
@@ -316,7 +319,7 @@ TEST(value, get_primary_type) {
 }
 
 
-TEST(value, instance_division) {
+NEW_TEST(value, instance_division) {
   CREATE_RUNTIME();
 
   value_t proto = new_heap_type(runtime, afFreeze, nothing(), null());
@@ -330,7 +333,7 @@ TEST(value, instance_division) {
 }
 
 
-TEST(value, integer_comparison) {
+NEW_TEST(value, integer_comparison) {
 #define ASSERT_INT_COMPARE(A, B, REL)                                          \
   ASSERT_TRUE(test_relation(value_ordering_compare(new_integer(A), new_integer(B)), REL))
 
@@ -341,7 +344,7 @@ TEST(value, integer_comparison) {
 #undef ASSERT_INT_COMPARE
 }
 
-TEST(value, string_comparison) {
+NEW_TEST(value, string_comparison) {
   CREATE_RUNTIME();
 
   // Checks that the string with contents A compares to B as the given operator.
@@ -369,7 +372,7 @@ TEST(value, string_comparison) {
   DISPOSE_RUNTIME();
 }
 
-TEST(value, bool_comparison) {
+NEW_TEST(value, bool_comparison) {
   CREATE_RUNTIME();
 
   value_t t = yes();
@@ -383,7 +386,7 @@ TEST(value, bool_comparison) {
   DISPOSE_RUNTIME();
 }
 
-TEST(value, array_sort) {
+NEW_TEST(value, array_sort) {
   CREATE_RUNTIME();
 
 #define kTestArraySize 32
@@ -470,7 +473,7 @@ static void assert_strings_present(size_t skip_first, safe_value_t *s_maps,
   }
 }
 
-TEST(value, rehash_map) {
+NEW_TEST(value, rehash_map) {
   CREATE_RUNTIME();
 
   // Create and retain a number of maps.
@@ -521,7 +524,7 @@ TEST(value, rehash_map) {
   DISPOSE_RUNTIME();
 }
 
-TEST(value, map_delete) {
+NEW_TEST(value, map_delete) {
   CREATE_RUNTIME();
 
   // Bit set to keep track of which entries are set in the map.
@@ -607,7 +610,7 @@ value_t get_argument_map(runtime_t *runtime, value_t root, test_argument_map_t *
   return get_argument_map_trie_value(current);
 }
 
-TEST(value, argument_map_tries) {
+NEW_TEST(value, argument_map_tries) {
   CREATE_RUNTIME();
 
   pseudo_random_t random;
@@ -672,7 +675,7 @@ static value_t try_finally_return(try_finally_data_t *data) {
   E_END_TRY_FINALLY();
 }
 
-TEST(value, try_finally) {
+NEW_TEST(value, try_finally) {
   try_finally_data_t data = {false};
 
   ASSERT_CONDITION(ccNothing, try_finally_condition(&data));
@@ -684,7 +687,7 @@ TEST(value, try_finally) {
   ASSERT_TRUE(data.called);
 }
 
-TEST(value, array_identity) {
+NEW_TEST(value, array_identity) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -749,7 +752,7 @@ TEST(value, array_identity) {
 
 #undef V2V
 
-TEST(value, set_value_mode) {
+NEW_TEST(value, set_value_mode) {
   CREATE_RUNTIME();
 
   value_t arr = new_heap_array(runtime, 3);
@@ -788,7 +791,7 @@ TEST(value, set_value_mode) {
   dispose_value_to_string(&to_string);                                         \
 } while (false)
 
-TEST(value, unsupported) {
+NEW_TEST(value, unsupported) {
   CHECK_UNSUPPORTED(vdInteger, __ofUnknown__, ubUnspecified,
       "%<condition: UnsupportedBehavior(Unspecified of Integer)>");
   CHECK_UNSUPPORTED(vdHeapObject, __ofUnknown__, ubSetContents,
@@ -797,7 +800,7 @@ TEST(value, unsupported) {
       "%<condition: UnsupportedBehavior(PlanktonSerialize of HeapObject/Array)>");
 }
 
-TEST(value, invalid_input) {
+NEW_TEST(value, invalid_input) {
   string_hint_t halp = STRING_HINT_INIT("halp!");
   value_t condition = new_invalid_input_condition_with_hint(halp);
   value_to_string_t to_string;
@@ -806,7 +809,7 @@ TEST(value, invalid_input) {
 }
 
 
-TEST(value, paths) {
+NEW_TEST(value, paths) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -854,7 +857,7 @@ value_t new_options(runtime_t *runtime, size_t count, value_t* elements) {
   return new_heap_options(runtime, array);
 }
 
-TEST(value, options) {
+NEW_TEST(value, options) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -897,7 +900,7 @@ TEST(value, options) {
 }
 
 
-TEST(value, reference) {
+NEW_TEST(value, reference) {
   CREATE_RUNTIME();
 
   value_t ref = new_heap_reference(runtime, null());
@@ -910,7 +913,7 @@ TEST(value, reference) {
 }
 
 
-TEST(value, ambience) {
+NEW_TEST(value, ambience) {
   CREATE_RUNTIME();
 
   ASSERT_PTREQ(runtime, get_ambience_runtime(ambience));

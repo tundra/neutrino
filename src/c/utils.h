@@ -10,7 +10,6 @@
 
 #include <stdarg.h>
 
-
 // --- M i s c ---
 
 // Returns a pointer greater than or equal to the given pointer which is
@@ -391,6 +390,5 @@ static value_array_t new_value_array(value_t *start, size_t length) {
   value_array_t result = {start, length};
   return result;
 }
-
 
 #endif // _UTILS

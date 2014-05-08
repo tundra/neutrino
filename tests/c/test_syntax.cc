@@ -1,14 +1,17 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "interp.h"
 #include "runtime.h"
 #include "syntax.h"
-#include "test.h"
 #include "value-inl.h"
+END_C_INCLUDES
 
-TEST(syntax, emitting) {
+NEW_TEST(syntax, emitting) {
   CREATE_RUNTIME();
 
   value_t ast = new_heap_literal_ast(runtime, yes());
@@ -29,7 +32,7 @@ TEST(syntax, emitting) {
 #define CHECK_ORDERING_INDEX(N, V)                                             \
   ASSERT_EQ((N), get_parameter_order_index_for_array(variant_to_value(runtime, (V))))
 
-TEST(syntax, parameter_order_index) {
+NEW_TEST(syntax, parameter_order_index) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -70,7 +73,7 @@ TEST(syntax, parameter_order_index) {
     ASSERT_EQ(ordering[i], expected[i]);                                       \
 } while (false)
 
-TEST(syntax, param_ordering) {
+NEW_TEST(syntax, param_ordering) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 

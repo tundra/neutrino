@@ -1,13 +1,16 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "freeze.h"
 #include "ook.h"
 #include "runtime.h"
 #include "tagged-inl.h"
-#include "test.h"
 #include "try-inl.h"
+END_C_INCLUDES
 
 // Checks that scoring value against guard gives a match iff is_match is true.
 #define ASSERT_MATCH(is_match, guard, value) do {                              \
@@ -18,7 +21,7 @@
   ASSERT_EQ(is_match, is_score_match(match));                                  \
 } while (false)
 
-TEST(method, identity_guard) {
+NEW_TEST(method, identity_guard) {
   CREATE_RUNTIME();
 
   value_t space = new_heap_methodspace(runtime);
@@ -34,7 +37,7 @@ TEST(method, identity_guard) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, any_guard) {
+NEW_TEST(method, any_guard) {
   CREATE_RUNTIME();
 
   value_t space = new_heap_methodspace(runtime);
@@ -47,7 +50,7 @@ TEST(method, any_guard) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, method_space) {
+NEW_TEST(method, method_space) {
   CREATE_RUNTIME();
 
   value_t space = new_heap_methodspace(runtime);
@@ -74,7 +77,7 @@ static value_t new_instance_of(runtime_t *runtime, value_t proto) {
   return new_heap_instance(runtime, species);
 }
 
-TEST(method, simple_is) {
+NEW_TEST(method, simple_is) {
   CREATE_RUNTIME();
 
   value_t s_str_p = new_heap_type(runtime, afFreeze, nothing(), null());
@@ -131,7 +134,7 @@ TEST(method, simple_is) {
   ASSERT_TRUE(compare_tagged_scores(score_a, score_b) REL 0);                  \
 } while (false)
 
-TEST(method, is_score) {
+NEW_TEST(method, is_score) {
   CREATE_RUNTIME();
 
   value_t s_str_p = new_heap_type(runtime, afFreeze, nothing(), null());
@@ -159,7 +162,7 @@ TEST(method, is_score) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, multi_score) {
+NEW_TEST(method, multi_score) {
   CREATE_RUNTIME();
 
   value_t int_str_p = new_heap_type(runtime, afFreeze, nothing(), null());
@@ -181,7 +184,7 @@ TEST(method, multi_score) {
 
 #undef ASSERT_COMPARE
 
-TEST(method, signature) {
+NEW_TEST(method, signature) {
   CREATE_RUNTIME();
 
   value_t empty_array = ROOT(runtime, empty_array);
@@ -196,7 +199,7 @@ TEST(method, signature) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, call_tags) {
+NEW_TEST(method, call_tags) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -223,7 +226,7 @@ static value_t make_call_tags(runtime_t *runtime, variant_t *variant) {
   return new_heap_call_tags(runtime, afFreeze, entries);
 }
 
-TEST(method, make_call_tags) {
+NEW_TEST(method, make_call_tags) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -240,7 +243,7 @@ TEST(method, make_call_tags) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, call_tags_with_stack) {
+NEW_TEST(method, call_tags_with_stack) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -260,7 +263,7 @@ TEST(method, call_tags_with_stack) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, make_signature) {
+NEW_TEST(method, make_signature) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -406,7 +409,7 @@ void assert_match(value_t ambience, match_result_t expected, value_t signature,
   assert_match_with_offsets(ambience, expected, NULL, signature, args);
 }
 
-TEST(method, simple_matching) {
+NEW_TEST(method, simple_matching) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -440,7 +443,7 @@ TEST(method, simple_matching) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, simple_guard_matching) {
+NEW_TEST(method, simple_guard_matching) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -471,7 +474,7 @@ TEST(method, simple_guard_matching) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, multi_tag_matching) {
+NEW_TEST(method, multi_tag_matching) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -512,7 +515,7 @@ TEST(method, multi_tag_matching) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, extra_args) {
+NEW_TEST(method, extra_args) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -572,7 +575,7 @@ TEST(method, extra_args) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, match_argument_map) {
+NEW_TEST(method, match_argument_map) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -675,7 +678,7 @@ static void test_join(join_status_t status, value_t **expected,
   }
 }
 
-TEST(method, join) {
+NEW_TEST(method, join) {
   CREATE_TEST_ARENA();
 
   value_t *empty = NULL;
@@ -732,7 +735,7 @@ static void test_lookup(value_t ambience, value_t expected, value_t first,
   ASSERT_VALEQ(expected, method);
 }
 
-TEST(method, dense_perfect_lookup) {
+NEW_TEST(method, dense_perfect_lookup) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -819,7 +822,7 @@ TEST(method, dense_perfect_lookup) {
 #define OP(otType, vValue)                                                     \
   new_heap_operation(runtime, afFreeze, otType, C(vValue))
 
-TEST(method, operation_printing) {
+NEW_TEST(method, operation_printing) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -849,7 +852,7 @@ TEST(method, operation_printing) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, tag_sorting) {
+NEW_TEST(method, tag_sorting) {
   CREATE_RUNTIME();
 
   value_t array = new_heap_array(runtime, 8);
@@ -874,7 +877,7 @@ TEST(method, tag_sorting) {
   DISPOSE_RUNTIME();
 }
 
-TEST(method, call_tags_compare) {
+NEW_TEST(method, call_tags_compare) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 

@@ -5,26 +5,26 @@ import re
 
 # ls neutrino/tests/c -1 | grep \\.c | sort
 test_file_names = [
-  "test_alloc.c",
-  "test_behavior.c",
-  "test_bind.c",
-  "test_crash.c",
-  "test_derived.c",
-  "test_freeze.c",
-  "test_globals.c",
-  "test_heap.c",
-  "test_interp.c",
-  "test_method.c",
-  "test_ook.c",
-  "test_plankton.c",
-  "test_process.c",
-  "test_runtime.c",
-  "test_safe.c",
-  "test_syntax.c",
-  "test_tagged.c",
-  "test_test.c",
-  "test_utils.c",
-  "test_value.c"
+  "test_alloc.cc",
+  "test_behavior.cc",
+  "test_bind.cc",
+  "test_crash.cc",
+  "test_derived.cc",
+  "test_freeze.cc",
+  "test_globals.cc",
+  "test_heap.cc",
+  "test_interp.cc",
+  "test_method.cc",
+  "test_ook.cc",
+  "test_plankton.cc",
+  "test_process.cc",
+  "test_runtime.cc",
+  "test_safe.cc",
+  "test_syntax.cc",
+  "test_tagged.cc",
+  "test_test.cc",
+  "test_utils.cc",
+  "test_value.cc"
 ]
 
 # Compile a single test file, ensuring that the include paths are hooked up
@@ -53,7 +53,8 @@ for test_file_name in test_file_names:
   test_library.add_member(object_file)
 
 main_file_names = [
-  "test.c"
+  "test.c",
+  "test.cc",
 ]
 
 # Compile the test main executable.

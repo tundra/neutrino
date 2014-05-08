@@ -453,3 +453,5 @@ value_t variant_to_value(runtime_t *runtime, variant_t *variant);
 // times, starting from 0..N, generates all possible permutations. Returns false
 // iff the given array if in descending order, which is the end point.
 bool advance_lexical_permutation(int64_t *elms, size_t elmc);
+
+int old_main(int argc, char *argv[]);

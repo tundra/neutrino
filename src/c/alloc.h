@@ -383,5 +383,4 @@ value_t alloc_heap_object(runtime_t *runtime, size_t bytes, value_t species);
 value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,
     value_t value);
 
-
 #endif // _ALLOC

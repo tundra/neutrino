@@ -1,9 +1,12 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "bind.h"
-#include "test.h"
+END_C_INCLUDES
 
 value_t expand_variant_to_unbound_module(runtime_t *runtime, variant_value_t *value) {
   TRY_DEF(fields, expand_variant_to_array(runtime, value));
@@ -86,7 +89,7 @@ static void test_import_map(value_t ambience, variant_t *expected,
   ASSERT_VAREQ(expected, flat_deps);
 }
 
-TEST(bind, dependency_map) {
+NEW_TEST(bind, dependency_map) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -182,7 +185,7 @@ static void test_load_order(value_t ambience, variant_t *expected,
   ASSERT_VAREQ(expected, schedule);
 }
 
-TEST(bind, load_order) {
+NEW_TEST(bind, load_order) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 

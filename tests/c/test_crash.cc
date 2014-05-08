@@ -1,14 +1,14 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-#include "test.h"
+#include "test.hh"
 
 static value_t do_check(bool value, consition_cause_t cause) {
   COND_CHECK_TRUE("foo", cause, value);
   return success();
 }
 
-TEST(crash, soft_check_failures) {
+NEW_TEST(crash, soft_check_failures) {
   IF_CHECKS_DISABLED(return);
   check_recorder_o recorder;
   install_check_recorder(&recorder);
@@ -42,7 +42,7 @@ TEST(crash, soft_check_failures) {
   uninstall_check_recorder(&recorder);
 }
 
-TEST(crash, checks_disabled) {
+NEW_TEST(crash, checks_disabled) {
   IF_CHECKS_ENABLED(return);
   CHECK_TRUE("test", false);
   CHECK_FALSE("test", true);

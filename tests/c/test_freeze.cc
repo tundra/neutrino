@@ -1,16 +1,19 @@
 //- Copyright 2014 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "freeze.h"
 #include "heap.h"
 #include "log.h"
 #include "runtime.h"
-#include "test.h"
 #include "try-inl.h"
 #include "value-inl.h"
+END_C_INCLUDES
 
-TEST(freeze, deep_freeze) {
+NEW_TEST(freeze, deep_freeze) {
   CREATE_RUNTIME();
 
   value_t zero = new_integer(0);
@@ -63,7 +66,7 @@ TEST(freeze, deep_freeze) {
   DISPOSE_RUNTIME();
 }
 
-TEST(freeze, ownership_freezing) {
+NEW_TEST(freeze, ownership_freezing) {
   CREATE_RUNTIME();
 
   value_t empty_map = new_heap_id_hash_map(runtime, 16);
@@ -89,7 +92,7 @@ TEST(freeze, ownership_freezing) {
   DISPOSE_RUNTIME();
 }
 
-TEST(freeze, freeze_cheat) {
+NEW_TEST(freeze, freeze_cheat) {
   CREATE_RUNTIME();
 
   value_t cheat = new_heap_freeze_cheat(runtime, new_integer(121));

@@ -1,12 +1,15 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
-#include "test.h"
 #include "process.h"
 #include "runtime.h"
+END_C_INCLUDES
 
-TEST(process, frame_bounds) {
+NEW_TEST(process, frame_bounds) {
   CREATE_RUNTIME();
 
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
@@ -32,7 +35,7 @@ TEST(process, frame_bounds) {
   DISPOSE_RUNTIME();
 }
 
-TEST(process, simple_frames) {
+NEW_TEST(process, simple_frames) {
   CREATE_RUNTIME();
 
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
@@ -59,7 +62,7 @@ TEST(process, simple_frames) {
   DISPOSE_RUNTIME();
 }
 
-TEST(process, frame_capacity) {
+NEW_TEST(process, frame_capacity) {
   CREATE_RUNTIME();
 
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
@@ -82,7 +85,7 @@ TEST(process, frame_capacity) {
   DISPOSE_RUNTIME();
 }
 
-TEST(process, bottom_frame) {
+NEW_TEST(process, bottom_frame) {
   CREATE_RUNTIME();
 
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
@@ -125,7 +128,7 @@ static void drop_to_stack_frame(value_t stack, frame_t *frame, frame_flag_t flag
   }
 }
 
-TEST(process, stack_frames) {
+NEW_TEST(process, stack_frames) {
   CREATE_RUNTIME();
 
   value_t stack = new_heap_stack(runtime, 24);
@@ -150,7 +153,7 @@ TEST(process, stack_frames) {
   DISPOSE_RUNTIME();
 }
 
-TEST(process, walk_stack_frames) {
+NEW_TEST(process, walk_stack_frames) {
   CREATE_RUNTIME();
 
   value_t stack = new_heap_stack(runtime, 16);
@@ -177,7 +180,7 @@ TEST(process, walk_stack_frames) {
   DISPOSE_RUNTIME();
 }
 
-TEST(process, get_argument_one_piece) {
+NEW_TEST(process, get_argument_one_piece) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -206,7 +209,7 @@ TEST(process, get_argument_one_piece) {
   DISPOSE_RUNTIME();
 }
 
-TEST(process, get_argument_multi_pieces) {
+NEW_TEST(process, get_argument_multi_pieces) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -229,7 +232,7 @@ TEST(process, get_argument_multi_pieces) {
   DISPOSE_RUNTIME();
 }
 
-TEST(process, get_local) {
+NEW_TEST(process, get_local) {
   CREATE_RUNTIME();
 
   value_t stack = new_heap_stack(runtime, 20);
@@ -270,7 +273,7 @@ static void assert_invocation_format(const char *expected_c_str, value_t invocat
   string_buffer_dispose(&buffer);
 }
 
-TEST(process, backtrace_entry_printing) {
+NEW_TEST(process, backtrace_entry_printing) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 

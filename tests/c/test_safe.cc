@@ -1,14 +1,17 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "derived.h"
 #include "runtime.h"
 #include "safe-inl.h"
-#include "test.h"
 #include "try-inl.h"
+END_C_INCLUDES
 
-TEST(safe, simple_safe_value) {
+NEW_TEST(safe, simple_safe_value) {
   CREATE_RUNTIME();
 
   value_t array_before = new_heap_array(runtime, 2);
@@ -27,7 +30,7 @@ TEST(safe, simple_safe_value) {
   DISPOSE_RUNTIME();
 }
 
-TEST(safe, simple_safe_conditions) {
+NEW_TEST(safe, simple_safe_conditions) {
   CREATE_RUNTIME();
 
   safe_value_t s_cond = runtime_protect_value(runtime, new_heap_exhausted_condition(43));
@@ -54,7 +57,7 @@ static safe_value_t simple_try_helper(runtime_t *runtime, value_t value,
   return protect_immediate(success());
 }
 
-TEST(safe, simple_try) {
+NEW_TEST(safe, simple_try) {
   CREATE_RUNTIME();
 
   bool succeeded = false;
@@ -75,7 +78,7 @@ static safe_value_t simple_try_set_helper(runtime_t *runtime, value_t value,
   return protect_immediate(success());
 }
 
-TEST(safe, simple_try_set) {
+NEW_TEST(safe, simple_try_set) {
   CREATE_RUNTIME();
 
   bool succeeded = false;
@@ -91,7 +94,7 @@ TEST(safe, simple_try_set) {
   DISPOSE_RUNTIME();
 }
 
-TEST(safe, simple_pool) {
+NEW_TEST(safe, simple_pool) {
   CREATE_RUNTIME();
 
   CREATE_SAFE_VALUE_POOL(runtime, 3, pool);
@@ -103,7 +106,7 @@ TEST(safe, simple_pool) {
   DISPOSE_RUNTIME();
 }
 
-TEST(safe, pool_overflow) {
+NEW_TEST(safe, pool_overflow) {
   CREATE_RUNTIME();
 
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
@@ -114,7 +117,7 @@ TEST(safe, pool_overflow) {
   DISPOSE_RUNTIME();
 }
 
-TEST(safe, derived) {
+NEW_TEST(safe, derived) {
   CREATE_RUNTIME();
 
   // Create some derived objects.

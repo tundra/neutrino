@@ -1,11 +1,14 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "runtime.h"
-#include "test.h"
+END_C_INCLUDES
 
-TEST(test, variant) {
+NEW_TEST(test, variant) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -69,7 +72,7 @@ static void test_permutations(int64_t *entries, size_t count) {
   bit_vector_dispose(&seen);
 }
 
-TEST(test, permutations) {
+NEW_TEST(test, permutations) {
   int64_t entries[9];
   for (size_t i = 2; i < 9; i++)
     test_permutations(entries, i);

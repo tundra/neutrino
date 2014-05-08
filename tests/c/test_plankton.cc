@@ -1,11 +1,14 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "plankton.h"
-#include "test.h"
 #include "value-inl.h"
 #include "try-inl.h"
+END_C_INCLUDES
 
 // Encodes and decodes a plankton value and returns the result.
 static value_t transcode_plankton(runtime_t *runtime, value_mapping_t *resolver,
@@ -26,7 +29,7 @@ static value_t check_plankton(runtime_t *runtime, value_t value) {
   return decoded;
 }
 
-TEST(plankton, simple) {
+NEW_TEST(plankton, simple) {
   CREATE_RUNTIME();
 
   // Integers
@@ -44,7 +47,7 @@ TEST(plankton, simple) {
   DISPOSE_RUNTIME();
 }
 
-TEST(plankton, array) {
+NEW_TEST(plankton, array) {
   CREATE_RUNTIME();
 
   value_t arr = new_heap_array(runtime, 5);
@@ -55,7 +58,7 @@ TEST(plankton, array) {
   DISPOSE_RUNTIME();
 }
 
-TEST(plankton, map) {
+NEW_TEST(plankton, map) {
   CREATE_RUNTIME();
 
   value_t map = new_heap_id_hash_map(runtime, 16);
@@ -73,7 +76,7 @@ TEST(plankton, map) {
 string_t name##_chars = new_string(value);                                            \
 value_t name = new_heap_string(runtime, &name##_chars)
 
-TEST(plankton, string) {
+NEW_TEST(plankton, string) {
   CREATE_RUNTIME();
 
   DEF_HEAP_STR(foo, "foo");
@@ -86,7 +89,7 @@ TEST(plankton, string) {
   DISPOSE_RUNTIME();
 }
 
-TEST(plankton, instance) {
+NEW_TEST(plankton, instance) {
   CREATE_RUNTIME();
 
   value_t instance = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
@@ -102,7 +105,7 @@ TEST(plankton, instance) {
   DISPOSE_RUNTIME();
 }
 
-TEST(plankton, references) {
+NEW_TEST(plankton, references) {
   CREATE_RUNTIME();
 
   value_t i0 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
@@ -125,7 +128,7 @@ TEST(plankton, references) {
   DISPOSE_RUNTIME();
 }
 
-TEST(plankton, cycles) {
+NEW_TEST(plankton, cycles) {
   CREATE_RUNTIME();
 
   value_t i0 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
@@ -186,7 +189,7 @@ static value_t int_to_value(value_t value, runtime_t *runtime, void *ptr) {
   }
 }
 
-TEST(plankton, env_resolution) {
+NEW_TEST(plankton, env_resolution) {
   CREATE_RUNTIME();
 
   test_resolver_data_t data;
@@ -249,7 +252,7 @@ static value_t deserialize(runtime_t *runtime, byte_buffer_t *buf) {
   return plankton_deserialize(runtime, &syntax_mapping, blob);
 }
 
-TEST(plankton, env_construction) {
+NEW_TEST(plankton, env_construction) {
   CREATE_RUNTIME();
 
   // Environment references resolve correctly to ast factories.

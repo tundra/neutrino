@@ -102,7 +102,7 @@ static void dispose_test_data(unit_test_data_t *data) {
 }
 
 // Run!
-int main(int argc, char *argv[]) {
+int old_main(int argc, char *argv[]) {
   install_crash_handler();
   if (argc >= 2) {
     // If there are arguments run the relevant test suites.
@@ -118,8 +118,8 @@ int main(int argc, char *argv[]) {
     unit_test_data_t data = {NULL, NULL};
     enumerate_tests(&data);
   }
+  return 0;
 }
-
 
 // Dump an error on test failure.
 void fail(const char *file, int line, const char *fmt, ...) {

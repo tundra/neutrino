@@ -1,15 +1,18 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "interp.h"
 #include "safe-inl.h"
 #include "syntax.h"
 #include "tagged.h"
-#include "test.h"
 #include "try-inl.h"
+END_C_INCLUDES
 
-TEST(interp, binding_info_size) {
+NEW_TEST(interp, binding_info_size) {
   ASSERT_TRUE(sizeof(binding_info_t) <= sizeof(int64_t));
 }
 
@@ -35,7 +38,7 @@ static value_t assert_ast_value(value_t ambience, variant_t *expected,
   return success();
 }
 
-TEST(interp, execution) {
+NEW_TEST(interp, execution) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
@@ -113,7 +116,7 @@ static void assert_compile_failure(runtime_t *runtime, value_t ast,
   ASSERT_EQ(cause, get_invalid_syntax_condition_cause(result));
 }
 
-TEST(interp, compile_errors) {
+NEW_TEST(interp, compile_errors) {
   CREATE_RUNTIME();
 
   value_t l3 = new_heap_literal_ast(runtime, new_integer(3));
@@ -150,7 +153,7 @@ static void validate_lookup_error(log_o *self, log_entry_t *entry) {
   ASSERT_STREQ(&expected, &message);
 }
 
-TEST(interp, lookup_error) {
+NEW_TEST(interp, lookup_error) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 

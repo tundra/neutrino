@@ -1,10 +1,9 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-#include "globals.h"
-#include "test.h"
+#include "test.hh"
 
-TEST(globals, int_types) {
+NEW_TEST(globals, int_types) {
   ASSERT_EQ(1, sizeof(uint8_t));
   ASSERT_EQ(1, sizeof(int8_t));
   ASSERT_EQ(2, sizeof(uint16_t));
@@ -15,7 +14,7 @@ TEST(globals, int_types) {
   ASSERT_EQ(8, sizeof(int64_t));
 }
 
-TEST(globals, pointer_size) {
+NEW_TEST(globals, pointer_size) {
 #ifdef IS_32_BIT
   ASSERT_EQ(4, sizeof(void*));
 #endif

@@ -1,9 +1,12 @@
 //- Copyright 2014 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "ook-inl.h"
-#include "test.h"
 #include "value-inl.h"
+END_C_INCLUDES
 
 INTERFACE(point_o);
 
@@ -116,7 +119,7 @@ cartesian3d_o cartesian3d_new(int32_t x, int32_t y, int32_t z) {
   return result;
 }
 
-TEST(ook, interaction) {
+NEW_TEST(ook, interaction) {
   cartesian_o c = cartesian_new(3, 8);
   point_o *pc = UPCAST(&c);
   ASSERT_TRUE(IS_INSTANCE(cartesian_o, pc));

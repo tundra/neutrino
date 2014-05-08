@@ -1,18 +1,21 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "runtime.h"
 #include "safe-inl.h"
-#include "test.h"
 #include "value-inl.h"
+END_C_INCLUDES
 
 // A malloc that refuses to yield any memory.
 memory_block_t blocking_malloc(void *data, size_t size) {
   return memory_block_empty();
 }
 
-TEST(runtime, create) {
+NEW_TEST(runtime, create) {
   // Successfully create a runtime->
   runtime_t r0;
   ASSERT_SUCCESS(runtime_init(&r0, NULL));
@@ -27,7 +30,7 @@ TEST(runtime, create) {
   allocator_set_default(prev_alloc);
 }
 
-TEST(runtime, singletons) {
+NEW_TEST(runtime, singletons) {
   CREATE_RUNTIME();
 
   value_t thrue = yes();
@@ -38,7 +41,7 @@ TEST(runtime, singletons) {
   DISPOSE_RUNTIME();
 }
 
-TEST(runtime, runtime_validation) {
+NEW_TEST(runtime, runtime_validation) {
   CREATE_RUNTIME();
   ASSERT_SUCCESS(runtime_validate(runtime, nothing()));
 
@@ -61,7 +64,7 @@ TEST(runtime, runtime_validation) {
   DISPOSE_RUNTIME();
 }
 
-TEST(runtime, gc_move_null) {
+NEW_TEST(runtime, gc_move_null) {
   CREATE_RUNTIME();
 
   // Check that anything gets moved at all and that we can call behavior
@@ -80,7 +83,7 @@ TEST(runtime, gc_move_null) {
   DISPOSE_RUNTIME();
 }
 
-TEST(runtime, safe_value_loop) {
+NEW_TEST(runtime, safe_value_loop) {
   CREATE_RUNTIME();
 
   value_t a0b = new_heap_array(runtime, 2);
@@ -102,7 +105,7 @@ TEST(runtime, safe_value_loop) {
   DISPOSE_RUNTIME();
 }
 
-TEST(runtime, gc_fuzzer) {
+NEW_TEST(runtime, gc_fuzzer) {
   static const size_t kMin = 10;
   static const size_t kMean = 100;
   gc_fuzzer_t fuzzer;
@@ -132,7 +135,7 @@ static void check_species_with_mode(runtime_t *runtime, value_t other,
   ASSERT_EQ(get_species_instance_family(other), get_species_instance_family(target));
 }
 
-TEST(runtime, modal_species_change) {
+NEW_TEST(runtime, modal_species_change) {
   CREATE_RUNTIME();
 
   value_t fluid = ROOT(runtime, fluid_array_species);
@@ -159,7 +162,7 @@ TEST(runtime, modal_species_change) {
   DISPOSE_RUNTIME();
 }
 
-TEST(runtime, ambience_gc) {
+NEW_TEST(runtime, ambience_gc) {
   CREATE_RUNTIME();
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
 

@@ -1,12 +1,15 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "runtime.h"
-#include "test.h"
 #include "value-inl.h"
+END_C_INCLUDES
 
-TEST(behavior, string_validation) {
+NEW_TEST(behavior, string_validation) {
   CREATE_RUNTIME();
 
   string_t chars = new_string("Hut!");
@@ -23,7 +26,7 @@ TEST(behavior, string_validation) {
   DISPOSE_RUNTIME();
 }
 
-TEST(behavior, identity) {
+NEW_TEST(behavior, identity) {
   CREATE_RUNTIME();
 
   // Convenient shorthands.
@@ -77,7 +80,7 @@ static void check_print_on(const char *expected_chars, value_t value) {
   string_buffer_dispose(&buf);
 }
 
-TEST(behavior, print_on) {
+NEW_TEST(behavior, print_on) {
   CREATE_RUNTIME();
 
   // Integers
@@ -133,7 +136,7 @@ static value_t condition_constructor(runtime_t *runtime) {
   return new_condition(ccNothing);
 }
 
-TEST(behavior, new_instance) {
+NEW_TEST(behavior, new_instance) {
   CREATE_RUNTIME();
 
   value_t dummy_fact = new_heap_factory(runtime, dummy_constructor);

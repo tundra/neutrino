@@ -1,11 +1,13 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "heap.h"
-#include "test.h"
+END_C_INCLUDES
 
-
-TEST(heap, init) {
+NEW_TEST(heap, init) {
   runtime_config_t config;
   runtime_config_init_defaults(&config);
   heap_t heap;
@@ -13,7 +15,7 @@ TEST(heap, init) {
   heap_dispose(&heap);
 }
 
-TEST(heap, align_size) {
+NEW_TEST(heap, align_size) {
   ASSERT_EQ(0, align_size(4, 0));
   ASSERT_EQ(4, align_size(4, 1));
   ASSERT_EQ(4, align_size(4, 2));
@@ -28,7 +30,7 @@ TEST(heap, align_size) {
   ASSERT_EQ(16, align_size(8, 9));
 }
 
-TEST(heap, align_address) {
+NEW_TEST(heap, align_address) {
 #define ASSERT_ALIGN(E, A, V)                                                  \
   ASSERT_PTREQ((address_t) E, align_address((A), (address_t) V));
 
@@ -41,7 +43,7 @@ TEST(heap, align_address) {
 #endif
 }
 
-TEST(heap, space_alloc) {
+NEW_TEST(heap, space_alloc) {
   // Configure the space.
   runtime_config_t config;
   runtime_config_init_defaults(&config);
