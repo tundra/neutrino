@@ -1,15 +1,26 @@
 //- Copyright 2014 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+// Need this for the platform macros to be available.
+#include "stdc.h"
+
 // Includes of C headers from C++ files should be surrounded by these macros to
 // ensure that they're linked appropriately.
-#if defined(__cplusplus)
-#define BEGIN_C_INCLUDES extern "C" {
-#define END_C_INCLUDES }
+#ifdef IS_GCC
+#  if defined(__cplusplus)
+#    define BEGIN_C_INCLUDES extern "C" {
+#    define END_C_INCLUDES }
+#  else
+#    define BEGIN_C_INCLUDES
+#    define END_C_INCLUDES
+#  endif
 #else
-#define BEGIN_C_INCLUDES
-#define END_C_INCLUDES
+   // On windows everything gets compiled as C++ so there's no need to handle
+   // C includes differently.
+#  define BEGIN_C_INCLUDES
+#  define END_C_INCLUDES
 #endif
+
 
 BEGIN_C_INCLUDES
 #include "alloc.h"
