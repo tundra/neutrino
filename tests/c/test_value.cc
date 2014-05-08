@@ -1,14 +1,17 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "freeze.h"
 #include "heap.h"
 #include "log.h"
 #include "runtime.h"
-#include "test.h"
 #include "try-inl.h"
 #include "value-inl.h"
+END_C_INCLUDES
 
 // Checks whether the value fits in a tagged integer by actually storing it,
 // getting the value back out, and testing whether it could be restored. This is
@@ -21,7 +24,7 @@ static bool try_tagging_as_integer(int64_t value) {
 
 TEST(value, fits_as_tagged_integer) {
   struct test_case_t {
-    int64_t value;
+    uint64_t value;
     bool fits;
   };
 #define kTestCaseCount 17

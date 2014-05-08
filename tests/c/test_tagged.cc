@@ -1,9 +1,12 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "behavior.h"
 #include "tagged-inl.h"
-#include "test.h"
+END_C_INCLUDES
 
 TEST(tagged, relation) {
   ASSERT_TRUE(test_relation(less_than(), reLessThan));
@@ -211,9 +214,9 @@ TEST(tagged, score_successor) {
 }
 
 TEST(tagged, nothing) {
-  value_t not = nothing();
-  ASSERT_EQ(ENCODED_NOTHING, not.encoded);
-  ASSERT_TRUE(is_nothing(not));
+  value_t noth = nothing();
+  ASSERT_EQ(ENCODED_NOTHING, noth.encoded);
+  ASSERT_TRUE(is_nothing(noth));
 }
 
 TEST(tagged, payload) {

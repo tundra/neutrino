@@ -1,12 +1,15 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "derived.h"
 #include "runtime.h"
 #include "safe-inl.h"
-#include "test.h"
 #include "try-inl.h"
+END_C_INCLUDES
 
 TEST(safe, simple_safe_value) {
   CREATE_RUNTIME();

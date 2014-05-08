@@ -1,13 +1,16 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "interp.h"
 #include "safe-inl.h"
 #include "syntax.h"
 #include "tagged.h"
-#include "test.h"
 #include "try-inl.h"
+END_C_INCLUDES
 
 TEST(interp, binding_info_size) {
   ASSERT_TRUE(sizeof(binding_info_t) <= sizeof(int64_t));

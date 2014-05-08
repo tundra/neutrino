@@ -1,9 +1,11 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-#include "heap.h"
-#include "test.h"
+#include "test.hh"
 
+BEGIN_C_INCLUDES
+#include "heap.h"
+END_C_INCLUDES
 
 TEST(heap, init) {
   runtime_config_t config;

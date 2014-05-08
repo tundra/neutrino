@@ -1,8 +1,7 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-#include "globals.h"
-#include "test.h"
+#include "test.hh"
 
 TEST(globals, int_types) {
   ASSERT_EQ(1, sizeof(uint8_t));

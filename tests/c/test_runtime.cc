@@ -1,11 +1,14 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "runtime.h"
 #include "safe-inl.h"
-#include "test.h"
 #include "value-inl.h"
+END_C_INCLUDES
 
 // A malloc that refuses to yield any memory.
 memory_block_t blocking_malloc(void *data, size_t size) {

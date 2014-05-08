@@ -1,14 +1,17 @@
 //- Copyright 2014 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "freeze.h"
 #include "heap.h"
 #include "log.h"
 #include "runtime.h"
-#include "test.h"
 #include "try-inl.h"
 #include "value-inl.h"
+END_C_INCLUDES
 
 TEST(freeze, deep_freeze) {
   CREATE_RUNTIME();

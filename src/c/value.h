@@ -1671,5 +1671,4 @@ value_t add_plankton_factory(value_t map, value_t category, const char *name,
 // Similar to printf but adds a newline and allows %v to print values.
 void print_ln(const char *fmt, ...);
 
-
 #endif // _VALUE

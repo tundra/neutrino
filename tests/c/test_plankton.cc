@@ -1,11 +1,14 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "plankton.h"
-#include "test.h"
 #include "value-inl.h"
 #include "try-inl.h"
+END_C_INCLUDES
 
 // Encodes and decodes a plankton value and returns the result.
 static value_t transcode_plankton(runtime_t *runtime, value_mapping_t *resolver,

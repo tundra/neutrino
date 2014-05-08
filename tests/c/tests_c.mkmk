@@ -5,26 +5,26 @@ import re
 
 # ls neutrino/tests/c -1 | grep \\.c | sort
 test_file_names = [
-  "test_alloc.c",
-  "test_behavior.c",
-  "test_bind.c",
-  "test_crash.c",
-  "test_derived.c",
-  "test_freeze.c",
-  "test_globals.c",
-  "test_heap.c",
-  "test_interp.c",
-  "test_method.c",
-  "test_ook.c",
-  "test_plankton.c",
-  "test_process.c",
-  "test_runtime.c",
-  "test_safe.c",
-  "test_syntax.c",
-  "test_tagged.c",
-  "test_test.c",
-  "test_utils.c",
-  "test_value.c"
+  "test_alloc.cc",
+  "test_behavior.cc",
+  "test_bind.cc",
+  "test_crash.cc",
+  "test_derived.cc",
+  "test_freeze.cc",
+  "test_globals.cc",
+  "test_heap.cc",
+  "test_interp.cc",
+  "test_method.cc",
+  "test_ook.cc",
+  "test_plankton.cc",
+  "test_process.cc",
+  "test_runtime.cc",
+  "test_safe.cc",
+  "test_syntax.cc",
+  "test_tagged.cc",
+  "test_test.cc",
+  "test_utils.cc",
+  "test_value.cc"
 ]
 
 # Compile a single test file, ensuring that the include paths are hooked up
@@ -32,28 +32,20 @@ test_file_names = [
 def compile_test_file(source):
   # Include the C sources.
   source.add_include(get_root().get_child('src', 'c'))
-  # Also include the c test folder in the bin directory since that's where the
-  # TOC file is going to land.
-  source.add_include(get_bindir().get_child('tests', 'c'))
   return source.get_object()
 
 # Create a group containing the test files along with the runtime library.
 test_library = get_group("library")
 test_library.add_dependency(get_external('src', 'c', 'library'))
 
-# Generate the test table-of-contents using the custom generator.
-toc_file = toc.get_toc_file("toc.c")
-toc_file.set_generator(get_root().get_child('src', 'python', 'build', 'toc.py'))
-
-# Compile the test source files and include them in the TOC.
+# Compile the test source files.
 for test_file_name in test_file_names:
   test_file = c.get_source_file(test_file_name)
-  toc_file.add_test(test_file)
   object_file = compile_test_file(test_file)
   test_library.add_member(object_file)
 
 main_file_names = [
-  "test.c"
+  "test.cc",
 ]
 
 # Compile the test main executable.
@@ -62,9 +54,6 @@ test_main.add_object(test_library)
 for main_file_name in main_file_names:
   main_file = c.get_source_file(main_file_name)
   object_file = compile_test_file(main_file)
-  # Let the main files depend on toc.c but don't try to compile it directly
-  # since it's going to be #included into test.c.
-  object_file.add_dependency(toc_file)
   test_main.add_object(object_file)
 
 run_tests = get_group("run-tests")

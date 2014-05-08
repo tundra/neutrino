@@ -1,13 +1,16 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "freeze.h"
 #include "ook.h"
 #include "runtime.h"
 #include "tagged-inl.h"
-#include "test.h"
 #include "try-inl.h"
+END_C_INCLUDES
 
 // Checks that scoring value against guard gives a match iff is_match is true.
 #define ASSERT_MATCH(is_match, guard, value) do {                              \

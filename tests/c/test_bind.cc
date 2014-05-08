@@ -1,9 +1,12 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "bind.h"
-#include "test.h"
+END_C_INCLUDES
 
 value_t expand_variant_to_unbound_module(runtime_t *runtime, variant_value_t *value) {
   TRY_DEF(fields, expand_variant_to_array(runtime, value));

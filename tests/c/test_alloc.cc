@@ -1,9 +1,12 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "test.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
-#include "test.h"
 #include "value-inl.h"
+END_C_INCLUDES
 
 TEST(alloc, heap_string) {
   CREATE_RUNTIME();
