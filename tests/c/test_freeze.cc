@@ -13,7 +13,7 @@ BEGIN_C_INCLUDES
 #include "value-inl.h"
 END_C_INCLUDES
 
-NEW_TEST(freeze, deep_freeze) {
+TEST(freeze, deep_freeze) {
   CREATE_RUNTIME();
 
   value_t zero = new_integer(0);
@@ -66,7 +66,7 @@ NEW_TEST(freeze, deep_freeze) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(freeze, ownership_freezing) {
+TEST(freeze, ownership_freezing) {
   CREATE_RUNTIME();
 
   value_t empty_map = new_heap_id_hash_map(runtime, 16);
@@ -92,7 +92,7 @@ NEW_TEST(freeze, ownership_freezing) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(freeze, freeze_cheat) {
+TEST(freeze, freeze_cheat) {
   CREATE_RUNTIME();
 
   value_t cheat = new_heap_freeze_cheat(runtime, new_integer(121));

@@ -9,7 +9,7 @@ BEGIN_C_INCLUDES
 #include "runtime.h"
 END_C_INCLUDES
 
-NEW_TEST(process, frame_bounds) {
+TEST(process, frame_bounds) {
   CREATE_RUNTIME();
 
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
@@ -35,7 +35,7 @@ NEW_TEST(process, frame_bounds) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(process, simple_frames) {
+TEST(process, simple_frames) {
   CREATE_RUNTIME();
 
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
@@ -62,7 +62,7 @@ NEW_TEST(process, simple_frames) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(process, frame_capacity) {
+TEST(process, frame_capacity) {
   CREATE_RUNTIME();
 
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
@@ -85,7 +85,7 @@ NEW_TEST(process, frame_capacity) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(process, bottom_frame) {
+TEST(process, bottom_frame) {
   CREATE_RUNTIME();
 
   value_t stack_piece = new_heap_stack_piece(runtime, 1024, nothing(), nothing());
@@ -128,7 +128,7 @@ static void drop_to_stack_frame(value_t stack, frame_t *frame, frame_flag_t flag
   }
 }
 
-NEW_TEST(process, stack_frames) {
+TEST(process, stack_frames) {
   CREATE_RUNTIME();
 
   value_t stack = new_heap_stack(runtime, 24);
@@ -153,7 +153,7 @@ NEW_TEST(process, stack_frames) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(process, walk_stack_frames) {
+TEST(process, walk_stack_frames) {
   CREATE_RUNTIME();
 
   value_t stack = new_heap_stack(runtime, 16);
@@ -180,7 +180,7 @@ NEW_TEST(process, walk_stack_frames) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(process, get_argument_one_piece) {
+TEST(process, get_argument_one_piece) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -209,7 +209,7 @@ NEW_TEST(process, get_argument_one_piece) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(process, get_argument_multi_pieces) {
+TEST(process, get_argument_multi_pieces) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -232,7 +232,7 @@ NEW_TEST(process, get_argument_multi_pieces) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(process, get_local) {
+TEST(process, get_local) {
   CREATE_RUNTIME();
 
   value_t stack = new_heap_stack(runtime, 20);
@@ -273,7 +273,7 @@ static void assert_invocation_format(const char *expected_c_str, value_t invocat
   string_buffer_dispose(&buffer);
 }
 
-NEW_TEST(process, backtrace_entry_printing) {
+TEST(process, backtrace_entry_printing) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 

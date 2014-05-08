@@ -89,7 +89,7 @@ static void test_import_map(value_t ambience, variant_t *expected,
   ASSERT_VAREQ(expected, flat_deps);
 }
 
-NEW_TEST(bind, dependency_map) {
+TEST(bind, dependency_map) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -185,7 +185,7 @@ static void test_load_order(value_t ambience, variant_t *expected,
   ASSERT_VAREQ(expected, schedule);
 }
 
-NEW_TEST(bind, load_order) {
+TEST(bind, load_order) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 

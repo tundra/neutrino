@@ -29,7 +29,7 @@ static value_t check_plankton(runtime_t *runtime, value_t value) {
   return decoded;
 }
 
-NEW_TEST(plankton, simple) {
+TEST(plankton, simple) {
   CREATE_RUNTIME();
 
   // Integers
@@ -47,7 +47,7 @@ NEW_TEST(plankton, simple) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(plankton, array) {
+TEST(plankton, array) {
   CREATE_RUNTIME();
 
   value_t arr = new_heap_array(runtime, 5);
@@ -58,7 +58,7 @@ NEW_TEST(plankton, array) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(plankton, map) {
+TEST(plankton, map) {
   CREATE_RUNTIME();
 
   value_t map = new_heap_id_hash_map(runtime, 16);
@@ -76,7 +76,7 @@ NEW_TEST(plankton, map) {
 string_t name##_chars = new_string(value);                                            \
 value_t name = new_heap_string(runtime, &name##_chars)
 
-NEW_TEST(plankton, string) {
+TEST(plankton, string) {
   CREATE_RUNTIME();
 
   DEF_HEAP_STR(foo, "foo");
@@ -89,7 +89,7 @@ NEW_TEST(plankton, string) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(plankton, instance) {
+TEST(plankton, instance) {
   CREATE_RUNTIME();
 
   value_t instance = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
@@ -105,7 +105,7 @@ NEW_TEST(plankton, instance) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(plankton, references) {
+TEST(plankton, references) {
   CREATE_RUNTIME();
 
   value_t i0 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
@@ -128,7 +128,7 @@ NEW_TEST(plankton, references) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(plankton, cycles) {
+TEST(plankton, cycles) {
   CREATE_RUNTIME();
 
   value_t i0 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
@@ -189,7 +189,7 @@ static value_t int_to_value(value_t value, runtime_t *runtime, void *ptr) {
   }
 }
 
-NEW_TEST(plankton, env_resolution) {
+TEST(plankton, env_resolution) {
   CREATE_RUNTIME();
 
   test_resolver_data_t data;
@@ -252,7 +252,7 @@ static value_t deserialize(runtime_t *runtime, byte_buffer_t *buf) {
   return plankton_deserialize(runtime, &syntax_mapping, blob);
 }
 
-NEW_TEST(plankton, env_construction) {
+TEST(plankton, env_construction) {
   CREATE_RUNTIME();
 
   // Environment references resolve correctly to ast factories.

@@ -15,7 +15,7 @@ memory_block_t blocking_malloc(void *data, size_t size) {
   return memory_block_empty();
 }
 
-NEW_TEST(runtime, create) {
+TEST(runtime, create) {
   // Successfully create a runtime->
   runtime_t r0;
   ASSERT_SUCCESS(runtime_init(&r0, NULL));
@@ -30,7 +30,7 @@ NEW_TEST(runtime, create) {
   allocator_set_default(prev_alloc);
 }
 
-NEW_TEST(runtime, singletons) {
+TEST(runtime, singletons) {
   CREATE_RUNTIME();
 
   value_t thrue = yes();
@@ -41,7 +41,7 @@ NEW_TEST(runtime, singletons) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(runtime, runtime_validation) {
+TEST(runtime, runtime_validation) {
   CREATE_RUNTIME();
   ASSERT_SUCCESS(runtime_validate(runtime, nothing()));
 
@@ -64,7 +64,7 @@ NEW_TEST(runtime, runtime_validation) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(runtime, gc_move_null) {
+TEST(runtime, gc_move_null) {
   CREATE_RUNTIME();
 
   // Check that anything gets moved at all and that we can call behavior
@@ -83,7 +83,7 @@ NEW_TEST(runtime, gc_move_null) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(runtime, safe_value_loop) {
+TEST(runtime, safe_value_loop) {
   CREATE_RUNTIME();
 
   value_t a0b = new_heap_array(runtime, 2);
@@ -105,7 +105,7 @@ NEW_TEST(runtime, safe_value_loop) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(runtime, gc_fuzzer) {
+TEST(runtime, gc_fuzzer) {
   static const size_t kMin = 10;
   static const size_t kMean = 100;
   gc_fuzzer_t fuzzer;
@@ -135,7 +135,7 @@ static void check_species_with_mode(runtime_t *runtime, value_t other,
   ASSERT_EQ(get_species_instance_family(other), get_species_instance_family(target));
 }
 
-NEW_TEST(runtime, modal_species_change) {
+TEST(runtime, modal_species_change) {
   CREATE_RUNTIME();
 
   value_t fluid = ROOT(runtime, fluid_array_species);
@@ -162,7 +162,7 @@ NEW_TEST(runtime, modal_species_change) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(runtime, ambience_gc) {
+TEST(runtime, ambience_gc) {
   CREATE_RUNTIME();
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
 

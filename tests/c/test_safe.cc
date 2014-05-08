@@ -11,7 +11,7 @@ BEGIN_C_INCLUDES
 #include "try-inl.h"
 END_C_INCLUDES
 
-NEW_TEST(safe, simple_safe_value) {
+TEST(safe, simple_safe_value) {
   CREATE_RUNTIME();
 
   value_t array_before = new_heap_array(runtime, 2);
@@ -30,7 +30,7 @@ NEW_TEST(safe, simple_safe_value) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(safe, simple_safe_conditions) {
+TEST(safe, simple_safe_conditions) {
   CREATE_RUNTIME();
 
   safe_value_t s_cond = runtime_protect_value(runtime, new_heap_exhausted_condition(43));
@@ -57,7 +57,7 @@ static safe_value_t simple_try_helper(runtime_t *runtime, value_t value,
   return protect_immediate(success());
 }
 
-NEW_TEST(safe, simple_try) {
+TEST(safe, simple_try) {
   CREATE_RUNTIME();
 
   bool succeeded = false;
@@ -78,7 +78,7 @@ static safe_value_t simple_try_set_helper(runtime_t *runtime, value_t value,
   return protect_immediate(success());
 }
 
-NEW_TEST(safe, simple_try_set) {
+TEST(safe, simple_try_set) {
   CREATE_RUNTIME();
 
   bool succeeded = false;
@@ -94,7 +94,7 @@ NEW_TEST(safe, simple_try_set) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(safe, simple_pool) {
+TEST(safe, simple_pool) {
   CREATE_RUNTIME();
 
   CREATE_SAFE_VALUE_POOL(runtime, 3, pool);
@@ -106,7 +106,7 @@ NEW_TEST(safe, simple_pool) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(safe, pool_overflow) {
+TEST(safe, pool_overflow) {
   CREATE_RUNTIME();
 
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
@@ -117,7 +117,7 @@ NEW_TEST(safe, pool_overflow) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(safe, derived) {
+TEST(safe, derived) {
   CREATE_RUNTIME();
 
   // Create some derived objects.

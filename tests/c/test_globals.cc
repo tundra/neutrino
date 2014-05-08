@@ -3,7 +3,7 @@
 
 #include "test.hh"
 
-NEW_TEST(globals, int_types) {
+TEST(globals, int_types) {
   ASSERT_EQ(1, sizeof(uint8_t));
   ASSERT_EQ(1, sizeof(int8_t));
   ASSERT_EQ(2, sizeof(uint16_t));
@@ -14,7 +14,7 @@ NEW_TEST(globals, int_types) {
   ASSERT_EQ(8, sizeof(int64_t));
 }
 
-NEW_TEST(globals, pointer_size) {
+TEST(globals, pointer_size) {
 #ifdef IS_32_BIT
   ASSERT_EQ(4, sizeof(void*));
 #endif

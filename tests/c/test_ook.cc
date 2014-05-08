@@ -119,7 +119,7 @@ cartesian3d_o cartesian3d_new(int32_t x, int32_t y, int32_t z) {
   return result;
 }
 
-NEW_TEST(ook, interaction) {
+TEST(ook, interaction) {
   cartesian_o c = cartesian_new(3, 8);
   point_o *pc = UPCAST(&c);
   ASSERT_TRUE(IS_INSTANCE(cartesian_o, pc));

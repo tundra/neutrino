@@ -8,7 +8,7 @@ BEGIN_C_INCLUDES
 #include "value-inl.h"
 END_C_INCLUDES
 
-NEW_TEST(alloc, heap_string) {
+TEST(alloc, heap_string) {
   CREATE_RUNTIME();
 
   string_t chars = new_string("Hut!");
@@ -23,7 +23,7 @@ NEW_TEST(alloc, heap_string) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(alloc, heap_blob) {
+TEST(alloc, heap_blob) {
   CREATE_RUNTIME();
 
   value_t blob = new_heap_blob(runtime, 9);
@@ -50,7 +50,7 @@ NEW_TEST(alloc, heap_blob) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(alloc, heap_species) {
+TEST(alloc, heap_species) {
   CREATE_RUNTIME();
 
   value_t species = new_heap_compact_species(runtime, &kStringBehavior);
@@ -61,7 +61,7 @@ NEW_TEST(alloc, heap_species) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(alloc, heap_array) {
+TEST(alloc, heap_array) {
   CREATE_RUNTIME();
 
   // Check initial state.
@@ -82,7 +82,7 @@ NEW_TEST(alloc, heap_array) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(alloc, heap_map) {
+TEST(alloc, heap_map) {
   CREATE_RUNTIME();
 
   value_t map = new_heap_id_hash_map(runtime, 16);
@@ -93,7 +93,7 @@ NEW_TEST(alloc, heap_map) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(alloc, instance) {
+TEST(alloc, instance) {
   CREATE_RUNTIME();
 
   value_t instance = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
@@ -106,7 +106,7 @@ NEW_TEST(alloc, instance) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(alloc, void_p) {
+TEST(alloc, void_p) {
   CREATE_RUNTIME();
 
   value_t vp = new_heap_void_p(runtime, NULL);
@@ -117,7 +117,7 @@ NEW_TEST(alloc, void_p) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(alloc, literal) {
+TEST(alloc, literal) {
   CREATE_RUNTIME();
 
   value_t lit = new_heap_literal_ast(runtime, new_integer(0));

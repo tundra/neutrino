@@ -9,7 +9,7 @@ BEGIN_C_INCLUDES
 #include "value-inl.h"
 END_C_INCLUDES
 
-NEW_TEST(behavior, string_validation) {
+TEST(behavior, string_validation) {
   CREATE_RUNTIME();
 
   string_t chars = new_string("Hut!");
@@ -26,7 +26,7 @@ NEW_TEST(behavior, string_validation) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(behavior, identity) {
+TEST(behavior, identity) {
   CREATE_RUNTIME();
 
   // Convenient shorthands.
@@ -80,7 +80,7 @@ static void check_print_on(const char *expected_chars, value_t value) {
   string_buffer_dispose(&buf);
 }
 
-NEW_TEST(behavior, print_on) {
+TEST(behavior, print_on) {
   CREATE_RUNTIME();
 
   // Integers
@@ -136,7 +136,7 @@ static value_t condition_constructor(runtime_t *runtime) {
   return new_condition(ccNothing);
 }
 
-NEW_TEST(behavior, new_instance) {
+TEST(behavior, new_instance) {
   CREATE_RUNTIME();
 
   value_t dummy_fact = new_heap_factory(runtime, dummy_constructor);

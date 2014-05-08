@@ -10,12 +10,12 @@ BEGIN_C_INCLUDES
 #include "value-inl.h"
 END_C_INCLUDES
 
-NEW_TEST(utils, globals) {
+TEST(utils, globals) {
   ASSERT_TRUE(kMostNegativeInt32 < 0);
   ASSERT_FALSE((int32_t) (((int64_t) kMostNegativeInt32) - 1) < 0);
 }
 
-NEW_TEST(utils, string_simple) {
+TEST(utils, string_simple) {
   string_t str;
   string_init(&str, "Hello, World!");
   ASSERT_EQ(13, string_length(&str));
@@ -23,7 +23,7 @@ NEW_TEST(utils, string_simple) {
   ASSERT_EQ('!', string_char_at(&str, 12));
 }
 
-NEW_TEST(utils, string_comparison) {
+TEST(utils, string_comparison) {
   // Use char arrays to ensure that the strings are all stored in different
   // parts of memory.
   char c0[4] = {'f', 'o', 'o', '\0'};
@@ -79,7 +79,7 @@ NEW_TEST(utils, string_comparison) {
 #undef ASSERT_STR_COMPARE
 }
 
-NEW_TEST(utils, string_buffer_simple) {
+TEST(utils, string_buffer_simple) {
   string_buffer_t buf;
   string_buffer_init(&buf);
 
@@ -92,7 +92,7 @@ NEW_TEST(utils, string_buffer_simple) {
   string_buffer_dispose(&buf);
 }
 
-NEW_TEST(utils, string_buffer_concat) {
+TEST(utils, string_buffer_concat) {
   string_buffer_t buf;
   string_buffer_init(&buf);
 
@@ -107,7 +107,7 @@ NEW_TEST(utils, string_buffer_concat) {
   string_buffer_dispose(&buf);
 }
 
-NEW_TEST(utils, string_buffer_long) {
+TEST(utils, string_buffer_long) {
   string_buffer_t buf;
   string_buffer_init(&buf);
 
@@ -136,7 +136,7 @@ NEW_TEST(utils, string_buffer_long) {
   string_buffer_dispose(&buf);                                                 \
 } while (false)
 
-NEW_TEST(utils, string_buffer_value_printf) {
+TEST(utils, string_buffer_value_printf) {
   CREATE_RUNTIME();
 
   CHECK_PRINTF("--- 0 ---", "--- %v ---", new_integer(0));
@@ -185,7 +185,7 @@ static void test_bit_vector(size_t size) {
 
 }
 
-NEW_TEST(utils, bit_vectors) {
+TEST(utils, bit_vectors) {
   test_bit_vector(8);
   test_bit_vector(62);
   test_bit_vector(64);
@@ -195,7 +195,7 @@ NEW_TEST(utils, bit_vectors) {
   test_bit_vector(1026);
 }
 
-NEW_TEST(utils, pseudo_random) {
+TEST(utils, pseudo_random) {
   pseudo_random_t rand;
   pseudo_random_init(&rand, 123456);
   static const size_t kBucketCount = 257;
@@ -224,7 +224,7 @@ NEW_TEST(utils, pseudo_random) {
   ASSERT_TRUE(max_dev <= 0.05);
 }
 
-NEW_TEST(utils, shuffle) {
+TEST(utils, shuffle) {
   pseudo_random_t rand;
   pseudo_random_init(&rand, 654322);
 
@@ -282,7 +282,7 @@ static bool test_eventual_detection(cycle_detector_t *outer, size_t depth) {
   return test_eventual_detection(&inner, depth - 1);
 }
 
-NEW_TEST(utils, cycle_detector) {
+TEST(utils, cycle_detector) {
   CREATE_RUNTIME();
 
   {
@@ -300,7 +300,7 @@ NEW_TEST(utils, cycle_detector) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(utils, hash_stream) {
+TEST(utils, hash_stream) {
   // Different integers.
   int64_t hashes[1024];
   for (size_t i = 0; i < 1024; i++) {
@@ -366,7 +366,7 @@ NEW_TEST(utils, hash_stream) {
   byte_buffer_dispose(&buf);                                                   \
 } while (false)
 
-NEW_TEST(utils, base64_encode) {
+TEST(utils, base64_encode) {
   CHECK_BASE64_ENCODE("", 0, 0);
   CHECK_BASE64_ENCODE("AA==", 1, 0);
   CHECK_BASE64_ENCODE("AAA=", 2, 0, 0);
@@ -405,7 +405,7 @@ NEW_TEST(utils, base64_encode) {
 // Record that this macro has been invoked with the given argument.
 #define RECORD(N) record[count++] = N;
 
-NEW_TEST(utils, for_each_va_arg) {
+TEST(utils, for_each_va_arg) {
   int count = 0;
   int record[8];
 
@@ -435,7 +435,7 @@ NEW_TEST(utils, for_each_va_arg) {
   ASSERT_C_STREQ(EXPECTED, hint_str);                                          \
 } while (false)
 
-NEW_TEST(utils, string_hint) {
+TEST(utils, string_hint) {
   ASSERT_EQ(sizeof(uint32_t), sizeof(string_hint_t));
 
   CHECK_HINT("abcdef", "ab..ef");
@@ -447,7 +447,7 @@ NEW_TEST(utils, string_hint) {
   CHECK_HINT("", "");
 }
 
-NEW_TEST(utils, va_argc) {
+TEST(utils, va_argc) {
   ASSERT_EQ(1, VA_ARGC(a));
   ASSERT_EQ(2, VA_ARGC(a, b));
   ASSERT_EQ(3, VA_ARGC(a, b, c));
@@ -458,7 +458,7 @@ NEW_TEST(utils, va_argc) {
   ASSERT_EQ(8, VA_ARGC(a, b, c, d, e, f, g, h));
 }
 
-NEW_TEST(utils, byte_buffer_cursor) {
+TEST(utils, byte_buffer_cursor) {
   byte_buffer_t buf;
   byte_buffer_init(&buf);
 
@@ -492,7 +492,7 @@ NEW_TEST(utils, byte_buffer_cursor) {
   byte_buffer_dispose(&buf);
 }
 
-NEW_TEST(utils, short_buffer) {
+TEST(utils, short_buffer) {
   short_buffer_t buf;
   short_buffer_init(&buf);
 
@@ -510,7 +510,7 @@ NEW_TEST(utils, short_buffer) {
   short_buffer_dispose(&buf);
 }
 
-NEW_TEST(utils, 64name) {
+TEST(utils, 64name) {
   char buf[kMaxWordyNameSize];
   wordy_encode(0x7FFFFFFFFFFFFFFFL, buf, kMaxWordyNameSize);
   ASSERT_C_STREQ("kahyfahuzytolubosuc", buf);

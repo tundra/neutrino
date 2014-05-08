@@ -7,7 +7,7 @@ BEGIN_C_INCLUDES
 #include "heap.h"
 END_C_INCLUDES
 
-NEW_TEST(heap, init) {
+TEST(heap, init) {
   runtime_config_t config;
   runtime_config_init_defaults(&config);
   heap_t heap;
@@ -15,7 +15,7 @@ NEW_TEST(heap, init) {
   heap_dispose(&heap);
 }
 
-NEW_TEST(heap, align_size) {
+TEST(heap, align_size) {
   ASSERT_EQ(0, align_size(4, 0));
   ASSERT_EQ(4, align_size(4, 1));
   ASSERT_EQ(4, align_size(4, 2));
@@ -30,7 +30,7 @@ NEW_TEST(heap, align_size) {
   ASSERT_EQ(16, align_size(8, 9));
 }
 
-NEW_TEST(heap, align_address) {
+TEST(heap, align_address) {
 #define ASSERT_ALIGN(E, A, V)                                                  \
   ASSERT_PTREQ((address_t) E, align_address((A), (address_t) V));
 
@@ -43,7 +43,7 @@ NEW_TEST(heap, align_address) {
 #endif
 }
 
-NEW_TEST(heap, space_alloc) {
+TEST(heap, space_alloc) {
   // Configure the space.
   runtime_config_t config;
   runtime_config_init_defaults(&config);

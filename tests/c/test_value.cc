@@ -22,7 +22,7 @@ static bool try_tagging_as_integer(int64_t value) {
   return decoded == value;
 }
 
-NEW_TEST(value, fits_as_tagged_integer) {
+TEST(value, fits_as_tagged_integer) {
   struct test_case_t {
     uint64_t value;
     bool fits;
@@ -55,7 +55,7 @@ NEW_TEST(value, fits_as_tagged_integer) {
 #undef kTestCaseCount
 }
 
-NEW_TEST(value, encoding) {
+TEST(value, encoding) {
   ASSERT_EQ(sizeof(unknown_value_t), sizeof(encoded_value_t));
   ASSERT_EQ(sizeof(integer_value_t), sizeof(encoded_value_t));
   ASSERT_EQ(sizeof(condition_value_t), sizeof(encoded_value_t));
@@ -65,12 +65,12 @@ NEW_TEST(value, encoding) {
   ASSERT_EQ(vdInteger, v0.encoded & 0x7);
 }
 
-NEW_TEST(value, sizes) {
+TEST(value, sizes) {
   ASSERT_TRUE(sizeof(void*) <= sizeof(encoded_value_t));
 }
 
 // Really simple value tagging stuff.
-NEW_TEST(value, tagged_integers) {
+TEST(value, tagged_integers) {
   value_t v0 = new_integer(10);
   ASSERT_DOMAIN(vdInteger, v0);
   ASSERT_EQ(10, get_integer_value(v0));
@@ -89,7 +89,7 @@ static value_t new_static_integer(int64_t value) {
   return result;
 }
 
-NEW_TEST(value, static_tagged_integers) {
+TEST(value, static_tagged_integers) {
   value_t v0 = new_static_integer(10);
   ASSERT_DOMAIN(vdInteger, v0);
   ASSERT_EQ(10, get_integer_value(v0));
@@ -101,7 +101,7 @@ NEW_TEST(value, static_tagged_integers) {
   ASSERT_EQ(0, get_integer_value(v2));
 }
 
-NEW_TEST(value, family_values) {
+TEST(value, family_values) {
   // Test that the integer values of the family enums are integers when viewed
   // as encoded value_ts.
   value_t value;
@@ -117,13 +117,13 @@ NEW_TEST(value, family_values) {
   ASSERT_DOMAIN(vdInteger, value);
 }
 
-NEW_TEST(value, conditions) {
+TEST(value, conditions) {
   value_t v0 = new_condition(ccHeapExhausted);
   ASSERT_DOMAIN(vdCondition, v0);
   ASSERT_EQ(ccHeapExhausted, get_condition_cause(v0));
 }
 
-NEW_TEST(value, custom_tagged) {
+TEST(value, custom_tagged) {
   value_t n0 = new_custom_tagged(tpNull, 0);
   ASSERT_EQ(0, get_custom_tagged_payload(n0));
   value_t n1 = new_custom_tagged(tpNull, 255);
@@ -134,7 +134,7 @@ NEW_TEST(value, custom_tagged) {
   ASSERT_EQ(-(1LL << 46), get_custom_tagged_payload(n3));
 }
 
-NEW_TEST(value, objects) {
+TEST(value, objects) {
   heap_t heap;
   ASSERT_SUCCESS(heap_init(&heap, NULL));
 
@@ -147,7 +147,7 @@ NEW_TEST(value, objects) {
   heap_dispose(&heap);
 }
 
-NEW_TEST(value, id_hash_maps_simple) {
+TEST(value, id_hash_maps_simple) {
   CREATE_RUNTIME();
 
   // Create a map.
@@ -194,7 +194,7 @@ NEW_TEST(value, id_hash_maps_simple) {
 }
 
 
-NEW_TEST(value, id_hash_maps_strings) {
+TEST(value, id_hash_maps_strings) {
   CREATE_RUNTIME();
 
   string_t one_chars;
@@ -211,7 +211,7 @@ NEW_TEST(value, id_hash_maps_strings) {
 }
 
 
-NEW_TEST(value, large_id_hash_maps) {
+TEST(value, large_id_hash_maps) {
   CREATE_RUNTIME();
 
   value_t map = new_heap_id_hash_map(runtime, 4);
@@ -233,7 +233,7 @@ NEW_TEST(value, large_id_hash_maps) {
 }
 
 
-NEW_TEST(value, exhaust_id_hash_map) {
+TEST(value, exhaust_id_hash_map) {
   runtime_config_t config;
   runtime_config_init_defaults(&config);
   config.semispace_size_bytes = 65536;
@@ -255,7 +255,7 @@ NEW_TEST(value, exhaust_id_hash_map) {
 }
 
 
-NEW_TEST(value, array_bounds) {
+TEST(value, array_bounds) {
   CREATE_RUNTIME();
 
   value_t arr = new_heap_array(runtime, 4);
@@ -269,7 +269,7 @@ NEW_TEST(value, array_bounds) {
 }
 
 
-NEW_TEST(value, array_buffer) {
+TEST(value, array_buffer) {
   CREATE_RUNTIME();
 
   value_t buf = new_heap_array_buffer(runtime, 16);
@@ -295,7 +295,7 @@ NEW_TEST(value, array_buffer) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(value, array_buffer_empty) {
+TEST(value, array_buffer_empty) {
   CREATE_RUNTIME();
 
   value_t buf = new_heap_array_buffer_with_contents(runtime, ROOT(runtime, empty_array));
@@ -305,7 +305,7 @@ NEW_TEST(value, array_buffer_empty) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(value, get_primary_type) {
+TEST(value, get_primary_type) {
   CREATE_RUNTIME();
 
   value_t int_proto = get_primary_type(new_integer(2), runtime);
@@ -319,7 +319,7 @@ NEW_TEST(value, get_primary_type) {
 }
 
 
-NEW_TEST(value, instance_division) {
+TEST(value, instance_division) {
   CREATE_RUNTIME();
 
   value_t proto = new_heap_type(runtime, afFreeze, nothing(), null());
@@ -333,7 +333,7 @@ NEW_TEST(value, instance_division) {
 }
 
 
-NEW_TEST(value, integer_comparison) {
+TEST(value, integer_comparison) {
 #define ASSERT_INT_COMPARE(A, B, REL)                                          \
   ASSERT_TRUE(test_relation(value_ordering_compare(new_integer(A), new_integer(B)), REL))
 
@@ -344,7 +344,7 @@ NEW_TEST(value, integer_comparison) {
 #undef ASSERT_INT_COMPARE
 }
 
-NEW_TEST(value, string_comparison) {
+TEST(value, string_comparison) {
   CREATE_RUNTIME();
 
   // Checks that the string with contents A compares to B as the given operator.
@@ -372,7 +372,7 @@ NEW_TEST(value, string_comparison) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(value, bool_comparison) {
+TEST(value, bool_comparison) {
   CREATE_RUNTIME();
 
   value_t t = yes();
@@ -386,7 +386,7 @@ NEW_TEST(value, bool_comparison) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(value, array_sort) {
+TEST(value, array_sort) {
   CREATE_RUNTIME();
 
 #define kTestArraySize 32
@@ -473,7 +473,7 @@ static void assert_strings_present(size_t skip_first, safe_value_t *s_maps,
   }
 }
 
-NEW_TEST(value, rehash_map) {
+TEST(value, rehash_map) {
   CREATE_RUNTIME();
 
   // Create and retain a number of maps.
@@ -524,7 +524,7 @@ NEW_TEST(value, rehash_map) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(value, map_delete) {
+TEST(value, map_delete) {
   CREATE_RUNTIME();
 
   // Bit set to keep track of which entries are set in the map.
@@ -610,7 +610,7 @@ value_t get_argument_map(runtime_t *runtime, value_t root, test_argument_map_t *
   return get_argument_map_trie_value(current);
 }
 
-NEW_TEST(value, argument_map_tries) {
+TEST(value, argument_map_tries) {
   CREATE_RUNTIME();
 
   pseudo_random_t random;
@@ -675,7 +675,7 @@ static value_t try_finally_return(try_finally_data_t *data) {
   E_END_TRY_FINALLY();
 }
 
-NEW_TEST(value, try_finally) {
+TEST(value, try_finally) {
   try_finally_data_t data = {false};
 
   ASSERT_CONDITION(ccNothing, try_finally_condition(&data));
@@ -687,7 +687,7 @@ NEW_TEST(value, try_finally) {
   ASSERT_TRUE(data.called);
 }
 
-NEW_TEST(value, array_identity) {
+TEST(value, array_identity) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -752,7 +752,7 @@ NEW_TEST(value, array_identity) {
 
 #undef V2V
 
-NEW_TEST(value, set_value_mode) {
+TEST(value, set_value_mode) {
   CREATE_RUNTIME();
 
   value_t arr = new_heap_array(runtime, 3);
@@ -791,7 +791,7 @@ NEW_TEST(value, set_value_mode) {
   dispose_value_to_string(&to_string);                                         \
 } while (false)
 
-NEW_TEST(value, unsupported) {
+TEST(value, unsupported) {
   CHECK_UNSUPPORTED(vdInteger, __ofUnknown__, ubUnspecified,
       "%<condition: UnsupportedBehavior(Unspecified of Integer)>");
   CHECK_UNSUPPORTED(vdHeapObject, __ofUnknown__, ubSetContents,
@@ -800,7 +800,7 @@ NEW_TEST(value, unsupported) {
       "%<condition: UnsupportedBehavior(PlanktonSerialize of HeapObject/Array)>");
 }
 
-NEW_TEST(value, invalid_input) {
+TEST(value, invalid_input) {
   string_hint_t halp = STRING_HINT_INIT("halp!");
   value_t condition = new_invalid_input_condition_with_hint(halp);
   value_to_string_t to_string;
@@ -809,7 +809,7 @@ NEW_TEST(value, invalid_input) {
 }
 
 
-NEW_TEST(value, paths) {
+TEST(value, paths) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -857,7 +857,7 @@ value_t new_options(runtime_t *runtime, size_t count, value_t* elements) {
   return new_heap_options(runtime, array);
 }
 
-NEW_TEST(value, options) {
+TEST(value, options) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -900,7 +900,7 @@ NEW_TEST(value, options) {
 }
 
 
-NEW_TEST(value, reference) {
+TEST(value, reference) {
   CREATE_RUNTIME();
 
   value_t ref = new_heap_reference(runtime, null());
@@ -913,7 +913,7 @@ NEW_TEST(value, reference) {
 }
 
 
-NEW_TEST(value, ambience) {
+TEST(value, ambience) {
   CREATE_RUNTIME();
 
   ASSERT_PTREQ(runtime, get_ambience_runtime(ambience));

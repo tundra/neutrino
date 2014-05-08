@@ -8,7 +8,7 @@ BEGIN_C_INCLUDES
 #include "derived-inl.h"
 END_C_INCLUDES
 
-NEW_TEST(derived, array) {
+TEST(derived, array) {
   CREATE_RUNTIME();
 
   value_t host = new_heap_array(runtime, 100);
@@ -27,7 +27,7 @@ NEW_TEST(derived, array) {
   DISPOSE_RUNTIME();
 }
 
-NEW_TEST(derived, anchors) {
+TEST(derived, anchors) {
   value_t d0 = new_derived_object_anchor(dgStackPointer, 0);
   ASSERT_EQ(0, get_derived_object_anchor_host_offset(d0));
 

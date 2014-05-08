@@ -44,7 +44,7 @@ private:
   TestInfo *next;
 };
 
-#define NEW_TEST(suite, name)                                                  \
+#define TEST(suite, name)                                                  \
   void run_##suite##_##name();                                                 \
   TestInfo* const test_info_##suite##_##name = new TestInfo(#suite, #name, run_##suite##_##name); \
   void run_##suite##_##name()

@@ -23,7 +23,6 @@ END_C_INCLUDES
 
 // TODO: fix timing for msvc
 #ifdef IS_GCC
-// ARRRG! Features. Are. Awful!
 #include <time.h>
 extern char *strdup(const char*);
 #endif

@@ -11,7 +11,7 @@ BEGIN_C_INCLUDES
 #include "value-inl.h"
 END_C_INCLUDES
 
-NEW_TEST(syntax, emitting) {
+TEST(syntax, emitting) {
   CREATE_RUNTIME();
 
   value_t ast = new_heap_literal_ast(runtime, yes());
@@ -32,7 +32,7 @@ NEW_TEST(syntax, emitting) {
 #define CHECK_ORDERING_INDEX(N, V)                                             \
   ASSERT_EQ((N), get_parameter_order_index_for_array(variant_to_value(runtime, (V))))
 
-NEW_TEST(syntax, parameter_order_index) {
+TEST(syntax, parameter_order_index) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
@@ -73,7 +73,7 @@ NEW_TEST(syntax, parameter_order_index) {
     ASSERT_EQ(ordering[i], expected[i]);                                       \
 } while (false)
 
-NEW_TEST(syntax, param_ordering) {
+TEST(syntax, param_ordering) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 

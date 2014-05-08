@@ -8,7 +8,7 @@ BEGIN_C_INCLUDES
 #include "tagged-inl.h"
 END_C_INCLUDES
 
-NEW_TEST(tagged, relation) {
+TEST(tagged, relation) {
   ASSERT_TRUE(test_relation(less_than(), reLessThan));
   ASSERT_TRUE(test_relation(less_than(), reLessThan | reEqual));
   ASSERT_FALSE(test_relation(less_than(), reEqual));
@@ -38,14 +38,14 @@ NEW_TEST(tagged, relation) {
   ASSERT_TRUE(test_relation(unordered(), reUnordered));
 }
 
-NEW_TEST(tagged, integer_comparison) {
+TEST(tagged, integer_comparison) {
   ASSERT_TRUE(test_relation(compare_signed_integers(-1, 1), reLessThan));
   ASSERT_TRUE(test_relation(compare_signed_integers(0, 1), reLessThan));
   ASSERT_TRUE(test_relation(compare_signed_integers(0, 0), reEqual));
   ASSERT_TRUE(test_relation(compare_signed_integers(0, -1), reGreaterThan));
 }
 
-NEW_TEST(tagged, float_32) {
+TEST(tagged, float_32) {
   ASSERT_EQ(sizeof(uint32_t), sizeof(float32_t));
 
   value_t one = new_float_32(1.0);
@@ -100,7 +100,7 @@ NEW_TEST(tagged, float_32) {
   ASSERT_FALSE(is_float_32_finite(minf));
 }
 
-NEW_TEST(tagged, tiny_bit_set) {
+TEST(tagged, tiny_bit_set) {
   // Initialization.
   value_t regular = new_flag_set(kFlagSetAllOff);
   for (size_t i = 0; i < kFlagSetMaxSize; i++)
@@ -139,7 +139,7 @@ static value_t test_new_score(score_category_t category, uint32_t subscore) {
   return score;
 }
 
-NEW_TEST(tagged, new_score) {
+TEST(tagged, new_score) {
   test_new_score(scEq, 0);
   test_new_score(scAny, 0);
   test_new_score(scIs, 0);
@@ -163,7 +163,7 @@ static void test_score_compare(score_category_t cat_a, uint32_t sub_a,
   ASSERT_TRUE(test_relation(integer_to_relation(compared), rel));
 }
 
-NEW_TEST(tagged, compare_scores) {
+TEST(tagged, compare_scores) {
   // Scores compare in the opposite order of what you might expect -- lower
   // values compare greater than. See score_ordering_compare for details.
 
@@ -191,7 +191,7 @@ NEW_TEST(tagged, compare_scores) {
   test_score_compare(scAny, 0xFFFFFFFF, reLessThan, scEq, 0);
 }
 
-NEW_TEST(tagged, is_score_match) {
+TEST(tagged, is_score_match) {
   ASSERT_TRUE(is_score_match(test_new_score(scEq, 0)));
   ASSERT_TRUE(is_score_match(test_new_score(scIs, 0)));
   ASSERT_TRUE(is_score_match(test_new_score(scAny, 0)));
@@ -204,7 +204,7 @@ NEW_TEST(tagged, is_score_match) {
   ASSERT_FALSE(is_score_match(test_new_score(scNone, 0xFFFFFFFF)));
 }
 
-NEW_TEST(tagged, score_successor) {
+TEST(tagged, score_successor) {
   ASSERT_SAME(new_score(scEq, 1), get_score_successor(new_score(scEq, 0)));
   ASSERT_SAME(new_score(scEq, 2), get_score_successor(new_score(scEq, 1)));
   ASSERT_SAME(new_score(scEq, 0xFFFFFFFF), get_score_successor(new_score(scEq, 0xFFFFFFFE)));
@@ -213,13 +213,13 @@ NEW_TEST(tagged, score_successor) {
   ASSERT_SAME(new_score(scIs, 0xFFFFFFFF), get_score_successor(new_score(scIs, 0xFFFFFFFE)));
 }
 
-NEW_TEST(tagged, nothing) {
+TEST(tagged, nothing) {
   value_t noth = nothing();
   ASSERT_EQ(ENCODED_NOTHING, noth.encoded);
   ASSERT_TRUE(is_nothing(noth));
 }
 
-NEW_TEST(tagged, payload) {
+TEST(tagged, payload) {
   int64_t v0 = (((int64_t) 1) << (kCustomTaggedPayloadSize - 1)) - 1;
   value_t t0 = new_custom_tagged(tpNull, v0);
   ASSERT_EQ(v0, get_custom_tagged_payload(t0));
