@@ -45,7 +45,7 @@ TEST(value, fits_as_tagged_integer) {
       {0xE000000000000000, false},
       {0xEFFFFFFFFFFFFFFF, false},
       {0xF000000000000000, true},
-      {0xF000000000000001U, true}
+      {0xF000000000000001, true}
   };
   for (size_t i = 0; i < kTestCaseCount; i++) {
     struct test_case_t test_case = cases[i];
