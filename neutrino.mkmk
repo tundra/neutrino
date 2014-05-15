@@ -4,6 +4,7 @@
 # The root build file.
 
 # Load the source build files.
+include_dep('tclib', 'tclib.mkmk')
 include('src', 'src.mkmk')
 include('tests', 'tests.mkmk')
 include('misc', 'misc.mkmk')

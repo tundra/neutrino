@@ -36,6 +36,7 @@ library = get_group("library")
 # Add the source file objects to the library.
 for library_file_name in library_file_names:
   library_file = c.get_source_file(library_file_name)
+  library_file.add_include(get_dep('tclib').get_child('src', 'c'))
   object_file = library_file.get_object()
   library.add_member(object_file)
 
@@ -48,4 +49,5 @@ ctrino = c.get_executable("ctrino")
 ctrino.add_object(library)
 for ctrino_file_name in ctrino_file_names:
   ctrino_file = c.get_source_file(ctrino_file_name)
+  ctrino_file.add_include(get_dep('tclib').get_child('src', 'c'))
   ctrino.add_object(ctrino_file.get_object())

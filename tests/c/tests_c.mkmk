@@ -32,6 +32,7 @@ test_file_names = [
 def compile_test_file(source):
   # Include the C sources.
   source.add_include(get_root().get_child('src', 'c'))
+  source.add_include(get_dep('tclib').get_child('src', 'c'))
   return source.get_object()
 
 # Create a group containing the test files along with the runtime library.
