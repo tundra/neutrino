@@ -12,4 +12,4 @@ sudo pip install virtualenv
 
 virtualenv devenv
 
-./ensure-mkmk.sh
+ensure-mkmk.sh
