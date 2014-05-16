@@ -29,39 +29,10 @@ BEGIN_C_INCLUDES
 #include "log.h"
 #include "ook.h"
 #include "runtime.h"
+#include "test/asserts.hh"
+#include "test/unittest.hh"
 #include "value-inl.h"
 END_C_INCLUDES
-
-// Data that picks out a particular test or suite to run.
-struct unit_test_selector_t {
-  // If non-null, the test suite to run.
-  char *suite;
-  // If non-null, the test case to run.
-  char *name;
-};
-
-class TestInfo {
-public:
-  typedef void (*unit_test_t)();
-  TestInfo(const char *suite, const char *name, unit_test_t unit_test);
-  static void run_tests(unit_test_selector_t *selector);
-  void run();
-  bool matches(unit_test_selector_t *selector);
-private:
-  static TestInfo *chain;
-  const char *suite;
-  const char *name;
-  unit_test_t unit_test;
-  TestInfo *next;
-};
-
-#define TEST(suite, name)                                                  \
-  void run_##suite##_##name();                                                 \
-  TestInfo* const test_info_##suite##_##name = new TestInfo(#suite, #name, run_##suite##_##name); \
-  void run_##suite##_##name()
-
-// Aborts exception, signalling an error.
-void fail(const char *file, int line, const char *fmt, ...);
 
 // Returns true iff the two values are structurally equal.
 bool value_structural_equal(value_t a, value_t b);
@@ -134,29 +105,6 @@ void install_log_validator(log_validator_o *validator,
 // and restores logging to the same state as before it was installed.
 void uninstall_log_validator(log_validator_o *validator);
 
-
-// Fails unless the two values are equal.
-#define ASSERT_EQ(A, B) do {                                                   \
-  int64_t __a__ = (int64_t) (A);                                               \
-  int64_t __b__ = (int64_t) (B);                                               \
-  if (__a__ != __b__)                                                          \
-    fail(__FILE__, __LINE__, "Assertion failed: %s == %s.\n  Expected: %lli\n  Found: %lli", \
-        #A, #B, __a__, __b__);                                                 \
-} while (false)
-
-// Bit-casts a void* to an integer.
-static int64_t ptr_to_int_bit_cast(void *value) {
-  int64_t result = 0;
-  memcpy(&result, &value, sizeof(value));
-  return result;
-}
-
-// Failus unless the two pointer values are equal.
-#define ASSERT_PTREQ(A, B) ASSERT_EQ(ptr_to_int_bit_cast(A), ptr_to_int_bit_cast(B))
-
-// Fails unless the two values are different.
-#define ASSERT_NEQ(A, B) ASSERT_FALSE((A) == (B))
-
 // Fails unless the two given strings (string_t*) are equal.
 #define ASSERT_STREQ(A, B) do {                                                \
   string_t *__a__ = (A);                                                       \
@@ -194,12 +142,6 @@ static int64_t ptr_to_int_bit_cast(void *value) {
 
 // Fails unless A and B are different objects, even if they're equal.
 #define ASSERT_NSAME(A, B) ASSERT_NEQ((A).encoded, (B).encoded)
-
-// Fails unless the condition is true.
-#define ASSERT_TRUE(COND) ASSERT_EQ(COND, true)
-
-// Fails unless the condition is false.
-#define ASSERT_FALSE(COND) ASSERT_EQ(COND, false)
 
 // Fails unless the given value is within the given domain.
 #define ASSERT_DOMAIN(vdDomain, EXPR) \

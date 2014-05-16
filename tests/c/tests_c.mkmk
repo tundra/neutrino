@@ -52,6 +52,7 @@ main_file_names = [
 # Compile the test main executable.
 test_main = c.get_executable("main")
 test_main.add_object(test_library)
+test_main.add_object(get_external('deps', 'tclib', 'src', 'c', 'test', 'library'))
 for main_file_name in main_file_names:
   main_file = c.get_source_file(main_file_name)
   object_file = compile_test_file(main_file)
