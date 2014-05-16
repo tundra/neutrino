@@ -19,6 +19,6 @@ if [ ! -d devenv ]; then
   virtualenv devenv
 fi
 
-source devenv/bin/activate
+. devenv/bin/activate
 
 $(dirname $0)/ensure-mkmk.sh
