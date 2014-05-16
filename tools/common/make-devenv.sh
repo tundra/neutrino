@@ -4,11 +4,11 @@
 
 ## Sets up a build environment.
 
-set -v -e
+set -e
 
 if [ ! -d devenv ]; then
-  if [ ! which virtualenv > /dev/null ]; then
-    if [ ! which pip > /dev/null ]; then
+  if ! which virtualenv > /dev/null; then
+    if ! which pip > /dev/null; then
       echo "Trying to install pip."
       sudo apt-get install python-pip
     fi

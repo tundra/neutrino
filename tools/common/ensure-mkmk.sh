@@ -1,4 +1,9 @@
 #!/bin/sh
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## Ensures that there's an mkmk command available, installing it from git if
+## necessary.
 
 set -e
 
