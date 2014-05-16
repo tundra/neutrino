@@ -25,5 +25,7 @@ if ! which mkmk > /dev/null; then
   fi
   echo "Trying to install python package."
   . devenv/bin/activate
-  $(cd mkmk && python setup.py develop)
+  cd mkmk
+  python setup.py develop
+  cd ..
 fi
