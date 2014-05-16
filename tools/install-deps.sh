@@ -11,7 +11,3 @@ ROOT_ABS=$(readlink -e "$ROOT_REL")
 # Install plankton
 cd "$ROOT_ABS/deps/plankton/src/python"
 python setup.py install
-
-# Install mkmk
-cd "$ROOT_ABS/deps/mkmk"
-python setup.py install
