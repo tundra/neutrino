@@ -3,7 +3,7 @@
 language: c
 compiler: gcc
 script: ./configure --noisy && ./build.sh run-tests
-install: ./tools/common/make-devenv.sh && source devenv/bin/activate
+install: source ./tools/common/make-devenv.sh
 
 matrix:
   include:
