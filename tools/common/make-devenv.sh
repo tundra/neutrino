@@ -6,10 +6,17 @@
 
 set -v -e
 
-sudo apt-get install python-pip
+if [ ! -d devenv ]; then
+  if [ ! which virtualenv > /dev/null ]; then
+    if [ ! which pip > /dev/null ]; then
+      echo "Trying to install pip."
+      sudo apt-get install python-pip
+    fi
+    echo "Trying to install virtualenv."
+    sudo pip install virtualenv
+  fi
+  echo "Trying to create devenv."
+  virtualenv devenv
+fi
 
-sudo pip install virtualenv
-
-virtualenv devenv
-
-ensure-mkmk.sh
+$(dirname $0)/ensure-mkmk.sh
