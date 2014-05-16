@@ -2,7 +2,9 @@
 # Copyright 2014 the Neutrino authors (see AUTHORS).
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-## Sets up a build environment.
+## Sets up a build environment. This file is copied among all the repos that use
+## mkmk, the authoritative version lives in mkmk/tools. Don't change this
+## directly.
 
 set -e
 
