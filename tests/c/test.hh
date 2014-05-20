@@ -4,24 +4,6 @@
 // Need this for the platform macros to be available.
 #include "stdc.h"
 
-// Includes of C headers from C++ files should be surrounded by these macros to
-// ensure that they're linked appropriately.
-#ifdef IS_GCC
-#  if defined(__cplusplus)
-#    define BEGIN_C_INCLUDES extern "C" {
-#    define END_C_INCLUDES }
-#  else
-#    define BEGIN_C_INCLUDES
-#    define END_C_INCLUDES
-#  endif
-#else
-   // On windows everything gets compiled as C++ so there's no need to handle
-   // C includes differently.
-#  define BEGIN_C_INCLUDES
-#  define END_C_INCLUDES
-#endif
-
-
 BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "condition.h"
