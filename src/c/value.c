@@ -922,6 +922,184 @@ size_t get_pair_array_buffer_length(value_t self) {
 }
 
 
+// --- F i f o   b u f f e r ---
+
+TRIVIAL_PRINT_ON_IMPL(FifoBuffer, fifo_buffer);
+FIXED_GET_MODE_IMPL(fifo_buffer, vmMutable);
+
+ACCESSORS_IMPL(FifoBuffer, fifo_buffer, acInFamily, ofArray, Data, data);
+INTEGER_ACCESSORS_IMPL(FifoBuffer, fifo_buffer, Size, size);
+
+value_t fifo_buffer_validate(value_t self) {
+  VALIDATE_FAMILY(ofFifoBuffer, self);
+  VALIDATE_FAMILY(ofArray, get_fifo_buffer_data(self));
+  return success();
+}
+
+size_t get_fifo_buffer_capacity(value_t self) {
+  CHECK_FAMILY(ofFifoBuffer, self);
+  value_t data = get_fifo_buffer_data(self);
+  return (get_array_length(data) / 3) - kFifoBufferDataHeaderSize;
+}
+
+value_t get_fifo_buffer_value_at(value_t self, size_t index) {
+  return get_array_at(get_fifo_buffer_data(self), index * 3);
+}
+
+void set_fifo_buffer_value_at(value_t self, size_t index, value_t value) {
+  set_array_at(get_fifo_buffer_data(self), index * 3, value);
+}
+
+size_t get_fifo_buffer_next_at(value_t self, size_t index) {
+  return get_integer_value(get_array_at(get_fifo_buffer_data(self), index * 3 + 1));
+}
+
+void set_fifo_buffer_next_at(value_t self, size_t index, size_t next) {
+  set_array_at(get_fifo_buffer_data(self), index * 3 + 1, new_integer(next));
+}
+
+size_t get_fifo_buffer_prev_at(value_t self, size_t index) {
+  return get_integer_value(get_array_at(get_fifo_buffer_data(self), index * 3 + 2));
+}
+
+void set_fifo_buffer_prev_at(value_t self, size_t index, size_t prev) {
+  set_array_at(get_fifo_buffer_data(self), index * 3 + 2, new_integer(prev));
+}
+
+// Unhooks the node at the given index from the list it's currently in.
+static void unhook_fifo_buffer_entry(value_t self, size_t index) {
+  size_t prev = get_fifo_buffer_prev_at(self, index);
+  size_t next = get_fifo_buffer_next_at(self, index);
+  set_fifo_buffer_next_at(self, prev, next);
+  set_fifo_buffer_prev_at(self, next, prev);
+}
+
+// Hooks the given target node into the list that index is currently in.
+static void hook_fifo_buffer_entry(value_t self, size_t index, size_t target) {
+  size_t next = get_fifo_buffer_next_at(self, index);
+  size_t prev = get_fifo_buffer_prev_at(self, next);
+  set_fifo_buffer_next_at(self, target, next);
+  set_fifo_buffer_prev_at(self, target, prev);
+  set_fifo_buffer_next_at(self, prev, target);
+  set_fifo_buffer_prev_at(self, next, target);
+}
+
+bool try_offer_to_fifo_buffer(value_t self, value_t value) {
+  CHECK_FAMILY(ofFifoBuffer, self);
+  CHECK_MUTABLE(self);
+  size_t capacity = get_fifo_buffer_capacity(self);
+  size_t size = get_fifo_buffer_size(self);
+  if (size == capacity)
+    // If the buffer is full we bail out immediately.
+    return false;
+  // Take the next free node, which we know must exist because of the size.
+  size_t next_free = get_fifo_buffer_next_at(self, kFifoBufferFreeRootOffset);
+  // Unhook it from the free list.
+  unhook_fifo_buffer_entry(self, next_free);
+  // Hook it into the occupied list.
+  hook_fifo_buffer_entry(self, kFifoBufferOccupiedRootOffset, next_free);
+  set_fifo_buffer_value_at(self, next_free, value);
+  set_fifo_buffer_size(self, size + 1);
+  return true;
+}
+
+value_t take_from_fifo_buffer(value_t self) {
+  CHECK_FAMILY(ofFifoBuffer, self);
+  if (is_fifo_buffer_empty(self))
+    return new_condition(ccNotFound);
+  // Get the least recently accessed occupied node.
+  size_t prev_occupied = get_fifo_buffer_prev_at(self, kFifoBufferOccupiedRootOffset);
+  // Clear the value; there's no reason to keep it alive from here.
+  value_t value = get_fifo_buffer_value_at(self, prev_occupied);
+  set_fifo_buffer_value_at(self, prev_occupied, nothing());
+  // Unhook it from the occupied list.
+  unhook_fifo_buffer_entry(self, prev_occupied);
+  // Hook it into the free list.
+  hook_fifo_buffer_entry(self, kFifoBufferFreeRootOffset, prev_occupied);
+  size_t size = get_fifo_buffer_size(self);
+  set_fifo_buffer_size(self, size - 1);
+  return value;
+}
+
+bool is_fifo_buffer_empty(value_t self) {
+  CHECK_FAMILY(ofFifoBuffer, self);
+  return get_fifo_buffer_size(self) == 0;
+}
+
+value_t offer_to_fifo_buffer(runtime_t *runtime, value_t buffer, value_t value) {
+  if (try_offer_to_fifo_buffer(buffer, value))
+    // The value fits without expanding; success!
+    return success();
+  // Doesn't fit; allocate a new backing array.
+  size_t old_capacity = get_fifo_buffer_capacity(buffer);
+  value_t old_data = get_fifo_buffer_data(buffer);
+  size_t old_data_size = get_array_length(old_data);
+  size_t new_data_size = old_data_size << 1;
+  TRY_DEF(new_data, new_heap_array(runtime, new_data_size));
+  // Copy the contents of the old array directly into the new one.
+  // TODO: memcpy?
+  for (size_t i = 0; i < old_data_size; i++)
+    set_array_at(new_data, i, get_array_at(old_data, i));
+  set_fifo_buffer_data(buffer, new_data);
+  size_t new_capacity = get_fifo_buffer_capacity(buffer);
+  // Make the new entries point to each other. This leaves two of the nodes with
+  // an incorrect value: the prev of the first will be wrong, as will the next
+  // of the last. We'll fix those below.
+  for (size_t i = old_capacity + kFifoBufferDataHeaderSize;
+      i < new_capacity + kFifoBufferDataHeaderSize;
+      i++) {
+    set_fifo_buffer_next_at(buffer, i, i + 1);
+    set_fifo_buffer_prev_at(buffer, i, i - 1);
+  }
+  // Hook the new entries into the free list. Since offering failed above we
+  // know that there are no free nodes left so we can hook the new ones directly
+  // onto the free root.
+  size_t new_next = old_capacity + kFifoBufferDataHeaderSize;
+  size_t new_prev = new_capacity + kFifoBufferDataHeaderSize - 1;
+  set_fifo_buffer_next_at(buffer, kFifoBufferFreeRootOffset, new_next);
+  set_fifo_buffer_prev_at(buffer, new_next, kFifoBufferFreeRootOffset);
+  set_fifo_buffer_prev_at(buffer, kFifoBufferFreeRootOffset, new_prev);
+  set_fifo_buffer_next_at(buffer, new_prev, kFifoBufferFreeRootOffset);
+  CHECK_TRUE("failed to expand fifo buffer", try_offer_to_fifo_buffer(buffer, value));
+  return success();
+}
+
+void fifo_buffer_iter_init(fifo_buffer_iter_t *iter, value_t buf) {
+  CHECK_FAMILY(ofFifoBuffer, buf);
+  iter->buffer = buf;
+  iter->current = kFifoBufferFreeRootOffset;
+}
+
+bool fifo_buffer_iter_advance(fifo_buffer_iter_t *iter) {
+  if (iter->current == kFifoBufferFreeRootOffset) {
+    if (is_fifo_buffer_empty(iter->buffer))
+      return false;
+    iter->current = get_fifo_buffer_prev_at(iter->buffer,
+        kFifoBufferOccupiedRootOffset);
+    return true;
+  } else {
+    iter->current = get_fifo_buffer_prev_at(iter->buffer, iter->current);
+    return (iter->current != kFifoBufferOccupiedRootOffset);
+  }
+}
+
+value_t fifo_buffer_iter_get_current(fifo_buffer_iter_t *iter) {
+  return get_fifo_buffer_value_at(iter->buffer, iter->current);
+}
+
+value_t fifo_buffer_iter_take_current(fifo_buffer_iter_t *iter) {
+  // Clear the value; there's no reason to keep it alive from here.
+  value_t value = fifo_buffer_iter_get_current(iter);
+  set_fifo_buffer_value_at(iter->buffer, iter->current, nothing());
+  // Unhook it from the occupied list.
+  unhook_fifo_buffer_entry(iter->buffer, iter->current);
+  // Hook it into the free list.
+  hook_fifo_buffer_entry(iter->buffer, kFifoBufferFreeRootOffset, iter->current);
+  size_t size = get_fifo_buffer_size(iter->buffer);
+  set_fifo_buffer_size(iter->buffer, size - 1);
+  return value;
+}
+
 
 // --- I d e n t i t y   h a s h   m a p ---
 

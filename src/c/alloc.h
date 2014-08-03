@@ -91,6 +91,10 @@ value_t new_heap_pair_array(runtime_t *runtime, size_t length);
 // initial capacity.
 value_t new_heap_array_buffer(runtime_t *runtime, size_t initial_capacity);
 
+// Allocates a new heap circular buffer in the given runtime with the given
+// initial capacity.
+value_t new_heap_fifo_buffer(runtime_t *runtime, size_t initial_capacity);
+
 // Allocates a new heap array buffer in the given runtime backed by the given
 // array.
 value_t new_heap_array_buffer_with_contents(runtime_t *runtime, value_t array);
