@@ -2,17 +2,35 @@
 
 set -e
 
-CONFIG=clang-32-warnings
-BIN=bin-$CONFIG
+if [[ -z "$NEUTRINO_HOME" ]]; then
+  echo "The \$NEUTRINO_HOME environment variable should be set."
+  exit 1
+fi
 
-LIBRARY=$BIN/out/n/library.nl
+LIBRARY=$NEUTRINO_HOME/lib/stdlib.nl
 if [ ! -f $LIBRARY ]; then
-  make library
+  echo "No standard library found at $LIBRARY"
+  exit 1
 fi
 
-if [ ! -f $BIN/ctrino ]; then
-  make ctrino
+CTRINO=$NEUTRINO_HOME/bin/ctrino
+if [ ! -f $CTRINO ]; then
+  echo "No interpreter found at $CTRINO"
+  exit 1
 fi
 
-./src/python/neutrino/main.py --file $1 > .neutrino.last
-$BIN/ctrino .neutrino.last --main-options `tools/plopt --module_loader { --libraries [ $LIBRARY ] }`
+ROOT=$(dirname $(dirname $(readlink -f $0)))
+PLOPT="$ROOT/tools/plopt"
+if [ ! -f $PLOPT ]; then
+  echo "No plankton processor found at $PLOPT"
+  exit 1
+fi
+
+COMPILER="$ROOT/src/python/neutrino/main.py"
+if [ ! -f $COMPILER ]; then
+  echo "No compiler found at $COMPILER"
+  exit 1
+fi
+
+$COMPILER --file $1 > /tmp/neutrino.last
+$CTRINO /tmp/neutrino.last --main-options `$PLOPT --module_loader { --libraries [ $LIBRARY ] }`
