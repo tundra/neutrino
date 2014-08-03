@@ -927,43 +927,47 @@ size_t get_pair_array_buffer_length(value_t self) {
 TRIVIAL_PRINT_ON_IMPL(FifoBuffer, fifo_buffer);
 FIXED_GET_MODE_IMPL(fifo_buffer, vmMutable);
 
-ACCESSORS_IMPL(FifoBuffer, fifo_buffer, acInFamily, ofArray, Data, data);
+ACCESSORS_IMPL(FifoBuffer, fifo_buffer, acInFamily, ofArray, Nodes, nodes);
 INTEGER_ACCESSORS_IMPL(FifoBuffer, fifo_buffer, Size, size);
 
 value_t fifo_buffer_validate(value_t self) {
   VALIDATE_FAMILY(ofFifoBuffer, self);
-  VALIDATE_FAMILY(ofArray, get_fifo_buffer_data(self));
+  VALIDATE_FAMILY(ofArray, get_fifo_buffer_nodes(self));
   return success();
 }
 
 size_t get_fifo_buffer_capacity(value_t self) {
   CHECK_FAMILY(ofFifoBuffer, self);
-  value_t data = get_fifo_buffer_data(self);
-  return (get_array_length(data) / 3) - kFifoBufferDataHeaderSize;
+  value_t data = get_fifo_buffer_nodes(self);
+  return (get_array_length(data) / kFifoBufferNodeSize) - kFifoBufferReservedNodeCount;
 }
 
 value_t get_fifo_buffer_value_at(value_t self, size_t index) {
-  return get_array_at(get_fifo_buffer_data(self), index * 3);
+  return get_array_at(get_fifo_buffer_nodes(self), index * kFifoBufferNodeSize);
 }
 
 void set_fifo_buffer_value_at(value_t self, size_t index, value_t value) {
-  set_array_at(get_fifo_buffer_data(self), index * 3, value);
+  set_array_at(get_fifo_buffer_nodes(self), index * kFifoBufferNodeSize, value);
 }
 
 size_t get_fifo_buffer_next_at(value_t self, size_t index) {
-  return get_integer_value(get_array_at(get_fifo_buffer_data(self), index * 3 + 1));
+  return get_integer_value(get_array_at(get_fifo_buffer_nodes(self),
+      index * kFifoBufferNodeSize + 1));
 }
 
 void set_fifo_buffer_next_at(value_t self, size_t index, size_t next) {
-  set_array_at(get_fifo_buffer_data(self), index * 3 + 1, new_integer(next));
+  set_array_at(get_fifo_buffer_nodes(self), index * kFifoBufferNodeSize + 1,
+      new_integer(next));
 }
 
 size_t get_fifo_buffer_prev_at(value_t self, size_t index) {
-  return get_integer_value(get_array_at(get_fifo_buffer_data(self), index * 3 + 2));
+  return get_integer_value(get_array_at(get_fifo_buffer_nodes(self),
+      index * kFifoBufferNodeSize + 2));
 }
 
 void set_fifo_buffer_prev_at(value_t self, size_t index, size_t prev) {
-  set_array_at(get_fifo_buffer_data(self), index * 3 + 2, new_integer(prev));
+  set_array_at(get_fifo_buffer_nodes(self), index * kFifoBufferNodeSize + 2,
+      new_integer(prev));
 }
 
 // Unhooks the node at the given index from the list it's currently in.
@@ -1011,7 +1015,7 @@ value_t take_from_fifo_buffer(value_t self) {
   size_t prev_occupied = get_fifo_buffer_prev_at(self, kFifoBufferOccupiedRootOffset);
   // Clear the value; there's no reason to keep it alive from here.
   value_t value = get_fifo_buffer_value_at(self, prev_occupied);
-  set_fifo_buffer_value_at(self, prev_occupied, nothing());
+  set_fifo_buffer_value_at(self, prev_occupied, null());
   // Unhook it from the occupied list.
   unhook_fifo_buffer_entry(self, prev_occupied);
   // Hook it into the free list.
@@ -1032,35 +1036,34 @@ value_t offer_to_fifo_buffer(runtime_t *runtime, value_t buffer, value_t value) 
     return success();
   // Doesn't fit; allocate a new backing array.
   size_t old_capacity = get_fifo_buffer_capacity(buffer);
-  value_t old_data = get_fifo_buffer_data(buffer);
-  size_t old_data_size = get_array_length(old_data);
-  size_t new_data_size = old_data_size << 1;
-  TRY_DEF(new_data, new_heap_array(runtime, new_data_size));
+  value_t old_nodes = get_fifo_buffer_nodes(buffer);
+  size_t old_nodes_size = get_array_length(old_nodes);
+  size_t new_nodes_size = old_nodes_size << 1;
+  TRY_DEF(new_nodes, new_heap_array(runtime, new_nodes_size));
   // Copy the contents of the old array directly into the new one.
   // TODO: memcpy?
-  for (size_t i = 0; i < old_data_size; i++)
-    set_array_at(new_data, i, get_array_at(old_data, i));
-  set_fifo_buffer_data(buffer, new_data);
+  for (size_t i = 0; i < old_nodes_size; i++)
+    set_array_at(new_nodes, i, get_array_at(old_nodes, i));
+  set_fifo_buffer_nodes(buffer, new_nodes);
   size_t new_capacity = get_fifo_buffer_capacity(buffer);
   // Make the new entries point to each other. This leaves two of the nodes with
   // an incorrect value: the prev of the first will be wrong, as will the next
   // of the last. We'll fix those below.
-  for (size_t i = old_capacity + kFifoBufferDataHeaderSize;
-      i < new_capacity + kFifoBufferDataHeaderSize;
-      i++) {
+  size_t new_first = old_capacity + kFifoBufferReservedNodeCount;
+  size_t new_last = new_capacity + kFifoBufferReservedNodeCount - 1;
+  for (size_t i = new_first; i <= new_last; i++) {
     set_fifo_buffer_next_at(buffer, i, i + 1);
     set_fifo_buffer_prev_at(buffer, i, i - 1);
   }
   // Hook the new entries into the free list. Since offering failed above we
   // know that there are no free nodes left so we can hook the new ones directly
   // onto the free root.
-  size_t new_next = old_capacity + kFifoBufferDataHeaderSize;
-  size_t new_prev = new_capacity + kFifoBufferDataHeaderSize - 1;
-  set_fifo_buffer_next_at(buffer, kFifoBufferFreeRootOffset, new_next);
-  set_fifo_buffer_prev_at(buffer, new_next, kFifoBufferFreeRootOffset);
-  set_fifo_buffer_prev_at(buffer, kFifoBufferFreeRootOffset, new_prev);
-  set_fifo_buffer_next_at(buffer, new_prev, kFifoBufferFreeRootOffset);
-  CHECK_TRUE("failed to expand fifo buffer", try_offer_to_fifo_buffer(buffer, value));
+  set_fifo_buffer_next_at(buffer, kFifoBufferFreeRootOffset, new_first);
+  set_fifo_buffer_prev_at(buffer, new_first, kFifoBufferFreeRootOffset);
+  set_fifo_buffer_prev_at(buffer, kFifoBufferFreeRootOffset, new_last);
+  set_fifo_buffer_next_at(buffer, new_last, kFifoBufferFreeRootOffset);
+  bool expanded = try_offer_to_fifo_buffer(buffer, value);
+  CHECK_TRUE("failed to expand fifo buffer", expanded);
   return success();
 }
 

@@ -180,25 +180,24 @@ value_t new_heap_array_buffer(runtime_t *runtime, size_t initial_capacity) {
 
 value_t new_heap_fifo_buffer(runtime_t *runtime, size_t initial_capacity) {
   size_t size = kFifoBufferSize;
-  TRY_DEF(data, new_heap_array(runtime, 3 * (initial_capacity + kFifoBufferDataHeaderSize)));
+  TRY_DEF(nodes, new_heap_array(runtime,
+      kFifoBufferNodeSize * (initial_capacity + kFifoBufferReservedNodeCount)));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, fifo_buffer_species)));
-  set_fifo_buffer_data(result, data);
+  set_fifo_buffer_nodes(result, nodes);
   set_fifo_buffer_size(result, 0);
   set_fifo_buffer_next_at(result, kFifoBufferOccupiedRootOffset, kFifoBufferOccupiedRootOffset);
   set_fifo_buffer_prev_at(result, kFifoBufferOccupiedRootOffset, kFifoBufferOccupiedRootOffset);
-  for (size_t i = kFifoBufferDataHeaderSize;
-      i < initial_capacity + kFifoBufferDataHeaderSize;
-      i++) {
+  size_t first = kFifoBufferReservedNodeCount;
+  size_t last = initial_capacity + kFifoBufferReservedNodeCount - 1;
+  for (size_t i = first; i <= last; i++) {
     set_fifo_buffer_next_at(result, i, i + 1);
     set_fifo_buffer_prev_at(result, i, i - 1);
   }
-  set_fifo_buffer_next_at(result, kFifoBufferFreeRootOffset, kFifoBufferDataHeaderSize);
-  set_fifo_buffer_prev_at(result, kFifoBufferDataHeaderSize, kFifoBufferFreeRootOffset);
-  set_fifo_buffer_prev_at(result, kFifoBufferFreeRootOffset,
-      initial_capacity + kFifoBufferDataHeaderSize - 1);
-  set_fifo_buffer_next_at(result, initial_capacity + kFifoBufferDataHeaderSize - 1,
-      kFifoBufferFreeRootOffset);
+  set_fifo_buffer_next_at(result, kFifoBufferFreeRootOffset, first);
+  set_fifo_buffer_prev_at(result, first, kFifoBufferFreeRootOffset);
+  set_fifo_buffer_prev_at(result, kFifoBufferFreeRootOffset, last);
+  set_fifo_buffer_next_at(result, last, kFifoBufferFreeRootOffset);
   return post_create_sanity_check(result, size);
 }
 

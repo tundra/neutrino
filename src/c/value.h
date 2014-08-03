@@ -1180,65 +1180,67 @@ size_t get_pair_array_buffer_length(value_t self);
 /// A fifo buffer is a first-in (that is, oldest) element out before younger
 /// elements. So if you offer "a", "b", and "c", you'll get them out in the
 /// same order. An additional tweak, though, is that in addition to this you can
-/// take elements in the middle so if you iterate through the three elements and
-/// ask to get "b", that's allowed and the elements left will still be in their
-/// original order, just missing "b".
+/// take elements in the middle so if you iterate through the three elements
+/// until you reach "b" and then take it that's allowed and the elements left
+/// will still be in their original order, just missing "b". This is the source
+/// of most of the implementation complexity.
 ///
 /// The implementation uses two doubly-linked lists so the elements are chained
 /// together explicitly. Instead of individual nodes though a fixed number of
-/// list nodes are allocated together in the form of a data array with segments
+/// list nodes are allocated together in the form of a entry array with segments
 /// of three entries making up the value, next, and prev fields. This is to
 /// avoid overhead and allocation churn. The data array has two reserved nodes,
 /// the first and second, which are dummy roots of the cycle of free and
 /// occupied nodes respectively.
 
 static const size_t kFifoBufferSize = HEAP_OBJECT_SIZE(2);
-static const size_t kFifoBufferDataOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kFifoBufferNodesOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kFifoBufferSizeOffset = HEAP_OBJECT_FIELD_OFFSET(1);
-static const size_t kFifoBufferDataHeaderSize = 2;
+static const size_t kFifoBufferNodeSize = 3;
+static const size_t kFifoBufferReservedNodeCount = 2;
 static const size_t kFifoBufferFreeRootOffset = 0;
 static const size_t kFifoBufferOccupiedRootOffset = 1;
 
-// The array storing the data elements in this buffer.
-ACCESSORS_DECL(fifo_buffer, data);
+// The array storing the doubly-linked list nodes in this buffer.
+ACCESSORS_DECL(fifo_buffer, nodes);
 
-// The number of elements in this fifo buffer.
+// The number of occupied nodes in this fifo buffer.
 INTEGER_ACCESSORS_DECL(fifo_buffer, size);
 
-// Returns the max number of elements this buffer can hold without expanding
+// Returns the max number of values this buffer can hold without expanding
 // its backing store.
 size_t get_fifo_buffer_capacity(value_t self);
 
-// Returns the value of the index'th element in this buffer.
+// Returns the value of the index'th node in this buffer.
 value_t get_fifo_buffer_value_at(value_t self, size_t index);
 
-// Sets the value of the index'th element in this buffer.
+// Sets the value of the index'th node in this buffer.
 void set_fifo_buffer_value_at(value_t self, size_t index, value_t value);
 
-// Returns the next index of the index'th element in this buffer.
+// Returns the next index of the index'th node in this buffer.
 size_t get_fifo_buffer_next_at(value_t self, size_t index);
 
-// Sets the next index of the index'th element in this buffer.
+// Sets the next index of the index'th node in this buffer.
 void set_fifo_buffer_next_at(value_t self, size_t index, size_t next);
 
-// Returns the prev of the index'th element in this buffer.
+// Returns the prev of the index'th node in this buffer.
 size_t get_fifo_buffer_prev_at(value_t self, size_t index);
 
-// Sets the prev of the index'th element in this buffer.
+// Sets the prev of the index'th node in this buffer.
 void set_fifo_buffer_prev_at(value_t self, size_t index, size_t prev);
 
-// Attempts to add an element at the head of this fifo buffer, increasing its
+// Attempts to add a value at the head of this fifo buffer, increasing its
 // size by 1. Returns true if this succeeds, false if it wasn't possible.
 bool try_offer_to_fifo_buffer(value_t self, value_t value);
 
-// Returns the oldest element from this fifo buffer that hasn't already been
+// Returns the oldest value from this fifo buffer that hasn't already been
 // taken. Returns a NotFound condition if the buffer is empty.
 value_t take_from_fifo_buffer(value_t self);
 
-// Returns true iff the given fifo buffer has more elements.
+// Returns true iff the given fifo buffer has more values.
 bool is_fifo_buffer_empty(value_t self);
 
-// Adds an element at the head of the given fifo buffer, expanding it to a new
+// Adds an value at the head of the given fifo buffer, expanding it to a new
 // backing array if necessary. Returns a condition on failure.
 value_t offer_to_fifo_buffer(runtime_t *runtime, value_t buffer, value_t value);
 
