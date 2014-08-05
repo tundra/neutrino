@@ -66,6 +66,9 @@ safe_value_t protect(safe_value_pool_t *pool, value_t value) {
       protect_immediate(new_condition(ccSafePoolFull)),
       pool->used < pool->capacity);
   S_TRY_DEF(result, runtime_protect_value(pool->runtime, value));
+  // Technically we only need to record the non-immediate values but that makes
+  // the number of used values highly variable. This way it's harder (though
+  // not impossible obviously) for bugs to hide.
   pool->values[pool->used++] = result;
   return result;
 }

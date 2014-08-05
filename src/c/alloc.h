@@ -229,6 +229,12 @@ value_t new_heap_backtrace(runtime_t *runtime, value_t entries);
 value_t new_heap_backtrace_entry(runtime_t *runtime, value_t invocation,
     value_t opcode);
 
+// Creates a new empty process.
+value_t new_heap_process(runtime_t *runtime);
+
+// Creates a new uninitialized task belonging to the given process.
+value_t new_heap_task(runtime_t *runtime, value_t process);
+
 
 // --- M e t h o d ---
 

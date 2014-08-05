@@ -181,12 +181,13 @@ static uint64_t interrupt_counter = 0;
 } while (false)
 
 
-// Runs the given stack within the given ambience until a condition is
+// Runs the given task within the given ambience until a condition is
 // encountered or evaluation completes. This function also bails on and leaves
 // it to the surrounding code to report error messages.
-static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
+static value_t run_task_pushing_signals(value_t ambience, value_t task) {
   CHECK_FAMILY(ofAmbience, ambience);
-  CHECK_FAMILY(ofStack, stack);
+  CHECK_FAMILY(ofTask, task);
+  value_t stack = get_task_stack(task);
   runtime_t *runtime = get_ambience_runtime(ambience);
   frame_t frame = open_stack(stack);
   code_cache_t cache;
@@ -772,11 +773,13 @@ static value_t run_stack_pushing_signals(value_t ambience, value_t stack) {
 }
 
 // Runs the given stack until it hits a condition or completes successfully.
-static value_t run_stack_until_condition(value_t ambience, value_t stack) {
-  value_t result = run_stack_pushing_signals(ambience, stack);
+static value_t run_task_until_condition(value_t ambience, value_t task) {
+  CHECK_FAMILY(ofAmbience, ambience);
+  CHECK_FAMILY(ofTask, task);
+  value_t result = run_task_pushing_signals(ambience, task);
   if (in_condition_cause(ccSignal, result)) {
     runtime_t *runtime = get_ambience_runtime(ambience);
-    frame_t frame = open_stack(stack);
+    frame_t frame = open_stack(get_task_stack(task));
     TRY_DEF(trace, capture_backtrace(runtime, &frame));
     print_ln("%9v", trace);
   }
@@ -786,11 +789,13 @@ static value_t run_stack_until_condition(value_t ambience, value_t stack) {
 // Runs the given stack until it hits a signal or completes successfully. If the
 // heap becomes exhausted this function will try garbage collecting and
 // continuing.
-static value_t run_stack_until_signal(safe_value_t s_ambience, safe_value_t s_stack) {
+static value_t run_task_until_signal(safe_value_t s_ambience, safe_value_t s_task) {
+  CHECK_FAMILY(ofAmbience, deref(s_ambience));
+  CHECK_FAMILY(ofTask, deref(s_task));
   loop: do {
     value_t ambience = deref(s_ambience);
-    value_t stack = deref(s_stack);
-    value_t result = run_stack_until_condition(ambience, stack);
+    value_t task = deref(s_task);
+    value_t result = run_task_until_condition(ambience, task);
     if (in_condition_cause(ccHeapExhausted, result)) {
       runtime_t *runtime = get_ambience_runtime(ambience);
       runtime_garbage_collect(runtime);
@@ -817,9 +822,13 @@ const char *get_opcode_name(opcode_t opcode) {
 }
 
 value_t run_code_block_until_condition(value_t ambience, value_t code) {
+  CHECK_FAMILY(ofAmbience, ambience);
+  CHECK_FAMILY(ofCodeBlock, code);
   // Create the stack to run the code on.
   runtime_t *runtime = get_ambience_runtime(ambience);
-  TRY_DEF(stack, new_heap_stack(runtime, 1024));
+  TRY_DEF(process, new_heap_process(runtime));
+  TRY_DEF(task, get_process_root_task(process));
+  TRY_DEF(stack, get_task_stack(task));
   // Push an activation onto the empty stack to get execution going.
   size_t frame_size = get_code_block_high_water_mark(code);
   frame_t frame = open_stack(stack);
@@ -828,7 +837,7 @@ value_t run_code_block_until_condition(value_t ambience, value_t code) {
   close_frame(&frame);
   // Run the stack.
   loop: do {
-    value_t result = run_stack_until_condition(ambience, stack);
+    value_t result = run_task_until_condition(ambience, task);
     if (in_condition_cause(ccForceValidate, result)) {
       runtime_t *runtime = get_ambience_runtime(ambience);
       runtime_validate(runtime, result);
@@ -838,23 +847,54 @@ value_t run_code_block_until_condition(value_t ambience, value_t code) {
   } while (false);
 }
 
-value_t run_code_block(safe_value_t s_ambience, safe_value_t code) {
+// Grabs the next work job from the given process, which must have more work,
+// and executes it on the process' main task.
+static value_t run_next_process_job(safe_value_t s_ambience, safe_value_t s_process) {
   runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
-  CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
+  TRY_DEF(code, take_process_job(deref(s_process)));
+  CREATE_SAFE_VALUE_POOL(runtime, 5, pool);
   E_BEGIN_TRY_FINALLY();
-    // Build a stack to run the code on.
-    E_S_TRY_DEF(s_stack, protect(pool, new_heap_stack(runtime, 1024)));
+    safe_value_t s_code = protect(pool, code);
+    E_S_TRY_DEF(s_task, protect(pool, get_process_root_task(deref(s_process))));
+    E_S_TRY_DEF(s_stack, protect(pool, get_task_stack(deref(s_task))));
     {
       frame_t frame = open_stack(deref(s_stack));
       // Set up the initial frame.
-      size_t frame_size = get_code_block_high_water_mark(deref(code));
+      size_t frame_size = get_code_block_high_water_mark(deref(s_code));
       E_TRY(push_stack_frame(runtime, deref(s_stack), &frame, frame_size,
           ROOT(runtime, empty_array)));
-      frame_set_code_block(&frame, deref(code));
+      frame_set_code_block(&frame, deref(s_code));
       close_frame(&frame);
     }
     // Run until completion.
-    E_RETURN(run_stack_until_signal(s_ambience, s_stack));
+    E_RETURN(run_task_until_signal(s_ambience, s_task));
+  E_FINALLY();
+    DISPOSE_SAFE_VALUE_POOL(pool);
+  E_END_TRY_FINALLY();
+}
+
+static value_t run_process_until_idle(safe_value_t s_ambience, safe_value_t s_process) {
+  if (!is_process_idle(deref(s_process))) {
+    // There's at least one job to run.
+    do {
+      TRY_DEF(result, run_next_process_job(s_ambience, s_process));
+      if (is_process_idle(deref(s_process)))
+        // The last job completed normally and it was the last job; return its
+        // value.
+        return result;
+    } while (true);
+  }
+  return nothing();
+}
+
+value_t run_code_block(safe_value_t s_ambience, safe_value_t s_code) {
+  runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
+  CREATE_SAFE_VALUE_POOL(runtime, 5, pool);
+  E_BEGIN_TRY_FINALLY();
+    // Build a process to run the code within.
+    E_S_TRY_DEF(s_process, protect(pool, new_heap_process(runtime)));
+    E_TRY(offer_process_job(runtime, deref(s_process), deref(s_code)));
+    E_RETURN(run_process_until_idle(s_ambience, s_process));
   E_FINALLY();
     DISPOSE_SAFE_VALUE_POOL(pool);
   E_END_TRY_FINALLY();

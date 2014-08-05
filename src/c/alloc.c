@@ -607,6 +607,26 @@ value_t new_heap_backtrace_entry(runtime_t *runtime, value_t invocation,
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_process(runtime_t *runtime) {
+  size_t size = kProcessSize;
+  TRY_DEF(work_queue, new_heap_fifo_buffer(runtime, 256));
+  TRY_DEF(root_task, new_heap_task(runtime, nothing()));
+  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, process_species)));
+  set_process_work_queue(result, work_queue);
+  set_process_root_task(result, root_task);
+  set_task_process(root_task, result);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_task(runtime_t *runtime, value_t process) {
+  size_t size = kTaskSize;
+  TRY_DEF(stack, new_heap_stack(runtime, 1024));
+  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, task_species)));
+  set_task_process(result, process);
+  set_task_stack(result, stack);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- M e t h o d ---
 

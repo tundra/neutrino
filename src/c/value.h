@@ -418,6 +418,7 @@ static value_t new_moved_object(value_t target) {
   F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _, 51)\
   F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _,  8)\
   F(Path,                    path,                      X, X, X, X, _, _, _, X, _, 36)\
+  F(Process,                 process,                   _, _, _, _, _, _, _, _, _, 83)\
   F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, _, _, 17)\
   F(Promise,                 promise,                   _, _, _, X, _, _, _, _, _, 78)\
   F(Reference,               reference,                 _, _, _, _, _, _, _, X, _, 68)\
@@ -432,6 +433,7 @@ static value_t new_moved_object(value_t target) {
   F(StackPiece,              stack_piece,               _, _, _, _, X, _, _, _, _, 58)\
   F(String,                  string,                    X, X, _, X, X, _, _, _, _, 57)\
   F(SymbolAst,               symbol_ast,                _, _, X, X, _, _, _, _, _, 33)\
+  F(Task,                    task,                      _, _, _, _, _, _, _, _, _, 82)\
   F(Type,                    type,                      _, _, X, X, _, _, _, X, _, 32)\
   F(UnboundModule,           unbound_module,            _, _, X, _, _, _, _, _, _, 55)\
   F(UnboundModuleFragment,   unbound_module_fragment,   _, _, X, _, _, _, _, _, _, 52)\
@@ -441,8 +443,11 @@ static value_t new_moved_object(value_t target) {
   F(WithEscapeAst,           with_escape_ast,           _, _, X, _, _, _, X, _, _, 23)
 
 // The next ordinal to use when adding a family. This isn't actually used in the
-// code it's just a reminder. Remember to update it when adding families.
-static const int kNextFamilyOrdinal = 82;
+// code it's just a reminder. Remember to update it when adding families. The
+// family enum values are not the raw ordinals but the ordinals shifted left by
+// the tag size so that they're tagged as integers. Those values are sometimes
+// stored as uint16s so the ordinals are allowed to take up to 14 bits.
+static const int kNextFamilyOrdinal = 84;
 
 // Enumerates all the object families.
 #define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \

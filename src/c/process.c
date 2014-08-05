@@ -797,3 +797,52 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
   // Wrap the result in a backtrace entry.
   return new_heap_backtrace_entry(runtime, invocation, new_integer(op));
 }
+
+
+/// ## Task
+
+FIXED_GET_MODE_IMPL(task, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(Task, task);
+
+ACCESSORS_IMPL(Task, task, acInFamilyOpt, ofProcess, Process, process);
+ACCESSORS_IMPL(Task, task, acInFamily, ofStack, Stack, stack);
+
+value_t task_validate(value_t self) {
+  VALIDATE_FAMILY(ofTask, self);
+  VALIDATE_FAMILY_OPT(ofProcess, get_task_process(self));
+  VALIDATE_FAMILY(ofStack, get_task_stack(self));
+  return success();
+}
+
+
+/// ## Process
+
+FIXED_GET_MODE_IMPL(process, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(Process, process);
+
+ACCESSORS_IMPL(Process, process, acInFamily, ofFifoBuffer, WorkQueue, work_queue);
+ACCESSORS_IMPL(Process, process, acInFamily, ofTask, RootTask, root_task);
+
+value_t process_validate(value_t self) {
+  VALIDATE_FAMILY(ofProcess, self);
+  VALIDATE_FAMILY(ofFifoBuffer, get_process_work_queue(self));
+  VALIDATE_FAMILY(ofTask, get_process_root_task(self));
+  return success();
+}
+
+value_t offer_process_job(runtime_t *runtime, value_t process, value_t work) {
+  CHECK_FAMILY(ofProcess, process);
+  CHECK_FAMILY(ofCodeBlock, work);
+  value_t work_queue = get_process_work_queue(process);
+  return offer_to_fifo_buffer(runtime, work_queue, work);
+}
+
+value_t take_process_job(value_t process) {
+  CHECK_FAMILY(ofProcess, process);
+  value_t work_queue = get_process_work_queue(process);
+  return take_from_fifo_buffer(work_queue);
+}
+
+bool is_process_idle(value_t process) {
+  return is_fifo_buffer_empty(get_process_work_queue(process));
+}

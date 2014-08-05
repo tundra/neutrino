@@ -550,4 +550,49 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
 value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame);
 
 
+/// ## Task
+///
+/// A task is a point of synchronous execution. That is, each task can exist
+/// alongside others and each have their execution state, but only one can ever
+/// execute at any one time.
+
+static const size_t kTaskSize = HEAP_OBJECT_SIZE(2);
+static const size_t kTaskProcessOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kTaskStackOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+
+// The process that contains this task.
+ACCESSORS_DECL(task, process);
+
+// The stack on which this task executes.
+ACCESSORS_DECL(task, stack);
+
+
+/// ## Process
+///
+/// A process is the unit of asynchronous execution. Two processes execute
+/// (potentially) independently of each other and can only affect each other
+/// through explicitly sending asynchronous messages.
+
+static const size_t kProcessSize = HEAP_OBJECT_SIZE(2);
+static const size_t kProcessWorkQueueOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kProcessRootTaskOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+
+// The work queue that holds tasks for this process.
+ACCESSORS_DECL(process, work_queue);
+
+// This process' root task, the task that is used to execute work from the
+// queue.
+ACCESSORS_DECL(process, root_task);
+
+// Adds a code block to the queue of work to perform for this task.
+value_t offer_process_job(runtime_t *runtime, value_t process, value_t job);
+
+// Returns the next scheduled code block to be executed on the given process.
+// If there are no more work left a NotFound condition is returned.
+value_t take_process_job(value_t process);
+
+// Returns true if there is no more work for this process to perform.
+bool is_process_idle(value_t process);
+
+
 #endif // _PROCESS
