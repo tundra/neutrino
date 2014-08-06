@@ -82,6 +82,17 @@ TEST(value, tagged_integers) {
   ASSERT_EQ(0, get_integer_value(v2));
 }
 
+TEST(value, fill_with_whatever) {
+  value_t values[100];
+  for (size_t i = 0; i < 100; i++)
+    values[i] = nothing();
+  fast_fill_with_whatever(values, 100);
+  for (size_t i = 0; i < 100; i++)
+    // This actually asserts more than the fill function guarantees so it's okay
+    // to fiddle with the expectation.
+    ASSERT_VALEQ(new_integer(0), values[i]);
+}
+
 // Creates a new integer value using NEW_STATIC_INTEGER.
 static value_t new_static_integer(int64_t value) {
   value_t result;

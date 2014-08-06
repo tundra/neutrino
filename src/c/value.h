@@ -228,6 +228,10 @@ static value_t whatever() {
   return new_integer(1);
 }
 
+// Fills the given data array with some value that is not a condition and not
+// a heap object. Don't depend on the concrete value.
+void fast_fill_with_whatever(value_t *data, size_t length);
+
 
 /// ## Moved objects
 ///
@@ -1205,6 +1209,7 @@ static const size_t kFifoBufferWidthOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 static const size_t kFifoBufferReservedNodeCount = 2;
 static const size_t kFifoBufferFreeRootOffset = 0;
 static const size_t kFifoBufferOccupiedRootOffset = 1;
+static const size_t kFifoBufferNodeHeaderSize = 2;
 
 // The array storing the doubly-linked list nodes in this buffer.
 ACCESSORS_DECL(fifo_buffer, nodes);

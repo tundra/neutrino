@@ -109,7 +109,7 @@ static value_t get_ambience_present_core_fragment_redirect() {
 // Returns the size of an individual fifo buffer node, given the width of the
 // fifo buffer.
 static inline size_t get_fifo_buffer_node_length_for_width(size_t width) {
-  return width + 2;
+  return width + kFifoBufferNodeHeaderSize;
 }
 
 

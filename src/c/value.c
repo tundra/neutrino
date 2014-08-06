@@ -142,6 +142,12 @@ value_t add_integer_builtin_implementations(runtime_t *runtime, safe_value_t s_m
   return success();
 }
 
+void fast_fill_with_whatever(value_t *data, size_t length) {
+  // This fills the data with tagged zeroes. If you change how tagging works
+  // this may break unless you ensure that all zeroes has some meaningful value.
+  memset(data, 0, sizeof(value_t) * length);
+}
+
 
 // --- O b j e c t ---
 
@@ -955,7 +961,7 @@ size_t get_fifo_buffer_capacity(value_t self) {
 void get_fifo_buffer_values_at(value_t self, size_t index, value_t *values_out,
     size_t values_size) {
   CHECK_EQ("invalid fifo buffer get", get_fifo_buffer_width(self), values_size);
-  size_t node_offset = index * get_fifo_buffer_node_length(self) + 2;
+  size_t node_offset = index * get_fifo_buffer_node_length(self) + kFifoBufferNodeHeaderSize;
   value_t *nodes_start = get_array_elements(get_fifo_buffer_nodes(self));
   memcpy(values_out, nodes_start + node_offset, sizeof(value_t) * values_size);
 }
@@ -963,17 +969,16 @@ void get_fifo_buffer_values_at(value_t self, size_t index, value_t *values_out,
 void set_fifo_buffer_values_at(value_t self, size_t index, value_t *values,
     size_t values_size) {
   CHECK_EQ("invalid fifo buffer set", get_fifo_buffer_width(self), values_size);
-  size_t node_offset = index * get_fifo_buffer_node_length(self) + 2;
+  size_t node_offset = index * get_fifo_buffer_node_length(self) + kFifoBufferNodeHeaderSize;
   value_t *nodes_start = get_array_elements(get_fifo_buffer_nodes(self));
   memcpy(nodes_start + node_offset, values, sizeof(value_t) * values_size);
 }
 
 void clear_fifo_buffer_values_at(value_t self, size_t index) {
   size_t width = get_fifo_buffer_width(self);
-  size_t node_offset = index * get_fifo_buffer_node_length(self) + 2;
+  size_t node_offset = index * get_fifo_buffer_node_length(self) + kFifoBufferNodeHeaderSize;
   value_t *nodes_start = get_array_elements(get_fifo_buffer_nodes(self));
-  for (size_t i = 0; i < width; i++)
-    nodes_start[node_offset + i] = nothing();
+  fast_fill_with_whatever(nodes_start + node_offset, width);
 }
 
 size_t get_fifo_buffer_next_at(value_t self, size_t index) {
