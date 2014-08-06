@@ -1198,10 +1198,10 @@ size_t get_pair_array_buffer_length(value_t self);
 /// the first and second, which are dummy roots of the cycle of free and
 /// occupied nodes respectively.
 
-static const size_t kFifoBufferSize = HEAP_OBJECT_SIZE(2);
+static const size_t kFifoBufferSize = HEAP_OBJECT_SIZE(3);
 static const size_t kFifoBufferNodesOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kFifoBufferSizeOffset = HEAP_OBJECT_FIELD_OFFSET(1);
-static const size_t kFifoBufferNodeSize = 3;
+static const size_t kFifoBufferWidthOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 static const size_t kFifoBufferReservedNodeCount = 2;
 static const size_t kFifoBufferFreeRootOffset = 0;
 static const size_t kFifoBufferOccupiedRootOffset = 1;
@@ -1212,15 +1212,28 @@ ACCESSORS_DECL(fifo_buffer, nodes);
 // The number of occupied nodes in this fifo buffer.
 INTEGER_ACCESSORS_DECL(fifo_buffer, size);
 
+// The number of fields in a single entry.
+INTEGER_ACCESSORS_DECL(fifo_buffer, width);
+
+// Given the width of a fifo buffer and the desired capacity, returns the size
+// in entries of the nodes array.
+size_t get_fifo_buffer_nodes_length(size_t width, size_t capacity);
+
 // Returns the max number of values this buffer can hold without expanding
 // its backing store.
 size_t get_fifo_buffer_capacity(value_t self);
 
-// Returns the value of the index'th node in this buffer.
-value_t get_fifo_buffer_value_at(value_t self, size_t index);
+// Returns the subindex'th value of the index'th node in this buffer.
+void get_fifo_buffer_values_at(value_t self, size_t index, value_t *values_out,
+    size_t values_size);
 
-// Sets the value of the index'th node in this buffer.
-void set_fifo_buffer_value_at(value_t self, size_t index, value_t value);
+// Sets the values of the index'th node in this buffer.
+void set_fifo_buffer_values_at(value_t self, size_t index, value_t *values,
+    size_t values_size);
+
+// Overwrites the values at the given index with a dummy value such that the
+// values won't be kept alive.
+void clear_fifo_buffer_values_at(value_t self, size_t index);
 
 // Returns the next index of the index'th node in this buffer.
 size_t get_fifo_buffer_next_at(value_t self, size_t index);
@@ -1234,20 +1247,23 @@ size_t get_fifo_buffer_prev_at(value_t self, size_t index);
 // Sets the prev of the index'th node in this buffer.
 void set_fifo_buffer_prev_at(value_t self, size_t index, size_t prev);
 
-// Attempts to add a value at the head of this fifo buffer, increasing its
-// size by 1. Returns true if this succeeds, false if it wasn't possible.
-bool try_offer_to_fifo_buffer(value_t self, value_t value);
+// Attempts to add a set of value at the head of this fifo buffer, increasing
+// its size by 1. Returns true if this succeeds, false if it wasn't possible.
+bool try_offer_to_fifo_buffer(value_t self, value_t *values, size_t values_size);
 
-// Returns the oldest value from this fifo buffer that hasn't already been
-// taken. Returns a NotFound condition if the buffer is empty.
-value_t take_from_fifo_buffer(value_t self);
+// Returns the oldest values from this fifo buffer that hasn't already been
+// taken. Returns a NotFound condition if the buffer is empty. If the buffer has
+// data the values are stored in the out parameter and an arbitrary
+// non-condition is returned.
+value_t take_from_fifo_buffer(value_t self, value_t *values_out, size_t values_size);
 
 // Returns true iff the given fifo buffer has more values.
 bool is_fifo_buffer_empty(value_t self);
 
-// Adds an value at the head of the given fifo buffer, expanding it to a new
-// backing array if necessary. Returns a condition on failure.
-value_t offer_to_fifo_buffer(runtime_t *runtime, value_t buffer, value_t value);
+// Adds a set of values at the head of the given fifo buffer, expanding it to a
+// new backing array if necessary. Returns a condition on failure.
+value_t offer_to_fifo_buffer(runtime_t *runtime, value_t buffer, value_t *values,
+    size_t values_size);
 
 typedef struct {
   value_t buffer;
@@ -1264,15 +1280,15 @@ void fifo_buffer_iter_init(fifo_buffer_iter_t *iter, value_t buf);
 // first and then in order until the newest.
 bool fifo_buffer_iter_advance(fifo_buffer_iter_t *iter);
 
-// Reads the value from the current fifo buffer entry. Fails if the last advance
-// call did not return true.
-value_t fifo_buffer_iter_get_current(fifo_buffer_iter_t *iter);
+// Reads the index'th payload value from the current fifo buffer entry. Fails if
+// the last advance call did not return true.
+void fifo_buffer_iter_get_current(fifo_buffer_iter_t *iter, value_t *values_out,
+    size_t values_size);
 
 // Removes the value from the current fifo buffer entry. This automatically
-// invalidates the interator so you can't go on iterating after this. The
+// invalidates the iterator so you can't go on iterating after this. The
 // order of the elements remaining in the buffer will keep their relative order.
-// The value that was removed is returned.
-value_t fifo_buffer_iter_take_current(fifo_buffer_iter_t *iter);
+void fifo_buffer_iter_take_current(fifo_buffer_iter_t *iter);
 
 
 // --- I d e n t i t y   h a s h   m a p ---

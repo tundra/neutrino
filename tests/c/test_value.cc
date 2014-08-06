@@ -936,38 +936,44 @@ TEST(value, fifo_buffer) {
   CREATE_RUNTIME();
 
   // Adding all, then removing all.
-  value_t b0 = new_heap_fifo_buffer(runtime, 8);
+  value_t b0 = new_heap_fifo_buffer(runtime, 2, 8);
   ASSERT_TRUE(is_fifo_buffer_empty(b0));
   ASSERT_SUCCESS(b0);
   for (size_t i = 0; i < 8; i++) {
     ASSERT_EQ(i, get_fifo_buffer_size(b0));
-    ASSERT_TRUE(try_offer_to_fifo_buffer(b0, new_integer(i + 5)));
+    value_t values[2] = {new_integer(i + 5), new_integer(i - 8)};
+    ASSERT_TRUE(try_offer_to_fifo_buffer(b0, values, 2));
   }
   ASSERT_EQ(8, get_fifo_buffer_size(b0));
-  ASSERT_FALSE(try_offer_to_fifo_buffer(b0, new_integer(13)));
+  value_t pastend[2] = {new_integer(13), new_integer(0)};
+  ASSERT_FALSE(try_offer_to_fifo_buffer(b0, pastend, 2));
   ASSERT_EQ(8, get_fifo_buffer_size(b0));
 
   for (size_t i = 0; i < 8; i++) {
-    value_t next = take_from_fifo_buffer(b0);
-    ASSERT_SUCCESS(next);
-    ASSERT_VALEQ(new_integer(i + 5), next);
+    value_t next[2] = {whatever(), whatever()};
+    ASSERT_SUCCESS(take_from_fifo_buffer(b0, next, 2));
+    ASSERT_VALEQ(new_integer(i + 5), next[0]);
+    ASSERT_VALEQ(new_integer(i - 8), next[1]);
     ASSERT_EQ(8 - i - 1, get_fifo_buffer_size(b0));
   }
   ASSERT_TRUE(is_fifo_buffer_empty(b0));
   ASSERT_EQ(0, get_fifo_buffer_size(b0));
-  value_t last = take_from_fifo_buffer(b0);
-  ASSERT_CONDITION(ccNotFound, last);
+  value_t last[2] = {whatever(), whatever()};
+  ASSERT_CONDITION(ccNotFound, take_from_fifo_buffer(b0, last, 2));
   ASSERT_TRUE(is_fifo_buffer_empty(b0));
   ASSERT_EQ(0, get_fifo_buffer_size(b0));
 
   // Adding and removing interleaved.
   for (size_t i = 0; i < 7; i++) {
     ASSERT_EQ(i, get_fifo_buffer_size(b0));
-    ASSERT_TRUE(try_offer_to_fifo_buffer(b0, new_integer(i + 2)));
-    ASSERT_TRUE(try_offer_to_fifo_buffer(b0, new_integer(i + 12)));
-    value_t elm = take_from_fifo_buffer(b0);
-    ASSERT_SUCCESS(elm);
-    ASSERT_EQ(2 + 10 * (i % 2) + (i / 2), get_integer_value(elm));
+    value_t v0[2] = {new_integer(i + 2), new_integer(i + 7)};
+    ASSERT_TRUE(try_offer_to_fifo_buffer(b0, v0, 2));
+    value_t v1[2] = {new_integer(i + 12), new_integer(i + 17)};
+    ASSERT_TRUE(try_offer_to_fifo_buffer(b0, v1, 2));
+    value_t elms[2] = {whatever(), whatever()};
+    ASSERT_SUCCESS(take_from_fifo_buffer(b0, elms, 2));
+    ASSERT_EQ(2 + 10 * (i % 2) + (i / 2), get_integer_value(elms[0]));
+    ASSERT_EQ(7 + 10 * (i % 2) + (i / 2), get_integer_value(elms[1]));
   }
 
   // Adding, removing, iterating, randomly.
@@ -975,11 +981,11 @@ TEST(value, fifo_buffer) {
   // First half fill the buffer.
   pseudo_random_t random;
   pseudo_random_init(&random, 423452);
-  value_t b1 = new_heap_fifo_buffer(runtime, 64);
+  value_t b1 = new_heap_fifo_buffer(runtime, 1, 64);
   value_t values[32];
   for (size_t i = 0; i < 32; i++) {
     value_t value = new_integer(pseudo_random_next_uint32(&random));
-    ASSERT_TRUE(try_offer_to_fifo_buffer(b1, value));
+    ASSERT_TRUE(try_offer_to_fifo_buffer(b1, &value, 1));
     values[i] = value;
   }
 
@@ -993,7 +999,8 @@ TEST(value, fifo_buffer) {
       fifo_buffer_iter_init(&iter, b1);
       for (size_t ii = 0; ii < 32; ii++) {
         ASSERT_TRUE(fifo_buffer_iter_advance(&iter));
-        value_t value = fifo_buffer_iter_get_current(&iter);
+        value_t value = whatever();
+        fifo_buffer_iter_get_current(&iter, &value, 1);
         ASSERT_VALEQ(values[ii], value);
       }
     }
@@ -1007,30 +1014,34 @@ TEST(value, fifo_buffer) {
       for (size_t ii = 0; ii <= index; ii++)
         ASSERT_TRUE(fifo_buffer_iter_advance(&iter));
       // Remove the entry at the current location.
-      value_t found = fifo_buffer_iter_get_current(&iter);
+      value_t found = whatever();
+      fifo_buffer_iter_get_current(&iter, &found, 1);
       ASSERT_VALEQ(values[index], found);
-      value_t taken = fifo_buffer_iter_take_current(&iter);
-      ASSERT_VALEQ(values[index], taken);
+      fifo_buffer_iter_take_current(&iter);
       // Shift down the expected values to reflect the removed entry.
       for (size_t vi = index; vi < 31; vi++)
         values[vi] = values[vi + 1];
       // Offer a new entry at the end of the buffer.
       value_t new_value = new_integer(pseudo_random_next_uint32(&random));
-      ASSERT_TRUE(try_offer_to_fifo_buffer(b1, new_value));
+      ASSERT_TRUE(try_offer_to_fifo_buffer(b1, &new_value, 1));
       values[31] = new_value;
     }
   }
 
   // Build a huge buffer.
-  value_t b2 = new_heap_fifo_buffer(runtime, 4);
-  for (size_t i = 0; i < 1024; i++)
-    ASSERT_SUCCESS(offer_to_fifo_buffer(runtime, b2, new_integer(i + 8)));
+  value_t b2 = new_heap_fifo_buffer(runtime, 1, 4);
+  for (size_t i = 0; i < 1024; i++) {
+    value_t value = new_integer(i + 8);
+    ASSERT_SUCCESS(offer_to_fifo_buffer(runtime, b2, &value, 1));
+  }
   ASSERT_EQ(1024, get_fifo_buffer_size(b2));
   fifo_buffer_iter_t iter;
   fifo_buffer_iter_init(&iter, b2);
   for (size_t i = 0; i < 1024; i++) {
     ASSERT_TRUE(fifo_buffer_iter_advance(&iter));
-    ASSERT_VALEQ(new_integer(i + 8), fifo_buffer_iter_get_current(&iter));
+    value_t current = whatever();
+    fifo_buffer_iter_get_current(&iter, &current, 1);
+    ASSERT_VALEQ(new_integer(i + 8), current);
   }
 
   DISPOSE_RUNTIME();

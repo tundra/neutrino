@@ -929,6 +929,7 @@ FIXED_GET_MODE_IMPL(fifo_buffer, vmMutable);
 
 ACCESSORS_IMPL(FifoBuffer, fifo_buffer, acInFamily, ofArray, Nodes, nodes);
 INTEGER_ACCESSORS_IMPL(FifoBuffer, fifo_buffer, Size, size);
+INTEGER_ACCESSORS_IMPL(FifoBuffer, fifo_buffer, Width, width);
 
 value_t fifo_buffer_validate(value_t self) {
   VALIDATE_FAMILY(ofFifoBuffer, self);
@@ -936,37 +937,62 @@ value_t fifo_buffer_validate(value_t self) {
   return success();
 }
 
+size_t get_fifo_buffer_nodes_length(size_t width, size_t capacity) {
+  size_t count = capacity + kFifoBufferReservedNodeCount;
+  return get_fifo_buffer_node_length_for_width(width) * count;
+}
+
+static size_t get_fifo_buffer_node_length(value_t self) {
+  return get_fifo_buffer_node_length_for_width(get_fifo_buffer_width(self));
+}
+
 size_t get_fifo_buffer_capacity(value_t self) {
   CHECK_FAMILY(ofFifoBuffer, self);
   value_t data = get_fifo_buffer_nodes(self);
-  return (get_array_length(data) / kFifoBufferNodeSize) - kFifoBufferReservedNodeCount;
+  return (get_array_length(data) / get_fifo_buffer_node_length(self)) - kFifoBufferReservedNodeCount;
 }
 
-value_t get_fifo_buffer_value_at(value_t self, size_t index) {
-  return get_array_at(get_fifo_buffer_nodes(self), index * kFifoBufferNodeSize);
+void get_fifo_buffer_values_at(value_t self, size_t index, value_t *values_out,
+    size_t values_size) {
+  CHECK_EQ("invalid fifo buffer get", get_fifo_buffer_width(self), values_size);
+  size_t node_offset = index * get_fifo_buffer_node_length(self) + 2;
+  value_t *nodes_start = get_array_elements(get_fifo_buffer_nodes(self));
+  memcpy(values_out, nodes_start + node_offset, sizeof(value_t) * values_size);
 }
 
-void set_fifo_buffer_value_at(value_t self, size_t index, value_t value) {
-  set_array_at(get_fifo_buffer_nodes(self), index * kFifoBufferNodeSize, value);
+void set_fifo_buffer_values_at(value_t self, size_t index, value_t *values,
+    size_t values_size) {
+  CHECK_EQ("invalid fifo buffer set", get_fifo_buffer_width(self), values_size);
+  size_t node_offset = index * get_fifo_buffer_node_length(self) + 2;
+  value_t *nodes_start = get_array_elements(get_fifo_buffer_nodes(self));
+  memcpy(nodes_start + node_offset, values, sizeof(value_t) * values_size);
+}
+
+void clear_fifo_buffer_values_at(value_t self, size_t index) {
+  size_t width = get_fifo_buffer_width(self);
+  size_t node_offset = index * get_fifo_buffer_node_length(self) + 2;
+  value_t *nodes_start = get_array_elements(get_fifo_buffer_nodes(self));
+  for (size_t i = 0; i < width; i++)
+    nodes_start[node_offset + i] = nothing();
 }
 
 size_t get_fifo_buffer_next_at(value_t self, size_t index) {
   return get_integer_value(get_array_at(get_fifo_buffer_nodes(self),
-      index * kFifoBufferNodeSize + 1));
+      index * get_fifo_buffer_node_length(self)));
 }
 
 void set_fifo_buffer_next_at(value_t self, size_t index, size_t next) {
-  set_array_at(get_fifo_buffer_nodes(self), index * kFifoBufferNodeSize + 1,
+  set_array_at(get_fifo_buffer_nodes(self), index * get_fifo_buffer_node_length(self),
       new_integer(next));
 }
 
 size_t get_fifo_buffer_prev_at(value_t self, size_t index) {
   return get_integer_value(get_array_at(get_fifo_buffer_nodes(self),
-      index * kFifoBufferNodeSize + 2));
+      index * get_fifo_buffer_node_length(self) + 1));
 }
 
 void set_fifo_buffer_prev_at(value_t self, size_t index, size_t prev) {
-  set_array_at(get_fifo_buffer_nodes(self), index * kFifoBufferNodeSize + 2,
+  set_array_at(get_fifo_buffer_nodes(self), index * get_fifo_buffer_node_length(self) + 1,
       new_integer(prev));
 }
 
@@ -988,9 +1014,10 @@ static void hook_fifo_buffer_entry(value_t self, size_t index, size_t target) {
   set_fifo_buffer_prev_at(self, next, target);
 }
 
-bool try_offer_to_fifo_buffer(value_t self, value_t value) {
+bool try_offer_to_fifo_buffer(value_t self, value_t *values, size_t values_size) {
   CHECK_FAMILY(ofFifoBuffer, self);
   CHECK_MUTABLE(self);
+  CHECK_EQ("offer has wrong width", get_fifo_buffer_width(self), values_size);
   size_t capacity = get_fifo_buffer_capacity(self);
   size_t size = get_fifo_buffer_size(self);
   if (size == capacity)
@@ -1002,27 +1029,28 @@ bool try_offer_to_fifo_buffer(value_t self, value_t value) {
   unhook_fifo_buffer_entry(self, next_free);
   // Hook it into the occupied list.
   hook_fifo_buffer_entry(self, kFifoBufferOccupiedRootOffset, next_free);
-  set_fifo_buffer_value_at(self, next_free, value);
+  set_fifo_buffer_values_at(self, next_free, values, values_size);
   set_fifo_buffer_size(self, size + 1);
   return true;
 }
 
-value_t take_from_fifo_buffer(value_t self) {
+value_t take_from_fifo_buffer(value_t self, value_t *values_out, size_t values_size) {
   CHECK_FAMILY(ofFifoBuffer, self);
+  CHECK_EQ("taking wrong size", get_fifo_buffer_width(self), values_size);
   if (is_fifo_buffer_empty(self))
     return new_condition(ccNotFound);
   // Get the least recently accessed occupied node.
   size_t prev_occupied = get_fifo_buffer_prev_at(self, kFifoBufferOccupiedRootOffset);
   // Clear the value; there's no reason to keep it alive from here.
-  value_t value = get_fifo_buffer_value_at(self, prev_occupied);
-  set_fifo_buffer_value_at(self, prev_occupied, null());
+  get_fifo_buffer_values_at(self, prev_occupied, values_out, values_size);
+  clear_fifo_buffer_values_at(self, prev_occupied);
   // Unhook it from the occupied list.
   unhook_fifo_buffer_entry(self, prev_occupied);
   // Hook it into the free list.
   hook_fifo_buffer_entry(self, kFifoBufferFreeRootOffset, prev_occupied);
   size_t size = get_fifo_buffer_size(self);
   set_fifo_buffer_size(self, size - 1);
-  return value;
+  return success();
 }
 
 bool is_fifo_buffer_empty(value_t self) {
@@ -1030,8 +1058,9 @@ bool is_fifo_buffer_empty(value_t self) {
   return get_fifo_buffer_size(self) == 0;
 }
 
-value_t offer_to_fifo_buffer(runtime_t *runtime, value_t buffer, value_t value) {
-  if (try_offer_to_fifo_buffer(buffer, value))
+value_t offer_to_fifo_buffer(runtime_t *runtime, value_t buffer, value_t *values,
+    size_t values_size) {
+  if (try_offer_to_fifo_buffer(buffer, values, values_size))
     // The value fits without expanding; success!
     return success();
   // Doesn't fit; allocate a new backing array.
@@ -1062,7 +1091,7 @@ value_t offer_to_fifo_buffer(runtime_t *runtime, value_t buffer, value_t value) 
   set_fifo_buffer_prev_at(buffer, new_first, kFifoBufferFreeRootOffset);
   set_fifo_buffer_prev_at(buffer, kFifoBufferFreeRootOffset, new_last);
   set_fifo_buffer_next_at(buffer, new_last, kFifoBufferFreeRootOffset);
-  bool expanded = try_offer_to_fifo_buffer(buffer, value);
+  bool expanded = try_offer_to_fifo_buffer(buffer, values, values_size);
   CHECK_TRUE("failed to expand fifo buffer", expanded);
   return success();
 }
@@ -1086,21 +1115,21 @@ bool fifo_buffer_iter_advance(fifo_buffer_iter_t *iter) {
   }
 }
 
-value_t fifo_buffer_iter_get_current(fifo_buffer_iter_t *iter) {
-  return get_fifo_buffer_value_at(iter->buffer, iter->current);
+void fifo_buffer_iter_get_current(fifo_buffer_iter_t *iter, value_t *values_out,
+    size_t values_size) {
+  get_fifo_buffer_values_at(iter->buffer, iter->current, values_out,
+      values_size);
 }
 
-value_t fifo_buffer_iter_take_current(fifo_buffer_iter_t *iter) {
+void fifo_buffer_iter_take_current(fifo_buffer_iter_t *iter) {
   // Clear the value; there's no reason to keep it alive from here.
-  value_t value = fifo_buffer_iter_get_current(iter);
-  set_fifo_buffer_value_at(iter->buffer, iter->current, nothing());
+  clear_fifo_buffer_values_at(iter->buffer, iter->current);
   // Unhook it from the occupied list.
   unhook_fifo_buffer_entry(iter->buffer, iter->current);
   // Hook it into the free list.
   hook_fifo_buffer_entry(iter->buffer, kFifoBufferFreeRootOffset, iter->current);
   size_t size = get_fifo_buffer_size(iter->buffer);
   set_fifo_buffer_size(iter->buffer, size - 1);
-  return value;
 }
 
 

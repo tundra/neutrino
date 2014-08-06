@@ -834,13 +834,15 @@ value_t offer_process_job(runtime_t *runtime, value_t process, value_t work) {
   CHECK_FAMILY(ofProcess, process);
   CHECK_FAMILY(ofCodeBlock, work);
   value_t work_queue = get_process_work_queue(process);
-  return offer_to_fifo_buffer(runtime, work_queue, work);
+  return offer_to_fifo_buffer(runtime, work_queue, &work, 1);
 }
 
 value_t take_process_job(value_t process) {
   CHECK_FAMILY(ofProcess, process);
   value_t work_queue = get_process_work_queue(process);
-  return take_from_fifo_buffer(work_queue);
+  value_t result = whatever();
+  TRY(take_from_fifo_buffer(work_queue, &result, 1));
+  return result;
 }
 
 bool is_process_idle(value_t process) {

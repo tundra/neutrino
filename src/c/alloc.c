@@ -178,14 +178,16 @@ value_t new_heap_array_buffer(runtime_t *runtime, size_t initial_capacity) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_fifo_buffer(runtime_t *runtime, size_t initial_capacity) {
+value_t new_heap_fifo_buffer(runtime_t *runtime, size_t width,
+    size_t initial_capacity) {
   size_t size = kFifoBufferSize;
   TRY_DEF(nodes, new_heap_array(runtime,
-      kFifoBufferNodeSize * (initial_capacity + kFifoBufferReservedNodeCount)));
+      get_fifo_buffer_nodes_length(width, initial_capacity)));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, fifo_buffer_species)));
   set_fifo_buffer_nodes(result, nodes);
   set_fifo_buffer_size(result, 0);
+  set_fifo_buffer_width(result, width);
   set_fifo_buffer_next_at(result, kFifoBufferOccupiedRootOffset, kFifoBufferOccupiedRootOffset);
   set_fifo_buffer_prev_at(result, kFifoBufferOccupiedRootOffset, kFifoBufferOccupiedRootOffset);
   size_t first = kFifoBufferReservedNodeCount;
@@ -609,7 +611,7 @@ value_t new_heap_backtrace_entry(runtime_t *runtime, value_t invocation,
 
 value_t new_heap_process(runtime_t *runtime) {
   size_t size = kProcessSize;
-  TRY_DEF(work_queue, new_heap_fifo_buffer(runtime, 256));
+  TRY_DEF(work_queue, new_heap_fifo_buffer(runtime, 1, 256));
   TRY_DEF(root_task, new_heap_task(runtime, nothing()));
   TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, process_species)));
   set_process_work_queue(result, work_queue);
