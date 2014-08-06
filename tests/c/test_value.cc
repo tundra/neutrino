@@ -247,7 +247,7 @@ TEST(value, large_id_hash_maps) {
 TEST(value, exhaust_id_hash_map) {
   runtime_config_t config;
   runtime_config_init_defaults(&config);
-  config.semispace_size_bytes = 65536;
+  config.semispace_size_bytes = 1 << 17;
   runtime_t *runtime = NULL;
   ASSERT_SUCCESS(new_runtime(&config, &runtime));
 

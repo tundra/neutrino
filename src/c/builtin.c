@@ -10,9 +10,10 @@
 #include "value-inl.h"
 
 void builtin_arguments_init(builtin_arguments_t *args, runtime_t *runtime,
-    frame_t *frame) {
+    frame_t *frame, value_t process) {
   args->runtime = runtime;
   args->frame = frame;
+  args->process = process;
 }
 
 value_t get_builtin_argument(builtin_arguments_t *args, size_t index) {
@@ -25,6 +26,10 @@ value_t get_builtin_subject(builtin_arguments_t *args) {
 
 runtime_t *get_builtin_runtime(builtin_arguments_t *args) {
   return args->runtime;
+}
+
+value_t get_builtin_process(builtin_arguments_t *args) {
+  return args->process;
 }
 
 value_t escape_builtin(builtin_arguments_t *args, value_array_t values) {

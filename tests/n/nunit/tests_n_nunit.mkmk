@@ -18,6 +18,7 @@ file_names = [
   "call_literals.n",
   "call_literal_invoke.n",
   "def.n",
+  "delay.n",
   "ensure.n",
   "escape.n",
   "field.n",

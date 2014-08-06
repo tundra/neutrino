@@ -187,6 +187,7 @@ static uint64_t interrupt_counter = 0;
 static value_t run_task_pushing_signals(value_t ambience, value_t task) {
   CHECK_FAMILY(ofAmbience, ambience);
   CHECK_FAMILY(ofTask, task);
+  value_t process = get_task_process(task);
   value_t stack = get_task_stack(task);
   runtime_t *runtime = get_ambience_runtime(ambience);
   frame_t frame = open_stack(stack);
@@ -321,7 +322,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           value_t wrapper = read_value(&cache, &frame, 1);
           builtin_method_t impl = (builtin_method_t) get_void_p_value(wrapper);
           builtin_arguments_t args;
-          builtin_arguments_init(&args, runtime, &frame);
+          builtin_arguments_init(&args, runtime, &frame, process);
           E_TRY_DEF(result, impl(&args));
           frame_push_value(&frame, result);
           frame.pc += kBuiltinOperationSize;
@@ -331,7 +332,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           value_t wrapper = read_value(&cache, &frame, 1);
           builtin_method_t impl = (builtin_method_t) get_void_p_value(wrapper);
           builtin_arguments_t args;
-          builtin_arguments_init(&args, runtime, &frame);
+          builtin_arguments_init(&args, runtime, &frame, process);
           value_t result = impl(&args);
           if (in_condition_cause(ccSignal, result)) {
             // The builtin failed. Find the appropriate signal handler and call
@@ -852,6 +853,7 @@ value_t run_code_block_until_condition(value_t ambience, value_t code) {
 static value_t run_next_process_job(safe_value_t s_ambience, safe_value_t s_process) {
   runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
   TRY_DEF(code, take_process_job(deref(s_process)));
+  CHECK_FAMILY(ofCodeBlock, code);
   CREATE_SAFE_VALUE_POOL(runtime, 5, pool);
   E_BEGIN_TRY_FINALLY();
     safe_value_t s_code = protect(pool, code);

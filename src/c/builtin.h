@@ -16,11 +16,13 @@ typedef struct {
   runtime_t *runtime;
   // The current stack frame.
   frame_t *frame;
+  // The current process
+  value_t process;
 } builtin_arguments_t;
 
 // Initialize a built_in_arguments appropriately.
 void builtin_arguments_init(builtin_arguments_t *args, runtime_t *runtime,
-    frame_t *frame);
+    frame_t *frame, value_t process);
 
 // Returns the index'th positional argument to a built-in method.
 value_t get_builtin_argument(builtin_arguments_t *args, size_t index);
@@ -30,6 +32,9 @@ value_t get_builtin_subject(builtin_arguments_t *args);
 
 // Returns the runtime for this builtin invocation.
 runtime_t *get_builtin_runtime(builtin_arguments_t *args);
+
+// Returns the current process.
+value_t get_builtin_process(builtin_arguments_t *args);
 
 // Raises a signal, leaving execution. Typically you'll want to call this
 // through the ESCAPE_BUILTIN macro.

@@ -20,3 +20,7 @@ def $is_frozen?($value) => @ctrino.is_frozen?($value);
 
 ## Is the given value deep frozen?
 def $is_deep_frozen?($value) => @ctrino.is_deep_frozen?($value);
+
+## Delays the execution of the given lambda to a future turn, returning a
+## promise for the eventual result.
+def $delay($thunk) => @ctrino.delay($thunk);
