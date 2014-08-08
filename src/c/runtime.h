@@ -84,6 +84,7 @@
   F(any_guard)                                                                 \
   F(array_of_zero)                                                             \
   F(builtin_impls)                                                             \
+  F(call_thunk_code_block)                                                     \
   F(ctrino)                                                                    \
   F(empty_array_buffer)                                                        \
   F(empty_array)                                                               \

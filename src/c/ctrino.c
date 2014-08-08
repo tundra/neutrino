@@ -205,7 +205,9 @@ static value_t ctrino_delay(builtin_arguments_t *args) {
   CHECK_FAMILY(ofLambda, thunk);
   value_t process = get_builtin_process(args);
   runtime_t *runtime = get_builtin_runtime(args);
-  TRY(offer_process_job(runtime, process, thunk));
+  job_t job;
+  job_init(&job, ROOT(runtime, call_thunk_code_block), thunk, nothing());
+  TRY(offer_process_job(runtime, process, &job));
   return null();
 }
 

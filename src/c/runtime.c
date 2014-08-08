@@ -64,6 +64,26 @@ static value_t create_return_code_block(runtime_t *runtime) {
       1);
 }
 
+// Creates a code block that invokes the call method on an object.
+static value_t create_call_thunk_code_block(runtime_t *runtime) {
+  assembler_t assm;
+  TRY(assembler_init_stripped_down(&assm, runtime));
+  TRY(assembler_emit_load_raw_argument(&assm, 0));
+  TRY(assembler_emit_push(&assm, ROOT(runtime, op_call)));
+  TRY_DEF(tag_array, new_heap_pair_array(runtime, 2));
+  set_pair_array_first_at(tag_array, 0, ROOT(runtime, subject_key));
+  set_pair_array_second_at(tag_array, 0, new_integer(1));
+  set_pair_array_first_at(tag_array, 1, ROOT(runtime, selector_key));
+  set_pair_array_second_at(tag_array, 1, new_integer(0));
+  TRY_DEF(tags, new_heap_call_tags(runtime, afFreeze, tag_array));
+  TRY(assembler_emit_invocation(&assm, nothing(), tags,  nothing()));
+  TRY(assembler_emit_slap(&assm, 2));
+  TRY(assembler_emit_return(&assm));
+  TRY_DEF(result, assembler_flush(&assm));
+  assembler_dispose(&assm);
+  return result;
+}
+
 // Creates an array of invocation records of the form
 //
 //   {%subject: N-1, %selector: N-2, 0: N-3, ...}
@@ -203,6 +223,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, stack_piece_bottom_code_block),
       create_stack_piece_bottom_code_block(runtime));
   TRY_SET(RAW_ROOT(roots, return_code_block), create_return_code_block(runtime));
+  TRY_SET(RAW_ROOT(roots, call_thunk_code_block), create_call_thunk_code_block(runtime));
   TRY_SET(RAW_ROOT(roots, escape_records), create_escape_records(runtime));
 
   // Generate initialization for the per-family types.
@@ -333,6 +354,7 @@ value_t roots_validate(value_t roots) {
   VALIDATE_CHECK_EQ(otCall, get_operation_type(RAW_ROOT(roots, op_call)));
   VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, stack_piece_bottom_code_block));
   VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, stack_bottom_code_block));
+  VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, call_thunk_code_block));
   VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, return_code_block));
   VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, empty_code_block));
   VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, escape_records));

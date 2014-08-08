@@ -402,6 +402,11 @@ value_t frame_get_argument(frame_t *frame, size_t param_index) {
   return stack_pointer[-(offset + 1)];
 }
 
+value_t frame_get_raw_argument(frame_t *frame, size_t eval_index) {
+  value_t *stack_pointer = frame->frame_pointer - kFrameHeaderSize;
+  return stack_pointer[-(eval_index + 1)];
+}
+
 value_t frame_get_pending_argument_at(frame_t *frame, value_t tags, size_t index) {
   CHECK_FAMILY(ofCallTags, tags);
   size_t offset = get_call_tags_offset_at(tags, index);
@@ -830,18 +835,28 @@ value_t process_validate(value_t self) {
   return success();
 }
 
-value_t offer_process_job(runtime_t *runtime, value_t process, value_t work) {
-  CHECK_FAMILY(ofProcess, process);
-  value_t work_queue = get_process_work_queue(process);
-  return offer_to_fifo_buffer(runtime, work_queue, &work, 1);
+void job_init(job_t *job, value_t code, value_t data, value_t promise) {
+  CHECK_FAMILY(ofCodeBlock, code);
+  CHECK_FAMILY_OPT(ofPromise, promise);
+  job->code = code;
+  job->data = data;
+  job->promise = promise;
 }
 
-value_t take_process_job(value_t process) {
+value_t offer_process_job(runtime_t *runtime, value_t process, job_t *job) {
   CHECK_FAMILY(ofProcess, process);
   value_t work_queue = get_process_work_queue(process);
-  value_t result = whatever();
-  TRY(take_from_fifo_buffer(work_queue, &result, 1));
-  return result;
+  value_t data[kProcessWorkQueueWidth] = {job->code, job->data, job->promise};
+  return offer_to_fifo_buffer(runtime, work_queue, data, kProcessWorkQueueWidth);
+}
+
+value_t take_process_job(value_t process, job_t *job_out) {
+  CHECK_FAMILY(ofProcess, process);
+  value_t work_queue = get_process_work_queue(process);
+  value_t result[kProcessWorkQueueWidth];
+  TRY(take_from_fifo_buffer(work_queue, result, kProcessWorkQueueWidth));
+  job_init(job_out, result[0], result[1], result[2]);
+  return success();
 }
 
 bool is_process_idle(value_t process) {

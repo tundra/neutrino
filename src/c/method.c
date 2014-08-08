@@ -1161,13 +1161,15 @@ static value_t complete_special_block_lookup(full_thunk_o *thunk,
 // module of origin.
 static value_t full_thunk_call(sigmap_thunk_o *super_self) {
   full_thunk_o *self = DOWNCAST(full_thunk_o, super_self);
-  CHECK_FAMILY(ofModuleFragment, self->fragment);
+  CHECK_FAMILY_OPT(ofModuleFragment, self->fragment);
   sigmap_state_t *state = UPCAST(self)->state;
-  TOPIC_INFO(Lookup, "Performing fragment lookup %v", state->input->tags);
-  if (is_nothing(self->helper)) {
-    TRY(lookup_through_fragment(state, self->fragment));
-  } else {
-    TRY(lookup_through_fragment_with_helper(state, self->fragment, self->helper));
+  if (!is_nothing(self->fragment)) {
+    TOPIC_INFO(Lookup, "Performing fragment lookup %v", state->input->tags);
+    if (is_nothing(self->helper)) {
+      TRY(lookup_through_fragment(state, self->fragment));
+    } else {
+      TRY(lookup_through_fragment_with_helper(state, self->fragment, self->helper));
+    }
   }
   TOPIC_INFO(Lookup, "Performing subject lookup");
   value_t subject = whatever();

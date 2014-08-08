@@ -244,7 +244,6 @@ value_t assembler_init(assembler_t *assm, runtime_t *runtime, value_t fragment,
   CHECK_FALSE("no scope callback", scope == NULL);
   CHECK_FAMILY_OPT(ofModuleFragment, fragment);
   TRY(assembler_init_stripped_down(assm, runtime));
-  TRY_SET(assm->value_pool, new_heap_id_hash_map(runtime, 16));
   assm->scope = scope;
   assm->fragment = fragment;
   return success();
@@ -254,6 +253,7 @@ value_t assembler_init_stripped_down(assembler_t *assm, runtime_t *runtime) {
   assm->scope = NULL;
   assm->runtime = runtime;
   assm->fragment = null();
+  assm->value_pool = nothing();
   short_buffer_init(&assm->code);
   assm->stack_height = assm->high_water_mark = 0;
   reusable_scratch_memory_init(&assm->scratch_memory);
@@ -277,23 +277,28 @@ value_t assembler_flush(assembler_t *assm) {
   short_buffer_flush(&assm->code, &code_blob);
   TRY_DEF(bytecode, new_heap_blob_with_data(assm->runtime, &code_blob));
   // Invert the constant pool map into an array.
+  value_t value_pool = whatever();
   value_t value_pool_map = assm->value_pool;
-  size_t value_pool_size = get_id_hash_map_size(value_pool_map);
-  TRY_DEF(value_pool, new_heap_array(assm->runtime, value_pool_size));
-  id_hash_map_iter_t iter;
-  id_hash_map_iter_init(&iter, value_pool_map);
-  size_t entries_seen = 0;
-  while (id_hash_map_iter_advance(&iter)) {
-    value_t key;
-    value_t value;
-    id_hash_map_iter_get_current(&iter, &key, &value);
-    size_t index = get_integer_value(value);
-    // Check that the entry hasn't been set already.
-    CHECK_PHYLUM(tpNull, get_array_at(value_pool, index));
-    set_array_at(value_pool, index, key);
-    entries_seen++;
+  if (is_nothing(value_pool_map)) {
+    value_pool = ROOT(assm->runtime, empty_array);
+  } else {
+    size_t value_pool_size = get_id_hash_map_size(value_pool_map);
+    TRY_SET(value_pool, new_heap_array(assm->runtime, value_pool_size));
+    id_hash_map_iter_t iter;
+    id_hash_map_iter_init(&iter, value_pool_map);
+    size_t entries_seen = 0;
+    while (id_hash_map_iter_advance(&iter)) {
+      value_t key;
+      value_t value;
+      id_hash_map_iter_get_current(&iter, &key, &value);
+      size_t index = get_integer_value(value);
+      // Check that the entry hasn't been set already.
+      CHECK_PHYLUM(tpNull, get_array_at(value_pool, index));
+      set_array_at(value_pool, index, key);
+      entries_seen++;
+    }
+    CHECK_EQ("wrong number of entries", entries_seen, value_pool_size);
   }
-  CHECK_EQ("wrong number of entries", entries_seen, value_pool_size);
   return new_heap_code_block(assm->runtime, bytecode, value_pool,
       assm->high_water_mark);
 }
@@ -320,6 +325,8 @@ static void assembler_emit_cursor(assembler_t *assm, short_buffer_cursor_t *out)
 // Writes a reference to a value in the value pool, adding the value to the
 // pool if necessary.
 static value_t assembler_emit_value(assembler_t *assm, value_t value) {
+  if (is_nothing(assm->value_pool))
+    TRY_SET(assm->value_pool, new_heap_id_hash_map(assm->runtime, 16));
   value_t value_pool = assm->value_pool;
   // Check if we've already emitted this value then we can use the index again.
   value_t prev_index = get_id_hash_map_at(value_pool, value);
@@ -479,7 +486,7 @@ value_t assembler_emit_stack_piece_bottom(assembler_t *assm) {
 
 value_t assembler_emit_invocation(assembler_t *assm, value_t fragment,
     value_t tags, value_t helper) {
-  CHECK_FAMILY(ofModuleFragment, fragment);
+  CHECK_FAMILY_OPT(ofModuleFragment, fragment);
   CHECK_FAMILY(ofCallTags, tags);
   assembler_emit_opcode(assm, ocInvoke);
   TRY(assembler_emit_value(assm, tags));
@@ -602,6 +609,13 @@ value_t assembler_emit_load_global(assembler_t *assm, value_t path,
 value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index) {
   assembler_emit_opcode(assm, ocLoadArgument);
   assembler_emit_short(assm, param_index);
+  assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
+value_t assembler_emit_load_raw_argument(assembler_t *assm, size_t eval_index) {
+  assembler_emit_opcode(assm, ocLoadRawArgument);
+  assembler_emit_short(assm, eval_index);
   assembler_adjust_stack_height(assm, +1);
   return success();
 }

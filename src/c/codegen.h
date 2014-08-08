@@ -234,6 +234,9 @@ value_t assembler_emit_load_global(assembler_t *assm, value_t name,
 // Emits an argument load of the argument with the given parameter index.
 value_t assembler_emit_load_argument(assembler_t *assm, size_t param_index);
 
+// Emits an argument load of the argument with the given evaluation order index.
+value_t assembler_emit_load_raw_argument(assembler_t *assm, size_t eval_index);
+
 // Emits an argument load of the argument with the given parameter index from
 // the frame block_depth nesting levels from the current location.
 value_t assembler_emit_load_refracted_argument(assembler_t *assm,

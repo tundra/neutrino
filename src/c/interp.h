@@ -37,6 +37,7 @@
   F(LoadGlobal,                 3)                                             \
   F(LoadLocal,                  2)                                             \
   F(LoadLambdaCapture,          2)                                             \
+  F(LoadRawArgument,            2)                                             \
   F(LoadRefractedArgument,      3)                                             \
   F(LoadRefractedCapture,       3)                                             \
   F(LoadRefractedLocal,         3)                                             \

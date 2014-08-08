@@ -236,9 +236,9 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           value_t tags = read_value(&cache, &frame, 1);
           CHECK_FAMILY(ofCallTags, tags);
           value_t fragment = read_value(&cache, &frame, 2);
-          CHECK_FAMILY(ofModuleFragment, fragment);
+          CHECK_FAMILY_OPT(ofModuleFragment, fragment);
           value_t helper = read_value(&cache, &frame, 3);
-          CHECK_FAMILY(ofSignatureMap, helper);
+          CHECK_FAMILY_OPT(ofSignatureMap, helper);
           value_t arg_map;
           frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags,
               &frame);
@@ -460,6 +460,13 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           value_t value = frame_get_argument(&frame, param_index);
           frame_push_value(&frame, value);
           frame.pc += kLoadArgumentOperationSize;
+          break;
+        }
+        case ocLoadRawArgument: {
+          size_t eval_index = read_short(&cache, &frame, 1);
+          value_t value = frame_get_raw_argument(&frame, eval_index);
+          frame_push_value(&frame, value);
+          frame.pc += kLoadRawArgumentOperationSize;
           break;
         }
         case ocLoadRefractedArgument: {
@@ -848,27 +855,33 @@ value_t run_code_block_until_condition(value_t ambience, value_t code) {
   } while (false);
 }
 
+static value_t prepare_run_job(runtime_t *runtime, value_t stack, job_t *job) {
+  frame_t frame = open_stack(stack);
+  // Set up the frame containing the argument. The code frame returns to
+  // this and then this returns by itself so at the end, if the job is
+  // successful, we're back to an empty stack.
+  TRY(push_stack_frame(runtime, stack, &frame, 2, ROOT(runtime, empty_array)));
+  frame_set_code_block(&frame, ROOT(runtime, return_code_block));
+  frame_push_value(&frame, job->data);
+  // Set up the frame for running the code.
+  size_t frame_size = get_code_block_high_water_mark(job->code);
+  TRY(push_stack_frame(runtime, stack, &frame, frame_size,
+      ROOT(runtime, empty_array)));
+  frame_set_code_block(&frame, job->code);
+  close_frame(&frame);
+  return success();
+}
+
 // Grabs the next work job from the given process, which must have more work,
 // and executes it on the process' main task.
 static value_t run_next_process_job(safe_value_t s_ambience, safe_value_t s_process) {
   runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
-  TRY_DEF(code, take_process_job(deref(s_process)));
-  CHECK_FAMILY(ofCodeBlock, code);
+  job_t job;
+  TRY(take_process_job(deref(s_process), &job));
   CREATE_SAFE_VALUE_POOL(runtime, 5, pool);
   E_BEGIN_TRY_FINALLY();
-    safe_value_t s_code = protect(pool, code);
     E_S_TRY_DEF(s_task, protect(pool, get_process_root_task(deref(s_process))));
-    E_S_TRY_DEF(s_stack, protect(pool, get_task_stack(deref(s_task))));
-    {
-      frame_t frame = open_stack(deref(s_stack));
-      // Set up the initial frame.
-      size_t frame_size = get_code_block_high_water_mark(deref(s_code));
-      E_TRY(push_stack_frame(runtime, deref(s_stack), &frame, frame_size,
-          ROOT(runtime, empty_array)));
-      frame_set_code_block(&frame, deref(s_code));
-      close_frame(&frame);
-    }
-    // Run until completion.
+    E_TRY(prepare_run_job(runtime, get_task_stack(deref(s_task)), &job));
     E_RETURN(run_task_until_signal(s_ambience, s_task));
   E_FINALLY();
     DISPOSE_SAFE_VALUE_POOL(pool);
@@ -895,7 +908,9 @@ value_t run_code_block(safe_value_t s_ambience, safe_value_t s_code) {
   E_BEGIN_TRY_FINALLY();
     // Build a process to run the code within.
     E_S_TRY_DEF(s_process, protect(pool, new_heap_process(runtime)));
-    E_TRY(offer_process_job(runtime, deref(s_process), deref(s_code)));
+    job_t job;
+    job_init(&job, deref(s_code), null(), nothing());
+    E_TRY(offer_process_job(runtime, deref(s_process), &job));
     E_RETURN(run_process_until_idle(s_ambience, s_process));
   E_FINALLY();
     DISPOSE_SAFE_VALUE_POOL(pool);

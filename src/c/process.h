@@ -226,6 +226,9 @@ value_t frame_peek_value(frame_t *frame, size_t index);
 // Returns the value of the index'th parameter.
 value_t frame_get_argument(frame_t *frame, size_t param_index);
 
+// Returns the value of the index'th argument in evaluation order.
+value_t frame_get_raw_argument(frame_t *frame, size_t eval_index);
+
 // Returns the index'th argument to an invocation using the given tags in sorted
 // tag order from the given frame. The argument is pending in the sense that
 // the call hasn't actually been performed yet, the arguments are just on the
@@ -576,6 +579,7 @@ ACCESSORS_DECL(task, stack);
 static const size_t kProcessSize = HEAP_OBJECT_SIZE(2);
 static const size_t kProcessWorkQueueOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kProcessRootTaskOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+#define kProcessWorkQueueWidth 3
 
 // The work queue that holds tasks for this process.
 ACCESSORS_DECL(process, work_queue);
@@ -584,12 +588,26 @@ ACCESSORS_DECL(process, work_queue);
 // queue.
 ACCESSORS_DECL(process, root_task);
 
-// Adds a code block to the queue of work to perform for this task.
-value_t offer_process_job(runtime_t *runtime, value_t process, value_t job);
+// A collection of values that make up a pending job.
+typedef struct {
+  // The code block to execute to run the job.
+  value_t code;
+  // An optional piece of data that is available to the code block.
+  value_t data;
+  // Optional promise to resolve with the result of running this job.
+  value_t promise;
+} job_t;
+
+// Initialize a job struct.
+void job_init(job_t *job, value_t code, value_t data, value_t promise);
+
+// Adds a job to the queue of work to perform for this process. The job struct
+// is copied so it can be disposed immediately after this call.
+value_t offer_process_job(runtime_t *runtime, value_t process, job_t *job);
 
 // Returns the next scheduled code block to be executed on the given process.
 // If there are no more work left a NotFound condition is returned.
-value_t take_process_job(value_t process);
+value_t take_process_job(value_t process, job_t *job_out);
 
 // Returns true if there is no more work for this process to perform.
 bool is_process_idle(value_t process);

@@ -611,7 +611,7 @@ value_t new_heap_backtrace_entry(runtime_t *runtime, value_t invocation,
 
 value_t new_heap_process(runtime_t *runtime) {
   size_t size = kProcessSize;
-  TRY_DEF(work_queue, new_heap_fifo_buffer(runtime, 1, 256));
+  TRY_DEF(work_queue, new_heap_fifo_buffer(runtime, kProcessWorkQueueWidth, 256));
   TRY_DEF(root_task, new_heap_task(runtime, nothing()));
   TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, process_species)));
   set_process_work_queue(result, work_queue);
