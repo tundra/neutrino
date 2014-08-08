@@ -25,6 +25,6 @@ def $is_deep_frozen?($value) => @ctrino.is_deep_frozen?($value);
 ## promise for the eventual result.
 def $delay($thunk) {
   def $result := new @Promise();
-  @ctrino.delay($thunk, $result);
+  @ctrino.delay($thunk, $result, null);
   $result;
 }

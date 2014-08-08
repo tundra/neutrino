@@ -919,7 +919,7 @@ value_t run_code_block(safe_value_t s_ambience, safe_value_t s_code) {
     // Build a process to run the code within.
     E_S_TRY_DEF(s_process, protect(pool, new_heap_process(runtime)));
     job_t job;
-    job_init(&job, deref(s_code), null(), nothing());
+    job_init(&job, deref(s_code), null(), nothing(), nothing());
     E_TRY(offer_process_job(runtime, deref(s_process), &job));
     E_RETURN(run_process_until_idle(s_ambience, s_process));
   E_FINALLY();

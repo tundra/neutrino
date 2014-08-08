@@ -32,3 +32,10 @@ def ($this is @Promise).get();
 ##   do nothing?
 @ctrino.builtin("promise.fulfill!")
 def ($this is @Promise).fulfill!($value);
+
+## Executes the given thunk eventually, after this promise has been resolved.
+def ($this is @Promise).then($thunk) {
+  def $result := new @Promise();
+  @ctrino.delay($thunk, $result, $this);
+  $result;
+}

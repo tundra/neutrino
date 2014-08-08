@@ -579,7 +579,7 @@ ACCESSORS_DECL(task, stack);
 static const size_t kProcessSize = HEAP_OBJECT_SIZE(2);
 static const size_t kProcessWorkQueueOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kProcessRootTaskOffset = HEAP_OBJECT_FIELD_OFFSET(1);
-#define kProcessWorkQueueWidth 3
+#define kProcessWorkQueueWidth 4
 
 // The work queue that holds tasks for this process.
 ACCESSORS_DECL(process, work_queue);
@@ -596,10 +596,13 @@ typedef struct {
   value_t data;
   // Optional promise to resolve with the result of running this job.
   value_t promise;
+  // Optional promise that must be resolved before this job can be run.
+  value_t guard;
 } job_t;
 
 // Initialize a job struct.
-void job_init(job_t *job, value_t code, value_t data, value_t promise);
+void job_init(job_t *job, value_t code, value_t data, value_t promise,
+    value_t guard);
 
 // Adds a job to the queue of work to perform for this process. The job struct
 // is copied so it can be disposed immediately after this call.

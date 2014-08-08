@@ -7,6 +7,7 @@
 #include "freeze.h"
 #include "log.h"
 #include "process.h"
+#include "sync.h"
 #include "tagged-inl.h"
 #include "try-inl.h"
 #include "value-inl.h"
@@ -835,28 +836,41 @@ value_t process_validate(value_t self) {
   return success();
 }
 
-void job_init(job_t *job, value_t code, value_t data, value_t promise) {
+void job_init(job_t *job, value_t code, value_t data, value_t promise, value_t guard) {
   CHECK_FAMILY(ofCodeBlock, code);
   CHECK_FAMILY_OPT(ofPromise, promise);
+  CHECK_FAMILY_OPT(ofPromise, guard);
   job->code = code;
   job->data = data;
   job->promise = promise;
+  job->guard = guard;
 }
 
 value_t offer_process_job(runtime_t *runtime, value_t process, job_t *job) {
   CHECK_FAMILY(ofProcess, process);
   value_t work_queue = get_process_work_queue(process);
-  value_t data[kProcessWorkQueueWidth] = {job->code, job->data, job->promise};
+  value_t data[kProcessWorkQueueWidth] = {job->code, job->data, job->promise, job->guard};
   return offer_to_fifo_buffer(runtime, work_queue, data, kProcessWorkQueueWidth);
 }
 
 value_t take_process_job(value_t process, job_t *job_out) {
   CHECK_FAMILY(ofProcess, process);
-  value_t work_queue = get_process_work_queue(process);
-  value_t result[kProcessWorkQueueWidth];
-  TRY(take_from_fifo_buffer(work_queue, result, kProcessWorkQueueWidth));
-  job_init(job_out, result[0], result[1], result[2]);
-  return success();
+  // Scan through the jobs to find the first one that's ready to run.
+  fifo_buffer_iter_t iter;
+  fifo_buffer_iter_init(&iter, get_process_work_queue(process));
+  while (fifo_buffer_iter_advance(&iter)) {
+    value_t result[kProcessWorkQueueWidth];
+    fifo_buffer_iter_get_current(&iter, result, kProcessWorkQueueWidth);
+    // Read the current entry into the output job for convenience.
+    job_init(job_out, result[0], result[1], result[2], result[3]);
+    value_t guard = job_out->guard;
+    if (is_nothing(guard) || is_promise_resolved(guard)) {
+      // This one is ready to run. Remove it from the buffer.
+      fifo_buffer_iter_take_current(&iter);
+      return success();
+    }
+  }
+  return new_condition(ccNotFound);
 }
 
 bool is_process_idle(value_t process) {
