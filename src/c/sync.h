@@ -25,6 +25,10 @@ ACCESSORS_DECL(promise, value);
 // Returns true if the given promise is in a resolved (non-pending) state.
 bool is_promise_resolved(value_t self);
 
+// Fulfill the given promise if it hasn't been already, otherwise this is a
+// noop.
+void fulfill_promise(value_t self, value_t value);
+
 
 /// ## Promise state
 

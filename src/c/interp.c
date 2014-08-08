@@ -7,6 +7,7 @@
 #include "log.h"
 #include "process.h"
 #include "safe-inl.h"
+#include "sync.h"
 #include "try-inl.h"
 #include "value-inl.h"
 
@@ -872,6 +873,13 @@ static value_t prepare_run_job(runtime_t *runtime, value_t stack, job_t *job) {
   return success();
 }
 
+static value_t resolve_job_promise(value_t result, job_t *job) {
+  if (is_nothing(job->promise))
+    return success();
+  fulfill_promise(job->promise, result);
+  return success();
+}
+
 // Grabs the next work job from the given process, which must have more work,
 // and executes it on the process' main task.
 static value_t run_next_process_job(safe_value_t s_ambience, safe_value_t s_process) {
@@ -882,7 +890,9 @@ static value_t run_next_process_job(safe_value_t s_ambience, safe_value_t s_proc
   E_BEGIN_TRY_FINALLY();
     E_S_TRY_DEF(s_task, protect(pool, get_process_root_task(deref(s_process))));
     E_TRY(prepare_run_job(runtime, get_task_stack(deref(s_task)), &job));
-    E_RETURN(run_task_until_signal(s_ambience, s_task));
+    E_TRY_DEF(result, run_task_until_signal(s_ambience, s_task));
+    E_TRY(resolve_job_promise(result, &job));
+    E_RETURN(result);
   E_FINALLY();
     DISPOSE_SAFE_VALUE_POOL(pool);
   E_END_TRY_FINALLY();

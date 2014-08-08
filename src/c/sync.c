@@ -20,6 +20,13 @@ bool is_promise_resolved(value_t self) {
   return is_promise_state_resolved(get_promise_state(self));
 }
 
+void fulfill_promise(value_t self, value_t value) {
+  if (!is_promise_resolved(self)) {
+    set_promise_state(self, promise_state_fulfilled());
+    set_promise_value(self, value);
+  }
+}
+
 value_t promise_validate(value_t self) {
   VALIDATE_FAMILY(ofPromise, self);
   VALIDATE_PHYLUM(tpPromiseState, get_promise_state(self));
@@ -64,10 +71,7 @@ static value_t promise_fulfill(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofPromise, self);
   value_t value = get_builtin_argument(args, 0);
-  if (!is_promise_resolved(self)) {
-    set_promise_state(self, promise_state_fulfilled());
-    set_promise_value(self, value);
-  }
+  fulfill_promise(self, value);
   return value;
 }
 

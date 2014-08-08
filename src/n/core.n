@@ -23,4 +23,8 @@ def $is_deep_frozen?($value) => @ctrino.is_deep_frozen?($value);
 
 ## Delays the execution of the given lambda to a future turn, returning a
 ## promise for the eventual result.
-def $delay($thunk) => @ctrino.delay($thunk);
+def $delay($thunk) {
+  def $result := new @Promise();
+  @ctrino.delay($thunk, $result);
+  $result;
+}

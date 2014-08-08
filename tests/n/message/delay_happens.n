@@ -1,0 +1,17 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $core;
+do {
+  $core:print_ln("a");
+  $core:delay(fn => $core:print_ln(1));
+  $core:print_ln("b");
+  $core:delay(fn => $core:print_ln(2));
+  $core:print_ln("c");
+  $core:delay(fn => $core:print_ln(3));
+  $core:print_ln("d");
+  $core:delay(fn => $core:print_ln(4));
+  $core:print_ln("e");
+  $core:delay(fn => $core:print_ln(5));
+  $core:print_ln("f");
+}

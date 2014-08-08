@@ -7,6 +7,7 @@ import plankton.options
 file_names = [
   "assert_equals_failure",
   "assert_that_failure",
+  "delay_happens",
   "trace_builtin_leave",
   "trace_explicit_leave",
   "trace_leave_ensure",

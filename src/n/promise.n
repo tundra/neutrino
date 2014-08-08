@@ -4,8 +4,10 @@
 ## The built-in type of runtime-native blocks.
 def @Promise := @ctrino.get_builtin_type("Promise");
 
-## Creates a new mutable array of the given length with all elements initialized
-## to null.
+## Creates and returns a new unresolved promise.
+def ($this == @Promise).new() => @ctrino.new_pending_promise();
+
+## Creates and returns a new unresolved promise.
 def ($this == @Promise).pending() => @ctrino.new_pending_promise();
 
 ## Returns a value representing the state of the given promise, one of pending,

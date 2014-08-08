@@ -201,12 +201,14 @@ static value_t ctrino_builtin(builtin_arguments_t *args) {
 static value_t ctrino_delay(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t thunk = get_builtin_argument(args, 0);
+  value_t promise = get_builtin_argument(args, 1);
   CHECK_FAMILY(ofCtrino, self);
   CHECK_FAMILY(ofLambda, thunk);
+  CHECK_FAMILY_OPT(ofPromise, promise);
   value_t process = get_builtin_process(args);
   runtime_t *runtime = get_builtin_runtime(args);
   job_t job;
-  job_init(&job, ROOT(runtime, call_thunk_code_block), thunk, nothing());
+  job_init(&job, ROOT(runtime, call_thunk_code_block), thunk, promise);
   TRY(offer_process_job(runtime, process, &job));
   return null();
 }
@@ -247,7 +249,7 @@ static value_t ctrino_new_pending_promise(builtin_arguments_t *args) {
 
 value_t add_ctrino_builtin_methods(runtime_t *runtime, value_t space) {
   ADD_BUILTIN("builtin", 1, ctrino_builtin);
-  ADD_BUILTIN("delay", 1, ctrino_delay);
+  ADD_BUILTIN("delay", 2, ctrino_delay);
   ADD_BUILTIN("freeze", 1, ctrino_freeze);
   ADD_BUILTIN("get_builtin_type", 1, ctrino_get_builtin_type);
   ADD_BUILTIN("get_current_backtrace", 0, ctrino_get_current_backtrace);
