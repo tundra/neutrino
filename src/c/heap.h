@@ -12,6 +12,7 @@
 #include "safe.h"
 #include "utils.h"
 #include "value.h"
+#include "sync/thread.h"
 
 
 static const byte_t kBlankHeapMarker = 0xBE;
@@ -146,6 +147,8 @@ typedef struct {
   object_tracker_t root_object_tracker;
   // The number of object trackers allocated.
   size_t object_tracker_count;
+  // The thread that created this heap.
+  native_thread_id_t creator_;
 } heap_t;
 
 // Initialize the given heap, returning a condition to indicate success or

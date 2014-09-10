@@ -221,10 +221,14 @@ value_t heap_init(heap_t *heap, const runtime_config_t *config) {
   // Initialize the object tracker loop using the dummy node.
   heap->root_object_tracker.next = heap->root_object_tracker.prev = &heap->root_object_tracker;
   heap->object_tracker_count = 0;
+  heap->creator_ = native_thread_get_current_id();
   return success();
 }
 
 bool heap_try_alloc(heap_t *heap, size_t size, address_t *memory_out) {
+  IF_EXPENSIVE_CHECKS_ENABLED(CHECK_TRUE("accessing heap from other thread",
+      native_thread_ids_equal(
+          heap->creator_, native_thread_get_current_id())));
   return space_try_alloc(&heap->to_space, size, memory_out);
 }
 
