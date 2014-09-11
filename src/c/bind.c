@@ -6,9 +6,9 @@
 #include "bind.h"
 #include "file.h"
 #include "interp.h"
-#include "log.h"
 #include "runtime.h"
 #include "tagged.h"
+#include "utils/log.h"
 
 // --- B i n d i n g ---
 

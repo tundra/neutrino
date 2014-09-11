@@ -36,15 +36,15 @@
 #ifndef _VALUE
 #define _VALUE
 
-#include "check.h"
 #include "globals.h"
+#include "utils/check.h"
+#include "utils/strbuf.h"
+#include "utils/string.h"
 
 FORWARD(blob_t);
 FORWARD(cycle_detector_t);
 FORWARD(hash_stream_t);
 FORWARD(runtime_t);
-FORWARD(string_t);
-FORWARD(string_buffer_t);
 
 // Calls the given macro for each value domain name. The tag is the one used
 // to distinguish pointers, the ordinal gives the sort order (lowest ordinal

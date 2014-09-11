@@ -6,15 +6,15 @@
 BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "behavior.h"
-#include "check.h"
-#include "crash.h"
 #include "freeze.h"
-#include "log.h"
-#include "ook-inl.h"
 #include "runtime.h"
 #include "tagged.h"
 #include "try-inl.h"
 #include "utils.h"
+#include "utils/check.h"
+#include "utils/crash.h"
+#include "utils/log.h"
+#include "utils/ook-inl.h"
 #include "value-inl.h"
 END_C_INCLUDES
 

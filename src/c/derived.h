@@ -8,8 +8,8 @@
 #define _DERIVED
 
 #include "behavior.h"
-#include "check.h"
 #include "utils.h"
+#include "utils/check.h"
 #include "value.h"
 
 

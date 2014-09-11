@@ -3,7 +3,7 @@
 
 #include "freeze.h"
 #include "heap.h"
-#include "log.h"
+#include "utils/log.h"
 #include "value-inl.h"
 
 bool is_mutable(value_t value) {

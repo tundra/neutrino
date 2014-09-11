@@ -7,9 +7,9 @@ BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "freeze.h"
 #include "heap.h"
-#include "log.h"
 #include "runtime.h"
 #include "try-inl.h"
+#include "utils/log.h"
 #include "value-inl.h"
 END_C_INCLUDES
 

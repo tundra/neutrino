@@ -6,10 +6,10 @@
 BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "freeze.h"
-#include "ook.h"
 #include "runtime.h"
 #include "tagged-inl.h"
 #include "try-inl.h"
+#include "utils/ook.h"
 END_C_INCLUDES
 
 // Checks that scoring value against guard gives a match iff is_match is true.

@@ -8,11 +8,11 @@ BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "condition.h"
 #include "globals.h"
-#include "log.h"
-#include "ook.h"
 #include "runtime.h"
 #include "test/asserts.hh"
 #include "test/unittest.hh"
+#include "utils/log.h"
+#include "utils/ook.h"
 #include "value-inl.h"
 END_C_INCLUDES
 
@@ -86,24 +86,6 @@ void install_log_validator(log_validator_o *validator,
 // Uninstalls the given log validator, which must be the currently active one,
 // and restores logging to the same state as before it was installed.
 void uninstall_log_validator(log_validator_o *validator);
-
-// Fails unless the two given strings (string_t*) are equal.
-#define ASSERT_STREQ(A, B) do {                                                \
-  string_t *__a__ = (A);                                                       \
-  string_t *__b__ = (B);                                                       \
-  if (!(string_equals(__a__, __b__)))                                          \
-    fail(__FILE__, __LINE__, "Assertion failed: %s == %s.\n  Expected: %s\n  Found: %s", \
-        #A, #B, __a__->chars, __b__->chars);                                   \
-} while (false)
-
-// Fails unless the two given c-strings are equal.
-#define ASSERT_C_STREQ(A, B) do {                                              \
-  string_t __sa__;                                                             \
-  string_init(&__sa__, (A));                                                   \
-  string_t __sb__;                                                             \
-  string_init(&__sb__, (B));                                                   \
-  ASSERT_STREQ(&__sa__, &__sb__);                                              \
-} while (false)
 
 // Check that the two values A and B are structurally equivalent. Note that this
 // only handles object trees, not cyclical graphs of objects.
@@ -179,14 +161,6 @@ IF_CHECKS_ENABLED(                                                             \
 // are enabled.
 #define ASSERT_CHECK_FAILURE_NO_VALUE(scCause, E)                              \
 IF_CHECKS_ENABLED(__ASSERT_CHECK_FAILURE_NO_VALUE_HELPER__(scCause, E))
-
-// Wraps a string_t around a C string.
-static string_t new_string(const char *value) {
-  string_t result;
-  result.length = strlen(value);
-  result.chars = value;
-  return result;
-}
 
 FORWARD(variant_t);
 

@@ -2,15 +2,15 @@
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "alloc.h"
-#include "crash.h"
 #include "file.h"
 #include "interp.h"
-#include "log.h"
 #include "plankton.h"
 #include "runtime-inl.h"
 #include "safe-inl.h"
 #include "tagged.h"
 #include "try-inl.h"
+#include "utils/crash.h"
+#include "utils/log.h"
 #include "value.h"
 
 // Convert a C string containing base64 encoded data to a heap blob with the

@@ -6,6 +6,8 @@
 #define _UTILS
 
 #include "globals.h"
+#include "utils/alloc.h"
+#include "utils/string.h"
 #include "value.h"
 
 #include <stdarg.h>
@@ -17,50 +19,6 @@
 static size_t align_size(uint32_t alignment, size_t size) {
   return (size + (alignment - 1)) & ~(alignment - 1);
 }
-
-
-// --- S t r i n g ---
-
-// A C string with a length.
-struct string_t {
-  size_t length;
-  const char *chars;
-};
-
-// Initializes this string to hold the given characters.
-void string_init(string_t *str, const char *chars);
-
-// Returns the length of the given string.
-size_t string_length(string_t *str);
-
-// Returns the index'th character in the given string.
-char string_char_at(string_t *str, size_t index);
-
-// Write the contents of this string into the given buffer, which must hold
-// at least count characters.
-void string_copy_to(string_t *str, char *dest, size_t count);
-
-// Returns true iff the two strings are equal.
-bool string_equals(string_t *a, string_t *b);
-
-// Returns an integer indicating how a and b relate in lexical ordering. It
-// holds that (string_compare(a, b) REL 0) when (a REL b) for a relational
-// operator REL.
-int string_compare(string_t *a, string_t *b);
-
-// Returns true iff the given string is equal to the given c-string.
-bool string_equals_cstr(string_t *a, const char *b);
-
-
-// A small snippet of a string that can be encoded as a 32-bit integer. Create
-// a hint cheaply using the STRING_HINT macro.
-typedef struct {
-  // The characters of this hint.
-  const char value[4];
-} string_hint_t;
-
-// Reads the characters from a string hint, storing them in a plain c-string.
-void string_hint_to_c_str(const char *hint, char c_str_out[5]);
 
 
 // --- B l o b ---
@@ -91,97 +49,6 @@ void blob_fill(blob_t *blob, byte_t value);
 
 // Write the contents of the source blob into the destination.
 void blob_copy_to(blob_t *src, blob_t *dest);
-
-
-// --- A l l o c a t o r ---
-
-// A block of memory as returned from an allocator. Bundling the length with the
-// memory allows us to check how much memory is live at any given time.
-typedef struct {
-  // The actual memory.
-  void *memory;
-  // The number of bytes of memory (minus any overhead added by the allocator).
-  size_t size;
-} memory_block_t;
-
-// Returns true iff the given block is empty, say because allocation failed.
-bool memory_block_is_empty(memory_block_t block);
-
-// Resets the given block to the empty state.
-memory_block_t memory_block_empty();
-
-// Creates a new memory block with the given contents. Be sure to note that this
-// doesn't allocate anything, just bundles previously allocated memory into a
-// struct.
-memory_block_t new_memory_block(void *memory, size_t size);
-
-// An allocator encapsulates a source of memory from the system.
-typedef struct {
-  // Function to call to do allocation.
-  memory_block_t (*malloc)(void *data, size_t size);
-  // Function to call to dispose memory. Note: the memory to deallocate is
-  // the second arguments.
-  void (*free)(void *data, memory_block_t memory);
-  // Extra data that can be used by the alloc/dealloc functions.
-  void *data;
-} allocator_t;
-
-// Initializes the given allocator to be the system allocator, using malloc and
-// free.
-void init_system_allocator(allocator_t *alloc);
-
-// Allocates a block of memory using the given allocator.
-memory_block_t allocator_malloc(allocator_t *alloc, size_t size);
-
-// Allocates the specified amount of memory using the default allocator.
-memory_block_t allocator_default_malloc(size_t size);
-
-// Frees the given block of memory using the default allocator.
-void allocator_default_free(memory_block_t block);
-
-// Frees a block of memory using the given allocator.
-void allocator_free(allocator_t *alloc, memory_block_t memory);
-
-// Returns the current default allocator. If none has been explicitly set this
-// will be the system allocator.
-allocator_t *allocator_get_default();
-
-// Sets the default allocator, returning the previous value.
-allocator_t *allocator_set_default(allocator_t *value);
-
-
-// --- S t r i n g   b u f f e r ---
-
-// Buffer for building a string incrementally.
-struct string_buffer_t {
-  // Size of string currently in the buffer.
-  size_t length;
-  // The data buffer.
-  memory_block_t memory;
-};
-
-// Initialize a string buffer.
-void string_buffer_init(string_buffer_t *buf);
-
-// Disposes the given string buffer.
-void string_buffer_dispose(string_buffer_t *buf);
-
-// Add a single character to this buffer.
-void string_buffer_putc(string_buffer_t *buf, char c);
-
-// Append the given text to the given buffer.
-void string_buffer_printf(string_buffer_t *buf, const char *format, ...);
-
-// Append the given text to the given buffer.
-void string_buffer_vprintf(string_buffer_t *buf, const char *format, va_list argp);
-
-// Append the contents of the string to this buffer.
-void string_buffer_append(string_buffer_t *buf, string_t *str);
-
-// Null-terminates the buffer and stores the result in the given out parameter.
-// The string is still backed by the buffer and so becomes invalid when the
-// buffer is disposed.
-void string_buffer_flush(string_buffer_t *buf, string_t *str_out);
 
 
 // --- B y t e   b u f f e r ---

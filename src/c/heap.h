@@ -8,11 +8,11 @@
 #define _HEAP
 
 #include "globals.h"
-#include "ook.h"
 #include "safe.h"
-#include "utils.h"
-#include "value.h"
 #include "sync/thread.h"
+#include "utils.h"
+#include "utils/ook.h"
+#include "value.h"
 
 
 static const byte_t kBlankHeapMarker = 0xBE;

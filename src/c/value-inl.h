@@ -11,6 +11,8 @@
 #include "tagged.h"
 #include "try-inl.h"
 #include "utils-inl.h"
+#include "utils/strbuf.h"
+#include "utils/string-inl.h"
 #include "value.h"
 
 // There are two flavors of tests: in-tests and is-tests. Both tests whether

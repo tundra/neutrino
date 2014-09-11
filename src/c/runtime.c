@@ -3,15 +3,16 @@
 
 #include "alloc.h"
 #include "behavior.h"
-#include "check.h"
 #include "ctrino.h"
 #include "derived.h"
+#include "format.h"
 #include "freeze.h"
-#include "log.h"
-#include "ook-inl.h"
 #include "runtime-inl.h"
 #include "safe-inl.h"
 #include "try-inl.h"
+#include "utils/check.h"
+#include "utils/log.h"
+#include "utils/ook-inl.h"
 #include "value-inl.h"
 
 
@@ -431,6 +432,7 @@ bool gc_fuzzer_tick(gc_fuzzer_t *fuzzer) {
 }
 
 value_t new_runtime(runtime_config_t *config, runtime_t **runtime_out) {
+  ensure_neutrino_format_handlers_registered();
   memory_block_t memory = allocator_default_malloc(sizeof(runtime_t));
   CHECK_EQ("wrong runtime_t memory size", sizeof(runtime_t), memory.size);
   runtime_t *runtime = (runtime_t*) memory.memory;

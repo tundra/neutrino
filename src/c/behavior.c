@@ -6,11 +6,11 @@
 #include "ctrino.h"
 #include "derived-inl.h"
 #include "freeze.h"
-#include "log.h"
 #include "runtime.h"
 #include "sync.h"
 #include "syntax.h"
 #include "try-inl.h"
+#include "utils/log.h"
 #include "value-inl.h"
 
 

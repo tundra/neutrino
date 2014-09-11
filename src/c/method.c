@@ -6,11 +6,11 @@
 #include "codegen.h"
 #include "derived-inl.h"
 #include "freeze.h"
-#include "log.h"
 #include "method.h"
-#include "ook-inl.h"
 #include "tagged-inl.h"
 #include "try-inl.h"
+#include "utils/log.h"
+#include "utils/ook-inl.h"
 #include "value-inl.h"
 
 void sigmap_input_init(sigmap_input_o *input, value_t ambience, value_t tags) {

@@ -4,9 +4,9 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "codegen.h"
-#include "log.h"
-#include "ook-inl.h"
 #include "try-inl.h"
+#include "utils/log.h"
+#include "utils/ook-inl.h"
 #include "value-inl.h"
 
 

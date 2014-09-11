@@ -8,7 +8,7 @@
 #define _CODEGEN
 
 #include "interp.h"
-#include "ook.h"
+#include "utils/ook.h"
 #include "value.h"
 
 

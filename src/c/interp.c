@@ -4,11 +4,11 @@
 #include "alloc.h"
 #include "derived-inl.h"
 #include "interp.h"
-#include "log.h"
 #include "process.h"
 #include "safe-inl.h"
 #include "sync.h"
 #include "try-inl.h"
+#include "utils/log.h"
 #include "value-inl.h"
 
 

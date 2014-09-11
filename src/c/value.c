@@ -7,10 +7,10 @@
 #include "freeze.h"
 #include "heap.h"
 #include "interp.h"
-#include "log.h"
 #include "runtime.h"
 #include "tagged-inl.h"
 #include "try-inl.h"
+#include "utils/log.h"
 #include "value-inl.h"
 
 const char *get_value_domain_name(value_domain_t domain) {
