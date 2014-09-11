@@ -32,7 +32,6 @@ library_file_names = [
 # a real library at some point but for now this'll do.
 library = get_group("library")
 library.add_dependency(get_dep_external('tclib', 'src', 'c', 'sync', 'library'))
-library.add_dependency(get_dep_external('tclib', 'src', 'c', 'utils', 'library'))
 
 # Add the source file objects to the library.
 for library_file_name in library_file_names:
