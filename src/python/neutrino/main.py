@@ -14,7 +14,7 @@ import analysis
 import ast
 import data
 import optparse
-import parser
+import nparser
 import plankton
 import re
 import schedule
@@ -51,12 +51,12 @@ class ModuleCompile(object):
   def parse_manifest(self):
     source = open(self.manifest_file, "rt").read()
     tokens = token.tokenize(source)
-    return parser.ModuleParser(tokens).parse_module_manifest()
+    return nparser.ModuleParser(tokens).parse_module_manifest()
 
   def parse_source_file(self, name):
     source = open(name, "rt").read()
     tokens = token.tokenize(source)
-    parser.Parser(tokens, self.module).parse_program()
+    nparser.Parser(tokens, self.module).parse_program()
 
   def add_to_library(self, library):
     unbound = self.module.as_unbound_module()
@@ -153,7 +153,7 @@ class Main(object):
       source = open(filename, "rt").read()
       tokens = token.tokenize(source)
       module = ast.Module(filename)
-      parser.Parser(tokens, module).parse_program()
+      nparser.Parser(tokens, module).parse_program()
       self.schedule_for_compile(module)
       self.schedule_for_output(module)
 

@@ -31,6 +31,8 @@ TEST(utils, string_buffer_value_printf) {
 
   CHECK_PRINTF("--- 0 ---", "--- %v ---", new_integer(0));
   CHECK_PRINTF("--- %<condition: Wat(dt@0)> ---", "--- %v ---", new_condition(ccWat));
+  CHECK_PRINTF("--- %<condition: Wat(dt@0)> | %<condition: Circular(dt@0)> ---",
+      "--- %v | %v ---", new_condition(ccWat), new_condition(ccCircular));
   CHECK_PRINTF("--- null ---", "--- %v ---", null());
   CHECK_PRINTF("--- true ---", "--- %v ---", yes());
   CHECK_PRINTF("--- [] ---", "--- %v ---", ROOT(runtime, empty_array));

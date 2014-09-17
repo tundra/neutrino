@@ -9,12 +9,12 @@
 #include "value.h"
 
 static void format_value(format_handler_o *self, format_request_t *request,
-    va_list argp) {
+    va_list_ref_t argp) {
   // Format a value. Since value_t and encoded_value_t should be
   // synonymous at the native level it should be possible to pass values
   // directly. However if that ever fails just grab the encoded value
   // where the value is passed.
-  encoded_value_t encoded = va_arg(argp, encoded_value_t);
+  encoded_value_t encoded = va_arg(VA_LIST_DEREF(argp), encoded_value_t);
   value_t value;
   value.encoded = encoded;
   size_t depth = (request->int_param == -1) ? kDefaultPrintDepth : ((size_t) request->int_param);
@@ -28,8 +28,8 @@ VTABLE(value_format_handler_o, format_handler_o) { format_value };
 format_handler_o kValueFormatHandler;
 
 static void format_value_pointer(format_handler_o *self, format_request_t *request,
-    va_list argp) {
-  encoded_value_t encoded = va_arg(argp, encoded_value_t);
+    va_list_ref_t argp) {
+  encoded_value_t encoded = va_arg(VA_LIST_DEREF(argp), encoded_value_t);
   char wordy[kMaxWordyNameSize];
   wordy_encode(encoded, wordy, kMaxWordyNameSize);
   string_buffer_native_printf(request->buf, "%s", wordy);

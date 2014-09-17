@@ -7,7 +7,7 @@ file_names = [
   "ast.py",
   "data.py",
   "main.py",
-  "parser.py",
+  "nparser.py",
   "schedule.py",
   "token.py",
 ]

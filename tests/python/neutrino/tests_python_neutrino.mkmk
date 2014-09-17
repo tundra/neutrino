@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 file_names = [
-  "test_parser.py",
+  "test_nparser.py",
   "test_token.py",
 ]
 

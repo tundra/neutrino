@@ -1,7 +1,10 @@
 # Copyright 2013 the Neutrino authors (see AUTHORS).
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-# Neutrino parser
+# Neutrino parser. This is called "nparser" instead of "parser" because python
+# has a built-in module called "parser" and under circumstances I don't
+# understand python insists on using that instead of our parser. So yeah thanks
+# for that.
 
 
 from abc import abstractmethod, ABCMeta

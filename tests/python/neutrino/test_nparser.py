@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-from neutrino import parser, token, ast, data
+from neutrino import nparser, token, ast, data
 import unittest
 
 ar = lambda *e: ast.Array(e)
@@ -93,14 +93,14 @@ class ParserTest(unittest.TestCase):
     self.maxDiff = None
 
   def check_expression(self, input, expected):
-    found = parser.Parser(token.tokenize(input), ast.Module("")).parse_expression(False)
+    found = nparser.Parser(token.tokenize(input), ast.Module("")).parse_expression(False)
     # Convert the asts to strings because that's just infinitely easier to
     # debug when assertions fail. Of course that requires that ast string
     # conversion is sane, which it is.
     self.assertEquals(str(expected), str(found))
 
   def check_program(self, input, expected):
-    found = parser.Parser(token.tokenize(input), ast.Module("")).parse_program()
+    found = nparser.Parser(token.tokenize(input), ast.Module("")).parse_program()
     self.assertEquals(unicode(expected), unicode(found))
 
   def test_atomic_expressions(self):
