@@ -5,9 +5,9 @@
 
 BEGIN_C_INCLUDES
 #include "alloc.h"
-#include "plankton.h"
-#include "value-inl.h"
+#include "serialize.h"
 #include "try-inl.h"
+#include "value-inl.h"
 END_C_INCLUDES
 
 // Encodes and decodes a plankton value and returns the result.
@@ -29,7 +29,7 @@ static value_t check_plankton(runtime_t *runtime, value_t value) {
   return decoded;
 }
 
-TEST(plankton, simple) {
+TEST(serialize, simple) {
   CREATE_RUNTIME();
 
   // Integers
@@ -47,7 +47,7 @@ TEST(plankton, simple) {
   DISPOSE_RUNTIME();
 }
 
-TEST(plankton, array) {
+TEST(serialize, array) {
   CREATE_RUNTIME();
 
   value_t arr = new_heap_array(runtime, 5);
@@ -58,7 +58,7 @@ TEST(plankton, array) {
   DISPOSE_RUNTIME();
 }
 
-TEST(plankton, map) {
+TEST(serialize, map) {
   CREATE_RUNTIME();
 
   value_t map = new_heap_id_hash_map(runtime, 16);
@@ -76,7 +76,7 @@ TEST(plankton, map) {
 string_t name##_chars = new_string(value);                                            \
 value_t name = new_heap_string(runtime, &name##_chars)
 
-TEST(plankton, string) {
+TEST(serialize, string) {
   CREATE_RUNTIME();
 
   DEF_HEAP_STR(foo, "foo");
@@ -89,7 +89,7 @@ TEST(plankton, string) {
   DISPOSE_RUNTIME();
 }
 
-TEST(plankton, instance) {
+TEST(serialize, instance) {
   CREATE_RUNTIME();
 
   value_t instance = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
@@ -105,7 +105,7 @@ TEST(plankton, instance) {
   DISPOSE_RUNTIME();
 }
 
-TEST(plankton, references) {
+TEST(serialize, references) {
   CREATE_RUNTIME();
 
   value_t i0 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
@@ -128,7 +128,7 @@ TEST(plankton, references) {
   DISPOSE_RUNTIME();
 }
 
-TEST(plankton, cycles) {
+TEST(serialize, cycles) {
   CREATE_RUNTIME();
 
   value_t i0 = new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
@@ -189,7 +189,7 @@ static value_t int_to_value(value_t value, runtime_t *runtime, void *ptr) {
   }
 }
 
-TEST(plankton, env_resolution) {
+TEST(serialize, env_resolution) {
   CREATE_RUNTIME();
 
   test_resolver_data_t data;
@@ -252,7 +252,7 @@ static value_t deserialize(runtime_t *runtime, byte_buffer_t *buf) {
   return plankton_deserialize(runtime, &syntax_mapping, blob);
 }
 
-TEST(plankton, env_construction) {
+TEST(serialize, env_construction) {
   CREATE_RUNTIME();
 
   // Environment references resolve correctly to ast factories.

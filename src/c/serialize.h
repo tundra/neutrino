@@ -2,8 +2,8 @@
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 
-#ifndef _PLANKTON
-#define _PLANKTON
+#ifndef _SERIALIZE
+#define _SERIALIZE
 
 #include "value.h"
 
@@ -60,4 +60,4 @@ value_t plankton_wire_encode_uint32(byte_buffer_t *buf, uint32_t value);
 // only the string contents.
 value_t plankton_wire_encode_string(byte_buffer_t *buf, string_t *str);
 
-#endif // _PLANKTON
+#endif // _SERIALIZE

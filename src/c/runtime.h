@@ -9,7 +9,7 @@
 #define _RUNTIME
 
 #include "heap.h"
-#include "plankton.h"
+#include "serialize.h"
 
 // Enumerates the string table strings that will be stored as easily accessible
 // roots.

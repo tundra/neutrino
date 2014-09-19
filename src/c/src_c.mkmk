@@ -17,10 +17,10 @@ library_file_names = [
   "heap.c",
   "interp.c",
   "method.c",
-  "plankton.c",
   "process.c",
   "runtime.c",
   "safe.c",
+  "serialize.c",
   "sync.c",
   "syntax.c",
   "tagged.c",
@@ -38,6 +38,7 @@ library.add_dependency(get_dep_external('plankton', 'src', 'c', 'library'))
 for library_file_name in library_file_names:
   library_file = c.get_source_file(library_file_name)
   library_file.add_include(get_dep('tclib').get_child('src', 'c'))
+  library_file.add_include(get_dep('plankton').get_child('src', 'c'))
   object_file = library_file.get_object()
   library.add_member(object_file)
 
