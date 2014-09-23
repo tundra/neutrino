@@ -52,12 +52,4 @@ value_t plankton_serialize(runtime_t *runtime, value_mapping_t *resolver_or_null
 value_t plankton_deserialize(runtime_t *runtime, value_mapping_t *access_or_null,
     value_t blob);
 
-// Encodes an unsigned 32-bit integer in the plankton wire format. This does not
-// emit the tag, only the integer value.
-value_t plankton_wire_encode_uint32(byte_buffer_t *buf, uint32_t value);
-
-// Encodes a string in the plankton wire format. This does not emit the tag,
-// only the string contents.
-value_t plankton_wire_encode_string(byte_buffer_t *buf, string_t *str);
-
 #endif // _SERIALIZE

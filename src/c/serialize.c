@@ -42,8 +42,6 @@ byte_t byte_stream_read(byte_stream_t *stream) {
 
 // Collection of state used when serializing data.
 typedef struct {
-  // The buffer we're writing the output to.
-  byte_buffer_t *buf;
   // The plankton assembler.
   pton_assembler_t *assm;
   // Map from objects we've seen to their index.
@@ -63,8 +61,7 @@ value_t value_mapping_apply(value_mapping_t *mapping, value_t value, runtime_t *
 
 // Initialize serialization state.
 static value_t serialize_state_init(serialize_state_t *state, runtime_t *runtime,
-    value_mapping_t *resolver, byte_buffer_t *buf, pton_assembler_t *assm) {
-  state->buf = buf;
+    value_mapping_t *resolver, pton_assembler_t *assm) {
   state->assm = assm;
   state->object_offset = 0;
   state->runtime = runtime;
@@ -76,47 +73,17 @@ static value_t serialize_state_init(serialize_state_t *state, runtime_t *runtime
 // Serialize any (non-condition) value on the given buffer.
 static value_t value_serialize(value_t value, serialize_state_t *state);
 
-value_t plankton_wire_encode_uint32(byte_buffer_t *buf, uint32_t value) {
-  while (value > 0x7F) {
-    // As long as the value doesn't fit in 7 bits chop off 7 bits and mark
-    // them with a high 1 to indicate that there's more coming.
-    byte_t part = value & 0x7F;
-    byte_buffer_append(buf, part | 0x80);
-    value >>= 7;
-  }
-  byte_buffer_append(buf, value);
-  return success();
-}
-
-// Zig-zag encodes a 32-bit signed integer.
-static value_t encode_int32(int32_t value, byte_buffer_t *buf) {
-  uint32_t zig_zag = (value << 1) ^ (value >> 31);
-  return plankton_wire_encode_uint32(buf, zig_zag);
-}
-
-static value_t integer_serialize(value_t value, byte_buffer_t *buf,
-    pton_assembler_t *assm) {
+static value_t integer_serialize(value_t value, pton_assembler_t *assm) {
   CHECK_DOMAIN(vdInteger, value);
-  byte_buffer_append(buf, pInt32);
-  // TODO: deal with full size integers, for now just trap loss of data.
   int64_t int_value = get_integer_value(value);
   pton_assembler_emit_int64(assm, int_value);
-  int32_t trunc = (int32_t) int_value;
-  CHECK_EQ("plankton integer overflow", int_value, (int64_t) trunc);
-  return encode_int32(trunc, buf);
-}
-
-static value_t singleton_serialize(plankton_tag_t tag, byte_buffer_t *buf) {
-  byte_buffer_append(buf, tag);
   return success();
 }
 
 static value_t array_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofArray, value);
-  byte_buffer_append(state->buf, pArray);
   size_t length = get_array_length(value);
   pton_assembler_begin_array(state->assm, length);
-  plankton_wire_encode_uint32(state->buf, length);
   for (size_t i = 0; i < length; i++) {
     TRY(value_serialize(get_array_at(value, i), state));
   }
@@ -125,10 +92,8 @@ static value_t array_serialize(value_t value, serialize_state_t *state) {
 
 static value_t map_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofIdHashMap, value);
-  byte_buffer_append(state->buf, pMap);
   size_t entry_count = get_id_hash_map_size(value);
   pton_assembler_begin_map(state->assm, entry_count);
-  plankton_wire_encode_uint32(state->buf, entry_count);
   id_hash_map_iter_t iter;
   id_hash_map_iter_init(&iter, value);
   size_t entries_written = 0;
@@ -144,21 +109,12 @@ static value_t map_serialize(value_t value, serialize_state_t *state) {
   return success();
 }
 
-value_t plankton_wire_encode_string(byte_buffer_t *buf, string_t *str) {
-  size_t length = string_length(str);
-  plankton_wire_encode_uint32(buf, length);
-  for (size_t i = 0; i < length; i++)
-    byte_buffer_append(buf, string_char_at(str, i));
-  return success();
-}
-
 static value_t string_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofString, value);
   string_t contents;
   get_string_contents(value, &contents);
   pton_assembler_emit_utf8(state->assm, contents.chars, contents.length);
-  byte_buffer_append(state->buf, pString);
-  return plankton_wire_encode_string(state->buf, &contents);
+  return success();
 }
 
 static void register_serialized_object(value_t value, serialize_state_t *state) {
@@ -176,8 +132,6 @@ static value_t instance_serialize(value_t value, serialize_state_t *state) {
     value_t raw_resolved = value_mapping_apply(state->resolver, value, state->runtime);
     if (in_condition_cause(ccNothing, raw_resolved)) {
       // It's not an environment object. Just serialize it directly.
-      byte_buffer_append(state->buf, pObject);
-      byte_buffer_append(state->buf, pNull);
       pton_assembler_begin_object(state->assm);
       pton_assembler_emit_null(state->assm);
       // Cycles are only allowed through the payload of an object so we only
@@ -186,7 +140,6 @@ static value_t instance_serialize(value_t value, serialize_state_t *state) {
       return value_serialize(get_instance_fields(value), state);
     } else {
       TRY_DEF(resolved, raw_resolved);
-      byte_buffer_append(state->buf, pEnvironment);
       pton_assembler_begin_environment_reference(state->assm);
       TRY(value_serialize(resolved, state));
       register_serialized_object(value, state);
@@ -197,8 +150,6 @@ static value_t instance_serialize(value_t value, serialize_state_t *state) {
     // we saw it.
     size_t delta = get_integer_value(ref);
     size_t offset = state->object_offset - delta - 1;
-    byte_buffer_append(state->buf, pReference);
-    plankton_wire_encode_uint32(state->buf, offset);
     pton_assembler_emit_reference(state->assm, offset);
     return success();
   }
@@ -225,10 +176,10 @@ static value_t custom_tagged_serialize(value_t value, serialize_state_t *state) 
   switch (get_custom_tagged_phylum(value)) {
     case tpNull:
       pton_assembler_emit_null(state->assm);
-      return singleton_serialize(pNull, state->buf);
+      return success();
     case tpBoolean:
       pton_assembler_emit_bool(state->assm, get_boolean_value(value));
-      return singleton_serialize(get_boolean_value(value) ? pTrue : pFalse, state->buf);
+      return success();
     default:
       return new_invalid_input_condition();
   }
@@ -238,7 +189,7 @@ static value_t value_serialize(value_t data, serialize_state_t *state) {
   value_domain_t domain = get_value_domain(data);
   switch (domain) {
     case vdInteger:
-      return integer_serialize(data, state->buf, state->assm);
+      return integer_serialize(data, state->assm);
     case vdHeapObject:
       return object_serialize(data, state);
     case vdCustomTagged:
@@ -259,9 +210,6 @@ value_t plankton_serialize(runtime_t *runtime, value_mapping_t *resolver_or_null
     value_t data) {
   pton_assembler_t *assm = pton_new_assembler();
   E_BEGIN_TRY_FINALLY();
-    // Write the data to a C heap blob.
-    byte_buffer_t buf;
-    byte_buffer_init(&buf);
     // Use the empty resolver if the resolver pointer is null.
     value_mapping_t resolver;
     if (resolver_or_null == NULL) {
@@ -270,12 +218,11 @@ value_t plankton_serialize(runtime_t *runtime, value_mapping_t *resolver_or_null
       resolver = *resolver_or_null;
     }
     serialize_state_t state;
-    E_TRY(serialize_state_init(&state, runtime, &resolver, &buf, assm));
+    E_TRY(serialize_state_init(&state, runtime, &resolver, assm));
     E_TRY(value_serialize(data, &state));
-    blob_t buffer_data;
-    byte_buffer_flush(&buf, &buffer_data);
-    E_TRY_DEF(result, new_heap_blob_with_data(runtime, &buffer_data));
-    byte_buffer_dispose(&buf);
+    blob_t blob = {0, 0};
+    pton_assembler_flush(assm, &blob.data, &blob.byte_length);
+    E_TRY_DEF(result, new_heap_blob_with_data(runtime, &blob));
     E_RETURN(result);
   E_FINALLY();
     pton_dispose_assembler(assm);
@@ -320,12 +267,13 @@ static value_t deserialize_state_init(deserialize_state_t *state, runtime_t *run
 static value_t value_deserialize(deserialize_state_t *state);
 
 static uint32_t uint32_deserialize(byte_stream_t *in) {
-  byte_t current = 0xFF;
-  uint32_t result = 0;
-  byte_t offset = 0;
-  while ((current & 0x80) != 0) {
-    current = byte_stream_read(in);
-    result = result | ((current & 0x7f) << offset);
+  uint8_t next = byte_stream_read(in);
+  uint64_t result = (next & 0x7F);
+  uint64_t offset = 7;
+  while (next >= 0x80 && byte_stream_has_more(in)) {
+    next = byte_stream_read(in);
+    uint64_t payload = (next & 0x7F) + 1;
+    result = result + (payload << offset);
     offset += 7;
   }
   return result;
@@ -401,6 +349,9 @@ static value_t environment_deserialize(deserialize_state_t *state) {
   return result;
 }
 
+#include "utils/log.h"
+
+int count = 0;
 static value_t reference_deserialize(deserialize_state_t *state) {
   size_t offset = uint32_deserialize(state->in);
   size_t index = state->object_offset - offset - 1;

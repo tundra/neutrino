@@ -5,6 +5,7 @@
 
 BEGIN_C_INCLUDES
 #include "alloc.h"
+#include "plankton.h"
 #include "serialize.h"
 #include "try-inl.h"
 #include "value-inl.h"
@@ -224,28 +225,27 @@ TEST(serialize, env_resolution) {
 }
 
 // Writes a tagged plankton string to the given buffer.
-static value_t write_string(byte_buffer_t *buf, const char *c_str) {
+static value_t write_string(pton_assembler_t *assm, const char *c_str) {
   string_t str;
   string_init(&str, c_str);
-  byte_buffer_append(buf, pString);
-  return plankton_wire_encode_string(buf, &str);
+  pton_assembler_emit_utf8(assm, str.chars, str.length);
+  return success();
 }
 
 // Writes an ast factory reference with the given ast type to the given buffer.
-static value_t write_ast_factory(byte_buffer_t *buf, const char *ast_type) {
-  byte_buffer_append(buf, pEnvironment);
-  byte_buffer_append(buf, pArray);
-  TRY(plankton_wire_encode_uint32(buf, 2));
-  TRY(write_string(buf, "ast"));
-  TRY(write_string(buf, ast_type));
+static value_t write_ast_factory(pton_assembler_t *assm, const char *ast_type) {
+  pton_assembler_begin_environment_reference(assm);
+  pton_assembler_begin_array(assm, 2);
+  TRY(write_string(assm, "ast"));
+  TRY(write_string(assm, ast_type));
   return success();
 }
 
 // Deserializes the contents of the given buffer as plankton within the given
 // runtime, resolving environment references using a syntax mapping.
-static value_t deserialize(runtime_t *runtime, byte_buffer_t *buf) {
-  blob_t raw_blob;
-  byte_buffer_flush(buf, &raw_blob);
+static value_t deserialize(runtime_t *runtime, pton_assembler_t *assm) {
+  blob_t raw_blob = {0, 0};
+  pton_assembler_flush(assm, &raw_blob.data, &raw_blob.byte_length);
   value_t blob = new_heap_blob_with_data(runtime, &raw_blob);
   value_mapping_t syntax_mapping;
   TRY(init_plankton_environment_mapping(&syntax_mapping, runtime));
@@ -257,28 +257,25 @@ TEST(serialize, env_construction) {
 
   // Environment references resolve correctly to ast factories.
   {
-    byte_buffer_t buf;
-    byte_buffer_init(&buf);
-    write_ast_factory(&buf, "Literal");
-    value_t value = deserialize(runtime, &buf);
+    pton_assembler_t *assm = pton_new_assembler();
+    write_ast_factory(assm, "Literal");
+    value_t value = deserialize(runtime, assm);
     ASSERT_FAMILY(ofFactory, value);
-    byte_buffer_dispose(&buf);
+    pton_dispose_assembler(assm);
   }
 
   // Objects with ast factory headers produce asts.
   {
-    byte_buffer_t buf;
-    byte_buffer_init(&buf);
-    byte_buffer_append(&buf, pObject);
-    write_ast_factory(&buf, "Literal");
-    byte_buffer_append(&buf, pMap);
-    plankton_wire_encode_uint32(&buf, 1);
-    write_string(&buf, "value");
-    byte_buffer_append(&buf, pTrue);
-    value_t value = deserialize(runtime, &buf);
+    pton_assembler_t *assm = pton_new_assembler();
+    pton_assembler_begin_object(assm);
+    write_ast_factory(assm, "Literal");
+    pton_assembler_begin_map(assm, 1);
+    write_string(assm, "value");
+    pton_assembler_emit_bool(assm, true);
+    value_t value = deserialize(runtime, assm);
     ASSERT_FAMILY(ofLiteralAst, value);
     ASSERT_VALEQ(yes(), get_literal_ast_value(value));
-    byte_buffer_dispose(&buf);
+    pton_dispose_assembler(assm);
   }
 
   DISPOSE_RUNTIME();
