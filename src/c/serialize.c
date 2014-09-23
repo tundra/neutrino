@@ -220,8 +220,9 @@ value_t plankton_serialize(runtime_t *runtime, value_mapping_t *resolver_or_null
     serialize_state_t state;
     E_TRY(serialize_state_init(&state, runtime, &resolver, assm));
     E_TRY(value_serialize(data, &state));
-    blob_t blob = {0, 0};
-    pton_assembler_flush(assm, &blob.data, &blob.byte_length);
+    memory_block_t code = pton_assembler_peek_code(assm);
+    blob_t blob;
+    blob_init(&blob, code.memory, code.size);
     E_TRY_DEF(result, new_heap_blob_with_data(runtime, &blob));
     E_RETURN(result);
   E_FINALLY();

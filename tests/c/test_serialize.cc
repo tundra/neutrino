@@ -244,8 +244,9 @@ static value_t write_ast_factory(pton_assembler_t *assm, const char *ast_type) {
 // Deserializes the contents of the given buffer as plankton within the given
 // runtime, resolving environment references using a syntax mapping.
 static value_t deserialize(runtime_t *runtime, pton_assembler_t *assm) {
-  blob_t raw_blob = {0, 0};
-  pton_assembler_flush(assm, &raw_blob.data, &raw_blob.byte_length);
+  memory_block_t code = pton_assembler_peek_code(assm);
+  blob_t raw_blob;
+  blob_init(&raw_blob, static_cast<byte_t*>(code.memory), code.size);
   value_t blob = new_heap_blob_with_data(runtime, &raw_blob);
   value_mapping_t syntax_mapping;
   TRY(init_plankton_environment_mapping(&syntax_mapping, runtime));
