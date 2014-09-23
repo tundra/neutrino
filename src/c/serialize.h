@@ -7,20 +7,6 @@
 
 #include "value.h"
 
-// The different plankton type tags.
-typedef enum {
-  pInt32 = 0,
-  pString = 1,
-  pArray = 2,
-  pMap = 3,
-  pNull = 4,
-  pTrue = 5,
-  pFalse = 6,
-  pObject = 7,
-  pReference = 8,
-  pEnvironment = 9,
-} plankton_tag_t;
-
 // Callback that can be used to resolve environment references.
 typedef value_t (value_mapping_function_t)(value_t value, runtime_t *runtime,
     void *data);

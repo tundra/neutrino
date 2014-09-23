@@ -267,28 +267,7 @@ static value_t deserialize_state_init(deserialize_state_t *state, runtime_t *run
 // Reads the next value from the stream.
 static value_t value_deserialize(deserialize_state_t *state);
 
-static uint32_t uint32_deserialize(byte_stream_t *in) {
-  uint8_t next = byte_stream_read(in);
-  uint64_t result = (next & 0x7F);
-  uint64_t offset = 7;
-  while (next >= 0x80 && byte_stream_has_more(in)) {
-    next = byte_stream_read(in);
-    uint64_t payload = (next & 0x7F) + 1;
-    result = result + (payload << offset);
-    offset += 7;
-  }
-  return result;
-}
-
-// Reads an int32 into an integer object.
-static value_t int32_deserialize(byte_stream_t *in) {
-  uint32_t zig_zag = uint32_deserialize(in);
-  int32_t value = (zig_zag >> 1) ^ (-(zig_zag & 1));
-  return new_integer(value);
-}
-
-static value_t array_deserialize(deserialize_state_t *state) {
-  size_t length = uint32_deserialize(state->in);
+static value_t array_deserialize(size_t length, deserialize_state_t *state) {
   TRY_DEF(result, new_heap_array(state->runtime, length));
   for (size_t i = 0; i < length; i++) {
     TRY_DEF(value, value_deserialize(state));
@@ -297,8 +276,7 @@ static value_t array_deserialize(deserialize_state_t *state) {
   return result;
 }
 
-static value_t map_deserialize(deserialize_state_t *state) {
-  size_t entry_count = uint32_deserialize(state->in);
+static value_t map_deserialize(size_t entry_count, deserialize_state_t *state) {
   TRY_DEF(result, new_heap_id_hash_map(state->runtime, 16));
   for (size_t i = 0; i < entry_count; i++) {
     TRY_DEF(key, value_deserialize(state));
@@ -308,20 +286,11 @@ static value_t map_deserialize(deserialize_state_t *state) {
   return result;
 }
 
-static value_t string_deserialize(deserialize_state_t *state) {
-  string_buffer_t buf;
-  string_buffer_init(&buf);
-  size_t length = uint32_deserialize(state->in);
-  for (size_t i = 0; i < length; i++)
-    string_buffer_putc(&buf, byte_stream_read(state->in));
+static value_t string_deserialize(pton_instr_t *instr, deserialize_state_t *state) {
   string_t contents;
-  string_buffer_flush(&buf, &contents);
-  E_BEGIN_TRY_FINALLY();
-    E_TRY_DEF(result, new_heap_string(state->runtime, &contents));
-    E_RETURN(result);
-  E_FINALLY();
-    string_buffer_dispose(&buf);
-  E_END_TRY_FINALLY();
+  contents.chars = (char*) instr->payload.string_data.contents;
+  contents.length = instr->payload.string_data.length;
+  return new_heap_string(state->runtime, &contents);
 }
 
 // Grabs and returns the next object index.
@@ -353,8 +322,7 @@ static value_t environment_deserialize(deserialize_state_t *state) {
 #include "utils/log.h"
 
 int count = 0;
-static value_t reference_deserialize(deserialize_state_t *state) {
-  size_t offset = uint32_deserialize(state->in);
+static value_t reference_deserialize(size_t offset, deserialize_state_t *state) {
   size_t index = state->object_offset - offset - 1;
   value_t result = get_id_hash_map_at(state->ref_map, new_integer(index));
   CHECK_FALSE("missing reference", in_condition_cause(ccNotFound, result));
@@ -362,27 +330,32 @@ static value_t reference_deserialize(deserialize_state_t *state) {
 }
 
 static value_t value_deserialize(deserialize_state_t *state) {
-  byte_t op = byte_stream_read(state->in);
-  switch (op) {
-    case pInt32:
-      return int32_deserialize(state->in);
-    case pNull:
+  byte_stream_t *in = state->in;
+  blob_t *blob = in->blob;
+  size_t cursor = in->cursor;
+  pton_instr_t instr;
+  if (!pton_decode_next_instruction(blob->data + cursor, blob->byte_length - cursor,
+      &instr))
+    return new_invalid_input_condition();
+  in->cursor += instr.size;
+  switch (instr.opcode) {
+    case PTON_OPCODE_INT64:
+      return new_integer(instr.payload.int64_value);
+    case PTON_OPCODE_NULL:
       return null();
-    case pTrue:
-      return yes();
-    case pFalse:
-      return no();
-    case pArray:
-      return array_deserialize(state);
-    case pMap:
-      return map_deserialize(state);
-    case pString:
-      return string_deserialize(state);
-    case pObject:
+    case PTON_OPCODE_BOOL:
+      return new_boolean(instr.payload.bool_value);
+    case PTON_OPCODE_BEGIN_ARRAY:
+      return array_deserialize(instr.payload.array_length, state);
+    case PTON_OPCODE_BEGIN_MAP:
+      return map_deserialize(instr.payload.map_size, state);
+    case PTON_OPCODE_UTF8:
+      return string_deserialize(&instr, state);
+    case PTON_OPCODE_BEGIN_OBJECT:
       return object_deserialize(state);
-    case pReference:
-      return reference_deserialize(state);
-    case pEnvironment:
+    case PTON_OPCODE_REFERENCE:
+      return reference_deserialize(instr.payload.reference_offset, state);
+    case PTON_OPCODE_BEGIN_ENVIRONMENT_REFERENCE:
       return environment_deserialize(state);
     default:
       return new_invalid_input_condition();
