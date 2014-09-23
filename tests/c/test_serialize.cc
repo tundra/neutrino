@@ -228,7 +228,7 @@ TEST(serialize, env_resolution) {
 static value_t write_string(pton_assembler_t *assm, const char *c_str) {
   string_t str;
   string_init(&str, c_str);
-  pton_assembler_emit_utf8(assm, str.chars, str.length);
+  pton_assembler_emit_default_string(assm, str.chars, str.length);
   return success();
 }
 

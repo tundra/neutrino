@@ -113,7 +113,7 @@ static value_t string_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofString, value);
   string_t contents;
   get_string_contents(value, &contents);
-  pton_assembler_emit_utf8(state->assm, contents.chars, contents.length);
+  pton_assembler_emit_default_string(state->assm, contents.chars, contents.length);
   return success();
 }
 
@@ -286,10 +286,10 @@ static value_t map_deserialize(size_t entry_count, deserialize_state_t *state) {
   return result;
 }
 
-static value_t string_deserialize(pton_instr_t *instr, deserialize_state_t *state) {
+static value_t default_string_deserialize(pton_instr_t *instr, deserialize_state_t *state) {
   string_t contents;
-  contents.chars = (char*) instr->payload.string_data.contents;
-  contents.length = instr->payload.string_data.length;
+  contents.chars = (char*) instr->payload.default_string_data.contents;
+  contents.length = instr->payload.default_string_data.length;
   return new_heap_string(state->runtime, &contents);
 }
 
@@ -349,8 +349,8 @@ static value_t value_deserialize(deserialize_state_t *state) {
       return array_deserialize(instr.payload.array_length, state);
     case PTON_OPCODE_BEGIN_MAP:
       return map_deserialize(instr.payload.map_size, state);
-    case PTON_OPCODE_UTF8:
-      return string_deserialize(&instr, state);
+    case PTON_OPCODE_DEFAULT_STRING:
+      return default_string_deserialize(&instr, state);
     case PTON_OPCODE_BEGIN_OBJECT:
       return object_deserialize(state);
     case PTON_OPCODE_REFERENCE:
