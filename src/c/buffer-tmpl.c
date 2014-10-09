@@ -40,8 +40,8 @@ void MAKE_BUFFER_NAME(append)(MAKE_BUFFER_NAME(t) *buf, BUFFER_TYPE value) {
   buf->length++;
 }
 
-void MAKE_BUFFER_NAME(flush)(MAKE_BUFFER_NAME(t) *buf, blob_t *blob_out) {
-  blob_init(blob_out, (byte_t*) buf->memory.memory, buf->length * sizeof(BUFFER_TYPE));
+blob_t MAKE_BUFFER_NAME(flush)(MAKE_BUFFER_NAME(t) *buf) {
+  return new_blob(buf->memory.memory, buf->length * sizeof(BUFFER_TYPE));
 }
 
 void MAKE_BUFFER_NAME(append_cursor)(MAKE_BUFFER_NAME(t) *buf,

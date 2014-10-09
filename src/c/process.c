@@ -773,9 +773,8 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
   size_t pc = frame->pc;
   if (pc < kInvokeOperationSize)
     return nothing();
-  blob_t data;
-  get_blob_data(bytecode, &data);
-  opcode_t op = (opcode_t) blob_short_at(&data, pc - kInvokeOperationSize);
+  blob_t data = get_blob_data(bytecode);
+  opcode_t op = (opcode_t) blob_short_at(data, pc - kInvokeOperationSize);
   if (!is_invocation_opcode(op))
     return nothing();
   value_t tags = whatever();
@@ -788,7 +787,7 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
   } else {
     // Okay so we have an invoke we can use. Grab the invocation record which
     // is baked into the instruction.
-    size_t record_index = blob_short_at(&data, pc - kInvokeOperationSize + 1);
+    size_t record_index = blob_short_at(data, pc - kInvokeOperationSize + 1);
     value_t value_pool = get_code_block_value_pool(code_block);
     tags = get_array_at(value_pool, record_index);
   }

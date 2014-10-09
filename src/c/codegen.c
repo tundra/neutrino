@@ -273,9 +273,8 @@ scope_o *assembler_set_scope(assembler_t *assm, scope_o *scope) {
 
 value_t assembler_flush(assembler_t *assm) {
   // Copy the bytecode into a blob object.
-  blob_t code_blob;
-  short_buffer_flush(&assm->code, &code_blob);
-  TRY_DEF(bytecode, new_heap_blob_with_data(assm->runtime, &code_blob));
+  blob_t code_blob = short_buffer_flush(&assm->code);
+  TRY_DEF(bytecode, new_heap_blob_with_data(assm->runtime, code_blob));
   // Invert the constant pool map into an array.
   value_t value_pool = whatever();
   value_t value_pool_map = assm->value_pool;

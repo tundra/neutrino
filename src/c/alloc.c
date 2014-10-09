@@ -67,20 +67,18 @@ value_t new_heap_blob(runtime_t *runtime, size_t length) {
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, blob_species)));
   set_blob_length(result, length);
-  blob_t data;
-  get_blob_data(result, &data);
-  blob_fill(&data, 0);
+  blob_t data = get_blob_data(result);
+  blob_fill(data, 0);
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_blob_with_data(runtime_t *runtime, blob_t *contents) {
+value_t new_heap_blob_with_data(runtime_t *runtime, blob_t contents) {
   // Allocate the blob object to hold the data.
   TRY_DEF(blob, new_heap_blob(runtime, blob_byte_length(contents)));
   // Pull out the contents of the heap blob.
-  blob_t blob_data;
-  get_blob_data(blob, &blob_data);
+  blob_t blob_data = get_blob_data(blob);
   // Copy the contents into the heap blob.
-  blob_copy_to(contents, &blob_data);
+  blob_copy_to(contents, blob_data);
   return blob;
 }
 
@@ -233,6 +231,45 @@ value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity) {
 value_t new_heap_ctrino(runtime_t *runtime) {
   size_t size = kCtrinoSize;
   return alloc_heap_object(runtime, size, ROOT(runtime, ctrino_species));
+}
+
+value_t new_heap_c_object_species(runtime_t *runtime, c_object_info_t *info) {
+  size_t size = kCObjectSpeciesSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, mutable_species_species)));
+  set_species_instance_family(result, ofCObject);
+  set_species_family_behavior(result, &kCObjectBehavior);
+  set_species_division_behavior(result, &kCObjectSpeciesBehavior);
+  set_c_object_species_data_size(result, new_integer(info->data_size));
+  set_c_object_species_value_count(result, new_integer(info->value_count));
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_c_object(runtime_t *runtime, value_t species, blob_t init_data,
+    value_array_t init_values) {
+  CHECK_DIVISION(sdCObject, species);
+  c_object_info_t info;
+  get_c_object_species_object_info(species, &info);
+  CHECK_REL("too much data", init_data.size, <=, info.data_size);
+  CHECK_REL("too many values", init_values.length, <=, info.value_count);
+  size_t size = calc_c_object_size(&info);
+  TRY_DEF(result, alloc_heap_object(runtime, size, species));
+  if (init_data.size < info.aligned_data_size) {
+    // If the aligned backing array is larger than the initial data we clear the
+    // whole thing to 0 to not have data lying around that hasn't been
+    // deliberately set.
+    blob_t aligned_data = new_blob(get_c_object_data_start(result), info.aligned_data_size);
+    blob_fill(aligned_data, 0);
+  }
+  // Copy the initial data into the object. This time we'll use just the
+  // requested part of the data.
+  blob_t object_data = get_mutable_c_object_data(result);
+  blob_copy_to(init_data, object_data);
+  // Copy the initial values into the object.
+  value_array_t object_values = get_mutable_c_object_values(result);
+  if (init_values.length < info.value_count)
+    value_array_fill(object_values, null());
+  value_array_copy_to(&init_values, &object_values);
+  return post_create_sanity_check(result, size);
 }
 
 value_t new_heap_key(runtime_t *runtime, value_t display_name) {

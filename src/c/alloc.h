@@ -10,6 +10,7 @@
 
 #include "behavior.h"
 #include "bind.h"
+#include "ctrino.h"
 #include "globals.h"
 #include "heap.h"
 #include "method.h"
@@ -49,7 +50,7 @@ value_t new_heap_blob(runtime_t *runtime, size_t length);
 // Allocates a new heap blob in the given runtime, if there is room, otherwise
 // returns a condition to indicate an error. The result will contain a copy of the
 // data in the given contents blob.
-value_t new_heap_blob_with_data(runtime_t *runtime, blob_t *contents);
+value_t new_heap_blob_with_data(runtime_t *runtime, blob_t contents);
 
 // Allocates a new species whose instances have the specified instance family.
 value_t new_heap_compact_species(runtime_t *runtime, family_behavior_t *behavior);
@@ -105,6 +106,15 @@ value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity);
 
 // Creates the singleton ctrino value.
 value_t new_heap_ctrino(runtime_t *runtime);
+
+// Creates and returns a new c-object species.
+value_t new_heap_c_object_species(runtime_t *runtime, c_object_info_t *info);
+
+// Creates a new instance of the given c object species whose data is read from
+// the given data pointer and values from the value pointer. The sizes must be
+// equal to the sizes stored in the species.
+value_t new_heap_c_object(runtime_t *runtime, value_t species, blob_t init_data,
+    value_array_t init_values);
 
 // Creates a new key with the given display name.
 value_t new_heap_key(runtime_t *runtime, value_t display_name);

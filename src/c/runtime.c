@@ -27,9 +27,8 @@ static value_t create_stack_bottom_code_block(runtime_t *runtime) {
   assembler_t assm;
   TRY(assembler_init_stripped_down(&assm, runtime));
   TRY(assembler_emit_stack_bottom(&assm));
-  blob_t blob;
-  short_buffer_flush(&assm.code, &blob);
-  TRY_DEF(bytecode, new_heap_blob_with_data(runtime, &blob));
+  blob_t blob = short_buffer_flush(&assm.code);
+  TRY_DEF(bytecode, new_heap_blob_with_data(runtime, blob));
   assembler_dispose(&assm);
   size_t high_water_mark = 1 + kStackBarrierSize;
   return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array),
@@ -42,9 +41,8 @@ static value_t create_stack_piece_bottom_code_block(runtime_t *runtime) {
   assembler_t assm;
   TRY(assembler_init_stripped_down(&assm, runtime));
   TRY(assembler_emit_stack_piece_bottom(&assm));
-  blob_t blob;
-  short_buffer_flush(&assm.code, &blob);
-  TRY_DEF(bytecode, new_heap_blob_with_data(runtime, &blob));
+  blob_t blob = short_buffer_flush(&assm.code);
+  TRY_DEF(bytecode, new_heap_blob_with_data(runtime, blob));
   assembler_dispose(&assm);
   return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array),
       1);
@@ -57,9 +55,8 @@ static value_t create_return_code_block(runtime_t *runtime) {
   // This is going to be used for frames that have various amounts of state on
   // the stack so avoid checking the stack height.
   TRY(assembler_emit_unchecked_return(&assm));
-  blob_t blob;
-  short_buffer_flush(&assm.code, &blob);
-  TRY_DEF(bytecode, new_heap_blob_with_data(runtime, &blob));
+  blob_t blob = short_buffer_flush(&assm.code);
+  TRY_DEF(bytecode, new_heap_blob_with_data(runtime, blob));
   assembler_dispose(&assm);
   return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array),
       1);

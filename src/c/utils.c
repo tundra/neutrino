@@ -9,38 +9,40 @@
 
 #include <stdarg.h>
 
-void blob_init(blob_t *blob, byte_t *data, size_t byte_length) {
-  blob->byte_length = byte_length;
-  blob->data = data;
+blob_t new_blob(void *data, size_t size) {
+  blob_t result;
+  result.data = data;
+  result.size = size;
+  return result;
 }
 
-size_t blob_byte_length(blob_t *blob) {
-  return blob->byte_length;
+size_t blob_byte_length(blob_t blob) {
+  return blob.size;
 }
 
-size_t blob_short_length(blob_t *blob) {
-  CHECK_EQ("unaligned short blob", 0, blob->byte_length & 0x1);
-  return blob->byte_length >> 1;
+size_t blob_short_length(blob_t blob) {
+  CHECK_EQ("unaligned short blob", 0, blob.size & 0x1);
+  return blob.size >> 1;
 }
 
-byte_t blob_byte_at(blob_t *blob, size_t index) {
+byte_t blob_byte_at(blob_t blob, size_t index) {
   CHECK_REL("blob index out of bounds", index, <, blob_byte_length(blob));
-  return blob->data[index];
+  return ((byte_t*) blob.data)[index];
 }
 
-short_t blob_short_at(blob_t *blob, size_t index) {
+short_t blob_short_at(blob_t blob, size_t index) {
   CHECK_REL("blob index out of bounds", index, <, blob_short_length(blob));
-  return ((short_t*) blob->data)[index];
+  return ((short_t*) blob.data)[index];
 }
 
-void blob_fill(blob_t *blob, byte_t value) {
-  memset(blob->data, value, blob_byte_length(blob));
+void blob_fill(blob_t blob, byte_t value) {
+  memset(blob.data, value, blob_byte_length(blob));
 }
 
-void blob_copy_to(blob_t *src, blob_t *dest) {
+void blob_copy_to(blob_t src, blob_t dest) {
   CHECK_REL("blob copy destination too small", blob_byte_length(dest), >=,
       blob_byte_length(src));
-  memcpy(dest->data, src->data, blob_byte_length(src));
+  memcpy(dest.data, src.data, blob_byte_length(src));
 }
 
 
@@ -330,4 +332,18 @@ void wordy_encode(int64_t signed_value, char *buf, size_t bufc) {
   // these are typically read left-to-right and differences are most likely
   // to be in the least significant bits, it's easier to read if values with
   // different low bits result in words with differences to the left.
+}
+
+
+// --- V a l u e   a r r a y ---
+
+void value_array_copy_to(value_array_t *src, value_array_t *dest) {
+  CHECK_REL("array copy destination too small", dest->length, >=,
+      src->length);
+  memcpy(dest->start, src->start, src->length * kValueSize);
+}
+
+void value_array_fill(value_array_t dest, value_t value) {
+  for (size_t i = 0; i < dest.length; i++)
+    dest.start[i] = value;
 }

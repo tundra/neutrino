@@ -269,3 +269,100 @@ value_t add_ctrino_builtin_methods(runtime_t *runtime, value_t space) {
   ADD_BUILTIN("to_string", 1, ctrino_to_string);
   return success();
 }
+
+/// ## C object species
+
+void get_c_object_species_layout(value_t value, heap_object_layout_t *layout) {
+  heap_object_layout_set(layout, kCObjectSpeciesSize, kSpeciesHeaderSize);
+}
+
+void c_object_info_init(c_object_info_t *info, size_t data_size, size_t value_count) {
+  info->data_size = data_size;
+  info->aligned_data_size = align_size(kValueSize, data_size);
+  info->value_count = value_count;
+}
+
+void get_c_object_species_object_info(value_t self, c_object_info_t *info_out) {
+  size_t data_size = get_integer_value(get_c_object_species_data_size(self));
+  size_t value_count = get_integer_value(get_c_object_species_value_count(self));
+  c_object_info_init(info_out, data_size, value_count);
+}
+
+CHECKED_SPECIES_ACCESSORS_IMPL(CObject, c_object, CObject, c_object,
+    acInDomain, vdInteger, DataSize, data_size);
+
+CHECKED_SPECIES_ACCESSORS_IMPL(CObject, c_object, CObject, c_object,
+    acInDomain, vdInteger, ValueCount, value_count);
+
+
+/// ## C object
+///
+/// Some C data and functionality exposed through a neutrino object.
+
+FIXED_GET_MODE_IMPL(c_object, vmMutable);
+NO_BUILTIN_METHODS(c_object);
+GET_FAMILY_PRIMARY_TYPE_IMPL(c_object);
+
+size_t calc_c_object_size(c_object_info_t *info) {
+  return kHeapObjectHeaderSize
+       + info->aligned_data_size
+       + (info->value_count * kValueSize);
+}
+
+value_t c_object_validate(value_t value) {
+  VALIDATE_FAMILY(ofCObject, value);
+  return success();
+}
+
+void c_object_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "ctrino");
+}
+
+void get_c_object_layout(value_t self, heap_object_layout_t *layout) {
+  value_t species = get_heap_object_species(self);
+  c_object_info_t info;
+  get_c_object_species_object_info(species, &info);
+  size_t size = calc_c_object_size(&info);
+  heap_object_layout_set(layout, size, info.aligned_data_size);
+}
+
+byte_t *get_c_object_data_start(value_t self) {
+  CHECK_FAMILY(ofCObject, self);
+  return (byte_t*) access_heap_object_field(self, kHeapObjectHeaderSize);
+}
+
+blob_t get_mutable_c_object_data(value_t self) {
+  CHECK_FAMILY(ofCObject, self);
+  CHECK_MUTABLE(self);
+  value_t species = get_heap_object_species(self);
+  value_t data_size_val = get_c_object_species_data_size(species);
+  return new_blob(get_c_object_data_start(self), get_integer_value(data_size_val));
+}
+
+value_t *get_c_object_value_start(value_t self) {
+  CHECK_FAMILY(ofCObject, self);
+  value_t species = get_heap_object_species(self);
+  c_object_info_t info;
+  get_c_object_species_object_info(species, &info);
+  return access_heap_object_field(self, kHeapObjectHeaderSize + info.aligned_data_size);
+}
+
+static value_array_t get_c_object_values(value_t self) {
+  CHECK_FAMILY(ofCObject, self);
+  value_t species = get_heap_object_species(self);
+  value_t value_count_val = get_c_object_species_value_count(species);
+  return new_value_array(get_c_object_value_start(self),
+      get_integer_value(value_count_val));
+}
+
+value_array_t get_mutable_c_object_values(value_t self) {
+  CHECK_MUTABLE(self);
+  return get_c_object_values(self);
+}
+
+value_t get_c_object_value_at(value_t self, size_t index) {
+  value_array_t values = get_c_object_values(self);
+  COND_CHECK_TRUE("c object value index out of bounds", ccOutOfBounds,
+      index < values.length);
+    return values.start[index];
+}

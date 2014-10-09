@@ -14,12 +14,12 @@
 
 // A stream that allows bytes to be read one at a time from a blob.
 typedef struct {
-  blob_t *blob;
+  blob_t blob;
   size_t cursor;
 } byte_stream_t;
 
 // Initializes a stream to read from the beginning of the given blob.
-void byte_stream_init(byte_stream_t *stream, blob_t *blob) {
+static void byte_stream_init(byte_stream_t *stream, blob_t blob) {
   stream->blob = blob;
   stream->cursor = 0;
 }
@@ -221,9 +221,8 @@ value_t plankton_serialize(runtime_t *runtime, value_mapping_t *resolver_or_null
     E_TRY(serialize_state_init(&state, runtime, &resolver, assm));
     E_TRY(value_serialize(data, &state));
     memory_block_t code = pton_assembler_peek_code(assm);
-    blob_t blob;
-    blob_init(&blob, code.memory, code.size);
-    E_TRY_DEF(result, new_heap_blob_with_data(runtime, &blob));
+    blob_t blob = new_blob(code.memory, code.size);
+    E_TRY_DEF(result, new_heap_blob_with_data(runtime, blob));
     E_RETURN(result);
   E_FINALLY();
     pton_dispose_assembler(assm);
@@ -331,10 +330,10 @@ static value_t reference_deserialize(size_t offset, deserialize_state_t *state) 
 
 static value_t value_deserialize(deserialize_state_t *state) {
   byte_stream_t *in = state->in;
-  blob_t *blob = in->blob;
+  blob_t blob = in->blob;
   size_t cursor = in->cursor;
   pton_instr_t instr;
-  if (!pton_decode_next_instruction(blob->data + cursor, blob->byte_length - cursor,
+  if (!pton_decode_next_instruction(blob.data + cursor, blob.size - cursor,
       &instr))
     return new_invalid_input_condition();
   in->cursor += instr.size;
@@ -370,10 +369,9 @@ static value_t unknown_input_mapping(value_t value, runtime_t *runtime, void *da
 value_t plankton_deserialize(runtime_t *runtime, value_mapping_t *access_or_null,
     value_t blob) {
   // Make a byte stream out of the blob.
-  blob_t data;
-  get_blob_data(blob, &data);
+  blob_t data = get_blob_data(blob);
   byte_stream_t in;
-  byte_stream_init(&in, &data);
+  byte_stream_init(&in, data);
   // Use a failing environment accessor if the access pointer is null.
   value_mapping_t access;
   if (access_or_null == NULL) {

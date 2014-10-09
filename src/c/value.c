@@ -480,11 +480,11 @@ size_t calc_blob_size(size_t size) {
 
 INTEGER_ACCESSORS_IMPL(Blob, blob, Length, length);
 
-void get_blob_data(value_t value, blob_t *blob_out) {
+blob_t get_blob_data(value_t value) {
   CHECK_FAMILY(ofBlob, value);
   size_t length = get_blob_length(value);
-  byte_t *data = (byte_t*) access_heap_object_field(value, kBlobDataOffset);
-  blob_init(blob_out, data, length);
+  void *data = access_heap_object_field(value, kBlobDataOffset);
+  return new_blob(data, length);
 }
 
 value_t blob_validate(value_t value) {
@@ -501,13 +501,12 @@ void get_blob_layout(value_t value, heap_object_layout_t *layout) {
 void blob_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofBlob, value);
   string_buffer_printf(context->buf, "#<blob: [");
-  blob_t blob;
-  get_blob_data(value, &blob);
-  size_t length = blob_byte_length(&blob);
+  blob_t blob = get_blob_data(value);
+  size_t length = blob_byte_length(blob);
   size_t bytes_to_show = (length <= 8) ? length : 8;
   for (size_t i = 0; i < bytes_to_show; i++) {
     static const char *kChars = "0123456789abcdef";
-    byte_t byte = blob_byte_at(&blob, i);
+    byte_t byte = blob_byte_at(blob, i);
     string_buffer_printf(context->buf, "%c%c", kChars[byte >> 4], kChars[byte & 0xF]);
   }
   if (bytes_to_show < length)

@@ -25,7 +25,7 @@ typedef struct {
 static void code_cache_refresh(code_cache_t *cache, frame_t *frame) {
   value_t code_block = frame_get_code_block(frame);
   value_t bytecode = get_code_block_bytecode(code_block);
-  get_blob_data(bytecode, &cache->bytecode);
+  cache->bytecode = get_blob_data(bytecode);
   cache->value_pool = get_code_block_value_pool(code_block);
 }
 
@@ -66,7 +66,7 @@ static void restore_escape_state(frame_t *frame, value_t stack,
 
 // Returns the short value at the given offset from the current pc.
 static short_t read_short(code_cache_t *cache, frame_t *frame, size_t offset) {
-  return blob_short_at(&cache->bytecode, frame->pc + offset);
+  return blob_short_at(cache->bytecode, frame->pc + offset);
 }
 
 // Returns the value at the given offset from the current pc.

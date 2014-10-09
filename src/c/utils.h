@@ -25,30 +25,30 @@ static size_t align_size(uint32_t alignment, size_t size) {
 
 // A block of data with a length.
 struct blob_t {
-  size_t byte_length;
-  byte_t *data;
+  size_t size;
+  void *data;
 };
 
-// Initializes a blob to hold this data.
-void blob_init(blob_t *blob, byte_t *data, size_t byte_length);
+// Similar to init but returns the blob rather than use an out parameter.
+blob_t new_blob(void *data, size_t size);
 
 // The number of bytes in this blob.
-size_t blob_byte_length(blob_t *blob);
+size_t blob_byte_length(blob_t blob);
 
 // The number of shorts in this blob.
-size_t blob_short_length(blob_t *blob);
+size_t blob_short_length(blob_t blob);
 
 // Returns the index'th byte in the given blob.
-byte_t blob_byte_at(blob_t *blob, size_t index);
+byte_t blob_byte_at(blob_t blob, size_t index);
 
 // Returns the index'th short in the given blob.
-short_t blob_short_at(blob_t *blob, size_t index);
+short_t blob_short_at(blob_t blob, size_t index);
 
 // Fills this blob's data with the given value.
-void blob_fill(blob_t *blob, byte_t value);
+void blob_fill(blob_t blob, byte_t value);
 
 // Write the contents of the source blob into the destination.
-void blob_copy_to(blob_t *src, blob_t *dest);
+void blob_copy_to(blob_t src, blob_t dest);
 
 
 // --- B y t e   b u f f e r ---
@@ -257,5 +257,11 @@ static value_array_t new_value_array(value_t *start, size_t length) {
   value_array_t result = {start, length};
   return result;
 }
+
+// Write the contents of the source array into the destination.
+void value_array_copy_to(value_array_t *src, value_array_t *dest);
+
+// Fills the given array with the given value.
+void value_array_fill(value_array_t dest, value_t value);
 
 #endif // _UTILS

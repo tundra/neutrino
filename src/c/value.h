@@ -380,6 +380,7 @@ static value_t new_moved_object(value_t target) {
   F(CallLiteralArgumentAst,  call_literal_argument_ast, _, _, X, _, _, _, _, _, _, 80)\
   F(CallLiteralAst,          call_literal_ast,          _, _, X, _, _, _, X, _, _, 79)\
   F(CallTags,                call_tags,                 _, X, _, _, _, _, _, X, X, 66)\
+  F(CObject,                 c_object,                  _, _, _, X, X, _, _, _, _, 84)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X, 49)\
   F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _, 67)\
   F(CurrentModuleAst,        current_module_ast,        _, _, X, _, _, _, X, _, _, 61)\
@@ -451,7 +452,7 @@ static value_t new_moved_object(value_t target) {
 // family enum values are not the raw ordinals but the ordinals shifted left by
 // the tag size so that they're tagged as integers. Those values are sometimes
 // stored as uint16s so the ordinals are allowed to take up to 14 bits.
-static const int kNextFamilyOrdinal = 84;
+static const int kNextFamilyOrdinal = 85;
 
 // Enumerates all the object families.
 #define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \
@@ -867,9 +868,10 @@ static const size_t kDerivedObjectGenusTagSize = 6;
 /// another, and arrays, blobs, etc. are all in a third one.
 
 #define ENUM_SPECIES_DIVISIONS(F)                                              \
-  F(Compact, compact)                                                          \
+  F(CObject,  c_object)                                                        \
+  F(Compact,  compact)                                                         \
   F(Instance, instance)                                                        \
-  F(Modal, modal)
+  F(Modal,    modal)
 
 // Identifies the division a species belongs to.
 typedef enum {
@@ -1021,9 +1023,8 @@ size_t calc_blob_size(size_t size);
 // The length in bytes of a heap blob.
 INTEGER_ACCESSORS_DECL(blob, length);
 
-// Gives access to the data in the given blob value in a blob struct through
-// the out parameter.
-void get_blob_data(value_t value, blob_t *blob_out);
+// Gives access to the data in the given blob value.
+blob_t get_blob_data(value_t value);
 
 
 // --- V o i d   P ---

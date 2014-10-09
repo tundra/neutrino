@@ -30,10 +30,9 @@ void MAKE_BUFFER_NAME(dispose)(MAKE_BUFFER_NAME(t) *buf);
 void MAKE_BUFFER_NAME(append)(MAKE_BUFFER_NAME(t) *buf,
     BUFFER_TYPE value);
 
-// Write the current contents to the given blob. The data in the blob will
+// Return the contents of this buffer as a blob. The data in the blob will
 // still be backed by this buffer so disposing this will make the blob invalid.
-void MAKE_BUFFER_NAME(flush)(MAKE_BUFFER_NAME(t) *buf,
-    blob_t *blob_out);
+blob_t MAKE_BUFFER_NAME(flush)(MAKE_BUFFER_NAME(t) *buf);
 
 // A pointer to a location within a buffer that can be written to directly.
 struct MAKE_BUFFER_NAME(cursor_t) {

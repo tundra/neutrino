@@ -24,9 +24,8 @@ static value_t base64_c_str_to_blob(runtime_t *runtime, const char *data) {
     byte_buffer_t buf;
     byte_buffer_init(&buf);
     base64_decode(&str, &buf);
-    blob_t blob;
-    byte_buffer_flush(&buf, &blob);
-    value_t result = new_heap_blob_with_data(runtime, &blob);
+    blob_t blob = byte_buffer_flush(&buf);
+    value_t result = new_heap_blob_with_data(runtime, blob);
     byte_buffer_dispose(&buf);
     return result;
   }

@@ -17,10 +17,9 @@ value_t read_handle_to_blob(runtime_t *runtime, FILE *handle) {
     for (size_t i = 0; i < was_read; i++)
       byte_buffer_append(&buffer, raw_buffer[i]);
   }
-  blob_t data_blob;
-  byte_buffer_flush(&buffer, &data_blob);
+  blob_t data_blob = byte_buffer_flush(&buffer);
   // Create a blob to hold the result and copy the data into it.
-  value_t result = new_heap_blob_with_data(runtime, &data_blob);
+  value_t result = new_heap_blob_with_data(runtime, data_blob);
   byte_buffer_dispose(&buffer);
   return result;
 }

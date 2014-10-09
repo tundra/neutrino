@@ -249,12 +249,11 @@ TEST(utils, hash_stream) {
   byte_buffer_t buf;                                                           \
   byte_buffer_init(&buf);                                                      \
   base64_decode(&str, &buf);                                                   \
-  blob_t blob;                                                                 \
-  byte_buffer_flush(&buf, &blob);                                              \
-  ASSERT_EQ(N, blob_byte_length(&blob));                                            \
+  blob_t blob = byte_buffer_flush(&buf);                                       \
+  ASSERT_EQ(N, blob_byte_length(blob));                                        \
   uint8_t expected[(N == 0) ? 1 : (N)] = {__VA_ARGS__};                        \
   for (int i = 0; i < (N); i++)                                                \
-    ASSERT_EQ(expected[i], blob_byte_at(&blob, i));                            \
+    ASSERT_EQ(expected[i], blob_byte_at(blob, i));                             \
   byte_buffer_dispose(&buf);                                                   \
 } while (false)
 
@@ -340,27 +339,26 @@ TEST(utils, byte_buffer_cursor) {
   byte_buffer_append_cursor(&buf, &c1);
   byte_buffer_append_cursor(&buf, &c2);
 
-  blob_t blob;
-  byte_buffer_flush(&buf, &blob);
-  ASSERT_EQ(3, blob_byte_length(&blob));
-  ASSERT_EQ(0, blob_byte_at(&blob, 0));
-  ASSERT_EQ(0, blob_byte_at(&blob, 1));
-  ASSERT_EQ(0, blob_byte_at(&blob, 2));
+  blob_t blob = byte_buffer_flush(&buf);
+  ASSERT_EQ(3, blob_byte_length(blob));
+  ASSERT_EQ(0, blob_byte_at(blob, 0));
+  ASSERT_EQ(0, blob_byte_at(blob, 1));
+  ASSERT_EQ(0, blob_byte_at(blob, 2));
 
   byte_buffer_cursor_set(&c0, 8);
-  ASSERT_EQ(8, blob_byte_at(&blob, 0));
-  ASSERT_EQ(0, blob_byte_at(&blob, 1));
-  ASSERT_EQ(0, blob_byte_at(&blob, 2));
+  ASSERT_EQ(8, blob_byte_at(blob, 0));
+  ASSERT_EQ(0, blob_byte_at(blob, 1));
+  ASSERT_EQ(0, blob_byte_at(blob, 2));
 
   byte_buffer_cursor_set(&c1, 7);
-  ASSERT_EQ(8, blob_byte_at(&blob, 0));
-  ASSERT_EQ(7, blob_byte_at(&blob, 1));
-  ASSERT_EQ(0, blob_byte_at(&blob, 2));
+  ASSERT_EQ(8, blob_byte_at(blob, 0));
+  ASSERT_EQ(7, blob_byte_at(blob, 1));
+  ASSERT_EQ(0, blob_byte_at(blob, 2));
 
   byte_buffer_cursor_set(&c2, 6);
-  ASSERT_EQ(8, blob_byte_at(&blob, 0));
-  ASSERT_EQ(7, blob_byte_at(&blob, 1));
-  ASSERT_EQ(6, blob_byte_at(&blob, 2));
+  ASSERT_EQ(8, blob_byte_at(blob, 0));
+  ASSERT_EQ(7, blob_byte_at(blob, 1));
+  ASSERT_EQ(6, blob_byte_at(blob, 2));
 
   byte_buffer_dispose(&buf);
 }
@@ -373,12 +371,11 @@ TEST(utils, short_buffer) {
   short_buffer_append(&buf, 0xF00D);
   short_buffer_append(&buf, 0xDEAD);
 
-  blob_t blob;
-  short_buffer_flush(&buf, &blob);
-  ASSERT_EQ(3, blob_short_length(&blob));
-  ASSERT_EQ(0xFACE, blob_short_at(&blob, 0));
-  ASSERT_EQ(0xF00D, blob_short_at(&blob, 1));
-  ASSERT_EQ(0xDEAD, blob_short_at(&blob, 2));
+  blob_t blob = short_buffer_flush(&buf);
+  ASSERT_EQ(3, blob_short_length(blob));
+  ASSERT_EQ(0xFACE, blob_short_at(blob, 0));
+  ASSERT_EQ(0xF00D, blob_short_at(blob, 1));
+  ASSERT_EQ(0xDEAD, blob_short_at(blob, 2));
 
   short_buffer_dispose(&buf);
 }
