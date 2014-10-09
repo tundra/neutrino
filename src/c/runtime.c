@@ -77,7 +77,7 @@ static value_t create_call_thunk_code_block(runtime_t *runtime) {
   set_pair_array_first_at(tag_array, 1, ROOT(runtime, selector_key));
   set_pair_array_second_at(tag_array, 1, new_integer(0));
   TRY_DEF(tags, new_heap_call_tags(runtime, afFreeze, tag_array));
-  TRY(assembler_emit_invocation(&assm, nothing(), tags,  nothing()));
+  TRY(assembler_emit_invocation(&assm, nothing(), tags));
   TRY(assembler_emit_slap(&assm, 2));
   TRY(assembler_emit_return(&assm));
   TRY_DEF(result, assembler_flush(&assm));

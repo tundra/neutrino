@@ -868,17 +868,6 @@ static value_t lookup_through_fragment(sigmap_state_t *state, value_t fragment) 
   return success();
 }
 
-// Does the same as lookup_through_fragment but faster by using the helper data
-// provided by the compiler.
-static value_t lookup_through_fragment_with_helper(sigmap_state_t *state,
-    value_t fragment, value_t helper) {
-  CHECK_FAMILY(ofModuleFragment, fragment);
-  CHECK_FAMILY(ofSignatureMap, helper);
-  value_t space = get_module_fragment_methodspace(fragment);
-  TRY(continue_sigmap_lookup(state, helper, space));
-  return success();
-}
-
 IMPLEMENTATION(full_thunk_o, sigmap_thunk_o);
 
 // Thunk that carries data for a full method lookup.
@@ -888,8 +877,6 @@ struct full_thunk_o {
   total_sigmap_input_o *input;
   // The fragment we're performing the lookup within.
   value_t fragment;
-  // The helper data for this call.
-  value_t helper;
   // The resulting arg map.
   value_t *arg_map_out;
 };
@@ -1165,11 +1152,7 @@ static value_t full_thunk_call(sigmap_thunk_o *super_self) {
   sigmap_state_t *state = UPCAST(self)->state;
   if (!is_nothing(self->fragment)) {
     TOPIC_INFO(Lookup, "Performing fragment lookup %v", state->input->tags);
-    if (is_nothing(self->helper)) {
-      TRY(lookup_through_fragment(state, self->fragment));
-    } else {
-      TRY(lookup_through_fragment_with_helper(state, self->fragment, self->helper));
-    }
+    TRY(lookup_through_fragment(state, self->fragment));
   }
   TOPIC_INFO(Lookup, "Performing subject lookup");
   value_t subject = whatever();
@@ -1194,14 +1177,13 @@ static value_t full_thunk_call(sigmap_thunk_o *super_self) {
 
 VTABLE(full_thunk_o, sigmap_thunk_o) { full_thunk_call };
 
-value_t lookup_method_full_with_helper(total_sigmap_input_o *input,
-    value_t fragment, value_t helper, value_t *arg_map_out) {
+value_t lookup_method_full(total_sigmap_input_o *input, value_t fragment,
+    value_t *arg_map_out) {
   unique_best_match_output_o output = unique_best_match_output_new();
   full_thunk_o thunk;
   VTABLE_INIT(full_thunk_o, UPCAST(&thunk));
   thunk.input = input;
   thunk.fragment = fragment;
-  thunk.helper = helper;
   thunk.arg_map_out = arg_map_out;
   return do_sigmap_lookup(UPCAST(&thunk), UPCAST(input), UPCAST(&output));
 }

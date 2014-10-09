@@ -227,28 +227,6 @@ FIXED_GET_MODE_IMPL(invocation_ast, vmMutable);
 ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, ofArray, Arguments,
     arguments);
 
-// Creates the invocation helper object to be used to speed up invocation.
-static value_t create_invocation_helper(assembler_t *assm, value_t record) {
-  value_t method_cache = get_or_create_module_fragment_methodspaces_cache(
-      assm->runtime, assm->fragment);
-  TRY_DEF(helper, new_heap_signature_map(assm->runtime));
-  for (size_t i = 0; i < get_array_buffer_length(method_cache); i++) {
-    value_t space = get_array_buffer_at(method_cache, i);
-    value_t sigmap = get_methodspace_methods(space);
-    value_t entries = get_signature_map_entries(sigmap);
-    for (size_t j = 0; j < get_pair_array_buffer_length(entries); j++) {
-      value_t signature = get_pair_array_buffer_first_at(entries, j);
-      match_result_t result = __mrNone__;
-      TRY(match_signature_tags(signature, record, &result));
-      if (match_result_is_match(result)) {
-        value_t method = get_pair_array_buffer_second_at(entries, j);
-        TRY(add_to_signature_map(assm->runtime, helper, signature, method));
-      }
-    }
-  }
-  return helper;
-}
-
 static value_t create_call_tags(value_t arguments, assembler_t *assm) {
   size_t arg_count = get_array_length(arguments);
   // Build the invocation record and emit the values at the same time.
@@ -271,8 +249,7 @@ value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofInvocationAst, value);
   value_t arguments = get_invocation_ast_arguments(value);
   TRY_DEF(record, create_call_tags(arguments, assm));
-  TRY_DEF(helper, create_invocation_helper(assm, record));
-  TRY(assembler_emit_invocation(assm, assm->fragment, record, helper));
+  TRY(assembler_emit_invocation(assm, assm->fragment, record));
   size_t argc = get_call_tags_entry_count(record);
   TRY(assembler_emit_slap(assm, argc));
   return success();
