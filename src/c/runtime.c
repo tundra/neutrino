@@ -85,6 +85,13 @@ static value_t create_call_thunk_code_block(runtime_t *runtime) {
   return result;
 }
 
+// Populates the special imports map.
+static value_t init_special_imports(runtime_t *runtime, value_t imports) {
+  TRY_DEF(ctrino, new_heap_ctrino(runtime));
+  TRY(set_id_hash_map_at(runtime, imports, RSTR(runtime, ctrino), ctrino));
+  return success();
+}
+
 // Creates an array of invocation records of the form
 //
 //   {%subject: N-1, %selector: N-2, 0: N-3, ...}
@@ -218,7 +225,6 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, selector_key), new_heap_key(runtime, RAW_RSTR(roots, selector)));
   TRY_SET(RAW_ROOT(roots, builtin_impls), new_heap_id_hash_map(runtime, 256));
   TRY_SET(RAW_ROOT(roots, op_call), new_heap_operation(runtime, afFreeze, otCall, null()));
-  TRY_SET(RAW_ROOT(roots, ctrino), new_heap_ctrino(runtime));
   TRY_SET(RAW_ROOT(roots, stack_bottom_code_block),
       create_stack_bottom_code_block(runtime));
   TRY_SET(RAW_ROOT(roots, stack_piece_bottom_code_block),
@@ -226,6 +232,7 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   TRY_SET(RAW_ROOT(roots, return_code_block), create_return_code_block(runtime));
   TRY_SET(RAW_ROOT(roots, call_thunk_code_block), create_call_thunk_code_block(runtime));
   TRY_SET(RAW_ROOT(roots, escape_records), create_escape_records(runtime));
+  TRY_SET(RAW_ROOT(roots, special_imports), new_heap_id_hash_map(runtime, 256));
 
   // Generate initialization for the per-family types.
   value_t core_type_origin = get_ambience_present_core_fragment_redirect();
@@ -359,6 +366,7 @@ value_t roots_validate(value_t roots) {
   VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, return_code_block));
   VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, empty_code_block));
   VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, escape_records));
+  VALIDATE_HEAP_OBJECT(ofIdHashMap, RAW_ROOT(roots, special_imports));
 
 #define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_HEAP_OBJECT(ofString, RAW_RSTR(roots, name));
   ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)
@@ -473,6 +481,7 @@ static value_t runtime_soft_init(runtime_t *runtime) {
     safe_value_t s_builtin_impls = protect(pool,
         ROOT(runtime, builtin_impls));
     E_TRY(add_builtin_implementations(runtime, s_builtin_impls));
+    E_TRY(init_special_imports(runtime, ROOT(runtime, special_imports)));
     E_TRY(init_plankton_environment_mapping(&runtime->plankton_mapping, runtime));
     E_RETURN(runtime_validate(runtime, nothing()));
   E_FINALLY();

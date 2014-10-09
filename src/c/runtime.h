@@ -85,7 +85,6 @@
   F(array_of_zero)                                                             \
   F(builtin_impls)                                                             \
   F(call_thunk_code_block)                                                     \
-  F(ctrino)                                                                    \
   F(empty_array_buffer)                                                        \
   F(empty_array)                                                               \
   F(empty_code_block)                                                          \
@@ -97,6 +96,7 @@
   F(plankton_environment)                                                      \
   F(return_code_block)                                                         \
   F(selector_key)                                                              \
+  F(special_imports)                                                           \
   F(stack_bottom_code_block)                                                   \
   F(stack_piece_bottom_code_block)                                             \
   F(subject_key)

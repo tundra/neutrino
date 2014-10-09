@@ -1930,8 +1930,10 @@ value_t module_fragment_lookup_path_full(runtime_t *runtime, value_t self, value
   CHECK_FAMILY_OPT(ofModuleFragment, self);
   CHECK_FAMILY(ofPath, path);
   value_t head = get_path_head(path);
-  if (value_identity_compare(head, RSTR(runtime, ctrino)))
-    return ROOT(runtime, ctrino);
+  value_t special_imports = ROOT(runtime, special_imports);
+  value_t special_import = get_id_hash_map_at(special_imports, head);
+  if (!in_condition_cause(ccNotFound, special_import))
+    return special_import;
   // Loop backwards through the fragments, starting from the specified stage.
   value_t fragment = self;
   while (!is_nothing(fragment)) {
