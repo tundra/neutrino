@@ -104,17 +104,15 @@ value_t new_heap_array_buffer_with_contents(runtime_t *runtime, value_t array);
 // Creates a new identity hash map with the given initial capacity.
 value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity);
 
-// Creates the singleton ctrino value.
-value_t new_heap_ctrino(runtime_t *runtime);
-
 // Creates and returns a new c-object species.
-value_t new_heap_c_object_species(runtime_t *runtime, c_object_info_t *info);
+value_t new_heap_c_object_species(runtime_t *runtime, alloc_flags_t flags,
+    c_object_info_t *info, value_t type);
 
 // Creates a new instance of the given c object species whose data is read from
 // the given data pointer and values from the value pointer. The sizes must be
 // equal to the sizes stored in the species.
-value_t new_heap_c_object(runtime_t *runtime, value_t species, blob_t init_data,
-    value_array_t init_values);
+value_t new_heap_c_object(runtime_t *runtime, alloc_flags_t flags,
+    value_t species, blob_t init_data, value_array_t init_values);
 
 // Creates a new key with the given display name.
 value_t new_heap_key(runtime_t *runtime, value_t display_name);
@@ -265,7 +263,7 @@ value_t new_heap_parameter(runtime_t *runtime, alloc_flags_t flags, value_t guar
 value_t new_heap_signature_map(runtime_t *runtime);
 
 // Creates a new empty method space.
-value_t new_heap_methodspace(runtime_t *runtime);
+value_t new_heap_methodspace(runtime_t *runtime, value_t parent);
 
 // Creates a new method with the given signature and implementation.
 value_t new_heap_method(runtime_t *runtime, alloc_flags_t alloc_flags,

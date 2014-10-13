@@ -516,7 +516,7 @@ value_t assembler_emit_signal(assembler_t *assm, opcode_t opcode, value_t tags) 
   return success();
 }
 
-value_t assembler_emit_builtin(assembler_t *assm, builtin_method_t builtin) {
+value_t assembler_emit_builtin(assembler_t *assm, builtin_implementation_t builtin) {
   TRY_DEF(wrapper, new_heap_void_p(assm->runtime, builtin));
   assembler_emit_opcode(assm, ocBuiltin);
   TRY(assembler_emit_value(assm, wrapper));
@@ -526,7 +526,7 @@ value_t assembler_emit_builtin(assembler_t *assm, builtin_method_t builtin) {
 }
 
 value_t assembler_emit_builtin_maybe_escape(assembler_t *assm,
-    builtin_method_t builtin, size_t leave_argc,
+    builtin_implementation_t builtin, size_t leave_argc,
     short_buffer_cursor_t *leave_offset_out) {
   TRY_DEF(wrapper, new_heap_void_p(assm->runtime, builtin));
   assembler_emit_opcode(assm, ocBuiltinMaybeEscape);

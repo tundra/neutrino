@@ -228,12 +228,9 @@ value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_ctrino(runtime_t *runtime) {
-  size_t size = kCtrinoSize;
-  return alloc_heap_object(runtime, size, ROOT(runtime, ctrino_species));
-}
-
-value_t new_heap_c_object_species(runtime_t *runtime, c_object_info_t *info) {
+value_t new_heap_c_object_species(runtime_t *runtime, alloc_flags_t flags,
+    c_object_info_t *info, value_t type) {
+  CHECK_FAMILY(ofType, type);
   size_t size = kCObjectSpeciesSize;
   TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, mutable_species_species)));
   set_species_instance_family(result, ofCObject);
@@ -241,11 +238,14 @@ value_t new_heap_c_object_species(runtime_t *runtime, c_object_info_t *info) {
   set_species_division_behavior(result, &kCObjectSpeciesBehavior);
   set_c_object_species_data_size(result, new_integer(info->data_size));
   set_c_object_species_value_count(result, new_integer(info->value_count));
+  set_c_object_species_type(result, type);
+  set_c_object_species_tag(result, info->tag);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_c_object(runtime_t *runtime, value_t species, blob_t init_data,
-    value_array_t init_values) {
+value_t new_heap_c_object(runtime_t *runtime, alloc_flags_t flags, value_t species,
+    blob_t init_data, value_array_t init_values) {
   CHECK_DIVISION(sdCObject, species);
   c_object_info_t info;
   get_c_object_species_object_info(species, &info);
@@ -253,6 +253,7 @@ value_t new_heap_c_object(runtime_t *runtime, value_t species, blob_t init_data,
   CHECK_REL("too many values", init_values.length, <=, info.value_count);
   size_t size = calc_c_object_size(&info);
   TRY_DEF(result, alloc_heap_object(runtime, size, species));
+  set_c_object_mode_unchecked(runtime, result, vmMutable);
   if (init_data.size < info.aligned_data_size) {
     // If the aligned backing array is larger than the initial data we clear the
     // whole thing to 0 to not have data lying around that hasn't been
@@ -269,6 +270,7 @@ value_t new_heap_c_object(runtime_t *runtime, value_t species, blob_t init_data,
   if (init_values.length < info.value_count)
     value_array_fill(object_values, null());
   value_array_copy_to(&init_values, &object_values);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
@@ -537,7 +539,8 @@ value_t new_heap_global_field(runtime_t *runtime, value_t display_name) {
 
 value_t new_heap_ambience(runtime_t *runtime) {
   size_t size = kAmbienceSize;
-  TRY_DEF(methodspace, new_heap_methodspace(runtime));
+  value_t native_methodspace = ROOT(runtime, builtin_methodspace);
+  TRY_DEF(methodspace, new_heap_methodspace(runtime, native_methodspace));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, ambience_species)));
   set_ambience_runtime(result, runtime);
@@ -719,7 +722,8 @@ value_t new_heap_signature_map(runtime_t *runtime) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_methodspace(runtime_t *runtime) {
+value_t new_heap_methodspace(runtime_t *runtime, value_t parent) {
+  CHECK_FAMILY_OPT(ofMethodspace, parent);
   size_t size = kMethodspaceSize;
   TRY_DEF(inheritance, new_heap_id_hash_map(runtime, kInheritanceMapInitialSize));
   TRY_DEF(methods, new_heap_signature_map(runtime));
@@ -727,6 +731,7 @@ value_t new_heap_methodspace(runtime_t *runtime) {
       ROOT(runtime, mutable_methodspace_species)));
   set_methodspace_inheritance(result, inheritance);
   set_methodspace_methods(result, methods);
+  set_methodspace_parent(result, parent);
   return post_create_sanity_check(result, size);
 }
 

@@ -352,9 +352,10 @@ value_t get_sigmap_lookup_argument_map(sigmap_state_t *state);
 
 // --- M e t h o d   s p a c e ---
 
-static const size_t kMethodspaceSize = HEAP_OBJECT_SIZE(2);
+static const size_t kMethodspaceSize = HEAP_OBJECT_SIZE(3);
 static const size_t kMethodspaceInheritanceOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kMethodspaceMethodsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kMethodspaceParentOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // The size of the inheritance map in an empty method space.
 static const size_t kInheritanceMapInitialSize = 16;
@@ -367,6 +368,10 @@ ACCESSORS_DECL(methodspace, inheritance);
 
 // The methods defined within this method space.
 ACCESSORS_DECL(methodspace, methods);
+
+// The optional parent methodspace whose state is implicitly included in this
+// one.
+ACCESSORS_DECL(methodspace, parent);
 
 // Records in the given method space that the subtype inherits directly from
 // the supertype. Returns a condition if adding fails, for instance if we run

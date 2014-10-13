@@ -45,7 +45,7 @@ value_t escape_builtin(builtin_arguments_t *args, value_array_t values) {
 }
 
 value_t add_builtin_method_impl(runtime_t *runtime, value_t map,
-    const char *name_c_str, size_t arg_count, builtin_method_t impl,
+    const char *name_c_str, size_t arg_count, builtin_implementation_t impl,
     int leave_argc) {
   CHECK_FAMILY(ofIdHashMap, map);
   E_BEGIN_TRY_FINALLY();

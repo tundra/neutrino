@@ -319,7 +319,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
         }
         case ocBuiltin: {
           value_t wrapper = read_value(&cache, &frame, 1);
-          builtin_method_t impl = (builtin_method_t) get_void_p_value(wrapper);
+          builtin_implementation_t impl = (builtin_implementation_t) get_void_p_value(wrapper);
           builtin_arguments_t args;
           builtin_arguments_init(&args, runtime, &frame, process);
           E_TRY_DEF(result, impl(&args));
@@ -329,7 +329,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
         }
         case ocBuiltinMaybeEscape: {
           value_t wrapper = read_value(&cache, &frame, 1);
-          builtin_method_t impl = (builtin_method_t) get_void_p_value(wrapper);
+          builtin_implementation_t impl = (builtin_implementation_t) get_void_p_value(wrapper);
           builtin_arguments_t args;
           builtin_arguments_init(&args, runtime, &frame, process);
           value_t result = impl(&args);

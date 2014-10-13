@@ -84,7 +84,8 @@ static value_t create_call_thunk_code_block(runtime_t *runtime) {
 
 // Populates the special imports map.
 static value_t init_special_imports(runtime_t *runtime, value_t imports) {
-  TRY_DEF(ctrino, new_heap_ctrino(runtime));
+  TRY_DEF(ctrino, new_c_object(runtime, ROOT(runtime, ctrino_factory),
+      new_blob(NULL, 0), new_value_array(NULL, 0)));
   TRY(set_id_hash_map_at(runtime, imports, RSTR(runtime, ctrino), ctrino));
   return success();
 }
@@ -117,20 +118,15 @@ static value_t create_escape_records(runtime_t *runtime) {
   return result;
 }
 
-// Create the fragment that holds the ctrino methods which will be made the
-// origin of the ctrino type.
-static value_t create_ctrino_origin(runtime_t *runtime) {
-  // Fragments must have a module.
-  TRY_DEF(module, new_heap_empty_module(runtime, nothing()));
-  TRY(ensure_frozen(runtime, module));
-  // The methodspace that holds the methods.
-  TRY_DEF(methodspace, new_heap_methodspace(runtime));
-  TRY(add_ctrino_builtin_methods(runtime, methodspace));
+// Create the methodspace that holds all the built-in methods provided by the
+// runtime.
+static value_t create_ctrino_factory_and_methodspace(runtime_t *runtime,
+    value_t *methodspace_out) {
+  TRY_DEF(methodspace, new_heap_methodspace(runtime, nothing()));
+  TRY_DEF(ctrino_factory, create_ctrino_factory(runtime, methodspace));
   TRY(ensure_frozen(runtime, methodspace));
-  TRY_DEF(fragment, new_heap_module_fragment(runtime, present_stage(), nothing(),
-      nothing(), nothing(), methodspace, nothing()));
-  TRY(ensure_frozen(runtime, fragment));
-  return fragment;
+  *methodspace_out = methodspace;
+  return ctrino_factory;
 }
 
 value_t roots_init(value_t roots, runtime_t *runtime) {
@@ -245,11 +241,11 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   ENUM_HEAP_OBJECT_FAMILIES(__CREATE_FAMILY_TYPE_OPT__)
 #undef __CREATE_FAMILY_TYPE_OPT__
 
-  // Set the origin of the ctrino object manually. Because of the role the
-  // ctrino object plays in how the runtime is initialized it has to be set up
-  // specially.
-  TRY_DEF(ctrino_origin, create_ctrino_origin(runtime));
-  set_type_raw_origin(RAW_ROOT(roots, ctrino_type), ctrino_origin);
+  // The native methodspace may need some of the types above so only initialize
+  // it after they have been created.
+  TRY_SET(RAW_ROOT(roots, ctrino_factory),
+      create_ctrino_factory_and_methodspace(runtime,
+          &RAW_ROOT(roots, builtin_methodspace)));
 
   // Ensure that the per-family types are all frozen. Doing this in two steps
   // means that any modifications that have to be done to these types can be
@@ -349,6 +345,7 @@ value_t roots_validate(value_t roots) {
   VALIDATE_CHECK_EQ(gtAny, get_guard_type(RAW_ROOT(roots, any_guard)));
   VALIDATE_HEAP_OBJECT(ofType, RAW_ROOT(roots, integer_type));
   VALIDATE_HEAP_OBJECT(ofSpecies, RAW_ROOT(roots, empty_instance_species));
+  VALIDATE_HEAP_OBJECT(ofMethodspace, RAW_ROOT(roots, builtin_methodspace));
   VALIDATE_HEAP_OBJECT(ofKey, RAW_ROOT(roots, subject_key));
   VALIDATE_CHECK_EQ(0, get_key_id(RAW_ROOT(roots, subject_key)));
   VALIDATE_HEAP_OBJECT(ofKey, RAW_ROOT(roots, selector_key));

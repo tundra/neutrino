@@ -270,6 +270,15 @@ static value_t new_moved_object(value_t target) {
   return moved;
 }
 
+// Given a value that may or may not be moved, returns the target if it has been
+// moved and otherwise the object itself. You shouldn't have to use this very
+// often -- it only makes sense during gc and it's always better to not depend
+// on data stored in the inconsistent object graph. But if you do need it, this
+// is the way to traverse the object graph.
+static inline value_t chase_moved_object(value_t raw) {
+  return (get_value_domain(raw) == vdMovedObject) ? get_moved_object_target(raw) : raw;
+}
+
 
 /// ## Heap objects
 ///
@@ -380,9 +389,8 @@ static value_t new_moved_object(value_t target) {
   F(CallLiteralArgumentAst,  call_literal_argument_ast, _, _, X, _, _, _, _, _, _, 80)\
   F(CallLiteralAst,          call_literal_ast,          _, _, X, _, _, _, X, _, _, 79)\
   F(CallTags,                call_tags,                 _, X, _, _, _, _, _, X, X, 66)\
-  F(CObject,                 c_object,                  _, _, _, X, X, _, _, _, _, 84)\
+  F(CObject,                 c_object,                  _, _, _, X, X, _, _, _, _, 67)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X, 49)\
-  F(Ctrino,                  ctrino,                    _, _, _, X, _, _, _, _, _, 67)\
   F(CurrentModuleAst,        current_module_ast,        _, _, X, _, _, _, X, _, _, 61)\
   F(DecimalFraction,         decimal_fraction,          _, _, X, _, _, _, _, _, _, 25)\
   F(EnsureAst,               ensure_ast,                _, _, X, X, _, _, X, _, _, 74)\
@@ -452,7 +460,7 @@ static value_t new_moved_object(value_t target) {
 // family enum values are not the raw ordinals but the ordinals shifted left by
 // the tag size so that they're tagged as integers. Those values are sometimes
 // stored as uint16s so the ordinals are allowed to take up to 14 bits.
-static const int kNextFamilyOrdinal = 85;
+static const int kNextFamilyOrdinal = 84;
 
 // Enumerates all the object families.
 #define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \

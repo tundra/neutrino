@@ -85,6 +85,7 @@
   F(array_of_zero)                                                             \
   F(builtin_impls)                                                             \
   F(call_thunk_code_block)                                                     \
+  F(ctrino_factory)                                                            \
   F(empty_array_buffer)                                                        \
   F(empty_array)                                                               \
   F(empty_code_block)                                                          \
@@ -92,6 +93,7 @@
   F(empty_path)                                                                \
   F(escape_records)                                                            \
   F(integer_type)                                                              \
+  F(builtin_methodspace)                                                       \
   F(op_call)                                                                   \
   F(plankton_environment)                                                      \
   F(return_code_block)                                                         \
@@ -293,16 +295,21 @@ value_t get_modal_species_sibling_with_mode(runtime_t *runtime, value_t species,
 // or a condition if the name is unknown.
 value_t runtime_get_builtin_implementation(runtime_t *runtime, value_t name);
 
-
 // Initialize this root set.
 value_t roots_init(value_t roots, runtime_t *runtime);
 
+// Returns the key'th of the given runtime's roots.
+static inline value_t get_runtime_root_at(runtime_t *runtime, root_key_t key) {
+  return get_roots_entry_at(runtime->roots, key);
+}
+
 // Accesses a named root directly in the given roots object. Usually you'll want
-// to your ROOT instead.
+// to use ROOT instead.
 #define RAW_ROOT(roots, name) (*access_roots_entry_at((roots), rk_##name))
 
 // Macro for accessing a named root in the given runtime. For instance, to get
-// null you would do null(). This can be used as an lval.
+// empty_array you would do ROOT(runtime, empty_array). This can be used as an
+// lval.
 #define ROOT(runtime, name) RAW_ROOT((runtime)->roots, name)
 
 // Accesses a string table string directly from the roots struct. Usually you'll

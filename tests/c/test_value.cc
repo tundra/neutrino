@@ -1067,15 +1067,19 @@ TEST(value, c_object) {
 
   // Create a c object species
   c_object_info_t info;
-  c_object_info_init(&info, sizeof(Point), 2);
-  value_t species = new_heap_c_object_species(runtime, &info);
+  c_object_info_reset(&info);
+  c_object_info_set_layout(&info, sizeof(Point), 2);
+  c_object_info_set_tag(&info, new_integer(15));
+  value_t type = new_heap_type(runtime, afFreeze, nothing(), nothing());
+  value_t species = new_heap_c_object_species(runtime, afFreeze, &info, type);
   ASSERT_VALEQ(new_integer(sizeof(Point)), get_c_object_species_data_size(species));
   ASSERT_VALEQ(new_integer(2), get_c_object_species_value_count(species));
   // Create an instance
   Point p0 = { 10, 43 };
   value_t init_values0[2] = { new_integer(18), new_integer(53) };
-  value_t o0 = new_heap_c_object(runtime, species, new_blob(&p0, sizeof(p0)),
+  value_t o0 = new_heap_c_object(runtime, afMutable, species, new_blob(&p0, sizeof(p0)),
       new_value_array(init_values0, 2));
+  ASSERT_VALEQ(new_integer(15), get_c_object_tag(o0));
   // Try reading the data back out again.
   blob_t blob0 = get_mutable_c_object_data(o0);
   ASSERT_EQ(sizeof(Point), blob0.size);
@@ -1095,7 +1099,8 @@ TEST(value, c_object) {
   ASSERT_VALEQ(new_integer(53), get_c_object_value_at(o0, 1));
 
   // Creating an object without passing full contents.
-  value_t o1 = new_heap_c_object(runtime, species, new_blob(NULL, 0), new_value_array(NULL, 0));
+  value_t o1 = new_heap_c_object(runtime, afMutable, species, new_blob(NULL, 0),
+      new_value_array(NULL, 0));
   blob_t blob1 = get_mutable_c_object_data(o1);
   ASSERT_EQ(sizeof(Point), blob1.size);
   Point *back1 = static_cast<Point*>(blob1.data);

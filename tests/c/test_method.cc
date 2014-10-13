@@ -24,7 +24,7 @@ END_C_INCLUDES
 TEST(method, identity_guard) {
   CREATE_RUNTIME();
 
-  value_t space = new_heap_methodspace(runtime);
+  value_t space = new_heap_methodspace(runtime, nothing());
   value_t zero = new_integer(0);
   value_t id_zero = new_heap_guard(runtime, afFreeze, gtEq, zero);
   value_t id_null = new_heap_guard(runtime, afFreeze, gtEq, null());
@@ -40,7 +40,7 @@ TEST(method, identity_guard) {
 TEST(method, any_guard) {
   CREATE_RUNTIME();
 
-  value_t space = new_heap_methodspace(runtime);
+  value_t space = new_heap_methodspace(runtime, nothing());
   value_t any_guard = ROOT(runtime, any_guard);
 
   ASSERT_MATCH(true, any_guard, new_integer(0));
@@ -53,7 +53,7 @@ TEST(method, any_guard) {
 TEST(method, method_space) {
   CREATE_RUNTIME();
 
-  value_t space = new_heap_methodspace(runtime);
+  value_t space = new_heap_methodspace(runtime, nothing());
   value_t p1 = new_heap_type(runtime, afFreeze, nothing(), null());
   value_t p2 = new_heap_type(runtime, afFreeze, nothing(), null());
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, p1, p2));
@@ -84,7 +84,7 @@ TEST(method, simple_is) {
   value_t obj_p = new_heap_type(runtime, afFreeze, nothing(), null());
   value_t int_p = ROOT(runtime, integer_type);
   value_t str_p = ROOT(runtime, string_type);
-  value_t space = new_heap_methodspace(runtime);
+  value_t space = new_heap_methodspace(runtime, nothing());
   // int <: obj
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, int_p, obj_p));
   // s-str <: str <: obj
@@ -140,7 +140,7 @@ TEST(method, is_score) {
   value_t s_str_p = new_heap_type(runtime, afFreeze, nothing(), null());
   value_t obj_p = new_heap_type(runtime, afFreeze, nothing(), null());
   value_t str_p = ROOT(runtime, string_type);
-  value_t space = new_heap_methodspace(runtime);
+  value_t space = new_heap_methodspace(runtime, nothing());
   // s-str <: str <: obj
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, str_p, obj_p));
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, s_str_p, str_p));
@@ -168,7 +168,7 @@ TEST(method, multi_score) {
   value_t int_str_p = new_heap_type(runtime, afFreeze, nothing(), null());
   value_t int_p = ROOT(runtime, integer_type);
   value_t str_p = ROOT(runtime, string_type);
-  value_t space = new_heap_methodspace(runtime);
+  value_t space = new_heap_methodspace(runtime, nothing());
   value_t is_str = new_heap_guard(runtime, afFreeze, gtIs, str_p);
   value_t is_int = new_heap_guard(runtime, afFreeze, gtIs, int_p);
   // int-str <: int, str
@@ -744,7 +744,7 @@ TEST(method, dense_perfect_lookup) {
   value_t b_p = new_heap_type(runtime, afFreeze, nothing(), C(vStr("B")));
   value_t c_p = new_heap_type(runtime, afFreeze, nothing(), C(vStr("C")));
   value_t d_p = new_heap_type(runtime, afFreeze, nothing(), C(vStr("D")));
-  value_t space = new_heap_methodspace(runtime);
+  value_t space = new_heap_methodspace(runtime, nothing());
   // D <: C <: B <: A <: Object
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, d_p, c_p));
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, c_p, b_p));

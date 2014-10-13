@@ -712,11 +712,14 @@ ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofIdHashMap, Inheritance,
     inheritance);
 ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofSignatureMap, Methods,
     methods);
+ACCESSORS_IMPL(Methodspace, methodspace, acInFamilyOpt, ofMethodspace, Parent,
+    parent);
 
 value_t methodspace_validate(value_t value) {
   VALIDATE_FAMILY(ofMethodspace, value);
   VALIDATE_FAMILY(ofIdHashMap, get_methodspace_inheritance(value));
   VALIDATE_FAMILY(ofSignatureMap, get_methodspace_methods(value));
+  VALIDATE_FAMILY_OPT(ofMethodspace, get_methodspace_parent(value));
   return success();
 }
 
@@ -799,9 +802,12 @@ static value_t get_invocation_subject_with_shortcut(total_sigmap_input_o *input)
 // itself and any of the siblings before it.
 static value_t lookup_through_fragment(sigmap_state_t *state, value_t fragment) {
   CHECK_FAMILY(ofModuleFragment, fragment);
-  value_t space = get_module_fragment_methodspace(fragment);
-  value_t sigmap = get_methodspace_methods(space);
-  TRY(continue_sigmap_lookup(state, sigmap, space));
+  value_t space = get_ambience_methodspace(state->input->ambience);
+  while (!is_nothing(space)) {
+    value_t sigmap = get_methodspace_methods(space);
+    TRY(continue_sigmap_lookup(state, sigmap, space));
+    space = get_methodspace_parent(space);
+  }
   return success();
 }
 

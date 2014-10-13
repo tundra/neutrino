@@ -56,12 +56,12 @@ value_t escape_builtin(builtin_arguments_t *args, value_array_t values);
 } while (false)
 
 // Signature of a function that implements a built-in method.
-typedef value_t (*builtin_method_t)(builtin_arguments_t *args);
+typedef value_t (*builtin_implementation_t)(builtin_arguments_t *args);
 
 // Add a builtin method implementation to the given map with the given name,
 // number of arguments, and implementation.
 value_t add_builtin_method_impl(runtime_t *runtime, value_t map,
-    const char *name_c_str, size_t arg_count, builtin_method_t method,
+    const char *name_c_str, size_t arg_count, builtin_implementation_t method,
     int leave_arg_count);
 
 struct assembler_t;

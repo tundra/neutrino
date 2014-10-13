@@ -441,7 +441,7 @@ static value_t build_methodspace_from_method_asts(value_t method_asts,
     assembler_t *assm) {
   CHECK_FAMILY(ofArray, method_asts);
   runtime_t *runtime = assm->runtime;
-  TRY_DEF(space, new_heap_methodspace(runtime));
+  TRY_DEF(space, new_heap_methodspace(runtime, nothing()));
 
   for (size_t i = 0; i < get_array_length(method_asts); i++) {
     value_t method_ast = get_array_at(method_asts, i);
