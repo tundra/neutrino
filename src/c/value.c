@@ -1967,8 +1967,6 @@ ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt, ofIdHashMap,
     Imports, imports);
 ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamily, ofModuleFragmentPrivate,
     Private, private);
-ACCESSORS_IMPL(ModuleFragment, module_fragment, acNoCheck, 0, MethodspacesCache,
-    methodspaces_cache);
 
 void set_module_fragment_epoch(value_t self, module_fragment_epoch_t value) {
   *access_heap_object_field(self, kModuleFragmentEpochOffset) = new_integer(value);
@@ -2010,7 +2008,6 @@ value_t get_module_fragment_predecessor_at(value_t self, value_t stage) {
 
 value_t ensure_module_fragment_owned_values_frozen(runtime_t *runtime, value_t self) {
   TRY(ensure_frozen(runtime, get_module_fragment_private(self)));
-  TRY(ensure_frozen(runtime, get_module_fragment_methodspaces_cache(self)));
   return success();
 }
 
@@ -2484,10 +2481,13 @@ FIXED_GET_MODE_IMPL(ambience, vmMutable);
 
 ACCESSORS_IMPL(Ambience, ambience, acInFamilyOpt, ofModuleFragment,
     PresentCoreFragment, present_core_fragment);
+ACCESSORS_IMPL(Ambience, ambience, acInFamily, ofMethodspace, Methodspace,
+    methodspace);
 
 value_t ambience_validate(value_t self) {
   VALIDATE_FAMILY(ofAmbience, self);
   VALIDATE_FAMILY_OPT(ofModuleFragment, get_ambience_present_core_fragment(self));
+  VALIDATE_FAMILY(ofMethodspace, get_ambience_methodspace(self));
   return success();
 }
 

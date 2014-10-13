@@ -1532,7 +1532,7 @@ typedef enum {
   feComplete
 } module_fragment_epoch_t;
 
-static const size_t kModuleFragmentSize = HEAP_OBJECT_SIZE(9);
+static const size_t kModuleFragmentSize = HEAP_OBJECT_SIZE(8);
 static const size_t kModuleFragmentStageOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kModuleFragmentPathOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 static const size_t kModuleFragmentPredecessorOffset = HEAP_OBJECT_FIELD_OFFSET(2);
@@ -1541,7 +1541,6 @@ static const size_t kModuleFragmentMethodspaceOffset = HEAP_OBJECT_FIELD_OFFSET(
 static const size_t kModuleFragmentImportsOffset = HEAP_OBJECT_FIELD_OFFSET(5);
 static const size_t kModuleFragmentEpochOffset = HEAP_OBJECT_FIELD_OFFSET(6);
 static const size_t kModuleFragmentPrivateOffset = HEAP_OBJECT_FIELD_OFFSET(7);
-static const size_t kModuleFragmentMethodspacesCacheOffset = HEAP_OBJECT_FIELD_OFFSET(8);
 
 // The index of the stage this fragment belongs to.
 ACCESSORS_DECL(module_fragment, stage);
@@ -1571,10 +1570,6 @@ ACCESSORS_DECL(module_fragment, private);
 
 // The current epoch of the given module fragment.
 TYPED_ACCESSORS_DECL(module_fragment, module_fragment_epoch_t, epoch);
-
-// A cache of the array of signature maps to look up through when resolving
-// methods in this fragment.
-ACCESSORS_DECL(module_fragment, methodspaces_cache);
 
 // Returns true iff this fragment has been bound.
 bool is_module_fragment_bound(value_t fragment);
@@ -1760,9 +1755,10 @@ ACCESSORS_DECL(reference, value);
 /// is visible at the surface level. Hidden ambient state (like caches) are
 /// okay.
 
-static const size_t kAmbienceSize = HEAP_OBJECT_SIZE(2);
+static const size_t kAmbienceSize = HEAP_OBJECT_SIZE(3);
 static const size_t kAmbienceRuntimeOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kAmbiencePresentCoreFragmentOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kAmbienceMethodspaceOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // Returns the runtime struct underlying this ambience.
 runtime_t *get_ambience_runtime(value_t self);
@@ -1775,6 +1771,9 @@ value_t follow_ambience_redirect(value_t self, value_t redirect);
 
 // The present fragment of the core module.
 ACCESSORS_DECL(ambience, present_core_fragment);
+
+// This ambience's methodspace.
+ACCESSORS_DECL(ambience, methodspace);
 
 
 // --- M i s c ---

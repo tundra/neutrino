@@ -408,7 +408,6 @@ value_t new_heap_module_fragment(runtime_t *runtime, value_t stage, value_t path
   set_module_fragment_epoch(result, feUnbound);
   set_module_fragment_private(result, phrivate);
   set_module_fragment_private_owner(phrivate, result);
-  set_module_fragment_methodspaces_cache(result, nothing());
   return post_create_sanity_check(result, size);
 }
 
@@ -538,10 +537,12 @@ value_t new_heap_global_field(runtime_t *runtime, value_t display_name) {
 
 value_t new_heap_ambience(runtime_t *runtime) {
   size_t size = kAmbienceSize;
+  TRY_DEF(methodspace, new_heap_methodspace(runtime));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, ambience_species)));
   set_ambience_runtime(result, runtime);
   set_ambience_present_core_fragment(result, nothing());
+  set_ambience_methodspace(result, methodspace);
   return post_create_sanity_check(result, size);
 }
 
@@ -722,12 +723,10 @@ value_t new_heap_methodspace(runtime_t *runtime) {
   size_t size = kMethodspaceSize;
   TRY_DEF(inheritance, new_heap_id_hash_map(runtime, kInheritanceMapInitialSize));
   TRY_DEF(methods, new_heap_signature_map(runtime));
-  TRY_DEF(imports, new_heap_array_buffer(runtime, kImportsArrayInitialSize));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_methodspace_species)));
   set_methodspace_inheritance(result, inheritance);
   set_methodspace_methods(result, methods);
-  set_methodspace_imports(result, imports);
   return post_create_sanity_check(result, size);
 }
 

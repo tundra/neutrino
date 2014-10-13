@@ -712,8 +712,6 @@ ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofIdHashMap, Inheritance,
     inheritance);
 ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofSignatureMap, Methods,
     methods);
-ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofArrayBuffer, Imports,
-    imports);
 
 value_t methodspace_validate(value_t value) {
   VALIDATE_FAMILY(ofMethodspace, value);
@@ -725,7 +723,6 @@ value_t methodspace_validate(value_t value) {
 value_t ensure_methodspace_owned_values_frozen(runtime_t *runtime, value_t self) {
   TRY(ensure_frozen(runtime, get_methodspace_inheritance(self)));
   TRY(ensure_frozen(runtime, get_methodspace_methods(self)));
-  TRY(ensure_frozen(runtime, get_methodspace_imports(self)));
   return success();
 }
 
@@ -748,14 +745,6 @@ value_t add_methodspace_inheritance(runtime_t *runtime, value_t self,
   // If this fails we may have set the parents array of the subtype to an empty
   // array which is awkward but okay.
   return add_to_array_buffer(runtime, parents, supertype);
-}
-
-value_t add_methodspace_import(runtime_t *runtime, value_t self, value_t imported) {
-  CHECK_FAMILY(ofMethodspace, self);
-  CHECK_FAMILY(ofMethodspace, imported);
-  CHECK_MUTABLE(self);
-  value_t imports = get_methodspace_imports(self);
-  return add_to_array_buffer(runtime, imports, imported);
 }
 
 value_t add_methodspace_method(runtime_t *runtime, value_t self,
@@ -806,65 +795,13 @@ static value_t get_invocation_subject_with_shortcut(total_sigmap_input_o *input)
     return new_not_found_condition();
 }
 
-// Ensures that the given methodspace as well as all transitive dependencies
-// are present in the given cache array.
-static value_t ensure_methodspace_transitive_dependencies(runtime_t *runtime,
-    value_t methodspace, value_t cache) {
-  CHECK_FAMILY(ofMethodspace, methodspace);
-  CHECK_FAMILY(ofArrayBuffer, cache);
-  TRY(ensure_array_buffer_contains(runtime, cache, methodspace));
-  value_t imports = get_methodspace_imports(methodspace);
-  for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
-    value_t import = get_array_buffer_at(imports, i);
-    TRY(ensure_methodspace_transitive_dependencies(runtime, import, cache));
-  }
-  return success();
-}
-
-value_t get_or_create_module_fragment_methodspaces_cache(runtime_t *runtime,
-    value_t fragment) {
-  CHECK_FAMILY(ofModuleFragment, fragment);
-  value_t cache = get_module_fragment_methodspaces_cache(fragment);
-  if (!is_nothing(cache)) {
-    CHECK_FAMILY(ofArrayBuffer, cache);
-    return cache;
-  }
-  // The next part requires the fragment to be mutable.
-  CHECK_MUTABLE(fragment);
-  // There is no cache available; build it now. As always, remember to do any
-  // allocation before modifying objects to make sure we don't end up in an
-  // inconsistent state if allocation fails.
-  TRY_SET(cache, new_heap_array_buffer(runtime, 16));
-  // We catch cycles (crudely) by setting the cache to an invalid value which
-  // will be caught by the check above. It's not that cycles couldn't in
-  // principle make sense but it'll take some thinking through to ensure that it
-  // really does make sense.
-  set_module_fragment_methodspaces_cache(fragment, new_integer(0));
-  // Scan through this fragment and its predecessors and add their transitive
-  // dependencies.
-  value_t current = fragment;
-  while (!is_nothing(current)) {
-    value_t methodspace = get_module_fragment_methodspace(current);
-    TRY(ensure_methodspace_transitive_dependencies(runtime, methodspace, cache));
-    current = get_module_fragment_predecessor(current);
-  }
-  TRY(ensure_frozen(runtime, cache));
-  set_module_fragment_methodspaces_cache(fragment, cache);
-  return cache;
-}
-
 // Performs a method lookup through the given fragment, that is, in the fragment
 // itself and any of the siblings before it.
 static value_t lookup_through_fragment(sigmap_state_t *state, value_t fragment) {
   CHECK_FAMILY(ofModuleFragment, fragment);
   value_t space = get_module_fragment_methodspace(fragment);
-  TRY_DEF(methodspaces, get_or_create_module_fragment_methodspaces_cache(
-      state->input->runtime, fragment));
-  for (size_t i = 0; i < get_array_buffer_length(methodspaces); i++) {
-    value_t methodspace = get_array_buffer_at(methodspaces, i);
-    value_t sigmap = get_methodspace_methods(methodspace);
-    TRY(continue_sigmap_lookup(state, sigmap, space));
-  }
+  value_t sigmap = get_methodspace_methods(space);
+  TRY(continue_sigmap_lookup(state, sigmap, space));
   return success();
 }
 
@@ -961,20 +898,6 @@ static unique_best_match_output_o unique_best_match_output_new() {
   return result;
 }
 
-// Do a transitive method lookup in the given method space, that is, look up
-// locally and in any imported spaces.
-static value_t lookup_methodspace_transitive_method(sigmap_state_t *state,
-    value_t space) {
-  value_t local_methods = get_methodspace_methods(space);
-  TRY(continue_sigmap_lookup(state, local_methods, space));
-  value_t imports = get_methodspace_imports(space);
-  for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
-    value_t import = get_array_buffer_at(imports, i);
-    TRY(lookup_methodspace_transitive_method(state, import));
-  }
-  return success();
-}
-
 IMPLEMENTATION(methodspace_thunk_o, sigmap_thunk_o);
 
 // State used when looking up within a single methodspace.
@@ -1000,7 +923,8 @@ static value_t methodspace_thunk_call(sigmap_thunk_o *super_self) {
   methodspace_thunk_o *self = DOWNCAST(methodspace_thunk_o, super_self);
   CHECK_FAMILY(ofMethodspace, self->methodspace);
   sigmap_state_t *state = UPCAST(self)->state;
-  TRY(lookup_methodspace_transitive_method(state, self->methodspace));
+  value_t space = self->methodspace;
+  TRY(continue_sigmap_lookup(state, get_methodspace_methods(space), space));
   TRY_SET(*self->arg_map_out, get_sigmap_lookup_argument_map(state));
   return success();
 }
@@ -1194,10 +1118,9 @@ value_t plankton_new_methodspace(runtime_t *runtime) {
 
 value_t plankton_set_methodspace_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, methods, inheritance, imports);
+  UNPACK_PLANKTON_MAP(contents, methods, inheritance);
   set_methodspace_methods(object, methods_value);
   set_methodspace_inheritance(object, inheritance_value);
-  set_methodspace_imports(object, imports_value);
   return success();
 }
 
@@ -1205,9 +1128,6 @@ void methodspace_print_on(value_t self, print_on_context_t *context) {
   string_buffer_printf(context->buf, "#<methodspace ");
   value_t methods = get_methodspace_methods(self);
   value_print_inner_on(methods, context, -1);
-  string_buffer_printf(context->buf, " ");
-  value_t imports = get_methodspace_imports(self);
-  value_print_inner_on(imports, context, -1);
   string_buffer_printf(context->buf, ">");
 }
 

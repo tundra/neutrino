@@ -20,6 +20,8 @@ typedef struct {
   value_t fragment_entry_map;
   // The ambience.
   value_t ambience;
+  // Cache of the ambience's runtime.
+  runtime_t *runtime;
 } binding_context_t;
 
 // Initializes a binding context appropriately.

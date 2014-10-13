@@ -16,6 +16,7 @@ void binding_context_init(binding_context_t *context, value_t ambience) {
   context->bound_module_map = whatever();
   context->fragment_entry_map = whatever();
   context->ambience = ambience;
+  context->runtime = get_ambience_runtime(ambience);
 }
 
 // Returns the unbound fragment for the given fragment.
@@ -171,7 +172,7 @@ static value_t bind_module_fragment_imports(binding_context_t *context,
     value_t imports, value_t bound_fragment) {
   // Import the modules spaces into this fragment and create bindings in the
   // importspace.
-  value_t methodspace = get_module_fragment_methodspace(bound_fragment);
+  //value_t methodspace = get_module_fragment_methodspace(bound_fragment);
   value_t importspace = get_module_fragment_imports(bound_fragment);
   runtime_t *runtime = get_ambience_runtime(context->ambience);
   for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
@@ -183,8 +184,8 @@ static value_t bind_module_fragment_imports(binding_context_t *context,
     value_t import_module = get_id_hash_map_at(context->bound_module_map, import_path);
     value_t import_fragment = get_module_fragment_at(import_module, import_stage);
     CHECK_TRUE("import not bound", is_module_fragment_bound(import_fragment));
-    value_t import_methods = get_module_fragment_methodspace(import_fragment);
-    TRY(add_methodspace_import(runtime, methodspace, import_methods));
+    //value_t import_methods = get_module_fragment_methodspace(import_fragment);
+    //TRY(add_methodspace_import(runtime, methodspace, import_methods));
     TRY(set_id_hash_map_at(runtime, importspace, import_head,
         import_fragment));
   }
@@ -271,10 +272,10 @@ static value_t build_transitive_module_array(runtime_t *runtime,
   return result;
 }
 
-static value_t init_empty_module_fragment(runtime_t *runtime, value_t fragment) {
-  TRY_DEF(nspace, new_heap_namespace(runtime, nothing()));
-  TRY_DEF(methodspace, new_heap_methodspace(runtime));
-  TRY_DEF(imports, new_heap_id_hash_map(runtime, 16));
+static value_t init_empty_module_fragment(binding_context_t *context, value_t fragment) {
+  TRY_DEF(nspace, new_heap_namespace(context->runtime, nothing()));
+  TRY_DEF(methodspace, get_ambience_methodspace(context->ambience));
+  TRY_DEF(imports, new_heap_id_hash_map(context->runtime, 16));
   set_module_fragment_namespace(fragment, nspace);
   set_module_fragment_methodspace(fragment, methodspace);
   set_module_fragment_imports(fragment, imports);
@@ -282,12 +283,12 @@ static value_t init_empty_module_fragment(runtime_t *runtime, value_t fragment) 
 }
 
 // Creates a new empty but suitably initialized bound module fragment.
-static value_t new_empty_module_fragment(runtime_t *runtime, value_t stage,
+static value_t new_empty_module_fragment(binding_context_t *context, value_t stage,
     value_t module) {
   value_t path = get_module_path(module);
-  TRY_DEF(empty_fragment, new_heap_module_fragment(runtime, stage, path,
+  TRY_DEF(empty_fragment, new_heap_module_fragment(context->runtime, stage, path,
       nothing(), nothing(), nothing(), nothing()));
-  TRY(init_empty_module_fragment(runtime, empty_fragment));
+  TRY(init_empty_module_fragment(context, empty_fragment));
   return empty_fragment;
 }
 
@@ -324,7 +325,7 @@ static value_t execute_binding_schedule(binding_context_t *context, value_t sche
     // Create the bound fragment.
     value_t bound_fragment = get_module_fragment_at(bound_module, stage);
     if (in_condition_cause(ccNotFound, bound_fragment)) {
-      TRY_SET(bound_fragment, new_empty_module_fragment(runtime, stage,
+      TRY_SET(bound_fragment, new_empty_module_fragment(context, stage,
           bound_module));
       TRY(add_module_fragment(runtime, bound_module, bound_fragment));
     } else {
@@ -332,7 +333,7 @@ static value_t execute_binding_schedule(binding_context_t *context, value_t sche
       // been created but not initialized yet.
       CHECK_EQ("Unexpected phase", get_module_fragment_epoch(bound_fragment),
           feUninitialized);
-      TRY(init_empty_module_fragment(runtime, bound_fragment));
+      TRY(init_empty_module_fragment(context, bound_fragment));
       set_module_fragment_epoch(bound_fragment, feUnbound);
     }
     if (is_present_core(runtime, next)) {
