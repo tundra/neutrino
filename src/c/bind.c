@@ -172,7 +172,6 @@ static value_t bind_module_fragment_imports(binding_context_t *context,
     value_t imports, value_t bound_fragment) {
   // Import the modules spaces into this fragment and create bindings in the
   // importspace.
-  //value_t methodspace = get_module_fragment_methodspace(bound_fragment);
   value_t importspace = get_module_fragment_imports(bound_fragment);
   runtime_t *runtime = get_ambience_runtime(context->ambience);
   for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
@@ -184,8 +183,6 @@ static value_t bind_module_fragment_imports(binding_context_t *context,
     value_t import_module = get_id_hash_map_at(context->bound_module_map, import_path);
     value_t import_fragment = get_module_fragment_at(import_module, import_stage);
     CHECK_TRUE("import not bound", is_module_fragment_bound(import_fragment));
-    //value_t import_methods = get_module_fragment_methodspace(import_fragment);
-    //TRY(add_methodspace_import(runtime, methodspace, import_methods));
     TRY(set_id_hash_map_at(runtime, importspace, import_head,
         import_fragment));
   }

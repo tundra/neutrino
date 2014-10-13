@@ -1112,18 +1112,6 @@ value_t lookup_method_full(total_sigmap_input_o *input, value_t fragment,
   return do_sigmap_lookup(UPCAST(&thunk), UPCAST(input), UPCAST(&output));
 }
 
-value_t plankton_new_methodspace(runtime_t *runtime) {
-  return new_heap_methodspace(runtime);
-}
-
-value_t plankton_set_methodspace_contents(value_t object, runtime_t *runtime,
-    value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, methods, inheritance);
-  set_methodspace_methods(object, methods_value);
-  set_methodspace_inheritance(object, inheritance_value);
-  return success();
-}
-
 void methodspace_print_on(value_t self, print_on_context_t *context) {
   string_buffer_printf(context->buf, "#<methodspace ");
   value_t methods = get_methodspace_methods(self);
