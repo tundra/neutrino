@@ -8,6 +8,7 @@
 #define _HEAP
 
 #include "globals.h"
+#include "io/file.h"
 #include "safe.h"
 #include "sync/thread.h"
 #include "utils.h"
@@ -78,6 +79,9 @@ typedef struct {
   // The plugins to install in runtimes created from this config.
   const c_object_info_t **plugins;
   size_t plugin_count;
+  // The object that provides access to the file system. Null means use the
+  // system default.
+  file_system_t *file_system;
 } runtime_config_t;
 
 // Initializes the fields of this runtime config to the defaults. These defaults

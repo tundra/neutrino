@@ -239,6 +239,9 @@ struct runtime_t {
   value_mapping_t plankton_mapping;
   // The module loader used by this runtime.
   safe_value_t module_loader;
+  // The object that provides access to the file system. This value is never
+  // null.
+  file_system_t *file_system;
 };
 
 // Creates a new runtime object, storing it in the given runtime out parameter.

@@ -2,7 +2,6 @@
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "alloc.h"
-#include "file.h"
 #include "interp.h"
 #include "runtime-inl.h"
 #include "safe-inl.h"
@@ -260,7 +259,8 @@ static value_t neutrino_main(int argc, char **argv) {
       const char *filename = options.argv[i];
       value_t input;
       if (strcmp("-", filename) == 0) {
-        E_TRY_SET(input, read_handle_to_blob(runtime, stdin));
+        open_file_t *stdin_handle = file_system_stdin(runtime->file_system);
+        E_TRY_SET(input, read_handle_to_blob(runtime, stdin_handle));
       } else {
         string_t filename_str;
         string_init(&filename_str, filename);

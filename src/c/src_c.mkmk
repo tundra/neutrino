@@ -11,7 +11,6 @@ library_file_names = [
   "condition.c",
   "ctrino.c",
   "derived.c",
-  "file.c",
   "format.c",
   "freeze.c",
   "heap.c",
@@ -32,6 +31,7 @@ library_file_names = [
 # All the objects for the library source files. It might make sense to create
 # a real library at some point but for now this'll do.
 library = get_group("library")
+library.add_dependency(get_dep_external('tclib', 'src', 'c', 'io', 'library'))
 library.add_dependency(get_dep_external('tclib', 'src', 'c', 'sync', 'library'))
 library.add_dependency(get_dep_external('plankton', 'src', 'c', 'library'))
 

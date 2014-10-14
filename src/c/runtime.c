@@ -520,6 +520,10 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
     config = runtime_config_get_default();
   // First reset all the fields to a well-defined value.
   runtime_clear(runtime);
+  // Set up the file system pointer. Null means default to the native system.
+  runtime->file_system = config->file_system;
+  if (runtime->file_system == NULL)
+    runtime->file_system = file_system_native();
   TRY(runtime_hard_init(runtime, config));
   TRY(runtime_soft_init(runtime));
   TRY(runtime_freeze_shared_state(runtime));
