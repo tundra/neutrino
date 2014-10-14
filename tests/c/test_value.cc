@@ -333,7 +333,7 @@ TEST(value, get_primary_type) {
 TEST(value, instance_division) {
   CREATE_RUNTIME();
 
-  value_t proto = new_heap_type(runtime, afFreeze, nothing(), null());
+  value_t proto = new_heap_type(runtime, afFreeze, null());
   value_t species = new_heap_instance_species(runtime, proto, nothing());
   value_t instance = new_heap_instance(runtime, species);
   ASSERT_VALEQ(proto, get_instance_species_primary_type_field(species));
@@ -928,17 +928,6 @@ TEST(value, ambience) {
   CREATE_RUNTIME();
 
   ASSERT_PTREQ(runtime, get_ambience_runtime(ambience));
-  value_t redirect = get_ambience_present_core_fragment_redirect();
-  ASSERT_VALEQ(nothing(), get_ambience_present_core_fragment(ambience));
-  ASSERT_VALEQ(nothing(), follow_ambience_redirect(ambience, redirect));
-  ASSERT_VALEQ(nothing(), get_type_origin(ROOT(runtime, string_type), ambience));
-
-  value_t frag = new_heap_module_fragment(runtime, present_stage(), nothing(),
-      nothing(), nothing(), nothing(), nothing());
-  set_ambience_present_core_fragment(ambience, frag);
-  ASSERT_VALEQ(frag, get_ambience_present_core_fragment(ambience));
-  ASSERT_VALEQ(frag, follow_ambience_redirect(ambience, redirect));
-  ASSERT_VALEQ(frag, get_type_origin(ROOT(runtime, string_type), ambience));
 
   DISPOSE_RUNTIME();
 }
@@ -1070,7 +1059,7 @@ TEST(value, c_object) {
   c_object_info_reset(&info);
   c_object_info_set_layout(&info, sizeof(Point), 2);
   c_object_info_set_tag(&info, new_integer(15));
-  value_t type = new_heap_type(runtime, afFreeze, nothing(), nothing());
+  value_t type = new_heap_type(runtime, afFreeze, nothing());
   value_t species = new_heap_c_object_species(runtime, afFreeze, &info, type);
   ASSERT_VALEQ(new_integer(sizeof(Point)), get_c_object_species_data_size(species));
   ASSERT_VALEQ(new_integer(2), get_c_object_species_value_count(species));

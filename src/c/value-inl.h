@@ -98,14 +98,6 @@ static value_array_t alloc_array_block(value_t self, size_t start, size_t length
 }
 
 
-// --- A m b i e n c e ----
-
-// Returns an ambience redirect for the core present module.
-static value_t get_ambience_present_core_fragment_redirect() {
-  return new_ambience_redirect(kAmbiencePresentCoreFragmentOffset);
-}
-
-
 // ## Fifo buffer
 
 // Returns the size of an individual fifo buffer node, given the width of the

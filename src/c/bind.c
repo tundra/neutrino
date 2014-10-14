@@ -289,21 +289,6 @@ static value_t new_empty_module_fragment(binding_context_t *context, value_t sta
   return empty_fragment;
 }
 
-// Returns true iff the given identifier is $:core.
-static bool is_present_core(runtime_t *runtime, value_t ident) {
-  CHECK_FAMILY(ofIdentifier, ident);
-  value_t path = get_identifier_path(ident);
-  value_t stage = get_identifier_stage(ident);
-  if (get_stage_offset_value(stage) != 0)
-    // Not present.
-    return false;
-  if (is_path_empty(path) || !is_path_empty(get_path_tail(path)))
-    // Not length 1.
-    return false;
-  value_t head = get_path_head(path);
-  return value_identity_compare(head, RSTR(runtime, core));
-}
-
 // Creates and binds modules and fragments according to the given schedule.
 static value_t execute_binding_schedule(binding_context_t *context, value_t schedule) {
   runtime_t *runtime = get_ambience_runtime(context->ambience);
@@ -332,14 +317,6 @@ static value_t execute_binding_schedule(binding_context_t *context, value_t sche
           feUninitialized);
       TRY(init_empty_module_fragment(context, bound_fragment));
       set_module_fragment_epoch(bound_fragment, feUnbound);
-    }
-    if (is_present_core(runtime, next)) {
-      // TODO: this is a hack, there should be some other mechanism for
-      //   identifying the core module. This way of binding it also means it
-      //   gets bound at a time that's not particularly well-defined which is
-      //   also an issue.
-      TOPIC_INFO(Library, "Binding present core to %v", bound_fragment);
-      set_ambience_present_core_fragment(context->ambience, bound_fragment);
     }
     // Grab the unbound fragment we'll use to create the bound fragment.
     value_t module_entries = get_id_hash_map_at(context->fragment_entry_map, path);

@@ -179,14 +179,6 @@ value_t add_float_32_builtin_implementations(runtime_t *runtime, safe_value_t s_
 }
 
 
-// --- A m b i e n c e   r e d i r e c t ---
-
-void ambience_redirect_print_on(value_t value, print_on_context_t *context) {
-  string_buffer_printf(context->buf, "#<ambience redirect @+%i>",
-      get_ambience_redirect_offset(value));
-}
-
-
 // --- F l a g   s e t ---
 
 void flag_set_print_on(value_t value, print_on_context_t *context) {

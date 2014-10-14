@@ -241,8 +241,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           value_t arg_map;
           frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags,
               &frame);
-          value_t method = lookup_method_full(UPCAST(&input), fragment,
-              &arg_map);
+          value_t method = lookup_method_full(UPCAST(&input), &arg_map);
           if (in_condition_cause(ccLookupError, method)) {
             log_lookup_error(method, UPCAST(&input));
             E_RETURN(method);
@@ -735,14 +734,12 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           // Perform the method lookup.
           value_t phrivate = frame_get_argument(&frame, 0);
           CHECK_FAMILY(ofModuleFragmentPrivate, phrivate);
-          value_t fragment = get_module_fragment_private_owner(phrivate);
           value_t call_data = frame_get_argument(&frame, 2);
           CHECK_FAMILY(ofCallData, call_data);
           value_t arg_map;
           call_data_sigmap_input_o input = call_data_sigmap_input_new(ambience,
               call_data);
-          value_t method = lookup_method_full(UPCAST(&input), fragment,
-              &arg_map);
+          value_t method = lookup_method_full(UPCAST(&input), &arg_map);
           if (in_condition_cause(ccLookupError, method)) {
             log_lookup_error(method, UPCAST(&input));
             E_RETURN(method);

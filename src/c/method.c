@@ -800,8 +800,7 @@ static value_t get_invocation_subject_with_shortcut(total_sigmap_input_o *input)
 
 // Performs a method lookup through the given fragment, that is, in the fragment
 // itself and any of the siblings before it.
-static value_t lookup_through_fragment(sigmap_state_t *state, value_t fragment) {
-  CHECK_FAMILY(ofModuleFragment, fragment);
+static value_t lookup_through_input(sigmap_state_t *state) {
   value_t space = get_ambience_methodspace(state->input->ambience);
   while (!is_nothing(space)) {
     value_t sigmap = get_methodspace_methods(space);
@@ -818,18 +817,15 @@ struct full_thunk_o {
   IMPLEMENTATION_HEADER(full_thunk_o, sigmap_thunk_o);
   // The input viewed as a total_sigmap_input_o.
   total_sigmap_input_o *input;
-  // The fragment we're performing the lookup within.
-  value_t fragment;
   // The resulting arg map.
   value_t *arg_map_out;
 };
 
-// Perform a method lookup in the subject's module of origin.
-static value_t lookup_subject_methods(full_thunk_o *thunk, value_t *subject_out) {
+// Returns the invocation subject.
+static value_t get_invocation_subject(full_thunk_o *thunk) {
   // Look for a subject value, if there is none there is nothing to do.
-  sigmap_state_t *state = UPCAST(thunk)->state;
   total_sigmap_input_o *input = thunk->input;
-  value_t subject = *subject_out = get_invocation_subject_with_shortcut(input);
+  value_t subject = get_invocation_subject_with_shortcut(input);
   TOPIC_INFO(Lookup, "Subject value: %9v", subject);
   if (in_condition_cause(ccNotFound, subject)) {
     // Just in case, check that the shortcut version gave the correct answer.
@@ -837,20 +833,8 @@ static value_t lookup_subject_methods(full_thunk_o *thunk, value_t *subject_out)
     // is the only case there can be any doubt about.
     IF_EXPENSIVE_CHECKS_ENABLED(CHECK_TRUE("Subject shortcut didn't work",
         in_condition_cause(ccNotFound, get_invocation_subject_no_shortcut(input))));
-    return success();
   }
-  // Extract the origin of the subject.
-  value_t type = get_primary_type(subject, UPCAST(input)->runtime);
-  TOPIC_INFO(Lookup, "Subject type: %9v", type);
-  CHECK_FAMILY(ofType, type);
-  value_t origin = get_type_origin(type, UPCAST(input)->ambience);
-  TOPIC_INFO(Lookup, "Subject origin: %9v", origin);
-  if (is_nothing(origin))
-    // Some types have no origin (at least at the moment) and that's okay, we
-    // just don't perform the extra lookup.
-    return success();
-  TRY(lookup_through_fragment(state, origin));
-  return success();
+  return subject;
 }
 
 IMPLEMENTATION(unique_best_match_output_o, sigmap_output_o);
@@ -1078,20 +1062,14 @@ static value_t complete_special_block_lookup(full_thunk_o *thunk,
 // module of origin.
 static value_t full_thunk_call(sigmap_thunk_o *super_self) {
   full_thunk_o *self = DOWNCAST(full_thunk_o, super_self);
-  CHECK_FAMILY_OPT(ofModuleFragment, self->fragment);
   sigmap_state_t *state = UPCAST(self)->state;
-  if (!is_nothing(self->fragment)) {
-    TOPIC_INFO(Lookup, "Performing fragment lookup %v", state->input->tags);
-    TRY(lookup_through_fragment(state, self->fragment));
-  }
-  TOPIC_INFO(Lookup, "Performing subject lookup");
-  value_t subject = whatever();
-  TRY(lookup_subject_methods(self, &subject));
+  TRY(lookup_through_input(state));
   value_t result = METHOD(state->output, get_result)(state->output);
   TOPIC_INFO(Lookup, "Lookup result: %v", result);
   if (in_family(ofMethod, result)) {
     value_t result_flags = get_method_flags(result);
     if (!is_flag_set_empty(result_flags)) {
+      TRY_DEF(subject, get_invocation_subject(self));
       // The result has at least one special flag set so we have to give this
       // lookup special treatment.
       if (get_flag_set_at(result_flags, mfLambdaDelegate)) {
@@ -1107,13 +1085,11 @@ static value_t full_thunk_call(sigmap_thunk_o *super_self) {
 
 VTABLE(full_thunk_o, sigmap_thunk_o) { full_thunk_call };
 
-value_t lookup_method_full(total_sigmap_input_o *input, value_t fragment,
-    value_t *arg_map_out) {
+value_t lookup_method_full(total_sigmap_input_o *input, value_t *arg_map_out) {
   unique_best_match_output_o output = unique_best_match_output_new();
   full_thunk_o thunk;
   VTABLE_INIT(full_thunk_o, UPCAST(&thunk));
   thunk.input = input;
-  thunk.fragment = fragment;
   thunk.arg_map_out = arg_map_out;
   return do_sigmap_lookup(UPCAST(&thunk), UPCAST(input), UPCAST(&output));
 }

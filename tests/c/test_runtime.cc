@@ -171,15 +171,12 @@ TEST(runtime, ambience_gc) {
   ASSERT_FAMILY(ofAmbience, deref(s_ambience));
   safe_value_t s_fragment = protect(pool, new_heap_module_fragment(runtime,
       stage, nothing(), nothing(), nothing(), nothing(), nothing()));
-  set_ambience_present_core_fragment(ambience, deref(s_fragment));
   ASSERT_FAMILY(ofModuleFragment, deref(s_fragment));
 
   runtime_garbage_collect(runtime);
 
   ASSERT_FAMILY(ofAmbience, deref(s_ambience));
   ASSERT_FAMILY(ofModuleFragment, deref(s_fragment));
-  ASSERT_SAME(deref(s_fragment),
-      get_ambience_present_core_fragment(deref(s_ambience)));
   ASSERT_SAME(stage, get_module_fragment_stage(deref(s_fragment)));
 
   DISPOSE_SAFE_VALUE_POOL(pool);

@@ -425,7 +425,7 @@ value_t get_c_object_value_at(value_t self, size_t index) {
 
 value_t new_c_object_factory(runtime_t *runtime, c_object_info_t *info,
     value_t methodspace) {
-  TRY_DEF(subject, new_heap_type(runtime, afFreeze, nothing(), nothing()));
+  TRY_DEF(subject, new_heap_type(runtime, afFreeze, nothing()));
   TRY_DEF(species, new_heap_c_object_species(runtime, afFreeze, info, subject));
   for (size_t i = 0; i < info->method_count; i++) {
     const c_object_method_t *method = &info->methods[i];

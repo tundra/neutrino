@@ -1636,7 +1636,6 @@ value_t ensure_code_block_owned_values_frozen(runtime_t *runtime, value_t self) 
 GET_FAMILY_PRIMARY_TYPE_IMPL(type);
 NO_BUILTIN_METHODS(type);
 
-ACCESSORS_IMPL(Type, type, acNoCheck, 0, RawOrigin, raw_origin);
 ACCESSORS_IMPL(Type, type, acNoCheck, 0, DisplayName, display_name);
 
 value_t type_validate(value_t value) {
@@ -1658,7 +1657,7 @@ void type_print_on(value_t value, print_on_context_t *context) {
 }
 
 value_t plankton_new_type(runtime_t *runtime) {
-  return new_heap_type(runtime, afMutable, nothing(), nothing());
+  return new_heap_type(runtime, afMutable, nothing());
 }
 
 value_t plankton_set_type_contents(value_t object, runtime_t *runtime,
@@ -1666,15 +1665,6 @@ value_t plankton_set_type_contents(value_t object, runtime_t *runtime,
   UNPACK_PLANKTON_MAP(contents, name);
   set_type_display_name(object, name_value);
   return success();
-}
-
-value_t get_type_origin(value_t self, value_t ambience) {
-  value_t raw_origin = get_type_raw_origin(self);
-  if (in_phylum(tpAmbienceRedirect, raw_origin)) {
-    return follow_ambience_redirect(ambience, raw_origin);
-  } else {
-    return raw_origin;
-  }
 }
 
 
@@ -2044,12 +2034,8 @@ static value_t module_fragment_private_new_type(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t display_name = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofModuleFragmentPrivate, self);
-  // The type is bound in the namespace of the fragment .new_type is called on
-  // but its origin is the next module since that's where the methods for the
-  // type are defined there.
   runtime_t *runtime = get_builtin_runtime(args);
-  value_t next_fragment = get_module_fragment_private_successor(self);
-  return new_heap_type(runtime, afMutable, next_fragment, display_name);
+  return new_heap_type(runtime, afMutable, display_name);
 }
 
 static value_t module_fragment_private_new_global_field(builtin_arguments_t *args) {
@@ -2479,14 +2465,11 @@ void reference_print_on(value_t self, print_on_context_t *context) {
 TRIVIAL_PRINT_ON_IMPL(Ambience, ambience);
 FIXED_GET_MODE_IMPL(ambience, vmMutable);
 
-ACCESSORS_IMPL(Ambience, ambience, acInFamilyOpt, ofModuleFragment,
-    PresentCoreFragment, present_core_fragment);
 ACCESSORS_IMPL(Ambience, ambience, acInFamily, ofMethodspace, Methodspace,
     methodspace);
 
 value_t ambience_validate(value_t self) {
   VALIDATE_FAMILY(ofAmbience, self);
-  VALIDATE_FAMILY_OPT(ofModuleFragment, get_ambience_present_core_fragment(self));
   VALIDATE_FAMILY(ofMethodspace, get_ambience_methodspace(self));
   return success();
 }
@@ -2505,14 +2488,6 @@ runtime_t *get_ambience_runtime(value_t self) {
   CHECK_FAMILY(ofAmbience, self);
   return (runtime_t*) value_to_pointer_bit_cast(
       *access_heap_object_field(self, kAmbienceRuntimeOffset));
-}
-
-value_t follow_ambience_redirect(value_t self, value_t redirect) {
-  CHECK_FAMILY(ofAmbience, self);
-  CHECK_PHYLUM(tpAmbienceRedirect, redirect);
-  size_t offset = get_ambience_redirect_offset(redirect);
-  CHECK_REL("invalid redirect", offset, <, kAmbienceSize);
-  return *access_heap_object_field(self, offset);
 }
 
 
