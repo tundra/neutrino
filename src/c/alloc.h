@@ -106,7 +106,7 @@ value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity);
 
 // Creates and returns a new c-object species.
 value_t new_heap_c_object_species(runtime_t *runtime, alloc_flags_t flags,
-    c_object_info_t *info, value_t type);
+    const c_object_info_t *info, value_t type);
 
 // Creates a new instance of the given c object species whose data is read from
 // the given data pointer and values from the value pointer. The sizes must be

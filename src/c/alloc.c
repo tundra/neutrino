@@ -229,15 +229,15 @@ value_t new_heap_id_hash_map(runtime_t *runtime, size_t init_capacity) {
 }
 
 value_t new_heap_c_object_species(runtime_t *runtime, alloc_flags_t flags,
-    c_object_info_t *info, value_t type) {
+    const c_object_info_t *info, value_t type) {
   CHECK_FAMILY(ofType, type);
   size_t size = kCObjectSpeciesSize;
   TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, mutable_species_species)));
   set_species_instance_family(result, ofCObject);
   set_species_family_behavior(result, &kCObjectBehavior);
   set_species_division_behavior(result, &kCObjectSpeciesBehavior);
-  set_c_object_species_data_size(result, new_integer(info->data_size));
-  set_c_object_species_value_count(result, new_integer(info->value_count));
+  set_c_object_species_data_size(result, new_integer(info->layout.data_size));
+  set_c_object_species_value_count(result, new_integer(info->layout.value_count));
   set_c_object_species_type(result, type);
   set_c_object_species_tag(result, info->tag);
   TRY(post_process_result(runtime, result, flags));
@@ -247,18 +247,19 @@ value_t new_heap_c_object_species(runtime_t *runtime, alloc_flags_t flags,
 value_t new_heap_c_object(runtime_t *runtime, alloc_flags_t flags, value_t species,
     blob_t init_data, value_array_t init_values) {
   CHECK_DIVISION(sdCObject, species);
-  c_object_info_t info;
-  get_c_object_species_object_info(species, &info);
+  c_object_layout_t info;
+  get_c_object_species_layout_gc_tolerant(species, &info);
   CHECK_REL("too much data", init_data.size, <=, info.data_size);
   CHECK_REL("too many values", init_values.length, <=, info.value_count);
   size_t size = calc_c_object_size(&info);
+  size_t aligned_data_size = align_size(kValueSize, info.data_size);
   TRY_DEF(result, alloc_heap_object(runtime, size, species));
   set_c_object_mode_unchecked(runtime, result, vmMutable);
-  if (init_data.size < info.aligned_data_size) {
+  if (init_data.size < aligned_data_size) {
     // If the aligned backing array is larger than the initial data we clear the
     // whole thing to 0 to not have data lying around that hasn't been
     // deliberately set.
-    blob_t aligned_data = new_blob(get_c_object_data_start(result), info.aligned_data_size);
+    blob_t aligned_data = new_blob(get_c_object_data_start(result), aligned_data_size);
     blob_fill(aligned_data, 0);
   }
   // Copy the initial data into the object. This time we'll use just the

@@ -17,6 +17,7 @@ library_file_names = [
   "heap.c",
   "interp.c",
   "method.c",
+  "plugin.c",
   "process.c",
   "runtime.c",
   "safe.c",

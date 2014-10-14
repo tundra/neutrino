@@ -24,65 +24,6 @@ static int32_t get_c_object_int_tag(value_t self) {
 }
 
 
-// --- F r a m e w o r k ---
-
-// Builds a signature for the built-in ctrino method with the given name and
-// positional argument count.
-static value_t build_builtin_method_signature(runtime_t *runtime,
-    const c_object_method_t *method, value_t subject, value_t selector) {
-  size_t argc = method->posc + 2;
-  TRY_DEF(vector, new_heap_pair_array(runtime, argc));
-  // The subject parameter.
-  TRY_DEF(subject_guard, new_heap_guard(runtime, afFreeze, gtIs, subject));
-  TRY_DEF(subject_param, new_heap_parameter(runtime, afFreeze, subject_guard,
-      ROOT(runtime, empty_array), false, 0));
-  set_pair_array_first_at(vector, 0, ROOT(runtime, subject_key));
-  set_pair_array_second_at(vector, 0, subject_param);
-  // The selector parameter.
-  TRY_DEF(name_guard, new_heap_guard(runtime, afFreeze, gtEq, selector));
-  TRY_DEF(name_param, new_heap_parameter(runtime, afFreeze, name_guard,
-      ROOT(runtime, empty_array), false, 1));
-  set_pair_array_first_at(vector, 1, ROOT(runtime, selector_key));
-  set_pair_array_second_at(vector, 1, name_param);
-  // The positional parameters.
-  for (size_t i = 0; i < method->posc; i++) {
-    TRY_DEF(param, new_heap_parameter(runtime, afFreeze,
-        ROOT(runtime, any_guard), ROOT(runtime, empty_array), false, 2 + i));
-    set_pair_array_first_at(vector, 2 + i, new_integer(i));
-    set_pair_array_second_at(vector, 2 + i, param);
-  }
-  co_sort_pair_array(vector);
-  return new_heap_signature(runtime, afFreeze, vector, argc, argc, false);
-}
-
-// Add a ctrino method to the given method space with the given name, number of
-// arguments, and implementation.
-static value_t add_builtin_method(runtime_t *runtime, const c_object_method_t *method,
-    value_t subject, value_t space) {
-  CHECK_FAMILY(ofMethodspace, space);
-  E_BEGIN_TRY_FINALLY();
-    // Build the implementation.
-    assembler_t assm;
-    E_TRY(assembler_init(&assm, runtime, nothing(), scope_get_bottom()));
-    E_TRY(assembler_emit_builtin(&assm, method->impl));
-    E_TRY(assembler_emit_return(&assm));
-    E_TRY_DEF(code_block, assembler_flush(&assm));
-    // Build the signature.
-    string_t name_str;
-    string_init(&name_str, method->selector);
-    E_TRY_DEF(name, new_heap_string(runtime, &name_str));
-    E_TRY_DEF(selector, new_heap_operation(runtime, afFreeze, otInfix, name));
-    E_TRY_DEF(signature, build_builtin_method_signature(runtime, method, subject, selector));
-    E_TRY_DEF(method,new_heap_method(runtime, afFreeze, signature, nothing(),
-        code_block, nothing(), new_flag_set(kFlagSetAllOff)));
-    // And in the methodspace bind them.
-    E_RETURN(add_methodspace_method(runtime, space, method));
-  E_FINALLY();
-    assembler_dispose(&assm);
-  E_END_TRY_FINALLY();
-}
-
-
 /// ## Ctrino
 
 static value_t ctrino_get_builtin_type(builtin_arguments_t *args) {
@@ -288,9 +229,8 @@ void get_c_object_species_layout(value_t value, heap_object_layout_t *layout) {
 }
 
 void c_object_info_reset(c_object_info_t *info) {
-  info->data_size = 0;
-  info->aligned_data_size = 0;
-  info->value_count = 0;
+  info->layout.data_size = 0;
+  info->layout.value_count = 0;
   info->methods = NULL;
   info->method_count = 0;
   info->tag = nothing();
@@ -308,22 +248,22 @@ void c_object_info_set_tag(c_object_info_t *info, value_t tag) {
 
 void c_object_info_set_layout(c_object_info_t *info, size_t data_size,
     size_t value_count) {
-  info->data_size = data_size;
-  info->aligned_data_size = align_size(kValueSize, data_size);
-  info->value_count = value_count;
+  info->layout.data_size = data_size;
+  info->layout.value_count = value_count;
 }
 
-void get_c_object_species_object_info(value_t raw_self, c_object_info_t *info_out) {
+void get_c_object_species_layout_gc_tolerant(value_t raw_self,
+    c_object_layout_t *layout_out) {
   value_t self = chase_moved_object(raw_self);
   // Access the fields directly rather than use the accessors because the
   // accessors assume the heap is in a consistent state which it may not be
   // because of gc when this is called.
-  size_t data_size = get_integer_value(*access_heap_object_field(self,
+  c_object_layout_t layout;
+  layout.data_size = get_integer_value(*access_heap_object_field(self,
       kCObjectSpeciesDataSizeOffset));
-  size_t value_count = get_integer_value(*access_heap_object_field(self,
+  layout.value_count = get_integer_value(*access_heap_object_field(self,
       kCObjectSpeciesValueCountOffset));
-  c_object_info_reset(info_out);
-  c_object_info_set_layout(info_out, data_size, value_count);
+  *layout_out = layout;
 }
 
 CHECKED_SPECIES_ACCESSORS_IMPL(CObject, c_object, CObject, c_object,
@@ -345,10 +285,15 @@ CHECKED_SPECIES_ACCESSORS_IMPL(CObject, c_object, CObject, c_object,
 
 NO_BUILTIN_METHODS(c_object);
 
-size_t calc_c_object_size(c_object_info_t *info) {
-  return kCObjectHeaderSize
-       + info->aligned_data_size
-       + (info->value_count * kValueSize);
+// Returns the offset in bytes at which the value section of a c object with the
+// given data size starts.
+static size_t calc_c_object_values_offset(size_t data_size) {
+  return kCObjectHeaderSize + align_size(kValueSize, data_size);
+}
+
+size_t calc_c_object_size(c_object_layout_t *layout) {
+  return calc_c_object_values_offset(layout->data_size)
+       + (layout->value_count * kValueSize);
 }
 
 value_mode_t get_c_object_mode(value_t self) {
@@ -376,10 +321,11 @@ void c_object_print_on(value_t value, print_on_context_t *context) {
 
 void get_c_object_layout(value_t self, heap_object_layout_t *layout) {
   value_t species = get_heap_object_species(self);
-  c_object_info_t info;
-  get_c_object_species_object_info(species, &info);
+  c_object_layout_t info;
+  get_c_object_species_layout_gc_tolerant(species, &info);
   size_t size = calc_c_object_size(&info);
-  heap_object_layout_set(layout, size, kCObjectHeaderSize + info.aligned_data_size);
+  size_t values_offset = calc_c_object_values_offset(info.data_size);
+  heap_object_layout_set(layout, size, values_offset);
 }
 
 byte_t *get_c_object_data_start(value_t self) {
@@ -395,12 +341,17 @@ blob_t get_mutable_c_object_data(value_t self) {
   return new_blob(get_c_object_data_start(self), get_integer_value(data_size_val));
 }
 
+size_t get_c_object_species_values_offset(value_t self) {
+  CHECK_DIVISION(sdCObject, self);
+  value_t data_size_val = get_c_object_species_data_size(self);
+  return calc_c_object_values_offset(get_integer_value(data_size_val));
+}
+
 value_t *get_c_object_value_start(value_t self) {
   CHECK_FAMILY(ofCObject, self);
   value_t species = get_heap_object_species(self);
-  c_object_info_t info;
-  get_c_object_species_object_info(species, &info);
-  return access_heap_object_field(self, kCObjectHeaderSize + info.aligned_data_size);
+  size_t offset = get_c_object_species_values_offset(species);
+  return access_heap_object_field(self, offset);
 }
 
 static value_array_t get_c_object_values(value_t self) {
@@ -421,20 +372,4 @@ value_t get_c_object_value_at(value_t self, size_t index) {
   COND_CHECK_TRUE("c object value index out of bounds", ccOutOfBounds,
       index < values.length);
     return values.start[index];
-}
-
-value_t new_c_object_factory(runtime_t *runtime, c_object_info_t *info,
-    value_t methodspace) {
-  TRY_DEF(subject, new_heap_type(runtime, afFreeze, nothing()));
-  TRY_DEF(species, new_heap_c_object_species(runtime, afFreeze, info, subject));
-  for (size_t i = 0; i < info->method_count; i++) {
-    const c_object_method_t *method = &info->methods[i];
-    TRY(add_builtin_method(runtime, method, subject, methodspace));
-  }
-  return species;
-}
-
-value_t new_c_object(runtime_t *runtime, value_t factory, blob_t data,
-    value_array_t values) {
-  return new_heap_c_object(runtime, afFreeze, factory, data, values);
 }
