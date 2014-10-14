@@ -19,6 +19,8 @@ static const byte_t kBlankHeapMarker = 0xBE;
 static const byte_t kAllocedHeapMarker = 0xFA;
 static const byte_t kFreedHeapMarker = 0xD0;
 
+FORWARD(c_object_info_t);
+
 
 // --- M i s c ---
 
@@ -73,6 +75,9 @@ typedef struct {
   // Random seed used to initialize the pseudo random generator used to
   // determine when to simulate a failure when fuzzing.
   size_t gc_fuzz_seed;
+  // The plugins to install in runtimes created from this config.
+  const c_object_info_t **plugins;
+  size_t plugin_count;
 } runtime_config_t;
 
 // Initializes the fields of this runtime config to the defaults. These defaults

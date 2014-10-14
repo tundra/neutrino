@@ -207,12 +207,31 @@ static value_t build_module_loader(runtime_t *runtime, value_t options) {
   return loader;
 }
 
+static value_t test_echo(builtin_arguments_t *args) {
+  return get_builtin_argument(args, 0);
+}
+
+#define kTestMethodCount 1
+static const c_object_method_t kTestMethods[kTestMethodCount] = {
+  BUILTIN_METHOD("echo", 1, test_echo)
+};
+
+static const c_object_info_t **get_main_plugins() {
+  static c_object_info_t test_plugin;
+  c_object_info_reset(&test_plugin);
+  c_object_info_set_methods(&test_plugin, kTestMethods, kTestMethodCount);
+  static const c_object_info_t *result[1] = { &test_plugin };
+  return result;
+}
+
 // Override some of the basic defaults to make the config better suited for
 // running scripts.
 static void runtime_config_init_main_defaults(runtime_config_t *config) {
   // Currently the runtime doesn't handle allocation failures super well
   // (particularly plankton parsing) so keep the semispace size big.
   config->semispace_size_bytes = 10 * kMB;
+  config->plugin_count = 1;
+  config->plugins = get_main_plugins();
 }
 
 // Create a vm and run the program.

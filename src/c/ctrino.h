@@ -31,7 +31,6 @@ value_t create_ctrino_factory(runtime_t *runtime, value_t space);
 
 /// ## C object species
 
-
 static const size_t kCObjectSpeciesSize = SPECIES_SIZE(4);
 static const size_t kCObjectSpeciesDataSizeOffset = SPECIES_FIELD_OFFSET(0);
 static const size_t kCObjectSpeciesValueCountOffset = SPECIES_FIELD_OFFSET(1);

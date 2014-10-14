@@ -20,6 +20,11 @@ typedef struct {
   builtin_implementation_t impl;
 } c_object_method_t;
 
+// Expands to a built-in method struct with the given string selector,
+// positional argument count, and native implementation.
+#define BUILTIN_METHOD(SEL, POSC, IMPL)                                        \
+  { (SEL), (POSC), (IMPL) }
+
 // Description of the layout of a C object. Note that unlike fully general
 // built-in objects, all C object instances of the same species must have the
 // same layout. To get variable size data or field count use a value field that
@@ -32,7 +37,7 @@ typedef struct {
 } c_object_layout_t;
 
 // Full description of a c object.
-typedef struct {
+struct c_object_info_t {
   // The object's layout.
   c_object_layout_t layout;
   // Description of the methods.
@@ -42,7 +47,7 @@ typedef struct {
   // The tag used to identify instances. An instance of this type will return
   // this value from get_c_object_tag.
   value_t tag;
-} c_object_info_t;
+};
 
 // Clears all the state in the given c object info.
 void c_object_info_reset(c_object_info_t *info);
@@ -65,7 +70,7 @@ value_t get_c_object_tag(value_t self);
 
 // Creates a new object that can be used to produce C objects. The object's
 // methods are installed in the given methodspace.
-value_t new_c_object_factory(runtime_t *runtime, c_object_info_t *info,
+value_t new_c_object_factory(runtime_t *runtime, const c_object_info_t *info,
     value_t methodspace);
 
 // Creates a new c object instance from the given factory.

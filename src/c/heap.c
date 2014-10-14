@@ -37,7 +37,9 @@ static const runtime_config_t kDefaultConfig = {
   1 * kMB,      // semispace_size_bytes
   100 * kMB,    // system_memory_limit
   0,            // allocation_failure_fuzzer_frequency
-  0             // allocation_failure_fuzzer_seed
+  0,            // allocation_failure_fuzzer_seed,
+  NULL,         // plugins
+  0             // plugin_count
 };
 
 void runtime_config_init_defaults(runtime_config_t *config) {

@@ -60,7 +60,7 @@ static value_t add_builtin_method(runtime_t *runtime, const c_object_method_t *m
   E_END_TRY_FINALLY();
 }
 
-value_t new_c_object_factory(runtime_t *runtime, c_object_info_t *info,
+value_t new_c_object_factory(runtime_t *runtime, const c_object_info_t *info,
     value_t methodspace) {
   TRY_DEF(subject, new_heap_type(runtime, afFreeze, nothing()));
   TRY_DEF(species, new_heap_c_object_species(runtime, afFreeze, info, subject));

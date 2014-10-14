@@ -120,16 +120,27 @@ static value_t create_escape_records(runtime_t *runtime) {
 
 // Create the methodspace that holds all the built-in methods provided by the
 // runtime.
-static value_t create_ctrino_factory_and_methodspace(runtime_t *runtime,
-    value_t *methodspace_out) {
-  TRY_DEF(methodspace, new_heap_methodspace(runtime, nothing()));
+static value_t apply_ctrino_plugin(runtime_t *runtime, value_t methodspace) {
   TRY_DEF(ctrino_factory, create_ctrino_factory(runtime, methodspace));
-  TRY(ensure_frozen(runtime, methodspace));
-  *methodspace_out = methodspace;
   return ctrino_factory;
 }
 
-value_t roots_init(value_t roots, runtime_t *runtime) {
+static value_t apply_custom_plugins(runtime_t *runtime, const runtime_config_t *config,
+    value_t methodspace) {
+  if (config->plugin_count == 0)
+    return ROOT(runtime, empty_array);
+  TRY_DEF(result, new_heap_array(runtime, config->plugin_count));
+  for (size_t i = 0; i < config->plugin_count; i++) {
+    const c_object_info_t *plugin = config->plugins[i];
+    if (plugin == NULL)
+      continue;
+    TRY_DEF(factory, new_c_object_factory(runtime, plugin, methodspace));
+    set_array_at(result, i, factory);
+  }
+  return result;
+}
+
+value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *runtime) {
   // The modal meta-roots are tricky because the species relationship between
   // them is circular.
   TRY_DEF(fluid_meta, new_heap_modal_species_unchecked(runtime, &kSpeciesBehavior,
@@ -240,11 +251,17 @@ value_t roots_init(value_t roots, runtime_t *runtime) {
   ENUM_HEAP_OBJECT_FAMILIES(__CREATE_FAMILY_TYPE_OPT__)
 #undef __CREATE_FAMILY_TYPE_OPT__
 
+  TRY_DEF(builtin_methodspace, new_heap_methodspace(runtime, nothing()));
+  RAW_ROOT(roots, builtin_methodspace) = builtin_methodspace;
+
   // The native methodspace may need some of the types above so only initialize
   // it after they have been created.
-  TRY_SET(RAW_ROOT(roots, ctrino_factory),
-      create_ctrino_factory_and_methodspace(runtime,
-          &RAW_ROOT(roots, builtin_methodspace)));
+  TRY_SET(RAW_ROOT(roots, ctrino_factory), apply_ctrino_plugin(runtime,
+          builtin_methodspace));
+  TRY_SET(RAW_ROOT(roots, plugin_factories), apply_custom_plugins(runtime,
+      config, builtin_methodspace));
+
+  TRY(ensure_frozen(runtime, builtin_methodspace));
 
   // Ensure that the per-family types are all frozen. Doing this in two steps
   // means that any modifications that have to be done to these types can be
@@ -359,6 +376,7 @@ value_t roots_validate(value_t roots) {
   VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, empty_code_block));
   VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, escape_records));
   VALIDATE_HEAP_OBJECT(ofIdHashMap, RAW_ROOT(roots, special_imports));
+  VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, plugin_factories));
 
 #define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_HEAP_OBJECT(ofString, RAW_RSTR(roots, name));
   ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)
@@ -457,7 +475,7 @@ static value_t runtime_hard_init(runtime_t *runtime, const runtime_config_t *con
   // be used.
   TRY(heap_init(&runtime->heap, config));
   TRY_SET(runtime->roots, new_heap_uninitialized_roots(runtime));
-  TRY(roots_init(runtime->roots, runtime));
+  TRY(roots_init(runtime->roots, config, runtime));
   TRY_SET(runtime->mutable_roots, new_heap_mutable_roots(runtime));
   // Check that everything looks sane.
   return runtime_validate(runtime, nothing());
@@ -855,4 +873,8 @@ value_t runtime_get_builtin_implementation(runtime_t *runtime, value_t name) {
   } else {
     return impl;
   }
+}
+
+value_t get_runtime_plugin_factory_at(runtime_t *runtime, size_t index) {
+  return get_array_at(ROOT(runtime, plugin_factories), index);
 }

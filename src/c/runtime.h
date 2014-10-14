@@ -96,6 +96,7 @@
   F(builtin_methodspace)                                                       \
   F(op_call)                                                                   \
   F(plankton_environment)                                                      \
+  F(plugin_factories)                                                          \
   F(return_code_block)                                                         \
   F(selector_key)                                                              \
   F(special_imports)                                                           \
@@ -296,12 +297,16 @@ value_t get_modal_species_sibling_with_mode(runtime_t *runtime, value_t species,
 value_t runtime_get_builtin_implementation(runtime_t *runtime, value_t name);
 
 // Initialize this root set.
-value_t roots_init(value_t roots, runtime_t *runtime);
+value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *runtime);
 
 // Returns the key'th of the given runtime's roots.
 static inline value_t get_runtime_root_at(runtime_t *runtime, root_key_t key) {
   return get_roots_entry_at(runtime->roots, key);
 }
+
+// Returns the instance factory that was created for the index'th entry in the
+// plugin list used to create the given runtime.
+value_t get_runtime_plugin_factory_at(runtime_t *runtime, size_t index);
 
 // Accesses a named root directly in the given roots object. Usually you'll want
 // to use ROOT instead.

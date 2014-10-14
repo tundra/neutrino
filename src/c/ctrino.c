@@ -55,6 +55,16 @@ static value_t ctrino_get_builtin_type(builtin_arguments_t *args) {
   return null();
 }
 
+static value_t ctrino_new_plugin_instance(builtin_arguments_t *args) {
+  runtime_t *runtime = get_builtin_runtime(args);
+  value_t self = get_builtin_subject(args);
+  value_t index = get_builtin_argument(args, 0);
+  CHECK_C_OBJECT_TAG(btCtrino, self);
+  CHECK_DOMAIN(vdInteger, index);
+  value_t factory = get_runtime_plugin_factory_at(runtime, get_integer_value(index));
+  return new_c_object(runtime, factory, new_blob(NULL, 0), new_value_array(NULL, 0));
+}
+
 static value_t ctrino_new_function(builtin_arguments_t *args) {
   runtime_t *runtime = get_builtin_runtime(args);
   value_t self = get_builtin_subject(args);
@@ -192,26 +202,24 @@ static value_t ctrino_new_pending_promise(builtin_arguments_t *args) {
   return new_heap_pending_promise(runtime);
 }
 
-#define BUILTIN_METHOD(SUBJ, SEL, ARGC, IMPL)                                  \
-  { (SEL), (ARGC), (IMPL) }
-
-#define kCtrinoMethodCount 15
+#define kCtrinoMethodCount 16
 static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
-  BUILTIN_METHOD(ctrino, "builtin", 1, ctrino_builtin),
-  BUILTIN_METHOD(ctrino, "delay", 3, ctrino_delay),
-  BUILTIN_METHOD(ctrino, "freeze", 1, ctrino_freeze),
-  BUILTIN_METHOD(ctrino, "get_builtin_type", 1, ctrino_get_builtin_type),
-  BUILTIN_METHOD(ctrino, "get_current_backtrace", 0, ctrino_get_current_backtrace),
-  BUILTIN_METHOD(ctrino, "is_deep_frozen?", 1, ctrino_is_deep_frozen),
-  BUILTIN_METHOD(ctrino, "is_frozen?", 1, ctrino_is_frozen),
-  BUILTIN_METHOD(ctrino, "log_info", 1, ctrino_log_info),
-  BUILTIN_METHOD(ctrino, "new_array", 1, ctrino_new_array),
-  BUILTIN_METHOD(ctrino, "new_float_32", 1, ctrino_new_float_32),
-  BUILTIN_METHOD(ctrino, "new_function", 1, ctrino_new_function),
-  BUILTIN_METHOD(ctrino, "new_instance_manager", 1, ctrino_new_instance_manager),
-  BUILTIN_METHOD(ctrino, "new_pending_promise", 0, ctrino_new_pending_promise),
-  BUILTIN_METHOD(ctrino, "print_ln", 1, ctrino_print_ln),
-  BUILTIN_METHOD(ctrino, "to_string", 1, ctrino_to_string)
+  BUILTIN_METHOD("builtin", 1, ctrino_builtin),
+  BUILTIN_METHOD("delay", 3, ctrino_delay),
+  BUILTIN_METHOD("freeze", 1, ctrino_freeze),
+  BUILTIN_METHOD("get_builtin_type", 1, ctrino_get_builtin_type),
+  BUILTIN_METHOD("get_current_backtrace", 0, ctrino_get_current_backtrace),
+  BUILTIN_METHOD("is_deep_frozen?", 1, ctrino_is_deep_frozen),
+  BUILTIN_METHOD("is_frozen?", 1, ctrino_is_frozen),
+  BUILTIN_METHOD("log_info", 1, ctrino_log_info),
+  BUILTIN_METHOD("new_array", 1, ctrino_new_array),
+  BUILTIN_METHOD("new_float_32", 1, ctrino_new_float_32),
+  BUILTIN_METHOD("new_function", 1, ctrino_new_function),
+  BUILTIN_METHOD("new_instance_manager", 1, ctrino_new_instance_manager),
+  BUILTIN_METHOD("new_pending_promise", 0, ctrino_new_pending_promise),
+  BUILTIN_METHOD("new_plugin_instance", 1, ctrino_new_plugin_instance),
+  BUILTIN_METHOD("print_ln", 1, ctrino_print_ln),
+  BUILTIN_METHOD("to_string", 1, ctrino_to_string)
 };
 
 value_t create_ctrino_factory(runtime_t *runtime, value_t space) {

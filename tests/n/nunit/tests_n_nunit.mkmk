@@ -36,6 +36,7 @@ file_names = [
   "leave.n",
   "module.n",
   "object.n",
+  "plugin.n",
   "promise.n",
   "selector.n",
   "signal.n",
