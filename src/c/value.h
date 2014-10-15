@@ -37,6 +37,7 @@
 #define _VALUE
 
 #include "globals.h"
+#include "io/file.h"
 #include "utils/check.h"
 #include "utils/strbuf.h"
 #include "utils/string.h"
@@ -45,7 +46,6 @@ FORWARD(blob_t);
 FORWARD(cycle_detector_t);
 FORWARD(hash_stream_t);
 FORWARD(runtime_t);
-FORWARD(open_file_t);
 
 // Calls the given macro for each value domain name. The tag is the one used
 // to distinguish pointers, the ordinal gives the sort order (lowest ordinal
