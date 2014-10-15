@@ -31,3 +31,28 @@ def ($this is @String)==($that is @String);
 ##   will have to do for now.
 @ctrino.builtin("str.get_ascii_characters()")
 def ($this is @String).get_ascii_characters();
+
+## A character classifier that uses the functions provided by ctype.h.
+type @CType;
+
+## Checks for a lower-case character.
+@ctrino.builtin("ctype.is_lower_case?")
+def ($this is @CType).is_lower_case?($str);
+
+## Checks for an uppercase letter.
+@ctrino.builtin("ctype.is_upper_case?")
+def ($this is @CType).is_upper_case?($str);
+
+## Checks for  an alphabetic character.
+@ctrino.builtin("ctype.is_alphabetic?")
+def ($this is @CType).is_alphabetic?($str);
+
+## Checks for a digit (0 through 9).
+@ctrino.builtin("ctype.is_digit?")
+def ($this is @CType).is_digit?($str);
+
+## Checks for white-space characters.
+@ctrino.builtin("ctype.is_whitespace?")
+def ($this is @CType).is_whitespace?($str);
+
+def ($this == @CType).new() => @manager.new_instance(@CType);

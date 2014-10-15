@@ -13,6 +13,8 @@
 #include "utils/log.h"
 #include "value-inl.h"
 
+#include <ctype.h>
+
 const char *get_value_domain_name(value_domain_t domain) {
   switch (domain) {
 #define __EMIT_DOMAIN_CASE__(Name, TAG, ORDINAL) case vd##Name: return #Name;
@@ -457,11 +459,52 @@ static value_t string_get_ascii_characters(builtin_arguments_t *args) {
   return result;
 }
 
+// Returns true if the given predicate returns true for all characters in the
+// string that has been passed as the 0'th argument.
+static value_t ctype_is_pred(builtin_arguments_t *args, int (*pred)(int)) {
+  value_t chars = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofString, chars);
+  string_t contents;
+  get_string_contents(chars, &contents);
+  size_t length = string_length(&contents);
+  for (size_t i = 0; i < length; i++) {
+    char c = string_char_at(&contents, i);
+    if (!pred(c))
+      return no();
+  }
+  return yes();
+}
+
+static value_t ctype_is_lower_case(builtin_arguments_t *args) {
+  return ctype_is_pred(args, islower);
+}
+
+static value_t ctype_is_upper_case(builtin_arguments_t *args) {
+  return ctype_is_pred(args, isupper);
+}
+
+static value_t ctype_is_alphabetic(builtin_arguments_t *args) {
+  return ctype_is_pred(args, isalpha);
+}
+
+static value_t ctype_is_digit(builtin_arguments_t *args) {
+  return ctype_is_pred(args, isdigit);
+}
+
+static value_t ctype_is_whitespace(builtin_arguments_t *args) {
+  return ctype_is_pred(args, isspace);
+}
+
 value_t add_string_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   ADD_BUILTIN_IMPL("str+str", 1, string_plus_string);
   ADD_BUILTIN_IMPL("str==str", 1, string_equals_string);
   ADD_BUILTIN_IMPL("str.print_raw()", 0, string_print_raw);
   ADD_BUILTIN_IMPL("str.get_ascii_characters()", 0, string_get_ascii_characters);
+  ADD_BUILTIN_IMPL("ctype.is_lower_case?", 1, ctype_is_lower_case);
+  ADD_BUILTIN_IMPL("ctype.is_upper_case?", 1, ctype_is_upper_case);
+  ADD_BUILTIN_IMPL("ctype.is_alphabetic?", 1, ctype_is_alphabetic);
+  ADD_BUILTIN_IMPL("ctype.is_digit?", 1, ctype_is_digit);
+  ADD_BUILTIN_IMPL("ctype.is_whitespace?", 1, ctype_is_whitespace);
   return success();
 }
 

@@ -4,6 +4,7 @@
 import $assert;
 import $core;
 
+
 def $test_characters() {
   def $s := "hello!";
   def $chars := $s.get_ascii_characters();
@@ -16,6 +17,39 @@ def $test_characters() {
   $assert:equals("!", $chars[5]);
 }
 
+def $test_ctype() {
+  def $ctype := new @core:CType();
+  $assert:that($ctype.is_lower_case?(""));
+  $assert:that($ctype.is_lower_case?("aaa"));
+  $assert:not($ctype.is_lower_case?("aAa"));
+  $assert:not($ctype.is_lower_case?("%"));
+  $assert:not($ctype.is_lower_case?("3"));
+  $assert:not($ctype.is_lower_case?(" "));
+  $assert:that($ctype.is_upper_case?(""));
+  $assert:that($ctype.is_upper_case?("AAA"));
+  $assert:not($ctype.is_upper_case?("AaA"));
+  $assert:not($ctype.is_upper_case?("%"));
+  $assert:not($ctype.is_upper_case?("3"));
+  $assert:not($ctype.is_lower_case?(" "));
+  $assert:that($ctype.is_alphabetic?(""));
+  $assert:that($ctype.is_alphabetic?("AAA"));
+  $assert:that($ctype.is_alphabetic?("aaa"));
+  $assert:that($ctype.is_alphabetic?("AaA"));
+  $assert:not($ctype.is_alphabetic?("A%A"));
+  $assert:not($ctype.is_alphabetic?("A3A"));
+  $assert:not($ctype.is_lower_case?("A A"));
+  $assert:that($ctype.is_digit?(""));
+  $assert:that($ctype.is_digit?("333"));
+  $assert:not($ctype.is_digit?("3a3"));
+  $assert:not($ctype.is_digit?(" "));
+  $assert:that($ctype.is_whitespace?(""));
+  $assert:that($ctype.is_whitespace?("   "));
+  $assert:not($ctype.is_whitespace?(" a "));
+  $assert:not($ctype.is_whitespace?(" % "));
+  $assert:not($ctype.is_whitespace?(" 3 "));
+}
+
 do {
   $test_characters();
+  $test_ctype();
 }
