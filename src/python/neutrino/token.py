@@ -77,7 +77,7 @@ class Token(object):
 
   # Just for debugging.
   def __str__(self):
-    return "%s(%s)" % (self.type, self.value)
+    return "%s(%s)" % (self.type, str(self.value))
 
   def __eq__(self, that):
     return self.type == that.type and self.value == that.value and self.delimiter == that.delimiter
@@ -91,8 +91,8 @@ class Token(object):
     return Token(Token.PUNCTUATION, value, delimiter)
 
   @staticmethod
-  def operation(value, delimiter=NO_DELIMITER):
-    return Token(Token.OPERATION, value, delimiter)
+  def operation(value, is_async, delimiter=NO_DELIMITER):
+    return Token(Token.OPERATION, (value, is_async), delimiter)
 
   @staticmethod
   def tag(value, delimiter=NO_DELIMITER):
@@ -194,7 +194,7 @@ class Tokenizer(object):
     elif (c == '$') or (c == '@'):
       result = self.scan_identifier(delim)
     elif c == '.':
-      result = self.scan_named_operation(delim)
+      result = self.scan_sync_operation(delim)
     elif self.is_operator(c):
       result = self.scan_operator(delim)
     elif self.is_punctuation(c):
@@ -254,16 +254,21 @@ class Tokenizer(object):
   def is_named_operator_char(self, value):
     return self.is_word_char(value) or self.is_operator(value)
 
-  # Scans over the next named operation.
-  def scan_named_operation(self, delim):
+  # Scans over the next synchronous operation.
+  def scan_sync_operation(self, delim):
     assert self.current() == '.'
     self.advance()
+    return self.scan_named_operation(delim, False)
+
+  # Scans over the next operation assuming that we've already seen the sync/async
+  # character (. or ->).
+  def scan_named_operation(self, delim, is_async):
     start = self.cursor
     while self.has_more() and self.is_named_operator_char(self.current()):
       self.advance()
     end = self.cursor
     value = self.slice(start, end)
-    return Token.operation(value, delim)
+    return Token.operation(value, is_async, delim)
 
   # Scans over the next special operator.
   def scan_operator(self, delim):
@@ -274,8 +279,10 @@ class Tokenizer(object):
     value = self.slice(start, end)
     if value == ':=' or value == '=>' or value == ':':
       return Token.punctuation(value, delim)
+    elif value == '->':
+      return self.scan_named_operation(delim, True)
     else:
-      return Token.operation(value, delim)
+      return Token.operation(value, False, delim)
 
   # Turns a decimal literal string into a parsed decimal literal value which
   # losslessly retains all the information from the string form.

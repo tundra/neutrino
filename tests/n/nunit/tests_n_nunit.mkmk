@@ -9,6 +9,7 @@ file_names = [
   "annot.n",
   "anything.n",
   "array.n",
+  "async.n",
   "block_arguments.n",
   "block_liveness.n",
   "block_locals.n",

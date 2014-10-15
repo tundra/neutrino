@@ -8,7 +8,8 @@ import unittest
 # Convenience shorthands
 wd = Token.word
 pt = Token.punctuation
-op = Token.operation
+op = lambda v: Token.operation(v, False)
+aop = lambda v: Token.operation(v, True)
 tg = Token.tag
 lt = Token.literal
 ed = Token.end
@@ -38,6 +39,7 @@ class TokenTest(unittest.TestCase):
     test("$foo$bar$baz", id(0, "foo"), id(0, "bar"), id(0, "baz"))
     test("foo$bar baz", wd("foo"), id(0, "bar"), wd("baz"))
     test(".foo", op("foo"))
+    test("->foo", aop("foo"))
     test(".+", op("+"))
     test(".foo.bar.baz", op("foo"), op("bar"), op("baz"))
     test("$foo.bar", id(0, "foo"), op("bar"))
@@ -55,8 +57,8 @@ class TokenTest(unittest.TestCase):
     test("\"boo\"", lt("boo"))
     test("def $x := 4 ;", wd("def"), id(0, "x"), pt(":="), lt(4),
         pt(';', Token.EXPLICIT_DELIMITER), ed(Token.IMPLICIT_DELIMITER))
-    test("for $i in 0 -> 10", wd("for"), id(0, "i"), wd("in"), lt(0),
-        op("->"), lt(10))
+    test("for $i in 0 --> 10", wd("for"), id(0, "i"), wd("in"), lt(0),
+        op("-->"), lt(10))
     test("+ - * /", op("+"), op("-"), op("*"), op("/"))
 
   def test_implicit_semis(self):

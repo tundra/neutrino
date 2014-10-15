@@ -84,7 +84,7 @@ class Parser(object):
 
   # Returns true if the next token is the specified operation token
   def at_operation(self, value):
-    return self.at_token(Token.OPERATION, value)
+    return self.at_token(Token.OPERATION, (value, False))
 
   # Skips over the current punctuation which must have the specified value,
   # if it's not it raises a syntax error.
@@ -180,7 +180,7 @@ class Parser(object):
       return ast.IsDeclaration(subtype, supertype)
     elif self.at_type(Token.OPERATION):
       # def <operation> ...
-      name = self.expect_type(Token.OPERATION)
+      (name, is_async) = self.expect_type(Token.OPERATION)
       subject = self.parse_subject()
       is_prefix = True
     else:
@@ -289,7 +289,7 @@ class Parser(object):
   def parse_naked_selector(self, expect_delim):
     self.expect_word('op')
     if self.at_type(Token.OPERATION):
-      value = self.expect_type(Token.OPERATION)
+      (value, is_async) = self.expect_type(Token.OPERATION)
       if self.at_punctuation('('):
         self.expect_punctuation('(')
         self.expect_punctuation(')')
@@ -351,7 +351,7 @@ class Parser(object):
   def parse_field_declaration(self):
     self.expect_word('field')
     subject = self.parse_subject()
-    op = self.expect_type(Token.OPERATION)
+    (op, is_async) = self.expect_type(Token.OPERATION)
     prop = data.Operation.property(op)
     getter = self.name_as_selector(prop)
     setter = self.name_as_selector(data.Operation.assign(prop))
@@ -469,7 +469,7 @@ class Parser(object):
     else:
       is_abort = False
       self.expect_word('signal')
-    (selector, rest) = self.parse_operator_tail()
+    (selector, is_async, rest) = self.parse_operator_tail()
     if self.at_word('else'):
       self.expect_word('else')
       default = self.parse_expression(expect_delim)
@@ -582,13 +582,17 @@ class Parser(object):
   # This is a mess, it should be cleaned up when the parser is rewritten.
   def parse_functino_signature(self, subject, is_prefix, default_name=None):
     name = default_name
+    is_async = False
     if (not is_prefix) and self.at_type(Token.OPERATION):
-      name = self.expect_type(Token.OPERATION)
+      (name, is_async) = self.expect_type(Token.OPERATION)
     if name:
       default_operation = data.Operation.infix(name)
     else:
       default_operation = Parser._SAUSAGES
     (params, param_operation, allow_extra) = self.parse_parameters(default_operation)
+    if is_async:
+      params.append(ast.Parameter(data.Identifier(0, data.Path(['is_async'])),
+        [data._IS_ASYNC], ast.Guard.eq(ast.Literal(True))))
     if is_prefix:
       op = data.Operation.prefix(name)
       params = []
@@ -709,25 +713,27 @@ class Parser(object):
   def parse_operator_expression(self):
     left = self.parse_unary_expression()
     while self.at_type(Token.OPERATION):
-      (selector, rest) = self.parse_operator_tail()
+      (selector, is_async, rest) = self.parse_operator_tail()
       prefix = [
         ast.Argument(data._SUBJECT, left),
         ast.Argument(data._SELECTOR, ast.Literal(selector))
       ]
+      if is_async:
+        prefix.append(ast.Argument(data._IS_ASYNC, ast.Literal(True)))
       left = ast.Invocation(prefix + rest)
     return left
 
   # <operator tail>
   #   <operation> <arguments>
   def parse_operator_tail(self):
-    name = self.expect_type(Token.OPERATION)
+    (name, is_async) = self.expect_type(Token.OPERATION)
     if self.at_atomic_start():
       selector = data.Operation.infix(name)
       rest = self.parse_arguments('(', ')')
     else:
       selector = data.Operation.property(name)
       rest = []
-    return (selector, rest)
+    return (selector, is_async, rest)
 
   # <arguments>
   #   -> <call expression>
@@ -765,7 +771,7 @@ class Parser(object):
   #   -> <prefix>* <atomic expression>
   def parse_unary_expression(self):
     if self.at_type(Token.OPERATION):
-      name = self.expect_type(Token.OPERATION)
+      (name, is_async) = self.expect_type(Token.OPERATION)
       selector = data.Operation.prefix(name)
       subject = self.parse_unary_expression()
       args = [

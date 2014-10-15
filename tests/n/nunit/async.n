@@ -1,0 +1,21 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def @manager := @ctrino.new_instance_manager(null);
+
+type @FooAsync;
+def ($this is @FooAsync)->foo() => 9;
+def ($this is @FooAsync).foo() => 10;
+
+def $test_async_syntax() {
+  def $obj := @manager.new_instance(@FooAsync);
+  $assert:equals(9, $obj->foo());
+  $assert:equals(10, $obj.foo());
+}
+
+do {
+  $test_async_syntax();
+}

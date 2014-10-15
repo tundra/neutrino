@@ -35,6 +35,7 @@
   F(handlers,                   "handlers")                                    \
   F(imports,                    "imports")                                     \
   F(inheritance,                "inheritance")                                 \
+  F(is_async,                   "is_async")                                    \
   F(is_mutable,                 "is_mutable")                                  \
   F(key,                        "key")                                         \
   F(libraries,                  "libraries")                                   \
@@ -93,6 +94,7 @@
   F(empty_path)                                                                \
   F(escape_records)                                                            \
   F(integer_type)                                                              \
+  F(is_async_key)                                                              \
   F(builtin_methodspace)                                                       \
   F(op_call)                                                                   \
   F(plankton_environment)                                                      \

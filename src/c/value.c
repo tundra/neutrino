@@ -2560,6 +2560,8 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
       runtime));
   TRY(add_plankton_binding(map, core, "selector", ROOT(runtime, selector_key),
       runtime));
+  TRY(add_plankton_binding(map, core, "is_async", ROOT(runtime, is_async_key),
+      runtime));
   // Types
   value_t type = RSTR(runtime, type);
   TRY(add_plankton_binding(map, type, "Integer", ROOT(runtime, integer_type),

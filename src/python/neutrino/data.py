@@ -235,3 +235,4 @@ class DecimalFraction(object):
 
 _SUBJECT = Key("subject", ("core", "subject"))
 _SELECTOR = Key("selector", ("core", "selector"))
+_IS_ASYNC = Key("is_async", ("core", "is_async"))
