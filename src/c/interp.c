@@ -118,6 +118,13 @@ static void log_lookup_error(value_t condition, total_sigmap_input_o *input) {
   string_buffer_dispose(&buf);
 }
 
+// Reports a lookup error as if it were a signal. It's not one that can be
+// caught though, it's mainly a trick to get the stack trace when lookup fails.
+static value_t signal_lookup_error(runtime_t *runtime, value_t stack, frame_t *frame) {
+  frame->pc += kInvokeOperationSize;
+  return new_signal_condition(true);
+}
+
 // Validates that the stack looks correct after execution completes normally.
 static void validate_stack_on_normal_exit(frame_t *frame) {
   value_t stack = get_stack_piece_stack(frame->stack_piece);
@@ -242,10 +249,8 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags,
               &frame);
           value_t method = lookup_method_full(UPCAST(&input), &arg_map);
-          if (in_condition_cause(ccLookupError, method)) {
-            log_lookup_error(method, UPCAST(&input));
-            E_RETURN(method);
-          }
+          if (in_condition_cause(ccLookupError, method))
+            E_RETURN(signal_lookup_error(runtime, stack, &frame));
           // The lookup may have failed with a different condition. Check for that.
           E_TRY(method);
           E_TRY_DEF(code_block, ensure_method_code(runtime, method));
@@ -740,10 +745,8 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           call_data_sigmap_input_o input = call_data_sigmap_input_new(ambience,
               call_data);
           value_t method = lookup_method_full(UPCAST(&input), &arg_map);
-          if (in_condition_cause(ccLookupError, method)) {
-            log_lookup_error(method, UPCAST(&input));
-            E_RETURN(method);
-          }
+          if (in_condition_cause(ccLookupError, method))
+            E_RETURN(signal_lookup_error(runtime, stack, &frame));
           E_TRY(method);
           E_TRY_DEF(code_block, ensure_method_code(runtime, method));
           frame.pc += kModuleFragmentPrivateInvokeOperationSize;
@@ -785,7 +788,7 @@ static value_t run_task_until_condition(value_t ambience, value_t task) {
     runtime_t *runtime = get_ambience_runtime(ambience);
     frame_t frame = open_stack(get_task_stack(task));
     TRY_DEF(trace, capture_backtrace(runtime, &frame));
-    print_ln("%9v", trace);
+    WARN("%9v", trace);
   }
   return result;
 }

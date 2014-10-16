@@ -145,7 +145,7 @@ static void validate_lookup_error(log_o *self, log_entry_t *entry) {
   // Ignore any logging to stdout, we're only interested in the error.
   if (entry->destination == lsStdout)
     return;
-  const char *prefix = "%<condition: LookupError(NoMatch)>: {%subject: lambda~";
+  const char *prefix = "--- backtrace ---\n- lambda~";
   string_t expected;
   string_init(&expected, prefix);
   string_t message = *entry->message;
@@ -184,7 +184,7 @@ TEST(interp, lookup_error) {
 
   log_validator_o validator;
   install_log_validator(&validator, validate_lookup_error, NULL);
-  ASSERT_CONDITION(ccLookupError, assert_ast_value(ambience, vInt(13), ast));
+  ASSERT_CONDITION(ccSignal, assert_ast_value(ambience, vInt(13), ast));
   uninstall_log_validator(&validator);
   ASSERT_EQ(1, validator.count);
 
