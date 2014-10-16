@@ -1,5 +1,5 @@
---- backtrace ---
+Error: %<condition: Signal(escape)>
+Info: --- backtrace ---
 - leave.assert_failed()
 - :fail()
 - :that(false)
-Error: %<condition: Signal(escape)>

@@ -1,5 +1,5 @@
---- backtrace ---
+Error: %<condition: Signal(escape)>
+Info: --- backtrace ---
 - :foo(null)
 - :level2()
 - :level1()
-Error: %<condition: Signal(escape)>

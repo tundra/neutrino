@@ -1,6 +1,6 @@
---- backtrace ---
+Error: %<condition: Signal(escape)>
+Info: --- backtrace ---
 - leave.assert_failed()
 - :fail()
 - :that(false)
 - :equals(1, 2)
-Error: %<condition: Signal(escape)>

@@ -1,5 +1,5 @@
---- backtrace ---
+Error: %<condition: Signal(escape)>
+Info: --- backtrace ---
 - leave.out_of_bounds(100)
 - [null][100]
 - :fail_builtin()
-Error: %<condition: Signal(escape)>

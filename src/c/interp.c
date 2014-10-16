@@ -788,7 +788,7 @@ static value_t run_task_until_condition(value_t ambience, value_t task) {
     runtime_t *runtime = get_ambience_runtime(ambience);
     frame_t frame = open_stack(get_task_stack(task));
     TRY_DEF(trace, capture_backtrace(runtime, &frame));
-    WARN("%9v", trace);
+    INFO_DETERMINISTIC("%9v", trace);
   }
   return result;
 }
