@@ -9,7 +9,7 @@
 #include "utils/log.h"
 #include "value-inl.h"
 
-const char *get_c_object_int_tag_name(builtin_tag_t tag) {
+const char *get_c_object_int_tag_name(uint32_t tag) {
   switch (tag) {
 #define __EMIT_TAG_CASE__(Name) case bt##Name: return #Name;
   FOR_EACH_BUILTIN_TAG(__EMIT_TAG_CASE__)
@@ -19,7 +19,7 @@ const char *get_c_object_int_tag_name(builtin_tag_t tag) {
   }
 }
 
-static int32_t get_c_object_int_tag(value_t self) {
+static uint32_t get_c_object_int_tag(value_t self) {
   return get_integer_value(get_c_object_tag(self));
 }
 

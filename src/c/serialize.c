@@ -209,6 +209,8 @@ static value_t nothing_mapping(value_t value, runtime_t *runtime, void *data) {
 value_t plankton_serialize(runtime_t *runtime, value_mapping_t *resolver_or_null,
     value_t data) {
   pton_assembler_t *assm = pton_new_assembler();
+  blob_t blob;
+  memory_block_t code;
   E_BEGIN_TRY_FINALLY();
     // Use the empty resolver if the resolver pointer is null.
     value_mapping_t resolver;
@@ -220,8 +222,8 @@ value_t plankton_serialize(runtime_t *runtime, value_mapping_t *resolver_or_null
     serialize_state_t state;
     E_TRY(serialize_state_init(&state, runtime, &resolver, assm));
     E_TRY(value_serialize(data, &state));
-    memory_block_t code = pton_assembler_peek_code(assm);
-    blob_t blob = new_blob(code.memory, code.size);
+    code = pton_assembler_peek_code(assm);
+    blob = new_blob(code.memory, code.size);
     E_TRY_DEF(result, new_heap_blob_with_data(runtime, blob));
     E_RETURN(result);
   E_FINALLY();
@@ -333,8 +335,8 @@ static value_t value_deserialize(deserialize_state_t *state) {
   blob_t blob = in->blob;
   size_t cursor = in->cursor;
   pton_instr_t instr;
-  if (!pton_decode_next_instruction(blob.data + cursor, blob.size - cursor,
-      &instr))
+  uint8_t *code = (uint8_t*) blob.data;
+  if (!pton_decode_next_instruction(code + cursor, blob.size - cursor, &instr))
     return new_invalid_input_condition();
   in->cursor += instr.size;
   switch (instr.opcode) {

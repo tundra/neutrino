@@ -565,10 +565,10 @@ value_t read_handle_to_blob(runtime_t *runtime, open_file_t *handle) {
     static const size_t kBufSize = 1024;
     byte_t raw_buffer[kBufSize];
     size_t was_read = open_file_read_bytes(handle, raw_buffer, kBufSize);
-    if (was_read <= 0)
-      break;
     for (size_t i = 0; i < was_read; i++)
       byte_buffer_append(&buffer, raw_buffer[i]);
+    if (open_file_at_eof(handle))
+      break;
   }
   blob_t data_blob = byte_buffer_flush(&buffer);
   // Create a blob to hold the result and copy the data into it.
