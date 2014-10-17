@@ -26,6 +26,11 @@ def $test_ascii_chars() {
   $assert:equals(48, $a("0").ordinal);
   $assert:equals(32, $a(" ").ordinal);
   $assert:equals(37, $a("%").ordinal);
+  $assert:equals($a("a"), @core:AsciiCharacter.from_ordinal(97));
+  $assert:equals($a("A"), @core:AsciiCharacter.from_ordinal(65));
+  $assert:equals($a("0"), @core:AsciiCharacter.from_ordinal(48));
+  $assert:equals($a(" "), @core:AsciiCharacter.from_ordinal(32));
+  $assert:equals($a("%"), @core:AsciiCharacter.from_ordinal(37));
 }
 
 def $test_ctype() {

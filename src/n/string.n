@@ -60,6 +60,10 @@ def ($this is @AsciiStringView).substring($from is @Integer, $to is @Integer);
 def @AsciiCharacter := @ctrino.get_builtin_type("AsciiCharacter");
 def type @AsciiCharacter is @Object;
 
+## Returns the ascii character that has the given ordinal.
+@ctrino.builtin("ascii_character.from_ordinal")
+def ($this == @AsciiCharacter).from_ordinal($value is @Integer);
+
 ## Is this ascii character lower case?
 @ctrino.builtin("ascii_character.is_lower_case?")
 def ($this is @AsciiCharacter).is_lower_case?;
