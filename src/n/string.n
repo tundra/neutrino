@@ -10,11 +10,6 @@ def type @String is @Object;
 @ctrino.builtin("str+str")
 def ($this is @String)+($that is @String);
 
-## Returns the string containing the characters of this string from $from up to
-## but not including $to.
-# @ctrino.builtin("str.substring")
-# def ($this is @String).substring($from, $to);
-
 ## Prints this string on stdout.
 ## TODO: This one definitely needs to go.
 @ctrino.builtin("str.print_raw()")
