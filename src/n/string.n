@@ -32,27 +32,50 @@ def ($this is @String)==($that is @String);
 @ctrino.builtin("str.get_ascii_characters()")
 def ($this is @String).get_ascii_characters();
 
-## A character classifier that uses the functions provided by ctype.h.
-type @CType;
+## Marker used to identify the ascii string view.
+type @Ascii;
 
-## Checks for a lower-case character.
-@ctrino.builtin("ctype.is_lower_case?")
-def ($this is @CType).is_lower_case?($str);
+## Returns a ascii/ctype view of this string.
+@ctrino.builtin("str.view_ascii")
+def ($this is @String).view($enc == @Ascii);
 
-## Checks for an uppercase letter.
-@ctrino.builtin("ctype.is_upper_case?")
-def ($this is @CType).is_upper_case?($str);
+## An ascii view of a string.
+def @AsciiStringView := @ctrino.get_builtin_type("AsciiStringView");
+def type @AsciiStringView is @Object;
 
-## Checks for  an alphabetic character.
-@ctrino.builtin("ctype.is_alphabetic?")
-def ($this is @CType).is_alphabetic?($str);
+## Returns the index'th ascii character in the underlying string.
+@ctrino.builtin("ascii_string_view[]")
+def ($this is @AsciiStringView)[$index];
 
-## Checks for a digit (0 through 9).
-@ctrino.builtin("ctype.is_digit?")
-def ($this is @CType).is_digit?($str);
+## Returns the number of ascii characters in the string.
+@ctrino.builtin("ascii_string_view.length")
+def ($this is @AsciiStringView).length;
 
-## Checks for white-space characters.
-@ctrino.builtin("ctype.is_whitespace?")
-def ($this is @CType).is_whitespace?($str);
+## Returns the substring of the underlying string that covers the ascii
+## characters from $from to but not including $to.
+@ctrino.builtin("ascii_string_view.substring")
+def ($this is @AsciiStringView).substring($from is @Integer, $to is @Integer);
 
-def ($this == @CType).new() => @manager.new_instance(@CType);
+## An individual character in an ascii string.
+def @AsciiCharacter := @ctrino.get_builtin_type("AsciiCharacter");
+def type @AsciiCharacter is @Object;
+
+## Is this ascii character lower case?
+@ctrino.builtin("ascii_character.is_lower_case?")
+def ($this is @AsciiCharacter).is_lower_case?;
+
+## Is this ascii character upper case?
+@ctrino.builtin("ascii_character.is_upper_case?")
+def ($this is @AsciiCharacter).is_upper_case?;
+
+## Is this ascii character alphabetic?
+@ctrino.builtin("ascii_character.is_alphabetic?")
+def ($this is @AsciiCharacter).is_alphabetic?;
+
+## Is this ascii character 0-9?
+@ctrino.builtin("ascii_character.is_digit?")
+def ($this is @AsciiCharacter).is_digit?;
+
+## Is this ascii character a space?
+@ctrino.builtin("ascii_character.is_whitespace?")
+def ($this is @AsciiCharacter).is_whitespace?;

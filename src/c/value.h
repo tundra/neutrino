@@ -379,6 +379,7 @@ static inline value_t chase_moved_object(value_t raw) {
   F(Array,                   array,                     _, X, _, X, X, _, _, X, _, 11)\
   F(ArrayAst,                array_ast,                 _, _, X, X, _, _, X, _, _, 10)\
   F(ArrayBuffer,             array_buffer,              _, _, _, X, _, _, _, X, X, 34)\
+  F(AsciiStringView,         ascii_string_view,         _, _, _, X, _, _, _, _, _, 85)\
   F(Backtrace,               backtrace,                 _, _, _, X, _, _, _, _, _, 54)\
   F(BacktraceEntry,          backtrace_entry,           _, _, _, _, _, _, _, _, _, 64)\
   F(Blob,                    blob,                      _, _, _, X, X, _, _, _, _, 63)\
@@ -461,7 +462,7 @@ static inline value_t chase_moved_object(value_t raw) {
 // family enum values are not the raw ordinals but the ordinals shifted left by
 // the tag size so that they're tagged as integers. Those values are sometimes
 // stored as uint16s so the ordinals are allowed to take up to 14 bits.
-static const int kNextFamilyOrdinal = 84;
+static const int kNextFamilyOrdinal = 85;
 
 // Enumerates all the object families.
 #define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \
@@ -652,6 +653,7 @@ ACCESSORS_DECL(heap_object, header);
 
 //  CamelName                underscore_name            Cm Sr
 #define ENUM_CUSTOM_TAGGED_PHYLUMS(F)                                          \
+  F(AsciiCharacter,          ascii_character,           X, X)                  \
   F(Boolean,                 boolean,                   X, X)                  \
   F(FlagSet,                 flag_set,                  _, _)                  \
   F(Float32,                 float_32,                  X, X)                  \
@@ -999,7 +1001,7 @@ size_t get_modal_species_base_root(value_t value);
 void set_modal_species_base_root(value_t value, size_t base_root);
 
 
-// --- S t r i n g ---
+/// ## Utf8
 
 static const size_t kUtf8LengthOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kUtf8CharsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
@@ -1018,6 +1020,15 @@ utf8_t get_utf8_contents(value_t value);
 
 // Writes the raw contents of the given string on the given buffer
 void string_buffer_append_utf8(string_buffer_t *buf, value_t value);
+
+
+/// ## Ascii string view
+
+static const size_t kAsciiStringViewSize = HEAP_OBJECT_SIZE(1);
+static const size_t kAsciiStringViewValueOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+
+// The underlying string.
+ACCESSORS_DECL(ascii_string_view, value);
 
 
 // --- B l o b ---

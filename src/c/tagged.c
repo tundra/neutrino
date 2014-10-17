@@ -10,6 +10,7 @@
 #include "utils.h"
 #include "value-inl.h"
 
+#include <ctype.h>
 #include <math.h>
 
 // --- S t a g e   o f f s e t ---
@@ -214,4 +215,55 @@ void derived_object_anchor_print_on(value_t value, print_on_context_t *context) 
   size_t host_offset = get_derived_object_anchor_host_offset(value);
   string_buffer_printf(context->buf, "#<anchor %s @+%i>",
       genus_name, host_offset);
+}
+
+
+/// ## Ascii character
+
+GET_FAMILY_PRIMARY_TYPE_IMPL(ascii_character);
+
+void ascii_character_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#A\\%c", get_ascii_character_value(value));
+}
+
+value_t ascii_character_ordering_compare(value_t a, value_t b) {
+  CHECK_PHYLUM(tpAsciiCharacter, a);
+  CHECK_PHYLUM(tpAsciiCharacter, b);
+  return compare_signed_integers(get_ascii_character_value(a), get_ascii_character_value(b));
+}
+
+static value_t ascii_character_is_pred(builtin_arguments_t *args, int (*pred)(int)) {
+  value_t self = get_builtin_subject(args);
+  CHECK_PHYLUM(tpAsciiCharacter, self);
+  uint8_t value = get_ascii_character_value(self);
+  return new_boolean(pred(value));
+}
+
+static value_t ascii_character_is_lower_case(builtin_arguments_t *args) {
+  return ascii_character_is_pred(args, islower);
+}
+
+static value_t ascii_character_is_upper_case(builtin_arguments_t *args) {
+  return ascii_character_is_pred(args, isupper);
+}
+
+static value_t ascii_character_is_alphabetic(builtin_arguments_t *args) {
+  return ascii_character_is_pred(args, isalpha);
+}
+
+static value_t ascii_character_is_digit(builtin_arguments_t *args) {
+  return ascii_character_is_pred(args, isdigit);
+}
+
+static value_t ascii_character_is_whitespace(builtin_arguments_t *args) {
+  return ascii_character_is_pred(args, isspace);
+}
+
+value_t add_ascii_character_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("ascii_character.is_lower_case?", 0, ascii_character_is_lower_case);
+  ADD_BUILTIN_IMPL("ascii_character.is_upper_case?", 0, ascii_character_is_upper_case);
+  ADD_BUILTIN_IMPL("ascii_character.is_alphabetic?", 0, ascii_character_is_alphabetic);
+  ADD_BUILTIN_IMPL("ascii_character.is_digit?", 0, ascii_character_is_digit);
+  ADD_BUILTIN_IMPL("ascii_character.is_whitespace?", 0, ascii_character_is_whitespace);
+  return success();
 }

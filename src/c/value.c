@@ -13,8 +13,6 @@
 #include "utils/log.h"
 #include "value-inl.h"
 
-#include <ctype.h>
-
 const char *get_value_domain_name(value_domain_t domain) {
   switch (domain) {
 #define __EMIT_DOMAIN_CASE__(Name, TAG, ORDINAL) case vd##Name: return #Name;
@@ -323,7 +321,7 @@ void set_modal_species_base_root(value_t value, size_t base_root) {
 }
 
 
-// --- S t r i n g ---
+/// ## Utf8
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(utf8);
 FIXED_GET_MODE_IMPL(utf8, vmDeepFrozen);
@@ -449,39 +447,11 @@ static value_t string_get_ascii_characters(builtin_arguments_t *args) {
   return result;
 }
 
-// Returns true if the given predicate returns true for all characters in the
-// string that has been passed as the 0'th argument.
-static value_t ctype_is_pred(builtin_arguments_t *args, int (*pred)(int)) {
-  value_t chars = get_builtin_argument(args, 0);
-  CHECK_FAMILY(ofUtf8, chars);
-  utf8_t contents = get_utf8_contents(chars);
-  size_t length = string_size(contents);
-  for (size_t i = 0; i < length; i++) {
-    char c = string_byte_at(contents, i);
-    if (!pred(c))
-      return no();
-  }
-  return yes();
-}
-
-static value_t ctype_is_lower_case(builtin_arguments_t *args) {
-  return ctype_is_pred(args, islower);
-}
-
-static value_t ctype_is_upper_case(builtin_arguments_t *args) {
-  return ctype_is_pred(args, isupper);
-}
-
-static value_t ctype_is_alphabetic(builtin_arguments_t *args) {
-  return ctype_is_pred(args, isalpha);
-}
-
-static value_t ctype_is_digit(builtin_arguments_t *args) {
-  return ctype_is_pred(args, isdigit);
-}
-
-static value_t ctype_is_whitespace(builtin_arguments_t *args) {
-  return ctype_is_pred(args, isspace);
+static value_t string_view_ascii(builtin_arguments_t *args) {
+  runtime_t *runtime = get_builtin_runtime(args);
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofUtf8, self);
+  return new_heap_ascii_string_view(runtime, self);
 }
 
 value_t add_utf8_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
@@ -489,11 +459,63 @@ value_t add_utf8_builtin_implementations(runtime_t *runtime, safe_value_t s_map)
   ADD_BUILTIN_IMPL("str==str", 1, string_equals_string);
   ADD_BUILTIN_IMPL("str.print_raw()", 0, string_print_raw);
   ADD_BUILTIN_IMPL("str.get_ascii_characters()", 0, string_get_ascii_characters);
-  ADD_BUILTIN_IMPL("ctype.is_lower_case?", 1, ctype_is_lower_case);
-  ADD_BUILTIN_IMPL("ctype.is_upper_case?", 1, ctype_is_upper_case);
-  ADD_BUILTIN_IMPL("ctype.is_alphabetic?", 1, ctype_is_alphabetic);
-  ADD_BUILTIN_IMPL("ctype.is_digit?", 1, ctype_is_digit);
-  ADD_BUILTIN_IMPL("ctype.is_whitespace?", 1, ctype_is_whitespace);
+  ADD_BUILTIN_IMPL("str.view_ascii", 1, string_view_ascii);
+  return success();
+}
+
+
+/// ## Ascii string view
+
+GET_FAMILY_PRIMARY_TYPE_IMPL(ascii_string_view);
+FIXED_GET_MODE_IMPL(ascii_string_view, vmDeepFrozen);
+TRIVIAL_PRINT_ON_IMPL(AsciiStringView, ascii_string_view);
+
+ACCESSORS_IMPL(AsciiStringView, ascii_string_view, acInFamily, ofUtf8,
+    Value, value);
+
+value_t ascii_string_view_validate(value_t self) {
+  VALIDATE_FAMILY(ofAsciiStringView, self);
+  VALIDATE_FAMILY(ofUtf8, get_ascii_string_view_value(self));
+  return success();
+}
+
+static value_t ascii_string_view_get_at(builtin_arguments_t *args) {
+  value_t subject = get_builtin_subject(args);
+  value_t index = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofAsciiStringView, subject);
+  CHECK_DOMAIN(vdInteger, index);
+  value_t value = get_ascii_string_view_value(subject);
+  utf8_t contents = get_utf8_contents(value);
+  int64_t i = get_integer_value(index);
+  return new_ascii_character(string_byte_at(contents, i));
+}
+
+static value_t ascii_string_view_length(builtin_arguments_t *args) {
+  value_t subject = get_builtin_subject(args);
+  CHECK_FAMILY(ofAsciiStringView, subject);
+  value_t value = get_ascii_string_view_value(subject);
+  return new_integer(get_utf8_length(value));
+}
+
+static value_t ascii_string_view_substring(builtin_arguments_t *args) {
+  runtime_t *runtime = get_builtin_runtime(args);
+  value_t subject = get_builtin_subject(args);
+  value_t from = get_builtin_argument(args, 0);
+  value_t to = get_builtin_argument(args, 1);
+  CHECK_FAMILY(ofAsciiStringView, subject);
+  CHECK_DOMAIN(vdInteger, from);
+  CHECK_DOMAIN(vdInteger, to);
+  value_t value = get_ascii_string_view_value(subject);
+  utf8_t contents = get_utf8_contents(value);
+  utf8_t substring = string_substring(contents, get_integer_value(from),
+      get_integer_value(to));
+  return new_heap_utf8(runtime, substring);
+}
+
+value_t add_ascii_string_view_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("ascii_string_view[]", 1, ascii_string_view_get_at);
+  ADD_BUILTIN_IMPL("ascii_string_view.length", 0, ascii_string_view_length);
+  ADD_BUILTIN_IMPL("ascii_string_view.substring", 2, ascii_string_view_substring);
   return success();
 }
 

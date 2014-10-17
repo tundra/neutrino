@@ -62,6 +62,15 @@ value_t new_heap_utf8(runtime_t *runtime, utf8_t contents) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_ascii_string_view(runtime_t *runtime, value_t value) {
+  size_t size = kAsciiStringViewSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, ascii_string_view_species)));
+  set_ascii_string_view_value(result, value);
+  return post_create_sanity_check(result, size);
+
+}
+
 value_t new_heap_blob(runtime_t *runtime, size_t length) {
   size_t size = calc_blob_size(length);
   TRY_DEF(result, alloc_heap_object(runtime, size,

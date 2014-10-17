@@ -310,4 +310,21 @@ static uint64_t get_derived_object_anchor_host_offset(value_t self) {
 }
 
 
+/// ## Ascii character
+///
+/// One of the 256 ascii characters with support for ctype based character
+/// predicates. Should be replaced with proper unicode support eventually.
+
+// Creates a new tagged stage offset value.
+static value_t new_ascii_character(uint8_t value) {
+  return new_custom_tagged(tpAsciiCharacter, value);
+}
+
+// Returns the integer value of the given stage offset.
+static uint8_t get_ascii_character_value(value_t value) {
+  CHECK_PHYLUM(tpAsciiCharacter, value);
+  return (uint8_t) get_custom_tagged_payload(value);
+}
+
+
 #endif // _TAGGED
