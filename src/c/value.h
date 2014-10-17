@@ -285,7 +285,7 @@ static inline value_t chase_moved_object(value_t raw) {
 ///
 /// Heap-allocated values. Most "interesting" objects are heap objects. A heap
 /// object is a tagged pointer into the C heap. The set of heap objects is
-/// divided into a number of _families_, for instance `ofString`, `ofArray`,
+/// divided into a number of _families_, for instance `ofUtf8`, `ofArray`,
 /// etc., where each family has their own layout and behavior. The families are
 /// listed in the {{#FamilyPropertyIndex}}(index) below.
 ///
@@ -445,13 +445,13 @@ static inline value_t chase_moved_object(value_t raw) {
   F(SignatureMap,            signature_map,             _, _, _, _, _, _, _, X, X, 45)\
   F(Stack,                   stack,                     _, _, _, _, _, _, _, _, _, 71)\
   F(StackPiece,              stack_piece,               _, _, _, _, X, _, _, _, _, 58)\
-  F(String,                  string,                    X, X, _, X, X, _, _, _, _, 57)\
   F(SymbolAst,               symbol_ast,                _, _, X, X, _, _, _, _, _, 33)\
   F(Task,                    task,                      _, _, _, _, _, _, _, _, _, 82)\
   F(Type,                    type,                      _, _, X, X, _, _, _, X, _, 32)\
   F(UnboundModule,           unbound_module,            _, _, X, _, _, _, _, _, _, 55)\
   F(UnboundModuleFragment,   unbound_module_fragment,   _, _, X, _, _, _, _, _, _, 52)\
   F(Unknown,                 unknown,                   _, _, X, _, _, _, _, _, _, 15)\
+  F(Utf8,                    utf8,                      X, X, _, X, X, _, _, _, _, 57)\
   F(VariableAssignmentAst,   variable_assignment_ast,   _, _, X, _, _, _, X, _, _, 22)\
   F(VoidP,                   void_p,                    _, _, _, _, X, _, _, _, _, 26)\
   F(WithEscapeAst,           with_escape_ast,           _, _, X, _, _, _, X, _, _, 23)
@@ -1001,23 +1001,23 @@ void set_modal_species_base_root(value_t value, size_t base_root);
 
 // --- S t r i n g ---
 
-static const size_t kStringLengthOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kStringCharsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kUtf8LengthOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kUtf8CharsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // Returns the size of a heap string with the given number of characters.
-size_t calc_string_size(size_t char_count);
+size_t calc_utf8_size(size_t char_count);
 
 // The length in characters of a heap string.
-INTEGER_ACCESSORS_DECL(string, length);
+INTEGER_ACCESSORS_DECL(utf8, length);
 
 // Returns a pointer to the array that holds the contents of this array.
-char *get_string_chars(value_t value);
+char *get_utf8_chars(value_t value);
 
 // Stores the contents of this string in the given output.
-void get_string_contents(value_t value, string_t *out);
+utf8_t get_utf8_contents(value_t value);
 
 // Writes the raw contents of the given string on the given buffer
-void string_buffer_append_string(string_buffer_t *buf, value_t value);
+void string_buffer_append_utf8(string_buffer_t *buf, value_t value);
 
 
 // --- B l o b ---
@@ -1038,7 +1038,7 @@ blob_t get_blob_data(value_t value);
 value_t read_handle_to_blob(runtime_t *runtime, open_file_t *handle);
 
 // Reads the full contents of a named file.
-value_t read_file_to_blob(runtime_t *runtime, string_t *filename);
+value_t read_file_to_blob(runtime_t *runtime, utf8_t filename);
 
 
 // --- V o i d   P ---

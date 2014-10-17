@@ -1425,7 +1425,7 @@ void builtin_marker_print_on(value_t self, print_on_context_t *context) {
 FIXED_GET_MODE_IMPL(builtin_implementation, vmMutable);
 
 ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation, acInFamily,
-    ofString, Name, name);
+    ofUtf8, Name, name);
 ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation, acInFamily,
     ofCodeBlock, Code, code);
 INTEGER_ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation,
@@ -1435,7 +1435,7 @@ ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation, acInPhylum,
 
 value_t builtin_implementation_validate(value_t self) {
   VALIDATE_FAMILY(ofBuiltinImplementation, self);
-  VALIDATE_FAMILY(ofString, get_builtin_implementation_name(self));
+  VALIDATE_FAMILY(ofUtf8, get_builtin_implementation_name(self));
   VALIDATE_FAMILY(ofCodeBlock, get_builtin_implementation_code(self));
   VALIDATE_PHYLUM(tpFlagSet, get_builtin_implementation_method_flags(self));
   return success();

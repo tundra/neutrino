@@ -40,7 +40,7 @@ value_t new_heap_mutable_roots(runtime_t *runtime);
 
 // Allocates a new heap string in the given runtime, if there is room, otherwise
 // returns a condition to indicate an error.
-value_t new_heap_string(runtime_t *runtime, string_t *contents);
+value_t new_heap_utf8(runtime_t *runtime, utf8_t contents);
 
 // Allocates a new heap blob in the given runtime, if there is room, otherwise
 // returns a condition to indicate an error. The result's data will be reset to

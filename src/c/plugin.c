@@ -46,9 +46,7 @@ static value_t add_builtin_method(runtime_t *runtime, const c_object_method_t *m
     E_TRY(assembler_emit_return(&assm));
     E_TRY_DEF(code_block, assembler_flush(&assm));
     // Build the signature.
-    string_t name_str;
-    string_init(&name_str, method->selector);
-    E_TRY_DEF(name, new_heap_string(runtime, &name_str));
+    E_TRY_DEF(name, new_heap_utf8(runtime, new_c_string(method->selector)));
     E_TRY_DEF(selector, new_heap_operation(runtime, afFreeze, otInfix, name));
     E_TRY_DEF(signature, build_builtin_method_signature(runtime, method, subject, selector));
     E_TRY_DEF(method,new_heap_method(runtime, afFreeze, signature, nothing(),

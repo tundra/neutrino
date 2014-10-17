@@ -270,18 +270,18 @@ static uint8_t kBase64CharToSextet[256] = {
   255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
 };
 
-void base64_decode(string_t *str, byte_buffer_t *out) {
-  size_t str_length = string_length(str);
+void base64_decode(utf8_t str, byte_buffer_t *out) {
+  size_t str_length = string_size(str);
   CHECK_EQ("invalid base64 string", 0, str_length & 0x3);
   for (size_t i = 0; i < str_length; i += 4) {
     // Read the next block of 4 characters.
-    uint8_t a = kBase64CharToSextet[(uint8_t) string_char_at(str, i)];
-    uint8_t b = kBase64CharToSextet[(uint8_t) string_char_at(str, i + 1)];
+    uint8_t a = kBase64CharToSextet[(uint8_t) string_byte_at(str, i)];
+    uint8_t b = kBase64CharToSextet[(uint8_t) string_byte_at(str, i + 1)];
     byte_buffer_append(out, (a << 2) | (b >> 4));
-    uint8_t c = kBase64CharToSextet[(uint8_t) string_char_at(str, i + 2)];
+    uint8_t c = kBase64CharToSextet[(uint8_t) string_byte_at(str, i + 2)];
     if (c != 255) {
       byte_buffer_append(out, (b << 4) | (c >> 2));
-      uint8_t d = kBase64CharToSextet[(uint8_t) string_char_at(str, i + 3)];
+      uint8_t d = kBase64CharToSextet[(uint8_t) string_byte_at(str, i + 3)];
       if (d != 255)
         byte_buffer_append(out, (c << 6) | d);
     }
@@ -292,7 +292,7 @@ void base64_decode(string_t *str, byte_buffer_t *out) {
 // --- W o r d y ---
 
 // The tables from which to grab characters.
-static const string_t kCharTables[2] = {
+static const utf8_t kCharTables[2] = {
   {20, "bcdfghjklmnpqrstvwxz"},
   {6, "aeiouy"}
 };
@@ -316,14 +316,14 @@ void wordy_encode(int64_t signed_value, char *buf, size_t bufc) {
   }
   // Even if value is 0 we have to run at least once.
   do {
-    string_t table = kCharTables[table_index];
-    size_t char_index = value % table.length;
+    utf8_t table = kCharTables[table_index];
+    size_t char_index = value % string_size(table);
     char c = table.chars[char_index];
     CHECK_REL("wordy_encode buf too small", cursor, <, bufc);
     buf[cursor] = c;
     table_index = 1 - table_index;
     cursor++;
-    value /= table.length;
+    value /= string_size(table);
   } while (value != 0);
   CHECK_REL("wordy_encode buf too small", cursor, <, bufc);
   buf[cursor] = 0;

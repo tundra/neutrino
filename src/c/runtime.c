@@ -187,9 +187,7 @@ value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *run
   // Generates code for initializing a string table entry.
 #define __CREATE_STRING_TABLE_ENTRY__(name, value)                             \
   do {                                                                         \
-    string_t contents;                                                         \
-    string_init(&contents, value);                                             \
-    TRY_SET(RAW_RSTR(roots, name), new_heap_string(runtime, &contents));       \
+    TRY_SET(RAW_RSTR(roots, name), new_heap_utf8(runtime, new_c_string(value))); \
   } while (false);
   ENUM_STRING_TABLE(__CREATE_STRING_TABLE_ENTRY__)
 #undef __CREATE_STRING_TABLE_ENTRY__
@@ -197,9 +195,7 @@ value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *run
   // Ditto selector table entry.
 #define __CREATE_SELECTOR_TABLE_ENTRY__(name, value)                           \
   do {                                                                         \
-    string_t contents;                                                         \
-    string_init(&contents, value);                                             \
-    TRY_DEF(string, new_heap_string(runtime, &contents));                      \
+    TRY_DEF(string, new_heap_utf8(runtime, new_c_string(value)));            \
     TRY_SET(RAW_RSEL(roots, name), new_heap_operation(runtime, afFreeze,       \
         otInfix, string));                                                     \
   } while (false);
@@ -240,9 +236,7 @@ value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *run
 
   // Generate initialization for the per-family types.
 #define __CREATE_TYPE__(Name, name) do {                                       \
-  string_t __display_name_str__;                                               \
-  string_init(&__display_name_str__, #Name);                                   \
-  TRY_DEF(__display_name__, new_heap_string(runtime, &__display_name_str__));  \
+  TRY_DEF(__display_name__, new_heap_utf8(runtime, new_c_string(#Name)));    \
   TRY_SET(RAW_ROOT(roots, name##_type), new_heap_type(runtime, afMutable,      \
       __display_name__));                                                      \
 } while (false);
@@ -381,7 +375,7 @@ value_t roots_validate(value_t roots) {
   VALIDATE_HEAP_OBJECT(ofIdHashMap, RAW_ROOT(roots, special_imports));
   VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, plugin_factories));
 
-#define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_HEAP_OBJECT(ofString, RAW_RSTR(roots, name));
+#define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_HEAP_OBJECT(ofUtf8, RAW_RSTR(roots, name));
   ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)
 #undef __VALIDATE_STRING_TABLE_ENTRY__
 

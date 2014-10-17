@@ -2,13 +2,18 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 ## The built-in type of runtime-native strings.
-def @String := @ctrino.get_builtin_type("String");
+def @String := @ctrino.get_builtin_type("Utf8");
 
 def type @String is @Object;
 
 ## Returns a new string which is the concatenation of the two given strings.
 @ctrino.builtin("str+str")
 def ($this is @String)+($that is @String);
+
+## Returns the string containing the characters of this string from $from up to
+## but not including $to.
+# @ctrino.builtin("str.substring")
+# def ($this is @String).substring($from, $to);
 
 ## Prints this string on stdout.
 ## TODO: This one definitely needs to go.

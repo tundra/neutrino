@@ -70,9 +70,7 @@ value_t add_builtin_method_impl(runtime_t *runtime, value_t map,
       E_TRY(assembler_emit_leave_or_fire_barrier(&assm, leave_argc));
     }
     E_TRY_DEF(code_block, assembler_flush(&assm));
-    string_t name_str;
-    string_init(&name_str, name_c_str);
-    E_TRY_DEF(name, new_heap_string(runtime, &name_str));
+    E_TRY_DEF(name, new_heap_utf8(runtime, new_c_string(name_c_str)));
     E_TRY_DEF(builtin, new_heap_builtin_implementation(runtime, afFreeze,
         name, code_block, arg_count, new_flag_set(kFlagSetAllOff)));
     E_RETURN(set_id_hash_map_at(runtime, map, name, builtin));
@@ -92,9 +90,7 @@ value_t add_custom_method_impl(runtime_t *runtime, value_t map,
   TRY(assembler_emit_return(&assm));
   TRY_DEF(code_block, assembler_flush(&assm));
   assembler_dispose(&assm);
-  string_t name_str;
-  string_init(&name_str, name_c_str);
-  TRY_DEF(name, new_heap_string(runtime, &name_str));
+  TRY_DEF(name, new_heap_utf8(runtime, new_c_string(name_c_str)));
   TRY_DEF(builtin, new_heap_builtin_implementation(runtime, afFreeze,
       name, code_block, posc, method_flags));
   return set_id_hash_map_at(runtime, map, name, builtin);

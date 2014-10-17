@@ -1316,8 +1316,8 @@ value_t plankton_set_guard_ast_contents(value_t object, runtime_t *runtime,
   guard_type_t type_enum;
   // Maybe passing an integer enum will be good enough? Or does that conflict
   // with being self-describing?
-  EXPECT_FAMILY(ccInvalidInput, ofString, type_value);
-  char type_char = get_string_chars(type_value)[0];
+  EXPECT_FAMILY(ccInvalidInput, ofUtf8, type_value);
+  char type_char = get_utf8_chars(type_value)[0];
   switch (type_char) {
     case '=': type_enum = gtEq; break;
     case 'i': type_enum = gtIs; break;

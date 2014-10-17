@@ -18,11 +18,9 @@ static value_t base64_c_str_to_blob(runtime_t *runtime, const char *data) {
   if ((data == NULL) || (strstr(data, "p64/") != data)) {
     return null();
   } else {
-    string_t str;
-    string_init(&str, data + 4);
     byte_buffer_t buf;
     byte_buffer_init(&buf);
-    base64_decode(&str, &buf);
+    base64_decode(new_c_string(data + 4), &buf);
     blob_t blob = byte_buffer_flush(&buf);
     value_t result = new_heap_blob_with_data(runtime, blob);
     byte_buffer_dispose(&buf);
@@ -262,9 +260,8 @@ static value_t neutrino_main(int argc, char **argv) {
         open_file_t *stdin_handle = file_system_stdin(runtime->file_system);
         E_TRY_SET(input, read_handle_to_blob(runtime, stdin_handle));
       } else {
-        string_t filename_str;
-        string_init(&filename_str, filename);
-        E_TRY_SET(input, read_file_to_blob(runtime, &filename_str));
+        utf8_t filename_str = new_c_string(filename);
+        E_TRY_SET(input, read_file_to_blob(runtime, filename_str));
       }
       E_TRY_DEF(program, safe_runtime_plankton_deserialize(runtime, protect(pool, input)));
       result = safe_execute_syntax(runtime, protect(pool, ambience),

@@ -31,7 +31,7 @@ static value_t ctrino_get_builtin_type(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t name = get_builtin_argument(args, 0);
   CHECK_C_OBJECT_TAG(btCtrino, self);
-  CHECK_FAMILY(ofString, name);
+  CHECK_FAMILY(ofUtf8, name);
 #define __CHECK_BUILTIN_TYPE__(family)                                         \
   do {                                                                         \
     value_t type = ROOT(runtime, family##_type);                               \
@@ -128,10 +128,9 @@ static value_t ctrino_to_string(builtin_arguments_t *args) {
   string_buffer_t buf;
   string_buffer_init(&buf);
   string_buffer_printf(&buf, "%9v", value);
-  string_t as_string;
-  string_buffer_flush(&buf, &as_string);
+  utf8_t as_string = string_buffer_flush(&buf);
   E_BEGIN_TRY_FINALLY();
-    E_TRY_DEF(result, new_heap_string(runtime, &as_string));
+    E_TRY_DEF(result, new_heap_utf8(runtime, as_string));
     E_RETURN(result);
   E_FINALLY();
     string_buffer_dispose(&buf);

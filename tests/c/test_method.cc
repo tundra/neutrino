@@ -83,7 +83,7 @@ TEST(method, simple_is) {
   value_t s_str_p = new_heap_type(runtime, afFreeze, null());
   value_t obj_p = new_heap_type(runtime, afFreeze, null());
   value_t int_p = ROOT(runtime, integer_type);
-  value_t str_p = ROOT(runtime, string_type);
+  value_t str_p = ROOT(runtime, utf8_type);
   value_t space = new_heap_methodspace(runtime, nothing());
   // int <: obj
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, int_p, obj_p));
@@ -101,8 +101,7 @@ TEST(method, simple_is) {
   ASSERT_MATCH(false, is_str, zero);
   ASSERT_MATCH(false, is_s_str, zero);
 
-  string_t x_str = new_string("x");
-  value_t x = new_heap_string(runtime, &x_str);
+  value_t x = new_heap_utf8(runtime, new_c_string("x"));
   ASSERT_MATCH(false, is_int, x);
   ASSERT_MATCH(true, is_obj, x);
   ASSERT_MATCH(true, is_str, x);
@@ -139,14 +138,13 @@ TEST(method, is_score) {
 
   value_t s_str_p = new_heap_type(runtime, afFreeze, null());
   value_t obj_p = new_heap_type(runtime, afFreeze, null());
-  value_t str_p = ROOT(runtime, string_type);
+  value_t str_p = ROOT(runtime, utf8_type);
   value_t space = new_heap_methodspace(runtime, nothing());
   // s-str <: str <: obj
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, str_p, obj_p));
   ASSERT_SUCCESS(add_methodspace_inheritance(runtime, space, s_str_p, str_p));
 
-  string_t x_str = new_string("x");
-  value_t x = new_heap_string(runtime, &x_str);
+  value_t x = new_heap_utf8(runtime, new_c_string("x"));
   value_t s_str = new_instance_of(runtime, s_str_p);
 
   value_t is_x = new_heap_guard(runtime, afFreeze, gtEq, x);
@@ -167,7 +165,7 @@ TEST(method, multi_score) {
 
   value_t int_str_p = new_heap_type(runtime, afFreeze, null());
   value_t int_p = ROOT(runtime, integer_type);
-  value_t str_p = ROOT(runtime, string_type);
+  value_t str_p = ROOT(runtime, utf8_type);
   value_t space = new_heap_methodspace(runtime, nothing());
   value_t is_str = new_heap_guard(runtime, afFreeze, gtIs, str_p);
   value_t is_int = new_heap_guard(runtime, afFreeze, gtIs, int_p);

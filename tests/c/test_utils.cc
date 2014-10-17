@@ -19,10 +19,8 @@ TEST(utils, globals) {
   string_buffer_t buf;                                                         \
   string_buffer_init(&buf);                                                    \
   string_buffer_printf(&buf, format, __VA_ARGS__);                             \
-  string_t found;                                                              \
-  string_buffer_flush(&buf, &found);                                           \
-  string_t str = new_string(expected);                                                \
-  ASSERT_STREQ(&str, &found);                                                  \
+  utf8_t found = string_buffer_flush(&buf);                                    \
+  ASSERT_STREQ(new_c_string(expected), found);                                 \
   string_buffer_dispose(&buf);                                                 \
 } while (false)
 
@@ -244,11 +242,9 @@ TEST(utils, hash_stream) {
 
 // Check that the input decodes the the given data.
 #define CHECK_BASE64_ENCODE(INPUT, N, ...) do {                                \
-  string_t str;                                                                \
-  string_init(&str, (INPUT));                                                  \
   byte_buffer_t buf;                                                           \
   byte_buffer_init(&buf);                                                      \
-  base64_decode(&str, &buf);                                                   \
+  base64_decode(new_c_string(INPUT), &buf);                                    \
   blob_t blob = byte_buffer_flush(&buf);                                       \
   ASSERT_EQ(N, blob_byte_length(blob));                                        \
   uint8_t expected[(N == 0) ? 1 : (N)] = {__VA_ARGS__};                        \

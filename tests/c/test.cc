@@ -31,8 +31,7 @@ void fail(const char *file, int line, const char *fmt, ...) {
   string_buffer_vprintf(&buf, fmt, argp);
   va_end(argp);
   // Flush the string buffer.
-  string_t str;
-  string_buffer_flush(&buf, &str);
+  utf8_t str = string_buffer_flush(&buf);
   // Print the formatted error message.
   log_message(llError, file, line, "%s", str.chars);
   string_buffer_dispose(&buf);
@@ -287,8 +286,7 @@ value_t expand_variant_to_stage_offset(runtime_t *runtime, variant_value_t *valu
 }
 
 value_t expand_variant_to_string(runtime_t *runtime, variant_value_t *value) {
-  string_t chars = new_string(value->as_c_str);
-  return new_heap_string(runtime, &chars);
+  return new_heap_utf8(runtime, new_c_string(value->as_c_str));
 }
 
 value_t expand_variant_to_infix(runtime_t *runtime, variant_value_t *value) {

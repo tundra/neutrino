@@ -112,8 +112,7 @@ static void log_lookup_error(value_t condition, total_sigmap_input_o *input) {
     string_buffer_printf(&buf, "%v: %v", tag, value);
   }
   string_buffer_printf(&buf, "}");
-  string_t str;
-  string_buffer_flush(&buf, &str);
+  utf8_t str = string_buffer_flush(&buf);
   ERROR("%s", str.chars);
   string_buffer_dispose(&buf);
 }

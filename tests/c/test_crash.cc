@@ -47,7 +47,7 @@ TEST(crash, checks_disabled) {
   CHECK_TRUE("test", false);
   CHECK_FALSE("test", true);
   CHECK_EQ("test", 1, 2);
-  CHECK_FAMILY(ofString, new_integer(0));
+  CHECK_FAMILY(ofUtf8, new_integer(0));
   CHECK_DOMAIN(vdHeapObject, new_integer(0));
   CHECK_DIVISION(sdCompact, new_integer(0));
 }

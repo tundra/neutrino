@@ -49,7 +49,12 @@ def $test_ctype() {
   $assert:not($ctype.is_whitespace?(" 3 "));
 }
 
+def $test_substring() {
+  
+}
+
 do {
   $test_characters();
   $test_ctype();
+  $test_substring();
 }

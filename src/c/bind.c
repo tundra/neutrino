@@ -573,9 +573,8 @@ value_t module_loader_validate(value_t self) {
 static value_t module_loader_read_library(runtime_t *runtime, value_t self,
     value_t library_path) {
   // Read the library from the file.
-  string_t library_path_str;
-  get_string_contents(library_path, &library_path_str);
-  TRY_DEF(data, read_file_to_blob(runtime, &library_path_str));
+  utf8_t library_path_str = get_utf8_contents(library_path);
+  TRY_DEF(data, read_file_to_blob(runtime, library_path_str));
   TRY_DEF(library, runtime_plankton_deserialize(runtime, data));
   if (!in_family(ofLibrary, library))
     return new_invalid_input_condition();

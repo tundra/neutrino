@@ -110,10 +110,9 @@ static value_t map_serialize(value_t value, serialize_state_t *state) {
 }
 
 static value_t string_serialize(value_t value, serialize_state_t *state) {
-  CHECK_FAMILY(ofString, value);
-  string_t contents;
-  get_string_contents(value, &contents);
-  pton_assembler_emit_default_string(state->assm, contents.chars, contents.length);
+  CHECK_FAMILY(ofUtf8, value);
+  utf8_t contents = get_utf8_contents(value);
+  pton_assembler_emit_default_string(state->assm, contents.chars, string_size(contents));
   return success();
 }
 
@@ -162,7 +161,7 @@ static value_t object_serialize(value_t value, serialize_state_t *state) {
       return array_serialize(value, state);
     case ofIdHashMap:
       return map_serialize(value, state);
-    case ofString:
+    case ofUtf8:
       return string_serialize(value, state);
     case ofInstance:
       return instance_serialize(value, state);
@@ -288,10 +287,10 @@ static value_t map_deserialize(size_t entry_count, deserialize_state_t *state) {
 }
 
 static value_t default_string_deserialize(pton_instr_t *instr, deserialize_state_t *state) {
-  string_t contents;
-  contents.chars = (char*) instr->payload.default_string_data.contents;
-  contents.length = instr->payload.default_string_data.length;
-  return new_heap_string(state->runtime, &contents);
+  utf8_t contents = new_string(
+      (char*) instr->payload.default_string_data.contents,
+      instr->payload.default_string_data.length);
+  return new_heap_utf8(state->runtime, contents);
 }
 
 // Grabs and returns the next object index.

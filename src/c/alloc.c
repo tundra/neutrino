@@ -53,12 +53,12 @@ value_t new_heap_mutable_roots(runtime_t *runtime) {
   return result;
 }
 
-value_t new_heap_string(runtime_t *runtime, string_t *contents) {
-  size_t size = calc_string_size(string_length(contents));
+value_t new_heap_utf8(runtime_t *runtime, utf8_t contents) {
+  size_t size = calc_utf8_size(string_size(contents));
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, string_species)));
-  set_string_length(result, string_length(contents));
-  string_copy_to(contents, get_string_chars(result), string_length(contents) + 1);
+      ROOT(runtime, utf8_species)));
+  set_utf8_length(result, string_size(contents));
+  string_copy_to(contents, get_utf8_chars(result), string_size(contents) + 1);
   return post_create_sanity_check(result, size);
 }
 

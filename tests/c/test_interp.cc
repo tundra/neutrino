@@ -145,12 +145,10 @@ static void validate_lookup_error(log_o *self, log_entry_t *entry) {
   // Ignore any logging to stdout, we're only interested in the error.
   if (entry->destination == lsStdout)
     return;
-  const char *prefix = "--- backtrace ---\n- lambda~";
-  string_t expected;
-  string_init(&expected, prefix);
-  string_t message = *entry->message;
-  message.length = min_size(strlen(prefix), message.length);
-  ASSERT_STREQ(&expected, &message);
+  utf8_t prefix = new_c_string("--- backtrace ---\n- lambda~");
+  utf8_t message = entry->message;
+  message.size = min_size(string_size(prefix), string_size(message));
+  ASSERT_STREQ(prefix, message);
 }
 
 TEST(interp, lookup_error) {

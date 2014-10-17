@@ -74,8 +74,8 @@ TEST(serialize, map) {
 
 // Declares a new variable that holds a heap string with the given contents.
 #define DEF_HEAP_STR(name, value)                                              \
-string_t name##_chars = new_string(value);                                            \
-value_t name = new_heap_string(runtime, &name##_chars)
+utf8_t name##_chars = new_c_string(value);                                     \
+value_t name = new_heap_utf8(runtime, name##_chars)
 
 TEST(serialize, string) {
   CREATE_RUNTIME();
@@ -226,9 +226,8 @@ TEST(serialize, env_resolution) {
 
 // Writes a tagged plankton string to the given buffer.
 static value_t write_string(pton_assembler_t *assm, const char *c_str) {
-  string_t str;
-  string_init(&str, c_str);
-  pton_assembler_emit_default_string(assm, str.chars, str.length);
+  utf8_t str = new_c_string(c_str);
+  pton_assembler_emit_default_string(assm, str.chars, string_size(str));
   return success();
 }
 

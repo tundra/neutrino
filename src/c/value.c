@@ -325,10 +325,10 @@ void set_modal_species_base_root(value_t value, size_t base_root) {
 
 // --- S t r i n g ---
 
-GET_FAMILY_PRIMARY_TYPE_IMPL(string);
-FIXED_GET_MODE_IMPL(string, vmDeepFrozen);
+GET_FAMILY_PRIMARY_TYPE_IMPL(utf8);
+FIXED_GET_MODE_IMPL(utf8, vmDeepFrozen);
 
-size_t calc_string_size(size_t char_count) {
+size_t calc_utf8_size(size_t char_count) {
   // We need to fix one extra byte, the terminating null.
   size_t bytes = char_count + 1;
   return kHeapObjectHeaderSize               // header
@@ -336,89 +336,81 @@ size_t calc_string_size(size_t char_count) {
        + align_size(kValueSize, bytes);  // contents
 }
 
-INTEGER_ACCESSORS_IMPL(String, string, Length, length);
+INTEGER_ACCESSORS_IMPL(Utf8, utf8, Length, length);
 
-char *get_string_chars(value_t value) {
-  CHECK_FAMILY(ofString, value);
-  return (char*) access_heap_object_field(value, kStringCharsOffset);
+char *get_utf8_chars(value_t value) {
+  CHECK_FAMILY(ofUtf8, value);
+  return (char*) access_heap_object_field(value, kUtf8CharsOffset);
 }
 
-void get_string_contents(value_t value, string_t *out) {
-  out->length = get_string_length(value);
-  out->chars = get_string_chars(value);
+utf8_t get_utf8_contents(value_t value) {
+  return new_string(get_utf8_chars(value), get_utf8_length(value));
 }
 
-value_t string_validate(value_t value) {
-  VALIDATE_FAMILY(ofString, value);
+value_t utf8_validate(value_t value) {
+  VALIDATE_FAMILY(ofUtf8, value);
   // Check that the string is null-terminated.
-  size_t length = get_string_length(value);
-  VALIDATE(get_string_chars(value)[length] == '\0');
+  size_t length = get_utf8_length(value);
+  VALIDATE(get_utf8_chars(value)[length] == '\0');
   return success();
 }
 
-void get_string_layout(value_t value, heap_object_layout_t *layout) {
+void get_utf8_layout(value_t value, heap_object_layout_t *layout) {
   // Strings have no value fields.
-  size_t size = calc_string_size(get_string_length(value));
+  size_t size = calc_utf8_size(get_utf8_length(value));
   heap_object_layout_set(layout, size, size);
 }
 
-value_t string_transient_identity_hash(value_t value, hash_stream_t *stream,
+value_t utf8_transient_identity_hash(value_t value, hash_stream_t *stream,
     cycle_detector_t *outer) {
-  string_t contents;
-  get_string_contents(value, &contents);
-  hash_stream_write_data(stream, contents.chars, contents.length);
+  utf8_t contents = get_utf8_contents(value);
+  hash_stream_write_data(stream, contents.chars, string_size(contents));
   return success();
 }
 
-value_t string_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
-  CHECK_FAMILY(ofString, a);
-  CHECK_FAMILY(ofString, b);
-  string_t a_contents;
-  get_string_contents(a, &a_contents);
-  string_t b_contents;
-  get_string_contents(b, &b_contents);
-  return new_boolean(string_equals(&a_contents, &b_contents));
+value_t utf8_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
+  CHECK_FAMILY(ofUtf8, a);
+  CHECK_FAMILY(ofUtf8, b);
+  utf8_t a_contents = get_utf8_contents(a);
+  utf8_t b_contents = get_utf8_contents(b);
+  return new_boolean(string_equals(a_contents, b_contents));
 }
 
-value_t string_ordering_compare(value_t a, value_t b) {
-  CHECK_FAMILY(ofString, a);
-  CHECK_FAMILY(ofString, b);
-  string_t a_contents;
-  get_string_contents(a, &a_contents);
-  string_t b_contents;
-  get_string_contents(b, &b_contents);
-  return integer_to_relation(string_compare(&a_contents, &b_contents));
+value_t utf8_ordering_compare(value_t a, value_t b) {
+  CHECK_FAMILY(ofUtf8, a);
+  CHECK_FAMILY(ofUtf8, b);
+  utf8_t a_contents = get_utf8_contents(a);
+  utf8_t b_contents = get_utf8_contents(b);
+  return integer_to_relation(string_compare(a_contents, b_contents));
 }
 
-void string_print_on(value_t value, print_on_context_t *context) {
+void utf8_print_on(value_t value, print_on_context_t *context) {
   if ((context->flags & pfUnquote) == 0)
     string_buffer_putc(context->buf, '"');
-  string_buffer_append_string(context->buf, value);
+  string_buffer_append_utf8(context->buf, value);
   if ((context->flags & pfUnquote) == 0)
     string_buffer_putc(context->buf, '"');
 }
 
-void string_buffer_append_string(string_buffer_t *buf, value_t value) {
-  CHECK_FAMILY(ofString, value);
-  string_t contents;
-  get_string_contents(value, &contents);
+void string_buffer_append_utf8(string_buffer_t *buf, value_t value) {
+  CHECK_FAMILY(ofUtf8, value);
+  utf8_t contents = get_utf8_contents(value);
   string_buffer_printf(buf, "%s", contents.chars);
 }
 
 static value_t string_plus_string(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
-  CHECK_FAMILY(ofString, self);
-  CHECK_FAMILY(ofString, that);
+  CHECK_FAMILY(ofUtf8, self);
+  CHECK_FAMILY(ofUtf8, that);
   string_buffer_t buf;
   string_buffer_init(&buf);
-  string_t str;
-  get_string_contents(self, &str);
-  string_buffer_append(&buf, &str);
-  get_string_contents(that, &str);
-  string_buffer_append(&buf, &str);
-  string_buffer_flush(&buf, &str);
-  TRY_DEF(result, new_heap_string(get_builtin_runtime(args), &str));
+  utf8_t str = get_utf8_contents(self);
+  string_buffer_append(&buf, str);
+  str = get_utf8_contents(that);
+  string_buffer_append(&buf, str);
+  str = string_buffer_flush(&buf);
+  TRY_DEF(result, new_heap_utf8(get_builtin_runtime(args), str));
   string_buffer_dispose(&buf);
   return result;
 }
@@ -426,17 +418,16 @@ static value_t string_plus_string(builtin_arguments_t *args) {
 static value_t string_equals_string(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
-  CHECK_FAMILY(ofString, self);
-  CHECK_FAMILY(ofString, that);
+  CHECK_FAMILY(ofUtf8, self);
+  CHECK_FAMILY(ofUtf8, that);
   return new_boolean(value_identity_compare(self, that));
 }
 
 static value_t string_print_raw(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  CHECK_FAMILY(ofString, self);
-  string_t contents;
-  get_string_contents(self, &contents);
-  fwrite(contents.chars, sizeof(char), contents.length, stdout);
+  CHECK_FAMILY(ofUtf8, self);
+  utf8_t contents = get_utf8_contents(self);
+  fwrite(contents.chars, sizeof(char), string_size(contents), stdout);
   fputc('\n', stdout);
   return nothing();
 }
@@ -444,16 +435,15 @@ static value_t string_print_raw(builtin_arguments_t *args) {
 static value_t string_get_ascii_characters(builtin_arguments_t *args) {
   runtime_t *runtime = get_builtin_runtime(args);
   value_t self = get_builtin_subject(args);
-  CHECK_FAMILY(ofString, self);
-  string_t contents;
-  get_string_contents(self, &contents);
-  size_t length = string_length(&contents);
+  CHECK_FAMILY(ofUtf8, self);
+  utf8_t contents = get_utf8_contents(self);
+  size_t length = string_size(contents);
   TRY_DEF(result, new_heap_array(runtime, length));
   for (size_t i = 0; i < length; i++) {
-    char c = string_char_at(&contents, i);
+    char c = string_byte_at(contents, i);
     char char_c_str[2] = {c, '\0'};
-    string_t char_str = {1, char_c_str};
-    TRY_DEF(char_obj, new_heap_string(runtime, &char_str));
+    utf8_t char_str = {1, char_c_str};
+    TRY_DEF(char_obj, new_heap_utf8(runtime, char_str));
     set_array_at(result, i, char_obj);
   }
   return result;
@@ -463,12 +453,11 @@ static value_t string_get_ascii_characters(builtin_arguments_t *args) {
 // string that has been passed as the 0'th argument.
 static value_t ctype_is_pred(builtin_arguments_t *args, int (*pred)(int)) {
   value_t chars = get_builtin_argument(args, 0);
-  CHECK_FAMILY(ofString, chars);
-  string_t contents;
-  get_string_contents(chars, &contents);
-  size_t length = string_length(&contents);
+  CHECK_FAMILY(ofUtf8, chars);
+  utf8_t contents = get_utf8_contents(chars);
+  size_t length = string_size(contents);
   for (size_t i = 0; i < length; i++) {
-    char c = string_char_at(&contents, i);
+    char c = string_byte_at(contents, i);
     if (!pred(c))
       return no();
   }
@@ -495,7 +484,7 @@ static value_t ctype_is_whitespace(builtin_arguments_t *args) {
   return ctype_is_pred(args, isspace);
 }
 
-value_t add_string_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+value_t add_utf8_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   ADD_BUILTIN_IMPL("str+str", 1, string_plus_string);
   ADD_BUILTIN_IMPL("str==str", 1, string_equals_string);
   ADD_BUILTIN_IMPL("str.print_raw()", 0, string_print_raw);
@@ -577,8 +566,8 @@ value_t read_handle_to_blob(runtime_t *runtime, open_file_t *handle) {
   return result;
 }
 
-value_t read_file_to_blob(runtime_t *runtime, string_t *filename) {
-  open_file_t *handle = file_system_open(runtime->file_system, filename->chars,
+value_t read_file_to_blob(runtime_t *runtime, utf8_t filename) {
+  open_file_t *handle = file_system_open(runtime->file_system, filename.chars,
       OPEN_FILE_MODE_READ);
   if (handle == NULL)
     return new_system_error_condition(seFileNotFound);
@@ -2571,10 +2560,8 @@ runtime_t *get_ambience_runtime(value_t self) {
 // Adds a binding to the given plankton environment map.
 static value_t add_plankton_binding(value_t map, value_t category, const char *name,
     value_t value, runtime_t *runtime) {
-  string_t key_str;
-  string_init(&key_str, name);
   // Build the key, [category, name].
-  TRY_DEF(name_obj, new_heap_string(runtime, &key_str));
+  TRY_DEF(name_obj, new_heap_utf8(runtime, new_c_string(name)));
   TRY_DEF(key_obj, new_heap_pair(runtime, category, name_obj));
   // Add the mapping to the environment map.
   TRY(set_id_hash_map_at(runtime, map, key_obj, value));
@@ -2627,8 +2614,7 @@ void print_ln(const char *fmt, ...) {
   string_buffer_vprintf(&buf, fmt, argp);
   va_end(argp);
   // Print the result to stdout.
-  string_t str;
-  string_buffer_flush(&buf, &str);
+  utf8_t str = string_buffer_flush(&buf);
   printf("%s\n", str.chars);
   fflush(stdout);
   // Done!
@@ -2638,7 +2624,7 @@ void print_ln(const char *fmt, ...) {
 const char *value_to_string(value_to_string_t *data, value_t value) {
   string_buffer_init(&data->buf);
   value_print_default_on(value, &data->buf);
-  string_buffer_flush(&data->buf, &data->str);
+  data->str = string_buffer_flush(&data->buf);
   return data->str.chars;
 }
 

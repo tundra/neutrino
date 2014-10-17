@@ -11,14 +11,13 @@ END_C_INCLUDES
 TEST(alloc, heap_string) {
   CREATE_RUNTIME();
 
-  string_t chars = new_string("Hut!");
-  value_t str = new_heap_string(runtime, &chars);
+  utf8_t chars = new_c_string("Hut!");
+  value_t str = new_heap_utf8(runtime, chars);
   ASSERT_DOMAIN(vdHeapObject, str);
-  ASSERT_FAMILY(ofString, str);
-  ASSERT_EQ(4, get_string_length(str));
-  string_t out;
-  get_string_contents(str, &out);
-  ASSERT_STREQ(&chars, &out);
+  ASSERT_FAMILY(ofUtf8, str);
+  ASSERT_EQ(4, get_utf8_length(str));
+  utf8_t out = get_utf8_contents(str);
+  ASSERT_STREQ(chars, out);
 
   DISPOSE_RUNTIME();
 }
@@ -50,10 +49,10 @@ TEST(alloc, heap_blob) {
 TEST(alloc, heap_species) {
   CREATE_RUNTIME();
 
-  value_t species = new_heap_compact_species(runtime, &kStringBehavior);
+  value_t species = new_heap_compact_species(runtime, &kUtf8Behavior);
   ASSERT_DOMAIN(vdHeapObject, species);
   ASSERT_FAMILY(ofSpecies, species);
-  ASSERT_EQ(ofString, get_species_instance_family(species));
+  ASSERT_EQ(ofUtf8, get_species_instance_family(species));
 
   DISPOSE_RUNTIME();
 }

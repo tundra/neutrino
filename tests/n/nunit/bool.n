@@ -1,0 +1,14 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def $test_bool_logic() {
+  $assert:that(false.not);
+  $assert:not(true.not);
+}
+
+do {
+  $test_bool_logic();
+}

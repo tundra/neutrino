@@ -12,16 +12,16 @@ END_C_INCLUDES
 TEST(behavior, string_validation) {
   CREATE_RUNTIME();
 
-  string_t chars = new_string("Hut!");
-  value_t str = new_heap_string(runtime, &chars);
+  utf8_t chars = new_c_string("Hut!");
+  value_t str = new_heap_utf8(runtime, chars);
 
   // String starts out validating.
   ASSERT_SUCCESS(heap_object_validate(str));
   // Zap the null terminator.
-  get_string_chars(str)[4] = 'x';
+  get_utf8_chars(str)[4] = 'x';
   // Now the string no longer terminates.
   ASSERT_CHECK_FAILURE(ccValidationFailed, heap_object_validate(str));
-  get_string_chars(str)[4] = '\0';
+  get_utf8_chars(str)[4] = '\0';
 
   DISPOSE_RUNTIME();
 }
@@ -41,10 +41,8 @@ TEST(behavior, identity) {
   ASSERT_FALSE(equal(new_integer(1), new_integer(0)));
 
   // Strings
-  string_t foo_chars = new_string("foo");
-  value_t foo = new_heap_string(runtime, &foo_chars);
-  string_t bar_chars = new_string("bar");
-  value_t bar = new_heap_string(runtime, &bar_chars);
+  value_t foo = new_heap_utf8(runtime, new_c_string("foo"));
+  value_t bar = new_heap_utf8(runtime, new_c_string("bar"));
   ASSERT_SUCCESS(hash(foo));
   ASSERT_NSAME(hash(foo), hash(bar));
   ASSERT_TRUE(equal(foo, foo));
@@ -72,10 +70,8 @@ static void check_print_on(const char *expected_chars, value_t value) {
   string_buffer_init(&buf);
 
   value_print_default_on(value, &buf);
-  string_t result;
-  string_buffer_flush(&buf, &result);
-  string_t expected = new_string(expected_chars);
-  ASSERT_STREQ(&expected, &result);
+  utf8_t result = string_buffer_flush(&buf);
+  ASSERT_STREQ(new_c_string(expected_chars), result);
 
   string_buffer_dispose(&buf);
 }
@@ -94,11 +90,9 @@ TEST(behavior, print_on) {
   check_print_on("false", no());
 
   // Strings
-  string_t foo_chars = new_string("foo");
-  value_t foo = new_heap_string(runtime, &foo_chars);
+  value_t foo = new_heap_utf8(runtime, new_c_string("foo"));
   check_print_on("\"foo\"", foo);
-  string_t empty_chars = new_string("");
-  value_t empty = new_heap_string(runtime, &empty_chars);
+  value_t empty = new_heap_utf8(runtime, new_c_string(""));
   check_print_on("\"\"", empty);
 
   // Arrays.

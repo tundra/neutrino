@@ -114,7 +114,7 @@ static inline size_t get_fifo_buffer_node_length_for_width(size_t width) {
 // structure captures that so it can be disposed using dispose_value_to_string.
 typedef struct {
   // The string representation of the value.
-  string_t str;
+  utf8_t str;
   // The string buffer used to build the result.
   string_buffer_t buf;
 } value_to_string_t;

@@ -208,9 +208,7 @@ TEST(value, id_hash_maps_simple) {
 TEST(value, id_hash_maps_strings) {
   CREATE_RUNTIME();
 
-  string_t one_chars;
-  string_init(&one_chars, "One");
-  value_t one = new_heap_string(runtime, &one_chars);
+  value_t one = new_heap_utf8(runtime, new_c_string("One"));
 
   value_t map = new_heap_id_hash_map(runtime, 4);
   ASSERT_EQ(0, get_id_hash_map_size(map));
@@ -360,10 +358,10 @@ TEST(value, string_comparison) {
 
   // Checks that the string with contents A compares to B as the given operator.
 #define ASSERT_STR_COMPARE(A, B, REL) do {                                     \
-  string_t a_str = new_string(A);                                                     \
-  value_t a = new_heap_string(runtime, &a_str);                                \
-  string_t b_str = new_string(B);                                                     \
-  value_t b = new_heap_string(runtime, &b_str);                                \
+  utf8_t a_str = new_c_string(A);                                              \
+  value_t a = new_heap_utf8(runtime, a_str);                                 \
+  utf8_t b_str = new_c_string(B);                                              \
+  value_t b = new_heap_utf8(runtime, b_str);                                 \
   ASSERT_TRUE(test_relation(value_ordering_compare(a, b), REL));               \
 } while (false)
 
