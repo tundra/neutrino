@@ -79,3 +79,7 @@ def ($this is @AsciiCharacter).is_digit?;
 ## Is this ascii character a space?
 @ctrino.builtin("ascii_character.is_whitespace?")
 def ($this is @AsciiCharacter).is_whitespace?;
+
+## Yields the integer ordinal that corresponds to this character.
+@ctrino.builtin("ascii_character.ordinal")
+def ($this is @AsciiCharacter).ordinal;

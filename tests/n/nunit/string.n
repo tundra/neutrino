@@ -21,6 +21,11 @@ def $test_ascii_view() {
 def $test_ascii_chars() {
   $assert:that($a("a") == $a("a"));
   $assert:not($a("a") == $a("b"));
+  $assert:equals(97, $a("a").ordinal);
+  $assert:equals(65, $a("A").ordinal);
+  $assert:equals(48, $a("0").ordinal);
+  $assert:equals(32, $a(" ").ordinal);
+  $assert:equals(37, $a("%").ordinal);
 }
 
 def $test_ctype() {

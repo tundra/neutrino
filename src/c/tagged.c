@@ -259,11 +259,19 @@ static value_t ascii_character_is_whitespace(builtin_arguments_t *args) {
   return ascii_character_is_pred(args, isspace);
 }
 
+static value_t ascii_character_ordinal(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_PHYLUM(tpAsciiCharacter, self);
+  uint8_t value = get_ascii_character_value(self);
+  return new_integer(value);
+}
+
 value_t add_ascii_character_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   ADD_BUILTIN_IMPL("ascii_character.is_lower_case?", 0, ascii_character_is_lower_case);
   ADD_BUILTIN_IMPL("ascii_character.is_upper_case?", 0, ascii_character_is_upper_case);
   ADD_BUILTIN_IMPL("ascii_character.is_alphabetic?", 0, ascii_character_is_alphabetic);
   ADD_BUILTIN_IMPL("ascii_character.is_digit?", 0, ascii_character_is_digit);
   ADD_BUILTIN_IMPL("ascii_character.is_whitespace?", 0, ascii_character_is_whitespace);
+  ADD_BUILTIN_IMPL("ascii_character.ordinal", 0, ascii_character_ordinal);
   return success();
 }
