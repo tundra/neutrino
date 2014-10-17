@@ -5,27 +5,26 @@
 files = get_group("files")
 
 core_file_names = [
-  "array.n",
-  "assert.n",
-  "block.n",
-  "bool.n",
-  "call_literal.n",
-  "control.n",
-  "core.n",
-  "escape.n",
-  "float32.n",
-  "function.n",
-  "integer.n",
-  "interval.n",
-  "lambda.n",
-  "null.n",
-  "object.n",
-  "promise.n",
-  "selector.n",
-  "string.n",
+  "core/array.n",
+  "core/block.n",
+  "core/bool.n",
+  "core/call_literal.n",
+  "core/control.n",
+  "core/core.n",
+  "core/escape.n",
+  "core/float32.n",
+  "core/function.n",
+  "core/integer.n",
+  "core/interval.n",
+  "core/lambda.n",
+  "core/null.n",
+  "core/object.n",
+  "core/promise.n",
+  "core/selector.n",
+  "core/string.n",
 ]
 
-core_manifest_file_name = "core.module"
+core_manifest_file_name = "core/core.module"
 core_manifest = n.get_module_file(core_manifest_file_name)
 for file_name in core_file_names:
   source_file = n.get_source_file(file_name)
@@ -33,13 +32,13 @@ for file_name in core_file_names:
   files.add_member(source_file)
 
 meta_file_names = [
-  "field.n",
-  "instance.n",
-  "module.n",
+  "meta/field.n",
+  "meta/instance.n",
+  "meta/module.n",
 ]
 
 
-meta_manifest_file_name = "meta.module"
+meta_manifest_file_name = "meta/meta.module"
 meta_manifest = n.get_module_file(meta_manifest_file_name)
 for file_name in meta_file_names:
   source_file = n.get_source_file(file_name)
@@ -47,10 +46,10 @@ for file_name in meta_file_names:
   files.add_member(source_file)
 
 assert_file_names = [
-  "assert.n",
+  "test/assert.n",
 ]
 
-assert_manifest_file_name = "assert.module"
+assert_manifest_file_name = "test/assert.module"
 assert_manifest = n.get_module_file(assert_manifest_file_name)
 for file_name in assert_file_names:
   source_file = n.get_source_file(file_name)
