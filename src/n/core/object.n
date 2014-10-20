@@ -47,5 +47,5 @@ def ($this)==($that) => $this.is_identical?($that);
 ##
 ## Collection equality should be reflexive, symmetric, and transitive. Typically
 ## you'll want to guard both arguments the same way or, if the guards have to be
-## different, have two methods one for @A == @B and @B == @A.
+## different, have two methods one for @A ==* @B and @B ==* @A.
 def ($this)==*($that) => $this == $that;

@@ -63,6 +63,13 @@ def $test_equality() {
   $assert:that($b ==* $b);
   $assert:not($b ==* $c);
   $assert:that($c ==* $c);
+  $b.add! 4;
+  $assert:that($a ==* $a);
+  $assert:not($a ==* $b);
+  $assert:not($a ==* $c);
+  $assert:that($b ==* $b);
+  $assert:that($b ==* $c);
+  $assert:that($c ==* $c);
 }
 
 do {

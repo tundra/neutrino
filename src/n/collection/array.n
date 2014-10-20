@@ -33,6 +33,20 @@ type @Array is @core:Object {
 ## Creates a new empty array buffer.
 def ($this == @Array).new() => (new @TupleArray());
 
+## The number of elements that will fit in the current backing array.
+def $capacity($this is @TupleArray) => $this.elements.length;
+
+## Doubles the capacity of this array.
+def $double_capacity($this is @TupleArray) {
+  var $old_capacity := $capacity($this);
+  var $new_capacity := $old_capacity * 2;
+  var $old_elements := $this.elements;
+  var $new_elements := (new $core:Tuple($new_capacity));
+  for $i in (0).to($old_capacity)
+    do ($new_elements[$i]) := ($old_elements[$i]);
+  $this.elements := $new_elements;
+}
+
 ## The default implementation of an array which uses a tuple as the backing
 ## store.
 type @TupleArray is @Array {
@@ -42,8 +56,8 @@ type @TupleArray is @Array {
 
   ## Adds an element to the end of this tuple, increasing the length by 1.
   def $this.add!($elm) {
-    if ($this.length) == ($this.capacity)
-      then $this.double_capacity();
+    if ($this.length) == $capacity($this)
+      then $double_capacity($this);
     ($this.elements)[$this.length] := $elm;
     $this.length := ($this.length + 1);
     null;
@@ -53,9 +67,6 @@ type @TupleArray is @Array {
     $this.length := 0;
     null;
   }
-
-  ## The number of elements that will fit in the current backing array.
-  def $this.capacity => $this.elements.length;
 
   ## Returns the $index'th element. If the index is outside the bounds of this
   ## array an out_of_bounds signal will raised with the invalid index.
@@ -71,17 +82,6 @@ type @TupleArray is @Array {
     if $index < ($this.length)
       then ($this.elements)[$index] := $value
       else leave.out_of_bounds($index);
-
-  ## Doubles the capacity of this array.
-  def $this.double_capacity() {
-    var $old_capacity := $this.capacity;
-    var $new_capacity := $old_capacity * 2;
-    var $old_elements := $this.elements;
-    var $new_elements := (new $core:Tuple($new_capacity));
-    for $i in (0).to($old_capacity)
-      do ($new_elements[$i]) := ($old_elements[$i]);
-    $this.elements := $new_elements;
-  }
 
 }
 
