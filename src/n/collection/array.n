@@ -9,6 +9,12 @@ type @Array is @core:Object {
   ## Does this array contain any elements at all?
   def $this.is_empty? => ($this.length == 0);
 
+  ## Invokes the given thunk for each element in this array, starting from 0.
+  def ($this is @Array).for($thunk) {
+    for $i in (0).to($this.length)
+      do $thunk($this[$i]);
+  }
+
 }
 
 ## Creates a new empty array buffer.

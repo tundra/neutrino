@@ -29,6 +29,12 @@ def $test_simple() {
   }
   for $i in (0).to(100)
     do $assert:equals($i, $buf[$i]);
+  var $expected := 0;
+  for $elm in $buf do {
+    $assert:equals($expected, $elm);
+    $expected := $expected + 1;
+  }
+  $assert:equals(100, $expected);
 }
 
 do {
