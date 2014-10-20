@@ -1,0 +1,36 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## A fixed-size collection of n values ordered from 0 to (n-1). Elements can be
+## accessed in O(1).
+def @Tuple := @ctrino.get_builtin_type("Array");
+
+def type @Tuple is @Object;
+
+## Creates a new mutable tuple of the given length with all elements initialized
+## to null.
+def ($this == @Tuple).new($length) => @ctrino.new_array($length);
+
+## Invokes the given thunk for each element in this tuple.
+def ($this is @Tuple).for($thunk) {
+  var $i := 0;
+  bk
+    $callback.keep_running() => $i < ($this.length)
+    on.run() {
+      $thunk($this[$i]);
+      $i := $i + 1;
+    }
+  in @while($callback);
+}
+
+## Returns the $index'th element of this tuple.
+@ctrino.builtin("array[]")
+def ($this is @Tuple)[$index];
+
+## Sets the $index'th element of this tuple to the specified value.
+@ctrino.builtin("array[]:=()")
+def ($this is @Tuple)[$index]:=($value);
+
+## Returns the length of this tuple.
+@ctrino.builtin("array.length")
+def ($this is @Tuple).length;

@@ -46,6 +46,7 @@ file_names = [
   "string.n",
   "tags.n",
   "trace.n",
+  "tuple.n",
   "var.n",
   "while.n",
 ]

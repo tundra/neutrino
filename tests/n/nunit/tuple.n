@@ -1,0 +1,91 @@
+# Copyright 2013 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def $test_simple_tuple_methods() {
+  def $a := [9, 8, 7];
+  $assert:equals(3, $a.length);
+  $assert:equals(9, $a[0]);
+  $assert:equals(8, $a[1]);
+  $assert:equals(7, $a[2]);
+  $assert:equals(10, $a[1] := 10);
+  $assert:equals(3, $a.length);
+  $assert:equals(9, $a[0]);
+  $assert:equals(10, $a[1]);
+  $assert:equals(7, $a[2]);
+}
+
+def $test_mutable_tuples() {
+  def $a := @core:Tuple.new(3);
+  $assert:equals(3, $a.length);
+  $assert:equals(null, $a[0]);
+  $assert:equals(null, $a[1]);
+  $assert:equals(null, $a[2]);
+  $a[0] := 1;
+  $assert:equals(1, $a[0]);
+  $assert:equals(null, $a[1]);
+  $assert:equals(null, $a[2]);
+  $a[1] := 2;
+  $assert:equals(1, $a[0]);
+  $assert:equals(2, $a[1]);
+  $assert:equals(null, $a[2]);
+  $a[2] := 3;
+  $assert:equals(1, $a[0]);
+  $assert:equals(2, $a[1]);
+  $assert:equals(3, $a[2]);
+}
+
+def $test_tuple_iteration() {
+  var $sum := 0;
+  var $count := 0;
+  for $elm in [1, 2, 3] do {
+    $count := $count + 1;
+    $sum := $sum + $elm;
+  }
+  $assert:equals(3, $count);
+  $assert:equals(6, $sum);
+}
+
+def $test_bounds() {
+  def $arr := @core:Tuple.new(3);
+  $assert:equals(22, try $arr[4] on.out_of_bounds($i) => 18 + $i);
+  $assert:equals(23, try ($arr[4] := null) on.out_of_bounds($i) => 19 + $i);
+  $assert:equals(19, try $arr[-1] on.out_of_bounds($i) => 20 + $i);
+  $assert:equals(20, try ($arr[-1] := null) on.out_of_bounds($i) => 21 + $i);
+}
+
+def $test_frozen() {
+  def $arr := @core:Tuple.new(3);
+  $assert:equals(8, $arr[0] := 8);
+  $assert:equals(7, $arr[1] := 7);
+  $assert:equals(6, $arr[2] := 6);
+  $assert:equals(3, $arr.length);
+  $assert:equals(8, $arr[0]);
+  $assert:equals(7, $arr[1]);
+  $assert:equals(6, $arr[2]);
+  $assert:equals(false, @core:is_frozen?($arr));
+  $assert:equals(false, @core:is_deep_frozen?($arr));
+  @core:freeze($arr);
+  $assert:equals(true, @core:is_frozen?($arr));
+  $assert:equals(true, @core:is_deep_frozen?($arr));
+  $assert:equals(3, $arr.length);
+  $assert:equals(8, $arr[0]);
+  $assert:equals(7, $arr[1]);
+  $assert:equals(6, $arr[2]);
+  $assert:equals(28, try $arr[0] := 18 on.is_frozen($a) => 28);
+  $assert:equals(27, try $arr[1] := 17 on.is_frozen($a) => 27);
+  $assert:equals(26, try $arr[2] := 16 on.is_frozen($a) => 26);
+  $assert:equals(8, $arr[0]);
+  $assert:equals(7, $arr[1]);
+  $assert:equals(6, $arr[2]);
+}
+
+do {
+  $test_simple_tuple_methods();
+  $test_mutable_tuples();
+  $test_tuple_iteration();
+  $test_bounds();
+  $test_frozen();
+}

@@ -4,7 +4,6 @@
 module $core {
 
   source [
-    "array.n",
     "block.n",
     "bool.n",
     "call_literal.n",
@@ -20,7 +19,8 @@ module $core {
     "object.n",
     "promise.n",
     "selector.n",
-    "string.n"
+    "string.n",
+    "tuple.n"
   ]
 
 }

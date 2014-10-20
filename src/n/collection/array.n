@@ -1,0 +1,74 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $core;
+
+## An array is similar to a tuple but without the size being fixed.
+type @Array is @core:Object {
+
+  ## Does this array contain any elements at all?
+  def $this.is_empty? => ($this.length == 0);
+
+}
+
+## Creates a new empty array buffer.
+def ($this == @Array).new() => (new @TupleArray());
+
+## The default implementation of an array which uses a tuple as the backing
+## store.
+type @TupleArray is @Array {
+
+  field $this.length;
+  field $this.elements;
+
+  ## Adds an element to the end of this tuple, increasing the length by 1.
+  def $this.add!($elm) {
+    if ($this.length) == ($this.capacity)
+      then $this.double_capacity();
+    ($this.elements)[$this.length] := $elm;
+    $this.length := ($this.length + 1);
+    null;
+  }
+
+  def $this.clear!() {
+    $this.length := 0;
+    null;
+  }
+
+  ## The number of elements that will fit in the current backing array.
+  def $this.capacity => $this.elements.length;
+
+  ## Returns the $index'th element. If the index is outside the bounds of this
+  ## array an out_of_bounds signal will raised with the invalid index.
+  def $this[$index] =>
+    if $index < ($this.length)
+      then ($this.elements)[$index]
+      else leave.out_of_bounds($index);
+
+  ## Sets the $index'th element of this array. If the index is outside the
+  ## bounds of this array an out_of_bounds signal will raised with the invalid
+  ## index.
+  def $this[$index] := ($value) =>
+    if $index < ($this.length)
+      then ($this.elements)[$index] := $value
+      else leave.out_of_bounds($index);
+
+  ## Doubles the capacity of this array.
+  def $this.double_capacity() {
+    var $old_capacity := $this.capacity;
+    var $new_capacity := $old_capacity * 2;
+    var $old_elements := $this.elements;
+    var $new_elements := (new $core:Tuple($new_capacity));
+    for $i in (0).to($old_capacity)
+      do ($new_elements[$i]) := ($old_elements[$i]);
+    $this.elements := $new_elements;
+  }
+
+}
+
+def ($this == @TupleArray).new() {
+  def $result := @core:manager.new_instance(@TupleArray);
+  $result.length := 0;
+  $result.elements := (new @core:Tuple(16));
+  $result;
+}

@@ -5,7 +5,6 @@
 files = get_group("files")
 
 core_file_names = [
-  "core/array.n",
   "core/block.n",
   "core/bool.n",
   "core/call_literal.n",
@@ -22,6 +21,7 @@ core_file_names = [
   "core/promise.n",
   "core/selector.n",
   "core/string.n",
+  "core/tuple.n",
 ]
 
 core_manifest_file_name = "core/core.module"
@@ -56,10 +56,22 @@ for file_name in assert_file_names:
   assert_manifest.add_dependency(source_file)
   files.add_member(source_file)
 
+collection_file_names = [
+  "collection/array.n",
+]
+
+collection_manifest_file_name = "collection/collection.module"
+collection_manifest = n.get_module_file(collection_manifest_file_name)
+for file_name in collection_file_names:
+  source_file = n.get_source_file(file_name)
+  collection_manifest.add_dependency(source_file)
+  files.add_member(source_file)
+
 # The library compiled from all the source files.
 library = n.get_library("library")
 library.set_compiler(get_external("src", "python", "neutrino", "main.py"))
 library.add_manifest(core_manifest)
 library.add_manifest(meta_manifest)
 library.add_manifest(assert_manifest)
+library.add_manifest(collection_manifest)
 library.add_dependency(files)

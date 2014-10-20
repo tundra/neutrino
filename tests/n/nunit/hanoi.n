@@ -95,7 +95,7 @@ type @Hanoi {
 ## Creates a new empty hanoi instance.
 def ($this == @Hanoi).new() {
   def $self := @manager.new_instance(@Hanoi);
-  $self.piles := @core:Array.new(3);
+  $self.piles := @core:Tuple.new(3);
   $self.moves := 0;
   $self;
 }

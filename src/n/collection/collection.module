@@ -1,7 +1,10 @@
 # Copyright 2014 the Neutrino authors (see AUTHORS).
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-import $core;
+module $collection {
 
-def $fail_builtin() => (@core:Tuple.new(1))[100];
-do $fail_builtin();
+  source [
+    "array.n"
+  ]
+
+}
