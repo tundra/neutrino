@@ -1,0 +1,17 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $core;
+
+## A generic collection.
+type @Collection is @core:Object {
+
+}
+
+## A collection with some finite size.
+type @FiniteCollection is @Collection {
+
+  ## Does this collection contain any elements at all?
+  def $this.is_empty? => ($this.size == 0);
+
+}

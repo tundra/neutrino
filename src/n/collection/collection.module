@@ -4,7 +4,9 @@
 module $collection {
 
   source [
-    "array.n"
+    "array.n",
+    "collection.n",
+    "interval.n"
   ]
 
 }

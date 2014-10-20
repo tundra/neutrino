@@ -33,9 +33,12 @@ def ($this is @Integer)/($that is @Integer);
 @ctrino.builtin("int%int")
 def ($this is @Integer)%($that is @Integer);
 
-## Returns true iff the left integers is strictly smaller than the right.
+## Returns true iff the left integer is strictly smaller than the right.
 @ctrino.builtin("int<int")
 def ($this is @Integer)<($that is @Integer);
+
+## Returns true iff the left integer is less than or equal to the right.
+def ($this is @Integer)<=($that is @Integer) => ($that < $this).not;
 
 ## Prints this integer on stdout.
 ## TODO: This one definitely needs to go.

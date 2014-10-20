@@ -13,7 +13,6 @@ module $core {
     "float32.n",
     "function.n",
     "integer.n",
-    "interval.n",
     "lambda.n",
     "null.n",
     "object.n",

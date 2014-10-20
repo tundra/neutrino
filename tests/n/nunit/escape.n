@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 import $assert;
+import $collection;
 import $core;
 
 def $test_simple_escape() {
@@ -44,7 +45,7 @@ def $test_direct_kill() {
     $assert:equals(true, $f.is_live?);
     $break(null);
   }
-  $assert:equals(false, $f.is_live?);  
+  $assert:equals(false, $f.is_live?);
 }
 
 ## Call recursively $n - $i times then capture an escape, do a recursive call,

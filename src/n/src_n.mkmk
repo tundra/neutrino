@@ -14,7 +14,6 @@ core_file_names = [
   "core/float32.n",
   "core/function.n",
   "core/integer.n",
-  "core/interval.n",
   "core/lambda.n",
   "core/null.n",
   "core/object.n",
@@ -58,6 +57,8 @@ for file_name in assert_file_names:
 
 collection_file_names = [
   "collection/array.n",
+  "collection/collection.n",
+  "collection/interval.n",
 ]
 
 collection_manifest_file_name = "collection/collection.module"

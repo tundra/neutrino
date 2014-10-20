@@ -1,17 +1,33 @@
 # Copyright 2013 the Neutrino authors (see AUTHORS).
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+import $core;
+
 ## A half-open interval.
-type @Interval {
+type @Interval is @FiniteCollection {
+
+  def ($this is @Interval).size => ($this.to) - ($this.from);
 
   ## Invokes the given thunk for each value within this interval.
   def $this.for($thunk) {
-    var $i := @from_field[$this];
-    def $limit := @to_field[$this];
+    var $i := $this.from;
+    def $limit := $this.to;
     bk $callback.keep_running() => $i < $limit
        on.run() => { $thunk($i); $i := $i.successor; }
-    in @while($callback);
+    in @core:while($callback);
   }
+
+  ## Returns this interval's start point, the first element.
+  def ($this is @Interval).from => @from_field[$this];
+
+  ## Returns thie interval's end point, one past the last element.
+  def ($this is @Interval).to => @to_field[$this];
+
+  ## Returns the $index'th element in this interval.
+  def ($this is @Interval)[$index] =>
+    if (if (0 <= $index) then ($index < (($this.to) - ($this.from))) else false)
+      then ($this.from) + $index
+      else leave.out_of_bounds($index);
 
 }
 
@@ -20,7 +36,7 @@ def @to_field := module.new_global_field("to");
 
 ## Creates a new interval with the given boundaries.
 def ($this == @Interval).new($from, $to) {
-  def $result := @manager.new_instance(@Interval);
+  def $result := @core:manager.new_instance(@Interval);
   @from_field[$result] := $from;
   @to_field[$result] := $to;
   $result;
@@ -30,4 +46,4 @@ def ($this == @Interval).new($from, $to) {
 ##
 ## TODO: It doesn't make sense to have this on all objects, this should all be
 ##   factored out. Also it should probably use the .. operator instead of .to.
-def ($from).to($to) => @Interval.new($from, $to);
+def ($from).to($to) => new @Interval($from, $to);

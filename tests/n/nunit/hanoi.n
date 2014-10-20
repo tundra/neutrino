@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 import $assert;
+import $collection;
 import $core;
 
 ## The instance manager for this process. The whole instance manager model is

@@ -4,10 +4,9 @@
 import $core;
 
 ## An array is similar to a tuple but without the size being fixed.
-type @Array is @core:Object {
+type @Array is @FiniteCollection {
 
-  ## Does this array contain any elements at all?
-  def $this.is_empty? => ($this.length == 0);
+  def ($this is @Array).size => $this.length;
 
   ## Invokes the given thunk for each element in this array, starting from 0.
   def ($this is @Array).for($thunk) {

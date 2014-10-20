@@ -34,10 +34,26 @@ def $test_simple_arithmetic() {
 
 ## Test of the most basic integer relations.
 def $test_simple_relations() {
-  $assert:equals(true, 0 < 1);
-  $assert:equals(false, 0 < (-1));
-  $assert:equals(false, 1 < 0);
-  $assert:equals(true, (-1) < 0);
+  $assert:equals(false, (-1) < (-1));
+  $assert:equals(true,  (-1) <   0);
+  $assert:equals(true,  (-1) <   1);
+  $assert:equals(false,   0  < (-1));
+  $assert:equals(false,   0  <   0);
+  $assert:equals(true,    0  <   1);
+  $assert:equals(false,   1  < (-1));
+  $assert:equals(false,   1  <   0);
+  $assert:equals(false,   1  <   1);
+
+  $assert:equals(true,  (-1) <= (-1));
+  $assert:equals(true,  (-1) <=   0);
+  $assert:equals(true,  (-1) <=   1);
+  $assert:equals(false,   0  <= (-1));
+  $assert:equals(true,    0  <=   0);
+  $assert:equals(true,    0  <=   1);
+  $assert:equals(false,   1  <= (-1));
+  $assert:equals(false,   1  <=   0);
+  $assert:equals(true,    1  <=   1);
+
   $assert:equals(true, 0 == 0);
   $assert:equals(false, 0 == 1);
 }

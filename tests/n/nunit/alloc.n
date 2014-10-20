@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 import $assert;
+import $collection;
 import $core;
 
 # Loop around allocating memory to cause a garbage collection.
