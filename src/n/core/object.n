@@ -30,3 +30,22 @@ def ($this).is_identical?($that);
 ## want to guard both arguments the same way or, if the guards have to be
 ## different, have two methods one for @A == @B and @B == @A.
 def ($this)==($that) => $this.is_identical?($that);
+
+## If this is a collection, returns true if it shallowly structually equal to
+## the argument. That is, if $this contains the same elements as $that in the
+## appropriate sense for this type of collection, where element equality is
+## determined using ==. The "appropriate sense" is intentionally vague since it
+## necessarily depends on the type of collection. For sequences, for instance,
+## it means that the elements not only have to be present but have to be in the
+## same order. In an ordered collection it just means that the same elements
+## have to be present.
+##
+## If this is not a collection it should work the same as ==.
+##
+## The asterisk in the operator is meant to parallel the Kleene star and
+## indicate that we're dealing with (potentially) multiple elements.
+##
+## Collection equality should be reflexive, symmetric, and transitive. Typically
+## you'll want to guard both arguments the same way or, if the guards have to be
+## different, have two methods one for @A == @B and @B == @A.
+def ($this)==*($that) => $this == $that;

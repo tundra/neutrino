@@ -15,6 +15,19 @@ type @Array is @core:Object {
       do $thunk($this[$i]);
   }
 
+  ## Collection equality. Returns true if both arrays contain the same number of
+  ## elements and the elements at each index are object (not collection) equal.
+  def ($this is @Array)==*($that is @Array) => with_escape $return do {
+    def $length := $this.length;
+    if (($that.length) == $length).not
+      then $return(false);
+    for $i in ((0).to($length)) do {
+      if ($this[$i] == $that[$i]).not
+        then $return(false);
+    }
+    true;
+  }
+
 }
 
 ## Creates a new empty array buffer.

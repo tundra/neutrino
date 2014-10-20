@@ -37,6 +37,35 @@ def $test_simple() {
   $assert:equals(100, $expected);
 }
 
+def $test_equality() {
+  def $a := new @collection:Array();
+  $a.add! 1;
+  $a.add! 2;
+  $a.add! 3;
+  def $b := new @collection:Array();
+  $b.add! 1;
+  $b.add! 2;
+  $b.add! 3;
+  def $c := new @collection:Array();
+  $c.add! 1;
+  $c.add! 2;
+  $c.add! 3;
+  $c.add! 4;
+  $assert:that($a == $a);
+  $assert:not($a == $b);
+  $assert:not($a == $c);
+  $assert:that($b == $b);
+  $assert:not($b == $c);
+  $assert:that($c == $c);
+  $assert:that($a ==* $a);
+  $assert:that($a ==* $b);
+  $assert:not($a ==* $c);
+  $assert:that($b ==* $b);
+  $assert:not($b ==* $c);
+  $assert:that($c ==* $c);
+}
+
 do {
   $test_simple();
+  $test_equality();
 }
