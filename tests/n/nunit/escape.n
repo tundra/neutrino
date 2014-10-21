@@ -63,7 +63,7 @@ def $escape_at_n($i, $n) {
 
 def $test_various_depth_escape() {
   # TODO: increase the number of iterations when the interpreter is faster.
-  for $i in (0).to(30) do {
+  for $i in (0 .to 30) do {
     $escape_at_n(0, 5 * $i);
   }
 }

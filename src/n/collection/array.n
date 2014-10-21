@@ -10,7 +10,7 @@ type @Array is @FiniteCollection {
 
   ## Invokes the given thunk for each element in this array, starting from 0.
   def ($this is @Array).for($thunk) {
-    for $i in (0).to($this.length)
+    for $i in (0 .to ($this.length))
       do $thunk($this[$i]);
   }
 
@@ -20,7 +20,7 @@ type @Array is @FiniteCollection {
     def $length := $this.length;
     if (($that.length) == $length).not
       then $return(false);
-    for $i in ((0).to($length)) do {
+    for $i in (0 .to $length) do {
       if ($this[$i] == $that[$i]).not
         then $return(false);
     }
@@ -41,7 +41,7 @@ def $double_capacity($this is @TupleArray) {
   var $new_capacity := $old_capacity * 2;
   var $old_elements := $this.elements;
   var $new_elements := (new $core:Tuple($new_capacity));
-  for $i in (0).to($old_capacity)
+  for $i in (0 .to $old_capacity)
     do ($new_elements[$i]) := ($old_elements[$i]);
   $this.elements := $new_elements;
 }

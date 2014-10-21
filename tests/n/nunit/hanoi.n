@@ -84,7 +84,7 @@ type @Hanoi {
 
   ## Build a stack of $disks disks on pile $pile.
   def $this.build(pile: $pile, disks: $disks) {
-    for $i in (0).to($disks) do {
+    for $i in (0 .to $disks) do {
       def $size := $disks - $i - 1;
       def $disk := new @Hanoi:Disk(size: $size);
       $this.push($pile, $disk);

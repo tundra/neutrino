@@ -87,3 +87,9 @@ def ($this is @AsciiCharacter).is_whitespace?;
 ## Yields the integer ordinal that corresponds to this character.
 @ctrino.builtin("ascii_character.ordinal")
 def ($this is @AsciiCharacter).ordinal;
+
+@ctrino.builtin("ascii_character<ascii_character")
+def ($this is @AsciiCharacter)<($that is @AsciiCharacter);
+
+def ($this is @AsciiCharacter)<=($that is @AsciiCharacter) =>
+  ($that < $this).not;

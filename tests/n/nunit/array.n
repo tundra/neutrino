@@ -23,11 +23,11 @@ def $test_simple() {
   $buf.clear! ();
   $assert:that($buf.is_empty?);
   $assert:equals(0, $buf.length);
-  for $i in (0).to(100) do {
+  for $i in (0 .to 100) do {
     $assert:equals($i, $buf.length);
     $buf.add! $i;
   }
-  for $i in (0).to(100)
+  for $i in (0 .to 100)
     do $assert:equals($i, $buf[$i]);
   var $expected := 0;
   for $elm in $buf do {

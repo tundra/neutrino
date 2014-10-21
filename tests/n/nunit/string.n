@@ -31,6 +31,26 @@ def $test_ascii_chars() {
   $assert:equals($a("0"), @core:AsciiCharacter.from_ordinal(48));
   $assert:equals($a(" "), @core:AsciiCharacter.from_ordinal(32));
   $assert:equals($a("%"), @core:AsciiCharacter.from_ordinal(37));
+
+  $assert:equals(false, $a("A") < $a("A"));
+  $assert:equals(true, $a("A") < $a("B"));
+  $assert:equals(true, $a("A") < $a("C"));
+  $assert:equals(false, $a("B") < $a("A"));
+  $assert:equals(false, $a("B") < $a("B"));
+  $assert:equals(true, $a("B") < $a("C"));
+  $assert:equals(false, $a("C") < $a("A"));
+  $assert:equals(false, $a("C") < $a("B"));
+  $assert:equals(false, $a("C") < $a("C"));
+
+  $assert:equals(true, $a("A") <= $a("A"));
+  $assert:equals(true, $a("A") <= $a("B"));
+  $assert:equals(true, $a("A") <= $a("C"));
+  $assert:equals(false, $a("B") <= $a("A"));
+  $assert:equals(true, $a("B") <= $a("B"));
+  $assert:equals(true, $a("B") <= $a("C"));
+  $assert:equals(false, $a("C") <= $a("A"));
+  $assert:equals(false, $a("C") <= $a("B"));
+  $assert:equals(true, $a("C") <= $a("C"));
 }
 
 def $test_ctype() {

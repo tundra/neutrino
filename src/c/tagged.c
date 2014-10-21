@@ -271,6 +271,14 @@ static value_t ascii_character_from_ordinal(builtin_arguments_t *args) {
   return new_ascii_character(get_integer_value(ordinal) & 0xFF);
 }
 
+static value_t ascii_character_less_ascii_character(builtin_arguments_t *args) {
+  value_t a = get_builtin_subject(args);
+  value_t b = get_builtin_argument(args, 0);
+  CHECK_PHYLUM(tpAsciiCharacter, a);
+  CHECK_PHYLUM(tpAsciiCharacter, b);
+  return new_boolean(get_ascii_character_value(a) < get_ascii_character_value(b));
+}
+
 value_t add_ascii_character_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   ADD_BUILTIN_IMPL("ascii_character.is_lower_case?", 0, ascii_character_is_lower_case);
   ADD_BUILTIN_IMPL("ascii_character.is_upper_case?", 0, ascii_character_is_upper_case);
@@ -279,5 +287,6 @@ value_t add_ascii_character_builtin_implementations(runtime_t *runtime, safe_val
   ADD_BUILTIN_IMPL("ascii_character.is_whitespace?", 0, ascii_character_is_whitespace);
   ADD_BUILTIN_IMPL("ascii_character.ordinal", 0, ascii_character_ordinal);
   ADD_BUILTIN_IMPL("ascii_character.from_ordinal", 1, ascii_character_from_ordinal);
+  ADD_BUILTIN_IMPL("ascii_character<ascii_character", 1, ascii_character_less_ascii_character);
   return success();
 }
