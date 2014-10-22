@@ -99,24 +99,6 @@ static value_t ensure_method_code(runtime_t *runtime, value_t method) {
   return code;
 }
 
-static void log_lookup_error(value_t condition, total_sigmap_input_o *input) {
-  size_t arg_count = sigmap_input_get_argument_count(UPCAST(input));
-  string_buffer_t buf;
-  string_buffer_init(&buf);
-  string_buffer_printf(&buf, "%v: {", condition);
-  for (size_t i = 0; i < arg_count; i++) {
-    if (i > 0)
-      string_buffer_printf(&buf, ", ");
-    value_t tag = sigmap_input_get_tag_at(UPCAST(input), i);
-    value_t value = total_sigmap_input_get_value_at(input, i);
-    string_buffer_printf(&buf, "%v: %v", tag, value);
-  }
-  string_buffer_printf(&buf, "}");
-  utf8_t str = string_buffer_flush(&buf);
-  ERROR("%s", str.chars);
-  string_buffer_dispose(&buf);
-}
-
 // Reports a lookup error as if it were a signal. It's not one that can be
 // caught though, it's mainly a trick to get the stack trace when lookup fails.
 static value_t signal_lookup_error(runtime_t *runtime, value_t stack, frame_t *frame) {
@@ -245,9 +227,8 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           value_t fragment = read_value(&cache, &frame, 2);
           CHECK_FAMILY_OPT(ofModuleFragment, fragment);
           value_t arg_map;
-          frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags,
-              &frame);
-          value_t method = lookup_method_full(UPCAST(&input), &arg_map);
+          sigmap_input_layout_t layout = sigmap_input_layout_new(ambience, tags);
+          value_t method = lookup_method_full_from_frame(&layout, &frame, &arg_map);
           if (in_condition_cause(ccLookupError, method))
             E_RETURN(signal_lookup_error(runtime, stack, &frame));
           // The lookup may have failed with a different condition. Check for that.
@@ -272,8 +253,8 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           frame.pc += kSignalEscapeOperationSize;
           value_t arg_map = whatever();
           value_t handler = whatever();
-          frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags, &frame);
-          value_t method = lookup_signal_handler_method(UPCAST(UPCAST(&input)),
+          sigmap_input_layout_t layout = sigmap_input_layout_new(ambience, tags);
+          value_t method = lookup_signal_handler_method_from_frame(&layout,
               &frame, &handler, &arg_map);
           bool is_escape = (opcode == ocSignalEscape);
           if (in_condition_cause(ccLookupError, method)) {
@@ -343,9 +324,8 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
             CHECK_FAMILY(ofCallTags, tags);
             value_t arg_map = whatever();
             value_t handler = whatever();
-            frame_sigmap_input_o input = frame_sigmap_input_new(ambience, tags,
-                &frame);
-            value_t method = lookup_signal_handler_method(UPCAST(UPCAST(&input)),
+            sigmap_input_layout_t layout = sigmap_input_layout_new(ambience, tags);
+            value_t method = lookup_signal_handler_method_from_frame(&layout,
                 &frame, &handler, &arg_map);
             if (in_condition_cause(ccLookupError, method)) {
               // Push the record back onto the stack to it's available to back
@@ -741,9 +721,10 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           value_t call_data = frame_get_argument(&frame, 2);
           CHECK_FAMILY(ofCallData, call_data);
           value_t arg_map;
-          call_data_sigmap_input_o input = call_data_sigmap_input_new(ambience,
-              call_data);
-          value_t method = lookup_method_full(UPCAST(&input), &arg_map);
+          sigmap_input_layout_t layout = sigmap_input_layout_new(ambience,
+              get_call_data_tags(call_data));
+          value_t method = lookup_method_full_from_call_data(&layout,
+              call_data, &arg_map);
           if (in_condition_cause(ccLookupError, method))
             E_RETURN(signal_lookup_error(runtime, stack, &frame));
           E_TRY(method);

@@ -108,5 +108,32 @@ static bool is_score_match(value_t score) {
   return is_score_better(score, new_score(scNone, 0));
 }
 
+// This guard matched perfectly.
+static value_t new_identical_match_score() {
+  return new_score(scEq, 0);
+}
+
+// It's not an identical match but the closest possible instanceof-match.
+static value_t new_perfect_is_match_score() {
+  return new_score(scIs, 0);
+}
+
+// Score that signifies that a guard didn't match at all.
+static value_t new_no_match_score() {
+  return new_score(scNone, 0);
+}
+
+// There was a match but only because extra arguments are allowed so anything
+// more specific would match better.
+static value_t new_extra_match_score() {
+  return new_score(scExtra, 0);
+}
+
+// The guard matched the given value but only because it matches any value so
+// anything more specific would match better.
+static value_t new_any_match_score() {
+  return  new_score(scAny, 0);
+}
+
 
 #endif // _TAGGED_INL

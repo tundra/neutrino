@@ -10,90 +10,6 @@
 #include "process.h"
 #include "value-inl.h"
 
-INTERFACE(sigmap_input_o);
-
-// Matches the index'th argument to this call against the given guard, storing
-// the result in the score_out parameter. If the match fails for whatever reason
-// a signal is returned.
-typedef value_t (*sigmap_input_match_value_at_m)(sigmap_input_o *self, size_t index,
-    value_t guard, value_t space, value_t *score_out);
-
-struct sigmap_input_o_vtable_t {
-  sigmap_input_match_value_at_m match_value_at;
-};
-
-// Input to a signature map lookup. This interface represents a potentially
-// partial input, that is, input where you can match against the values but not
-// necessarily get access to them.
-struct sigmap_input_o {
-  INTERFACE_HEADER(sigmap_input_o);
-  // The ambience we're looking up within.
-  value_t ambience;
-  // Cache of the ambience's runtime.
-  runtime_t *runtime;
-  // The call tags that describe the invocation being looked up.
-  value_t tags;
-  // Cache of the number of arguments.
-  size_t argc;
-};
-
-// Initializes an input struct appropriately.
-void sigmap_input_init(sigmap_input_o *self, value_t ambience, value_t tags);
-
-// Returns the number of arguments of this call.
-size_t sigmap_input_get_argument_count(sigmap_input_o *self);
-
-// Returns the tag of the index'th argument in sorted order.
-value_t sigmap_input_get_tag_at(sigmap_input_o *self, size_t index);
-
-// Returns the stack offset of the index'th argument in sorted tag order.
-size_t sigmap_input_get_offset_at(sigmap_input_o *self, size_t index);
-
-INTERFACE(total_sigmap_input_o);
-
-// Returns the value of the index'th argument in sorted tag order.
-typedef value_t (*total_sigmap_input_get_value_at_m)(total_sigmap_input_o *self,
-    size_t index);
-
-struct total_sigmap_input_o_vtable_t {
-  sigmap_input_o_vtable_t super;
-  total_sigmap_input_get_value_at_m get_value_at;
-};
-
-// A total sigmap input is one that is not partial so that you can get access
-// to the values of all arguments.
-struct total_sigmap_input_o {
-  SUB_INTERFACE_HEADER(total_sigmap_input_o, sigmap_input_o);
-};
-
-// Returns the index'th argument value in sorted tag order.
-value_t total_sigmap_input_get_value_at(total_sigmap_input_o *self, size_t index);
-
-IMPLEMENTATION(frame_sigmap_input_o, total_sigmap_input_o);
-
-// Total sigmap input that gets the values of arguments from a frame.
-struct frame_sigmap_input_o {
-  IMPLEMENTATION_HEADER(frame_sigmap_input_o, total_sigmap_input_o);
-  frame_t *frame;
-};
-
-// Creates a new frame sigmap input.
-frame_sigmap_input_o frame_sigmap_input_new(value_t ambience, value_t tags,
-    frame_t *frame);
-
-IMPLEMENTATION(call_data_sigmap_input_o, total_sigmap_input_o);
-
-// Total sigmap input that gets the values of arguments from a call data
-// object.
-struct call_data_sigmap_input_o {
-  IMPLEMENTATION_HEADER(call_data_sigmap_input_o, total_sigmap_input_o);
-  value_t call_data;
-};
-
-// Creates a new call data sigmap input.
-call_data_sigmap_input_o call_data_sigmap_input_new(value_t ambience,
-    value_t call_data);
-
 // --- S i g n a t u r e ---
 
 static const size_t kSignatureSize = HEAP_OBJECT_SIZE(4);
@@ -168,6 +84,17 @@ typedef struct {
 void match_info_init(match_info_t *info, value_t *scores, size_t *offsets,
     size_t capacity);
 
+// "Static" information about an invocation. For most calls it will always be
+// the same across all invocations at the same site.
+typedef struct {
+  // The ambience surrounding the invocation.
+  value_t ambience;
+  // Argument tags.
+  value_t tags;
+} sigmap_input_layout_t;
+
+sigmap_input_layout_t sigmap_input_layout_new(value_t ambience, value_t tags);
+
 // Matches the given invocation against this signature. You should not base
 // behavior on the exact failure type returned since there can be multiple
 // failures and the choice of which one gets returned is arbitrary.
@@ -175,15 +102,20 @@ void match_info_init(match_info_t *info, value_t *scores, size_t *offsets,
 // The capacity of the match_info argument must be at least large enough to hold
 // info about all the arguments. If the match succeeds it holds the info, if
 // it fails the state is unspecified.
-value_t match_signature(value_t self, sigmap_input_o *input, value_t space,
-    match_info_t *match_info, match_result_t *match_out);
+value_t match_signature_from_frame(value_t self, sigmap_input_layout_t *layout,
+    frame_t *frame, value_t space, match_info_t *match_info,
+    match_result_t *match_out);
+
+value_t match_signature_from_call_data(value_t self, sigmap_input_layout_t *layout,
+    value_t call_data, value_t space, match_info_t *match_info,
+    match_result_t *match_out);
 
 // Matches the given tags against this signature. If this signature can be
 // matched successfully against some invocation with these tags this will store
 // a successful match value in the match out parameter, otherwise it will store
 // a match failure value.
-value_t match_signature_tags(value_t self, value_t tags,
-    match_result_t *match_out);
+// value_t match_signature_tags(value_t self, value_t tags,
+//   match_result_t *match_out);
 
 // The outcome of joining two score vectors. The values encode how they matched:
 // if the first bit is set the target was strictly better at some point, if the
@@ -252,7 +184,7 @@ TYPED_ACCESSORS_DECL(guard, guard_type_t, type);
 // Matches the given guard against the given value, returning a condition that
 // indicates whether the match was successful and, if it was, storing the score
 // in the out argument for how well it matched within the given method space.
-value_t guard_match(value_t guard, value_t value, sigmap_input_o *lookup_input,
+value_t guard_match(value_t guard, value_t value, runtime_t *runtime,
     value_t methodspace, value_t *score_out);
 
 
@@ -322,32 +254,8 @@ ACCESSORS_DECL(signature_map, entries);
 value_t add_to_signature_map(runtime_t *runtime, value_t map, value_t signature,
     value_t value);
 
-// Opaque datatype used during signature map lookup.
-FORWARD(sigmap_state_t);
 INTERFACE(sigmap_output_o);
 INTERFACE(sigmap_thunk_o);
-
-// A callback called by do_signature_map_lookup to perform the traversal that
-// produces the signature maps to lookup within.
-typedef value_t (sigmap_state_callback_t)(sigmap_state_t *state);
-
-// Prepares a signature map lookup and then calls the callback which must
-// traverse the signature maps to include in the lookup and invoke
-// continue_signature_map_lookup for each of them. When the callback returns
-// this function completes the lookup and returns the result or a condition as
-// appropriate.
-value_t do_sigmap_lookup(sigmap_thunk_o *callback, sigmap_input_o *input,
-    sigmap_output_o *output);
-
-// Includes the given signature map in the lookup associated with the given
-// lookup state.
-value_t continue_sigmap_lookup(sigmap_state_t *state, value_t sigmap,
-    value_t space);
-
-// Returns the argument map that describes the location of the arguments of the
-// signature map lookup match recorded in the given lookup state. If there is
-// no match recorded an arbitrary non-condition value will be returned.
-value_t get_sigmap_lookup_argument_map(sigmap_state_t *state);
 
 
 // --- M e t h o d   s p a c e ---
@@ -394,16 +302,20 @@ value_t add_methodspace_method(runtime_t *runtime, value_t self,
 //
 // TODO: this is an approximation of the intended lookup mechanism and should be
 //   revised later on, for instance to not hard-code the subject origin lookup.
-value_t lookup_method_full(total_sigmap_input_o *input, value_t *arg_map_out);
+value_t lookup_method_full_from_frame(sigmap_input_layout_t *layout,
+    frame_t *frame, value_t *arg_map_out);
 
-value_t lookup_methodspace_method(sigmap_input_o *input, value_t methodspace,
-    value_t *arg_map_out);
+value_t lookup_method_full_from_call_data(sigmap_input_layout_t *layout,
+    value_t call_data, value_t *arg_map_out);
+
+value_t lookup_methodspace_method_from_frame(sigmap_input_layout_t *layout,
+    frame_t *frame, value_t methodspace, value_t *arg_map_out);
 
 // Scans through the stack looking for signal handler methods, returning the
 // best match if there is one otherwise a LookupError condition. The signal
 // handler that contains the method is stored in handler_out.
-value_t lookup_signal_handler_method(sigmap_input_o *input, frame_t *frame,
-    value_t *handler_out, value_t *arg_map_out);
+value_t lookup_signal_handler_method_from_frame(sigmap_input_layout_t *layout,
+    frame_t *frame, value_t *handler_out, value_t *arg_map_out);
 
 
 /// ## Call tags
@@ -548,34 +460,5 @@ INTEGER_ACCESSORS_DECL(builtin_implementation, argument_count);
 // The code block that implements this builtin.
 ACCESSORS_DECL(builtin_implementation, method_flags);
 
-
-// ## Virtuals
-
-// Function called with additional matches that are not strictly better or worse
-// than the best seen so far.
-typedef value_t (*sigmap_output_add_ambiguous_m)(sigmap_output_o *self, value_t value);
-
-// Function called the first time a result is found that is strictly better
-// than any matches previously seen.
-typedef value_t (*sigmap_output_add_better_m)(sigmap_output_o *self, value_t value);
-
-// Returns the result of this lookup.
-typedef value_t (*sigmap_output_get_result_m)(sigmap_output_o *self);
-
-// Resets the lookup state.
-typedef void (*sigmap_output_reset_m)(sigmap_output_o *self);
-
-// Collection of virtual functions for working with a result collector.
-struct sigmap_output_o_vtable_t {
-  sigmap_output_add_ambiguous_m add_ambiguous;
-  sigmap_output_add_better_m add_better;
-  sigmap_output_get_result_m get_result;
-  sigmap_output_reset_m reset;
-};
-
-// Virtual signature map lookup result collector.
-struct sigmap_output_o {
-  INTERFACE_HEADER(sigmap_output_o);
-};
 
 #endif // _METHOD
