@@ -10,14 +10,24 @@ def @y := module.new_global_field("y");
 
 def $test_raw_field_access() {
   def $p := @manager.new_instance(@Point);
+  $assert:not(@x.is_set? $p);
+  $assert:not(@y.is_set? $p);
   @x[$p] := 0;
+  $assert:that(@x.is_set? $p);
+  $assert:not(@y.is_set? $p);
   @y[$p] := 0;
+  $assert:that(@x.is_set? $p);
+  $assert:that(@y.is_set? $p);
   $assert:equals(0, @x[$p]);
   $assert:equals(0, @y[$p]);
   @x[$p] := 1;
+  $assert:that(@x.is_set? $p);
+  $assert:that(@y.is_set? $p);
   $assert:equals(1, @x[$p]);
   $assert:equals(0, @y[$p]);
   @y[$p] := 2;
+  $assert:that(@x.is_set? $p);
+  $assert:that(@y.is_set? $p);
   $assert:equals(1, @x[$p]);
   $assert:equals(2, @y[$p]);
 }

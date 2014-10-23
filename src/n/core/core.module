@@ -12,6 +12,7 @@ module $core {
     "escape.n",
     "float32.n",
     "function.n",
+    "hash.n",
     "integer.n",
     "lambda.n",
     "null.n",

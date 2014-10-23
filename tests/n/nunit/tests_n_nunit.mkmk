@@ -30,6 +30,7 @@ file_names = [
   "functino_multis.n",
   "functino_selectors.n",
   "hanoi.n",
+  "hash.n",
   "if.n",
   "integer.n",
   "interval.n",

@@ -1,0 +1,44 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+type @NoHash { }
+
+type @HashSequence {
+
+  field $this.next;
+
+  def ($this)() {
+    def $result := $this.next;
+    $this.next := ($result + 1);
+    $result;
+  }
+
+}
+
+def $test_object_hash() {
+  $assert:equals(null, null.hash_code);
+  def $nh1 := @core:manager.new_instance(@NoHash);
+  def $nh2 := @core:manager.new_instance(@NoHash);
+  $assert:equals(null, $nh1.hash_code);
+  $assert:equals(null, $nh2.hash_code);
+  def $seq := @core:manager.new_instance(@HashSequence);
+  $seq.next := 0;
+  def $hasher := new @core:IdentityHasher($seq);
+  $assert:equals(null, $hasher.get_hash_code($nh1));
+  $assert:equals(null, $hasher.get_hash_code($nh2));
+  $assert:equals(0, $hasher.get_or_bind_hash_code!($nh1, $nh1));
+  $assert:equals(1, $hasher.get_or_bind_hash_code!($nh2, $nh2));
+  $assert:equals(null, $nh1.hash_code);
+  $assert:equals(null, $nh2.hash_code);
+  $assert:equals(0, $hasher.get_hash_code($nh1));
+  $assert:equals(1, $hasher.get_hash_code($nh2));
+  $assert:equals(0, $hasher.get_or_bind_hash_code!($nh1, $nh1));
+  $assert:equals(1, $hasher.get_or_bind_hash_code!($nh2, $nh2));
+}
+
+do {
+  $test_object_hash();
+}

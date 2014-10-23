@@ -2520,8 +2520,18 @@ static value_t global_field_get(builtin_arguments_t *args) {
   }
 }
 
+static value_t global_field_is_set(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofGlobalField, self);
+  value_t instance = get_builtin_argument(args, 0);
+  value_t value = get_instance_field(instance, self);
+  bool is_set = !in_condition_cause(ccNotFound, value);
+  return new_boolean(is_set);
+}
+
 value_t add_global_field_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   ADD_BUILTIN_IMPL_MAY_ESCAPE("global_field[]", 1, 2, global_field_get);
+  ADD_BUILTIN_IMPL("global_field.is_set?", 1, global_field_is_set);
   ADD_BUILTIN_IMPL("global_field[]:=()", 2, global_field_set);
   return success();
 }
