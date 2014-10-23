@@ -26,10 +26,6 @@ END_C_INCLUDES
 template <typename I>
 value_t generic_match_signature(value_t self, I *input, value_t space,
     match_info_t *match_info, match_result_t *result_out) {
-  // This implementation matches match_signature_tags very closely. Ideally the
-  // same implementation could be used for both purposes but the flow is
-  // different enough that having two near-identical copies is actually easier
-  // to manage. Make sure to keep them in sync.
   CHECK_FAMILY(ofSignature, self);
   CHECK_FAMILY_OPT(ofMethodspace, space);
   TOPIC_INFO(Lookup, "Matching against %5v", self);

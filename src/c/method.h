@@ -95,9 +95,10 @@ typedef struct {
 
 sigmap_input_layout_t sigmap_input_layout_new(value_t ambience, value_t tags);
 
-// Matches the given invocation against this signature. You should not base
-// behavior on the exact failure type returned since there can be multiple
-// failures and the choice of which one gets returned is arbitrary.
+// Matches the given invocation, the arguments passed as a frame, against this
+// signature. You should not base behavior on the exact failure type returned
+// since there can be multiple failures and the choice of which one gets
+// returned is arbitrary.
 //
 // The capacity of the match_info argument must be at least large enough to hold
 // info about all the arguments. If the match succeeds it holds the info, if
@@ -106,16 +107,17 @@ value_t match_signature_from_frame(value_t self, sigmap_input_layout_t *layout,
     frame_t *frame, value_t space, match_info_t *match_info,
     match_result_t *match_out);
 
+// Matches the given invocation, the arguments passed as a call data object,
+// against this signature. You should not base behavior on the exact failure
+// type returned since there can be multiple failures and the choice of which
+// one gets returned is arbitrary.
+//
+// The capacity of the match_info argument must be at least large enough to hold
+// info about all the arguments. If the match succeeds it holds the info, if
+// it fails the state is unspecified.
 value_t match_signature_from_call_data(value_t self, sigmap_input_layout_t *layout,
     value_t call_data, value_t space, match_info_t *match_info,
     match_result_t *match_out);
-
-// Matches the given tags against this signature. If this signature can be
-// matched successfully against some invocation with these tags this will store
-// a successful match value in the match out parameter, otherwise it will store
-// a match failure value.
-// value_t match_signature_tags(value_t self, value_t tags,
-//   match_result_t *match_out);
 
 // The outcome of joining two score vectors. The values encode how they matched:
 // if the first bit is set the target was strictly better at some point, if the
@@ -295,19 +297,27 @@ value_t get_type_parents(runtime_t *runtime, value_t space, value_t type);
 value_t add_methodspace_method(runtime_t *runtime, value_t self,
     value_t method);
 
-// Looks up a method in the given fragment given a set of inputs. This is the
-// full lookup that also searches the subject's origin. If the match is
-// successful, as a side-effect stores an argument map that maps between the
-// result's parameters and argument offsets on the stack.
+// Looks up a method in the given fragment given a set of inputs, including
+// resolving lambda and block methods. If the match is successful, as a
+// side-effect stores an argument map that maps between the result's parameters
+// and argument offsets on the stack.
 //
 // TODO: this is an approximation of the intended lookup mechanism and should be
 //   revised later on, for instance to not hard-code the subject origin lookup.
 value_t lookup_method_full_from_frame(sigmap_input_layout_t *layout,
     frame_t *frame, value_t *arg_map_out);
 
+// Looks up a method in the given fragment given a set of inputs, including
+// resolving lambda and block methods. If the match is successful, as a
+// side-effect stores an argument map that maps between the result's parameters
+// and argument offsets on the stack.
+//
+// TODO: this is an approximation of the intended lookup mechanism and should be
+//   revised later on, for instance to not hard-code the subject origin lookup.
 value_t lookup_method_full_from_call_data(sigmap_input_layout_t *layout,
     value_t call_data, value_t *arg_map_out);
 
+// Looks up a value in a methodspace, taking input from the given frame.
 value_t lookup_methodspace_method_from_frame(sigmap_input_layout_t *layout,
     frame_t *frame, value_t methodspace, value_t *arg_map_out);
 
