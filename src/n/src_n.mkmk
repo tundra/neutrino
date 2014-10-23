@@ -13,6 +13,7 @@ core_file_names = [
   "core/escape.n",
   "core/float32.n",
   "core/function.n",
+  "core/hash.n",
   "core/integer.n",
   "core/lambda.n",
   "core/null.n",

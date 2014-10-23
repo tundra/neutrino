@@ -11,3 +11,7 @@ def ($this is @GlobalField)[$instance];
 ## Sets the value of this field on the given instance.
 @ctrino.builtin("global_field[]:=()")
 def ($this is @GlobalField)[$instance]:=($value);
+
+## Returns true iff this field has been set to a value on the given value.
+@ctrino.builtin("global_field.is_set?")
+def ($this is @GlobalField).is_set?($value);

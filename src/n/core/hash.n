@@ -1,0 +1,94 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## Either returns the hash code for this object or, if it doesn't have one,
+## null. In this case an @IdentityHasher can be used to generate a random hash
+## for the object.
+def ($this).hash_code => null;
+
+def $get_or_bind_identity_hash($this is @IdentityHasher, $obj) {
+  ((@IdentityHasher:key.is_set? $obj).select(fn {
+    @IdentityHasher:key[$obj];
+  }, fn {
+    def $hash := (@IdentityHasher:source[$this])();
+    @IdentityHasher:key[$obj] := $hash;
+    $hash;
+  }))();
+}
+
+## Utility that asssigns randomly generated hash codes to objects that don't
+## have an intrinsic hash.
+type @IdentityHasher {
+
+  ## Returns the object's intrinsic hash code or, if it doesn't have one (that
+  ## is, .hash_code returns null), the default hash previously generated for it.
+  ## If no hash has ever been generated null is returned. If you want to always
+  ## get a hash back use get_or_bind_hash_code!.
+  ##
+  ## This function subtly undermines the guarantees around deep frozen objects.
+  ## You would expect that if only deep frozen objects were involved you could
+  ## never observe the objects or their behavior changing. With this method
+  ## though, a call to .get_or_bind_hash_code! elsewhere in code that involves
+  ## mutable objects can cause the hash of a deep frozen object to change which
+  ## is observable as a change to the result of calling this method.
+  ##
+  ## Automatic assignment of "random" hash codes to objects seems to necessarily
+  ## involve either nondeterminism (for instance using the object's heap
+  ## address), deep-frozen changes at a distance (such that the hash code, once
+  ## generated, is consistently the same wherever it is accessed), high cost
+  ## (generating a deterministic hash when an object is frozen or earlier to
+  ## ensure that the object never changes after it is frozen), or some
+  ## combination of the three. I've not been able to figure out an approach that
+  ## doesn't have at least one of these problems and frozen action at a
+  ## distance, while pretty terrible, seems like the least terrible place to
+  ## compromize.
+  def $this.get_hash_code($obj) {
+    # Yeah so because control structures don't work so good within $core the
+    # code style here is atrocious.
+    def $intr := $obj.hash_code;
+    (($intr == null).select(fn {
+      ((@IdentityHasher:key.is_set? $obj).select(fn {
+        # There was no intrinsic code but we've got an identity hash from
+        # earlier.
+        @IdentityHasher:key[$obj];
+      }, fn {
+        # No intrinsic hash, no identity hash.
+        null;
+      }))();
+    }, fn {
+      # There was an intrinsic hash.
+      $intr;
+    }))();
+  }
+
+  ## Returns the object's intrinsic hash code or, if it doesn't have one (that
+  ## is, .hash_code returns null), the default hash previously generated for it.
+  ## If no hash has ever been generated for the object the next value will be
+  ## taken from this hasher's sequence and assigned to the object. This value
+  ## will then be the object's identity hash and will be returned consistently
+  ## from .get_hash_code and .get_or_bind_hash_code!.
+  ##
+  ## The object may be frozen or deep frozen but $whos_asking must be mutable.
+  ## It doesn't actually matter what the value is but it's to ensure the
+  ## discipline that there must be a mutable object involved when changing state
+  ## and both this and the object can be deep frozen so something mutable has to
+  ## come from somewhere.
+  def $this.get_or_bind_hash_code!($obj, $whos_asking) {
+    def $intr := $obj.hash_code;
+    (($intr == null).select(
+      fn => $get_or_bind_identity_hash($this, $obj),
+      fn => $intr))();
+  }
+
+}
+
+def @IdentityHasher:key := module.new_global_field("key");
+def @IdentityHasher:source := module.new_global_field("source");
+
+## Returns a new identity hasher which pulls new hash codes from the given hash
+## source.
+def ($This == @IdentityHasher).new($source) {
+  def $this := @manager.new_instance(@IdentityHasher);
+  @IdentityHasher:source[$this] := $source;
+  $this;
+}
