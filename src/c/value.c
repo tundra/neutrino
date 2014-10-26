@@ -2463,9 +2463,9 @@ void decimal_fraction_print_on(value_t value, print_on_context_t *context) {
 value_t plankton_set_decimal_fraction_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, numerator, denominator, precision);
-  set_frozen_decimal_fraction_numerator(object, numerator_value);
-  set_frozen_decimal_fraction_denominator(object, denominator_value);
-  set_frozen_decimal_fraction_precision(object, precision_value);
+  init_frozen_decimal_fraction_numerator(object, numerator_value);
+  init_frozen_decimal_fraction_denominator(object, denominator_value);
+  init_frozen_decimal_fraction_precision(object, precision_value);
   return success();
 }
 

@@ -597,7 +597,7 @@ TYPED_GETTER_DECL(receiver, value_t, field)
 // object being frozen typically means there's a reason you shouldn't set its
 // fields.
 #define FROZEN_ACCESSORS_DECL(receiver, field)                                 \
-void set_frozen_##receiver##_##field(value_t self, value_t value);             \
+void init_frozen_##receiver##_##field(value_t self, value_t value);            \
 ACCESSORS_DECL(receiver, field)
 
 // Expands to declarations of a getter and setter for the specified field in the

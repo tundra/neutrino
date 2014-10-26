@@ -238,7 +238,7 @@ SWALLOW_SEMI(gi)
 // Expands to the same as ACCESSORS_IMPL but also gives a _frozen_ version of
 // setter which allows fields of frozen objects to be set.
 #define FROZEN_ACCESSORS_IMPL(Receiver, receiver, acValueCheck, VALUE_CHECK_ARG, Field, field) \
-void set_frozen_##receiver##_##field(value_t self, value_t value) {            \
+void init_frozen_##receiver##_##field(value_t self, value_t value) {           \
   CHECK_FAMILY(of##Receiver, self);                                            \
   acValueCheck(VALUE_CHECK_ARG, value);                                        \
   *access_heap_object_field(self, k##Receiver##Field##Offset) = value;         \

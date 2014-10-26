@@ -579,7 +579,6 @@ value_t plankton_new_argument_ast(runtime_t *runtime) {
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(sequence_ast);
 NO_BUILTIN_METHODS(sequence_ast);
-FIXED_GET_MODE_IMPL(sequence_ast, vmMutable);
 
 ACCESSORS_IMPL(SequenceAst, sequence_ast, acInFamily, ofArray, Values, values);
 
@@ -634,7 +633,6 @@ value_t plankton_new_sequence_ast(runtime_t *runtime) {
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(local_declaration_ast);
 NO_BUILTIN_METHODS(local_declaration_ast);
-FIXED_GET_MODE_IMPL(local_declaration_ast, vmMutable);
 
 ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acInFamilyOpt,
     ofSymbolAst, Symbol, symbol);
@@ -1028,7 +1026,6 @@ value_t plankton_new_namespace_variable_ast(runtime_t *runtime) {
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(symbol_ast);
 NO_BUILTIN_METHODS(symbol_ast);
-FIXED_GET_MODE_IMPL(symbol_ast, vmMutable);
 
 ACCESSORS_IMPL(SymbolAst, symbol_ast, acNoCheck, 0, Name, name);
 ACCESSORS_IMPL(SymbolAst, symbol_ast, acNoCheck, 0, Origin, origin);

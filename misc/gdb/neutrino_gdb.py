@@ -13,6 +13,8 @@ _PHYLUM_TAG_MASK = (1 << _PHYLUM_TAG_SIZE) - 1
 
 _VALUE_SIZE = 8
 
+_OBJECT_TAG = 1
+
 # A convenience wrapper around a value.
 class Value(object):
 
@@ -47,7 +49,7 @@ class Value(object):
 
   # Returns the address value of this object as a gdb.Value.
   def get_object_address(self):
-    return self.value['encoded'] - 1
+    return self.value['encoded'] - _OBJECT_TAG
 
   # Returns the integer phylum code of this value.
   def get_phylum_code(self):

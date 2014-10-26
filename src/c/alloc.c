@@ -66,7 +66,7 @@ value_t new_heap_ascii_string_view(runtime_t *runtime, value_t value) {
   size_t size = kAsciiStringViewSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, ascii_string_view_species)));
-  set_frozen_ascii_string_view_value(result, value);
+  init_frozen_ascii_string_view_value(result, value);
   return post_create_sanity_check(result, size);
 
 }
@@ -307,7 +307,7 @@ value_t new_heap_instance_manager(runtime_t *runtime, value_t display_name) {
   size_t size = kInstanceManagerSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, instance_manager_species)));
-  set_frozen_instance_manager_display_name(result, display_name);
+  init_frozen_instance_manager_display_name(result, display_name);
   return post_create_sanity_check(result, size);
 }
 
@@ -324,7 +324,7 @@ value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr) {
   size_t size = kFactorySize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, factory_species)));
-  set_frozen_factory_constructor(result, constr_wrapper);
+  init_frozen_factory_constructor(result, constr_wrapper);
   return post_create_sanity_check(result, size);
 }
 
@@ -531,9 +531,9 @@ value_t new_heap_decimal_fraction(runtime_t *runtime, value_t numerator,
   size_t size = kDecimalFractionSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, decimal_fraction_species)));
-  set_frozen_decimal_fraction_numerator(result, numerator);
-  set_frozen_decimal_fraction_denominator(result, denominator);
-  set_frozen_decimal_fraction_precision(result, precision);
+  init_frozen_decimal_fraction_numerator(result, numerator);
+  init_frozen_decimal_fraction_denominator(result, denominator);
+  init_frozen_decimal_fraction_precision(result, precision);
   return post_create_sanity_check(result, size);
 }
 
@@ -541,7 +541,7 @@ value_t new_heap_global_field(runtime_t *runtime, value_t display_name) {
   size_t size = kGlobalFieldSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, global_field_species)));
-  set_frozen_global_field_display_name(result, display_name);
+  init_frozen_global_field_display_name(result, display_name);
   return post_create_sanity_check(result, size);
 }
 
@@ -560,7 +560,7 @@ value_t new_heap_freeze_cheat(runtime_t *runtime, value_t value) {
   size_t size = kFreezeCheatSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, freeze_cheat_species)));
-  set_frozen_freeze_cheat_value(result, value);
+  init_frozen_freeze_cheat_value(result, value);
   return post_create_sanity_check(result, size);
 }
 
