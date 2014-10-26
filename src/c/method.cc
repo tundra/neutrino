@@ -297,6 +297,7 @@ static value_t get_invocation_subject_with_shortcut(I *input) {
 template <class I, class O>
 static value_t lookup_through_input(sigmap_state_t<I, O> *state) {
   value_t space = get_ambience_methodspace(state->input->get_ambience());
+  // CHECK_DEEP_FROZEN(space);
   while (!is_nothing(space)) {
     value_t sigmap = get_methodspace_methods(space);
     TRY(continue_sigmap_lookup(state, sigmap, space));

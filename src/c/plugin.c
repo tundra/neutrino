@@ -9,28 +9,28 @@
 static value_t build_builtin_method_signature(runtime_t *runtime,
     const c_object_method_t *method, value_t subject, value_t selector) {
   size_t argc = method->posc + 2;
-  TRY_DEF(vector, new_heap_pair_array(runtime, argc));
+  TRY_DEF(tags, new_heap_pair_array(runtime, argc));
   // The subject parameter.
   TRY_DEF(subject_guard, new_heap_guard(runtime, afFreeze, gtIs, subject));
   TRY_DEF(subject_param, new_heap_parameter(runtime, afFreeze, subject_guard,
       ROOT(runtime, empty_array), false, 0));
-  set_pair_array_first_at(vector, 0, ROOT(runtime, subject_key));
-  set_pair_array_second_at(vector, 0, subject_param);
+  set_pair_array_first_at(tags, 0, ROOT(runtime, subject_key));
+  set_pair_array_second_at(tags, 0, subject_param);
   // The selector parameter.
   TRY_DEF(name_guard, new_heap_guard(runtime, afFreeze, gtEq, selector));
   TRY_DEF(name_param, new_heap_parameter(runtime, afFreeze, name_guard,
       ROOT(runtime, empty_array), false, 1));
-  set_pair_array_first_at(vector, 1, ROOT(runtime, selector_key));
-  set_pair_array_second_at(vector, 1, name_param);
+  set_pair_array_first_at(tags, 1, ROOT(runtime, selector_key));
+  set_pair_array_second_at(tags, 1, name_param);
   // The positional parameters.
   for (size_t i = 0; i < method->posc; i++) {
     TRY_DEF(param, new_heap_parameter(runtime, afFreeze,
         ROOT(runtime, any_guard), ROOT(runtime, empty_array), false, 2 + i));
-    set_pair_array_first_at(vector, 2 + i, new_integer(i));
-    set_pair_array_second_at(vector, 2 + i, param);
+    set_pair_array_first_at(tags, 2 + i, new_integer(i));
+    set_pair_array_second_at(tags, 2 + i, param);
   }
-  co_sort_pair_array(vector);
-  return new_heap_signature(runtime, afFreeze, vector, argc, argc, false);
+  co_sort_pair_array(tags);
+  return new_heap_signature(runtime, afFreeze, tags, argc, argc, false);
 }
 
 // Add a ctrino method to the given method space with the given name, number of

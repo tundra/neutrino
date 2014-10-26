@@ -70,7 +70,7 @@ static value_t ctrino_new_function(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t display_name = get_builtin_argument(args, 0);
   CHECK_C_OBJECT_TAG(btCtrino, self);
-  return new_heap_function(runtime, afMutable, display_name);
+  return new_heap_function(runtime, afFreeze, display_name);
 }
 
 static value_t ctrino_new_instance_manager(builtin_arguments_t *args) {

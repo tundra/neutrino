@@ -3,6 +3,7 @@
 
 
 #include "builtin.h"
+#include "freeze.h"
 #include "sync.h"
 #include "tagged-inl.h"
 #include "value-inl.h"

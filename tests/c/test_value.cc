@@ -830,7 +830,7 @@ TEST(value, paths) {
 
   value_t segments = variant_to_value(runtime, vArray(vStr("a"), vStr("b"),
       vStr("c")));
-  value_t path = new_heap_path_with_names(runtime, segments, 0);
+  value_t path = new_heap_path_with_names(runtime, afFreeze, segments, 0);
   ASSERT_VAREQ(vStr("a"), get_path_head(path));
   ASSERT_VAREQ(vStr("b"), get_path_head(get_path_tail(path)));
   ASSERT_VAREQ(vStr("c"), get_path_head(get_path_tail(get_path_tail(path))));

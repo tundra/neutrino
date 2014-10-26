@@ -470,7 +470,7 @@ GET_FAMILY_PRIMARY_TYPE_IMPL(ascii_string_view);
 FIXED_GET_MODE_IMPL(ascii_string_view, vmDeepFrozen);
 TRIVIAL_PRINT_ON_IMPL(AsciiStringView, ascii_string_view);
 
-ACCESSORS_IMPL(AsciiStringView, ascii_string_view, acInFamily, ofUtf8,
+FROZEN_ACCESSORS_IMPL(AsciiStringView, ascii_string_view, acInFamily, ofUtf8,
     Value, value);
 
 value_t ascii_string_view_validate(value_t self) {
@@ -1641,7 +1641,7 @@ void set_instance_mode_unchecked(runtime_t *runtime, value_t self,
 
 // --- I n s t a n c e   m a n a g e r ---
 
-ACCESSORS_IMPL(InstanceManager, instance_manager, acNoCheck, 0, DisplayName, display_name);
+FROZEN_ACCESSORS_IMPL(InstanceManager, instance_manager, acNoCheck, 0, DisplayName, display_name);
 GET_FAMILY_PRIMARY_TYPE_IMPL(instance_manager);
 FIXED_GET_MODE_IMPL(instance_manager, vmDeepFrozen);
 
@@ -1674,7 +1674,7 @@ value_t add_instance_manager_builtin_implementations(runtime_t *runtime, safe_va
 
 // --- F a c t o r y ---
 
-ACCESSORS_IMPL(Factory, factory, acInFamily, ofVoidP, Constructor, constructor);
+FROZEN_ACCESSORS_IMPL(Factory, factory, acInFamily, ofVoidP, Constructor, constructor);
 FIXED_GET_MODE_IMPL(factory, vmDeepFrozen);
 
 value_t factory_validate(value_t value) {
@@ -1750,7 +1750,7 @@ value_t plankton_set_type_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, name);
   set_type_display_name(object, name_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 
@@ -1871,7 +1871,7 @@ value_t set_namespace_binding_at(runtime_t *runtime, value_t nspace,
 }
 
 value_t ensure_namespace_owned_values_frozen(runtime_t *runtime, value_t self) {
-  TRY(ensure_frozen(runtime, get_namespace_bindings(self)));
+  TRY(ensure_id_hash_map_frozen(runtime, get_namespace_bindings(self), mfFreezeValues));
   return success();
 }
 
@@ -2061,6 +2061,11 @@ value_t module_fragment_validate(value_t value) {
   return success();
 }
 
+value_t ensure_module_fragment_owned_values_frozen(runtime_t *runtime, value_t self) {
+  TRY(ensure_frozen(runtime, get_module_fragment_private(self)));
+  return success();
+}
+
 void module_fragment_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofModuleFragment, value);
   string_buffer_printf(context->buf, "#<fragment ");
@@ -2082,26 +2087,17 @@ value_t get_module_fragment_predecessor_at(value_t self, value_t stage) {
   return current;
 }
 
-value_t ensure_module_fragment_owned_values_frozen(runtime_t *runtime, value_t self) {
-  TRY(ensure_frozen(runtime, get_module_fragment_private(self)));
-  return success();
-}
-
 
 // --- M o d u l e   f r a g m e n t   a c c e s s ---
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(module_fragment_private);
-FIXED_GET_MODE_IMPL(module_fragment_private, vmMutable);
 
 ACCESSORS_IMPL(ModuleFragmentPrivate, module_fragment_private, acInFamilyOpt,
     ofModuleFragment, Owner, owner);
-ACCESSORS_IMPL(ModuleFragmentPrivate, module_fragment_private, acInFamilyOpt,
-    ofModuleFragment, Successor, successor);
 
 value_t module_fragment_private_validate(value_t value) {
   VALIDATE_FAMILY(ofModuleFragmentPrivate, value);
   VALIDATE_FAMILY_OPT(ofModuleFragment, get_module_fragment_private_owner(value));
-  VALIDATE_FAMILY_OPT(ofModuleFragment, get_module_fragment_private_successor(value));
   return success();
 }
 
@@ -2121,7 +2117,7 @@ static value_t module_fragment_private_new_type(builtin_arguments_t *args) {
   value_t display_name = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofModuleFragmentPrivate, self);
   runtime_t *runtime = get_builtin_runtime(args);
-  return new_heap_type(runtime, afMutable, display_name);
+  return new_heap_type(runtime, afFreeze, display_name);
 }
 
 static value_t module_fragment_private_new_global_field(builtin_arguments_t *args) {
@@ -2179,11 +2175,11 @@ value_t plankton_set_path_contents(value_t object, runtime_t *runtime,
     CHECK_TRUE("new path was non-empty", is_path_empty(object));
   } else {
     value_t head = get_array_at(names_value, 0);
-    TRY_DEF(tail, new_heap_path_with_names(runtime, names_value, 1));
+    TRY_DEF(tail, new_heap_path_with_names(runtime, afFreeze, names_value, 1));
     set_path_raw_head(object, head);
     set_path_raw_tail(object, tail);
   }
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t get_path_head(value_t path) {
@@ -2258,8 +2254,6 @@ value_t path_ordering_compare(value_t a, value_t b) {
 
 // --- I d e n t i f i e r ---
 
-FIXED_GET_MODE_IMPL(identifier, vmMutable);
-
 ACCESSORS_IMPL(Identifier, identifier, acInFamilyOpt, ofPath, Path, path);
 ACCESSORS_IMPL(Identifier, identifier, acNoCheck, 0, Stage, stage);
 
@@ -2270,7 +2264,7 @@ value_t identifier_validate(value_t self) {
 }
 
 value_t plankton_new_identifier(runtime_t *runtime) {
-  return new_heap_identifier(runtime, nothing(), nothing());
+  return new_heap_identifier(runtime, afMutable, nothing(), nothing());
 }
 
 value_t plankton_set_identifier_contents(value_t object, runtime_t *runtime,
@@ -2278,7 +2272,7 @@ value_t plankton_set_identifier_contents(value_t object, runtime_t *runtime,
   UNPACK_PLANKTON_MAP(contents, stage, path);
   set_identifier_stage(object, new_stage_offset(get_integer_value(stage_value)));
   set_identifier_path(object, path_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 void identifier_print_on(value_t value, print_on_context_t *context) {
@@ -2444,9 +2438,9 @@ value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key,
 
 FIXED_GET_MODE_IMPL(decimal_fraction, vmFrozen);
 
-ACCESSORS_IMPL(DecimalFraction, decimal_fraction, acNoCheck, 0, Numerator, numerator);
-ACCESSORS_IMPL(DecimalFraction, decimal_fraction, acNoCheck, 0, Denominator, denominator);
-ACCESSORS_IMPL(DecimalFraction, decimal_fraction, acNoCheck, 0, Precision, precision);
+FROZEN_ACCESSORS_IMPL(DecimalFraction, decimal_fraction, acNoCheck, 0, Numerator, numerator);
+FROZEN_ACCESSORS_IMPL(DecimalFraction, decimal_fraction, acNoCheck, 0, Denominator, denominator);
+FROZEN_ACCESSORS_IMPL(DecimalFraction, decimal_fraction, acNoCheck, 0, Precision, precision);
 
 value_t decimal_fraction_validate(value_t self) {
   VALIDATE_FAMILY(ofDecimalFraction, self);
@@ -2469,9 +2463,9 @@ void decimal_fraction_print_on(value_t value, print_on_context_t *context) {
 value_t plankton_set_decimal_fraction_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, numerator, denominator, precision);
-  set_decimal_fraction_numerator(object, numerator_value);
-  set_decimal_fraction_denominator(object, denominator_value);
-  set_decimal_fraction_precision(object, precision_value);
+  set_frozen_decimal_fraction_numerator(object, numerator_value);
+  set_frozen_decimal_fraction_denominator(object, denominator_value);
+  set_frozen_decimal_fraction_precision(object, precision_value);
   return success();
 }
 
@@ -2485,7 +2479,7 @@ value_t plankton_new_decimal_fraction(runtime_t *runtime) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(global_field);
 FIXED_GET_MODE_IMPL(global_field, vmFrozen);
 
-ACCESSORS_IMPL(GlobalField, global_field, acNoCheck, 0, DisplayName, display_name);
+FROZEN_ACCESSORS_IMPL(GlobalField, global_field, acNoCheck, 0, DisplayName, display_name);
 
 value_t global_field_validate(value_t self) {
   VALIDATE_FAMILY(ofGlobalField, self);

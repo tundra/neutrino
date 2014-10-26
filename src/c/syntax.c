@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "behavior.h"
+#include "freeze.h"
 #include "runtime-inl.h"
 #include "syntax.h"
 #include "try-inl.h"
@@ -143,7 +144,6 @@ size_t *calc_parameter_ast_ordering(reusable_scratch_memory_t *scratch,
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(literal_ast);
 NO_BUILTIN_METHODS(literal_ast);
-FIXED_GET_MODE_IMPL(literal_ast, vmMutable);
 
 ACCESSORS_IMPL(LiteralAst, literal_ast, acNoCheck, 0, Value, value);
 
@@ -159,14 +159,14 @@ void literal_ast_print_on(value_t value, print_on_context_t *context) {
 }
 
 value_t plankton_new_literal_ast(runtime_t *runtime) {
-  return new_heap_literal_ast(runtime, null());
+  return new_heap_literal_ast(runtime, afMutable, null());
 }
 
 value_t plankton_set_literal_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, value);
   set_literal_ast_value(object, value_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t emit_literal_ast(value_t value, assembler_t *assm) {
@@ -179,7 +179,6 @@ value_t emit_literal_ast(value_t value, assembler_t *assm) {
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(array_ast);
 NO_BUILTIN_METHODS(array_ast);
-FIXED_GET_MODE_IMPL(array_ast, vmMutable);
 
 ACCESSORS_IMPL(ArrayAst, array_ast, acInFamilyOpt, ofArray, Elements, elements);
 
@@ -209,11 +208,11 @@ value_t plankton_set_array_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, elements);
   set_array_ast_elements(object, elements_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_array_ast(runtime_t *runtime) {
-  return new_heap_array_ast(runtime, nothing());
+  return new_heap_array_ast(runtime, afMutable, nothing());
 }
 
 
@@ -222,7 +221,6 @@ value_t plankton_new_array_ast(runtime_t *runtime) {
 TRIVIAL_PRINT_ON_IMPL(InvocationAst, invocation_ast);
 GET_FAMILY_PRIMARY_TYPE_IMPL(invocation_ast);
 NO_BUILTIN_METHODS(invocation_ast);
-FIXED_GET_MODE_IMPL(invocation_ast, vmMutable);
 
 ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, ofArray, Arguments,
     arguments);
@@ -265,11 +263,11 @@ value_t plankton_set_invocation_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, arguments);
   set_invocation_ast_arguments(object, arguments_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_invocation_ast(runtime_t *runtime) {
-  return new_heap_invocation_ast(runtime, nothing());
+  return new_heap_invocation_ast(runtime, afMutable, nothing());
 }
 
 
@@ -277,7 +275,6 @@ value_t plankton_new_invocation_ast(runtime_t *runtime) {
 
 TRIVIAL_PRINT_ON_IMPL(CallLiteralAst, call_literal_ast);
 NO_BUILTIN_METHODS(call_literal_ast);
-FIXED_GET_MODE_IMPL(call_literal_ast, vmMutable);
 
 ACCESSORS_IMPL(CallLiteralAst, call_literal_ast, acInFamilyOpt, ofArray, Arguments,
     arguments);
@@ -306,11 +303,11 @@ value_t plankton_set_call_literal_ast_contents(value_t object, runtime_t *runtim
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, arguments);
   set_call_literal_ast_arguments(object, arguments_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_call_literal_ast(runtime_t *runtime) {
-  return new_heap_call_literal_ast(runtime, nothing());
+  return new_heap_call_literal_ast(runtime, afMutable, nothing());
 }
 
 
@@ -318,7 +315,6 @@ value_t plankton_new_call_literal_ast(runtime_t *runtime) {
 
 TRIVIAL_PRINT_ON_IMPL(CallLiteralArgumentAst, call_literal_argument_ast);
 NO_BUILTIN_METHODS(call_literal_argument_ast);
-FIXED_GET_MODE_IMPL(call_literal_argument_ast, vmMutable);
 
 ACCESSORS_IMPL(CallLiteralArgumentAst, call_literal_argument_ast, acIsSyntaxOpt,
     0, Tag, tag);
@@ -336,11 +332,11 @@ value_t plankton_set_call_literal_argument_ast_contents(value_t object, runtime_
   UNPACK_PLANKTON_MAP(contents, tag, value);
   set_call_literal_argument_ast_tag(object, tag_value);
   set_call_literal_argument_ast_value(object, value_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_call_literal_argument_ast(runtime_t *runtime) {
-  return new_heap_call_literal_argument_ast(runtime, nothing(), nothing());
+  return new_heap_call_literal_argument_ast(runtime, afMutable, nothing(), nothing());
 }
 
 
@@ -349,7 +345,6 @@ value_t plankton_new_call_literal_argument_ast(runtime_t *runtime) {
 TRIVIAL_PRINT_ON_IMPL(SignalAst, signal_ast);
 GET_FAMILY_PRIMARY_TYPE_IMPL(signal_ast);
 NO_BUILTIN_METHODS(signal_ast);
-FIXED_GET_MODE_IMPL(signal_ast, vmMutable);
 
 ACCESSORS_IMPL(SignalAst, signal_ast, acInFamilyOpt, ofArray, Arguments,
     arguments);
@@ -418,11 +413,11 @@ value_t plankton_set_signal_ast_contents(value_t object, runtime_t *runtime,
   // Convert nulls (which can be represented in plankton) into nothings (which
   // can't).
   set_signal_ast_default(object, is_null(default_value) ? nothing() : default_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_signal_ast(runtime_t *runtime) {
-  return new_heap_signal_ast(runtime, nothing(), nothing(), nothing());
+  return new_heap_signal_ast(runtime, afMutable, nothing(), nothing(), nothing());
 }
 
 
@@ -431,7 +426,6 @@ value_t plankton_new_signal_ast(runtime_t *runtime) {
 TRIVIAL_PRINT_ON_IMPL(SignalHandlerAst, signal_handler_ast);
 GET_FAMILY_PRIMARY_TYPE_IMPL(signal_handler_ast);
 NO_BUILTIN_METHODS(signal_handler_ast);
-FIXED_GET_MODE_IMPL(signal_handler_ast, vmMutable);
 
 ACCESSORS_IMPL(SignalHandlerAst, signal_handler_ast, acIsSyntaxOpt, 0, Body, body);
 ACCESSORS_IMPL(SignalHandlerAst, signal_handler_ast, acInFamilyOpt, ofArray,
@@ -492,11 +486,11 @@ value_t plankton_set_signal_handler_ast_contents(value_t object, runtime_t *runt
   UNPACK_PLANKTON_MAP(contents, body, handlers);
   set_signal_handler_ast_body(object, body_value);
   set_signal_handler_ast_handlers(object, handlers_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_signal_handler_ast(runtime_t *runtime) {
-  return new_heap_signal_handler_ast(runtime, nothing(), nothing());
+  return new_heap_signal_handler_ast(runtime, afMutable, nothing(), nothing());
 }
 
 
@@ -505,7 +499,6 @@ value_t plankton_new_signal_handler_ast(runtime_t *runtime) {
 TRIVIAL_PRINT_ON_IMPL(EnsureAst, ensure_ast);
 GET_FAMILY_PRIMARY_TYPE_IMPL(ensure_ast);
 NO_BUILTIN_METHODS(ensure_ast);
-FIXED_GET_MODE_IMPL(ensure_ast, vmMutable);
 
 ACCESSORS_IMPL(EnsureAst, ensure_ast, acIsSyntaxOpt, 0, Body, body);
 ACCESSORS_IMPL(EnsureAst, ensure_ast, acIsSyntaxOpt, 0, OnExit, on_exit);
@@ -547,11 +540,11 @@ value_t plankton_set_ensure_ast_contents(value_t object, runtime_t *runtime,
   UNPACK_PLANKTON_MAP(contents, body, on_exit);
   set_ensure_ast_body(object, body_value);
   set_ensure_ast_on_exit(object, on_exit_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_ensure_ast(runtime_t *runtime) {
-  return new_heap_ensure_ast(runtime, nothing(), nothing());
+  return new_heap_ensure_ast(runtime, afMutable, nothing(), nothing());
 }
 
 
@@ -560,7 +553,6 @@ value_t plankton_new_ensure_ast(runtime_t *runtime) {
 TRIVIAL_PRINT_ON_IMPL(ArgumentAst, argument_ast);
 GET_FAMILY_PRIMARY_TYPE_IMPL(argument_ast);
 NO_BUILTIN_METHODS(argument_ast);
-FIXED_GET_MODE_IMPL(argument_ast, vmMutable);
 
 ACCESSORS_IMPL(ArgumentAst, argument_ast, acNoCheck, 0, Tag, tag);
 ACCESSORS_IMPL(ArgumentAst, argument_ast, acIsSyntaxOpt, 0, Value, value);
@@ -575,12 +567,11 @@ value_t plankton_set_argument_ast_contents(value_t object, runtime_t *runtime,
   UNPACK_PLANKTON_MAP(contents, tag, value);
   set_argument_ast_tag(object, tag_value);
   set_argument_ast_value(object, value_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_argument_ast(runtime_t *runtime) {
-  return new_heap_argument_ast(runtime, nothing(),
-      nothing());
+  return new_heap_argument_ast(runtime, afMutable, nothing(), nothing());
 }
 
 
@@ -631,11 +622,11 @@ value_t plankton_set_sequence_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, values);
   set_sequence_ast_values(object, values_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_sequence_ast(runtime_t *runtime) {
-  return new_heap_sequence_ast(runtime, ROOT(runtime, empty_array));
+  return new_heap_sequence_ast(runtime, afMutable, ROOT(runtime, empty_array));
 }
 
 
@@ -708,11 +699,11 @@ value_t plankton_set_local_declaration_ast_contents(value_t object,
   set_local_declaration_ast_is_mutable(object, is_mutable_value);
   set_local_declaration_ast_value(object, value_value);
   set_local_declaration_ast_body(object, body_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_local_declaration_ast(runtime_t *runtime) {
-  return new_heap_local_declaration_ast(runtime, nothing(), nothing(),
+  return new_heap_local_declaration_ast(runtime, afMutable, nothing(), nothing(),
       nothing(), nothing());
 }
 
@@ -721,7 +712,6 @@ value_t plankton_new_local_declaration_ast(runtime_t *runtime) {
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(block_ast);
 NO_BUILTIN_METHODS(block_ast);
-FIXED_GET_MODE_IMPL(block_ast, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(BlockAst, block_ast);
 
 ACCESSORS_IMPL(BlockAst, block_ast, acInFamilyOpt, ofSymbolAst, Symbol, symbol);
@@ -839,17 +829,16 @@ value_t plankton_set_block_ast_contents(value_t object,
   set_block_ast_symbol(object, symbol_value);
   set_block_ast_methods(object, methods_value);
   set_block_ast_body(object, body_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_block_ast(runtime_t *runtime) {
-  return new_heap_block_ast(runtime, nothing(), nothing(), nothing());
+  return new_heap_block_ast(runtime, afMutable, nothing(), nothing(), nothing());
 }
 
 
 // --- W i t h   e s c a p e   a s t ---
 
-FIXED_GET_MODE_IMPL(with_escape_ast, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(WithEscapeAst, with_escape_ast);
 
 ACCESSORS_IMPL(WithEscapeAst, with_escape_ast, acInFamilyOpt, ofSymbolAst,
@@ -900,17 +889,16 @@ value_t plankton_set_with_escape_ast_contents(value_t object,
   UNPACK_PLANKTON_MAP(contents, symbol, body);
   set_with_escape_ast_symbol(object, symbol_value);
   set_with_escape_ast_body(object, body_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_with_escape_ast(runtime_t *runtime) {
-  return new_heap_with_escape_ast(runtime, nothing(), nothing());
+  return new_heap_with_escape_ast(runtime, afMutable, nothing(), nothing());
 }
 
 
 // --- V a r i a b l e   a s s i g n m e n t   a s t ---
 
-FIXED_GET_MODE_IMPL(variable_assignment_ast, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(VariableAssignmentAst, variable_assignment_ast);
 
 ACCESSORS_IMPL(VariableAssignmentAst, variable_assignment_ast, acIsSyntaxOpt, 0,
@@ -928,11 +916,11 @@ value_t plankton_set_variable_assignment_ast_contents(value_t object,
   UNPACK_PLANKTON_MAP(contents, target, value);
   set_variable_assignment_ast_target(object, target_value);
   set_variable_assignment_ast_value(object, value_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_variable_assignment_ast(runtime_t *runtime) {
-  return new_heap_variable_assignment_ast(runtime, nothing(), nothing());
+  return new_heap_variable_assignment_ast(runtime, afMutable, nothing(), nothing());
 }
 
 // Loads the value of the given symbol onto the stack. If the variable is
@@ -966,7 +954,6 @@ value_t emit_variable_assignment_ast(value_t self, assembler_t *assm) {
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(local_variable_ast);
 NO_BUILTIN_METHODS(local_variable_ast);
-FIXED_GET_MODE_IMPL(local_variable_ast, vmMutable);
 
 ACCESSORS_IMPL(LocalVariableAst, local_variable_ast, acInFamilyOpt, ofSymbolAst,
     Symbol, symbol);
@@ -994,11 +981,11 @@ value_t plankton_set_local_variable_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
   UNPACK_PLANKTON_MAP(contents, symbol);
   set_local_variable_ast_symbol(object, symbol_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_local_variable_ast(runtime_t *runtime) {
-  return new_heap_local_variable_ast(runtime, nothing());
+  return new_heap_local_variable_ast(runtime, afMutable, nothing());
 }
 
 
@@ -1007,7 +994,6 @@ value_t plankton_new_local_variable_ast(runtime_t *runtime) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(namespace_variable_ast);
 NO_BUILTIN_METHODS(namespace_variable_ast);
 TRIVIAL_PRINT_ON_IMPL(NamespaceVariableAst, namespace_variable_ast);
-FIXED_GET_MODE_IMPL(namespace_variable_ast, vmMutable);
 
 ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast, acInFamilyOpt,
     ofIdentifier, Identifier, identifier);
@@ -1030,11 +1016,11 @@ value_t plankton_set_namespace_variable_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
   UNPACK_PLANKTON_MAP(contents, name);
   set_namespace_variable_ast_identifier(object, name_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_namespace_variable_ast(runtime_t *runtime) {
-  return new_heap_namespace_variable_ast(runtime, nothing());
+  return new_heap_namespace_variable_ast(runtime, afMutable, nothing());
 }
 
 
@@ -1063,11 +1049,11 @@ value_t plankton_set_symbol_ast_contents(value_t object, runtime_t *runtime,
   UNPACK_PLANKTON_MAP(contents, name, origin);
   set_symbol_ast_name(object, name_value);
   set_symbol_ast_origin(object, origin_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_symbol_ast(runtime_t *runtime) {
-  return new_heap_symbol_ast(runtime, nothing(), nothing());
+  return new_heap_symbol_ast(runtime, afMutable, nothing(), nothing());
 }
 
 
@@ -1076,7 +1062,6 @@ value_t plankton_new_symbol_ast(runtime_t *runtime) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(lambda_ast);
 NO_BUILTIN_METHODS(lambda_ast);
 TRIVIAL_PRINT_ON_IMPL(LambdaAst, lambda_ast);
-FIXED_GET_MODE_IMPL(lambda_ast, vmMutable);
 
 ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt, ofArray, Methods,
     methods);
@@ -1246,11 +1231,11 @@ value_t plankton_set_lambda_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, methods);
   set_lambda_ast_methods(object, methods_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_lambda_ast(runtime_t *runtime) {
-  return new_heap_lambda_ast(runtime, nothing());
+  return new_heap_lambda_ast(runtime, afMutable, nothing());
 }
 
 
@@ -1258,7 +1243,6 @@ value_t plankton_new_lambda_ast(runtime_t *runtime) {
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(parameter_ast);
 NO_BUILTIN_METHODS(parameter_ast);
-FIXED_GET_MODE_IMPL(parameter_ast, vmMutable);
 
 ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt, ofSymbolAst, Symbol,
     symbol);
@@ -1279,12 +1263,12 @@ value_t plankton_set_parameter_ast_contents(value_t object, runtime_t *runtime,
   set_parameter_ast_symbol(object, symbol_value);
   set_parameter_ast_tags(object, tags_value);
   set_parameter_ast_guard(object, guard_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_parameter_ast(runtime_t *runtime) {
-  return new_heap_parameter_ast(runtime, nothing(),
-      nothing(), nothing());
+  return new_heap_parameter_ast(runtime, afMutable, nothing(), nothing(),
+      nothing());
 }
 
 void parameter_ast_print_on(value_t self, print_on_context_t *context) {
@@ -1300,7 +1284,6 @@ void parameter_ast_print_on(value_t self, print_on_context_t *context) {
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(guard_ast);
 NO_BUILTIN_METHODS(guard_ast);
-FIXED_GET_MODE_IMPL(guard_ast, vmMutable);
 
 ENUM_ACCESSORS_IMPL(GuardAst, guard_ast, guard_type_t, Type, type);
 ACCESSORS_IMPL(GuardAst, guard_ast, acNoCheck, 0, Value, value);
@@ -1326,11 +1309,11 @@ value_t plankton_set_guard_ast_contents(value_t object, runtime_t *runtime,
   }
   set_guard_ast_type(object, type_enum);
   set_guard_ast_value(object, value_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_guard_ast(runtime_t *runtime) {
-  return new_heap_guard_ast(runtime, gtAny, nothing());
+  return new_heap_guard_ast(runtime, afMutable, gtAny, nothing());
 }
 
 void guard_ast_print_on(value_t self, print_on_context_t *context) {
@@ -1357,7 +1340,6 @@ void guard_ast_print_on(value_t self, print_on_context_t *context) {
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(signature_ast);
 NO_BUILTIN_METHODS(signature_ast);
-FIXED_GET_MODE_IMPL(signature_ast, vmMutable);
 
 ACCESSORS_IMPL(SignatureAst, signature_ast, acInFamilyOpt, ofArray,
     Parameters, parameters);
@@ -1375,11 +1357,11 @@ value_t plankton_set_signature_ast_contents(value_t object, runtime_t *runtime,
   UNPACK_PLANKTON_MAP(contents, parameters, allow_extra);
   set_signature_ast_parameters(object, parameters_value);
   set_signature_ast_allow_extra(object, allow_extra_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_signature_ast(runtime_t *runtime) {
-  return new_heap_signature_ast(runtime, nothing(), nothing());
+  return new_heap_signature_ast(runtime, afMutable, nothing(), nothing());
 }
 
 void signature_ast_print_on(value_t self, print_on_context_t *context) {
@@ -1414,12 +1396,11 @@ value_t plankton_set_method_ast_contents(value_t object, runtime_t *runtime,
   UNPACK_PLANKTON_MAP(contents, signature, body);
   set_method_ast_signature(object, signature_value);
   set_method_ast_body(object, body_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_method_ast(runtime_t *runtime) {
-  return new_heap_method_ast(runtime, nothing(),
-      nothing());
+  return new_heap_method_ast(runtime, afMutable, nothing(), nothing());
 }
 
 void method_ast_print_on(value_t self, print_on_context_t *context) {
@@ -1434,8 +1415,6 @@ void method_ast_print_on(value_t self, print_on_context_t *context) {
 
 
 // --- N a m e s p a c e   d e c l a r a t i o n   a s t ---
-
-FIXED_GET_MODE_IMPL(namespace_declaration_ast, vmMutable);
 
 ACCESSORS_IMPL(NamespaceDeclarationAst, namespace_declaration_ast,
     acInFamilyOpt, ofArray, Annotations, annotations);
@@ -1457,11 +1436,11 @@ value_t plankton_set_namespace_declaration_ast_contents(value_t object,
   set_namespace_declaration_ast_annotations(object, annotations_value);
   set_namespace_declaration_ast_path(object, path_value);
   set_namespace_declaration_ast_value(object, value_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_namespace_declaration_ast(runtime_t *runtime) {
-  return new_heap_namespace_declaration_ast(runtime, nothing(),
+  return new_heap_namespace_declaration_ast(runtime, afMutable, nothing(),
       nothing(), nothing());
 }
 
@@ -1475,8 +1454,6 @@ void namespace_declaration_ast_print_on(value_t value, print_on_context_t *conte
 
 
 // --- M e t h o d   d e c l a r a t i o n   a s t ---
-
-FIXED_GET_MODE_IMPL(method_declaration_ast, vmMutable);
 
 ACCESSORS_IMPL(MethodDeclarationAst, method_declaration_ast, acInFamilyOpt,
     ofArray, Annotations, annotations);
@@ -1495,11 +1472,11 @@ value_t plankton_set_method_declaration_ast_contents(value_t object,
   UNPACK_PLANKTON_MAP(contents, method, annotations);
   set_method_declaration_ast_annotations(object, annotations_value);
   set_method_declaration_ast_method(object, method_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_method_declaration_ast(runtime_t *runtime) {
-  return new_heap_method_declaration_ast(runtime, nothing(), nothing());
+  return new_heap_method_declaration_ast(runtime, afMutable, nothing(), nothing());
 }
 
 void method_declaration_ast_print_on(value_t value, print_on_context_t *context) {
@@ -1510,8 +1487,6 @@ void method_declaration_ast_print_on(value_t value, print_on_context_t *context)
 
 
 // --- I s   d e c l a r a t i o n   a s t ---
-
-FIXED_GET_MODE_IMPL(is_declaration_ast, vmMutable);
 
 ACCESSORS_IMPL(IsDeclarationAst, is_declaration_ast, acIsSyntaxOpt, 0, Subtype,
     subtype);
@@ -1528,11 +1503,11 @@ value_t plankton_set_is_declaration_ast_contents(value_t object,
   UNPACK_PLANKTON_MAP(contents, subtype, supertype);
   set_is_declaration_ast_subtype(object, subtype_value);
   set_is_declaration_ast_supertype(object, supertype_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_is_declaration_ast(runtime_t *runtime) {
-  return new_heap_is_declaration_ast(runtime, nothing(), nothing());
+  return new_heap_is_declaration_ast(runtime, afMutable, nothing(), nothing());
 }
 
 void is_declaration_ast_print_on(value_t value, print_on_context_t *context) {
@@ -1545,8 +1520,6 @@ void is_declaration_ast_print_on(value_t value, print_on_context_t *context) {
 
 
 // --- P r o g r a m   a s t ---
-
-FIXED_GET_MODE_IMPL(program_ast, vmMutable);
 
 ACCESSORS_IMPL(ProgramAst, program_ast, acIsSyntaxOpt, 0, EntryPoint, entry_point);
 ACCESSORS_IMPL(ProgramAst, program_ast, acNoCheck, 0, Module, module);
@@ -1561,12 +1534,11 @@ value_t plankton_set_program_ast_contents(value_t object, runtime_t *runtime,
   UNPACK_PLANKTON_MAP(contents, entry_point, module);
   set_program_ast_entry_point(object, entry_point_value);
   set_program_ast_module(object, module_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_program_ast(runtime_t *runtime) {
-  return new_heap_program_ast(runtime, nothing(),
-      nothing());
+  return new_heap_program_ast(runtime, afMutable, nothing(), nothing());
 }
 
 void program_ast_print_on(value_t value, print_on_context_t *context) {

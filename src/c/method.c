@@ -202,7 +202,7 @@ void guard_print_on(value_t self, print_on_context_t *context) {
 // ## Method
 
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofSignature, Signature, signature);
-ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofCodeBlock, Code, code);
+FROZEN_ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofCodeBlock, Code, code);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofMethodAst, Syntax, syntax);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofModuleFragment, ModuleFragment,
     module_fragment);
@@ -289,7 +289,8 @@ value_t methodspace_validate(value_t value) {
 }
 
 value_t ensure_methodspace_owned_values_frozen(runtime_t *runtime, value_t self) {
-  TRY(ensure_frozen(runtime, get_methodspace_inheritance(self)));
+  TRY(ensure_id_hash_map_frozen(runtime, get_methodspace_inheritance(self),
+      mfFreezeValues));
   TRY(ensure_frozen(runtime, get_methodspace_methods(self)));
   return success();
 }
@@ -636,7 +637,7 @@ value_t plankton_set_operation_contents(value_t object, runtime_t *runtime,
   UNPACK_PLANKTON_MAP(contents, type, value);
   set_operation_type(object, get_integer_value(type_value));
   set_operation_value(object, value_value);
-  return success();
+  return ensure_frozen(runtime, object);
 }
 
 

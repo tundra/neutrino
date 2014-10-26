@@ -2,6 +2,7 @@
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "alloc.h"
+#include "freeze.h"
 #include "runtime.h"
 #include "safe-inl.h"
 #include "serialize.h"
@@ -273,6 +274,7 @@ static value_t array_deserialize(size_t length, deserialize_state_t *state) {
     TRY_DEF(value, value_deserialize(state));
     set_array_at(result, i, value);
   }
+  TRY(ensure_frozen(state->runtime, result));
   return result;
 }
 

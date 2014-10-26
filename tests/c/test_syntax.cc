@@ -14,7 +14,7 @@ END_C_INCLUDES
 TEST(syntax, emitting) {
   CREATE_RUNTIME();
 
-  value_t ast = new_heap_literal_ast(runtime, yes());
+  value_t ast = new_heap_literal_ast(runtime, afFreeze, yes());
   assembler_t assm;
   ASSERT_SUCCESS(assembler_init(&assm, runtime, nothing(), scope_get_bottom()));
   ASSERT_SUCCESS(emit_value(ast, &assm));
@@ -64,7 +64,7 @@ TEST(syntax, parameter_order_index) {
   variant_t **elms = var_params->value.as_array.elements;                      \
   for (size_t i = 0; i < (N); i++) {                                           \
     value_t tags = variant_to_value(runtime, elms[i]);                         \
-    set_array_at(params, i, new_heap_parameter_ast(runtime,                    \
+    set_array_at(params, i, new_heap_parameter_ast(runtime, afFreeze,          \
         nothing(), tags, any_guard_ast));                                      \
   }                                                                            \
   size_t *ordering = calc_parameter_ast_ordering(&scratch, params);            \
@@ -77,7 +77,7 @@ TEST(syntax, param_ordering) {
   CREATE_RUNTIME();
   CREATE_TEST_ARENA();
 
-  value_t any_guard_ast = new_heap_guard_ast(runtime, gtAny, null());
+  value_t any_guard_ast = new_heap_guard_ast(runtime, afFreeze, gtAny, null());
 
   reusable_scratch_memory_t scratch;
   reusable_scratch_memory_init(&scratch);

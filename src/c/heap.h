@@ -217,4 +217,8 @@ void value_field_iter_init(value_field_iter_t *iter, value_t value);
 // argument, advances the iterator, and returns true. Otherwise returns false.
 bool value_field_iter_next(value_field_iter_t *iter, value_t **field_out);
 
+// Returns the offset within the given object of the last field returned from
+// this iterator.
+size_t value_field_iter_offset(value_field_iter_t *iter, value_t value);
+
 #endif // _HEAP

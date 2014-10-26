@@ -59,7 +59,8 @@ value_t transitively_validate_deep_frozen(runtime_t *runtime, value_t value,
     if (is_condition(ensured)) {
       // Deep freezing failed. Restore the object to its previous state and bail.
       set_value_mode_unchecked(runtime, value, vmFrozen);
-      TOPIC_INFO(Freeze, "Failed to validate deep frozen: %v", value);
+      TOPIC_INFO(Freeze, "Failed to validate %v@%x (= %2v)", value,
+          value_field_iter_offset(&iter, value), *field);
       return ensured;
     }
   }
@@ -97,13 +98,34 @@ bool try_validate_deep_frozen(runtime_t *runtime, value_t value,
   }
 }
 
+value_t ensure_id_hash_map_frozen(runtime_t *runtime, value_t value,
+    id_hash_map_freeze_mode_t mode) {
+  CHECK_FAMILY(ofIdHashMap, value);
+  TRY(ensure_frozen(runtime, value));
+  if (mode != mfShallow) {
+    id_hash_map_iter_t iter;
+    id_hash_map_iter_init(&iter, value);
+    while (id_hash_map_iter_advance(&iter)) {
+      value_t key = whatever();
+      value_t value = whatever();
+      id_hash_map_iter_get_current(&iter, &key, &value);
+      if (mode & mfFreezeKeys)
+        TRY(ensure_frozen(runtime, key));
+      if (mode & mfFreezeValues)
+        TRY(ensure_frozen(runtime, value));
+      ;
+    }
+  }
+  return success();
+}
+
 
 /// ## Freeze cheat
 
 FIXED_GET_MODE_IMPL(freeze_cheat, vmDeepFrozen);
 TRIVIAL_PRINT_ON_IMPL(FreezeCheat, freeze_cheat);
 
-ACCESSORS_IMPL(FreezeCheat, freeze_cheat, acNoCheck, 0, Value, value);
+FROZEN_ACCESSORS_IMPL(FreezeCheat, freeze_cheat, acNoCheck, 0, Value, value);
 
 value_t freeze_cheat_validate(value_t self) {
   VALIDATE_FAMILY(ofFreezeCheat, self);

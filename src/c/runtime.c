@@ -236,8 +236,8 @@ value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *run
 
   // Generate initialization for the per-family types.
 #define __CREATE_TYPE__(Name, name) do {                                       \
-  TRY_DEF(__display_name__, new_heap_utf8(runtime, new_c_string(#Name)));    \
-  TRY_SET(RAW_ROOT(roots, name##_type), new_heap_type(runtime, afMutable,      \
+  TRY_DEF(__display_name__, new_heap_utf8(runtime, new_c_string(#Name)));      \
+  TRY_SET(RAW_ROOT(roots, name##_type), new_heap_type(runtime, afFreeze,       \
       __display_name__));                                                      \
 } while (false);
   __CREATE_TYPE__(Integer, integer);
@@ -257,18 +257,6 @@ value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *run
       config, builtin_methodspace));
 
   TRY(ensure_frozen(runtime, builtin_methodspace));
-
-  // Ensure that the per-family types are all frozen. Doing this in two steps
-  // means that any modifications that have to be done to these types can be
-  // done before this point, while the types are still mutable.
-#define __FREEZE_TYPE__(Name, name)                                            \
-  TRY(ensure_frozen(runtime, RAW_ROOT(roots, name##_type)));
-  __FREEZE_TYPE__(Integer, integer);
-#define __FREEZE_FAMILY_TYPE_OPT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)\
-  SR(__FREEZE_TYPE__(Family, family),)
-  ENUM_HEAP_OBJECT_FAMILIES(__FREEZE_FAMILY_TYPE_OPT__)
-#undef __FREEZE_FAMILY_TYPE_OPT__
-#undef __FREEZE_TYPE__
 
   // Generate initialization for the per-phylum types.
 #define __CREATE_PHYLUM_TYPE__(Phylum, phylum, CM, SR)                         \
