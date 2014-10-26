@@ -208,35 +208,35 @@ void on_derived_object_exit(value_t self);
 #define OBJ_ADDR_HASH(VAL) new_integer((VAL).encoded)
 
 // Declare the behavior structs for all the families on one fell swoop.
-#define DECLARE_FAMILY_BEHAVIOR(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N) \
+#define DECLARE_FAMILY_BEHAVIOR(Family, family, MD, SR, MINOR, N) \
 extern family_behavior_t k##Family##Behavior;
 ENUM_HEAP_OBJECT_FAMILIES(DECLARE_FAMILY_BEHAVIOR)
 #undef DECLARE_FAMILY_BEHAVIOR
 
 // Declare the functions that implement the behaviors too, that way they can be
 // implemented wherever.
-#define __DECLARE_FAMILY_FUNCTIONS__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N) \
+#define __DECLARE_FAMILY_FUNCTIONS__(Family, family, MD, SR, MINOR, N) \
 value_t family##_validate(value_t value);                                      \
-ID(                                                                            \
+mfId MINOR (                                                                   \
   value_t family##_transient_identity_hash(value_t value,                      \
     hash_stream_t *stream, cycle_detector_t *detector);,                       \
   )                                                                            \
-ID(                                                                            \
+mfId MINOR (                                                                   \
   value_t family##_identity_compare(value_t a, value_t b,                      \
     cycle_detector_t *detector);,                                              \
   )                                                                            \
-CM(                                                                            \
+mfCm MINOR (                                                                   \
   value_t family##_ordering_compare(value_t a, value_t b);,                    \
   )                                                                            \
 void family##_print_on(value_t value, print_on_context_t *context);            \
-NL(                                                                            \
+mfNl MINOR (                                                                   \
   void get_##family##_layout(value_t value, heap_object_layout_t *layout_out);,\
   )                                                                            \
-PT(                                                                            \
+mfPt MINOR (                                                                   \
   value_t plankton_set_##family##_contents(value_t value, runtime_t *runtime,  \
     value_t contents);,                                                        \
   )                                                                            \
-PT(                                                                            \
+mfPt MINOR (                                                                   \
   value_t plankton_new_##family(runtime_t *runtime);,                          \
   )                                                                            \
 SR(                                                                            \
@@ -246,7 +246,7 @@ SR(                                                                            \
   value_t add_##family##_builtin_implementations(runtime_t *runtime,           \
     safe_value_t s_map);,                                                      \
   )                                                                            \
-FU(                                                                            \
+mfFu MINOR (                                                                   \
   void fixup_##family##_post_migrate(runtime_t *runtime, value_t new_heap_object,\
     value_t old_object);,                                                      \
   )                                                                            \
@@ -255,7 +255,7 @@ MD(,                                                                           \
   void set_##family##_mode_unchecked(runtime_t *runtime, value_t self,         \
       value_mode_t mode);                                                      \
   )                                                                            \
-OW(                                                                            \
+mfOw MINOR (                                                                   \
   value_t ensure_##family##_owned_values_frozen(runtime_t *runtime,            \
       value_t self);,                                                          \
   )

@@ -39,7 +39,7 @@ static value_t ctrino_get_builtin_type(builtin_arguments_t *args) {
       return type;                                                             \
   } while (false);
   // Match against the built-in families.
-#define __CHECK_BUILTIN_FAMILY_OPT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N) \
+#define __CHECK_BUILTIN_FAMILY_OPT__(Family, family, MD, SR, MINOR, N) \
   SR(__CHECK_BUILTIN_TYPE__(family),)
   ENUM_HEAP_OBJECT_FAMILIES(__CHECK_BUILTIN_FAMILY_OPT__)
 #undef __CHECK_BUILTIN_FAMILY_OPT__

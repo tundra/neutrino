@@ -125,7 +125,7 @@ typedef enum {
 #define __EMIT_MODAL_SPECIES__(family) , rk_fluid_##family##_species,          \
   rk_mutable_##family##_species, rk_frozen_##family##_species,                 \
   rk_deep_frozen_##family##_species
-#define __EMIT_PER_FAMILY_ENUMS__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N) \
+#define __EMIT_PER_FAMILY_ENUMS__(Family, family, MD, SR, MINOR, N)            \
   MD(                                                                          \
     __EMIT_MODAL_SPECIES__(family),                                            \
     __EMIT_COMPACT_SPECIES__(family))                                          \

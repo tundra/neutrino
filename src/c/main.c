@@ -46,11 +46,13 @@ static value_t safe_execute_syntax(runtime_t *runtime, safe_value_t s_program) {
   TRY_DEF(ambience, new_heap_ambience(runtime));
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   safe_value_t s_ambience = protect(pool, ambience);
+  // Forward declare these to avoid msvc complaining.
+  safe_value_t s_module, s_entry_point;
   E_BEGIN_TRY_FINALLY();
     value_t unbound_module = get_program_ast_module(deref(s_program));
     E_TRY_DEF(module, assemble_module(deref(s_ambience), unbound_module));
-    safe_value_t s_module = protect(pool, module);
-    safe_value_t s_entry_point = protect(pool, get_program_ast_entry_point(deref(s_program)));
+    s_module = protect(pool, module);
+    s_entry_point = protect(pool, get_program_ast_entry_point(deref(s_program)));
     E_TRY_DEF(code_block, safe_compile_expression(runtime, s_entry_point,
         s_module, scope_get_bottom()));
     E_RETURN(run_code_block(s_ambience, protect(pool, code_block)));

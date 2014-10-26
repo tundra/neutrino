@@ -173,7 +173,7 @@ value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *run
       runtime, &k##Family##Behavior, vmFrozen, rk_fluid_##family##_species));  \
   TRY_SET(RAW_ROOT(roots, deep_frozen_##family##_species), new_heap_modal_species(\
       runtime, &k##Family##Behavior, vmDeepFrozen, rk_fluid_##family##_species));
-#define __CREATE_OTHER_SPECIES__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)\
+#define __CREATE_OTHER_SPECIES__(Family, family, MD, SR, MINOR, N)             \
   MD(__CREATE_MODAL_SPECIES__(Family, family),__CREATE_COMPACT_SPECIES__(Family, family))
   ENUM_OTHER_HEAP_OBJECT_FAMILIES(__CREATE_OTHER_SPECIES__)
 #undef __CREATE_OTHER_SPECIES__
@@ -241,7 +241,7 @@ value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *run
       __display_name__));                                                      \
 } while (false);
   __CREATE_TYPE__(Integer, integer);
-#define __CREATE_FAMILY_TYPE_OPT__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)\
+#define __CREATE_FAMILY_TYPE_OPT__(Family, family, MD, SR, MINOR, N)           \
   SR(__CREATE_TYPE__(Family, family),)
   ENUM_HEAP_OBJECT_FAMILIES(__CREATE_FAMILY_TYPE_OPT__)
 #undef __CREATE_FAMILY_TYPE_OPT__
@@ -314,7 +314,7 @@ value_t roots_validate(value_t roots) {
   } while (false)
 
   // Generate validation for species.
-#define __VALIDATE_PER_FAMILY_FIELDS__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)\
+#define __VALIDATE_PER_FAMILY_FIELDS__(Family, family, MD, SR, MINOR, N)       \
   MD(                                                                          \
     VALIDATE_ALL_MODAL_SPECIES(of##Family, family),                            \
     VALIDATE_SPECIES(of##Family, RAW_ROOT(roots, family##_species)));          \

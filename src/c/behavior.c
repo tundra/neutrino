@@ -19,7 +19,7 @@
 // Is the given family in a modal division?
 static bool in_modal_division(heap_object_family_t family) {
   switch (family) {
-#define __GEN_CASE__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N)    \
+#define __GEN_CASE__(Family, family, MD, SR, MINOR, N)                         \
     MD(                                                                        \
       case of##Family: return true;,                                           \
       )
@@ -106,8 +106,8 @@ static void get_##family##_layout(value_t value, heap_object_layout_t *layout_ou
 
 // Generate all the trivial layout functions since we know what they'll look
 // like.
-#define __DEFINE_TRIVIAL_LAYOUT_FUNCTION__(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N) \
-NL(                                                                            \
+#define __DEFINE_TRIVIAL_LAYOUT_FUNCTION__(Family, family, MD, SR, MINOR, N)   \
+mfNl MINOR (                                                                   \
   ,                                                                            \
   __TRIVIAL_LAYOUT_FUNCTION__(Family, family))
   ENUM_HEAP_OBJECT_FAMILIES(__DEFINE_TRIVIAL_LAYOUT_FUNCTION__)
@@ -598,29 +598,29 @@ void on_derived_object_exit(value_t self) {
 // Define all the family behaviors in one go. Because of this, as soon as you
 // add a new object type you'll get errors for all the behaviors you need to
 // implement.
-#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N) \
+#define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, MD, SR, MINOR, N)        \
 family_behavior_t k##Family##Behavior = {                                      \
   of##Family,                                                                  \
-  true,                                                                        \
+  mfFz MINOR (false, true),                                                    \
   &family##_validate,                                                          \
-  ID(                                                                          \
+  mfId MINOR (                                                                 \
     &family##_transient_identity_hash,                                         \
     default_heap_heap_object_transient_identity_hash),                         \
-  ID(                                                                          \
+  mfId MINOR (                                                                 \
     &family##_identity_compare,                                                \
     &default_heap_heap_object_identity_compare),                               \
-  CM(                                                                          \
+  mfCm MINOR (                                                                 \
     &family##_ordering_compare,                                                \
     NULL),                                                                     \
   &family##_print_on,                                                          \
   &get_##family##_layout,                                                      \
-  PT(                                                                          \
+  mfPt MINOR (                                                                 \
     &plankton_set_##family##_contents,                                         \
     &plankton_set_contents_unsupported),                                       \
   SR(                                                                          \
     &get_##family##_primary_type,                                              \
     &get_internal_object_type),                                                \
-  FU(                                                                          \
+  mfFu MINOR (                                                                 \
     &fixup_##family##_post_migrate,                                            \
     NULL),                                                                     \
   MD(                                                                          \
@@ -629,7 +629,7 @@ family_behavior_t k##Family##Behavior = {                                      \
   MD(                                                                          \
     set_modal_heap_object_mode_unchecked,                                      \
     set_##family##_mode_unchecked),                                            \
-  OW(                                                                          \
+  mfOw MINOR (                                                                 \
     ensure_##family##_owned_values_frozen,                                     \
     NULL)                                                                      \
 };
