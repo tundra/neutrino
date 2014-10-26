@@ -48,7 +48,7 @@ value_t heap_object_validate(value_t value) {
   family_behavior_t *behavior = get_heap_object_family_behavior(value);
   CHECK_FALSE("Modal value with non-modal species",
       in_modal_division(behavior->family) && get_heap_object_division(value) != sdModal);
-  if (peek_deep_frozen(value))
+  if (peek_deep_frozen(value) && behavior->deep_frozen_field_validation)
     deep_frozen_heap_heap_object_validate(value);
   return (behavior->validate)(value);
 }
@@ -601,6 +601,7 @@ void on_derived_object_exit(value_t self) {
 #define DEFINE_OBJECT_FAMILY_BEHAVIOR(Family, family, CM, ID, PT, SR, NL, FU, EM, MD, OW, N) \
 family_behavior_t k##Family##Behavior = {                                      \
   of##Family,                                                                  \
+  true,                                                                        \
   &family##_validate,                                                          \
   ID(                                                                          \
     &family##_transient_identity_hash,                                         \

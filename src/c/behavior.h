@@ -62,6 +62,10 @@ typedef struct {
 struct family_behavior_t {
   // The family this behavior belongs to.
   heap_object_family_t family;
+  // Whether to validate that deep frozen instances have all deep frozen fields.
+  // If you're considering setting this to false you need a really really good
+  // reason.
+  bool deep_frozen_field_validation;
   // Function for validating an object.
   value_t (*validate)(value_t value);
   // Calculates the transient identity hash.
