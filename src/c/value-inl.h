@@ -235,15 +235,26 @@ SWALLOW_SEMI(gi)
 #define acIsSyntaxOpt(UNUSED, VALUE)                                           \
   CHECK_SYNTAX_FAMILY_OPT(VALUE)
 
-// Expands to an unchecked setter and a getter for the specified types.
-#define ACCESSORS_IMPL(Receiver, receiver, acValueCheck, VALUE_CHECK_ARG, Field, field) \
-void set_##receiver##_##field(value_t self, value_t value) {                   \
+// Expands to the same as ACCESSORS_IMPL but also gives a _frozen_ version of
+// setter which allows fields of frozen objects to be set.
+#define FROZEN_ACCESSORS_IMPL(Receiver, receiver, acValueCheck, VALUE_CHECK_ARG, Field, field) \
+void init_frozen_##receiver##_##field(value_t self, value_t value) {           \
   CHECK_FAMILY(of##Receiver, self);                                            \
   acValueCheck(VALUE_CHECK_ARG, value);                                        \
   *access_heap_object_field(self, k##Receiver##Field##Offset) = value;         \
 }                                                                              \
-GETTER_IMPL(Receiver, receiver, Field, field)
+ACCESSORS_IMPL(Receiver, receiver, acValueCheck, VALUE_CHECK_ARG, Field, field)
 
+// Expands to a setter and a getter for the specified types. The setter will
+// have a custom check on the value and a mutability check on the instance.
+#define ACCESSORS_IMPL(Receiver, receiver, acValueCheck, VALUE_CHECK_ARG, Field, field) \
+void set_##receiver##_##field(value_t self, value_t value) {                   \
+  CHECK_FAMILY(of##Receiver, self);                                            \
+  CHECK_MUTABLE(self);                                                         \
+  acValueCheck(VALUE_CHECK_ARG, value);                                        \
+  *access_heap_object_field(self, k##Receiver##Field##Offset) = value;         \
+}                                                                              \
+GETTER_IMPL(Receiver, receiver, Field, field)
 
 // Expands to a function that gets the specified field in the specified object
 // family.

@@ -5,6 +5,7 @@
 
 BEGIN_C_INCLUDES
 #include "alloc.h"
+#include "freeze.h"
 #include "interp.h"
 #include "safe-inl.h"
 #include "syntax.h"
@@ -46,59 +47,60 @@ TEST(interp, execution) {
   value_t subject_array = C(vArray(vValue(ROOT(runtime, subject_key))));
   value_t selector_array = C(vArray(vValue(ROOT(runtime, selector_key))));
   value_t basic_signature_params = new_heap_array(runtime, 2);
-  set_array_at(basic_signature_params, 0, new_heap_parameter_ast(
-      runtime, new_heap_symbol_ast(runtime, null(), null()), subject_array,
-      new_heap_guard_ast(runtime, gtAny, null())));
-  set_array_at(basic_signature_params, 1, new_heap_parameter_ast(
-      runtime, new_heap_symbol_ast(runtime, null(), null()), selector_array,
-      new_heap_guard_ast(runtime, gtEq,
-          new_heap_literal_ast(runtime, ROOT(runtime, op_call)))));
+  set_array_at(basic_signature_params, 0, new_heap_parameter_ast(runtime,
+      afFreeze, new_heap_symbol_ast(runtime, afFreeze, null(), null()), subject_array,
+      new_heap_guard_ast(runtime, afFreeze, gtAny, null())));
+  set_array_at(basic_signature_params, 1, new_heap_parameter_ast(runtime,
+      afFreeze, new_heap_symbol_ast(runtime, afFreeze, null(), null()), selector_array,
+      new_heap_guard_ast(runtime, afFreeze, gtEq,
+          new_heap_literal_ast(runtime, afFreeze, ROOT(runtime, op_call)))));
 
   // Literal
   {
-    value_t ast = new_heap_literal_ast(runtime, new_integer(121));
+    value_t ast = new_heap_literal_ast(runtime, afFreeze, new_integer(121));
     assert_ast_value(ambience, vInt(121), ast);
   }
 
   // Array
   {
     value_t elements = new_heap_array(runtime, 2);
-    set_array_at(elements, 0, new_heap_literal_ast(runtime, new_integer(98)));
-    set_array_at(elements, 1, new_heap_literal_ast(runtime, new_integer(87)));
-    value_t ast = new_heap_array_ast(runtime, elements);
+    set_array_at(elements, 0, new_heap_literal_ast(runtime, afFreeze, new_integer(98)));
+    set_array_at(elements, 1, new_heap_literal_ast(runtime, afFreeze, new_integer(87)));
+    value_t ast = new_heap_array_ast(runtime, afFreeze, elements);
     assert_ast_value(ambience, vArray(vInt(98), vInt(87)), ast);
   }
 
   // 0-element sequence
   {
-    value_t ast = new_heap_sequence_ast(runtime, ROOT(runtime, empty_array));
+    value_t ast = new_heap_sequence_ast(runtime, afFreeze, ROOT(runtime, empty_array));
     assert_ast_value(ambience, vNull(), ast);
   }
 
   // 1-element sequence
   {
     value_t values = new_heap_array(runtime, 1);
-    set_array_at(values, 0, new_heap_literal_ast(runtime, new_integer(98)));
-    value_t ast = new_heap_sequence_ast(runtime, values);
+    set_array_at(values, 0, new_heap_literal_ast(runtime, afFreeze, new_integer(98)));
+    value_t ast = new_heap_sequence_ast(runtime, afFreeze, values);
     assert_ast_value(ambience, vInt(98), ast);
   }
 
   // 2-element sequence
   {
     value_t values = new_heap_array(runtime, 2);
-    set_array_at(values, 0, new_heap_literal_ast(runtime, new_integer(98)));
-    set_array_at(values, 1, new_heap_literal_ast(runtime, new_integer(87)));
-    value_t ast = new_heap_sequence_ast(runtime, values);
+    set_array_at(values, 0, new_heap_literal_ast(runtime, afFreeze, new_integer(98)));
+    set_array_at(values, 1, new_heap_literal_ast(runtime, afFreeze, new_integer(87)));
+    value_t ast = new_heap_sequence_ast(runtime, afFreeze, values);
     assert_ast_value(ambience, vInt(87), ast);
   }
 
   // Simple local definition
   {
-    value_t sym = new_heap_symbol_ast(runtime, null(), null());
-    value_t var = new_heap_local_variable_ast(runtime, sym);
-    value_t ast = new_heap_local_declaration_ast(runtime, sym, no(),
-        new_heap_literal_ast(runtime, new_integer(3)), var);
+    value_t sym = new_heap_symbol_ast(runtime, afMutable, null(), null());
+    value_t var = new_heap_local_variable_ast(runtime, afFreeze, sym);
+    value_t ast = new_heap_local_declaration_ast(runtime, afFreeze, sym, no(),
+        new_heap_literal_ast(runtime, afFreeze, new_integer(3)), var);
     set_symbol_ast_origin(sym, ast);
+    ASSERT_SUCCESS(ensure_frozen(runtime, sym));
     assert_ast_value(ambience, vInt(3), ast);
   }
 
@@ -119,22 +121,25 @@ static void assert_compile_failure(runtime_t *runtime, value_t ast,
 TEST(interp, compile_errors) {
   CREATE_RUNTIME();
 
-  value_t l3 = new_heap_literal_ast(runtime, new_integer(3));
+  value_t l3 = new_heap_literal_ast(runtime, afFreeze, new_integer(3));
   // Redefinition of a local.
   {
-    value_t sym = new_heap_symbol_ast(runtime, null(), null());
-    value_t var = new_heap_local_variable_ast(runtime, sym);
-    value_t inner = new_heap_local_declaration_ast(runtime, sym, no(), l3, var);
-    value_t outer = new_heap_local_declaration_ast(runtime, sym, no(), l3, inner);
+    value_t sym = new_heap_symbol_ast(runtime, afFreeze, null(), null());
+    value_t var = new_heap_local_variable_ast(runtime, afFreeze, sym);
+    value_t inner = new_heap_local_declaration_ast(runtime, afFreeze, sym, no(),
+        l3, var);
+    value_t outer = new_heap_local_declaration_ast(runtime, afFreeze, sym, no(),
+        l3, inner);
     assert_compile_failure(runtime, outer, isSymbolAlreadyBound);
   }
 
   // Accessing an undefined symbol.
   {
-    value_t s0 = new_heap_symbol_ast(runtime, null(), null());
-    value_t s1 = new_heap_symbol_ast(runtime, null(), null());
-    value_t var = new_heap_local_variable_ast(runtime, s0);
-    value_t ast = new_heap_local_declaration_ast(runtime, s1, no(), l3, var);
+    value_t s0 = new_heap_symbol_ast(runtime, afFreeze, null(), null());
+    value_t s1 = new_heap_symbol_ast(runtime, afFreeze, null(), null());
+    value_t var = new_heap_local_variable_ast(runtime, afFreeze, s0);
+    value_t ast = new_heap_local_declaration_ast(runtime, afFreeze, s1, no(),
+        l3, var);
     assert_compile_failure(runtime, ast, isSymbolNotBound);
   }
 
@@ -158,27 +163,28 @@ TEST(interp, lookup_error) {
   value_t subject_array = C(vArray(vValue(ROOT(runtime, subject_key))));
   value_t selector_array = C(vArray(vValue(ROOT(runtime, selector_key))));
   value_t basic_signature_params = new_heap_array(runtime, 2);
-  set_array_at(basic_signature_params, 0, new_heap_parameter_ast(
-      runtime, new_heap_symbol_ast(runtime, null(), null()), subject_array,
-      new_heap_guard_ast(runtime, gtAny, null())));
-  set_array_at(basic_signature_params, 1, new_heap_parameter_ast(
-      runtime, new_heap_symbol_ast(runtime, null(), null()), selector_array,
-      new_heap_guard_ast(runtime, gtEq,
-          new_heap_literal_ast(runtime, ROOT(runtime, op_call)))));
-  value_t basic_signature = new_heap_signature_ast(runtime, basic_signature_params, no());
+  set_array_at(basic_signature_params, 0, new_heap_parameter_ast(runtime,
+      afFreeze, new_heap_symbol_ast(runtime, afFreeze, null(), null()), subject_array,
+      new_heap_guard_ast(runtime, afFreeze, gtAny, null())));
+  set_array_at(basic_signature_params, 1, new_heap_parameter_ast(runtime,
+      afFreeze, new_heap_symbol_ast(runtime, afFreeze, null(), null()), selector_array,
+      new_heap_guard_ast(runtime, afFreeze, gtEq,
+          new_heap_literal_ast(runtime, afFreeze, ROOT(runtime, op_call)))));
+  value_t basic_signature = new_heap_signature_ast(runtime, afFreeze,
+      basic_signature_params, no());
 
   value_t methods = new_heap_array(runtime, 1);
-  set_array_at(methods, 0, new_heap_method_ast(runtime, basic_signature,
-      new_heap_literal_ast(runtime, new_integer(13))));
-  value_t lam = new_heap_lambda_ast(runtime, methods);
-  value_t subject_arg = new_heap_argument_ast(runtime, ROOT(runtime, subject_key),
+  set_array_at(methods, 0, new_heap_method_ast(runtime, afFreeze, basic_signature,
+      new_heap_literal_ast(runtime, afFreeze, new_integer(13))));
+  value_t lam = new_heap_lambda_ast(runtime, afFreeze, methods);
+  value_t subject_arg = new_heap_argument_ast(runtime, afFreeze, ROOT(runtime, subject_key),
       lam);
-  value_t selector_arg = new_heap_argument_ast(runtime, ROOT(runtime, selector_key),
-      new_heap_literal_ast(runtime, new_integer(0)));
+  value_t selector_arg = new_heap_argument_ast(runtime, afFreeze, ROOT(runtime, selector_key),
+      new_heap_literal_ast(runtime, afFreeze, new_integer(0)));
   value_t args = new_heap_array(runtime, 2);
   set_array_at(args, 0, subject_arg);
   set_array_at(args, 1, selector_arg);
-  value_t ast = new_heap_invocation_ast(runtime, args);
+  value_t ast = new_heap_invocation_ast(runtime, afFreeze, args);
 
   log_validator_o validator;
   install_log_validator(&validator, validate_lookup_error, NULL);

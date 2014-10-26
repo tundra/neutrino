@@ -338,3 +338,15 @@ bool value_field_iter_next(value_field_iter_t *iter, value_t **value_out) {
     return true;
   }
 }
+
+size_t value_field_iter_offset(value_field_iter_t *iter, value_t value) {
+  if (!is_heap_object(value))
+    return 0;
+  heap_object_layout_t layout;
+  get_heap_object_layout(value, &layout);
+  address_t start = get_heap_object_address(value);
+  CHECK_PTREQ("iter offset using wrong value", iter->limit, start + layout.size);
+  // We want the offset of the last value returned, not the next one, so we have
+  // to go back one step from the current next.
+  return (iter->next - start) - kValueSize;
+}

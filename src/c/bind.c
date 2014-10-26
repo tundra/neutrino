@@ -4,6 +4,7 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "bind.h"
+#include "freeze.h"
 #include "interp.h"
 #include "runtime.h"
 #include "tagged.h"
@@ -49,7 +50,7 @@ static value_t binding_context_ensure_fragment_entry(binding_context_t *context,
   value_t stage_map = get_id_hash_map_at(path_map, path);
   if (!has_id_hash_map_at(stage_map, stage)) {
     TRY_DEF(imports, new_heap_array_buffer(runtime, 4));
-    TRY_DEF(ident, new_heap_identifier(runtime, stage, path));
+    TRY_DEF(ident, new_heap_identifier(runtime, afFreeze, stage, path));
     TRY_DEF(entry, new_heap_triple(runtime, fragment, imports, ident));
     TRY(set_id_hash_map_at(runtime, stage_map, stage, entry));
     *created = true;
@@ -129,6 +130,7 @@ static value_t apply_method_declaration(value_t ambience, value_t decl,
     set_method_flags(method, impl_flags);
   }
   value_t methodspace = get_module_fragment_methodspace(fragment);
+  TRY(ensure_frozen(runtime, method));
   TRY(add_methodspace_method(runtime, methodspace, method));
   return success();
 }
@@ -200,6 +202,13 @@ static value_t apply_module_fragment_elements(binding_context_t *context,
   return success();
 }
 
+static value_t ensure_module_fragment_frozen(runtime_t *runtime, value_t fragment) {
+  TRY(ensure_frozen(runtime, get_module_fragment_namespace(fragment)));
+  TRY(ensure_frozen(runtime, get_module_fragment_imports(fragment)));
+  TRY(ensure_frozen(runtime, fragment));
+  return success();
+}
+
 // Binds an individual module fragment.
 static value_t bind_module_fragment(binding_context_t *context,
     value_t entry, value_t bound_module, value_t bound_fragment) {
@@ -211,13 +220,6 @@ static value_t bind_module_fragment(binding_context_t *context,
       get_module_fragment_stage(bound_fragment));
   if (!in_condition_cause(ccNotFound, predecessor))
     set_module_fragment_predecessor(bound_fragment, predecessor);
-  // Set the fragment's private successor.
-  value_t stage = get_module_fragment_stage(bound_fragment);
-  runtime_t *runtime = get_ambience_runtime(context->ambience);
-  value_t successor = get_or_create_module_fragment_at(runtime, bound_module,
-      get_stage_offset_successor(stage), NULL);
-  value_t phrivate = get_module_fragment_private(bound_fragment);
-  set_module_fragment_private_successor(phrivate, successor);
   if (!is_nothing(unbound_fragment)) {
     // This is a real fragment so we have to apply the entries.
     CHECK_FAMILY(ofUnboundModuleFragment, unbound_fragment);
@@ -228,6 +230,8 @@ static value_t bind_module_fragment(binding_context_t *context,
     TRY(apply_module_fragment_elements(context, unbound_fragment, bound_fragment));
   }
   set_module_fragment_epoch(bound_fragment, feComplete);
+  runtime_t *runtime = get_ambience_runtime(context->ambience);
+  TRY(ensure_module_fragment_frozen(runtime, bound_fragment));
   return success();
 }
 
@@ -361,7 +365,8 @@ static value_t build_real_fragment_entries(binding_context_t *context,
       value_t fragment_imports = get_unbound_module_fragment_imports(fragment);
       for (size_t ii = 0; ii < get_array_length(fragment_imports); ii++) {
         value_t import = get_array_at(fragment_imports, ii);
-        TRY_DEF(ident, new_heap_identifier(runtime, present_stage(), import));
+        TRY_DEF(ident, new_heap_identifier(runtime, afFreeze, present_stage(),
+            import));
         TRY(ensure_array_buffer_contains(runtime, imports, ident));
       }
     }

@@ -113,6 +113,19 @@ bool try_validate_deep_frozen(runtime_t *runtime, value_t value,
 value_t validate_deep_frozen(runtime_t *runtime, value_t value,
     value_t *offender_out);
 
+typedef enum {
+  mfShallow = 0x0,
+  mfFreezeValues = 0x1,
+  mfFreezeKeys = 0x2,
+  mfFreezeKeysAndValues = 0x3
+} id_hash_map_freeze_mode_t;
+
+// Ensures that an id hash map is frozen. If you pass mfShallow this works the
+// same way as just ensure_freezing a map value but the other modes will also
+// freeze the values and/or keys -- shallowly though, to freeze deeper through
+// them you have to write custom code.
+value_t ensure_id_hash_map_frozen(runtime_t *runtime, value_t value,
+    id_hash_map_freeze_mode_t mode);
 
 /// ## Freeze cheat
 ///
@@ -126,7 +139,7 @@ static const size_t kFreezeCheatSize = HEAP_OBJECT_SIZE(1);
 static const size_t kFreezeCheatValueOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The raw value currently held by this freeze cheat.
-ACCESSORS_DECL(freeze_cheat, value);
+FROZEN_ACCESSORS_DECL(freeze_cheat, value);
 
 
 #endif // _FREEZE

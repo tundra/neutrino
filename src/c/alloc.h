@@ -164,8 +164,7 @@ value_t new_heap_module_fragment(runtime_t *runtime, value_t stage, value_t path
     value_t predecessor, value_t nspace, value_t methodspace, value_t imports);
 
 // Creates a new module fragment private access object.
-value_t new_heap_module_fragment_private(runtime_t *runtime, value_t owner,
-    value_t successor);
+value_t new_heap_module_fragment_private(runtime_t *runtime, value_t owner);
 
 // Creates a new empty bound module with the given path.
 value_t new_heap_empty_module(runtime_t *runtime, value_t path);
@@ -180,7 +179,8 @@ value_t new_heap_path(runtime_t *runtime, alloc_flags_t flags, value_t head,
 
 // Creates a new path with segments taken from the given array of names,
 // starting from the given offset.
-value_t new_heap_path_with_names(runtime_t *runtime, value_t names, size_t offset);
+value_t new_heap_path_with_names(runtime_t *runtime, alloc_flags_t flags,
+    value_t names, size_t offset);
 
 // Creates a new unknown object with the given header and payload.
 value_t new_heap_unknown(runtime_t *runtime, value_t header, value_t payload);
@@ -294,100 +294,114 @@ value_t new_heap_builtin_implementation(runtime_t *runtime, alloc_flags_t flags,
 // --- S y n t a x ---
 
 // Creates a new literal syntax tree with the given value.
-value_t new_heap_literal_ast(runtime_t *runtime, value_t value);
-
-// Creates a new array syntax tree with the given element array.
-value_t new_heap_array_ast(runtime_t *runtime, value_t elements);
-
-// Creates a new invocation syntax tree with the given arguments.
-value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments);
-
-// Creates a new call literal syntax tree with the given arguments.
-value_t new_heap_call_literal_ast(runtime_t *runtime, value_t arguments);
-
-// Creates a new call literal argument.
-value_t new_heap_call_literal_argument_ast(runtime_t *runtime, value_t tag,
+value_t new_heap_literal_ast(runtime_t *runtime, alloc_flags_t flags,
     value_t value);
 
+// Creates a new array syntax tree with the given element array.
+value_t new_heap_array_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t elements);
+
+// Creates a new invocation syntax tree with the given arguments.
+value_t new_heap_invocation_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t arguments);
+
+// Creates a new call literal syntax tree with the given arguments.
+value_t new_heap_call_literal_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t arguments);
+
+// Creates a new call literal argument.
+value_t new_heap_call_literal_argument_ast(runtime_t *runtime,  alloc_flags_t flags,
+    value_t tag, value_t value);
+
 // Creates a new signal syntax tree with the given arguments.
-value_t new_heap_signal_ast(runtime_t *runtime, value_t escape, value_t arguments,
-    value_t defawlt);
+value_t new_heap_signal_ast(runtime_t *runtime,  alloc_flags_t flags,
+    value_t escape, value_t arguments, value_t defawlt);
 
 // Creates a new signal handler syntax tree.
-value_t new_heap_signal_handler_ast(runtime_t *runtime, value_t body,
+value_t new_heap_signal_handler_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t body,
     value_t handlers);
 
 // Creates a new ensure syntax tree with the given components.
-value_t new_heap_ensure_ast(runtime_t *runtime, value_t body, value_t on_exit);
+value_t new_heap_ensure_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t body, value_t on_exit);
 
 // Creates a new argument syntax tree with the given tag and value.
-value_t new_heap_argument_ast(runtime_t *runtime, value_t tag, value_t value);
+value_t new_heap_argument_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t tag, value_t value);
 
 // Creates a new sequence syntax tree with the given values.
-value_t new_heap_sequence_ast(runtime_t *runtime, value_t values);
+value_t new_heap_sequence_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t values);
 
 // Creates a new local declaration syntax tree with the given attributes.
-value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
-    value_t is_mutable, value_t value, value_t body);
+value_t new_heap_local_declaration_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t symbol, value_t is_mutable, value_t value, value_t body);
 
 // Creates a new block syntax tree with the given attributes.
-value_t new_heap_block_ast(runtime_t *runtime, value_t symbol, value_t methods,
-    value_t body);
+value_t new_heap_block_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t symbol, value_t methods, value_t body);
 
 // Creates a new with_escape syntax tree with the given attributes.
-value_t new_heap_with_escape_ast(runtime_t *runtime, value_t symbol,
-    value_t body);
+value_t new_heap_with_escape_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t symbol, value_t body);
 
 // Creates a new local variable syntax tree with the given symbol.
-value_t new_heap_local_variable_ast(runtime_t *runtime, value_t symbol);
+value_t new_heap_local_variable_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t symbol);
 
 // Creates a new assignment of the given value to the given variable.
-value_t new_heap_variable_assignment_ast(runtime_t *runtime, value_t target,
-    value_t value);
+value_t new_heap_variable_assignment_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t target, value_t value);
 
 // Creates a new namespace variable syntax tree with the given name.
-value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t ident);
+value_t new_heap_namespace_variable_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t ident);
 
 // Creates a new symbol syntax tree with the given name and origin.
-value_t new_heap_symbol_ast(runtime_t *runtime, value_t name, value_t origin);
+value_t new_heap_symbol_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t name, value_t origin);
 
 // Creates a new lambda syntax tree with the given attributes.
-value_t new_heap_lambda_ast(runtime_t *runtime, value_t methods);
+value_t new_heap_lambda_ast(runtime_t *runtime, alloc_flags_t flags, value_t methods);
 
 // Creates a new parameter syntax tree with the given attributes.
-value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags,
-    value_t guard);
+value_t new_heap_parameter_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t symbol, value_t tags, value_t guard);
 
 // Creates a new guard syntax tree with the given attributes.
-value_t new_heap_guard_ast(runtime_t *runtime, guard_type_t type, value_t value);
+value_t new_heap_guard_ast(runtime_t *runtime, alloc_flags_t flags,
+    guard_type_t type, value_t value);
 
 // Creates a new signature syntax tree with the given parameters.
-value_t new_heap_signature_ast(runtime_t *runtime, value_t parameters,
-    value_t allow_extra);
+value_t new_heap_signature_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t parameters, value_t allow_extra);
 
 // Creates a new method ast with the given attributes.
-value_t new_heap_method_ast(runtime_t *runtime, value_t signature, value_t body);
+value_t new_heap_method_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t signature, value_t body);
 
 // Creates a new program syntax tree with the given elements.
-value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point,
-    value_t module);
+value_t new_heap_program_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t entry_point, value_t module);
 
 // Creates a new identifier with the given path and stage.
-value_t new_heap_identifier(runtime_t *runtime, value_t stage, value_t path);
+value_t new_heap_identifier(runtime_t *runtime, alloc_flags_t flags,
+    value_t stage, value_t path);
 
 // Creates a new namespace declaration syntax tree with the given path bound
 // to the given name.
-value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t annotations,
-    value_t path, value_t value);
+value_t new_heap_namespace_declaration_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t annotations, value_t path, value_t value);
 
 // Creates a new method declaration that declares the given method.
-value_t new_heap_method_declaration_ast(runtime_t *runtime, value_t annotations,
-    value_t method);
+value_t new_heap_method_declaration_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t annotations, value_t method);
 
 // Creates a new is declaration that declares the given subtype to have the
 // given supertype.
-value_t new_heap_is_declaration_ast(runtime_t *runtime, value_t subtype,
-    value_t supertype);
+value_t new_heap_is_declaration_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t subtype, value_t supertype);
 
 // Creates a new current module accessor ast.
 value_t new_heap_current_module_ast(runtime_t *runtime);

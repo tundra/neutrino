@@ -94,7 +94,9 @@ static value_t ensure_method_code(runtime_t *runtime, value_t method) {
   value_t code = get_method_code(method);
   if (is_nothing(code)) {
     TRY_SET(code, compile_method(runtime, method));
-    set_method_code(method, code);
+    // TODO: this is not an initialization, it needs to be changed to a freeze
+    // cheat.
+    init_frozen_method_code(method, code);
   }
   return code;
 }

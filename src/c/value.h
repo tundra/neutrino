@@ -374,28 +374,28 @@ static inline value_t chase_moved_object(value_t raw) {
   /*     ---    below must not affect correctness. If it does they must be    ---   */\
   /*     ---    moved above the line.                                         ---   */\
   F(Ambience,                ambience,                  _, _, _, _, X, _, _, _, _, 65)\
-  F(ArgumentAst,             argument_ast,              _, _, X, X, _, _, _, _, _,  9)\
+  F(ArgumentAst,             argument_ast,              _, _, X, X, _, _, _, X, _,  9)\
   F(ArgumentMapTrie,         argument_map_trie,         _, _, _, _, _, _, _, X, X,  7)\
   F(Array,                   array,                     _, X, _, X, X, _, _, X, _, 11)\
-  F(ArrayAst,                array_ast,                 _, _, X, X, _, _, X, _, _, 10)\
+  F(ArrayAst,                array_ast,                 _, _, X, X, _, _, X, X, _, 10)\
   F(ArrayBuffer,             array_buffer,              _, _, _, X, _, _, _, X, X, 34)\
   F(AsciiStringView,         ascii_string_view,         _, _, _, X, _, _, _, _, _, 85)\
   F(Backtrace,               backtrace,                 _, _, _, X, _, _, _, _, _, 54)\
   F(BacktraceEntry,          backtrace_entry,           _, _, _, _, _, _, _, _, _, 64)\
   F(Blob,                    blob,                      _, _, _, X, X, _, _, _, _, 63)\
   F(Block,                   block,                     _, _, _, X, _, _, _, X, _, 73)\
-  F(BlockAst,                block_ast,                 _, _, X, X, _, _, X, _, _, 72)\
+  F(BlockAst,                block_ast,                 _, _, X, X, _, _, X, X, _, 72)\
   F(BuiltinImplementation,   builtin_implementation,    _, _, _, _, _, _, _, X, _,  6)\
   F(BuiltinMarker,           builtin_marker,            _, _, _, X, _, _, _, _, _, 43)\
   F(CallData,                call_data,                 _, _, _, X, _, _, _, X, _, 76)\
-  F(CallLiteralArgumentAst,  call_literal_argument_ast, _, _, X, _, _, _, _, _, _, 80)\
-  F(CallLiteralAst,          call_literal_ast,          _, _, X, _, _, _, X, _, _, 79)\
+  F(CallLiteralArgumentAst,  call_literal_argument_ast, _, _, X, _, _, _, _, X, _, 80)\
+  F(CallLiteralAst,          call_literal_ast,          _, _, X, _, _, _, X, X, _, 79)\
   F(CallTags,                call_tags,                 _, X, _, _, _, _, _, X, X, 66)\
   F(CObject,                 c_object,                  _, _, _, X, X, _, _, _, _, 67)\
   F(CodeBlock,               code_block,                _, _, _, _, _, _, _, X, X, 49)\
   F(CurrentModuleAst,        current_module_ast,        _, _, X, _, _, _, X, _, _, 61)\
   F(DecimalFraction,         decimal_fraction,          _, _, X, _, _, _, _, _, _, 25)\
-  F(EnsureAst,               ensure_ast,                _, _, X, X, _, _, X, _, _, 74)\
+  F(EnsureAst,               ensure_ast,                _, _, X, X, _, _, X, X, _, 74)\
   F(Escape,                  escape,                    _, _, _, X, _, _, _, _, _, 50)\
   F(Factory,                 factory,                   _, _, _, _, _, _, _, _, _,  5)\
   F(FifoBuffer,              fifo_buffer,               _, _, _, _, _, _, _, _, _, 81)\
@@ -403,22 +403,22 @@ static inline value_t chase_moved_object(value_t raw) {
   F(Function,                function,                  _, _, _, X, _, _, _, X, _, 56)\
   F(GlobalField,             global_field,              _, _, _, X, _, _, _, _, _, 31)\
   F(Guard,                   guard,                     _, _, _, _, _, _, _, X, _, 30)\
-  F(GuardAst,                guard_ast,                 _, _, X, X, _, _, _, _, _, 38)\
-  F(Identifier,              identifier,                X, X, X, _, _, _, _, _, _, 27)\
+  F(GuardAst,                guard_ast,                 _, _, X, X, _, _, _, X, _, 38)\
+  F(Identifier,              identifier,                X, X, X, _, _, _, _, X, _, 27)\
   F(IdHashMap,               id_hash_map,               _, _, _, X, _, X, _, X, X, 24)\
   F(Instance,                instance,                  _, _, X, X, _, _, _, _, _, 60)\
   F(InstanceManager,         instance_manager,          _, _, _, X, _, _, _, _, _,  3)\
-  F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, _, _,  4)\
-  F(IsDeclarationAst,        is_declaration_ast,        _, _, X, _, _, _, _, _, _, 21)\
+  F(InvocationAst,           invocation_ast,            _, _, X, X, _, _, X, X, _,  4)\
+  F(IsDeclarationAst,        is_declaration_ast,        _, _, X, _, _, _, _, X, _, 21)\
   F(Lambda,                  lambda,                    _, _, _, X, _, _, _, X, X, 47)\
-  F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, _, _, 69)\
+  F(LambdaAst,               lambda_ast,                _, _, X, X, _, _, X, X, _, 69)\
   F(Library,                 library,                   _, _, X, _, _, _, _, _, _, 37)\
-  F(LiteralAst,              literal_ast,               _, _, X, X, _, _, X, _, _, 40)\
-  F(LocalDeclarationAst,     local_declaration_ast,     _, _, X, X, _, _, X, _, _, 20)\
-  F(LocalVariableAst,        local_variable_ast,        _, _, X, X, _, _, X, _, _, 12)\
+  F(LiteralAst,              literal_ast,               _, _, X, X, _, _, X, X, _, 40)\
+  F(LocalDeclarationAst,     local_declaration_ast,     _, _, X, X, _, _, X, X, _, 20)\
+  F(LocalVariableAst,        local_variable_ast,        _, _, X, X, _, _, X, X, _, 12)\
   F(Method,                  method,                    _, _, _, _, _, _, _, X, _, 59)\
   F(MethodAst,               method_ast,                _, _, X, X, _, _, _, X, _, 29)\
-  F(MethodDeclarationAst,    method_declaration_ast,    _, _, X, _, _, _, _, _, _, 18)\
+  F(MethodDeclarationAst,    method_declaration_ast,    _, _, X, _, _, _, _, X, _, 18)\
   F(Methodspace,             methodspace,               _, _, _, _, _, _, _, X, X,  1)\
   F(Module,                  module,                    _, _, _, _, _, _, _, X, X, 62)\
   F(ModuleFragment,          module_fragment,           _, _, _, _, _, _, _, X, X, 16)\
@@ -426,36 +426,36 @@ static inline value_t chase_moved_object(value_t raw) {
   F(ModuleLoader,            module_loader,             _, _, _, _, _, _, _, _, _, 13)\
   F(MutableRoots,            mutable_roots,             _, _, _, _, _, _, _, X, X, 41)\
   F(Namespace,               namespace,                 _, _, _, _, _, _, _, X, X, 28)\
-  F(NamespaceDeclarationAst, namespace_declaration_ast, _, _, X, _, _, _, _, _, _, 44)\
-  F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, _, _, 42)\
+  F(NamespaceDeclarationAst, namespace_declaration_ast, _, _, X, _, _, _, _, X, _, 44)\
+  F(NamespaceVariableAst,    namespace_variable_ast,    _, _, X, X, _, _, X, X, _, 42)\
   F(Operation,               operation,                 _, X, X, X, _, _, _, X, _, 46)\
   F(Options,                 options,                   _, _, X, _, _, _, _, _, _, 14)\
   F(Parameter,               parameter,                 _, _, _, _, _, _, _, X, _, 51)\
-  F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, _, _,  8)\
+  F(ParameterAst,            parameter_ast,             _, _, X, X, _, _, _, X, _,  8)\
   F(Path,                    path,                      X, X, X, X, _, _, _, X, _, 36)\
   F(Process,                 process,                   _, _, _, _, _, _, _, _, _, 83)\
-  F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, _, _, 17)\
+  F(ProgramAst,              program_ast,               _, _, X, _, _, _, _, X, _, 17)\
   F(Promise,                 promise,                   _, _, _, X, _, _, _, _, _, 78)\
   F(Reference,               reference,                 _, _, _, _, _, _, _, X, _, 68)\
   F(Roots,                   roots,                     _, _, _, _, _, _, _, X, X,  2)\
-  F(SequenceAst,             sequence_ast,              _, _, X, X, _, _, X, _, _, 35)\
-  F(SignalAst,               signal_ast,                _, _, X, X, _, _, X, _, _, 48)\
-  F(SignalHandlerAst,        signal_handler_ast,        _, _, X, X, _, _, X, _, _, 75)\
+  F(SequenceAst,             sequence_ast,              _, _, X, X, _, _, X, X, _, 35)\
+  F(SignalAst,               signal_ast,                _, _, X, X, _, _, X, X, _, 48)\
+  F(SignalHandlerAst,        signal_handler_ast,        _, _, X, X, _, _, X, X, _, 75)\
   F(Signature,               signature,                 _, _, _, _, _, _, _, X, X, 53)\
-  F(SignatureAst,            signature_ast,             _, _, X, X, _, _, _, _, _, 19)\
+  F(SignatureAst,            signature_ast,             _, _, X, X, _, _, _, X, _, 19)\
   F(SignatureMap,            signature_map,             _, _, _, _, _, _, _, X, X, 45)\
   F(Stack,                   stack,                     _, _, _, _, _, _, _, _, _, 71)\
   F(StackPiece,              stack_piece,               _, _, _, _, X, _, _, _, _, 58)\
-  F(SymbolAst,               symbol_ast,                _, _, X, X, _, _, _, _, _, 33)\
+  F(SymbolAst,               symbol_ast,                _, _, X, X, _, _, _, X, _, 33)\
   F(Task,                    task,                      _, _, _, _, _, _, _, _, _, 82)\
   F(Type,                    type,                      _, _, X, X, _, _, _, X, _, 32)\
   F(UnboundModule,           unbound_module,            _, _, X, _, _, _, _, _, _, 55)\
   F(UnboundModuleFragment,   unbound_module_fragment,   _, _, X, _, _, _, _, _, _, 52)\
   F(Unknown,                 unknown,                   _, _, X, _, _, _, _, _, _, 15)\
   F(Utf8,                    utf8,                      X, X, _, X, X, _, _, _, _, 57)\
-  F(VariableAssignmentAst,   variable_assignment_ast,   _, _, X, _, _, _, X, _, _, 22)\
+  F(VariableAssignmentAst,   variable_assignment_ast,   _, _, X, _, _, _, X, X, _, 22)\
   F(VoidP,                   void_p,                    _, _, _, _, X, _, _, _, _, 26)\
-  F(WithEscapeAst,           with_escape_ast,           _, _, X, _, _, _, X, _, _, 23)
+  F(WithEscapeAst,           with_escape_ast,           _, _, X, _, _, _, X, X, _, 23)
 
 // The next ordinal to use when adding a family. This isn't actually used in the
 // code it's just a reminder. Remember to update it when adding families. The
@@ -590,6 +590,15 @@ TYPED_GETTER_DECL(receiver, type_t, field)
 #define ACCESSORS_DECL(receiver, field)                                        \
 TYPED_SETTER_DECL(receiver, value_t, field);                                   \
 TYPED_GETTER_DECL(receiver, value_t, field)
+
+// Expands to declarations of a getter and a normal and frozen setter for the
+// specified field in the specified object. You typically only need the frozen
+// setter for non-modal objects that are always frozen, for modal objects the
+// object being frozen typically means there's a reason you shouldn't set its
+// fields.
+#define FROZEN_ACCESSORS_DECL(receiver, field)                                 \
+void init_frozen_##receiver##_##field(value_t self, value_t value);            \
+ACCESSORS_DECL(receiver, field)
 
 // Expands to declarations of a getter and setter for the specified field in the
 // specified object.
@@ -1028,7 +1037,7 @@ static const size_t kAsciiStringViewSize = HEAP_OBJECT_SIZE(1);
 static const size_t kAsciiStringViewValueOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The underlying string.
-ACCESSORS_DECL(ascii_string_view, value);
+FROZEN_ACCESSORS_DECL(ascii_string_view, value);
 
 
 // --- B l o b ---
@@ -1441,7 +1450,7 @@ static const size_t kInstanceManagerSize = HEAP_OBJECT_SIZE(1);
 static const size_t kInstanceManagerDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The display name to show for this instance manager.
-ACCESSORS_DECL(instance_manager, display_name);
+FROZEN_ACCESSORS_DECL(instance_manager, display_name);
 
 
 // --- F a c t o r y ---
@@ -1456,7 +1465,7 @@ static const size_t kFactorySize = HEAP_OBJECT_SIZE(1);
 static const size_t kFactoryConstructorOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The constructor function for this factory wrapped in a void-p.
-ACCESSORS_DECL(factory, constructor);
+FROZEN_ACCESSORS_DECL(factory, constructor);
 
 
 //  --- C o d e   b l o c k ---
@@ -1595,15 +1604,11 @@ value_t get_module_fragment_predecessor_at(value_t self, value_t stage);
 
 // --- M o d u l e   f r a g m e n t   p r i v a t e ---
 
-static const size_t kModuleFragmentPrivateSize = HEAP_OBJECT_SIZE(2);
+static const size_t kModuleFragmentPrivateSize = HEAP_OBJECT_SIZE(1);
 static const size_t kModuleFragmentPrivateOwnerOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kModuleFragmentPrivateSuccessorOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // Returns the module fragment that this private object provides access to.
 ACCESSORS_DECL(module_fragment_private, owner);
-
-// The owner's successor module.
-ACCESSORS_DECL(module_fragment_private, successor);
 
 // Looks up a path in the given fragment, scanning backwards through the
 // fragment's predecessors if necessary. If for any reason the binding cannot be
@@ -1731,14 +1736,14 @@ static const size_t kDecimalFractionDenominatorOffset = HEAP_OBJECT_FIELD_OFFSET
 static const size_t kDecimalFractionPrecisionOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // The fraction numerator.
-ACCESSORS_DECL(decimal_fraction, numerator);
+FROZEN_ACCESSORS_DECL(decimal_fraction, numerator);
 
 // Log-10 of the fraction denominator.
-ACCESSORS_DECL(decimal_fraction, denominator);
+FROZEN_ACCESSORS_DECL(decimal_fraction, denominator);
 
 // The precision of the fraction, represented as a delta on the denominator.
 // Under most circumstances equal to the number of leading zeros.
-ACCESSORS_DECL(decimal_fraction, precision);
+FROZEN_ACCESSORS_DECL(decimal_fraction, precision);
 
 
 // --- G l o b a l   f i e l d ---
@@ -1747,7 +1752,7 @@ static const size_t kGlobalFieldSize = HEAP_OBJECT_SIZE(1);
 static const size_t kGlobalFieldDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The display name which is used to identify the field.
-ACCESSORS_DECL(global_field, display_name);
+FROZEN_ACCESSORS_DECL(global_field, display_name);
 
 
 // --- R e f e r e n c e ---

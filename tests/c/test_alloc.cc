@@ -116,7 +116,7 @@ TEST(alloc, void_p) {
 TEST(alloc, literal) {
   CREATE_RUNTIME();
 
-  value_t lit = new_heap_literal_ast(runtime, new_integer(0));
+  value_t lit = new_heap_literal_ast(runtime, afFreeze, new_integer(0));
   ASSERT_FAMILY(ofLiteralAst, lit);
   ASSERT_VALEQ(new_integer(0), get_literal_ast_value(lit));
 

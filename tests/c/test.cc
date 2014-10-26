@@ -352,7 +352,7 @@ value_t expand_variant_to_identifier(runtime_t *runtime, variant_value_t *value)
   CHECK_EQ("invalid identifier variant input", 2, value->as_array.length);
   TRY_DEF(stage, C(value->as_array.elements[0]));
   TRY_DEF(path, C(value->as_array.elements[1]));
-  return new_heap_identifier(runtime, stage, path);
+  return new_heap_identifier(runtime, afFreeze, stage, path);
 }
 
 value_t expand_variant_to_signature(runtime_t *runtime, variant_value_t *value) {

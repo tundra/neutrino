@@ -215,7 +215,7 @@ static const size_t kMethodFlagsOffset = HEAP_OBJECT_FIELD_OFFSET(4);
 ACCESSORS_DECL(method, signature);
 
 // The compiled method implementation. This may or may not be set.
-ACCESSORS_DECL(method, code);
+FROZEN_ACCESSORS_DECL(method, code);
 
 // The syntax of the implementation of the method.
 ACCESSORS_DECL(method, syntax);

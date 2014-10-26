@@ -32,7 +32,7 @@ static bool in_modal_division(heap_object_family_t family) {
 
 // Validate that a given deep frozen object only points to other deep frozen
 // objects.
-static void deep_frozen_heap_heap_object_validate(value_t value) {
+static void deep_frozen_heap_object_validate(value_t value) {
   value_field_iter_t iter;
   value_field_iter_init(&iter, value);
   value_t *field = NULL;
@@ -49,7 +49,7 @@ value_t heap_object_validate(value_t value) {
   CHECK_FALSE("Modal value with non-modal species",
       in_modal_division(behavior->family) && get_heap_object_division(value) != sdModal);
   if (peek_deep_frozen(value) && behavior->deep_frozen_field_validation)
-    deep_frozen_heap_heap_object_validate(value);
+    deep_frozen_heap_object_validate(value);
   return (behavior->validate)(value);
 }
 

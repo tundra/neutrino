@@ -4,15 +4,20 @@ import os.path
 import sys
 
 # Build the location of the gdb script.
-script_root = os.path.join('.', 'neutrino', 'misc', 'gdb')
+src_path = os.environ.get('NEUTRINO_SRC', None)
+if src_path is None:
+  src_path = './neutrino'
+script_root = os.path.join(src_path, 'misc', 'gdb')
 
 # Push the script's root onto the path stack, import it, then pop it back off.
 sys.path.append(script_root)
 try:
   import neutrino_gdb
   neutrino_gdb.register_printers()
-except ImportError, e:
+  print("Successfully registered neutrino printers")
+except ImportError as e:
   pass
-sys.path.remove(script_root)
+finally:
+  sys.path.remove(script_root)
 
 end

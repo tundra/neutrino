@@ -66,7 +66,7 @@ value_t new_heap_ascii_string_view(runtime_t *runtime, value_t value) {
   size_t size = kAsciiStringViewSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, ascii_string_view_species)));
-  set_ascii_string_view_value(result, value);
+  init_frozen_ascii_string_view_value(result, value);
   return post_create_sanity_check(result, size);
 
 }
@@ -307,7 +307,7 @@ value_t new_heap_instance_manager(runtime_t *runtime, value_t display_name) {
   size_t size = kInstanceManagerSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, instance_manager_species)));
-  set_instance_manager_display_name(result, display_name);
+  init_frozen_instance_manager_display_name(result, display_name);
   return post_create_sanity_check(result, size);
 }
 
@@ -324,7 +324,7 @@ value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr) {
   size_t size = kFactorySize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, factory_species)));
-  set_factory_constructor(result, constr_wrapper);
+  init_frozen_factory_constructor(result, constr_wrapper);
   return post_create_sanity_check(result, size);
 }
 
@@ -405,7 +405,7 @@ value_t new_heap_module_fragment(runtime_t *runtime, value_t stage, value_t path
   CHECK_FAMILY_OPT(ofNamespace, nspace);
   CHECK_FAMILY_OPT(ofMethodspace, methodspace);
   CHECK_FAMILY_OPT(ofIdHashMap, imports);
-  TRY_DEF(phrivate, new_heap_module_fragment_private(runtime, nothing(), nothing()));
+  TRY_DEF(phrivate, new_heap_module_fragment_private(runtime, nothing()));
   size_t size = kModuleFragmentSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_module_fragment_species)));
@@ -421,13 +421,11 @@ value_t new_heap_module_fragment(runtime_t *runtime, value_t stage, value_t path
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_module_fragment_private(runtime_t *runtime, value_t owner,
-    value_t successor) {
+value_t new_heap_module_fragment_private(runtime_t *runtime, value_t owner) {
   size_t size = kModuleFragmentPrivateSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
         ROOT(runtime, mutable_module_fragment_private_species)));
   set_module_fragment_private_owner(result, owner);
-  set_module_fragment_private_successor(result, successor);
   return post_create_sanity_check(result, size);
 }
 
@@ -464,14 +462,16 @@ value_t new_heap_path(runtime_t *runtime, alloc_flags_t flags, value_t head,
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_path_with_names(runtime_t *runtime, value_t names,
-    size_t offset) {
+value_t new_heap_path_with_names(runtime_t *runtime, alloc_flags_t flags,
+    value_t names, size_t offset) {
   size_t length = get_array_length(names);
   if (offset == length)
     return ROOT(runtime, empty_path);
-  TRY_DEF(tail, new_heap_path_with_names(runtime, names, offset + 1));
+  TRY_DEF(tail, new_heap_path_with_names(runtime, flags, names, offset + 1));
   value_t head = get_array_at(names, offset);
-  return new_heap_path(runtime, afMutable, head, tail);
+  value_t result = new_heap_path(runtime, afMutable, head, tail);
+  TRY(post_process_result(runtime, result, flags));
+  return result;
 }
 
 value_t new_heap_unknown(runtime_t *runtime, value_t header, value_t payload) {
@@ -531,9 +531,9 @@ value_t new_heap_decimal_fraction(runtime_t *runtime, value_t numerator,
   size_t size = kDecimalFractionSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, decimal_fraction_species)));
-  set_decimal_fraction_numerator(result, numerator);
-  set_decimal_fraction_denominator(result, denominator);
-  set_decimal_fraction_precision(result, precision);
+  init_frozen_decimal_fraction_numerator(result, numerator);
+  init_frozen_decimal_fraction_denominator(result, denominator);
+  init_frozen_decimal_fraction_precision(result, precision);
   return post_create_sanity_check(result, size);
 }
 
@@ -541,7 +541,7 @@ value_t new_heap_global_field(runtime_t *runtime, value_t display_name) {
   size_t size = kGlobalFieldSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, global_field_species)));
-  set_global_field_display_name(result, display_name);
+  init_frozen_global_field_display_name(result, display_name);
   return post_create_sanity_check(result, size);
 }
 
@@ -560,7 +560,7 @@ value_t new_heap_freeze_cheat(runtime_t *runtime, value_t value) {
   size_t size = kFreezeCheatSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, freeze_cheat_species)));
-  set_freeze_cheat_value(result, value);
+  init_frozen_freeze_cheat_value(result, value);
   return post_create_sanity_check(result, size);
 }
 
@@ -806,261 +806,300 @@ value_t new_heap_builtin_implementation(runtime_t *runtime, alloc_flags_t flags,
 
 // --- S y n t a x ---
 
-value_t new_heap_literal_ast(runtime_t *runtime, value_t value) {
+value_t new_heap_literal_ast(runtime_t *runtime, alloc_flags_t flags, value_t value) {
   size_t size = kLiteralAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, literal_ast_species)));
+      ROOT(runtime, mutable_literal_ast_species)));
   set_literal_ast_value(result, value);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_array_ast(runtime_t *runtime, value_t elements) {
+value_t new_heap_array_ast(runtime_t *runtime, alloc_flags_t flags, value_t elements) {
   size_t size = kArrayAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, array_ast_species)));
+      ROOT(runtime, mutable_array_ast_species)));
   set_array_ast_elements(result, elements);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_invocation_ast(runtime_t *runtime, value_t arguments) {
+value_t new_heap_invocation_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t arguments) {
   size_t size = kInvocationAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, invocation_ast_species)));
+      ROOT(runtime, mutable_invocation_ast_species)));
   set_invocation_ast_arguments(result, arguments);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_call_literal_ast(runtime_t *runtime, value_t arguments) {
+value_t new_heap_call_literal_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t arguments) {
   size_t size = kCallLiteralAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, call_literal_ast_species)));
+      ROOT(runtime, mutable_call_literal_ast_species)));
   set_call_literal_ast_arguments(result, arguments);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_call_literal_argument_ast(runtime_t *runtime, value_t tag,
-    value_t value) {
+value_t new_heap_call_literal_argument_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t tag, value_t value) {
   size_t size = kCallLiteralArgumentAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, call_literal_argument_ast_species)));
+      ROOT(runtime, mutable_call_literal_argument_ast_species)));
   set_call_literal_argument_ast_tag(result, tag);
   set_call_literal_argument_ast_value(result, value);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_signal_ast(runtime_t *runtime, value_t escape, value_t arguments,
-    value_t defawlt) {
+value_t new_heap_signal_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t escape, value_t arguments, value_t defawlt) {
   size_t size = kSignalAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, signal_ast_species)));
+      ROOT(runtime, mutable_signal_ast_species)));
   set_signal_ast_escape(result, escape);
   set_signal_ast_arguments(result, arguments);
   set_signal_ast_default(result, defawlt);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_signal_handler_ast(runtime_t *runtime, value_t body,
-    value_t handlers) {
+value_t new_heap_signal_handler_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t body, value_t handlers) {
   size_t size = kSignalHandlerAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, signal_handler_ast_species)));
+      ROOT(runtime, mutable_signal_handler_ast_species)));
   set_signal_handler_ast_body(result, body);
   set_signal_handler_ast_handlers(result, handlers);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_ensure_ast(runtime_t *runtime, value_t body, value_t on_exit) {
+value_t new_heap_ensure_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t body, value_t on_exit) {
   size_t size = kEnsureAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, ensure_ast_species)));
+      ROOT(runtime, mutable_ensure_ast_species)));
   set_ensure_ast_body(result, body);
   set_ensure_ast_on_exit(result, on_exit);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_argument_ast(runtime_t *runtime, value_t tag, value_t value) {
+value_t new_heap_argument_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t tag, value_t value) {
   size_t size = kArgumentAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, argument_ast_species)));
+      ROOT(runtime, mutable_argument_ast_species)));
   set_argument_ast_tag(result, tag);
   set_argument_ast_value(result, value);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_sequence_ast(runtime_t *runtime, value_t values) {
+value_t new_heap_sequence_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t values) {
   size_t size = kSequenceAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, sequence_ast_species)));
+      ROOT(runtime, mutable_sequence_ast_species)));
   set_sequence_ast_values(result, values);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_local_declaration_ast(runtime_t *runtime, value_t symbol,
-    value_t is_mutable, value_t value, value_t body) {
+value_t new_heap_local_declaration_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t symbol, value_t is_mutable, value_t value, value_t body) {
   size_t size = kLocalDeclarationAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, local_declaration_ast_species)));
+      ROOT(runtime, mutable_local_declaration_ast_species)));
   set_local_declaration_ast_symbol(result, symbol);
   set_local_declaration_ast_is_mutable(result, is_mutable);
   set_local_declaration_ast_value(result, value);
   set_local_declaration_ast_body(result, body);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_block_ast(runtime_t *runtime, value_t symbol,
-    value_t methods, value_t body) {
+value_t new_heap_block_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t symbol, value_t methods, value_t body) {
   size_t size = kBlockAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, block_ast_species)));
+      ROOT(runtime, mutable_block_ast_species)));
   set_block_ast_symbol(result, symbol);
   set_block_ast_methods(result, methods);
   set_block_ast_body(result, body);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_with_escape_ast(runtime_t *runtime, value_t symbol,
-    value_t body) {
+value_t new_heap_with_escape_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t symbol, value_t body) {
   size_t size = kWithEscapeAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, with_escape_ast_species)));
+      ROOT(runtime, mutable_with_escape_ast_species)));
   set_with_escape_ast_symbol(result, symbol);
   set_with_escape_ast_body(result, body);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_local_variable_ast(runtime_t *runtime, value_t symbol) {
+value_t new_heap_local_variable_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t symbol) {
   size_t size = kLocalVariableAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, local_variable_ast_species)));
+      ROOT(runtime, mutable_local_variable_ast_species)));
   set_local_variable_ast_symbol(result, symbol);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_variable_assignment_ast(runtime_t *runtime, value_t target,
-    value_t value) {
+value_t new_heap_variable_assignment_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t target, value_t value) {
   size_t size = kVariableAssignmentAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, variable_assignment_ast_species)));
+      ROOT(runtime, mutable_variable_assignment_ast_species)));
   set_variable_assignment_ast_target(result, target);
   set_variable_assignment_ast_value(result, value);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
 
-value_t new_heap_namespace_variable_ast(runtime_t *runtime, value_t ident) {
+value_t new_heap_namespace_variable_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t ident) {
   size_t size = kNamespaceVariableAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, namespace_variable_ast_species)));
+      ROOT(runtime, mutable_namespace_variable_ast_species)));
   set_namespace_variable_ast_identifier(result, ident);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_symbol_ast(runtime_t *runtime, value_t name, value_t origin) {
+value_t new_heap_symbol_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t name, value_t origin) {
   size_t size = kSymbolAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, symbol_ast_species)));
+      ROOT(runtime, mutable_symbol_ast_species)));
   set_symbol_ast_name(result, name);
   set_symbol_ast_origin(result, origin);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_lambda_ast(runtime_t *runtime, value_t methods) {
+value_t new_heap_lambda_ast(runtime_t *runtime, alloc_flags_t flags, value_t methods) {
   size_t size = kLambdaAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, lambda_ast_species)));
+      ROOT(runtime, mutable_lambda_ast_species)));
   set_lambda_ast_methods(result, methods);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_parameter_ast(runtime_t *runtime, value_t symbol, value_t tags,
-    value_t guard) {
+value_t new_heap_parameter_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t symbol, value_t tags, value_t guard) {
   size_t size = kParameterAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, parameter_ast_species)));
+      ROOT(runtime, mutable_parameter_ast_species)));
   set_parameter_ast_symbol(result, symbol);
   set_parameter_ast_tags(result, tags);
   set_parameter_ast_guard(result, guard);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_guard_ast(runtime_t *runtime, guard_type_t type, value_t value) {
+value_t new_heap_guard_ast(runtime_t *runtime, alloc_flags_t flags,
+    guard_type_t type, value_t value) {
   size_t size = kGuardAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, guard_ast_species)));
+      ROOT(runtime, mutable_guard_ast_species)));
   set_guard_ast_type(result, type);
   set_guard_ast_value(result, value);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_signature_ast(runtime_t *runtime, value_t parameters,
-    value_t allow_extra) {
+value_t new_heap_signature_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t parameters, value_t allow_extra) {
   size_t size = kSignatureAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, signature_ast_species)));
+      ROOT(runtime, mutable_signature_ast_species)));
   set_signature_ast_parameters(result, parameters);
   set_signature_ast_allow_extra(result, allow_extra);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_method_ast(runtime_t *runtime, value_t signature, value_t body) {
+value_t new_heap_method_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t signature, value_t body) {
   size_t size = kMethodAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_method_ast_species)));
   set_method_ast_signature(result, signature);
   set_method_ast_body(result, body);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_program_ast(runtime_t *runtime, value_t entry_point,
-    value_t module) {
+value_t new_heap_program_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t entry_point, value_t module) {
   size_t size = kProgramAstSize;
-  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, program_ast_species)));
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_program_ast_species)));
   set_program_ast_entry_point(result, entry_point);
   set_program_ast_module(result, module);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_identifier(runtime_t *runtime, value_t stage, value_t path) {
+value_t new_heap_identifier(runtime_t *runtime, alloc_flags_t flags,
+    value_t stage, value_t path) {
   CHECK_PHYLUM_OPT(tpStageOffset, stage);
   CHECK_FAMILY_OPT(ofPath, path);
   size_t size = kIdentifierSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, identifier_species)));
+      ROOT(runtime, mutable_identifier_species)));
   set_identifier_stage(result, stage);
   set_identifier_path(result, path);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_namespace_declaration_ast(runtime_t *runtime, value_t annotations,
-    value_t path, value_t value) {
+value_t new_heap_namespace_declaration_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t annotations, value_t path, value_t value) {
   CHECK_FAMILY_OPT(ofPath, path);
   CHECK_FAMILY_OPT(ofArray, annotations);
   size_t size = kNamespaceDeclarationAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, namespace_declaration_ast_species)));
+      ROOT(runtime, mutable_namespace_declaration_ast_species)));
   set_namespace_declaration_ast_path(result, path);
   set_namespace_declaration_ast_value(result, value);
   set_namespace_declaration_ast_annotations(result, annotations);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_method_declaration_ast(runtime_t *runtime, value_t annotations,
-    value_t method) {
+value_t new_heap_method_declaration_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t annotations, value_t method) {
   size_t size = kMethodDeclarationAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, method_declaration_ast_species)));
+      ROOT(runtime, mutable_method_declaration_ast_species)));
   set_method_declaration_ast_annotations(result, annotations);
   set_method_declaration_ast_method(result, method);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_is_declaration_ast(runtime_t *runtime, value_t subtype,
-    value_t supertype) {
+value_t new_heap_is_declaration_ast(runtime_t *runtime, alloc_flags_t flags,
+    value_t subtype, value_t supertype) {
   size_t size = kIsDeclarationAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, is_declaration_ast_species)));
+      ROOT(runtime, mutable_is_declaration_ast_species)));
   set_is_declaration_ast_subtype(result, subtype);
   set_is_declaration_ast_supertype(result, supertype);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
