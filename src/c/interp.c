@@ -238,14 +238,19 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           // The lookup may have failed with a different condition. Check for that.
           E_TRY(method);
           E_TRY_DEF(code_block, ensure_method_code(runtime, method));
-          // We should now have done everything that can fail so we advance the
-          // pc over this instruction. In reality we haven't, the frame push op
-          // below can fail so we should really push the next frame before
-          // storing the pc for this one. Laters.
+          // Optimistically advance the pc to the operation we'll return to
+          // after this invocation, since the pc will be captured by pushing
+          // the new frame. If pushing fails we rewind.
           frame.pc += kInvokeOperationSize;
           // Push a new activation.
-          E_TRY(push_stack_frame(runtime, stack, &frame,
-              get_code_block_high_water_mark(code_block), arg_map));
+          value_t pushed = push_stack_frame(runtime, stack, &frame,
+              get_code_block_high_water_mark(code_block), arg_map);
+          if (is_condition(pushed)) {
+            // Pushing failed, usually because we ran out of memory. Rewind so
+            // we're ready to try again.
+            frame.pc -= kInvokeOperationSize;
+            E_RETURN(pushed);
+          }
           frame_set_code_block(&frame, code_block);
           code_cache_refresh(&cache, &frame);
           break;
@@ -350,11 +355,15 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
             // Skip forward to the point we want the signal to return to, the
             // leave-or-fire-barrier op that will do the leaving.
             size_t dest_offset = read_short(&cache, &frame, 2);
+            E_TRY_DEF(code_block, ensure_method_code(runtime, method));
             frame.pc += dest_offset;
             // Run the handler.
-            E_TRY_DEF(code_block, ensure_method_code(runtime, method));
-            E_TRY(push_stack_frame(runtime, stack, &frame,
-                get_code_block_high_water_mark(code_block), arg_map));
+            value_t pushed = push_stack_frame(runtime, stack, &frame,
+                get_code_block_high_water_mark(code_block), arg_map);
+            if (is_condition(pushed)) {
+              frame.pc -= dest_offset;
+              E_RETURN(pushed);
+            }
             frame_set_code_block(&frame, code_block);
             CHECK_TRUE("subject not null", is_null(frame_get_argument(&frame, 0)));
             frame_set_argument(&frame, 0, handler);
@@ -564,8 +573,12 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           barrier_state_unregister(shard, stack);
           frame.pc += kCallEnsurerOperationSize;
           value_t argmap = ROOT(runtime, array_of_zero);
-          push_stack_frame(runtime, stack, &frame,
+          value_t pushed = push_stack_frame(runtime, stack, &frame,
               get_code_block_high_water_mark(code_block), argmap);
+          if (is_condition(pushed)) {
+            frame.pc -= kCallEnsurerOperationSize;
+            E_RETURN(pushed);
+          }
           frame_set_code_block(&frame, code_block);
           code_cache_refresh(&cache, &frame);
           break;
@@ -628,8 +641,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           frame.pc += kCreateEscapeOperationSize;
           // This is the execution state the escape will escape to (modulo the
           // destination offset) so this is what we want to capture.
-          capture_escape_state(section, &frame,
-              dest_offset);
+          capture_escape_state(section, &frame, dest_offset);
           break;
         }
         case ocLeaveOrFireBarrier: {
@@ -739,12 +751,16 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           size_t argc = get_array_length(values);
           // The argument frame needs room for all the arguments as well as
           // the return value.
-          E_TRY(push_stack_frame(runtime, stack, &frame, argc + 1, nothing()));
+          value_t pushed = push_stack_frame(runtime, stack, &frame, argc + 1, nothing());
+          if (is_condition(pushed)) {
+            frame.pc -= kModuleFragmentPrivateInvokeOperationSize;
+            E_RETURN(pushed);
+          }
           frame_set_code_block(&frame, ROOT(runtime, return_code_block));
           for (size_t i = 0; i < argc; i++)
             frame_push_value(&frame, get_array_at(values, argc - i - 1));
           // Then build the method's frame.
-          value_t pushed = push_stack_frame(runtime, stack, &frame,
+          pushed = push_stack_frame(runtime, stack, &frame,
               get_code_block_high_water_mark(code_block), arg_map);
           // This should be handled gracefully.
           CHECK_FALSE("call literal invocation failed", is_condition(pushed));
