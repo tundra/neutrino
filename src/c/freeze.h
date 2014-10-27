@@ -138,8 +138,11 @@ value_t ensure_id_hash_map_frozen(runtime_t *runtime, value_t value,
 static const size_t kFreezeCheatSize = HEAP_OBJECT_SIZE(1);
 static const size_t kFreezeCheatValueOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
-// The raw value currently held by this freeze cheat.
-FROZEN_ACCESSORS_DECL(freeze_cheat, value);
+// The raw value currently held by this freeze cheat. The setter obviously
+// doesn't check mutability since that's the whole point of freeze cheats so
+// you can use it directly rather than the init_frozen_ method you'd usually
+// use.
+ACCESSORS_DECL(freeze_cheat, value);
 
 
 #endif // _FREEZE

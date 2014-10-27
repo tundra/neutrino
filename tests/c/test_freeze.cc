@@ -98,11 +98,11 @@ TEST(freeze, freeze_cheat) {
   value_t cheat = new_heap_freeze_cheat(runtime, new_integer(121));
   ASSERT_EQ(true, try_validate_deep_frozen(runtime, cheat, NULL));
   ASSERT_VALEQ(new_integer(121), get_freeze_cheat_value(cheat));
-  init_frozen_freeze_cheat_value(cheat, new_integer(212));
+  set_freeze_cheat_value(cheat, new_integer(212));
   ASSERT_EQ(true, try_validate_deep_frozen(runtime, cheat, NULL));
   ASSERT_VALEQ(new_integer(212), get_freeze_cheat_value(cheat));
 
-  init_frozen_freeze_cheat_value(cheat, new_heap_array(runtime, 3));
+  set_freeze_cheat_value(cheat, new_heap_array(runtime, 3));
   ASSERT_SUCCESS(runtime_validate(runtime, nothing()));
 
   DISPOSE_RUNTIME();

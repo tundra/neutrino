@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "derived-inl.h"
+#include "freeze.h"
 #include "interp.h"
 #include "process.h"
 #include "safe-inl.h"
@@ -91,12 +92,13 @@ static value_t compile_method(runtime_t *runtime, value_t method) {
 
 // Gets the code from a method object, compiling the method if necessary.
 static value_t ensure_method_code(runtime_t *runtime, value_t method) {
-  value_t code = get_method_code(method);
+  value_t code_ptr = get_method_code_ptr(method);
+  value_t code = get_freeze_cheat_value(code_ptr);
   if (is_nothing(code)) {
     TRY_SET(code, compile_method(runtime, method));
     // TODO: this is not an initialization, it needs to be changed to a freeze
     // cheat.
-    init_frozen_method_code(method, code);
+    set_freeze_cheat_value(code_ptr, code);
   }
   return code;
 }

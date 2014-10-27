@@ -125,9 +125,17 @@ value_t ensure_id_hash_map_frozen(runtime_t *runtime, value_t value,
 FIXED_GET_MODE_IMPL(freeze_cheat, vmDeepFrozen);
 TRIVIAL_PRINT_ON_IMPL(FreezeCheat, freeze_cheat);
 
-FROZEN_ACCESSORS_IMPL(FreezeCheat, freeze_cheat, acNoCheck, 0, Value, value);
-
 value_t freeze_cheat_validate(value_t self) {
   VALIDATE_FAMILY(ofFreezeCheat, self);
   return success();
+}
+
+void set_freeze_cheat_value(value_t self, value_t value) {
+  CHECK_FAMILY(ofFreezeCheat, self);
+  *access_heap_object_field(self, kFreezeCheatValueOffset) = value;
+}
+
+value_t get_freeze_cheat_value(value_t self) {
+  CHECK_FAMILY(ofFreezeCheat, self);
+  return *access_heap_object_field(self, kFreezeCheatValueOffset);
 }

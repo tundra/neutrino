@@ -560,7 +560,7 @@ value_t new_heap_freeze_cheat(runtime_t *runtime, value_t value) {
   size_t size = kFreezeCheatSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, freeze_cheat_species)));
-  init_frozen_freeze_cheat_value(result, value);
+  set_freeze_cheat_value(result, value);
   return post_create_sanity_check(result, size);
 }
 
@@ -749,10 +749,11 @@ value_t new_heap_method(runtime_t *runtime, alloc_flags_t alloc_flags,
   CHECK_FAMILY_OPT(ofCodeBlock, code);
   CHECK_PHYLUM(tpFlagSet, method_flags);
   size_t size = kMethodSize;
+  TRY_DEF(code_ptr, new_heap_freeze_cheat(runtime, code));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_method_species)));
   set_method_signature(result, signature);
-  set_method_code(result, code);
+  set_method_code_ptr(result, code_ptr);
   set_method_syntax(result, syntax);
   set_method_module_fragment(result, fragment);
   set_method_flags(result, method_flags);

@@ -125,7 +125,7 @@ static value_t apply_method_declaration(value_t ambience, value_t decl,
     TRY_DEF(impl, runtime_get_builtin_implementation(runtime, builtin_name));
     value_t impl_code = get_builtin_implementation_code(impl);
     TRY(validate_builtin_method_binding(method, impl));
-    set_method_code(method, impl_code);
+    set_freeze_cheat_value(get_method_code_ptr(method), impl_code);
     value_t impl_flags = get_builtin_implementation_method_flags(impl);
     set_method_flags(method, impl_flags);
   }

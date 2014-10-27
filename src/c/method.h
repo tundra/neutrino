@@ -206,7 +206,7 @@ typedef enum {
 
 static const size_t kMethodSize = HEAP_OBJECT_SIZE(5);
 static const size_t kMethodSignatureOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kMethodCodeOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kMethodCodePtrOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 static const size_t kMethodSyntaxOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 static const size_t kMethodModuleFragmentOffset = HEAP_OBJECT_FIELD_OFFSET(3);
 static const size_t kMethodFlagsOffset = HEAP_OBJECT_FIELD_OFFSET(4);
@@ -214,8 +214,10 @@ static const size_t kMethodFlagsOffset = HEAP_OBJECT_FIELD_OFFSET(4);
 // The method's signature, the arguments it matches.
 ACCESSORS_DECL(method, signature);
 
-// The compiled method implementation. This may or may not be set.
-FROZEN_ACCESSORS_DECL(method, code);
+// The compiled method implementation. This field holds a freeze cheat that
+// points to the compiled code, or not, depending on whether it's been compiled
+// yet.
+ACCESSORS_DECL(method, code_ptr);
 
 // The syntax of the implementation of the method.
 ACCESSORS_DECL(method, syntax);

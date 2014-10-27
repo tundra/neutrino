@@ -202,7 +202,7 @@ void guard_print_on(value_t self, print_on_context_t *context) {
 // ## Method
 
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofSignature, Signature, signature);
-FROZEN_ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofCodeBlock, Code, code);
+ACCESSORS_IMPL(Method, method, acInFamily, ofFreezeCheat, CodePtr, code_ptr);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofMethodAst, Syntax, syntax);
 ACCESSORS_IMPL(Method, method, acInFamilyOpt, ofModuleFragment, ModuleFragment,
     module_fragment);
@@ -211,7 +211,9 @@ ACCESSORS_IMPL(Method, method, acInPhylum, tpFlagSet, Flags, flags);
 value_t method_validate(value_t self) {
   VALIDATE_FAMILY(ofMethod, self);
   VALIDATE_FAMILY_OPT(ofSignature, get_method_signature(self));
-  VALIDATE_FAMILY_OPT(ofCodeBlock, get_method_code(self));
+  value_t code_ptr = get_method_code_ptr(self);
+  VALIDATE_FAMILY(ofFreezeCheat, code_ptr);
+  VALIDATE_FAMILY_OPT(ofCodeBlock, get_freeze_cheat_value(code_ptr));
   VALIDATE_FAMILY_OPT(ofMethodAst, get_method_syntax(self));
   VALIDATE_FAMILY_OPT(ofModuleFragment, get_method_module_fragment(self));
   VALIDATE_PHYLUM(tpFlagSet, get_method_flags(self));
