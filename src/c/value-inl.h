@@ -186,9 +186,10 @@ SWALLOW_SEMI(gfpti)
 value_mode_t get_##family##_mode(value_t self) {                               \
   return vmMode;                                                               \
 }                                                                              \
-void set_##family##_mode_unchecked(runtime_t *rt, value_t self, value_mode_t mode) { \
+value_t set_##family##_mode_unchecked(runtime_t *rt, value_t self, value_mode_t mode) { \
   CHECK_TRUE("invalid mode change",                                            \
       mode == vmMode || ((mode == vmFrozen) && (vmMode == vmDeepFrozen)));     \
+  return success();                                                            \
 }                                                                              \
 SWALLOW_SEMI(fgmi)
 

@@ -409,12 +409,12 @@ static inline value_t chase_moved_object(value_t raw) {
   F(FifoBuffer,              fifo_buffer,               _, _, (_, _, _, _, _, _, _, _), 81)\
   F(FreezeCheat,             freeze_cheat,              _, _, (_, _, _, _, _, _, _, X), 77)\
   F(Function,                function,                  X, X, (_, _, _, _, _, _, _, _), 56)\
-  F(GlobalField,             global_field,              _, X, (_, _, _, _, _, _, _, _), 31)\
   F(Guard,                   guard,                     X, _, (_, _, _, _, _, _, _, _), 30)\
   F(GuardAst,                guard_ast,                 X, X, (_, _, X, _, _, _, _, _), 38)\
+  F(HardField,               hard_field,                _, X, (_, _, _, _, _, _, _, _), 31)\
   F(Identifier,              identifier,                X, _, (X, X, X, _, _, _, _, _), 27)\
   F(IdHashMap,               id_hash_map,               X, X, (_, _, _, _, X, _, X, _), 24)\
-  F(Instance,                instance,                  _, X, (_, _, X, _, _, _, _, _), 60)\
+  F(Instance,                instance,                  _, X, (_, _, X, _, _, _, X, _), 60)\
   F(InstanceManager,         instance_manager,          _, X, (_, _, _, _, _, _, _, _),  3)\
   F(InvocationAst,           invocation_ast,            X, X, (_, _, X, _, _, X, _, _),  4)\
   F(IsDeclarationAst,        is_declaration_ast,        X, _, (_, _, X, _, _, _, _, _), 21)\
@@ -981,9 +981,11 @@ static const size_t kCompactSpeciesSize = SPECIES_SIZE(0);
 
 // --- I n s t a n c e   s p e c i e s ---
 
-static const size_t kInstanceSpeciesSize = SPECIES_SIZE(2);
+static const size_t kInstanceSpeciesSize = SPECIES_SIZE(4);
 static const size_t kInstanceSpeciesPrimaryTypeFieldOffset = SPECIES_FIELD_OFFSET(0);
 static const size_t kInstanceSpeciesManagerOffset = SPECIES_FIELD_OFFSET(1);
+static const size_t kInstanceSpeciesRawModeOffset = SPECIES_FIELD_OFFSET(2);
+static const size_t kInstanceSpeciesDerivativesOffset = SPECIES_FIELD_OFFSET(3);
 
 // The primary type of the instance. This has the _field suffix to distinguish
 // it from the get_primary_type behavior.
@@ -992,6 +994,14 @@ SPECIES_ACCESSORS_DECL(instance, primary_type_field);
 // The object manager that governs instances of this species.
 SPECIES_ACCESSORS_DECL(instance, manager);
 
+// The mode of instances of this species. Called raw_mode to distinguish it from
+// mode which is defined by the modes framework.
+SPECIES_ACCESSORS_DECL(instance, raw_mode);
+
+// An array of species derived from this one, identical but with different
+// modes.
+SPECIES_ACCESSORS_DECL(instance, derivatives);
+
 
 // --- M o d a l    s p e c i e s ---
 
@@ -999,13 +1009,13 @@ SPECIES_ACCESSORS_DECL(instance, manager);
 typedef enum {
   // Any changes can be made to this object, including changing which type
   // it supports and which fields it has.
-  vmFluid,
+  vmFluid = 0,
   // The object's fields can be set.
-  vmMutable,
+  vmMutable = 1,
   // The object cannot be changed but can reference other objects that can.
-  vmFrozen,
+  vmFrozen = 2,
   // The object cannot change and neither can any objects it references.
-  vmDeepFrozen
+  vmDeepFrozen = 3
 } value_mode_t;
 
 static const size_t kModalSpeciesSize = SPECIES_SIZE(2);
@@ -1020,7 +1030,7 @@ value_mode_t get_modal_heap_object_mode(value_t value);
 
 // Sets the mode for a modal object by switching to the species with the
 // appropriate mode.
-void set_modal_heap_object_mode_unchecked(runtime_t *runtime, value_t self,
+value_t set_modal_heap_object_mode_unchecked(runtime_t *runtime, value_t self,
     value_mode_t mode);
 
 // Sets the mode this species indicates.
@@ -1771,13 +1781,16 @@ FROZEN_ACCESSORS_DECL(decimal_fraction, denominator);
 FROZEN_ACCESSORS_DECL(decimal_fraction, precision);
 
 
-// --- G l o b a l   f i e l d ---
+/// ## Hard field
+///
+/// A hard field is a frozen field key that can only be set on mutable objects.
+/// You can't change the value of a hard field on a frozen object.
 
-static const size_t kGlobalFieldSize = HEAP_OBJECT_SIZE(1);
-static const size_t kGlobalFieldDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kHardFieldSize = HEAP_OBJECT_SIZE(1);
+static const size_t kHardFieldDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The display name which is used to identify the field.
-FROZEN_ACCESSORS_DECL(global_field, display_name);
+FROZEN_ACCESSORS_DECL(hard_field, display_name);
 
 
 // --- R e f e r e n c e ---

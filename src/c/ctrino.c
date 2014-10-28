@@ -313,8 +313,10 @@ value_t get_c_object_primary_type(value_t self, runtime_t *runtime) {
   return get_c_object_species_type(species);
 }
 
-void set_c_object_mode_unchecked(runtime_t *runtime, value_t self, value_mode_t mode) {
+value_t set_c_object_mode_unchecked(runtime_t *runtime, value_t self,
+    value_mode_t mode) {
   *access_heap_object_field(self, kCObjectModeOffset) = new_integer(mode);
+  return success();
 }
 
 value_t c_object_validate(value_t value) {

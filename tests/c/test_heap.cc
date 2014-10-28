@@ -62,3 +62,29 @@ TEST(heap, space_alloc) {
   // Clean up.
   space_dispose(&space);
 }
+
+TEST(heap, clone) {
+  CREATE_RUNTIME();
+
+  value_t a0 = new_heap_array(runtime, 3);
+  set_array_at(a0, 0, new_integer(8));
+  set_array_at(a0, 1, new_integer(9));
+  set_array_at(a0, 2, new_integer(10));
+
+  value_t a1 = clone_heap_object(runtime, a0);
+  ASSERT_FALSE(is_same_value(a0, a1));
+  ASSERT_VALEQ(new_integer(8), get_array_at(a1, 0));
+  ASSERT_VALEQ(new_integer(9), get_array_at(a1, 1));
+  ASSERT_VALEQ(new_integer(10), get_array_at(a1, 2));
+
+  set_array_at(a1, 1, new_integer(11));
+
+  ASSERT_VALEQ(new_integer(8), get_array_at(a0, 0));
+  ASSERT_VALEQ(new_integer(9), get_array_at(a0, 1));
+  ASSERT_VALEQ(new_integer(10), get_array_at(a0, 2));
+  ASSERT_VALEQ(new_integer(8), get_array_at(a1, 0));
+  ASSERT_VALEQ(new_integer(11), get_array_at(a1, 1));
+  ASSERT_VALEQ(new_integer(10), get_array_at(a1, 2));
+
+  DISPOSE_RUNTIME();
+}

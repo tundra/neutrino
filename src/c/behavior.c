@@ -133,8 +133,7 @@ value_t set_value_mode(runtime_t *runtime, value_t self, value_mode_t mode) {
     return success();
   } else if (mode > current_mode) {
     // It's always okay to set the object to a more restrictive mode.
-    set_value_mode_unchecked(runtime, self, mode);
-    return success();
+    return set_value_mode_unchecked(runtime, self, mode);
   } else if (mode == vmFrozen) {
     // As a special case, it's okay to try to freeze an object that is already
     // deep frozen. It's a no-op.
@@ -144,13 +143,14 @@ value_t set_value_mode(runtime_t *runtime, value_t self, value_mode_t mode) {
   }
 }
 
-void set_value_mode_unchecked(runtime_t *runtime, value_t self, value_mode_t mode) {
+value_t set_value_mode_unchecked(runtime_t *runtime, value_t self, value_mode_t mode) {
   if (is_heap_object(self)) {
     family_behavior_t *behavior = get_heap_object_family_behavior(self);
-    (behavior->set_mode_unchecked)(runtime, self, mode);
+    return (behavior->set_mode_unchecked)(runtime, self, mode);
   } else {
     CHECK_EQ("non-object not frozen", vmDeepFrozen, get_value_mode(self));
     CHECK_REL("invalid mode change", mode, >=, vmFrozen);
+    return success();
   }
 }
 
@@ -489,7 +489,7 @@ static value_t new_instance_of_unknown(runtime_t *runtime, value_t type) {
 }
 
 static value_t new_instance_of_type(runtime_t *runtime, value_t type) {
-  TRY_DEF(species, new_heap_instance_species(runtime, type, nothing()));
+  TRY_DEF(species, new_heap_instance_species(runtime, type, nothing(), vmFluid));
   TRY_DEF(result, new_heap_instance(runtime, species));
   return result;
 }

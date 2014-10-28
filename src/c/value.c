@@ -278,6 +278,10 @@ CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance,
     acInFamily, ofType, PrimaryTypeField, primary_type_field);
 CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance,
     acInFamilyOpt, ofInstanceManager, Manager, manager);
+CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance,
+    acInDomain, vdInteger, RawMode, raw_mode);
+CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance,
+    acInFamilyOpt, ofArray, Derivatives, derivatives);
 
 
 // --- M o d a l   s p e c i e s ---
@@ -303,12 +307,13 @@ value_mode_t get_modal_heap_object_mode(value_t value) {
   return get_modal_species_mode(species);
 }
 
-void set_modal_heap_object_mode_unchecked(runtime_t *runtime, value_t self,
+value_t set_modal_heap_object_mode_unchecked(runtime_t *runtime, value_t self,
     value_mode_t mode) {
   value_t old_species = get_heap_object_species(self);
   value_t new_species = get_modal_species_sibling_with_mode(runtime, old_species,
       mode);
   set_heap_object_species(self, new_species);
+  return success();
 }
 
 size_t get_modal_species_base_root(value_t value) {
@@ -1630,12 +1635,33 @@ value_t get_instance_primary_type(value_t self, runtime_t *runtime) {
 }
 
 value_mode_t get_instance_mode(value_t self) {
-  return vmMutable;
+  return (value_mode_t) get_integer_value(get_instance_raw_mode(self));
 }
 
-void set_instance_mode_unchecked(runtime_t *runtime, value_t self,
+value_t set_instance_mode_unchecked(runtime_t *runtime, value_t self,
     value_mode_t mode) {
-  UNREACHABLE("setting instance mode not implemented");
+  // Get or create the derivatives array.
+  value_t species = get_heap_object_species(self);
+  value_t derivatives = get_instance_species_derivatives(species);
+  if (is_nothing(derivatives)) {
+    TRY_SET(derivatives, new_heap_array(runtime, 4));
+    set_instance_species_derivatives(species, derivatives);
+  }
+  // Get or create the clone with the right mode from the derivatives.
+  value_t new_species = get_array_at(derivatives, (size_t) mode);
+  if (is_null(new_species)) {
+    TRY_SET(new_species, clone_heap_instance_species(runtime, species));
+    set_instance_species_raw_mode(new_species, new_integer(mode));
+    set_array_at(derivatives, (size_t) mode, new_species);
+  }
+  // Change to the new species with the right mode.
+  set_heap_object_species(self, new_species);
+  return new_species;
+}
+
+value_t ensure_instance_owned_values_frozen(runtime_t *runtime, value_t self) {
+  TRY(ensure_frozen(runtime, get_instance_fields(self)));
+  return success();
 }
 
 
@@ -1662,7 +1688,7 @@ static value_t instance_manager_new_instance(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t type = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofType, type);
-  TRY_DEF(species, new_heap_instance_species(runtime, type, self));
+  TRY_DEF(species, new_heap_instance_species(runtime, type, self, vmFluid));
   return new_heap_instance(runtime, species);
 }
 
@@ -2120,11 +2146,11 @@ static value_t module_fragment_private_new_type(builtin_arguments_t *args) {
   return new_heap_type(runtime, afFreeze, display_name);
 }
 
-static value_t module_fragment_private_new_global_field(builtin_arguments_t *args) {
+static value_t module_fragment_private_new_hard_field(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t display_name = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofModuleFragmentPrivate, self);
-  return new_heap_global_field(get_builtin_runtime(args), display_name);
+  return new_heap_hard_field(get_builtin_runtime(args), display_name);
 }
 
 value_t emit_module_fragment_private_invoke(assembler_t *assm) {
@@ -2136,8 +2162,8 @@ value_t add_module_fragment_private_builtin_implementations(runtime_t *runtime,
     safe_value_t s_map) {
   ADD_BUILTIN_IMPL("module_fragment_private.new_type", 1,
       module_fragment_private_new_type);
-  ADD_BUILTIN_IMPL("module_fragment_private.new_global_field", 1,
-      module_fragment_private_new_global_field);
+  ADD_BUILTIN_IMPL("module_fragment_private.new_hard_field", 1,
+      module_fragment_private_new_hard_field);
   TRY(add_custom_method_impl(runtime, deref(s_map), "module_fragment_private.invoke",
       1, new_flag_set(kFlagSetAllOff), emit_module_fragment_private_invoke));
   return success();
@@ -2474,49 +2500,55 @@ value_t plankton_new_decimal_fraction(runtime_t *runtime) {
 }
 
 
-// --- G l o b a l   f i e l d ---
+/// ## Hard field
 
-GET_FAMILY_PRIMARY_TYPE_IMPL(global_field);
-FIXED_GET_MODE_IMPL(global_field, vmFrozen);
+GET_FAMILY_PRIMARY_TYPE_IMPL(hard_field);
+FIXED_GET_MODE_IMPL(hard_field, vmFrozen);
 
-FROZEN_ACCESSORS_IMPL(GlobalField, global_field, acNoCheck, 0, DisplayName, display_name);
+FROZEN_ACCESSORS_IMPL(HardField, hard_field, acNoCheck, 0, DisplayName, display_name);
 
-value_t global_field_validate(value_t self) {
-  VALIDATE_FAMILY(ofGlobalField, self);
+value_t hard_field_validate(value_t self) {
+  VALIDATE_FAMILY(ofHardField, self);
   return success();
 }
 
-void global_field_print_on(value_t value, print_on_context_t *context) {
+void hard_field_print_on(value_t value, print_on_context_t *context) {
   string_buffer_printf(context->buf, ".$");
-  value_t display_name = get_global_field_display_name(value);
+  value_t display_name = get_hard_field_display_name(value);
   value_print_inner_on(display_name, context, -1);
   string_buffer_printf(context->buf, "");
 }
 
-static value_t global_field_set(builtin_arguments_t *args) {
+static value_t hard_field_set(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  CHECK_FAMILY(ofGlobalField, self);
+  CHECK_FAMILY(ofHardField, self);
   value_t instance = get_builtin_argument(args, 0);
-  value_t value = get_builtin_argument(args, 1);
-  runtime_t *runtime = get_builtin_runtime(args);
-  return set_instance_field(runtime, instance, self, value);
+  if (is_mutable(instance)) {
+    value_t value = get_builtin_argument(args, 1);
+    runtime_t *runtime = get_builtin_runtime(args);
+    return set_instance_field(runtime, instance, self, value);
+  } else {
+    value_t display_name = get_hard_field_display_name(self);
+    ESCAPE_BUILTIN(args, changing_frozen, display_name, instance);
+  }
 }
 
-static value_t global_field_get(builtin_arguments_t *args) {
+static value_t hard_field_get(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  CHECK_FAMILY(ofGlobalField, self);
+  CHECK_FAMILY(ofHardField, self);
   value_t instance = get_builtin_argument(args, 0);
   value_t value = get_instance_field(instance, self);
   if (in_condition_cause(ccNotFound, value)) {
-    ESCAPE_BUILTIN(args, no_such_field, self, instance);
+    value_t display_name = get_hard_field_display_name(self);
+    ESCAPE_BUILTIN(args, no_such_field, display_name, instance);
   } else {
     return value;
   }
 }
 
-value_t add_global_field_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  ADD_BUILTIN_IMPL_MAY_ESCAPE("global_field[]", 1, 2, global_field_get);
-  ADD_BUILTIN_IMPL("global_field[]:=()", 2, global_field_set);
+value_t add_hard_field_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL_MAY_ESCAPE("hard_field[]", 1, 2, hard_field_get);
+  ADD_BUILTIN_IMPL_MAY_ESCAPE("hard_field[]:=()", 2, 2, hard_field_set);
   return success();
 }
 

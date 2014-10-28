@@ -2,11 +2,12 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 import $assert;
+import $core;
 
 def @manager := @ctrino.new_instance_manager(null);
 def @Point := module.new_type("Point");
-def @x := module.new_global_field("x");
-def @y := module.new_global_field("y");
+def @x := module.new_hard_field("x");
+def @y := module.new_hard_field("y");
 
 def $test_raw_field_access() {
   def $p := @manager.new_instance(@Point);
@@ -18,6 +19,11 @@ def $test_raw_field_access() {
   $assert:equals(1, @x[$p]);
   $assert:equals(0, @y[$p]);
   @y[$p] := 2;
+  $assert:equals(1, @x[$p]);
+  $assert:equals(2, @y[$p]);
+  $core:freeze($p);
+  $assert:equals(["x", $p], try @x[$p] := 3 on.changing_frozen($k, $i) => [$k, $i]);
+  $assert:equals(["y", $p], try @y[$p] := 4 on.changing_frozen($k, $i) => [$k, $i]);
   $assert:equals(1, @x[$p]);
   $assert:equals(2, @y[$p]);
 }

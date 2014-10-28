@@ -71,7 +71,7 @@ TEST(method, method_space) {
 // Returns a new instance with the given primary type.
 static value_t new_instance_of(runtime_t *runtime, value_t proto) {
   CHECK_FAMILY(ofType, proto);
-  value_t species = new_heap_instance_species(runtime, proto, nothing());
+  value_t species = new_heap_instance_species(runtime, proto, nothing(), vmFluid);
   return new_heap_instance(runtime, species);
 }
 

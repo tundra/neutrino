@@ -48,7 +48,7 @@ value_t transitively_validate_deep_frozen(runtime_t *runtime, value_t value,
   CHECK_DOMAIN(vdHeapObject, value);
   CHECK_EQ("tentatively freezing non-frozen", vmFrozen, get_value_mode(value));
   // Deep freeze the object.
-  set_value_mode_unchecked(runtime, value, vmDeepFrozen);
+  TRY(set_value_mode_unchecked(runtime, value, vmDeepFrozen));
   // Scan through the object's fields.
   value_field_iter_t iter;
   value_field_iter_init(&iter, value);
@@ -58,7 +58,7 @@ value_t transitively_validate_deep_frozen(runtime_t *runtime, value_t value,
     value_t ensured = validate_deep_frozen(runtime, *field, offender_out);
     if (is_condition(ensured)) {
       // Deep freezing failed. Restore the object to its previous state and bail.
-      set_value_mode_unchecked(runtime, value, vmFrozen);
+      TRY(set_value_mode_unchecked(runtime, value, vmFrozen));
       TOPIC_INFO(Freeze, "Failed to validate %v@%x (= %2v)", value,
           value_field_iter_offset(&iter, value), *field);
       return ensured;

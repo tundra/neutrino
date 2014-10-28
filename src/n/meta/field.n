@@ -1,13 +1,13 @@
 # Copyright 2014 the Neutrino authors (see AUTHORS).
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-## The built-in type of runtime-native object arrays.
-def @GlobalField := @ctrino.get_builtin_type("GlobalField");
+## The built-in type of hard field keys.
+def @HardField := @ctrino.get_builtin_type("HardField");
 
 ## Returns the value of this field set on the given instance.
-@ctrino.builtin("global_field[]")
-def ($this is @GlobalField)[$instance];
+@ctrino.builtin("hard_field[]")
+def ($this is @HardField)[$instance];
 
 ## Sets the value of this field on the given instance.
-@ctrino.builtin("global_field[]:=()")
-def ($this is @GlobalField)[$instance]:=($value);
+@ctrino.builtin("hard_field[]:=()")
+def ($this is @HardField)[$instance]:=($value);

@@ -92,7 +92,7 @@ value_t new_heap_blob_with_data(runtime_t *runtime, blob_t contents) {
 }
 
 value_t new_heap_instance_species(runtime_t *runtime, value_t primary,
-    value_t manager) {
+    value_t manager, value_mode_t mode) {
   size_t size = kInstanceSpeciesSize;
   CHECK_FAMILY(ofType, primary);
   CHECK_FAMILY_OPT(ofInstanceManager, manager);
@@ -103,7 +103,14 @@ value_t new_heap_instance_species(runtime_t *runtime, value_t primary,
   set_species_division_behavior(result, &kInstanceSpeciesBehavior);
   set_instance_species_primary_type_field(result, primary);
   set_instance_species_manager(result, manager);
+  set_instance_species_raw_mode(result, new_integer(mode));
+  set_instance_species_derivatives(result, nothing());
   return post_create_sanity_check(result, size);
+}
+
+value_t clone_heap_instance_species(runtime_t *runtime, value_t original) {
+  CHECK_DIVISION(sdInstance, original);
+  return clone_heap_object(runtime, original);
 }
 
 value_t new_heap_compact_species(runtime_t *runtime, family_behavior_t *behavior) {
@@ -537,11 +544,11 @@ value_t new_heap_decimal_fraction(runtime_t *runtime, value_t numerator,
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_global_field(runtime_t *runtime, value_t display_name) {
-  size_t size = kGlobalFieldSize;
+value_t new_heap_hard_field(runtime_t *runtime, value_t display_name) {
+  size_t size = kHardFieldSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, global_field_species)));
-  init_frozen_global_field_display_name(result, display_name);
+      ROOT(runtime, hard_field_species)));
+  init_frozen_hard_field_display_name(result, display_name);
   return post_create_sanity_check(result, size);
 }
 
@@ -1127,6 +1134,16 @@ value_t alloc_heap_object(runtime_t *runtime, size_t bytes, value_t species) {
   return result;
 }
 
+value_t clone_heap_object(runtime_t *runtime, value_t original) {
+  heap_object_layout_t layout;
+  get_heap_object_layout(original, &layout);
+  TRY_DEF(result, alloc_heap_object(runtime, layout.size, get_heap_object_species(original)));
+  blob_t dest_blob = new_blob(get_heap_object_address(result), layout.size);
+  blob_t src_blob = new_blob(get_heap_object_address(original), layout.size);
+  blob_copy_to(src_blob, dest_blob);
+  return result;
+}
+
 static value_t extend_id_hash_map(runtime_t *runtime, value_t map) {
   // Create the new entry array first so that if it fails we bail out asap.
   size_t old_capacity = get_id_hash_map_capacity(map);
@@ -1169,6 +1186,7 @@ value_t set_id_hash_map_at(runtime_t *runtime, value_t map, value_t key, value_t
 
 value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,
     value_t value) {
+  CHECK_MUTABLE(instance);
   value_t fields = get_instance_fields(instance);
   return set_id_hash_map_at(runtime, fields, key, value);
 }

@@ -31,8 +31,8 @@ type @Interval is @FiniteCollection {
 
 }
 
-def @from_field := module.new_global_field("from");
-def @to_field := module.new_global_field("to");
+def @from_field := module.new_hard_field("from");
+def @to_field := module.new_hard_field("to");
 
 ## Creates a new interval with the given boundaries.
 def ($this == @Interval).new($from, $to) {

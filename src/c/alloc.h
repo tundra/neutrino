@@ -72,7 +72,12 @@ value_t new_heap_modal_species_unchecked(runtime_t *runtime,
 // Creates a new instance species with the specified primary type and instance
 // manager.
 value_t new_heap_instance_species(runtime_t *runtime, value_t primary,
-    value_t manager);
+    value_t manager, value_mode_t mode);
+
+// Creates a new instance species whose state is taken from the given original.
+// Note that if the derivatives array is set it will be shared between the
+// original and the clone.
+value_t clone_heap_instance_species(runtime_t *runtime, value_t original);
 
 // Allocates a new heap array in the given runtime with room for the given
 // number of elements. The array will be initialized to null.
@@ -209,8 +214,8 @@ value_t new_heap_library(runtime_t *runtime, value_t display_name,
 value_t new_heap_decimal_fraction(runtime_t *runtime, value_t numerator,
     value_t denominator, value_t precision);
 
-// Creates a new global field object with the given display name.
-value_t new_heap_global_field(runtime_t *runtime, value_t display_name);
+// Creates a new hard field object with the given display name.
+value_t new_heap_hard_field(runtime_t *runtime, value_t display_name);
 
 // Creates a new ambience object within the given runtime.
 value_t new_heap_ambience(runtime_t *runtime);
@@ -413,6 +418,12 @@ value_t new_heap_current_module_ast(runtime_t *runtime);
 // initializes it with the given type but requires the caller to complete
 // initialization.
 value_t alloc_heap_object(runtime_t *runtime, size_t bytes, value_t species);
+
+// Creates and returns a clone of the given object. The contents of the object
+// will be exactly the same as before so typically you don't want to use this on
+// objects that contain derived pointers or that own values, unless you know
+// that those owned values should be shared between the cloned instances.
+value_t clone_heap_object(runtime_t *runtime, value_t original);
 
 // Sets the given instance field to the given value, replacing the existing
 // value if it already exists. Returns a condition on failure.

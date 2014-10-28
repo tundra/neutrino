@@ -58,7 +58,7 @@ class Visitor(object):
 
   def visit_local_declaration(self, that):
     self.visit_ast(that)
-  
+
   def visit_block(self, that):
     self.visit_ast(that)
 
@@ -717,7 +717,7 @@ class MethodDeclaration(object):
 
   def apply(self, module):
     fragment = module.get_or_create_fragment(self.stage)
-    fragment.add_element(self)          
+    fragment.add_element(self)
 
   def __str__(self):
     return "(method-declaration %s %s)" % (self.method.signature, self.method.body)
@@ -778,7 +778,7 @@ class TypeDeclaration(object):
 # A stand-alone field declaration.
 class FieldDeclaration(object):
 
-  _NEW_GLOBAL_FIELD = data.Operation.infix("new_global_field")
+  _NEW_GLOBAL_FIELD = data.Operation.infix("new_hard_field")
   _SQUARE_SAUSAGES = data.Operation.index()
   _SQUARE_SAUSAGE_ASSIGN = data.Operation.assign(data.Operation.index())
 

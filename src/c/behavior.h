@@ -32,7 +32,7 @@ value_mode_t get_value_mode(value_t value);
 value_t set_value_mode(runtime_t *runtime, value_t self, value_mode_t mode);
 
 // Sets the object's value mode without checking mode discipline.
-void set_value_mode_unchecked(runtime_t *runtime, value_t self,
+value_t set_value_mode_unchecked(runtime_t *runtime, value_t self,
     value_mode_t mode);
 
 // Initializes the fields of an object layout struct.
@@ -99,7 +99,7 @@ struct family_behavior_t {
   value_mode_t (*get_mode)(value_t self);
   // Set the current mode of the given value to the given mode, possibly using
   // the given runtime. This must not check mode discipline.
-  void (*set_mode_unchecked)(runtime_t *runtime, value_t self,
+  value_t (*set_mode_unchecked)(runtime_t *runtime, value_t self,
       value_mode_t mode);
   // Ensures that all values owned by this one are frozen. This should not
   // fail because of mode discipline but may fail if interacting with the
@@ -252,7 +252,7 @@ mfFu MINOR (                                                                   \
   )                                                                            \
 MD(,                                                                           \
   value_mode_t get_##family##_mode(value_t self);                              \
-  void set_##family##_mode_unchecked(runtime_t *runtime, value_t self,         \
+  value_t set_##family##_mode_unchecked(runtime_t *runtime, value_t self,      \
       value_mode_t mode);                                                      \
   )                                                                            \
 mfOw MINOR (                                                                   \
