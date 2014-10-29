@@ -2150,7 +2150,9 @@ static value_t module_fragment_private_new_hard_field(builtin_arguments_t *args)
   value_t self = get_builtin_subject(args);
   value_t display_name = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofModuleFragmentPrivate, self);
-  return new_heap_hard_field(get_builtin_runtime(args), display_name);
+  runtime_t *runtime = get_builtin_runtime(args);
+  TRY(validate_deep_frozen(runtime, display_name, NULL));
+  return new_heap_hard_field(runtime, display_name);
 }
 
 value_t emit_module_fragment_private_invoke(assembler_t *assm) {
@@ -2462,7 +2464,7 @@ value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key,
 
 // --- D e c i m a l   f r a c t i o n ---
 
-FIXED_GET_MODE_IMPL(decimal_fraction, vmFrozen);
+FIXED_GET_MODE_IMPL(decimal_fraction, vmDeepFrozen);
 
 FROZEN_ACCESSORS_IMPL(DecimalFraction, decimal_fraction, acNoCheck, 0, Numerator, numerator);
 FROZEN_ACCESSORS_IMPL(DecimalFraction, decimal_fraction, acNoCheck, 0, Denominator, denominator);
@@ -2489,6 +2491,9 @@ void decimal_fraction_print_on(value_t value, print_on_context_t *context) {
 value_t plankton_set_decimal_fraction_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, numerator, denominator, precision);
+  TRY(validate_deep_frozen(runtime, numerator_value, NULL));
+  TRY(validate_deep_frozen(runtime, denominator_value, NULL));
+  TRY(validate_deep_frozen(runtime, precision_value, NULL));
   init_frozen_decimal_fraction_numerator(object, numerator_value);
   init_frozen_decimal_fraction_denominator(object, denominator_value);
   init_frozen_decimal_fraction_precision(object, precision_value);
@@ -2503,7 +2508,7 @@ value_t plankton_new_decimal_fraction(runtime_t *runtime) {
 /// ## Hard field
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(hard_field);
-FIXED_GET_MODE_IMPL(hard_field, vmFrozen);
+FIXED_GET_MODE_IMPL(hard_field, vmDeepFrozen);
 
 FROZEN_ACCESSORS_IMPL(HardField, hard_field, acNoCheck, 0, DisplayName, display_name);
 

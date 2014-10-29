@@ -241,6 +241,7 @@ SWALLOW_SEMI(gi)
 #define FROZEN_ACCESSORS_IMPL(Receiver, receiver, acValueCheck, VALUE_CHECK_ARG, Field, field) \
 void init_frozen_##receiver##_##field(value_t self, value_t value) {           \
   CHECK_FAMILY(of##Receiver, self);                                            \
+  CHECK_DEEP_FROZEN(value);                                                    \
   acValueCheck(VALUE_CHECK_ARG, value);                                        \
   *access_heap_object_field(self, k##Receiver##Field##Offset) = value;         \
 }                                                                              \

@@ -620,7 +620,9 @@ TYPED_GETTER_DECL(receiver, value_t, field)
 // specified field in the specified object. You typically only need the frozen
 // setter for non-modal objects that are always frozen, for modal objects the
 // object being frozen typically means there's a reason you shouldn't set its
-// fields.
+// fields. The initializer asserts that the value to set is deep frozen since
+// we're assuming the object we're setting it on is deep frozen and having a
+// deep frozen value pointing to something that's not is inconsistent.
 #define FROZEN_ACCESSORS_DECL(receiver, field)                                 \
 void init_frozen_##receiver##_##field(value_t self, value_t value);            \
 ACCESSORS_DECL(receiver, field)
