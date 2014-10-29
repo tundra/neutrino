@@ -16,9 +16,9 @@
 #include "value.h"
 
 
-static const byte_t kBlankHeapMarker = 0xBE;
-static const byte_t kAllocedHeapMarker = 0xFA;
-static const byte_t kFreedHeapMarker = 0xD0;
+static const byte_t kUnusedHeapMarker = 0xA4;
+static const byte_t kAllocatedHeapMarker = 0xB4;
+static const byte_t kFreedHeapMarker = 0xC4;
 
 FORWARD(c_object_info_t);
 

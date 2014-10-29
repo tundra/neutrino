@@ -685,25 +685,32 @@ ACCESSORS_DECL(heap_object, header);
 ///   - _Sr_: is this type exposed to the surface language?
 ///
 
-//  CamelName                underscore_name            Cm Sr
+// Accessors for the minor phylum properties. See the accessors for minor family
+// properties for details.
+#define mpCm(CM) CM
+
+//  CamelName                underscore_name            Sr (Cm)   N
 #define ENUM_CUSTOM_TAGGED_PHYLUMS(F)                                          \
-  F(AsciiCharacter,          ascii_character,           X, X)                  \
-  F(Boolean,                 boolean,                   X, X)                  \
-  F(FlagSet,                 flag_set,                  _, _)                  \
-  F(Float32,                 float_32,                  X, X)                  \
-  F(Nothing,                 nothing,                   _, _)                  \
-  F(Null,                    null,                      _, X)                  \
-  F(PromiseState,            promise_state,             _, _)                  \
-  F(Relation,                relation,                  _, _)                  \
-  F(Score,                   score,                     X, _)                  \
-  F(StageOffset,             stage_offset,              X, _)                  \
-  F(DerivedObjectAnchor,     derived_object_anchor,     _, _)
+  F(AsciiCharacter,          ascii_character,           X, (X),   0)           \
+  F(Boolean,                 boolean,                   X, (X),   1)           \
+  F(FlagSet,                 flag_set,                  _, (_),   2)           \
+  F(Float32,                 float_32,                  X, (X),   3)           \
+  F(Nothing,                 nothing,                   _, (_),   4)           \
+  F(Null,                    null,                      X, (_),   5)           \
+  F(PromiseState,            promise_state,             _, (_),   6)           \
+  F(Relation,                relation,                  _, (_),   7)           \
+  F(Score,                   score,                     _, (X),   8)           \
+  F(StageOffset,             stage_offset,              _, (X),   9)           \
+  F(DerivedObjectAnchor,     derived_object_anchor,     _, (_),  10)           \
+  F(UnusedMemory,            unused_memory,             _, (_), 148)           \
+  F(AllocatedMemory,         allocated_memory,          _, (_), 150)           \
+  F(FreedMemory,             freed_memory,              _, (_), 152)
 
 // Enum identifying the different phylums of custom tagged values.
 typedef enum {
-  __tpFirst__ = -1
-#define __DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__(Phylum, phylum, CM, SR)        \
-  , tp##Phylum
+  __tpFirst__
+#define __DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__(Phylum, phylum, SR, MINOR, N)    \
+  , tp##Phylum = (N)
   ENUM_CUSTOM_TAGGED_PHYLUMS(__DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__)
 #undef __DECLARE_CUSTOM_TAGGED_PHYLUM_ENUM__
   // This is a special value separate from any of the others that can be used

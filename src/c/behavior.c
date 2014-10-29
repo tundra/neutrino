@@ -651,11 +651,11 @@ ENUM_SPECIES_DIVISIONS(DEFINE_SPECIES_DIVISION_BEHAVIOR)
 
 // Define all the division behaviors. Similarly to families, when you add a new
 // division you have to add the methods or this will break.
-#define DEFINE_TAGGED_PHYLUM_BEHAVIOR(Phylum, phylum, CM, SR)                  \
+#define DEFINE_TAGGED_PHYLUM_BEHAVIOR(Phylum, phylum, SR, MINOR, N)            \
 phylum_behavior_t k##Phylum##PhylumBehavior = {                                \
   tp##Phylum,                                                                  \
   &phylum##_print_on,                                                          \
-  CM(                                                                          \
+  mpCm MINOR (                                                                 \
     &phylum##_ordering_compare,                                                \
     NULL),                                                                     \
   SR(                                                                          \
@@ -669,7 +669,7 @@ phylum_behavior_t *kCustomTaggedPhylumBehaviors[kCustomTaggedPhylumCount] = {NUL
 
 phylum_behavior_t *get_custom_tagged_phylum_behavior(custom_tagged_phylum_t phylum) {
   if (kCustomTaggedPhylumBehaviors[0] == NULL) {
-#define __SET_PHYLUM_BEHAVIOR__(Phylum, phylum, CM, SR)                        \
+#define __SET_PHYLUM_BEHAVIOR__(Phylum, phylum, SR, MINOR, N)                  \
     kCustomTaggedPhylumBehaviors[tp##Phylum] = &k##Phylum##PhylumBehavior;
   ENUM_CUSTOM_TAGGED_PHYLUMS(__SET_PHYLUM_BEHAVIOR__)
 #undef __SET_PHYLUM_BEHAVIOR__

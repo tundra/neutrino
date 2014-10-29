@@ -109,7 +109,7 @@ value_t add_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
 #undef __EMIT_ADD_BUILTINS_CALL__
 
   // The phylum built-ins.
-#define __EMIT_PHYLUM_BUILTINS_CALL__(Phylum, phylum, CM, SR)                  \
+#define __EMIT_PHYLUM_BUILTINS_CALL__(Phylum, phylum, SR, MINOR, N)            \
   SR(                                                                          \
     TRY(add_##phylum##_builtin_implementations(runtime, s_map));,              \
     )

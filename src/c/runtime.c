@@ -259,7 +259,7 @@ value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *run
   TRY(ensure_frozen(runtime, builtin_methodspace));
 
   // Generate initialization for the per-phylum types.
-#define __CREATE_PHYLUM_TYPE__(Phylum, phylum, CM, SR)                         \
+#define __CREATE_PHYLUM_TYPE__(Phylum, phylum, SR, MINOR, N)                   \
   SR(__CREATE_TYPE__(Phylum, phylum),)
   ENUM_CUSTOM_TAGGED_PHYLUMS(__CREATE_PHYLUM_TYPE__)
 #undef __CREATE_PHYLUM_TYPE__
@@ -325,7 +325,7 @@ value_t roots_validate(value_t roots) {
 #undef __VALIDATE_PER_FAMILY_FIELDS__
 
   // Generate validation for phylums.
-#define __VALIDATE_PER_PHYLUM_FIELDS__(Phylum, phylum, CM, SR)                 \
+#define __VALIDATE_PER_PHYLUM_FIELDS__(Phylum, phylum, SR, MINOR, N)           \
   SR(                                                                          \
     VALIDATE_HEAP_OBJECT(ofType, RAW_ROOT(roots, phylum##_type));,             \
     )

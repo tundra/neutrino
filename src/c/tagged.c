@@ -13,6 +13,11 @@
 #include <ctype.h>
 #include <math.h>
 
+#define TRIVIAL_PHYLUM_PRINT_ON(phylum)                                        \
+void phylum##_print_on(value_t value, print_on_context_t *context) {           \
+  string_buffer_printf(context->buf, "#<" #phylum ">");                        \
+}
+
 // --- S t a g e   o f f s e t ---
 
 void stage_offset_print_on(value_t value, print_on_context_t *context) {
@@ -290,3 +295,9 @@ value_t add_ascii_character_builtin_implementations(runtime_t *runtime, safe_val
   ADD_BUILTIN_IMPL("ascii_character<ascii_character", 1, ascii_character_less_ascii_character);
   return success();
 }
+
+/// Memory markers
+
+TRIVIAL_PHYLUM_PRINT_ON(unused_memory);
+TRIVIAL_PHYLUM_PRINT_ON(allocated_memory);
+TRIVIAL_PHYLUM_PRINT_ON(freed_memory);

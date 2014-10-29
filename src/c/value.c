@@ -56,7 +56,7 @@ const char *get_species_division_name(species_division_t division) {
 
 const char *get_custom_tagged_phylum_name(custom_tagged_phylum_t phylum) {
   switch (phylum) {
-#define __GEN_CASE__(Name, name, CM, SR) case tp##Name: return #Name;
+#define __GEN_CASE__(Name, name, SR, FLAGS, N) case tp##Name: return #Name;
     ENUM_CUSTOM_TAGGED_PHYLUMS(__GEN_CASE__)
 #undef __GEN_CASE__
     default:

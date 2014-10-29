@@ -61,7 +61,7 @@ value_t space_init(space_t *space, const runtime_config_t *config) {
   if (memory_block_is_empty(memory))
     return new_system_error_condition(seAllocationFailed);
   // Clear the newly allocated memory to a recognizable value.
-  memset(memory.memory, kBlankHeapMarker, bytes);
+  memset(memory.memory, kUnusedHeapMarker, bytes);
   address_t aligned = align_address(kValueSize, (address_t) memory.memory);
   space->memory = memory;
   space->next_free = space->start = aligned;
@@ -99,7 +99,7 @@ bool space_try_alloc(space_t *space, size_t size, address_t *memory_out) {
   if (next <= space->limit) {
     // Clear the newly allocated memory to a different value, again to make the
     // contents recognizable.
-    memset(addr, kAllocedHeapMarker, aligned);
+    memset(addr, kAllocatedHeapMarker, aligned);
     *memory_out = addr;
     space->next_free = next;
     return true;

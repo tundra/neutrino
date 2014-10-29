@@ -295,9 +295,9 @@ ENUM_SPECIES_DIVISIONS(DECLARE_DIVISION_BEHAVIOR_IMPLS)
 
 // Declare the functions that implement the behaviors too, that way they can be
 // implemented wherever.
-#define __DECLARE_PHYLUM_FUNCTIONS__(Phylum, phylum, CM, SR)                   \
+#define __DECLARE_PHYLUM_FUNCTIONS__(Phylum, phylum, SR, MINOR, N)             \
 void phylum##_print_on(value_t value, print_on_context_t *context);            \
-CM(                                                                            \
+mpCm MINOR (                                                                   \
   value_t phylum##_ordering_compare(value_t a, value_t b);,                    \
   )                                                                            \
 SR(                                                                            \
@@ -326,7 +326,7 @@ typedef struct {
 } phylum_behavior_t;
 
 // Declare the division behavior structs.
-#define DECLARE_PHYLUM_BEHAVIOR(Phylum, phylum, CM, SR)                        \
+#define DECLARE_PHYLUM_BEHAVIOR(Phylum, phylum, SR, MINOR, N)                  \
 extern phylum_behavior_t k##Phylum##PhylumBehavior;
 ENUM_CUSTOM_TAGGED_PHYLUMS(DECLARE_PHYLUM_BEHAVIOR)
 #undef DECLARE_PHYLUM_BEHAVIOR

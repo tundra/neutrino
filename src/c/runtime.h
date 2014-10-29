@@ -141,7 +141,7 @@ typedef enum {
 
   // Phylum-related roots.
 #define __EMIT_PHYLUM_TYPE__(phylum) , rk_##phylum##_type
-#define __EMIT_PER_PHYLUM_ENUMS__(Phylum, phylum, CM, SR)                      \
+#define __EMIT_PER_PHYLUM_ENUMS__(Phylum, phylum, SR, MINOR, N)                \
   SR(                                                                          \
     __EMIT_PHYLUM_TYPE__(phylum),                                              \
     )

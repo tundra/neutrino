@@ -88,3 +88,18 @@ TEST(heap, clone) {
 
   DISPOSE_RUNTIME();
 }
+
+TEST(heap, zappers) {
+  // Check that memory cleared with the heap markers result in the memory
+  // holding somewhat meaningful values.
+  value_t zapped;
+  memset(&zapped.encoded, kUnusedHeapMarker, sizeof(zapped.encoded));
+  ASSERT_EQ(vdCustomTagged, get_value_domain(zapped));
+  ASSERT_EQ(tpUnusedMemory, get_custom_tagged_phylum(zapped));
+  memset(&zapped.encoded, kAllocatedHeapMarker, sizeof(zapped.encoded));
+  ASSERT_EQ(vdCustomTagged, get_value_domain(zapped));
+  ASSERT_EQ(tpAllocatedMemory, get_custom_tagged_phylum(zapped));
+  memset(&zapped.encoded, kFreedHeapMarker, sizeof(zapped.encoded));
+  ASSERT_EQ(vdCustomTagged, get_value_domain(zapped));
+  ASSERT_EQ(tpFreedMemory, get_custom_tagged_phylum(zapped));
+}

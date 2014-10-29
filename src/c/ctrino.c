@@ -39,12 +39,12 @@ static value_t ctrino_get_builtin_type(builtin_arguments_t *args) {
       return type;                                                             \
   } while (false);
   // Match against the built-in families.
-#define __CHECK_BUILTIN_FAMILY_OPT__(Family, family, MD, SR, MINOR, N) \
+#define __CHECK_BUILTIN_FAMILY_OPT__(Family, family, MD, SR, MINOR, N)         \
   SR(__CHECK_BUILTIN_TYPE__(family),)
   ENUM_HEAP_OBJECT_FAMILIES(__CHECK_BUILTIN_FAMILY_OPT__)
 #undef __CHECK_BUILTIN_FAMILY_OPT__
   // Match against the built-in phylums.
-#define __CHECK_BUILTIN_PHYLUM_OPT__(Phylum, phylum, CM, SR)                   \
+#define __CHECK_BUILTIN_PHYLUM_OPT__(Phylum, phylum, SR, MINOR, N)             \
   SR(__CHECK_BUILTIN_TYPE__(phylum),)
   ENUM_CUSTOM_TAGGED_PHYLUMS(__CHECK_BUILTIN_PHYLUM_OPT__)
 #undef __CHECK_BUILTIN_PHYLUM_OPT__
