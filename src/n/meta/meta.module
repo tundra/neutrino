@@ -9,7 +9,7 @@ module $meta {
 
   source [
     "field.n",
-    "hash_binder.n",
+    "hash_oracle.n",
     "instance.n",
     "module.n"
   ]

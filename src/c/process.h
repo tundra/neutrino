@@ -579,7 +579,7 @@ ACCESSORS_DECL(task, stack);
 static const size_t kProcessSize = HEAP_OBJECT_SIZE(3);
 static const size_t kProcessWorkQueueOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kProcessRootTaskOffset = HEAP_OBJECT_FIELD_OFFSET(1);
-static const size_t kProcessHashStreamOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kProcessHashSourceOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 #define kProcessWorkQueueWidth 4
 
@@ -590,8 +590,8 @@ ACCESSORS_DECL(process, work_queue);
 // queue.
 ACCESSORS_DECL(process, root_task);
 
-// This process' built-in hash stream.
-ACCESSORS_DECL(process, hash_stream);
+// This process' built-in hash source.
+ACCESSORS_DECL(process, hash_source);
 
 // A collection of values that make up a pending job.
 typedef struct {

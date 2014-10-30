@@ -413,8 +413,8 @@ static inline value_t chase_moved_object(value_t raw) {
   F(Guard,                   guard,                     X, _, (_, _, _, _, _, _, _, _), 30)\
   F(GuardAst,                guard_ast,                 X, X, (_, _, X, _, _, _, _, _), 38)\
   F(HardField,               hard_field,                _, X, (_, _, _, _, _, _, _, _), 31)\
-  F(HashBinder,              hash_binder,               X, X, (_, _, _, _, _, _, X, _), 87)\
-  F(HashStream,              hash_stream,               _, X, (_, _, _, X, _, _, _, _), 86)\
+  F(HashOracle,              hash_oracle,               X, X, (_, _, _, _, _, _, X, _), 87)\
+  F(HashSource,              hash_source,               _, X, (_, _, _, X, _, _, _, _), 86)\
   F(Identifier,              identifier,                X, _, (X, X, X, _, _, _, _, _), 27)\
   F(IdHashMap,               id_hash_map,               X, X, (_, _, _, _, X, _, X, _), 24)\
   F(Instance,                instance,                  _, X, (_, _, X, _, _, _, X, _), 60)\
@@ -1846,40 +1846,41 @@ void set_ambience_runtime(value_t self, runtime_t *runtime);
 ACCESSORS_DECL(ambience, methodspace);
 
 
-/// ## Hash binder
+/// ## Hash oracle
 ///
-/// A hash binder is an object that can bind hash values to objects. The hash
-/// values for all hash binders come from the same global hash stream, so any
-/// hash binder will yield the same results. The purpose of a hash binder is to
-/// have an object that can both be mutable (so we can associate new state with
-/// existing frozen objects -- there always has to be something mutable involved
-/// when you change state) but can eventually be frozen so you can deep freeze
-/// objects that rely on hashing. The hash stream is inherently mutable since
-/// it's shared so freezing it will stop all code from generating new hash
-/// codes, so we need this other object to stand in for it.
+/// A hash oracle is an object that can bind hash values to objects. The hash
+/// values generated for a hash oracle come from a hash source which can be
+/// shared between multiple oracles which, then, will all yield the same
+/// results. The purpose of a hash oracle is to have an object that can both be
+/// mutable (so we can associate new state with existing frozen objects -- there
+/// always has to be something mutable involved when you change state) but can
+/// eventually be frozen so you can deep freeze objects that rely on hashing.
+/// The hash source is inherently mutable since it's shared so freezing it will
+/// stop all code from generating new hash codes, so we need this other object
+/// to stand in for it.
 
-static const size_t kHashBinderSize = HEAP_OBJECT_SIZE(2);
-static const size_t kHashBinderStreamOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kHashBinderLimitOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kHashOracleSize = HEAP_OBJECT_SIZE(2);
+static const size_t kHashOracleSourceOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kHashOracleLimitOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
-// Returns the stream underlying this binder.
-ACCESSORS_DECL(hash_binder, stream);
+// Returns the source underlying this oracle.
+ACCESSORS_DECL(hash_oracle, source);
 
-// If this hash binder has been frozen this field holds the hash serial number
+// If this hash oracle has been frozen this field holds the hash serial number
 // at which it was frozen.
-ACCESSORS_DECL(hash_binder, limit);
+ACCESSORS_DECL(hash_oracle, limit);
 
 
-/// ## Hash stream
+/// ## Hash source
 ///
 /// A stream of randomly generated (but deterministic) hashes that can be
-/// associated with objects. User code is free to make and use hash streams
+/// associated with objects. User code is free to make and use hash sources
 /// so they're not magic as such -- but all processes come with a hidden
-/// built-in hash stream which provides identity hash values for objects.
+/// built-in hash source which provides identity hash values for objects.
 
-static const size_t kHashStreamStateOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kHashSourceStateOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
-// The internal state of a hash stream.
+// The internal state of a hash source.
 typedef struct {
   // The mersenne twister used to generate hashes.
   tinymt64_t twister;
@@ -1892,21 +1893,24 @@ typedef struct {
   // means 2B hashes per second. 2B is roughly 2^31 which means that you'll run
   // out of space within 64 bits in 2^33 seconds. 2^33 seconds is around 272
   // years. It seems safe -- at least presently -- to assume that that's not a
-  // case we'll run into in practice. Even for a program designed to run for a
-  // few centuries, in all likelihood something else will have caused the
-  // process to exit before this becomes an issue.
+  // case we'll run into in practice. Even for a program designed to run for
+  // 2^33 cycles, in all likelihood something else will have caused the process
+  // to exit before this becomes an issue.
   uint64_t next_serial;
-} hash_stream_state_t;
+} hash_source_state_t;
 
-// Returns the size of a hash stream. This is not a constant because calculating
+// Returns the size of a hash source. This is not a constant because calculating
 // it involves some arithmetic.
-size_t hash_stream_size();
+size_t hash_source_size();
 
-// Returns a pointer to the internal state of a hash stream.
-hash_stream_state_t *get_hash_stream_state(value_t self);
+// Returns a pointer to the internal state of a hash source.
+hash_source_state_t *get_hash_source_state(value_t self);
 
-// Returns the stream underlying this binder.
-ACCESSORS_DECL(hash_stream, field);
+// Returns the field used to bind generated hashes to values.
+//
+// TODO: change this to a soft field so it also works for frozen objects and
+//   primitive values.
+ACCESSORS_DECL(hash_source, field);
 
 
 // --- M i s c ---

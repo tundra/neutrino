@@ -30,7 +30,7 @@ file_names = [
   "functino_multis.n",
   "functino_selectors.n",
   "hanoi.n",
-  "hash_binder.n",
+  "hash_oracle.n",
   "if.n",
   "integer.n",
   "interval.n",

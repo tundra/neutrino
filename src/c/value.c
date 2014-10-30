@@ -2616,36 +2616,36 @@ runtime_t *get_ambience_runtime(value_t self) {
 }
 
 
-/// ## Hash binder
+/// ## Hash oracle
 
-GET_FAMILY_PRIMARY_TYPE_IMPL(hash_binder);
-TRIVIAL_PRINT_ON_IMPL(HashBinder, hash_binder);
+GET_FAMILY_PRIMARY_TYPE_IMPL(hash_oracle);
+TRIVIAL_PRINT_ON_IMPL(HashOracle, hash_oracle);
 
-ACCESSORS_IMPL(HashBinder, hash_binder, acInFamily, ofHashStream, Stream,
-    stream);
-FROZEN_ACCESSORS_IMPL(HashBinder, hash_binder, acInDomainOpt, vdInteger, Limit,
+ACCESSORS_IMPL(HashOracle, hash_oracle, acInFamily, ofHashSource, Source,
+    source);
+FROZEN_ACCESSORS_IMPL(HashOracle, hash_oracle, acInDomainOpt, vdInteger, Limit,
     limit);
 
-value_t hash_binder_validate(value_t self) {
-  VALIDATE_FAMILY(ofHashBinder, self);
-  VALIDATE_FAMILY(ofHashStream, get_hash_binder_stream(self));
-  VALIDATE_DOMAIN_OPT(vdInteger, get_hash_binder_limit(self));
+value_t hash_oracle_validate(value_t self) {
+  VALIDATE_FAMILY(ofHashOracle, self);
+  VALIDATE_FAMILY(ofHashSource, get_hash_oracle_source(self));
+  VALIDATE_DOMAIN_OPT(vdInteger, get_hash_oracle_limit(self));
   return success();
 }
 
-static value_t hash_binder_get_or_bind_hash_code(builtin_arguments_t *args) {
+static value_t hash_oracle_ensure_hash_code(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  CHECK_FAMILY(ofHashBinder, self);
+  CHECK_FAMILY(ofHashOracle, self);
   CHECK_MUTABLE(self);
   value_t value = get_builtin_argument(args, 0);
-  value_t stream = get_hash_binder_stream(self);
-  value_t field = get_hash_stream_field(stream);
+  value_t source = get_hash_oracle_source(self);
+  value_t field = get_hash_source_field(source);
   value_t hash_pair = get_instance_field(value, field);
   if (in_condition_cause(ccNotFound, hash_pair)) {
     // There's no hash already so we have to bind one. Generate one from the
     // twister.
     runtime_t *runtime = get_builtin_runtime(args);
-    hash_stream_state_t *state = get_hash_stream_state(stream);
+    hash_source_state_t *state = get_hash_source_state(source);
     uint64_t next_next_serial = state->next_serial + 1;
     tinymt64_state_t new_twister_state;
     uint64_t code64 = tinymt64_next_uint64(&state->twister, &new_twister_state);
@@ -2662,17 +2662,17 @@ static value_t hash_binder_get_or_bind_hash_code(builtin_arguments_t *args) {
   return get_pair_first(hash_pair);
 }
 
-static value_t hash_binder_get_hash_code(builtin_arguments_t *args) {
+static value_t hash_oracle_peek_hash_code(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  CHECK_FAMILY(ofHashBinder, self);
+  CHECK_FAMILY(ofHashOracle, self);
   value_t value = get_builtin_argument(args, 0);
-  value_t stream = get_hash_binder_stream(self);
-  value_t field = get_hash_stream_field(stream);
+  value_t source = get_hash_oracle_source(self);
+  value_t field = get_hash_source_field(source);
   value_t hash_pair = get_instance_field(value, field);
   if (in_condition_cause(ccNotFound, hash_pair)) {
     return null();
   } else {
-    value_t limit = get_hash_binder_limit(self);
+    value_t limit = get_hash_oracle_limit(self);
     if (is_nothing(limit)) {
       return get_pair_first(hash_pair);
     } else {
@@ -2686,70 +2686,71 @@ static value_t hash_binder_get_hash_code(builtin_arguments_t *args) {
   }
 }
 
-value_t ensure_hash_binder_owned_values_frozen(runtime_t *runtime, value_t self) {
-  CHECK_FAMILY(ofHashBinder, self);
-  value_t stream = get_hash_binder_stream(self);
-  hash_stream_state_t *state = get_hash_stream_state(stream);
-  init_frozen_hash_binder_limit(self, new_integer(state->next_serial));
+value_t ensure_hash_oracle_owned_values_frozen(runtime_t *runtime, value_t self) {
+  CHECK_FAMILY(ofHashOracle, self);
+  value_t source = get_hash_oracle_source(self);
+  hash_source_state_t *state = get_hash_source_state(source);
+  init_frozen_hash_oracle_limit(self, new_integer(state->next_serial));
   return success();
 }
 
-value_t add_hash_binder_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  ADD_BUILTIN_IMPL("hash_binder.get_or_bind_hash_code!", 1, hash_binder_get_or_bind_hash_code);
-  ADD_BUILTIN_IMPL("hash_binder.get_hash_code", 1, hash_binder_get_hash_code);
+value_t add_hash_oracle_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("hash_oracle.ensure_hash_code!", 1, hash_oracle_ensure_hash_code);
+  ADD_BUILTIN_IMPL("hash_oracle.peek_hash_code", 1, hash_oracle_peek_hash_code);
   return success();
 }
 
 
-/// ## Hash stream
+/// ## Hash source
 
-GET_FAMILY_PRIMARY_TYPE_IMPL(hash_stream);
-TRIVIAL_PRINT_ON_IMPL(HashStream, hash_stream);
-FIXED_GET_MODE_IMPL(hash_stream, vmMutable);
+GET_FAMILY_PRIMARY_TYPE_IMPL(hash_source);
+TRIVIAL_PRINT_ON_IMPL(HashSource, hash_source);
+FIXED_GET_MODE_IMPL(hash_source, vmMutable);
 
-static size_t hash_stream_state_size() {
-  return align_size(kValueSize, sizeof(hash_stream_state_t));
+static size_t hash_source_state_size() {
+  return align_size(kValueSize, sizeof(hash_source_state_t));
 }
 
-static size_t hash_stream_values_offset() {
-  return kHeapObjectHeaderSize + hash_stream_state_size();
+static size_t hash_source_values_offset() {
+  return kHeapObjectHeaderSize + hash_source_state_size();
 }
 
-size_t hash_stream_size() {
+size_t hash_source_size() {
   return kHeapObjectHeaderSize    // header
       + kValueSize                // field
-      + hash_stream_state_size(); // contents
+      + hash_source_state_size(); // contents
 }
 
-hash_stream_state_t *get_hash_stream_state(value_t self) {
-  CHECK_FAMILY(ofHashStream, self);
-  void *data = access_heap_object_field(self, kHashStreamStateOffset);
-  return (hash_stream_state_t*) data;
+hash_source_state_t *get_hash_source_state(value_t self) {
+  CHECK_FAMILY(ofHashSource, self);
+  void *data = access_heap_object_field(self, kHashSourceStateOffset);
+  return (hash_source_state_t*) data;
 }
 
-void set_hash_stream_field(value_t self, value_t value) {
-  CHECK_FAMILY(ofHashStream, self);
+void set_hash_source_field(value_t self, value_t value) {
+  CHECK_FAMILY(ofHashSource, self);
   CHECK_MUTABLE(self);
   CHECK_FAMILY(ofHardField, value);
-  *access_heap_object_field(self, hash_stream_values_offset()) = value;
+  *access_heap_object_field(self, hash_source_values_offset()) = value;
 }
 
-value_t get_hash_stream_field(value_t self) {
-  CHECK_FAMILY(ofHashStream, self);
-  return *access_heap_object_field(self, hash_stream_values_offset());
+value_t get_hash_source_field(value_t self) {
+  CHECK_FAMILY(ofHashSource, self);
+  return *access_heap_object_field(self, hash_source_values_offset());
 }
 
-void get_hash_stream_layout(value_t value, heap_object_layout_t *layout) {
-  size_t size = hash_stream_size();
-  heap_object_layout_set(layout, size, hash_stream_values_offset());
+void get_hash_source_layout(value_t value, heap_object_layout_t *layout) {
+  size_t size = hash_source_size();
+  heap_object_layout_set(layout, size, hash_source_values_offset());
 }
 
-value_t hash_stream_validate(value_t self) {
-  VALIDATE_FAMILY(ofHashStream, self);
+value_t hash_source_validate(value_t self) {
+  VALIDATE_FAMILY(ofHashSource, self);
+  VALIDATE_FAMILY(ofHardField, get_hash_source_field(self));
   return success();
 }
 
-value_t add_hash_stream_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+value_t add_hash_source_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   return success();
 }
 

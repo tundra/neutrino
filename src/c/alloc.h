@@ -226,11 +226,11 @@ value_t new_heap_freeze_cheat(runtime_t *runtime, value_t value);
 // Creates a new pending promise.
 value_t new_heap_pending_promise(runtime_t *runtime);
 
-// Returns a new hash stream initialized with the given seed.
-value_t new_heap_hash_stream(runtime_t *runtime, uint64_t seed);
+// Returns a new hash source initialized with the given seed.
+value_t new_heap_hash_source(runtime_t *runtime, uint64_t seed);
 
-// Returns a new hash binder backed by the given stream.
-value_t new_heap_hash_binder(runtime_t *runtime, value_t stream);
+// Returns a new hash oracle backed by the given source.
+value_t new_heap_hash_oracle(runtime_t *runtime, value_t stream);
 
 
 // --- P r o c e s s ---

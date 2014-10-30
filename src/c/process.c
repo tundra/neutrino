@@ -827,13 +827,13 @@ TRIVIAL_PRINT_ON_IMPL(Process, process);
 
 ACCESSORS_IMPL(Process, process, acInFamily, ofFifoBuffer, WorkQueue, work_queue);
 ACCESSORS_IMPL(Process, process, acInFamily, ofTask, RootTask, root_task);
-ACCESSORS_IMPL(Process, process, acInFamily, ofHashStream, HashStream, hash_stream);
+ACCESSORS_IMPL(Process, process, acInFamily, ofHashSource, HashSource, hash_source);
 
 value_t process_validate(value_t self) {
   VALIDATE_FAMILY(ofProcess, self);
   VALIDATE_FAMILY(ofFifoBuffer, get_process_work_queue(self));
   VALIDATE_FAMILY(ofTask, get_process_root_task(self));
-  VALIDATE_FAMILY(ofHashStream, get_process_hash_stream(self));
+  VALIDATE_FAMILY(ofHashSource, get_process_hash_source(self));
   return success();
 }
 

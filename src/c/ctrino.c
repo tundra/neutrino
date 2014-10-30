@@ -201,32 +201,32 @@ static value_t ctrino_new_pending_promise(builtin_arguments_t *args) {
   return new_heap_pending_promise(runtime);
 }
 
-static value_t ctrino_new_hash_stream(builtin_arguments_t *args) {
+static value_t ctrino_new_hash_source(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t seed_val = get_builtin_argument(args, 0);
   CHECK_C_OBJECT_TAG(btCtrino, self);
   CHECK_DOMAIN(vdInteger, seed_val);
   uint64_t seed = get_integer_value(seed_val);
   runtime_t *runtime = get_builtin_runtime(args);
-  return new_heap_hash_stream(runtime, seed);
+  return new_heap_hash_source(runtime, seed);
 }
 
-static value_t ctrino_new_hash_binder(builtin_arguments_t *args) {
+static value_t ctrino_new_hash_oracle(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  value_t stream = get_builtin_argument(args, 0);
+  value_t source = get_builtin_argument(args, 0);
   CHECK_C_OBJECT_TAG(btCtrino, self);
-  CHECK_FAMILY(ofHashStream, stream);
+  CHECK_FAMILY(ofHashSource, source);
   runtime_t *runtime = get_builtin_runtime(args);
-  return new_heap_hash_binder(runtime, stream);
+  return new_heap_hash_oracle(runtime, source);
 }
 
-static value_t ctrino_new_global_hash_binder(builtin_arguments_t *args) {
+static value_t ctrino_new_global_hash_oracle(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_C_OBJECT_TAG(btCtrino, self);
   value_t process = get_builtin_process(args);
-  value_t stream = get_process_hash_stream(process);
+  value_t source = get_process_hash_source(process);
   runtime_t *runtime = get_builtin_runtime(args);
-  return new_heap_hash_binder(runtime, stream);
+  return new_heap_hash_oracle(runtime, source);
 }
 
 #define kCtrinoMethodCount 19
@@ -242,9 +242,9 @@ static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("new_array", 1, ctrino_new_array),
   BUILTIN_METHOD("new_float_32", 1, ctrino_new_float_32),
   BUILTIN_METHOD("new_function", 1, ctrino_new_function),
-  BUILTIN_METHOD("new_hash_stream", 1, ctrino_new_hash_stream),
-  BUILTIN_METHOD("new_hash_binder", 1, ctrino_new_hash_binder),
-  BUILTIN_METHOD("new_global_hash_binder", 0, ctrino_new_global_hash_binder),
+  BUILTIN_METHOD("new_hash_source", 1, ctrino_new_hash_source),
+  BUILTIN_METHOD("new_hash_oracle", 1, ctrino_new_hash_oracle),
+  BUILTIN_METHOD("new_global_hash_oracle", 0, ctrino_new_global_hash_oracle),
   BUILTIN_METHOD("new_instance_manager", 1, ctrino_new_instance_manager),
   BUILTIN_METHOD("new_pending_promise", 0, ctrino_new_pending_promise),
   BUILTIN_METHOD("new_plugin_instance", 1, ctrino_new_plugin_instance),

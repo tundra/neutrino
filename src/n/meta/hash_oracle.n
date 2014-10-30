@@ -1,0 +1,25 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## The built-in type of hash oracles, objects that can produce hash values for
+## objects.
+def @HashOracle := @ctrino.get_builtin_type("HashOracle");
+
+## Creates and returns a new hash binder backed by the given stream.
+def ($this == @HashOracle).new($source) => @ctrino.new_hash_oracle($source);
+
+## Creates and returns a new hash binder backed by the current process'
+## global hash stream.
+def ($this == @HashOracle).new() => @ctrino.new_global_hash_oracle();
+
+## If the given value has already been given a hash value using this oracle or
+## any other one created from the same hash source, return that hash code. If
+## not, pull the next hash from the stream and assign it to the value.
+@ctrino.builtin("hash_oracle.ensure_hash_code!")
+def ($this is @HashOracle).ensure_hash_code!($value);
+
+## If the given value has already been given a hash value using this oracle or
+## any other created from the same hash source before this one was frozen (if it
+## frozen) return that hash code. If not returns null.
+@ctrino.builtin("hash_oracle.peek_hash_code")
+def ($this is @HashOracle).peek_hash_code($value);
