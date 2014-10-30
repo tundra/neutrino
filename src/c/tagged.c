@@ -296,6 +296,25 @@ value_t add_ascii_character_builtin_implementations(runtime_t *runtime, safe_val
   return success();
 }
 
+/// ## Hash code
+
+GET_FAMILY_PRIMARY_TYPE_IMPL(hash_code);
+
+void hash_code_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<hash_code %llx>", get_hash_code_value(value));
+}
+
+value_t hash_code_ordering_compare(value_t a, value_t b) {
+  CHECK_PHYLUM(tpHashCode, a);
+  CHECK_PHYLUM(tpHashCode, b);
+  return compare_signed_integers(get_hash_code_value(a), get_hash_code_value(b));
+}
+
+value_t add_hash_code_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  return success();
+}
+
+
 /// Memory markers
 
 TRIVIAL_PHYLUM_PRINT_ON(unused_memory);

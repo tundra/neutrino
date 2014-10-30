@@ -14,10 +14,16 @@
 
 // --- M i s c ---
 
+// Expands to an expression that yields the given size rounded up to the nearest
+// multiple of the given alignment. This evaluates the alignment twice and may
+// mess with the types involved (64/32 bits) so if at all possible use
+// align_size instead.
+#define STATIC_ALIGN_SIZE(ALGN, SIZE) (((SIZE) + ((ALGN) - 1)) & (~((ALGN) - 1)))
+
 // Returns a pointer greater than or equal to the given pointer which is
 // aligned to an 'alignment' boundary.
 static size_t align_size(uint32_t alignment, size_t size) {
-  return (size + (alignment - 1)) & ~(alignment - 1);
+  return STATIC_ALIGN_SIZE(alignment, size);
 }
 
 

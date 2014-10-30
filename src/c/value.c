@@ -805,6 +805,14 @@ value_t binary_search_pair_array(value_t self, value_t key) {
   return new_not_found_condition();
 }
 
+value_t get_pair_first(value_t pair) {
+  return get_array_at(pair, 0);
+}
+
+value_t get_pair_second(value_t pair) {
+  return get_array_at(pair, 1);
+}
+
 value_t array_transient_identity_hash(value_t value, hash_stream_t *stream,
     cycle_detector_t *outer) {
   size_t length = get_array_length(value);
@@ -2606,6 +2614,145 @@ runtime_t *get_ambience_runtime(value_t self) {
   return (runtime_t*) value_to_pointer_bit_cast(
       *access_heap_object_field(self, kAmbienceRuntimeOffset));
 }
+
+
+/// ## Hash binder
+
+GET_FAMILY_PRIMARY_TYPE_IMPL(hash_binder);
+TRIVIAL_PRINT_ON_IMPL(HashBinder, hash_binder);
+
+ACCESSORS_IMPL(HashBinder, hash_binder, acInFamily, ofHashStream, Stream,
+    stream);
+FROZEN_ACCESSORS_IMPL(HashBinder, hash_binder, acInDomainOpt, vdInteger, Limit,
+    limit);
+
+value_t hash_binder_validate(value_t self) {
+  VALIDATE_FAMILY(ofHashBinder, self);
+  VALIDATE_FAMILY(ofHashStream, get_hash_binder_stream(self));
+  VALIDATE_DOMAIN_OPT(vdInteger, get_hash_binder_limit(self));
+  return success();
+}
+
+static value_t hash_binder_get_or_bind_hash_code(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofHashBinder, self);
+  CHECK_MUTABLE(self);
+  value_t value = get_builtin_argument(args, 0);
+  value_t stream = get_hash_binder_stream(self);
+  value_t field = get_hash_stream_field(stream);
+  value_t hash_pair = get_instance_field(value, field);
+  if (in_condition_cause(ccNotFound, hash_pair)) {
+    // There's no hash already so we have to bind one. Generate one from the
+    // twister.
+    runtime_t *runtime = get_builtin_runtime(args);
+    hash_stream_state_t *state = get_hash_stream_state(stream);
+    uint64_t next_next_serial = state->next_serial + 1;
+    tinymt64_state_t new_twister_state;
+    uint64_t code64 = tinymt64_next_uint64(&state->twister, &new_twister_state);
+    value_t hash_code = new_hash_code(code64);
+    // Try to cache the hash state in the object.
+    TRY_SET(hash_pair, new_heap_pair(runtime, hash_code, new_integer(state->next_serial)));
+    TRY(set_instance_field(runtime, value, field, hash_pair));
+    // If we succeeded we can update the state. If any part failed we have to
+    // be sure that nothing has changed so we can try again, that's why the
+    // update comes at the very end.
+    state->next_serial = next_next_serial;
+    state->twister.state = new_twister_state;
+  }
+  return get_pair_first(hash_pair);
+}
+
+static value_t hash_binder_get_hash_code(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofHashBinder, self);
+  value_t value = get_builtin_argument(args, 0);
+  value_t stream = get_hash_binder_stream(self);
+  value_t field = get_hash_stream_field(stream);
+  value_t hash_pair = get_instance_field(value, field);
+  if (in_condition_cause(ccNotFound, hash_pair)) {
+    return null();
+  } else {
+    value_t limit = get_hash_binder_limit(self);
+    if (is_nothing(limit)) {
+      return get_pair_first(hash_pair);
+    } else {
+      value_t serial = get_pair_second(hash_pair);
+      if (get_integer_value(serial) < get_integer_value(limit)) {
+        return get_pair_first(hash_pair);
+      } else {
+        return null();
+      }
+    }
+  }
+}
+
+value_t ensure_hash_binder_owned_values_frozen(runtime_t *runtime, value_t self) {
+  CHECK_FAMILY(ofHashBinder, self);
+  value_t stream = get_hash_binder_stream(self);
+  hash_stream_state_t *state = get_hash_stream_state(stream);
+  init_frozen_hash_binder_limit(self, new_integer(state->next_serial));
+  return success();
+}
+
+value_t add_hash_binder_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("hash_binder.get_or_bind_hash_code!", 1, hash_binder_get_or_bind_hash_code);
+  ADD_BUILTIN_IMPL("hash_binder.get_hash_code", 1, hash_binder_get_hash_code);
+  return success();
+}
+
+
+/// ## Hash stream
+
+GET_FAMILY_PRIMARY_TYPE_IMPL(hash_stream);
+TRIVIAL_PRINT_ON_IMPL(HashStream, hash_stream);
+FIXED_GET_MODE_IMPL(hash_stream, vmMutable);
+
+static size_t hash_stream_state_size() {
+  return align_size(kValueSize, sizeof(hash_stream_state_t));
+}
+
+static size_t hash_stream_values_offset() {
+  return kHeapObjectHeaderSize + hash_stream_state_size();
+}
+
+size_t hash_stream_size() {
+  return kHeapObjectHeaderSize    // header
+      + kValueSize                // field
+      + hash_stream_state_size(); // contents
+}
+
+hash_stream_state_t *get_hash_stream_state(value_t self) {
+  CHECK_FAMILY(ofHashStream, self);
+  void *data = access_heap_object_field(self, kHashStreamStateOffset);
+  return (hash_stream_state_t*) data;
+}
+
+void set_hash_stream_field(value_t self, value_t value) {
+  CHECK_FAMILY(ofHashStream, self);
+  CHECK_MUTABLE(self);
+  CHECK_FAMILY(ofHardField, value);
+  *access_heap_object_field(self, hash_stream_values_offset()) = value;
+}
+
+value_t get_hash_stream_field(value_t self) {
+  CHECK_FAMILY(ofHashStream, self);
+  return *access_heap_object_field(self, hash_stream_values_offset());
+}
+
+void get_hash_stream_layout(value_t value, heap_object_layout_t *layout) {
+  size_t size = hash_stream_size();
+  heap_object_layout_set(layout, size, hash_stream_values_offset());
+}
+
+value_t hash_stream_validate(value_t self) {
+  VALIDATE_FAMILY(ofHashStream, self);
+  return success();
+}
+
+value_t add_hash_stream_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  return success();
+}
+
 
 
 // --- M i s c ---

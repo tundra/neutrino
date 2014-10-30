@@ -509,6 +509,7 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
   runtime->file_system = config->file_system;
   if (runtime->file_system == NULL)
     runtime->file_system = file_system_native();
+  runtime->random = new_tinymt64(tinymt64_params_default(), config->random_seed);
   TRY(runtime_hard_init(runtime, config));
   TRY(runtime_soft_init(runtime));
   TRY(runtime_freeze_shared_state(runtime));

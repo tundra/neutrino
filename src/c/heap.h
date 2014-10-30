@@ -82,6 +82,11 @@ typedef struct {
   // The object that provides access to the file system. Null means use the
   // system default.
   file_system_t *file_system;
+  // The seed used for the pseudo-random number generator used within this
+  // runtime. Note that this seed is not the only source of nondeterminism in
+  // a runtime so running the same program twice with the same seed will not
+  // necessarily give the same result.
+  uint64_t random_seed;
 } runtime_config_t;
 
 // Initializes the fields of this runtime config to the defaults. These defaults

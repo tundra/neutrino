@@ -320,11 +320,36 @@ static value_t new_ascii_character(uint8_t value) {
   return new_custom_tagged(tpAsciiCharacter, value);
 }
 
-// Returns the integer value of the given stage offset.
+// Returns the ordinal of the given ascii character.
 static uint8_t get_ascii_character_value(value_t value) {
   CHECK_PHYLUM(tpAsciiCharacter, value);
   return (uint8_t) get_custom_tagged_payload(value);
 }
+
+
+/// ## Hash code
+///
+/// A wrapper around a generated or calculated hash code.
+
+// Returns a new tagged hash code value. If the code is greater than 48 bits
+// (the capacity of a tagged value payload) the top bits will be silently
+// discarded. Don't depend on how they're discarded for correctness though.
+static value_t new_hash_code(uint64_t value) {
+  // Shifting away the top bits like this ensures that the top bit within the
+  // range we can actually represent becomes the sign bit of the truncated
+  // value. Basically we're smearing the top bit across the whole top of the
+  // value.
+  size_t bits_to_discard = 64 - kCustomTaggedPayloadSize;
+  int64_t truncated = (((int64_t) value) << bits_to_discard) >> bits_to_discard;
+  return new_custom_tagged(tpHashCode, truncated);
+}
+
+// Returns the integer value of the given hash code.
+static uint64_t get_hash_code_value(value_t value) {
+  CHECK_PHYLUM(tpHashCode, value);
+  return get_custom_tagged_payload(value) & ((1ULL << kCustomTaggedPayloadSize) - 1);
+}
+
 
 
 #endif // _TAGGED

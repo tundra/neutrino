@@ -41,6 +41,7 @@
 #include "utils/check.h"
 #include "utils/strbuf.h"
 #include "utils/string.h"
+#include "utils/tinymt.h"
 
 FORWARD(blob_t);
 FORWARD(cycle_detector_t);
@@ -412,6 +413,8 @@ static inline value_t chase_moved_object(value_t raw) {
   F(Guard,                   guard,                     X, _, (_, _, _, _, _, _, _, _), 30)\
   F(GuardAst,                guard_ast,                 X, X, (_, _, X, _, _, _, _, _), 38)\
   F(HardField,               hard_field,                _, X, (_, _, _, _, _, _, _, _), 31)\
+  F(HashBinder,              hash_binder,               X, X, (_, _, _, _, _, _, X, _), 87)\
+  F(HashStream,              hash_stream,               _, X, (_, _, _, X, _, _, _, _), 86)\
   F(Identifier,              identifier,                X, _, (X, X, X, _, _, _, _, _), 27)\
   F(IdHashMap,               id_hash_map,               X, X, (_, _, _, _, X, _, X, _), 24)\
   F(Instance,                instance,                  _, X, (_, _, X, _, _, _, X, _), 60)\
@@ -470,7 +473,7 @@ static inline value_t chase_moved_object(value_t raw) {
 // family enum values are not the raw ordinals but the ordinals shifted left by
 // the tag size so that they're tagged as integers. Those values are sometimes
 // stored as uint16s so the ordinals are allowed to take up to 14 bits.
-static const int kNextFamilyOrdinal = 85;
+static const int kNextFamilyOrdinal = 88;
 
 // Enumerates all the object families.
 #define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \
@@ -704,6 +707,7 @@ ACCESSORS_DECL(heap_object, header);
   F(Score,                   score,                     _, (X),   8)           \
   F(StageOffset,             stage_offset,              _, (X),   9)           \
   F(DerivedObjectAnchor,     derived_object_anchor,     _, (_),  10)           \
+  F(HashCode,                hash_code,                 X, (X),  11)           \
   F(UnusedMemory,            unused_memory,             _, (_), 148)           \
   F(AllocatedMemory,         allocated_memory,          _, (_), 150)           \
   F(FreedMemory,             freed_memory,              _, (_), 152)
@@ -1186,6 +1190,14 @@ value_t get_pair_array_second_at(value_t self, size_t index);
 
 // Returns the length of this array when viewed as a pair array.
 size_t get_pair_array_length(value_t self);
+
+// Returns the first element in a heap pair, which is really just a length-2
+// array.
+value_t get_pair_first(value_t pair);
+
+// Returns the second element in a heap pair, which is really just a length-2
+// array.
+value_t get_pair_second(value_t pair);
 
 
 // --- T u p l e ---
@@ -1832,6 +1844,69 @@ void set_ambience_runtime(value_t self, runtime_t *runtime);
 
 // This ambience's methodspace.
 ACCESSORS_DECL(ambience, methodspace);
+
+
+/// ## Hash binder
+///
+/// A hash binder is an object that can bind hash values to objects. The hash
+/// values for all hash binders come from the same global hash stream, so any
+/// hash binder will yield the same results. The purpose of a hash binder is to
+/// have an object that can both be mutable (so we can associate new state with
+/// existing frozen objects -- there always has to be something mutable involved
+/// when you change state) but can eventually be frozen so you can deep freeze
+/// objects that rely on hashing. The hash stream is inherently mutable since
+/// it's shared so freezing it will stop all code from generating new hash
+/// codes, so we need this other object to stand in for it.
+
+static const size_t kHashBinderSize = HEAP_OBJECT_SIZE(2);
+static const size_t kHashBinderStreamOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kHashBinderLimitOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+
+// Returns the stream underlying this binder.
+ACCESSORS_DECL(hash_binder, stream);
+
+// If this hash binder has been frozen this field holds the hash serial number
+// at which it was frozen.
+ACCESSORS_DECL(hash_binder, limit);
+
+
+/// ## Hash stream
+///
+/// A stream of randomly generated (but deterministic) hashes that can be
+/// associated with objects. User code is free to make and use hash streams
+/// so they're not magic as such -- but all processes come with a hidden
+/// built-in hash stream which provides identity hash values for objects.
+
+static const size_t kHashStreamStateOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+
+// The internal state of a hash stream.
+typedef struct {
+  // The mersenne twister used to generate hashes.
+  tinymt64_t twister;
+  // The serial number to assign to the next hash code returned. The serial
+  // numbers are counted from 0 and up. There is no handling of overflow, if it
+  // wraps around you'll most likely see catastrophic, biblical, failure. The
+  // reasoning behind allowing this is: assume that we'll be running a program
+  // which does nothing but generate hashes and we've optimized everything such
+  // that you can generate a new hash per clock cycle. On a 2GHz processor that
+  // means 2B hashes per second. 2B is roughly 2^31 which means that you'll run
+  // out of space within 64 bits in 2^33 seconds. 2^33 seconds is around 272
+  // years. It seems safe -- at least presently -- to assume that that's not a
+  // case we'll run into in practice. Even for a program designed to run for a
+  // few centuries, in all likelihood something else will have caused the
+  // process to exit before this becomes an issue.
+  uint64_t next_serial;
+} hash_stream_state_t;
+
+// Returns the size of a hash stream. This is not a constant because calculating
+// it involves some arithmetic.
+size_t hash_stream_size();
+
+// Returns a pointer to the internal state of a hash stream.
+hash_stream_state_t *get_hash_stream_state(value_t self);
+
+// Returns the stream underlying this binder.
+ACCESSORS_DECL(hash_stream, field);
 
 
 // --- M i s c ---

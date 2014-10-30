@@ -580,6 +580,27 @@ value_t new_heap_pending_promise(runtime_t *runtime) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_hash_stream(runtime_t *runtime, uint64_t seed) {
+  size_t size = hash_stream_size();
+  TRY_DEF(field, new_heap_hard_field(runtime, nothing()));
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, hash_stream_species)));
+  hash_stream_state_t *state = get_hash_stream_state(result);
+  state->twister = new_tinymt64(tinymt64_params_default(), seed);
+  state->next_serial = 0;
+  set_hash_stream_field(result, field);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_hash_binder(runtime_t *runtime, value_t stream) {
+  size_t size = kHashBinderSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, mutable_hash_binder_species)));
+  set_hash_binder_stream(result, stream);
+  set_hash_binder_limit(result, nothing());
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- P r o c e s s ---
 
@@ -668,10 +689,15 @@ value_t new_heap_process(runtime_t *runtime) {
   size_t size = kProcessSize;
   TRY_DEF(work_queue, new_heap_fifo_buffer(runtime, kProcessWorkQueueWidth, 256));
   TRY_DEF(root_task, new_heap_task(runtime, nothing()));
+  tinymt64_state_t new_state;
+  uint64_t hash_stream_seed = tinymt64_next_uint64(&runtime->random, &new_state);
+  TRY_DEF(hash_stream, new_heap_hash_stream(runtime, hash_stream_seed));
   TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, process_species)));
   set_process_work_queue(result, work_queue);
   set_process_root_task(result, root_task);
+  set_process_hash_stream(result, hash_stream);
   set_task_process(root_task, result);
+  runtime->random.state = new_state;
   return post_create_sanity_check(result, size);
 }
 

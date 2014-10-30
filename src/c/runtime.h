@@ -245,6 +245,9 @@ struct runtime_t {
   // The object that provides access to the file system. This value is never
   // null.
   file_system_t *file_system;
+  // Non-cryptographic (but decent) random number generator used to provide
+  // pseudo randomness.
+  tinymt64_t random;
 };
 
 // Creates a new runtime object, storing it in the given runtime out parameter.

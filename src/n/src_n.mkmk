@@ -32,6 +32,7 @@ for file_name in core_file_names:
 
 meta_file_names = [
   "meta/field.n",
+  "meta/hash_binder.n",
   "meta/instance.n",
   "meta/module.n",
 ]
