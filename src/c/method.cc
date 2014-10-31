@@ -334,11 +334,9 @@ public:
   runtime_t *get_runtime();
   value_t get_ambience();
   value_t get_tags();
-  value_t get_next_guards();
 private:
   value_t ambience_;
   value_t tags_;
-  value_t next_guards_;
   size_t argc_;
   runtime_t *runtime_;
 };
@@ -346,7 +344,6 @@ private:
 AbstractSigmapInput::AbstractSigmapInput(sigmap_input_layout_t *layout) {
   ambience_ = layout->ambience;
   tags_ = layout->tags;
-  next_guards_ = layout->next_guards;
   argc_ = is_nothing(tags_) ? 0 : get_call_tags_entry_count(tags_);
   runtime_ = get_ambience_runtime(layout->ambience);
 }
@@ -375,10 +372,6 @@ value_t AbstractSigmapInput::get_tags() {
   return tags_;
 }
 
-value_t AbstractSigmapInput::get_next_guards() {
-  return next_guards_;
-}
-
 // Lookup input that gets values from a frame.
 class FrameSigmapInput : public AbstractSigmapInput {
 public:
@@ -400,14 +393,31 @@ value_t FrameSigmapInput::get_value_at(size_t index) {
 value_t FrameSigmapInput::match_value_at(size_t index, value_t guard,
     value_t space, value_t *score_out) {
   value_t value = get_value_at(index);
+  return guard_match(guard, value, get_runtime(), space, score_out);
+}
+
+// Frame input that takes next-guards into account.
+class FrameSigmapInputWithNexts : public FrameSigmapInput {
+public:
+  FrameSigmapInputWithNexts(sigmap_input_layout_t *layout, frame_t *frame);
+  value_t match_value_at(size_t index, value_t guard, value_t space, value_t *score_out);
+private:
+  value_t next_guards_;
+};
+
+FrameSigmapInputWithNexts::FrameSigmapInputWithNexts(sigmap_input_layout_t *layout,
+    frame_t *frame)
+  : FrameSigmapInput(layout, frame)
+  , next_guards_(layout->next_guards) {
+  CHECK_FALSE("next frame input without next guards", is_nothing(layout->next_guards));
+}
+
+value_t FrameSigmapInputWithNexts::match_value_at(size_t index, value_t guard,
+    value_t space, value_t *score_out) {
+  value_t value = get_value_at(index);
   value_t score = whatever();
   TRY(guard_match(guard, value, get_runtime(), space, &score));
-  value_t next_guards = get_next_guards();
-  if (is_nothing(next_guards)) {
-    *score_out = score;
-    return success();
-  }
-  value_t next_guard = get_array_at(next_guards, index);
+  value_t next_guard = get_array_at(next_guards_, index);
   if (is_nothing(next_guard)) {
     *score_out = score;
     return success();
@@ -683,8 +693,13 @@ value_t InvocationThunk<I, O>::complete_special_block_lookup(value_t subject,
 value_t match_signature_from_frame(value_t self, sigmap_input_layout_t *layout,
     frame_t *frame, value_t space, match_info_t *match_info,
     match_result_t *result_out) {
-  FrameSigmapInput in(layout, frame);
-  return generic_match_signature(self, &in, space, match_info, result_out);
+  if (is_nothing(layout->next_guards)) {
+    FrameSigmapInput in(layout, frame);
+    return generic_match_signature(self, &in, space, match_info, result_out);
+  } else {
+    FrameSigmapInputWithNexts in(layout, frame);
+    return generic_match_signature(self, &in, space, match_info, result_out);
+  }
 }
 
 value_t match_signature_from_call_data(value_t self, sigmap_input_layout_t *layout,
@@ -697,9 +712,15 @@ value_t match_signature_from_call_data(value_t self, sigmap_input_layout_t *layo
 value_t lookup_method_full_from_frame(sigmap_input_layout_t *layout,
     frame_t *frame, value_t *arg_map_out) {
   UniqueBestMatchOutput out;
-  FrameSigmapInput in(layout, frame);
-  InvocationThunk<FrameSigmapInput, UniqueBestMatchOutput> thunk(&in, arg_map_out);
-  return generic_lookup_method(&thunk, &in, &out);
+  if (is_nothing(layout->next_guards)) {
+    FrameSigmapInput in(layout, frame);
+    InvocationThunk<FrameSigmapInput, UniqueBestMatchOutput> thunk(&in, arg_map_out);
+    return generic_lookup_method(&thunk, &in, &out);
+  } else {
+    FrameSigmapInputWithNexts in(layout, frame);
+    InvocationThunk<FrameSigmapInputWithNexts, UniqueBestMatchOutput> thunk(&in, arg_map_out);
+    return generic_lookup_method(&thunk, &in, &out);
+  }
 }
 
 value_t lookup_method_full_from_call_data(sigmap_input_layout_t *layout,
@@ -720,8 +741,14 @@ value_t lookup_signal_handler_method_from_frame(sigmap_input_layout_t *layout,
 
 value_t lookup_methodspace_method_from_frame(sigmap_input_layout_t *layout,
     frame_t *frame, value_t methodspace, value_t *arg_map_out) {
-  FrameSigmapInput in(layout, frame);
-  MethodspaceThunk<FrameSigmapInput, UniqueBestMatchOutput> thunk(methodspace, arg_map_out);
   UniqueBestMatchOutput out;
-  return generic_lookup_method(&thunk, &in, &out);
+  if (is_nothing(layout->next_guards)) {
+    FrameSigmapInput in(layout, frame);
+    MethodspaceThunk<FrameSigmapInput, UniqueBestMatchOutput> thunk(methodspace, arg_map_out);
+    return generic_lookup_method(&thunk, &in, &out);
+  } else {
+    FrameSigmapInputWithNexts in(layout, frame);
+    MethodspaceThunk<FrameSigmapInputWithNexts, UniqueBestMatchOutput> thunk(methodspace, arg_map_out);
+    return generic_lookup_method(&thunk, &in, &out);
+  }
 }
