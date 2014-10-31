@@ -243,6 +243,20 @@ static value_t create_call_tags(value_t arguments, assembler_t *assm) {
   return new_heap_call_tags(assm->runtime, afFreeze, entries);
 }
 
+// Given a guard ast, evaluates it to a guard within the given fragment. There
+// is some slight cheating involved here but it'll work for now.
+static value_t evaluate_guard(runtime_t *runtime, value_t guard_ast, value_t fragment) {
+  guard_type_t guard_type = get_guard_ast_type(guard_ast);
+  if (guard_type == gtAny) {
+    return ROOT(runtime, any_guard);
+  } else {
+    value_t guard_value_ast = get_guard_ast_value(guard_ast);
+    TRY_DEF(guard_value, quick_and_dirty_evaluate_syntax(runtime, fragment,
+        guard_value_ast));
+    return new_heap_guard(runtime, afFreeze, guard_type, guard_value);
+  }
+}
+
 // Given an array of argument asts, returns the guard array to use if this is
 // a next call, otherwise nothing.
 static value_t create_call_next_guards(value_t arguments, assembler_t *assm) {
@@ -265,18 +279,8 @@ static value_t create_call_next_guards(value_t arguments, assembler_t *assm) {
     if (is_nothing(guard_ast)) {
       set_array_at(result, i, nothing());
     } else {
-      guard_type_t guard_type = get_guard_ast_type(guard_ast);
-      value_t guard = whatever();
-      if (guard_type == gtAny) {
-        guard = ROOT(runtime, any_guard);
-      } else {
-        value_t guard_value_ast = get_guard_ast_value(guard_ast);
-        TRY_DEF(guard_value, quick_and_dirty_evaluate_syntax(runtime, assm->fragment,
-            guard_value_ast));
-        TRY_SET(guard, new_heap_guard(runtime, afFreeze, guard_type,
-            guard_value));
-        set_array_at(result, i, guard);
-      }
+      TRY_DEF(guard, evaluate_guard(runtime, guard_ast, assm->fragment));
+      set_array_at(result, i, guard);
     }
   }
   return result;
@@ -1153,17 +1157,7 @@ value_t build_method_signature(runtime_t *runtime, value_t fragment,
     // Add the parameter to the signature.
     value_t param_ast = get_array_at(param_asts, i);
     value_t guard_ast = get_parameter_ast_guard(param_ast);
-    guard_type_t guard_type = get_guard_ast_type(guard_ast);
-    value_t guard;
-    if (guard_type == gtAny) {
-      guard = ROOT(runtime, any_guard);
-    } else {
-      value_t guard_value_ast = get_guard_ast_value(guard_ast);
-      TRY_DEF(guard_value, quick_and_dirty_evaluate_syntax(runtime, fragment,
-          guard_value_ast));
-      TRY_SET(guard, new_heap_guard(runtime, afFreeze, guard_type,
-          guard_value));
-    }
+    value_t guard = evaluate_guard(runtime, guard_ast, fragment);
     size_t param_index = offsets[i];
     value_t tags = get_parameter_ast_tags(param_ast);
     TRY_DEF(param, new_heap_parameter(runtime, afFreeze, guard, tags, false, param_index));
