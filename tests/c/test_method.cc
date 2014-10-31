@@ -367,7 +367,8 @@ void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
       call_data = new_heap_call_data(runtime, call_tags, values);
     }
 
-    sigmap_input_layout_t layout = sigmap_input_layout_new(ambience, call_tags);
+    sigmap_input_layout_t layout = sigmap_input_layout_new(ambience, call_tags,
+        nothing());
     static const size_t kLength = 16;
     value_t scores[16];
     size_t offsets[16];
@@ -718,7 +719,7 @@ static void test_lookup(value_t ambience, value_t expected, value_t first,
   }
   value_t tags = new_heap_call_tags(runtime, afFreeze, entries);
   value_t arg_map;
-  sigmap_input_layout_t layout = sigmap_input_layout_new(ambience, tags);
+  sigmap_input_layout_t layout = sigmap_input_layout_new(ambience, tags, nothing());
   value_t method = lookup_methodspace_method_from_frame(&layout, &frame, space, &arg_map);
   ASSERT_VALEQ(expected, method);
 }

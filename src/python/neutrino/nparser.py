@@ -281,6 +281,8 @@ class Parser(object):
       return self.parse_naked_selector(expect_delim)
     elif self.at_word('call'):
       return self.parse_call_literal(expect_delim)
+    elif self.at_word('next'):
+      return self.parse_next_directive(expect_delim)
     else:
       return self.parse_assignment_expression(expect_delim)
 
@@ -345,6 +347,14 @@ class Parser(object):
     self.expect_punctuation(')')
     self.expect_statement_delimiter(expect_delim)
     return ast.CallLiteral(args)
+
+  # <next directive>
+  #   -> "next" <atomic expression> <guard>
+  def parse_next_directive(self, expect_delim):
+    self.expect_word('next')
+    value = self.parse_atomic_expression()
+    guard = self.parse_guard(None)
+    return ast.NextDirective(value, guard)
 
   # <field declaration>
   #   -> "field" <subject> <operator> ";"
@@ -692,21 +702,26 @@ class Parser(object):
       self.expect_operation('*')
       return None
     name = self.expect_type(Token.IDENTIFIER)
+    guard = self.parse_guard(default_tag)
+    result = ast.Parameter(name, tags, guard)
+    return result
+
+  def parse_guard(self, default_tag):
     if self.at_operation('=='):
       self.expect_operation('==')
       guard_value = self.parse_atomic_expression()
-      guard = ast.Guard.eq(guard_value)
+      return ast.Guard.eq(guard_value)
     elif self.at_word('is'):
       self.expect_word('is')
       guard_value = self.parse_atomic_expression()
-      guard = ast.Guard.is_(guard_value)
+      return ast.Guard.is_(guard_value)
     else:
       if default_tag == data._SUBJECT:
-        guard = self.default_subject_guard
+        return self.default_subject_guard
       else:
-        guard = ast.Guard.any()
-    result = ast.Parameter(name, tags, guard)
-    return result
+        return ast.Guard.any()
+
+
 
   # <operator expression>
   #   -> <call expression> +: <operator tail>

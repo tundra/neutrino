@@ -328,18 +328,33 @@ class Argument(object):
 
   @plankton.field("tag")
   @plankton.field("value")
+  @plankton.field("next_guard")
   def __init__(self, tag, value):
     self.tag = tag
-    self.value = value
+    if isinstance(value, NextDirective):
+      self.value = value.value
+      self.next_guard = value.guard
+    else:
+      self.value = value
+      self.next_guard = None
 
   def accept(self, visitor):
     return visitor.visit_argument(self)
 
   def traverse(self, visitor):
     self.value.accept(visitor)
+    if not self.next_guard is None:
+      self.next_guard.accept(visitor)
 
   def __str__(self):
     return "(argument %s %s)" % (self.tag, self.value)
+
+
+class NextDirective(object):
+
+  def __init__(self, value, guard):
+    self.value = value
+    self.guard = guard
 
 
 # A binding from a symbol to a value.

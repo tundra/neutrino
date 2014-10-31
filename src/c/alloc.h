@@ -339,7 +339,7 @@ value_t new_heap_ensure_ast(runtime_t *runtime, alloc_flags_t flags,
 
 // Creates a new argument syntax tree with the given tag and value.
 value_t new_heap_argument_ast(runtime_t *runtime, alloc_flags_t flags,
-    value_t tag, value_t value);
+    value_t tag, value_t value, value_t next_guard);
 
 // Creates a new sequence syntax tree with the given values.
 value_t new_heap_sequence_ast(runtime_t *runtime, alloc_flags_t flags,

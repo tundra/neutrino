@@ -243,11 +243,51 @@ static value_t create_call_tags(value_t arguments, assembler_t *assm) {
   return new_heap_call_tags(assm->runtime, afFreeze, entries);
 }
 
+// Given an array of argument asts, returns the guard array to use if this is
+// a next call, otherwise nothing.
+static value_t create_call_next_guards(value_t arguments, assembler_t *assm) {
+  bool has_next = false;
+  size_t arg_count = get_array_length(arguments);
+  for (size_t i = 0; i < arg_count && !has_next; i++) {
+    value_t arg = get_array_at(arguments, i);
+    has_next = !is_nothing(get_argument_ast_next_guard(arg));
+  }
+  // There aren't any next guards so we can just stop here.
+  if (!has_next)
+    return nothing();
+  // Build an array that matches the arguments that gives, for each one, the
+  // guard to match the argument against.
+  runtime_t *runtime = assm->runtime;
+  TRY_DEF(result, new_heap_array(runtime, arg_count));
+  for (size_t i = 0; i < arg_count; i++) {
+    value_t arg = get_array_at(arguments, i);
+    value_t guard_ast = get_argument_ast_next_guard(arg);
+    if (is_nothing(guard_ast)) {
+      set_array_at(result, i, nothing());
+    } else {
+      guard_type_t guard_type = get_guard_ast_type(guard_ast);
+      value_t guard = whatever();
+      if (guard_type == gtAny) {
+        guard = ROOT(runtime, any_guard);
+      } else {
+        value_t guard_value_ast = get_guard_ast_value(guard_ast);
+        TRY_DEF(guard_value, quick_and_dirty_evaluate_syntax(runtime, assm->fragment,
+            guard_value_ast));
+        TRY_SET(guard, new_heap_guard(runtime, afFreeze, guard_type,
+            guard_value));
+        set_array_at(result, i, guard);
+      }
+    }
+  }
+  return result;
+}
+
 value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofInvocationAst, value);
   value_t arguments = get_invocation_ast_arguments(value);
   TRY_DEF(record, create_call_tags(arguments, assm));
-  TRY(assembler_emit_invocation(assm, assm->fragment, record));
+  TRY_DEF(next_guards, create_call_next_guards(arguments, assm));
+  TRY(assembler_emit_invocation(assm, assm->fragment, record, next_guards));
   size_t argc = get_call_tags_entry_count(record);
   TRY(assembler_emit_slap(assm, argc));
   return success();
@@ -556,22 +596,26 @@ NO_BUILTIN_METHODS(argument_ast);
 
 ACCESSORS_IMPL(ArgumentAst, argument_ast, acNoCheck, 0, Tag, tag);
 ACCESSORS_IMPL(ArgumentAst, argument_ast, acIsSyntaxOpt, 0, Value, value);
+ACCESSORS_IMPL(ArgumentAst, argument_ast, acInFamilyOpt, ofGuardAst, NextGuard, next_guard);
 
 value_t argument_ast_validate(value_t value) {
   VALIDATE_FAMILY(ofArgumentAst, value);
+  VALIDATE_FAMILY_OPT(ofGuardAst, get_argument_ast_next_guard(value));
   return success();
 }
 
 value_t plankton_set_argument_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, tag, value);
+  UNPACK_PLANKTON_MAP(contents, tag, value, next_guard);
   set_argument_ast_tag(object, tag_value);
   set_argument_ast_value(object, value_value);
+  if (!is_null(next_guard_value))
+    set_argument_ast_next_guard(object, next_guard_value);
   return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_argument_ast(runtime_t *runtime) {
-  return new_heap_argument_ast(runtime, afMutable, nothing(), nothing());
+  return new_heap_argument_ast(runtime, afMutable, nothing(), nothing(), nothing());
 }
 
 

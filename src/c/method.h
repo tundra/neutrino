@@ -91,9 +91,13 @@ typedef struct {
   value_t ambience;
   // Argument tags.
   value_t tags;
+  // If this is a next call, the argument guards used to direct which are the
+  // next methods.
+  value_t next_guards;
 } sigmap_input_layout_t;
 
-sigmap_input_layout_t sigmap_input_layout_new(value_t ambience, value_t tags);
+sigmap_input_layout_t sigmap_input_layout_new(value_t ambience, value_t tags,
+    value_t next_guards);
 
 // Matches the given invocation, the arguments passed as a frame, against this
 // signature. You should not base behavior on the exact failure type returned

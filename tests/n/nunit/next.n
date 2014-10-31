@@ -1,0 +1,31 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+type @A;
+type @B is @A;
+type @C is @B;
+
+def ($this).prop => "*";
+def ($this is @A).prop => "A";
+def ($this is @B).prop => "B";
+def ($this is @C).prop => "C";
+def ($this is @core:String).prop => "String";
+def ($this == "foo").prop => "foo";
+
+def $test_simple_next() {
+  def $c := @core:manager.new_instance(@C);
+  $assert:equals("C", $c.prop);
+  $assert:equals("B", (next $c is @C).prop);
+  $assert:equals("A", (next $c is @B).prop);
+  $assert:equals("*", (next $c is @A).prop);
+  $assert:equals("foo", "foo".prop);
+  $assert:equals("String", (next "foo" == "foo").prop);
+  $assert:equals("*", (next "foo" is @core:String).prop);
+}
+
+do {
+  $test_simple_next();
+}

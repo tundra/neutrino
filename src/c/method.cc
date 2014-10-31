@@ -334,9 +334,11 @@ public:
   runtime_t *get_runtime();
   value_t get_ambience();
   value_t get_tags();
+  value_t get_next_guards();
 private:
   value_t ambience_;
   value_t tags_;
+  value_t next_guards_;
   size_t argc_;
   runtime_t *runtime_;
 };
@@ -344,6 +346,7 @@ private:
 AbstractSigmapInput::AbstractSigmapInput(sigmap_input_layout_t *layout) {
   ambience_ = layout->ambience;
   tags_ = layout->tags;
+  next_guards_ = layout->next_guards;
   argc_ = is_nothing(tags_) ? 0 : get_call_tags_entry_count(tags_);
   runtime_ = get_ambience_runtime(layout->ambience);
 }
@@ -372,6 +375,10 @@ value_t AbstractSigmapInput::get_tags() {
   return tags_;
 }
 
+value_t AbstractSigmapInput::get_next_guards() {
+  return next_guards_;
+}
+
 // Lookup input that gets values from a frame.
 class FrameSigmapInput : public AbstractSigmapInput {
 public:
@@ -393,7 +400,27 @@ value_t FrameSigmapInput::get_value_at(size_t index) {
 value_t FrameSigmapInput::match_value_at(size_t index, value_t guard,
     value_t space, value_t *score_out) {
   value_t value = get_value_at(index);
-  return guard_match(guard, value, get_runtime(), space, score_out);
+  value_t score = whatever();
+  TRY(guard_match(guard, value, get_runtime(), space, &score));
+  value_t next_guards = get_next_guards();
+  if (is_nothing(next_guards)) {
+    *score_out = score;
+    return success();
+  }
+  value_t next_guard = get_array_at(next_guards, index);
+  if (is_nothing(next_guard)) {
+    *score_out = score;
+    return success();
+  }
+  value_t next_score = whatever();
+  TRY(guard_match(next_guard, value, get_runtime(), space, &next_score));
+  if (is_score_better(next_score, score)) {
+    *score_out = score;
+    return success();
+  } else {
+    *score_out = new_no_match_score();
+    return success();
+  }
 }
 
 // Lookup input that gets values from a call data object.

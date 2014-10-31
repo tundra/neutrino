@@ -13,10 +13,12 @@
 #include "utils/ook-inl.h"
 #include "value-inl.h"
 
-sigmap_input_layout_t sigmap_input_layout_new(value_t ambience, value_t tags) {
+sigmap_input_layout_t sigmap_input_layout_new(value_t ambience, value_t tags,
+    value_t next_guards) {
   sigmap_input_layout_t result;
   result.ambience = ambience;
   result.tags = tags;
+  result.next_guards = next_guards;
   return result;
 }
 

@@ -230,8 +230,11 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           CHECK_FAMILY(ofCallTags, tags);
           value_t fragment = read_value(&cache, &frame, 2);
           CHECK_FAMILY_OPT(ofModuleFragment, fragment);
+          value_t next_guards = read_value(&cache, &frame, 3);
+          CHECK_FAMILY_OPT(ofArray, next_guards);
           value_t arg_map;
-          sigmap_input_layout_t layout = sigmap_input_layout_new(ambience, tags);
+          sigmap_input_layout_t layout = sigmap_input_layout_new(ambience, tags,
+              next_guards);
           value_t method = lookup_method_full_from_frame(&layout, &frame, &arg_map);
           if (in_condition_cause(ccLookupError, method))
             E_RETURN(signal_lookup_error(runtime, stack, &frame));
@@ -262,7 +265,8 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           frame.pc += kSignalEscapeOperationSize;
           value_t arg_map = whatever();
           value_t handler = whatever();
-          sigmap_input_layout_t layout = sigmap_input_layout_new(ambience, tags);
+          sigmap_input_layout_t layout = sigmap_input_layout_new(ambience, tags,
+              nothing());
           value_t method = lookup_signal_handler_method_from_frame(&layout,
               &frame, &handler, &arg_map);
           bool is_escape = (opcode == ocSignalEscape);
@@ -333,7 +337,8 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
             CHECK_FAMILY(ofCallTags, tags);
             value_t arg_map = whatever();
             value_t handler = whatever();
-            sigmap_input_layout_t layout = sigmap_input_layout_new(ambience, tags);
+            sigmap_input_layout_t layout = sigmap_input_layout_new(ambience, tags,
+                nothing());
             value_t method = lookup_signal_handler_method_from_frame(&layout,
                 &frame, &handler, &arg_map);
             if (in_condition_cause(ccLookupError, method)) {
@@ -738,7 +743,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           CHECK_FAMILY(ofCallData, call_data);
           value_t arg_map;
           sigmap_input_layout_t layout = sigmap_input_layout_new(ambience,
-              get_call_data_tags(call_data));
+              get_call_data_tags(call_data), nothing());
           value_t method = lookup_method_full_from_call_data(&layout,
               call_data, &arg_map);
           if (in_condition_cause(ccLookupError, method))

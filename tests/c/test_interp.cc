@@ -178,9 +178,9 @@ TEST(interp, lookup_error) {
       new_heap_literal_ast(runtime, afFreeze, new_integer(13))));
   value_t lam = new_heap_lambda_ast(runtime, afFreeze, methods);
   value_t subject_arg = new_heap_argument_ast(runtime, afFreeze, ROOT(runtime, subject_key),
-      lam);
+      lam, nothing());
   value_t selector_arg = new_heap_argument_ast(runtime, afFreeze, ROOT(runtime, selector_key),
-      new_heap_literal_ast(runtime, afFreeze, new_integer(0)));
+      new_heap_literal_ast(runtime, afFreeze, new_integer(0)), nothing());
   value_t args = new_heap_array(runtime, 2);
   set_array_at(args, 0, subject_arg);
   set_array_at(args, 1, selector_arg);

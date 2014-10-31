@@ -170,15 +170,19 @@ ACCESSORS_DECL(call_literal_argument_ast, value);
 
 // --- A r g u m e n t   a s t ---
 
-static const size_t kArgumentAstSize = HEAP_OBJECT_SIZE(2);
+static const size_t kArgumentAstSize = HEAP_OBJECT_SIZE(3);
 static const size_t kArgumentAstTagOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kArgumentAstValueOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kArgumentAstNextGuardOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // The argument tag.
 ACCESSORS_DECL(argument_ast, tag);
 
 // The argument value.
 ACCESSORS_DECL(argument_ast, value);
+
+// An optional guard that specifies what to find the next method relative to.
+ACCESSORS_DECL(argument_ast, next_guard);
 
 
 // --- S e q u e n c e   a s t ---

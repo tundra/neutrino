@@ -484,13 +484,13 @@ value_t assembler_emit_stack_piece_bottom(assembler_t *assm) {
 }
 
 value_t assembler_emit_invocation(assembler_t *assm, value_t fragment,
-    value_t tags) {
+    value_t tags, value_t nexts) {
   CHECK_FAMILY_OPT(ofModuleFragment, fragment);
   CHECK_FAMILY(ofCallTags, tags);
   assembler_emit_opcode(assm, ocInvoke);
   TRY(assembler_emit_value(assm, tags));
   TRY(assembler_emit_value(assm, fragment));
-  assembler_emit_short(assm, 0);
+  TRY(assembler_emit_value(assm, nexts));
   // The result will be pushed onto the stack on top of the arguments.
   assembler_adjust_stack_height(assm, 1);
   return success();

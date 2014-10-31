@@ -47,6 +47,7 @@
   F(name,                       "name")                                        \
   F(names,                      "names")                                       \
   F(namespace,                  "namespace")                                   \
+  F(next_guard,                 "next_guard")                                  \
   F(numerator,                  "numerator")                                   \
   F(on_exit,                    "on_exit")                                     \
   F(options,                    "options")                                     \

@@ -38,6 +38,7 @@ file_names = [
   "lambda.n",
   "leave.n",
   "module.n",
+  "next.n",
   "object.n",
   "plugin.n",
   "promise.n",

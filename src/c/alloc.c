@@ -924,12 +924,13 @@ value_t new_heap_ensure_ast(runtime_t *runtime, alloc_flags_t flags,
 }
 
 value_t new_heap_argument_ast(runtime_t *runtime, alloc_flags_t flags,
-    value_t tag, value_t value) {
+    value_t tag, value_t value, value_t next_guard) {
   size_t size = kArgumentAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_argument_ast_species)));
   set_argument_ast_tag(result, tag);
   set_argument_ast_value(result, value);
+  set_argument_ast_next_guard(result, next_guard);
   TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
