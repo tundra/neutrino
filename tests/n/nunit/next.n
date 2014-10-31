@@ -15,6 +15,16 @@ def ($this is @C).prop => "C";
 def ($this is @core:String).prop => "String";
 def ($this == "foo").prop => "foo";
 
+def ($this is @A).also($this is @A) => "AA";
+def ($this is @A).also($this is @B) => "AB";
+def ($this is @A).also($this is @C) => "AC";
+def ($this is @B).also($this is @A) => "BA";
+def ($this is @B).also($this is @B) => "BB";
+def ($this is @B).also($this is @C) => "BC";
+def ($this is @C).also($this is @A) => "CA";
+def ($this is @C).also($this is @B) => "CB";
+def ($this is @C).also($this is @C) => "CC";
+
 def $test_simple_next() {
   def $c := @core:manager.new_instance(@C);
   $assert:equals("C", $c.prop);
@@ -26,6 +36,20 @@ def $test_simple_next() {
   $assert:equals("*", (next "foo" is @core:String).prop);
 }
 
+def $test_multi_next() {
+  def $c := @core:manager.new_instance(@C);
+  $assert:equals("CC", $c .also $c);
+  $assert:equals("BC", (next $c is @C) .also $c);
+  $assert:equals("AC", (next $c is @B) .also $c);
+  $assert:equals("CB", $c .also (next $c is @C));
+  $assert:equals("BB", (next $c is @C) .also (next $c is @C));
+  $assert:equals("AB", (next $c is @B) .also (next $c is @C));
+  $assert:equals("CA", $c .also (next $c is @B));
+  $assert:equals("BA", (next $c is @C) .also (next $c is @B));
+  $assert:equals("AA", (next $c is @B) .also (next $c is @B));
+}
+
 do {
   $test_simple_next();
+  $test_multi_next();
 }
