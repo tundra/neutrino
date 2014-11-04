@@ -217,6 +217,9 @@ value_t new_heap_decimal_fraction(runtime_t *runtime, value_t numerator,
 // Creates a new hard field object with the given display name.
 value_t new_heap_hard_field(runtime_t *runtime, value_t display_name);
 
+// Creates a new soft field object with the given display name.
+value_t new_heap_soft_field(runtime_t *runtime, value_t display_name);
+
 // Creates a new ambience object within the given runtime.
 value_t new_heap_ambience(runtime_t *runtime);
 

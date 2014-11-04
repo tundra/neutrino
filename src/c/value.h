@@ -455,6 +455,7 @@ static inline value_t chase_moved_object(value_t raw) {
   F(Signature,               signature,                 X, _, (_, _, _, _, _, _, X, _), 53)\
   F(SignatureAst,            signature_ast,             X, X, (_, _, X, _, _, _, _, _), 19)\
   F(SignatureMap,            signature_map,             X, _, (_, _, _, _, _, _, X, _), 45)\
+  F(SoftField,               soft_field,                _, X, (_, _, _, _, _, _, _, _), 89)\
   F(Stack,                   stack,                     _, _, (_, _, _, _, _, _, _, _), 71)\
   F(StackPiece,              stack_piece,               _, _, (_, _, _, X, _, _, _, _), 58)\
   F(SymbolAst,               symbol_ast,                X, X, (_, _, X, _, _, _, _, _), 33)\
@@ -473,7 +474,7 @@ static inline value_t chase_moved_object(value_t raw) {
 // family enum values are not the raw ordinals but the ordinals shifted left by
 // the tag size so that they're tagged as integers. Those values are sometimes
 // stored as uint16s so the ordinals are allowed to take up to 14 bits.
-static const int kNextFamilyOrdinal = 88;
+static const int kNextFamilyOrdinal = 89;
 
 // Enumerates all the object families.
 #define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \
@@ -1387,7 +1388,15 @@ void fifo_buffer_iter_get_current(fifo_buffer_iter_t *iter, value_t *values_out,
 void fifo_buffer_iter_take_current(fifo_buffer_iter_t *iter);
 
 
-// --- I d e n t i t y   h a s h   m a p ---
+/// ## Identity hash map
+///
+/// An internal hash map that maps keys to values based on the key's object
+/// identity.
+///
+/// Note that, critically, the iteration order of an identity hash map is not
+/// deterministic so exposing it in any way to the surface language is a huge
+/// no-no. Using it internally is okay if you're careful that the order doesn't
+/// leak through.
 
 static const size_t kIdHashMapSize = HEAP_OBJECT_SIZE(4);
 static const size_t kIdHashMapSizeOffset = HEAP_OBJECT_FIELD_OFFSET(0);
@@ -1458,6 +1467,9 @@ typedef struct {
 // Initializes an iterator for iterating the given map. Once initialized the
 // iterator starts out before the first entry so after the first call to advance
 // you'll have access to the first element.
+//
+// Note the comment above: the iteration order of an id hash map is not
+// deterministic so it must never become visible to the surface language.
 void id_hash_map_iter_init(id_hash_map_iter_t *iter, value_t map);
 
 // Advances the iterator to the next element. Returns true iff an element
@@ -1812,6 +1824,23 @@ static const size_t kHardFieldDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 
 // The display name which is used to identify the field.
 FROZEN_ACCESSORS_DECL(hard_field, display_name);
+
+
+/// ## Soft field
+///
+/// A soft field is a mutable field key that can be set and changed on frozen
+/// objects.
+
+static const size_t kSoftFieldSize = HEAP_OBJECT_SIZE(2);
+static const size_t kSoftFieldDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kSoftFieldOverlayMapOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kSoftFieldOverlayMapInitialSize = 128;
+
+// The display name which is used to identify the field.
+ACCESSORS_DECL(soft_field, display_name);
+
+// The identity hash map used to associate values with frozen objects.
+ACCESSORS_DECL(soft_field, overlay_map);
 
 
 // --- R e f e r e n c e ---

@@ -2163,6 +2163,14 @@ static value_t module_fragment_private_new_hard_field(builtin_arguments_t *args)
   return new_heap_hard_field(runtime, display_name);
 }
 
+static value_t module_fragment_private_new_soft_field(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t display_name = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofModuleFragmentPrivate, self);
+  runtime_t *runtime = get_builtin_runtime(args);
+  return new_heap_soft_field(runtime, display_name);
+}
+
 value_t emit_module_fragment_private_invoke(assembler_t *assm) {
   TRY(assembler_emit_module_fragment_private_invoke(assm));
   return success();
@@ -2174,6 +2182,8 @@ value_t add_module_fragment_private_builtin_implementations(runtime_t *runtime,
       module_fragment_private_new_type);
   ADD_BUILTIN_IMPL("module_fragment_private.new_hard_field", 1,
       module_fragment_private_new_hard_field);
+  ADD_BUILTIN_IMPL("module_fragment_private.new_soft_field", 1,
+      module_fragment_private_new_soft_field);
   TRY(add_custom_method_impl(runtime, deref(s_map), "module_fragment_private.invoke",
       1, new_flag_set(kFlagSetAllOff), emit_module_fragment_private_invoke));
   return success();
@@ -2566,6 +2576,70 @@ value_t add_hard_field_builtin_implementations(runtime_t *runtime, safe_value_t 
 }
 
 
+/// ## Soft field
+
+GET_FAMILY_PRIMARY_TYPE_IMPL(soft_field);
+FIXED_GET_MODE_IMPL(soft_field, vmMutable);
+
+ACCESSORS_IMPL(SoftField, soft_field, acNoCheck, 0, DisplayName, display_name);
+ACCESSORS_IMPL(SoftField, soft_field, acInFamily, ofIdHashMap, OverlayMap, overlay_map);
+
+value_t soft_field_validate(value_t self) {
+  VALIDATE_FAMILY(ofSoftField, self);
+  VALIDATE_FAMILY(ofIdHashMap, get_soft_field_overlay_map(self));
+  return success();
+}
+
+void soft_field_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "..$");
+  value_t display_name = get_soft_field_display_name(value);
+  value_print_inner_on(display_name, context, -1);
+  string_buffer_printf(context->buf, "");
+}
+
+static value_t soft_field_set(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofSoftField, self);
+  value_t holder = get_builtin_argument(args, 0);
+  value_t value = get_builtin_argument(args, 1);
+  runtime_t *runtime = get_builtin_runtime(args);
+  if (in_family(ofInstance, holder) && is_mutable(holder)) {
+    // If the object is still mutable we can just set the field on it.
+    TRY(set_instance_field(runtime, holder, self, value));
+  } else {
+    // Otherwise we'll set/shadow the field in the map in the field itself.
+    value_t overlay_map = get_soft_field_overlay_map(self);
+    TRY(set_id_hash_map_at(runtime, overlay_map, holder, value));
+  }
+  return value;
+}
+
+static value_t soft_field_get(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofSoftField, self);
+  value_t holder = get_builtin_argument(args, 0);
+  // First look for a binding in the overlay since that always takes precedence.
+  value_t overlay_map = get_soft_field_overlay_map(self);
+  value_t overlay_value = get_id_hash_map_at(overlay_map, holder);
+  if (!in_condition_cause(ccNotFound, overlay_value))
+    return overlay_value;
+  // If it's not there try in the object itself.
+  if (in_family(ofInstance, holder)) {
+    value_t instance_value = get_instance_field(holder, self);
+    if (!in_condition_cause(ccNotFound, instance_value))
+      return instance_value;
+  }
+  value_t display_name = get_soft_field_display_name(self);
+  ESCAPE_BUILTIN(args, no_such_field, display_name, holder);
+}
+
+value_t add_soft_field_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL_MAY_ESCAPE("soft_field[]", 1, 2, soft_field_get);
+  ADD_BUILTIN_IMPL_MAY_ESCAPE("soft_field[]:=()", 2, 2, soft_field_set);
+  return success();
+}
+
+
 
 // --- R e f e r e n c e ---
 
@@ -2730,7 +2804,7 @@ hash_source_state_t *get_hash_source_state(value_t self) {
 void set_hash_source_field(value_t self, value_t value) {
   CHECK_FAMILY(ofHashSource, self);
   CHECK_MUTABLE(self);
-  CHECK_FAMILY(ofHardField, value);
+  CHECK_FAMILY(ofSoftField, value);
   *access_heap_object_field(self, hash_source_values_offset()) = value;
 }
 
@@ -2746,7 +2820,7 @@ void get_hash_source_layout(value_t value, heap_object_layout_t *layout) {
 
 value_t hash_source_validate(value_t self) {
   VALIDATE_FAMILY(ofHashSource, self);
-  VALIDATE_FAMILY(ofHardField, get_hash_source_field(self));
+  VALIDATE_FAMILY(ofSoftField, get_hash_source_field(self));
   return success();
 }
 

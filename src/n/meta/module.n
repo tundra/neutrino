@@ -12,6 +12,10 @@ def ($this is @ModuleFragmentPrivate).new_type($display_name);
 @ctrino.builtin("module_fragment_private.new_hard_field")
 def ($this is @ModuleFragmentPrivate).new_hard_field($display_name);
 
+## Creates a new soft field key with the given display name.
+@ctrino.builtin("module_fragment_private.new_soft_field")
+def ($this is @ModuleFragmentPrivate).new_soft_field($display_name);
+
 ## Executes the given call in the module fragment represented by this object.
 @ctrino.builtin("module_fragment_private.invoke")
 def ($this is @ModuleFragmentPrivate).invoke($call);

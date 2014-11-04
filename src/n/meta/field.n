@@ -11,3 +11,14 @@ def ($this is @HardField)[$instance];
 ## Sets the value of this field on the given instance.
 @ctrino.builtin("hard_field[]:=()")
 def ($this is @HardField)[$instance]:=($value);
+
+## The built-in type of soft field keys.
+def @SoftField := @ctrino.get_builtin_type("SoftField");
+
+## Returns the value of this field set on the given instance.
+@ctrino.builtin("soft_field[]")
+def ($this is @SoftField)[$instance];
+
+## Sets the value of this field on the given instance.
+@ctrino.builtin("soft_field[]:=()")
+def ($this is @SoftField)[$instance]:=($value);

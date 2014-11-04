@@ -552,6 +552,16 @@ value_t new_heap_hard_field(runtime_t *runtime, value_t display_name) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_soft_field(runtime_t *runtime, value_t display_name) {
+  size_t size = kSoftFieldSize;
+  TRY_DEF(overlay, new_heap_id_hash_map(runtime, kSoftFieldOverlayMapInitialSize));
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, soft_field_species)));
+  set_soft_field_display_name(result, display_name);
+  set_soft_field_overlay_map(result, overlay);
+  return post_create_sanity_check(result, size);
+}
+
 value_t new_heap_ambience(runtime_t *runtime) {
   size_t size = kAmbienceSize;
   value_t native_methodspace = ROOT(runtime, builtin_methodspace);
@@ -582,7 +592,7 @@ value_t new_heap_pending_promise(runtime_t *runtime) {
 
 value_t new_heap_hash_source(runtime_t *runtime, uint64_t seed) {
   size_t size = hash_source_size();
-  TRY_DEF(field, new_heap_hard_field(runtime, nothing()));
+  TRY_DEF(field, new_heap_soft_field(runtime, nothing()));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, hash_source_species)));
   hash_source_state_t *state = get_hash_source_state(result);

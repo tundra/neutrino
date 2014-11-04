@@ -8,8 +8,10 @@ def @manager := @ctrino.new_instance_manager(null);
 def @Point := module.new_type("Point");
 def @x := module.new_hard_field("x");
 def @y := module.new_hard_field("y");
+def @a := module.new_soft_field("a");
+def @b := module.new_soft_field("b");
 
-def $test_raw_field_access() {
+def $test_hard_field_access() {
   def $p := @manager.new_instance(@Point);
   @x[$p] := 0;
   @y[$p] := 0;
@@ -26,6 +28,48 @@ def $test_raw_field_access() {
   $assert:equals(["y", $p], try @y[$p] := 4 on.changing_frozen($k, $i) => [$k, $i]);
   $assert:equals(1, @x[$p]);
   $assert:equals(2, @y[$p]);
+}
+
+def $test_soft_field_access() {
+  def $p := @manager.new_instance(@Point);
+  @a[$p] := 0;
+  @b[$p] := 0;
+  $assert:equals(0, @a[$p]);
+  $assert:equals(0, @b[$p]);
+  @a[$p] := 1;
+  $assert:equals(1, @a[$p]);
+  $assert:equals(0, @b[$p]);
+  @b[$p] := 2;
+  $assert:equals(1, @a[$p]);
+  $assert:equals(2, @b[$p]);
+  $core:freeze($p);
+  $assert:equals(3, @a[$p] := 3);
+  $assert:equals(4, @b[$p] := 4);
+  $assert:equals(3, @a[$p]);
+  $assert:equals(4, @b[$p]);
+}
+
+def ($this).a => @a[$this];
+def ($this).a := ($v) => @a[$this] := $v;
+
+def $test_soft_field_primitives() {
+  $assert:equals(["a", 5], try @a[5] on.no_such_field($k, $i) => [$k, $i]);
+  @a[5] := "what?";
+  $assert:equals("what?", @a[5]);
+  $assert:equals("what?", @a[1 + 1 + 1 + 1 + 1]);
+  $assert:equals("what?", (5).a);
+  $assert:equals(["a", "5"], try @a["5"] on.no_such_field($k, $i) => [$k, $i]);
+  @a["5"] := "what?!?";
+  $assert:equals("what?!?", @a["5"]);
+  $assert:equals("what?", @a[5]);
+  $assert:equals("what?!?", "5".a);
+  $assert:equals("what?", (5).a);
+  "5".a := "tahw";
+  (5).a := "----";
+  $assert:equals("tahw", @a["5"]);
+  $assert:equals("----", @a[5]);
+  $assert:equals("tahw", "5".a);
+  $assert:equals("----", (5).a);
 }
 
 def ($this is @Point).x => @x[$this];
@@ -84,7 +128,9 @@ def $test_field_declarations() {
 }
 
 do {
-  $test_raw_field_access();
+  $test_hard_field_access();
+  $test_soft_field_access();
+  $test_soft_field_primitives();
   $test_field_accessors();
   $test_constructor();
   $test_field_declarations();
