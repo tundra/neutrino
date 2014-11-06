@@ -774,14 +774,17 @@ value_t new_heap_signature_map(runtime_t *runtime) {
 
 value_t new_heap_methodspace(runtime_t *runtime, value_t parent) {
   CHECK_FAMILY_OPT(ofMethodspace, parent);
+  CHECK_FROZEN(parent);
   size_t size = kMethodspaceSize;
   TRY_DEF(inheritance, new_heap_id_hash_map(runtime, kInheritanceMapInitialSize));
   TRY_DEF(methods, new_heap_signature_map(runtime));
+  TRY_DEF(cache_ptr, new_heap_freeze_cheat(runtime, nothing()));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_methodspace_species)));
   set_methodspace_inheritance(result, inheritance);
   set_methodspace_methods(result, methods);
   set_methodspace_parent(result, parent);
+  set_methodspace_cache_ptr(result, cache_ptr);
   return post_create_sanity_check(result, size);
 }
 
@@ -811,6 +814,17 @@ value_t new_heap_call_tags(runtime_t *runtime, alloc_flags_t flags,
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_call_tags_species)));
   set_call_tags_entries(result, entries);
+  // There's no reason to take these as arguments since they can be calculated
+  // from the entries. Also, this way we're sure they are determined correctly.
+  set_call_tags_subject_offset(result, nothing());
+  set_call_tags_selector_offset(result, nothing());
+  for (size_t i = 0; i < get_call_tags_entry_count(result); i++) {
+    value_t tag = get_call_tags_tag_at(result, i);
+    if (is_same_value(tag, ROOT(runtime, subject_key)))
+      set_call_tags_subject_offset(result, new_integer(i));
+    else if (is_same_value(tag, ROOT(runtime, selector_key)))
+      set_call_tags_selector_offset(result, new_integer(i));
+  }
   TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }

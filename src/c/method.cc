@@ -262,64 +262,27 @@ value_t get_sigmap_lookup_argument_map(sigmap_state_t<I, O> *state) {
 }
 
 
-// Does a full exhaustive lookup through the tags of the invocation for the
-// subject of this call. Returns a not found condition if there is no subject.
-template <class I>
-static value_t get_invocation_subject_no_shortcut(I *input) {
-  size_t argc = input->get_argument_count();
-  for (size_t i = 0; i < argc; i++) {
-    value_t tag = input->get_tag_at(i);
-    if (is_same_value(tag, ROOT(input->get_runtime(), subject_key)))
-      return input->get_value_at(i);
-  }
-  return new_not_found_condition();
-}
-
-// Returns the subject of the invocation, using the fact that the subject sorts
-// lowest so it must be at parameter index 0 if it is there at all. Note that
-// _parameter_ index 0 is not the same as _argument_ index 0, it doesn't have
-// to be the 0'th argument (that is, the first in evaluation order) for this
-// to work. Rather, the argument index must be given by the 0'th entry of the
-// invocation record. Potentially confusingly, the argument index will actually
-// almost always be 0 as well but that's not what we're using here (since we're
-// hardcoding the index we need _always_ always, not _almost_ always).
-template <class I>
-static value_t get_invocation_subject_with_shortcut(I *input) {
-  value_t tag_zero = input->get_tag_at(0);
-  if (is_same_value(tag_zero, ROOT(input->get_runtime(), subject_key)))
-    return input->get_value_at(0);
-  else
-    return new_not_found_condition();
-}
-
 // Performs a method lookup through the given fragment, that is, in the fragment
 // itself and any of the siblings before it.
 template <class I, class O>
 static value_t lookup_through_input(sigmap_state_t<I, O> *state) {
   value_t space = get_ambience_methodspace(state->input->get_ambience());
-  // CHECK_DEEP_FROZEN(space);
-  while (!is_nothing(space)) {
-    value_t sigmap = get_methodspace_methods(space);
-    TRY(continue_sigmap_lookup(state, sigmap, space));
-    space = get_methodspace_parent(space);
+  value_t selector = nothing(); // state->input->get_selector();
+  if (is_nothing(selector)) {
+    // If there is no selector we have to look up through all the methods.
+    while (!is_nothing(space)) {
+      value_t sigmap = get_methodspace_methods(space);
+      TRY(continue_sigmap_lookup(state, sigmap, space));
+      space = get_methodspace_parent(space);
+    }
+  } else {
+    // If there is a selector the methodspace will give us a pre-computed slice
+    // of methods that are the ones that can match, no others.
+    TRY_DEF(slice, get_or_create_methodspace_selector_slice(state->input->get_runtime(),
+        space, selector));
+    TRY(continue_sigmap_lookup(state, slice, space));
   }
   return success();
-}
-
-// Returns the invocation subject.
-template <class I>
-static value_t get_invocation_subject(I *input) {
-  // Look for a subject value, if there is none there is nothing to do.
-  value_t subject = get_invocation_subject_with_shortcut(input);
-  TOPIC_INFO(Lookup, "Subject value: %9v", subject);
-  if (in_condition_cause(ccNotFound, subject)) {
-    // Just in case, check that the shortcut version gave the correct answer.
-    // The case where it returns a non-condition is trivially correct (FLW) so this
-    // is the only case there can be any doubt about.
-    IF_EXPENSIVE_CHECKS_ENABLED(CHECK_TRUE("Subject shortcut didn't work",
-        in_condition_cause(ccNotFound, get_invocation_subject_no_shortcut(input))));
-  }
-  return subject;
 }
 
 /// ## Inputs
@@ -377,6 +340,8 @@ class FrameSigmapInput : public AbstractSigmapInput {
 public:
   FrameSigmapInput(sigmap_input_layout_t *layout, frame_t *frame);
   value_t get_value_at(size_t index);
+  value_t get_subject();
+  value_t get_selector();
   value_t match_value_at(size_t index, value_t guard, value_t space, value_t *score_out);
 private:
   frame_t *frame_;
@@ -388,6 +353,22 @@ FrameSigmapInput::FrameSigmapInput(sigmap_input_layout_t *layout, frame_t *frame
 
 value_t FrameSigmapInput::get_value_at(size_t index) {
   return frame_get_pending_argument_at(frame_, get_tags(), index);
+}
+
+value_t FrameSigmapInput::get_subject() {
+  value_t tags = get_tags();
+  value_t offset = get_call_tags_subject_offset(tags);
+  return is_nothing(offset)
+      ? nothing()
+      : frame_get_pending_argument_at(frame_, tags, get_integer_value(offset));
+}
+
+value_t FrameSigmapInput::get_selector() {
+  value_t tags = get_tags();
+  value_t offset = get_call_tags_selector_offset(tags);
+  return is_nothing(offset)
+      ? nothing()
+      : frame_get_pending_argument_at(frame_, tags, get_integer_value(offset));
 }
 
 value_t FrameSigmapInput::match_value_at(size_t index, value_t guard,
@@ -439,6 +420,8 @@ public:
   CallDataSigmapInput(sigmap_input_layout_t *layout, value_t call_data);
   value_t get_value_at(size_t index);
   value_t match_value_at(size_t index, value_t guard, value_t space, value_t *score_out);
+  value_t get_subject();
+  value_t get_selector();
 private:
   value_t call_data_;
 };
@@ -449,6 +432,20 @@ CallDataSigmapInput::CallDataSigmapInput(sigmap_input_layout_t *layout, value_t 
 
 value_t CallDataSigmapInput::get_value_at(size_t index) {
   return get_call_data_value_at(call_data_, index);
+}
+
+value_t CallDataSigmapInput::get_subject() {
+  value_t offset = get_call_tags_subject_offset(get_tags());
+  return is_nothing(offset)
+      ? nothing()
+      : get_call_data_value_at(call_data_, get_integer_value(offset));
+}
+
+value_t CallDataSigmapInput::get_selector() {
+  value_t offset = get_call_tags_selector_offset(get_tags());
+  return is_nothing(offset)
+      ? nothing()
+      : get_call_data_value_at(call_data_, get_integer_value(offset));
 }
 
 value_t CallDataSigmapInput::match_value_at(size_t index, value_t guard,
@@ -649,7 +646,7 @@ value_t InvocationThunk<I, O>::call(sigmap_state_t<I, O> *state) {
   if (in_family(ofMethod, result)) {
     value_t result_flags = get_method_flags(result);
     if (!is_flag_set_empty(result_flags)) {
-      TRY_DEF(subject, get_invocation_subject(input_));
+      value_t subject = input_->get_subject();
       // The result has at least one special flag set so we have to give this
       // lookup special treatment.
       if (get_flag_set_at(result_flags, mfLambdaDelegate)) {

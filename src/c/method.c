@@ -283,12 +283,15 @@ ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofSignatureMap, Methods,
     methods);
 ACCESSORS_IMPL(Methodspace, methodspace, acInFamilyOpt, ofMethodspace, Parent,
     parent);
+ACCESSORS_IMPL(Methodspace, methodspace, acInFamily, ofFreezeCheat, CachePtr,
+    cache_ptr);
 
-value_t methodspace_validate(value_t value) {
-  VALIDATE_FAMILY(ofMethodspace, value);
-  VALIDATE_FAMILY(ofIdHashMap, get_methodspace_inheritance(value));
-  VALIDATE_FAMILY(ofSignatureMap, get_methodspace_methods(value));
-  VALIDATE_FAMILY_OPT(ofMethodspace, get_methodspace_parent(value));
+value_t methodspace_validate(value_t self) {
+  VALIDATE_FAMILY(ofMethodspace, self);
+  VALIDATE_FAMILY(ofIdHashMap, get_methodspace_inheritance(self));
+  VALIDATE_FAMILY(ofSignatureMap, get_methodspace_methods(self));
+  VALIDATE_FAMILY_OPT(ofMethodspace, get_methodspace_parent(self));
+  VALIDATE_FAMILY(ofFreezeCheat, get_methodspace_cache_ptr(self));
   return success();
 }
 
@@ -317,6 +320,7 @@ value_t add_methodspace_inheritance(runtime_t *runtime, value_t self,
   }
   // If this fails we may have set the parents array of the subtype to an empty
   // array which is awkward but okay.
+  invalidate_methodspace_caches(self);
   return add_to_array_buffer(runtime, parents, supertype);
 }
 
@@ -325,6 +329,7 @@ value_t add_methodspace_method(runtime_t *runtime, value_t self,
   CHECK_FAMILY(ofMethodspace, self);
   CHECK_MUTABLE(self);
   CHECK_FAMILY(ofMethod, method);
+  invalidate_methodspace_caches(self);
   value_t signature = get_method_signature(method);
   return add_to_signature_map(runtime, get_methodspace_methods(self), signature,
       method);
@@ -340,6 +345,39 @@ value_t get_type_parents(runtime_t *runtime, value_t space, value_t type) {
   }
 }
 
+static value_t create_methodspace_selector_slice(runtime_t *runtime, value_t self,
+    value_t selector) {
+  TRY_DEF(result, new_heap_signature_map(runtime));
+  value_t current = self;
+  while (!is_nothing(current)) {
+    value_t methods = get_methodspace_methods(current);
+    value_t entries = get_signature_map_entries(methods);
+    for (size_t i = 0; i < get_pair_array_buffer_length(entries); i++) {
+      value_t signature = get_pair_array_buffer_first_at(entries, i);
+      value_t method = get_pair_array_buffer_second_at(entries, i);
+      TRY(add_to_signature_map(runtime, result, signature, method));
+    }
+    current = get_methodspace_parent(current);
+  }
+  return result;
+}
+
+value_t get_or_create_methodspace_selector_slice(runtime_t *runtime, value_t self,
+    value_t selector) {
+  value_t cache_ptr = get_methodspace_cache_ptr(self);
+  value_t cache = get_freeze_cheat_value(cache_ptr);
+  if (is_nothing(cache)) {
+    TRY_SET(cache, create_methodspace_selector_slice(runtime, self, selector));
+    set_freeze_cheat_value(cache_ptr, cache);
+  }
+  return cache;
+}
+
+void invalidate_methodspace_caches(value_t self) {
+  value_t cache_ptr = get_methodspace_cache_ptr(self);
+  set_freeze_cheat_value(cache_ptr, nothing());
+}
+
 void methodspace_print_on(value_t self, print_on_context_t *context) {
   string_buffer_printf(context->buf, "#<methodspace ");
   value_t methods = get_methodspace_methods(self);
@@ -351,10 +389,14 @@ void methodspace_print_on(value_t self, print_on_context_t *context) {
 /// ## Call tags
 
 ACCESSORS_IMPL(CallTags, call_tags, acInFamily, ofArray, Entries, entries);
+ACCESSORS_IMPL(CallTags, call_tags, acInDomainOpt, vdInteger, SubjectOffset, subject_offset);
+ACCESSORS_IMPL(CallTags, call_tags, acInDomainOpt, vdInteger, SelectorOffset, selector_offset);
 
 value_t call_tags_validate(value_t self) {
   VALIDATE_FAMILY(ofCallTags, self);
   VALIDATE_FAMILY(ofArray, get_call_tags_entries(self));
+  VALIDATE_DOMAIN_OPT(vdInteger, get_call_tags_subject_offset(self));
+  VALIDATE_DOMAIN_OPT(vdInteger, get_call_tags_selector_offset(self));
   return success();
 }
 

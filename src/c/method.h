@@ -268,10 +268,11 @@ INTERFACE(sigmap_thunk_o);
 
 // --- M e t h o d   s p a c e ---
 
-static const size_t kMethodspaceSize = HEAP_OBJECT_SIZE(3);
+static const size_t kMethodspaceSize = HEAP_OBJECT_SIZE(4);
 static const size_t kMethodspaceInheritanceOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kMethodspaceMethodsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 static const size_t kMethodspaceParentOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kMethodspaceCachePtrOffset = HEAP_OBJECT_FIELD_OFFSET(3);
 
 // The size of the inheritance map in an empty method space.
 static const size_t kInheritanceMapInitialSize = 16;
@@ -289,6 +290,9 @@ ACCESSORS_DECL(methodspace, methods);
 // one.
 ACCESSORS_DECL(methodspace, parent);
 
+// Freeze-cheat pointer to the cache used to speed up lookup.
+ACCESSORS_DECL(methodspace, cache_ptr);
+
 // Records in the given method space that the subtype inherits directly from
 // the supertype. Returns a condition if adding fails, for instance if we run
 // out of memory to increase the size of the map.
@@ -302,6 +306,15 @@ value_t get_type_parents(runtime_t *runtime, value_t space, value_t type);
 // instance if we run out of memory to increase the size of the map.
 value_t add_methodspace_method(runtime_t *runtime, value_t self,
     value_t method);
+
+// Given a selector, returns the methods that might match that selector.
+value_t get_or_create_methodspace_selector_slice(runtime_t *runtime, value_t self,
+    value_t selector);
+
+// Clears any caches that depend on the current state of this methodspace.
+// Ideally there wouldn't be any caches in a mutable methodspace but that'll
+// have to be cleaned up later.
+void invalidate_methodspace_caches(value_t self);
 
 // Looks up a method in the given fragment given a set of inputs, including
 // resolving lambda and block methods. If the match is successful, as a
@@ -361,12 +374,22 @@ value_t lookup_signal_handler_method_from_frame(sigmap_input_layout_t *layout,
 /// Because signatures are also sorted by tag they can be matched just by
 /// scanning through both sequentially.
 
-static const size_t kCallTagsSize = HEAP_OBJECT_SIZE(1);
+static const size_t kCallTagsSize = HEAP_OBJECT_SIZE(3);
 static const size_t kCallTagsEntriesOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kCallTagsSubjectOffsetOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kCallTagsSelectorOffsetOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // The array giving the mapping between tag sort order and argument evaulation
 // order.
 ACCESSORS_DECL(call_tags, entries);
+
+// If one of the parameters is tagged with the selector key this holds the
+// associated evaluation offset. If not it's nothing.
+ACCESSORS_DECL(call_tags, selector_offset);
+
+// If one of the parameters is tagged with the subject key this holds the
+// associated evaluation offset. If not it's nothing.
+ACCESSORS_DECL(call_tags, subject_offset);
 
 // Returns the number of argument in this call tags object.
 size_t get_call_tags_entry_count(value_t self);
