@@ -152,6 +152,15 @@ value_t new_heap_array(runtime_t *runtime, size_t length) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_array_with_contents(runtime_t *runtime, alloc_flags_t flags,
+    value_array_t contents) {
+  TRY_DEF(result, new_heap_array(runtime, contents.length));
+  for (size_t i = 0; i < contents.length; i++)
+    set_array_at(result, i, contents.start[i]);
+  TRY(post_process_result(runtime, result, flags));
+  return result;
+}
+
 value_t new_heap_reference(runtime_t *runtime, value_t value) {
   size_t size = kReferenceSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,

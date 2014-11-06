@@ -843,6 +843,14 @@ value_t array_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
   return yes();
 }
 
+bool in_array(value_t self, value_t value) {
+  for (size_t i = 0; i < get_array_length(self); i++) {
+    if (value_identity_compare(value, get_array_at(self, i)))
+      return true;
+  }
+  return false;
+}
+
 static value_t array_length(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofArray, self);

@@ -345,6 +345,35 @@ value_t get_type_parents(runtime_t *runtime, value_t space, value_t type) {
   }
 }
 
+// Returns true if the given signature could possibly match an invocation where
+// the given tag maps to the given value.
+static bool can_match_eq(value_t signature, value_t tag, value_t value) {
+  size_t paramc = get_signature_parameter_count(signature);
+  // First look for a matching parameter in the signature.
+  value_t match = nothing();
+  for (size_t i = 0; i < paramc; i++) {
+    value_t param = get_signature_parameter_at(signature, i);
+    value_t tags = get_parameter_tags(param);
+    if (in_array(tags, tag)) {
+      match = param;
+      break;
+    }
+  }
+  if (is_nothing(match)) {
+    // There was no matching parameter so this can only match if the signature
+    // permits it as an extra argument.
+    return get_signature_allow_extra(signature);
+  } else {
+    value_t guard = get_parameter_guard(match);
+    if (get_guard_type(guard) == gtEq) {
+      value_t eq_value = get_guard_value(guard);
+      return value_identity_compare(value, eq_value);
+    } else {
+      return true;
+    }
+  }
+}
+
 static value_t create_methodspace_selector_slice(runtime_t *runtime, value_t self,
     value_t selector) {
   TRY_DEF(result, new_heap_signature_map(runtime));
@@ -354,8 +383,10 @@ static value_t create_methodspace_selector_slice(runtime_t *runtime, value_t sel
     value_t entries = get_signature_map_entries(methods);
     for (size_t i = 0; i < get_pair_array_buffer_length(entries); i++) {
       value_t signature = get_pair_array_buffer_first_at(entries, i);
-      value_t method = get_pair_array_buffer_second_at(entries, i);
-      TRY(add_to_signature_map(runtime, result, signature, method));
+      if (can_match_eq(signature, ROOT(runtime, selector_key), selector)) {
+        value_t method = get_pair_array_buffer_second_at(entries, i);
+        TRY(add_to_signature_map(runtime, result, signature, method));
+      }
     }
     current = get_methodspace_parent(current);
   }
@@ -366,11 +397,18 @@ value_t get_or_create_methodspace_selector_slice(runtime_t *runtime, value_t sel
     value_t selector) {
   value_t cache_ptr = get_methodspace_cache_ptr(self);
   value_t cache = get_freeze_cheat_value(cache_ptr);
+  // Create the cache if it doesn't exist.
   if (is_nothing(cache)) {
-    TRY_SET(cache, create_methodspace_selector_slice(runtime, self, selector));
+    TRY_SET(cache, new_heap_id_hash_map(runtime, 128));
     set_freeze_cheat_value(cache_ptr, cache);
   }
-  return cache;
+  // Create the selector-specific cache if it doesn't exits.
+  value_t slice = get_id_hash_map_at(cache, selector);
+  if (in_condition_cause(ccNotFound, slice)) {
+    TRY_SET(slice, create_methodspace_selector_slice(runtime, self, selector));
+    TRY(set_id_hash_map_at(runtime, cache, selector, slice));
+  }
+  return slice;
 }
 
 void invalidate_methodspace_caches(value_t self) {

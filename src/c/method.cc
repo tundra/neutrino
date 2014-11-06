@@ -267,7 +267,7 @@ value_t get_sigmap_lookup_argument_map(sigmap_state_t<I, O> *state) {
 template <class I, class O>
 static value_t lookup_through_input(sigmap_state_t<I, O> *state) {
   value_t space = get_ambience_methodspace(state->input->get_ambience());
-  value_t selector = nothing(); // state->input->get_selector();
+  value_t selector = state->input->get_selector();
   if (is_nothing(selector)) {
     // If there is no selector we have to look up through all the methods.
     while (!is_nothing(space)) {

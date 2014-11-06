@@ -83,6 +83,10 @@ value_t clone_heap_instance_species(runtime_t *runtime, value_t original);
 // number of elements. The array will be initialized to null.
 value_t new_heap_array(runtime_t *runtime, size_t length);
 
+// Creates a new array that holds the given contents.
+value_t new_heap_array_with_contents(runtime_t *runtime, alloc_flags_t flags,
+    value_array_t contents);
+
 // Returns a new reference that initially holds the given value.
 value_t new_heap_reference(runtime_t *runtime, value_t value);
 

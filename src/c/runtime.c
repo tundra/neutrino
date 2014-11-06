@@ -233,6 +233,12 @@ value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *run
   TRY_SET(RAW_ROOT(roots, call_thunk_code_block), create_call_thunk_code_block(runtime));
   TRY_SET(RAW_ROOT(roots, escape_records), create_escape_records(runtime));
   TRY_SET(RAW_ROOT(roots, special_imports), new_heap_id_hash_map(runtime, 256));
+  TRY_SET(RAW_ROOT(roots, subject_key_array),
+      new_heap_array_with_contents(runtime, afFreeze,
+          new_value_array(&RAW_ROOT(roots, subject_key), 1)));
+  TRY_SET(RAW_ROOT(roots, selector_key_array),
+      new_heap_array_with_contents(runtime, afFreeze,
+          new_value_array(&RAW_ROOT(roots, selector_key), 1)));
 
   // Generate initialization for the per-family types.
 #define __CREATE_TYPE__(Name, name) do {                                       \
@@ -362,6 +368,11 @@ value_t roots_validate(value_t roots) {
   VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, escape_records));
   VALIDATE_HEAP_OBJECT(ofIdHashMap, RAW_ROOT(roots, special_imports));
   VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, plugin_factories));
+
+  VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, subject_key_array));
+  VALIDATE_CHECK_EQ(1, get_array_length(RAW_ROOT(roots, subject_key_array)));
+  VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, selector_key_array));
+  VALIDATE_CHECK_EQ(1, get_array_length(RAW_ROOT(roots, selector_key_array)));
 
 #define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_HEAP_OBJECT(ofUtf8, RAW_RSTR(roots, name));
   ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)

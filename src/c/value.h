@@ -1200,6 +1200,9 @@ value_t get_pair_first(value_t pair);
 // array.
 value_t get_pair_second(value_t pair);
 
+// Returns true iff the given array contains a value identical to the given value.
+bool in_array(value_t self, value_t value);
+
 
 // --- T u p l e ---
 

@@ -13,13 +13,13 @@ static value_t build_builtin_method_signature(runtime_t *runtime,
   // The subject parameter.
   TRY_DEF(subject_guard, new_heap_guard(runtime, afFreeze, gtIs, subject));
   TRY_DEF(subject_param, new_heap_parameter(runtime, afFreeze, subject_guard,
-      ROOT(runtime, empty_array), false, 0));
+      ROOT(runtime, subject_key_array), false, 0));
   set_pair_array_first_at(tags, 0, ROOT(runtime, subject_key));
   set_pair_array_second_at(tags, 0, subject_param);
   // The selector parameter.
   TRY_DEF(name_guard, new_heap_guard(runtime, afFreeze, gtEq, selector));
   TRY_DEF(name_param, new_heap_parameter(runtime, afFreeze, name_guard,
-      ROOT(runtime, empty_array), false, 1));
+      ROOT(runtime, selector_key_array), false, 1));
   set_pair_array_first_at(tags, 1, ROOT(runtime, selector_key));
   set_pair_array_second_at(tags, 1, name_param);
   // The positional parameters.

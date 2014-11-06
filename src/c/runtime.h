@@ -106,7 +106,9 @@
   F(special_imports)                                                           \
   F(stack_bottom_code_block)                                                   \
   F(stack_piece_bottom_code_block)                                             \
-  F(subject_key)
+  F(subject_key)                                                               \
+  F(subject_key_array)                                                         \
+  F(selector_key_array)
 
 // Enum where each entry corresponds to a field in the roots object. The naming
 // convention is a bit odd, that's because we're going to be using these to name
