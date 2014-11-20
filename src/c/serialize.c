@@ -91,23 +91,28 @@ static value_t array_serialize(value_t value, serialize_state_t *state) {
   return success();
 }
 
-static value_t map_serialize(value_t value, serialize_state_t *state) {
-  CHECK_FAMILY(ofIdHashMap, value);
-  size_t entry_count = get_id_hash_map_size(value);
-  pton_assembler_begin_map(state->assm, entry_count);
-  id_hash_map_iter_t iter;
-  id_hash_map_iter_init(&iter, value);
+static value_t map_contents_serialize(size_t entry_count, id_hash_map_iter_t *iter,
+    serialize_state_t *state) {
   size_t entries_written = 0;
-  while (id_hash_map_iter_advance(&iter)) {
+  while (id_hash_map_iter_advance(iter)) {
     value_t key;
     value_t value;
-    id_hash_map_iter_get_current(&iter, &key, &value);
+    id_hash_map_iter_get_current(iter, &key, &value);
     TRY(value_serialize(key, state));
     TRY(value_serialize(value, state));
     entries_written++;
   }
   CHECK_EQ("serialized map length", entry_count, entries_written);
   return success();
+}
+
+static value_t map_serialize(value_t value, serialize_state_t *state) {
+  CHECK_FAMILY(ofIdHashMap, value);
+  size_t entry_count = get_id_hash_map_size(value);
+  pton_assembler_begin_map(state->assm, entry_count);
+  id_hash_map_iter_t iter;
+  id_hash_map_iter_init(&iter, value);
+  return map_contents_serialize(entry_count, &iter, state);
 }
 
 static value_t string_serialize(value_t value, serialize_state_t *state) {
@@ -132,12 +137,16 @@ static value_t instance_serialize(value_t value, serialize_state_t *state) {
     value_t raw_resolved = value_mapping_apply(state->resolver, value, state->runtime);
     if (in_condition_cause(ccNothing, raw_resolved)) {
       // It's not an environment object. Just serialize it directly.
-      pton_assembler_begin_object(state->assm);
+      value_t fields = get_instance_fields(value);
+      size_t fieldc = get_id_hash_map_size(fields);
+      pton_assembler_begin_object(state->assm, fieldc);
       pton_assembler_emit_null(state->assm);
       // Cycles are only allowed through the payload of an object so we only
       // register the object after the header has been written.
       register_serialized_object(value, state);
-      return value_serialize(get_instance_fields(value), state);
+      id_hash_map_iter_t iter;
+      id_hash_map_iter_init(&iter, fields);
+      return map_contents_serialize(fieldc, &iter, state);
     } else {
       TRY_DEF(resolved, raw_resolved);
       pton_assembler_begin_environment_reference(state->assm);
@@ -300,14 +309,14 @@ static size_t acquire_object_index(deserialize_state_t *state) {
   return state->object_offset++;
 }
 
-static value_t object_deserialize(deserialize_state_t *state) {
+static value_t object_deserialize(size_t fieldc, deserialize_state_t *state) {
   size_t offset = acquire_object_index(state);
   // Read the header before creating the instance.
   TRY_DEF(header, value_deserialize(state));
   TRY_DEF(result, new_heap_object_with_type(state->runtime, header));
   TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
       result));
-  TRY_DEF(payload, value_deserialize(state));
+  TRY_DEF(payload, map_deserialize(fieldc, state));
   TRY(set_heap_object_contents(state->runtime, result, payload));
   return result;
 }
@@ -321,9 +330,6 @@ static value_t environment_deserialize(deserialize_state_t *state) {
   return result;
 }
 
-#include "utils/log.h"
-
-int count = 0;
 static value_t reference_deserialize(size_t offset, deserialize_state_t *state) {
   size_t index = state->object_offset - offset - 1;
   value_t result = get_id_hash_map_at(state->ref_map, new_integer(index));
@@ -354,7 +360,7 @@ static value_t value_deserialize(deserialize_state_t *state) {
     case PTON_OPCODE_DEFAULT_STRING:
       return default_string_deserialize(&instr, state);
     case PTON_OPCODE_BEGIN_OBJECT:
-      return object_deserialize(state);
+      return object_deserialize(instr.payload.object_fieldc, state);
     case PTON_OPCODE_REFERENCE:
       return reference_deserialize(instr.payload.reference_offset, state);
     case PTON_OPCODE_BEGIN_ENVIRONMENT_REFERENCE:

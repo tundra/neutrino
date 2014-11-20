@@ -266,9 +266,8 @@ TEST(serialize, env_construction) {
   // Objects with ast factory headers produce asts.
   {
     pton_assembler_t *assm = pton_new_assembler();
-    pton_assembler_begin_object(assm);
+    pton_assembler_begin_object(assm, 1);
     write_ast_factory(assm, "Literal");
-    pton_assembler_begin_map(assm, 1);
     write_string(assm, "value");
     pton_assembler_emit_bool(assm, true);
     value_t value = deserialize(runtime, assm);
