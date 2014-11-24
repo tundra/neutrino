@@ -139,7 +139,8 @@ value_t new_heap_instance_manager(runtime_t *runtime, value_t display_name);
 value_t new_heap_void_p(runtime_t *runtime, void *value);
 
 // Creates a new factory object backed by the given constructor function.
-value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr);
+value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr,
+    utf8_t name);
 
 // Creates a new argument map trie with the given value and an empty children
 // array.

@@ -100,7 +100,7 @@ class Visitor(object):
 
 
 # A constant literal value.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Literal"))
+@plankton.serializable("ast:Literal")
 class Literal(object):
 
   @plankton.field("value")
@@ -118,7 +118,7 @@ class Literal(object):
 
 
 # An array expression.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Array"))
+@plankton.serializable("ast:Array")
 class Array(object):
 
   @plankton.field("elements")
@@ -141,8 +141,8 @@ class Array(object):
 @plankton.serializable()
 class Variable(object):
 
-  _LOCAL_HEADER = plankton.EnvironmentReference.path("ast", "LocalVariable")
-  _NAMESPACE_HEADER = plankton.EnvironmentReference.path("ast", "NamespaceVariable")
+  _LOCAL_HEADER = "ast:LocalVariable"
+  _NAMESPACE_HEADER = "ast:NamespaceVariable"
 
   def __init__(self, ident, symbol=None):
     self.ident = ident
@@ -178,7 +178,7 @@ class Variable(object):
     return "(var %s)" % str(self.ident)
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "VariableAssignment"))
+@plankton.serializable("ast:VariableAssignment")
 class VariableAssignment(object):
 
   @plankton.field("target")
@@ -196,7 +196,7 @@ class VariableAssignment(object):
 
 
 # A multi-method invocation.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Invocation"))
+@plankton.serializable("ast:Invocation")
 class Invocation(object):
 
   @plankton.field("arguments")
@@ -230,7 +230,7 @@ class Invocation(object):
 
 
 # A reified multi-method call literal.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "CallLiteral"))
+@plankton.serializable("ast:CallLiteral")
 class CallLiteral(object):
 
   @plankton.field("arguments")
@@ -246,7 +246,7 @@ class CallLiteral(object):
 
 
 # An individual argument to an invocation.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "CallLiteralArgument"))
+@plankton.serializable("ast:CallLiteralArgument")
 class CallLiteralArgument(object):
 
   @plankton.field("tag")
@@ -266,7 +266,7 @@ class CallLiteralArgument(object):
     return "(call literal argument %s %s)" % (self.tag, self.value)
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Signal"))
+@plankton.serializable("ast:Signal")
 class Signal(object):
 
   @plankton.field("escape")
@@ -287,7 +287,7 @@ class Signal(object):
       self.default.accept(visitor)
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "SignalHandler"))
+@plankton.serializable("ast:SignalHandler")
 class SignalHandler(object):
 
   @plankton.field("body")
@@ -305,7 +305,7 @@ class SignalHandler(object):
       handler.accept(visitor)
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Ensure"))
+@plankton.serializable("ast:Ensure")
 class Ensure(object):
 
   @plankton.field("body")
@@ -323,7 +323,7 @@ class Ensure(object):
 
 
 # An individual argument to an invocation.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Argument"))
+@plankton.serializable("ast:Argument")
 class Argument(object):
 
   @plankton.field("tag")
@@ -370,7 +370,7 @@ class Binding(object):
 
 # A sequence of expressions to execute in order, yielding the value of the last
 # expression.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Sequence"))
+@plankton.serializable("ast:Sequence")
 class Sequence(object):
 
   @plankton.field("values")
@@ -398,7 +398,7 @@ class Sequence(object):
 
 
 # A local variable declaration.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "LocalDeclaration"))
+@plankton.serializable("ast:LocalDeclaration")
 class LocalDeclaration(object):
 
   @plankton.field("symbol")
@@ -430,7 +430,7 @@ class LocalDeclaration(object):
     return "(%s %s := %s in %s)" % (type, self.ident, self.value, self.body)
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Block"))
+@plankton.serializable("ast:Block")
 class Block(object):
 
   @plankton.field("symbol")
@@ -458,7 +458,7 @@ class Block(object):
 
 
 # A local escape capture.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "WithEscape"))
+@plankton.serializable("ast:WithEscape")
 class WithEscape(object):
 
   @plankton.field("symbol")
@@ -479,7 +479,7 @@ class WithEscape(object):
 
 
 # A symbol that identifies a scoped binding.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Symbol"))
+@plankton.serializable("ast:Symbol")
 class Symbol(object):
 
   @plankton.field("name")
@@ -495,7 +495,7 @@ class Symbol(object):
 
 
 # An individual method parameter.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Parameter"))
+@plankton.serializable("ast:Parameter")
 class Parameter(object):
 
   @plankton.field("symbol")
@@ -527,7 +527,7 @@ class Parameter(object):
         self.guard)
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Signature"))
+@plankton.serializable("ast:Signature")
 class Signature(object):
 
   @plankton.field("parameters")
@@ -551,7 +551,7 @@ class Signature(object):
     return "(signature %s)" % " ".join(map(str, self.parameters))
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Guard"))
+@plankton.serializable("ast:Guard")
 class Guard(object):
 
   @plankton.field("type")
@@ -595,7 +595,7 @@ class Guard(object):
 
 # An anonymous function. These can be broken down into equivalent new-object
 # and set-property calls but that's for later.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Lambda"))
+@plankton.serializable("ast:Lambda")
 class Lambda(object):
 
   @plankton.field("methods")
@@ -631,7 +631,7 @@ class Lambda(object):
 
 
 # Yields the current bound module fragment.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "CurrentModule"))
+@plankton.serializable("ast:CurrentModule")
 class CurrentModule(object):
 
   def accept(self, visitor):
@@ -644,7 +644,7 @@ class CurrentModule(object):
     return "(current-module)"
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Program"))
+@plankton.serializable("ast:Program")
 class Program(object):
 
   @plankton.field("entry_point")
@@ -661,7 +661,7 @@ class Program(object):
 
 
 # A toplevel namespace declaration.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "NamespaceDeclaration"))
+@plankton.serializable("ast:NamespaceDeclaration")
 class NamespaceDeclaration(object):
 
   @plankton.field("annotations")
@@ -694,7 +694,7 @@ class NamespaceDeclaration(object):
 
 
 # Syntax of a method.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Method"))
+@plankton.serializable("ast:Method")
 class Method(object):
 
   @plankton.field("signature")
@@ -712,7 +712,7 @@ class Method(object):
 
 
 # A toplevel method declaration.
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "MethodDeclaration"))
+@plankton.serializable("ast:MethodDeclaration")
 class MethodDeclaration(object):
 
   @plankton.field("annotations")
@@ -832,7 +832,7 @@ class FieldDeclaration(object):
     setter.apply(module)
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("core", "UnboundModule"))
+@plankton.serializable("core:UnboundModule")
 class UnboundModule(object):
 
   @plankton.field('path')
@@ -845,7 +845,7 @@ class UnboundModule(object):
     return "(module %s %s)" % (self.path, " ".join(map(str, self.fragments)))
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("core", "UnboundModuleFragment"))
+@plankton.serializable("core:UnboundModuleFragment")
 class UnboundModuleFragment(object):
 
   @plankton.field('stage')
@@ -974,7 +974,7 @@ class Quote(object):
     return "(@ %s)" % self.ast
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "Unquote"))
+@plankton.serializable("ast:Unquote")
 class Unquote(object):
 
   @plankton.field('stage')
@@ -1006,7 +1006,7 @@ class Import(object):
     return "(import %s)" % self.ident
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("ast", "IsDeclaration"))
+@plankton.serializable("ast:IsDeclaration")
 class IsDeclaration(object):
 
   @plankton.field("subtype")

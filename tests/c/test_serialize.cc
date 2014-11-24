@@ -17,7 +17,7 @@ static value_t transcode_plankton(runtime_t *runtime, value_mapping_t *resolver,
   // Encode and decode the value.
   value_t encoded = plankton_serialize(runtime, resolver, value);
   ASSERT_SUCCESS(encoded);
-  value_t decoded = plankton_deserialize(runtime, access, encoded);
+  value_t decoded = plankton_deserialize(runtime, access, NULL, encoded);
   ASSERT_SUCCESS(decoded);
   return decoded;
 }
@@ -234,8 +234,6 @@ static value_t write_string(pton_assembler_t *assm, const char *c_str) {
 // Writes an ast factory reference with the given ast type to the given buffer.
 static value_t write_ast_factory(pton_assembler_t *assm, const char *ast_type) {
   pton_assembler_begin_environment_reference(assm);
-  pton_assembler_begin_array(assm, 2);
-  TRY(write_string(assm, "ast"));
   TRY(write_string(assm, ast_type));
   return success();
 }
@@ -248,7 +246,7 @@ static value_t deserialize(runtime_t *runtime, pton_assembler_t *assm) {
   value_t blob = new_heap_blob_with_data(runtime, raw_blob);
   value_mapping_t syntax_mapping;
   TRY(init_plankton_environment_mapping(&syntax_mapping, runtime));
-  return plankton_deserialize(runtime, &syntax_mapping, blob);
+  return plankton_deserialize(runtime, &syntax_mapping, NULL, blob);
 }
 
 TEST(serialize, env_construction) {
@@ -257,7 +255,7 @@ TEST(serialize, env_construction) {
   // Environment references resolve correctly to ast factories.
   {
     pton_assembler_t *assm = pton_new_assembler();
-    write_ast_factory(assm, "Literal");
+    write_ast_factory(assm, "ast:Literal");
     value_t value = deserialize(runtime, assm);
     ASSERT_FAMILY(ofFactory, value);
     pton_dispose_assembler(assm);
@@ -267,7 +265,7 @@ TEST(serialize, env_construction) {
   {
     pton_assembler_t *assm = pton_new_assembler();
     pton_assembler_begin_object(assm, 1);
-    write_ast_factory(assm, "Literal");
+    write_ast_factory(assm, "ast:Literal");
     write_string(assm, "value");
     pton_assembler_emit_bool(assm, true);
     value_t value = deserialize(runtime, assm);

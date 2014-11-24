@@ -30,6 +30,9 @@ class Value(object):
   def is_NULL(self):
     return self.value['encoded'] == 0
 
+  def is_integer(self):
+    return False
+
   # Returns the value's domain as a string (ie. "vdObject").
   def get_domain(self):
     code = self.get_domain_code()
@@ -39,17 +42,89 @@ class Value(object):
   def get_domain_code(self):
     return self.value['encoded'] & _DOMAIN_TAG_MASK
 
+  # Returning false here will cause gdb to fall back to the default printer when
+  # printing this value.
+  def use_fallback_printer(self):
+    return False
+
+  # Returning true here will cause gdb to call the get_children method to get
+  # this value's children. Otherwise it'll assume the value is atomic.
+  def is_array(self):
+    return False
+
+  # Generate the value's children.
+  def get_array_elements(self):
+    return None
+
+  def is_map(self):
+    return False
+
+  def get_map_items(self):
+    return None
+
+  def is_string(self):
+    return False
+
+  # Returns the name of the enum in the given type whose ordinal value is as
+  # specified. Returns None if one is not found.
+  @staticmethod
+  def get_enum_name(ordinal, type):
+    enums = gdb.lookup_type(type)
+    for (name, field) in enums.items():
+      if field.enumval == ordinal:
+        return name
+    return None
+
+  @staticmethod
+  def wrap(value):
+    unspecific = Value(value)
+    if unspecific.is_NULL():
+      return NULL(value)
+    domain = unspecific.get_domain()
+    if domain == 'vdInteger':
+      return IntegerValue(value)
+    elif domain == 'vdCondition':
+      return ConditionValue(value)
+    elif domain == 'vdHeapObject':
+      return HeapObjectValue.wrap(value)
+    elif domain == 'vdCustomTagged':
+      return CustomTaggedValue(value)
+    else:
+      return unspecific
+
+
+# This guy turns up occasionally and confuses the heap object logic if not
+# handled specially.
+class NULL(Value):
+
+  def use_fallback_printer(self):
+    return True
+
+
+class IntegerValue(Value):
+
+  def is_integer(self):
+    return True
+
   # Returns the integer value of this tagged integer value.
   def get_integer_value(self):
     return int(self.value['as_integer']['data']) >> _DOMAIN_TAG_SIZE
+
+  def __str__(self):
+    return "&%i" % self.get_integer_value()
+
+
+class ConditionValue(Value):
 
   # Returns the cause of this tagged signal as a string.
   def get_condition_cause(self):
     return str(self.value['as_condition']['cause'])
 
-  # Returns the address value of this object as a gdb.Value.
-  def get_object_address(self):
-    return self.value['encoded'] - _OBJECT_TAG
+  def __str__(self):
+    return "%%<condition: %s>" % self.get_condition_cause()
+
+
+class CustomTaggedValue(Value):
 
   # Returns the integer phylum code of this value.
   def get_phylum_code(self):
@@ -67,52 +142,141 @@ class Value(object):
     code = self.get_phylum_code()
     return Value.get_enum_name(code, 'custom_tagged_phylum_t')
 
-  # Returns the index'th value field of this object as a gdb.Value.
-  def get_object_field(self, index):
-    addr = self.get_object_address()
-    type = gdb.Type.pointer(gdb.lookup_type('value_t'))
-    ptr = addr.cast(type)
-    return Value(ptr[index])
+  def __str__(self):
+    phylum = self.get_phylum()
+    payload = self.get_custom_tagged_payload()
+    if phylum == 'tpNull':
+      return '#null'
+    elif phylum == 'tpNothing':
+      return '#nothing'
+    elif phylum == 'tpBoolean':
+      if payload == 0:
+        return '#false'
+      elif payload == 1:
+        return '#true'
+    elif phylum == 'tpAllocatedMemory':
+      return '#allocated'
+    return '#<%s (%s)>' % (enum_to_phrase(phylum), payload)
+
+
+class HeapObjectValue(Value):
+
+  # Returns the i'th field of this object. Note that the object header is not
+  # counted, just like the HEAP_OBJECT_FIELD_OFFSET macro in the implementation
+  # so the first field after the header is 0.
+  def get_field(self, offset):
+    return self.get_object_word(1 + offset)
 
   # Returns the family of this object as a string.
   def get_object_family(self):
-    header = self.get_object_field(0)
-    code = header.get_object_field(1).get_integer_value() << _DOMAIN_TAG_SIZE
+    header = HeapObjectValue(self.get_naked_object_word(0))
+    code = header.get_object_word(1).get_integer_value() << _DOMAIN_TAG_SIZE
     return Value.get_enum_name(code, 'heap_object_family_t')
 
-  # Returns the name of the enum in the given type whose ordinal value is as
-  # specified. Returns None if one is not found.
+  # Returns the address value of this object as a gdb.Value.
+  def get_object_address(self):
+    return self.value['encoded'] - _OBJECT_TAG
+
+  # Returns the value stored index words into this object, which must be a heap
+  # object. The species is stored at word 0 and the object's fields are stored
+  # from word 1.
+  def get_object_word(self, index):
+    return Value.wrap(self.get_naked_object_word(index))
+
+  # Returns the gdb.Value representation of the value stored index words into
+  # this object.
+  def get_naked_object_word(self, index):
+    addr = self.get_object_address()
+    type = gdb.Type.pointer(gdb.lookup_type('value_t'))
+    ptr = addr.cast(type)
+    return ptr[index]
+
   @staticmethod
-  def get_enum_name(ordinal, type):
-    enums = gdb.lookup_type(type)
-    for (name, field) in enums.items():
-      if field.enumval == ordinal:
-        return name
-    return None
+  def wrap(value):
+    unspecific = HeapObjectValue(value)
+    family = unspecific.get_object_family()
+    if family == 'ofArray':
+      return ArrayObject(value)
+    elif family == 'ofUtf8':
+      return StringObject(value)
+    elif family == 'ofUnknown':
+      return UnknownObject(value)
+    elif family == 'ofIdHashMap':
+      return IdHashMapObject(value)
+    else:
+      return unspecific
 
-def new_custom_tagged_printer(value):
-  phylum = value.get_phylum()
-  payload = value.get_custom_tagged_payload()
-  if phylum == 'tpNull':
-    return StringPrinter('#null')
-  elif phylum == 'tpNothing':
-    return StringPrinter('#nothing')
-  elif phylum == 'tpBoolean':
-    if payload == 0:
-      return StringPrinter('#false')
-    elif payload == 1:
-      return StringPrinter('#true')
-  return StringPrinter('#<%s (%s)>' % (enum_to_phrase(phylum), payload))
+  def __str__(self):
+    return "#<%s>" % enum_to_phrase(self.get_object_family())
 
 
-# A printer that holds a display string with no children.
-class StringPrinter(object):
+class ArrayObject(HeapObjectValue):
 
-  def __init__(self, value):
-    self.value = value
+  def __len__(self):
+    return self.get_field(0).get_integer_value()
 
-  def to_string(self):
-    return self.value
+  def is_array(self):
+    return True
+
+  def get_array_elements(self):
+    for i in range(0, len(self)):
+      yield self[i]
+
+  def __getitem__(self, index):
+    return self.get_field(1 + index)
+
+  def __str__(self):
+    return "#<an Array [%s]>" % len(self)
+
+
+class IdHashMapObject(HeapObjectValue):
+
+  def get_size(self):
+    return self.get_field(0).get_integer_value()
+
+  def is_map(self):
+    return True
+
+  def get_map_items(self):
+    capacity = self.get_field(1).get_integer_value()
+    entry_array = self.get_field(3)
+    cursor = 0
+    while cursor < capacity:
+      index = 3 * cursor
+      hash = entry_array[index + 1]
+      if hash.is_integer():
+        key = entry_array[index]
+        value = entry_array[index + 2]
+        yield (key, value)
+      cursor += 1
+
+  def __str__(self):
+    return "#<an IdHashMap {%s}>" % self.get_size()
+
+
+class StringObject(HeapObjectValue):
+
+  def get_length(self):
+    return self.get_field(0).get_integer_value()
+
+  def get_contents(self):
+    length = self.get_length()
+    addr = self.get_object_address()
+    type = gdb.Type.pointer(gdb.lookup_type('uint8_t'))
+    ptr = addr.cast(type)
+    header_size = _VALUE_SIZE * 2
+    chars = bytes([int(ptr[header_size + i]) for i in range(0, length)])
+    return '"%s"' % chars.decode('utf-8')
+
+  def __str__(self):
+    return self.get_contents()
+
+
+class UnknownObject(HeapObjectValue):
+
+  def __str__(self):
+    header = self.get_field(0)
+    return "#<an Unknown %s>" % str(header)
 
 
 # Convert an enum value (say "vdGuard") into smalltalk-style "a Guard". This is
@@ -125,88 +289,61 @@ def enum_to_phrase(enum_name):
     return "a %s" % name
 
 
-# A generic object value printer.
-class HeapObjectValuePrinter(object):
+# Adaptor that tells gdb how to display a wrapped value.
+class ValuePrinter(object):
 
   def __init__(self, value):
     self.value = value
 
-  def get_family(self):
-    return self.value.get_object_family()
-
-  # Returns the i'th field of this object. Note that the object header is not
-  # counted, just like the HEAP_OBJECT_FIELD_OFFSET macro in the implementation
-  # so the first field after the header is 0.
-  def get_field(self, offset):
-    return self.value.get_object_field(1 + offset)
-
   def to_string(self):
-    return "#<%s>" % enum_to_phrase(self.get_family())
+    return str(self.value)
+
+  @staticmethod
+  def wrap(value):
+    if value.use_fallback_printer():
+      return None
+    # Annoyingly, gdb behaves differently based on which methods exist, not what
+    # they yield, So we need several different implementations to control how
+    # the values are displayed.
+    if value.is_array():
+      return ArrayPrinter(value)
+    elif value.is_map():
+      return MapPrinter(value)
+    elif value.is_string():
+      return StringPrinter(value)
+    else:
+      return ValuePrinter(value)
 
 
-# A custom value printer for heap arrays.
-class ArrayValuePrinter(HeapObjectValuePrinter):
-
-  def get_length(self):
-    return self.get_field(0).get_integer_value()
+class ArrayPrinter(ValuePrinter):
 
   def display_hint(self):
-    return 'array'
+    return "array"
 
   def children(self):
-    for i in range(0, self.get_length()):
-      child = self.get_field(1 + i)
-      yield (str(i), child.to_gdb())
-
-  def to_string(self):
-    return "#<an Array [%s]>" % self.get_length()
+    index = 0
+    for child in self.value.get_array_elements():
+      yield ("[%i]" % index, child.to_gdb())
+      index += 1
 
 
-class StringValuePrinter(HeapObjectValuePrinter):
+class MapPrinter(ValuePrinter):
 
-  def get_length(self):
-    return self.get_field(0).get_integer_value()
+  def display_hint(self):
+    return "map"
 
-  def get_contents(self):
-    length = self.get_length()
-    addr = self.value.get_object_address()
-    type = gdb.Type.pointer(gdb.lookup_type('uint8_t'))
-    ptr = addr.cast(type)
-    header_size = _VALUE_SIZE * 2
-    chars = bytes([int(ptr[header_size + i]) for i in range(0, length)])
-    return chars.decode('utf-8')
-
-  def to_string(self):
-    return "#<a Utf8 \"%s\">" % self.get_contents()
-
-# Returns the appropriate value printer for the given object wrapper.
-def new_heap_object_printer(value):
-  family = value.get_object_family()
-  if family == 'ofArray':
-    return ArrayValuePrinter(value)
-  elif family == 'ofUtf8':
-    return StringValuePrinter(value)
-  else:
-    return HeapObjectValuePrinter(value)
+  def children(self):
+    index = 0
+    for (key, value) in self.value.get_map_items():
+      yield ("key[%i]" % index, key.to_gdb())
+      yield ("value[%i]" % index, value.to_gdb())
+      index += 1
 
 
-# Returns the appropriate value printer for the given value wrapper.
-def new_value_printer(value):
-  if value.is_NULL():
-    # This guy turns up occasionally and confuses the heap object logic if not
-    # handled specially.
-    return None
-  domain = value.get_domain()
-  if domain == 'vdInteger':
-    return StringPrinter('&' % value.get_integer_value())
-  elif domain == 'vdCondition':
-    return StringPrinter('%%<condition: %s>' % value.get_condition_cause())
-  elif domain == 'vdHeapObject':
-    return new_heap_object_printer(value)
-  elif domain == 'vdCustomTagged':
-    return new_custom_tagged_printer(value)
-  else:
-    return None
+class StringPrinter(ValuePrinter):
+
+  def display_hint(self):
+    return "string"
 
 
 # Look up the appropriate pretty-printer for the given value if it's one we
@@ -219,7 +356,7 @@ def resolve_neutrino_printer(value):
   # Get the tag of the union or struct or, if it's not one, None.
   tag = stripped.tag
   if tag == 'value_t':
-    return new_value_printer(Value(value))
+    return ValuePrinter.wrap(Value.wrap(value))
   else:
     return None
 

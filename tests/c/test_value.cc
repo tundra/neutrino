@@ -849,13 +849,8 @@ value_t new_flag_element(runtime_t *runtime, value_t key, value_t value) {
   value_t payload = new_heap_id_hash_map(runtime, 16);
   set_id_hash_map_at(runtime, payload, RSTR(runtime, key), key);
   set_id_hash_map_at(runtime, payload, RSTR(runtime, value), value);
-  value_t path = new_heap_array(runtime, 2);
-  set_array_at(path, 0, RSTR(runtime, options));
-  set_array_at(path, 1, RSTR(runtime, FlagElement));
   return new_heap_unknown(runtime,
-      new_heap_unknown(runtime,
-          RSTR(runtime, environment_reference),
-          path),
+      RSTR(runtime, options_FlagElement),
       payload);
 }
 

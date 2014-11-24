@@ -46,7 +46,7 @@ class Parameter(object):
     self.guard = guard
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("core", "Operation"))
+@plankton.serializable("core:Operation")
 class Operation(object):
 
   _ASSIGN = 1
@@ -121,7 +121,7 @@ class Key(plankton.EnvironmentReference):
     return "(key %s)" % self.display_name
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("core", "Path"))
+@plankton.serializable("core:Path")
 class Path(object):
 
   @plankton.field("names")
@@ -154,7 +154,7 @@ class Path(object):
     return "".join([":%s" % name for name in self.names])
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("core", "Identifier"))
+@plankton.serializable("core:Identifier")
 class Identifier(object):
 
   @plankton.field("path")
@@ -191,7 +191,7 @@ class Identifier(object):
     return "(name %s %s)" % (prefix, self.path)
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("core", "Function"))
+@plankton.serializable("core:Function")
 class Function(object):
 
   @plankton.field("display_name")
@@ -199,7 +199,7 @@ class Function(object):
     self.display_name = display_name
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("core", "Library"))
+@plankton.serializable("core:Library")
 class Library(object):
 
   @plankton.field("modules")
@@ -211,7 +211,7 @@ class Library(object):
     self.modules[path] = module
 
 
-@plankton.serializable(plankton.EnvironmentReference.path("core", "DecimalFraction"))
+@plankton.serializable("core:DecimalFraction")
 class DecimalFraction(object):
 
   @plankton.field("numerator")
@@ -233,6 +233,6 @@ class DecimalFraction(object):
     return "(decimal %i/%i@%i)" % (self.numerator, self.denominator, self.precision)
 
 
-_SUBJECT = Key("subject", ("core", "subject"))
-_SELECTOR = Key("selector", ("core", "selector"))
-_IS_ASYNC = Key("is_async", ("core", "is_async"))
+_SUBJECT = Key("subject", "core:subject")
+_SELECTOR = Key("selector", "core:selector")
+_IS_ASYNC = Key("is_async", "core:is_async")

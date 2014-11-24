@@ -494,13 +494,23 @@ static value_t new_instance_of_type(runtime_t *runtime, value_t type) {
   return result;
 }
 
+static value_t new_instance_of_string(runtime_t *runtime, value_t type) {
+  value_t env = ROOT(runtime, plankton_environment);
+  value_t factory = get_id_hash_map_at(env, type);
+  return in_family(ofFactory, factory)
+      ? new_instance_of_factory(runtime, factory)
+      : new_heap_unknown(runtime, type, nothing());
+}
+
 static value_t new_heap_object_with_object_type(runtime_t *runtime, value_t type) {
   heap_object_family_t family = get_heap_object_family(type);
   switch (family) {
     case ofType:
       return new_instance_of_type(runtime, type);
     case ofFactory:
-      return new_instance_of_factory(runtime, type);
+      return new_heap_object_with_object_type(runtime, get_factory_name(type));
+    case ofUtf8:
+      return new_instance_of_string(runtime, type);
     default: {
       return new_instance_of_unknown(runtime, type);
     }

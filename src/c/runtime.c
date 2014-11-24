@@ -830,8 +830,23 @@ safe_value_t runtime_protect_value(runtime_t *runtime, value_t value) {
   }
 }
 
+static value_t new_object_instance(object_factory_t *factory, runtime_t *runtime,
+    value_t header) {
+  return new_heap_object_with_type(runtime, header);
+}
+
+static value_t set_object_instance_fields(object_factory_t *factory,
+    runtime_t *runtime, value_t header, value_t object, value_t fields) {
+  return set_heap_object_contents(runtime, object, fields);
+}
+
+object_factory_t runtime_default_object_factory() {
+  return new_object_factory(new_object_instance, set_object_instance_fields, NULL);
+}
+
 value_t runtime_plankton_deserialize(runtime_t *runtime, value_t blob) {
-  return plankton_deserialize(runtime, &runtime->plankton_mapping, blob);
+  object_factory_t factory = runtime_default_object_factory();
+  return plankton_deserialize(runtime, &runtime->plankton_mapping, &factory, blob);
 }
 
 value_t safe_runtime_plankton_deserialize(runtime_t *runtime, safe_value_t blob) {

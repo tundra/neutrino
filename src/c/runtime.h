@@ -29,7 +29,7 @@
   F(entry_point,                "entry_point")                                 \
   F(environment_reference,      "environment_reference")                       \
   F(escape,                     "escape")                                      \
-  F(FlagElement,                "FlagElement")                                 \
+  F(options_FlagElement,        "options:FlagElement")                         \
   F(fragments,                  "fragments")                                   \
   F(guard,                      "guard")                                       \
   F(handlers,                   "handlers")                                    \
@@ -283,6 +283,10 @@ value_t runtime_validate(runtime_t *runtime, value_t cause);
 
 // Creates a gc-safe reference to the given value.
 safe_value_t runtime_protect_value(runtime_t *runtime, value_t value);
+
+// Initializes an object factory with the default methods for producing objects
+// for a runtime.
+object_factory_t runtime_default_object_factory();
 
 // Deserialize the given data using the environment bindings from this runtime.
 value_t runtime_plankton_deserialize(runtime_t *runtime, value_t blob);

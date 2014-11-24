@@ -56,6 +56,12 @@ typedef struct {
   value_mapping_t *resolver;
 } serialize_state_t;
 
+object_factory_t new_object_factory(new_empty_object_t *new_empty_object,
+    set_object_fields_t *set_object_fields, void *data) {
+  object_factory_t result = {new_empty_object, set_object_fields, data};
+  return result;
+}
+
 value_t value_mapping_apply(value_mapping_t *mapping, value_t value, runtime_t *runtime) {
   return (mapping->function)(value, runtime, mapping->data);
 }
@@ -260,19 +266,21 @@ typedef struct {
   runtime_t *runtime;
   // Environment access used to resolve environment references.
   value_mapping_t *access;
+  // The factory used to construct object instances.
+  object_factory_t *factory;
 } deserialize_state_t;
 
 // Initialize deserialization state.
 static value_t deserialize_state_init(deserialize_state_t *state, runtime_t *runtime,
-    value_mapping_t *access, byte_stream_t *in) {
+    value_mapping_t *access, object_factory_t *factory, byte_stream_t *in) {
   state->in = in;
   state->object_offset = 0;
   state->runtime = runtime;
   state->access = access;
+  state->factory = factory;
   TRY_SET(state->ref_map, new_heap_id_hash_map(runtime, 16));
   return success();
 }
-
 
 // Reads the next value from the stream.
 static value_t value_deserialize(deserialize_state_t *state);
@@ -313,11 +321,12 @@ static value_t object_deserialize(size_t fieldc, deserialize_state_t *state) {
   size_t offset = acquire_object_index(state);
   // Read the header before creating the instance.
   TRY_DEF(header, value_deserialize(state));
-  TRY_DEF(result, new_heap_object_with_type(state->runtime, header));
+  object_factory_t *factory = state->factory;
+  TRY_DEF(result, (factory->new_empty_object)(factory, state->runtime, header));
   TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
       result));
   TRY_DEF(payload, map_deserialize(fieldc, state));
-  TRY(set_heap_object_contents(state->runtime, result, payload));
+  TRY((factory->set_object_fields)(factory, state->runtime, header, result, payload));
   return result;
 }
 
@@ -376,7 +385,7 @@ static value_t unknown_input_mapping(value_t value, runtime_t *runtime, void *da
 }
 
 value_t plankton_deserialize(runtime_t *runtime, value_mapping_t *access_or_null,
-    value_t blob) {
+    object_factory_t *factory_or_null, value_t blob) {
   // Make a byte stream out of the blob.
   blob_t data = get_blob_data(blob);
   byte_stream_t in;
@@ -388,7 +397,13 @@ value_t plankton_deserialize(runtime_t *runtime, value_mapping_t *access_or_null
   } else {
     access = *access_or_null;
   }
+  object_factory_t factory;
+  if (factory_or_null == NULL) {
+    factory = runtime_default_object_factory();
+  } else {
+    factory = *factory_or_null;
+  }
   deserialize_state_t state;
-  TRY(deserialize_state_init(&state, runtime, &access, &in));
+  TRY(deserialize_state_init(&state, runtime, &access, &factory, &in));
   return value_deserialize(&state);
 }

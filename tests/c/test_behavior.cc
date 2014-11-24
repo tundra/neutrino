@@ -121,27 +121,3 @@ TEST(behavior, print_on) {
 
   DISPOSE_RUNTIME();
 }
-
-static value_t dummy_constructor(runtime_t *runtime) {
-  return new_integer(434);
-}
-
-static value_t condition_constructor(runtime_t *runtime) {
-  return new_condition(ccNothing);
-}
-
-TEST(behavior, new_instance) {
-  CREATE_RUNTIME();
-
-  value_t dummy_fact = new_heap_factory(runtime, dummy_constructor);
-  ASSERT_SUCCESS(dummy_fact);
-  value_t instance = new_heap_object_with_type(runtime, dummy_fact);
-  ASSERT_VALEQ(new_integer(434), instance);
-
-  value_t condition_fact = new_heap_factory(runtime, condition_constructor);
-  ASSERT_SUCCESS(condition_fact);
-  value_t cond = new_heap_object_with_type(runtime, condition_fact);
-  ASSERT_CONDITION(ccNothing, cond);
-
-  DISPOSE_RUNTIME();
-}

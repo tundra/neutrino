@@ -335,12 +335,15 @@ value_t new_heap_void_p(runtime_t *runtime, void *value) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr) {
+value_t new_heap_factory(runtime_t *runtime, factory_constructor_t *constr,
+    utf8_t name_str) {
+  TRY_DEF(name, new_heap_utf8(runtime, name_str));
   TRY_DEF(constr_wrapper, new_heap_void_p(runtime, (void*) (intptr_t) constr));
   size_t size = kFactorySize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, factory_species)));
   init_frozen_factory_constructor(result, constr_wrapper);
+  init_frozen_factory_name(result, name);
   return post_create_sanity_check(result, size);
 }
 

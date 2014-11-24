@@ -1532,11 +1532,14 @@ FROZEN_ACCESSORS_DECL(instance_manager, display_name);
 // The type of constructor functions stored in a factory.
 typedef value_t (factory_constructor_t)(runtime_t *runtime);
 
-static const size_t kFactorySize = HEAP_OBJECT_SIZE(1);
+static const size_t kFactorySize = HEAP_OBJECT_SIZE(2);
 static const size_t kFactoryConstructorOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kFactoryNameOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The constructor function for this factory wrapped in a void-p.
 FROZEN_ACCESSORS_DECL(factory, constructor);
+
+FROZEN_ACCESSORS_DECL(factory, name);
 
 
 //  --- C o d e   b l o c k ---
@@ -1950,9 +1953,9 @@ ACCESSORS_DECL(hash_source, field);
 // Initialize the map from core type names to the factories themselves.
 value_t init_plankton_core_factories(value_t map, runtime_t *runtime);
 
-// Adds a factory object to the given plankton factory environment map under th
-// given category and name.
-value_t add_plankton_factory(value_t map, value_t category, const char *name,
+// Adds a factory object to the given plankton factory environment map under the
+// given name.
+value_t add_plankton_factory(value_t map, const char *name,
     factory_constructor_t constructor, runtime_t *runtime);
 
 
