@@ -10,15 +10,7 @@
 #include "stdc.h"
 
 // A single byte.
-typedef uint8_t byte_t;
 typedef uint16_t short_t;
-
-// Shorthand for pointers into memory.
-typedef byte_t *address_t;
-
-// The type to cast pointers to when you need to do advanced pointer
-// arithmetic.
-typedef IF_32_BIT(uint32_t, uint64_t) address_arith_t;
 
 // Shorthands for commonly used sizes.
 #define kKB 1024
