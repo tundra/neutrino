@@ -272,10 +272,10 @@ value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *run
 
 #undef __CREATE_TYPE__
 
-  TRY_DEF(plankton_environment, new_heap_id_hash_map(runtime, 16));
-  init_plankton_core_factories(plankton_environment, runtime);
-  init_plankton_syntax_factories(plankton_environment, runtime);
-  RAW_ROOT(roots, plankton_environment) = plankton_environment;
+  TRY_DEF(plankton_factories, new_heap_id_hash_map(runtime, 16));
+  init_plankton_core_factories(plankton_factories, runtime);
+  init_plankton_syntax_factories(plankton_factories, runtime);
+  RAW_ROOT(roots, plankton_factories) = plankton_factories;
 
   return success();
 }
@@ -488,7 +488,6 @@ static value_t runtime_soft_init(runtime_t *runtime) {
         ROOT(runtime, builtin_impls));
     E_TRY(add_builtin_implementations(runtime, s_builtin_impls));
     E_TRY(init_special_imports(runtime, ROOT(runtime, special_imports)));
-    E_TRY(init_plankton_environment_mapping(&runtime->plankton_mapping, runtime));
     E_RETURN(runtime_validate(runtime, nothing()));
   E_FINALLY();
     DISPOSE_SAFE_VALUE_POOL(pool);
@@ -795,8 +794,6 @@ void runtime_clear(runtime_t *runtime) {
   runtime->gc_fuzzer = NULL;
   runtime->roots = whatever();
   runtime->mutable_roots = whatever();
-  runtime->plankton_mapping.data = NULL;
-  runtime->plankton_mapping.function = NULL;
   runtime->module_loader = empty_safe_value();
 }
 
@@ -837,7 +834,7 @@ static value_t new_object_instance(object_factory_t *factory, runtime_t *runtime
 
 static value_t set_object_instance_fields(object_factory_t *factory,
     runtime_t *runtime, value_t header, value_t object, value_t fields) {
-  return set_heap_object_contents(runtime, object, fields);
+  return set_heap_object_contents(runtime, object, header, fields);
 }
 
 object_factory_t runtime_default_object_factory() {
@@ -846,7 +843,7 @@ object_factory_t runtime_default_object_factory() {
 
 value_t runtime_plankton_deserialize(runtime_t *runtime, value_t blob) {
   object_factory_t factory = runtime_default_object_factory();
-  return plankton_deserialize(runtime, &runtime->plankton_mapping, &factory, blob);
+  return plankton_deserialize(runtime, &factory, blob);
 }
 
 value_t safe_runtime_plankton_deserialize(runtime_t *runtime, safe_value_t blob) {

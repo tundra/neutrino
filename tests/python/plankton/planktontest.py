@@ -110,7 +110,7 @@ class TestCase(unittest.TestCase):
     assemble(assm)
     bytes = assm.bytes
     # Then try decoding the bytes.
-    decoder = plankton.Decoder(self.access, default_object=Object)
+    decoder = plankton.Decoder(default_object=Object)
     decoded = decoder.decode(bytes)
     self.check_equals(input, decoded)
 
@@ -119,17 +119,9 @@ class TestCase(unittest.TestCase):
     assemble(expected_assm)
     expected = expected_assm.entries
     found_assm = RecordingAssembler()
-    plankton.Encoder().set_resolver(self.resolve).write(input, assembler=found_assm)
+    plankton.Encoder().write(input, assembler=found_assm)
     found = found_assm.entries
     self.assertEquals(expected, found)
-
-  def resolve(self, value):
-    if isinstance(value, EnvRef):
-      return value.key
-    return None
-
-  def access(self, key):
-    return EnvRef(key)
 
   def are_equal(self, a, b, seen):
     if isinstance(a, Object) and isinstance(b, Object):

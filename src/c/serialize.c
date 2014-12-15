@@ -51,9 +51,6 @@ typedef struct {
   size_t object_offset;
   // The runtime to use for heap allocation.
   runtime_t *runtime;
-  // The resolver used to determine when to reference an object through the
-  // environment.
-  value_mapping_t *resolver;
 } serialize_state_t;
 
 object_factory_t new_object_factory(new_empty_object_t *new_empty_object,
@@ -68,11 +65,10 @@ value_t value_mapping_apply(value_mapping_t *mapping, value_t value, runtime_t *
 
 // Initialize serialization state.
 static value_t serialize_state_init(serialize_state_t *state, runtime_t *runtime,
-    value_mapping_t *resolver, pton_assembler_t *assm) {
+    pton_assembler_t *assm) {
   state->assm = assm;
   state->object_offset = 0;
   state->runtime = runtime;
-  state->resolver = resolver;
   TRY_SET(state->ref_map, new_heap_id_hash_map(runtime, 16));
   return success();
 }
@@ -138,28 +134,16 @@ static value_t instance_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofInstance, value);
   value_t ref = get_id_hash_map_at(state->ref_map, value);
   if (in_condition_cause(ccNotFound, ref)) {
-    // We haven't seen this object before. First we check if it should be an
-    // environment object.
-    value_t raw_resolved = value_mapping_apply(state->resolver, value, state->runtime);
-    if (in_condition_cause(ccNothing, raw_resolved)) {
-      // It's not an environment object. Just serialize it directly.
-      value_t fields = get_instance_fields(value);
-      size_t fieldc = get_id_hash_map_size(fields);
-      pton_assembler_begin_object(state->assm, fieldc);
-      pton_assembler_emit_null(state->assm);
-      // Cycles are only allowed through the payload of an object so we only
-      // register the object after the header has been written.
-      register_serialized_object(value, state);
-      id_hash_map_iter_t iter;
-      id_hash_map_iter_init(&iter, fields);
-      return map_contents_serialize(fieldc, &iter, state);
-    } else {
-      TRY_DEF(resolved, raw_resolved);
-      pton_assembler_begin_environment_reference(state->assm);
-      TRY(value_serialize(resolved, state));
-      register_serialized_object(value, state);
-      return success();
-    }
+    value_t fields = get_instance_fields(value);
+    size_t fieldc = get_id_hash_map_size(fields);
+    pton_assembler_begin_object(state->assm, fieldc);
+    pton_assembler_emit_null(state->assm);
+    // Cycles are only allowed through the payload of an object so we only
+    // register the object after the header has been written.
+    register_serialized_object(value, state);
+    id_hash_map_iter_t iter;
+    id_hash_map_iter_init(&iter, fields);
+    return map_contents_serialize(fieldc, &iter, state);
   } else {
     // We've already seen this object; write a reference back to the last time
     // we saw it.
@@ -216,26 +200,13 @@ static value_t value_serialize(value_t data, serialize_state_t *state) {
   }
 }
 
-// Never resolve.
-static value_t nothing_mapping(value_t value, runtime_t *runtime, void *data) {
-  return new_condition(ccNothing);
-}
-
-value_t plankton_serialize(runtime_t *runtime, value_mapping_t *resolver_or_null,
-    value_t data) {
+value_t plankton_serialize(runtime_t *runtime, value_t data) {
   pton_assembler_t *assm = pton_new_assembler();
   blob_t blob;
   memory_block_t code;
   E_BEGIN_TRY_FINALLY();
-    // Use the empty resolver if the resolver pointer is null.
-    value_mapping_t resolver;
-    if (resolver_or_null == NULL) {
-      value_mapping_init(&resolver, nothing_mapping, NULL);
-    } else {
-      resolver = *resolver_or_null;
-    }
     serialize_state_t state;
-    E_TRY(serialize_state_init(&state, runtime, &resolver, assm));
+    E_TRY(serialize_state_init(&state, runtime, assm));
     E_TRY(value_serialize(data, &state));
     code = pton_assembler_peek_code(assm);
     blob = new_blob(code.memory, code.size);
@@ -264,19 +235,16 @@ typedef struct {
   size_t object_offset;
   // The runtime to use for heap allocation.
   runtime_t *runtime;
-  // Environment access used to resolve environment references.
-  value_mapping_t *access;
   // The factory used to construct object instances.
   object_factory_t *factory;
 } deserialize_state_t;
 
 // Initialize deserialization state.
 static value_t deserialize_state_init(deserialize_state_t *state, runtime_t *runtime,
-    value_mapping_t *access, object_factory_t *factory, byte_stream_t *in) {
+    object_factory_t *factory, byte_stream_t *in) {
   state->in = in;
   state->object_offset = 0;
   state->runtime = runtime;
-  state->access = access;
   state->factory = factory;
   TRY_SET(state->ref_map, new_heap_id_hash_map(runtime, 16));
   return success();
@@ -322,21 +290,22 @@ static value_t object_deserialize(size_t fieldc, deserialize_state_t *state) {
   // Read the header before creating the instance.
   TRY_DEF(header, value_deserialize(state));
   object_factory_t *factory = state->factory;
-  TRY_DEF(result, (factory->new_empty_object)(factory, state->runtime, header));
+  TRY_DEF(init_value, (factory->new_empty_object)(factory, state->runtime, header));
   TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
-      result));
+      init_value));
   TRY_DEF(payload, map_deserialize(fieldc, state));
-  TRY((factory->set_object_fields)(factory, state->runtime, header, result, payload));
-  return result;
-}
-
-static value_t environment_deserialize(deserialize_state_t *state) {
-  TRY_DEF(key, value_deserialize(state));
-  size_t offset = acquire_object_index(state);
-  TRY_DEF(result, value_mapping_apply(state->access, key, state->runtime));
-  TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
-      result));
-  return result;
+  TRY_DEF(final_value, (factory->set_object_fields)(factory, state->runtime,
+      header, init_value, payload));
+  if (is_nothing(init_value)) {
+    // If the initial value was nothing it means that we should use the value
+    // returned from setting the contents. Hence we replace the initial value
+    // in the reference map.
+    TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
+        final_value));
+    return final_value;
+  } else {
+    return init_value;
+  }
 }
 
 static value_t reference_deserialize(size_t offset, deserialize_state_t *state) {
@@ -372,31 +341,18 @@ static value_t value_deserialize(deserialize_state_t *state) {
       return object_deserialize(instr.payload.object_fieldc, state);
     case PTON_OPCODE_REFERENCE:
       return reference_deserialize(instr.payload.reference_offset, state);
-    case PTON_OPCODE_BEGIN_ENVIRONMENT_REFERENCE:
-      return environment_deserialize(state);
     default:
       return new_invalid_input_condition();
   }
 }
 
-// Always report invalid input.
-static value_t unknown_input_mapping(value_t value, runtime_t *runtime, void *data) {
-  return new_heap_unknown(runtime, RSTR(runtime, environment_reference), value);
-}
-
-value_t plankton_deserialize(runtime_t *runtime, value_mapping_t *access_or_null,
-    object_factory_t *factory_or_null, value_t blob) {
+value_t plankton_deserialize(runtime_t *runtime, object_factory_t *factory_or_null,
+    value_t blob) {
   // Make a byte stream out of the blob.
   blob_t data = get_blob_data(blob);
   byte_stream_t in;
   byte_stream_init(&in, data);
   // Use a failing environment accessor if the access pointer is null.
-  value_mapping_t access;
-  if (access_or_null == NULL) {
-    value_mapping_init(&access, unknown_input_mapping, NULL);
-  } else {
-    access = *access_or_null;
-  }
   object_factory_t factory;
   if (factory_or_null == NULL) {
     factory = runtime_default_object_factory();
@@ -404,6 +360,6 @@ value_t plankton_deserialize(runtime_t *runtime, value_mapping_t *access_or_null
     factory = *factory_or_null;
   }
   deserialize_state_t state;
-  TRY(deserialize_state_init(&state, runtime, &access, &factory, &in));
+  TRY(deserialize_state_init(&state, runtime, &factory, &in));
   return value_deserialize(&state);
 }

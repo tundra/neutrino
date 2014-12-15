@@ -84,9 +84,6 @@ struct family_behavior_t {
   void (*print_on)(value_t value, print_on_context_t *context);
   // Stores the layout of the given object in the output layout struct.
   void (*get_heap_object_layout)(value_t value, heap_object_layout_t *layout_out);
-  // Sets the contents of the given value from the given serialized contents.
-  value_t (*set_contents)(value_t value, runtime_t *runtime,
-      value_t contents);
   // Returns the primary type object for the given object.
   value_t (*get_primary_type)(value_t value, runtime_t *runtime);
   // If non-NULL, performs a fixup step to the new object optionally using the
@@ -195,7 +192,7 @@ value_t new_heap_object_with_type(runtime_t *runtime, value_t type);
 // expects a condition should be returned (as well as if anything else fails
 // obviously).
 value_t set_heap_object_contents(runtime_t *runtime, value_t object,
-    value_t payload);
+    value_t type, value_t payload);
 
 // Returns the primary type of the given value.
 value_t get_primary_type(value_t value, runtime_t *runtime);

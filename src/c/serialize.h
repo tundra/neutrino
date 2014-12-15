@@ -43,19 +43,14 @@ object_factory_t new_object_factory(new_empty_object_t *new_empty_object,
 value_t value_mapping_apply(value_mapping_t *mapping, value_t value,
     runtime_t *runtime);
 
-// Initializes a value mapping struct with the specified state.
-void value_mapping_init(value_mapping_t *resolver, value_mapping_function_t function,
-    void *data);
-
 // Serializes an object graph into a plankton encoded binary blob. The resolver
 // is used to decide which objects to fetch from the environment and which to
 // serialize.
-value_t plankton_serialize(runtime_t *runtime, value_mapping_t *resolver_or_null,
-    value_t data);
+value_t plankton_serialize(runtime_t *runtime, value_t data);
 
 // Plankton deserialize a binary blob containing a serialized object graph. The
 // access mapping is used to acquire values from the environment.
-value_t plankton_deserialize(runtime_t *runtime, value_mapping_t *access_or_null,
-    object_factory_t *factory, value_t blob);
+value_t plankton_deserialize(runtime_t *runtime, object_factory_t *factory,
+    value_t blob);
 
 #endif // _SERIALIZE

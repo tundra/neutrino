@@ -11,11 +11,6 @@
 
 // --- M i s c ---
 
-// Initialize a value mapping such that it maps environment references through
-// the plankton environment of the given runtime.
-value_t init_plankton_environment_mapping(value_mapping_t *mapping,
-    runtime_t *runtime);
-
 // Initialize the map from syntax factory names to the factories themselves.
 value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime);
 

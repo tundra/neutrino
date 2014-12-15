@@ -105,16 +105,6 @@ class PlanktonTests(planktontest.TestCase):
     assemble = lambda assm: assm.tag(0).int32(-1)
     self.run_test(input, assemble)
 
-  def test_mixed_repeated_array_repetition(self):
-    ctx = self.new_context()
-    input = [(ctx.new_object(id=0)
-      .set_header(None)
-      .set_payload({})), ctx.get_ref(0), ctx.new_env_ref("x", id=1), ctx.get_ref(0), ctx.get_ref(1), (ctx.new_object(id=2)
-      .set_header(None)
-      .set_payload({})), ctx.get_ref(0), ctx.get_ref(1), ctx.get_ref(2)]
-    assemble = lambda assm: assm.tag(2).uint32(9).tag(7).uint32(0).tag(4).tag(8).uint32(0).tag(9).tag(1).uint32(1).blob(bytearray([120])).tag(8).uint32(1).tag(8).uint32(0).tag(7).uint32(0).tag(4).tag(8).uint32(2).tag(8).uint32(1).tag(8).uint32(0)
-    self.run_test(input, assemble)
-
   def test_nested_array(self):
     ctx = self.new_context()
     input = [1, [2, [3, [4, [5, [6]]]]]]
@@ -165,12 +155,6 @@ class PlanktonTests(planktontest.TestCase):
         "x": 1,
         "y": 2}))
     assemble = lambda assm: assm.tag(7).uint32(2).tag(4).tag(1).uint32(1).blob(bytearray([120])).tag(0).int32(1).tag(1).uint32(1).blob(bytearray([121])).tag(0).int32(2)
-    self.run_test(input, assemble)
-
-  def test_repeated_array_env(self):
-    ctx = self.new_context()
-    input = [ctx.new_env_ref(0, id=0), ctx.get_ref(0), ctx.get_ref(0)]
-    assemble = lambda assm: assm.tag(2).uint32(3).tag(9).tag(0).int32(0).tag(8).uint32(0).tag(8).uint32(0)
     self.run_test(input, assemble)
 
   def test_repeated_array_repetition(self):
@@ -251,12 +235,6 @@ class PlanktonTests(planktontest.TestCase):
     assemble = lambda assm: assm.tag(7).uint32(2).tag(4).tag(1).uint32(1).blob(bytearray([120])).tag(0).int32(1).tag(1).uint32(1).blob(bytearray([121])).tag(0).int32(2)
     self.run_test(input, assemble)
 
-  def test_shorthand_simple_env(self):
-    ctx = self.new_context()
-    input = ctx.new_env_ref(0, id=0)
-    assemble = lambda assm: assm.tag(9).tag(0).int32(0)
-    self.run_test(input, assemble)
-
   def test_shorthand_small_map(self):
     ctx = self.new_context()
     input = {
@@ -269,12 +247,6 @@ class PlanktonTests(planktontest.TestCase):
     ctx = self.new_context()
     input = True
     assemble = lambda assm: assm.tag(5)
-    self.run_test(input, assemble)
-
-  def test_simple_env(self):
-    ctx = self.new_context()
-    input = ctx.new_env_ref(0, id=0)
-    assemble = lambda assm: assm.tag(9).tag(0).int32(0)
     self.run_test(input, assemble)
 
   def test_simple_object(self):
@@ -293,12 +265,6 @@ class PlanktonTests(planktontest.TestCase):
       "a": 1,
       "b": 2}
     assemble = lambda assm: assm.tag(3).uint32(2).tag(1).uint32(1).blob(bytearray([97])).tag(0).int32(1).tag(1).uint32(1).blob(bytearray([98])).tag(0).int32(2)
-    self.run_test(input, assemble)
-
-  def test_string_env(self):
-    ctx = self.new_context()
-    input = ctx.new_env_ref("hey", id=0)
-    assemble = lambda assm: assm.tag(9).tag(1).uint32(3).blob(bytearray([104, 101, 121]))
     self.run_test(input, assemble)
 
   def test_true(self):

@@ -377,7 +377,7 @@ static inline value_t chase_moved_object(value_t raw) {
 
 // Enumerates the compact object species.
 #define ENUM_OTHER_HEAP_OBJECT_FAMILIES(F)                                     \
-  F(Key,                     key,                       X, X, (X, _, _, _, _, _, _, _),  0)\
+  F(Key,                     key,                       X, X, (X, _, X, _, _, _, _, _),  0)\
   /*     ---    Correctness depends on the sort order of families above       ---   */\
   /*     ---    this divider. The relative sort order of the families         ---   */\
   /*     ---    below must not affect correctness. If it does they must be    ---   */\
@@ -1530,14 +1530,22 @@ FROZEN_ACCESSORS_DECL(instance_manager, display_name);
 // instances of a particular family.
 
 // The type of constructor functions stored in a factory.
-typedef value_t (factory_constructor_t)(runtime_t *runtime);
+typedef value_t (factory_new_instance_t)(runtime_t *runtime);
 
-static const size_t kFactorySize = HEAP_OBJECT_SIZE(2);
-static const size_t kFactoryConstructorOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kFactoryNameOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+// The type of object contents setters stored in a factory.
+typedef value_t (factory_set_contents_t)(value_t object, runtime_t *runtime,
+    value_t contents);
+
+static const size_t kFactorySize = HEAP_OBJECT_SIZE(3);
+static const size_t kFactoryNewInstanceOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kFactorySetContentsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kFactoryNameOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // The constructor function for this factory wrapped in a void-p.
-FROZEN_ACCESSORS_DECL(factory, constructor);
+FROZEN_ACCESSORS_DECL(factory, new_instance);
+
+// The contents setter function for this factory wrapped in a void-p.
+FROZEN_ACCESSORS_DECL(factory, set_contents);
 
 FROZEN_ACCESSORS_DECL(factory, name);
 
@@ -1956,7 +1964,15 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime);
 // Adds a factory object to the given plankton factory environment map under the
 // given name.
 value_t add_plankton_factory(value_t map, const char *name,
-    factory_constructor_t constructor, runtime_t *runtime);
+    factory_new_instance_t new_instance, factory_set_contents_t set_contents,
+    runtime_t *runtime);
+
+// Convenience macro for adding a plankton factory to a map. Assumes the runtime
+// is stored in a variable called 'runtime'.
+#define ADD_PLANKTON_FACTORY(map, TYPE, type) do {                             \
+  TRY(add_plankton_factory(map, TYPE, plankton_new_##type,                     \
+      plankton_set_##type##_contents, runtime));                               \
+} while (false)
 
 
 // --- D e b u g ---

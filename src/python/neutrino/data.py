@@ -111,14 +111,15 @@ class Operation(object):
 
 
 # A unique key, matching a neutrino runtime key.
-class Key(plankton.EnvironmentReference):
+@plankton.serializable("core:Key")
+class Key(object):
 
-  def __init__(self, display_name, key):
-    self.display_name = display_name
-    self.key = key
+  @plankton.field("id")
+  def __init__(self, id):
+    self.id = id
 
   def __str__(self):
-    return "(key %s)" % self.display_name
+    return "(key %s)" % self.id
 
 
 @plankton.serializable("core:Path")
@@ -233,6 +234,6 @@ class DecimalFraction(object):
     return "(decimal %i/%i@%i)" % (self.numerator, self.denominator, self.precision)
 
 
-_SUBJECT = Key("subject", "core:subject")
-_SELECTOR = Key("selector", "core:selector")
-_IS_ASYNC = Key("is_async", "core:is_async")
+_SUBJECT = Key("core:subject")
+_SELECTOR = Key("core:selector")
+_IS_ASYNC = Key("core:is_async")

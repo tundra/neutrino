@@ -1608,6 +1608,24 @@ void key_print_on(value_t value, print_on_context_t *context) {
   value_print_inner_on(display_name, &new_context, -1);
 }
 
+value_t plankton_new_key(runtime_t *runtime) {
+  return nothing();
+}
+
+value_t plankton_set_key_contents(value_t instance, runtime_t *runtime,
+    value_t contents) {
+  UNPACK_PLANKTON_MAP(contents, id);
+  if (value_identity_compare(id_value, RSTR(runtime, core_is_async))) {
+    return ROOT(runtime, is_async_key);
+  } else if (value_identity_compare(id_value, RSTR(runtime, core_selector))) {
+    return ROOT(runtime, selector_key);
+  } else if (value_identity_compare(id_value, RSTR(runtime, core_subject))) {
+    return ROOT(runtime, subject_key);
+  } else {
+    return new_heap_key(runtime, id_value);
+  }
+}
+
 
 // --- I n s t a n c e ---
 
@@ -1716,13 +1734,15 @@ value_t add_instance_manager_builtin_implementations(runtime_t *runtime, safe_va
 
 // --- F a c t o r y ---
 
-FROZEN_ACCESSORS_IMPL(Factory, factory, acInFamily, ofVoidP, Constructor, constructor);
+FROZEN_ACCESSORS_IMPL(Factory, factory, acInFamily, ofVoidP, NewInstance, new_instance);
+FROZEN_ACCESSORS_IMPL(Factory, factory, acInFamily, ofVoidP, SetContents, set_contents);
 FROZEN_ACCESSORS_IMPL(Factory, factory, acInFamily, ofUtf8, Name, name);
 FIXED_GET_MODE_IMPL(factory, vmDeepFrozen);
 
 value_t factory_validate(value_t value) {
   VALIDATE_FAMILY(ofFactory, value);
-  VALIDATE_FAMILY(ofVoidP, get_factory_constructor(value));
+  VALIDATE_FAMILY(ofVoidP, get_factory_new_instance(value));
+  VALIDATE_FAMILY(ofVoidP, get_factory_set_contents(value));
   VALIDATE_FAMILY(ofUtf8, get_factory_name(value));
   return success();
 }
@@ -1730,7 +1750,9 @@ value_t factory_validate(value_t value) {
 void factory_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofFactory, value);
   string_buffer_printf(context->buf, "#<factory: ");
-  value_print_inner_on(get_factory_constructor(value), context, -1);
+  value_print_inner_on(get_factory_new_instance(value), context, -1);
+  string_buffer_printf(context->buf, " ");
+  value_print_inner_on(get_factory_set_contents(value), context, -1);
   string_buffer_printf(context->buf, ">");
 }
 
@@ -2835,43 +2857,26 @@ value_t add_hash_source_builtin_implementations(runtime_t *runtime, safe_value_t
 
 // --- M i s c ---
 
-// Adds a binding to the given plankton environment map.
-static value_t add_plankton_binding(value_t map, const char *name, value_t value,
+value_t add_plankton_factory(value_t map, const char *name,
+    factory_new_instance_t new_instance, factory_set_contents_t set_contents,
     runtime_t *runtime) {
+  TRY_DEF(factory, new_heap_factory(runtime, new_instance, set_contents, new_c_string(name)));
   TRY_DEF(name_obj, new_heap_utf8(runtime, new_c_string(name)));
-  // Add the mapping to the environment map.
-  TRY(set_id_hash_map_at(runtime, map, name_obj, value));
+  TRY(set_id_hash_map_at(runtime, map, name_obj, factory));
   return success();
 }
 
-value_t add_plankton_factory(value_t map, const char *name,
-    factory_constructor_t constructor, runtime_t *runtime) {
-  TRY_DEF(factory, new_heap_factory(runtime, constructor, new_c_string(name)));
-  return add_plankton_binding(map, name, factory, runtime);
-}
-
 value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
-  // Factories
-  TRY(add_plankton_factory(map, "core:DecimalFraction", plankton_new_decimal_fraction, runtime));
-  TRY(add_plankton_factory(map, "core:Identifier", plankton_new_identifier, runtime));
-  TRY(add_plankton_factory(map, "core:Library", plankton_new_library, runtime));
-  TRY(add_plankton_factory(map, "core:Operation", plankton_new_operation, runtime));
-  TRY(add_plankton_factory(map, "core:Path", plankton_new_path, runtime));
-  TRY(add_plankton_factory(map, "core:Type", plankton_new_type, runtime));
-  TRY(add_plankton_factory(map, "core:UnboundModule", plankton_new_unbound_module, runtime));
-  TRY(add_plankton_factory(map, "core:UnboundModuleFragment", plankton_new_unbound_module_fragment, runtime));
-  // Singletons
-  TRY(add_plankton_binding(map, "core:subject", ROOT(runtime, subject_key),
-      runtime));
-  TRY(add_plankton_binding(map, "core:selector", ROOT(runtime, selector_key),
-      runtime));
-  TRY(add_plankton_binding(map, "core:is_async", ROOT(runtime, is_async_key),
-      runtime));
-  // Types
-  TRY(add_plankton_binding(map, "type:Integer", ROOT(runtime, integer_type),
-      runtime));
-  // Options
-  TRY(add_plankton_factory(map, "options:Options", plankton_new_options, runtime));
+  ADD_PLANKTON_FACTORY(map, "core:DecimalFraction", decimal_fraction);
+  ADD_PLANKTON_FACTORY(map, "core:Identifier", identifier);
+  ADD_PLANKTON_FACTORY(map, "core:Library", library);
+  ADD_PLANKTON_FACTORY(map, "core:Operation", operation);
+  ADD_PLANKTON_FACTORY(map, "core:Path", path);
+  ADD_PLANKTON_FACTORY(map, "core:Type", type);
+  ADD_PLANKTON_FACTORY(map, "core:UnboundModule", unbound_module);
+  ADD_PLANKTON_FACTORY(map, "core:UnboundModuleFragment", unbound_module_fragment);
+  ADD_PLANKTON_FACTORY(map, "core:Key", key);
+  ADD_PLANKTON_FACTORY(map, "options:Options", options);
   return success();
 }
 

@@ -21,6 +21,9 @@
   F(bindings,                   "bindings")                                    \
   F(body,                       "body")                                        \
   F(core,                       "core")                                        \
+  F(core_is_async,              "core:is_async")                               \
+  F(core_selector,              "core:selector")                               \
+  F(core_subject,               "core:subject")                                \
   F(ctrino,                     "ctrino")                                      \
   F(default,                    "default")                                     \
   F(denominator,                "denominator")                                 \
@@ -33,6 +36,7 @@
   F(fragments,                  "fragments")                                   \
   F(guard,                      "guard")                                       \
   F(handlers,                   "handlers")                                    \
+  F(id,                         "id")                                          \
   F(imports,                    "imports")                                     \
   F(inheritance,                "inheritance")                                 \
   F(is_async,                   "is_async")                                    \
@@ -99,7 +103,7 @@
   F(is_async_key)                                                              \
   F(builtin_methodspace)                                                       \
   F(op_call)                                                                   \
-  F(plankton_environment)                                                      \
+  F(plankton_factories)                                                        \
   F(plugin_factories)                                                          \
   F(return_code_block)                                                         \
   F(selector_key)                                                              \
@@ -241,8 +245,6 @@ struct runtime_t {
   uint64_t next_key_index;
   // Optional allocation failure fuzzer.
   gc_fuzzer_t *gc_fuzzer;
-  // Environment mapping to use when deserializing plankton.
-  value_mapping_t plankton_mapping;
   // The module loader used by this runtime.
   safe_value_t module_loader;
   // The object that provides access to the file system. This value is never

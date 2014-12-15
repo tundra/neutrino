@@ -477,13 +477,6 @@ void value_print_inner_on(value_t value, print_on_context_t *context,
 
 // --- N e w   i n s t a n c e ---
 
-static value_t new_instance_of_factory(runtime_t *runtime, value_t type) {
-  value_t constr_wrapper = get_factory_constructor(type);
-  void *constr_ptr = get_void_p_value(constr_wrapper);
-  factory_constructor_t *constr = (factory_constructor_t*) (intptr_t) constr_ptr;
-  return constr(runtime);
-}
-
 static value_t new_instance_of_unknown(runtime_t *runtime, value_t type) {
   return new_heap_unknown(runtime, type, nothing());
 }
@@ -495,11 +488,16 @@ static value_t new_instance_of_type(runtime_t *runtime, value_t type) {
 }
 
 static value_t new_instance_of_string(runtime_t *runtime, value_t type) {
-  value_t env = ROOT(runtime, plankton_environment);
-  value_t factory = get_id_hash_map_at(env, type);
-  return in_family(ofFactory, factory)
-      ? new_instance_of_factory(runtime, factory)
-      : new_heap_unknown(runtime, type, nothing());
+  value_t factories = ROOT(runtime, plankton_factories);
+  value_t factory = get_id_hash_map_at(factories, type);
+  if (in_family(ofFactory, factory)) {
+    value_t new_instance_wrapper = get_factory_new_instance(factory);
+    void *new_instance_ptr = get_void_p_value(new_instance_wrapper);
+    factory_new_instance_t *new_instance = (factory_new_instance_t*) (intptr_t) new_instance_ptr;
+    return new_instance(runtime);
+  } else {
+    return new_heap_unknown(runtime, type, nothing());
+  }
 }
 
 static value_t new_heap_object_with_object_type(runtime_t *runtime, value_t type) {
@@ -507,8 +505,6 @@ static value_t new_heap_object_with_object_type(runtime_t *runtime, value_t type
   switch (family) {
     case ofType:
       return new_instance_of_type(runtime, type);
-    case ofFactory:
-      return new_heap_object_with_object_type(runtime, get_factory_name(type));
     case ofUtf8:
       return new_instance_of_string(runtime, type);
     default: {
@@ -529,13 +525,13 @@ static value_t new_heap_object_with_custom_tagged_type(runtime_t *runtime, value
   }
 }
 
-value_t new_heap_object_with_type(runtime_t *runtime, value_t type) {
-  value_domain_t domain = get_value_domain(type);
+value_t new_heap_object_with_type(runtime_t *runtime, value_t header) {
+  value_domain_t domain = get_value_domain(header);
   switch (domain) {
     case vdHeapObject:
-      return new_heap_object_with_object_type(runtime, type);
+      return new_heap_object_with_object_type(runtime, header);
     case vdCustomTagged:
-      return new_heap_object_with_custom_tagged_type(runtime, type);
+      return new_heap_object_with_custom_tagged_type(runtime, header);
     default:
       return new_unsupported_behavior_condition(domain, __ofUnknown__,
           ubNewObjectWithType);
@@ -545,18 +541,63 @@ value_t new_heap_object_with_type(runtime_t *runtime, value_t type) {
 
 // --- P a y l o a d ---
 
-value_t set_heap_object_contents(runtime_t *runtime, value_t object, value_t payload) {
-  family_behavior_t *behavior = get_heap_object_family_behavior(object);
-  TRY((behavior->set_contents)(object, runtime, payload));
-  TRY(heap_object_validate(object));
-  return success();
+static value_t set_heap_object_contents_with_utf8_type(runtime_t *runtime,
+    value_t object, value_t header, value_t payload) {
+  value_t factories = ROOT(runtime, plankton_factories);
+  value_t factory = get_id_hash_map_at(factories, header);
+  if (in_family(ofFactory, factory)) {
+    value_t set_contents_wrapper = get_factory_set_contents(factory);
+    void *set_contents_ptr = get_void_p_value(set_contents_wrapper);
+    factory_set_contents_t *set_contents = (factory_set_contents_t*) (intptr_t) set_contents_ptr;
+    return set_contents(object, runtime, payload);
+  } else {
+    set_unknown_payload(object, payload);
+    return success();
+  }
 }
 
-// A function compatible with set_contents that always returns unsupported.
-static value_t plankton_set_contents_unsupported(value_t value, runtime_t *runtime,
-    value_t contents) {
-  return new_unsupported_behavior_condition(vdHeapObject, get_heap_object_family(value),
-      ubSetContents);
+static value_t set_heap_object_contents_with_object_type(runtime_t *runtime, value_t object,
+    value_t header, value_t payload) {
+  heap_object_family_t family = get_heap_object_family(header);
+  switch (family) {
+    case ofUtf8:
+      return set_heap_object_contents_with_utf8_type(runtime, object, header,
+          payload);
+    default: {
+      set_unknown_payload(object, payload);
+      return success();
+    }
+  }
+}
+
+static value_t set_heap_object_contents_with_custom_tagged_type(runtime_t *runtime,
+    value_t object, value_t header, value_t payload) {
+  custom_tagged_phylum_t phylum = get_custom_tagged_phylum(header);
+  switch (phylum) {
+    case tpNull:
+      // For now we use null to indicate an instance. Later this should be
+      // replaced by something else, something species-like possibly.
+      return plankton_set_instance_contents(object, runtime, payload);
+    default:
+      set_unknown_payload(object, payload);
+      return success();
+  }
+}
+
+value_t set_heap_object_contents(runtime_t *runtime, value_t object,
+    value_t header, value_t payload) {
+  value_domain_t domain = get_value_domain(header);
+  switch (domain) {
+    case vdHeapObject:
+      return set_heap_object_contents_with_object_type(runtime, object, header, payload);
+      break;
+    case vdCustomTagged:
+      return set_heap_object_contents_with_custom_tagged_type(runtime, object, header, payload);
+      break;
+    default:
+      return new_unsupported_behavior_condition(domain, __ofUnknown__,
+          ubNewObjectWithType);
+  }
 }
 
 
@@ -624,9 +665,6 @@ family_behavior_t k##Family##Behavior = {                                      \
     NULL),                                                                     \
   &family##_print_on,                                                          \
   &get_##family##_layout,                                                      \
-  mfPt MINOR (                                                                 \
-    &plankton_set_##family##_contents,                                         \
-    &plankton_set_contents_unsupported),                                       \
   SR(                                                                          \
     &get_##family##_primary_type,                                              \
     &get_internal_object_type),                                                \

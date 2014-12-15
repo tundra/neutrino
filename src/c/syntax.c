@@ -15,21 +15,6 @@
 
 // --- M i s c ---
 
-static value_t resolve_syntax_factory(value_t key, runtime_t *runtime, void *data) {
-  value_t result = get_id_hash_map_at(ROOT(runtime, plankton_environment), key);
-  if (in_condition_cause(ccNotFound, result)) {
-    return new_heap_unknown(runtime, RSTR(runtime, environment_reference), key);
-  } else {
-    return result;
-  }
-}
-
-value_t init_plankton_environment_mapping(value_mapping_t *mapping,
-    runtime_t *runtime) {
-  value_mapping_init(mapping, resolve_syntax_factory, NULL);
-  return success();
-}
-
 value_t compile_expression(runtime_t *runtime, value_t program, value_t fragment,
     scope_o *scope) {
   assembler_t assm;
@@ -1636,32 +1621,32 @@ value_t emit_value(value_t value, assembler_t *assm) {
 // --- F a c t o r i e s ---
 
 value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime) {
-  TRY(add_plankton_factory(map, "ast:Argument", plankton_new_argument_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:Array", plankton_new_array_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:Block", plankton_new_block_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:CallLiteral", plankton_new_call_literal_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:CallLiteralArgument", plankton_new_call_literal_argument_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:CurrentModule", plankton_new_current_module_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:Ensure", plankton_new_ensure_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:Guard", plankton_new_guard_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:Invocation", plankton_new_invocation_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:IsDeclaration", plankton_new_is_declaration_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:Lambda", plankton_new_lambda_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:Literal", plankton_new_literal_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:LocalDeclaration", plankton_new_local_declaration_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:LocalVariable", plankton_new_local_variable_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:Method", plankton_new_method_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:MethodDeclaration", plankton_new_method_declaration_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:NamespaceDeclaration", plankton_new_namespace_declaration_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:NamespaceVariable", plankton_new_namespace_variable_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:Parameter", plankton_new_parameter_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:Program", plankton_new_program_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:Sequence", plankton_new_sequence_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:Signal", plankton_new_signal_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:SignalHandler", plankton_new_signal_handler_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:Signature", plankton_new_signature_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:Symbol", plankton_new_symbol_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:VariableAssignment", plankton_new_variable_assignment_ast, runtime));
-  TRY(add_plankton_factory(map, "ast:WithEscape", plankton_new_with_escape_ast, runtime));
+  ADD_PLANKTON_FACTORY(map, "ast:Argument", argument_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:Array", array_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:Block", block_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:CallLiteral", call_literal_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:CallLiteralArgument", call_literal_argument_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:CurrentModule", current_module_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:Ensure", ensure_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:Guard", guard_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:Invocation", invocation_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:IsDeclaration", is_declaration_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:Lambda", lambda_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:Literal", literal_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:LocalDeclaration", local_declaration_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:LocalVariable", local_variable_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:Method", method_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:MethodDeclaration", method_declaration_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:NamespaceDeclaration", namespace_declaration_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:NamespaceVariable", namespace_variable_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:Parameter", parameter_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:Program", program_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:Sequence", sequence_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:Signal", signal_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:SignalHandler", signal_handler_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:Signature", signature_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:Symbol", symbol_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:VariableAssignment", variable_assignment_ast);
+  ADD_PLANKTON_FACTORY(map, "ast:WithEscape", with_escape_ast);
   return success();
 }
