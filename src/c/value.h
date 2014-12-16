@@ -1104,7 +1104,7 @@ INTEGER_ACCESSORS_DECL(blob, length);
 blob_t get_blob_data(value_t value);
 
 // Reads the full contents of a file as given by a FILE handle into a blob.
-value_t read_handle_to_blob(runtime_t *runtime, open_file_t *handle);
+value_t read_handle_to_blob(runtime_t *runtime, io_stream_t *handle);
 
 // Reads the full contents of a named file.
 value_t read_file_to_blob(runtime_t *runtime, utf8_t filename);

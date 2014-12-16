@@ -263,7 +263,7 @@ static value_t neutrino_main(int argc, char **argv) {
       const char *filename = options.argv[i];
       value_t input;
       if (strcmp("-", filename) == 0) {
-        open_file_t *stdin_handle = file_system_stdin(runtime->file_system);
+        io_stream_t *stdin_handle = file_system_stdin(runtime->file_system);
         E_TRY_SET(input, read_handle_to_blob(runtime, stdin_handle));
       } else {
         utf8_t filename_str = new_c_string(filename);
