@@ -1,9 +1,6 @@
 [submodule "deps/plankton"]
 	path = deps/plankton
-	url = https://github.com/goto-10/plankton.git
-[submodule "deps/mkmk"]
-	path = deps/mkmk
-	url = https://github.com/goto-10/mkmk.git
+	url = https://github.com/tundra/plankton.git
 [submodule "deps/tclib"]
 	path = deps/tclib
-	url = https://github.com/goto-10/tclib.git
+	url = https://github.com/tundra/tclib.git
