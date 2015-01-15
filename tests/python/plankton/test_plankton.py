@@ -31,7 +31,7 @@ class PlanktonTests(planktontest.TestCase):
     input = [(ctx.new_object(id=0)
       .set_header(None)
       .set_payload({})), ctx.get_ref(0), ctx.get_ref(0)]
-    assemble = lambda assm: assm.tag(2).uint32(3).tag(7).uint32(0).tag(4).tag(8).uint32(0).tag(8).uint32(0)
+    assemble = lambda assm: assm.tag(2).uint32(3).tag(7).uint32(1).uint32(0).tag(4).tag(8).uint32(0).tag(8).uint32(0)
     self.run_test(input, assemble)
 
   def test_empty_array(self):
@@ -72,7 +72,7 @@ class PlanktonTests(planktontest.TestCase):
         .set_header(None)
         .set_payload({})))
       .set_payload({"x": [ctx.get_ref(0), ctx.get_ref(1)]}))
-    assemble = lambda assm: assm.tag(7).uint32(1).tag(7).uint32(0).tag(4).tag(1).uint32(1).blob("x").tag(2).uint32(2).tag(8).uint32(1).tag(8).uint32(0)
+    assemble = lambda assm: assm.tag(7).uint32(1).uint32(1).tag(7).uint32(1).uint32(0).tag(4).tag(1).uint32(1).blob("x").tag(2).uint32(2).tag(8).uint32(1).tag(8).uint32(0)
     self.run_test(input, assemble)
 
   def test_long_string(self):
@@ -144,7 +144,7 @@ class PlanktonTests(planktontest.TestCase):
           .set_payload({
             "x": 3,
             "y": 4}))}))
-    assemble = lambda assm: assm.tag(7).uint32(2).tag(4).tag(1).uint32(1).blob(bytearray([120])).tag(7).uint32(2).tag(4).tag(1).uint32(1).blob(bytearray([120])).tag(0).int32(1).tag(1).uint32(1).blob(bytearray([121])).tag(0).int32(2).tag(1).uint32(1).blob(bytearray([121])).tag(7).uint32(2).tag(4).tag(1).uint32(1).blob(bytearray([120])).tag(0).int32(3).tag(1).uint32(1).blob(bytearray([121])).tag(0).int32(4)
+    assemble = lambda assm: assm.tag(7).uint32(1).uint32(2).tag(4).tag(1).uint32(1).blob(bytearray([120])).tag(7).uint32(1).uint32(2).tag(4).tag(1).uint32(1).blob(bytearray([120])).tag(0).int32(1).tag(1).uint32(1).blob(bytearray([121])).tag(0).int32(2).tag(1).uint32(1).blob(bytearray([121])).tag(7).uint32(1).uint32(2).tag(4).tag(1).uint32(1).blob(bytearray([120])).tag(0).int32(3).tag(1).uint32(1).blob(bytearray([121])).tag(0).int32(4)
     self.run_test(input, assemble)
 
   def test_pair_one(self):
@@ -154,7 +154,7 @@ class PlanktonTests(planktontest.TestCase):
       .set_payload({
         "x": 1,
         "y": 2}))
-    assemble = lambda assm: assm.tag(7).uint32(2).tag(4).tag(1).uint32(1).blob(bytearray([120])).tag(0).int32(1).tag(1).uint32(1).blob(bytearray([121])).tag(0).int32(2)
+    assemble = lambda assm: assm.tag(7).uint32(1).uint32(2).tag(4).tag(1).uint32(1).blob(bytearray([120])).tag(0).int32(1).tag(1).uint32(1).blob(bytearray([121])).tag(0).int32(2)
     self.run_test(input, assemble)
 
   def test_repeated_array_repetition(self):
@@ -166,7 +166,7 @@ class PlanktonTests(planktontest.TestCase):
       .set_payload({})), ctx.get_ref(0), ctx.get_ref(1), (ctx.new_object(id=2)
       .set_header(None)
       .set_payload({})), ctx.get_ref(0), ctx.get_ref(1), ctx.get_ref(2)]
-    assemble = lambda assm: assm.tag(2).uint32(9).tag(7).uint32(0).tag(4).tag(8).uint32(0).tag(7).uint32(0).tag(4).tag(8).uint32(1).tag(8).uint32(0).tag(7).uint32(0).tag(4).tag(8).uint32(2).tag(8).uint32(1).tag(8).uint32(0)
+    assemble = lambda assm: assm.tag(2).uint32(9).tag(7).uint32(1).uint32(0).tag(4).tag(8).uint32(0).tag(7).uint32(1).uint32(0).tag(4).tag(8).uint32(1).tag(8).uint32(0).tag(7).uint32(1).uint32(0).tag(4).tag(8).uint32(2).tag(8).uint32(1).tag(8).uint32(0)
     self.run_test(input, assemble)
 
   def test_reverse_small_map(self):
@@ -232,7 +232,7 @@ class PlanktonTests(planktontest.TestCase):
       .set_payload({
         "x": 1,
         "y": 2}))
-    assemble = lambda assm: assm.tag(7).uint32(2).tag(4).tag(1).uint32(1).blob(bytearray([120])).tag(0).int32(1).tag(1).uint32(1).blob(bytearray([121])).tag(0).int32(2)
+    assemble = lambda assm: assm.tag(7).uint32(1).uint32(2).tag(4).tag(1).uint32(1).blob(bytearray([120])).tag(0).int32(1).tag(1).uint32(1).blob(bytearray([121])).tag(0).int32(2)
     self.run_test(input, assemble)
 
   def test_shorthand_small_map(self):
@@ -256,7 +256,7 @@ class PlanktonTests(planktontest.TestCase):
       .set_payload({
         "x": None,
         "y": False}))
-    assemble = lambda assm: assm.tag(7).uint32(2).tag(1).uint32(1).blob(bytearray([97])).tag(1).uint32(1).blob(bytearray([120])).tag(4).tag(1).uint32(1).blob(bytearray([121])).tag(6)
+    assemble = lambda assm: assm.tag(7).uint32(1).uint32(2).tag(1).uint32(1).blob(bytearray([97])).tag(1).uint32(1).blob(bytearray([120])).tag(4).tag(1).uint32(1).blob(bytearray([121])).tag(6)
     self.run_test(input, assemble)
 
   def test_small_map(self):
