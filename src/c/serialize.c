@@ -136,7 +136,7 @@ static value_t instance_serialize(value_t value, serialize_state_t *state) {
   if (in_condition_cause(ccNotFound, ref)) {
     value_t fields = get_instance_fields(value);
     size_t fieldc = get_id_hash_map_size(fields);
-    pton_assembler_begin_seed(state->assm, fieldc);
+    pton_assembler_begin_seed(state->assm, 1, fieldc);
     pton_assembler_emit_null(state->assm);
     // Cycles are only allowed through the payload of an object so we only
     // register the object after the header has been written.
@@ -285,10 +285,13 @@ static size_t acquire_object_index(deserialize_state_t *state) {
   return state->object_offset++;
 }
 
-static value_t seed_deserialize(size_t fieldc, deserialize_state_t *state) {
+static value_t seed_deserialize(size_t headerc, size_t fieldc, deserialize_state_t *state) {
   size_t offset = acquire_object_index(state);
   // Read the header before creating the instance.
   TRY_DEF(header, value_deserialize(state));
+  for (size_t i = 1; i < headerc; i++)
+    // Ignore remaining headers.
+    TRY(value_deserialize(state));
   object_factory_t *factory = state->factory;
   TRY_DEF(init_value, (factory->new_empty_object)(factory, state->runtime, header));
   TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
@@ -338,7 +341,8 @@ static value_t value_deserialize(deserialize_state_t *state) {
     case PTON_OPCODE_DEFAULT_STRING:
       return default_string_deserialize(&instr, state);
     case PTON_OPCODE_BEGIN_SEED:
-      return seed_deserialize(instr.payload.seed_fieldc, state);
+      return seed_deserialize(instr.payload.seed_data.headerc,
+          instr.payload.seed_data.fieldc, state);
     case PTON_OPCODE_REFERENCE:
       return reference_deserialize(instr.payload.reference_offset, state);
     default:
