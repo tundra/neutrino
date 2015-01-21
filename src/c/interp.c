@@ -467,8 +467,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           value_t params = read_value(&cache, &frame, 1);
           size_t argc = get_array_length(argmap);
           E_TRY_DEF(values, new_heap_array(runtime, argc));
-          E_TRY_DEF(reified, new_heap_reified_arguments(runtime, argmap, params,
-              values));
+          E_TRY_DEF(reified, new_heap_reified_arguments(runtime, params, values));
           for (size_t i = 0; i < argc; i++) {
             value_t value = frame_get_argument(&frame, i);
             set_array_at(values, i, value);

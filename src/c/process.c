@@ -887,15 +887,12 @@ TRIVIAL_PRINT_ON_IMPL(ReifiedArguments, reified_arguments);
 GET_FAMILY_PRIMARY_TYPE_IMPL(reified_arguments);
 
 ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofArray,
-    Map, map);
-ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofArray,
     Params, params);
 ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofArray,
     Values, values);
 
 value_t reified_arguments_validate(value_t self) {
   VALIDATE_FAMILY(ofReifiedArguments, self);
-  VALIDATE_FAMILY(ofArray, get_reified_arguments_map(self));
   VALIDATE_FAMILY(ofArray, get_reified_arguments_params(self));
   VALIDATE_FAMILY(ofArray, get_reified_arguments_values(self));
   return success();

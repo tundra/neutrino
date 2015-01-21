@@ -5,7 +5,6 @@ import $assert;
 import $core;
 
 def $positional($a, $b, $c) as $args => $args;
-def $reverse(2: $a, 1: $b, 0: $c) as $args => $args;
 def $keyword(a: $a, b: $b, c: $c) as $args => $args;
 def $rkeyword(c: $a, b: $b, a: $c) as $args => $args;
 

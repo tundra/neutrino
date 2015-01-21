@@ -267,8 +267,8 @@ value_t new_heap_process(runtime_t *runtime);
 value_t new_heap_task(runtime_t *runtime, value_t process);
 
 // Creates a new reified arguments value.
-value_t new_heap_reified_arguments(runtime_t *runtime, value_t map,
-    value_t params, value_t values);
+value_t new_heap_reified_arguments(runtime_t *runtime, value_t params,
+    value_t values);
 
 
 // --- M e t h o d ---
