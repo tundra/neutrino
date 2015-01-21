@@ -35,6 +35,7 @@ meta_file_names = [
   "meta/hash_oracle.n",
   "meta/instance.n",
   "meta/module.n",
+  "meta/reified_arguments.n",
 ]
 
 

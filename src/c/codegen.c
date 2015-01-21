@@ -375,6 +375,13 @@ value_t assembler_emit_push(assembler_t *assm, value_t value) {
   return success();
 }
 
+value_t assembler_emit_reify_arguments(assembler_t *assm, value_t params) {
+  assembler_emit_opcode(assm, ocReifyArguments);
+  TRY(assembler_emit_value(assm, params));
+  assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
 value_t assembler_emit_pop(assembler_t *assm, size_t count) {
   assembler_emit_opcode(assm, ocPop);
   assembler_emit_short(assm, count);

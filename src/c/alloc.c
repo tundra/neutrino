@@ -734,6 +734,17 @@ value_t new_heap_task(runtime_t *runtime, value_t process) {
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_reified_arguments(runtime_t *runtime, value_t map,
+    value_t params, value_t values) {
+  size_t size = kReifiedArgumentsSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, reified_arguments_species)));
+  set_reified_arguments_map(result, map);
+  set_reified_arguments_params(result, params);
+  set_reified_arguments_values(result, values);
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- M e t h o d ---
 
@@ -1095,12 +1106,13 @@ value_t new_heap_guard_ast(runtime_t *runtime, alloc_flags_t flags,
 }
 
 value_t new_heap_signature_ast(runtime_t *runtime, alloc_flags_t flags,
-    value_t parameters, value_t allow_extra) {
+    value_t parameters, value_t allow_extra, value_t reified) {
   size_t size = kSignatureAstSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_signature_ast_species)));
   set_signature_ast_parameters(result, parameters);
   set_signature_ast_allow_extra(result, allow_extra);
+  set_signature_ast_reified(result, reified);
   TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }

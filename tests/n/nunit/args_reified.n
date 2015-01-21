@@ -1,0 +1,108 @@
+# Copyright 2015 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def $positional($a, $b, $c) as $args => $args;
+def $reverse(2: $a, 1: $b, 0: $c) as $args => $args;
+def $keyword(a: $a, b: $b, c: $c) as $args => $args;
+def $rkeyword(c: $a, b: $b, a: $c) as $args => $args;
+
+# Loop around allocating memory to cause a garbage collection.
+def $test_positional() {
+  # Positional, default order.
+  def $p0 := $positional(5, 6, 7);
+  $assert:equals($positional, $p0[subject]);
+  $assert:equals(op(), $p0[selector]);
+  $assert:equals(5, $p0[0]);
+  $assert:equals(6, $p0[1]);
+  $assert:equals(7, $p0[2]);
+  # Positional, force reverse arg order.
+  def $p1 := $positional(2: 8, 1: 9, 0: 10);
+  $assert:equals($positional, $p1[subject]);
+  $assert:equals(op(), $p1[selector]);
+  $assert:equals(10, $p1[0]);
+  $assert:equals(9, $p1[1]);
+  $assert:equals(8, $p1[2]);
+  # Positional, force mixed arg order.
+  def $p2 := $positional(1: 11, 2: 12, 0: 13);
+  $assert:equals($positional, $p2[subject]);
+  $assert:equals(op(), $p2[selector]);
+  $assert:equals(13, $p2[0]);
+  $assert:equals(11, $p2[1]);
+  $assert:equals(12, $p2[2]);
+}
+
+def $test_keyword() {
+  def $k0 := $keyword(14, 15, 16);
+  $assert:equals($keyword, $k0[subject]);
+  $assert:equals(op(), $k0[selector]);
+  $assert:equals(14, $k0[0]);
+  $assert:equals(15, $k0[1]);
+  $assert:equals(16, $k0[2]);
+  $assert:equals(14, $k0["a"]);
+  $assert:equals(15, $k0["b"]);
+  $assert:equals(16, $k0["c"]);
+  def $k1 := $keyword(a: 17, b: 18, c: 19);
+  $assert:equals($keyword, $k1[subject]);
+  $assert:equals(op(), $k1[selector]);
+  $assert:equals(17, $k1[0]);
+  $assert:equals(18, $k1[1]);
+  $assert:equals(19, $k1[2]);
+  $assert:equals(17, $k1["a"]);
+  $assert:equals(18, $k1["b"]);
+  $assert:equals(19, $k1["c"]);
+  def $k2 := $keyword(c: 23, a: 24, b: 25);
+  $assert:equals($keyword, $k2[subject]);
+  $assert:equals(op(), $k2[selector]);
+  $assert:equals(24, $k2[0]);
+  $assert:equals(25, $k2[1]);
+  $assert:equals(23, $k2[2]);
+  $assert:equals(24, $k2["a"]);
+  $assert:equals(25, $k2["b"]);
+  $assert:equals(23, $k2["c"]);
+}
+
+def $test_rkeyword() {
+  def $r0 := $rkeyword(14, 15, 16);
+  $assert:equals($rkeyword, $r0[subject]);
+  $assert:equals(op(), $r0[selector]);
+  $assert:equals(14, $r0[0]);
+  $assert:equals(15, $r0[1]);
+  $assert:equals(16, $r0[2]);
+  $assert:equals(16, $r0["a"]);
+  $assert:equals(15, $r0["b"]);
+  $assert:equals(14, $r0["c"]);
+  def $r1 := $rkeyword(a: 17, b: 18, c: 19);
+  $assert:equals($rkeyword, $r1[subject]);
+  $assert:equals(op(), $r1[selector]);
+  $assert:equals(19, $r1[0]);
+  $assert:equals(18, $r1[1]);
+  $assert:equals(17, $r1[2]);
+  $assert:equals(17, $r1["a"]);
+  $assert:equals(18, $r1["b"]);
+  $assert:equals(19, $r1["c"]);
+  def $r2 := $rkeyword(c: 23, a: 24, b: 25);
+  $assert:equals($rkeyword, $r2[subject]);
+  $assert:equals(op(), $r2[selector]);
+  $assert:equals(23, $r2[0]);
+  $assert:equals(25, $r2[1]);
+  $assert:equals(24, $r2[2]);
+  $assert:equals(24, $r2["a"]);
+  $assert:equals(25, $r2["b"]);
+  $assert:equals(23, $r2["c"]);
+}
+
+def $test_failures() {
+  def $k := $keyword(20, 21, 22);
+  $assert:equals("d", try $k["d"] on.no_such_tag($t) => $t);
+  $assert:equals(4, try $k[4] on.no_such_tag($t) => $t);
+}
+
+do {
+  $test_positional();
+  $test_keyword();
+  $test_rkeyword();
+  $test_failures();
+}

@@ -621,4 +621,23 @@ value_t take_process_job(value_t process, job_t *job_out);
 bool is_process_idle(value_t process);
 
 
+/// ## Reified arguments
+///
+/// Reified arguments capture the tags and value passed to an invocation.
+
+static const size_t kReifiedArgumentsSize = HEAP_OBJECT_SIZE(3);
+static const size_t kReifiedArgumentsMapOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kReifiedArgumentsParamsOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kReifiedArgumentsValuesOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+
+// The arguments map.
+ACCESSORS_DECL(reified_arguments, map);
+
+// The argument parameters.
+ACCESSORS_DECL(reified_arguments, params);
+
+// The concrete argument values.
+ACCESSORS_DECL(reified_arguments, values);
+
+
 #endif // _PROCESS

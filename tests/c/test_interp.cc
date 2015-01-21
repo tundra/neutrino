@@ -33,7 +33,8 @@ static value_t assert_ast_value(value_t ambience, variant_t *expected,
     value_t ast) {
   runtime_t *runtime = get_ambience_runtime(ambience);
   TRY_DEF(fragment, new_empty_module_fragment(runtime));
-  TRY_DEF(code_block, compile_expression(runtime, ast, fragment, scope_get_bottom()));
+  TRY_DEF(code_block, compile_expression(runtime, ast, fragment, scope_get_bottom(),
+      nothing()));
   TRY_DEF(result, run_code_block_until_condition(ambience, code_block));
   ASSERT_VAREQ(expected, result);
   return success();
@@ -113,7 +114,8 @@ TEST(interp, execution) {
 // specified condition.
 static void assert_compile_failure(runtime_t *runtime, value_t ast,
     invalid_syntax_cause_t cause) {
-  value_t result = compile_expression(runtime, ast, nothing(), scope_get_bottom());
+  value_t result = compile_expression(runtime, ast, nothing(), scope_get_bottom(),
+      nothing());
   ASSERT_CONDITION(ccInvalidSyntax, result);
   ASSERT_EQ(cause, get_invalid_syntax_condition_cause(result));
 }
@@ -171,7 +173,7 @@ TEST(interp, lookup_error) {
       new_heap_guard_ast(runtime, afFreeze, gtEq,
           new_heap_literal_ast(runtime, afFreeze, ROOT(runtime, op_call)))));
   value_t basic_signature = new_heap_signature_ast(runtime, afFreeze,
-      basic_signature_params, no());
+      basic_signature_params, no(), nothing());
 
   value_t methods = new_heap_array(runtime, 1);
   set_array_at(methods, 0, new_heap_method_ast(runtime, afFreeze, basic_signature,

@@ -81,6 +81,11 @@ static inline bool is_null(value_t value) {
   return is_same_value(value, null());
 }
 
+// Returns nothing if the value is null, otherwise returns the value itself.
+static inline value_t null_to_nothing(value_t value) {
+  return is_null(value) ? nothing() : value;
+}
+
 
 // --- B o o l e a n s ---
 

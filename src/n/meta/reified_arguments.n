@@ -1,0 +1,19 @@
+# Copyright 2015 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## The built-in type of captured argument sets.
+def @ReifiedArguments := @ctrino.get_builtin_type("ReifiedArguments");
+
+## Returns the argument with the given tag.
+##
+## Note that arguments are returned based on the parameter tags, not the tags
+## used as arguments. Method parameters can have multiple tags and if this only
+## used the tag that was used when the method was invoked, the callee would have
+## to try all the tags for that argument to be sure to get the value.
+##
+## The comparison used to determine whether an argument tag is equal to the
+## given tag is identity comparison so even if your argument considers itself
+## to be, for instance, == with 0, only 0 the integer will actually give the
+## 0'th argument.
+@ctrino.builtin("reified_arguments[]")
+def ($this is @ReifiedArguments)[$tag];

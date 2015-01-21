@@ -92,9 +92,13 @@ class ScopeVisitor(ast.Visitor):
     that.value.accept(self)
 
   def visit_method(self, that):
+    sig = that.signature
     bindings = {}
-    for param in that.signature.parameters:
+    for param in sig.parameters:
       bindings[param.get_name()] = param.get_symbol()
+    if not sig.reified_ident is None:
+      reified = sig.reified_ident
+      bindings[reified.get_name()] = sig.reified
     outer_scope = self.scope
     self.scope = MappedScope(bindings, outer_scope)
     try:

@@ -266,6 +266,10 @@ value_t new_heap_process(runtime_t *runtime);
 // Creates a new uninitialized task belonging to the given process.
 value_t new_heap_task(runtime_t *runtime, value_t process);
 
+// Creates a new reified arguments value.
+value_t new_heap_reified_arguments(runtime_t *runtime, value_t map,
+    value_t params, value_t values);
+
 
 // --- M e t h o d ---
 
@@ -394,7 +398,7 @@ value_t new_heap_guard_ast(runtime_t *runtime, alloc_flags_t flags,
 
 // Creates a new signature syntax tree with the given parameters.
 value_t new_heap_signature_ast(runtime_t *runtime, alloc_flags_t flags,
-    value_t parameters, value_t allow_extra);
+    value_t parameters, value_t allow_extra, value_t reified);
 
 // Creates a new method ast with the given attributes.
 value_t new_heap_method_ast(runtime_t *runtime, alloc_flags_t flags,

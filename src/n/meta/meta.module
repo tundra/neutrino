@@ -11,7 +11,8 @@ module $meta {
     "field.n",
     "hash_oracle.n",
     "instance.n",
-    "module.n"
+    "module.n",
+    "reified_arguments.n"
   ]
 
 }

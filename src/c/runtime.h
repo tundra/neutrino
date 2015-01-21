@@ -59,6 +59,7 @@
   F(parameters,                 "parameters")                                  \
   F(path,                       "path")                                        \
   F(precision,                  "precision")                                   \
+  F(reified,                    "reified")                                     \
   F(selector,                   "selector")                                    \
   F(signature,                  "signature")                                   \
   F(stage,                      "stage")                                       \

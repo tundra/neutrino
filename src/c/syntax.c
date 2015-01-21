@@ -16,14 +16,14 @@
 // --- M i s c ---
 
 value_t compile_expression(runtime_t *runtime, value_t program, value_t fragment,
-    scope_o *scope) {
+    scope_o *scope, value_t reify_params_opt) {
   assembler_t assm;
   // Don't try to execute cleanup if this fails since there'll not be an
   // assembler to dispose.
   TRY(assembler_init(&assm, runtime, fragment, scope));
   E_BEGIN_TRY_FINALLY();
     E_TRY_DEF(code_block, compile_expression_with_assembler(runtime, program,
-        &assm));
+        &assm, reify_params_opt));
     E_RETURN(code_block);
   E_FINALLY();
     assembler_dispose(&assm);
@@ -31,9 +31,13 @@ value_t compile_expression(runtime_t *runtime, value_t program, value_t fragment
 }
 
 value_t compile_expression_with_assembler(runtime_t *runtime, value_t program,
-    assembler_t *assm) {
+    assembler_t *assm, value_t reify_params_opt) {
+  if (!is_nothing(reify_params_opt))
+    TRY(assembler_emit_reify_arguments(assm, reify_params_opt));
   TRY(emit_value(program, assm));
-  assembler_emit_return(assm);
+  if (!is_nothing(reify_params_opt))
+    TRY(assembler_emit_slap(assm, 1));
+  TRY(assembler_emit_return(assm));
   TRY_DEF(code_block, assembler_flush(assm));
   return code_block;
 }
@@ -41,7 +45,7 @@ value_t compile_expression_with_assembler(runtime_t *runtime, value_t program,
 value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
     safe_value_t module, scope_o *scope) {
   RETRY_ONCE_IMPL(runtime, compile_expression(runtime, deref(ast), deref(module),
-      scope));
+      scope, nothing()));
 }
 
 size_t get_parameter_order_index_for_array(value_t tags) {
@@ -439,9 +443,7 @@ value_t plankton_set_signal_ast_contents(value_t object, runtime_t *runtime,
   UNPACK_PLANKTON_MAP(contents, arguments, escape, default);
   set_signal_ast_escape(object, escape_value);
   set_signal_ast_arguments(object, arguments_value);
-  // Convert nulls (which can be represented in plankton) into nothings (which
-  // can't).
-  set_signal_ast_default(object, is_null(default_value) ? nothing() : default_value);
+  set_signal_ast_default(object, null_to_nothing(default_value));
   return ensure_frozen(runtime, object);
 }
 
@@ -538,7 +540,7 @@ static value_t emit_ensurer(value_t code, assembler_t *assm) {
   TRY(assembler_push_block_scope(assm, &block_scope));
 
   TRY_DEF(code_block, compile_expression(assm->runtime, code, assm->fragment,
-        UPCAST(&block_scope)));
+        UPCAST(&block_scope), nothing()));
 
   // Pop the block scope off, we're done refracting.
   assembler_pop_block_scope(assm, &block_scope);
@@ -1164,6 +1166,15 @@ value_t build_method_signature(runtime_t *runtime, value_t fragment,
   return result;
 }
 
+static value_t sanity_check_symbol(assembler_t *assm, value_t probably_symbol) {
+  if (!in_family(ofSymbolAst, probably_symbol))
+    return new_invalid_syntax_condition(isExpectedSymbol);
+  if (assembler_is_symbol_bound(assm, probably_symbol))
+    // We're trying to redefine an already defined symbol. That's not valid.
+    return new_invalid_syntax_condition(isSymbolAlreadyBound);
+  return success();
+}
+
 value_t compile_method_body(assembler_t *assm, value_t method_ast) {
   CHECK_FAMILY(ofMethodAst, method_ast);
 
@@ -1188,12 +1199,18 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
     // Bind the parameter in the local scope.
     value_t param_ast = get_array_at(param_asts, i);
     value_t symbol = get_parameter_ast_symbol(param_ast);
-    if (!in_family(ofSymbolAst, symbol))
-      return new_invalid_syntax_condition(isExpectedSymbol);
-    if (assembler_is_symbol_bound(assm, symbol))
-      // We're trying to redefine an already defined symbol. That's not valid.
-      return new_invalid_syntax_condition(isSymbolAlreadyBound);
+    TRY(sanity_check_symbol(assm, symbol));
     TRY(map_scope_bind(&param_scope, symbol, btArgument, offsets[i]));
+  }
+
+  value_t reified_symbol = get_signature_ast_reified(signature_ast);
+  value_t reify_params = nothing();
+  if (!is_nothing(reified_symbol)) {
+    TRY(sanity_check_symbol(assm, reified_symbol));
+    TRY(map_scope_bind(&param_scope, reified_symbol, btLocal, 0));
+    TRY_SET(reify_params, new_heap_array(runtime, param_astc));
+    for (size_t i = 0; i < param_astc; i++)
+      set_array_at(reify_params, offsets[i], get_array_at(param_asts, i));
   }
 
   // We don't need this more so clear it to ensure that we don't accidentally
@@ -1203,7 +1220,7 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
   // Compile the code.
   value_t body_ast = get_method_ast_body(method_ast);
   TRY_DEF(result, compile_expression(runtime, body_ast, assm->fragment,
-      assm->scope));
+      assm->scope, reify_params));
   assembler_pop_map_scope(assm, &param_scope);
   return result;
 }
@@ -1365,23 +1382,28 @@ ACCESSORS_IMPL(SignatureAst, signature_ast, acInFamilyOpt, ofArray,
     Parameters, parameters);
 ACCESSORS_IMPL(SignatureAst, signature_ast, acNoCheck, 0, AllowExtra,
     allow_extra);
+ACCESSORS_IMPL(SignatureAst, signature_ast, acInFamilyOpt, ofSymbolAst,
+    Reified, reified);
 
 value_t signature_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofSignatureAst, self);
   VALIDATE_FAMILY_OPT(ofArray, get_signature_ast_parameters(self));
+  VALIDATE_FAMILY_OPT(ofSymbolAst, get_signature_ast_reified(self));
   return success();
 }
 
 value_t plankton_set_signature_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, parameters, allow_extra);
+  UNPACK_PLANKTON_MAP(contents, parameters, allow_extra, reified);
   set_signature_ast_parameters(object, parameters_value);
   set_signature_ast_allow_extra(object, allow_extra_value);
+  set_signature_ast_reified(object, null_to_nothing(reified_value));
   return ensure_frozen(runtime, object);
 }
 
 value_t plankton_new_signature_ast(runtime_t *runtime) {
-  return new_heap_signature_ast(runtime, afMutable, nothing(), nothing());
+  return new_heap_signature_ast(runtime, afMutable, nothing(), nothing(),
+      nothing());
 }
 
 void signature_ast_print_on(value_t self, print_on_context_t *context) {

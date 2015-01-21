@@ -155,9 +155,7 @@ static value_t ctrino_delay(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t thunk = get_builtin_argument(args, 0);
   value_t promise = get_builtin_argument(args, 1);
-  value_t guard = get_builtin_argument(args, 2);
-  if (is_null(guard))
-    guard = nothing();
+  value_t guard = null_to_nothing(get_builtin_argument(args, 2));
   CHECK_C_OBJECT_TAG(btCtrino, self);
   CHECK_FAMILY(ofLambda, thunk);
   CHECK_FAMILY_OPT(ofPromise, promise);

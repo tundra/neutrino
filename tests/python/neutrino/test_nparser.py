@@ -36,17 +36,7 @@ def ls(*params):
     fpm(nm(['self']), any(), ST),
     fpm(nm(['name']), eq(lt(data.Operation.call())), SL)
   ]
-  return ast.Signature(prefix + list(params), False)
-
-def ms(this, name, *params):
-  prefix = [
-    fpm(this, any(), ST),
-    fpm(nm(['name']), eq(lt(name)), SL)
-  ]
-  return ast.Signature(prefix + list(params))
-
-def fms(*params):
-  return ast.Signature(list(params))
+  return ast.Signature(prefix + list(params), False, None)
 
 def nm(names, phase=0):
   if isinstance(names, list):

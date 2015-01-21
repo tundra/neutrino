@@ -162,10 +162,10 @@ class Parser(object):
         if self.at_punctuation('('):
           # def <ident> (
           subject = ast.Parameter(name, [data._SUBJECT], ast.Guard.eq(ast.Variable(name.shift_back())))
-          (params, operation, allow_extra) = self.parse_parameters(Parser._SAUSAGES)
+          (params, operation, allow_extra, reified) = self.parse_parameters(Parser._SAUSAGES)
           body = self.parse_method_tail(True)
           selector = self.name_as_selector(operation)
-          signature = ast.Signature([subject, selector] + params, allow_extra)
+          signature = ast.Signature([subject, selector] + params, allow_extra, reified)
           return ast.FunctionDeclaration(name, ast.Method(signature, body))
         else:
           # def <ident> ...
@@ -599,7 +599,7 @@ class Parser(object):
       default_operation = data.Operation.infix(name)
     else:
       default_operation = Parser._SAUSAGES
-    (params, param_operation, allow_extra) = self.parse_parameters(default_operation)
+    (params, param_operation, allow_extra, reified) = self.parse_parameters(default_operation)
     if is_async:
       params.append(ast.Parameter(data.Identifier(0, data.Path(['is_async'])),
         [data._IS_ASYNC], ast.Guard.eq(ast.Literal(True))))
@@ -616,14 +616,14 @@ class Parser(object):
       op = param_operation
     if self.at_punctuation(':='):
       self.expect_punctuation(':=')
-      (assign_params, assign_op, allow_extra) = self.parse_parameters(None, start_index=len(params))
+      (assign_params, assign_op, allow_extra, reified) = self.parse_parameters(None, start_index=len(params))
       params += assign_params
       op = data.Operation.assign(op)
     if allow_extra:
       selector = self.any_selector()
     else:
       selector = self.name_as_selector(op)
-    return ast.Signature(subject + [selector] + params, allow_extra)
+    return ast.Signature(subject + [selector] + params, allow_extra, reified)
 
   # Are we currently at a token that is allowed as the first token of a
   # parameter?
@@ -650,10 +650,10 @@ class Parser(object):
       self.name_as_subject(data.Identifier(0, data.Path(['self']))),
       self.name_as_selector(Parser._SAUSAGES)
     ]
-    (params, operation, allow_extra) = self.parse_parameters(None)
+    (params, operation, allow_extra, reified) = self.parse_parameters(None)
     if params is None:
       params = []
-    return ast.Signature(prefix + params, allow_extra)
+    return ast.Signature(prefix + params, allow_extra, reified)
 
   # <parameters>
   #   -> "(" <parameter> *: "," ")"
@@ -663,14 +663,14 @@ class Parser(object):
     operation = default_operation
     if self.at_parameter_start():
       param = self.parse_parameter(0)
-      return ([param], operation, False)
+      return ([param], operation, False, None)
     elif self.at_punctuation('('):
       (start, end) = ("(", ")")
     elif self.at_punctuation('['):
       (start, end) = ("[", "]")
       operation = Parser._SQUARE_SAUSAGES
     else:
-      return (None, operation, False)
+      return (None, operation, False, None)
     self.expect_punctuation(start)
     result = []
     allow_extra = False
@@ -691,7 +691,11 @@ class Parser(object):
           index += 1
           result.append(next)
     self.expect_punctuation(end)
-    return (result, operation, allow_extra)
+    reified = None
+    if self.at_word('as'):
+      self.expect_word('as')
+      reified = self.expect_type(Token.IDENTIFIER)
+    return (result, operation, allow_extra, reified)
 
   def parse_parameter(self, default_tag):
     tags = [default_tag]

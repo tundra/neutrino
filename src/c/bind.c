@@ -62,7 +62,7 @@ static value_t run_expression_until_condition(value_t ambience, value_t fragment
     value_t expr) {
   runtime_t *runtime = get_ambience_runtime(ambience);
   TRY_DEF(code_block, compile_expression(runtime, expr, fragment,
-      scope_get_bottom()));
+      scope_get_bottom(), nothing()));
   return run_code_block_until_condition(ambience, code_block);
 }
 
@@ -76,7 +76,7 @@ static value_t apply_namespace_declaration(value_t ambience, value_t decl,
   runtime_t *runtime = get_ambience_runtime(ambience);
   value_t value_syntax = get_namespace_declaration_ast_value(decl);
   TRY_DEF(code_block, compile_expression(runtime, value_syntax, fragment,
-      scope_get_bottom()));
+      scope_get_bottom(), nothing()));
   TRY_DEF(value, run_code_block_until_condition(ambience, code_block));
   value_t nspace = get_module_fragment_namespace(fragment);
   value_t path = get_namespace_declaration_ast_path(decl);

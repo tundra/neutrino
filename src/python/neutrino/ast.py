@@ -532,9 +532,16 @@ class Signature(object):
 
   @plankton.field("parameters")
   @plankton.field("allow_extra")
-  def __init__(self, parameters, allow_extra):
+  @plankton.field("reified")
+  def __init__(self, parameters, allow_extra, reified_ident):
     self.parameters = parameters
     self.allow_extra = allow_extra
+    if reified_ident is None:
+      self.reified_ident = None
+      self.reified = None
+    else:
+      self.reified_ident = reified_ident
+      self.reified = Symbol(reified_ident.get_name())
 
   def accept(self, visitor):
     visitor.visit_signature(self)
@@ -626,7 +633,7 @@ class Lambda(object):
         Guard.any()),
       Parameter(data.Identifier(0, data.Path(['name'])), [data._SELECTOR],
         Guard.eq(Literal(op)))
-    ], False)
+    ], False, None)
     return Method(signature, body)
 
 
@@ -814,7 +821,7 @@ class FieldDeclaration(object):
     ]))
     key_decl.apply(module)
     getter = MethodDeclaration(0, [], Method(
-      Signature([self.subject, self.getter], False), Invocation([
+      Signature([self.subject, self.getter], False, None), Invocation([
         Argument(data._SUBJECT, key_access),
         Argument(data._SELECTOR, Literal(FieldDeclaration._SQUARE_SAUSAGES)),
         Argument(0, Variable(self.subject.ident))
@@ -822,7 +829,7 @@ class FieldDeclaration(object):
     value = Parameter(data.Identifier(0, data.Path(['value'])), [0],
       Guard.any())
     setter = MethodDeclaration(0, [], Method(
-      Signature([self.subject, self.setter, value], False), Invocation([
+      Signature([self.subject, self.setter, value], False, None), Invocation([
         Argument(data._SUBJECT, key_access),
         Argument(data._SELECTOR, Literal(FieldDeclaration._SQUARE_SAUSAGE_ASSIGN)),
         Argument(0, Variable(self.subject.ident)),

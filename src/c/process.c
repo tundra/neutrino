@@ -877,3 +877,52 @@ value_t take_process_job(value_t process, job_t *job_out) {
 bool is_process_idle(value_t process) {
   return is_fifo_buffer_empty(get_process_work_queue(process));
 }
+
+
+/// ## Reified arguments
+
+
+FIXED_GET_MODE_IMPL(reified_arguments, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(ReifiedArguments, reified_arguments);
+GET_FAMILY_PRIMARY_TYPE_IMPL(reified_arguments);
+
+ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofArray,
+    Map, map);
+ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofArray,
+    Params, params);
+ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofArray,
+    Values, values);
+
+value_t reified_arguments_validate(value_t self) {
+  VALIDATE_FAMILY(ofReifiedArguments, self);
+  VALIDATE_FAMILY(ofArray, get_reified_arguments_map(self));
+  VALIDATE_FAMILY(ofArray, get_reified_arguments_params(self));
+  VALIDATE_FAMILY(ofArray, get_reified_arguments_values(self));
+  return success();
+}
+
+static value_t reified_arguments_get_at(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t tag = get_builtin_argument(args, 0);
+  value_t params = get_reified_arguments_params(self);
+  size_t paramc = get_array_length(params);
+  for (size_t ip = 0; ip < paramc; ip++) {
+    value_t param = get_array_at(params, ip);
+    value_t tags = get_parameter_ast_tags(param);
+    for (size_t it = 0; it < get_array_length(tags); it++) {
+      value_t candidate = get_array_at(tags, it);
+      if (value_identity_compare(candidate, tag)) {
+        // Found it!
+        value_t values = get_reified_arguments_values(self);
+        return get_array_at(values, ip);
+      }
+    }
+  }
+  ESCAPE_BUILTIN(args, no_such_tag, tag);
+}
+
+value_t add_reified_arguments_builtin_implementations(runtime_t *runtime,
+    safe_value_t s_map) {
+  ADD_BUILTIN_IMPL_MAY_ESCAPE("reified_arguments[]", 1, 1, reified_arguments_get_at);
+  return success();
+}

@@ -448,6 +448,7 @@ static inline value_t chase_moved_object(value_t raw) {
   F(ProgramAst,              program_ast,               X, _, (_, _, X, _, _, _, _, _), 17)\
   F(Promise,                 promise,                   _, X, (_, _, _, _, _, _, _, _), 78)\
   F(Reference,               reference,                 X, _, (_, _, _, _, _, _, _, _), 68)\
+  F(ReifiedArguments,        reified_arguments,         _, X, (_, _, _, _, _, _, _, _), 90)\
   F(Roots,                   roots,                     X, _, (_, _, _, _, _, _, X, _),  2)\
   F(SequenceAst,             sequence_ast,              X, X, (_, _, X, _, _, X, _, _), 35)\
   F(SignalAst,               signal_ast,                X, X, (_, _, X, _, _, X, _, _), 48)\
@@ -474,7 +475,7 @@ static inline value_t chase_moved_object(value_t raw) {
 // family enum values are not the raw ordinals but the ordinals shifted left by
 // the tag size so that they're tagged as integers. Those values are sometimes
 // stored as uint16s so the ordinals are allowed to take up to 14 bits.
-static const int kNextFamilyOrdinal = 89;
+static const int kNextFamilyOrdinal = 91;
 
 // Enumerates all the object families.
 #define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \
