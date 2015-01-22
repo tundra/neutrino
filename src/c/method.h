@@ -12,7 +12,7 @@
 
 // --- S i g n a t u r e ---
 
-static const size_t kSignatureSize = HEAP_OBJECT_SIZE(5);
+static const size_t kSignatureSize = HEAP_OBJECT_SIZE(4);
 static const size_t kSignatureTagsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kSignatureParameterCountOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 static const size_t kSignatureMandatoryCountOffset = HEAP_OBJECT_FIELD_OFFSET(2);

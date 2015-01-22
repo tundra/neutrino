@@ -18,16 +18,36 @@ value_t init_plankton_syntax_factories(value_t map, runtime_t *runtime);
 // a syntax tree an InvalidSyntax condition is returned.
 value_t emit_value(value_t value, assembler_t *assm);
 
+// Configuration of how to do expression compilation.
+typedef struct {
+  // If this is something it signals that the compiler should reify the
+  // arguments in the preamble.
+  value_t reify_params_opt;
+} single_compile_config_t;
+
+// Clears the given config to its defaults.
+void single_compile_config_clear(single_compile_config_t *config);
+
+// The state used when compiling a single expression. This is really all
+// implementation details but it's convenient to have it factored out so it can
+// be passed around explicitly.
+typedef struct {
+  runtime_t *runtime;
+  assembler_t assm;
+  // Optional flags that control compilation.
+  single_compile_config_t *config;
+} single_compile_state_t;
+
 // Compiles the given expression syntax tree to a code block. The scope callback
 // allows this compilation to access symbols defined in an outer scope. If the
 // callback is null it is taken to mean that there is no outer scope.
 value_t compile_expression(runtime_t *runtime, value_t ast,
-    value_t fragment, scope_o *scope, value_t reify_params_opt);
+    value_t fragment, scope_o *scope, single_compile_config_t *config_opt);
 
-// Does the same a compile_expression but takes an existing assembler rather
-// than create one.
-value_t compile_expression_with_assembler(runtime_t *runtime, value_t ast,
-    assembler_t *assm, value_t reify_params_opt);
+// Does the same a compile_expression but takes an existing initialized state
+// rather than create one.
+value_t compile_expression_with_state(single_compile_state_t *state,
+    value_t ast);
 
 // Compiles a method into a bytecode implementation.
 value_t compile_method_body(assembler_t *assm, value_t method_ast);

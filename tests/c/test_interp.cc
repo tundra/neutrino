@@ -34,7 +34,7 @@ static value_t assert_ast_value(value_t ambience, variant_t *expected,
   runtime_t *runtime = get_ambience_runtime(ambience);
   TRY_DEF(fragment, new_empty_module_fragment(runtime));
   TRY_DEF(code_block, compile_expression(runtime, ast, fragment, scope_get_bottom(),
-      nothing()));
+      NULL));
   TRY_DEF(result, run_code_block_until_condition(ambience, code_block));
   ASSERT_VAREQ(expected, result);
   return success();
@@ -115,7 +115,7 @@ TEST(interp, execution) {
 static void assert_compile_failure(runtime_t *runtime, value_t ast,
     invalid_syntax_cause_t cause) {
   value_t result = compile_expression(runtime, ast, nothing(), scope_get_bottom(),
-      nothing());
+      NULL);
   ASSERT_CONDITION(ccInvalidSyntax, result);
   ASSERT_EQ(cause, get_invalid_syntax_condition_cause(result));
 }

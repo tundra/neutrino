@@ -15,27 +15,62 @@
 
 // --- M i s c ---
 
+void single_compile_config_clear(single_compile_config_t *config) {
+  config->reify_params_opt = nothing();
+}
+
+// Returns a shared singleton compile config that contains the default config
+// values.
+static single_compile_config_t *single_compile_config_default() {
+  static single_compile_config_t instance;
+  static single_compile_config_t *result = NULL;
+  if (result == NULL) {
+    single_compile_config_clear(&instance);
+    result = &instance;
+  }
+  return result;
+}
+
+// Initializes a compile state. If this is successful you have to remember to
+// dispose the state; if it fails you can just bail.
+static value_t single_compile_state_init(single_compile_state_t *state,
+    runtime_t *runtime, value_t fragment, scope_o *scope,
+    single_compile_config_t *config_opt) {
+  TRY(assembler_init(&state->assm, runtime, fragment, scope));
+  state->runtime = runtime;
+  state->config = (config_opt == NULL) ? single_compile_config_default() : config_opt;
+  return success();
+}
+
+// Dispose the given compile state appropriately.
+static void single_compile_state_dispose(single_compile_state_t *state) {
+  assembler_dispose(&state->assm);
+}
+
 value_t compile_expression(runtime_t *runtime, value_t program, value_t fragment,
-    scope_o *scope, value_t reify_params_opt) {
-  assembler_t assm;
+    scope_o *scope, single_compile_config_t *config_opt) {
+  single_compile_state_t state;
   // Don't try to execute cleanup if this fails since there'll not be an
   // assembler to dispose.
-  TRY(assembler_init(&assm, runtime, fragment, scope));
+  TRY(single_compile_state_init(&state, runtime, fragment, scope, config_opt));
   E_BEGIN_TRY_FINALLY();
-    E_TRY_DEF(code_block, compile_expression_with_assembler(runtime, program,
-        &assm, reify_params_opt));
-    E_RETURN(code_block);
+    E_RETURN(compile_expression_with_state(&state, program));
   E_FINALLY();
-    assembler_dispose(&assm);
+    single_compile_state_dispose(&state);
   E_END_TRY_FINALLY();
 }
 
-value_t compile_expression_with_assembler(runtime_t *runtime, value_t program,
-    assembler_t *assm, value_t reify_params_opt) {
-  if (!is_nothing(reify_params_opt))
-    TRY(assembler_emit_reify_arguments(assm, reify_params_opt));
+value_t compile_expression_with_state(single_compile_state_t *state,
+    value_t program) {
+  assembler_t *assm = &state->assm;
+  bool should_reify = !is_nothing(state->config->reify_params_opt);
+  if (should_reify)
+    TRY(assembler_emit_reify_arguments(assm, state->config->reify_params_opt));
   TRY(emit_value(program, assm));
-  if (!is_nothing(reify_params_opt))
+  if (should_reify)
+    // We could in principle leave the reified args on the stack but this allows
+    // stricter validation and there's no harm in fixing it later if there's a
+    // performance issue.
     TRY(assembler_emit_slap(assm, 1));
   TRY(assembler_emit_return(assm));
   TRY_DEF(code_block, assembler_flush(assm));
@@ -45,7 +80,7 @@ value_t compile_expression_with_assembler(runtime_t *runtime, value_t program,
 value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
     safe_value_t module, scope_o *scope) {
   RETRY_ONCE_IMPL(runtime, compile_expression(runtime, deref(ast), deref(module),
-      scope, nothing()));
+      scope, NULL));
 }
 
 size_t get_parameter_order_index_for_array(value_t tags) {
@@ -540,7 +575,7 @@ static value_t emit_ensurer(value_t code, assembler_t *assm) {
   TRY(assembler_push_block_scope(assm, &block_scope));
 
   TRY_DEF(code_block, compile_expression(assm->runtime, code, assm->fragment,
-        UPCAST(&block_scope), nothing()));
+        UPCAST(&block_scope), NULL));
 
   // Pop the block scope off, we're done refracting.
   assembler_pop_block_scope(assm, &block_scope);
@@ -1203,14 +1238,18 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
     TRY(map_scope_bind(&param_scope, symbol, btArgument, offsets[i]));
   }
 
+  single_compile_config_t config;
+  single_compile_config_clear(&config);
+
   value_t reified_symbol = get_signature_ast_reified(signature_ast);
-  value_t reify_params = nothing();
   if (!is_nothing(reified_symbol)) {
+    value_t reify_params = nothing();
     TRY(sanity_check_symbol(assm, reified_symbol));
     TRY(map_scope_bind(&param_scope, reified_symbol, btLocal, 0));
     TRY_SET(reify_params, new_heap_array(runtime, param_astc));
     for (size_t i = 0; i < param_astc; i++)
       set_array_at(reify_params, offsets[i], get_array_at(param_asts, i));
+    config.reify_params_opt = reify_params;
   }
 
   // We don't need this more so clear it to ensure that we don't accidentally
@@ -1220,7 +1259,7 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
   // Compile the code.
   value_t body_ast = get_method_ast_body(method_ast);
   TRY_DEF(result, compile_expression(runtime, body_ast, assm->fragment,
-      assm->scope, reify_params));
+      assm->scope, &config));
   assembler_pop_map_scope(assm, &param_scope);
   return result;
 }
