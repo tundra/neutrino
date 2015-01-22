@@ -8,7 +8,6 @@ def $positional($a, $b, $c) as $args => $args;
 def $keyword(a: $a, b: $b, c: $c) as $args => $args;
 def $rkeyword(c: $a, b: $b, a: $c) as $args => $args;
 
-# Loop around allocating memory to cause a garbage collection.
 def $test_positional() {
   # Positional, default order.
   def $p0 := $positional(5, 6, 7);
@@ -116,6 +115,29 @@ def $test_extra() {
   $assert:equals(46, $e2[2]);
 }
 
+def $reverse(2: $a, 1: $b, 0: $c) as $args => $args;
+
+def $test_reverse() {
+  def $r0 := $reverse(50, 51, 52);
+  $assert:equals($reverse, $r0[subject]);
+  $assert:equals(op(), $r0[selector]);
+  $assert:equals(50, $r0[0]);
+  $assert:equals(51, $r0[1]);
+  $assert:equals(52, $r0[2]);
+  def $r1 := $reverse(2: 53, 1: 54, 0: 55);
+  $assert:equals($reverse, $r1[subject]);
+  $assert:equals(op(), $r1[selector]);
+  $assert:equals(55, $r1[0]);
+  $assert:equals(54, $r1[1]);
+  $assert:equals(53, $r1[2]);
+  def $r2 := $reverse(1: 56, 2: 57, 0: 58);
+  $assert:equals($reverse, $r2[subject]);
+  $assert:equals(op(), $r2[selector]);
+  $assert:equals(58, $r2[0]);
+  $assert:equals(56, $r2[1]);
+  $assert:equals(57, $r2[2]);
+}
+
 def $test_failures() {
   def $k := $keyword(20, 21, 22);
   $assert:equals("d", try $k["d"] on.no_such_tag($t) => $t);
@@ -130,4 +152,5 @@ do {
   $test_rkeyword();
   $test_failures();
   $test_extra();
+  $test_reverse();
 }

@@ -158,7 +158,8 @@ static always_inline value_t get_caller_call_tags(frame_t *callee) {
   // Get access to the caller's frame.
   frame_iter_t iter;
   frame_iter_init_from_frame(&iter, callee);
-  CHECK_TRUE("error advancing to get caller tags", frame_iter_advance(&iter));
+  bool advanced = frame_iter_advance(&iter);
+  CHECK_TRUE("error advancing to get caller tags", advanced);
   frame_t *caller = frame_iter_get_current(&iter);
   value_t caller_code = frame_get_code_block(caller);
   // The caller's pc should be parked immediately after the invocation that
