@@ -735,12 +735,14 @@ value_t new_heap_task(runtime_t *runtime, value_t process) {
 }
 
 value_t new_heap_reified_arguments(runtime_t *runtime, value_t params,
-    value_t values) {
+    value_t values, value_t argmap, value_t tags) {
   size_t size = kReifiedArgumentsSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, reified_arguments_species)));
   set_reified_arguments_params(result, params);
   set_reified_arguments_values(result, values);
+  set_reified_arguments_argmap(result, argmap);
+  set_reified_arguments_tags(result, tags);
   return post_create_sanity_check(result, size);
 }
 

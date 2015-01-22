@@ -625,15 +625,28 @@ bool is_process_idle(value_t process);
 ///
 /// Reified arguments capture the tags and value passed to an invocation.
 
-static const size_t kReifiedArgumentsSize = HEAP_OBJECT_SIZE(2);
+static const size_t kReifiedArgumentsSize = HEAP_OBJECT_SIZE(4);
 static const size_t kReifiedArgumentsParamsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kReifiedArgumentsValuesOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kReifiedArgumentsArgmapOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kReifiedArgumentsTagsOffset = HEAP_OBJECT_FIELD_OFFSET(3);
 
-// The argument parameters.
+// The argument parameters from the method being called.
 ACCESSORS_DECL(reified_arguments, params);
 
-// The concrete argument values.
+// The concrete argument values. The values must come in evaluation order, that
+// is, the order in which they were passed on the stack by the caller, not the
+// order of the parameters in the callee.
 ACCESSORS_DECL(reified_arguments, values);
+
+// The argument map passed by the caller. This gives, for each parameter index,
+// the corresponding evaluation index.
+ACCESSORS_DECL(reified_arguments, argmap);
+
+// The call tags used by the caller to resolve the method. These need to be
+// available in addition to the params in case the call uses extra arguments
+// that the callee doesn't know about.
+ACCESSORS_DECL(reified_arguments, tags);
 
 
 #endif // _PROCESS

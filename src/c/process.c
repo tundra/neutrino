@@ -890,18 +890,44 @@ ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofArray,
     Params, params);
 ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofArray,
     Values, values);
+ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofArray,
+    Argmap, argmap);
+ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofCallTags,
+    Tags, tags);
 
 value_t reified_arguments_validate(value_t self) {
   VALIDATE_FAMILY(ofReifiedArguments, self);
   VALIDATE_FAMILY(ofArray, get_reified_arguments_params(self));
   VALIDATE_FAMILY(ofArray, get_reified_arguments_values(self));
+  VALIDATE_FAMILY(ofArray, get_reified_arguments_argmap(self));
+  VALIDATE_FAMILY(ofCallTags, get_reified_arguments_tags(self));
   return success();
 }
 
 static value_t reified_arguments_get_at(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofReifiedArguments, self);
   value_t tag = get_builtin_argument(args, 0);
+
+  // First try to find the argument based on the tags used by the caller. This
+  // will usually work.
+  value_t call_tags = get_reified_arguments_tags(self);
+  size_t argc = get_call_tags_entry_count(call_tags);
+  for (size_t ia = 0; ia < argc; ia++) {
+    value_t candidate = get_call_tags_tag_at(call_tags, ia);
+    if (value_identity_compare(candidate, tag)) {
+      // Found it among the arguments.
+      value_t values = get_reified_arguments_values(self);
+      size_t offset = get_call_tags_offset_at(call_tags, ia);
+      return get_array_at(values, offset);
+    }
+  }
+
+  // Didn't find the value under the tags used by the caller; go through the
+  // params to see if there is an alias we can find it under.
   value_t params = get_reified_arguments_params(self);
+  // Paramc may be different from argc if there are extra arguments not
+  // anticipated in the method declaration.
   size_t paramc = get_array_length(params);
   for (size_t ip = 0; ip < paramc; ip++) {
     value_t param = get_array_at(params, ip);
@@ -909,12 +935,15 @@ static value_t reified_arguments_get_at(builtin_arguments_t *args) {
     for (size_t it = 0; it < get_array_length(tags); it++) {
       value_t candidate = get_array_at(tags, it);
       if (value_identity_compare(candidate, tag)) {
-        // Found it!
+        // Found it among the parameters!
         value_t values = get_reified_arguments_values(self);
-        return get_array_at(values, ip);
+        value_t argmap = get_reified_arguments_argmap(self);
+        size_t eval_index = get_integer_value(get_array_at(argmap, ip));
+        return get_array_at(values, eval_index);
       }
     }
   }
+
   ESCAPE_BUILTIN(args, no_such_tag, tag);
 }
 

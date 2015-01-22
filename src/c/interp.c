@@ -154,6 +154,49 @@ static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
   return false;
 }
 
+static always_inline value_t get_caller_call_tags(frame_t *callee) {
+  // Get access to the caller's frame.
+  frame_iter_t iter;
+  frame_iter_init_from_frame(&iter, callee);
+  CHECK_TRUE("error advancing to get caller tags", frame_iter_advance(&iter));
+  frame_t *caller = frame_iter_get_current(&iter);
+  value_t caller_code = frame_get_code_block(caller);
+  // The caller's pc should be parked immediately after the invocation that
+  // caused the callee to be running.
+  size_t caller_pc = caller->pc;
+  CHECK_TRUE("caller not after invoke", caller_pc >= kInvokeOperationSize);
+  size_t invoke_pc = caller_pc - kInvokeOperationSize;
+  value_t bytecode = get_code_block_bytecode(caller_code);
+  blob_t data = get_blob_data(bytecode);
+  // Get the call tags from the caller's value pool.
+  size_t call_tags_index = blob_short_at(data, invoke_pc + 1);
+  value_t caller_value_pool = get_code_block_value_pool(caller_code);
+  value_t tags = get_array_at(caller_value_pool, call_tags_index);
+  CHECK_FAMILY(ofCallTags, tags);
+  return tags;
+}
+
+static always_inline value_t do_reify_arguments(runtime_t *runtime, frame_t *frame,
+    code_cache_t *cache) {
+  value_t argmap = frame_get_argument_map(frame);
+  value_t params = read_value(cache, frame, 1);
+  value_t tags = get_caller_call_tags(frame);
+  size_t argc = get_array_length(argmap);
+  TRY_DEF(values, new_heap_array(runtime, argc));
+  TRY_DEF(reified, new_heap_reified_arguments(runtime, params, values,
+      argmap, tags));
+  for (size_t i = 0; i < argc; i++) {
+    // We have to get the raw arguments because extra arguments aren't
+    // accessible through frame_get_argument because it uses the param
+    // index and extra args don't have a param index.
+    value_t value = frame_get_raw_argument(frame, i);
+    set_array_at(values, i, value);
+  }
+  frame_push_value(frame, reified);
+  frame->pc += kReifyArgumentsOperationSize;
+  return success();
+}
+
 // Counter that increments for each opcode executed when interpreter topic
 // logging is enabled. Can be helpful for debugging but is kind of a lame hack.
 static uint64_t opcode_counter = 0;
@@ -172,7 +215,6 @@ static uint64_t interrupt_counter = 0;
     E_RETURN(new_force_validate_condition(serial));                            \
   }                                                                            \
 } while (false)
-
 
 // Runs the given task within the given ambience until a condition is
 // encountered or evaluation completes. This function also bails on and leaves
@@ -463,17 +505,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           break;
         }
         case ocReifyArguments: {
-          value_t argmap = frame_get_argument_map(&frame);
-          value_t params = read_value(&cache, &frame, 1);
-          size_t argc = get_array_length(argmap);
-          E_TRY_DEF(values, new_heap_array(runtime, argc));
-          E_TRY_DEF(reified, new_heap_reified_arguments(runtime, params, values));
-          for (size_t i = 0; i < argc; i++) {
-            value_t value = frame_get_argument(&frame, i);
-            set_array_at(values, i, value);
-          }
-          frame_push_value(&frame, reified);
-          frame.pc += kReifyArgumentsOperationSize;
+          E_TRY(do_reify_arguments(runtime, &frame, &cache));
           break;
         }
         case ocLoadRawArgument: {
