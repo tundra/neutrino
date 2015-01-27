@@ -21,13 +21,6 @@ import schedule
 import token
 
 
-def parse_plankton_option(option, opt_str, value, parser):
-  if value.startswith('p64/'):
-    decoder = plankton.Decoder()
-    value = decoder.base64decode(value[4:])
-  setattr(parser.values, option.dest, value)
-
-
 # Encapsulates the compilation of an individual module.
 class ModuleCompile(object):
 
@@ -91,28 +84,17 @@ class LibraryCompile(object):
 class Main(object):
 
   def __init__(self):
-    self.args = None
+    self.options = None
     self.flags = None
     self.scheduler = schedule.TaskScheduler()
 
-  # Builds and returns a new option parser for the flags understood by this
-  # script.
-  def build_option_parser(self):
-    parser = optparse.OptionParser()
-    parser.add_option('--file', action='append', default=[])
-    parser.add_option('--filter', action='store_true', default=False)
-    parser.add_option('--base64', action='store_true', default=False)
-    parser.add_option('--disass', action='store_true', default=False)
-    parser.add_option('--out', default=None)
-    parser.add_option('--compile', action='callback', type='string', callback=parse_plankton_option)
-    return parser
-
   # Parses the script arguments, storing the values in the appropriate fields.
   def parse_arguments(self):
-    parser = self.build_option_parser()
-    (self.flags, self.args) = parser.parse_args()
-    if self.flags.compile:
-      self.compile_flags = self.flags.compile.get_flags()
+    self.options = plankton.options.parse(sys.argv[1:])
+    self.flags = self.options.get_flags()
+    compile = self.flags.compile
+    if compile:
+      self.compile_flags = compile
     else:
       self.compile_flags = None
 
@@ -149,7 +131,8 @@ class Main(object):
 
   # Processes any --file arguments. These are used by the nunit tests.
   def schedule_files(self):
-    for filename in self.flags.file:
+    files = self.flags.files or []
+    for filename in files:
       source = open(filename, "rt").read()
       tokens = token.tokenize(source)
       module = ast.Module(filename)
@@ -158,9 +141,9 @@ class Main(object):
       self.schedule_for_output(module)
 
   def schedule_libraries(self):
-    if not self.compile_flags or not self.compile_flags.build_library:
+    if not self.compile_flags or not "build_library" in self.compile_flags:
       return
-    process = LibraryCompile(self.compile_flags.build_library)
+    process = LibraryCompile(self.compile_flags["build_library"])
     process.run()
 
   # Schedules a unit for compilation at the appropriate time relative to any
