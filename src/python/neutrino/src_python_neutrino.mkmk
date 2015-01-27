@@ -13,8 +13,10 @@ file_names = [
 ]
 
 files = get_group("files")
+plankton_path = get_root().get_child("deps", "plankton", "src", "python")
 
 for file_name in file_names:
   source_file = py.get_source_file(file_name)
+  source_file.add_pythonpath(plankton_path)
   source_file.add_dependency(files)
   files.add_member(source_file)
