@@ -7,7 +7,9 @@
 #ifndef _BIND
 #define _BIND
 
+#include "plankton.h"
 #include "value-inl.h"
+
 
 // --- B i n d i n g ---
 
@@ -51,7 +53,7 @@ ACCESSORS_DECL(module_loader, modules);
 
 // Configure this loader according to the given options object.
 value_t module_loader_process_options(runtime_t *runtime, value_t self,
-    value_t options);
+    pton_variant_t options);
 
 // Looks up a module by path, returning an unbound module. If the loader doesn't
 // know any modules with the given path NotFound is returned.

@@ -2448,63 +2448,6 @@ void unknown_print_on(value_t value, print_on_context_t *context) {
 }
 
 
-// --- O p t i o n s ---
-
-FIXED_GET_MODE_IMPL(options, vmMutable);
-
-ACCESSORS_IMPL(Options, options, acInFamilyOpt, ofArray, Elements, elements);
-
-value_t plankton_new_options(runtime_t *runtime) {
-  return new_heap_options(runtime, nothing());
-}
-
-value_t plankton_set_options_contents(value_t object, runtime_t *runtime,
-    value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, elements);
-  set_options_elements(object, elements_value);
-  return success();
-}
-
-value_t options_validate(value_t self) {
-  VALIDATE_FAMILY(ofOptions, self);
-  return success();
-}
-
-void options_print_on(value_t value, print_on_context_t *context) {
-  string_buffer_printf(context->buf, "#<options ");
-  value_t elements = get_options_elements(value);
-  value_print_inner_on(elements, context, -1);
-  string_buffer_printf(context->buf, ">");
-}
-
-value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key,
-    value_t defawlt) {
-  // Yeah so the clean way to do this would have been to create families for
-  // the different kinds of elements and let the deserialization code sort all
-  // this out. But we can get away with this somewhat hacky by simple and
-  // localized approach.
-  value_t elements = get_options_elements(self);
-  for (size_t i = 0; i < get_array_length(elements); i++) {
-    value_t element = get_array_at(elements, i);
-    if (!in_family(ofUnknown, element))
-      continue;
-    value_t header = get_unknown_header(element);
-    if (!value_identity_compare(header, RSTR(runtime, options_FlagElement)))
-      continue;
-    value_t payload = get_unknown_payload(element);
-    if (!in_family(ofIdHashMap, payload))
-      continue;
-    value_t element_key = get_id_hash_map_at(payload, RSTR(runtime, key));
-    if (in_condition_cause(ccNotFound, element_key) || !value_identity_compare(element_key, key))
-      continue;
-    value_t element_value = get_id_hash_map_at(payload, RSTR(runtime, value));
-    if (!in_condition_cause(ccNotFound, element_value))
-      return element_value;
-  }
-  return defawlt;
-}
-
-
 // --- D e c i m a l   f r a c t i o n ---
 
 FIXED_GET_MODE_IMPL(decimal_fraction, vmDeepFrozen);
@@ -2876,7 +2819,6 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   ADD_PLANKTON_FACTORY(map, "core:UnboundModule", unbound_module);
   ADD_PLANKTON_FACTORY(map, "core:UnboundModuleFragment", unbound_module_fragment);
   ADD_PLANKTON_FACTORY(map, "core:Key", key);
-  ADD_PLANKTON_FACTORY(map, "options:Options", options);
   return success();
 }
 

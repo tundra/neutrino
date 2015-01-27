@@ -845,65 +845,6 @@ TEST(value, paths) {
   DISPOSE_RUNTIME();
 }
 
-value_t new_flag_element(runtime_t *runtime, value_t key, value_t value) {
-  value_t payload = new_heap_id_hash_map(runtime, 16);
-  set_id_hash_map_at(runtime, payload, RSTR(runtime, key), key);
-  set_id_hash_map_at(runtime, payload, RSTR(runtime, value), value);
-  return new_heap_unknown(runtime,
-      RSTR(runtime, options_FlagElement),
-      payload);
-}
-
-value_t new_options(runtime_t *runtime, size_t count, value_t* elements) {
-  value_t array = new_heap_array(runtime, count);
-  for (size_t i = 0; i < count; i++)
-    set_array_at(array, i, elements[i]);
-  return new_heap_options(runtime, array);
-}
-
-TEST(value, options) {
-  CREATE_RUNTIME();
-  CREATE_TEST_ARENA();
-
-  value_t x = variant_to_value(runtime, vStr("x"));
-  value_t y = variant_to_value(runtime, vStr("y"));
-  value_t z = variant_to_value(runtime, vStr("z"));
-
-  value_t empty = new_options(runtime, 0, NULL);
-  ASSERT_VAREQ(vInt(9), get_options_flag_value(runtime, empty, x, new_integer(9)));
-  ASSERT_VAREQ(vInt(10), get_options_flag_value(runtime, empty, y, new_integer(10)));
-  ASSERT_VAREQ(vInt(11), get_options_flag_value(runtime, empty, z, new_integer(11)));
-
-  value_t has_x_elms[1] = {new_flag_element(runtime, x, new_integer(60))};
-  value_t has_x = new_options(runtime, 1, has_x_elms);
-  ASSERT_VAREQ(vInt(60), get_options_flag_value(runtime, has_x, x, new_integer(12)));
-  ASSERT_VAREQ(vInt(13), get_options_flag_value(runtime, has_x, y, new_integer(13)));
-  ASSERT_VAREQ(vInt(14), get_options_flag_value(runtime, has_x, z, new_integer(14)));
-
-  value_t has_xy_elms[2] = {
-    new_flag_element(runtime, x, new_integer(61)),
-    new_flag_element(runtime, y, new_integer(62))
-  };
-  value_t has_xy = new_options(runtime, 2, has_xy_elms);
-  ASSERT_VAREQ(vInt(61), get_options_flag_value(runtime, has_xy, x, new_integer(15)));
-  ASSERT_VAREQ(vInt(62), get_options_flag_value(runtime, has_xy, y, new_integer(16)));
-  ASSERT_VAREQ(vInt(17), get_options_flag_value(runtime, has_xy, z, new_integer(17)));
-
-  value_t has_xyz_elms[3] = {
-    new_flag_element(runtime, x, new_integer(63)),
-    new_flag_element(runtime, y, new_integer(64)),
-    new_flag_element(runtime, z, new_integer(65))
-  };
-  value_t has_xyz = new_options(runtime, 3, has_xyz_elms);
-  ASSERT_VAREQ(vInt(63), get_options_flag_value(runtime, has_xyz, x, new_integer(18)));
-  ASSERT_VAREQ(vInt(64), get_options_flag_value(runtime, has_xyz, y, new_integer(19)));
-  ASSERT_VAREQ(vInt(65), get_options_flag_value(runtime, has_xyz, z, new_integer(20)));
-
-  DISPOSE_TEST_ARENA();
-  DISPOSE_RUNTIME();
-}
-
-
 TEST(value, reference) {
   CREATE_RUNTIME();
 

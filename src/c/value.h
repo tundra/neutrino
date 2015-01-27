@@ -440,7 +440,6 @@ static inline value_t chase_moved_object(value_t raw) {
   F(NamespaceDeclarationAst, namespace_declaration_ast, X, _, (_, _, X, _, _, _, _, _), 44)\
   F(NamespaceVariableAst,    namespace_variable_ast,    X, X, (_, _, X, _, _, X, _, _), 42)\
   F(Operation,               operation,                 X, X, (_, X, X, _, _, _, _, _), 46)\
-  F(Options,                 options,                   _, _, (_, _, X, _, _, _, _, _), 14)\
   F(Parameter,               parameter,                 X, _, (_, _, _, _, _, _, _, _), 51)\
   F(ParameterAst,            parameter_ast,             X, X, (_, _, X, _, _, _, _, _),  8)\
   F(Path,                    path,                      X, X, (X, X, X, _, _, _, _, _), 36)\
@@ -448,7 +447,7 @@ static inline value_t chase_moved_object(value_t raw) {
   F(ProgramAst,              program_ast,               X, _, (_, _, X, _, _, _, _, _), 17)\
   F(Promise,                 promise,                   _, X, (_, _, _, _, _, _, _, _), 78)\
   F(Reference,               reference,                 X, _, (_, _, _, _, _, _, _, _), 68)\
-  F(ReifiedArguments,        reified_arguments,         _, X, (_, _, _, _, _, _, _, _), 90)\
+  F(ReifiedArguments,        reified_arguments,         _, X, (_, _, _, _, _, _, _, _), 14)\
   F(Roots,                   roots,                     X, _, (_, _, _, _, _, _, X, _),  2)\
   F(SequenceAst,             sequence_ast,              X, X, (_, _, X, _, _, X, _, _), 35)\
   F(SignalAst,               signal_ast,                X, X, (_, _, X, _, _, X, _, _), 48)\
@@ -475,7 +474,7 @@ static inline value_t chase_moved_object(value_t raw) {
 // family enum values are not the raw ordinals but the ordinals shifted left by
 // the tag size so that they're tagged as integers. Those values are sometimes
 // stored as uint16s so the ordinals are allowed to take up to 14 bits.
-static const int kNextFamilyOrdinal = 91;
+static const int kNextFamilyOrdinal = 90;
 
 // Enumerates all the object families.
 #define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \
@@ -1793,22 +1792,6 @@ ACCESSORS_DECL(unknown, header);
 
 // The payload of this object of unknown type.
 ACCESSORS_DECL(unknown, payload);
-
-
-// --- O p t i o n s ---
-
-// This should so be an instance-type object defined in a library. But alas it's
-// currently part of the implementation of libraries so maybe later.
-static const size_t kOptionsSize = HEAP_OBJECT_SIZE(1);
-static const size_t kOptionsElementsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-
-// The elements array of this set of options.
-ACCESSORS_DECL(options, elements);
-
-// Returns the value of the flag with the given key in the given options set.
-// If the key is not available the default is returned.
-value_t get_options_flag_value(runtime_t *runtime, value_t self, value_t key,
-    value_t defawlt);
 
 
 // --- D e c i m a l   f r a c t i o n ---

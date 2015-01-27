@@ -576,14 +576,15 @@ value_t module_loader_validate(value_t self) {
 // Reads a library from the given library path and adds the modules to this
 // loaders set of available modules.
 static value_t module_loader_read_library(runtime_t *runtime, value_t self,
-    value_t library_path) {
+    pton_variant_t library_path) {
   // Read the library from the file.
-  utf8_t library_path_str = get_utf8_contents(library_path);
+  utf8_t library_path_str = new_c_string(pton_string_chars(library_path));
+  TRY_DEF(library_path_val, new_heap_utf8(runtime, library_path_str));
   TRY_DEF(data, read_file_to_blob(runtime, library_path_str));
   TRY_DEF(library, runtime_plankton_deserialize(runtime, data));
   if (!in_family(ofLibrary, library))
     return new_invalid_input_condition();
-  set_library_display_name(library, library_path);
+  set_library_display_name(library, library_path_val);
   // Load all the modules from the library into this module loader.
   id_hash_map_iter_t iter;
   id_hash_map_iter_init(&iter, get_library_modules(library));
@@ -597,12 +598,10 @@ static value_t module_loader_read_library(runtime_t *runtime, value_t self,
 }
 
 value_t module_loader_process_options(runtime_t *runtime, value_t self,
-    value_t options) {
-  CHECK_FAMILY(ofIdHashMap, options);
-  value_t libraries = get_id_hash_map_at_with_default(options, RSTR(runtime, libraries),
-      ROOT(runtime, empty_array));
-  for (size_t i = 0; i < get_array_length(libraries); i++) {
-    value_t library_path = get_array_at(libraries, i);
+    pton_variant_t options) {
+  pton_variant_t libraries = pton_map_get(options, pton_c_str("libraries"));
+  for (size_t i = 0; i < pton_array_length(libraries); i++) {
+    pton_variant_t library_path = pton_array_get(libraries, i);
     TRY(module_loader_read_library(runtime, self, library_path));
   }
   return success();

@@ -503,13 +503,6 @@ value_t new_heap_unknown(runtime_t *runtime, value_t header, value_t payload) {
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_options(runtime_t *runtime, value_t elements) {
-  size_t size = kOptionsSize;
-  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, options_species)));
-  set_options_elements(result, elements);
-  return post_create_sanity_check(result, size);
-}
-
 value_t new_heap_empty_module_loader(runtime_t *runtime) {
   TRY_DEF(modules, new_heap_id_hash_map(runtime, 16));
   size_t size = kModuleLoaderSize;

@@ -2,7 +2,6 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 import os.path
-import plankton.options
 
 file_names = [
   "assert_equals_failure",
@@ -36,14 +35,10 @@ for file_base in file_names:
   # Run the test
   test_case = test.get_exec_test_case(file_name)
   suite.add_member(test_case)
-  opts = plankton.options.Options()
-  opts.add_flag("module_loader", {
-    "libraries": [library.get_output_path()]
-  })
+  opts = "--module_loader { --libraries [ \"%s\" ] }" % library.get_output_path()
   test_case.set_runner(tester)
   test_case.set_arguments(output_file.get_input_file().get_path(),
-    runner.get_output_path(), program.get_output_path(), "--main-options",
-    opts.base64_encode())
+    runner.get_output_path(), program.get_output_path(), opts)
   test_case.add_dependency(program)
   test_case.add_dependency(library)
   test_case.add_dependency(output_file)

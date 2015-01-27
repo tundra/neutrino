@@ -11,6 +11,7 @@ import sys
 def main():
   # Run the command, building the output.
   command = sys.argv[2:]
+  print " ".join(command)
   process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   (stdout, stderr) = process.communicate()
   output_found = stdout + stderr

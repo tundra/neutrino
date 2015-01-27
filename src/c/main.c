@@ -4,6 +4,7 @@
 #include "alloc.h"
 #include "freeze.h"
 #include "interp.h"
+#include "plankton.h"
 #include "runtime-inl.h"
 #include "safe-inl.h"
 #include "serialize.h"
@@ -108,90 +109,46 @@ static void main_allocator_data_dispose(main_allocator_data_t *data) {
 }
 
 // Holds all the options understood by the main executable.
-// TODO: accept options encoded as plankton instead of this.
 typedef struct {
-  // Whether or not to print the output values.
-  bool print_value;
-  // Extra arguments to main.
-  const char *main_options;
   // The config to store config-related flags directly into.
   runtime_config_t *config;
-  // The number of positional arguments.
-  size_t argc;
-  // The values of the positional arguments.
-  const char **argv;
-  // The memory block that holds the args.
-  memory_block_t argv_memory;
+  // The reader that owns the parsed data.
+  pton_command_line_reader_t *owner;
+  // Parsed command-line.
+  pton_command_line_t *cmdline;
 } main_options_t;
 
 // Initializes a options struct.
 static void main_options_init(main_options_t *flags, runtime_config_t *config) {
-  flags->print_value = false;
-  flags->main_options = NULL;
   flags->config = config;
-  flags->argc = 0;
-  flags->argv = NULL;
-  flags->argv_memory = memory_block_empty();
 }
 
 // Free any memory allocated for the options struct.
 static void main_options_dispose(main_options_t *flags) {
-  allocator_default_free(flags->argv_memory);
-  flags->argv = NULL;
-  flags->main_options = NULL;
-}
-
-// Returns true iff the given haystack starts with the given prefix.
-static bool c_str_starts_with(const char *haystack, const char *prefix) {
-  return strstr(haystack, prefix) == haystack;
-}
-
-// Returns true iff the two given c strings are equal.
-static bool c_str_equals(const char *a, const char *b) {
-  return strcmp(a, b) == 0;
-}
-
-// Parses the given string as a base-10 long and returns the value. If parsing
-// fails issues an error and aborts execution.
-static size_t c_str_as_long_or_die(const char *str) {
-  char *end = NULL;
-  size_t value = strtol(str, &end, 10);
-  if (*end != '\0') {
-    ERROR("Couldn't parse '%s' as a number", str);
-    UNREACHABLE("c str as long parse error");
-  }
-  return value;
+  pton_dispose_command_line_reader(flags->owner);
 }
 
 // Parse a set of command-line arguments.
-static void parse_options(size_t argc, char **argv, main_options_t *flags_out) {
-  // Allocate an argv array that is definitely large enough to store all the
-  // positional arguments.
-  flags_out->argv_memory = allocator_default_malloc(argc * sizeof(char*));
-  flags_out->argv = (const char **) flags_out->argv_memory.memory;
-  // Scan through the arguments and parse them as flags or arguments.
-  for (size_t i = 1; i < argc;) {
-    const char *arg = argv[i++];
-    if (c_str_starts_with(arg, "--")) {
-      if (c_str_equals(arg, "--print-value")) {
-        flags_out->print_value = true;
-      } else if (c_str_equals(arg, "--garbage-collect-fuzz-frequency")) {
-        CHECK_REL("missing flag argument", i, <, argc);
-        flags_out->config->gc_fuzz_freq = c_str_as_long_or_die(argv[i++]);
-      } else if (c_str_equals(arg, "--garbage-collect-fuzz-seed")) {
-        CHECK_REL("missing flag argument", i, <, argc);
-        flags_out->config->gc_fuzz_seed = c_str_as_long_or_die(argv[i++]);
-      } else if (c_str_equals(arg, "--main-options")) {
-        CHECK_REL("missing flag argument", i, <, argc);
-        flags_out->main_options = argv[i++];
-      } else {
-        ERROR("Unknown flags '%s'", arg);
-        UNREACHABLE("Flag parsing failed");
-      }
-    } else {
-      flags_out->argv[flags_out->argc++] = arg;
-    }
+static void parse_options(size_t argc, const char **argv, main_options_t *flags_out) {
+  pton_command_line_reader_t *reader = pton_new_command_line_reader();
+  flags_out->owner = reader;
+  pton_command_line_t *cmdline = pton_command_line_reader_parse(reader, argc, argv);
+  flags_out->cmdline = cmdline;
+  if (!pton_command_line_is_valid(cmdline)) {
+    pton_syntax_error_t *error = pton_command_line_error(cmdline);
+    ERROR("Error parsing command line options at char '%c'",
+        pton_syntax_error_offender(error));
+    return;
   }
+
+  flags_out->config->gc_fuzz_freq = pton_int64_value(
+      pton_command_line_option(cmdline,
+          pton_c_str("--garbage-collect-fuzz-frequency"),
+          pton_integer(0)));
+  flags_out->config->gc_fuzz_seed = pton_int64_value(
+      pton_command_line_option(cmdline,
+          pton_c_str("--garbage-collect-fuzz-see"),
+          pton_integer(0)));
 }
 
 // Parses the main options as plankton and returns the resulting object.
@@ -202,11 +159,11 @@ static value_t parse_main_options(runtime_t *runtime, const char *value) {
 }
 
 // Constructs a module loader based on the given command-line options.
-static value_t build_module_loader(runtime_t *runtime, value_t options) {
+static value_t build_module_loader(runtime_t *runtime, pton_command_line_t *cmdline) {
   value_t loader = deref(runtime->module_loader);
-  value_t module_loader_options = get_options_flag_value(runtime, options,
-      RSTR(runtime, module_loader), null());
-  if (!is_null(module_loader_options))
+  pton_variant_t module_loader_options = pton_command_line_option(cmdline,
+      pton_c_str("module_loader"), pton_null());
+  if (!pton_is_null(module_loader_options))
     TRY(module_loader_process_options(runtime, loader, module_loader_options));
   return loader;
 }
@@ -239,7 +196,7 @@ static void runtime_config_init_main_defaults(runtime_config_t *config) {
 }
 
 // Create a vm and run the program.
-static value_t neutrino_main(int argc, char **argv) {
+static value_t neutrino_main(int argc, const char **argv) {
   runtime_config_t config;
   runtime_config_init_defaults(&config);
   runtime_config_init_main_defaults(&config);
@@ -257,10 +214,10 @@ static value_t neutrino_main(int argc, char **argv) {
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
     value_t result = whatever();
-    E_TRY_DEF(main_options, parse_main_options(runtime, options.main_options));
-    E_TRY(build_module_loader(runtime, main_options));
-    for (size_t i = 0; i < options.argc; i++) {
-      const char *filename = options.argv[i];
+    E_TRY(build_module_loader(runtime, options.cmdline));
+    size_t argc = pton_command_line_argument_count(options.cmdline);
+    for (size_t i = 1; i < argc; i++) {
+      const char *filename = pton_string_chars(pton_command_line_argument(options.cmdline, i));
       value_t input;
       if (strcmp("-", filename) == 0) {
         io_stream_t *stdin_handle = file_system_stdin(runtime->file_system);
@@ -271,8 +228,6 @@ static value_t neutrino_main(int argc, char **argv) {
       }
       E_TRY_DEF(program, safe_runtime_plankton_deserialize(runtime, protect(pool, input)));
       result = safe_execute_syntax(runtime, protect(pool, program));
-      if (options.print_value)
-        print_ln("%v", result);
     }
     E_RETURN(result);
   E_FINALLY();
@@ -283,7 +238,7 @@ static value_t neutrino_main(int argc, char **argv) {
   E_END_TRY_FINALLY();
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, const char *argv[]) {
   install_crash_handler();
   value_t result = neutrino_main(argc, argv);
   if (is_condition(result)) {

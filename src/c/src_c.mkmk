@@ -54,4 +54,5 @@ ctrino.add_object(library)
 for ctrino_file_name in ctrino_file_names:
   ctrino_file = c.get_source_file(ctrino_file_name)
   ctrino_file.add_include(get_dep('tclib').get_child('src', 'c'))
+  ctrino_file.add_include(get_dep('plankton').get_child('src', 'c'))
   ctrino.add_object(ctrino_file.get_object())
