@@ -1,6 +1,3 @@
 #!/bin/sh
 
-# Install included dependencies
-./tools/install-deps.sh
-
 ./tools/init.sh "$@"

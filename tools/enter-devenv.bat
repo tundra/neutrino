@@ -15,7 +15,7 @@ if ERRORLEVEL 1 (
   REM There is no mkmk installed so try to install it.
   if not exist mkmk (
     REM We have to check out the mkmk github project.
-    git clone https://github.com/goto-10/mkmk.git mkmk
+    git clone https://github.com/tundra/mkmk.git mkmk
   )
   REM Run the mkmk installer (develop really).
   cd mkmk

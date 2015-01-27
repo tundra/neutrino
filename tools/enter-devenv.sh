@@ -23,7 +23,7 @@ if ! which mkmk > /dev/null; then
   fi
   if [ ! -d mkmk ]; then
     echo "Trying to check out mkmk from github."
-    git clone https://github.com/goto-10/mkmk.git mkmk
+    git clone https://github.com/tundra/mkmk.git mkmk
   fi
   echo "Trying to install python package."
   . devenv/bin/activate
