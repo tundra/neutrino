@@ -7,11 +7,11 @@ file_names = [
 ]
 
 all = get_group("suite")
-path = get_root().get_child("src", "python")
 
 for file_name in file_names:
   source_file = py.get_source_file(file_name)
-  source_file.add_pythonpath(path)
+  source_file.add_pythonpath(get_root().get_child("src", "python"))
+  source_file.add_pythonpath(get_root().get_child("deps", "plankton", "src", "python"))
   test_case = test.get_exec_test_case(file_name)
   test_case.set_runner(source_file)
   all.add_member(test_case)
