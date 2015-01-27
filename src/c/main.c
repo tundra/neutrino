@@ -121,11 +121,15 @@ typedef struct {
 // Initializes a options struct.
 static void main_options_init(main_options_t *flags, runtime_config_t *config) {
   flags->config = config;
+  flags->owner = NULL;
+  flags->cmdline = NULL;
 }
 
 // Free any memory allocated for the options struct.
 static void main_options_dispose(main_options_t *flags) {
   pton_dispose_command_line_reader(flags->owner);
+  flags->owner = NULL;
+  flags->cmdline = NULL;
 }
 
 // Parse a set of command-line arguments.
@@ -143,19 +147,12 @@ static void parse_options(size_t argc, const char **argv, main_options_t *flags_
 
   flags_out->config->gc_fuzz_freq = pton_int64_value(
       pton_command_line_option(cmdline,
-          pton_c_str("--garbage-collect-fuzz-frequency"),
+          pton_c_str("garbage-collect-fuzz-frequency"),
           pton_integer(0)));
   flags_out->config->gc_fuzz_seed = pton_int64_value(
       pton_command_line_option(cmdline,
-          pton_c_str("--garbage-collect-fuzz-see"),
+          pton_c_str("garbage-collect-fuzz-seed"),
           pton_integer(0)));
-}
-
-// Parses the main options as plankton and returns the resulting object.
-static value_t parse_main_options(runtime_t *runtime, const char *value) {
-  TRY_DEF(blob, base64_c_str_to_blob(runtime, value));
-  CHECK_FAMILY(ofBlob, blob);
-  return runtime_plankton_deserialize(runtime, blob);
 }
 
 // Constructs a module loader based on the given command-line options.
