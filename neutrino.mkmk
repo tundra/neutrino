@@ -4,7 +4,6 @@
 # The root build file.
 
 # Load the source build files.
-include_dep('tclib', 'tclib.mkmk')
 include_dep('plankton', 'plankton.mkmk')
 include('src', 'src.mkmk')
 include('tests', 'tests.mkmk')

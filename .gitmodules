@@ -1,6 +1,3 @@
 [submodule "deps/plankton"]
 	path = deps/plankton
 	url = https://github.com/tundra/plankton.git
-[submodule "deps/tclib"]
-	path = deps/tclib
-	url = https://github.com/tundra/tclib.git
