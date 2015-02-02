@@ -155,14 +155,37 @@ static void parse_options(size_t argc, const char **argv, main_options_t *flags_
           pton_integer(0)));
 }
 
+// Reads a library from the given library path and adds the modules to the
+// runtime's module loader.
+static value_t load_library_from_file(runtime_t *runtime, value_t self,
+    pton_variant_t library_path) {
+  // Read the library from the file.
+  utf8_t library_path_str = new_c_string(pton_string_chars(library_path));
+  TRY_DEF(library_path_val, new_heap_utf8(runtime, library_path_str));
+  io_stream_t *stream = file_system_open(runtime->file_system,
+      library_path_str.chars, OPEN_FILE_MODE_READ);
+  if (stream == NULL)
+    return new_system_error_condition(seFileNotFound);
+  E_BEGIN_TRY_FINALLY();
+    E_RETURN(runtime_load_library_from_stream(runtime, stream, library_path_val));
+  E_FINALLY();
+    io_stream_close(stream);
+  E_END_TRY_FINALLY();
+}
+
 // Constructs a module loader based on the given command-line options.
 static value_t build_module_loader(runtime_t *runtime, pton_command_line_t *cmdline) {
-  value_t loader = deref(runtime->module_loader);
-  pton_variant_t module_loader_options = pton_command_line_option(cmdline,
+  pton_variant_t options = pton_command_line_option(cmdline,
       pton_c_str("module_loader"), pton_null());
-  if (!pton_is_null(module_loader_options))
-    TRY(module_loader_process_options(runtime, loader, module_loader_options));
-  return loader;
+  if (pton_is_null(options))
+    return success();
+  value_t loader = deref(runtime->module_loader);
+  pton_variant_t libraries = pton_map_get(options, pton_c_str("libraries"));
+  for (size_t i = 0; i < pton_array_length(libraries); i++) {
+    pton_variant_t library_path = pton_array_get(libraries, i);
+    TRY(load_library_from_file(runtime, loader, library_path));
+  }
+  return success();
 }
 
 static value_t test_echo(builtin_arguments_t *args) {
@@ -216,13 +239,19 @@ static value_t neutrino_main(int argc, const char **argv) {
     for (size_t i = 1; i < argc; i++) {
       const char *filename = pton_string_chars(pton_command_line_argument(options.cmdline, i));
       value_t input;
-      if (strcmp("-", filename) == 0) {
-        io_stream_t *stdin_handle = file_system_stdin(runtime->file_system);
-        E_TRY_SET(input, read_handle_to_blob(runtime, stdin_handle));
+      bool is_stdout = (strcmp("-", filename) == 0);
+      io_stream_t *stream = NULL;
+      if (is_stdout) {
+        stream = file_system_stdin(runtime->file_system);
       } else {
-        utf8_t filename_str = new_c_string(filename);
-        E_TRY_SET(input, read_file_to_blob(runtime, filename_str));
+        stream = file_system_open(runtime->file_system, filename,
+            OPEN_FILE_MODE_READ);
+        if (stream == NULL)
+          return new_system_error_condition(seFileNotFound);
       }
+      E_TRY_SET(input, read_stream_to_blob(runtime, stream));
+      if (!is_stdout)
+        io_stream_close(stream);
       E_TRY_DEF(program, safe_runtime_plankton_deserialize(runtime, protect(pool, input)));
       result = safe_execute_syntax(runtime, protect(pool, program));
     }

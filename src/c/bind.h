@@ -51,10 +51,6 @@ static const size_t kModuleLoaderModulesOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 // The path that identifies this module.
 ACCESSORS_DECL(module_loader, modules);
 
-// Configure this loader according to the given options object.
-value_t module_loader_process_options(runtime_t *runtime, value_t self,
-    pton_variant_t options);
-
 // Looks up a module by path, returning an unbound module. If the loader doesn't
 // know any modules with the given path NotFound is returned.
 value_t module_loader_lookup_module(value_t self, value_t path);

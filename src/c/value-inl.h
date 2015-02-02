@@ -372,5 +372,4 @@ SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
   SWALLOW_SEMI(upm)
 
 
-
 #endif // _VALUE_INL

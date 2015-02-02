@@ -327,6 +327,11 @@ static inline value_t get_runtime_root_at(runtime_t *runtime, root_key_t key) {
 // plugin list used to create the given runtime.
 value_t get_runtime_plugin_factory_at(runtime_t *runtime, size_t index);
 
+// Reader a library from the given data source and installs the modules in this
+// runtime's module loader.
+value_t runtime_load_library_from_stream(runtime_t *runtime, io_stream_t *src,
+    value_t display_name);
+
 // Accesses a named root directly in the given roots object. Usually you'll want
 // to use ROOT instead.
 #define RAW_ROOT(roots, name) (*access_roots_entry_at((roots), rk_##name))

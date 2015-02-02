@@ -7,6 +7,8 @@
 #ifndef _TRY_INL
 #define _TRY_INL
 
+#include "value-inl.h"
+
 
 // --- P l a i n ---
 

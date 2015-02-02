@@ -891,3 +891,23 @@ value_t runtime_get_builtin_implementation(runtime_t *runtime, value_t name) {
 value_t get_runtime_plugin_factory_at(runtime_t *runtime, size_t index) {
   return get_array_at(ROOT(runtime, plugin_factories), index);
 }
+
+value_t runtime_load_library_from_stream(runtime_t *runtime, io_stream_t *stream,
+    value_t display_name) {
+  TRY_DEF(data, read_stream_to_blob(runtime, stream));
+  TRY_DEF(library, runtime_plankton_deserialize(runtime, data));
+  if (!in_family(ofLibrary, library))
+    return new_invalid_input_condition();
+  set_library_display_name(library, display_name);
+  // Load all the modules from the library into this module loader.
+  value_t loader = deref(runtime->module_loader);
+  id_hash_map_iter_t iter;
+  id_hash_map_iter_init(&iter, get_library_modules(library));
+  while (id_hash_map_iter_advance(&iter)) {
+    value_t key;
+    value_t value;
+    id_hash_map_iter_get_current(&iter, &key, &value);
+    TRY(set_id_hash_map_at(runtime, get_module_loader_modules(loader), key, value));
+  }
+  return success();
+}

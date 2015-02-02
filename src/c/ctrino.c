@@ -354,7 +354,9 @@ value_t c_object_validate(value_t value) {
 }
 
 void c_object_print_on(value_t value, print_on_context_t *context) {
-  string_buffer_printf(context->buf, "c_object");
+  string_buffer_printf(context->buf, "#<c_object ~%w: ", value);
+  value_print_inner_on(get_c_object_tag(value), context, -1);
+  string_buffer_printf(context->buf, ">");
 }
 
 void get_c_object_layout(value_t self, heap_object_layout_t *layout) {

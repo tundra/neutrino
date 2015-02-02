@@ -573,17 +573,17 @@ void blob_print_on(value_t value, print_on_context_t *context) {
   string_buffer_printf(context->buf, "]>");
 }
 
-value_t read_handle_to_blob(runtime_t *runtime, io_stream_t *handle) {
+value_t read_stream_to_blob(runtime_t *runtime, io_stream_t *stream) {
   // Read the complete file into a byte buffer.
   byte_buffer_t buffer;
   byte_buffer_init(&buffer);
   while (true) {
     static const size_t kBufSize = 1024;
     byte_t raw_buffer[kBufSize];
-    size_t was_read = io_stream_read_bytes(handle, raw_buffer, kBufSize);
+    size_t was_read = io_stream_read_bytes(stream, raw_buffer, kBufSize);
     for (size_t i = 0; i < was_read; i++)
       byte_buffer_append(&buffer, raw_buffer[i]);
-    if (io_stream_at_eof(handle))
+    if (io_stream_at_eof(stream))
       break;
   }
   blob_t data_blob = byte_buffer_flush(&buffer);
@@ -591,18 +591,6 @@ value_t read_handle_to_blob(runtime_t *runtime, io_stream_t *handle) {
   value_t result = new_heap_blob_with_data(runtime, data_blob);
   byte_buffer_dispose(&buffer);
   return result;
-}
-
-value_t read_file_to_blob(runtime_t *runtime, utf8_t filename) {
-  io_stream_t *handle = file_system_open(runtime->file_system, filename.chars,
-      OPEN_FILE_MODE_READ);
-  if (handle == NULL)
-    return new_system_error_condition(seFileNotFound);
-  E_BEGIN_TRY_FINALLY();
-    E_RETURN(read_handle_to_blob(runtime, handle));
-  E_FINALLY();
-    io_stream_close(handle);
-  E_END_TRY_FINALLY();
 }
 
 
