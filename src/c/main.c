@@ -163,7 +163,7 @@ static value_t load_library_from_file(runtime_t *runtime, value_t self,
   utf8_t library_path_str = new_c_string(pton_string_chars(library_path));
   TRY_DEF(library_path_val, new_heap_utf8(runtime, library_path_str));
   io_stream_t *stream = file_system_open(runtime->file_system,
-      library_path_str.chars, OPEN_FILE_MODE_READ);
+      library_path_str, OPEN_FILE_MODE_READ);
   if (stream == NULL)
     return new_system_error_condition(seFileNotFound);
   E_BEGIN_TRY_FINALLY();
@@ -237,9 +237,11 @@ static value_t neutrino_main(int argc, const char **argv) {
     E_TRY(build_module_loader(runtime, options.cmdline));
     size_t argc = pton_command_line_argument_count(options.cmdline);
     for (size_t i = 1; i < argc; i++) {
-      const char *filename = pton_string_chars(pton_command_line_argument(options.cmdline, i));
+      pton_variant_t filename_var = pton_command_line_argument(options.cmdline, i);
+      utf8_t filename = new_string(pton_string_chars(filename_var),
+          pton_string_length(filename_var));
       value_t input;
-      bool is_stdout = (strcmp("-", filename) == 0);
+      bool is_stdout = string_equals_cstr(filename, "-");
       io_stream_t *stream = NULL;
       if (is_stdout) {
         stream = file_system_stdin(runtime->file_system);
