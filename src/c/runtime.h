@@ -332,6 +332,9 @@ value_t get_runtime_plugin_factory_at(runtime_t *runtime, size_t index);
 value_t runtime_load_library_from_stream(runtime_t *runtime, in_stream_t *src,
     value_t display_name);
 
+// Executes the given program syntax tree within the given runtime.
+value_t safe_runtime_execute_syntax(runtime_t *runtime, safe_value_t s_program);
+
 // Accesses a named root directly in the given roots object. Usually you'll want
 // to use ROOT instead.
 #define RAW_ROOT(roots, name) (*access_roots_entry_at((roots), rk_##name))
