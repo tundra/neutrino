@@ -329,7 +329,7 @@ value_t get_runtime_plugin_factory_at(runtime_t *runtime, size_t index);
 
 // Reader a library from the given data source and installs the modules in this
 // runtime's module loader.
-value_t runtime_load_library_from_stream(runtime_t *runtime, io_stream_t *src,
+value_t runtime_load_library_from_stream(runtime_t *runtime, in_stream_t *src,
     value_t display_name);
 
 // Accesses a named root directly in the given roots object. Usually you'll want

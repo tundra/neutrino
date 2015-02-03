@@ -892,7 +892,7 @@ value_t get_runtime_plugin_factory_at(runtime_t *runtime, size_t index) {
   return get_array_at(ROOT(runtime, plugin_factories), index);
 }
 
-value_t runtime_load_library_from_stream(runtime_t *runtime, io_stream_t *stream,
+value_t runtime_load_library_from_stream(runtime_t *runtime, in_stream_t *stream,
     value_t display_name) {
   TRY_DEF(data, read_stream_to_blob(runtime, stream));
   TRY_DEF(library, runtime_plankton_deserialize(runtime, data));

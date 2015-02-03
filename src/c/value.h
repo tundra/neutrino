@@ -1104,7 +1104,7 @@ INTEGER_ACCESSORS_DECL(blob, length);
 blob_t get_blob_data(value_t value);
 
 // Reads the full contents of an io stream into a blob.
-value_t read_stream_to_blob(runtime_t *runtime, io_stream_t *stream);
+value_t read_stream_to_blob(runtime_t *runtime, in_stream_t *stream);
 
 
 // --- V o i d   P ---

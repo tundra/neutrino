@@ -162,14 +162,14 @@ static value_t load_library_from_file(runtime_t *runtime, value_t self,
   // Read the library from the file.
   utf8_t library_path_str = new_c_string(pton_string_chars(library_path));
   TRY_DEF(library_path_val, new_heap_utf8(runtime, library_path_str));
-  io_stream_t *stream = file_system_open(runtime->file_system,
+  file_streams_t streams = file_system_open(runtime->file_system,
       library_path_str, OPEN_FILE_MODE_READ);
-  if (stream == NULL)
+  if (!streams.is_open)
     return new_system_error_condition(seFileNotFound);
   E_BEGIN_TRY_FINALLY();
-    E_RETURN(runtime_load_library_from_stream(runtime, stream, library_path_val));
+    E_RETURN(runtime_load_library_from_stream(runtime, streams.in, library_path_val));
   E_FINALLY();
-    io_stream_close(stream);
+    file_streams_close(&streams);
   E_END_TRY_FINALLY();
 }
 
@@ -241,19 +241,17 @@ static value_t neutrino_main(int argc, const char **argv) {
       utf8_t filename = new_string(pton_string_chars(filename_var),
           pton_string_length(filename_var));
       value_t input;
-      bool is_stdout = string_equals_cstr(filename, "-");
-      io_stream_t *stream = NULL;
-      if (is_stdout) {
-        stream = file_system_stdin(runtime->file_system);
+      if (string_equals_cstr(filename, "-")) {
+        in_stream_t *stdin = file_system_stdin(runtime->file_system);
+        E_TRY_SET(input, read_stream_to_blob(runtime, stdin));
       } else {
-        stream = file_system_open(runtime->file_system, filename,
+        file_streams_t streams = file_system_open(runtime->file_system, filename,
             OPEN_FILE_MODE_READ);
-        if (stream == NULL)
+        if (!streams.is_open)
           return new_system_error_condition(seFileNotFound);
+        E_TRY_SET(input, read_stream_to_blob(runtime, streams.in));
+        file_streams_close(&streams);
       }
-      E_TRY_SET(input, read_stream_to_blob(runtime, stream));
-      if (!is_stdout)
-        io_stream_close(stream);
       E_TRY_DEF(program, safe_runtime_plankton_deserialize(runtime, protect(pool, input)));
       result = safe_execute_syntax(runtime, protect(pool, program));
     }

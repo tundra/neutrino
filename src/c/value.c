@@ -573,17 +573,17 @@ void blob_print_on(value_t value, print_on_context_t *context) {
   string_buffer_printf(context->buf, "]>");
 }
 
-value_t read_stream_to_blob(runtime_t *runtime, io_stream_t *stream) {
+value_t read_stream_to_blob(runtime_t *runtime, in_stream_t *stream) {
   // Read the complete file into a byte buffer.
   byte_buffer_t buffer;
   byte_buffer_init(&buffer);
   while (true) {
     static const size_t kBufSize = 1024;
     byte_t raw_buffer[kBufSize];
-    size_t was_read = io_stream_read_bytes(stream, raw_buffer, kBufSize);
+    size_t was_read = in_stream_read_bytes(stream, raw_buffer, kBufSize);
     for (size_t i = 0; i < was_read; i++)
       byte_buffer_append(&buffer, raw_buffer[i]);
-    if (io_stream_at_eof(stream))
+    if (in_stream_at_eof(stream))
       break;
   }
   blob_t data_blob = byte_buffer_flush(&buffer);
