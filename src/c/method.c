@@ -456,6 +456,18 @@ size_t get_call_tags_entry_count(value_t self) {
   return get_pair_array_length(entries);
 }
 
+void check_call_tags_entries_unique(value_t tags) {
+  if (get_pair_array_length(tags) == 0)
+    return;
+  value_t last_tag = get_pair_array_first_at(tags, 0);
+  for (size_t i = 1; i < get_pair_array_length(tags); i++) {
+    value_t next_tag = get_pair_array_first_at(tags, i);
+    if (value_identity_compare(last_tag, next_tag))
+      FATAL("Tag %v occurs twice in %v", last_tag, tags);
+    last_tag = next_tag;
+  }
+}
+
 value_t build_call_tags_entries(runtime_t *runtime, value_t tags) {
   size_t tag_count = get_array_length(tags);
   TRY_DEF(result, new_heap_pair_array(runtime, tag_count));
@@ -468,6 +480,7 @@ value_t build_call_tags_entries(runtime_t *runtime, value_t tags) {
     set_pair_array_second_at(result, i, new_integer(offset));
   }
   TRY(co_sort_pair_array(result));
+  IF_EXPENSIVE_CHECKS_ENABLED(check_call_tags_entries_unique(result));
   return result;
 }
 

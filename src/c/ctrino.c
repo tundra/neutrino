@@ -116,7 +116,7 @@ static value_t ctrino_print_ln(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t value = get_builtin_argument(args, 0);
   CHECK_C_OBJECT_TAG(btCtrino, self);
-  print_ln("%9v", value);
+  print_ln(NULL, "%9v", value);
   return value;
 }
 

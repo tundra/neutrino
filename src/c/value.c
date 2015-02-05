@@ -126,7 +126,7 @@ static value_t integer_negate(builtin_arguments_t *args) {
 
 static value_t integer_print(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  print_ln("%v", self);
+  print_ln(NULL, "%v", self);
   return nothing();
 }
 
@@ -2813,7 +2813,9 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
 
 // --- D e b u g ---
 
-void print_ln(const char *fmt, ...) {
+void print_ln(out_stream_t *out, const char *fmt, ...) {
+  if (out == NULL)
+    out = file_system_stdout(file_system_native());
   // Write the value on a string buffer.
   string_buffer_t buf;
   string_buffer_init(&buf);
@@ -2823,8 +2825,8 @@ void print_ln(const char *fmt, ...) {
   va_end(argp);
   // Print the result to stdout.
   utf8_t str = string_buffer_flush(&buf);
-  printf("%s\n", str.chars);
-  fflush(stdout);
+  out_stream_printf(out, "%s\n", str.chars);
+  out_stream_flush(out);
   // Done!
   string_buffer_dispose(&buf);
 }

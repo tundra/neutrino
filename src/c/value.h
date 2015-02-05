@@ -85,6 +85,7 @@ int get_value_domain_ordinal(value_domain_t domain);
   F(BuiltinBindingFailed)                                                      \
   F(Circular)                                                                  \
   F(EmptyPath)                                                                 \
+  F(FatalError)                                                                \
   F(ForceValidate)                                                             \
   F(HeapExhausted)                                                             \
   F(InternalFamily)                                                            \
@@ -1958,7 +1959,8 @@ value_t add_plankton_factory(value_t map, const char *name,
 
 // --- D e b u g ---
 
-// Similar to printf but adds a newline and allows %v to print values.
-void print_ln(const char *fmt, ...);
+// Similar to printf but adds a newline and allows %v to print values. If the
+// out stream argument is NULL stdout is used.
+void print_ln(out_stream_t *out, const char *fmt, ...);
 
 #endif // _VALUE

@@ -542,6 +542,15 @@ class Signature(object):
     else:
       self.reified_ident = reified_ident
       self.reified = Symbol(reified_ident.get_name())
+    self.check_tags_unique()
+
+  # Assert that the same tag is only ever used once.
+  def check_tags_unique(self):
+    tags = set()
+    for param in self.parameters:
+      for tag in param.tags:
+        assert not tag in tags
+        tags.add(tag)
 
   def accept(self, visitor):
     visitor.visit_signature(self)

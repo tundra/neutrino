@@ -85,7 +85,7 @@ static void main_options_dispose(main_options_t *flags) {
 }
 
 // Parse a set of command-line arguments.
-static void parse_options(size_t argc, const char **argv, main_options_t *flags_out) {
+static bool parse_options(size_t argc, const char **argv, main_options_t *flags_out) {
   pton_command_line_reader_t *reader = pton_new_command_line_reader();
   flags_out->owner = reader;
   pton_command_line_t *cmdline = pton_command_line_reader_parse(reader, argc, argv);
@@ -94,7 +94,7 @@ static void parse_options(size_t argc, const char **argv, main_options_t *flags_
     pton_syntax_error_t *error = pton_command_line_error(cmdline);
     ERROR("Error parsing command line options at char '%c'",
         pton_syntax_error_offender(error));
-    return;
+    return false;
   }
 
   flags_out->config->gc_fuzz_freq = pton_int64_value(
@@ -105,6 +105,7 @@ static void parse_options(size_t argc, const char **argv, main_options_t *flags_
       pton_command_line_option(cmdline,
           pton_c_str("garbage-collect-fuzz-seed"),
           pton_integer(0)));
+  return true;
 }
 
 // Reads a library from the given library path and adds the modules to the
@@ -179,7 +180,8 @@ static value_t neutrino_main(int argc, const char **argv) {
   // Parse the options.
   main_options_t options;
   main_options_init(&options, &config);
-  parse_options(argc, argv, &options);
+  if (!parse_options(argc - 1, argv + 1, &options))
+    return new_invalid_input_condition();
 
   runtime_t *runtime;
   TRY(new_runtime(&config, &runtime));
@@ -188,14 +190,14 @@ static value_t neutrino_main(int argc, const char **argv) {
     value_t result = whatever();
     E_TRY(build_module_loader(runtime, options.cmdline));
     size_t argc = pton_command_line_argument_count(options.cmdline);
-    for (size_t i = 1; i < argc; i++) {
+    for (size_t i = 0; i < argc; i++) {
       pton_variant_t filename_var = pton_command_line_argument(options.cmdline, i);
       utf8_t filename = new_string(pton_string_chars(filename_var),
           pton_string_length(filename_var));
       value_t input;
       if (string_equals_cstr(filename, "-")) {
-        in_stream_t *stdin = file_system_stdin(runtime->file_system);
-        E_TRY_SET(input, read_stream_to_blob(runtime, stdin));
+        in_stream_t *in = file_system_stdin(runtime->file_system);
+        E_TRY_SET(input, read_stream_to_blob(runtime, in));
       } else {
         file_streams_t streams = file_system_open(runtime->file_system, filename,
             OPEN_FILE_MODE_READ);
@@ -220,7 +222,8 @@ int main(int argc, const char *argv[]) {
   install_crash_handler();
   value_t result = neutrino_main(argc, argv);
   if (is_condition(result)) {
-    print_ln("Error: %v", result);
+    out_stream_t *out = file_system_stderr(file_system_native());
+    print_ln(out, "Error: %v", result);
     return 1;
   } else {
     return 0;

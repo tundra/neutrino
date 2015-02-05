@@ -701,10 +701,17 @@ class Parser(object):
     tags = [default_tag]
     if self.at_type(Token.TAG):
       tag = self.expect_type(Token.TAG)
-      tags = [tag] + tags
+      if type(tag) == int:
+        # TODO: This is kind of a hack but how to handle integer tags that
+        #     overlap with the default tags? Ban them maybe?
+        tags = [tag]
+      else:
+        tags = [tag, default_tag]
     elif self.at_operation('*'):
       self.expect_operation('*')
       return None
+    else:
+      tags = [default_tag]
     name = self.expect_type(Token.IDENTIFIER)
     guard = self.parse_guard(default_tag)
     result = ast.Parameter(name, tags, guard)

@@ -893,16 +893,6 @@ TEST(method, call_tags_compare) {
   ASSERT_FALSE(is_same_value(h1, h3));
   ASSERT_FALSE(is_same_value(h2, h3));
 
-  value_t r4 = make_call_tags(runtime, vArray(vStr("x"), vStr("z"),
-      vStr("y"), vStr("y")));
-  value_t h4 = value_transient_identity_hash(r4);
-  ASSERT_FALSE(value_identity_compare(r1, r4));
-  ASSERT_FALSE(value_identity_compare(r2, r4));
-  ASSERT_FALSE(value_identity_compare(r3, r4));
-  ASSERT_FALSE(is_same_value(h1, h4));
-  ASSERT_FALSE(is_same_value(h2, h4));
-  ASSERT_FALSE(is_same_value(h3, h4));
-
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();
 }

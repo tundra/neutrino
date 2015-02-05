@@ -405,6 +405,13 @@ size_t get_call_tags_offset_at(value_t self, size_t index);
 // "c": 2] (arguments are counted backwards, 0 being the last).
 value_t build_call_tags_entries(runtime_t *runtime, value_t tags);
 
+// Check that the tags in the given call tags entry array are all unique, that
+// is, no value occurs more than once. Having the same tag appear more than once
+// is bad because not only is it invalid according to the language but because
+// we sort the tags using a sort function whose behavior is undefined on equal
+// values it opens the possibility of some really subtle bugs.
+void check_call_tags_entries_unique(value_t tags);
+
 // Prints a call tags object with a set of arguments.
 void print_call_on(value_t tags, frame_t *frame, string_buffer_t *out);
 

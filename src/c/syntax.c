@@ -264,6 +264,7 @@ static value_t create_call_tags(value_t arguments, assembler_t *assm) {
     TRY(emit_value(value, assm));
   }
   TRY(co_sort_pair_array(entries));
+  IF_EXPENSIVE_CHECKS_ENABLED(check_call_tags_entries_unique(entries));
   return new_heap_call_tags(assm->runtime, afFreeze, entries);
 }
 
@@ -1191,7 +1192,8 @@ value_t build_method_signature(runtime_t *runtime, value_t fragment,
       set_pair_array_second_at(tag_array, tag_index, param);
     }
   }
-  co_sort_pair_array(tag_array);
+  TRY(co_sort_pair_array(tag_array));
+  IF_EXPENSIVE_CHECKS_ENABLED(check_call_tags_entries_unique(tag_array));
 
   bool allow_extra = get_boolean_value(get_signature_ast_allow_extra(signature_ast));
   // Build the result signature and store it in the out param.

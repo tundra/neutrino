@@ -13,14 +13,17 @@ def main():
   command = sys.argv[2:]
   process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   (stdout, stderr) = process.communicate()
-  output_found = stdout + stderr
+  output_found = stderr + stdout
   output_path = sys.argv[1]
   # Read the expected output.
   output_expected = open(output_path, "rt").read()
   if output_found == output_expected:
     sys.exit(0)
   # If there's a difference print it as a diff.
-  diff = difflib.unified_diff(output_expected.splitlines(), output_found.splitlines())
+  diff = list(difflib.unified_diff(output_expected.splitlines(), output_found.splitlines()))
+  if len(diff) == 0:
+    # There were only whitespace differences, that's okay.
+    sys.exit(0)
   for line in diff:
     print line
   # Exit with an error returncode.

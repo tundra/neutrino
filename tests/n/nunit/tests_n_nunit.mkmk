@@ -70,9 +70,12 @@ for file_name in file_names:
   # Run the test
   test_case = test.get_exec_test_case(file_name)
   suite.add_member(test_case)
-  opts = "--module_loader { --libraries [ \"%s\" ] }" % library.get_output_path()
+  opts = "\"%(program)s\" --module_loader { --libraries [ \"%(library)s\" ] }" % {
+    "library": library.get_output_path(),
+    "program": program.get_output_path()
+  }
   test_case.set_runner(runner)
-  test_case.set_arguments(program.get_output_path(), opts)
+  test_case.set_arguments(opts)
   test_case.add_dependency(program)
   test_case.add_dependency(library)
   # Create a shorthand for running this test case.
