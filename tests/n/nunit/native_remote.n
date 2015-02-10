@@ -4,10 +4,13 @@
 import $assert;
 import $core;
 
-def $test_simple_async() {
-  $core:info(@core:time->call());
+def $test_placeholder() {
+  # TODO: given that @time is native the promise shouldn't resolve immediately,
+  #   only after the end of this turn.
+  def $time_p := @core:time->call();
+  $assert:equals(52, $time_p.get());
 }
 
 do {
-  $test_simple_async();
+  $test_placeholder();
 }

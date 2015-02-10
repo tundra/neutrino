@@ -2,6 +2,7 @@
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 
+#include "alloc.h"
 #include "builtin.h"
 #include "freeze.h"
 #include "plugin.h"
@@ -129,27 +130,28 @@ void native_remote_print_on(value_t self, print_on_context_t *context) {
   string_buffer_printf(context->buf, ">");
 }
 
-#include "utils/log.h"
-
 // Extra state maintained around a native request.
 typedef struct {
   native_request_t request;
   unary_callback_t *callback;
+  value_t promise;
 } native_request_state_t;
 
 // Called when a native request succeeds. Note that there is no guaranteed of
 // which thread will call this so any access to the runtime needs to be
 // explicitly synchronized.
-static opaque_t on_native_request_success(opaque_t opaque_process,
-    opaque_t opaque_state, opaque_t opaque_result) {
+static opaque_t on_native_request_success(opaque_t opaque_state,
+    opaque_t opaque_result) {
   // Start out by cleaning up the state.
   native_request_state_t *state = (native_request_state_t*) o2p(opaque_state);
+  value_t promise = state->promise;
   callback_dispose(state->callback);
   opaque_promise_dispose(state->request.promise);
   allocator_default_free(new_memory_block(state, sizeof(native_request_state_t)));
-  // Log the result for now.
+  // TODO: the promise must not be fulfilled in the middle of a turn, it should
+  //   be scheduled now but only done after the end of the turn.
   value_t result = o2v(opaque_result);
-  HEST("%v", result);
+  fulfill_promise(promise, result);
   return opaque_null();
 }
 
@@ -158,21 +160,22 @@ static value_t native_remote_call_with_args(builtin_arguments_t *args) {
   CHECK_FAMILY(ofNativeRemote, self);
   value_t reified = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofReifiedArguments, reified);
+  runtime_t *runtime = get_builtin_runtime(args);
+  TRY_DEF(promise, new_heap_pending_promise(runtime));
   // Allocate and initialize the request state.
   memory_block_t memory = allocator_default_malloc(sizeof(native_request_state_t));
   native_request_state_t *state = (native_request_state_t*) memory.memory;
+  state->promise = promise;
   native_request_t *request = &state->request;
   request->promise = opaque_promise_empty();
   // Ensure that we get notified when the remote responds.
-  value_t process = get_builtin_process(args);
-  state->callback = new_unary_callback_2(on_native_request_success, v2o(process),
-      p2o(state));
+  state->callback = new_unary_callback_1(on_native_request_success, p2o(state));
   opaque_promise_on_success(request->promise, state->callback);
   // Pass the request on to the remote.
   void *impl_ptr = get_void_p_value(get_native_remote_impl(self));
   native_remote_t *impl = (native_remote_t*) impl_ptr;
   impl->schedule_request(request);
-  return null();
+  return promise;
 }
 
 value_t add_native_remote_builtin_implementations(runtime_t *runtime,

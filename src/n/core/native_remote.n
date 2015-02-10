@@ -1,11 +1,18 @@
 # Copyright 2015 the Neutrino authors (see AUTHORS).
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+# A wrapper around a native C/C++ object within this process that can be
+# accessed as if it were a remote.
 def @NativeRemote := @ctrino.get_builtin_type("NativeRemote");
 
 def type @NativeRemote is @Object;
 
+# Generic operation on a native remote. This should be changed such that it's
+# not hardwired to the selector "call".
 def ($this is @NativeRemote)->call(*) as $args => $this.call_with_args($args);
 
+# The native that does the actual work of a remote call. This might work better
+# as a function on the namespace rather than a method on remotes. Scratch that,
+# that definitely would be better.
 @ctrino.builtin("native_remote.call_with_args")
 def ($this is @NativeRemote).call_with_args($args);

@@ -83,10 +83,10 @@ bool native_request_fulfill(native_request_t *request, value_t value) {
   return opaque_promise_fulfill(request->promise, v2o(value));
 }
 
-#include "utils/log.h"
-
 void schedule_time_request(native_request_t *request) {
-  native_request_fulfill(request, new_integer(0));
+  // TODO: placeholder implementation, need to give some thought to how the
+  //   runtime should interface with real time.
+  native_request_fulfill(request, new_integer(52));
 }
 
 native_remote_t *native_remote_time() {
