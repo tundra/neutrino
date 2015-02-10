@@ -187,7 +187,7 @@ value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor,
 
 // Update the state of trackers post migration but before the gc has been
 // finalized.
-void heap_update_object_trackers(heap_t *heap);
+value_t heap_post_process_object_trackers(heap_t *heap);
 
 // Dispose of the given heap.
 void heap_dispose(heap_t *heap);

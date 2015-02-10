@@ -141,24 +141,6 @@ typedef struct object_tracker_iter_t {
   bool include_weak;
 } object_tracker_iter_t;
 
-// Skip past any trackers to ignore.
-static void object_tracker_skip_ignored(object_tracker_iter_t *iter) {
-  if (iter->include_weak)
-    return;
-  while (iter->current != iter->limit && object_tracker_is_weak(iter->current))
-    iter->current = iter->current->next;
-}
-
-// Initializes an object tracker iterator so that it's ready to iterate through
-// all the handles in the given heap.
-static void object_tracker_iter_init(object_tracker_iter_t *iter, heap_t *heap,
-    bool include_weak) {
-  iter->current = heap->root_object_tracker.next;
-  iter->limit = &heap->root_object_tracker;
-  iter->include_weak = include_weak;
-  object_tracker_skip_ignored(iter);
-}
-
 // Returns true if there is a current node to return, false if we've reached the
 // end.
 static bool object_tracker_iter_has_current(object_tracker_iter_t *iter) {
@@ -172,6 +154,25 @@ static object_tracker_t *object_tracker_iter_get_current(object_tracker_iter_t *
   CHECK_TRUE("non-weak iter returning weak",
       iter->include_weak || !object_tracker_is_weak(iter->current));
   return iter->current;
+}
+
+// Skip past any trackers we've been asked to ignore.
+static void object_tracker_skip_ignored(object_tracker_iter_t *iter) {
+  if (iter->include_weak)
+    return;
+  while (object_tracker_iter_has_current(iter) && object_tracker_is_weak(iter->current))
+    // Advance by hand since iter_advance would call this one recursively.
+    iter->current = iter->current->next;
+}
+
+// Initializes an object tracker iterator so that it's ready to iterate through
+// all the handles in the given heap.
+static void object_tracker_iter_init(object_tracker_iter_t *iter, heap_t *heap,
+    bool include_weak) {
+  iter->current = heap->root_object_tracker.next;
+  iter->limit = &heap->root_object_tracker;
+  iter->include_weak = include_weak;
+  object_tracker_skip_ignored(iter);
 }
 
 // Advances the iterator to the next node.
@@ -316,7 +317,7 @@ value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor,
   return space_for_each_object(&heap->to_space, UPCAST(&delegator));
 }
 
-void heap_update_object_trackers(heap_t *heap) {
+value_t heap_post_process_object_trackers(heap_t *heap) {
   object_tracker_iter_t iter;
   object_tracker_iter_init(&iter, heap, true);
   while (object_tracker_iter_has_current(&iter)) {
@@ -337,6 +338,7 @@ void heap_update_object_trackers(heap_t *heap) {
     }
     object_tracker_iter_advance(&iter);
   }
+  return success();
 }
 
 value_t heap_prepare_garbage_collection(heap_t *heap) {

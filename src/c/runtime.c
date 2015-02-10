@@ -782,7 +782,7 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
   // effectively makes a deep migration.
   TRY(heap_for_each_field(&runtime->heap, visitor, false));
   // Update the state of the heap's object trackers.
-  heap_update_object_trackers(&runtime->heap);
+  TRY(heap_post_process_object_trackers(&runtime->heap));
   // At this point everything has been migrated so we can run the fixups and
   // then we're done with the state.
   runtime_apply_fixups(&state);
