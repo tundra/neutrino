@@ -14,6 +14,7 @@ module $core {
     "function.n",
     "integer.n",
     "lambda.n",
+    "native_remote.n",
     "null.n",
     "object.n",
     "promise.n",

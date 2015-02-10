@@ -87,6 +87,8 @@ static value_t init_special_imports(runtime_t *runtime, value_t imports) {
   TRY_DEF(ctrino, new_c_object(runtime, ROOT(runtime, ctrino_factory),
       new_blob(NULL, 0), new_value_array(NULL, 0)));
   TRY(set_id_hash_map_at(runtime, imports, RSTR(runtime, ctrino), ctrino));
+  TRY_DEF(time, new_native_remote(runtime, native_remote_time()));
+  TRY(set_id_hash_map_at(runtime, imports, RSTR(runtime, time), time));
   return success();
 }
 

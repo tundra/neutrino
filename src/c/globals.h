@@ -7,7 +7,7 @@
 #ifndef _GLOBALS
 #define _GLOBALS
 
-#include "stdc.h"
+#include "c/stdc.h"
 
 typedef uint16_t short_t;
 

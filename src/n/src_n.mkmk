@@ -16,6 +16,7 @@ core_file_names = [
   "core/integer.n",
   "core/lambda.n",
   "core/null.n",
+  "core/native_remote.n",
   "core/object.n",
   "core/promise.n",
   "core/selector.n",

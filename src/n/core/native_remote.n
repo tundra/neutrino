@@ -1,0 +1,11 @@
+# Copyright 2015 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+def @NativeRemote := @ctrino.get_builtin_type("NativeRemote");
+
+def type @NativeRemote is @Object;
+
+def ($this is @NativeRemote)->call(*) as $args => $this.call_with_args($args);
+
+@ctrino.builtin("native_remote.call_with_args")
+def ($this is @NativeRemote).call_with_args($args);

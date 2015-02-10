@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "plugin.h"
+#include "async/promise.h"
 
 // Builds a signature for the built-in ctrino method with the given name and
 // positional argument count.
@@ -72,4 +73,23 @@ value_t new_c_object_factory(runtime_t *runtime, const c_object_info_t *info,
 value_t new_c_object(runtime_t *runtime, value_t factory, blob_t data,
     value_array_t values) {
   return new_heap_c_object(runtime, afFreeze, factory, data, values);
+}
+
+value_t new_native_remote(runtime_t *runtime, native_remote_t *impl) {
+  return new_heap_native_remote(runtime, impl);
+}
+
+bool native_request_fulfill(native_request_t *request, value_t value) {
+  return opaque_promise_fulfill(request->promise, v2o(value));
+}
+
+#include "utils/log.h"
+
+void schedule_time_request(native_request_t *request) {
+  native_request_fulfill(request, new_integer(0));
+}
+
+native_remote_t *native_remote_time() {
+  static native_remote_t kInstance = {"Time", schedule_time_request};
+  return &kInstance;
 }

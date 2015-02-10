@@ -440,6 +440,7 @@ static inline value_t chase_moved_object(value_t raw) {
   F(Namespace,               namespace,                 X, _, (_, _, _, _, _, _, X, _), 28)\
   F(NamespaceDeclarationAst, namespace_declaration_ast, X, _, (_, _, X, _, _, _, _, _), 44)\
   F(NamespaceVariableAst,    namespace_variable_ast,    X, X, (_, _, X, _, _, X, _, _), 42)\
+  F(NativeRemote,            native_remote,             _, X, (_, _, _, _, _, _, _, _), 90)\
   F(Operation,               operation,                 X, X, (_, X, X, _, _, _, _, _), 46)\
   F(Parameter,               parameter,                 X, _, (_, _, _, _, _, _, _, _), 51)\
   F(ParameterAst,            parameter_ast,             X, X, (_, _, X, _, _, _, _, _),  8)\
@@ -475,7 +476,7 @@ static inline value_t chase_moved_object(value_t raw) {
 // family enum values are not the raw ordinals but the ordinals shifted left by
 // the tag size so that they're tagged as integers. Those values are sometimes
 // stored as uint16s so the ordinals are allowed to take up to 14 bits.
-static const int kNextFamilyOrdinal = 90;
+static const int kNextFamilyOrdinal = 91;
 
 // Enumerates all the object families.
 #define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \

@@ -11,6 +11,7 @@
 #include "tagged.h"
 #include "try-inl.h"
 #include "value-inl.h"
+#include "utils/string-inl.h"
 
 
 // --- B a s i c ---
@@ -738,6 +739,22 @@ value_t new_heap_reified_arguments(runtime_t *runtime, value_t params,
   set_reified_arguments_tags(result, tags);
   return post_create_sanity_check(result, size);
 }
+
+value_t new_heap_native_remote(runtime_t *runtime, native_remote_t *impl) {
+  size_t size = kNativeRemoteSize;
+  value_t display_name = null();
+  if (impl->display_name != NULL) {
+    utf8_t display_name_str = new_c_string(impl->display_name);
+    TRY_SET(display_name, new_heap_utf8(runtime, display_name_str));
+  }
+  TRY_DEF(impl_val, new_heap_void_p(runtime, impl));
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, native_remote_species)));
+  init_frozen_native_remote_impl(result, impl_val);
+  init_frozen_native_remote_display_name(result, display_name);
+  return post_create_sanity_check(result, size);
+}
+
 
 
 // --- M e t h o d ---

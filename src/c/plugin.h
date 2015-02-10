@@ -7,6 +7,8 @@
 #ifndef _PLUGIN
 #define _PLUGIN
 
+#include "async/promise.h"
+
 #include "builtin.h"
 #include "value.h"
 
@@ -76,5 +78,46 @@ value_t new_c_object_factory(runtime_t *runtime, const c_object_info_t *info,
 // Creates a new c object instance from the given factory.
 value_t new_c_object(runtime_t *runtime, value_t factory, blob_t data,
     value_array_t values);
+
+// Data associated with a request issued from the vm to a native remote
+// implementation.
+typedef struct {
+  opaque_promise_t *promise;
+} native_request_t;
+
+// Deliver the given value as the successful result of the given request. If the
+// request has already been resolved, successfully or not, this does nothing.
+// Returns true iff it did something.
+bool native_request_fulfill(native_request_t *request, value_t value);
+
+// Callback called by the runtime to schedule a request. The result of the
+// request must be delivered by fulfilling the promise the is given as part
+// of the request. The request struct is guaranteed to be alive at only until
+// the promise is fulfilled.
+typedef void (*schedule_request_t)(native_request_t *request);
+
+// Data associated with a native remote request handler.
+typedef struct {
+  const char *display_name;
+  schedule_request_t schedule_request;
+} native_remote_t;
+
+// Creates a native remote object that delivers requests through the given
+// implementation. The implementation struct must be valid as long as the native
+// remote wrapper is used.
+value_t new_native_remote(runtime_t *runtime, native_remote_t *impl);
+
+// Returns a native remote that implements the time api.
+native_remote_t *native_remote_time();
+
+// Returns a value that has been wrapped in an opaque.
+static inline value_t o2v(opaque_t opaque) {
+  return decode_value(o2u(opaque));
+}
+
+// Returns an opaque that wraps the given value.
+static inline opaque_t v2o(value_t value) {
+  return u2o(value.encoded);
+}
 
 #endif // _PLUGIN

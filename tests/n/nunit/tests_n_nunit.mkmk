@@ -38,6 +38,7 @@ file_names = [
   "lambda.n",
   "leave.n",
   "module.n",
+  "native_remote.n",
   "next.n",
   "object.n",
   "plugin.n",

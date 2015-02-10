@@ -74,4 +74,20 @@ static bool is_promise_state_resolved(value_t self) {
 }
 
 
+/// ## Native remote
+///
+/// A native remote is a remote process that is immediately backed by an
+/// in-process native implementation.
+
+static const size_t kNativeRemoteSize = HEAP_OBJECT_SIZE(2);
+static const size_t kNativeRemoteImplOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kNativeRemoteDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+
+// The implementation.
+FROZEN_ACCESSORS_DECL(native_remote, impl);
+
+// Display name used to identify the value.
+FROZEN_ACCESSORS_DECL(native_remote, display_name);
+
+
 #endif // _SYNC

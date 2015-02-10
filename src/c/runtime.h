@@ -10,6 +10,7 @@
 
 #include "heap.h"
 #include "serialize.h"
+#include "sync/mutex.h"
 
 // Enumerates the string table strings that will be stored as easily accessible
 // roots.
@@ -71,6 +72,7 @@
   F(tag,                        "tag")                                         \
   F(tags,                       "tags")                                        \
   F(target,                     "target")                                      \
+  F(time,                       "time")                                        \
   F(type,                       "type")                                        \
   F(value,                      "value")                                       \
   F(values,                     "values")

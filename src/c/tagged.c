@@ -3,9 +3,9 @@
 
 #include "behavior.h"
 #include "builtin.h"
+#include "c/stdc-inl.h"
 #include "derived.h"
 #include "runtime.h"
-#include "stdc-inl.h"
 #include "tagged-inl.h"
 #include "utils.h"
 #include "value-inl.h"
