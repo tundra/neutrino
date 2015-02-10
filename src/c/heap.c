@@ -137,13 +137,26 @@ typedef struct object_tracker_iter_t {
   object_tracker_t *current;
   // The node that indicates when we've reached the end.
   object_tracker_t *limit;
+  // Include weak references?
+  bool include_weak;
 } object_tracker_iter_t;
+
+// Skip past any trackers to ignore.
+static void object_tracker_skip_ignored(object_tracker_iter_t *iter) {
+  if (iter->include_weak)
+    return;
+  while (iter->current != iter->limit && object_tracker_is_weak(iter->current))
+    iter->current = iter->current->next;
+}
 
 // Initializes an object tracker iterator so that it's ready to iterate through
 // all the handles in the given heap.
-static void object_tracker_iter_init(object_tracker_iter_t *iter, heap_t *heap) {
+static void object_tracker_iter_init(object_tracker_iter_t *iter, heap_t *heap,
+    bool include_weak) {
   iter->current = heap->root_object_tracker.next;
   iter->limit = &heap->root_object_tracker;
+  iter->include_weak = include_weak;
+  object_tracker_skip_ignored(iter);
 }
 
 // Returns true if there is a current node to return, false if we've reached the
@@ -156,6 +169,8 @@ static bool object_tracker_iter_has_current(object_tracker_iter_t *iter) {
 static object_tracker_t *object_tracker_iter_get_current(object_tracker_iter_t *iter) {
   CHECK_TRUE("object tracker iter get past end",
       object_tracker_iter_has_current(iter));
+  CHECK_TRUE("non-weak iter returning weak",
+      iter->include_weak || !object_tracker_is_weak(iter->current));
   return iter->current;
 }
 
@@ -164,15 +179,18 @@ static void object_tracker_iter_advance(object_tracker_iter_t *iter) {
   CHECK_TRUE("object tracker iter advance past end",
       object_tracker_iter_has_current(iter));
   iter->current = iter->current->next;
+  object_tracker_skip_ignored(iter);
 }
 
-object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value) {
+object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value,
+    uint32_t flags) {
   CHECK_FALSE("tracker for immediate", value_is_immediate(value));
   memory_block_t memory = allocator_default_malloc(sizeof(object_tracker_t));
   object_tracker_t *new_tracker = (object_tracker_t*) memory.memory;
   object_tracker_t *next = heap->root_object_tracker.next;
   object_tracker_t *prev = next->prev;
   new_tracker->value = value;
+  new_tracker->flags = flags;
   new_tracker->next = next;
   new_tracker->prev = prev;
   prev->next = new_tracker;
@@ -195,7 +213,7 @@ void heap_dispose_object_tracker(heap_t *heap, object_tracker_t *tracker) {
 
 value_t heap_validate(heap_t *heap) {
   object_tracker_iter_t iter;
-  object_tracker_iter_init(&iter, heap);
+  object_tracker_iter_init(&iter, heap, true);
   object_tracker_t *prev = &heap->root_object_tracker;
   size_t trackers_seen = 0;
   while (object_tracker_iter_has_current(&iter)) {
@@ -245,7 +263,7 @@ void heap_dispose(heap_t *heap) {
 value_t heap_for_each_object(heap_t *heap, value_visitor_o *visitor) {
   CHECK_FALSE("traversing empty space", space_is_empty(&heap->to_space));
   object_tracker_iter_t iter;
-  object_tracker_iter_init(&iter, heap);
+  object_tracker_iter_init(&iter, heap, true);
   while (object_tracker_iter_has_current(&iter)) {
     object_tracker_t *current = object_tracker_iter_get_current(&iter);
     TRY(value_visitor_visit(visitor, current->value));
@@ -283,9 +301,10 @@ static value_t field_delegator_visit(value_visitor_o *super_self, value_t object
 
 VTABLE(field_delegator_o, value_visitor_o) { field_delegator_visit };
 
-value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor) {
+value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor,
+    bool include_weak) {
   object_tracker_iter_t iter;
-  object_tracker_iter_init(&iter, heap);
+  object_tracker_iter_init(&iter, heap, include_weak);
   while (object_tracker_iter_has_current(&iter)) {
     object_tracker_t *current = object_tracker_iter_get_current(&iter);
     field_visitor_visit(visitor, &current->value);
@@ -295,6 +314,29 @@ value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor) {
   VTABLE_INIT(field_delegator_o, UPCAST(&delegator));
   delegator.field_visitor = visitor;
   return space_for_each_object(&heap->to_space, UPCAST(&delegator));
+}
+
+void heap_update_object_trackers(heap_t *heap) {
+  object_tracker_iter_t iter;
+  object_tracker_iter_init(&iter, heap, true);
+  while (object_tracker_iter_has_current(&iter)) {
+    object_tracker_t *current = object_tracker_iter_get_current(&iter);
+    if (object_tracker_is_weak(current)) {
+      value_t header = get_heap_object_header(current->value);
+      if (get_value_domain(header) == vdMovedObject) {
+        // This is a weak reference whose value is still alive. Update the
+        // value ref since the first pass will have skipped this and hence it
+        // hasn't been updated yet.
+        current->value = get_moved_object_target(header);
+      } else {
+        // This is a weak reference whose object hasn't been moved so it must
+        // be garbage; update the tracker's state accordingly.
+        current->value = nothing();
+        current->state |= tsGarbage;
+      }
+    }
+    object_tracker_iter_advance(&iter);
+  }
 }
 
 value_t heap_prepare_garbage_collection(heap_t *heap) {

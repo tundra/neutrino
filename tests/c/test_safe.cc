@@ -138,7 +138,7 @@ TEST(safe, derived) {
   ASSERT_FALSE(safe_value_is_immediate(s_p1));
 
   // Run gc.
-  runtime_garbage_collect(runtime);
+  ASSERT_SUCCESS(runtime_garbage_collect(runtime));
 
   // They should have moved during gc.
   ASSERT_FALSE(is_same_value(p0, deref(s_p0)));
@@ -153,6 +153,45 @@ TEST(safe, derived) {
 
   dispose_safe_value(runtime, s_p0);
   dispose_safe_value(runtime, s_p1);
+
+  DISPOSE_RUNTIME();
+}
+
+TEST(safe, weak) {
+  CREATE_RUNTIME();
+
+  // Immediates can't be garbage.
+  safe_value_t s_int = runtime_protect_value_weak(runtime, new_integer(29));
+  ASSERT_FALSE(safe_value_is_garbage(s_int));
+
+  // An object only referenced by a weak reference should become garbage.
+  value_t a0 = new_heap_array(runtime, 2);
+  safe_value_t s_a0 = runtime_protect_value_weak(runtime, a0);
+  ASSERT_FALSE(safe_value_is_garbage(s_a0));
+  ASSERT_TRUE(is_same_value(a0, deref(s_a0)));
+  ASSERT_SUCCESS(runtime_garbage_collect(runtime));
+  ASSERT_TRUE(safe_value_is_garbage(s_a0));
+  ASSERT_TRUE(is_nothing(deref(s_a0)));
+  dispose_safe_value(runtime, s_a0);
+
+  // An object with a strong reference should stay alive...
+  value_t a1 = new_heap_array(runtime, 2);
+  set_array_at(a1, 0, a1);
+  set_array_at(a1, 1, a1);
+  safe_value_t s_a11 = runtime_protect_value_weak(runtime, a1);
+  safe_value_t s_a12 = runtime_protect_value(runtime, a1);
+  ASSERT_FALSE(safe_value_is_garbage(s_a11));
+  ASSERT_FALSE(safe_value_is_garbage(s_a12));
+  ASSERT_SUCCESS(runtime_garbage_collect(runtime));
+  ASSERT_FALSE(safe_value_is_garbage(s_a11));
+  ASSERT_FALSE(safe_value_is_garbage(s_a12));
+  ASSERT_TRUE(is_same_value(deref(s_a11), deref(s_a12)));
+
+  // ...until the strong reference is removed, then it should die.
+  dispose_safe_value(runtime, s_a12);
+  ASSERT_SUCCESS(runtime_garbage_collect(runtime));
+  ASSERT_TRUE(safe_value_is_garbage(s_a11));
+  dispose_safe_value(runtime, s_a11);
 
   DISPOSE_RUNTIME();
 }

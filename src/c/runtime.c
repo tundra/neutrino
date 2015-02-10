@@ -548,8 +548,8 @@ static value_t value_validator_visit(value_visitor_o *self, value_t value) {
     case vdDerivedObject:
       return value_validate(value);
     default:
-      UNREACHABLE("validating non-object");
-      return whatever();
+      CHECK_TRUE("validating non-object", is_nothing(value));
+      return success();
   }
 }
 
@@ -777,10 +777,12 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
   // Shallow migration of all the roots.
   TRY(field_visitor_visit(visitor, &runtime->roots));
   TRY(field_visitor_visit(visitor, &runtime->mutable_roots));
-  // Shallow migration of everything currently stored in to-space which, since
-  // we keep going until all objects have been migrated, effectively makes a deep
-  // migration.
-  TRY(heap_for_each_field(&runtime->heap, visitor));
+  // Shallow migration of everything currently stored in non-weak references in
+  // to-space which, since we keep going until all objects have been migrated,
+  // effectively makes a deep migration.
+  TRY(heap_for_each_field(&runtime->heap, visitor, false));
+  // Update the state of the heap's object trackers.
+  heap_update_object_trackers(&runtime->heap);
   // At this point everything has been migrated so we can run the fixups and
   // then we're done with the state.
   runtime_apply_fixups(&state);
@@ -820,13 +822,24 @@ bool value_is_immediate(value_t value) {
   }
 }
 
-safe_value_t runtime_protect_value(runtime_t *runtime, value_t value) {
+static safe_value_t runtime_protect_value_generic(runtime_t *runtime, value_t value,
+    uint32_t safe_flags) {
   if (value_is_immediate(value)) {
     return protect_immediate(value);
   } else {
-    object_tracker_t *gc_safe = heap_new_heap_object_tracker(&runtime->heap, value);
+    object_tracker_t *gc_safe = heap_new_heap_object_tracker(&runtime->heap, value,
+        safe_flags);
     return object_tracker_to_safe_value(gc_safe);
   }
+
+}
+
+safe_value_t runtime_protect_value(runtime_t *runtime, value_t value) {
+  return runtime_protect_value_generic(runtime, value, tfNone);
+}
+
+safe_value_t runtime_protect_value_weak(runtime_t *runtime, value_t value) {
+  return runtime_protect_value_generic(runtime, value, tfWeak);
 }
 
 static value_t new_object_instance(object_factory_t *factory, runtime_t *runtime,

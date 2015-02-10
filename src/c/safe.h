@@ -9,6 +9,19 @@
 
 #include "value.h"
 
+// Flags set on object trackers that control how they behave.
+typedef enum {
+  // No special behavior.
+  tfNone = 0x0,
+  // This tracker should not keep the object alive.
+  tfWeak = 0x1
+} object_tracker_flags_t;
+
+// Flags set by the gc on object trackers that indicate their current state.
+typedef enum {
+  tsGarbage = 0x1
+} object_tracker_state_t;
+
 // An object reference tracked by the runtime. These handles form a
 // doubly-linked list such that nodes can add and remove themselves from the
 // chain of all object trackers. Object trackers can only store heap objects
@@ -16,11 +29,18 @@
 typedef struct object_tracker_t {
   // The pinned value.
   value_t value;
+  // Flags that control how the tracker behaves.
+  uint32_t flags;
+  // Flags that indicate the current state of the tracker.
+  uint32_t state;
   // The next pin descriptor.
   struct object_tracker_t *next;
   // The previous pin descriptor.
   struct object_tracker_t *prev;
 } object_tracker_t;
+
+// Returns true iff the given object tracker is a weak reference.
+bool object_tracker_is_weak(object_tracker_t *tracker);
 
 // An immutable gc-safe reference. Gc-safe references work much like values,
 // they are tagged like the value they reference. Indeed, for non-objects a safe
@@ -61,6 +81,10 @@ bool value_is_immediate(value_t value);
 
 // Returns the value stored in a safe value reference.
 value_t deref(safe_value_t s_value);
+
+// Returns true iff the given safe value was a weak reference to a value that
+// has not been garbage collected.
+bool safe_value_is_garbage(safe_value_t s_value);
 
 
 // A pool of safe values that can be disposed together. This is not a scoped

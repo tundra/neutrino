@@ -180,8 +180,14 @@ value_t heap_for_each_object(heap_t *heap, value_visitor_o *visitor);
 
 // Invokes the given callback for each object field in the space. It is safe to
 // allocate new object while traversing the space, new objects will have their
-// fields visited in order of allocation.
-value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor);
+// fields visited in order of allocation. The include_weak flag controls whether
+// weak references are visited.
+value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor,
+    bool include_weak);
+
+// Update the state of trackers post migration but before the gc has been
+// finalized.
+void heap_update_object_trackers(heap_t *heap);
 
 // Dispose of the given heap.
 void heap_dispose(heap_t *heap);
@@ -197,7 +203,8 @@ value_t heap_prepare_garbage_collection(heap_t *heap);
 value_t heap_complete_garbage_collection(heap_t *heap);
 
 // Creates a new object tracker that holds the specified value.
-object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value);
+object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value,
+    uint32_t flags);
 
 // Disposes an object tracker.
 void heap_dispose_object_tracker(heap_t *heap, object_tracker_t *gc_safe);

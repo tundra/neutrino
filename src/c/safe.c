@@ -11,6 +11,10 @@ bool safe_value_is_immediate(safe_value_t s_value) {
   return value_is_immediate(s_value.as_value);
 }
 
+bool object_tracker_is_weak(object_tracker_t *tracker) {
+  return (tracker->flags & tfWeak) != 0;
+}
+
 safe_value_t object_tracker_to_safe_value(object_tracker_t *handle) {
   value_t target = handle->value;
   safe_value_t s_result;
@@ -46,6 +50,11 @@ value_t deref(safe_value_t s_value) {
   return safe_value_is_immediate(s_value)
       ? deref_immediate(s_value)
       : safe_value_to_object_tracker(s_value)->value;
+}
+
+bool safe_value_is_garbage(safe_value_t s_value) {
+  return !safe_value_is_immediate(s_value)
+      && ((safe_value_to_object_tracker(s_value)->state & tsGarbage) != 0);
 }
 
 void safe_value_pool_init(safe_value_pool_t *pool, safe_value_t *values,
