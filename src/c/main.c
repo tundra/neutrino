@@ -14,52 +14,6 @@
 #include "utils/log.h"
 #include "value.h"
 
-// Data used by the custom allocator.
-typedef struct {
-  // The default allocator this one is replacing.
-  allocator_t *outer;
-  // The config to use.
-  runtime_config_t *config;
-  // The total amount of live memory.
-  size_t live_memory;
-  // The custom allocator to use.
-  allocator_t allocator;
-} main_allocator_data_t;
-
-void main_free(void *raw_data, memory_block_t memory) {
-  main_allocator_data_t *data = (main_allocator_data_t*) raw_data;
-  data->live_memory -= memory.size;
-  allocator_free(data->outer, memory);
-}
-
-memory_block_t main_malloc(void *raw_data, size_t size) {
-  main_allocator_data_t *data = (main_allocator_data_t*) raw_data;
-  if (data->live_memory + size > data->config->system_memory_limit) {
-    WARN("Tried to allocate more than %i of system memory. At %i, requested %i.",
-        data->config->system_memory_limit, data->live_memory, size);
-    return memory_block_empty();
-  }
-  memory_block_t result = allocator_malloc(data->outer, size);
-  if (!memory_block_is_empty(result))
-    data->live_memory += result.size;
-  return result;
-}
-
-static void main_allocator_data_init(main_allocator_data_t *data, runtime_config_t *config) {
-  data->config = config;
-  data->live_memory = 0;
-  data->allocator.data = data;
-  data->allocator.free = main_free;
-  data->allocator.malloc = main_malloc;
-  data->outer = allocator_set_default(&data->allocator);
-}
-
-static void main_allocator_data_dispose(main_allocator_data_t *data) {
-  allocator_set_default(data->outer);
-  if (data->live_memory > 0)
-    WARN("Disposing with %ib of live memory.", data->live_memory);
-}
-
 // Holds all the options understood by the main executable.
 typedef struct {
   // The config to store config-related flags directly into.
@@ -174,8 +128,8 @@ static value_t neutrino_main(int argc, const char **argv) {
   runtime_config_init_defaults(&config);
   runtime_config_init_main_defaults(&config);
   // Set up a custom allocator we get tighter control over allocation.
-  main_allocator_data_t allocator_data;
-  main_allocator_data_init(&allocator_data, &config);
+  limited_allocator_t limited_allocator;
+  limited_allocator_install(&limited_allocator, config.system_memory_limit);
 
   // Parse the options.
   main_options_t options;
@@ -214,7 +168,7 @@ static value_t neutrino_main(int argc, const char **argv) {
     DISPOSE_SAFE_VALUE_POOL(pool);
     TRY(delete_runtime(runtime));
     main_options_dispose(&options);
-    main_allocator_data_dispose(&allocator_data);
+    limited_allocator_uninstall(&limited_allocator);
   E_END_TRY_FINALLY();
 }
 

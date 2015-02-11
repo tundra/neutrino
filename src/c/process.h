@@ -581,7 +581,7 @@ ACCESSORS_DECL(task, stack);
 // with a process is implemented: other threads can put data into the airlock
 // and the process will take it out when it wants.
 typedef struct {
-
+  size_t placeholder;
 } process_airlock_t;
 
 // Create and initialize a process airlock. Returns null if anything fails.
