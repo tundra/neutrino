@@ -189,8 +189,14 @@ value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor,
 // finalized.
 value_t heap_post_process_object_trackers(heap_t *heap);
 
-// Dispose of the given heap.
-void heap_dispose(heap_t *heap);
+// Returns true if the heap, in its current state, must be garbage collected
+// before it can be disposed.
+bool heap_collect_before_dispose(heap_t *heap);
+
+// Dispose of the given heap. If there is a validation problem a condition will
+// be returned but the heap will still be disposed, at least to the extent the
+// problem allows.
+value_t heap_dispose(heap_t *heap);
 
 // Checks that the heap's data structures are consistent.
 value_t heap_validate(heap_t *heap);

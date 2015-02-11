@@ -272,7 +272,9 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config);
 // initialized are sane.
 void runtime_clear(runtime_t *runtime);
 
-// Disposes of the given runtime. If disposing fails a condition is returned.
+// Disposes of the given runtime. If disposing fails a condition is returned but
+// an attempt will be made to fully dispose the runtime anyway to the extent the
+// problem allows.
 value_t runtime_dispose(runtime_t *runtime);
 
 // Collect garbage in the given runtime. If anything goes wrong, such as the os
@@ -286,14 +288,15 @@ value_t runtime_garbage_collect(runtime_t *runtime);
 // debugging.
 value_t runtime_validate(runtime_t *runtime, value_t cause);
 
-// Creates a gc-safe reference to the given value.
+// Creates a gc-safe reference to the given value. The value will be kept alive
+// as long as the reference exists and you can get the current location of the
+// value at any time by calling deref.
 safe_value_t runtime_protect_value(runtime_t *runtime, value_t value);
 
-// Creates a weak gc-safe reference to the given value. If the value becomes
-// garbage during the lifetime of the returned safe, the safe will be marked as
-// garbage and the reference to the value (the result of deref) will be cleared
-// to nothing.
-safe_value_t runtime_protect_value_weak(runtime_t *runtime, value_t value);
+// Creates a gc-safe reference to the given value whose behavior is defined by
+// the given flags.
+safe_value_t runtime_protect_value_with_flags(runtime_t *runtime, value_t value,
+    uint32_t flags);
 
 // Initializes an object factory with the default methods for producing objects
 // for a runtime.

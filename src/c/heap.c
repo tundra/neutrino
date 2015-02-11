@@ -255,10 +255,14 @@ bool heap_try_alloc(heap_t *heap, size_t size, address_t *memory_out) {
   return space_try_alloc(&heap->to_space, size, memory_out);
 }
 
-void heap_dispose(heap_t *heap) {
-  CHECK_EQ("Leaking undisposed trackers", 0, heap->object_tracker_count);
+value_t heap_dispose(heap_t *heap) {
+  value_t result = success();
+  if (heap->object_tracker_count > 0)
+    // Not all trackers have been cleaned up before disposing. Disappointing!
+    result = new_condition(ccValidationFailed);
   space_dispose(&heap->to_space);
   space_dispose(&heap->from_space);
+  return result;
 }
 
 value_t heap_for_each_object(heap_t *heap, value_visitor_o *visitor) {
@@ -322,6 +326,10 @@ value_t heap_post_process_object_trackers(heap_t *heap) {
   object_tracker_iter_init(&iter, heap, true);
   while (object_tracker_iter_has_current(&iter)) {
     object_tracker_t *current = object_tracker_iter_get_current(&iter);
+    // Advance past the current tracker before we start processing it because
+    // in a little bit we may delete it. That's fine with the iterator as long
+    // as it's scanned past it.
+    object_tracker_iter_advance(&iter);
     if (object_tracker_is_weak(current)) {
       value_t header = get_heap_object_header(current->value);
       if (get_value_domain(header) == vdMovedObject) {
@@ -334,11 +342,31 @@ value_t heap_post_process_object_trackers(heap_t *heap) {
         // be garbage; update the tracker's state accordingly.
         current->value = nothing();
         current->state |= tsGarbage;
+        if ((current->flags & tfSelfDestruct) != 0) {
+          // This is a self-destructing tracker and it's become time to kill it.
+          heap_dispose_object_tracker(heap, current);
+        }
       }
     }
-    object_tracker_iter_advance(&iter);
   }
   return success();
+}
+
+bool heap_collect_before_dispose(heap_t *heap) {
+  // The heap requires a collection before disposal if there are object trackers
+  // that have side-effects triggered by their values becoming garbage. In that
+  // case we need those triggers to run and for that we need a collection (or
+  // something like a collection at least, probably this could be special cased
+  // with something more light-weight).
+  object_tracker_iter_t iter;
+  object_tracker_iter_init(&iter, heap, true);
+  while (object_tracker_iter_has_current(&iter)) {
+    object_tracker_t *current = object_tracker_iter_get_current(&iter);
+    if ((current->flags & tfSelfDestruct) != 0)
+      return true;
+    object_tracker_iter_advance(&iter);
+  }
+  return false;
 }
 
 value_t heap_prepare_garbage_collection(heap_t *heap) {

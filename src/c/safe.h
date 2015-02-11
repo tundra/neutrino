@@ -13,8 +13,15 @@
 typedef enum {
   // No special behavior.
   tfNone = 0x0,
-  // This tracker should not keep the object alive.
-  tfWeak = 0x1
+  // This tracker should not keep the object alive. If the value becomes garbage
+  // during the lifetime of the returned tracker, the tracker will be marked as
+  // garbage and the reference to the value will be cleared to nothing.
+  tfWeak = 0x1,
+  // When the object tracked by this tracker goes away the tracker itself should
+  // be disposed. This really only makes sense if combined with some of the
+  // other flags but it's treated orthogonally because it can be and to make
+  // testing easier without involving a bunch of other flags.
+  tfSelfDestruct = 0x2
 } object_tracker_flags_t;
 
 // Flags set by the gc on object trackers that indicate their current state.

@@ -2,14 +2,14 @@
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "c/stdc.h"
+#include "test/asserts.hh"
+#include "test/unittest.hh"
 
 BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "condition.h"
 #include "globals.h"
 #include "runtime.h"
-#include "test/asserts.hh"
-#include "test/unittest.hh"
 #include "utils/log.h"
 #include "utils/ook.h"
 #include "value-inl.h"

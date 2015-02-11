@@ -24,6 +24,14 @@ static value_t new_condition(consition_cause_t cause) {
   return new_condition_with_details(cause, 0);
 }
 
+// If a is a condition returns a, otherwise b. This means that if either a or b
+// is a condition the result will be a condition. If you think of values as like
+// booleans where conditions are false and other values are true, this behaves
+// like logical and.
+static value_t condition_and(value_t a, value_t b) {
+  return (get_value_domain(a) == vdCondition) ? a : b;
+}
+
 // Returns the cause of a condition.
 static consition_cause_t get_condition_cause(value_t value) {
   CHECK_DOMAIN(vdCondition, value);

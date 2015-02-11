@@ -801,15 +801,25 @@ void runtime_clear(runtime_t *runtime) {
   runtime->module_loader = empty_safe_value();
 }
 
+// Perform any pre-processing we need to do before releasing the runtime.
+static value_t runtime_prepare_dispose(runtime_t *runtime) {
+  return heap_collect_before_dispose(&runtime->heap)
+      ? runtime_garbage_collect(runtime)
+      : runtime_validate(runtime, nothing());
+}
+
 value_t runtime_dispose(runtime_t *runtime) {
-  TRY(runtime_validate(runtime, nothing()));
+  value_t result = runtime_prepare_dispose(runtime);
+  // If preparing fails we keep going and try to free the allocated memory.
+  // This may be a bad idea but until there's some evidence one way or the other
+  // let's do it this way.
   dispose_safe_value(runtime, runtime->module_loader);
-  heap_dispose(&runtime->heap);
+  result = condition_and(result, heap_dispose(&runtime->heap));
   if (runtime->gc_fuzzer != NULL) {
     allocator_default_free(new_memory_block(runtime->gc_fuzzer, sizeof(gc_fuzzer_t)));
     runtime->gc_fuzzer = NULL;
   }
-  return success();
+  return result;
 }
 
 bool value_is_immediate(value_t value) {
@@ -822,7 +832,7 @@ bool value_is_immediate(value_t value) {
   }
 }
 
-static safe_value_t runtime_protect_value_generic(runtime_t *runtime, value_t value,
+safe_value_t runtime_protect_value_with_flags(runtime_t *runtime, value_t value,
     uint32_t safe_flags) {
   if (value_is_immediate(value)) {
     return protect_immediate(value);
@@ -835,11 +845,7 @@ static safe_value_t runtime_protect_value_generic(runtime_t *runtime, value_t va
 }
 
 safe_value_t runtime_protect_value(runtime_t *runtime, value_t value) {
-  return runtime_protect_value_generic(runtime, value, tfNone);
-}
-
-safe_value_t runtime_protect_value_weak(runtime_t *runtime, value_t value) {
-  return runtime_protect_value_generic(runtime, value, tfWeak);
+  return runtime_protect_value_with_flags(runtime, value, tfNone);
 }
 
 static value_t new_object_instance(object_factory_t *factory, runtime_t *runtime,
