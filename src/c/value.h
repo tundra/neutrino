@@ -556,7 +556,6 @@ static value_t new_heap_object(address_t addr) {
   return result;
 }
 
-
 // Bit cast a value to a void*. Defined as a macro because this is an extremely
 // hot operation so we need to be sure it gets inlined even in debug mode.
 #define value_to_pointer_bit_cast(VALUE) ((void*) (address_arith_t) (VALUE).encoded)

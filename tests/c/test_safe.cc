@@ -208,4 +208,3 @@ TEST(safe, self_destruct) {
   // that to happen.
   DISPOSE_RUNTIME();
 }
-
