@@ -576,10 +576,26 @@ ACCESSORS_DECL(task, stack);
 /// (potentially) independently of each other and can only affect each other
 /// through explicitly sending asynchronous messages.
 
-static const size_t kProcessSize = HEAP_OBJECT_SIZE(3);
+// Data allocated in the C heap which is accessible from other threads
+// throughout the lifetime of the process. This is how asynchronous interaction
+// with a process is implemented: other threads can put data into the airlock
+// and the process will take it out when it wants.
+typedef struct {
+
+} process_airlock_t;
+
+// Create and initialize a process airlock. Returns null if anything fails.
+process_airlock_t *process_airlock_new();
+
+// Dispose the airlock's state appropriately, including deleting the airlock
+// value.
+bool process_airlock_dispose(process_airlock_t *airlock);
+
+static const size_t kProcessSize = HEAP_OBJECT_SIZE(4);
 static const size_t kProcessWorkQueueOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kProcessRootTaskOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 static const size_t kProcessHashSourceOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kProcessAirlockPtrOffset = HEAP_OBJECT_FIELD_OFFSET(3);
 
 #define kProcessWorkQueueWidth 4
 
@@ -592,6 +608,12 @@ ACCESSORS_DECL(process, root_task);
 
 // This process' built-in hash source.
 ACCESSORS_DECL(process, hash_source);
+
+// This process' airlock structure.
+ACCESSORS_DECL(process, airlock_ptr);
+
+// Returns the airlock struct for the given process.
+process_airlock_t *get_process_airlock(value_t process);
 
 // A collection of values that make up a pending job.
 typedef struct {

@@ -198,7 +198,6 @@ TEST(safe, weak) {
 }
 
 TEST(safe, self_destruct) {
-  return;
   CREATE_RUNTIME();
 
   value_t arr = new_heap_array(runtime, 5);
@@ -209,3 +208,4 @@ TEST(safe, self_destruct) {
   // that to happen.
   DISPOSE_RUNTIME();
 }
+

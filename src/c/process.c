@@ -828,12 +828,14 @@ TRIVIAL_PRINT_ON_IMPL(Process, process);
 ACCESSORS_IMPL(Process, process, acInFamily, ofFifoBuffer, WorkQueue, work_queue);
 ACCESSORS_IMPL(Process, process, acInFamily, ofTask, RootTask, root_task);
 ACCESSORS_IMPL(Process, process, acInFamily, ofHashSource, HashSource, hash_source);
+ACCESSORS_IMPL(Process, process, acInFamily, ofVoidP, AirlockPtr, airlock_ptr);
 
 value_t process_validate(value_t self) {
   VALIDATE_FAMILY(ofProcess, self);
   VALIDATE_FAMILY(ofFifoBuffer, get_process_work_queue(self));
   VALIDATE_FAMILY(ofTask, get_process_root_task(self));
   VALIDATE_FAMILY(ofHashSource, get_process_hash_source(self));
+  VALIDATE_FAMILY(ofVoidP, get_process_airlock_ptr(self));
   return success();
 }
 
@@ -877,6 +879,41 @@ value_t take_process_job(value_t process, job_t *job_out) {
 bool is_process_idle(value_t process) {
   return is_fifo_buffer_empty(get_process_work_queue(process));
 }
+
+value_t finalize_process(garbage_value_t dead_self) {
+  // Because this deals with a dead object during gc there are hardly any
+  // implicit type checks, instead this has to be done with raw offsets and
+  // explicit checks. Errors in this code are likely to be a nightmare to debug
+  // so extra effort to sanity check everything is worthwhile.
+  CHECK_EQ("running process finalizer on non-process", ofProcess,
+      get_garbage_object_family(dead_self));
+  garbage_value_t dead_airlock_ptr = get_garbage_object_field(dead_self,
+      kProcessAirlockPtrOffset);
+  CHECK_EQ("invalid process during finalization", ofVoidP,
+      get_garbage_object_family(dead_airlock_ptr));
+  garbage_value_t airlock_value = get_garbage_object_field(dead_airlock_ptr,
+      kVoidPValueOffset);
+  void *raw_airlock_ptr = value_to_pointer_bit_cast(airlock_value.value);
+  process_airlock_t *airlock = (process_airlock_t*) raw_airlock_ptr;
+  if (!process_airlock_dispose(airlock))
+    return new_system_error_condition(seUnspecified);
+  return success();
+}
+
+process_airlock_t *process_airlock_new() {
+  memory_block_t block = allocator_default_malloc(sizeof(process_airlock_t));
+  if (memory_block_is_empty(block))
+    return NULL;
+  process_airlock_t *airlock = (process_airlock_t*) block.memory;
+  return airlock;
+}
+
+bool process_airlock_dispose(process_airlock_t *airlock) {
+  allocator_default_free(new_memory_block(airlock, sizeof(process_airlock_t)));
+  return true;
+}
+
+
 
 
 /// ## Reified arguments

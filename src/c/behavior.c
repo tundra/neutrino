@@ -633,6 +633,16 @@ static value_t get_internal_object_type(value_t self, runtime_t *runtime) {
   return new_condition(ccInternalFamily);
 }
 
+value_t finalize_heap_object(value_t garbage) {
+  CHECK_DOMAIN(vdHeapObject, garbage);
+  value_t header = get_heap_object_header(garbage);
+  CHECK_FALSE("finalizing live object", in_domain(vdMovedObject, header));
+  family_behavior_t *behavior = get_species_family_behavior(header);
+  garbage_value_t wrapper = {garbage};
+  CHECK_FALSE("finalizing object without finalizer", behavior->finalize == NULL);
+  return (behavior->finalize(wrapper));
+}
+
 
 // ## Scoping
 
@@ -679,6 +689,9 @@ family_behavior_t k##Family##Behavior = {                                      \
     set_##family##_mode_unchecked),                                            \
   mfOw MINOR (                                                                 \
     ensure_##family##_owned_values_frozen,                                     \
+    NULL),                                                                     \
+  mfFl MINOR (                                                                 \
+    finalize_##family,                                                         \
     NULL)                                                                      \
 };
 ENUM_HEAP_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)

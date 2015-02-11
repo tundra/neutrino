@@ -21,7 +21,13 @@ typedef enum {
   // be disposed. This really only makes sense if combined with some of the
   // other flags but it's treated orthogonally because it can be and to make
   // testing easier without involving a bunch of other flags.
-  tfSelfDestruct = 0x2
+  tfSelfDestruct = 0x2,
+  // When the object tracked by this tracker becomes garbage invoke the object's
+  // finalizer. Note that creating multiple finalizing trackers for the same
+  // object will cause the finalizer to be called for each tracker so you either
+  // need to ensure that finalization is idempotent or that only one tracker is
+  // created for an object. Selbstdisziplin haben!
+  tfFinalize = 0x4
 } object_tracker_flags_t;
 
 // Flags set by the gc on object trackers that indicate their current state.

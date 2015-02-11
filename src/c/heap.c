@@ -340,8 +340,12 @@ value_t heap_post_process_object_trackers(heap_t *heap) {
       } else {
         // This is a weak reference whose object hasn't been moved so it must
         // be garbage; update the tracker's state accordingly.
+        value_t garbage_value = current->value;
         current->value = nothing();
         current->state |= tsGarbage;
+        if ((current->flags & tfFinalize) != 0)
+          // This object has a finalizer; call it.
+          TRY(finalize_heap_object(garbage_value));
         if ((current->flags & tfSelfDestruct) != 0) {
           // This is a self-destructing tracker and it's become time to kill it.
           heap_dispose_object_tracker(heap, current);
@@ -350,6 +354,12 @@ value_t heap_post_process_object_trackers(heap_t *heap) {
     }
   }
   return success();
+}
+
+// Is there a action or side-effect associated with the value of this tracker
+// becoming garbage?
+static bool object_tracker_has_action_on_garbage(object_tracker_t *tracker) {
+  return (tracker->flags & (tfSelfDestruct | tfFinalize)) != 0;
 }
 
 bool heap_collect_before_dispose(heap_t *heap) {
@@ -362,7 +372,7 @@ bool heap_collect_before_dispose(heap_t *heap) {
   object_tracker_iter_init(&iter, heap, true);
   while (object_tracker_iter_has_current(&iter)) {
     object_tracker_t *current = object_tracker_iter_get_current(&iter);
-    if ((current->flags & tfSelfDestruct) != 0)
+    if (object_tracker_has_action_on_garbage(current))
       return true;
     object_tracker_iter_advance(&iter);
   }

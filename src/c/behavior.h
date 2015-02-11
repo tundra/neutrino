@@ -102,6 +102,8 @@ struct family_behavior_t {
   // fail because of mode discipline but may fail if interacting with the
   // runtime fails.
   value_t (*ensure_owned_values_frozen)(runtime_t *runtime, value_t self);
+  // Clean up after the value has become garbage.
+  value_t (*finalize)(garbage_value_t dead_self);
 };
 
 // Validates a heap object. Check fails if validation fails except in soft check
@@ -200,6 +202,9 @@ value_t get_primary_type(value_t value, runtime_t *runtime);
 // Performs the on-scope-exit action for the given derived object.
 void on_derived_object_exit(value_t self);
 
+// Finalize the given heap object which must be un-migrated.
+value_t finalize_heap_object(value_t garbage);
+
 // Returns a value suitable to be returned as a hash from the address of an
 // object.
 #define OBJ_ADDR_HASH(VAL) new_integer((VAL).encoded)
@@ -255,6 +260,9 @@ MD(,                                                                           \
 mfOw MINOR (                                                                   \
   value_t ensure_##family##_owned_values_frozen(runtime_t *runtime,            \
       value_t self);,                                                          \
+  )                                                                            \
+mfFl MINOR (                                                                   \
+  value_t finalize_##family(garbage_value_t dead_self);,                       \
   )
 ENUM_HEAP_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
 #undef __DECLARE_FAMILY_FUNCTIONS__

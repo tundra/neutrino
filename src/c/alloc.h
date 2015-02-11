@@ -433,6 +433,9 @@ value_t new_heap_current_module_ast(runtime_t *runtime);
 // Allocates a new heap object in the given runtime of the given size and
 // initializes it with the given type but requires the caller to complete
 // initialization.
+//
+// Note that if the value has finalization behavior you need to explicitly
+// create an object tracker that finalizes it.
 value_t alloc_heap_object(runtime_t *runtime, size_t bytes, value_t species);
 
 // Creates and returns a clone of the given object. The contents of the object

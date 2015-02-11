@@ -704,17 +704,36 @@ value_t new_heap_backtrace_entry(runtime_t *runtime, value_t invocation,
 }
 
 value_t new_heap_process(runtime_t *runtime) {
+  // First do everything that can fail. If it does fail then that's okay, there
+  // will be no references to these objects so they should die untouched after
+  // the next gc.
   size_t size = kProcessSize;
   TRY_DEF(work_queue, new_heap_fifo_buffer(runtime, kProcessWorkQueueWidth, 256));
   TRY_DEF(root_task, new_heap_task(runtime, nothing()));
+  TRY_DEF(airlock_ptr, new_heap_void_p(runtime, NULL));
   tinymt64_state_t new_state;
   uint64_t hash_source_seed = tinymt64_next_uint64(&runtime->random, &new_state);
   TRY_DEF(hash_source, new_heap_hash_source(runtime, hash_source_seed));
   TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, process_species)));
+  // Once everything is allocated we can initialize the result. From this point
+  // on only airlock allocation can fail.
   set_process_work_queue(result, work_queue);
   set_process_root_task(result, root_task);
   set_process_hash_source(result, hash_source);
+  set_process_airlock_ptr(result, airlock_ptr);
   set_task_process(root_task, result);
+  // Allocate the airlock. If this fails, again, it's safe to leave everything
+  // as garbage.
+  process_airlock_t *airlock = process_airlock_new();
+  if (airlock == NULL)
+    return new_system_error_condition(seAllocationFailed);
+  // Store the airlock in the process and schedule for it to be finalized at
+  // the same time. From now on the process object has to be in a consistent
+  // state because the finalizer may be invoked at any time.
+  set_void_p_value(airlock_ptr, airlock);
+  runtime_protect_value_with_flags(runtime, result, tfWeak | tfSelfDestruct | tfFinalize);
+  // Don't update the random state until after we know the whole allocation has
+  // succeeded.
   runtime->random.state = new_state;
   return post_create_sanity_check(result, size);
 }

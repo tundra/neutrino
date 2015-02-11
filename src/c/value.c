@@ -159,6 +159,36 @@ value_t get_heap_object_header(value_t value) {
   return *access_heap_object_field(value, kHeapObjectHeaderOffset);
 }
 
+garbage_value_t get_garbage_object_field(garbage_value_t ref, size_t index) {
+  value_t value = ref.value;
+  CHECK_DOMAIN(vdHeapObject, value);
+  // The object may have been moved so we first check whether it has and if so
+  // chase it.
+  value_t header = get_heap_object_header(value);
+  if (in_domain(vdMovedObject, header))
+    value = get_moved_object_target(header);
+  CHECK_DOMAIN(vdHeapObject, value);
+  // Grab the raw field unchecked.
+  garbage_value_t result = {*access_heap_object_field(value, index)};
+  return result;
+}
+
+heap_object_family_t get_garbage_object_family(garbage_value_t ref) {
+  value_t value = ref.value;
+  CHECK_DOMAIN(vdHeapObject, value);
+  // The object may have been moved so we first check whether it has and if so
+  // chase it.
+  value_t original_header = get_heap_object_header(value);
+  if (in_domain(vdMovedObject, original_header))
+    value = get_moved_object_target(original_header);
+  CHECK_DOMAIN(vdHeapObject, value);
+  // Get the species. If the object has been moved this will be a normal
+  // species, if it hasn't it may also be, but it may also be a dead species. In
+  // that case the family enum will still be intact within it.
+  value_t species = get_heap_object_species(value);
+  return get_species_instance_family(species);
+}
+
 void set_heap_object_species(value_t value, value_t species) {
   CHECK_FAMILY(ofSpecies, species);
   set_heap_object_header(value, species);
