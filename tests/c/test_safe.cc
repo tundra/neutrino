@@ -25,7 +25,7 @@ TEST(safe, simple_safe_value) {
   ASSERT_VALEQ(yes(), get_array_at(array_after, 0));
   ASSERT_VALEQ(no(), get_array_at(array_after, 1));
 
-  dispose_safe_value(runtime, s_array);
+  safe_value_destroy(runtime, s_array);
 
   DISPOSE_RUNTIME();
 }
@@ -43,9 +43,9 @@ TEST(safe, simple_safe_conditions) {
   safe_value_t s_obj = runtime_protect_value(runtime, obj);
   ASSERT_FALSE(safe_value_is_immediate(s_obj));
 
-  dispose_safe_value(runtime, s_cond);
-  dispose_safe_value(runtime, s_int);
-  dispose_safe_value(runtime, s_obj);
+  safe_value_destroy(runtime, s_cond);
+  safe_value_destroy(runtime, s_int);
+  safe_value_destroy(runtime, s_obj);
 
   DISPOSE_RUNTIME();
 }
@@ -74,7 +74,7 @@ static safe_value_t simple_try_set_helper(runtime_t *runtime, value_t value,
   safe_value_t target;
   S_TRY_SET(target, runtime_protect_value(runtime, value));
   *succeeded = true;
-  dispose_safe_value(runtime, target);
+  safe_value_destroy(runtime, target);
   return protect_immediate(success());
 }
 
@@ -151,8 +151,8 @@ TEST(safe, derived) {
   ASSERT_EQ(2, get_array_length(after_array));
   ASSERT_TRUE(is_same_value(after_array, get_derived_object_host(deref(s_p1))));
 
-  dispose_safe_value(runtime, s_p0);
-  dispose_safe_value(runtime, s_p1);
+  safe_value_destroy(runtime, s_p0);
+  safe_value_destroy(runtime, s_p1);
 
   DISPOSE_RUNTIME();
 }
@@ -173,7 +173,7 @@ TEST(safe, weak) {
   ASSERT_SUCCESS(runtime_garbage_collect(runtime));
   ASSERT_TRUE(safe_value_is_garbage(s_a0));
   ASSERT_TRUE(is_nothing(deref(s_a0)));
-  dispose_safe_value(runtime, s_a0);
+  safe_value_destroy(runtime, s_a0);
 
   // An object with a strong reference should stay alive...
   value_t a1 = new_heap_array(runtime, 2);
@@ -189,10 +189,10 @@ TEST(safe, weak) {
   ASSERT_TRUE(is_same_value(deref(s_a11), deref(s_a12)));
 
   // ...until the strong reference is removed, then it should die.
-  dispose_safe_value(runtime, s_a12);
+  safe_value_destroy(runtime, s_a12);
   ASSERT_SUCCESS(runtime_garbage_collect(runtime));
   ASSERT_TRUE(safe_value_is_garbage(s_a11));
-  dispose_safe_value(runtime, s_a11);
+  safe_value_destroy(runtime, s_a11);
 
   DISPOSE_RUNTIME();
 }

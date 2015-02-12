@@ -99,8 +99,8 @@ TEST(runtime, safe_value_loop) {
   ASSERT_SAME(a1a, get_array_at(a0a, 0));
   ASSERT_SAME(a1a, get_array_at(a0a, 1));
   ASSERT_SAME(a0a, get_array_at(a1a, 0));
-  dispose_safe_value(runtime, s_a0);
-  dispose_safe_value(runtime, s_a1);
+  safe_value_destroy(runtime, s_a0);
+  safe_value_destroy(runtime, s_a1);
 
   DISPOSE_RUNTIME();
 }

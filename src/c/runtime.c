@@ -521,7 +521,7 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
   runtime->file_system = config->file_system;
   if (runtime->file_system == NULL)
     runtime->file_system = file_system_native();
-  runtime->random = new_tinymt64(tinymt64_params_default(), config->random_seed);
+  runtime->random = tinymt64_construct(tinymt64_params_default(), config->random_seed);
   TRY(runtime_hard_init(runtime, config));
   TRY(runtime_soft_init(runtime));
   TRY(runtime_freeze_shared_state(runtime));
@@ -813,7 +813,7 @@ value_t runtime_dispose(runtime_t *runtime) {
   // If preparing fails we keep going and try to free the allocated memory.
   // This may be a bad idea but until there's some evidence one way or the other
   // let's do it this way.
-  dispose_safe_value(runtime, runtime->module_loader);
+  safe_value_destroy(runtime, runtime->module_loader);
   result = condition_and(result, heap_dispose(&runtime->heap));
   if (runtime->gc_fuzzer != NULL) {
     allocator_default_free(new_memory_block(runtime->gc_fuzzer, sizeof(gc_fuzzer_t)));
@@ -871,10 +871,10 @@ value_t safe_runtime_plankton_deserialize(runtime_t *runtime, safe_value_t blob)
   RETRY_ONCE_IMPL(runtime, runtime_plankton_deserialize(runtime, deref(blob)));
 }
 
-void dispose_safe_value(runtime_t *runtime, safe_value_t s_value) {
+void safe_value_destroy(runtime_t *runtime, safe_value_t s_value) {
   if (!safe_value_is_immediate(s_value)) {
     object_tracker_t *gc_safe = safe_value_to_object_tracker(s_value);
-    heap_dispose_object_tracker(&runtime->heap, gc_safe);
+    heap_destroy_object_tracker(&runtime->heap, gc_safe);
   }
 }
 

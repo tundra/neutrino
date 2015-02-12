@@ -895,7 +895,7 @@ value_t finalize_process(garbage_value_t dead_self) {
       kVoidPValueOffset);
   void *raw_airlock_ptr = value_to_pointer_bit_cast(airlock_value.value);
   process_airlock_t *airlock = (process_airlock_t*) raw_airlock_ptr;
-  if (!process_airlock_dispose(airlock))
+  if (!process_airlock_destroy(airlock))
     return new_system_error_condition(seUnspecified);
   return success();
 }
@@ -908,7 +908,7 @@ process_airlock_t *process_airlock_new() {
   return airlock;
 }
 
-bool process_airlock_dispose(process_airlock_t *airlock) {
+bool process_airlock_destroy(process_airlock_t *airlock) {
   allocator_default_free(new_memory_block(airlock, sizeof(process_airlock_t)));
   return true;
 }

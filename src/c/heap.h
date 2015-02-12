@@ -213,7 +213,7 @@ object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value,
     uint32_t flags);
 
 // Disposes an object tracker.
-void heap_dispose_object_tracker(heap_t *heap, object_tracker_t *gc_safe);
+void heap_destroy_object_tracker(heap_t *heap, object_tracker_t *gc_safe);
 
 
 // --- F i e l d   i t e r a t i o n ---

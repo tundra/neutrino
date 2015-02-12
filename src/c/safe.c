@@ -67,7 +67,7 @@ void safe_value_pool_init(safe_value_pool_t *pool, safe_value_t *values,
 
 void safe_value_pool_dispose(safe_value_pool_t *pool) {
   for (size_t i = 0; i < pool->used; i++)
-    dispose_safe_value(pool->runtime, pool->values[i]);
+    safe_value_destroy(pool->runtime, pool->values[i]);
 }
 
 safe_value_t protect(safe_value_pool_t *pool, value_t value) {

@@ -804,7 +804,7 @@ TEST(method, dense_perfect_lookup) {
   value_t op = (OP);                                                           \
   value_to_string_t to_string;                                                 \
   ASSERT_C_STREQ(EXPECTED, value_to_string(&to_string, op));                   \
-  dispose_value_to_string(&to_string);                                         \
+  value_to_string_dispose(&to_string);                                         \
 } while (false)
 
 // Shorthand for creating an op with the given type and value.

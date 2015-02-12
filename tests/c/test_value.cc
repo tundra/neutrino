@@ -521,14 +521,14 @@ TEST(value, rehash_map) {
   for (size_t i = 0; i < kMapCount; i++) {
     // Dispose the maps one at a time and then garbage collect to get them
     // to move around.
-    dispose_safe_value(runtime, s_maps[i]);
+    safe_value_destroy(runtime, s_maps[i]);
     runtime_garbage_collect(runtime);
     assert_strings_present(i + 1, s_maps, s_insts);
   }
 
   // Give back the instance handles.
   for (size_t i = 0; i < kInstanceCount; i++)
-    dispose_safe_value(runtime, s_insts[i]);
+    safe_value_destroy(runtime, s_insts[i]);
 
   DISPOSE_RUNTIME();
 }
@@ -795,9 +795,9 @@ TEST(value, set_value_mode) {
 #define CHECK_UNSUPPORTED(vdDomain, ofFamily, ubCause, EXPECTED) do {          \
   value_t condition = new_unsupported_behavior_condition(vdDomain, ofFamily, ubCause);\
   value_to_string_t to_string;                                                 \
-  const char *found = value_to_string(&to_string, condition);                     \
+  const char *found = value_to_string(&to_string, condition);                  \
   ASSERT_C_STREQ(EXPECTED, found);                                             \
-  dispose_value_to_string(&to_string);                                         \
+  value_to_string_dispose(&to_string);                                         \
 } while (false)
 
 TEST(value, unsupported) {
@@ -814,7 +814,7 @@ TEST(value, invalid_input) {
   value_t condition = new_invalid_input_condition_with_hint(halp);
   value_to_string_t to_string;
   ASSERT_C_STREQ("%<condition: InvalidInput(ha..p!)>", value_to_string(&to_string, condition));
-  dispose_value_to_string(&to_string);
+  value_to_string_dispose(&to_string);
 }
 
 
@@ -839,7 +839,7 @@ TEST(value, paths) {
   value_to_string_t to_string;
   const char *found = value_to_string(&to_string, path);
   ASSERT_C_STREQ(":a:b:c", found);
-  dispose_value_to_string(&to_string);
+  value_to_string_dispose(&to_string);
 
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();

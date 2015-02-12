@@ -200,7 +200,7 @@ object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value,
   return new_tracker;
 }
 
-void heap_dispose_object_tracker(heap_t *heap, object_tracker_t *tracker) {
+void heap_destroy_object_tracker(heap_t *heap, object_tracker_t *tracker) {
   CHECK_REL("freed too many object trackers", heap->object_tracker_count, >, 0);
   object_tracker_t *prev = tracker->prev;
   CHECK_PTREQ("wrong tracker prev", tracker, prev->next);
@@ -348,7 +348,7 @@ value_t heap_post_process_object_trackers(heap_t *heap) {
           TRY(finalize_heap_object(garbage_value));
         if ((current->flags & tfSelfDestruct) != 0) {
           // This is a self-destructing tracker and it's become time to kill it.
-          heap_dispose_object_tracker(heap, current);
+          heap_destroy_object_tracker(heap, current);
         }
       }
     }

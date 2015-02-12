@@ -589,7 +589,7 @@ process_airlock_t *process_airlock_new();
 
 // Dispose the airlock's state appropriately, including deleting the airlock
 // value.
-bool process_airlock_dispose(process_airlock_t *airlock);
+bool process_airlock_destroy(process_airlock_t *airlock);
 
 static const size_t kProcessSize = HEAP_OBJECT_SIZE(4);
 static const size_t kProcessWorkQueueOffset = HEAP_OBJECT_FIELD_OFFSET(0);

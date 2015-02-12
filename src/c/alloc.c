@@ -604,7 +604,7 @@ value_t new_heap_hash_source(runtime_t *runtime, uint64_t seed) {
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, hash_source_species)));
   hash_source_state_t *state = get_hash_source_state(result);
-  state->twister = new_tinymt64(tinymt64_params_default(), seed);
+  state->twister = tinymt64_construct(tinymt64_params_default(), seed);
   state->next_serial = 0;
   set_hash_source_field(result, field);
   return post_create_sanity_check(result, size);

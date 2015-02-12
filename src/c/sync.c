@@ -145,8 +145,8 @@ static opaque_t on_native_request_success(opaque_t opaque_state,
   // Start out by cleaning up the state.
   native_request_state_t *state = (native_request_state_t*) o2p(opaque_state);
   value_t promise = state->promise;
-  callback_dispose(state->callback);
-  opaque_promise_dispose(state->request.promise);
+  callback_destroy(state->callback);
+  opaque_promise_destroy(state->request.promise);
   allocator_default_free(new_memory_block(state, sizeof(native_request_state_t)));
   // TODO: the promise must not be fulfilled in the middle of a turn, it should
   //   be scheduled now but only done after the end of the turn.
@@ -169,7 +169,7 @@ static value_t native_remote_call_with_args(builtin_arguments_t *args) {
   native_request_t *request = &state->request;
   request->promise = opaque_promise_empty();
   // Ensure that we get notified when the remote responds.
-  state->callback = new_unary_callback_1(on_native_request_success, p2o(state));
+  state->callback = unary_callback_new_1(on_native_request_success, p2o(state));
   opaque_promise_on_success(request->promise, state->callback);
   // Pass the request on to the remote.
   void *impl_ptr = get_void_p_value(get_native_remote_impl(self));

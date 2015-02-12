@@ -123,7 +123,7 @@ typedef struct {
 const char *value_to_string(value_to_string_t *data, value_t value);
 
 // Disposes the data buffer.
-void dispose_value_to_string(value_to_string_t *data);
+void value_to_string_dispose(value_to_string_t *data);
 
 
 // --- V a l i d a t i o n ---

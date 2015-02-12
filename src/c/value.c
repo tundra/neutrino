@@ -2868,6 +2868,6 @@ const char *value_to_string(value_to_string_t *data, value_t value) {
   return data->str.chars;
 }
 
-void dispose_value_to_string(value_to_string_t *data) {
+void value_to_string_dispose(value_to_string_t *data) {
   string_buffer_dispose(&data->buf);
 }

@@ -309,7 +309,7 @@ value_t runtime_plankton_deserialize(runtime_t *runtime, value_t blob);
 value_t safe_runtime_plankton_deserialize(runtime_t *runtime, safe_value_t blob);
 
 // Disposes a gc-safe reference.
-void dispose_safe_value(runtime_t *runtime, safe_value_t value_s);
+void safe_value_destroy(runtime_t *runtime, safe_value_t value_s);
 
 // Set whether fuzzing is on or off. If there is no fuzzer this has no effect.
 void runtime_toggle_fuzzing(runtime_t *runtime, bool enable);
