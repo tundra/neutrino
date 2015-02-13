@@ -196,7 +196,8 @@ static value_t new_lookup_error_condition(lookup_error_cause_t cause) {
 #define ENUM_SYSTEM_ERROR_CAUSES(F)                                            \
   F(Unspecified)                                                               \
   F(AllocationFailed)                                                          \
-  F(FileNotFound)
+  F(FileNotFound)                                                              \
+  F(SystemCallFailed)
 
 // Reasons for a system error.
 typedef enum {

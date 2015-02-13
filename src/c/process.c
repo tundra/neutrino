@@ -877,7 +877,12 @@ value_t take_process_job(value_t process, job_t *job_out) {
 }
 
 bool is_process_idle(value_t process) {
-  return is_fifo_buffer_empty(get_process_work_queue(process));
+  // If there is more work to do the process is definitely not idle.
+  if (!is_fifo_buffer_empty(get_process_work_queue(process)))
+    return false;
+  // If there is no more work but we're still waiting for outstanding requests
+  // it also shouldn't be considered idle.
+  return get_process_airlock(process)->open_request_count == 0;
 }
 
 value_t finalize_process(garbage_value_t dead_self) {
@@ -900,15 +905,68 @@ value_t finalize_process(garbage_value_t dead_self) {
   return success();
 }
 
+process_airlock_t *get_process_airlock(value_t process) {
+  value_t ptr = get_process_airlock_ptr(process);
+  return (process_airlock_t*) get_void_p_value(ptr);
+}
+
 process_airlock_t *process_airlock_new() {
   memory_block_t block = allocator_default_malloc(sizeof(process_airlock_t));
   if (memory_block_is_empty(block))
     return NULL;
   process_airlock_t *airlock = (process_airlock_t*) block.memory;
+  airlock->pending_result = NULL;
+  airlock->open_request_count = 0;
+  native_semaphore_construct_with_count(&airlock->pending_results_available, 0);
+  native_semaphore_construct_with_count(&airlock->pending_result_vacancies, 1);
+  if (!native_semaphore_initialize(&airlock->pending_results_available)
+   || !native_semaphore_initialize(&airlock->pending_result_vacancies))
+    return NULL;
   return airlock;
 }
 
+void process_airlock_offer_result(process_airlock_t *airlock,
+    native_request_state_t *result) {
+  // Acquire room to store the result.
+  duration_t unlimited = {true, 0};
+  native_semaphore_acquire(&airlock->pending_result_vacancies, unlimited);
+  CHECK_TRUE("overwriting result", airlock->pending_result == NULL);
+  // Store the result.
+  airlock->pending_result = result;
+  // Release a pending result.
+  native_semaphore_release(&airlock->pending_results_available);
+}
+
+value_t deliver_process_outstanding_results(value_t process) {
+  CHECK_FAMILY(ofProcess, process);
+  process_airlock_t *airlock = get_process_airlock(process);
+  native_request_state_t *state = NULL;
+  if (!process_airlock_try_take(airlock, &state))
+    // There were no pending results.
+    return success();
+  airlock->open_request_count--;
+  fulfill_promise(state->surface_promise, state->result);
+  native_request_state_destroy(state);
+  return success();
+}
+
+// If the given airlock has a pending result takes it, stores it in result_out,
+// and returns true. If not returns false. Never blocks.
+bool process_airlock_try_take(process_airlock_t *airlock,
+    native_request_state_t **result_out) {
+  if (native_semaphore_try_acquire(&airlock->pending_results_available)) {
+    *result_out = airlock->pending_result;
+    airlock->pending_result = NULL;
+    native_semaphore_release(&airlock->pending_result_vacancies);
+    return true;
+  } else {
+    return false;
+  }
+}
+
 bool process_airlock_destroy(process_airlock_t *airlock) {
+  native_semaphore_dispose(&airlock->pending_results_available);
+  native_semaphore_dispose(&airlock->pending_result_vacancies);
   allocator_default_free(new_memory_block(airlock, sizeof(process_airlock_t)));
   return true;
 }

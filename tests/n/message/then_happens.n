@@ -5,9 +5,9 @@ import $core;
 do {
   $core:print_ln("a");
   def $p0 := new $core:Promise();
-  def $p1 := $p0.then(fn => $core:print_ln(1));
-  def $p2 := $p1.then(fn => $core:print_ln(2));
-  def $p3 := $p2.then(fn {
+  def $p1 := $p0.then(fn $x => $core:print_ln(1));
+  def $p2 := $p1.then(fn $x => $core:print_ln(2));
+  def $p3 := $p2.then(fn $x {
     $core:print_ln(3);
     $core:print_ln($p0.get());
     $core:print_ln($p1.get());
@@ -17,7 +17,7 @@ do {
   $core:delay(fn {
     $core:print_ln("c");
     $p0.fulfill!(0);
-    $core:print_ln("d");    
+    $core:print_ln("d");
   });
   $core:print_ln("e");
 }
