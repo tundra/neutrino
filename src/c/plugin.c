@@ -80,7 +80,7 @@ value_t new_native_remote(runtime_t *runtime, native_remote_t *impl) {
 }
 
 bool native_request_fulfill(native_request_t *request, value_t value) {
-  return opaque_promise_fulfill(request->promise, v2o(value));
+  return opaque_promise_fulfill(request->impl_promise, v2o(value));
 }
 
 void schedule_time_request(native_request_t *request) {
