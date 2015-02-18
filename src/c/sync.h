@@ -79,6 +79,29 @@ static bool is_promise_state_resolved(value_t self) {
 /// A native remote is a remote process that is immediately backed by an
 /// in-process native implementation.
 
+// Extra state maintained around a native request.
+struct native_request_state_t {
+  // The part of the data that will be passed to the native impl.
+  native_request_t request;
+  // The callback that will be called; kept around so we can destroy it later.
+  unary_callback_t *callback;
+  // The airlock of the process to return the result to.
+  process_airlock_t *airlock;
+  // The promise value that will be delivered to the surface language to
+  // represent the result of this request.
+  value_t surface_promise;
+  // This is where the result will be held between the request completing and
+  // the process delivering it to the promise.
+  value_t result;
+};
+
+// Create an initialize a new native request state.
+value_t native_requests_state_new(runtime_t *runtime, value_t process,
+    native_request_state_t **result_out);
+
+// Destroy the given state.
+void native_request_state_destroy(native_request_state_t *state);
+
 static const size_t kNativeRemoteSize = HEAP_OBJECT_SIZE(2);
 static const size_t kNativeRemoteImplOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kNativeRemoteDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(1);

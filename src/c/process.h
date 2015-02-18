@@ -37,6 +37,7 @@
 
 #include "derived.h"
 #include "value-inl.h"
+#include "sync/semaphore.h"
 
 /// ## Stack piece
 ///
@@ -576,16 +577,36 @@ ACCESSORS_DECL(task, stack);
 /// (potentially) independently of each other and can only affect each other
 /// through explicitly sending asynchronous messages.
 
+typedef struct native_request_state_t native_request_state_t;
+
 // Data allocated in the C heap which is accessible from other threads
 // throughout the lifetime of the process. This is how asynchronous interaction
 // with a process is implemented: other threads can put data into the airlock
 // and the process will take it out when it wants.
 typedef struct {
-  size_t placeholder;
+  // How many results have been delivered into this airlock?
+  native_semaphore_t pending_results_available;
+  // How much space is available for results to be delivered?
+  native_semaphore_t pending_result_vacancies;
+  // The spot to place a result.
+  native_request_state_t *pending_result;
+  // The number of outstanding requests whose results haven't been delivered
+  // to their associated promise.
+  size_t open_request_count;
 } process_airlock_t;
 
 // Create and initialize a process airlock. Returns null if anything fails.
 process_airlock_t *process_airlock_new();
+
+// Blocks until a space opens up in the given airlock and then delivers the
+// given result.
+void process_airlock_offer_result(process_airlock_t *airlock,
+    native_request_state_t *result);
+
+// If the given airlock has a pending result takes it, stores it in result_out,
+// and returns true. If not returns false. Never blocks.
+bool process_airlock_try_take(process_airlock_t *airlock,
+    native_request_state_t **result_out);
 
 // Dispose the airlock's state appropriately, including deleting the airlock
 // value.
@@ -638,6 +659,10 @@ value_t offer_process_job(runtime_t *runtime, value_t process, job_t *job);
 // Returns the next scheduled code block to be executed on the given process.
 // If there are no more work left a NotFound condition is returned.
 value_t take_process_job(value_t process, job_t *job_out);
+
+// Process any pending results that have been delivered to this process'
+// airlock.
+value_t deliver_process_outstanding_results(value_t process);
 
 // Returns true if there is no more work for this process to perform.
 bool is_process_idle(value_t process);

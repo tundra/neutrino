@@ -4,13 +4,14 @@
 import $assert;
 import $core;
 
-def $test_placeholder() {
-  # TODO: given that @time is native the promise shouldn't resolve immediately,
-  #   only after the end of this turn.
+def $test_time_call() {
   def $time_p := @core:time->call();
-  $assert:equals(52, $time_p.get());
+  $assert:not($time_p.is_resolved?);
+  $time_p.then(fn ($value) {
+    $assert:equals(52, $value);
+  });
 }
 
 do {
-  $test_placeholder();
+  $test_time_call();
 }

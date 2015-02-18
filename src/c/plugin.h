@@ -82,7 +82,9 @@ value_t new_c_object(runtime_t *runtime, value_t factory, blob_t data,
 // Data associated with a request issued from the vm to a native remote
 // implementation.
 typedef struct {
-  opaque_promise_t *promise;
+  // The promise that must be fulfilled for a result to be delivered to the
+  // caller.
+  opaque_promise_t *impl_promise;
 } native_request_t;
 
 // Deliver the given value as the successful result of the given request. If the

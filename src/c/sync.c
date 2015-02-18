@@ -130,29 +130,38 @@ void native_remote_print_on(value_t self, print_on_context_t *context) {
   string_buffer_printf(context->buf, ">");
 }
 
-// Extra state maintained around a native request.
-typedef struct {
-  native_request_t request;
-  unary_callback_t *callback;
-  value_t promise;
-} native_request_state_t;
-
-// Called when a native request succeeds. Note that there is no guaranteed of
-// which thread will call this so any access to the runtime needs to be
-// explicitly synchronized.
+// Called when a native request succeeds. Note that there is no guarantee of
+// which thread will call this.
 static opaque_t on_native_request_success(opaque_t opaque_state,
     opaque_t opaque_result) {
-  // Start out by cleaning up the state.
   native_request_state_t *state = (native_request_state_t*) o2p(opaque_state);
-  value_t promise = state->promise;
-  callback_destroy(state->callback);
-  opaque_promise_destroy(state->request.promise);
-  allocator_default_free(new_memory_block(state, sizeof(native_request_state_t)));
-  // TODO: the promise must not be fulfilled in the middle of a turn, it should
-  //   be scheduled now but only done after the end of the turn.
-  value_t result = o2v(opaque_result);
-  fulfill_promise(promise, result);
+  state->result = o2v(opaque_result);
+  process_airlock_offer_result(state->airlock, state);
   return opaque_null();
+}
+
+value_t native_requests_state_new(runtime_t *runtime, value_t process,
+    native_request_state_t **result_out) {
+  TRY_DEF(promise, new_heap_pending_promise(runtime));
+  memory_block_t memory = allocator_default_malloc(sizeof(native_request_state_t));
+  if (memory_block_is_empty(memory))
+    return new_system_error_condition(seSystemCallFailed);
+  native_request_state_t *state = (native_request_state_t*) memory.memory;
+  state->surface_promise = promise;
+  state->airlock = get_process_airlock(process);
+  state->result = nothing();
+  state->callback = unary_callback_new_1(on_native_request_success, p2o(state));
+  native_request_t *request = &state->request;
+  request->impl_promise = opaque_promise_empty();
+  opaque_promise_on_success(request->impl_promise, state->callback);
+  *result_out = state;
+  return success();
+}
+
+void native_request_state_destroy(native_request_state_t *state) {
+  callback_destroy(state->callback);
+  opaque_promise_destroy(state->request.impl_promise);
+  allocator_default_free(new_memory_block(state, sizeof(native_request_state_t)));
 }
 
 static value_t native_remote_call_with_args(builtin_arguments_t *args) {
@@ -161,21 +170,15 @@ static value_t native_remote_call_with_args(builtin_arguments_t *args) {
   value_t reified = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofReifiedArguments, reified);
   runtime_t *runtime = get_builtin_runtime(args);
-  TRY_DEF(promise, new_heap_pending_promise(runtime));
-  // Allocate and initialize the request state.
-  memory_block_t memory = allocator_default_malloc(sizeof(native_request_state_t));
-  native_request_state_t *state = (native_request_state_t*) memory.memory;
-  state->promise = promise;
-  native_request_t *request = &state->request;
-  request->promise = opaque_promise_empty();
+  native_request_state_t *state = NULL;
+  value_t process = get_builtin_process(args);
+  TRY(native_requests_state_new(runtime, process, &state));
+  get_process_airlock(process)->open_request_count++;
   // Ensure that we get notified when the remote responds.
-  state->callback = unary_callback_new_1(on_native_request_success, p2o(state));
-  opaque_promise_on_success(request->promise, state->callback);
-  // Pass the request on to the remote.
   void *impl_ptr = get_void_p_value(get_native_remote_impl(self));
   native_remote_t *impl = (native_remote_t*) impl_ptr;
-  impl->schedule_request(request);
-  return promise;
+  impl->schedule_request(&state->request);
+  return state->surface_promise;
 }
 
 value_t add_native_remote_builtin_implementations(runtime_t *runtime,

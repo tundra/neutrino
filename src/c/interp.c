@@ -935,6 +935,7 @@ static value_t resolve_job_promise(value_t result, job_t *job) {
 static value_t run_next_process_job(safe_value_t s_ambience, safe_value_t s_process) {
   runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
   job_t job;
+  TRY(deliver_process_outstanding_results(deref(s_process)));
   TRY(take_process_job(deref(s_process), &job));
   CREATE_SAFE_VALUE_POOL(runtime, 5, pool);
   E_BEGIN_TRY_FINALLY();
