@@ -148,14 +148,15 @@ TEST(interp, compile_errors) {
   DISPOSE_RUNTIME();
 }
 
-static void validate_lookup_error(log_o *self, log_entry_t *entry) {
+static bool validate_lookup_error(log_o *self, log_entry_t *entry) {
   // Ignore any logging to stdout, we're only interested in the error.
   if (entry->destination == lsStdout)
-    return;
+    return true;
   utf8_t prefix = new_c_string("--- backtrace ---\n- lambda~");
   utf8_t message = entry->message;
   message.size = min_size(string_size(prefix), string_size(message));
   ASSERT_STREQ(prefix, message);
+  return true;
 }
 
 TEST(interp, lookup_error) {

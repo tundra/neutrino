@@ -2,6 +2,7 @@
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "condition.h"
+#include "utils/log.h"
 
 invalid_syntax_cause_t get_invalid_syntax_condition_cause(value_t condition) {
   return (invalid_syntax_cause_t) get_condition_details(condition);
@@ -55,4 +56,10 @@ const char *get_system_error_cause_name(system_error_cause_t cause) {
     default:
       return "unknown system error cause";
   }
+}
+
+value_t report_system_call_failed_condition(const char *file, int line,
+    const char *call) {
+  log_message(llError, file, line, "System call failed: %s", call);
+  return new_system_error_condition(seSystemCallFailed);
 }

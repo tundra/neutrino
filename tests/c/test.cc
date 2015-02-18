@@ -147,7 +147,7 @@ void uninstall_check_recorder(check_recorder_o *recorder) {
   recorder->previous = NULL;
 }
 
-static void log_validator_log(log_o *super_self, log_entry_t *entry) {
+static bool log_validator_log(log_o *super_self, log_entry_t *entry) {
   log_validator_o *self = DOWNCAST(log_validator_o, super_self);
   self->count++;
   // Temporarily restore the previous log callback in case validation wants to
@@ -155,6 +155,7 @@ static void log_validator_log(log_o *super_self, log_entry_t *entry) {
   set_global_log(self->previous);
   (self->validate_callback)(UPCAST(self), entry);
   set_global_log(UPCAST(self));
+  return true;
 }
 
 VTABLE(log_validator_o, log_o) { log_validator_log };

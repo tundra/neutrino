@@ -17,7 +17,7 @@ static void format_value(format_handler_o *self, format_request_t *request,
   encoded_value_t encoded = va_arg(VA_LIST_DEREF(argp), encoded_value_t);
   value_t value;
   value.encoded = encoded;
-  size_t depth = (request->int_param == -1) ? kDefaultPrintDepth : ((size_t) request->int_param);
+  size_t depth = (request->width == -1) ? kDefaultPrintDepth : ((size_t) request->width);
   print_on_context_t context;
   print_on_context_init(&context, request->buf, pfNone, depth);
   value_print_on(value, &context);

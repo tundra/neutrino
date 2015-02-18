@@ -215,6 +215,13 @@ static value_t new_system_error_condition(system_error_cause_t cause) {
   return new_condition_with_details(ccSystemError, cause);
 }
 
+// Returns a system call failed condition, plus issues a warning.
+value_t report_system_call_failed_condition(const char *file, int line,
+    const char *call);
+
+#define new_system_call_failed_condition(CALL)                                 \
+    report_system_call_failed_condition(__FILE__, __LINE__, (CALL))
+
 // Creates a new not-found condition. Not-found is a very generic and
 // non-informative condition so it should be caught and converted quickly while
 // the context gives the information needed to understand it. If it indicates an

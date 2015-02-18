@@ -156,7 +156,7 @@ static value_t neutrino_main(int argc, const char **argv) {
         file_streams_t streams = file_system_open(runtime->file_system, filename,
             OPEN_FILE_MODE_READ);
         if (!streams.is_open)
-          return new_system_error_condition(seFileNotFound);
+          return new_system_call_failed_condition("fopen");
         E_TRY_SET(input, read_stream_to_blob(runtime, streams.in));
         file_streams_close(&streams);
       }

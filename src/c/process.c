@@ -901,7 +901,7 @@ value_t finalize_process(garbage_value_t dead_self) {
   void *raw_airlock_ptr = value_to_pointer_bit_cast(airlock_value.value);
   process_airlock_t *airlock = (process_airlock_t*) raw_airlock_ptr;
   if (!process_airlock_destroy(airlock))
-    return new_system_error_condition(seUnspecified);
+    return new_system_call_failed_condition("free");
   return success();
 }
 

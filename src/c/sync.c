@@ -145,7 +145,7 @@ value_t native_requests_state_new(runtime_t *runtime, value_t process,
   TRY_DEF(promise, new_heap_pending_promise(runtime));
   memory_block_t memory = allocator_default_malloc(sizeof(native_request_state_t));
   if (memory_block_is_empty(memory))
-    return new_system_error_condition(seSystemCallFailed);
+    return new_system_call_failed_condition("malloc");
   native_request_state_t *state = (native_request_state_t*) memory.memory;
   state->surface_promise = promise;
   state->airlock = get_process_airlock(process);
