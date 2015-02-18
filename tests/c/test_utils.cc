@@ -37,7 +37,6 @@ TEST(utils, string_buffer_value_printf) {
 
   value_t cycle_array = new_heap_array(runtime, 1);
   set_array_at(cycle_array, 0, cycle_array);
-  CHECK_PRINTF("--- " kBottomValuePlaceholder " ---", "--- %0v ---", cycle_array);
   CHECK_PRINTF("--- #<array[1]> ---", "--- %1v ---", cycle_array);
   CHECK_PRINTF("--- [#<array[1]>] ---", "--- %2v ---", cycle_array);
   CHECK_PRINTF("--- [[#<array[1]>]] ---", "--- %3v ---", cycle_array);
