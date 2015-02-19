@@ -52,6 +52,7 @@ file_names = [
   "tuple.n",
   "var.n",
   "while.n",
+  "wildcard.n",
 ]
 
 suite = get_group("suite")

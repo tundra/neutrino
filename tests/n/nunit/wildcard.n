@@ -1,0 +1,22 @@
+# Copyright 2015 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+type @A;
+
+def ($this is @A).foo() => "foo";
+def ($this is @A)->(*) as $args => $args[selector];
+
+def $test_simple() {
+  def $a := @core:manager.new_instance(@A);
+  $assert:equals(op.foo(), $a->foo());
+  $assert:equals(op.bar(), $a->bar());
+  $assert:equals(op.baz(), $a->baz());
+  $assert:equals("foo", $a.foo());
+}
+
+do {
+  $test_simple();
+}

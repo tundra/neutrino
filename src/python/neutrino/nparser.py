@@ -619,7 +619,7 @@ class Parser(object):
       (assign_params, assign_op, allow_extra, reified) = self.parse_parameters(None, start_index=len(params))
       params += assign_params
       op = data.Operation.assign(op)
-    if allow_extra:
+    if allow_extra and (op.type == data.Operation._CALL):
       selector = self.any_selector()
     else:
       selector = self.name_as_selector(op)
