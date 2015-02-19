@@ -279,10 +279,8 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           sigmap_input_layout_t layout = sigmap_input_layout_new(ambience, tags,
               next_guards);
           value_t method = lookup_method_full_from_frame(&layout, &frame, &arg_map);
-          if (in_condition_cause(ccLookupError, method)) {
-            WARN("Lookup error: %v", method);
+          if (in_condition_cause(ccLookupError, method))
             E_RETURN(signal_lookup_error(runtime, stack, &frame));
-          }
           // The lookup may have failed with a different condition. Check for that.
           E_TRY(method);
           E_TRY_DEF(code_block, ensure_method_code(runtime, method));
