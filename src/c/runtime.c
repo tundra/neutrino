@@ -979,14 +979,37 @@ static void runtime_run_static_inits() {
   run_plugin_static_init();
 }
 
-void runtime_ensure_static_inits_run() {
-  static pthread_once_t once = PTHREAD_ONCE_INIT;
-  // The once-stuff is tricky to factor into a platform-independent api, plus
-  // it's not really something that should be used elsewhere, so it's just
-  // inlined locally.
+// The once-stuff is tricky to factor into a platform-independent api, plus
+// it's not really something that should be used elsewhere, so it's just
+// inlined here.
 #ifdef IS_MSVC
-#  error implement run-once for msvc
+// Include this as late as possible.
+#  include "c/winhdr.h"
+#  define callback_marker CALLBACK
+#  define init_once_t INIT_ONCE
+#  define kInitOnceInit INIT_ONCE_STATIC_INIT
 #else
+#  define callback_marker
+#  define init_once_t pthread_once_t
+#  define bool_t bool
+#  define kInitOnceInit PTHREAD_ONCE_INIT
+#endif
+
+// Trampoline used to adapt runtime_run_static_inits to the windows InitOnce
+// api.
+static bool_t callback_marker runtime_run_static_inits_msvc(init_once_t* init_once,
+    void* param, void** context) {
+  runtime_run_static_inits();
+  return true;
+}
+
+void runtime_ensure_static_inits_run() {
+  static init_once_t once = kInitOnceInit;
+#ifdef IS_MSVC
+  InitOnceExecuteOnce(&once, runtime_run_static_inits_msvc, NULL, NULL);
+#else
+  // Include a dummy usage to avoid unused-function errors.
+  USE(runtime_run_static_inits_msvc(NULL, NULL, NULL));
   pthread_once(&once, runtime_run_static_inits);
 #endif
 }

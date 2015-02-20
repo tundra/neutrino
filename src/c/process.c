@@ -962,7 +962,7 @@ bool process_airlock_try_take(process_airlock_t *airlock,
     bool took = bounded_buffer_try_take(
         (bounded_buffer_t*) airlock->pending_results, &next);
     CHECK_TRUE("result missing", took);
-    *result_out = o2p(next);
+    *result_out = (native_request_state_t*) o2p(next);
     native_mutex_unlock(&airlock->pending_results_mutex);
     native_semaphore_release(&airlock->pending_result_vacancies);
     return true;

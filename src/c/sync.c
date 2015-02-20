@@ -125,7 +125,7 @@ value_t native_remote_validate(value_t self) {
 void native_remote_print_on(value_t self, print_on_context_t *context) {
   string_buffer_printf(context->buf, "#<native_remote: ");
   print_on_context_t sub_context = *context;
-  sub_context.flags |= pfUnquote;
+  sub_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
   value_print_inner_on(get_native_remote_display_name(self), &sub_context, -1);
   string_buffer_printf(context->buf, ">");
 }
