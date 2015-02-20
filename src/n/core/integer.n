@@ -40,6 +40,8 @@ def ($this is @Integer)<($that is @Integer);
 ## Returns true iff the left integer is less than or equal to the right.
 def ($this is @Integer)<=($that is @Integer) => ($that < $this).not;
 
+def ($this is @Integer)>($that is @Integer) => ($that < $this);
+
 ## Prints this integer on stdout.
 ## TODO: This one definitely needs to go.
 @ctrino.builtin("int.print()")

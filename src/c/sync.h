@@ -103,11 +103,11 @@ value_t native_requests_state_new(runtime_t *runtime, value_t process,
 void native_request_state_destroy(native_request_state_t *state);
 
 static const size_t kNativeRemoteSize = HEAP_OBJECT_SIZE(2);
-static const size_t kNativeRemoteImplOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kNativeRemoteImplsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kNativeRemoteDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
-// The implementation.
-FROZEN_ACCESSORS_DECL(native_remote, impl);
+// Mapping from method names to native implementations.
+FROZEN_ACCESSORS_DECL(native_remote, impls);
 
 // Display name used to identify the value.
 FROZEN_ACCESSORS_DECL(native_remote, display_name);

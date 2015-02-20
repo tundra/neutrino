@@ -38,6 +38,7 @@
 #include "derived.h"
 #include "value-inl.h"
 #include "sync/semaphore.h"
+#include "utils/boundbuf.h"
 
 /// ## Stack piece
 ///
@@ -579,6 +580,9 @@ ACCESSORS_DECL(task, stack);
 
 typedef struct native_request_state_t native_request_state_t;
 
+// The number of pending results that we'll let buffer in an airlock.
+#define kProcessAirlockBufferSize 16
+
 // Data allocated in the C heap which is accessible from other threads
 // throughout the lifetime of the process. This is how asynchronous interaction
 // with a process is implemented: other threads can put data into the airlock
@@ -588,8 +592,10 @@ typedef struct {
   native_semaphore_t pending_results_available;
   // How much space is available for results to be delivered?
   native_semaphore_t pending_result_vacancies;
+  // Mutex that guards the pending results.
+  native_mutex_t pending_results_mutex;
   // The spot to place a result.
-  native_request_state_t *pending_result;
+  byte_t pending_results[BOUNDED_BUFFER_SIZE(kProcessAirlockBufferSize)];
   // The number of outstanding requests whose results haven't been delivered
   // to their associated promise.
   size_t open_request_count;

@@ -12,6 +12,7 @@
 #include "safe.h"
 #include "sync/thread.h"
 #include "utils.h"
+#include "utils/clock.h"
 #include "utils/ook.h"
 #include "value.h"
 
@@ -82,6 +83,8 @@ typedef struct {
   // The object that provides access to the file system. Null means use the
   // system default.
   file_system_t *file_system;
+  // The object that provides (or pretends to provide) access to system time.
+  real_time_clock_t *system_time;
   // The seed used for the pseudo-random number generator used within this
   // runtime. Note that this seed is not the only source of nondeterminism in
   // a runtime so running the same program twice with the same seed will not

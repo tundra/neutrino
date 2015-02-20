@@ -111,14 +111,14 @@ void promise_state_print_on(value_t value, print_on_context_t *context) {
 FIXED_GET_MODE_IMPL(native_remote, vmDeepFrozen);
 GET_FAMILY_PRIMARY_TYPE_IMPL(native_remote);
 
-FROZEN_ACCESSORS_IMPL(NativeRemote, native_remote, acInFamily, ofVoidP, Impl,
-    impl);
+FROZEN_ACCESSORS_IMPL(NativeRemote, native_remote, acInFamily, ofIdHashMap, Impls,
+    impls);
 FROZEN_ACCESSORS_IMPL(NativeRemote, native_remote, acNoCheck, 0, DisplayName,
     display_name);
 
 value_t native_remote_validate(value_t self) {
   VALIDATE_FAMILY(ofNativeRemote, self);
-  VALIDATE_FAMILY(ofVoidP, get_native_remote_impl(self));
+  VALIDATE_FAMILY(ofIdHashMap, get_native_remote_impls(self));
   return success();
 }
 
@@ -152,6 +152,7 @@ value_t native_requests_state_new(runtime_t *runtime, value_t process,
   state->result = nothing();
   state->callback = unary_callback_new_1(on_native_request_success, p2o(state));
   native_request_t *request = &state->request;
+  request->runtime = runtime;
   request->impl_promise = opaque_promise_empty();
   opaque_promise_on_success(request->impl_promise, state->callback);
   *result_out = state;
@@ -167,22 +168,34 @@ void native_request_state_destroy(native_request_state_t *state) {
 static value_t native_remote_call_with_args(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofNativeRemote, self);
-  value_t reified = get_builtin_argument(args, 0);
+  value_t operation = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofOperation, operation);
+  value_t reified = get_builtin_argument(args, 1);
   CHECK_FAMILY(ofReifiedArguments, reified);
+  // First look up the implementation since this may fail in which case it's
+  // convenient to be able to just break out without having to clean up.
+  value_t impls = get_native_remote_impls(self);
+  value_t name = get_operation_value(operation);
+  value_t method = get_id_hash_map_at(impls, name);
+  if (in_condition_cause(ccNotFound, method))
+    // Escape with the operation not the name; the part about extracting the
+    // string name is an implementation detail.
+    ESCAPE_BUILTIN(args, unknown_native_method, operation);
+  void *impl_ptr = get_void_p_value(method);
+  schedule_request_m impl = (schedule_request_m) impl_ptr;
+  // Got an implementation. Now we can start allocating stuff.
   runtime_t *runtime = get_builtin_runtime(args);
   native_request_state_t *state = NULL;
   value_t process = get_builtin_process(args);
   TRY(native_requests_state_new(runtime, process, &state));
   get_process_airlock(process)->open_request_count++;
-  // Ensure that we get notified when the remote responds.
-  void *impl_ptr = get_void_p_value(get_native_remote_impl(self));
-  native_remote_t *impl = (native_remote_t*) impl_ptr;
-  impl->schedule_request(&state->request);
+  (impl)(&state->request);
   return state->surface_promise;
 }
 
 value_t add_native_remote_builtin_implementations(runtime_t *runtime,
     safe_value_t s_map) {
-  ADD_BUILTIN_IMPL("native_remote.call_with_args", 1, native_remote_call_with_args);
+  ADD_BUILTIN_IMPL_MAY_ESCAPE("native_remote.call_with_args", 2, 1,
+      native_remote_call_with_args);
   return success();
 }

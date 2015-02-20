@@ -915,12 +915,14 @@ process_airlock_t *process_airlock_new() {
   if (memory_block_is_empty(block))
     return NULL;
   process_airlock_t *airlock = (process_airlock_t*) block.memory;
-  airlock->pending_result = NULL;
+  bounded_buffer_init((bounded_buffer_t*) airlock->pending_results, kProcessAirlockBufferSize);
   airlock->open_request_count = 0;
   native_semaphore_construct_with_count(&airlock->pending_results_available, 0);
-  native_semaphore_construct_with_count(&airlock->pending_result_vacancies, 1);
+  native_semaphore_construct_with_count(&airlock->pending_result_vacancies, kProcessAirlockBufferSize);
+  native_mutex_construct(&airlock->pending_results_mutex);
   if (!native_semaphore_initialize(&airlock->pending_results_available)
-   || !native_semaphore_initialize(&airlock->pending_result_vacancies))
+   || !native_semaphore_initialize(&airlock->pending_result_vacancies)
+   || !native_mutex_initialize(&airlock->pending_results_mutex))
     return NULL;
   return airlock;
 }
@@ -928,11 +930,12 @@ process_airlock_t *process_airlock_new() {
 void process_airlock_offer_result(process_airlock_t *airlock,
     native_request_state_t *result) {
   // Acquire room to store the result.
-  duration_t unlimited = {true, 0};
-  native_semaphore_acquire(&airlock->pending_result_vacancies, unlimited);
-  CHECK_TRUE("overwriting result", airlock->pending_result == NULL);
-  // Store the result.
-  airlock->pending_result = result;
+  native_semaphore_acquire(&airlock->pending_result_vacancies, duration_unlimited());
+  native_mutex_lock(&airlock->pending_results_mutex);
+  bool offered = bounded_buffer_try_offer(
+      (bounded_buffer_t*) airlock->pending_results, p2o(result));
+  CHECK_TRUE("out of capacity", offered);
+  native_mutex_unlock(&airlock->pending_results_mutex);
   // Release a pending result.
   native_semaphore_release(&airlock->pending_results_available);
 }
@@ -941,12 +944,11 @@ value_t deliver_process_outstanding_results(value_t process) {
   CHECK_FAMILY(ofProcess, process);
   process_airlock_t *airlock = get_process_airlock(process);
   native_request_state_t *state = NULL;
-  if (!process_airlock_try_take(airlock, &state))
-    // There were no pending results.
-    return success();
-  airlock->open_request_count--;
-  fulfill_promise(state->surface_promise, state->result);
-  native_request_state_destroy(state);
+  while (process_airlock_try_take(airlock, &state)) {
+    airlock->open_request_count--;
+    fulfill_promise(state->surface_promise, state->result);
+    native_request_state_destroy(state);
+  }
   return success();
 }
 
@@ -955,8 +957,13 @@ value_t deliver_process_outstanding_results(value_t process) {
 bool process_airlock_try_take(process_airlock_t *airlock,
     native_request_state_t **result_out) {
   if (native_semaphore_try_acquire(&airlock->pending_results_available)) {
-    *result_out = airlock->pending_result;
-    airlock->pending_result = NULL;
+    native_mutex_lock(&airlock->pending_results_mutex);
+    opaque_t next;
+    bool took = bounded_buffer_try_take(
+        (bounded_buffer_t*) airlock->pending_results, &next);
+    CHECK_TRUE("result missing", took);
+    *result_out = o2p(next);
+    native_mutex_unlock(&airlock->pending_results_mutex);
     native_semaphore_release(&airlock->pending_result_vacancies);
     return true;
   } else {
@@ -967,6 +974,7 @@ bool process_airlock_try_take(process_airlock_t *airlock,
 bool process_airlock_destroy(process_airlock_t *airlock) {
   native_semaphore_dispose(&airlock->pending_results_available);
   native_semaphore_dispose(&airlock->pending_result_vacancies);
+  native_mutex_dispose(&airlock->pending_results_mutex);
   allocator_default_free(new_memory_block(airlock, sizeof(process_airlock_t)));
   return true;
 }

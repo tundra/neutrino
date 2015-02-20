@@ -4,14 +4,17 @@
 import $assert;
 import $core;
 
-def $test_time_call() {
-  def $time_p := @core:time->call();
-  $assert:not($time_p.is_resolved?);
-  $time_p.then(fn ($value) {
-    $assert:equals(52, $value);
-  });
+def $test_time() {
+  def $current_p := @core:time->current();
+  $assert:not($current_p.is_resolved?);
+  $current_p.then(fn $value => $assert:that($value > 0));
+}
+
+def $test_unknown() {
+  $assert:equals(op.blargh(), try @core:time->blargh() on.unknown_native_method($s) => $s);
 }
 
 do {
-  $test_time_call();
+  $test_time();
+  $test_unknown();
 }

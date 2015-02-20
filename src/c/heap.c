@@ -41,6 +41,7 @@ static const runtime_config_t kDefaultConfig = {
   NULL,                 // plugins
   0,                    // plugin_count
   NULL,                 // file_system
+  NULL,                 // system_time
   0x9d5c326b950e060eULL // random_seed
 };
 

@@ -766,10 +766,23 @@ value_t new_heap_native_remote(runtime_t *runtime, native_remote_t *impl) {
     utf8_t display_name_str = new_c_string(impl->display_name);
     TRY_SET(display_name, new_heap_utf8(runtime, display_name_str));
   }
-  TRY_DEF(impl_val, new_heap_void_p(runtime, impl));
+  // Fill a map with the method pointers.
+  TRY_DEF(impls, new_heap_id_hash_map(runtime, impl->method_count * 2));
+  for (size_t i = 0; i < impl->method_count; i++) {
+    native_remote_method_t *method = impl->methods[i];
+    TRY_DEF(name, new_heap_utf8(runtime, new_c_string(method->name)));
+    CHECK_DEEP_FROZEN(name);
+    TRY_DEF(impl, new_heap_void_p(runtime, method->impl));
+    CHECK_DEEP_FROZEN(impl);
+    TRY(try_set_id_hash_map_at(impls, name, impl, false));
+  }
+  // Freeze the implementation map; the keys and values are known to already be
+  // deep frozen.
+  TRY(ensure_frozen(runtime, impls));
+  TRY(validate_deep_frozen(runtime, impls, NULL));
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, native_remote_species)));
-  init_frozen_native_remote_impl(result, impl_val);
+  init_frozen_native_remote_impls(result, impls);
   init_frozen_native_remote_display_name(result, display_name);
   return post_create_sanity_check(result, size);
 }

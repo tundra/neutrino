@@ -448,7 +448,6 @@ bool gc_fuzzer_tick(gc_fuzzer_t *fuzzer) {
 }
 
 value_t new_runtime(runtime_config_t *config, runtime_t **runtime_out) {
-  ensure_neutrino_format_handlers_registered();
   memory_block_t memory = allocator_default_malloc(sizeof(runtime_t));
   CHECK_EQ("wrong runtime_t memory size", sizeof(runtime_t), memory.size);
   runtime_t *runtime = (runtime_t*) memory.memory;
@@ -513,6 +512,8 @@ static value_t runtime_freeze_shared_state(runtime_t *runtime) {
 }
 
 value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
+  runtime_ensure_static_inits_run();
+  ensure_neutrino_format_handlers_registered();
   if (config == NULL)
     config = runtime_config_get_default();
   // First reset all the fields to a well-defined value.
@@ -521,6 +522,9 @@ value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
   runtime->file_system = config->file_system;
   if (runtime->file_system == NULL)
     runtime->file_system = file_system_native();
+  runtime->system_time = config->system_time;
+  if (runtime->system_time == NULL)
+    runtime->system_time = real_time_clock_system();
   runtime->random = tinymt64_construct(tinymt64_params_default(), config->random_seed);
   TRY(runtime_hard_init(runtime, config));
   TRY(runtime_soft_init(runtime));
@@ -962,4 +966,27 @@ value_t safe_runtime_execute_syntax(runtime_t *runtime, safe_value_t s_program) 
   E_FINALLY();
     DISPOSE_SAFE_VALUE_POOL(pool);
   E_END_TRY_FINALLY();
+}
+
+// Have the modules we depend on had their static initializers run?
+static bool has_run_static_inits = false;
+
+static void runtime_run_static_inits() {
+  // The way this is called should ensure that it is never called more than
+  // once.
+  CHECK_FALSE("static initialization already run", has_run_static_inits);
+  has_run_static_inits = true;
+  run_plugin_static_init();
+}
+
+void runtime_ensure_static_inits_run() {
+  static pthread_once_t once = PTHREAD_ONCE_INIT;
+  // The once-stuff is tricky to factor into a platform-independent api, plus
+  // it's not really something that should be used elsewhere, so it's just
+  // inlined locally.
+#ifdef IS_MSVC
+#  error implement run-once for msvc
+#else
+  pthread_once(&once, runtime_run_static_inits);
+#endif
 }

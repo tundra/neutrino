@@ -83,13 +83,47 @@ bool native_request_fulfill(native_request_t *request, value_t value) {
   return opaque_promise_fulfill(request->impl_promise, v2o(value));
 }
 
-void schedule_time_request(native_request_t *request) {
-  // TODO: placeholder implementation, need to give some thought to how the
-  //   runtime should interface with real time.
-  native_request_fulfill(request, new_integer(52));
+void native_remote_init(native_remote_t *remote, const char *display_name,
+    size_t method_count, native_remote_method_t **methods) {
+  remote->display_name = display_name;
+  remote->method_count = method_count;
+  remote->methods = methods;
+}
+
+
+void native_time_current(native_request_t *request) {
+  real_time_clock_t *clock = request->runtime->system_time;
+  uint64_t time = real_time_clock_millis_since_epoch_utc(clock);
+  native_request_fulfill(request, new_integer(time));
+}
+
+// Has this module's static initializer been run?
+static bool has_run_static_init = false;
+
+// Data for the native remote @time.
+typedef struct {
+  native_remote_t remote;
+  native_remote_method_t current;
+  native_remote_method_t *methods[1];
+} native_remote_time_t;
+
+// Singleton @time implementation.
+static native_remote_time_t time_impl;
+
+// Initializes the singleton time instance.
+static void run_time_impl_static_init() {
+  time_impl.current.name = "current";
+  time_impl.current.impl = native_time_current;
+  time_impl.methods[0] = &time_impl.current;
+  native_remote_init(&time_impl.remote, "Time", 1, time_impl.methods);
 }
 
 native_remote_t *native_remote_time() {
-  static native_remote_t kInstance = {"Time", schedule_time_request};
-  return &kInstance;
+  CHECK_TRUE("plugin statics not inited", has_run_static_init);
+  return &time_impl.remote;
+}
+
+void run_plugin_static_init() {
+  has_run_static_init = true;
+  run_time_impl_static_init();
 }

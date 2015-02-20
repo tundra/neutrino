@@ -85,6 +85,7 @@
   F(out_of_bounds,              "out_of_bounds")                               \
   F(no_such_field,              "no_such_field")                               \
   F(no_such_tag,                "no_such_tag")                                 \
+  F(unknown_native_method,      "unknown_native_method")                       \
   F(is_frozen,                  "is_frozen")                                   \
   F(promise_not_resolved,       "promise_not_resolved")
 
@@ -253,6 +254,8 @@ struct runtime_t {
   // The object that provides access to the file system. This value is never
   // null.
   file_system_t *file_system;
+  // Access to system time.
+  real_time_clock_t *system_time;
   // Non-cryptographic (but decent) random number generator used to provide
   // pseudo randomness.
   tinymt64_t random;
@@ -313,6 +316,12 @@ void safe_value_destroy(runtime_t *runtime, safe_value_t value_s);
 
 // Set whether fuzzing is on or off. If there is no fuzzer this has no effect.
 void runtime_toggle_fuzzing(runtime_t *runtime, bool enable);
+
+// Performs module-level static initialization. Both C and C++ have facilities
+// that to some extent support doing this implicitly but this seems saner and
+// easier to debug/reproduce. This will only do something the first time it is
+// called and is thread safe.
+void runtime_ensure_static_inits_run();
 
 // Returns a modal species with the specified mode which is a sibling of the
 // given value, that is, identical except having the specified mode.
