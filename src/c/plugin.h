@@ -100,15 +100,21 @@ bool native_request_fulfill(native_request_t *request, value_t value);
 // the promise is fulfilled.
 typedef void (*schedule_request_m)(native_request_t *request);
 
+// An individual method on a native remote object.
 typedef struct {
+  // Method name.
   const char *name;
+  // Function to call on new requests.
   schedule_request_m impl;
 } native_remote_method_t;
 
 // Data associated with a native remote request handler.
 typedef struct {
+  // Optional display name to show when printing the remote value.
   const char *display_name;
+  // Size of the method array.
   size_t method_count;
+  // Methods.
   native_remote_method_t **methods;
 } native_remote_t;
 
@@ -122,10 +128,6 @@ value_t new_native_remote(runtime_t *runtime, native_remote_t *impl);
 
 // Returns a native remote that implements the time api.
 native_remote_t *native_remote_time();
-
-// Returns a native remote that echoes all messages sent to it. For testing
-// mainly.
-native_remote_t *native_remote_echo();
 
 // Returns a value that has been wrapped in an opaque.
 static inline value_t o2v(opaque_t opaque) {
