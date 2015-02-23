@@ -451,9 +451,13 @@ value_t new_runtime(runtime_config_t *config, runtime_t **runtime_out) {
   memory_block_t memory = allocator_default_malloc(sizeof(runtime_t));
   CHECK_EQ("wrong runtime_t memory size", sizeof(runtime_t), memory.size);
   runtime_t *runtime = (runtime_t*) memory.memory;
-  TRY(runtime_init(runtime, config));
+  value_t result = runtime_init(runtime, config);
+  if (is_condition(result)) {
+    delete_runtime(runtime);
+    return result;
+  }
   *runtime_out = runtime;
-  return success();
+  return result;
 }
 
 value_t delete_runtime(runtime_t *runtime) {

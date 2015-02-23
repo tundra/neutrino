@@ -22,17 +22,17 @@ public:
   RuntimeConfig();
 };
 
-// The information about an error that is available through a Maybe<T>. This is
+// The information about a message that is available through a Maybe<T>. This is
 // factored into its own type such that it can be shared between maybes without
 // having to explicitly deal with ownership. For internal use only.
-class MaybeError : public tclib::refcount_shared_t {
+class MaybeMessage : public tclib::refcount_shared_t {
 private:
   template <typename T> friend class Maybe;
 
   // Create an error with the given message. The message is copied so it's safe
   // to delete it after this call.
-  explicit MaybeError(const char *message);
-  ~MaybeError();
+  explicit MaybeMessage(const char *message);
+  ~MaybeMessage();
 
   const char *message() { return message_; }
   char *message_;
@@ -41,11 +41,18 @@ private:
 // An option type that either holds some value or not, and if it doesn't it may
 // have a message that indicates why it doesn't.
 template <typename T>
-class Maybe : public tclib::refcount_reference_t<MaybeError> {
+class Maybe : public tclib::refcount_reference_t<MaybeMessage> {
 public:
+  // Initialize an empty option which neither has a value nor a message
+  // indicating why.
+  Maybe()
+    : tclib::refcount_reference_t<MaybeMessage>()
+    , has_value_(false)
+    , value_(NULL) { }
+
   // Constructs an option with the given value.
   Maybe(T *value)
-    : tclib::refcount_reference_t<MaybeError>()
+    : tclib::refcount_reference_t<MaybeMessage>()
     , has_value_(true)
     , value_(value) { }
 
@@ -62,14 +69,14 @@ public:
 
   // Returns an option that has no value for the given reason, or optionally
   // for no explicit reason.
-  static Maybe<T> with_message(const char *message = NULL) { return Maybe<T>(*new MaybeError(message)); }
+  static Maybe<T> with_message(const char *message = NULL) { return Maybe<T>(*new MaybeMessage(message)); }
 
   // Returns an option with the given value.
   static Maybe<T> with_value(T *value) { return Maybe<T>(value); }
 
 private:
-  Maybe(MaybeError &error)
-    : tclib::refcount_reference_t<MaybeError>(&error)
+  Maybe(MaybeMessage &error)
+    : tclib::refcount_reference_t<MaybeMessage>(&error)
     , has_value_(false)
     , value_(NULL) { }
 

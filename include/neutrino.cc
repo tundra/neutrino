@@ -25,22 +25,23 @@ Runtime::~Runtime() {
 }
 
 Maybe<void> Runtime::initialize(RuntimeConfig *config) {
-  value_t result = new_runtime(config, &runtime_);
-  if (is_condition(result)) {
+  value_t value = new_runtime(config, &runtime_);
+  Maybe<void> result;
+  if (is_condition(value)) {
     value_to_string_t to_string;
-    value_to_string(&to_string, result);
-    Maybe<void> error = Maybe<void>::with_message(to_string.str.chars);
+    value_to_string(&to_string, value);
+    result = Maybe<void>::with_message(to_string.str.chars);
     value_to_string_dispose(&to_string);
-    return error;
   } else {
-    return NULL;
+    result = Maybe<void>::with_value(NULL);
   }
+  return result;
 }
 
-MaybeError::MaybeError(const char *message)
+MaybeMessage::MaybeMessage(const char *message)
   : message_((message == NULL) ? NULL : strdup(message)) { }
 
-MaybeError::~MaybeError() {
+MaybeMessage::~MaybeMessage() {
   free(message_);
   message_ = NULL;
 }
