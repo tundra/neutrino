@@ -1,0 +1,24 @@
+# Copyright 2015 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+library_file_names = [
+  "neutrino.cc",
+]
+
+def compile_file(name):
+  file = c.get_source_file(name)
+  file.add_include(get_dep("tclib").get_child("src", "c"))
+  file.add_include(get_dep("plankton").get_child("src", "c"))
+  file.add_include(get_root().get_child("src", "c"))
+  file.add_include(get_root())
+  object = file.get_object()
+  return object
+
+# All the objects for the library source files. It might make sense to create
+# a real library at some point but for now this'll do.
+library = get_group("library")
+library.add_dependency(get_external('src', 'c', 'library'))
+
+# Add the source file objects to the library.
+for library_file_name in library_file_names:
+  library.add_member(compile_file(library_file_name))

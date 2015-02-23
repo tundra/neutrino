@@ -119,7 +119,7 @@ static void runtime_config_init_main_defaults(runtime_config_t *config) {
   // (particularly plankton parsing) so keep the semispace size big.
   config->semispace_size_bytes = 10 * kMB;
   config->plugin_count = 1;
-  config->plugins = get_main_plugins();
+  config->plugins = (const void**) get_main_plugins();
 }
 
 // Create a vm and run the program.

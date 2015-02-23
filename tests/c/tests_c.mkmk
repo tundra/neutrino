@@ -15,6 +15,7 @@ test_file_names = [
   "test_heap.cc",
   "test_interp.cc",
   "test_method.cc",
+  "test_neutrino.cc",
   "test_process.cc",
   "test_runtime.cc",
   "test_safe.cc",
@@ -31,13 +32,14 @@ test_file_names = [
 def compile_test_file(source):
   # Include the C sources.
   source.add_include(get_root().get_child('src', 'c'))
+  source.add_include(get_root())
   source.add_include(get_dep('tclib').get_child('src', 'c'))
   source.add_include(get_dep('plankton').get_child('src', 'c'))
   return source.get_object()
 
 # Create a group containing the test files along with the runtime library.
 test_library = get_group("library")
-test_library.add_dependency(get_external('src', 'c', 'library'))
+test_library.add_dependency(get_external('include', 'library'))
 
 # Compile the test source files.
 for test_file_name in test_file_names:
