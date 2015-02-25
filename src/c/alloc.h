@@ -266,7 +266,7 @@ value_t new_heap_reified_arguments(runtime_t *runtime, value_t params,
     value_t values, value_t argmap, value_t tags);
 
 // Creates a new native remote instance.
-value_t new_heap_native_remote(runtime_t *runtime, native_remote_t *impl);
+value_t new_heap_native_remote(runtime_t *runtime, service_descriptor_t *impl);
 
 
 // --- M e t h o d ---

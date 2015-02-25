@@ -262,13 +262,13 @@ struct runtime_t {
 };
 
 // Creates a new runtime object, storing it in the given runtime out parameter.
-value_t new_runtime(runtime_config_t *config, runtime_t **runtime);
+value_t new_runtime(extended_runtime_config_t *config, runtime_t **runtime);
 
 // Disposes the given runtime and frees the memory.
 value_t delete_runtime(runtime_t *runtime);
 
 // Initializes the given runtime according to the given config.
-value_t runtime_init(runtime_t *runtime, const runtime_config_t *config);
+value_t runtime_init(runtime_t *runtime, const extended_runtime_config_t *config);
 
 // Resets this runtime to a well-defined state such that if anything fails
 // during the subsequent initialization all fields that haven't been
@@ -336,7 +336,8 @@ value_t get_modal_species_sibling_with_mode(runtime_t *runtime, value_t species,
 value_t runtime_get_builtin_implementation(runtime_t *runtime, value_t name);
 
 // Initialize this root set.
-value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *runtime);
+value_t roots_init(value_t roots, const extended_runtime_config_t *config,
+    runtime_t *runtime);
 
 // Returns the key'th of the given runtime's roots.
 static inline value_t get_runtime_root_at(runtime_t *runtime, root_key_t key) {

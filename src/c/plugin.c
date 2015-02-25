@@ -75,7 +75,7 @@ value_t new_c_object(runtime_t *runtime, value_t factory, blob_t data,
   return new_heap_c_object(runtime, afFreeze, factory, data, values);
 }
 
-value_t new_native_remote(runtime_t *runtime, native_remote_t *impl) {
+value_t new_native_remote(runtime_t *runtime, service_descriptor_t *impl) {
   return new_heap_native_remote(runtime, impl);
 }
 
@@ -83,18 +83,20 @@ bool native_request_fulfill(native_request_t *request, value_t value) {
   return opaque_promise_fulfill(request->impl_promise, v2o(value));
 }
 
-void native_remote_init(native_remote_t *remote, const char *display_name,
-    size_t method_count, native_remote_method_t **methods) {
-  remote->display_name = display_name;
-  remote->method_count = method_count;
-  remote->methods = methods;
+void native_remote_init(service_descriptor_t *remote, const char *display_name,
+    size_t method_count, service_method_t *methods) {
+  remote->name = display_name;
+  remote->methodc = method_count;
+  remote->methodv = methods;
 }
 
 
-void native_time_current(native_request_t *request) {
+opaque_t native_time_current(opaque_t opaque_request) {
+  native_request_t *request = (native_request_t*) o2p(opaque_request);
   real_time_clock_t *clock = request->runtime->system_time;
   uint64_t time = real_time_clock_millis_since_epoch_utc(clock);
   native_request_fulfill(request, new_integer(time));
+  return opaque_null();
 }
 
 // Has this module's static initializer been run?
@@ -102,9 +104,8 @@ static bool has_run_static_init = false;
 
 // Data for the native remote @time.
 typedef struct {
-  native_remote_t remote;
-  native_remote_method_t current;
-  native_remote_method_t *methods[1];
+  service_descriptor_t remote;
+  service_method_t methods[1];
 } native_remote_time_t;
 
 // Singleton @time implementation.
@@ -112,13 +113,13 @@ static native_remote_time_t time_impl;
 
 // Initializes the singleton time instance.
 static void run_time_impl_static_init() {
-  time_impl.current.name = "current";
-  time_impl.current.impl = native_time_current;
-  time_impl.methods[0] = &time_impl.current;
+  time_impl.methods[0].name = "current";
+  unary_callback_t *raw_current = unary_callback_new_0(native_time_current);
+  time_impl.methods[0].callback = callback_invisible_clone(raw_current);
   native_remote_init(&time_impl.remote, "Time", 1, time_impl.methods);
 }
 
-native_remote_t *native_remote_time() {
+service_descriptor_t *native_remote_time() {
   CHECK_TRUE("plugin statics not inited", has_run_static_init);
   return &time_impl.remote;
 }

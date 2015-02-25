@@ -118,16 +118,39 @@ typedef struct {
   native_remote_method_t **methods;
 } native_remote_t;
 
-void native_remote_init(native_remote_t *remote, const char *display_name,
-    size_t method_count, native_remote_method_t **methods);
+// Data passed to the api when it's asked to install services into a runtime.
+typedef struct {
+  // The runtime we're initializing.
+  runtime_t *runtime;
+  // The map of imports to install the service names within.
+  value_t imports;
+} service_install_hook_context_t;
+
+typedef struct {
+  const char *name;
+  unary_callback_t *callback;
+} service_method_t;
+
+typedef struct {
+  const char *name;
+  size_t methodc;
+  service_method_t *methodv;
+} service_descriptor_t;
+
+// Install the service described by the given descriptor in the given context.
+value_t service_hook_add_service(service_install_hook_context_t *context,
+    service_descriptor_t *service);
+
+void native_remote_init(service_descriptor_t *remote, const char *display_name,
+    size_t method_count, service_method_t *methods);
 
 // Creates a native remote object that delivers requests through the given
 // implementation. The implementation struct must be valid as long as the native
 // remote wrapper is used.
-value_t new_native_remote(runtime_t *runtime, native_remote_t *impl);
+value_t new_native_remote(runtime_t *runtime, service_descriptor_t *impl);
 
 // Returns a native remote that implements the time api.
-native_remote_t *native_remote_time();
+service_descriptor_t *native_remote_time();
 
 // Returns a value that has been wrapped in an opaque.
 static inline value_t o2v(opaque_t opaque) {

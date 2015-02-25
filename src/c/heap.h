@@ -22,6 +22,17 @@ static const byte_t kFreedHeapMarker = 0xC4;
 
 FORWARD(c_object_info_t);
 
+// A runtime config with some additional extensions for the public api bindings
+// to use.
+typedef struct {
+  // The part of the config that was publicly available.
+  neu_runtime_config_t base;
+  // Callback to invoke to install services on the runtime. The callback will
+  // be passed a single argument, a service install hook context, which holds
+  // all the data necessary for installing services. The result should be a
+  // value wrapped in an opaque.
+  unary_callback_t *service_install_hook;
+} extended_runtime_config_t;
 
 // --- M i s c ---
 
@@ -62,7 +73,7 @@ struct field_visitor_o {
 value_t field_visitor_visit(field_visitor_o *self, value_t *field);
 
 // Returns a pointer to a runtime config that holds the default values.
-const runtime_config_t *runtime_config_get_default();
+const extended_runtime_config_t *extended_runtime_config_get_default();
 
 // An allocation space. The heap is made up of several of these.
 typedef struct {
@@ -81,7 +92,7 @@ typedef struct {
 
 // Initialize the given space, assumed to be uninitialized. If this fails for
 // whatever reason a condition is returned.
-value_t space_init(space_t *space, const runtime_config_t *config);
+value_t space_init(space_t *space, const extended_runtime_config_t *config);
 
 // If necessary, dispose the memory held by this space.
 void space_dispose(space_t *space);
@@ -115,7 +126,7 @@ bool space_contains(space_t *space, address_t addr);
 // A full garbage-collectable heap.
 typedef struct {
   // The space configuration this heap gets it settings from.
-  runtime_config_t config;
+  extended_runtime_config_t config;
   // The space where we allocate new objects.
   space_t to_space;
   // The space that, during gc, holds existing object and from which values are
@@ -132,7 +143,7 @@ typedef struct {
 
 // Initialize the given heap, returning a condition to indicate success or
 // failure. If the config is NULL the default is used.
-value_t heap_init(heap_t *heap, const runtime_config_t *config);
+value_t heap_init(heap_t *heap, const extended_runtime_config_t *config);
 
 // Allocate the given number of byte in the given space. The size is not
 // required to be value pointer aligned, this function will take care of

@@ -1,6 +1,12 @@
 //- Copyright 2013 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+#include "c/stdc.h"
+
+#include "include/neutrino.hh"
+#include "include/service.hh"
+
+BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "freeze.h"
 #include "interp.h"
@@ -13,11 +19,12 @@
 #include "utils/crash.h"
 #include "utils/log.h"
 #include "value.h"
+END_C_INCLUDES
 
 // Holds all the options understood by the main executable.
 typedef struct {
   // The config to store config-related flags directly into.
-  runtime_config_t *config;
+  neu_runtime_config_t *config;
   // The reader that owns the parsed data.
   pton_command_line_reader_t *owner;
   // Parsed command-line.
@@ -25,7 +32,7 @@ typedef struct {
 } main_options_t;
 
 // Initializes a options struct.
-static void main_options_init(main_options_t *flags, runtime_config_t *config) {
+static void main_options_init(main_options_t *flags, neu_runtime_config_t *config) {
   flags->config = config;
   flags->owner = NULL;
   flags->cmdline = NULL;
@@ -114,7 +121,7 @@ static const c_object_info_t **get_main_plugins() {
 
 // Override some of the basic defaults to make the config better suited for
 // running scripts.
-static void runtime_config_init_main_defaults(runtime_config_t *config) {
+static void runtime_config_init_main_defaults(neu_runtime_config_t *config) {
   // Currently the runtime doesn't handle allocation failures super well
   // (particularly plankton parsing) so keep the semispace size big.
   config->semispace_size_bytes = 10 * kMB;
@@ -122,10 +129,61 @@ static void runtime_config_init_main_defaults(runtime_config_t *config) {
   config->plugins = (const void**) get_main_plugins();
 }
 
+class EchoService : public neutrino::NativeService {
+public:
+  virtual neutrino::Maybe<> install(neutrino::NativeServiceBinder *config);
+  virtual const char *name() { return "echo"; }
+  void echo(neutrino::ServiceRequest *request);
+};
+
+neutrino::Maybe<> EchoService::install(neutrino::NativeServiceBinder *config) {
+  return config->add_method("echo", tclib::new_callback(&EchoService::echo, this));
+}
+
+void EchoService::echo(neutrino::ServiceRequest *request) {
+  request->fulfill(946);
+}
+
+static value_t neutrino_main_with_options(neutrino::RuntimeConfig *config,
+    main_options_t *options) {
+  neutrino::Runtime runtime;
+  EchoService echo;
+  runtime.add_service(&echo);
+  runtime.initialize(config);
+  size_t argc = 0;
+  CREATE_SAFE_VALUE_POOL(*runtime, 4, pool);
+  E_BEGIN_TRY_FINALLY();
+    value_t result = whatever();
+    E_TRY(build_module_loader(*runtime, options->cmdline));
+    argc = pton_command_line_argument_count(options->cmdline);
+    for (size_t i = 0; i < argc; i++) {
+      pton_variant_t filename_var = pton_command_line_argument(options->cmdline, i);
+      utf8_t filename = new_string(pton_string_chars(filename_var),
+          pton_string_length(filename_var));
+      value_t input;
+      if (string_equals_cstr(filename, "-")) {
+        in_stream_t *in = file_system_stdin(runtime->file_system);
+        E_TRY_SET(input, read_stream_to_blob(*runtime, in));
+      } else {
+        file_streams_t streams = file_system_open(runtime->file_system, filename,
+            OPEN_FILE_MODE_READ);
+        if (!streams.is_open)
+          return new_system_call_failed_condition("fopen");
+        E_TRY_SET(input, read_stream_to_blob(*runtime, streams.in));
+        file_streams_close(&streams);
+      }
+      E_TRY_DEF(program, safe_runtime_plankton_deserialize(*runtime, protect(pool, input)));
+      result = safe_runtime_execute_syntax(*runtime, protect(pool, program));
+    }
+    E_RETURN(result);
+  E_FINALLY();
+    DISPOSE_SAFE_VALUE_POOL(pool);
+  E_END_TRY_FINALLY();
+}
+
 // Create a vm and run the program.
-static value_t neutrino_main(int argc, const char **argv) {
-  runtime_config_t config;
-  runtime_config_init_defaults(&config);
+static value_t neutrino_main(int raw_argc, const char **argv) {
+  neutrino::RuntimeConfig config;
   runtime_config_init_main_defaults(&config);
   // Set up a custom allocator we get tighter control over allocation.
   limited_allocator_t limited_allocator;
@@ -134,39 +192,12 @@ static value_t neutrino_main(int argc, const char **argv) {
   // Parse the options.
   main_options_t options;
   main_options_init(&options, &config);
-  if (!parse_options(argc - 1, argv + 1, &options))
+  if (!parse_options(raw_argc - 1, argv + 1, &options))
     return new_invalid_input_condition();
 
-  runtime_t *runtime;
-  TRY(new_runtime(&config, &runtime));
-  CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   E_BEGIN_TRY_FINALLY();
-    value_t result = whatever();
-    E_TRY(build_module_loader(runtime, options.cmdline));
-    size_t argc = pton_command_line_argument_count(options.cmdline);
-    for (size_t i = 0; i < argc; i++) {
-      pton_variant_t filename_var = pton_command_line_argument(options.cmdline, i);
-      utf8_t filename = new_string(pton_string_chars(filename_var),
-          pton_string_length(filename_var));
-      value_t input;
-      if (string_equals_cstr(filename, "-")) {
-        in_stream_t *in = file_system_stdin(runtime->file_system);
-        E_TRY_SET(input, read_stream_to_blob(runtime, in));
-      } else {
-        file_streams_t streams = file_system_open(runtime->file_system, filename,
-            OPEN_FILE_MODE_READ);
-        if (!streams.is_open)
-          return new_system_call_failed_condition("fopen");
-        E_TRY_SET(input, read_stream_to_blob(runtime, streams.in));
-        file_streams_close(&streams);
-      }
-      E_TRY_DEF(program, safe_runtime_plankton_deserialize(runtime, protect(pool, input)));
-      result = safe_runtime_execute_syntax(runtime, protect(pool, program));
-    }
-    E_RETURN(result);
+    E_RETURN(neutrino_main_with_options(&config, &options));
   E_FINALLY();
-    DISPOSE_SAFE_VALUE_POOL(pool);
-    TRY(delete_runtime(runtime));
     main_options_dispose(&options);
     limited_allocator_uninstall(&limited_allocator);
   E_END_TRY_FINALLY();

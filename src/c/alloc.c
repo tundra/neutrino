@@ -759,20 +759,21 @@ value_t new_heap_reified_arguments(runtime_t *runtime, value_t params,
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_native_remote(runtime_t *runtime, native_remote_t *impl) {
+value_t new_heap_native_remote(runtime_t *runtime, service_descriptor_t *impl) {
   size_t size = kNativeRemoteSize;
   value_t display_name = null();
-  if (impl->display_name != NULL) {
-    utf8_t display_name_str = new_c_string(impl->display_name);
+  if (impl->name != NULL) {
+    utf8_t display_name_str = new_c_string(impl->name);
     TRY_SET(display_name, new_heap_utf8(runtime, display_name_str));
   }
   // Fill a map with the method pointers.
-  TRY_DEF(impls, new_heap_id_hash_map(runtime, impl->method_count * 2));
-  for (size_t i = 0; i < impl->method_count; i++) {
-    native_remote_method_t *method = impl->methods[i];
+  TRY_DEF(impls, new_heap_id_hash_map(runtime, impl->methodc * 2));
+  for (size_t i = 0; i < impl->methodc; i++) {
+    service_method_t *method = &(impl->methodv[i]);
     TRY_DEF(name, new_heap_utf8(runtime, new_c_string(method->name)));
     CHECK_DEEP_FROZEN(name);
-    TRY_DEF(impl, new_heap_void_p(runtime, method->impl));
+    unary_callback_t *callback = method->callback;
+    TRY_DEF(impl, new_heap_void_p(runtime, callback));
     CHECK_DEEP_FROZEN(impl);
     TRY(try_set_id_hash_map_at(impls, name, impl, false));
   }

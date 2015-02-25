@@ -33,32 +33,35 @@ static size_t is_size_aligned(uint32_t alignment, size_t size) {
 }
 
 // The default space config.
-static const runtime_config_t kDefaultConfig = {
-  1 * kMB,              // semispace_size_bytes
-  100 * kMB,            // system_memory_limit
-  0,                    // allocation_failure_fuzzer_frequency
-  0,                    // allocation_failure_fuzzer_seed,
-  NULL,                 // plugins
-  0,                    // plugin_count
-  NULL,                 // file_system
-  NULL,                 // system_time
-  0x9d5c326b950e060eULL // random_seed
+static const extended_runtime_config_t kDefaultConfig = {
+  /* base */ {
+  1 * kMB,               // semispace_size_bytes
+  100 * kMB,             // system_memory_limit
+  0,                     // allocation_failure_fuzzer_frequency
+  0,                     // allocation_failure_fuzzer_seed,
+  NULL,                  // plugins
+  0,                     // plugin_count
+  NULL,                  // file_system
+  NULL,                  // system_time
+  0x9d5c326b950e060eULL  // random_seed
+  },
+  NULL                   // service_installer
 };
 
-void runtime_config_init_defaults(runtime_config_t *config) {
-  *config = *runtime_config_get_default();
+void neu_runtime_config_init_defaults(neu_runtime_config_t *config) {
+  *config = extended_runtime_config_get_default()->base;
 }
 
-const runtime_config_t *runtime_config_get_default() {
+const extended_runtime_config_t *extended_runtime_config_get_default() {
   return &kDefaultConfig;
 }
 
-value_t space_init(space_t *space, const runtime_config_t *config) {
+value_t space_init(space_t *space, const extended_runtime_config_t *config) {
   // Start out by clearing it, just for good measure.
   space_clear(space);
   // Allocate one word more than strictly necessary to account for possible
   // alignment.
-  size_t bytes = config->semispace_size_bytes + kValueSize;
+  size_t bytes = config->base.semispace_size_bytes + kValueSize;
   memory_block_t memory = allocator_default_malloc(bytes);
   if (memory_block_is_empty(memory))
     return new_system_call_failed_condition("malloc");
@@ -71,7 +74,7 @@ value_t space_init(space_t *space, const runtime_config_t *config) {
   // wastes the extra word we allocated to make room for alignment. However,
   // making the space size slightly different depending on whether malloc
   // aligns its data or not is a recipe for subtle bugs.
-  space->limit = space->next_free + config->semispace_size_bytes;
+  space->limit = space->next_free + config->base.semispace_size_bytes;
   return success();
 }
 
@@ -234,11 +237,11 @@ value_t heap_validate(heap_t *heap) {
 
 // --- H e a p ---
 
-value_t heap_init(heap_t *heap, const runtime_config_t *config) {
+value_t heap_init(heap_t *heap, const extended_runtime_config_t *config) {
   // Initialize new space, leave old space clear; we won't use that until
   // later.
   if (config == NULL)
-    config = runtime_config_get_default();
+    config = extended_runtime_config_get_default();
   heap->config = *config;
   TRY(space_init(&heap->to_space, config));
   space_clear(&heap->from_space);

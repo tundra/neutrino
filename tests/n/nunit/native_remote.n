@@ -14,7 +14,14 @@ def $test_unknown() {
   $assert:equals(op.blargh(), try @core:time->blargh() on.unknown_native_method($s) => $s);
 }
 
+def $test_echo() {
+  def $echo_p := @core:echo->echo();
+  $assert:not($echo_p.is_resolved?);
+  $echo_p.then(fn $value => $assert:equals(946, $value));
+}
+
 do {
   $test_time();
+  $test_echo();
   $test_unknown();
 }

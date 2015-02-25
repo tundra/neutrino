@@ -15,7 +15,6 @@
 #include "utils/ook-inl.h"
 #include "value-inl.h"
 
-
 // --- R o o t s ---
 
 TRIVIAL_PRINT_ON_IMPL(Roots, roots);
@@ -44,8 +43,7 @@ static value_t create_stack_piece_bottom_code_block(runtime_t *runtime) {
   blob_t blob = short_buffer_flush(&assm.code);
   TRY_DEF(bytecode, new_heap_blob_with_data(runtime, blob));
   assembler_dispose(&assm);
-  return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array),
-      1);
+  return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array), 1);
 }
 
 // Creates a code block that holds just a single return instruction.
@@ -58,8 +56,7 @@ static value_t create_return_code_block(runtime_t *runtime) {
   blob_t blob = short_buffer_flush(&assm.code);
   TRY_DEF(bytecode, new_heap_blob_with_data(runtime, blob));
   assembler_dispose(&assm);
-  return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array),
-      1);
+  return new_heap_code_block(runtime, bytecode, ROOT(runtime, empty_array), 1);
 }
 
 // Creates a code block that invokes the call method on an object.
@@ -84,11 +81,32 @@ static value_t create_call_thunk_code_block(runtime_t *runtime) {
 
 // Populates the special imports map.
 static value_t init_special_imports(runtime_t *runtime, value_t imports) {
-  TRY_DEF(ctrino, new_c_object(runtime, ROOT(runtime, ctrino_factory),
-      new_blob(NULL, 0), new_value_array(NULL, 0)));
+  TRY_DEF(ctrino,
+      new_c_object(runtime, ROOT(runtime, ctrino_factory), new_blob(NULL, 0), new_value_array(NULL, 0)));
   TRY(set_id_hash_map_at(runtime, imports, RSTR(runtime, ctrino), ctrino));
   TRY_DEF(time, new_native_remote(runtime, native_remote_time()));
   TRY(set_id_hash_map_at(runtime, imports, RSTR(runtime, time), time));
+  return success();
+}
+
+// Populates the special imports map with services using the configurable
+// service installer.
+static value_t init_services(runtime_t *runtime, value_t imports,
+    const extended_runtime_config_t *config) {
+  unary_callback_t *install_hook = config->service_install_hook;
+  if (install_hook == NULL)
+    return success();
+  service_install_hook_context_t context = { runtime, imports };
+  TRY(o2v(unary_callback_call(install_hook, p2o(&context))));
+  return success();
+}
+
+// Install the service described by the given descriptor in the given context.
+value_t service_hook_add_service(service_install_hook_context_t *context,
+    service_descriptor_t *service) {
+  TRY_DEF(name, new_heap_utf8(context->runtime, new_c_string(service->name)));
+  TRY_DEF(obj, new_native_remote(context->runtime, service));
+  TRY(set_id_hash_map_at(context->runtime, context->imports, name, obj));
   return success();
 }
 
@@ -127,13 +145,13 @@ static value_t apply_ctrino_plugin(runtime_t *runtime, value_t methodspace) {
   return ctrino_factory;
 }
 
-static value_t apply_custom_plugins(runtime_t *runtime, const runtime_config_t *config,
-    value_t methodspace) {
-  if (config->plugin_count == 0)
+static value_t apply_custom_plugins(runtime_t *runtime,
+    const extended_runtime_config_t *config, value_t methodspace) {
+  if (config->base.plugin_count == 0)
     return ROOT(runtime, empty_array);
-  TRY_DEF(result, new_heap_array(runtime, config->plugin_count));
-  for (size_t i = 0; i < config->plugin_count; i++) {
-    const c_object_info_t *plugin = config->plugins[i];
+  TRY_DEF(result, new_heap_array(runtime, config->base.plugin_count));
+  for (size_t i = 0; i < config->base.plugin_count; i++) {
+    const c_object_info_t *plugin = config->base.plugins[i];
     if (plugin == NULL)
       continue;
     TRY_DEF(factory, new_c_object_factory(runtime, plugin, methodspace));
@@ -142,17 +160,22 @@ static value_t apply_custom_plugins(runtime_t *runtime, const runtime_config_t *
   return result;
 }
 
-value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *runtime) {
+value_t roots_init(value_t roots, const extended_runtime_config_t *config,
+    runtime_t *runtime) {
   // The modal meta-roots are tricky because the species relationship between
   // them is circular.
-  TRY_DEF(fluid_meta, new_heap_modal_species_unchecked(runtime, &kSpeciesBehavior,
-      vmFluid, rk_fluid_species_species));
-  TRY_DEF(mutable_meta, new_heap_modal_species_unchecked(runtime, &kSpeciesBehavior,
-      vmMutable, rk_fluid_species_species));
-  TRY_DEF(frozen_meta, new_heap_modal_species_unchecked(runtime, &kSpeciesBehavior,
-      vmFrozen, rk_fluid_species_species));
-  TRY_DEF(deep_frozen_meta, new_heap_modal_species_unchecked(runtime, &kSpeciesBehavior,
-      vmDeepFrozen, rk_fluid_species_species));
+  TRY_DEF(fluid_meta,
+      new_heap_modal_species_unchecked(runtime, &kSpeciesBehavior, vmFluid,
+          rk_fluid_species_species));
+  TRY_DEF(mutable_meta,
+      new_heap_modal_species_unchecked(runtime, &kSpeciesBehavior, vmMutable,
+          rk_fluid_species_species));
+  TRY_DEF(frozen_meta,
+      new_heap_modal_species_unchecked(runtime, &kSpeciesBehavior, vmFrozen,
+          rk_fluid_species_species));
+  TRY_DEF(deep_frozen_meta,
+      new_heap_modal_species_unchecked(runtime, &kSpeciesBehavior, vmDeepFrozen,
+          rk_fluid_species_species));
   set_heap_object_header(fluid_meta, mutable_meta);
   set_heap_object_header(mutable_meta, mutable_meta);
   set_heap_object_header(frozen_meta, mutable_meta);
@@ -183,7 +206,8 @@ value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *run
 #undef __CREATE_MODAL_SPECIES__
 
   // At this point we'll have created the root species so we can set its header.
-  CHECK_EQ("roots already initialized", vdInteger, get_value_domain(get_heap_object_header(roots)));
+  CHECK_EQ("roots already initialized", vdInteger,
+      get_value_domain(get_heap_object_header(roots)));
   set_heap_object_species(roots, RAW_ROOT(roots, mutable_roots_species));
 
   // Generates code for initializing a string table entry.
@@ -212,35 +236,41 @@ value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *run
   set_array_at(array_of_zero, 0, new_integer(0));
   RAW_ROOT(roots, array_of_zero) = array_of_zero;
   TRY_DEF(empty_blob, new_heap_blob(runtime, 0));
-  TRY_SET(RAW_ROOT(roots, empty_code_block), new_heap_code_block(runtime,
-      empty_blob, empty_array, 0));
-  TRY_SET(RAW_ROOT(roots, empty_array_buffer), new_heap_array_buffer(runtime, 0));
-  TRY_SET(RAW_ROOT(roots, empty_path), new_heap_path(runtime, afFreeze, nothing(),
-      nothing()));
-  TRY_SET(RAW_ROOT(roots, any_guard), new_heap_guard(runtime, afFreeze, gtAny, null()));
+  TRY_SET(RAW_ROOT(roots, empty_code_block),
+      new_heap_code_block(runtime, empty_blob, empty_array, 0));
+  TRY_SET(RAW_ROOT(roots, empty_array_buffer),
+      new_heap_array_buffer(runtime, 0));
+  TRY_SET(RAW_ROOT(roots, empty_path),
+      new_heap_path(runtime, afFreeze, nothing(), nothing()));
+  TRY_SET(RAW_ROOT(roots, any_guard),
+      new_heap_guard(runtime, afFreeze, gtAny, null()));
   TRY_DEF(empty_type, new_heap_type(runtime, afFreeze, null()));
   TRY(validate_deep_frozen(runtime, empty_type, NULL));
   TRY_SET(RAW_ROOT(roots, empty_instance_species),
       new_heap_instance_species(runtime, empty_type, nothing(), vmMutable));
-  TRY_SET(RAW_ROOT(roots, subject_key), new_heap_key(runtime, RAW_RSTR(roots, subject)));
-  TRY_SET(RAW_ROOT(roots, selector_key), new_heap_key(runtime, RAW_RSTR(roots, selector)));
-  TRY_SET(RAW_ROOT(roots, is_async_key), new_heap_key(runtime, RAW_RSTR(roots, is_async)));
+  TRY_SET(RAW_ROOT(roots, subject_key),
+      new_heap_key(runtime, RAW_RSTR(roots, subject)));
+  TRY_SET(RAW_ROOT(roots, selector_key),
+      new_heap_key(runtime, RAW_RSTR(roots, selector)));
+  TRY_SET(RAW_ROOT(roots, is_async_key),
+      new_heap_key(runtime, RAW_RSTR(roots, is_async)));
   TRY_SET(RAW_ROOT(roots, builtin_impls), new_heap_id_hash_map(runtime, 256));
-  TRY_SET(RAW_ROOT(roots, op_call), new_heap_operation(runtime, afFreeze, otCall, null()));
+  TRY_SET(RAW_ROOT(roots, op_call),
+      new_heap_operation(runtime, afFreeze, otCall, null()));
   TRY_SET(RAW_ROOT(roots, stack_bottom_code_block),
       create_stack_bottom_code_block(runtime));
   TRY_SET(RAW_ROOT(roots, stack_piece_bottom_code_block),
       create_stack_piece_bottom_code_block(runtime));
-  TRY_SET(RAW_ROOT(roots, return_code_block), create_return_code_block(runtime));
-  TRY_SET(RAW_ROOT(roots, call_thunk_code_block), create_call_thunk_code_block(runtime));
+  TRY_SET(RAW_ROOT(roots, return_code_block),
+      create_return_code_block(runtime));
+  TRY_SET(RAW_ROOT(roots, call_thunk_code_block),
+      create_call_thunk_code_block(runtime));
   TRY_SET(RAW_ROOT(roots, escape_records), create_escape_records(runtime));
   TRY_SET(RAW_ROOT(roots, special_imports), new_heap_id_hash_map(runtime, 256));
   TRY_SET(RAW_ROOT(roots, subject_key_array),
-      new_heap_array_with_contents(runtime, afFreeze,
-          new_value_array(&RAW_ROOT(roots, subject_key), 1)));
+      new_heap_array_with_contents(runtime, afFreeze, new_value_array(&RAW_ROOT(roots, subject_key), 1)));
   TRY_SET(RAW_ROOT(roots, selector_key_array),
-      new_heap_array_with_contents(runtime, afFreeze,
-          new_value_array(&RAW_ROOT(roots, selector_key), 1)));
+      new_heap_array_with_contents(runtime, afFreeze, new_value_array(&RAW_ROOT(roots, selector_key), 1)));
 
   // Generate initialization for the per-family types.
 #define __CREATE_TYPE__(Name, name) do {                                       \
@@ -259,10 +289,10 @@ value_t roots_init(value_t roots, const runtime_config_t *config, runtime_t *run
 
   // The native methodspace may need some of the types above so only initialize
   // it after they have been created.
-  TRY_SET(RAW_ROOT(roots, ctrino_factory), apply_ctrino_plugin(runtime,
-          builtin_methodspace));
-  TRY_SET(RAW_ROOT(roots, plugin_factories), apply_custom_plugins(runtime,
-      config, builtin_methodspace));
+  TRY_SET(RAW_ROOT(roots, ctrino_factory),
+      apply_ctrino_plugin(runtime, builtin_methodspace));
+  TRY_SET(RAW_ROOT(roots, plugin_factories),
+      apply_custom_plugins(runtime, config, builtin_methodspace));
 
   TRY(ensure_frozen(runtime, builtin_methodspace));
 
@@ -293,21 +323,21 @@ COND_CHECK_EQ("validation", ccValidationFailed, A, B)
 value_t roots_validate(value_t roots) {
   // Checks whether the argument is within the specified family, otherwise
   // signals a validation failure.
-  #define VALIDATE_HEAP_OBJECT(ofFamily, value) do {                           \
+#define VALIDATE_HEAP_OBJECT(ofFamily, value) do {                           \
     VALIDATE_CHECK_TRUE(in_family(ofFamily, (value)));                         \
     TRY(heap_object_validate(value));                                          \
   } while (false)
 
   // Checks that the given value is a species with the specified instance
   // family.
-  #define VALIDATE_SPECIES(ofFamily, value) do {                               \
+#define VALIDATE_SPECIES(ofFamily, value) do {                               \
     VALIDATE_HEAP_OBJECT(ofSpecies, value);                                    \
     VALIDATE_CHECK_EQ(get_species_instance_family(value), ofFamily);           \
     TRY(heap_object_validate(value));                                          \
   } while (false)
 
   // Checks all the species that belong to the given modal family.
-  #define VALIDATE_ALL_MODAL_SPECIES(ofFamily, family)                                              \
+#define VALIDATE_ALL_MODAL_SPECIES(ofFamily, family)                                              \
     VALIDATE_MODAL_SPECIES(ofFamily, vmFluid, RAW_ROOT(roots, fluid_##family##_species));           \
     VALIDATE_MODAL_SPECIES(ofFamily, vmMutable, RAW_ROOT(roots, mutable_##family##_species));       \
     VALIDATE_MODAL_SPECIES(ofFamily, vmFrozen, RAW_ROOT(roots, frozen_##family##_species));         \
@@ -315,7 +345,7 @@ value_t roots_validate(value_t roots) {
 
   // Checks that the given value is a modal species for the given family and in
   // the given mode.
-  #define VALIDATE_MODAL_SPECIES(ofFamily, vmMode, value) do {                 \
+#define VALIDATE_MODAL_SPECIES(ofFamily, vmMode, value) do {                 \
     VALIDATE(get_species_division(value) == sdModal);                          \
     VALIDATE(get_modal_species_mode(value) == vmMode);                         \
     VALIDATE_SPECIES(ofFamily, value);                                         \
@@ -345,7 +375,8 @@ value_t roots_validate(value_t roots) {
   VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, array_of_zero));
   VALIDATE_CHECK_EQ(1, get_array_length(RAW_ROOT(roots, array_of_zero)));
   VALIDATE_HEAP_OBJECT(ofArrayBuffer, RAW_ROOT(roots, empty_array_buffer));
-  VALIDATE_CHECK_EQ(0, get_array_buffer_length(RAW_ROOT(roots, empty_array_buffer)));
+  VALIDATE_CHECK_EQ(0,
+      get_array_buffer_length(RAW_ROOT(roots, empty_array_buffer)));
   VALIDATE_HEAP_OBJECT(ofPath, RAW_ROOT(roots, empty_path));
   VALIDATE_CHECK_TRUE(is_path_empty(RAW_ROOT(roots, empty_path)));
   VALIDATE_HEAP_OBJECT(ofGuard, RAW_ROOT(roots, any_guard));
@@ -362,7 +393,8 @@ value_t roots_validate(value_t roots) {
   VALIDATE_HEAP_OBJECT(ofIdHashMap, RAW_ROOT(roots, builtin_impls));
   VALIDATE_HEAP_OBJECT(ofOperation, RAW_ROOT(roots, op_call));
   VALIDATE_CHECK_EQ(otCall, get_operation_type(RAW_ROOT(roots, op_call)));
-  VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, stack_piece_bottom_code_block));
+  VALIDATE_HEAP_OBJECT(ofCodeBlock,
+      RAW_ROOT(roots, stack_piece_bottom_code_block));
   VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, stack_bottom_code_block));
   VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, call_thunk_code_block));
   VALIDATE_HEAP_OBJECT(ofCodeBlock, RAW_ROOT(roots, return_code_block));
@@ -384,8 +416,8 @@ value_t roots_validate(value_t roots) {
   ENUM_SELECTOR_TABLE(__VALIDATE_SELECTOR_TABLE_ENTRY__)
 #undef __VALIDATE_SELECTOR_TABLE_ENTRY__
 
-  #undef VALIDATE_TYPE
-  #undef VALIDATE_SPECIES
+#undef VALIDATE_TYPE
+#undef VALIDATE_SPECIES
   return success();
 }
 
@@ -399,18 +431,19 @@ value_t ensure_roots_owned_values_frozen(runtime_t *runtime, value_t self) {
   return success();
 }
 
-
 // --- M u t a b l e   r o o t s ---
 
 TRIVIAL_PRINT_ON_IMPL(MutableRoots, mutable_roots);
 
 value_t mutable_roots_validate(value_t self) {
   VALIDATE_FAMILY(ofMutableRoots, self);
-  VALIDATE_HEAP_OBJECT(ofArgumentMapTrie, RAW_MROOT(self, argument_map_trie_root));
+  VALIDATE_HEAP_OBJECT(ofArgumentMapTrie,
+      RAW_MROOT(self, argument_map_trie_root));
   return success();
 }
 
-value_t ensure_mutable_roots_owned_values_frozen(runtime_t *runtime, value_t self) {
+value_t ensure_mutable_roots_owned_values_frozen(runtime_t *runtime,
+    value_t self) {
   // Why would you freeze the mutable roots -- they're supposed to be mutable!
   UNREACHABLE("freezing the mutable roots");
   return new_condition(ccWat);
@@ -438,8 +471,8 @@ bool gc_fuzzer_tick(gc_fuzzer_t *fuzzer) {
     return false;
   if (fuzzer->remaining == 0) {
     // This is where we fail. First, generate a new remaining tick count.
-    fuzzer->remaining = pseudo_random_next(&fuzzer->random, fuzzer->spread) +
-        fuzzer->min_freq;
+    fuzzer->remaining = pseudo_random_next(&fuzzer->random, fuzzer->spread)
+        + fuzzer->min_freq;
     return true;
   } else {
     fuzzer->remaining--;
@@ -447,7 +480,7 @@ bool gc_fuzzer_tick(gc_fuzzer_t *fuzzer) {
   }
 }
 
-value_t new_runtime(runtime_config_t *config, runtime_t **runtime_out) {
+value_t new_runtime(extended_runtime_config_t *config, runtime_t **runtime_out) {
   memory_block_t memory = allocator_default_malloc(sizeof(runtime_t));
   CHECK_EQ("wrong runtime_t memory size", sizeof(runtime_t), memory.size);
   runtime_t *runtime = (runtime_t*) memory.memory;
@@ -471,7 +504,8 @@ static const size_t kGcFuzzerMinFrequency = 64;
 
 // Perform "hard" initialization, the stuff where the runtime isn't fully
 // consistent yet.
-static value_t runtime_hard_init(runtime_t *runtime, const runtime_config_t *config) {
+static value_t runtime_hard_init(runtime_t *runtime,
+    const extended_runtime_config_t *config) {
   // Initialize the heap and roots. After this the runtime is sort-of ready to
   // be used.
   TRY(heap_init(&runtime->heap, config));
@@ -484,18 +518,20 @@ static value_t runtime_hard_init(runtime_t *runtime, const runtime_config_t *con
 
 // Perform "soft" initialization, the stuff where we're starting to rely on the
 // runtime being fully functional.
-static value_t runtime_soft_init(runtime_t *runtime) {
+static value_t runtime_soft_init(runtime_t *runtime,
+    const extended_runtime_config_t *config) {
   TRY_DEF(module_loader, new_heap_empty_module_loader(runtime));
   runtime->module_loader = runtime_protect_value(runtime, module_loader);
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
-  E_BEGIN_TRY_FINALLY();
-    safe_value_t s_builtin_impls = protect(pool,
-        ROOT(runtime, builtin_impls));
-    E_TRY(add_builtin_implementations(runtime, s_builtin_impls));
-    E_TRY(init_special_imports(runtime, ROOT(runtime, special_imports)));
-    E_RETURN(runtime_validate(runtime, nothing()));
+  E_BEGIN_TRY_FINALLY()
+  ;
+  safe_value_t s_builtin_impls = protect(pool, ROOT(runtime, builtin_impls));
+  E_TRY(add_builtin_implementations(runtime, s_builtin_impls));
+  E_TRY(init_special_imports(runtime, ROOT(runtime, special_imports)));
+  E_TRY(init_services(runtime, ROOT(runtime, special_imports), config));
+  E_RETURN(runtime_validate(runtime, nothing()));
   E_FINALLY();
-    DISPOSE_SAFE_VALUE_POOL(pool);
+  DISPOSE_SAFE_VALUE_POOL(pool);
   E_END_TRY_FINALLY();
 }
 
@@ -515,34 +551,35 @@ static value_t runtime_freeze_shared_state(runtime_t *runtime) {
   return success();
 }
 
-value_t runtime_init(runtime_t *runtime, const runtime_config_t *config) {
+value_t runtime_init(runtime_t *runtime,
+    const extended_runtime_config_t *config) {
   runtime_ensure_static_inits_run();
   ensure_neutrino_format_handlers_registered();
   if (config == NULL)
-    config = runtime_config_get_default();
+    config = extended_runtime_config_get_default();
   // First reset all the fields to a well-defined value.
   runtime_clear(runtime);
   // Set up the file system pointer. Null means default to the native system.
-  runtime->file_system = config->file_system;
+  runtime->file_system = config->base.file_system;
   if (runtime->file_system == NULL)
     runtime->file_system = file_system_native();
-  runtime->system_time = config->system_time;
+  runtime->system_time = config->base.system_time;
   if (runtime->system_time == NULL)
     runtime->system_time = real_time_clock_system();
-  runtime->random = tinymt64_construct(tinymt64_params_default(), config->random_seed);
+  runtime->random = tinymt64_construct(tinymt64_params_default(),
+      config->base.random_seed);
   TRY(runtime_hard_init(runtime, config));
-  TRY(runtime_soft_init(runtime));
+  TRY(runtime_soft_init(runtime, config));
   TRY(runtime_freeze_shared_state(runtime));
   TRY(runtime_validate(runtime, nothing()));
   // Set up gc fuzzing. For now do this after the initialization to exempt that
   // from being fuzzed. Longer term (probably after this has been rewritten) we
   // want more of this to be gc safe.
-  if (config->gc_fuzz_freq > 0) {
-    memory_block_t memory = allocator_default_malloc(
-        sizeof(gc_fuzzer_t));
+  if (config->base.gc_fuzz_freq > 0) {
+    memory_block_t memory = allocator_default_malloc(sizeof(gc_fuzzer_t));
     runtime->gc_fuzzer = (gc_fuzzer_t*) memory.memory;
     gc_fuzzer_init(runtime->gc_fuzzer, kGcFuzzerMinFrequency,
-        config->gc_fuzz_freq, config->gc_fuzz_seed);
+        config->base.gc_fuzz_freq, config->base.gc_fuzz_seed);
   }
   return success();
 }
@@ -552,12 +589,12 @@ IMPLEMENTATION(value_validator_o, value_visitor_o);
 // Adaptor function for passing object validate as a value visitor.
 static value_t value_validator_visit(value_visitor_o *self, value_t value) {
   switch (get_value_domain(value)) {
-    case vdHeapObject:
-    case vdDerivedObject:
-      return value_validate(value);
-    default:
-      CHECK_TRUE("validating non-object", is_nothing(value));
-      return success();
+  case vdHeapObject:
+  case vdDerivedObject:
+    return value_validate(value);
+  default:
+    CHECK_TRUE("validating non-object", is_nothing(value));
+    return success();
   }
 }
 
@@ -617,7 +654,8 @@ static value_t pending_fixup_worklist_add(pending_fixup_worklist_t *worklist,
     pending_fixup_t *new_fixups = (pending_fixup_t*) new_memory.memory;
     if (old_capacity > 0) {
       // Copy the previous data over to the new backing store.
-      memcpy(new_fixups, worklist->fixups, worklist->length * sizeof(pending_fixup_t));
+      memcpy(new_fixups, worklist->fixups,
+          worklist->length * sizeof(pending_fixup_t));
       // Free the old backing store.
       allocator_default_free(worklist->memory);
     }
@@ -643,7 +681,8 @@ IMPLEMENTATION(garbage_collection_state_o, field_visitor_o);
 // State maintained during garbage collection. Also functions as a field visitor
 // such that it's easy to traverse objects.
 struct garbage_collection_state_o {
-  IMPLEMENTATION_HEADER(garbage_collection_state_o, field_visitor_o);
+  IMPLEMENTATION_HEADER(garbage_collection_state_o, field_visitor_o)
+  ;
   // The runtime we're collecting.
   runtime_t *runtime;
   // List of objects to post-process after migration.
@@ -651,7 +690,8 @@ struct garbage_collection_state_o {
 };
 
 // Initializes a garbage collection state object.
-static garbage_collection_state_o garbage_collection_state_new(runtime_t *runtime) {
+static garbage_collection_state_o garbage_collection_state_new(
+    runtime_t *runtime) {
   garbage_collection_state_o result;
   result.runtime = runtime;
   VTABLE_INIT(garbage_collection_state_o, UPCAST(&result));
@@ -681,7 +721,8 @@ static value_t migrate_object_shallow(value_t object, space_t *space) {
 
 // Returns true if the given object needs to apply a fixup after migration.
 static bool needs_post_migrate_fixup(value_t old_object) {
-  return get_heap_object_family_behavior_unchecked(old_object)->post_migrate_fixup != NULL;
+  return get_heap_object_family_behavior_unchecked(old_object)->post_migrate_fixup
+      != NULL;
 }
 
 /// ## Field migration
@@ -704,15 +745,16 @@ static value_t ensure_heap_object_migrated(garbage_collection_state_o *self,
     // Check with the object whether it needs post processing. This is the last
     // time the object is intact so it's the last point we can call methods on
     // it to find out.
-    CHECK_TRUE("migrating clone", space_contains(&self->runtime->heap.from_space,
-        get_heap_object_address(old_object)));
+    CHECK_TRUE("migrating clone",
+        space_contains(&self->runtime->heap.from_space, get_heap_object_address(old_object)));
     bool needs_fixup = needs_post_migrate_fixup(old_object);
-    value_t new_object = migrate_object_shallow(old_object, &self->runtime->heap.to_space);
+    value_t new_object = migrate_object_shallow(old_object,
+        &self->runtime->heap.to_space);
     CHECK_DOMAIN(vdHeapObject, new_object);
     // Now that we know where the new object is going to be we can schedule the
     // fixup if necessary.
     if (needs_fixup) {
-      pending_fixup_t fixup = {new_object, old_object};
+      pending_fixup_t fixup = { new_object, old_object };
       TRY(pending_fixup_worklist_add(&self->pending_fixups, &fixup));
     }
     // Point the old object to the new one so we know to use the new clone
@@ -743,7 +785,8 @@ static value_t migrate_derived_object(garbage_collection_state_o *self,
 // migrated already.
 static value_t migrate_field_shallow(field_visitor_o *super_self,
     value_t *field) {
-  garbage_collection_state_o *self = DOWNCAST(garbage_collection_state_o, super_self);
+  garbage_collection_state_o *self = DOWNCAST(garbage_collection_state_o,
+      super_self);
   value_t old_value = *field;
   // If this is not a heap object there's nothing to do.
   value_domain_t domain = get_value_domain(old_value);
@@ -755,13 +798,13 @@ static value_t migrate_field_shallow(field_visitor_o *super_self,
   return success();
 }
 
-VTABLE(garbage_collection_state_o, field_visitor_o) {
-  migrate_field_shallow
-};
+VTABLE(garbage_collection_state_o, field_visitor_o) { migrate_field_shallow };
 
 // Applies a post-migration fixup scheduled when migrating the given object.
-static void apply_fixup(runtime_t *runtime, value_t new_heap_object, value_t old_object) {
-  family_behavior_t *behavior = get_heap_object_family_behavior_unchecked(new_heap_object);
+static void apply_fixup(runtime_t *runtime, value_t new_heap_object,
+    value_t old_object) {
+  family_behavior_t *behavior = get_heap_object_family_behavior_unchecked(
+      new_heap_object);
   (behavior->post_migrate_fixup)(runtime, new_heap_object, old_object);
 }
 
@@ -811,9 +854,10 @@ void runtime_clear(runtime_t *runtime) {
 
 // Perform any pre-processing we need to do before releasing the runtime.
 static value_t runtime_prepare_dispose(runtime_t *runtime) {
-  return heap_collect_before_dispose(&runtime->heap)
-      ? runtime_garbage_collect(runtime)
-      : runtime_validate(runtime, nothing());
+  return
+      heap_collect_before_dispose(&runtime->heap) ?
+          runtime_garbage_collect(runtime) :
+          runtime_validate(runtime, nothing());
 }
 
 value_t runtime_dispose(runtime_t *runtime) {
@@ -824,7 +868,8 @@ value_t runtime_dispose(runtime_t *runtime) {
   safe_value_destroy(runtime, runtime->module_loader);
   result = condition_and(result, heap_dispose(&runtime->heap));
   if (runtime->gc_fuzzer != NULL) {
-    allocator_default_free(new_memory_block(runtime->gc_fuzzer, sizeof(gc_fuzzer_t)));
+    allocator_default_free(
+        new_memory_block(runtime->gc_fuzzer, sizeof(gc_fuzzer_t)));
     runtime->gc_fuzzer = NULL;
   }
   return result;
@@ -832,11 +877,11 @@ value_t runtime_dispose(runtime_t *runtime) {
 
 bool value_is_immediate(value_t value) {
   switch (get_value_domain(value)) {
-    case vdHeapObject:
-    case vdDerivedObject:
-      return false;
-    default:
-      return true;
+  case vdHeapObject:
+  case vdDerivedObject:
+    return false;
+  default:
+    return true;
   }
 }
 
@@ -845,8 +890,8 @@ safe_value_t runtime_protect_value_with_flags(runtime_t *runtime, value_t value,
   if (value_is_immediate(value)) {
     return protect_immediate(value);
   } else {
-    object_tracker_t *gc_safe = heap_new_heap_object_tracker(&runtime->heap, value,
-        safe_flags);
+    object_tracker_t *gc_safe = heap_new_heap_object_tracker(&runtime->heap,
+        value, safe_flags);
     return object_tracker_to_safe_value(gc_safe);
   }
 
@@ -856,8 +901,8 @@ safe_value_t runtime_protect_value(runtime_t *runtime, value_t value) {
   return runtime_protect_value_with_flags(runtime, value, tfNone);
 }
 
-static value_t new_object_instance(object_factory_t *factory, runtime_t *runtime,
-    value_t header) {
+static value_t new_object_instance(object_factory_t *factory,
+    runtime_t *runtime, value_t header) {
   return new_heap_object_with_type(runtime, header);
 }
 
@@ -867,7 +912,8 @@ static value_t set_object_instance_fields(object_factory_t *factory,
 }
 
 object_factory_t runtime_default_object_factory() {
-  return new_object_factory(new_object_instance, set_object_instance_fields, NULL);
+  return new_object_factory(new_object_instance, set_object_instance_fields,
+      NULL);
 }
 
 value_t runtime_plankton_deserialize(runtime_t *runtime, value_t blob) {
@@ -921,8 +967,8 @@ value_t get_runtime_plugin_factory_at(runtime_t *runtime, size_t index) {
   return get_array_at(ROOT(runtime, plugin_factories), index);
 }
 
-value_t runtime_load_library_from_stream(runtime_t *runtime, in_stream_t *stream,
-    value_t display_name) {
+value_t runtime_load_library_from_stream(runtime_t *runtime,
+    in_stream_t *stream, value_t display_name) {
   TRY_DEF(data, read_stream_to_blob(runtime, stream));
   TRY_DEF(library, runtime_plankton_deserialize(runtime, data));
   if (!in_family(ofLibrary, library))
@@ -936,7 +982,9 @@ value_t runtime_load_library_from_stream(runtime_t *runtime, in_stream_t *stream
     value_t key;
     value_t value;
     id_hash_map_iter_get_current(&iter, &key, &value);
-    TRY(set_id_hash_map_at(runtime, get_module_loader_modules(loader), key, value));
+    TRY(
+        set_id_hash_map_at(runtime, get_module_loader_modules(loader), key,
+            value));
   }
   return success();
 }
@@ -959,16 +1007,18 @@ value_t safe_runtime_execute_syntax(runtime_t *runtime, safe_value_t s_program) 
   safe_value_t s_ambience = protect(pool, ambience);
   // Forward declare these to avoid msvc complaining.
   safe_value_t s_module, s_entry_point;
-  E_BEGIN_TRY_FINALLY();
-    value_t unbound_module = get_program_ast_module(deref(s_program));
-    E_TRY_DEF(module, assemble_module(deref(s_ambience), unbound_module));
-    s_module = protect(pool, module);
-    s_entry_point = protect(pool, get_program_ast_entry_point(deref(s_program)));
-    E_TRY_DEF(code_block, safe_compile_expression(runtime, s_entry_point,
-        s_module, scope_get_bottom()));
-    E_RETURN(run_code_block(s_ambience, protect(pool, code_block)));
+  E_BEGIN_TRY_FINALLY()
+  ;
+  value_t unbound_module = get_program_ast_module(deref(s_program));
+  E_TRY_DEF(module, assemble_module(deref(s_ambience), unbound_module));
+  s_module = protect(pool, module);
+  s_entry_point = protect(pool, get_program_ast_entry_point(deref(s_program)));
+  E_TRY_DEF(code_block,
+      safe_compile_expression(runtime, s_entry_point, s_module,
+          scope_get_bottom()));
+  E_RETURN(run_code_block(s_ambience, protect(pool, code_block)));
   E_FINALLY();
-    DISPOSE_SAFE_VALUE_POOL(pool);
+  DISPOSE_SAFE_VALUE_POOL(pool);
   E_END_TRY_FINALLY();
 }
 
@@ -1001,8 +1051,8 @@ static void runtime_run_static_inits() {
 
 // Trampoline used to adapt runtime_run_static_inits to the windows InitOnce
 // api.
-static bool_t callback_marker runtime_run_static_inits_msvc(init_once_t* init_once,
-    void* param, void** context) {
+static bool_t callback_marker runtime_run_static_inits_msvc(
+    init_once_t* init_once, void* param, void** context) {
   runtime_run_static_inits();
   return true;
 }

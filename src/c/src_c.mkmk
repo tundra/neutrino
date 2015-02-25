@@ -47,12 +47,11 @@ for library_file_name in library_file_names:
   library.add_member(object_file)
 
 ctrino_file_names = [
-  "main.c"
+  "main.cc"
 ]
 
 # Build an executable from the library along with the main file.
 ctrino = c.get_executable("ctrino")
-ctrino.add_object(library)
 for ctrino_file_name in ctrino_file_names:
   ctrino_file = c.get_source_file(ctrino_file_name)
   ctrino_file.add_include(get_dep('tclib').get_child('src', 'c'))

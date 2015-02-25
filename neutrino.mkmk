@@ -10,6 +10,8 @@ include('include', 'include.mkmk')
 include('tests', 'tests.mkmk')
 include('misc', 'misc.mkmk')
 
+get_external("src", "c", "ctrino").add_object(get_external("include", "library"))
+
 # Set up some convenient aliases.
 ctrino = add_alias("ctrino", get_external("src", "c", "ctrino"))
 c_tests = add_alias("c-tests", get_external("tests", "c", "main"))

@@ -6,6 +6,7 @@
 
 #include "c/stdc.h"
 #include "utils/refcount.hh"
+#include "c/stdvector.hh"
 
 BEGIN_C_INCLUDES
 #include "neutrino.h"
@@ -17,7 +18,7 @@ namespace neutrino {
 
 // Settings to apply when creating a runtime. This struct gets passed by value
 // under some circumstances so be sure it doesn't break anything to do that.
-class RuntimeConfig : public runtime_config_t {
+class RuntimeConfig : public neu_runtime_config_t {
 public:
   RuntimeConfig();
 };
@@ -26,6 +27,9 @@ public:
 // factored into its own type such that it can be shared between maybes without
 // having to explicitly deal with ownership. For internal use only.
 class MaybeMessage : public tclib::refcount_shared_t {
+protected:
+  virtual size_t instance_size() { return sizeof(*this); }
+
 private:
   template <typename T> friend class Maybe;
 
@@ -39,19 +43,19 @@ private:
 };
 
 // An option type that either holds some value or not, and if it doesn't it may
-// have a message that indicates why it doesn't.
-template <typename T>
+// have a message that indicates why it doesn't. You can also leave out the
+// type parameter to indicate that the value returned is irrelevant.
+template <typename T = void*>
 class Maybe : public tclib::refcount_reference_t<MaybeMessage> {
 public:
   // Initialize an empty option which neither has a value nor a message
   // indicating why.
   Maybe()
     : tclib::refcount_reference_t<MaybeMessage>()
-    , has_value_(false)
-    , value_(NULL) { }
+    , has_value_(false) { }
 
   // Constructs an option with the given value.
-  Maybe(T *value)
+  Maybe(T value)
     : tclib::refcount_reference_t<MaybeMessage>()
     , has_value_(true)
     , value_(value) { }
@@ -69,10 +73,11 @@ public:
 
   // Returns an option that has no value for the given reason, or optionally
   // for no explicit reason.
-  static Maybe<T> with_message(const char *message = NULL) { return Maybe<T>(*new MaybeMessage(message)); }
+  static Maybe<T> with_message(const char *message = NULL) { return Maybe<T>(*new (tclib::kDefaultAlloc) MaybeMessage(message)); }
 
-  // Returns an option with the given value.
-  static Maybe<T> with_value(T *value) { return Maybe<T>(value); }
+  // Returns an option with the given value, or if none is specified the default
+  // value for the given type.
+  static Maybe<T> with_value(T value = T()) { return Maybe<T>(value); }
 
 private:
   Maybe(MaybeMessage &error)
@@ -81,20 +86,45 @@ private:
     , value_(NULL) { }
 
   bool has_value_;
-  T *value_;
+  T value_;
 };
+
+class NativeService;
 
 // All the data associated with a single VM instance.
 class Runtime {
 public:
+  class Garbage;
+
   Runtime();
   ~Runtime();
 
   // Initialize this runtime.
-  Maybe<void> initialize(RuntimeConfig *config = NULL);
+  Maybe<> initialize(RuntimeConfig *config = NULL);
+
+  // Add a native service to the set that will be installed when the runtime
+  // is created.
+  void add_service(NativeService *service);
+
+  // Accessors for the underlying runtime.
+  // TODO: remove.
+  runtime_t *operator*();
+  runtime_t *operator->();
 
 private:
-  runtime_t *runtime_;
+  // The Internal class is where most of the action is, it's hidden away in
+  // the implementation to avoid exposing the mechanics of how runtimes work
+  // internally.
+  class Internal;
+  friend class Internal;
+
+  // Add a piece of data that should be cleaned up when this runtime is
+  // destroyed.
+  void add_garbage(Garbage *garbage);
+
+  Internal *internal_;
+  std::vector<NativeService*> services_;
+  std::vector<Garbage*> garbage_;
 };
 
 } // namespace neutrino

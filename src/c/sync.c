@@ -182,14 +182,14 @@ static value_t native_remote_call_with_args(builtin_arguments_t *args) {
     // string name is an implementation detail.
     ESCAPE_BUILTIN(args, unknown_native_method, operation);
   void *impl_ptr = get_void_p_value(method);
-  schedule_request_m impl = (schedule_request_m) impl_ptr;
+  unary_callback_t *impl = (unary_callback_t*) impl_ptr;
   // Got an implementation. Now we can start allocating stuff.
   runtime_t *runtime = get_builtin_runtime(args);
   native_request_state_t *state = NULL;
   value_t process = get_builtin_process(args);
   TRY(native_requests_state_new(runtime, process, &state));
   get_process_airlock(process)->open_request_count++;
-  (impl)(&state->request);
+  unary_callback_call(impl, p2o(&state->request));
   return state->surface_promise;
 }
 
