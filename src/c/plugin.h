@@ -10,6 +10,7 @@
 #include "async/promise.h"
 
 #include "builtin.h"
+#include "plankton.h"
 #include "value.h"
 
 // Description of a method on a c object.
@@ -87,12 +88,18 @@ typedef struct {
   // The promise that must be fulfilled for a result to be delivered to the
   // caller.
   opaque_promise_t *impl_promise;
+  // Optional arena within which the result can be stored.
+  pton_arena_t *arena;
 } native_request_t;
 
-// Deliver the given value as the successful result of the given request. If the
-// request has already been resolved, successfully or not, this does nothing.
-// Returns true iff it did something.
-bool native_request_fulfill(native_request_t *request, value_t value);
+// Deliver the variant as the successful result of the given request. The reason
+// for passing the variant by reference rather than value is that the value
+// won't fit as an opaque so it needs to be stored somewhere else for the
+// duration of the call.
+//
+// If the request has already been resolved, successfully or not, this does
+// nothing. Returns true iff it did something.
+bool native_request_fulfill(native_request_t *request, pton_variant_t *result);
 
 // Data passed to the api when it's asked to install services into a runtime.
 typedef struct {
@@ -104,7 +111,7 @@ typedef struct {
 
 typedef struct {
   // Method name.
-  const char *name;
+  pton_variant_t selector;
   // Callback called by the runtime to schedule a request. The result of the
   // request must be delivered by fulfilling the promise the is given as part
   // of the request. The request struct is guaranteed to be alive at only until
@@ -113,8 +120,10 @@ typedef struct {
 } service_method_t;
 
 typedef struct {
-  // Service name.
-  const char *name;
+  // The name under which this service will be installed in the namespace.
+  pton_variant_t namespace_name;
+  // The name shown for this descriptor when printing it.
+  pton_variant_t display_name;
   // Number of methods in the method array.
   size_t methodc;
   // The methods supported by this service.
@@ -125,7 +134,8 @@ typedef struct {
 value_t service_hook_add_service(service_install_hook_context_t *context,
     service_descriptor_t *service);
 
-void service_descriptor_init(service_descriptor_t *remote, const char *display_name,
+void service_descriptor_init(service_descriptor_t *remote,
+    pton_variant_t namespace_name, pton_variant_t display_name,
     size_t methodc, service_method_t *methodv);
 
 // Creates a native remote object that delivers requests through the given

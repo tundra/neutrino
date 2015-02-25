@@ -79,13 +79,15 @@ value_t new_native_remote(runtime_t *runtime, service_descriptor_t *impl) {
   return new_heap_native_remote(runtime, impl);
 }
 
-bool native_request_fulfill(native_request_t *request, value_t value) {
-  return opaque_promise_fulfill(request->impl_promise, v2o(value));
+bool native_request_fulfill(native_request_t *request, pton_variant_t *result) {
+  return opaque_promise_fulfill(request->impl_promise, p2o(result));
 }
 
-void service_descriptor_init(service_descriptor_t *remote, const char *display_name,
+void service_descriptor_init(service_descriptor_t *remote,
+    pton_variant_t namespace_name, pton_variant_t display_name,
     size_t methodc, service_method_t *methodv) {
-  remote->name = display_name;
+  remote->namespace_name = namespace_name;
+  remote->display_name = display_name;
   remote->methodc = methodc;
   remote->methodv = methodv;
 }
@@ -94,7 +96,8 @@ opaque_t native_time_current(opaque_t opaque_request) {
   native_request_t *request = (native_request_t*) o2p(opaque_request);
   real_time_clock_t *clock = request->runtime->system_time;
   uint64_t time = real_time_clock_millis_since_epoch_utc(clock);
-  native_request_fulfill(request, new_integer(time));
+  pton_variant_t result = pton_integer(time);
+  native_request_fulfill(request, &result);
   return opaque_null();
 }
 
@@ -112,10 +115,11 @@ static time_service_descriptor_t time_impl;
 
 // Initializes the singleton time instance.
 static void run_time_impl_static_init() {
-  time_impl.methods[0].name = "current";
+  time_impl.methods[0].selector = pton_c_str("current");
   unary_callback_t *raw_current = unary_callback_new_0(native_time_current);
   time_impl.methods[0].callback = callback_invisible_clone(raw_current);
-  service_descriptor_init(&time_impl.service, "Time", 1, time_impl.methods);
+  service_descriptor_init(&time_impl.service, pton_c_str("time"),
+      pton_c_str("Time"), 1, time_impl.methods);
 }
 
 service_descriptor_t *native_remote_time() {

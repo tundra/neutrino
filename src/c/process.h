@@ -588,6 +588,8 @@ typedef struct native_request_state_t native_request_state_t;
 // with a process is implemented: other threads can put data into the airlock
 // and the process will take it out when it wants.
 typedef struct {
+  // The runtime that contains the process.
+  runtime_t *runtime;
   // How many results have been delivered into this airlock?
   native_semaphore_t pending_results_available;
   // How much space is available for results to be delivered?
@@ -602,7 +604,7 @@ typedef struct {
 } process_airlock_t;
 
 // Create and initialize a process airlock. Returns null if anything fails.
-process_airlock_t *process_airlock_new();
+process_airlock_t *process_airlock_new(runtime_t *runtime);
 
 // Blocks until a space opens up in the given airlock and then delivers the
 // given result.

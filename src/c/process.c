@@ -910,11 +910,12 @@ process_airlock_t *get_process_airlock(value_t process) {
   return (process_airlock_t*) get_void_p_value(ptr);
 }
 
-process_airlock_t *process_airlock_new() {
+process_airlock_t *process_airlock_new(runtime_t *runtime) {
   memory_block_t block = allocator_default_malloc(sizeof(process_airlock_t));
   if (memory_block_is_empty(block))
     return NULL;
   process_airlock_t *airlock = (process_airlock_t*) block.memory;
+  airlock->runtime = runtime;
   bounded_buffer_init((bounded_buffer_t*) airlock->pending_results, kProcessAirlockBufferSize);
   airlock->open_request_count = 0;
   native_semaphore_construct_with_count(&airlock->pending_results_available, 0);
@@ -946,7 +947,8 @@ value_t deliver_process_outstanding_results(value_t process) {
   native_request_state_t *state = NULL;
   while (process_airlock_try_take(airlock, &state)) {
     airlock->open_request_count--;
-    fulfill_promise(state->surface_promise, state->result);
+    TRY_DEF(result, import_pton_variant(airlock->runtime, state->result));
+    fulfill_promise(state->surface_promise, result);
     native_request_state_destroy(state);
   }
   return success();

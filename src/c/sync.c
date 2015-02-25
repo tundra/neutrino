@@ -135,7 +135,7 @@ void native_remote_print_on(value_t self, print_on_context_t *context) {
 static opaque_t on_native_request_success(opaque_t opaque_state,
     opaque_t opaque_result) {
   native_request_state_t *state = (native_request_state_t*) o2p(opaque_state);
-  state->result = o2v(opaque_result);
+  state->result = *((pton_variant_t*) o2p(opaque_result));
   process_airlock_offer_result(state->airlock, state);
   return opaque_null();
 }
@@ -149,11 +149,12 @@ value_t native_requests_state_new(runtime_t *runtime, value_t process,
   native_request_state_t *state = (native_request_state_t*) memory.memory;
   state->surface_promise = promise;
   state->airlock = get_process_airlock(process);
-  state->result = nothing();
+  state->result = pton_null();
   state->callback = unary_callback_new_1(on_native_request_success, p2o(state));
   native_request_t *request = &state->request;
   request->runtime = runtime;
   request->impl_promise = opaque_promise_empty();
+  request->arena = NULL;
   opaque_promise_on_success(request->impl_promise, state->callback);
   *result_out = state;
   return success();
@@ -162,6 +163,8 @@ value_t native_requests_state_new(runtime_t *runtime, value_t process,
 void native_request_state_destroy(native_request_state_t *state) {
   callback_destroy(state->callback);
   opaque_promise_destroy(state->request.impl_promise);
+  if (state->request.arena != NULL)
+    pton_dispose_arena(state->request.arena);
   allocator_default_free(new_memory_block(state, sizeof(native_request_state_t)));
 }
 

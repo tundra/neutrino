@@ -449,4 +449,7 @@ value_t clone_heap_object(runtime_t *runtime, value_t original);
 value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,
     value_t value);
 
+// Returns a neutrino value that corresponds to the given plankton variant.
+value_t import_pton_variant(runtime_t *runtime, pton_variant_t value);
+
 #endif // _ALLOC

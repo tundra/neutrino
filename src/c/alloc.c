@@ -724,7 +724,7 @@ value_t new_heap_process(runtime_t *runtime) {
   set_task_process(root_task, result);
   // Allocate the airlock. If this fails, again, it's safe to leave everything
   // as garbage.
-  process_airlock_t *airlock = process_airlock_new();
+  process_airlock_t *airlock = process_airlock_new(runtime);
   if (airlock == NULL)
     return new_system_error_condition(seAllocationFailed);
   // Store the airlock in the process and schedule for it to be finalized at
@@ -761,21 +761,17 @@ value_t new_heap_reified_arguments(runtime_t *runtime, value_t params,
 
 value_t new_heap_native_remote(runtime_t *runtime, service_descriptor_t *impl) {
   size_t size = kNativeRemoteSize;
-  value_t display_name = null();
-  if (impl->name != NULL) {
-    utf8_t display_name_str = new_c_string(impl->name);
-    TRY_SET(display_name, new_heap_utf8(runtime, display_name_str));
-  }
+  TRY_DEF(display_name, import_pton_variant(runtime, impl->display_name));
   // Fill a map with the method pointers.
   TRY_DEF(impls, new_heap_id_hash_map(runtime, impl->methodc * 2));
   for (size_t i = 0; i < impl->methodc; i++) {
     service_method_t *method = &(impl->methodv[i]);
-    TRY_DEF(name, new_heap_utf8(runtime, new_c_string(method->name)));
-    CHECK_DEEP_FROZEN(name);
+    TRY_DEF(selector, import_pton_variant(runtime, method->selector));
+    CHECK_DEEP_FROZEN(selector);
     unary_callback_t *callback = method->callback;
     TRY_DEF(impl, new_heap_void_p(runtime, callback));
     CHECK_DEEP_FROZEN(impl);
-    TRY(try_set_id_hash_map_at(impls, name, impl, false));
+    TRY(try_set_id_hash_map_at(impls, selector, impl, false));
   }
   // Freeze the implementation map; the keys and values are known to already be
   // deep frozen.
@@ -1310,4 +1306,20 @@ value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,
   CHECK_MUTABLE(instance);
   value_t fields = get_instance_fields(instance);
   return set_id_hash_map_at(runtime, fields, key, value);
+}
+
+value_t import_pton_variant(runtime_t *runtime, pton_variant_t variant) {
+  switch (pton_type(variant)) {
+    case PTON_INTEGER: {
+      int64_t value = pton_int64_value(variant);
+      return new_integer(value);
+    }
+    case PTON_STRING: {
+      const char *chars = pton_string_chars(variant);
+      size_t size = pton_string_length(variant);
+      return new_heap_utf8(runtime, new_string(chars, size));
+    }
+    default:
+      return new_invalid_input_condition();
+  }
 }

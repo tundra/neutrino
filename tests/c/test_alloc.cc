@@ -122,3 +122,14 @@ TEST(alloc, literal) {
 
   DISPOSE_RUNTIME();
 }
+
+TEST(alloc, import_variant) {
+  CREATE_RUNTIME();
+  CREATE_TEST_ARENA();
+
+  ASSERT_VAREQ(vInt(10), import_pton_variant(runtime, pton_integer(10)));
+  ASSERT_VAREQ(vStr("foo"), import_pton_variant(runtime, pton_c_str("foo")));
+
+  DISPOSE_TEST_ARENA();
+  DISPOSE_RUNTIME();
+}

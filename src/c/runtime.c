@@ -104,9 +104,10 @@ static value_t init_services(runtime_t *runtime, value_t imports,
 // Install the service described by the given descriptor in the given context.
 value_t service_hook_add_service(service_install_hook_context_t *context,
     service_descriptor_t *service) {
-  TRY_DEF(name, new_heap_utf8(context->runtime, new_c_string(service->name)));
+  TRY_DEF(namespace_name, import_pton_variant(context->runtime,
+      service->namespace_name));
   TRY_DEF(obj, new_native_remote(context->runtime, service));
-  TRY(set_id_hash_map_at(context->runtime, context->imports, name, obj));
+  TRY(set_id_hash_map_at(context->runtime, context->imports, namespace_name, obj));
   return success();
 }
 

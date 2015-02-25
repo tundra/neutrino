@@ -6,6 +6,7 @@
 
 #include "c/stdc.h"
 #include "neutrino.hh"
+#include "plankton-inl.hh"
 #include "utils/callback.hh"
 
 namespace neutrino {
@@ -15,25 +16,39 @@ class ServiceRequest {
 public:
   virtual ~ServiceRequest() { }
 
-  // Schedules the result of the request to be fulfilled.
-  // TODO: accept arbitrary variants.
-  virtual void fulfill(int64_t value) = 0;
+  // Schedules the result of the request to be fulfilled. The given variant must
+  // either have been allocated using the factory provided by this request or
+  // be known to be valid until this request's factory is destroyed. If it's
+  // allocated elsewhere one way to ensure this is to give the request's factory
+  // ownership of the factory using which it's allocated.
+  virtual void fulfill(plankton::Variant result) = 0;
+
+  // Returns a factory that can be used to allocate the result.
+  virtual plankton::Factory *factory() = 0;
 };
 
 // A binder is used to describe a native service to the runtime.
+//
+// All variants passed into this binder must either be allocated within the
+// factory supplied by the binder or must be alive at least until the initialize
+// call returns that caused the bind call that supplied this binder.
 class NativeServiceBinder {
 public:
   // The type of functions that will be called to respond to requests.
   typedef tclib::callback_t<void(ServiceRequest*)> MethodCallback;
   virtual ~NativeServiceBinder() { }
 
-  // Add a method with the given name to the set understood by the service being
-  // bound.
-  virtual Maybe<> add_method(const char *name, MethodCallback callback) = 0;
+  // Add a method with the given selector to the set understood by the service
+  // being bound.
+  virtual Maybe<> add_method(plankton::Variant selector, MethodCallback callback) = 0;
 
   // Set the name under which to bind the service.
-  // TODO: support arbitrary variants.
-  virtual void set_namespace_name(const char *name) = 0;
+  virtual void set_namespace_name(plankton::Variant name) = 0;
+
+  // Returns a factory that can be used to allocate variants used in the
+  // definition of this service. The factory is only guaranteed to be valid
+  // during the bind call to which this binder is passed.
+  virtual plankton::Factory *factory() = 0;
 };
 
 // Abstract interface for native services.

@@ -2,6 +2,7 @@
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "neutrino.hh"
+#include "plankton.hh"
 #include "service.hh"
 #include "utils/callback.hh"
 
@@ -56,7 +57,7 @@ public:
   // runtime.
   class MethodBridge {
   public:
-    MethodBridge(NativeServiceBinderImpl *owner, const char *name,
+    MethodBridge(NativeServiceBinderImpl *owner, plankton::Variant selector,
         MethodCallback direct);
 
     // Method that conforms to the runtime's native method hook that calls the
@@ -69,7 +70,7 @@ public:
 
   public:
     NativeServiceBinderImpl *owner_;
-    const char *name_;
+    plankton::Variant selector_;
     NativeServiceBinder::MethodCallback original_;
 
     // The adapted callback we'll pass to the runtime. Note that because this
@@ -79,14 +80,17 @@ public:
     tclib::callback_t<opaque_t(opaque_t)> adapted_;
   };
 
-  NativeServiceBinderImpl(service_install_hook_context_t *context);
+  NativeServiceBinderImpl(plankton::Arena *scratch_arena,
+      service_install_hook_context_t *context);
 
   // Implicitly cleans up the vectors.
   virtual ~NativeServiceBinderImpl() { }
 
-  virtual Maybe<> add_method(const char *name, MethodCallback callback);
+  virtual Maybe<> add_method(plankton::Variant selector, MethodCallback callback);
 
-  virtual void set_namespace_name(const char *name);
+  virtual void set_namespace_name(plankton::Variant value);
+
+  virtual plankton::Factory *factory() { return scratch_arena_; }
 
   // Process the given service, modifying this binder in the process. If
   // successful a C-style descriptor will be stored in the out argument.
@@ -99,7 +103,12 @@ private:
   service_install_hook_context_t *context_;
   service_descriptor_t desc_;
 
-  const char *namespace_name_;
+  plankton::Variant namespace_name_;
+
+  // Scratch arena that is made available to the service being bound. This
+  // arena is only guaranteed to be available initially, until processing is
+  // done, so to be on the safe side it's cleared at that point.
+  plankton::Arena *scratch_arena_;
 
   // This binder's method bridges. This must not be modified when is_frozen_ is
   // true.
@@ -116,7 +125,8 @@ private:
 class ServiceRequestImpl : public ServiceRequest {
 public:
   ServiceRequestImpl(native_request_t *native) : native_(native) { }
-  virtual void fulfill(int64_t value);
+  virtual void fulfill(plankton::Variant result);
+  virtual plankton::Factory *factory();
 private:
   native_request_t *native_;
 };
@@ -183,7 +193,9 @@ value_t Runtime::Internal::service_install_hook(service_install_hook_context_t *
   std::vector<NativeService*> &services = owner()->services_;
   for (size_t i = 0; i < services.size(); i++) {
     NativeService *service = services[i];
-    NativeServiceBinderImpl *binder = new NativeServiceBinderImpl(context);
+    plankton::Arena scratch_arena;
+    NativeServiceBinderImpl *binder = new NativeServiceBinderImpl(&scratch_arena,
+        context);
     // Tie the binder's lifetime to the runtime as a whole.
     owner_->take_ownership(binder);
     service_descriptor_t *desc = NULL;
@@ -214,9 +226,9 @@ Maybe<> Runtime::Internal::initialize(RuntimeConfig *config) {
 }
 
 NativeServiceBinderImpl::MethodBridge::MethodBridge(NativeServiceBinderImpl *owner,
-    const char *name, MethodCallback original)
+    plankton::Variant selector, MethodCallback original)
   : owner_(owner)
-  , name_(name)
+  , selector_(selector)
   , original_(original) { }
 
 unary_callback_t *NativeServiceBinderImpl::MethodBridge::bridge() {
@@ -232,21 +244,22 @@ opaque_t NativeServiceBinderImpl::MethodBridge::invoke(opaque_t args) {
   return opaque_null();
 }
 
-NativeServiceBinderImpl::NativeServiceBinderImpl(service_install_hook_context_t *context)
+NativeServiceBinderImpl::NativeServiceBinderImpl(plankton::Arena *scratch_arena,
+    service_install_hook_context_t *context)
   : context_(context)
-  , namespace_name_(NULL)
+  , scratch_arena_(scratch_arena)
   , is_frozen_(false) { }
 
-Maybe<> NativeServiceBinderImpl::add_method(const char *name,
+Maybe<> NativeServiceBinderImpl::add_method(plankton::Variant selector,
     NativeServiceBinder::MethodCallback callback) {
   CHECK_FALSE("modifying frozen", is_frozen_);
-  MethodBridge method(this, name, callback);
+  MethodBridge method(this, selector, callback);
   bridges_.push_back(method);
   return Maybe<>::with_value();
 }
 
-void NativeServiceBinderImpl::set_namespace_name(const char *name) {
-  namespace_name_ = name;
+void NativeServiceBinderImpl::set_namespace_name(plankton::Variant value) {
+  namespace_name_ = value;
 }
 
 value_t NativeServiceBinderImpl::process(NativeService *service,
@@ -255,16 +268,27 @@ value_t NativeServiceBinderImpl::process(NativeService *service,
   is_frozen_ = true;
   for (size_t i = 0; i < bridges_.size(); i++) {
     MethodBridge *bridge = &bridges_[i];
-    service_method_t method_out = {bridge->name_, bridge->bridge()};
+    service_method_t method_out = {bridge->selector_.to_c(), bridge->bridge()};
     methods_.push_back(method_out);
   }
-  service_descriptor_init(&desc_, namespace_name_, methods_.size(), methods_.data());
+  service_descriptor_init(&desc_, namespace_name_.to_c(), namespace_name_.to_c(),
+      methods_.size(), methods_.data());
   *desc_out = &desc_;
+  // This arena is not guaranteed to be valid once this call returns to clear
+  // it just in case.
+  scratch_arena_ = NULL;
   return success();
 }
 
-void ServiceRequestImpl::fulfill(int64_t value) {
-  native_request_fulfill(native_, new_integer(value));
+plankton::Factory *ServiceRequestImpl::factory() {
+  if (native_->arena == NULL)
+    native_->arena = pton_new_arena();
+  return static_cast<plankton::Arena*>(native_->arena);
+}
+
+void ServiceRequestImpl::fulfill(plankton::Variant result) {
+  pton_variant_t as_c = result.to_c();
+  native_request_fulfill(native_, &as_c);
 }
 
 internal::MaybeMessage::MaybeMessage(const char *message)

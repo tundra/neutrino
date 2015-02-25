@@ -92,7 +92,7 @@ struct native_request_state_t {
   value_t surface_promise;
   // This is where the result will be held between the request completing and
   // the process delivering it to the promise.
-  value_t result;
+  pton_variant_t result;
 };
 
 // Create an initialize a new native request state.
