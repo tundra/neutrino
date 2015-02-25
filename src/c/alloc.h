@@ -452,5 +452,4 @@ value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,
 // Returns a neutrino value that corresponds to the given plankton variant.
 value_t import_pton_variant(runtime_t *runtime, pton_variant_t value);
 
-
 #endif // _ALLOC
