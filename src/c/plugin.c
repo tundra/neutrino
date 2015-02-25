@@ -83,6 +83,12 @@ bool native_request_fulfill(native_request_t *request, pton_variant_t *result) {
   return opaque_promise_fulfill(request->impl_promise, p2o(result));
 }
 
+void service_method_init(service_method_t *method, pton_variant_t selector,
+    unary_callback_t *callback) {
+  method->selector = selector;
+  method->callback = callback;
+}
+
 void service_descriptor_init(service_descriptor_t *remote,
     pton_variant_t namespace_name, pton_variant_t display_name,
     size_t methodc, service_method_t *methodv) {
@@ -115,9 +121,8 @@ static time_service_descriptor_t time_impl;
 
 // Initializes the singleton time instance.
 static void run_time_impl_static_init() {
-  time_impl.methods[0].selector = pton_c_str("current");
-  unary_callback_t *raw_current = unary_callback_new_0(native_time_current);
-  time_impl.methods[0].callback = callback_invisible_clone(raw_current);
+  service_method_init(&(time_impl.methods[0]), pton_c_str("current"),
+      callback_invisible_clone(unary_callback_new_0(native_time_current)));
   service_descriptor_init(&time_impl.service, pton_c_str("time"),
       pton_c_str("Time"), 1, time_impl.methods);
 }

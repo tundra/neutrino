@@ -42,8 +42,12 @@ public:
   // being bound.
   virtual Maybe<> add_method(plankton::Variant selector, MethodCallback callback) = 0;
 
-  // Set the name under which to bind the service.
+  // Set the name under which to bind the service. If no display name has been
+  // set this also sets that.
   virtual void set_namespace_name(plankton::Variant name) = 0;
+
+  // Sets the name to display when printing the service.
+  virtual void set_display_name(plankton::Variant name) = 0;
 
   // Returns a factory that can be used to allocate variants used in the
   // definition of this service. The factory is only guaranteed to be valid

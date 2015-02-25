@@ -90,6 +90,8 @@ public:
 
   virtual void set_namespace_name(plankton::Variant value);
 
+  virtual void set_display_name(plankton::Variant value);
+
   virtual plankton::Factory *factory() { return scratch_arena_; }
 
   // Process the given service, modifying this binder in the process. If
@@ -104,6 +106,7 @@ private:
   service_descriptor_t desc_;
 
   plankton::Variant namespace_name_;
+  plankton::Variant display_name_;
 
   // Scratch arena that is made available to the service being bound. This
   // arena is only guaranteed to be available initially, until processing is
@@ -259,7 +262,15 @@ Maybe<> NativeServiceBinderImpl::add_method(plankton::Variant selector,
 }
 
 void NativeServiceBinderImpl::set_namespace_name(plankton::Variant value) {
+  CHECK_FALSE("modifying frozen", is_frozen_);
   namespace_name_ = value;
+  if (display_name_.is_null())
+    display_name_ = value;
+}
+
+void NativeServiceBinderImpl::set_display_name(plankton::Variant value) {
+  CHECK_FALSE("modifying frozen", is_frozen_);
+  display_name_ = value;
 }
 
 value_t NativeServiceBinderImpl::process(NativeService *service,
@@ -271,7 +282,7 @@ value_t NativeServiceBinderImpl::process(NativeService *service,
     service_method_t method_out = {bridge->selector_.to_c(), bridge->bridge()};
     methods_.push_back(method_out);
   }
-  service_descriptor_init(&desc_, namespace_name_.to_c(), namespace_name_.to_c(),
+  service_descriptor_init(&desc_, namespace_name_.to_c(), display_name_.to_c(),
       methods_.size(), methods_.data());
   *desc_out = &desc_;
   // This arena is not guaranteed to be valid once this call returns to clear

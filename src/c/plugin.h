@@ -119,6 +119,10 @@ typedef struct {
   unary_callback_t *callback;
 } service_method_t;
 
+// Initialize a service method struct.
+void service_method_init(service_method_t *method, pton_variant_t selector,
+    unary_callback_t *callback);
+
 typedef struct {
   // The name under which this service will be installed in the namespace.
   pton_variant_t namespace_name;
@@ -134,6 +138,7 @@ typedef struct {
 value_t service_hook_add_service(service_install_hook_context_t *context,
     service_descriptor_t *service);
 
+// Initialize a service descriptor struct.
 void service_descriptor_init(service_descriptor_t *remote,
     pton_variant_t namespace_name, pton_variant_t display_name,
     size_t methodc, service_method_t *methodv);
