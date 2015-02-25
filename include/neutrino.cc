@@ -129,6 +129,7 @@ class ServiceRequestImpl : public ServiceRequest {
 public:
   ServiceRequestImpl(native_request_t *native) : native_(native) { }
   virtual void fulfill(plankton::Variant result);
+  virtual plankton::Variant argument(plankton::Variant key);
   virtual plankton::Factory *factory();
 private:
   native_request_t *native_;
@@ -292,14 +293,17 @@ value_t NativeServiceBinderImpl::process(NativeService *service,
 }
 
 plankton::Factory *ServiceRequestImpl::factory() {
-  if (native_->arena == NULL)
-    native_->arena = pton_new_arena();
   return static_cast<plankton::Arena*>(native_->arena);
 }
 
 void ServiceRequestImpl::fulfill(plankton::Variant result) {
   pton_variant_t as_c = result.to_c();
   native_request_fulfill(native_, &as_c);
+}
+
+plankton::Variant ServiceRequestImpl::argument(plankton::Variant key) {
+  plankton::Map args = plankton::Variant(native_->args);
+  return args[key];
 }
 
 internal::MaybeMessage::MaybeMessage(const char *message)

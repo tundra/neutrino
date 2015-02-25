@@ -388,6 +388,13 @@ value_t utf8_validate(value_t value) {
   return success();
 }
 
+value_t utf8_to_plankton(pton_arena_t *arena, value_t self,
+    pton_variant_t *pton_out) {
+  utf8_t contents = get_utf8_contents(self);
+  *pton_out = pton_new_string(arena, contents.chars, contents.size);
+  return success();
+}
+
 void get_utf8_layout(value_t value, heap_object_layout_t *layout) {
   // Strings have no value fields.
   size_t size = calc_utf8_size(get_utf8_length(value));

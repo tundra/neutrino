@@ -90,7 +90,13 @@ typedef struct {
   opaque_promise_t *impl_promise;
   // Optional arena within which the result can be stored.
   pton_arena_t *arena;
+  // The request arguments.
+  pton_variant_t args;
 } native_request_t;
+
+// Initialize a native request struct.
+void native_request_init(native_request_t *req, runtime_t *runtime,
+    opaque_promise_t *impl_promise, pton_arena_t *arena, pton_variant_t args);
 
 // Deliver the variant as the successful result of the given request. The reason
 // for passing the variant by reference rather than value is that the value

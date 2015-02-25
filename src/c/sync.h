@@ -95,7 +95,8 @@ struct native_request_state_t {
   pton_variant_t result;
 };
 
-// Create an initialize a new native request state.
+// Create an initialize a new native request state. Note that the arguments
+// will not have been set, this only initializes the rest.
 value_t native_requests_state_new(runtime_t *runtime, value_t process,
     native_request_state_t **result_out);
 

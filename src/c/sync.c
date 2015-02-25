@@ -152,10 +152,10 @@ value_t native_requests_state_new(runtime_t *runtime, value_t process,
   state->result = pton_null();
   state->callback = unary_callback_new_1(on_native_request_success, p2o(state));
   native_request_t *request = &state->request;
-  request->runtime = runtime;
-  request->impl_promise = opaque_promise_empty();
-  request->arena = NULL;
-  opaque_promise_on_success(request->impl_promise, state->callback);
+  opaque_promise_t *impl_promise = opaque_promise_empty();
+  pton_arena_t *arena = pton_new_arena();
+  native_request_init(request, runtime, impl_promise, arena, pton_null());
+  opaque_promise_on_success(impl_promise, state->callback);
   *result_out = state;
   return success();
 }
@@ -163,9 +163,34 @@ value_t native_requests_state_new(runtime_t *runtime, value_t process,
 void native_request_state_destroy(native_request_state_t *state) {
   callback_destroy(state->callback);
   opaque_promise_destroy(state->request.impl_promise);
-  if (state->request.arena != NULL)
-    pton_dispose_arena(state->request.arena);
+  pton_dispose_arena(state->request.arena);
   allocator_default_free(new_memory_block(state, sizeof(native_request_state_t)));
+}
+
+#include "utils/log.h"
+
+// Create a plankton-ified copy of the raw arguments.
+static value_t native_remote_clone_args(pton_arena_t *arena, value_t raw_args,
+    pton_variant_t *args_out) {
+  CHECK_FAMILY(ofReifiedArguments, raw_args);
+  pton_variant_t args = pton_new_map(arena);
+  value_t tags = get_reified_arguments_tags(raw_args);
+  value_t values = get_reified_arguments_values(raw_args);
+  for (size_t i = 0; i < get_call_tags_entry_count(tags); i++) {
+    value_t tag = get_call_tags_tag_at(tags, i);
+    if (get_value_domain(tag) == vdHeapObject && get_heap_object_family(tag) == ofKey)
+      // Skip the keys for now. Figure out how to deal with them later.
+      continue;
+    size_t offset = get_call_tags_offset_at(tags, i);
+    value_t arg = get_array_at(values, offset);
+    pton_variant_t key;
+    TRY(value_to_plankton(arena, tag, &key));
+    pton_variant_t value;
+    TRY(value_to_plankton(arena, arg, &value));
+    pton_map_set(args, key, value);
+  }
+  *args_out = args;
+  return success();
 }
 
 static value_t native_remote_call_with_args(builtin_arguments_t *args) {
@@ -191,6 +216,7 @@ static value_t native_remote_call_with_args(builtin_arguments_t *args) {
   native_request_state_t *state = NULL;
   value_t process = get_builtin_process(args);
   TRY(native_requests_state_new(runtime, process, &state));
+  TRY(native_remote_clone_args(state->request.arena, reified, &state->request.args));
   get_process_airlock(process)->open_request_count++;
   unary_callback_call(impl, p2o(&state->request));
   return state->surface_promise;

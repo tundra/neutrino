@@ -8,6 +8,7 @@
 #ifndef _BEHAVIOR
 #define _BEHAVIOR
 
+#include "plankton.h"
 #include "safe.h"
 #include "value.h"
 
@@ -104,6 +105,8 @@ struct family_behavior_t {
   value_t (*ensure_owned_values_frozen)(runtime_t *runtime, value_t self);
   // Clean up after the value has become garbage.
   value_t (*finalize)(garbage_value_t dead_self);
+  // Convert this value to plankton in the given arena.
+  value_t (*to_plankton)(pton_arena_t *arena, value_t self, pton_variant_t *pton_out);
 };
 
 // Validates a heap object. Check fails if validation fails except in soft check
@@ -205,6 +208,11 @@ void on_derived_object_exit(value_t self);
 // Finalize the given heap object which must be un-migrated.
 value_t finalize_heap_object(value_t garbage);
 
+// Attempt to convert a neutrino value to plankton. If successful, returns a
+// condition, otherwise stores the result in the out parameter.
+value_t value_to_plankton(pton_arena_t *arena, value_t self,
+    pton_variant_t *pton_out);
+
 // Returns a value suitable to be returned as a hash from the address of an
 // object.
 #define OBJ_ADDR_HASH(VAL) new_integer((VAL).encoded)
@@ -234,12 +242,16 @@ void family##_print_on(value_t value, print_on_context_t *context);            \
 mfNl MINOR (                                                                   \
   void get_##family##_layout(value_t value, heap_object_layout_t *layout_out);,\
   )                                                                            \
-mfPt MINOR (                                                                   \
+mfPi MINOR (                                                                   \
   value_t plankton_set_##family##_contents(value_t value, runtime_t *runtime,  \
     value_t contents);,                                                        \
   )                                                                            \
-mfPt MINOR (                                                                   \
+mfPi MINOR (                                                                   \
   value_t plankton_new_##family(runtime_t *runtime);,                          \
+  )                                                                            \
+mfPo MINOR (                                                                   \
+  value_t family##_to_plankton(pton_arena_t *arena, value_t self,              \
+    pton_variant_t *pton_out);,                                                \
   )                                                                            \
 SR(                                                                            \
   value_t get_##family##_primary_type(value_t value, runtime_t *runtime);,     \
@@ -305,6 +317,10 @@ void phylum##_print_on(value_t value, print_on_context_t *context);            \
 mpCm MINOR (                                                                   \
   value_t phylum##_ordering_compare(value_t a, value_t b);,                    \
   )                                                                            \
+mpPo MINOR (                                                                   \
+  value_t phylum##_to_plankton(pton_arena_t *arena, value_t self,              \
+      pton_variant_t *pton_out);,                                              \
+  )                                                                            \
 SR(                                                                            \
   value_t get_##phylum##_primary_type(value_t value, runtime_t *runtime);,     \
   )                                                                            \
@@ -328,6 +344,9 @@ typedef struct {
   value_t (*ordering_compare)(value_t a, value_t b);
   // Returns the primary type object for the given object.
   value_t (*get_primary_type)(value_t value, runtime_t *runtime);
+  // Convert this value to plankton in the given arena.
+  value_t (*to_plankton)(pton_arena_t *arena, value_t self,
+      pton_variant_t *pton_out);
 } phylum_behavior_t;
 
 // Declare the division behavior structs.

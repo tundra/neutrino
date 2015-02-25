@@ -346,7 +346,8 @@ static inline value_t chase_moved_object(value_t raw) {
 ///   - _Sr_: is this type exposed to the surface language?
 ///   - _Cm_: do the values support ordered comparison?
 ///   - _Id_: do the values have a custom identity comparison function?
-///   - _Pt_: can this be read from plankton?
+///   - _Pi_: can this be read from plankton?
+///   - _Po_: can this be converted to plankton?
 ///   - _Nl_: does this type have a nontrivial layout, either non-value fields
 ///       or variable size.
 ///   - _Fu_: does this type require a post-migration fixup during garbage
@@ -370,107 +371,107 @@ static inline value_t chase_moved_object(value_t raw) {
 /// code that uses them, only the code that uses the flags you're adding or
 /// removing.
 
-// CamelName                 underscore_name            Md Sr (Cm Id Pt Nl Fu Em Ow Fz Fn) N
+// CamelName                 underscore_name            Md Sr (Cm Id Pi Po Nl Fu Em Ow Fz Fn) N
 
 // Enumerates the special species, the ones that require special handling during
 // startup.
 #define ENUM_SPECIAL_HEAP_OBJECT_FAMILIES(F)                                   \
-  F(Species,                 species,                   X, _, (_, _, _, X, _, _, _, _, _), 70)
+  F(Species,                 species,                   X, _, (_, _, _, _, X, _, _, _, _, _), 70)
 
 // Enumerates the compact object species.
 #define ENUM_OTHER_HEAP_OBJECT_FAMILIES(F)                                     \
-  F(Key,                     key,                       X, X, (X, _, X, _, _, _, _, _, _),  0)\
+  F(Key,                     key,                       X, X, (X, _, X, _, _, _, _, _, _, _),  0)\
   /*     ---    Correctness depends on the sort order of families above       ---   */\
   /*     ---    this divider. The relative sort order of the families         ---   */\
   /*     ---    below must not affect correctness. If it does they must be    ---   */\
   /*     ---    moved above the line.                                         ---   */\
-  F(Ambience,                ambience,                  _, _, (_, _, _, X, _, _, _, _, _), 65)\
-  F(ArgumentAst,             argument_ast,              X, X, (_, _, X, _, _, _, _, _, _),  9)\
-  F(ArgumentMapTrie,         argument_map_trie,         X, _, (_, _, _, _, _, _, X, _, _),  7)\
-  F(Array,                   array,                     X, X, (_, X, _, X, _, _, _, _, _), 11)\
-  F(ArrayAst,                array_ast,                 X, X, (_, _, X, _, _, X, _, _, _), 10)\
-  F(ArrayBuffer,             array_buffer,              X, X, (_, _, _, _, _, _, X, _, _), 34)\
-  F(AsciiStringView,         ascii_string_view,         _, X, (_, _, _, _, _, _, _, _, _), 85)\
-  F(Backtrace,               backtrace,                 _, X, (_, _, _, _, _, _, _, _, _), 54)\
-  F(BacktraceEntry,          backtrace_entry,           _, _, (_, _, _, _, _, _, _, _, _), 64)\
-  F(Blob,                    blob,                      _, X, (_, _, _, X, _, _, _, _, _), 63)\
-  F(Block,                   block,                     X, X, (_, _, _, _, _, _, _, _, _), 73)\
-  F(BlockAst,                block_ast,                 X, X, (_, _, X, _, _, X, _, _, _), 72)\
-  F(BuiltinImplementation,   builtin_implementation,    X, _, (_, _, _, _, _, _, _, _, _),  6)\
-  F(BuiltinMarker,           builtin_marker,            _, X, (_, _, _, _, _, _, _, _, _), 43)\
-  F(CallData,                call_data,                 X, X, (_, _, _, _, _, _, _, _, _), 76)\
-  F(CallLiteralArgumentAst,  call_literal_argument_ast, X, _, (_, _, X, _, _, _, _, _, _), 80)\
-  F(CallLiteralAst,          call_literal_ast,          X, _, (_, _, X, _, _, X, _, _, _), 79)\
-  F(CallTags,                call_tags,                 X, _, (_, X, _, _, _, _, X, _, _), 66)\
-  F(CObject,                 c_object,                  _, X, (_, _, _, X, _, _, _, _, _), 67)\
-  F(CodeBlock,               code_block,                X, _, (_, _, _, _, _, _, X, _, _), 49)\
-  F(CurrentModuleAst,        current_module_ast,        _, _, (_, _, X, _, _, X, _, _, _), 61)\
-  F(DecimalFraction,         decimal_fraction,          _, _, (_, _, X, _, _, _, _, _, _), 25)\
-  F(EnsureAst,               ensure_ast,                X, X, (_, _, X, _, _, X, _, _, _), 74)\
-  F(Escape,                  escape,                    _, X, (_, _, _, _, _, _, _, _, _), 50)\
-  F(Factory,                 factory,                   _, _, (_, _, _, _, _, _, _, _, _),  5)\
-  F(FifoBuffer,              fifo_buffer,               _, _, (_, _, _, _, _, _, _, _, _), 81)\
-  F(FreezeCheat,             freeze_cheat,              _, _, (_, _, _, _, _, _, _, X, _), 77)\
-  F(Function,                function,                  X, X, (_, _, _, _, _, _, _, _, _), 56)\
-  F(Guard,                   guard,                     X, _, (_, _, _, _, _, _, _, _, _), 30)\
-  F(GuardAst,                guard_ast,                 X, X, (_, _, X, _, _, _, _, _, _), 38)\
-  F(HardField,               hard_field,                _, X, (_, _, _, _, _, _, _, _, _), 31)\
-  F(HashOracle,              hash_oracle,               X, X, (_, _, _, _, _, _, X, _, _), 87)\
-  F(HashSource,              hash_source,               _, X, (_, _, _, X, _, _, _, _, _), 86)\
-  F(Identifier,              identifier,                X, _, (X, X, X, _, _, _, _, _, _), 27)\
-  F(IdHashMap,               id_hash_map,               X, X, (_, _, _, _, X, _, X, _, _), 24)\
-  F(Instance,                instance,                  _, X, (_, _, X, _, _, _, X, _, _), 60)\
-  F(InstanceManager,         instance_manager,          _, X, (_, _, _, _, _, _, _, _, _),  3)\
-  F(InvocationAst,           invocation_ast,            X, X, (_, _, X, _, _, X, _, _, _),  4)\
-  F(IsDeclarationAst,        is_declaration_ast,        X, _, (_, _, X, _, _, _, _, _, _), 21)\
-  F(Lambda,                  lambda,                    X, X, (_, _, _, _, _, _, X, _, _), 47)\
-  F(LambdaAst,               lambda_ast,                X, X, (_, _, X, _, _, X, _, _, _), 69)\
-  F(Library,                 library,                   _, _, (_, _, X, _, _, _, _, _, _), 37)\
-  F(LiteralAst,              literal_ast,               X, X, (_, _, X, _, _, X, _, _, _), 40)\
-  F(LocalDeclarationAst,     local_declaration_ast,     X, X, (_, _, X, _, _, X, _, _, _), 20)\
-  F(LocalVariableAst,        local_variable_ast,        X, X, (_, _, X, _, _, X, _, _, _), 12)\
-  F(Method,                  method,                    X, _, (_, _, _, _, _, _, _, _, _), 59)\
-  F(MethodAst,               method_ast,                X, X, (_, _, X, _, _, _, _, _, _), 29)\
-  F(MethodDeclarationAst,    method_declaration_ast,    X, _, (_, _, X, _, _, _, _, _, _), 18)\
-  F(Methodspace,             methodspace,               X, _, (_, _, _, _, _, _, X, _, _),  1)\
-  F(Module,                  module,                    X, _, (_, _, _, _, _, _, X, _, _), 62)\
-  F(ModuleFragment,          module_fragment,           X, _, (_, _, _, _, _, _, X, _, _), 16)\
-  F(ModuleFragmentPrivate,   module_fragment_private,   X, X, (_, _, _, _, _, _, _, _, _), 39)\
-  F(ModuleLoader,            module_loader,             _, _, (_, _, _, _, _, _, _, _, _), 13)\
-  F(MutableRoots,            mutable_roots,             X, _, (_, _, _, _, _, _, X, _, _), 41)\
-  F(Namespace,               namespace,                 X, _, (_, _, _, _, _, _, X, _, _), 28)\
-  F(NamespaceDeclarationAst, namespace_declaration_ast, X, _, (_, _, X, _, _, _, _, _, _), 44)\
-  F(NamespaceVariableAst,    namespace_variable_ast,    X, X, (_, _, X, _, _, X, _, _, _), 42)\
-  F(NativeRemote,            native_remote,             _, X, (_, _, _, _, _, _, _, _, _), 90)\
-  F(Operation,               operation,                 X, X, (_, X, X, _, _, _, _, _, _), 46)\
-  F(Parameter,               parameter,                 X, _, (_, _, _, _, _, _, _, _, _), 51)\
-  F(ParameterAst,            parameter_ast,             X, X, (_, _, X, _, _, _, _, _, _),  8)\
-  F(Path,                    path,                      X, X, (X, X, X, _, _, _, _, _, _), 36)\
-  F(Process,                 process,                   _, _, (_, _, _, _, _, _, _, _, X), 83)\
-  F(ProgramAst,              program_ast,               X, _, (_, _, X, _, _, _, _, _, _), 17)\
-  F(Promise,                 promise,                   _, X, (_, _, _, _, _, _, _, _, _), 78)\
-  F(Reference,               reference,                 X, _, (_, _, _, _, _, _, _, _, _), 68)\
-  F(ReifiedArguments,        reified_arguments,         _, X, (_, _, _, _, _, _, _, _, _), 14)\
-  F(Roots,                   roots,                     X, _, (_, _, _, _, _, _, X, _, _),  2)\
-  F(SequenceAst,             sequence_ast,              X, X, (_, _, X, _, _, X, _, _, _), 35)\
-  F(SignalAst,               signal_ast,                X, X, (_, _, X, _, _, X, _, _, _), 48)\
-  F(SignalHandlerAst,        signal_handler_ast,        X, X, (_, _, X, _, _, X, _, _, _), 75)\
-  F(Signature,               signature,                 X, _, (_, _, _, _, _, _, X, _, _), 53)\
-  F(SignatureAst,            signature_ast,             X, X, (_, _, X, _, _, _, _, _, _), 19)\
-  F(SignatureMap,            signature_map,             X, _, (_, _, _, _, _, _, X, _, _), 45)\
-  F(SoftField,               soft_field,                _, X, (_, _, _, _, _, _, _, _, _), 89)\
-  F(Stack,                   stack,                     _, _, (_, _, _, _, _, _, _, _, _), 71)\
-  F(StackPiece,              stack_piece,               _, _, (_, _, _, X, _, _, _, _, _), 58)\
-  F(SymbolAst,               symbol_ast,                X, X, (_, _, X, _, _, _, _, _, _), 33)\
-  F(Task,                    task,                      _, _, (_, _, _, _, _, _, _, _, _), 82)\
-  F(Type,                    type,                      X, X, (_, _, X, _, _, _, _, _, _), 32)\
-  F(UnboundModule,           unbound_module,            _, _, (_, _, X, _, _, _, _, _, _), 55)\
-  F(UnboundModuleFragment,   unbound_module_fragment,   _, _, (_, _, X, _, _, _, _, _, _), 52)\
-  F(Unknown,                 unknown,                   _, _, (_, _, X, _, _, _, _, _, _), 15)\
-  F(Utf8,                    utf8,                      _, X, (X, X, _, X, _, _, _, _, _), 57)\
-  F(VariableAssignmentAst,   variable_assignment_ast,   X, _, (_, _, X, _, _, X, _, _, _), 22)\
-  F(VoidP,                   void_p,                    _, _, (_, _, _, X, _, _, _, _, _), 26)\
-  F(WithEscapeAst,           with_escape_ast,           X, _, (_, _, X, _, _, X, _, _, _), 23)
+  F(Ambience,                ambience,                  _, _, (_, _, _, _, X, _, _, _, _, _), 65)\
+  F(ArgumentAst,             argument_ast,              X, X, (_, _, X, _, _, _, _, _, _, _),  9)\
+  F(ArgumentMapTrie,         argument_map_trie,         X, _, (_, _, _, _, _, _, _, X, _, _),  7)\
+  F(Array,                   array,                     X, X, (_, X, _, _, X, _, _, _, _, _), 11)\
+  F(ArrayAst,                array_ast,                 X, X, (_, _, X, _, _, _, X, _, _, _), 10)\
+  F(ArrayBuffer,             array_buffer,              X, X, (_, _, _, _, _, _, _, X, _, _), 34)\
+  F(AsciiStringView,         ascii_string_view,         _, X, (_, _, _, _, _, _, _, _, _, _), 85)\
+  F(Backtrace,               backtrace,                 _, X, (_, _, _, _, _, _, _, _, _, _), 54)\
+  F(BacktraceEntry,          backtrace_entry,           _, _, (_, _, _, _, _, _, _, _, _, _), 64)\
+  F(Blob,                    blob,                      _, X, (_, _, _, _, X, _, _, _, _, _), 63)\
+  F(Block,                   block,                     X, X, (_, _, _, _, _, _, _, _, _, _), 73)\
+  F(BlockAst,                block_ast,                 X, X, (_, _, X, _, _, _, X, _, _, _), 72)\
+  F(BuiltinImplementation,   builtin_implementation,    X, _, (_, _, _, _, _, _, _, _, _, _),  6)\
+  F(BuiltinMarker,           builtin_marker,            _, X, (_, _, _, _, _, _, _, _, _, _), 43)\
+  F(CallData,                call_data,                 X, X, (_, _, _, _, _, _, _, _, _, _), 76)\
+  F(CallLiteralArgumentAst,  call_literal_argument_ast, X, _, (_, _, X, _, _, _, _, _, _, _), 80)\
+  F(CallLiteralAst,          call_literal_ast,          X, _, (_, _, X, _, _, _, X, _, _, _), 79)\
+  F(CallTags,                call_tags,                 X, _, (_, X, _, _, _, _, _, X, _, _), 66)\
+  F(CObject,                 c_object,                  _, X, (_, _, _, _, X, _, _, _, _, _), 67)\
+  F(CodeBlock,               code_block,                X, _, (_, _, _, _, _, _, _, X, _, _), 49)\
+  F(CurrentModuleAst,        current_module_ast,        _, _, (_, _, X, _, _, _, X, _, _, _), 61)\
+  F(DecimalFraction,         decimal_fraction,          _, _, (_, _, X, _, _, _, _, _, _, _), 25)\
+  F(EnsureAst,               ensure_ast,                X, X, (_, _, X, _, _, _, X, _, _, _), 74)\
+  F(Escape,                  escape,                    _, X, (_, _, _, _, _, _, _, _, _, _), 50)\
+  F(Factory,                 factory,                   _, _, (_, _, _, _, _, _, _, _, _, _),  5)\
+  F(FifoBuffer,              fifo_buffer,               _, _, (_, _, _, _, _, _, _, _, _, _), 81)\
+  F(FreezeCheat,             freeze_cheat,              _, _, (_, _, _, _, _, _, _, _, X, _), 77)\
+  F(Function,                function,                  X, X, (_, _, _, _, _, _, _, _, _, _), 56)\
+  F(Guard,                   guard,                     X, _, (_, _, _, _, _, _, _, _, _, _), 30)\
+  F(GuardAst,                guard_ast,                 X, X, (_, _, X, _, _, _, _, _, _, _), 38)\
+  F(HardField,               hard_field,                _, X, (_, _, _, _, _, _, _, _, _, _), 31)\
+  F(HashOracle,              hash_oracle,               X, X, (_, _, _, _, _, _, _, X, _, _), 87)\
+  F(HashSource,              hash_source,               _, X, (_, _, _, _, X, _, _, _, _, _), 86)\
+  F(Identifier,              identifier,                X, _, (X, X, X, _, _, _, _, _, _, _), 27)\
+  F(IdHashMap,               id_hash_map,               X, X, (_, _, _, _, _, X, _, X, _, _), 24)\
+  F(Instance,                instance,                  _, X, (_, _, X, _, _, _, _, X, _, _), 60)\
+  F(InstanceManager,         instance_manager,          _, X, (_, _, _, _, _, _, _, _, _, _),  3)\
+  F(InvocationAst,           invocation_ast,            X, X, (_, _, X, _, _, _, X, _, _, _),  4)\
+  F(IsDeclarationAst,        is_declaration_ast,        X, _, (_, _, X, _, _, _, _, _, _, _), 21)\
+  F(Lambda,                  lambda,                    X, X, (_, _, _, _, _, _, _, X, _, _), 47)\
+  F(LambdaAst,               lambda_ast,                X, X, (_, _, X, _, _, _, X, _, _, _), 69)\
+  F(Library,                 library,                   _, _, (_, _, X, _, _, _, _, _, _, _), 37)\
+  F(LiteralAst,              literal_ast,               X, X, (_, _, X, _, _, _, X, _, _, _), 40)\
+  F(LocalDeclarationAst,     local_declaration_ast,     X, X, (_, _, X, _, _, _, X, _, _, _), 20)\
+  F(LocalVariableAst,        local_variable_ast,        X, X, (_, _, X, _, _, _, X, _, _, _), 12)\
+  F(Method,                  method,                    X, _, (_, _, _, _, _, _, _, _, _, _), 59)\
+  F(MethodAst,               method_ast,                X, X, (_, _, X, _, _, _, _, _, _, _), 29)\
+  F(MethodDeclarationAst,    method_declaration_ast,    X, _, (_, _, X, _, _, _, _, _, _, _), 18)\
+  F(Methodspace,             methodspace,               X, _, (_, _, _, _, _, _, _, X, _, _),  1)\
+  F(Module,                  module,                    X, _, (_, _, _, _, _, _, _, X, _, _), 62)\
+  F(ModuleFragment,          module_fragment,           X, _, (_, _, _, _, _, _, _, X, _, _), 16)\
+  F(ModuleFragmentPrivate,   module_fragment_private,   X, X, (_, _, _, _, _, _, _, _, _, _), 39)\
+  F(ModuleLoader,            module_loader,             _, _, (_, _, _, _, _, _, _, _, _, _), 13)\
+  F(MutableRoots,            mutable_roots,             X, _, (_, _, _, _, _, _, _, X, _, _), 41)\
+  F(Namespace,               namespace,                 X, _, (_, _, _, _, _, _, _, X, _, _), 28)\
+  F(NamespaceDeclarationAst, namespace_declaration_ast, X, _, (_, _, X, _, _, _, _, _, _, _), 44)\
+  F(NamespaceVariableAst,    namespace_variable_ast,    X, X, (_, _, X, _, _, _, X, _, _, _), 42)\
+  F(NativeRemote,            native_remote,             _, X, (_, _, _, _, _, _, _, _, _, _), 90)\
+  F(Operation,               operation,                 X, X, (_, X, X, _, _, _, _, _, _, _), 46)\
+  F(Parameter,               parameter,                 X, _, (_, _, _, _, _, _, _, _, _, _), 51)\
+  F(ParameterAst,            parameter_ast,             X, X, (_, _, X, _, _, _, _, _, _, _),  8)\
+  F(Path,                    path,                      X, X, (X, X, X, _, _, _, _, _, _, _), 36)\
+  F(Process,                 process,                   _, _, (_, _, _, _, _, _, _, _, _, X), 83)\
+  F(ProgramAst,              program_ast,               X, _, (_, _, X, _, _, _, _, _, _, _), 17)\
+  F(Promise,                 promise,                   _, X, (_, _, _, _, _, _, _, _, _, _), 78)\
+  F(Reference,               reference,                 X, _, (_, _, _, _, _, _, _, _, _, _), 68)\
+  F(ReifiedArguments,        reified_arguments,         _, X, (_, _, _, _, _, _, _, _, _, _), 14)\
+  F(Roots,                   roots,                     X, _, (_, _, _, _, _, _, _, X, _, _),  2)\
+  F(SequenceAst,             sequence_ast,              X, X, (_, _, X, _, _, _, X, _, _, _), 35)\
+  F(SignalAst,               signal_ast,                X, X, (_, _, X, _, _, _, X, _, _, _), 48)\
+  F(SignalHandlerAst,        signal_handler_ast,        X, X, (_, _, X, _, _, _, X, _, _, _), 75)\
+  F(Signature,               signature,                 X, _, (_, _, _, _, _, _, _, X, _, _), 53)\
+  F(SignatureAst,            signature_ast,             X, X, (_, _, X, _, _, _, _, _, _, _), 19)\
+  F(SignatureMap,            signature_map,             X, _, (_, _, _, _, _, _, _, X, _, _), 45)\
+  F(SoftField,               soft_field,                _, X, (_, _, _, _, _, _, _, _, _, _), 89)\
+  F(Stack,                   stack,                     _, _, (_, _, _, _, _, _, _, _, _, _), 71)\
+  F(StackPiece,              stack_piece,               _, _, (_, _, _, _, X, _, _, _, _, _), 58)\
+  F(SymbolAst,               symbol_ast,                X, X, (_, _, X, _, _, _, _, _, _, _), 33)\
+  F(Task,                    task,                      _, _, (_, _, _, _, _, _, _, _, _, _), 82)\
+  F(Type,                    type,                      X, X, (_, _, X, _, _, _, _, _, _, _), 32)\
+  F(UnboundModule,           unbound_module,            _, _, (_, _, X, _, _, _, _, _, _, _), 55)\
+  F(UnboundModuleFragment,   unbound_module_fragment,   _, _, (_, _, X, _, _, _, _, _, _, _), 52)\
+  F(Unknown,                 unknown,                   _, _, (_, _, X, _, _, _, _, _, _, _), 15)\
+  F(Utf8,                    utf8,                      _, X, (X, X, _, X, X, _, _, _, _, _), 57)\
+  F(VariableAssignmentAst,   variable_assignment_ast,   X, _, (_, _, X, _, _, _, X, _, _, _), 22)\
+  F(VoidP,                   void_p,                    _, _, (_, _, _, _, X, _, _, _, _, _), 26)\
+  F(WithEscapeAst,           with_escape_ast,           X, _, (_, _, X, _, _, _, X, _, _, _), 23)
 
 // The next ordinal to use when adding a family. This isn't actually used in the
 // code it's just a reminder. Remember to update it when adding families. The
@@ -492,15 +493,16 @@ static const int kNextFamilyOrdinal = 91;
 // This is super weird and awful and stuff but the fact that is allows you to
 // add new minor properties without changing code all over the place makes it
 // totally worth it.
-#define mfCm(CM, ID, PT, NL, FU, EM, OW, FZ, FL) CM
-#define mfId(CM, ID, PT, NL, FU, EM, OW, FZ, FL) ID
-#define mfPt(CM, ID, PT, NL, FU, EM, OW, FZ, FL) PT
-#define mfNl(CM, ID, PT, NL, FU, EM, OW, FZ, FL) NL
-#define mfFu(CM, ID, PT, NL, FU, EM, OW, FZ, FL) FU
-#define mfEm(CM, ID, PT, NL, FU, EM, OW, FZ, FL) EM
-#define mfOw(CM, ID, PT, NL, FU, EM, OW, FZ, FL) OW
-#define mfFz(CM, ID, PT, NL, FU, EM, OW, FZ, FL) FZ
-#define mfFl(CM, ID, PT, NL, FU, EM, OW, FZ, FL) FL
+#define mfCm(CM, ID, PI, PO, NL, FU, EM, OW, FZ, FL) CM
+#define mfId(CM, ID, PI, PO, NL, FU, EM, OW, FZ, FL) ID
+#define mfPi(CM, ID, PI, PO, NL, FU, EM, OW, FZ, FL) PI
+#define mfPo(CM, ID, PI, PO, NL, FU, EM, OW, FZ, FL) PO
+#define mfNl(CM, ID, PI, PO, NL, FU, EM, OW, FZ, FL) NL
+#define mfFu(CM, ID, PI, PO, NL, FU, EM, OW, FZ, FL) FU
+#define mfEm(CM, ID, PI, PO, NL, FU, EM, OW, FZ, FL) EM
+#define mfOw(CM, ID, PI, PO, NL, FU, EM, OW, FZ, FL) OW
+#define mfFz(CM, ID, PI, PO, NL, FU, EM, OW, FZ, FL) FZ
+#define mfFl(CM, ID, PI, PO, NL, FU, EM, OW, FZ, FL) FL
 
 // Enum identifying the different families of heap objects. The integer values
 // of the enums are tagged as integers which means that they can be stored in
@@ -712,30 +714,32 @@ ACCESSORS_DECL(heap_object, header);
 ///   - _CamelName_: the name of the phylum in upper camel case.
 ///   - _underscore_name_: the name of the phylum in lower underscore case.
 ///   - _Cm_: do the values support ordered comparison?
+///   - _Po_: can values be converted to plankton?
 ///   - _Sr_: is this type exposed to the surface language?
 ///
 
 // Accessors for the minor phylum properties. See the accessors for minor family
 // properties for details.
-#define mpCm(CM) CM
+#define mpCm(CM, PO) CM
+#define mpPo(CM, PO) PO
 
-//  CamelName                underscore_name            Sr (Cm)   N
+//  CamelName                underscore_name            Sr (Cm Po)   N
 #define ENUM_CUSTOM_TAGGED_PHYLUMS(F)                                          \
-  F(AsciiCharacter,          ascii_character,           X, (X),   0)           \
-  F(Boolean,                 boolean,                   X, (X),   1)           \
-  F(FlagSet,                 flag_set,                  _, (_),   2)           \
-  F(Float32,                 float_32,                  X, (X),   3)           \
-  F(Nothing,                 nothing,                   _, (_),   4)           \
-  F(Null,                    null,                      X, (_),   5)           \
-  F(PromiseState,            promise_state,             _, (_),   6)           \
-  F(Relation,                relation,                  _, (_),   7)           \
-  F(Score,                   score,                     _, (X),   8)           \
-  F(StageOffset,             stage_offset,              _, (X),   9)           \
-  F(DerivedObjectAnchor,     derived_object_anchor,     _, (_),  10)           \
-  F(HashCode,                hash_code,                 X, (X),  11)           \
-  F(UnusedMemory,            unused_memory,             _, (_), 148)           \
-  F(AllocatedMemory,         allocated_memory,          _, (_), 150)           \
-  F(FreedMemory,             freed_memory,              _, (_), 152)
+  F(AsciiCharacter,          ascii_character,           X, (X, _),   0)        \
+  F(Boolean,                 boolean,                   X, (X, X),   1)        \
+  F(FlagSet,                 flag_set,                  _, (_, _),   2)        \
+  F(Float32,                 float_32,                  X, (X, _),   3)        \
+  F(Nothing,                 nothing,                   _, (_, _),   4)        \
+  F(Null,                    null,                      X, (_, X),   5)        \
+  F(PromiseState,            promise_state,             _, (_, _),   6)        \
+  F(Relation,                relation,                  _, (_, _),   7)        \
+  F(Score,                   score,                     _, (X, _),   8)        \
+  F(StageOffset,             stage_offset,              _, (X, _),   9)        \
+  F(DerivedObjectAnchor,     derived_object_anchor,     _, (_, _),  10)        \
+  F(HashCode,                hash_code,                 X, (X, _),  11)        \
+  F(UnusedMemory,            unused_memory,             _, (_, _), 148)        \
+  F(AllocatedMemory,         allocated_memory,          _, (_, _), 150)        \
+  F(FreedMemory,             freed_memory,              _, (_, _), 152)
 
 // Enum identifying the different phylums of custom tagged values.
 typedef enum {

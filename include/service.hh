@@ -23,6 +23,10 @@ public:
   // ownership of the factory using which it's allocated.
   virtual void fulfill(plankton::Variant result) = 0;
 
+  // Returns the argument with the given key. The result is guaranteed to be
+  // valid as long as this request's factory is.
+  virtual plankton::Variant argument(plankton::Variant key) = 0;
+
   // Returns a factory that can be used to allocate the result.
   virtual plankton::Factory *factory() = 0;
 };

@@ -14,10 +14,18 @@ def $test_unknown() {
   $assert:equals(op.blargh(), try @core:time->blargh() on.unknown_native_method($s) => $s);
 }
 
+def $run_echo_test($in) {
+  # Test round-tripping through a remote call.
+  @core:echo->echo($in).then(fn $out => $assert:equals($in, $out));
+}
+
 def $test_echo() {
-  def $echo_p := @core:echo->echo();
-  $assert:not($echo_p.is_resolved?);
-  $echo_p.then(fn $value => $assert:equals(946, $value));
+  $run_echo_test(946);
+  $run_echo_test("hey");
+  $run_echo_test("oof!");
+  $run_echo_test(true);
+  $run_echo_test(false);
+  $run_echo_test(null);
 }
 
 do {

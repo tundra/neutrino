@@ -79,6 +79,14 @@ value_t new_native_remote(runtime_t *runtime, service_descriptor_t *impl) {
   return new_heap_native_remote(runtime, impl);
 }
 
+void native_request_init(native_request_t *req, runtime_t *runtime,
+    opaque_promise_t *impl_promise, pton_arena_t *arena, pton_variant_t args) {
+  req->runtime = runtime;
+  req->impl_promise = impl_promise;
+  req->arena = arena;
+  req->args = args;
+}
+
 bool native_request_fulfill(native_request_t *request, pton_variant_t *result) {
   return opaque_promise_fulfill(request->impl_promise, p2o(result));
 }

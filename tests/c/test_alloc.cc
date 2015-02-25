@@ -129,6 +129,9 @@ TEST(alloc, import_variant) {
 
   ASSERT_VAREQ(vInt(10), import_pton_variant(runtime, pton_integer(10)));
   ASSERT_VAREQ(vStr("foo"), import_pton_variant(runtime, pton_c_str("foo")));
+  ASSERT_VAREQ(vNull(), import_pton_variant(runtime, pton_null()));
+  ASSERT_VAREQ(vBool(true), import_pton_variant(runtime, pton_true()));
+  ASSERT_VAREQ(vBool(false), import_pton_variant(runtime, pton_false()));
 
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();

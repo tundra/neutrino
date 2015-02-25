@@ -123,7 +123,7 @@ neutrino::Maybe<> EchoService::bind(neutrino::NativeServiceBinder *config) {
 }
 
 void EchoService::echo(neutrino::ServiceRequest *request) {
-  request->fulfill(946);
+  request->fulfill(request->argument(plankton::Variant::integer(0)));
 }
 
 // Create a vm and run the program under the given set of options.

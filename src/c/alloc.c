@@ -1319,6 +1319,10 @@ value_t import_pton_variant(runtime_t *runtime, pton_variant_t variant) {
       size_t size = pton_string_length(variant);
       return new_heap_utf8(runtime, new_string(chars, size));
     }
+    case PTON_NULL:
+      return null();
+    case PTON_BOOL:
+      return pton_bool_value(variant) ? yes() : no();
     default:
       return new_invalid_input_condition();
   }
