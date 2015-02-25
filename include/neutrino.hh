@@ -85,7 +85,9 @@ public:
 
   // Returns an option that has no value for the given reason, or optionally
   // for no explicit reason.
-  static Maybe<T> with_message(const char *message = NULL) { return Maybe<T>(*new (tclib::kDefaultAlloc) internal::MaybeMessage(message)); }
+  static Maybe<T> with_message(const char *message = NULL) {
+    return Maybe<T>(*new (tclib::kDefaultAlloc) internal::MaybeMessage(message));
+  }
 
   // Returns an option with the given value, or if none is specified the default
   // value for the given type.

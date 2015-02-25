@@ -41,7 +41,6 @@ file_names = [
   "native_remote.n",
   "next.n",
   "object.n",
-  "plugin.n",
   "promise.n",
   "selector.n",
   "signal.n",
