@@ -16,12 +16,13 @@ struct runtime_t;
 
 namespace neutrino {
 
-// Settings to apply when creating a runtime. This struct gets passed by value
-// under some circumstances so be sure it doesn't break anything to do that.
-class RuntimeConfig : public neu_runtime_config_t {
-public:
-  RuntimeConfig();
-};
+// Forward declarations.
+template <typename T> class Maybe;
+class NativeService;
+
+// Stuff that must be public for whatever reason but are really implementation
+// details.
+namespace internal {
 
 // The information about a message that is available through a Maybe<T>. This is
 // factored into its own type such that it can be shared between maybes without
@@ -31,7 +32,7 @@ protected:
   virtual size_t instance_size() { return sizeof(*this); }
 
 private:
-  template <typename T> friend class Maybe;
+  template <typename T> friend class neutrino::Maybe;
 
   // Create an error with the given message. The message is copied so it's safe
   // to delete it after this call.
@@ -39,24 +40,35 @@ private:
   ~MaybeMessage();
 
   const char *message() { return message_; }
+
+  // The message string. Owned by this object.
   char *message_;
+};
+
+} // namespace internal
+
+// Settings to apply when creating a runtime. This struct gets passed by value
+// under some circumstances so be sure it doesn't break anything to do that.
+class RuntimeConfig : public neu_runtime_config_t {
+public:
+  RuntimeConfig();
 };
 
 // An option type that either holds some value or not, and if it doesn't it may
 // have a message that indicates why it doesn't. You can also leave out the
 // type parameter to indicate that the value returned is irrelevant.
 template <typename T = void*>
-class Maybe : public tclib::refcount_reference_t<MaybeMessage> {
+class Maybe : public tclib::refcount_reference_t<internal::MaybeMessage> {
 public:
   // Initialize an empty option which neither has a value nor a message
   // indicating why.
   Maybe()
-    : tclib::refcount_reference_t<MaybeMessage>()
+    : tclib::refcount_reference_t<internal::MaybeMessage>()
     , has_value_(false) { }
 
   // Constructs an option with the given value.
   Maybe(T value)
-    : tclib::refcount_reference_t<MaybeMessage>()
+    : tclib::refcount_reference_t<internal::MaybeMessage>()
     , has_value_(true)
     , value_(value) { }
 
@@ -73,15 +85,18 @@ public:
 
   // Returns an option that has no value for the given reason, or optionally
   // for no explicit reason.
-  static Maybe<T> with_message(const char *message = NULL) { return Maybe<T>(*new (tclib::kDefaultAlloc) MaybeMessage(message)); }
+  static Maybe<T> with_message(const char *message = NULL) { return Maybe<T>(*new (tclib::kDefaultAlloc) internal::MaybeMessage(message)); }
 
   // Returns an option with the given value, or if none is specified the default
   // value for the given type.
   static Maybe<T> with_value(T value = T()) { return Maybe<T>(value); }
 
 private:
-  Maybe(MaybeMessage &error)
-    : tclib::refcount_reference_t<MaybeMessage>(&error)
+  // This constructor takes a reference rather than a pointer to ensure that
+  // there are no ambiguities with the T constructor when T is a pointer and
+  // you pass NULL.
+  Maybe(internal::MaybeMessage &message)
+    : tclib::refcount_reference_t<internal::MaybeMessage>(&message)
     , has_value_(false)
     , value_(NULL) { }
 
@@ -89,22 +104,28 @@ private:
   T value_;
 };
 
-class NativeService;
-
 // All the data associated with a single VM instance.
 class Runtime {
 public:
-  class Garbage;
+  // Abstract interface for objects that can be deleted.
+  class Deletable;
 
+  // Create but don't initialize this runtime.
   Runtime();
+
+  // Dispose this runtime and all values owned by it.
   ~Runtime();
 
-  // Initialize this runtime.
+  // Initialize this runtime according to the given config.
   Maybe<> initialize(RuntimeConfig *config = NULL);
 
   // Add a native service to the set that will be installed when the runtime
-  // is created.
+  // is initialized. So native services must be added before initialize has been
+  // called.
   void add_service(NativeService *service);
+
+  // Has this runtime been successfully initialized?
+  bool is_initialized() { return internal_ != NULL; }
 
   // Accessors for the underlying runtime.
   // TODO: remove.
@@ -120,11 +141,16 @@ private:
 
   // Add a piece of data that should be cleaned up when this runtime is
   // destroyed.
-  void add_garbage(Garbage *garbage);
+  void take_ownership(Deletable *obj);
 
+  // Underlying implementation.
   Internal *internal_;
+
+  // Services to install on initialize.
   std::vector<NativeService*> services_;
-  std::vector<Garbage*> garbage_;
+
+  // Values this runtime has taken ownership of.
+  std::vector<Deletable*> owned_;
 };
 
 } // namespace neutrino

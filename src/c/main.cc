@@ -102,41 +102,23 @@ static value_t build_module_loader(runtime_t *runtime, pton_command_line_t *cmdl
   return success();
 }
 
-static value_t test_echo(builtin_arguments_t *args) {
-  return get_builtin_argument(args, 0);
-}
-
-#define kTestMethodCount 1
-static const c_object_method_t kTestMethods[kTestMethodCount] = {
-  BUILTIN_METHOD("echo", 1, test_echo)
-};
-
-static const c_object_info_t **get_main_plugins() {
-  static c_object_info_t test_plugin;
-  c_object_info_reset(&test_plugin);
-  c_object_info_set_methods(&test_plugin, kTestMethods, kTestMethodCount);
-  static const c_object_info_t *result[1] = { &test_plugin };
-  return result;
-}
-
 // Override some of the basic defaults to make the config better suited for
 // running scripts.
 static void runtime_config_init_main_defaults(neu_runtime_config_t *config) {
   // Currently the runtime doesn't handle allocation failures super well
   // (particularly plankton parsing) so keep the semispace size big.
   config->semispace_size_bytes = 10 * kMB;
-  config->plugin_count = 1;
-  config->plugins = (const void**) get_main_plugins();
 }
 
+// Native echo service, mainly for testing.
 class EchoService : public neutrino::NativeService {
 public:
-  virtual neutrino::Maybe<> install(neutrino::NativeServiceBinder *config);
-  virtual const char *name() { return "echo"; }
+  virtual neutrino::Maybe<> bind(neutrino::NativeServiceBinder *config);
   void echo(neutrino::ServiceRequest *request);
 };
 
-neutrino::Maybe<> EchoService::install(neutrino::NativeServiceBinder *config) {
+neutrino::Maybe<> EchoService::bind(neutrino::NativeServiceBinder *config) {
+  config->set_namespace_name("echo");
   return config->add_method("echo", tclib::new_callback(&EchoService::echo, this));
 }
 
@@ -144,6 +126,7 @@ void EchoService::echo(neutrino::ServiceRequest *request) {
   request->fulfill(946);
 }
 
+// Create a vm and run the program under the given set of options.
 static value_t neutrino_main_with_options(neutrino::RuntimeConfig *config,
     main_options_t *options) {
   neutrino::Runtime runtime;
@@ -181,7 +164,7 @@ static value_t neutrino_main_with_options(neutrino::RuntimeConfig *config,
   E_END_TRY_FINALLY();
 }
 
-// Create a vm and run the program.
+// Set up the environment, parse arguments, create a vm, and run the program.
 static value_t neutrino_main(int raw_argc, const char **argv) {
   neutrino::RuntimeConfig config;
   runtime_config_init_main_defaults(&config);

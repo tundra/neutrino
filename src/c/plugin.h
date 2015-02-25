@@ -94,30 +94,6 @@ typedef struct {
 // Returns true iff it did something.
 bool native_request_fulfill(native_request_t *request, value_t value);
 
-// Callback called by the runtime to schedule a request. The result of the
-// request must be delivered by fulfilling the promise the is given as part
-// of the request. The request struct is guaranteed to be alive at only until
-// the promise is fulfilled.
-typedef void (*schedule_request_m)(native_request_t *request);
-
-// An individual method on a native remote object.
-typedef struct {
-  // Method name.
-  const char *name;
-  // Function to call on new requests.
-  schedule_request_m impl;
-} native_remote_method_t;
-
-// Data associated with a native remote request handler.
-typedef struct {
-  // Optional display name to show when printing the remote value.
-  const char *display_name;
-  // Size of the method array.
-  size_t method_count;
-  // Methods.
-  native_remote_method_t **methods;
-} native_remote_t;
-
 // Data passed to the api when it's asked to install services into a runtime.
 typedef struct {
   // The runtime we're initializing.
@@ -127,13 +103,21 @@ typedef struct {
 } service_install_hook_context_t;
 
 typedef struct {
+  // Method name.
   const char *name;
+  // Callback called by the runtime to schedule a request. The result of the
+  // request must be delivered by fulfilling the promise the is given as part
+  // of the request. The request struct is guaranteed to be alive at only until
+  // the promise is fulfilled.
   unary_callback_t *callback;
 } service_method_t;
 
 typedef struct {
+  // Service name.
   const char *name;
+  // Number of methods in the method array.
   size_t methodc;
+  // The methods supported by this service.
   service_method_t *methodv;
 } service_descriptor_t;
 
@@ -141,8 +125,8 @@ typedef struct {
 value_t service_hook_add_service(service_install_hook_context_t *context,
     service_descriptor_t *service);
 
-void native_remote_init(service_descriptor_t *remote, const char *display_name,
-    size_t method_count, service_method_t *methods);
+void service_descriptor_init(service_descriptor_t *remote, const char *display_name,
+    size_t methodc, service_method_t *methodv);
 
 // Creates a native remote object that delivers requests through the given
 // implementation. The implementation struct must be valid as long as the native

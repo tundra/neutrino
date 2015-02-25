@@ -14,36 +14,112 @@ END_C_INCLUDES
 
 using namespace neutrino;
 
+// That "actual" implementation of a runtime.
 class Runtime::Internal {
 public:
   Internal(Runtime *owner);
   ~Internal();
+
+  // The raw hook called from the runtime initialized.
   opaque_t service_install_hook_trampoline(opaque_t opaque_context);
+
+  // Does the actual installation of services.
   value_t service_install_hook(service_install_hook_context_t *context);
+
+  // Create and initialize this runtime.
   Maybe<> initialize(RuntimeConfig *config);
+
+  // The runtime to which this internal belongs.
   Runtime *owner() { return owner_; }
+
+  // The underlying live runtime.
   runtime_t *runtime() { return runtime_; }
+
 private:
   Runtime *owner_;
   runtime_t *runtime_;
 };
 
-class Runtime::Garbage {
+// TODO: factor this out into a tclib class, we need this elsewhere.
+class Runtime::Deletable {
 public:
-  virtual ~Garbage() { }
+  virtual ~Deletable() { }
   virtual size_t instance_size() = 0;
 };
 
-Runtime::Internal::Internal(Runtime *owner)
-  : owner_(owner)
-  , runtime_(NULL) { }
+// Concrete implementation of the native service binder interface.
+class NativeServiceBinderImpl
+    : public NativeServiceBinder
+    , public Runtime::Deletable {
+public:
+  // An adaptor that allows a native C++ method to be used from inside the
+  // runtime.
+  class MethodBridge {
+  public:
+    MethodBridge(NativeServiceBinderImpl *owner, const char *name,
+        MethodCallback direct);
 
-Runtime::Internal::~Internal() {
-  if (runtime_ != NULL) {
-    delete_runtime(runtime_);
-    runtime_ = NULL;
-  }
-}
+    // Method that conforms to the runtime's native method hook that calls the
+    // underlying C++ method.
+    opaque_t invoke(opaque_t args);
+
+    // Returns the adapted c-style callback. Must only be called after the
+    // binder is done binding.
+    unary_callback_t *bridge();
+
+  public:
+    NativeServiceBinderImpl *owner_;
+    const char *name_;
+    NativeServiceBinder::MethodCallback original_;
+
+    // The adapted callback we'll pass to the runtime. Note that because this
+    // uses a direct pointer to the bridge, and the bridges are stored by value,
+    // this can only be set after we're done manipulating the bridges array so
+    // it's not set by the constructor.
+    tclib::callback_t<opaque_t(opaque_t)> adapted_;
+  };
+
+  NativeServiceBinderImpl(service_install_hook_context_t *context);
+
+  // Implicitly cleans up the vectors.
+  virtual ~NativeServiceBinderImpl() { }
+
+  virtual Maybe<> add_method(const char *name, MethodCallback callback);
+
+  virtual void set_namespace_name(const char *name);
+
+  // Process the given service, modifying this binder in the process. If
+  // successful a C-style descriptor will be stored in the out argument.
+  value_t process(NativeService *service, service_descriptor_t **desc_out);
+
+protected:
+  virtual size_t instance_size() { return sizeof(*this); }
+
+private:
+  service_install_hook_context_t *context_;
+  service_descriptor_t desc_;
+
+  const char *namespace_name_;
+
+  // This binder's method bridges. This must not be modified when is_frozen_ is
+  // true.
+  std::vector<MethodBridge> bridges_;
+
+  // Storage for the method array we'll pass to the C runtime.
+  std::vector<service_method_t> methods_;
+
+  // Set to true when no further modification is allowed.
+  bool is_frozen_;
+};
+
+// Concrete implementation of the service request interface.
+class ServiceRequestImpl : public ServiceRequest {
+public:
+  ServiceRequestImpl(native_request_t *native) : native_(native) { }
+  virtual void fulfill(int64_t value);
+private:
+  native_request_t *native_;
+};
 
 RuntimeConfig::RuntimeConfig() {
   neu_runtime_config_init_defaults(this);
@@ -57,16 +133,18 @@ Runtime::~Runtime() {
     tclib::default_delete_concrete(internal_);
     internal_ = NULL;
   }
-  for (size_t i = 0; i < garbage_.size(); i++)
-    delete garbage_[i];
+  for (size_t i = 0; i < owned_.size(); i++)
+    delete owned_[i];
+  owned_.clear();
 }
 
 void Runtime::add_service(NativeService *service) {
+  CHECK_FALSE("adding service after initialized", is_initialized());
   services_.push_back(service);
 }
 
-void Runtime::add_garbage(Garbage *garbage) {
-  garbage_.push_back(garbage);
+void Runtime::take_ownership(Deletable *obj) {
+  owned_.push_back(obj);
 }
 
 runtime_t *Runtime::operator*() {
@@ -74,77 +152,25 @@ runtime_t *Runtime::operator*() {
 }
 
 runtime_t *Runtime::operator->() {
-  return (internal_ == NULL) ? NULL : internal_->runtime();
+  return this->operator*();
 }
 
-class NativeServiceBinderImpl : public NativeServiceBinder, public Runtime::Garbage {
-public:
-  class MethodBridge {
-  public:
-    MethodBridge(const char *name, NativeServiceBinder::MethodCallback direct)
-      : name_(name)
-      , direct_(direct) { }
-    opaque_t call(opaque_t args);
-  public:
-    const char *name_;
-    NativeServiceBinder::MethodCallback direct_;
-    tclib::callback_t<opaque_t(opaque_t)> adapted_;
-  };
-
-  virtual ~NativeServiceBinderImpl() { }
-  virtual size_t instance_size() { return sizeof(*this); }
-  NativeServiceBinderImpl(service_install_hook_context_t *context);
-  virtual Maybe<> add_method(const char *name, NativeServiceBinder::MethodCallback callback);
-  value_t apply(NativeService *service, service_descriptor_t **desc_out);
-private:
-  service_install_hook_context_t *context_;
-  service_descriptor_t desc_;
-  std::vector<MethodBridge> bridges_;
-  std::vector<service_method_t> methods_;
-};
-
-class ServiceRequestImpl : public ServiceRequest {
-public:
-  ServiceRequestImpl(native_request_t *native) : native_(native) { }
-  virtual void fulfill(int64_t value);
-private:
-  native_request_t *native_;
-};
-
-opaque_t NativeServiceBinderImpl::MethodBridge::call(opaque_t args) {
-  ServiceRequestImpl request(static_cast<native_request_t*>(o2p(args)));
-  direct_(&request);
-  return opaque_null();
+Maybe<> Runtime::initialize(RuntimeConfig *config) {
+  if (internal_ != NULL)
+    return Maybe<>::with_message("Runtime has already been initialized");
+  internal_ = new (tclib::kDefaultAlloc) Internal(this);
+  return internal_->initialize(config);
 }
 
-void ServiceRequestImpl::fulfill(int64_t value) {
-  native_request_fulfill(native_, new_integer(value));
-}
+Runtime::Internal::Internal(Runtime *owner)
+  : owner_(owner)
+  , runtime_(NULL) { }
 
-NativeServiceBinderImpl::NativeServiceBinderImpl(service_install_hook_context_t *context)
-  : context_(context) { }
-
-Maybe<> NativeServiceBinderImpl::add_method(const char *name,
-    NativeServiceBinder::MethodCallback callback) {
-  MethodBridge method(name, callback);
-  bridges_.push_back(method);
-  return Maybe<>::with_value();
-}
-
-value_t NativeServiceBinderImpl::apply(NativeService *service,
-    service_descriptor_t **desc_out) {
-  desc_.name = service->name();
-  service->install(this);
-  desc_.methodc = bridges_.size();
-  for (size_t i = 0; i < bridges_.size(); i++) {
-    MethodBridge *bridge = &bridges_[i];
-    bridge->adapted_ = tclib::new_callback(&MethodBridge::call, bridge);
-    service_method_t method_out = {bridge->name_, unary_callback_from(&bridge->adapted_)};
-    methods_.push_back(method_out);
+Runtime::Internal::~Internal() {
+  if (runtime_ != NULL) {
+    delete_runtime(runtime_);
+    runtime_ = NULL;
   }
-  desc_.methodv = methods_.data();
-  *desc_out = &desc_;
-  return success();
 }
 
 opaque_t Runtime::Internal::service_install_hook_trampoline(opaque_t opaque_context) {
@@ -158,9 +184,10 @@ value_t Runtime::Internal::service_install_hook(service_install_hook_context_t *
   for (size_t i = 0; i < services.size(); i++) {
     NativeService *service = services[i];
     NativeServiceBinderImpl *binder = new NativeServiceBinderImpl(context);
-    owner_->add_garbage(binder);
+    // Tie the binder's lifetime to the runtime as a whole.
+    owner_->take_ownership(binder);
     service_descriptor_t *desc = NULL;
-    TRY(binder->apply(service, &desc));
+    TRY(binder->process(service, &desc));
     TRY(service_hook_add_service(context, desc));
   }
   return success();
@@ -186,17 +213,64 @@ Maybe<> Runtime::Internal::initialize(RuntimeConfig *config) {
   return result;
 }
 
-Maybe<> Runtime::initialize(RuntimeConfig *config) {
-  if (internal_ != NULL)
-    return Maybe<>::with_message("Runtime has already been initialized");
-  internal_ = new (tclib::kDefaultAlloc) Internal(this);
-  return internal_->initialize(config);
+NativeServiceBinderImpl::MethodBridge::MethodBridge(NativeServiceBinderImpl *owner,
+    const char *name, MethodCallback original)
+  : owner_(owner)
+  , name_(name)
+  , original_(original) { }
+
+unary_callback_t *NativeServiceBinderImpl::MethodBridge::bridge() {
+  CHECK_TRUE("binder must be frozen", owner_->is_frozen_);
+  if (adapted_.is_empty())
+    adapted_ = tclib::new_callback(&MethodBridge::invoke, this);
+  return unary_callback_from(&adapted_);
 }
 
-MaybeMessage::MaybeMessage(const char *message)
+opaque_t NativeServiceBinderImpl::MethodBridge::invoke(opaque_t args) {
+  ServiceRequestImpl request(static_cast<native_request_t*>(o2p(args)));
+  original_(&request);
+  return opaque_null();
+}
+
+NativeServiceBinderImpl::NativeServiceBinderImpl(service_install_hook_context_t *context)
+  : context_(context)
+  , namespace_name_(NULL)
+  , is_frozen_(false) { }
+
+Maybe<> NativeServiceBinderImpl::add_method(const char *name,
+    NativeServiceBinder::MethodCallback callback) {
+  CHECK_FALSE("modifying frozen", is_frozen_);
+  MethodBridge method(this, name, callback);
+  bridges_.push_back(method);
+  return Maybe<>::with_value();
+}
+
+void NativeServiceBinderImpl::set_namespace_name(const char *name) {
+  namespace_name_ = name;
+}
+
+value_t NativeServiceBinderImpl::process(NativeService *service,
+    service_descriptor_t **desc_out) {
+  service->bind(this);
+  is_frozen_ = true;
+  for (size_t i = 0; i < bridges_.size(); i++) {
+    MethodBridge *bridge = &bridges_[i];
+    service_method_t method_out = {bridge->name_, bridge->bridge()};
+    methods_.push_back(method_out);
+  }
+  service_descriptor_init(&desc_, namespace_name_, methods_.size(), methods_.data());
+  *desc_out = &desc_;
+  return success();
+}
+
+void ServiceRequestImpl::fulfill(int64_t value) {
+  native_request_fulfill(native_, new_integer(value));
+}
+
+internal::MaybeMessage::MaybeMessage(const char *message)
   : message_((message == NULL) ? NULL : strdup(message)) { }
 
-MaybeMessage::~MaybeMessage() {
+internal::MaybeMessage::~MaybeMessage() {
   free(message_);
   message_ = NULL;
 }

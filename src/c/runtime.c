@@ -96,7 +96,7 @@ static value_t init_services(runtime_t *runtime, value_t imports,
   unary_callback_t *install_hook = config->service_install_hook;
   if (install_hook == NULL)
     return success();
-  service_install_hook_context_t context = { runtime, imports };
+  service_install_hook_context_t context = {runtime, imports};
   TRY(o2v(unary_callback_call(install_hook, p2o(&context))));
   return success();
 }

@@ -45,7 +45,7 @@ static const extended_runtime_config_t kDefaultConfig = {
   NULL,                  // system_time
   0x9d5c326b950e060eULL  // random_seed
   },
-  NULL                   // service_installer
+  NULL                   // service_install_hook
 };
 
 void neu_runtime_config_init_defaults(neu_runtime_config_t *config) {

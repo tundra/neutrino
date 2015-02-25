@@ -83,13 +83,12 @@ bool native_request_fulfill(native_request_t *request, value_t value) {
   return opaque_promise_fulfill(request->impl_promise, v2o(value));
 }
 
-void native_remote_init(service_descriptor_t *remote, const char *display_name,
-    size_t method_count, service_method_t *methods) {
+void service_descriptor_init(service_descriptor_t *remote, const char *display_name,
+    size_t methodc, service_method_t *methodv) {
   remote->name = display_name;
-  remote->methodc = method_count;
-  remote->methodv = methods;
+  remote->methodc = methodc;
+  remote->methodv = methodv;
 }
-
 
 opaque_t native_time_current(opaque_t opaque_request) {
   native_request_t *request = (native_request_t*) o2p(opaque_request);
@@ -104,24 +103,24 @@ static bool has_run_static_init = false;
 
 // Data for the native remote @time.
 typedef struct {
-  service_descriptor_t remote;
+  service_descriptor_t service;
   service_method_t methods[1];
-} native_remote_time_t;
+} time_service_descriptor_t;
 
 // Singleton @time implementation.
-static native_remote_time_t time_impl;
+static time_service_descriptor_t time_impl;
 
 // Initializes the singleton time instance.
 static void run_time_impl_static_init() {
   time_impl.methods[0].name = "current";
   unary_callback_t *raw_current = unary_callback_new_0(native_time_current);
   time_impl.methods[0].callback = callback_invisible_clone(raw_current);
-  native_remote_init(&time_impl.remote, "Time", 1, time_impl.methods);
+  service_descriptor_init(&time_impl.service, "Time", 1, time_impl.methods);
 }
 
 service_descriptor_t *native_remote_time() {
   CHECK_TRUE("plugin statics not inited", has_run_static_init);
-  return &time_impl.remote;
+  return &time_impl.service;
 }
 
 void run_plugin_static_init() {
