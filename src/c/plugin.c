@@ -76,7 +76,7 @@ value_t new_c_object(runtime_t *runtime, value_t factory, blob_t data,
 }
 
 value_t new_native_remote(runtime_t *runtime, service_descriptor_t *impl) {
-  return new_heap_native_remote(runtime, impl);
+  return new_heap_foreign_service(runtime, impl);
 }
 
 void native_request_init(native_request_t *req, runtime_t *runtime,

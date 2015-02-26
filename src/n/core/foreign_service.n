@@ -1,0 +1,17 @@
+# Copyright 2015 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+# A wrapper around a foreign object within this process that can be accessed as
+# if it were a remote.
+def @fsi:ForeignService := @ctrino.get_builtin_type("ForeignService");
+
+def type @fsi:ForeignService is @Object;
+
+# Generic operation on a foreign service.
+def ($this is @fsi:ForeignService)->(*) as $args => $this.call_with_args($args[selector], $args);
+
+# The native that does the actual work of a remote call. This might work better
+# as a function on the namespace rather than a method on remotes. Scratch that,
+# that definitely would be better.
+@ctrino.builtin("foreign_service.call_with_args")
+def ($this is @fsi:ForeignService).call_with_args($selector, $args);

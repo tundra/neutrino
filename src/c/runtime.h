@@ -85,7 +85,7 @@
   F(out_of_bounds,              "out_of_bounds")                               \
   F(no_such_field,              "no_such_field")                               \
   F(no_such_tag,                "no_such_tag")                                 \
-  F(unknown_native_method,      "unknown_native_method")                       \
+  F(unknown_foreign_method,     "unknown_foreign_method")                      \
   F(is_frozen,                  "is_frozen")                                   \
   F(promise_not_resolved,       "promise_not_resolved")
 

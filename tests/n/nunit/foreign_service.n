@@ -11,7 +11,7 @@ def $test_time() {
 }
 
 def $test_unknown() {
-  $assert:equals(op.blargh(), try @core:time->blargh() on.unknown_native_method($s) => $s);
+  $assert:equals(op.blargh(), try @core:time->blargh() on.unknown_foreign_method($s) => $s);
 }
 
 def $test_echo() {
@@ -29,11 +29,25 @@ def $test_echo() {
   $run([1, 2, 3]);
   $run([1, [2, [3, [4]]]]);
   $run({});
+}
 
+# Chained calls to the echo service.
+def $step_echo_chain($n) {
+  @core:echo->echo($n).then(fn $v {
+    $assert:equals($n, $v);
+    if $v == 0
+      then 0;
+      else $step_echo_chain($v - 1);
+  });
+}
+
+def $test_echo_chain() {
+  $step_echo_chain(1000);
 }
 
 do {
   $test_time();
   $test_echo();
   $test_unknown();
+  $test_echo_chain();
 }

@@ -106,27 +106,27 @@ void promise_state_print_on(value_t value, print_on_context_t *context) {
 }
 
 
-/// ## Native remote
+/// ## Native service
 
-FIXED_GET_MODE_IMPL(native_remote, vmDeepFrozen);
-GET_FAMILY_PRIMARY_TYPE_IMPL(native_remote);
+FIXED_GET_MODE_IMPL(foreign_service, vmDeepFrozen);
+GET_FAMILY_PRIMARY_TYPE_IMPL(foreign_service);
 
-FROZEN_ACCESSORS_IMPL(NativeRemote, native_remote, acInFamily, ofIdHashMap, Impls,
+FROZEN_ACCESSORS_IMPL(ForeignService, foreign_service, acInFamily, ofIdHashMap, Impls,
     impls);
-FROZEN_ACCESSORS_IMPL(NativeRemote, native_remote, acNoCheck, 0, DisplayName,
+FROZEN_ACCESSORS_IMPL(ForeignService, foreign_service, acNoCheck, 0, DisplayName,
     display_name);
 
-value_t native_remote_validate(value_t self) {
-  VALIDATE_FAMILY(ofNativeRemote, self);
-  VALIDATE_FAMILY(ofIdHashMap, get_native_remote_impls(self));
+value_t foreign_service_validate(value_t self) {
+  VALIDATE_FAMILY(ofForeignService, self);
+  VALIDATE_FAMILY(ofIdHashMap, get_foreign_service_impls(self));
   return success();
 }
 
-void native_remote_print_on(value_t self, print_on_context_t *context) {
-  string_buffer_printf(context->buf, "#<native_remote: ");
+void foreign_service_print_on(value_t self, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<foreign_service: ");
   print_on_context_t sub_context = *context;
   sub_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
-  value_print_inner_on(get_native_remote_display_name(self), &sub_context, -1);
+  value_print_inner_on(get_foreign_service_display_name(self), &sub_context, -1);
   string_buffer_printf(context->buf, ">");
 }
 
@@ -170,7 +170,7 @@ void native_request_state_destroy(native_request_state_t *state) {
 #include "utils/log.h"
 
 // Create a plankton-ified copy of the raw arguments.
-static value_t native_remote_clone_args(pton_arena_t *arena, value_t raw_args,
+static value_t foreign_service_clone_args(pton_arena_t *arena, value_t raw_args,
     pton_variant_t *args_out) {
   CHECK_FAMILY(ofReifiedArguments, raw_args);
   pton_variant_t args = pton_new_map(arena);
@@ -193,22 +193,22 @@ static value_t native_remote_clone_args(pton_arena_t *arena, value_t raw_args,
   return success();
 }
 
-static value_t native_remote_call_with_args(builtin_arguments_t *args) {
+static value_t foreign_service_call_with_args(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  CHECK_FAMILY(ofNativeRemote, self);
+  CHECK_FAMILY(ofForeignService, self);
   value_t operation = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofOperation, operation);
   value_t reified = get_builtin_argument(args, 1);
   CHECK_FAMILY(ofReifiedArguments, reified);
   // First look up the implementation since this may fail in which case it's
   // convenient to be able to just break out without having to clean up.
-  value_t impls = get_native_remote_impls(self);
+  value_t impls = get_foreign_service_impls(self);
   value_t name = get_operation_value(operation);
   value_t method = get_id_hash_map_at(impls, name);
   if (in_condition_cause(ccNotFound, method))
     // Escape with the operation not the name; the part about extracting the
     // string name is an implementation detail.
-    ESCAPE_BUILTIN(args, unknown_native_method, operation);
+    ESCAPE_BUILTIN(args, unknown_foreign_method, operation);
   void *impl_ptr = get_void_p_value(method);
   unary_callback_t *impl = (unary_callback_t*) impl_ptr;
   // Got an implementation. Now we can start allocating stuff.
@@ -216,15 +216,15 @@ static value_t native_remote_call_with_args(builtin_arguments_t *args) {
   native_request_state_t *state = NULL;
   value_t process = get_builtin_process(args);
   TRY(native_requests_state_new(runtime, process, &state));
-  TRY(native_remote_clone_args(state->request.arena, reified, &state->request.args));
+  TRY(foreign_service_clone_args(state->request.arena, reified, &state->request.args));
   get_process_airlock(process)->open_request_count++;
   unary_callback_call(impl, p2o(&state->request));
   return state->surface_promise;
 }
 
-value_t add_native_remote_builtin_implementations(runtime_t *runtime,
+value_t add_foreign_service_builtin_implementations(runtime_t *runtime,
     safe_value_t s_map) {
-  ADD_BUILTIN_IMPL_MAY_ESCAPE("native_remote.call_with_args", 2, 1,
-      native_remote_call_with_args);
+  ADD_BUILTIN_IMPL_MAY_ESCAPE("foreign_service.call_with_args", 2, 1,
+      foreign_service_call_with_args);
   return success();
 }

@@ -759,8 +759,8 @@ value_t new_heap_reified_arguments(runtime_t *runtime, value_t params,
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_native_remote(runtime_t *runtime, service_descriptor_t *impl) {
-  size_t size = kNativeRemoteSize;
+value_t new_heap_foreign_service(runtime_t *runtime, service_descriptor_t *impl) {
+  size_t size = kForeignServiceSize;
   TRY_DEF(display_name, import_pton_variant(runtime, impl->display_name));
   // Fill a map with the method pointers.
   TRY_DEF(impls, new_heap_id_hash_map(runtime, 16));
@@ -778,9 +778,9 @@ value_t new_heap_native_remote(runtime_t *runtime, service_descriptor_t *impl) {
   TRY(ensure_frozen(runtime, impls));
   TRY(validate_deep_frozen(runtime, impls, NULL));
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, native_remote_species)));
-  init_frozen_native_remote_impls(result, impls);
-  init_frozen_native_remote_display_name(result, display_name);
+      ROOT(runtime, foreign_service_species)));
+  init_frozen_foreign_service_impls(result, impls);
+  init_frozen_foreign_service_display_name(result, display_name);
   return post_create_sanity_check(result, size);
 }
 

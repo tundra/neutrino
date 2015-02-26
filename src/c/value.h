@@ -411,6 +411,7 @@ static inline value_t chase_moved_object(value_t raw) {
   F(Escape,                  escape,                    _, X, (_, _, _, _, _, _, _, _, _, _), 50)\
   F(Factory,                 factory,                   _, _, (_, _, _, _, _, _, _, _, _, _),  5)\
   F(FifoBuffer,              fifo_buffer,               _, _, (_, _, _, _, _, _, _, _, _, _), 81)\
+  F(ForeignService,          foreign_service,           _, X, (_, _, _, _, _, _, _, _, _, _), 90)\
   F(FreezeCheat,             freeze_cheat,              _, _, (_, _, _, _, _, _, _, _, X, _), 77)\
   F(Function,                function,                  X, X, (_, _, _, _, _, _, _, _, _, _), 56)\
   F(Guard,                   guard,                     X, _, (_, _, _, _, _, _, _, _, _, _), 30)\
@@ -442,7 +443,6 @@ static inline value_t chase_moved_object(value_t raw) {
   F(Namespace,               namespace,                 X, _, (_, _, _, _, _, _, _, X, _, _), 28)\
   F(NamespaceDeclarationAst, namespace_declaration_ast, X, _, (_, _, X, _, _, _, _, _, _, _), 44)\
   F(NamespaceVariableAst,    namespace_variable_ast,    X, X, (_, _, X, _, _, _, X, _, _, _), 42)\
-  F(NativeRemote,            native_remote,             _, X, (_, _, _, _, _, _, _, _, _, _), 90)\
   F(Operation,               operation,                 X, X, (_, X, X, _, _, _, _, _, _, _), 46)\
   F(Parameter,               parameter,                 X, _, (_, _, _, _, _, _, _, _, _, _), 51)\
   F(ParameterAst,            parameter_ast,             X, X, (_, _, X, _, _, _, _, _, _, _),  8)\

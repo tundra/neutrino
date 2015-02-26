@@ -74,7 +74,7 @@ static bool is_promise_state_resolved(value_t self) {
 }
 
 
-/// ## Native remote
+/// ## Native service
 ///
 /// A native remote is a remote process that is immediately backed by an
 /// in-process native implementation.
@@ -103,15 +103,15 @@ value_t native_requests_state_new(runtime_t *runtime, value_t process,
 // Destroy the given state.
 void native_request_state_destroy(native_request_state_t *state);
 
-static const size_t kNativeRemoteSize = HEAP_OBJECT_SIZE(2);
-static const size_t kNativeRemoteImplsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kNativeRemoteDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kForeignServiceSize = HEAP_OBJECT_SIZE(2);
+static const size_t kForeignServiceImplsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kForeignServiceDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // Mapping from method names to native implementations.
-FROZEN_ACCESSORS_DECL(native_remote, impls);
+FROZEN_ACCESSORS_DECL(foreign_service, impls);
 
 // Display name used to identify the value.
-FROZEN_ACCESSORS_DECL(native_remote, display_name);
+FROZEN_ACCESSORS_DECL(foreign_service, display_name);
 
 
 #endif // _SYNC
