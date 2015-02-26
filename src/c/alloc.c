@@ -763,7 +763,7 @@ value_t new_heap_native_remote(runtime_t *runtime, service_descriptor_t *impl) {
   size_t size = kNativeRemoteSize;
   TRY_DEF(display_name, import_pton_variant(runtime, impl->display_name));
   // Fill a map with the method pointers.
-  TRY_DEF(impls, new_heap_id_hash_map(runtime, impl->methodc * 2));
+  TRY_DEF(impls, new_heap_id_hash_map(runtime, 16));
   for (size_t i = 0; i < impl->methodc; i++) {
     service_method_t *method = &(impl->methodv[i]);
     TRY_DEF(selector, import_pton_variant(runtime, method->selector));
@@ -783,7 +783,6 @@ value_t new_heap_native_remote(runtime_t *runtime, service_descriptor_t *impl) {
   init_frozen_native_remote_display_name(result, display_name);
   return post_create_sanity_check(result, size);
 }
-
 
 
 // --- M e t h o d ---
@@ -1318,6 +1317,15 @@ value_t import_pton_variant(runtime_t *runtime, pton_variant_t variant) {
       const char *chars = pton_string_chars(variant);
       size_t size = pton_string_length(variant);
       return new_heap_utf8(runtime, new_string(chars, size));
+    }
+    case PTON_ARRAY: {
+      size_t size = pton_array_length(variant);
+      TRY_DEF(result, new_heap_array(runtime, size));
+      for (size_t i = 0; i < size; i++) {
+        TRY_DEF(value, import_pton_variant(runtime, pton_array_get(variant, i)));
+        set_array_at(result, i, value);
+      }
+      return result;
     }
     case PTON_NULL:
       return null();

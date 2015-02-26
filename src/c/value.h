@@ -388,7 +388,7 @@ static inline value_t chase_moved_object(value_t raw) {
   F(Ambience,                ambience,                  _, _, (_, _, _, _, X, _, _, _, _, _), 65)\
   F(ArgumentAst,             argument_ast,              X, X, (_, _, X, _, _, _, _, _, _, _),  9)\
   F(ArgumentMapTrie,         argument_map_trie,         X, _, (_, _, _, _, _, _, _, X, _, _),  7)\
-  F(Array,                   array,                     X, X, (_, X, _, _, X, _, _, _, _, _), 11)\
+  F(Array,                   array,                     X, X, (_, X, _, X, X, _, _, _, _, _), 11)\
   F(ArrayAst,                array_ast,                 X, X, (_, _, X, _, _, _, X, _, _, _), 10)\
   F(ArrayBuffer,             array_buffer,              X, X, (_, _, _, _, _, _, _, X, _, _), 34)\
   F(AsciiStringView,         ascii_string_view,         _, X, (_, _, _, _, _, _, _, _, _, _), 85)\

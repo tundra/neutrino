@@ -390,6 +390,7 @@ value_t utf8_validate(value_t value) {
 
 value_t utf8_to_plankton(pton_arena_t *arena, value_t self,
     pton_variant_t *pton_out) {
+  CHECK_FAMILY(ofUtf8, self);
   utf8_t contents = get_utf8_contents(self);
   *pton_out = pton_new_string(arena, contents.chars, contents.size);
   return success();
@@ -716,6 +717,20 @@ void array_print_on(value_t value, print_on_context_t *context) {
     }
     string_buffer_printf(context->buf, "]");
   }
+}
+
+value_t array_to_plankton(pton_arena_t *arena, value_t self,
+    pton_variant_t *pton_out) {
+  CHECK_FAMILY(ofArray, self);
+  size_t length = get_array_length(self);
+  pton_variant_t result = pton_new_array_with_capacity(arena, length);
+  for (size_t i = 0; i < length; i++) {
+    pton_variant_t elm = pton_null();
+    TRY(value_to_plankton(arena, get_array_at(self, i), &elm));
+    pton_array_add(result, elm);
+  }
+  *pton_out = result;
+  return success();
 }
 
 // Compares two values pointed to by two void pointers.
