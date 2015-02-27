@@ -409,7 +409,7 @@ static inline value_t chase_moved_object(value_t raw) {
   F(DecimalFraction,         decimal_fraction,          _, _, (_, _, X, _, _, _, _, _, _, _), 25)\
   F(EnsureAst,               ensure_ast,                X, X, (_, _, X, _, _, _, X, _, _, _), 74)\
   F(Escape,                  escape,                    _, X, (_, _, _, _, _, _, _, _, _, _), 50)\
-  F(ExportedService,         exported_service,          _, X, (_, _, _, _, _, _, _, _, _, _), 91)\
+  F(ExportedService,         exported_service,          _, X, (_, _, _, _, _, _, _, _, _, X), 91)\
   F(Factory,                 factory,                   _, _, (_, _, _, _, _, _, _, _, _, _),  5)\
   F(FifoBuffer,              fifo_buffer,               _, _, (_, _, _, _, _, _, _, _, _, _), 81)\
   F(ForeignService,          foreign_service,           _, X, (_, _, _, _, _, _, _, _, _, _), 90)\

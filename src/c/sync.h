@@ -81,6 +81,7 @@ static bool is_promise_state_resolved(value_t self) {
 
 // Extra state maintained around a foreign request.
 struct foreign_request_state_t {
+  // TODO: make gc safe.
   // The part of the data that will be passed to the native impl.
   native_request_t request;
   // The callback that will be called; kept around so we can destroy it later.
@@ -122,30 +123,54 @@ FROZEN_ACCESSORS_DECL(foreign_service, display_name);
 
 // Extra state maintained around a request to an exported service.
 struct incoming_request_state_t {
+  // XXX: make GC safe.
+  exported_service_capsule_t *capsule;
+  value_t request;
   value_t surface_promise;
 };
 
-value_t incoming_request_state_new(value_t surface_promise,
-    incoming_request_state_t **result_out);
+value_t incoming_request_state_new(exported_service_capsule_t *capsule,
+    value_t request, value_t surface_promise, incoming_request_state_t **result_out);
 
 void incoming_request_state_destroy(incoming_request_state_t *state);
 
-typedef struct {
-  size_t placeholder;
-} exported_service_capsule_t;
+// State allocated on the C heap associated with an exported service. Unlike the
+// service itself which may move around in the heap, this state can safely be
+// passed around outside the runtime and between threads.
+struct exported_service_capsule_t {
+  // XXX: make GC safe.
+  value_t service;
+};
 
-static const size_t kExportedServiceSize = HEAP_OBJECT_SIZE(3);
+// Set up the given capsule struct.
+void exported_service_capsule_init(exported_service_capsule_t *capsule,
+    value_t service);
+
+// Create and return a new export service capsule.
+exported_service_capsule_t *exported_service_capsule_new(runtime_t *runtime,
+    value_t service);
+
+bool exported_service_capsule_destroy(exported_service_capsule_t *capsule);
+
+static const size_t kExportedServiceSize = HEAP_OBJECT_SIZE(4);
 static const size_t kExportedServiceCapsulePtrOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kExportedServiceProcessOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 static const size_t kExportedServiceHandlerOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kExportedServiceModuleOffset = HEAP_OBJECT_FIELD_OFFSET(3);
 
 // This service's capsule of externally visible data.
 ACCESSORS_DECL(exported_service, capsule_ptr);
+
+// Returns the capsule struct for the given service.
+exported_service_capsule_t *get_exported_service_capsule(value_t process);
 
 // The process to which this service belongs.
 ACCESSORS_DECL(exported_service, process);
 
 // The handler object that implements the service's behavior.
 ACCESSORS_DECL(exported_service, handler);
+
+// The module within which methods will be resolved.
+ACCESSORS_DECL(exported_service, module);
 
 #endif // _SYNC

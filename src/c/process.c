@@ -995,12 +995,11 @@ value_t deliver_process_incoming(runtime_t *runtime, value_t process) {
   process_airlock_t *airlock = get_process_airlock(process);
   incoming_request_state_t *state = NULL;
   while (process_airlock_next_incoming(airlock, &state)) {
-    TRY_DEF(thunk, new_heap_incoming_request_thunk(runtime, nothing()));
+    TRY_DEF(thunk, new_heap_incoming_request_thunk(runtime, state));
     job_t job;
     job_init(&job, ROOT(runtime, call_thunk_code_block), thunk,
         state->surface_promise, nothing());
     TRY(offer_process_job(runtime, process, &job));
-    incoming_request_state_destroy(state);
   }
   return success();
 }
@@ -1147,17 +1146,51 @@ value_t add_reified_arguments_builtin_implementations(runtime_t *runtime,
 
 
 /// ## Incoming request thunk
+///
+/// All the data required to run an externally initiated request to a value
+/// in this process.
 
 FIXED_GET_MODE_IMPL(incoming_request_thunk, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(IncomingRequestThunk, incoming_request_thunk);
 GET_FAMILY_PRIMARY_TYPE_IMPL(incoming_request_thunk);
 
+ACCESSORS_IMPL(IncomingRequestThunk, incoming_request_thunk, acInFamily,
+    ofVoidP, RequestStatePtr, request_state_ptr);
+
 value_t incoming_request_thunk_validate(value_t self) {
   VALIDATE_FAMILY(ofIncomingRequestThunk, self);
+  VALIDATE_FAMILY(ofVoidP, get_incoming_request_thunk_request_state_ptr(self));
   return success();
+}
+
+static value_t incoming_request_thunk_handler(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofIncomingRequestThunk, self);
+  value_t state_ptr = get_incoming_request_thunk_request_state_ptr(self);
+  incoming_request_state_t *state = (incoming_request_state_t*) get_void_p_value(state_ptr);
+  return get_exported_service_handler(state->capsule->service);
+}
+
+static value_t incoming_request_thunk_module(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofIncomingRequestThunk, self);
+  value_t state_ptr = get_incoming_request_thunk_request_state_ptr(self);
+  incoming_request_state_t *state = (incoming_request_state_t*) get_void_p_value(state_ptr);
+  return get_exported_service_module(state->capsule->service);
+}
+
+static value_t incoming_request_thunk_request(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofIncomingRequestThunk, self);
+  value_t state_ptr = get_incoming_request_thunk_request_state_ptr(self);
+  incoming_request_state_t *state = (incoming_request_state_t*) get_void_p_value(state_ptr);
+  return state->request;
 }
 
 value_t add_incoming_request_thunk_builtin_implementations(runtime_t *runtime,
     safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("incoming_request_thunk.handler", 0, incoming_request_thunk_handler);
+  ADD_BUILTIN_IMPL("incoming_request_thunk.module", 0, incoming_request_thunk_module);
+  ADD_BUILTIN_IMPL("incoming_request_thunk.request", 0, incoming_request_thunk_request);
   return success();
 }

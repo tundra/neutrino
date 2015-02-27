@@ -175,12 +175,14 @@ void foreign_request_state_destroy(foreign_request_state_t *state) {
   allocator_default_free(new_memory_block(state, sizeof(foreign_request_state_t)));
 }
 
-value_t incoming_request_state_new(value_t surface_promise,
-    incoming_request_state_t **result_out) {
+value_t incoming_request_state_new(exported_service_capsule_t *capsule,
+    value_t request, value_t surface_promise, incoming_request_state_t **result_out) {
   memory_block_t memory = allocator_default_malloc(sizeof(incoming_request_state_t));
   if (memory_block_is_empty(memory))
     return new_system_call_failed_condition("malloc");
   incoming_request_state_t *state = (incoming_request_state_t*) memory.memory;
+  state->capsule = capsule;
+  state->request = request;
   state->surface_promise = surface_promise;
   *result_out = state;
   return success();
@@ -263,12 +265,60 @@ ACCESSORS_IMPL(ExportedService, exported_service, acInFamily, ofProcess,
     Process, process);
 ACCESSORS_IMPL(ExportedService, exported_service, acNoCheck, 0, Handler,
     handler);
+ACCESSORS_IMPL(ExportedService, exported_service, acInFamily,
+    ofModuleFragmentPrivate, Module, module);
+
+exported_service_capsule_t *get_exported_service_capsule(value_t self) {
+  value_t ptr = get_exported_service_capsule_ptr(self);
+  return (exported_service_capsule_t*) get_void_p_value(ptr);
+}
 
 value_t exported_service_validate(value_t self) {
   VALIDATE_FAMILY(ofExportedService, self);
   VALIDATE_FAMILY(ofVoidP, get_exported_service_capsule_ptr(self));
   VALIDATE_FAMILY(ofProcess, get_exported_service_process(self));
+  VALIDATE_FAMILY(ofModuleFragmentPrivate, get_exported_service_module(self));
   return success();
+}
+
+value_t finalize_exported_service(garbage_value_t dead_self) {
+  // Because this deals with a dead object during gc there are hardly any
+  // implicit type checks, instead this has to be done with raw offsets and
+  // explicit checks. Errors in this code are likely to be a nightmare to debug
+  // so extra effort to sanity check everything is worthwhile.
+  CHECK_EQ("running exported finalizer on non-exported", ofExportedService,
+      get_garbage_object_family(dead_self));
+  garbage_value_t dead_capsule_ptr = get_garbage_object_field(dead_self,
+      kExportedServiceCapsulePtrOffset);
+  CHECK_EQ("invalid exported during finalization", ofVoidP,
+      get_garbage_object_family(dead_capsule_ptr));
+  garbage_value_t capsule_value = get_garbage_object_field(dead_capsule_ptr,
+      kVoidPValueOffset);
+  void *raw_capsule_ptr = value_to_pointer_bit_cast(capsule_value.value);
+  exported_service_capsule_t *capsule = (exported_service_capsule_t*) raw_capsule_ptr;
+  if (!exported_service_capsule_destroy(capsule))
+    return new_system_call_failed_condition("free");
+  return success();
+}
+
+void exported_service_capsule_init(exported_service_capsule_t *capsule,
+    value_t service) {
+  capsule->service = service;
+}
+
+exported_service_capsule_t *exported_service_capsule_new(runtime_t *runtime,
+    value_t service) {
+  memory_block_t block = allocator_default_malloc(sizeof(exported_service_capsule_t));
+  if (memory_block_is_empty(block))
+    return NULL;
+  exported_service_capsule_t *capsule = (exported_service_capsule_t*) block.memory;
+  exported_service_capsule_init(capsule, service);
+  return capsule;
+}
+
+bool exported_service_capsule_destroy(exported_service_capsule_t *capsule) {
+  allocator_default_free(new_memory_block(capsule, sizeof(exported_service_capsule_t)));
+  return true;
 }
 
 static value_t exported_service_call_with_args(builtin_arguments_t *args) {
@@ -277,9 +327,10 @@ static value_t exported_service_call_with_args(builtin_arguments_t *args) {
   value_t reified = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofReifiedArguments, reified);
   runtime_t *runtime = get_builtin_runtime(args);
-  incoming_request_state_t *state = NULL;
   TRY_DEF(promise, new_heap_pending_promise(runtime));
-  TRY(incoming_request_state_new(promise, &state));
+  exported_service_capsule_t *capsule = get_exported_service_capsule(self);
+  incoming_request_state_t *state = NULL;
+  TRY(incoming_request_state_new(capsule, reified, promise, &state));
   value_t process = get_exported_service_process(self);
   process_airlock_t *airlock = get_process_airlock(process);
   process_airlock_schedule_incoming_request(airlock, state);

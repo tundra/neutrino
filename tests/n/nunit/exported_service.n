@@ -5,8 +5,8 @@ import $assert;
 import $core;
 
 def $test_wrapping() {
-  def $foo := new @core:fsi:ExportedService("foo");
-  $core:info($foo->bar());
+  def $foo := new @core:fsi:ExportedService("foo", module);
+  $core:info($foo->length);
 }
 
 do {

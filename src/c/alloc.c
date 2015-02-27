@@ -785,7 +785,7 @@ value_t new_heap_foreign_service(runtime_t *runtime, service_descriptor_t *impl)
 }
 
 value_t new_heap_exported_service(runtime_t *runtime, value_t process,
-    value_t handler) {
+    value_t handler, value_t module) {
   size_t size = kExportedServiceSize;
   TRY_DEF(capsule_ptr, new_heap_void_p(runtime, NULL));
   TRY_DEF(result, alloc_heap_object(runtime, size,
@@ -793,13 +793,23 @@ value_t new_heap_exported_service(runtime_t *runtime, value_t process,
   set_exported_service_capsule_ptr(result, capsule_ptr);
   set_exported_service_process(result, process);
   set_exported_service_handler(result, handler);
+  set_exported_service_module(result, module);
+  exported_service_capsule_t *capsule = exported_service_capsule_new(runtime,
+      result);
+  if (capsule == NULL)
+    return new_system_error_condition(seAllocationFailed);
+  set_void_p_value(capsule_ptr, capsule);
+  runtime_protect_value_with_flags(runtime, result, tfWeak | tfSelfDestruct | tfFinalize);
   return post_create_sanity_check(result, size);
 }
 
-value_t new_heap_incoming_request_thunk(runtime_t *runtime, value_t args) {
+value_t new_heap_incoming_request_thunk(runtime_t *runtime,
+    incoming_request_state_t *state) {
+  TRY_DEF(state_ptr, new_heap_void_p(runtime, state));
   size_t size = kIncomingRequestThunkSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, incoming_request_thunk_species)));
+  set_incoming_request_thunk_request_state_ptr(result, state_ptr);
   return post_create_sanity_check(result, size);
 }
 

@@ -7,8 +7,9 @@ def @fsi:ExportedService := @ctrino.get_builtin_type("ExportedService");
 
 def type @fsi:ExportedService is @Object;
 
-## Creates and returns a new exported service backed by the given handler.
-def ($this == @fsi:ExportedService).new($handler) => @ctrino.new_exported_service($handler);
+## Creates and returns a new exported service backed by the given handler where
+## method resolution happens in the given module.
+def ($this == @fsi:ExportedService).new($handler, $module) => @ctrino.new_exported_service($handler, $module);
 
 # Generic operation on an exported service.
 def ($this is @fsi:ExportedService)->(*) as $args => $this.call_with_args($args);
@@ -21,6 +22,21 @@ def @IncomingRequestThunk := @ctrino.get_builtin_type("IncomingRequestThunk");
 
 def type @IncomingRequestThunk is @Object;
 
+# Yields the exported service that is the target of this request.
+@ctrino.builtin("incoming_request_thunk.handler")
+def ($this is @IncomingRequestThunk).handler;
+
+# Yields the module within which to execute this request.
+@ctrino.builtin("incoming_request_thunk.module")
+def ($this is @IncomingRequestThunk).module;
+
+# Yields the call literal the contains the request data.
+@ctrino.builtin("incoming_request_thunk.request")
+def ($this is @IncomingRequestThunk).request;
+
 def ($this is @IncomingRequestThunk)() {
-  $info("thunk!");
+  def $handler := $this.handler;
+  def $module := $this.module;
+  def $request := $this.request;
+  $info($module.invoke($request.replace_argument(subject, $handler)));
 }

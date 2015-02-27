@@ -580,6 +580,7 @@ ACCESSORS_DECL(task, stack);
 
 typedef struct foreign_request_state_t foreign_request_state_t;
 typedef struct incoming_request_state_t incoming_request_state_t;
+typedef struct exported_service_capsule_t exported_service_capsule_t;
 
 // The number of pending results that we'll let buffer in an airlock.
 #define kProcessAirlockCompleteBufferSize 16
@@ -728,7 +729,11 @@ ACCESSORS_DECL(reified_arguments, tags);
 /// An incoming request thunk is all the data about an incoming request bundled
 /// together.
 
-static const size_t kIncomingRequestThunkSize = HEAP_OBJECT_SIZE(0);
+static const size_t kIncomingRequestThunkSize = HEAP_OBJECT_SIZE(1);
+static const size_t kIncomingRequestThunkRequestStatePtrOffset = HEAP_OBJECT_SIZE(0);
+
+// Pointer to the C request state data.
+ACCESSORS_DECL(incoming_request_thunk, request_state_ptr);
 
 
 #endif // _PROCESS

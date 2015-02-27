@@ -90,11 +90,13 @@ static value_t ctrino_new_array(builtin_arguments_t *args) {
 
 static value_t ctrino_new_exported_service(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  value_t handler = get_builtin_argument(args, 0);
   CHECK_C_OBJECT_TAG(btCtrino, self);
+  value_t handler = get_builtin_argument(args, 0);
+  value_t module = get_builtin_argument(args, 1);
+  CHECK_FAMILY(ofModuleFragmentPrivate, module);
   runtime_t *runtime = get_builtin_runtime(args);
   value_t process = get_builtin_process(args);
-  return new_heap_exported_service(runtime, process, handler);
+  return new_heap_exported_service(runtime, process, handler, module);
 }
 
 static value_t ctrino_new_float_32(builtin_arguments_t *args) {
@@ -247,7 +249,7 @@ static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("is_frozen?", 1, ctrino_is_frozen),
   BUILTIN_METHOD("log_info", 1, ctrino_log_info),
   BUILTIN_METHOD("new_array", 1, ctrino_new_array),
-  BUILTIN_METHOD("new_exported_service", 1, ctrino_new_exported_service),
+  BUILTIN_METHOD("new_exported_service", 2, ctrino_new_exported_service),
   BUILTIN_METHOD("new_float_32", 1, ctrino_new_float_32),
   BUILTIN_METHOD("new_function", 1, ctrino_new_function),
   BUILTIN_METHOD("new_hash_source", 1, ctrino_new_hash_source),
