@@ -578,10 +578,14 @@ ACCESSORS_DECL(task, stack);
 /// (potentially) independently of each other and can only affect each other
 /// through explicitly sending asynchronous messages.
 
-typedef struct native_request_state_t native_request_state_t;
+typedef struct foreign_request_state_t foreign_request_state_t;
+typedef struct incoming_request_state_t incoming_request_state_t;
 
 // The number of pending results that we'll let buffer in an airlock.
-#define kProcessAirlockBufferSize 16
+#define kProcessAirlockCompleteBufferSize 16
+
+// The number of incoming requests we'll let buffer in an airlock.
+#define kProcessAirlockIncomingBufferSize 16
 
 // Data allocated in the C heap which is accessible from other threads
 // throughout the lifetime of the process. This is how asynchronous interaction
@@ -590,31 +594,43 @@ typedef struct native_request_state_t native_request_state_t;
 typedef struct {
   // The runtime that contains the process.
   runtime_t *runtime;
-  // How many results have been delivered into this airlock?
-  native_semaphore_t pending_results_available;
-  // How much space is available for results to be delivered?
-  native_semaphore_t pending_result_vacancies;
-  // Mutex that guards the pending results.
-  native_mutex_t pending_results_mutex;
-  // The spot to place a result.
-  byte_t pending_results[BOUNDED_BUFFER_SIZE(kProcessAirlockBufferSize)];
-  // The number of outstanding requests whose results haven't been delivered
-  // to their associated promise.
-  size_t open_request_count;
+  // How much space is available for foreign requests to be completed?
+  native_semaphore_t foreign_vacancies;
+  // Mutex that guards the complete request buffer.
+  native_mutex_t complete_buffer_mutex;
+  // Buffer that holds the state of completed requests.
+  byte_t complete_buffer[BOUNDED_BUFFER_SIZE(kProcessAirlockCompleteBufferSize)];
+  // The number of outstanding foreign requests whose results haven't been
+  // delivered to their associated promise.
+  size_t open_foreign_request_count;
+  // Buffer that holds the state of incoming requests.
+  byte_t incoming_buffer[BOUNDED_BUFFER_SIZE(kProcessAirlockIncomingBufferSize)];
+  // How much room is left in the incoming request buffer?
+  native_semaphore_t incoming_vacancies;
+  // Mutex that guards the incoming request buffer.
+  native_mutex_t incoming_buffer_mutex;
 } process_airlock_t;
 
 // Create and initialize a process airlock. Returns null if anything fails.
 process_airlock_t *process_airlock_new(runtime_t *runtime);
 
-// Blocks until a space opens up in the given airlock and then delivers the
-// given result.
-void process_airlock_offer_result(process_airlock_t *airlock,
-    native_request_state_t *result);
+// Notify the process that the request with the given state has completed.
+void process_airlock_complete_foreign_request(process_airlock_t *airlock,
+    foreign_request_state_t *result);
 
-// If the given airlock has a pending result takes it, stores it in result_out,
-// and returns true. If not returns false. Never blocks.
-bool process_airlock_try_take(process_airlock_t *airlock,
-    native_request_state_t **result_out);
+// If the given airlock has a pending complete foreign request takes it, stores
+// it in result_out, and returns true. If not returns false. Never blocks.
+bool process_airlock_next_complete_foreign(process_airlock_t *airlock,
+    foreign_request_state_t **result_out);
+
+// If the given airlock has a pending incoming request takes it, stores
+// it in result_out, and returns true. If not returns false. Never blocks.
+bool process_airlock_next_incoming(process_airlock_t *airlock,
+    incoming_request_state_t **result_out);
+
+// Notify the process that there is a request to an exported service incoming.
+void process_airlock_schedule_incoming_request(process_airlock_t *airlock,
+    incoming_request_state_t *request);
 
 // Dispose the airlock's state appropriately, including deleting the airlock
 // value.
@@ -668,9 +684,12 @@ value_t offer_process_job(runtime_t *runtime, value_t process, job_t *job);
 // If there are no more work left a NotFound condition is returned.
 value_t take_process_job(value_t process, job_t *job_out);
 
-// Process any pending results that have been delivered to this process'
+// Process any foreign request results that have been delivered to this process'
 // airlock.
-value_t deliver_process_outstanding_results(value_t process);
+value_t deliver_process_complete_foreign(value_t process);
+
+// Schedule any incoming requests in this process' airlock onto the worklist.
+value_t deliver_process_incoming(runtime_t *runtime, value_t process);
 
 // Returns true if there is no more work for this process to perform.
 bool is_process_idle(value_t process);
@@ -702,6 +721,14 @@ ACCESSORS_DECL(reified_arguments, argmap);
 // available in addition to the params in case the call uses extra arguments
 // that the callee doesn't know about.
 ACCESSORS_DECL(reified_arguments, tags);
+
+
+/// ## Incoming request thunk
+///
+/// An incoming request thunk is all the data about an incoming request bundled
+/// together.
+
+static const size_t kIncomingRequestThunkSize = HEAP_OBJECT_SIZE(0);
 
 
 #endif // _PROCESS

@@ -1,0 +1,26 @@
+# Copyright 2015 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+# A wrapper around a foreign object within this process that can be accessed as
+# if it were a remote.
+def @fsi:ExportedService := @ctrino.get_builtin_type("ExportedService");
+
+def type @fsi:ExportedService is @Object;
+
+## Creates and returns a new exported service backed by the given handler.
+def ($this == @fsi:ExportedService).new($handler) => @ctrino.new_exported_service($handler);
+
+# Generic operation on an exported service.
+def ($this is @fsi:ExportedService)->(*) as $args => $this.call_with_args($args);
+
+# The native that does the actual work of a remote call.
+@ctrino.builtin("exported_service.call_with_args")
+def ($this is @fsi:ExportedService).call_with_args($args);
+
+def @IncomingRequestThunk := @ctrino.get_builtin_type("IncomingRequestThunk");
+
+def type @IncomingRequestThunk is @Object;
+
+def ($this is @IncomingRequestThunk)() {
+  $info("thunk!");
+}

@@ -12,15 +12,16 @@
 #include "utils/log.h"
 #include "value-inl.h"
 
-
 /// ## Stack piece
 
 FIXED_GET_MODE_IMPL(stack_piece, vmMutable);
 
 ACCESSORS_IMPL(StackPiece, stack_piece, acNoCheck, 0, Capacity, capacity);
-ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt, ofStackPiece, Previous, previous);
+ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt, ofStackPiece, Previous,
+    previous);
 ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt, ofStack, Stack, stack);
-ACCESSORS_IMPL(StackPiece, stack_piece, acNoCheck, 0, LidFramePointer, lid_frame_pointer);
+ACCESSORS_IMPL(StackPiece, stack_piece, acNoCheck, 0, LidFramePointer,
+    lid_frame_pointer);
 
 size_t calc_stack_piece_size(size_t capacity) {
   return kStackPieceHeaderSize + (capacity * kValueSize);
@@ -60,14 +61,14 @@ bool is_stack_piece_closed(value_t self) {
   return is_integer(get_stack_piece_lid_frame_pointer(self));
 }
 
-
 // --- S t a c k   ---
 
 FIXED_GET_MODE_IMPL(stack, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(Stack, stack);
 
 ACCESSORS_IMPL(Stack, stack, acInFamily, ofStackPiece, TopPiece, top_piece);
-INTEGER_ACCESSORS_IMPL(Stack, stack, DefaultPieceCapacity, default_piece_capacity);
+INTEGER_ACCESSORS_IMPL(Stack, stack, DefaultPieceCapacity,
+    default_piece_capacity);
 ACCESSORS_IMPL(Stack, stack, acNoCheck, 0, TopBarrier, top_barrier);
 
 value_t stack_validate(value_t self) {
@@ -95,8 +96,8 @@ static void transfer_top_arguments(value_t new_piece, frame_t *frame,
   close_frame(&new_frame);
 }
 
-static void push_stack_piece_bottom_frame(runtime_t *runtime, value_t stack_piece,
-    value_t arg_map) {
+static void push_stack_piece_bottom_frame(runtime_t *runtime,
+    value_t stack_piece, value_t arg_map) {
   frame_t bottom = frame_empty();
   value_t code_block = ROOT(runtime, stack_piece_bottom_code_block);
   // The transferred arguments are going to appear as if they were arguments
@@ -119,7 +120,8 @@ static void read_stack_piece_lid(value_t piece, frame_t *frame) {
   CHECK_TRUE("stack piece not closed", is_stack_piece_closed(piece));
   frame->stack_piece = piece;
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
-  frame->frame_pointer = stack_start + get_integer_value(get_stack_piece_lid_frame_pointer(piece));
+  frame->frame_pointer = stack_start
+      + get_integer_value(get_stack_piece_lid_frame_pointer(piece));
   frame_walk_down_stack(frame);
 }
 
@@ -135,7 +137,8 @@ void close_frame(frame_t *frame) {
   bool pushed = try_push_new_frame(frame, 0, ffLid | ffSynthetic, true);
   CHECK_TRUE("Failed to close frame", pushed);
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
-  set_stack_piece_lid_frame_pointer(piece, new_integer(frame->frame_pointer - stack_start));
+  set_stack_piece_lid_frame_pointer(piece,
+      new_integer(frame->frame_pointer - stack_start));
   frame->stack_piece = nothing();
   frame->frame_pointer = frame->limit_pointer = frame->stack_pointer = 0;
   frame->pc = 0;
@@ -151,18 +154,17 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     // allocate a new top piece that definitely has room.
     size_t default_capacity = get_stack_default_piece_capacity(stack);
     size_t transfer_arg_count = get_array_length(arg_map);
-    size_t required_capacity
-        = frame_capacity          // the new frame's locals
-        + kFrameHeaderSize        // the new frame's header
-        + 1                       // the synthetic bottom frame's one local
-        + kFrameHeaderSize        // the synthetic bottom frame's header
-        + transfer_arg_count;     // any arguments to be copied onto the piece
+    size_t required_capacity = frame_capacity // the new frame's locals
+    + kFrameHeaderSize // the new frame's header
+        + 1 // the synthetic bottom frame's one local
+        + kFrameHeaderSize // the synthetic bottom frame's header
+        + transfer_arg_count; // any arguments to be copied onto the piece
     size_t new_capacity = max_size(default_capacity, required_capacity);
 
     // Create and initialize the new stack segment. The frame struct is still
     // pointing to the old frame.
-    TRY_DEF(new_piece, new_heap_stack_piece(runtime, new_capacity, top_piece,
-        stack));
+    TRY_DEF(new_piece,
+        new_heap_stack_piece(runtime, new_capacity, top_piece, stack));
     push_stack_piece_bottom_frame(runtime, new_piece, arg_map);
     transfer_top_arguments(new_piece, frame, transfer_arg_count);
     set_stack_top_piece(stack, new_piece);
@@ -177,8 +179,7 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     bool pushed_stack_piece = try_push_new_frame(frame, frame_capacity,
         ffOrganic, false);
     if (!pushed_stack_piece)
-      try_push_new_frame(frame, frame_capacity,
-              ffOrganic, false);
+      try_push_new_frame(frame, frame_capacity, ffOrganic, false);
     CHECK_TRUE("pushing on new piece failed", pushed_stack_piece);
   }
   frame_set_argument_map(frame, arg_map);
@@ -189,8 +190,10 @@ void frame_walk_down_stack(frame_t *frame) {
   frame_t snapshot = *frame;
   // Get the frame pointer and capacity from the frame's header.
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
-  frame->frame_pointer = stack_start + frame_get_previous_frame_pointer(&snapshot);
-  frame->limit_pointer = stack_start + frame_get_previous_limit_pointer(&snapshot);
+  frame->frame_pointer = stack_start
+      + frame_get_previous_frame_pointer(&snapshot);
+  frame->limit_pointer = stack_start
+      + frame_get_previous_limit_pointer(&snapshot);
   frame->flags = frame_get_previous_flags(&snapshot);
   frame->pc = frame_get_previous_pc(&snapshot);
   // The stack pointer will be the first field of the top frame's header.
@@ -207,7 +210,8 @@ value_t *frame_get_stack_piece_bottom(frame_t *frame) {
 
 value_t *frame_get_stack_piece_top(frame_t *frame) {
   value_t *storage = get_stack_piece_storage(frame->stack_piece);
-  return storage + get_integer_value(get_stack_piece_capacity(frame->stack_piece));
+  return storage
+      + get_integer_value(get_stack_piece_capacity(frame->stack_piece));
 }
 
 frame_t open_stack(value_t stack) {
@@ -216,7 +220,6 @@ frame_t open_stack(value_t stack) {
   open_stack_piece(get_stack_top_piece(stack), &result);
   return result;
 }
-
 
 /// ### Barrier iter
 
@@ -230,11 +233,10 @@ value_t barrier_iter_advance(barrier_iter_t *iter) {
   return iter->current;
 }
 
-
 // --- F r a m e ---
 
 bool try_push_new_frame(frame_t *frame, size_t frame_capacity, uint32_t flags,
-    bool is_lid) {
+bool is_lid) {
   value_t stack_piece = frame->stack_piece;
   CHECK_FALSE("pushing closed stack piece", is_stack_piece_closed(stack_piece));
   // First record the current state of the old top frame so we can store it in
@@ -261,8 +263,10 @@ bool try_push_new_frame(frame_t *frame, size_t frame_capacity, uint32_t flags,
   frame->pc = 0;
   // Record the relevant information about the previous frame in the new frame's
   // header.
-  frame_set_previous_frame_pointer(frame, old_frame.frame_pointer - stack_piece_start);
-  frame_set_previous_limit_pointer(frame, old_frame.limit_pointer - stack_piece_start);
+  frame_set_previous_frame_pointer(frame,
+      old_frame.frame_pointer - stack_piece_start);
+  frame_set_previous_limit_pointer(frame,
+      old_frame.limit_pointer - stack_piece_start);
   frame_set_previous_flags(frame, old_frame.flags);
   frame_set_previous_pc(frame, old_frame.pc);
   frame_set_code_block(frame, nothing());
@@ -282,7 +286,8 @@ void frame_pop_within_stack_piece(frame_t *frame) {
 static value_t *access_frame_header_field(frame_t *frame, size_t offset) {
   CHECK_REL("frame header field out of bounds", offset, <=, kFrameHeaderSize);
   value_t *location = frame->frame_pointer - offset - 1;
-  CHECK_TRUE("frame header out of bounds", frame_get_stack_piece_bottom(frame) <= location);
+  CHECK_TRUE("frame header out of bounds",
+      frame_get_stack_piece_bottom(frame) <= location);
   return location;
 }
 
@@ -298,8 +303,8 @@ void frame_set_previous_frame_pointer(frame_t *frame, size_t value) {
 }
 
 size_t frame_get_previous_frame_pointer(frame_t *frame) {
-  return get_integer_value(*access_frame_header_field(frame,
-      kFrameHeaderPreviousFramePointerOffset));
+  return get_integer_value(
+      *access_frame_header_field(frame, kFrameHeaderPreviousFramePointerOffset));
 }
 
 void frame_set_previous_limit_pointer(frame_t *frame, size_t value) {
@@ -308,8 +313,8 @@ void frame_set_previous_limit_pointer(frame_t *frame, size_t value) {
 }
 
 size_t frame_get_previous_limit_pointer(frame_t *frame) {
-  return get_integer_value(*access_frame_header_field(frame,
-      kFrameHeaderPreviousLimitPointerOffset));
+  return get_integer_value(
+      *access_frame_header_field(frame, kFrameHeaderPreviousLimitPointerOffset));
 }
 
 void frame_set_previous_flags(frame_t *frame, value_t flags) {
@@ -321,8 +326,7 @@ value_t frame_get_previous_flags(frame_t *frame) {
 }
 
 void frame_set_code_block(frame_t *frame, value_t code_block) {
-  *access_frame_header_field(frame, kFrameHeaderCodeBlockOffset) =
-      code_block;
+  *access_frame_header_field(frame, kFrameHeaderCodeBlockOffset) = code_block;
 }
 
 value_t frame_get_code_block(frame_t *frame) {
@@ -339,13 +343,13 @@ value_t frame_get_argument_map(frame_t *frame) {
 }
 
 void frame_set_previous_pc(frame_t *frame, size_t pc) {
-  *access_frame_header_field(frame, kFrameHeaderPreviousPcOffset) =
-      new_integer(pc);
+  *access_frame_header_field(frame, kFrameHeaderPreviousPcOffset) = new_integer(
+      pc);
 }
 
 size_t frame_get_previous_pc(frame_t *frame) {
-  return get_integer_value(*access_frame_header_field(frame,
-      kFrameHeaderPreviousPcOffset));
+  return get_integer_value(
+      *access_frame_header_field(frame, kFrameHeaderPreviousPcOffset));
 }
 
 value_t frame_push_value(frame_t *frame, value_t value) {
@@ -408,7 +412,8 @@ value_t frame_get_raw_argument(frame_t *frame, size_t eval_index) {
   return stack_pointer[-(eval_index + 1)];
 }
 
-value_t frame_get_pending_argument_at(frame_t *frame, value_t tags, size_t index) {
+value_t frame_get_pending_argument_at(frame_t *frame, value_t tags,
+    size_t index) {
   CHECK_FAMILY(ofCallTags, tags);
   size_t offset = get_call_tags_offset_at(tags, index);
   return frame_peek_value(frame, offset);
@@ -427,7 +432,6 @@ value_t frame_get_local(frame_t *frame, size_t index) {
       location < frame->stack_pointer);
   return *location;
 }
-
 
 // --- F r a m e   i t e r a t o r ---
 
@@ -458,7 +462,6 @@ bool frame_iter_advance(frame_iter_t *iter) {
   return true;
 }
 
-
 // ## Escape
 
 FIXED_GET_MODE_IMPL(escape, vmMutable);
@@ -484,13 +487,14 @@ static value_t escape_is_live(builtin_arguments_t *args) {
   return new_boolean(!is_nothing(get_escape_section(self)));
 }
 
-value_t add_escape_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  TRY(add_custom_method_impl(runtime, deref(s_map), "escape()", 1,
-      new_flag_set(kFlagSetAllOff), emit_fire_escape));
+value_t add_escape_builtin_implementations(runtime_t *runtime,
+    safe_value_t s_map) {
+  TRY(
+      add_custom_method_impl(runtime, deref(s_map), "escape()", 1,
+          new_flag_set(kFlagSetAllOff), emit_fire_escape));
   ADD_BUILTIN_IMPL("escape.is_live?", 0, escape_is_live);
   return success();
 }
-
 
 // ## Lambda
 
@@ -516,9 +520,11 @@ value_t emit_lambda_call_trampoline(assembler_t *assm) {
   return success();
 }
 
-value_t add_lambda_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  TRY(add_custom_method_impl(runtime, deref(s_map), "lambda()", 0,
-      new_flag_set(mfLambdaDelegate), emit_lambda_call_trampoline));
+value_t add_lambda_builtin_implementations(runtime_t *runtime,
+    safe_value_t s_map) {
+  TRY(
+      add_custom_method_impl(runtime, deref(s_map), "lambda()", 0,
+          new_flag_set(mfLambdaDelegate), emit_lambda_call_trampoline));
   return success();
 }
 
@@ -532,7 +538,6 @@ value_t ensure_lambda_owned_values_frozen(runtime_t *runtime, value_t self) {
   TRY(ensure_frozen(runtime, get_lambda_captures(self)));
   return success();
 }
-
 
 /// ## Block
 
@@ -562,9 +567,11 @@ static value_t block_is_live(builtin_arguments_t *args) {
   return new_boolean(!is_nothing(get_block_section(self)));
 }
 
-value_t add_block_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  TRY(add_custom_method_impl(runtime, deref(s_map), "block()", 0,
-      new_flag_set(mfBlockDelegate), emit_block_call_trampoline));
+value_t add_block_builtin_implementations(runtime_t *runtime,
+    safe_value_t s_map) {
+  TRY(
+      add_custom_method_impl(runtime, deref(s_map), "block()", 0,
+          new_flag_set(mfBlockDelegate), emit_block_call_trampoline));
   ADD_BUILTIN_IMPL("block.is_live?", 0, block_is_live);
   return success();
 }
@@ -605,14 +612,14 @@ void get_refractor_refracted_frame(value_t self, size_t block_depth,
   frame->flags = nothing();
 }
 
-
 // --- B a c k t r a c e ---
 
 FIXED_GET_MODE_IMPL(backtrace, vmMutable);
 GET_FAMILY_PRIMARY_TYPE_IMPL(backtrace);
 NO_BUILTIN_METHODS(backtrace);
 
-ACCESSORS_IMPL(Backtrace, backtrace, acInFamily, ofArrayBuffer, Entries, entries);
+ACCESSORS_IMPL(Backtrace, backtrace, acInFamily, ofArrayBuffer, Entries,
+    entries);
 
 value_t backtrace_validate(value_t value) {
   VALIDATE_FAMILY(ofBacktrace, value);
@@ -643,15 +650,13 @@ value_t capture_backtrace(runtime_t *runtime, frame_t *top) {
   return new_heap_backtrace(runtime, frames);
 }
 
-
 // --- B a c k t r a c e   e n t r y ---
 
 FIXED_GET_MODE_IMPL(backtrace_entry, vmMutable);
 
 ACCESSORS_IMPL(BacktraceEntry, backtrace_entry, acNoCheck, 0, Invocation,
     invocation);
-ACCESSORS_IMPL(BacktraceEntry, backtrace_entry, acNoCheck, 0, Opcode,
-    opcode);
+ACCESSORS_IMPL(BacktraceEntry, backtrace_entry, acNoCheck, 0, Opcode, opcode);
 
 value_t backtrace_entry_validate(value_t value) {
   VALIDATE_FAMILY(ofBacktraceEntry, value);
@@ -798,7 +803,7 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
   // Scan through the record to build the invocation map.
   TRY_DEF(invocation, new_heap_id_hash_map(runtime, 16));
   size_t arg_count = get_call_tags_entry_count(tags);
-  for (size_t i = 0;  i < arg_count; i++) {
+  for (size_t i = 0; i < arg_count; i++) {
     value_t tag = get_call_tags_tag_at(tags, i);
     value_t arg = frame_get_pending_argument_at(frame, tags, i);
     TRY(set_id_hash_map_at(runtime, invocation, tag, arg));
@@ -806,7 +811,6 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
   // Wrap the result in a backtrace entry.
   return new_heap_backtrace_entry(runtime, invocation, new_integer(op));
 }
-
 
 /// ## Task
 
@@ -823,15 +827,16 @@ value_t task_validate(value_t self) {
   return success();
 }
 
-
 /// ## Process
 
 FIXED_GET_MODE_IMPL(process, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(Process, process);
 
-ACCESSORS_IMPL(Process, process, acInFamily, ofFifoBuffer, WorkQueue, work_queue);
+ACCESSORS_IMPL(Process, process, acInFamily, ofFifoBuffer, WorkQueue,
+    work_queue);
 ACCESSORS_IMPL(Process, process, acInFamily, ofTask, RootTask, root_task);
-ACCESSORS_IMPL(Process, process, acInFamily, ofHashSource, HashSource, hash_source);
+ACCESSORS_IMPL(Process, process, acInFamily, ofHashSource, HashSource,
+    hash_source);
 ACCESSORS_IMPL(Process, process, acInFamily, ofVoidP, AirlockPtr, airlock_ptr);
 
 value_t process_validate(value_t self) {
@@ -843,7 +848,8 @@ value_t process_validate(value_t self) {
   return success();
 }
 
-void job_init(job_t *job, value_t code, value_t data, value_t promise, value_t guard) {
+void job_init(job_t *job, value_t code, value_t data, value_t promise,
+    value_t guard) {
   CHECK_FAMILY(ofCodeBlock, code);
   CHECK_FAMILY_OPT(ofPromise, promise);
   CHECK_FAMILY_OPT(ofPromise, guard);
@@ -856,7 +862,8 @@ void job_init(job_t *job, value_t code, value_t data, value_t promise, value_t g
 value_t offer_process_job(runtime_t *runtime, value_t process, job_t *job) {
   CHECK_FAMILY(ofProcess, process);
   value_t work_queue = get_process_work_queue(process);
-  value_t data[kProcessWorkQueueWidth] = {job->code, job->data, job->promise, job->guard};
+  value_t data[kProcessWorkQueueWidth] = { job->code, job->data, job->promise,
+      job->guard };
   return offer_to_fifo_buffer(runtime, work_queue, data, kProcessWorkQueueWidth);
 }
 
@@ -886,7 +893,14 @@ bool is_process_idle(value_t process) {
     return false;
   // If there is no more work but we're still waiting for outstanding requests
   // it also shouldn't be considered idle.
-  return get_process_airlock(process)->open_request_count == 0;
+  process_airlock_t *airlock = get_process_airlock(process);
+  if (airlock->open_foreign_request_count > 0)
+    return false;
+  // If there are incoming requests that haven't been processed there's also
+  // work to do there.
+  if (!bounded_buffer_is_empty(airlock->incoming_buffer))
+    return false;
+  return true;
 }
 
 value_t finalize_process(garbage_value_t dead_self) {
@@ -920,85 +934,124 @@ process_airlock_t *process_airlock_new(runtime_t *runtime) {
     return NULL;
   process_airlock_t *airlock = (process_airlock_t*) block.memory;
   airlock->runtime = runtime;
-  bounded_buffer_init((bounded_buffer_t*) airlock->pending_results, kProcessAirlockBufferSize);
-  airlock->open_request_count = 0;
-  native_semaphore_construct_with_count(&airlock->pending_results_available, 0);
-  native_semaphore_construct_with_count(&airlock->pending_result_vacancies, kProcessAirlockBufferSize);
-  native_mutex_construct(&airlock->pending_results_mutex);
-  if (!native_semaphore_initialize(&airlock->pending_results_available)
-   || !native_semaphore_initialize(&airlock->pending_result_vacancies)
-   || !native_mutex_initialize(&airlock->pending_results_mutex))
+  bounded_buffer_init(airlock->complete_buffer,
+      sizeof(airlock->complete_buffer),
+      kProcessAirlockCompleteBufferSize);
+  bounded_buffer_init(airlock->incoming_buffer,
+      sizeof(airlock->incoming_buffer),
+      kProcessAirlockIncomingBufferSize);
+  airlock->open_foreign_request_count = 0;
+  native_semaphore_construct_with_count(&airlock->foreign_vacancies,
+  kProcessAirlockCompleteBufferSize);
+  native_semaphore_construct_with_count(&airlock->incoming_vacancies,
+  kProcessAirlockIncomingBufferSize);
+  native_mutex_construct(&airlock->complete_buffer_mutex);
+  native_mutex_construct(&airlock->incoming_buffer_mutex);
+  if (!native_semaphore_initialize(&airlock->foreign_vacancies)
+      || !native_semaphore_initialize(&airlock->incoming_vacancies)
+      || !native_mutex_initialize(&airlock->complete_buffer_mutex)
+      || !native_mutex_initialize(&airlock->incoming_buffer_mutex))
     return NULL;
   return airlock;
 }
 
-void process_airlock_offer_result(process_airlock_t *airlock,
-    native_request_state_t *result) {
-  // Acquire room to store the result.
-  native_semaphore_acquire(&airlock->pending_result_vacancies, duration_unlimited());
-  native_mutex_lock(&airlock->pending_results_mutex);
-  bool offered = bounded_buffer_try_offer(
-      (bounded_buffer_t*) airlock->pending_results, p2o(result));
+void process_airlock_complete_foreign_request(process_airlock_t *airlock,
+    foreign_request_state_t *result) {
+  // Acquire room to store the result and access to the buffer.
+  native_semaphore_acquire(&airlock->foreign_vacancies, duration_unlimited());
+  native_mutex_lock(&airlock->complete_buffer_mutex);
+  bool offered = bounded_buffer_try_offer(airlock->complete_buffer,
+      p2o(result));
   CHECK_TRUE("out of capacity", offered);
-  native_mutex_unlock(&airlock->pending_results_mutex);
-  // Release a pending result.
-  native_semaphore_release(&airlock->pending_results_available);
+  native_mutex_unlock(&airlock->complete_buffer_mutex);
 }
 
-value_t deliver_process_outstanding_results(value_t process) {
+void process_airlock_schedule_incoming_request(process_airlock_t *airlock,
+    incoming_request_state_t *request) {
+  // Acquire room to store the result and access to the buffer.
+  native_semaphore_acquire(&airlock->incoming_vacancies, duration_unlimited());
+  native_mutex_lock(&airlock->incoming_buffer_mutex);
+  bool offered = bounded_buffer_try_offer(airlock->incoming_buffer,
+      p2o(request));
+  CHECK_TRUE("out of capacity", offered);
+  native_mutex_unlock(&airlock->incoming_buffer_mutex);
+}
+
+value_t deliver_process_complete_foreign(value_t process) {
   CHECK_FAMILY(ofProcess, process);
   process_airlock_t *airlock = get_process_airlock(process);
-  native_request_state_t *state = NULL;
-  while (process_airlock_try_take(airlock, &state)) {
-    airlock->open_request_count--;
+  foreign_request_state_t *state = NULL;
+  while (process_airlock_next_complete_foreign(airlock, &state)) {
+    airlock->open_foreign_request_count--;
     TRY_DEF(result, import_pton_variant(airlock->runtime, state->result));
     fulfill_promise(state->surface_promise, result);
-    native_request_state_destroy(state);
+    foreign_request_state_destroy(state);
   }
   return success();
 }
 
-// If the given airlock has a pending result takes it, stores it in result_out,
-// and returns true. If not returns false. Never blocks.
-bool process_airlock_try_take(process_airlock_t *airlock,
-    native_request_state_t **result_out) {
-  if (native_semaphore_try_acquire(&airlock->pending_results_available)) {
-    native_mutex_lock(&airlock->pending_results_mutex);
-    opaque_t next;
-    bool took = bounded_buffer_try_take(
-        (bounded_buffer_t*) airlock->pending_results, &next);
-    CHECK_TRUE("result missing", took);
-    *result_out = (native_request_state_t*) o2p(next);
-    native_mutex_unlock(&airlock->pending_results_mutex);
-    native_semaphore_release(&airlock->pending_result_vacancies);
-    return true;
-  } else {
-    return false;
+value_t deliver_process_incoming(runtime_t *runtime, value_t process) {
+  CHECK_FAMILY(ofProcess, process);
+  process_airlock_t *airlock = get_process_airlock(process);
+  incoming_request_state_t *state = NULL;
+  while (process_airlock_next_incoming(airlock, &state)) {
+    TRY_DEF(thunk, new_heap_incoming_request_thunk(runtime, nothing()));
+    job_t job;
+    job_init(&job, ROOT(runtime, call_thunk_code_block), thunk,
+        state->surface_promise, nothing());
+    TRY(offer_process_job(runtime, process, &job));
+    incoming_request_state_destroy(state);
   }
+  return success();
+}
+
+bool process_airlock_next_complete_foreign(process_airlock_t *airlock,
+    foreign_request_state_t **result_out) {
+  native_mutex_lock(&airlock->complete_buffer_mutex);
+  opaque_t next = opaque_null();
+  bool took = bounded_buffer_try_take(airlock->complete_buffer, &next);
+  native_mutex_unlock(&airlock->complete_buffer_mutex);
+  if (took) {
+    *result_out = o2p(next);
+    native_semaphore_release(&airlock->foreign_vacancies);
+  }
+  return took;
+}
+
+bool process_airlock_next_incoming(process_airlock_t *airlock,
+    incoming_request_state_t **result_out) {
+  native_mutex_lock(&airlock->incoming_buffer_mutex);
+  opaque_t next = opaque_null();
+  bool took = bounded_buffer_try_take(airlock->incoming_buffer, &next);
+  native_mutex_unlock(&airlock->incoming_buffer_mutex);
+  if (took) {
+    *result_out = o2p(next);
+    native_semaphore_release(&airlock->incoming_vacancies);
+  }
+  return took;
 }
 
 bool process_airlock_destroy(process_airlock_t *airlock) {
-  native_semaphore_dispose(&airlock->pending_results_available);
-  native_semaphore_dispose(&airlock->pending_result_vacancies);
-  native_mutex_dispose(&airlock->pending_results_mutex);
+  native_semaphore_dispose(&airlock->foreign_vacancies);
+  native_semaphore_dispose(&airlock->incoming_vacancies);
+  native_mutex_dispose(&airlock->complete_buffer_mutex);
+  native_mutex_dispose(&airlock->incoming_buffer_mutex);
   allocator_default_free(new_memory_block(airlock, sizeof(process_airlock_t)));
   return true;
 }
 
-
 /// ## Reified arguments
-
 
 FIXED_GET_MODE_IMPL(reified_arguments, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(ReifiedArguments, reified_arguments);
 GET_FAMILY_PRIMARY_TYPE_IMPL(reified_arguments);
 
-ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofArray,
-    Params, params);
-ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofArray,
-    Values, values);
-ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofArray,
-    Argmap, argmap);
+ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofArray, Params,
+    params);
+ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofArray, Values,
+    values);
+ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofArray, Argmap,
+    argmap);
 ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily, ofCallTags,
     Tags, tags);
 
@@ -1089,5 +1142,22 @@ value_t add_reified_arguments_builtin_implementations(runtime_t *runtime,
   ADD_BUILTIN_IMPL_MAY_ESCAPE("reified_arguments[]", 1, 1, reified_arguments_get_at);
   ADD_BUILTIN_IMPL_MAY_ESCAPE("reified_arguments.replace_argument", 2, 1,
       reified_arguments_replace_argument);
+  return success();
+}
+
+
+/// ## Incoming request thunk
+
+FIXED_GET_MODE_IMPL(incoming_request_thunk, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(IncomingRequestThunk, incoming_request_thunk);
+GET_FAMILY_PRIMARY_TYPE_IMPL(incoming_request_thunk);
+
+value_t incoming_request_thunk_validate(value_t self) {
+  VALIDATE_FAMILY(ofIncomingRequestThunk, self);
+  return success();
+}
+
+value_t add_incoming_request_thunk_builtin_implementations(runtime_t *runtime,
+    safe_value_t s_map) {
   return success();
 }

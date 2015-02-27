@@ -106,7 +106,7 @@ void promise_state_print_on(value_t value, print_on_context_t *context) {
 }
 
 
-/// ## Native service
+/// ## Foreign service
 
 FIXED_GET_MODE_IMPL(foreign_service, vmDeepFrozen);
 GET_FAMILY_PRIMARY_TYPE_IMPL(foreign_service);
@@ -132,25 +132,33 @@ void foreign_service_print_on(value_t self, print_on_context_t *context) {
 
 // Called when a native request succeeds. Note that there is no guarantee of
 // which thread will call this.
-static opaque_t on_native_request_success(opaque_t opaque_state,
+static opaque_t on_foreign_request_success(opaque_t opaque_state,
     opaque_t opaque_result) {
-  native_request_state_t *state = (native_request_state_t*) o2p(opaque_state);
+  foreign_request_state_t *state = (foreign_request_state_t*) o2p(opaque_state);
   state->result = *((pton_variant_t*) o2p(opaque_result));
-  process_airlock_offer_result(state->airlock, state);
+  process_airlock_complete_foreign_request(state->airlock, state);
   return opaque_null();
 }
 
-value_t native_requests_state_new(runtime_t *runtime, value_t process,
-    native_request_state_t **result_out) {
+void foreign_request_state_init(foreign_request_state_t *state,
+    unary_callback_t *callback, process_airlock_t *airlock,
+    value_t surface_promise, pton_variant_t result) {
+  state->callback = callback;
+  state->airlock = airlock;
+  state->surface_promise = surface_promise;
+  state->result = result;
+}
+
+value_t foreign_request_state_new(runtime_t *runtime, value_t process,
+    foreign_request_state_t **result_out) {
   TRY_DEF(promise, new_heap_pending_promise(runtime));
-  memory_block_t memory = allocator_default_malloc(sizeof(native_request_state_t));
+  memory_block_t memory = allocator_default_malloc(sizeof(foreign_request_state_t));
   if (memory_block_is_empty(memory))
     return new_system_call_failed_condition("malloc");
-  native_request_state_t *state = (native_request_state_t*) memory.memory;
-  state->surface_promise = promise;
-  state->airlock = get_process_airlock(process);
-  state->result = pton_null();
-  state->callback = unary_callback_new_1(on_native_request_success, p2o(state));
+  foreign_request_state_t *state = (foreign_request_state_t*) memory.memory;
+  unary_callback_t *callback = unary_callback_new_1(on_foreign_request_success, p2o(state));
+  foreign_request_state_init(state, callback, get_process_airlock(process),
+      promise, pton_null());
   native_request_t *request = &state->request;
   opaque_promise_t *impl_promise = opaque_promise_empty();
   pton_arena_t *arena = pton_new_arena();
@@ -160,14 +168,27 @@ value_t native_requests_state_new(runtime_t *runtime, value_t process,
   return success();
 }
 
-void native_request_state_destroy(native_request_state_t *state) {
+void foreign_request_state_destroy(foreign_request_state_t *state) {
   callback_destroy(state->callback);
   opaque_promise_destroy(state->request.impl_promise);
   pton_dispose_arena(state->request.arena);
-  allocator_default_free(new_memory_block(state, sizeof(native_request_state_t)));
+  allocator_default_free(new_memory_block(state, sizeof(foreign_request_state_t)));
 }
 
-#include "utils/log.h"
+value_t incoming_request_state_new(value_t surface_promise,
+    incoming_request_state_t **result_out) {
+  memory_block_t memory = allocator_default_malloc(sizeof(incoming_request_state_t));
+  if (memory_block_is_empty(memory))
+    return new_system_call_failed_condition("malloc");
+  incoming_request_state_t *state = (incoming_request_state_t*) memory.memory;
+  state->surface_promise = surface_promise;
+  *result_out = state;
+  return success();
+}
+
+void incoming_request_state_destroy(incoming_request_state_t *state) {
+  allocator_default_free(new_memory_block(state, sizeof(incoming_request_state_t)));
+}
 
 // Create a plankton-ified copy of the raw arguments.
 static value_t foreign_service_clone_args(pton_arena_t *arena, value_t raw_args,
@@ -213,11 +234,11 @@ static value_t foreign_service_call_with_args(builtin_arguments_t *args) {
   unary_callback_t *impl = (unary_callback_t*) impl_ptr;
   // Got an implementation. Now we can start allocating stuff.
   runtime_t *runtime = get_builtin_runtime(args);
-  native_request_state_t *state = NULL;
+  foreign_request_state_t *state = NULL;
   value_t process = get_builtin_process(args);
-  TRY(native_requests_state_new(runtime, process, &state));
+  TRY(foreign_request_state_new(runtime, process, &state));
   TRY(foreign_service_clone_args(state->request.arena, reified, &state->request.args));
-  get_process_airlock(process)->open_request_count++;
+  get_process_airlock(process)->open_foreign_request_count++;
   unary_callback_call(impl, p2o(&state->request));
   return state->surface_promise;
 }
@@ -226,5 +247,48 @@ value_t add_foreign_service_builtin_implementations(runtime_t *runtime,
     safe_value_t s_map) {
   ADD_BUILTIN_IMPL_MAY_ESCAPE("foreign_service.call_with_args", 2, 1,
       foreign_service_call_with_args);
+  return success();
+}
+
+
+/// ## Exported service
+
+FIXED_GET_MODE_IMPL(exported_service, vmMutable);
+GET_FAMILY_PRIMARY_TYPE_IMPL(exported_service);
+TRIVIAL_PRINT_ON_IMPL(ExportedService, exported_service);
+
+ACCESSORS_IMPL(ExportedService, exported_service, acInFamily, ofVoidP,
+    CapsulePtr, capsule_ptr);
+ACCESSORS_IMPL(ExportedService, exported_service, acInFamily, ofProcess,
+    Process, process);
+ACCESSORS_IMPL(ExportedService, exported_service, acNoCheck, 0, Handler,
+    handler);
+
+value_t exported_service_validate(value_t self) {
+  VALIDATE_FAMILY(ofExportedService, self);
+  VALIDATE_FAMILY(ofVoidP, get_exported_service_capsule_ptr(self));
+  VALIDATE_FAMILY(ofProcess, get_exported_service_process(self));
+  return success();
+}
+
+static value_t exported_service_call_with_args(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofExportedService, self);
+  value_t reified = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofReifiedArguments, reified);
+  runtime_t *runtime = get_builtin_runtime(args);
+  incoming_request_state_t *state = NULL;
+  TRY_DEF(promise, new_heap_pending_promise(runtime));
+  TRY(incoming_request_state_new(promise, &state));
+  value_t process = get_exported_service_process(self);
+  process_airlock_t *airlock = get_process_airlock(process);
+  process_airlock_schedule_incoming_request(airlock, state);
+  return promise;
+}
+
+value_t add_exported_service_builtin_implementations(runtime_t *runtime,
+    safe_value_t s_map) {
+  ADD_BUILTIN_IMPL_MAY_ESCAPE("exported_service.call_with_args", 1, 1,
+      exported_service_call_with_args);
   return success();
 }

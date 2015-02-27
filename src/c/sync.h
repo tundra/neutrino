@@ -74,13 +74,13 @@ static bool is_promise_state_resolved(value_t self) {
 }
 
 
-/// ## Native service
+/// ## Foreign service
 ///
-/// A native remote is a remote process that is immediately backed by an
+/// A foreign service is a remote process that is immediately backed by an
 /// in-process native implementation.
 
-// Extra state maintained around a native request.
-struct native_request_state_t {
+// Extra state maintained around a foreign request.
+struct foreign_request_state_t {
   // The part of the data that will be passed to the native impl.
   native_request_t request;
   // The callback that will be called; kept around so we can destroy it later.
@@ -95,13 +95,17 @@ struct native_request_state_t {
   pton_variant_t result;
 };
 
+void foreign_request_state_init(foreign_request_state_t *state,
+    unary_callback_t *callback, process_airlock_t *airlock,
+    value_t surface_promise, pton_variant_t result);
+
 // Create an initialize a new native request state. Note that the arguments
 // will not have been set, this only initializes the rest.
-value_t native_requests_state_new(runtime_t *runtime, value_t process,
-    native_request_state_t **result_out);
+value_t foreign_request_state_new(runtime_t *runtime, value_t process,
+    foreign_request_state_t **result_out);
 
 // Destroy the given state.
-void native_request_state_destroy(native_request_state_t *state);
+void foreign_request_state_destroy(foreign_request_state_t *state);
 
 static const size_t kForeignServiceSize = HEAP_OBJECT_SIZE(2);
 static const size_t kForeignServiceImplsOffset = HEAP_OBJECT_FIELD_OFFSET(0);
@@ -113,5 +117,35 @@ FROZEN_ACCESSORS_DECL(foreign_service, impls);
 // Display name used to identify the value.
 FROZEN_ACCESSORS_DECL(foreign_service, display_name);
 
+
+/// ## Exported service
+
+// Extra state maintained around a request to an exported service.
+struct incoming_request_state_t {
+  value_t surface_promise;
+};
+
+value_t incoming_request_state_new(value_t surface_promise,
+    incoming_request_state_t **result_out);
+
+void incoming_request_state_destroy(incoming_request_state_t *state);
+
+typedef struct {
+  size_t placeholder;
+} exported_service_capsule_t;
+
+static const size_t kExportedServiceSize = HEAP_OBJECT_SIZE(3);
+static const size_t kExportedServiceCapsulePtrOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kExportedServiceProcessOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kExportedServiceHandlerOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+
+// This service's capsule of externally visible data.
+ACCESSORS_DECL(exported_service, capsule_ptr);
+
+// The process to which this service belongs.
+ACCESSORS_DECL(exported_service, process);
+
+// The handler object that implements the service's behavior.
+ACCESSORS_DECL(exported_service, handler);
 
 #endif // _SYNC

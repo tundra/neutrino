@@ -409,6 +409,7 @@ static inline value_t chase_moved_object(value_t raw) {
   F(DecimalFraction,         decimal_fraction,          _, _, (_, _, X, _, _, _, _, _, _, _), 25)\
   F(EnsureAst,               ensure_ast,                X, X, (_, _, X, _, _, _, X, _, _, _), 74)\
   F(Escape,                  escape,                    _, X, (_, _, _, _, _, _, _, _, _, _), 50)\
+  F(ExportedService,         exported_service,          _, X, (_, _, _, _, _, _, _, _, _, _), 91)\
   F(Factory,                 factory,                   _, _, (_, _, _, _, _, _, _, _, _, _),  5)\
   F(FifoBuffer,              fifo_buffer,               _, _, (_, _, _, _, _, _, _, _, _, _), 81)\
   F(ForeignService,          foreign_service,           _, X, (_, _, _, _, _, _, _, _, _, _), 90)\
@@ -421,6 +422,7 @@ static inline value_t chase_moved_object(value_t raw) {
   F(HashSource,              hash_source,               _, X, (_, _, _, _, X, _, _, _, _, _), 86)\
   F(Identifier,              identifier,                X, _, (X, X, X, _, _, _, _, _, _, _), 27)\
   F(IdHashMap,               id_hash_map,               X, X, (_, _, _, _, _, X, _, X, _, _), 24)\
+  F(IncomingRequestThunk,    incoming_request_thunk,    _, X, (_, _, _, _, _, _, _, _, _, _), 92)\
   F(Instance,                instance,                  _, X, (_, _, X, _, _, _, _, X, _, _), 60)\
   F(InstanceManager,         instance_manager,          _, X, (_, _, _, _, _, _, _, _, _, _),  3)\
   F(InvocationAst,           invocation_ast,            X, X, (_, _, X, _, _, _, X, _, _, _),  4)\
@@ -478,7 +480,7 @@ static inline value_t chase_moved_object(value_t raw) {
 // family enum values are not the raw ordinals but the ordinals shifted left by
 // the tag size so that they're tagged as integers. Those values are sometimes
 // stored as uint16s so the ordinals are allowed to take up to 14 bits.
-static const int kNextFamilyOrdinal = 91;
+static const int kNextFamilyOrdinal = 93;
 
 // Enumerates all the object families.
 #define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \

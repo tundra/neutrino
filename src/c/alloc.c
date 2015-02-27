@@ -784,6 +784,25 @@ value_t new_heap_foreign_service(runtime_t *runtime, service_descriptor_t *impl)
   return post_create_sanity_check(result, size);
 }
 
+value_t new_heap_exported_service(runtime_t *runtime, value_t process,
+    value_t handler) {
+  size_t size = kExportedServiceSize;
+  TRY_DEF(capsule_ptr, new_heap_void_p(runtime, NULL));
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, exported_service_species)));
+  set_exported_service_capsule_ptr(result, capsule_ptr);
+  set_exported_service_process(result, process);
+  set_exported_service_handler(result, handler);
+  return post_create_sanity_check(result, size);
+}
+
+value_t new_heap_incoming_request_thunk(runtime_t *runtime, value_t args) {
+  size_t size = kIncomingRequestThunkSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, incoming_request_thunk_species)));
+  return post_create_sanity_check(result, size);
+}
+
 
 // --- M e t h o d ---
 

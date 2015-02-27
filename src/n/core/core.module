@@ -10,6 +10,7 @@ module $core {
     "control.n",
     "core.n",
     "escape.n",
+    "exported_service.n",
     "float32.n",
     "foreign_service.n",
     "function.n",

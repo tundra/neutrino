@@ -88,6 +88,15 @@ static value_t ctrino_new_array(builtin_arguments_t *args) {
   return new_heap_array(get_builtin_runtime(args), get_integer_value(length));
 }
 
+static value_t ctrino_new_exported_service(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t handler = get_builtin_argument(args, 0);
+  CHECK_C_OBJECT_TAG(btCtrino, self);
+  runtime_t *runtime = get_builtin_runtime(args);
+  value_t process = get_builtin_process(args);
+  return new_heap_exported_service(runtime, process, handler);
+}
+
 static value_t ctrino_new_float_32(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t decimal = get_builtin_argument(args, 0);
@@ -227,7 +236,7 @@ static value_t ctrino_new_global_hash_oracle(builtin_arguments_t *args) {
   return new_heap_hash_oracle(runtime, source);
 }
 
-#define kCtrinoMethodCount 19
+#define kCtrinoMethodCount 20
 static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("builtin", 1, ctrino_builtin),
   BUILTIN_METHOD("delay", 3, ctrino_delay),
@@ -238,6 +247,7 @@ static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("is_frozen?", 1, ctrino_is_frozen),
   BUILTIN_METHOD("log_info", 1, ctrino_log_info),
   BUILTIN_METHOD("new_array", 1, ctrino_new_array),
+  BUILTIN_METHOD("new_exported_service", 1, ctrino_new_exported_service),
   BUILTIN_METHOD("new_float_32", 1, ctrino_new_float_32),
   BUILTIN_METHOD("new_function", 1, ctrino_new_function),
   BUILTIN_METHOD("new_hash_source", 1, ctrino_new_hash_source),

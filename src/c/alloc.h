@@ -268,6 +268,13 @@ value_t new_heap_reified_arguments(runtime_t *runtime, value_t params,
 // Creates a new native remote instance.
 value_t new_heap_foreign_service(runtime_t *runtime, service_descriptor_t *impl);
 
+// Creates a new exported service that delegates to the given handler.
+value_t new_heap_exported_service(runtime_t *runtime, value_t process,
+    value_t handler);
+
+// Creates a new incoming request thunk value.
+value_t new_heap_incoming_request_thunk(runtime_t *runtime, value_t args);
+
 
 // --- M e t h o d ---
 
