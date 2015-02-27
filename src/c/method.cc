@@ -414,93 +414,48 @@ value_t FrameSigmapInputWithNexts::match_value_at(size_t index, value_t guard,
   }
 }
 
-// Lookup input that gets values from a call data object.
-class CallDataSigmapInput : public AbstractSigmapInput {
+// Lookup input that gets values from an array.
+class ValueArraySigmapInput : public AbstractSigmapInput {
 public:
-  CallDataSigmapInput(sigmap_input_layout_t *layout, value_t call_data);
+  ValueArraySigmapInput(sigmap_input_layout_t *layout, value_t values);
   value_t get_value_at(size_t param_index);
   value_t match_value_at(size_t param_index, value_t guard, value_t space,
       value_t *score_out);
   value_t get_subject();
   value_t get_selector();
 private:
-  value_t call_data_;
+  value_t values_;
 };
 
-CallDataSigmapInput::CallDataSigmapInput(sigmap_input_layout_t *layout,
-    value_t call_data)
+ValueArraySigmapInput::ValueArraySigmapInput(sigmap_input_layout_t *layout,
+    value_t values)
   : AbstractSigmapInput(layout)
-  , call_data_(call_data) { }
+  , values_(values) { }
 
-value_t CallDataSigmapInput::get_value_at(size_t param_index) {
-  return get_call_data_value_at(call_data_, param_index);
+value_t ValueArraySigmapInput::get_value_at(size_t param_index) {
+  size_t offset = get_call_tags_offset_at(get_tags(), param_index);
+  return get_array_at(values_, offset);
 }
 
-value_t CallDataSigmapInput::get_subject() {
+value_t ValueArraySigmapInput::get_subject() {
   value_t offset = get_call_tags_subject_offset(get_tags());
   return is_nothing(offset)
       ? nothing()
-      : get_call_data_value_at(call_data_, get_integer_value(offset));
+      : get_value_at(get_integer_value(offset));
 }
 
-value_t CallDataSigmapInput::get_selector() {
+value_t ValueArraySigmapInput::get_selector() {
   value_t offset = get_call_tags_selector_offset(get_tags());
   return is_nothing(offset)
       ? nothing()
-      : get_call_data_value_at(call_data_, get_integer_value(offset));
+      : get_value_at(get_integer_value(offset));
 }
 
-value_t CallDataSigmapInput::match_value_at(size_t param_index, value_t guard,
+value_t ValueArraySigmapInput::match_value_at(size_t param_index, value_t guard,
     value_t space, value_t *score_out) {
-  value_t value = get_call_data_value_at(call_data_, param_index);
-  return guard_match(guard, value, get_runtime(), space, score_out);
-}
-
-// Lookup input that gets values from a call data object.
-class ReifiedArgumentsSigmapInput : public AbstractSigmapInput {
-public:
-  ReifiedArgumentsSigmapInput(sigmap_input_layout_t *layout, value_t reified);
-  value_t get_value_at(size_t param_index);
-  value_t match_value_at(size_t param_index, value_t guard, value_t space,
-      value_t *score_out);
-  value_t get_subject();
-  value_t get_selector();
-private:
-  value_t reified_;
-};
-
-ReifiedArgumentsSigmapInput::ReifiedArgumentsSigmapInput(sigmap_input_layout_t *layout,
-    value_t reified)
-  : AbstractSigmapInput(layout)
-  , reified_(reified) { }
-
-value_t ReifiedArgumentsSigmapInput::get_value_at(size_t param_index) {
-  value_t tags = get_reified_arguments_tags(reified_);
-  size_t offset = get_call_tags_offset_at(tags, param_index);
-  value_t values = get_reified_arguments_values(reified_);
-  return get_array_at(values, offset);
-}
-
-value_t ReifiedArgumentsSigmapInput::get_subject() {
-  value_t offset = get_call_tags_subject_offset(get_tags());
-  return is_nothing(offset)
-      ? nothing()
-      : get_value_at(get_integer_value(offset));
-}
-
-value_t ReifiedArgumentsSigmapInput::get_selector() {
-  value_t offset = get_call_tags_selector_offset(get_tags());
-  return is_nothing(offset)
-      ? nothing()
-      : get_value_at(get_integer_value(offset));
-}
-
-value_t ReifiedArgumentsSigmapInput::match_value_at(size_t param_index,
-    value_t guard, value_t space, value_t *score_out) {
   value_t value = get_value_at(param_index);
   return guard_match(guard, value, get_runtime(), space, score_out);
 }
-
 
 
 /// ## Outputs
@@ -750,7 +705,7 @@ value_t match_signature_from_frame(value_t self, sigmap_input_layout_t *layout,
 value_t match_signature_from_call_data(value_t self, sigmap_input_layout_t *layout,
     value_t call_data, value_t space, match_info_t *match_info,
     match_result_t *result_out) {
-  CallDataSigmapInput in(layout, call_data);
+  ValueArraySigmapInput in(layout, get_call_data_values(call_data));
   return generic_match_signature(self, &in, space, match_info, result_out);
 }
 
@@ -768,19 +723,11 @@ value_t lookup_method_full_from_frame(sigmap_input_layout_t *layout,
   }
 }
 
-value_t lookup_method_full_from_call_data(sigmap_input_layout_t *layout,
-    value_t call_data, value_t *arg_map_out) {
+value_t lookup_method_full_from_value_array(sigmap_input_layout_t *layout,
+    value_t values, value_t *arg_map_out) {
   UniqueBestMatchOutput out;
-  CallDataSigmapInput in(layout, call_data);
-  InvocationThunk<CallDataSigmapInput, UniqueBestMatchOutput> thunk(&in, arg_map_out);
-  return generic_lookup_method(&thunk, &in, &out);
-}
-
-value_t lookup_method_full_from_reified_arguments(sigmap_input_layout_t *layout,
-    value_t reified, value_t *arg_map_out) {
-  UniqueBestMatchOutput out;
-  ReifiedArgumentsSigmapInput in(layout, reified);
-  InvocationThunk<ReifiedArgumentsSigmapInput, UniqueBestMatchOutput> thunk(&in,
+  ValueArraySigmapInput in(layout, values);
+  InvocationThunk<ValueArraySigmapInput, UniqueBestMatchOutput> thunk(&in,
       arg_map_out);
   return generic_lookup_method(&thunk, &in, &out);
 }
