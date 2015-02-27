@@ -285,7 +285,10 @@ value_t assembler_emit_delegate_lambda_call(assembler_t *assm);
 value_t assembler_emit_delegate_block_call(assembler_t *assm);
 
 // Invoke a call data in the given module.
-value_t assembler_emit_module_fragment_private_invoke(assembler_t *assm);
+value_t assembler_emit_module_fragment_private_invoke_call_data(assembler_t *assm);
+
+// Invoke a reified arguments set in the given module.
+value_t assembler_emit_module_fragment_private_invoke_reified_arguments(assembler_t *assm);
 
 // Capture an escape, pushing it onto the stack. The offset_out is a cursor
 // where the offset to jump to when returning to the escape should be written.

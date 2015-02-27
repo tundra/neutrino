@@ -9,6 +9,7 @@ file_names = [
   "anything.n",
   "array.n",
   "args_reified.n",
+  "args_reified_invoke.n",
   "async.n",
   "block_arguments.n",
   "block_liveness.n",

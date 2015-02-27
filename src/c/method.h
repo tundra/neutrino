@@ -336,6 +336,13 @@ value_t lookup_method_full_from_frame(sigmap_input_layout_t *layout,
 value_t lookup_method_full_from_call_data(sigmap_input_layout_t *layout,
     value_t call_data, value_t *arg_map_out);
 
+// Looks up a method in the given fragment given a set of inputs, including
+// resolving lambda and block methods. If the match is successful, as a
+// side-effect stores an argument map that maps between the result's parameters
+// and argument offsets on the stack.
+value_t lookup_method_full_from_reified_arguments(sigmap_input_layout_t *layout,
+    value_t reified, value_t *arg_map_out);
+
 // Looks up a value in a methodspace, taking input from the given frame.
 value_t lookup_methodspace_method_from_frame(sigmap_input_layout_t *layout,
     frame_t *frame, value_t methodspace, value_t *arg_map_out);

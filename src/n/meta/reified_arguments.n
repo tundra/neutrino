@@ -15,5 +15,19 @@ def @ReifiedArguments := @ctrino.get_builtin_type("ReifiedArguments");
 ## given tag is identity comparison so even if your argument considers itself
 ## to be, for instance, == with 0, only 0 the integer will actually give the
 ## 0'th argument.
+##
+## If the tag isn't present a .no_such_tag signal is raised.
 @ctrino.builtin("reified_arguments[]")
 def ($this is @ReifiedArguments)[$tag];
+
+## Return a new reified arguments set where the value of the argument with the
+## given tag has been set to the given value.
+##
+## Each parameter can have multiple tags and if the corresponding parameter has
+## other tags this replaces the value for those other tags too, such that the
+## result behaves as if the given value were passed instead of the one that
+## actually was. This is typically what you want for delegating calls.
+##
+## If the tag isn't present a .no_such_tag signal is raised.
+@ctrino.builtin("reified_arguments.replace_argument")
+def ($this is @ReifiedArguments).replace_argument($tag, $value);

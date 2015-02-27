@@ -1151,6 +1151,26 @@ void *get_void_p_value(value_t value);
 
 // --- A r r a y ---
 
+// A generic array of values.
+typedef struct {
+  // Beginning of the array. Can be NULL if the array is empty.
+  value_t *start;
+  // Length of the array in values.
+  size_t length;
+} value_array_t;
+
+// Shorthand for creating a new value array struct.
+static value_array_t new_value_array(value_t *start, size_t length) {
+  value_array_t result = {start, length};
+  return result;
+}
+
+// Write the contents of the source array into the destination.
+void value_array_copy_to(value_array_t dest, value_array_t src);
+
+// Fills the given array with the given value.
+void value_array_fill(value_array_t dest, value_t value);
+
 static const size_t kArrayLengthOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kArrayElementsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
@@ -1167,12 +1187,15 @@ value_t get_array_at(value_t value, size_t index);
 // Sets the index'th element in the given array.
 void set_array_at(value_t value, size_t index, value_t element);
 
-// Returns the underlying array element array.
-value_t *get_array_elements(value_t value);
+// Returns a pointer to the beginning of the underlying element array.
+value_t *get_array_start(value_t value);
+
+// Returns the elements of this array as a value array.
+value_array_t get_array_elements(value_t self);
 
 // Does the same as get_array_elements but without any sanity checks which means
 // that it can be used during garbage collection. Don't use it anywhere else.
-value_t *get_array_elements_unchecked(value_t value);
+value_t *get_array_start_unchecked(value_t value);
 
 // Sorts the given array. If there are any errors, for instance if some of the
 // values are not comparable, a condition is returned.

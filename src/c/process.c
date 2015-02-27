@@ -1007,22 +1007,22 @@ value_t reified_arguments_validate(value_t self) {
   return success();
 }
 
-static value_t reified_arguments_get_at(builtin_arguments_t *args) {
-  value_t self = get_builtin_subject(args);
-  CHECK_FAMILY(ofReifiedArguments, self);
-  value_t tag = get_builtin_argument(args, 0);
-
-  // First try to find the argument based on the tags used by the caller. This
-  // will usually work.
+// If there is an argument corresponding to the given tag, store the value array
+// index that holds the value in the out param and return true. Otherwise return
+// false.
+static bool reified_arguments_get_value_index(value_t self, value_t tag,
+    size_t *index_out) {
+  // First try to find the argument based on the tags used by the caller. The
+  // expectation is that this will usually work.
   value_t call_tags = get_reified_arguments_tags(self);
   size_t argc = get_call_tags_entry_count(call_tags);
   for (size_t ia = 0; ia < argc; ia++) {
     value_t candidate = get_call_tags_tag_at(call_tags, ia);
     if (value_identity_compare(candidate, tag)) {
       // Found it among the arguments.
-      value_t values = get_reified_arguments_values(self);
       size_t offset = get_call_tags_offset_at(call_tags, ia);
-      return get_array_at(values, offset);
+      *index_out = offset;
+      return true;
     }
   }
 
@@ -1039,19 +1039,51 @@ static value_t reified_arguments_get_at(builtin_arguments_t *args) {
       value_t candidate = get_array_at(tags, it);
       if (value_identity_compare(candidate, tag)) {
         // Found it among the parameters!
-        value_t values = get_reified_arguments_values(self);
         value_t argmap = get_reified_arguments_argmap(self);
         size_t eval_index = get_integer_value(get_array_at(argmap, ip));
-        return get_array_at(values, eval_index);
+        *index_out = eval_index;
+        return true;
       }
     }
   }
 
-  ESCAPE_BUILTIN(args, no_such_tag, tag);
+  return false;
+}
+
+static value_t reified_arguments_get_at(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofReifiedArguments, self);
+  value_t tag = get_builtin_argument(args, 0);
+  size_t index = 0;
+  if (!reified_arguments_get_value_index(self, tag, &index))
+    ESCAPE_BUILTIN(args, no_such_tag, tag);
+  value_t values = get_reified_arguments_values(self);
+  return get_array_at(values, index);
+}
+
+static value_t reified_arguments_replace_argument(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofReifiedArguments, self);
+  value_t tag = get_builtin_argument(args, 0);
+  size_t index = 0;
+  if (!reified_arguments_get_value_index(self, tag, &index))
+    ESCAPE_BUILTIN(args, no_such_tag, tag);
+  value_t old_values = get_reified_arguments_values(self);
+  runtime_t *runtime = get_builtin_runtime(args);
+  // Found the index to replace. Clone the values array and replace the value.
+  value_t new_value = get_builtin_argument(args, 1);
+  size_t argc = get_array_length(old_values);
+  TRY_DEF(new_values, new_heap_array(runtime, argc));
+  value_array_copy_to(get_array_elements(new_values), get_array_elements(old_values));
+  set_array_at(new_values, index, new_value);
+  return new_heap_reified_arguments(runtime, get_reified_arguments_params(self),
+      new_values, get_reified_arguments_argmap(self), get_reified_arguments_tags(self));
 }
 
 value_t add_reified_arguments_builtin_implementations(runtime_t *runtime,
     safe_value_t s_map) {
   ADD_BUILTIN_IMPL_MAY_ESCAPE("reified_arguments[]", 1, 1, reified_arguments_get_at);
+  ADD_BUILTIN_IMPL_MAY_ESCAPE("reified_arguments.replace_argument", 2, 1,
+      reified_arguments_replace_argument);
   return success();
 }

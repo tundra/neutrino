@@ -142,8 +142,50 @@ def $test_failures() {
   def $k := $keyword(20, 21, 22);
   $assert:equals("d", try $k["d"] on.no_such_tag($t) => $t);
   $assert:equals(4, try $k[4] on.no_such_tag($t) => $t);
+  $assert:equals("d", try $k.replace_argument("d", 0) on.no_such_tag($t) => $t);
+  $assert:equals(4, try $k.replace_argument(4, 0) on.no_such_tag($t) => $t);
   def $e := $extra(23, 24, 25);
   $assert:equals(4, try $e[4] on.no_such_tag($t) => $t);
+  $assert:equals(4, try $e.replace_argument(4, 0) on.no_such_tag($t) => $t);
+}
+
+def $test_replace() {
+  def $k0 := $keyword(60, 61, 62);
+  $assert:equals($keyword, $k0[subject]);
+  $assert:equals(op(), $k0[selector]);
+  $assert:equals(60, $k0[0]);
+  $assert:equals(61, $k0[1]);
+  $assert:equals(62, $k0[2]);
+  $assert:equals(60, $k0["a"]);
+  $assert:equals(61, $k0["b"]);
+  $assert:equals(62, $k0["c"]);
+  def $k1 := $k0.replace_argument(subject, $reverse);
+  $assert:equals($reverse, $k1[subject]);
+  $assert:equals(op(), $k1[selector]);
+  $assert:equals(60, $k1[0]);
+  $assert:equals(61, $k1[1]);
+  $assert:equals(62, $k1[2]);
+  $assert:equals(60, $k1["a"]);
+  $assert:equals(61, $k1["b"]);
+  $assert:equals(62, $k1["c"]);
+  def $k2 := $k1.replace_argument(0, 63);
+  $assert:equals($reverse, $k2[subject]);
+  $assert:equals(op(), $k2[selector]);
+  $assert:equals(63, $k2[0]);
+  $assert:equals(61, $k2[1]);
+  $assert:equals(62, $k2[2]);
+  $assert:equals(63, $k2["a"]);
+  $assert:equals(61, $k2["b"]);
+  $assert:equals(62, $k2["c"]);
+  def $k3 := $k2.replace_argument("c", 64);
+  $assert:equals($reverse, $k3[subject]);
+  $assert:equals(op(), $k3[selector]);
+  $assert:equals(63, $k3[0]);
+  $assert:equals(61, $k3[1]);
+  $assert:equals(64, $k3[2]);
+  $assert:equals(63, $k3["a"]);
+  $assert:equals(61, $k3["b"]);
+  $assert:equals(64, $k3["c"]);
 }
 
 do {
@@ -153,4 +195,5 @@ do {
   $test_failures();
   $test_extra();
   $test_reverse();
+  $test_replace();
 }

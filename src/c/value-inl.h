@@ -94,7 +94,7 @@ static value_t get_tuple_second(value_t self) {
 // Returns a value array pointing at the given range within the given array.
 static value_array_t alloc_array_block(value_t self, size_t start, size_t length) {
   CHECK_REL("out of bounds", start + length, <=, get_array_length(self));
-  return new_value_array(get_array_elements(self) + start, length);
+  return new_value_array(get_array_start(self) + start, length);
 }
 
 

@@ -333,17 +333,3 @@ void wordy_encode(int64_t signed_value, char *buf, size_t bufc) {
   // to be in the least significant bits, it's easier to read if values with
   // different low bits result in words with differences to the left.
 }
-
-
-// --- V a l u e   a r r a y ---
-
-void value_array_copy_to(value_array_t *src, value_array_t *dest) {
-  CHECK_REL("array copy destination too small", dest->length, >=,
-      src->length);
-  memcpy(dest->start, src->start, src->length * kValueSize);
-}
-
-void value_array_fill(value_array_t dest, value_t value) {
-  for (size_t i = 0; i < dest.length; i++)
-    dest.start[i] = value;
-}

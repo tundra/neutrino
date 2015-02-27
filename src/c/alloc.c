@@ -296,7 +296,7 @@ value_t new_heap_c_object(runtime_t *runtime, alloc_flags_t flags, value_t speci
   value_array_t object_values = get_mutable_c_object_values(result);
   if (init_values.length < info.value_count)
     value_array_fill(object_values, null());
-  value_array_copy_to(&init_values, &object_values);
+  value_array_copy_to(object_values, init_values);
   TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }

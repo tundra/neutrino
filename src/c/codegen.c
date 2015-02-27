@@ -416,8 +416,14 @@ value_t assembler_emit_delegate_block_call(assembler_t *assm) {
   return success();
 }
 
-value_t assembler_emit_module_fragment_private_invoke(assembler_t *assm) {
-  assembler_emit_opcode(assm, ocModuleFragmentPrivateInvoke);
+value_t assembler_emit_module_fragment_private_invoke_call_data(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocModuleFragmentPrivateInvokeCallData);
+  assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
+value_t assembler_emit_module_fragment_private_invoke_reified_arguments(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocModuleFragmentPrivateInvokeReifiedArguments);
   assembler_adjust_stack_height(assm, +1);
   return success();
 }

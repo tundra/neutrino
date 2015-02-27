@@ -248,26 +248,4 @@ void base64_decode(utf8_t str, byte_buffer_t *out);
 void wordy_encode(int64_t value, char *buf, size_t bufc);
 
 
-/// ## Value array
-
-// A generic array of values.
-typedef struct {
-  // Beginning of the array. Can be NULL if the array is empty.
-  value_t *start;
-  // Length of the array in values.
-  size_t length;
-} value_array_t;
-
-// Shorthand for creating a new value array struct.
-static value_array_t new_value_array(value_t *start, size_t length) {
-  value_array_t result = {start, length};
-  return result;
-}
-
-// Write the contents of the source array into the destination.
-void value_array_copy_to(value_array_t *src, value_array_t *dest);
-
-// Fills the given array with the given value.
-void value_array_fill(value_array_t dest, value_t value);
-
 #endif // _UTILS

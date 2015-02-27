@@ -674,23 +674,39 @@ value_t get_array_at(value_t value, size_t index) {
   CHECK_FAMILY(ofArray, value);
   COND_CHECK_TRUE("array index out of bounds", ccOutOfBounds,
       index < get_array_length(value));
-  return get_array_elements(value)[index];
+  return get_array_start(value)[index];
 }
 
 void set_array_at(value_t value, size_t index, value_t element) {
   CHECK_FAMILY(ofArray, value);
   CHECK_MUTABLE(value);
   CHECK_REL("array index out of bounds", index, <, get_array_length(value));
-  get_array_elements(value)[index] = element;
+  get_array_start(value)[index] = element;
 }
 
-value_t *get_array_elements(value_t value) {
+value_t *get_array_start(value_t value) {
   CHECK_FAMILY(ofArray, value);
-  return get_array_elements_unchecked(value);
+  return get_array_start_unchecked(value);
 }
 
-value_t *get_array_elements_unchecked(value_t value) {
+value_t *get_array_start_unchecked(value_t value) {
   return access_heap_object_field(value, kArrayElementsOffset);
+}
+
+value_array_t get_array_elements(value_t self) {
+  CHECK_FAMILY(ofArray, self);
+  return new_value_array(get_array_start(self), get_array_length(self));
+}
+
+void value_array_copy_to(value_array_t dest, value_array_t src) {
+  CHECK_REL("array copy destination too small", dest.length, >=,
+      src.length);
+  memcpy(dest.start, src.start, src.length * kValueSize);
+}
+
+void value_array_fill(value_array_t dest, value_t value) {
+  for (size_t i = 0; i < dest.length; i++)
+    dest.start[i] = value;
 }
 
 value_t array_validate(value_t value) {
@@ -750,7 +766,7 @@ value_t sort_array_partial(value_t value, size_t elmc) {
   CHECK_FAMILY(ofArray, value);
   CHECK_MUTABLE(value);
   CHECK_REL("sorting out of bounds", elmc, <=, get_array_length(value));
-  value_t *elements = get_array_elements(value);
+  value_t *elements = get_array_start(value);
   // Just use qsort. This means that we can't propagate conditions from the
   // compare functions back out but that shouldn't be a huge issue. We'll check
   // on them for now and later on this will have to be rewritten in n anyway.
@@ -796,7 +812,7 @@ value_t co_sort_pair_array(value_t value) {
   size_t length = get_array_length(value);
   CHECK_EQ("pair sorting odd-length array", 0, length & 1);
   size_t pair_count = length >> 1;
-  value_t *elements = get_array_elements(value);
+  value_t *elements = get_array_start(value);
   // The value compare function works in this case too because it'll compare the
   // first value pointed to by its arguments, it doesn't care if there are more
   // values after it.
@@ -1108,7 +1124,7 @@ void get_fifo_buffer_values_at(value_t self, size_t index, value_t *values_out,
     size_t values_size) {
   CHECK_EQ("invalid fifo buffer get", get_fifo_buffer_width(self), values_size);
   size_t node_offset = index * get_fifo_buffer_node_length(self) + kFifoBufferNodeHeaderSize;
-  value_t *nodes_start = get_array_elements(get_fifo_buffer_nodes(self));
+  value_t *nodes_start = get_array_start(get_fifo_buffer_nodes(self));
   memcpy(values_out, nodes_start + node_offset, sizeof(value_t) * values_size);
 }
 
@@ -1116,14 +1132,14 @@ void set_fifo_buffer_values_at(value_t self, size_t index, value_t *values,
     size_t values_size) {
   CHECK_EQ("invalid fifo buffer set", get_fifo_buffer_width(self), values_size);
   size_t node_offset = index * get_fifo_buffer_node_length(self) + kFifoBufferNodeHeaderSize;
-  value_t *nodes_start = get_array_elements(get_fifo_buffer_nodes(self));
+  value_t *nodes_start = get_array_start(get_fifo_buffer_nodes(self));
   memcpy(nodes_start + node_offset, values, sizeof(value_t) * values_size);
 }
 
 void clear_fifo_buffer_values_at(value_t self, size_t index) {
   size_t width = get_fifo_buffer_width(self);
   size_t node_offset = index * get_fifo_buffer_node_length(self) + kFifoBufferNodeHeaderSize;
-  value_t *nodes_start = get_array_elements(get_fifo_buffer_nodes(self));
+  value_t *nodes_start = get_array_start(get_fifo_buffer_nodes(self));
   fast_fill_with_whatever(nodes_start + node_offset, width);
 }
 
@@ -1298,7 +1314,7 @@ INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, OccupiedCount, occupied_count);
 static value_t *get_id_hash_map_entry(value_t map, size_t index) {
   CHECK_REL("map entry out of bounds", index, <, get_id_hash_map_capacity(map));
   value_t array = get_id_hash_map_entry_array(map);
-  return get_array_elements(array) + (index * kIdHashMapEntryFieldCount);
+  return get_array_start(array) + (index * kIdHashMapEntryFieldCount);
 }
 
 // Returns true if the given map entry is not storing a binding.
@@ -1506,13 +1522,13 @@ void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_heap_object,
   // Get the raw entry array from the new map.
   value_t new_entry_array = get_id_hash_map_entry_array(new_heap_object);
   size_t entry_array_length = get_array_length(new_entry_array);
-  value_t *new_entries = get_array_elements(new_entry_array);
+  value_t *new_entries = get_array_start(new_entry_array);
   // Get the raw entry array from the old map. This requires going directly
   // through the object since the nice accessors do sanity checking and the
   // state of the object at this point is, well, not sane.
   value_t old_entry_array = *access_heap_object_field(old_object, kIdHashMapEntryArrayOffset);
   CHECK_DOMAIN(vdMovedObject, get_heap_object_header(old_entry_array));
-  value_t *old_entries = get_array_elements_unchecked(old_entry_array);
+  value_t *old_entries = get_array_start_unchecked(old_entry_array);
   // Copy the contents of the new entry array into the old one and clear it as
   // we go so it's ready to have elements added back.
   for (size_t i = 0; i < entry_array_length; i++) {
@@ -1544,7 +1560,7 @@ void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_heap_object,
 
 void id_hash_map_iter_init(id_hash_map_iter_t *iter, value_t map) {
   value_t entry_array = get_id_hash_map_entry_array(map);
-  iter->entries = get_array_elements(entry_array);
+  iter->entries = get_array_start(entry_array);
   iter->cursor = 0;
   iter->capacity = get_id_hash_map_capacity(map);
   iter->current = NULL;
@@ -2243,8 +2259,13 @@ static value_t module_fragment_private_new_soft_field(builtin_arguments_t *args)
   return new_heap_soft_field(runtime, display_name);
 }
 
-value_t emit_module_fragment_private_invoke(assembler_t *assm) {
-  TRY(assembler_emit_module_fragment_private_invoke(assm));
+value_t emit_module_fragment_private_invoke_call_data(assembler_t *assm) {
+  TRY(assembler_emit_module_fragment_private_invoke_call_data(assm));
+  return success();
+}
+
+value_t emit_module_fragment_private_invoke_reified_arguments(assembler_t *assm) {
+  TRY(assembler_emit_module_fragment_private_invoke_reified_arguments(assm));
   return success();
 }
 
@@ -2256,8 +2277,12 @@ value_t add_module_fragment_private_builtin_implementations(runtime_t *runtime,
       module_fragment_private_new_hard_field);
   ADD_BUILTIN_IMPL("module_fragment_private.new_soft_field", 1,
       module_fragment_private_new_soft_field);
-  TRY(add_custom_method_impl(runtime, deref(s_map), "module_fragment_private.invoke",
-      1, new_flag_set(kFlagSetAllOff), emit_module_fragment_private_invoke));
+  TRY(add_custom_method_impl(runtime, deref(s_map),
+      "module_fragment_private.invoke_call_data", 1, new_flag_set(kFlagSetAllOff),
+      emit_module_fragment_private_invoke_call_data));
+  TRY(add_custom_method_impl(runtime, deref(s_map),
+      "module_fragment_private.invoke_reified_arguments", 1, new_flag_set(kFlagSetAllOff),
+      emit_module_fragment_private_invoke_reified_arguments));
   return success();
 }
 

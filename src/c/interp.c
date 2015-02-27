@@ -782,35 +782,55 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           frame.pc += kCreateCallDataOperationSize;
           break;
         }
-        case ocModuleFragmentPrivateInvoke: {
+        case ocModuleFragmentPrivateInvokeCallData:
+        case ocModuleFragmentPrivateInvokeReifiedArguments: {
           // Perform the method lookup.
           value_t phrivate = frame_get_argument(&frame, 0);
           CHECK_FAMILY(ofModuleFragmentPrivate, phrivate);
-          value_t call_data = frame_get_argument(&frame, 2);
-          CHECK_FAMILY(ofCallData, call_data);
-          value_t arg_map;
-          sigmap_input_layout_t layout = sigmap_input_layout_new(ambience,
-              get_call_data_tags(call_data), nothing());
-          value_t method = lookup_method_full_from_call_data(&layout,
-              call_data, &arg_map);
+          value_t method = whatever();
+          value_t arg_map = whatever();
+          value_t data = frame_get_argument(&frame, 2);
+          size_t argc = 0;
+          if (opcode == ocModuleFragmentPrivateInvokeCallData) {
+            CHECK_FAMILY(ofCallData, data);
+            sigmap_input_layout_t layout = sigmap_input_layout_new(ambience,
+                get_call_data_tags(data), nothing());
+            method = lookup_method_full_from_call_data(&layout, data,
+                &arg_map);
+            value_t values = get_call_data_values(data);
+            argc = get_array_length(values);
+          } else {
+            CHECK_FAMILY(ofReifiedArguments, data);
+            sigmap_input_layout_t layout = sigmap_input_layout_new(ambience,
+                get_reified_arguments_tags(data), nothing());
+            method = lookup_method_full_from_reified_arguments(&layout, data,
+                &arg_map);
+            value_t values = get_reified_arguments_values(data);
+            argc = get_array_length(values);
+          }
           if (in_condition_cause(ccLookupError, method))
             E_RETURN(signal_lookup_error(runtime, stack, &frame));
           E_TRY(method);
           E_TRY_DEF(code_block, ensure_method_code(runtime, method));
-          frame.pc += kModuleFragmentPrivateInvokeOperationSize;
+          frame.pc += kModuleFragmentPrivateInvokeCallDataOperationSize;
           // Method lookup succeeded. Build the frame that holds the arguments.
-          value_t values = get_call_data_values(call_data);
-          size_t argc = get_array_length(values);
           // The argument frame needs room for all the arguments as well as
           // the return value.
           value_t pushed = push_stack_frame(runtime, stack, &frame, argc + 1, nothing());
           if (is_condition(pushed)) {
-            frame.pc -= kModuleFragmentPrivateInvokeOperationSize;
+            frame.pc -= kModuleFragmentPrivateInvokeCallDataOperationSize;
             E_RETURN(pushed);
           }
           frame_set_code_block(&frame, ROOT(runtime, return_code_block));
-          for (size_t i = 0; i < argc; i++)
-            frame_push_value(&frame, get_array_at(values, argc - i - 1));
+          if (opcode == ocModuleFragmentPrivateInvokeCallData) {
+            value_t values = get_call_data_values(data);
+            for (size_t i = 0; i < argc; i++)
+              frame_push_value(&frame, get_array_at(values, argc - i - 1));
+          } else {
+            value_t values = get_reified_arguments_values(data);
+            for (size_t i = 0; i < argc; i++)
+              frame_push_value(&frame, get_array_at(values, argc - i - 1));
+          }
           // Then build the method's frame.
           pushed = push_stack_frame(runtime, stack, &frame,
               get_code_block_high_water_mark(code_block), arg_map);
