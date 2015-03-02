@@ -107,6 +107,36 @@ void promise_state_print_on(value_t value, print_on_context_t *context) {
 
 
 /// ## Foreign service
+///
+/// A foreign service is an object that is backed by some mechanism outside
+/// the runtime so requests are serialized and delivered asynchronously. This is
+/// different from an exported service in that exported services receive
+/// requests from the outside, a foreign service delivers requests to the
+/// outside from within the runtime.
+///
+/// Some rules of thumb. Sending a request through a foreign service must be
+/// deterministic within the same turn. Requests may be delivered synchronously
+/// and it's fine for them to fail or succeed immediately, but that result must
+/// not become visible until the next turn at the earliest. In particular,
+/// issuing a request must not fail synchronously for any reason, it must always
+/// succeed even if you know right then and there that it won't succeed and only
+/// fail in a later turn. Otherwise you get nondeterminism bleeding into the
+/// same turn and we only allow nondeterminism that happens, or modulo cheating
+/// appears to happen, between turns.
+///
+/// With regard to throttling and backpressure that should happen at the point
+/// where requests are issued since that's where the initiative to creating the
+/// request lies. In particular, it doesn't make sense to throttle delivery of
+/// responses since what do you do in that case -- exponential backoff? If the
+/// requests keep coming that'll only make things worse. No, throttle at the
+/// point where requests are issued and always, at least if at all possible,
+/// accept responses as they come in.
+///
+/// Since requests may be issued to the underlying implementation synchronously,
+/// and it may deliver responses synchronously too, response delivery should
+/// also not block since otherwise that opens you up to deadlocks. So really,
+/// be sure only to issue a request if you know the response can be delivered,
+/// and delivered without blocking more than a constant short amount.
 
 FIXED_GET_MODE_IMPL(foreign_service, vmDeepFrozen);
 GET_FAMILY_PRIMARY_TYPE_IMPL(foreign_service);
@@ -254,6 +284,10 @@ value_t add_foreign_service_builtin_implementations(runtime_t *runtime,
 
 
 /// ## Exported service
+///
+/// An exported service is a neutrino object made accessible outside the
+/// runtime. Request can be issued asynchronously from there and will be added
+/// to the process' worklist and eventually resolved.
 
 FIXED_GET_MODE_IMPL(exported_service, vmMutable);
 GET_FAMILY_PRIMARY_TYPE_IMPL(exported_service);
