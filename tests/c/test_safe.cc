@@ -162,12 +162,13 @@ TEST(safe, weak) {
 
   // Immediates can't be garbage.
   safe_value_t s_int = runtime_protect_value_with_flags(runtime, new_integer(29),
-      tfWeak);
+      tfAlwaysWeak, NULL);
   ASSERT_FALSE(safe_value_is_garbage(s_int));
 
   // An object only referenced by a weak reference should become garbage.
   value_t a0 = new_heap_array(runtime, 2);
-  safe_value_t s_a0 = runtime_protect_value_with_flags(runtime, a0, tfWeak);
+  safe_value_t s_a0 = runtime_protect_value_with_flags(runtime, a0, tfAlwaysWeak,
+      NULL);
   ASSERT_FALSE(safe_value_is_garbage(s_a0));
   ASSERT_TRUE(is_same_value(a0, deref(s_a0)));
   ASSERT_SUCCESS(runtime_garbage_collect(runtime));
@@ -179,7 +180,8 @@ TEST(safe, weak) {
   value_t a1 = new_heap_array(runtime, 2);
   set_array_at(a1, 0, a1);
   set_array_at(a1, 1, a1);
-  safe_value_t s_a11 = runtime_protect_value_with_flags(runtime, a1, tfWeak);
+  safe_value_t s_a11 = runtime_protect_value_with_flags(runtime, a1, tfAlwaysWeak,
+      NULL);
   safe_value_t s_a12 = runtime_protect_value(runtime, a1);
   ASSERT_FALSE(safe_value_is_garbage(s_a11));
   ASSERT_FALSE(safe_value_is_garbage(s_a12));
@@ -201,10 +203,57 @@ TEST(safe, self_destruct) {
   CREATE_RUNTIME();
 
   value_t arr = new_heap_array(runtime, 5);
-  runtime_protect_value_with_flags(runtime, arr, tfWeak | tfSelfDestruct);
+  runtime_protect_value_with_flags(runtime, arr, tfAlwaysWeak | tfSelfDestruct, NULL);
 
   // This will fail unless the reference created above gets disposed
   // automatically while disposing the runtime and tfSelfDestruct should cause
   // that to happen.
+  DISPOSE_RUNTIME();
+}
+
+// The array argument is considered weak if its first element is set to a
+// nontrivial value.
+static bool is_array_weak(value_t value, void *data) {
+  size_t *count = (size_t*) data;
+  (*count)++;
+  return !is_same_value(get_array_at(value, 0), null());
+}
+
+TEST(safe, maybe_weak) {
+  CREATE_RUNTIME();
+
+  value_t arr = new_heap_array(runtime, 5);
+  protect_value_data_t data;
+  size_t count = 0;
+  data.maybe_weak.is_weak = is_array_weak;
+  data.maybe_weak.is_weak_data = &count;
+  safe_value_t s_arr = runtime_protect_value_with_flags(runtime, arr,
+      tfMaybeWeak, &data);
+  ASSERT_FALSE(safe_value_is_garbage(s_arr));
+
+  // Running a gc calls the weakness predicate exactly once and leaves the
+  // tracker alone.
+  ASSERT_EQ(0, count);
+  ASSERT_SUCCESS(runtime_garbage_collect(runtime));
+  ASSERT_EQ(1, count);
+  ASSERT_FALSE(safe_value_is_garbage(s_arr));
+
+  // Same the second time.
+  ASSERT_SUCCESS(runtime_garbage_collect(runtime));
+  ASSERT_EQ(2, count);
+  ASSERT_FALSE(safe_value_is_garbage(s_arr));
+
+  // Now signal that the array should be considered weak, gc, and observe it
+  // becoming garbage.
+  set_array_at(deref(s_arr), 0, new_integer(0));
+  ASSERT_SUCCESS(runtime_garbage_collect(runtime));
+  ASSERT_EQ(3, count);
+  ASSERT_TRUE(safe_value_is_garbage(s_arr));
+
+  // Gc'ing no longer calls the predicate.
+  ASSERT_SUCCESS(runtime_garbage_collect(runtime));
+  ASSERT_EQ(3, count);
+
+  safe_value_destroy(runtime, s_arr);
   DISPOSE_RUNTIME();
 }

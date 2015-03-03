@@ -302,7 +302,7 @@ safe_value_t runtime_protect_value(runtime_t *runtime, value_t value);
 // Creates a gc-safe reference to the given value whose behavior is defined by
 // the given flags.
 safe_value_t runtime_protect_value_with_flags(runtime_t *runtime, value_t value,
-    uint32_t flags);
+    uint32_t flags, protect_value_data_t *data);
 
 // Initializes an object factory with the default methods for producing objects
 // for a runtime.

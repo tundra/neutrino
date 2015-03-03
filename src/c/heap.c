@@ -156,7 +156,7 @@ static object_tracker_t *object_tracker_iter_get_current(object_tracker_iter_t *
   CHECK_TRUE("object tracker iter get past end",
       object_tracker_iter_has_current(iter));
   CHECK_TRUE("non-weak iter returning weak",
-      iter->include_weak || !object_tracker_is_weak(iter->current));
+      iter->include_weak || !object_tracker_is_currently_weak(iter->current));
   return iter->current;
 }
 
@@ -164,7 +164,7 @@ static object_tracker_t *object_tracker_iter_get_current(object_tracker_iter_t *
 static void object_tracker_skip_ignored(object_tracker_iter_t *iter) {
   if (iter->include_weak)
     return;
-  while (object_tracker_iter_has_current(iter) && object_tracker_is_weak(iter->current))
+  while (object_tracker_iter_has_current(iter) && object_tracker_is_currently_weak(iter->current))
     // Advance by hand since iter_advance would call this one recursively.
     iter->current = iter->current->next;
 }
@@ -187,10 +187,16 @@ static void object_tracker_iter_advance(object_tracker_iter_t *iter) {
   object_tracker_skip_ignored(iter);
 }
 
+size_t object_tracker_size(uint32_t flags) {
+  bool is_maybe_weak = (flags & tfMaybeWeak) != 0;
+  return is_maybe_weak ? sizeof(maybe_weak_object_tracker_t) : sizeof(object_tracker_t);
+}
+
 object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value,
-    uint32_t flags) {
+    uint32_t flags, protect_value_data_t *data) {
   CHECK_FALSE("tracker for immediate", value_is_immediate(value));
-  memory_block_t memory = allocator_default_malloc(sizeof(object_tracker_t));
+  size_t size = object_tracker_size(flags);
+  memory_block_t memory = allocator_default_malloc(size);
   object_tracker_t *new_tracker = (object_tracker_t*) memory.memory;
   object_tracker_t *next = heap->root_object_tracker.next;
   object_tracker_t *prev = next->prev;
@@ -201,6 +207,13 @@ object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value,
   prev->next = new_tracker;
   next->prev = new_tracker;
   heap->object_tracker_count++;
+  maybe_weak_object_tracker_t *maybe_weak = maybe_weak_object_tracker_from(new_tracker);
+  if (maybe_weak != NULL) {
+    CHECK_TRUE("no maybe-weak data", data != NULL);
+    maybe_weak->weakness = wsUnknown;
+    maybe_weak->is_weak = data->maybe_weak.is_weak;
+    maybe_weak->is_weak_data = data->maybe_weak.is_weak_data;
+  }
   return new_tracker;
 }
 
@@ -210,7 +223,9 @@ void heap_destroy_object_tracker(heap_t *heap, object_tracker_t *tracker) {
   CHECK_PTREQ("wrong tracker prev", tracker, prev->next);
   object_tracker_t *next = tracker->next;
   CHECK_PTREQ("wrong tracker next", tracker, next->prev);
-  allocator_default_free(new_memory_block(tracker, sizeof(object_tracker_t)));
+  uint32_t flags = tracker->flags;
+  size_t size = object_tracker_size(flags);
+  allocator_default_free(new_memory_block(tracker, size));
   prev->next = next;
   next->prev = prev;
   heap->object_tracker_count--;
@@ -334,7 +349,7 @@ value_t heap_post_process_object_trackers(heap_t *heap) {
     // in a little bit we may delete it. That's fine with the iterator as long
     // as it's scanned past it.
     object_tracker_iter_advance(&iter);
-    if (object_tracker_is_weak(current)) {
+    if (object_tracker_is_currently_weak(current)) {
       value_t header = get_heap_object_header(current->value);
       if (get_value_domain(header) == vdMovedObject) {
         // This is a weak reference whose value is still alive. Update the
@@ -383,6 +398,47 @@ bool heap_collect_before_dispose(heap_t *heap) {
   return false;
 }
 
+// Determine and record whether the given tracker is currently weak.
+static void maybe_weak_object_tracker_determine_weakness(
+    maybe_weak_object_tracker_t *maybe_weak) {
+  CHECK_TRUE("tracker already determined", maybe_weak->weakness == wsUnknown);
+  if (object_tracker_is_garbage(&maybe_weak->base)) {
+    // If this value is already garbage we default to it being strong. It
+    // doesn't really matter, the value is nothing anyway, so it's just to
+    // ensure that nothing breaks going forward.
+    maybe_weak->weakness = wsStrong;
+  } else {
+    value_t value = maybe_weak->base.value;
+    bool is_weak = (maybe_weak->is_weak)(value, maybe_weak->is_weak_data);
+    maybe_weak->weakness = is_weak ? wsWeak : wsStrong;
+  }
+}
+
+// For each maybe-weak object tracker, determine whether it's currently weak.
+static value_t heap_determine_maybe_weak_tracker_weakness(heap_t *heap) {
+  object_tracker_iter_t iter;
+  object_tracker_iter_init(&iter, heap, true);
+  while (object_tracker_iter_has_current(&iter)) {
+    object_tracker_t *current = object_tracker_iter_get_current(&iter);
+    if (object_tracker_is_maybe_weak(current))
+      maybe_weak_object_tracker_determine_weakness(maybe_weak_object_tracker_from(current));
+    object_tracker_iter_advance(&iter);
+  }
+  return success();
+}
+
+// For each maybe-weak object tracker, determine whether it's currently weak.
+static void heap_clear_maybe_weak_tracker_weakness(heap_t *heap) {
+  object_tracker_iter_t iter;
+  object_tracker_iter_init(&iter, heap, true);
+  while (object_tracker_iter_has_current(&iter)) {
+    object_tracker_t *current = object_tracker_iter_get_current(&iter);
+    if (object_tracker_is_maybe_weak(current))
+      maybe_weak_object_tracker_from(current)->weakness = wsUnknown;
+    object_tracker_iter_advance(&iter);
+  }
+}
+
 value_t heap_prepare_garbage_collection(heap_t *heap) {
   CHECK_TRUE("from space not empty", space_is_empty(&heap->from_space));
   CHECK_FALSE("to space empty", space_is_empty(&heap->to_space));
@@ -391,12 +447,15 @@ value_t heap_prepare_garbage_collection(heap_t *heap) {
   // Reset to-space so we can use the fields again.
   space_clear(&heap->to_space);
   // Then create a new empty to-space.
-  return space_init(&heap->to_space, &heap->config);
+  TRY(space_init(&heap->to_space, &heap->config));
+  TRY(heap_determine_maybe_weak_tracker_weakness(heap));
+  return success();
 }
 
 value_t heap_complete_garbage_collection(heap_t *heap) {
   CHECK_FALSE("from space empty", space_is_empty(&heap->from_space));
   CHECK_FALSE("to space empty", space_is_empty(&heap->to_space));
+  heap_clear_maybe_weak_tracker_weakness(heap);
   space_dispose(&heap->from_space);
   return success();
 }

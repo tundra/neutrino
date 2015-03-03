@@ -896,19 +896,19 @@ bool value_is_immediate(value_t value) {
 }
 
 safe_value_t runtime_protect_value_with_flags(runtime_t *runtime, value_t value,
-    uint32_t safe_flags) {
+    uint32_t safe_flags, protect_value_data_t *data) {
   if (value_is_immediate(value)) {
     return protect_immediate(value);
   } else {
     object_tracker_t *gc_safe = heap_new_heap_object_tracker(&runtime->heap,
-        value, safe_flags);
+        value, safe_flags, data);
     return object_tracker_to_safe_value(gc_safe);
   }
 
 }
 
 safe_value_t runtime_protect_value(runtime_t *runtime, value_t value) {
-  return runtime_protect_value_with_flags(runtime, value, tfNone);
+  return runtime_protect_value_with_flags(runtime, value, tfNone, NULL);
 }
 
 static value_t new_object_instance(object_factory_t *factory,

@@ -16,7 +16,7 @@ typedef enum {
   // This tracker should not keep the object alive. If the value becomes garbage
   // during the lifetime of the returned tracker, the tracker will be marked as
   // garbage and the reference to the value will be cleared to nothing.
-  tfWeak = 0x1,
+  tfAlwaysWeak = 0x1,
   // When the object tracked by this tracker goes away the tracker itself should
   // be disposed. This really only makes sense if combined with some of the
   // other flags but it's treated orthogonally because it can be and to make
@@ -27,7 +27,17 @@ typedef enum {
   // object will cause the finalizer to be called for each tracker so you either
   // need to ensure that finalization is idempotent or that only one tracker is
   // created for an object. Selbstdisziplin haben!
-  tfFinalize = 0x4
+  tfFinalize = 0x4,
+  // This reference may or may not be weak, depending on the state of the object
+  // in question. The predicate used to determine whether the value is weak is
+  // passed along in the constructor. Note that only the thread that runs the
+  // runtime, that is the same thread the executes gcs, is allowed to modify
+  // the state that determines whether a value is weak. It's not an assumption
+  // the runtime uses but if other threads start manipulating the state while
+  // a gc is running they may think the value is strong when the gc believes it
+  // is weak and kill the value, hence invalidating the other thread's
+  // assumptions.
+  tfMaybeWeak = 0x8
 } object_tracker_flags_t;
 
 // Flags set by the gc on object trackers that indicate their current state.
@@ -52,8 +62,50 @@ typedef struct object_tracker_t {
   struct object_tracker_t *prev;
 } object_tracker_t;
 
-// Returns true iff the given object tracker is a weak reference.
-bool object_tracker_is_weak(object_tracker_t *tracker);
+// Returns true iff the given object tracker is an always-weak reference. Note
+// that even if the tracker isn't always-weak it may still be weak temporarily
+// at this moment.
+bool object_tracker_is_always_weak(object_tracker_t *tracker);
+
+// Returns if the given tracker may or may not be weak at any given time.
+bool object_tracker_is_maybe_weak(object_tracker_t *tracker);
+
+// Returns true if the given tracker represented an object that has now become
+// garbage.
+bool object_tracker_is_garbage(object_tracker_t *tracker);
+
+typedef enum {
+  // The weakness state hasn't been determined.
+  wsUnknown,
+  // The reference is weak.
+  wsWeak,
+  // The reference isn't weak.
+  wsStrong
+} weakness_state_t;
+
+// Callback used to determine whether a maybe-weak value is weak at this
+// particular point in time.
+typedef bool (is_weak_function_t)(value_t value, void *data);
+
+// An object tracker with additional info about weakness.
+typedef struct {
+  // Basic object tracker state.
+  object_tracker_t base;
+  // Weakness gets determined once before the gc proper begins since at that
+  // point the heap is still consistent which makes everything simpler.
+  weakness_state_t weakness;
+  // Callback to use to determine weakness.
+  is_weak_function_t *is_weak;
+  void *is_weak_data;
+} maybe_weak_object_tracker_t;
+
+// If the given tracker is maybe-weak, returns the maybe-weak view of it.
+// Otherwise NULL.
+maybe_weak_object_tracker_t *maybe_weak_object_tracker_from(object_tracker_t *tracker);
+
+// Returns true iff the given object tracker is currently weak. If the tracker
+// is maybe-weak this requires that its weakness has been determined previously.
+bool object_tracker_is_currently_weak(object_tracker_t *tracker);
 
 // An immutable gc-safe reference. Gc-safe references work much like values,
 // they are tagged like the value they reference. Indeed, for non-objects a safe

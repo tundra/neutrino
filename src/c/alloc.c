@@ -731,7 +731,7 @@ value_t new_heap_process(runtime_t *runtime) {
   // the same time. From now on the process object has to be in a consistent
   // state because the finalizer may be invoked at any time.
   set_void_p_value(airlock_ptr, airlock);
-  runtime_protect_value_with_flags(runtime, result, tfWeak | tfSelfDestruct | tfFinalize);
+  runtime_protect_value_with_flags(runtime, result, tfAlwaysWeak | tfSelfDestruct | tfFinalize, NULL);
   // Don't update the random state until after we know the whole allocation has
   // succeeded.
   runtime->random.state = new_state;
@@ -799,7 +799,7 @@ value_t new_heap_exported_service(runtime_t *runtime, value_t process,
   if (capsule == NULL)
     return new_system_error_condition(seAllocationFailed);
   set_void_p_value(capsule_ptr, capsule);
-  runtime_protect_value_with_flags(runtime, result, tfWeak | tfSelfDestruct | tfFinalize);
+  runtime_protect_value_with_flags(runtime, result, tfAlwaysWeak | tfSelfDestruct | tfFinalize, NULL);
   return post_create_sanity_check(result, size);
 }
 

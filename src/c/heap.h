@@ -184,9 +184,25 @@ value_t heap_prepare_garbage_collection(heap_t *heap);
 // Wraps up an in-progress garbage collection by discarding from-space.
 value_t heap_complete_garbage_collection(heap_t *heap);
 
+// Returns the size in bytes of an object tracker with the given set of flags.
+size_t object_tracker_size(uint32_t flags);
+
+// Additional data that can be passed when creating an object tracker. Which
+// data to pass when depends on the flags.
+typedef union {
+  // Data for maybe-weak references. An alternative design to passing these
+  // along in the constructor would be to make them part of the behavior
+  // functions and intrinsic to each type. That would probably work fine but
+  // would be much more difficult to test, this makes testing trivial.
+  struct {
+    is_weak_function_t *is_weak;
+    void *is_weak_data;
+  } maybe_weak;
+} protect_value_data_t;
+
 // Creates a new object tracker that holds the specified value.
 object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value,
-    uint32_t flags);
+    uint32_t flags, protect_value_data_t *data);
 
 // Disposes an object tracker.
 void heap_destroy_object_tracker(heap_t *heap, object_tracker_t *gc_safe);

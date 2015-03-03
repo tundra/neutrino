@@ -11,8 +11,34 @@ bool safe_value_is_immediate(safe_value_t s_value) {
   return value_is_immediate(s_value.as_value);
 }
 
-bool object_tracker_is_weak(object_tracker_t *tracker) {
-  return (tracker->flags & tfWeak) != 0;
+bool object_tracker_is_always_weak(object_tracker_t *tracker) {
+  return (tracker->flags & tfAlwaysWeak) != 0;
+}
+
+bool object_tracker_is_maybe_weak(object_tracker_t *tracker) {
+  return (tracker->flags & tfMaybeWeak) != 0;
+}
+
+bool object_tracker_is_garbage(object_tracker_t *tracker) {
+  return (tracker->state & tsGarbage) != 0;
+}
+
+bool object_tracker_is_currently_weak(object_tracker_t *tracker) {
+  if (object_tracker_is_always_weak(tracker)) {
+    return true;
+  } else if (object_tracker_is_maybe_weak(tracker)) {
+    maybe_weak_object_tracker_t *maybe_weak = maybe_weak_object_tracker_from(tracker);
+    CHECK_FALSE("weakness not determined", maybe_weak->weakness == wsUnknown);
+    return maybe_weak->weakness == wsWeak;
+  } else {
+    return false;
+  }
+}
+
+maybe_weak_object_tracker_t *maybe_weak_object_tracker_from(object_tracker_t *tracker) {
+  return (tracker->flags & tfMaybeWeak) == 0
+      ? NULL
+      : (maybe_weak_object_tracker_t*) tracker;
 }
 
 safe_value_t object_tracker_to_safe_value(object_tracker_t *handle) {
@@ -54,7 +80,7 @@ value_t deref(safe_value_t s_value) {
 
 bool safe_value_is_garbage(safe_value_t s_value) {
   return !safe_value_is_immediate(s_value)
-      && ((safe_value_to_object_tracker(s_value)->state & tsGarbage) != 0);
+      && object_tracker_is_garbage(safe_value_to_object_tracker(s_value));
 }
 
 void safe_value_pool_init(safe_value_pool_t *pool, safe_value_t *values,
