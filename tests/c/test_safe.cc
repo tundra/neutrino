@@ -223,8 +223,8 @@ TEST(safe, maybe_weak) {
   CREATE_RUNTIME();
 
   value_t arr = new_heap_array(runtime, 5);
-  protect_value_data_t data;
   size_t count = 0;
+  protect_value_data_t data;
   data.maybe_weak.is_weak = is_array_weak;
   data.maybe_weak.is_weak_data = &count;
   safe_value_t s_arr = runtime_protect_value_with_flags(runtime, arr,
@@ -256,4 +256,29 @@ TEST(safe, maybe_weak) {
 
   safe_value_destroy(runtime, s_arr);
   DISPOSE_RUNTIME();
+}
+
+TEST(safe, maybe_weak_self_destruct) {
+  CREATE_RUNTIME();
+
+  value_t arr = new_heap_array(runtime, 5);
+  size_t count = 0;
+  protect_value_data_t data;
+  data.maybe_weak.is_weak = is_array_weak;
+  data.maybe_weak.is_weak_data = &count;
+  safe_value_t s_arr = runtime_protect_value_with_flags(runtime, arr,
+      tfMaybeWeak | tfSelfDestruct, &data);
+
+  // The array isn't weak yet so it should survive a gc.
+  ASSERT_SUCCESS(runtime_garbage_collect(runtime));
+  ASSERT_EQ(1, count);
+  ASSERT_FALSE(safe_value_is_garbage(s_arr));
+
+  // Now make the array weak.
+  set_array_at(deref(s_arr), 0, new_integer(0));
+
+  // This will fail unless the reference created above gets disposed
+  // automatically.
+  DISPOSE_RUNTIME();
+  ASSERT_EQ(2, count);
 }

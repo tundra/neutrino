@@ -207,9 +207,9 @@ object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value,
   prev->next = new_tracker;
   next->prev = new_tracker;
   heap->object_tracker_count++;
-  maybe_weak_object_tracker_t *maybe_weak = maybe_weak_object_tracker_from(new_tracker);
-  if (maybe_weak != NULL) {
+  if (object_tracker_is_maybe_weak(new_tracker)) {
     CHECK_TRUE("no maybe-weak data", data != NULL);
+    maybe_weak_object_tracker_t *maybe_weak = maybe_weak_object_tracker_from(new_tracker);
     maybe_weak->weakness = wsUnknown;
     maybe_weak->is_weak = data->maybe_weak.is_weak;
     maybe_weak->is_weak_data = data->maybe_weak.is_weak_data;
@@ -223,8 +223,7 @@ void heap_destroy_object_tracker(heap_t *heap, object_tracker_t *tracker) {
   CHECK_PTREQ("wrong tracker prev", tracker, prev->next);
   object_tracker_t *next = tracker->next;
   CHECK_PTREQ("wrong tracker next", tracker, next->prev);
-  uint32_t flags = tracker->flags;
-  size_t size = object_tracker_size(flags);
+  size_t size = object_tracker_size(tracker->flags);
   allocator_default_free(new_memory_block(tracker, size));
   prev->next = next;
   next->prev = prev;
@@ -420,8 +419,10 @@ static value_t heap_determine_maybe_weak_tracker_weakness(heap_t *heap) {
   object_tracker_iter_init(&iter, heap, true);
   while (object_tracker_iter_has_current(&iter)) {
     object_tracker_t *current = object_tracker_iter_get_current(&iter);
-    if (object_tracker_is_maybe_weak(current))
-      maybe_weak_object_tracker_determine_weakness(maybe_weak_object_tracker_from(current));
+    if (object_tracker_is_maybe_weak(current)) {
+      maybe_weak_object_tracker_determine_weakness(
+          maybe_weak_object_tracker_from(current));
+    }
     object_tracker_iter_advance(&iter);
   }
   return success();
