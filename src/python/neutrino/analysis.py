@@ -95,7 +95,9 @@ class ScopeVisitor(ast.Visitor):
     sig = that.signature
     bindings = {}
     for param in sig.parameters:
-      bindings[param.get_name()] = param.get_symbol()
+      symbol = param.get_symbol()
+      if not symbol is None:
+        bindings[param.get_name()] = symbol
     if not sig.reified_ident is None:
       reified = sig.reified_ident
       bindings[reified.get_name()] = sig.reified

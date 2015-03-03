@@ -90,7 +90,8 @@ static value_t validate_builtin_method_binding(value_t method, value_t impl) {
   value_t signature = get_method_signature(method);
   size_t posc = get_signature_parameter_count(signature)
       - 1  // subject
-      - 1; // selector
+      - 1  // selector
+      - 1; // is_async
   size_t required_posc = get_builtin_implementation_argument_count(impl);
   if (posc != required_posc) {
     ERROR("Argument count mismatch (found %i, expected %i) binding %9v to %9v",

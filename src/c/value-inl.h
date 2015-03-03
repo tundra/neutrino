@@ -346,7 +346,8 @@ SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
   TRY(add_builtin_method_impl(runtime, deref(s_map), name, argc, impl, -1))
 
 #define ADD_BUILTIN_IMPL_MAY_ESCAPE(name, argc, leave_argc, impl)              \
-  TRY(add_builtin_method_impl(runtime, deref(s_map), name, argc, impl, leave_argc + 2))
+  TRY(add_builtin_method_impl(runtime, deref(s_map), name, argc, impl,         \
+      leave_argc + kImplicitArgumentCount))
 
 
 // --- P l a n k t o n ---

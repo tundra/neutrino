@@ -658,10 +658,12 @@ void operation_print_on(value_t self, print_on_context_t *context) {
   }
 }
 
-void operation_print_open_on(value_t self, print_on_context_t *context) {
+void operation_print_open_on(value_t self, value_t transport,
+    print_on_context_t *context) {
   value_t value = get_operation_value(self);
   print_on_context_t unquote_context = *context;
   unquote_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
+  bool is_async = is_same_value(transport, transport_async());
   switch (get_operation_type(self)) {
   case otAssign:
     // Since the operator for the assignment is kind of sort of part of the
@@ -678,7 +680,7 @@ void operation_print_open_on(value_t self, print_on_context_t *context) {
     string_buffer_printf(context->buf, "[");
     break;
   case otInfix:
-    string_buffer_printf(context->buf, ".");
+    string_buffer_printf(context->buf, is_async ? "->" : ".");
     value_print_inner_on(value, &unquote_context, -1);
     string_buffer_printf(context->buf, "(");
     break;
@@ -687,7 +689,7 @@ void operation_print_open_on(value_t self, print_on_context_t *context) {
     string_buffer_printf(context->buf, "(");
     break;
   case otProperty:
-    string_buffer_printf(context->buf, ".");
+    string_buffer_printf(context->buf, is_async ? "->" : ".");
     value_print_inner_on(value, &unquote_context, -1);
     break;
   case otSuffix:

@@ -50,11 +50,12 @@ def $test_computed_tags() {
   $assert:equals(2, $c01.length);
   $assert:equals("a", $c01[0]);
   $assert:equals("b", $c01[1]);
-  def $csel := call((subject): 1, (selector): 2, 3);
-  $assert:equals(3, $csel.length);
+  def $csel := call((subject): 1, (selector): 2, (transport): 3, 4);
+  $assert:equals(4, $csel.length);
   $assert:equals(1, $csel[subject]);
   $assert:equals(2, $csel[selector]);
-  $assert:equals(3, $csel[0]);
+  $assert:equals(3, $csel[transport]);
+  $assert:equals(4, $csel[0]);
 }
 
 def $test_bounds() {

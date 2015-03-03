@@ -17,7 +17,7 @@ void builtin_arguments_init(builtin_arguments_t *args, runtime_t *runtime,
 }
 
 value_t get_builtin_argument(builtin_arguments_t *args, size_t index) {
-  return frame_get_argument(args->frame, 2 + index);
+  return frame_get_argument(args->frame, kImplicitArgumentCount + index);
 }
 
 value_t get_builtin_subject(builtin_arguments_t *args) {

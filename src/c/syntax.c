@@ -88,10 +88,10 @@ size_t get_parameter_order_index_for_array(value_t tags) {
   for (size_t i = 0; i < get_array_length(tags); i++) {
     value_t tag = get_array_at(tags, i);
     if (is_integer(tag)) {
-      result = min_size(result, 2 + get_integer_value(tag));
+      result = min_size(result, kImplicitArgumentCount + get_integer_value(tag));
     } else if (in_family(ofKey, tag)) {
       size_t id = get_key_id(tag);
-      if (id < 2)
+      if (id < kImplicitArgumentCount)
         result = min_size(result, id);
     }
   }
@@ -1236,8 +1236,10 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
     // Bind the parameter in the local scope.
     value_t param_ast = get_array_at(param_asts, i);
     value_t symbol = get_parameter_ast_symbol(param_ast);
-    TRY(sanity_check_symbol(assm, symbol));
-    TRY(map_scope_bind(&param_scope, symbol, btArgument, offsets[i]));
+    if (!is_nothing(symbol)) {
+      TRY(sanity_check_symbol(assm, symbol));
+      TRY(map_scope_bind(&param_scope, symbol, btArgument, offsets[i]));
+    }
   }
 
   single_compile_config_t config;
@@ -1338,7 +1340,7 @@ value_t parameter_ast_validate(value_t self) {
 value_t plankton_set_parameter_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, symbol, tags, guard);
-  set_parameter_ast_symbol(object, symbol_value);
+  set_parameter_ast_symbol(object, null_to_nothing(symbol_value));
   set_parameter_ast_tags(object, tags_value);
   set_parameter_ast_guard(object, guard_value);
   return ensure_frozen(runtime, object);

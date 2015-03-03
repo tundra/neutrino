@@ -1671,12 +1671,16 @@ value_t plankton_new_key(runtime_t *runtime) {
 value_t plankton_set_key_contents(value_t instance, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, id);
-  if (value_identity_compare(id_value, RSTR(runtime, core_is_async))) {
-    return ROOT(runtime, is_async_key);
+  if (value_identity_compare(id_value, RSTR(runtime, core_transport))) {
+    return ROOT(runtime, transport_key);
   } else if (value_identity_compare(id_value, RSTR(runtime, core_selector))) {
     return ROOT(runtime, selector_key);
   } else if (value_identity_compare(id_value, RSTR(runtime, core_subject))) {
     return ROOT(runtime, subject_key);
+  } else if (value_identity_compare(id_value, RSTR(runtime, core_async))) {
+    return transport_async();
+  } else if (value_identity_compare(id_value, RSTR(runtime, core_sync))) {
+    return transport_sync();
   } else {
     return new_heap_key(runtime, id_value);
   }

@@ -326,6 +326,19 @@ value_t add_hash_code_builtin_implementations(runtime_t *runtime, safe_value_t s
   return success();
 }
 
+/// ## Transport
+
+GET_FAMILY_PRIMARY_TYPE_IMPL(transport);
+
+void transport_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<transport %s>",
+      is_transport_sync(value) ? "sync" : "async");
+}
+
+value_t add_transport_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  return success();
+}
+
 
 /// Memory markers
 

@@ -276,43 +276,61 @@ TEST(process, backtrace_entry_printing) {
 
   variant_t *subject = vValue(ROOT(runtime, subject_key));
   variant_t *selector = vValue(ROOT(runtime, selector_key));
+  variant_t *transport = vValue(ROOT(runtime, transport_key));
+  variant_t *sync = vValue(transport_sync());
+  variant_t *async = vValue(transport_async());
 
   assert_invocation_format("10", C(vMap(
       subject, vInt(10))));
   assert_invocation_format("11.foo()", C(vMap(
       subject, vInt(11),
-      selector, vInfix("foo"))));
+      selector, vInfix("foo"),
+      transport, sync)));
+  assert_invocation_format("11->foo()", C(vMap(
+      subject, vInt(11),
+      selector, vInfix("foo"),
+      transport, async)));
   assert_invocation_format(".fxx()", C(vMap(
       selector, vInfix("fxx"))));
+  assert_invocation_format("->fxx()", C(vMap(
+      selector, vInfix("fxx"),
+      transport, async)));
   assert_invocation_format("12.bar(\"blah\")", C(vMap(
       subject, vInt(12),
       selector, vInfix("bar"),
+      transport, sync,
       vInt(0), vStr("blah"))));
   assert_invocation_format("13.baz(\"blah\", \"blob\")", C(vMap(
       subject, vInt(13),
       selector, vInfix("baz"),
+      transport, sync,
       vInt(0), vStr("blah"),
       vInt(1), vStr("blob"))));
   assert_invocation_format("13[0]", C(vMap(
       subject, vInt(13),
       selector, vIndex(),
+      transport, sync,
       vInt(0), vInt(0))));
   assert_invocation_format("14.quux(\"blah\", 2: \"blob\")", C(vMap(
       subject, vInt(14),
       selector, vInfix("quux"),
+      transport, sync,
       vInt(0), vStr("blah"),
       vInt(2), vStr("blob"))));
   assert_invocation_format("16.quux(a: \"blob\")", C(vMap(
       subject, vInt(16),
       selector, vInfix("quux"),
+      transport, sync,
       vStr("a"), vStr("blob"))));
   assert_invocation_format("17[row: 8]", C(vMap(
       subject, vInt(17),
       selector, vIndex(),
+      transport, sync,
       vStr("row"), vInt(8))));
   assert_invocation_format("18.quux(-1: \"blob\")", C(vMap(
       subject, vInt(18),
       selector, vInfix("quux"),
+      transport, sync,
       vInt(-1), vStr("blob"))));
 
   DISPOSE_TEST_ARENA();

@@ -20,6 +20,9 @@ typedef struct {
   value_t process;
 } builtin_arguments_t;
 
+// Number of implicit arguments, that is, subject, selector, and is_async.
+#define kImplicitArgumentCount 3
+
 // Initialize a built_in_arguments appropriately.
 void builtin_arguments_init(builtin_arguments_t *args, runtime_t *runtime,
     frame_t *frame, value_t process);
@@ -46,13 +49,14 @@ value_t escape_builtin(builtin_arguments_t *args, value_array_t values);
 #define ESCAPE_BUILTIN(ARGS, selector, ...) do {                               \
   builtin_arguments_t *__args__ = (ARGS);                                      \
   runtime_t *__runtime__ = get_builtin_runtime(__args__);                      \
-  value_t values[VA_ARGC(__VA_ARGS__) + 2] = {                                 \
+  value_t values[VA_ARGC(__VA_ARGS__) + kImplicitArgumentCount] = {            \
     null(),                                                                    \
-    RSEL(__runtime__, selector)                                                \
+    RSEL(__runtime__, selector),                                               \
+    transport_sync()                                                           \
     FOR_EACH_VA_ARG(__GEN_ESCAPE_ARG__, __VA_ARGS__)                           \
   };                                                                           \
   return escape_builtin(__args__,                                              \
-      new_value_array(values, VA_ARGC(__VA_ARGS__) + 2));                      \
+      new_value_array(values, VA_ARGC(__VA_ARGS__) + kImplicitArgumentCount));                      \
 } while (false)
 
 // Signature of a function that implements a built-in method.

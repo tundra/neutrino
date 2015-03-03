@@ -737,6 +737,7 @@ ACCESSORS_DECL(heap_object, header);
   F(StageOffset,             stage_offset,              _, (X, _),   9)        \
   F(DerivedObjectAnchor,     derived_object_anchor,     _, (_, _),  10)        \
   F(HashCode,                hash_code,                 X, (X, _),  11)        \
+  F(Transport,               transport,                 X, (_, _),  12)        \
   F(UnusedMemory,            unused_memory,             _, (_, _), 148)        \
   F(AllocatedMemory,         allocated_memory,          _, (_, _), 150)        \
   F(FreedMemory,             freed_memory,              _, (_, _), 152)

@@ -20,6 +20,8 @@ is_ = ast.Guard.is_
 any = ast.Guard.any
 ST = data._SUBJECT
 SL = data._SELECTOR
+TN = data._TRANSPORT
+SN = data._SYNC
 ix = data.Operation.infix
 
 def ut(phase, *elements):
@@ -34,7 +36,8 @@ def mu(*phases):
 def ls(*params):
   prefix = [
     fpm(nm(['self']), any(), ST),
-    fpm(nm(['name']), eq(lt(data.Operation.call())), SL)
+    fpm(None, eq(lt(data.Operation.call())), SL),
+    fpm(None, eq(lt(SN)), TN)
   ]
   return ast.Signature(prefix + list(params), False, None)
 
@@ -52,13 +55,15 @@ def bn(left, op, right):
   return ast.Invocation([
     ast.Argument(ST, left),
     ast.Argument(SL, ast.Literal(data.Operation.infix(op))),
+    ast.Argument(TN, ast.Literal(SN)),
     ast.Argument(0, right)
   ])
 
 def cl(fun, *poss):
   args = [
     ast.Argument(ST, fun),
-    ast.Argument(SL, ast.Literal(data.Operation.call()))
+    ast.Argument(SL, ast.Literal(data.Operation.call())),
+    ast.Argument(TN, ast.Literal(SN)),
   ]
   for i in xrange(len(poss)):
     args.append(ast.Argument(i, poss[i]))
@@ -67,7 +72,8 @@ def cl(fun, *poss):
 def mt(fun, name, *poss):
   args = [
     ast.Argument(ST, fun),
-    ast.Argument(SL, name)
+    ast.Argument(SL, name),
+    ast.Argument(TN, ast.Literal(SN)),
   ]
   for i in xrange(len(poss)):
     pos = poss[i]

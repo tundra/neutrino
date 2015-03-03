@@ -13,6 +13,7 @@ def $test_positional() {
   def $p0 := $positional(5, 6, 7);
   $assert:equals($positional, $p0[subject]);
   $assert:equals(op(), $p0[selector]);
+  $assert:equals(sync, $p0[transport]);
   $assert:equals(5, $p0[0]);
   $assert:equals(6, $p0[1]);
   $assert:equals(7, $p0[2]);
@@ -20,6 +21,7 @@ def $test_positional() {
   def $p1 := $positional(2: 8, 1: 9, 0: 10);
   $assert:equals($positional, $p1[subject]);
   $assert:equals(op(), $p1[selector]);
+  $assert:equals(sync, $p1[transport]);
   $assert:equals(10, $p1[0]);
   $assert:equals(9, $p1[1]);
   $assert:equals(8, $p1[2]);
@@ -27,6 +29,7 @@ def $test_positional() {
   def $p2 := $positional(1: 11, 2: 12, 0: 13);
   $assert:equals($positional, $p2[subject]);
   $assert:equals(op(), $p2[selector]);
+  $assert:equals(sync, $p2[transport]);
   $assert:equals(13, $p2[0]);
   $assert:equals(11, $p2[1]);
   $assert:equals(12, $p2[2]);
@@ -36,6 +39,7 @@ def $test_keyword() {
   def $k0 := $keyword(14, 15, 16);
   $assert:equals($keyword, $k0[subject]);
   $assert:equals(op(), $k0[selector]);
+  $assert:equals(sync, $k0[transport]);
   $assert:equals(14, $k0[0]);
   $assert:equals(15, $k0[1]);
   $assert:equals(16, $k0[2]);
@@ -45,6 +49,7 @@ def $test_keyword() {
   def $k1 := $keyword(a: 17, b: 18, c: 19);
   $assert:equals($keyword, $k1[subject]);
   $assert:equals(op(), $k1[selector]);
+  $assert:equals(sync, $k1[transport]);
   $assert:equals(17, $k1[0]);
   $assert:equals(18, $k1[1]);
   $assert:equals(19, $k1[2]);
@@ -54,6 +59,7 @@ def $test_keyword() {
   def $k2 := $keyword(c: 23, a: 24, b: 25);
   $assert:equals($keyword, $k2[subject]);
   $assert:equals(op(), $k2[selector]);
+  $assert:equals(sync, $k2[transport]);
   $assert:equals(24, $k2[0]);
   $assert:equals(25, $k2[1]);
   $assert:equals(23, $k2[2]);
@@ -66,6 +72,7 @@ def $test_rkeyword() {
   def $r0 := $rkeyword(14, 15, 16);
   $assert:equals($rkeyword, $r0[subject]);
   $assert:equals(op(), $r0[selector]);
+  $assert:equals(sync, $r0[transport]);
   $assert:equals(14, $r0[0]);
   $assert:equals(15, $r0[1]);
   $assert:equals(16, $r0[2]);
@@ -74,6 +81,7 @@ def $test_rkeyword() {
   $assert:equals(14, $r0["c"]);
   def $r1 := $rkeyword(a: 17, b: 18, c: 19);
   $assert:equals($rkeyword, $r1[subject]);
+  $assert:equals(sync, $r1[transport]);
   $assert:equals(op(), $r1[selector]);
   $assert:equals(19, $r1[0]);
   $assert:equals(18, $r1[1]);
@@ -84,6 +92,7 @@ def $test_rkeyword() {
   def $r2 := $rkeyword(c: 23, a: 24, b: 25);
   $assert:equals($rkeyword, $r2[subject]);
   $assert:equals(op(), $r2[selector]);
+  $assert:equals(sync, $r2[transport]);
   $assert:equals(23, $r2[0]);
   $assert:equals(25, $r2[1]);
   $assert:equals(24, $r2[2]);
@@ -98,18 +107,21 @@ def $test_extra() {
   def $e0 := $extra(40, 41, 42);
   $assert:equals($extra, $e0[subject]);
   $assert:equals(op(), $e0[selector]);
+  $assert:equals(sync, $e0[transport]);
   $assert:equals(40, $e0[0]);
   $assert:equals(41, $e0[1]);
   $assert:equals(42, $e0[2]);
   def $e1 := $extra(a: 43, b: 44, c: 45);
   $assert:equals($extra, $e1[subject]);
   $assert:equals(op(), $e1[selector]);
+  $assert:equals(sync, $e1[transport]);
   $assert:equals(43, $e1["a"]);
   $assert:equals(44, $e1["b"]);
   $assert:equals(45, $e1["c"]);
   def $e2 := $extra(2: 46, 1: 47, 0: 48);
   $assert:equals($extra, $e2[subject]);
   $assert:equals(op(), $e2[selector]);
+  $assert:equals(sync, $e2[transport]);
   $assert:equals(48, $e2[0]);
   $assert:equals(47, $e2[1]);
   $assert:equals(46, $e2[2]);
@@ -121,18 +133,21 @@ def $test_reverse() {
   def $r0 := $reverse(50, 51, 52);
   $assert:equals($reverse, $r0[subject]);
   $assert:equals(op(), $r0[selector]);
+  $assert:equals(sync, $r0[transport]);
   $assert:equals(50, $r0[0]);
   $assert:equals(51, $r0[1]);
   $assert:equals(52, $r0[2]);
   def $r1 := $reverse(2: 53, 1: 54, 0: 55);
   $assert:equals($reverse, $r1[subject]);
   $assert:equals(op(), $r1[selector]);
+  $assert:equals(sync, $r1[transport]);
   $assert:equals(55, $r1[0]);
   $assert:equals(54, $r1[1]);
   $assert:equals(53, $r1[2]);
   def $r2 := $reverse(1: 56, 2: 57, 0: 58);
   $assert:equals($reverse, $r2[subject]);
   $assert:equals(op(), $r2[selector]);
+  $assert:equals(sync, $r2[transport]);
   $assert:equals(58, $r2[0]);
   $assert:equals(56, $r2[1]);
   $assert:equals(57, $r2[2]);
@@ -153,6 +168,7 @@ def $test_replace() {
   def $k0 := $keyword(60, 61, 62);
   $assert:equals($keyword, $k0[subject]);
   $assert:equals(op(), $k0[selector]);
+  $assert:equals(sync, $k0[transport]);
   $assert:equals(60, $k0[0]);
   $assert:equals(61, $k0[1]);
   $assert:equals(62, $k0[2]);
@@ -162,6 +178,7 @@ def $test_replace() {
   def $k1 := $k0.replace_argument(subject, $reverse);
   $assert:equals($reverse, $k1[subject]);
   $assert:equals(op(), $k1[selector]);
+  $assert:equals(sync, $k1[transport]);
   $assert:equals(60, $k1[0]);
   $assert:equals(61, $k1[1]);
   $assert:equals(62, $k1[2]);
@@ -171,6 +188,7 @@ def $test_replace() {
   def $k2 := $k1.replace_argument(0, 63);
   $assert:equals($reverse, $k2[subject]);
   $assert:equals(op(), $k2[selector]);
+  $assert:equals(sync, $k2[transport]);
   $assert:equals(63, $k2[0]);
   $assert:equals(61, $k2[1]);
   $assert:equals(62, $k2[2]);
@@ -180,6 +198,7 @@ def $test_replace() {
   def $k3 := $k2.replace_argument("c", 64);
   $assert:equals($reverse, $k3[subject]);
   $assert:equals(op(), $k3[selector]);
+  $assert:equals(sync, $k3[transport]);
   $assert:equals(63, $k3[0]);
   $assert:equals(61, $k3[1]);
   $assert:equals(64, $k3[2]);

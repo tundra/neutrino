@@ -9,7 +9,7 @@
 // positional argument count.
 static value_t build_builtin_method_signature(runtime_t *runtime,
     const c_object_method_t *method, value_t subject, value_t selector) {
-  size_t argc = method->posc + 2;
+  size_t argc = method->posc + kImplicitArgumentCount;
   TRY_DEF(tags, new_heap_pair_array(runtime, argc));
   // The subject parameter.
   TRY_DEF(subject_guard, new_heap_guard(runtime, afFreeze, gtIs, subject));
@@ -23,12 +23,18 @@ static value_t build_builtin_method_signature(runtime_t *runtime,
       ROOT(runtime, selector_key_array), false, 1));
   set_pair_array_first_at(tags, 1, ROOT(runtime, selector_key));
   set_pair_array_second_at(tags, 1, name_param);
+  // The is-async parameter.
+  TRY_DEF(transport_guard, new_heap_guard(runtime, afFreeze, gtEq, transport_sync()));
+  TRY_DEF(transport_param, new_heap_parameter(runtime, afFreeze, transport_guard,
+      ROOT(runtime, transport_key_array), false, 2));
+  set_pair_array_first_at(tags, 2, ROOT(runtime, transport_key));
+  set_pair_array_second_at(tags, 2, transport_param);
   // The positional parameters.
   for (size_t i = 0; i < method->posc; i++) {
     TRY_DEF(param, new_heap_parameter(runtime, afFreeze,
-        ROOT(runtime, any_guard), ROOT(runtime, empty_array), false, 2 + i));
-    set_pair_array_first_at(tags, 2 + i, new_integer(i));
-    set_pair_array_second_at(tags, 2 + i, param);
+        ROOT(runtime, any_guard), ROOT(runtime, empty_array), false, kImplicitArgumentCount + i));
+    set_pair_array_first_at(tags, kImplicitArgumentCount + i, new_integer(i));
+    set_pair_array_second_at(tags, kImplicitArgumentCount + i, param);
   }
   co_sort_pair_array(tags);
   return new_heap_signature(runtime, afFreeze, tags, argc, argc, false);

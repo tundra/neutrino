@@ -162,10 +162,11 @@ class Parser(object):
         if self.at_punctuation('('):
           # def <ident> (
           subject = ast.Parameter(name, [data._SUBJECT], ast.Guard.eq(ast.Variable(name.shift_back())))
+          is_async = ast.Parameter(None, [data._TRANSPORT], ast.Guard.eq(ast.Literal(data._SYNC)))
           (params, operation, allow_extra, reified) = self.parse_parameters(Parser._SAUSAGES)
           body = self.parse_method_tail(True)
           selector = self.name_as_selector(operation)
-          signature = ast.Signature([subject, selector] + params, allow_extra, reified)
+          signature = ast.Signature([subject, selector, is_async] + params, allow_extra, reified)
           return ast.FunctionDeclaration(name, ast.Method(signature, body))
         else:
           # def <ident> ...
@@ -425,6 +426,7 @@ class Parser(object):
     prefix = [
       ast.Argument(data._SUBJECT, cons),
       ast.Argument(data._SELECTOR, ast.Literal(Parser._NEW)),
+      ast.Argument(data._TRANSPORT, ast.Literal(data._SYNC))
     ]
     return ast.Invocation(prefix + args)
 
@@ -447,6 +449,7 @@ class Parser(object):
     args = [
       ast.Argument(data._SUBJECT, ast.Variable(data.Identifier(-1, data.Path(["core", "if"])))),
       ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES)),
+      ast.Argument(data._TRANSPORT, ast.Literal(data._SYNC)),
       ast.Argument(0, cond),
       ast.Argument(1, ast.Lambda(methods))
     ]
@@ -467,6 +470,7 @@ class Parser(object):
     return ast.Invocation([
       ast.Argument(data._SUBJECT, ast.Variable(data.Identifier(-1, data.Path(["core", "while"])))),
       ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES)),
+      ast.Argument(data._TRANSPORT, ast.Literal(data._SYNC)),
       ast.Argument(0, ast.Lambda(methods)),
     ])
 
@@ -488,7 +492,8 @@ class Parser(object):
       self.expect_statement_delimiter(expect_delim)
     return ast.Signal(is_abort, [
       ast.Argument(data._SUBJECT, ast.Literal(None)),
-      ast.Argument(data._SELECTOR, ast.Literal(selector))
+      ast.Argument(data._SELECTOR, ast.Literal(selector)),
+      ast.Argument(data._TRANSPORT, ast.Literal(data._SYNC))
     ] + rest, default)
 
   # <for expression>
@@ -504,6 +509,7 @@ class Parser(object):
     return ast.Invocation([
       ast.Argument(data._SUBJECT, ast.Variable(data.Identifier(-1, data.Path(["core", "for"])))),
       ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES)),
+      ast.Argument(data._TRANSPORT, ast.Literal(data._SYNC)),
       ast.Argument(0, elms),
       ast.Argument(1, thunk),
     ])
@@ -600,9 +606,6 @@ class Parser(object):
     else:
       default_operation = Parser._SAUSAGES
     (params, param_operation, allow_extra, reified) = self.parse_parameters(default_operation)
-    if is_async:
-      params.append(ast.Parameter(data.Identifier(0, data.Path(['is_async'])),
-        [data._IS_ASYNC], ast.Guard.eq(ast.Literal(True))))
     if is_prefix:
       op = data.Operation.prefix(name)
       params = []
@@ -614,6 +617,7 @@ class Parser(object):
         op = data.Operation.property(name)
     else:
       op = param_operation
+    is_async_param = ast.Parameter(None, [data._TRANSPORT], ast.Guard.eq(ast.Literal(data._ASYNC if is_async else data._SYNC)))
     if self.at_punctuation(':='):
       self.expect_punctuation(':=')
       (assign_params, assign_op, allow_extra, reified) = self.parse_parameters(None, start_index=len(params))
@@ -623,7 +627,7 @@ class Parser(object):
       selector = self.any_selector()
     else:
       selector = self.name_as_selector(op)
-    return ast.Signature(subject + [selector] + params, allow_extra, reified)
+    return ast.Signature(subject + [selector, is_async_param] + params, allow_extra, reified)
 
   # Are we currently at a token that is allowed as the first token of a
   # parameter?
@@ -633,13 +637,11 @@ class Parser(object):
   # Given a string operation name returns the corresponding selector parameter.
   def name_as_selector(self, name):
     assert isinstance(name, data.Operation)
-    return ast.Parameter(data.Identifier(0, data.Path(['name'])), [data._SELECTOR],
-      ast.Guard.eq(ast.Literal(name)))
+    return ast.Parameter(None, [data._SELECTOR], ast.Guard.eq(ast.Literal(name)))
 
   # Returns a parameter that matches any selector.
   def any_selector(self):
-    return ast.Parameter(data.Identifier(0, data.Path(['name'])), [data._SELECTOR],
-      ast.Guard.any())
+    return ast.Parameter(None, [data._SELECTOR], ast.Guard.any())
 
   def name_as_subject(self, name):
     return ast.Parameter(name, [data._SUBJECT], ast.Guard.any())
@@ -648,7 +650,8 @@ class Parser(object):
   def parse_signature(self):
     prefix = [
       self.name_as_subject(data.Identifier(0, data.Path(['self']))),
-      self.name_as_selector(Parser._SAUSAGES)
+      self.name_as_selector(Parser._SAUSAGES),
+      ast.Parameter(None, [data._TRANSPORT], ast.Guard.eq(ast.Literal(data._SYNC)))
     ]
     (params, operation, allow_extra, reified) = self.parse_parameters(None)
     if params is None:
@@ -742,10 +745,9 @@ class Parser(object):
       (selector, is_async, rest) = self.parse_operator_tail()
       prefix = [
         ast.Argument(data._SUBJECT, left),
-        ast.Argument(data._SELECTOR, ast.Literal(selector))
+        ast.Argument(data._SELECTOR, ast.Literal(selector)),
+        ast.Argument(data._TRANSPORT, ast.Literal(data._ASYNC if is_async else data._SYNC))
       ]
-      if is_async:
-        prefix.append(ast.Argument(data._IS_ASYNC, ast.Literal(True)))
       left = ast.Invocation(prefix + rest)
     return left
 
@@ -802,7 +804,8 @@ class Parser(object):
       subject = self.parse_unary_expression()
       args = [
         ast.Argument(data._SUBJECT, subject),
-        ast.Argument(data._SELECTOR, ast.Literal(selector))
+        ast.Argument(data._SELECTOR, ast.Literal(selector)),
+        ast.Argument(data._TRANSPORT, ast.Literal(data._ASYNC if is_async else data._SYNC))
       ]
       return ast.Invocation(args)
     else:
@@ -825,7 +828,8 @@ class Parser(object):
         break
       prefix = [
         ast.Argument(data._SUBJECT, recv),
-        ast.Argument(data._SELECTOR, ast.Literal(selector))
+        ast.Argument(data._SELECTOR, ast.Literal(selector)),
+        ast.Argument(data._TRANSPORT, ast.Literal(data._SYNC))
       ]
       rest = self.parse_arguments(start, end)
       recv = ast.Invocation(prefix + rest)
@@ -853,6 +857,9 @@ class Parser(object):
         or self.at_word('module')
         or self.at_word('subject')
         or self.at_word('selector')
+        or self.at_word('transport')
+        or self.at_word('sync')
+        or self.at_word('async')
         or self.at_type(Token.QUOTE))
 
   # <atomic expression>
@@ -870,6 +877,7 @@ class Parser(object):
         result = ast.Invocation([
           ast.Argument(data._SUBJECT, ast.Variable(data.Identifier(-1, data.Path(["ctrino"])))),
           ast.Argument(data._SELECTOR, ast.Literal(data.Operation.infix("new_float_32"))),
+          ast.Argument(data._TRANSPORT, ast.Literal(data._SYNC)),
           ast.Argument(0, result)
         ])
       return result
@@ -899,6 +907,15 @@ class Parser(object):
     elif self.at_word('selector'):
       self.expect_word('selector')
       return ast.Literal(data._SELECTOR)
+    elif self.at_word('transport'):
+      self.expect_word('transport')
+      return ast.Literal(data._TRANSPORT)
+    elif self.at_word('async'):
+      self.expect_word('async')
+      return ast.Literal(data._ASYNC)
+    elif self.at_word('sync'):
+      self.expect_word('sync')
+      return ast.Literal(data._SYNC)
     elif self.at_word('module'):
       self.expect_word('module')
       return ast.CurrentModule()

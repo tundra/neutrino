@@ -22,9 +22,11 @@
   F(bindings,                   "bindings")                                    \
   F(body,                       "body")                                        \
   F(core,                       "core")                                        \
-  F(core_is_async,              "core:is_async")                               \
+  F(core_async,                 "core:async")                                  \
   F(core_selector,              "core:selector")                               \
   F(core_subject,               "core:subject")                                \
+  F(core_sync,                  "core:sync")                                   \
+  F(core_transport,             "core:transport")                              \
   F(ctrino,                     "ctrino")                                      \
   F(default,                    "default")                                     \
   F(denominator,                "denominator")                                 \
@@ -40,7 +42,7 @@
   F(id,                         "id")                                          \
   F(imports,                    "imports")                                     \
   F(inheritance,                "inheritance")                                 \
-  F(is_async,                   "is_async")                                    \
+  F(transport,                  "transport")                                   \
   F(is_mutable,                 "is_mutable")                                  \
   F(key,                        "key")                                         \
   F(libraries,                  "libraries")                                   \
@@ -104,7 +106,8 @@
   F(empty_path)                                                                \
   F(escape_records)                                                            \
   F(integer_type)                                                              \
-  F(is_async_key)                                                              \
+  F(transport_key)                                                             \
+  F(transport_key_array)                                                       \
   F(builtin_methodspace)                                                       \
   F(op_call)                                                                   \
   F(plankton_factories)                                                        \

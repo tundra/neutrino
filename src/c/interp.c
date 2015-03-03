@@ -727,7 +727,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           // Fire the next barrier or, if there are no more barriers, apply the
           // escape.
           if (maybe_fire_next_barrier(&cache, &frame, runtime, stack, section)) {
-            value_t value = frame_get_argument(&frame, 2);
+            value_t value = frame_get_argument(&frame, kImplicitArgumentCount);
             restore_escape_state(&frame, stack, section);
             code_cache_refresh(&cache, &frame);
             frame_push_value(&frame, value);
@@ -790,13 +790,13 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           value_t values = whatever();
           sigmap_input_layout_t layout;
           if (opcode == ocModuleFragmentPrivateInvokeCallData) {
-            value_t call_data = frame_get_argument(&frame, 2);
+            value_t call_data = frame_get_argument(&frame, 3);
             CHECK_FAMILY(ofCallData, call_data);
             values = get_call_data_values(call_data);
             layout = sigmap_input_layout_new(ambience, get_call_data_tags(call_data),
                 nothing());
           } else {
-            value_t reified = frame_get_argument(&frame, 2);
+            value_t reified = frame_get_argument(&frame, 3);
             CHECK_FAMILY(ofReifiedArguments, reified);
             values = get_reified_arguments_values(reified);
             layout = sigmap_input_layout_new(ambience,
@@ -922,7 +922,8 @@ static value_t prepare_run_job(runtime_t *runtime, value_t stack, job_t *job) {
   // Set up the frame containing the argument. The code frame returns to
   // this and then this returns by itself so at the end, if the job is
   // successful, we're back to an empty stack.
-  TRY(push_stack_frame(runtime, stack, &frame, 2, ROOT(runtime, empty_array)));
+  TRY(push_stack_frame(runtime, stack, &frame, 2,
+      ROOT(runtime, empty_array)));
   frame_set_code_block(&frame, ROOT(runtime, return_code_block));
   frame_push_value(&frame, job->data);
   // Set up the frame for running the code.

@@ -667,6 +667,7 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
   }
   value_t subject = new_not_found_condition();
   value_t selector = new_not_found_condition();
+  value_t transport = new_not_found_condition();
   id_hash_map_iter_t iter;
   id_hash_map_iter_init(&iter, invocation);
   while (id_hash_map_iter_advance(&iter)) {
@@ -675,10 +676,13 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
     id_hash_map_iter_get_current(&iter, &key, &value);
     if (in_family(ofKey, key)) {
       size_t id = get_key_id(key);
-      if (id == 0)
+      if (id == 0) {
         subject = value;
-      else if (id == 1)
+      } else if (id == 1) {
         selector = value;
+      } else if (id == 2) {
+        transport = value;
+      }
     }
   }
   // Print the subject as the first thing. For aborts we ignore the subject
@@ -692,7 +696,7 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
   }
   // Begin the selector.
   if (in_family(ofOperation, selector)) {
-    operation_print_open_on(selector, context);
+    operation_print_open_on(selector, transport, context);
   } else if (!in_condition_cause(ccNotFound, selector)) {
     value_print_inner_on(selector, context, -1);
   }
@@ -720,7 +724,7 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
     id_hash_map_iter_get_current(&iter, &key, &value);
     if (in_family(ofKey, key)) {
       size_t id = get_key_id(key);
-      if (id == 0 || id == 1)
+      if (id == 0 || id == 1 || id == 2)
         // Don't print the subject/selector again.
         continue;
     } else if (is_integer(key) && ((size_t) get_integer_value(key)) < posc) {

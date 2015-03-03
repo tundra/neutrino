@@ -43,15 +43,15 @@ TEST(syntax, parameter_order_index) {
   CHECK_ORDERING_INDEX(1, vArray(selector_key));
   CHECK_ORDERING_INDEX(0, vArray(subject_key, selector_key));
 
-  CHECK_ORDERING_INDEX(2, vArray(vInt(0)));
-  CHECK_ORDERING_INDEX(3, vArray(vInt(1)));
-  CHECK_ORDERING_INDEX(4, vArray(vInt(2)));
-  CHECK_ORDERING_INDEX(2, vArray(vInt(0), vInt(2)));
-  CHECK_ORDERING_INDEX(2, vArray(vInt(2), vInt(0)));
+  CHECK_ORDERING_INDEX(3, vArray(vInt(0)));
+  CHECK_ORDERING_INDEX(4, vArray(vInt(1)));
+  CHECK_ORDERING_INDEX(5, vArray(vInt(2)));
+  CHECK_ORDERING_INDEX(3, vArray(vInt(0), vInt(2)));
+  CHECK_ORDERING_INDEX(3, vArray(vInt(2), vInt(0)));
   CHECK_ORDERING_INDEX(1, vArray(vInt(2), selector_key));
 
   CHECK_ORDERING_INDEX(kMaxOrderIndex, vArray(vStr("foo")));
-  CHECK_ORDERING_INDEX(102, vArray(vStr("foo"), vInt(100)));
+  CHECK_ORDERING_INDEX(103, vArray(vStr("foo"), vInt(100)));
 
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();

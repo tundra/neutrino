@@ -6,6 +6,7 @@ import os.path
 file_names = [
   "assert_equals_failure",
   "assert_that_failure",
+  "async_lookup_failure",
   "delay_happens",
   "lookup_failure",
   "then_happens",

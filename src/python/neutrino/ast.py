@@ -145,6 +145,7 @@ class Variable(object):
   _NAMESPACE_HEADER = "ast:NamespaceVariable"
 
   def __init__(self, ident, symbol=None):
+    assert not ident is None
     self.ident = ident
     self.symbol = symbol
 
@@ -503,7 +504,10 @@ class Parameter(object):
   @plankton.field("guard")
   def __init__(self, ident, tags, guard):
     self.ident = ident
-    self.symbol = Symbol(self.get_name())
+    if self.ident is None:
+      self.symbol = None
+    else:
+      self.symbol = Symbol(self.get_name())
     self.tags = tags
     self.guard = guard
 
@@ -638,10 +642,9 @@ class Lambda(object):
   @staticmethod
   def method(body, op):
     signature = Signature([
-      Parameter(data.Identifier(0, data.Path(['self'])), [data._SUBJECT],
-        Guard.any()),
-      Parameter(data.Identifier(0, data.Path(['name'])), [data._SELECTOR],
-        Guard.eq(Literal(op)))
+      Parameter(None, [data._SUBJECT], Guard.any()),
+      Parameter(None, [data._SELECTOR], Guard.eq(Literal(op))),
+      Parameter(None, [data._TRANSPORT], Guard.eq(Literal(data._SYNC)))
     ], False, None)
     return Method(signature, body)
 
@@ -795,6 +798,7 @@ class TypeDeclaration(object):
     name_decl = NamespaceDeclaration([], self.ident, Invocation([
       Argument(data._SUBJECT, CurrentModule()),
       Argument(data._SELECTOR, Literal(TypeDeclaration._NEW_TYPE)),
+      Argument(data._TRANSPORT, Literal(data._SYNC)),
       Argument(0, Literal(self.ident)),
     ]))
     name_decl.apply(module)
@@ -823,24 +827,28 @@ class FieldDeclaration(object):
     # TODO: this field shouldn't be accessible through the namespace.
     key_ident = data.Identifier(-1, self.key_name)
     key_access = Variable(key_ident)
+    not_async = Parameter(None, [data._TRANSPORT], Guard.eq(Literal(data._SYNC)))
     key_decl = NamespaceDeclaration([], key_ident, Invocation([
       Argument(data._SUBJECT, CurrentModule()),
       Argument(data._SELECTOR, Literal(FieldDeclaration._NEW_GLOBAL_FIELD)),
+      Argument(data._TRANSPORT, Literal(data._SYNC)),
       Argument(0, Literal(self.key_name)),
     ]))
     key_decl.apply(module)
     getter = MethodDeclaration(0, [], Method(
-      Signature([self.subject, self.getter], False, None), Invocation([
+      Signature([self.subject, self.getter, not_async], False, None), Invocation([
         Argument(data._SUBJECT, key_access),
         Argument(data._SELECTOR, Literal(FieldDeclaration._SQUARE_SAUSAGES)),
+        Argument(data._TRANSPORT, Literal(data._SYNC)),
         Argument(0, Variable(self.subject.ident))
     ])))
-    value = Parameter(data.Identifier(0, data.Path(['value'])), [0],
+    value = value = Parameter(data.Identifier(0, data.Path(['value'])), [0],
       Guard.any())
     setter = MethodDeclaration(0, [], Method(
-      Signature([self.subject, self.setter, value], False, None), Invocation([
+      Signature([self.subject, self.setter, not_async, value], False, None), Invocation([
         Argument(data._SUBJECT, key_access),
         Argument(data._SELECTOR, Literal(FieldDeclaration._SQUARE_SAUSAGE_ASSIGN)),
+        Argument(data._TRANSPORT, Literal(data._SYNC)),
         Argument(0, Variable(self.subject.ident)),
         Argument(1, Variable(value.ident))
     ])))
@@ -887,6 +895,7 @@ class UnboundModuleFragment(object):
     value = Invocation([
       Argument(data._SUBJECT, Variable(data.Identifier(-1, data.Path(["ctrino"])))),
       Argument(data._SELECTOR, Literal(data.Operation.infix("new_function"))),
+      Argument(data._TRANSPORT, Literal(data._SYNC)),
       Argument(0, Literal(name.path))
     ])
     self.add_element(NamespaceDeclaration([], name, value))

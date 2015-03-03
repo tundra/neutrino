@@ -65,14 +65,17 @@ static value_t create_call_thunk_code_block(runtime_t *runtime) {
   TRY(assembler_init_stripped_down(&assm, runtime));
   TRY(assembler_emit_load_raw_argument(&assm, 0));
   TRY(assembler_emit_push(&assm, ROOT(runtime, op_call)));
-  TRY_DEF(tag_array, new_heap_pair_array(runtime, 2));
+  TRY(assembler_emit_push(&assm, transport_sync()));
+  TRY_DEF(tag_array, new_heap_pair_array(runtime, kImplicitArgumentCount));
   set_pair_array_first_at(tag_array, 0, ROOT(runtime, subject_key));
-  set_pair_array_second_at(tag_array, 0, new_integer(1));
+  set_pair_array_second_at(tag_array, 0, new_integer(2));
   set_pair_array_first_at(tag_array, 1, ROOT(runtime, selector_key));
-  set_pair_array_second_at(tag_array, 1, new_integer(0));
+  set_pair_array_second_at(tag_array, 1, new_integer(1));
+  set_pair_array_first_at(tag_array, 2, ROOT(runtime, transport_key));
+  set_pair_array_second_at(tag_array, 2, new_integer(0));
   TRY_DEF(tags, new_heap_call_tags(runtime, afFreeze, tag_array));
   TRY(assembler_emit_invocation(&assm, nothing(), tags, nothing()));
-  TRY(assembler_emit_slap(&assm, 2));
+  TRY(assembler_emit_slap(&assm, kImplicitArgumentCount));
   TRY(assembler_emit_return(&assm));
   TRY_DEF(result, assembler_flush(&assm));
   assembler_dispose(&assm);
@@ -113,14 +116,14 @@ value_t service_hook_add_service(service_install_hook_context_t *context,
 
 // Creates an array of invocation records of the form
 //
-//   {%subject: N-1, %selector: N-2, 0: N-3, ...}
+//   {%subject: N-1, %selector: N-2, %is_async: N-3, 0: N-4, ...}
 //
 // for up to kMaxSize entries (including the subject and selector). These are
 // used for instance for raising signals from within builtins.
 static value_t create_escape_records(runtime_t *runtime) {
-  static const size_t kMaxSize = 4;
+  static const size_t kMaxSize = 5;
   TRY_DEF(result, new_heap_array(runtime, kMaxSize + 1));
-  for (size_t i = 2; i <= kMaxSize; i++) {
+  for (size_t i = kImplicitArgumentCount; i <= kMaxSize; i++) {
     // Build the entries manually. The indexes are somewhat fiddly because they
     // are counted backwards from the size-1.
     TRY_DEF(entries, new_heap_pair_array(runtime, i));
@@ -128,8 +131,10 @@ static value_t create_escape_records(runtime_t *runtime) {
     set_pair_array_second_at(entries, 0, new_integer(i - 1));
     set_pair_array_first_at(entries, 1, ROOT(runtime, selector_key));
     set_pair_array_second_at(entries, 1, new_integer(i - 2));
-    for (size_t j = 2; j < i; j++) {
-      set_pair_array_first_at(entries, j, new_integer(j - 2));
+    set_pair_array_first_at(entries, 2, ROOT(runtime, transport_key));
+    set_pair_array_second_at(entries, 2, new_integer(i - 3));
+    for (size_t j = kImplicitArgumentCount; j < i; j++) {
+      set_pair_array_first_at(entries, j, new_integer(j - kImplicitArgumentCount));
       set_pair_array_second_at(entries, j, new_integer(i - j - 1));
     }
     CHECK_TRUE("escape record not sorted", is_pair_array_sorted(entries));
@@ -253,8 +258,8 @@ value_t roots_init(value_t roots, const extended_runtime_config_t *config,
       new_heap_key(runtime, RAW_RSTR(roots, subject)));
   TRY_SET(RAW_ROOT(roots, selector_key),
       new_heap_key(runtime, RAW_RSTR(roots, selector)));
-  TRY_SET(RAW_ROOT(roots, is_async_key),
-      new_heap_key(runtime, RAW_RSTR(roots, is_async)));
+  TRY_SET(RAW_ROOT(roots, transport_key),
+      new_heap_key(runtime, RAW_RSTR(roots, transport)));
   TRY_SET(RAW_ROOT(roots, builtin_impls), new_heap_id_hash_map(runtime, 256));
   TRY_SET(RAW_ROOT(roots, op_call),
       new_heap_operation(runtime, afFreeze, otCall, null()));
@@ -272,6 +277,8 @@ value_t roots_init(value_t roots, const extended_runtime_config_t *config,
       new_heap_array_with_contents(runtime, afFreeze, new_value_array(&RAW_ROOT(roots, subject_key), 1)));
   TRY_SET(RAW_ROOT(roots, selector_key_array),
       new_heap_array_with_contents(runtime, afFreeze, new_value_array(&RAW_ROOT(roots, selector_key), 1)));
+  TRY_SET(RAW_ROOT(roots, transport_key_array),
+      new_heap_array_with_contents(runtime, afFreeze, new_value_array(&RAW_ROOT(roots, transport_key), 1)));
 
   // Generate initialization for the per-family types.
 #define __CREATE_TYPE__(Name, name) do {                                       \
@@ -389,8 +396,8 @@ value_t roots_validate(value_t roots) {
   VALIDATE_CHECK_EQ(0, get_key_id(RAW_ROOT(roots, subject_key)));
   VALIDATE_HEAP_OBJECT(ofKey, RAW_ROOT(roots, selector_key));
   VALIDATE_CHECK_EQ(1, get_key_id(RAW_ROOT(roots, selector_key)));
-  VALIDATE_HEAP_OBJECT(ofKey, RAW_ROOT(roots, is_async_key));
-  VALIDATE_CHECK_EQ(2, get_key_id(RAW_ROOT(roots, is_async_key)));
+  VALIDATE_HEAP_OBJECT(ofKey, RAW_ROOT(roots, transport_key));
+  VALIDATE_CHECK_EQ(2, get_key_id(RAW_ROOT(roots, transport_key)));
   VALIDATE_HEAP_OBJECT(ofIdHashMap, RAW_ROOT(roots, builtin_impls));
   VALIDATE_HEAP_OBJECT(ofOperation, RAW_ROOT(roots, op_call));
   VALIDATE_CHECK_EQ(otCall, get_operation_type(RAW_ROOT(roots, op_call)));
@@ -408,6 +415,8 @@ value_t roots_validate(value_t roots) {
   VALIDATE_CHECK_EQ(1, get_array_length(RAW_ROOT(roots, subject_key_array)));
   VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, selector_key_array));
   VALIDATE_CHECK_EQ(1, get_array_length(RAW_ROOT(roots, selector_key_array)));
+  VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, transport_key_array));
+  VALIDATE_CHECK_EQ(1, get_array_length(RAW_ROOT(roots, transport_key_array)));
 
 #define __VALIDATE_STRING_TABLE_ENTRY__(name, value) VALIDATE_HEAP_OBJECT(ofUtf8, RAW_RSTR(roots, name));
   ENUM_STRING_TABLE(__VALIDATE_STRING_TABLE_ENTRY__)

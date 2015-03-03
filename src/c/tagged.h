@@ -356,5 +356,42 @@ static uint64_t get_hash_code_value(value_t value) {
 }
 
 
+/// ## Transport
+///
+/// Value that indicates how an invocation should be executed, synchronous or
+/// asynchronous.
+
+// Mode of transport.
+typedef enum {
+  tmSync    = 0,
+  tmAsync   = 1
+} transport_mode_t;
+
+// Returns a new transport with the given mode.
+static value_t new_transport(transport_mode_t mode) {
+  return new_custom_tagged(tpTransport, mode);
+}
+
+// Returns the asynchronous transport mode.
+static value_t transport_async() {
+  return new_transport(tmAsync);
+}
+
+// Returns the synchronous transport mode.
+static value_t transport_sync() {
+  return new_transport(tmSync);
+}
+
+// Returns the mode of the given transport.
+static transport_mode_t get_transport_mode(value_t value) {
+  CHECK_PHYLUM(tpTransport, value);
+  return (transport_mode_t) get_custom_tagged_payload(value);
+}
+
+// Is the given value the synchronous transport value?
+static bool is_transport_sync(value_t value) {
+  return get_transport_mode(value) == tmSync;
+}
+
 
 #endif // _TAGGED
