@@ -676,11 +676,11 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
     id_hash_map_iter_get_current(&iter, &key, &value);
     if (in_family(ofKey, key)) {
       size_t id = get_key_id(key);
-      if (id == 0) {
+      if (id == kSubjectKeyId) {
         subject = value;
-      } else if (id == 1) {
+      } else if (id == kSelectorKeyId) {
         selector = value;
-      } else if (id == 2) {
+      } else if (id == kTransportKeyId) {
         transport = value;
       }
     }
@@ -724,7 +724,7 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
     id_hash_map_iter_get_current(&iter, &key, &value);
     if (in_family(ofKey, key)) {
       size_t id = get_key_id(key);
-      if (id == 0 || id == 1 || id == 2)
+      if (id == kSubjectKeyId || id == kSelectorKeyId || id == kTransportKeyId)
         // Don't print the subject/selector again.
         continue;
     } else if (is_integer(key) && ((size_t) get_integer_value(key)) < posc) {

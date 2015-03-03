@@ -393,11 +393,11 @@ value_t roots_validate(value_t roots) {
   VALIDATE_HEAP_OBJECT(ofSpecies, RAW_ROOT(roots, empty_instance_species));
   VALIDATE_HEAP_OBJECT(ofMethodspace, RAW_ROOT(roots, builtin_methodspace));
   VALIDATE_HEAP_OBJECT(ofKey, RAW_ROOT(roots, subject_key));
-  VALIDATE_CHECK_EQ(0, get_key_id(RAW_ROOT(roots, subject_key)));
+  VALIDATE_CHECK_EQ(kSubjectKeyId, get_key_id(RAW_ROOT(roots, subject_key)));
   VALIDATE_HEAP_OBJECT(ofKey, RAW_ROOT(roots, selector_key));
-  VALIDATE_CHECK_EQ(1, get_key_id(RAW_ROOT(roots, selector_key)));
+  VALIDATE_CHECK_EQ(kSelectorKeyId, get_key_id(RAW_ROOT(roots, selector_key)));
   VALIDATE_HEAP_OBJECT(ofKey, RAW_ROOT(roots, transport_key));
-  VALIDATE_CHECK_EQ(2, get_key_id(RAW_ROOT(roots, transport_key)));
+  VALIDATE_CHECK_EQ(kTransportKeyId, get_key_id(RAW_ROOT(roots, transport_key)));
   VALIDATE_HEAP_OBJECT(ofIdHashMap, RAW_ROOT(roots, builtin_impls));
   VALIDATE_HEAP_OBJECT(ofOperation, RAW_ROOT(roots, op_call));
   VALIDATE_CHECK_EQ(otCall, get_operation_type(RAW_ROOT(roots, op_call)));

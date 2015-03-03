@@ -1542,6 +1542,11 @@ static const size_t kKeySize = HEAP_OBJECT_SIZE(2);
 static const size_t kKeyIdOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kKeyDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
+// Hardcoded key ids for the implicit arguments.
+static const size_t kSubjectKeyId = 0;
+static const size_t kSelectorKeyId = 1;
+static const size_t kTransportKeyId = 2;
+
 // The unique id for this key (unique across this runtime).
 INTEGER_ACCESSORS_DECL(key, id);
 
