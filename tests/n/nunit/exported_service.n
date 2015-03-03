@@ -5,8 +5,9 @@ import $assert;
 import $core;
 
 def $test_wrapping() {
-  def $foo := new @core:fsi:ExportedService("foo", module);
-  $core:info($foo->length);
+  def $str := "foo".view(@core:Ascii);
+  def $foo := new @core:fsi:ExportedService($str, module);
+  $foo->length.then(fn $v => $assert:equals(3, $v));
 }
 
 do {

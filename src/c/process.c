@@ -1163,28 +1163,40 @@ value_t incoming_request_thunk_validate(value_t self) {
   return success();
 }
 
-static value_t incoming_request_thunk_handler(builtin_arguments_t *args) {
+static incoming_request_state_t *incoming_request_thunk_state(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofIncomingRequestThunk, self);
   value_t state_ptr = get_incoming_request_thunk_request_state_ptr(self);
-  incoming_request_state_t *state = (incoming_request_state_t*) get_void_p_value(state_ptr);
-  return get_exported_service_handler(state->capsule->service);
+  return (incoming_request_state_t*) get_void_p_value(state_ptr);
+}
+
+static value_t incoming_request_thunk_handler(builtin_arguments_t *args) {
+  incoming_request_state_t *state = incoming_request_thunk_state(args);
+  return (state == NULL) ? null() : get_exported_service_handler(state->capsule->service);
 }
 
 static value_t incoming_request_thunk_module(builtin_arguments_t *args) {
-  value_t self = get_builtin_subject(args);
-  CHECK_FAMILY(ofIncomingRequestThunk, self);
-  value_t state_ptr = get_incoming_request_thunk_request_state_ptr(self);
-  incoming_request_state_t *state = (incoming_request_state_t*) get_void_p_value(state_ptr);
-  return get_exported_service_module(state->capsule->service);
+  incoming_request_state_t *state = incoming_request_thunk_state(args);
+  return (state == NULL) ? null() : get_exported_service_module(state->capsule->service);
 }
 
 static value_t incoming_request_thunk_request(builtin_arguments_t *args) {
+  incoming_request_state_t *state = incoming_request_thunk_state(args);
+  return (state == NULL) ? null() : state->request;
+}
+
+static value_t incoming_request_thunk_promise(builtin_arguments_t *args) {
+  incoming_request_state_t *state = incoming_request_thunk_state(args);
+  return (state == NULL) ? null() : state->surface_promise;
+}
+
+static value_t incoming_request_thunk_clear(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofIncomingRequestThunk, self);
   value_t state_ptr = get_incoming_request_thunk_request_state_ptr(self);
-  incoming_request_state_t *state = (incoming_request_state_t*) get_void_p_value(state_ptr);
-  return state->request;
+  incoming_request_state_destroy((incoming_request_state_t*) get_void_p_value(state_ptr));
+  set_void_p_value(state_ptr, NULL);
+  return null();
 }
 
 value_t add_incoming_request_thunk_builtin_implementations(runtime_t *runtime,
@@ -1192,5 +1204,7 @@ value_t add_incoming_request_thunk_builtin_implementations(runtime_t *runtime,
   ADD_BUILTIN_IMPL("incoming_request_thunk.handler", 0, incoming_request_thunk_handler);
   ADD_BUILTIN_IMPL("incoming_request_thunk.module", 0, incoming_request_thunk_module);
   ADD_BUILTIN_IMPL("incoming_request_thunk.request", 0, incoming_request_thunk_request);
+  ADD_BUILTIN_IMPL("incoming_request_thunk.promise", 0, incoming_request_thunk_promise);
+  ADD_BUILTIN_IMPL("incoming_request_thunk.clear!", 0, incoming_request_thunk_clear);
   return success();
 }
