@@ -10,6 +10,28 @@ def $test_wrapping() {
   $foo->length.then(fn $v => $assert:equals(3, $v));
 }
 
+type @A;
+
+def ($this is @A).step($n) => $n * $n;
+
+def $next_step($e, $n) {
+  if $n < 100 then {
+    def $p := $e->step($n);
+    @ctrino.collect_garbage!();
+    $p.then(fn $v {
+      $assert:equals($n * $n, $v);
+      $next_step($e, $n + 1);
+    });
+  }
+}
+
+def $test_fuzz() {
+  def $a := @ctrino.new_instance_manager(null).new_instance(@A);
+  def $e := new @core:fsi:ExportedService($a, module);
+  $next_step($e, 0);
+}
+
 do {
   $test_wrapping();
+  $test_fuzz();
 }

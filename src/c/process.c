@@ -1164,12 +1164,14 @@ static incoming_request_state_t *incoming_request_thunk_state(builtin_arguments_
 
 static value_t incoming_request_thunk_handler(builtin_arguments_t *args) {
   incoming_request_state_t *state = incoming_request_thunk_state(args);
-  return (state == NULL) ? null() : get_exported_service_handler(state->capsule->service);
+  safe_value_t s_service = state->capsule->service;
+  return (state == NULL) ? null() : get_exported_service_handler(deref(s_service));
 }
 
 static value_t incoming_request_thunk_module(builtin_arguments_t *args) {
   incoming_request_state_t *state = incoming_request_thunk_state(args);
-  return (state == NULL) ? null() : get_exported_service_module(state->capsule->service);
+  safe_value_t s_service = state->capsule->service;
+  return (state == NULL) ? null() : get_exported_service_module(deref(s_service));
 }
 
 static value_t incoming_request_thunk_request(builtin_arguments_t *args) {

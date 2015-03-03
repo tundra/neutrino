@@ -336,8 +336,8 @@ value_t finalize_exported_service(garbage_value_t dead_self) {
 }
 
 void exported_service_capsule_init(exported_service_capsule_t *capsule,
-    value_t service) {
-  capsule->service = service;
+    safe_value_t s_service) {
+  capsule->service = s_service;
 }
 
 exported_service_capsule_t *exported_service_capsule_new(runtime_t *runtime,

@@ -162,6 +162,12 @@ static value_t ctrino_builtin(builtin_arguments_t *args) {
   return new_heap_builtin_marker(runtime, name);
 }
 
+static value_t ctrino_collect_garbage(builtin_arguments_t *args) {
+  frame_push_value(args->frame, null());
+  args->frame->pc += kBuiltinOperationSize;
+  return new_heap_exhausted_condition(0);
+}
+
 static value_t ctrino_delay(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t thunk = get_builtin_argument(args, 0);
@@ -238,9 +244,10 @@ static value_t ctrino_new_global_hash_oracle(builtin_arguments_t *args) {
   return new_heap_hash_oracle(runtime, source);
 }
 
-#define kCtrinoMethodCount 20
+#define kCtrinoMethodCount 21
 static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("builtin", 1, ctrino_builtin),
+  BUILTIN_METHOD("collect_garbage!", 0, ctrino_collect_garbage),
   BUILTIN_METHOD("delay", 3, ctrino_delay),
   BUILTIN_METHOD("freeze", 1, ctrino_freeze),
   BUILTIN_METHOD("get_builtin_type", 1, ctrino_get_builtin_type),

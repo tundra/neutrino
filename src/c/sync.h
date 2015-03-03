@@ -123,7 +123,6 @@ FROZEN_ACCESSORS_DECL(foreign_service, display_name);
 
 // Extra state maintained around a request to an exported service.
 struct incoming_request_state_t {
-  // XXX: make GC safe.
   exported_service_capsule_t *capsule;
   value_t request;
   value_t surface_promise;
@@ -138,13 +137,12 @@ void incoming_request_state_destroy(incoming_request_state_t *state);
 // service itself which may move around in the heap, this state can safely be
 // passed around outside the runtime and between threads.
 struct exported_service_capsule_t {
-  // XXX: make GC safe.
-  value_t service;
+  safe_value_t service;
 };
 
 // Set up the given capsule struct.
 void exported_service_capsule_init(exported_service_capsule_t *capsule,
-    value_t service);
+    safe_value_t s_service);
 
 // Create and return a new export service capsule.
 exported_service_capsule_t *exported_service_capsule_new(runtime_t *runtime,
