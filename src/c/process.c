@@ -154,17 +154,18 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
     // allocate a new top piece that definitely has room.
     size_t default_capacity = get_stack_default_piece_capacity(stack);
     size_t transfer_arg_count = get_array_length(arg_map);
-    size_t required_capacity = frame_capacity // the new frame's locals
-    + kFrameHeaderSize // the new frame's header
-        + 1 // the synthetic bottom frame's one local
-        + kFrameHeaderSize // the synthetic bottom frame's header
+    size_t required_capacity =
+          frame_capacity      // the new frame's locals
+        + kFrameHeaderSize    // the new frame's header
+        + 1                   // the synthetic bottom frame's one local
+        + kFrameHeaderSize    // the synthetic bottom frame's header
         + transfer_arg_count; // any arguments to be copied onto the piece
     size_t new_capacity = max_size(default_capacity, required_capacity);
 
     // Create and initialize the new stack segment. The frame struct is still
     // pointing to the old frame.
-    TRY_DEF(new_piece,
-        new_heap_stack_piece(runtime, new_capacity, top_piece, stack));
+    TRY_DEF(new_piece, new_heap_stack_piece(runtime, new_capacity, top_piece,
+        stack));
     push_stack_piece_bottom_frame(runtime, new_piece, arg_map);
     transfer_top_arguments(new_piece, frame, transfer_arg_count);
     set_stack_top_piece(stack, new_piece);
@@ -190,10 +191,8 @@ void frame_walk_down_stack(frame_t *frame) {
   frame_t snapshot = *frame;
   // Get the frame pointer and capacity from the frame's header.
   value_t *stack_start = frame_get_stack_piece_bottom(frame);
-  frame->frame_pointer = stack_start
-      + frame_get_previous_frame_pointer(&snapshot);
-  frame->limit_pointer = stack_start
-      + frame_get_previous_limit_pointer(&snapshot);
+  frame->frame_pointer = stack_start + frame_get_previous_frame_pointer(&snapshot);
+  frame->limit_pointer = stack_start + frame_get_previous_limit_pointer(&snapshot);
   frame->flags = frame_get_previous_flags(&snapshot);
   frame->pc = frame_get_previous_pc(&snapshot);
   // The stack pointer will be the first field of the top frame's header.
@@ -210,8 +209,7 @@ value_t *frame_get_stack_piece_bottom(frame_t *frame) {
 
 value_t *frame_get_stack_piece_top(frame_t *frame) {
   value_t *storage = get_stack_piece_storage(frame->stack_piece);
-  return storage
-      + get_integer_value(get_stack_piece_capacity(frame->stack_piece));
+  return storage + get_integer_value(get_stack_piece_capacity(frame->stack_piece));
 }
 
 frame_t open_stack(value_t stack) {
@@ -236,7 +234,7 @@ value_t barrier_iter_advance(barrier_iter_t *iter) {
 // --- F r a m e ---
 
 bool try_push_new_frame(frame_t *frame, size_t frame_capacity, uint32_t flags,
-bool is_lid) {
+    bool is_lid) {
   value_t stack_piece = frame->stack_piece;
   CHECK_FALSE("pushing closed stack piece", is_stack_piece_closed(stack_piece));
   // First record the current state of the old top frame so we can store it in
@@ -263,10 +261,8 @@ bool is_lid) {
   frame->pc = 0;
   // Record the relevant information about the previous frame in the new frame's
   // header.
-  frame_set_previous_frame_pointer(frame,
-      old_frame.frame_pointer - stack_piece_start);
-  frame_set_previous_limit_pointer(frame,
-      old_frame.limit_pointer - stack_piece_start);
+  frame_set_previous_frame_pointer(frame, old_frame.frame_pointer - stack_piece_start);
+  frame_set_previous_limit_pointer(frame, old_frame.limit_pointer - stack_piece_start);
   frame_set_previous_flags(frame, old_frame.flags);
   frame_set_previous_pc(frame, old_frame.pc);
   frame_set_code_block(frame, nothing());
@@ -313,8 +309,8 @@ void frame_set_previous_limit_pointer(frame_t *frame, size_t value) {
 }
 
 size_t frame_get_previous_limit_pointer(frame_t *frame) {
-  return get_integer_value(
-      *access_frame_header_field(frame, kFrameHeaderPreviousLimitPointerOffset));
+  return get_integer_value(*access_frame_header_field(frame,
+      kFrameHeaderPreviousLimitPointerOffset));
 }
 
 void frame_set_previous_flags(frame_t *frame, value_t flags) {
@@ -343,13 +339,12 @@ value_t frame_get_argument_map(frame_t *frame) {
 }
 
 void frame_set_previous_pc(frame_t *frame, size_t pc) {
-  *access_frame_header_field(frame, kFrameHeaderPreviousPcOffset) = new_integer(
-      pc);
+  *access_frame_header_field(frame, kFrameHeaderPreviousPcOffset) = new_integer(pc);
 }
 
 size_t frame_get_previous_pc(frame_t *frame) {
-  return get_integer_value(
-      *access_frame_header_field(frame, kFrameHeaderPreviousPcOffset));
+  return get_integer_value(*access_frame_header_field(frame,
+      kFrameHeaderPreviousPcOffset));
 }
 
 value_t frame_push_value(frame_t *frame, value_t value) {
@@ -489,9 +484,8 @@ static value_t escape_is_live(builtin_arguments_t *args) {
 
 value_t add_escape_builtin_implementations(runtime_t *runtime,
     safe_value_t s_map) {
-  TRY(
-      add_custom_method_impl(runtime, deref(s_map), "escape()", 1,
-          new_flag_set(kFlagSetAllOff), emit_fire_escape));
+  TRY(add_custom_method_impl(runtime, deref(s_map), "escape()", 1,
+      new_flag_set(kFlagSetAllOff), emit_fire_escape));
   ADD_BUILTIN_IMPL("escape.is_live?", 0, escape_is_live);
   return success();
 }
@@ -522,9 +516,8 @@ value_t emit_lambda_call_trampoline(assembler_t *assm) {
 
 value_t add_lambda_builtin_implementations(runtime_t *runtime,
     safe_value_t s_map) {
-  TRY(
-      add_custom_method_impl(runtime, deref(s_map), "lambda()", 0,
-          new_flag_set(mfLambdaDelegate), emit_lambda_call_trampoline));
+  TRY(add_custom_method_impl(runtime, deref(s_map), "lambda()", 0,
+      new_flag_set(mfLambdaDelegate), emit_lambda_call_trampoline));
   return success();
 }
 
@@ -569,9 +562,8 @@ static value_t block_is_live(builtin_arguments_t *args) {
 
 value_t add_block_builtin_implementations(runtime_t *runtime,
     safe_value_t s_map) {
-  TRY(
-      add_custom_method_impl(runtime, deref(s_map), "block()", 0,
-          new_flag_set(mfBlockDelegate), emit_block_call_trampoline));
+  TRY(add_custom_method_impl(runtime, deref(s_map), "block()", 0,
+      new_flag_set(mfBlockDelegate), emit_block_call_trampoline));
   ADD_BUILTIN_IMPL("block.is_live?", 0, block_is_live);
   return success();
 }
