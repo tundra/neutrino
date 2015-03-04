@@ -133,14 +133,20 @@ struct incoming_request_state_t {
   size_t request_count_delta;
 };
 
+// Initialize the given state. Note that this may change the request count of
+// the capsule as a side-effect.
 void incoming_request_state_init(incoming_request_state_t *state,
     exported_service_capsule_t *capsule, safe_value_t s_request,
     safe_value_t s_surface_promise, size_t request_count_delta);
 
+// Returns a new incomine request state. Note that this may change the request
+// count of the capsule as a side-effect.
 value_t incoming_request_state_new(exported_service_capsule_t *capsule,
     safe_value_t s_request, safe_value_t s_surface_promise,
     size_t request_count_delta, incoming_request_state_t **result_out);
 
+// Destroy the given incomine request state. Note that this may change the
+// request count of the request's capsule as a side-effect.
 void incoming_request_state_destroy(runtime_t *runtime, incoming_request_state_t *state);
 
 // State allocated on the C heap associated with an exported service. Unlike the
