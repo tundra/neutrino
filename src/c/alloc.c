@@ -794,12 +794,16 @@ value_t new_heap_exported_service(runtime_t *runtime, value_t process,
   set_exported_service_process(result, process);
   set_exported_service_handler(result, handler);
   set_exported_service_module(result, module);
+  protect_value_data_t protect_data;
+  protect_data.maybe_weak.is_weak = is_exported_service_weak;
+  protect_data.maybe_weak.is_weak_data = NULL;
+  safe_value_t s_result = runtime_protect_value_with_flags(runtime, result,
+      tfMaybeWeak | tfSelfDestruct | tfFinalize, &protect_data);
   exported_service_capsule_t *capsule = exported_service_capsule_new(runtime,
-      result);
+      s_result);
   if (capsule == NULL)
     return new_system_error_condition(seAllocationFailed);
   set_void_p_value(capsule_ptr, capsule);
-  runtime_protect_value_with_flags(runtime, result, tfAlwaysWeak | tfSelfDestruct | tfFinalize, NULL);
   return post_create_sanity_check(result, size);
 }
 

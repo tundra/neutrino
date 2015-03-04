@@ -205,20 +205,36 @@ void foreign_request_state_destroy(foreign_request_state_t *state) {
   allocator_default_free(new_memory_block(state, sizeof(foreign_request_state_t)));
 }
 
+void incoming_request_state_init(incoming_request_state_t *state,
+    exported_service_capsule_t *capsule, safe_value_t s_request,
+    safe_value_t s_surface_promise, size_t request_count_delta) {
+  state->capsule = capsule;
+  state->s_request = s_request;
+  state->s_surface_promise = s_surface_promise;
+  state->request_count_delta = request_count_delta;
+  if (request_count_delta > 0)
+    capsule->request_count += request_count_delta;
+}
+
 value_t incoming_request_state_new(exported_service_capsule_t *capsule,
-    value_t request, value_t surface_promise, incoming_request_state_t **result_out) {
+    safe_value_t s_request, safe_value_t s_surface_promise,
+    size_t request_count_delta, incoming_request_state_t **result_out) {
   memory_block_t memory = allocator_default_malloc(sizeof(incoming_request_state_t));
   if (memory_block_is_empty(memory))
     return new_system_call_failed_condition("malloc");
   incoming_request_state_t *state = (incoming_request_state_t*) memory.memory;
-  state->capsule = capsule;
-  state->request = request;
-  state->surface_promise = surface_promise;
+  incoming_request_state_init(state, capsule, s_request, s_surface_promise,
+      request_count_delta);
   *result_out = state;
   return success();
 }
 
-void incoming_request_state_destroy(incoming_request_state_t *state) {
+void incoming_request_state_destroy(runtime_t *runtime,
+    incoming_request_state_t *state) {
+  if (state->request_count_delta > 0)
+    state->capsule->request_count -= state->request_count_delta;
+  safe_value_destroy(runtime, state->s_request);
+  safe_value_destroy(runtime, state->s_surface_promise);
   allocator_default_free(new_memory_block(state, sizeof(incoming_request_state_t)));
 }
 
@@ -330,6 +346,10 @@ value_t finalize_exported_service(garbage_value_t dead_self) {
       kVoidPValueOffset);
   void *raw_capsule_ptr = value_to_pointer_bit_cast(capsule_value.value);
   exported_service_capsule_t *capsule = (exported_service_capsule_t*) raw_capsule_ptr;
+  if (capsule == NULL)
+    // A null capsule can happen if we run out of memory right in the middle of
+    // construction so don't crash on that.
+    return success();
   if (!exported_service_capsule_destroy(capsule))
     return new_system_call_failed_condition("free");
   return success();
@@ -337,22 +357,30 @@ value_t finalize_exported_service(garbage_value_t dead_self) {
 
 void exported_service_capsule_init(exported_service_capsule_t *capsule,
     safe_value_t s_service) {
-  capsule->service = s_service;
+  capsule->s_service = s_service;
+  capsule->request_count = 0;
 }
 
 exported_service_capsule_t *exported_service_capsule_new(runtime_t *runtime,
-    value_t service) {
+    safe_value_t s_service) {
   memory_block_t block = allocator_default_malloc(sizeof(exported_service_capsule_t));
   if (memory_block_is_empty(block))
     return NULL;
   exported_service_capsule_t *capsule = (exported_service_capsule_t*) block.memory;
-  exported_service_capsule_init(capsule, service);
+  exported_service_capsule_init(capsule, s_service);
   return capsule;
 }
 
 bool exported_service_capsule_destroy(exported_service_capsule_t *capsule) {
+  CHECK_TRUE("destroying capsule in use", capsule->request_count == 0);
   allocator_default_free(new_memory_block(capsule, sizeof(exported_service_capsule_t)));
   return true;
+}
+
+bool is_exported_service_weak(value_t self, void *data) {
+  CHECK_FAMILY(ofExportedService, self);
+  exported_service_capsule_t *capsule = get_exported_service_capsule(self);
+  return capsule->request_count == 0;
 }
 
 static value_t exported_service_call_with_args(builtin_arguments_t *args) {
@@ -364,7 +392,12 @@ static value_t exported_service_call_with_args(builtin_arguments_t *args) {
   TRY_DEF(promise, new_heap_pending_promise(runtime));
   exported_service_capsule_t *capsule = get_exported_service_capsule(self);
   incoming_request_state_t *state = NULL;
-  TRY(incoming_request_state_new(capsule, reified, promise, &state));
+  safe_value_t s_request = runtime_protect_value(runtime, reified);
+  safe_value_t s_promise = runtime_protect_value(runtime, promise);
+  // Creating this request increases the request count by 1 since there is
+  // nothing else guaranteed to keep the service alive until the request has
+  // completed, so we need it to happen explicitly.
+  TRY(incoming_request_state_new(capsule, s_request, s_promise, 1, &state));
   value_t process = get_exported_service_process(self);
   process_airlock_t *airlock = get_process_airlock(process);
   process_airlock_schedule_incoming_request(airlock, state);

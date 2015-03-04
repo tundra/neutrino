@@ -990,7 +990,7 @@ value_t deliver_process_incoming(runtime_t *runtime, value_t process) {
     TRY_DEF(thunk, new_heap_incoming_request_thunk(runtime, state));
     job_t job;
     job_init(&job, ROOT(runtime, call_thunk_code_block), thunk,
-        state->surface_promise, nothing());
+        deref(state->s_surface_promise), nothing());
     TRY(offer_process_job(runtime, process, &job));
   }
   return success();
@@ -1164,31 +1164,33 @@ static incoming_request_state_t *incoming_request_thunk_state(builtin_arguments_
 
 static value_t incoming_request_thunk_handler(builtin_arguments_t *args) {
   incoming_request_state_t *state = incoming_request_thunk_state(args);
-  safe_value_t s_service = state->capsule->service;
+  safe_value_t s_service = state->capsule->s_service;
   return (state == NULL) ? null() : get_exported_service_handler(deref(s_service));
 }
 
 static value_t incoming_request_thunk_module(builtin_arguments_t *args) {
   incoming_request_state_t *state = incoming_request_thunk_state(args);
-  safe_value_t s_service = state->capsule->service;
+  safe_value_t s_service = state->capsule->s_service;
   return (state == NULL) ? null() : get_exported_service_module(deref(s_service));
 }
 
 static value_t incoming_request_thunk_request(builtin_arguments_t *args) {
   incoming_request_state_t *state = incoming_request_thunk_state(args);
-  return (state == NULL) ? null() : state->request;
+  return (state == NULL) ? null() : deref(state->s_request);
 }
 
 static value_t incoming_request_thunk_promise(builtin_arguments_t *args) {
   incoming_request_state_t *state = incoming_request_thunk_state(args);
-  return (state == NULL) ? null() : state->surface_promise;
+  return (state == NULL) ? null() : deref(state->s_surface_promise);
 }
 
 static value_t incoming_request_thunk_clear(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofIncomingRequestThunk, self);
   value_t state_ptr = get_incoming_request_thunk_request_state_ptr(self);
-  incoming_request_state_destroy((incoming_request_state_t*) get_void_p_value(state_ptr));
+  runtime_t *runtime = get_builtin_runtime(args);
+  incoming_request_state_destroy(runtime,
+      (incoming_request_state_t*) get_void_p_value(state_ptr));
   set_void_p_value(state_ptr, NULL);
   return null();
 }

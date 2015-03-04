@@ -163,8 +163,12 @@ static value_t ctrino_builtin(builtin_arguments_t *args) {
 }
 
 static value_t ctrino_collect_garbage(builtin_arguments_t *args) {
+  // Advance past the current instruction forcefully. I'm not 100% sure this
+  // isn't unsafe for some reason that hasn't occurred to me but it seems to
+  // work okay.
   frame_push_value(args->frame, null());
   args->frame->pc += kBuiltinOperationSize;
+  // Then pretend we need a gc.
   return new_heap_exhausted_condition(0);
 }
 

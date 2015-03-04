@@ -10,28 +10,55 @@ def $test_wrapping() {
   $foo->length.then(fn $v => $assert:equals(3, $v));
 }
 
-type @A;
+type @Helper {
 
-def ($this is @A).step($n) => $n * $n;
+  def $this.step($n) {
+    @ctrino.collect_garbage!();
+    $n * $n;
+  }
 
-def $next_step($e, $n) {
-  if $n < 100 then {
-    def $p := $e->step($n);
+  def $this.echo($v) => $v;
+
+}
+
+def $next_step($service, $n) {
+  if $n < 20 then {
+    def $p := $service->step($n);
     @ctrino.collect_garbage!();
     $p.then(fn $v {
       $assert:equals($n * $n, $v);
-      $next_step($e, $n + 1);
+      $next_step($service, $n + 1);
     });
   }
 }
 
-def $test_fuzz() {
-  def $a := @ctrino.new_instance_manager(null).new_instance(@A);
-  def $e := new @core:fsi:ExportedService($a, module);
-  $next_step($e, 0);
+def $test_gc_safe() {
+  def $helper := @ctrino.new_instance_manager(null).new_instance(@Helper);
+  def $service := new @core:fsi:ExportedService($helper, module);
+  $next_step($service, 0);
+}
+
+def $test_roundtrip() {
+  def $helper := @ctrino.new_instance_manager(null).new_instance(@Helper);
+  def $service := new @core:fsi:ExportedService($helper, module);
+  def $run := fn ($in) {
+    def $out_p := $service->echo($in).then(fn $out => $assert:equals($in, $out));
+    @ctrino.collect_garbage!();
+  }
+  $run(946);
+  $run("hey");
+  $run("oof!");
+  $run(true);
+  $run(false);
+  $run(null);
+  $run([]);
+  $run([1, 2, 3]);
+  $run([1, [2, [3, [4]]]]);
+  $run({});
 }
 
 do {
   $test_wrapping();
-  $test_fuzz();
+  $test_gc_safe();
+  $test_roundtrip();
 }

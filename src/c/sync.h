@@ -123,21 +123,38 @@ FROZEN_ACCESSORS_DECL(foreign_service, display_name);
 
 // Extra state maintained around a request to an exported service.
 struct incoming_request_state_t {
+  // Capsule for the service that should handle this request.
   exported_service_capsule_t *capsule;
-  value_t request;
-  value_t surface_promise;
+  // The request data.
+  safe_value_t s_request;
+  // The promise to resolve with the result.
+  safe_value_t s_surface_promise;
+  // How much did creating this request increase the capsule's request count?
+  size_t request_count_delta;
 };
 
-value_t incoming_request_state_new(exported_service_capsule_t *capsule,
-    value_t request, value_t surface_promise, incoming_request_state_t **result_out);
+void incoming_request_state_init(incoming_request_state_t *state,
+    exported_service_capsule_t *capsule, safe_value_t s_request,
+    safe_value_t s_surface_promise, size_t request_count_delta);
 
-void incoming_request_state_destroy(incoming_request_state_t *state);
+value_t incoming_request_state_new(exported_service_capsule_t *capsule,
+    safe_value_t s_request, safe_value_t s_surface_promise,
+    size_t request_count_delta, incoming_request_state_t **result_out);
+
+void incoming_request_state_destroy(runtime_t *runtime, incoming_request_state_t *state);
 
 // State allocated on the C heap associated with an exported service. Unlike the
 // service itself which may move around in the heap, this state can safely be
-// passed around outside the runtime and between threads.
+// passed around outside the runtime and between threads. However: it must only
+// be passed around and back into the runtime, other threads must not change
+// the state.
 struct exported_service_capsule_t {
-  safe_value_t service;
+  // Reference to the service being exported.
+  safe_value_t s_service;
+  // Number of outstanding requests; this is taken into account when deciding
+  // whether the service is still alive and so can be used as a refcount by
+  // outstanding requests to keep it alive until they're complete.
+  size_t request_count;
 };
 
 // Set up the given capsule struct.
@@ -146,9 +163,11 @@ void exported_service_capsule_init(exported_service_capsule_t *capsule,
 
 // Create and return a new export service capsule.
 exported_service_capsule_t *exported_service_capsule_new(runtime_t *runtime,
-    value_t service);
+    safe_value_t s_service);
 
 bool exported_service_capsule_destroy(exported_service_capsule_t *capsule);
+
+bool is_exported_service_weak(value_t service, void *data);
 
 static const size_t kExportedServiceSize = HEAP_OBJECT_SIZE(4);
 static const size_t kExportedServiceCapsulePtrOffset = HEAP_OBJECT_FIELD_OFFSET(0);
