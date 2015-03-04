@@ -3,7 +3,6 @@
 
 // Gc-safe references.
 
-
 #ifndef _SAFE
 #define _SAFE
 
@@ -101,7 +100,8 @@ typedef struct {
 
 // If the given tracker is maybe-weak, returns the maybe-weak view of it.
 // Otherwise NULL.
-maybe_weak_object_tracker_t *maybe_weak_object_tracker_from(object_tracker_t *tracker);
+maybe_weak_object_tracker_t *maybe_weak_object_tracker_from(
+    object_tracker_t *tracker);
 
 // Returns true iff the given object tracker is currently weak. If the tracker
 // is maybe-weak this requires that its weakness has been determined previously.
@@ -151,6 +151,8 @@ value_t deref(safe_value_t s_value);
 // has not been garbage collected.
 bool safe_value_is_garbage(safe_value_t s_value);
 
+// Does the given safe value wrap nothing?
+bool safe_value_is_nothing(safe_value_t s_value);
 
 // A pool of safe values that can be disposed together. This is not a scoped
 // value and safe values can be allocated into this in any order.

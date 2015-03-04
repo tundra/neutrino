@@ -165,9 +165,12 @@ void exported_service_capsule_init(exported_service_capsule_t *capsule,
 exported_service_capsule_t *exported_service_capsule_new(runtime_t *runtime,
     safe_value_t s_service);
 
+// Destroy the given capsule. The capsule must be dead, that is, there can
+// be no active refcounts.
 bool exported_service_capsule_destroy(exported_service_capsule_t *capsule);
 
-bool is_exported_service_weak(value_t service, void *data);
+// Returns true iff the given exported service can be safely collected.
+bool is_exported_service_weak(value_t sellf, void *data);
 
 static const size_t kExportedServiceSize = HEAP_OBJECT_SIZE(4);
 static const size_t kExportedServiceCapsulePtrOffset = HEAP_OBJECT_FIELD_OFFSET(0);

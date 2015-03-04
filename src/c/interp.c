@@ -936,10 +936,9 @@ static value_t prepare_run_job(runtime_t *runtime, value_t stack, job_t *job) {
 }
 
 static value_t resolve_job_promise(value_t result, safe_value_t s_promise) {
-  value_t promise = deref(s_promise);
-  if (is_nothing(promise))
+  if (safe_value_is_nothing(s_promise))
     return success();
-  fulfill_promise(promise, result);
+  fulfill_promise(deref(s_promise), result);
   return success();
 }
 

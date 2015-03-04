@@ -23,6 +23,12 @@ bool object_tracker_is_garbage(object_tracker_t *tracker) {
   return (tracker->state & tsGarbage) != 0;
 }
 
+bool safe_value_is_nothing(safe_value_t s_value) {
+  // This works both for immediates and non-immediates because non-immediates
+  // are object-tagged and hence distinct from nothing.
+  return is_nothing(s_value.as_value);
+}
+
 bool object_tracker_is_currently_weak(object_tracker_t *tracker) {
   if (object_tracker_is_always_weak(tracker)) {
     return true;
