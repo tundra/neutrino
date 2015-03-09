@@ -41,6 +41,20 @@
 FLAVOR(__FLAVOR_TYPE__) TARGET;                                                \
 __GENERIC_TRY_SET__(FLAVOR, TARGET, EXPR, RETURN)
 
+#define __GENERIC_RETRY__(FLAVOR, RUNTIME, EXPR, RETURN) do {                  \
+  FLAVOR(__FLAVOR_TYPE__) __gr_value__ = (EXPR);                               \
+  if (FLAVOR(__FLAVOR_IS_EXHAUSTED__)(__gr_value__)) {                         \
+    __GENERIC_TRY_DEF__(FLAVOR, __recall__,                                    \
+        runtime_prepare_retry_after_heap_exhausted(RUNTIME, __gr_value__),     \
+        RETURN);                                                               \
+    __gr_value__ = (EXPR);                                                     \
+    runtime_complete_retry_after_heap_exhausted(RUNTIME, __recall__);          \
+    if (FLAVOR(__FLAVOR_IS_EXHAUSTED__)(__gr_value__))                         \
+      RETURN(new_out_of_memory_condition(__gr_value__));                       \
+  }                                                                            \
+  __GENERIC_TRY__(FLAVOR, __gr_value__, RETURN);                               \
+} while (false)
+
 // Try performing the given expression. If it fails with heap exhausted gc and
 // try again. If this fails too abort with an oom. Otherwise store the result
 // in the target variable.

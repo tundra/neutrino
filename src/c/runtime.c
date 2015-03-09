@@ -1008,7 +1008,7 @@ value_t get_runtime_plugin_factory_at(runtime_t *runtime, size_t index) {
 value_t runtime_load_library_from_stream(runtime_t *runtime,
     in_stream_t *stream, value_t display_name) {
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
-  E_BEGIN_TRY_FINALLY();
+  TRY_FINALLY {
     E_S_TRY_DEF(s_data, protect(pool, read_stream_to_blob(runtime, stream)));
     E_TRY_DEF(library, runtime_plankton_deserialize(runtime, s_data));
     if (!in_family(ofLibrary, library))
@@ -1026,9 +1026,9 @@ value_t runtime_load_library_from_stream(runtime_t *runtime,
           value));
     }
     E_RETURN(success());
-  E_FINALLY();
+  } FINALLY {
     DISPOSE_SAFE_VALUE_POOL(pool);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 // Assemble a module that can be executed from unbound modules in the module

@@ -229,10 +229,9 @@ void value_mapping_init(value_mapping_t *resolver,
 typedef struct {
   // The input blob.
   safe_value_t s_blob;
-  // The buffer we're reading input from.
-  byte_stream_t *in;
+  size_t cursor;
   // Map from object offsets we've seen to their values.
-  value_t ref_map;
+  safe_value_t s_ref_map;
   // The offset of the next object we're going to write.
   size_t object_offset;
   // The runtime to use for heap allocation.
@@ -245,87 +244,74 @@ typedef struct {
 static value_t deserialize_state_init(deserialize_state_t *state, runtime_t *runtime,
     object_factory_t *factory, safe_value_t s_blob, byte_stream_t *in) {
   state->s_blob = s_blob;
-  state->in = in;
+  state->cursor = 0;
   state->object_offset = 0;
   state->runtime = runtime;
   state->factory = factory;
-  TRY_SET(state->ref_map, new_heap_id_hash_map(runtime, 16));
+  state->s_ref_map = runtime_protect_value(runtime, new_heap_id_hash_map(runtime, 16));
   return success();
+}
+
+static void deserialize_state_dispose(deserialize_state_t *state) {
+  safe_value_destroy(state->runtime, state->s_ref_map);
 }
 
 // Reads the next value from the stream.
 static value_t value_deserialize(deserialize_state_t *state);
 
-static value_t deserialize_garbage_collect(deserialize_state_t *state) {
-  TRY(runtime_garbage_collect(state->runtime));
-  state->in->blob = get_blob_data(deref(state->s_blob));
-  return success();
-}
+// Try doing the given expression, retry if the heap becomes exhausted. Note:
+// only use this if the function you're calling doesn't handle heap exhaustion.
+// For instance, don't retry calls to deserialize functions because they only
+// fail for non-exhaustion reasons.
+#define E_RETRY(RUNTIME, EXPR) __GENERIC_RETRY__(P_FLAVOR, RUNTIME, EXPR, P_RETURN)
 
-#define E_S_RETRY()
-
-#define E_TRY_DEF_TRY_AGAIN(POOL, NAME, EXPR)                                  \
+// Try and possibly retry evaluating the given expression and if successful
+// protect the result using the given pool and store it in a new variable with
+// the given name. Same rules apply as for E_RETRY.
+#define E_RETRY_DEF_PROTECT(POOL, RUNTIME, NAME, EXPR)                         \
   safe_value_t NAME;                                                           \
   do {                                                                         \
-    value_t raw_##NAME = (EXPR);                                               \
-    if (in_condition_cause(ccHeapExhausted, raw_##NAME)) {                     \
-      E_TRY(deserialize_garbage_collect(state));                               \
-      raw_##NAME = (EXPR);                                                     \
-    }                                                                          \
-    E_TRY(raw_##NAME);                                                         \
-    NAME = protect(POOL, raw_##NAME);                                          \
-  } while (false)
-
-
-#define E_TRY_DEF_TRY_AGAIN(POOL, NAME, EXPR)                                  \
-  safe_value_t NAME;                                                           \
-  do {                                                                         \
-    value_t raw_##NAME = (EXPR);                                               \
-    if (in_condition_cause(ccHeapExhausted, raw_##NAME)) {                     \
-      E_TRY(deserialize_garbage_collect(state));                               \
-      raw_##NAME = (EXPR);                                                     \
-    }                                                                          \
-    E_TRY(raw_##NAME);                                                         \
-    NAME = protect(POOL, raw_##NAME);                                          \
+    __GENERIC_RETRY_DEF__(P_FLAVOR, RUNTIME, __erdp_value__, EXPR, P_RETURN);  \
+    NAME = protect(POOL, __erdp_value__);                                      \
   } while (false)
 
 static value_t array_deserialize(size_t length, deserialize_state_t *state) {
   CREATE_SAFE_VALUE_POOL(state->runtime, 1, pool);
-  E_BEGIN_TRY_FINALLY();
-    E_TRY_DEF_TRY_AGAIN(pool, s_result, new_heap_array(state->runtime, length));
+  TRY_FINALLY {
+    E_RETRY_DEF_PROTECT(pool, state->runtime, s_result, new_heap_array(state->runtime, length));
     for (size_t i = 0; i < length; i++) {
       E_TRY_DEF(value, value_deserialize(state));
       set_array_at(deref(s_result), i, value);
     }
     E_TRY(ensure_frozen(state->runtime, deref(s_result)));
     E_RETURN(deref(s_result));
-  E_FINALLY();
+  } FINALLY {
     DISPOSE_SAFE_VALUE_POOL(pool);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 static value_t map_entry_deserialize(safe_value_t s_map, deserialize_state_t *state) {
   CREATE_SAFE_VALUE_POOL(state->runtime, 2, pool);
-  E_BEGIN_TRY_FINALLY();
+  TRY_FINALLY {
     E_S_TRY_DEF(s_key, protect(pool, value_deserialize(state)));
     E_S_TRY_DEF(s_value, protect(pool, value_deserialize(state)));
     E_TRY(safe_set_id_hash_map_at(state->runtime, s_map, s_key, s_value));
     E_RETURN(success());
-  E_FINALLY();
+  } FINALLY {
     DISPOSE_SAFE_VALUE_POOL(pool);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 static value_t map_deserialize(size_t entry_count, deserialize_state_t *state) {
   CREATE_SAFE_VALUE_POOL(state->runtime, 1, pool);
-  E_BEGIN_TRY_FINALLY();
-    E_TRY_DEF_TRY_AGAIN(pool, s_result, new_heap_id_hash_map(state->runtime, 16));
+  TRY_FINALLY {
+    E_RETRY_DEF_PROTECT(pool, state->runtime, s_result, new_heap_id_hash_map(state->runtime, 16));
     for (size_t i = 0; i < entry_count; i++)
       E_TRY(map_entry_deserialize(s_result, state));
     E_RETURN(deref(s_result));
-  E_FINALLY();
+  } FINALLY {
     DISPOSE_SAFE_VALUE_POOL(pool);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 static value_t default_string_deserialize(pton_instr_t *instr, deserialize_state_t *state) {
@@ -342,46 +328,52 @@ static size_t acquire_object_index(deserialize_state_t *state) {
 
 static value_t seed_deserialize(size_t headerc, size_t fieldc, deserialize_state_t *state) {
   size_t offset = acquire_object_index(state);
-  // Read the header before creating the instance.
-  TRY_DEF(header, value_deserialize(state));
-  for (size_t i = 1; i < headerc; i++)
-    // Ignore remaining headers.
-    TRY(value_deserialize(state));
-  object_factory_t *factory = state->factory;
-  TRY_DEF(init_value, (factory->new_empty_object)(factory, state->runtime, header));
-  TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
-      init_value));
-  TRY_DEF(payload, map_deserialize(fieldc, state));
-  TRY_DEF(final_value, (factory->set_object_fields)(factory, state->runtime,
-      header, init_value, payload));
-  if (is_nothing(init_value)) {
-    // If the initial value was nothing it means that we should use the value
-    // returned from setting the contents. Hence we replace the initial value
-    // in the reference map.
-    TRY(set_id_hash_map_at(state->runtime, state->ref_map, new_integer(offset),
-        final_value));
-    return final_value;
-  } else {
-    return init_value;
-  }
+  CREATE_SAFE_VALUE_POOL(state->runtime, 5, pool);
+  TRY_FINALLY {
+    // Read the header before creating the instance.
+    E_S_TRY_DEF(s_header, protect(pool, value_deserialize(state)));
+    for (size_t i = 1; i < headerc; i++)
+      // Ignore remaining headers.
+      E_TRY(value_deserialize(state));
+    object_factory_t *factory = state->factory;
+    E_RETRY_DEF_PROTECT(pool, state->runtime, s_init_value,
+        (factory->new_empty_object)(factory, state->runtime, deref(s_header)));
+    E_RETRY(state->runtime, safe_set_id_hash_map_at(state->runtime, state->s_ref_map,
+        protect_immediate(new_integer(offset)), s_init_value));
+    E_S_TRY_DEF(s_payload, protect(pool, map_deserialize(fieldc, state)));
+    E_RETRY_DEF_PROTECT(pool, state->runtime, s_final_value,
+        (factory->set_object_fields)(factory, state->runtime, deref(s_header),
+            deref(s_init_value), deref(s_payload)));
+    if (safe_value_is_nothing(s_init_value)) {
+      // If the initial value was nothing it means that we should use the value
+      // returned from setting the contents. Hence we replace the initial value
+      // in the reference map.
+      E_RETRY(state->runtime, safe_set_id_hash_map_at(state->runtime,
+          state->s_ref_map, protect_immediate(new_integer(offset)), s_final_value));
+      E_RETURN(deref(s_final_value));
+    } else {
+      E_RETURN(deref(s_init_value));
+    }
+  } FINALLY {
+    DISPOSE_SAFE_VALUE_POOL(pool);
+  } YRT
 }
 
 static value_t reference_deserialize(size_t offset, deserialize_state_t *state) {
   size_t index = state->object_offset - offset - 1;
-  value_t result = get_id_hash_map_at(state->ref_map, new_integer(index));
+  value_t result = get_id_hash_map_at(deref(state->s_ref_map), new_integer(index));
   CHECK_FALSE("missing reference", in_condition_cause(ccNotFound, result));
   return result;
 }
 
 static value_t value_deserialize(deserialize_state_t *state) {
-  byte_stream_t *in = state->in;
-  blob_t blob = in->blob;
-  size_t cursor = in->cursor;
+  blob_t blob = get_blob_data(deref(state->s_blob));
+  size_t cursor = state->cursor;
   pton_instr_t instr;
   uint8_t *code = (uint8_t*) blob.data;
   if (!pton_decode_next_instruction(code + cursor, blob.size - cursor, &instr))
     return new_invalid_input_condition();
-  in->cursor += instr.size;
+  state->cursor += instr.size;
   switch (instr.opcode) {
     case PTON_OPCODE_INT64:
       return new_integer(instr.payload.int64_value);
@@ -419,5 +411,7 @@ value_t plankton_deserialize(runtime_t *runtime, object_factory_t *factory_or_nu
   }
   deserialize_state_t state;
   TRY(deserialize_state_init(&state, runtime, &factory, s_blob, &in));
-  return value_deserialize(&state);
+  value_t result = value_deserialize(&state);
+  deserialize_state_dispose(&state);
+  return result;
 }

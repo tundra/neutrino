@@ -164,37 +164,57 @@ TEST(serialize, cycles) {
 
 static plankton::Variant test_data_gen(plankton::Factory *factory, size_t depth,
     size_t seed) {
-  if (depth == 0) {
+  if (depth == 0)
     return (seed % 239);
-  } else if ((depth % 2) == 0) {
-    plankton::Array result = factory->new_array();
-    result.add(test_data_gen(factory, depth - 1, (3 * seed) + 5));
-    result.add(test_data_gen(factory, depth - 1, (5 * seed) + 7));
-    return result;
-  } else {
-    size_t root = (seed % 257);
-    plankton::Map result = factory->new_map();
-    result.set(root, test_data_gen(factory, depth - 1, (11 * seed) + 13));
-    result.set(root + 1, test_data_gen(factory, depth - 1, (13 * seed) + 17));
-    return result;
+  switch (depth % 3) {
+    case 0: {
+      plankton::Array result = factory->new_array();
+      result.add(test_data_gen(factory, depth - 1, (3 * seed) + 5));
+      result.add(test_data_gen(factory, depth - 1, (5 * seed) + 7));
+      return result;
+    }
+    case 1: {
+      size_t root = (seed % 257);
+      plankton::Map result = factory->new_map();
+      result.set(root, test_data_gen(factory, depth - 1, (11 * seed) + 13));
+      result.set(root + 1, test_data_gen(factory, depth - 1, (13 * seed) + 17));
+      return result;
+    }
+    default: {
+      plankton::Seed result = factory->new_seed();
+      result.set_header(test_data_gen(factory, depth - 1, (17 * seed) + 19));
+      return result;
+    }
   }
 }
 
 static void test_data_validate(value_t value, size_t depth, size_t seed) {
   if (depth == 0) {
     ASSERT_EQ(seed % 239, get_integer_value(value));
-  } else if ((depth % 2) == 0) {
-    ASSERT_TRUE(in_family(ofArray, value));
-    test_data_validate(get_array_at(value, 0), depth - 1, (3 * seed) + 5);
-    test_data_validate(get_array_at(value, 1), depth - 1, (5 * seed) + 7);
-  } else {
-    ASSERT_TRUE(in_family(ofIdHashMap, value));
-    ASSERT_EQ(2, get_id_hash_map_size(value));
-    size_t root = (seed % 257);
-    test_data_validate(get_id_hash_map_at(value, new_integer(root)), depth - 1,
-        (11 * seed) + 13);
-    test_data_validate(get_id_hash_map_at(value, new_integer(root + 1)),
-        depth - 1, (13 * seed) + 17);
+    return;
+  }
+  switch (depth % 3) {
+    case 0: {
+      ASSERT_TRUE(in_family(ofArray, value));
+      test_data_validate(get_array_at(value, 0), depth - 1, (3 * seed) + 5);
+      test_data_validate(get_array_at(value, 1), depth - 1, (5 * seed) + 7);
+      break;
+    }
+    case 1: {
+      ASSERT_TRUE(in_family(ofIdHashMap, value));
+      ASSERT_EQ(2, get_id_hash_map_size(value));
+      size_t root = (seed % 257);
+      test_data_validate(get_id_hash_map_at(value, new_integer(root)), depth - 1,
+          (11 * seed) + 13);
+      test_data_validate(get_id_hash_map_at(value, new_integer(root + 1)),
+          depth - 1, (13 * seed) + 17);
+      break;
+    }
+    default: {
+      ASSERT_TRUE(in_family(ofUnknown, value));
+      test_data_validate(get_unknown_header(value), depth - 1, (17 * seed) + 19);
+      break;
+    }
   }
 }
 
