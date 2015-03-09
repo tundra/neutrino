@@ -49,8 +49,9 @@ value_t value_mapping_apply(value_mapping_t *mapping, value_t value,
 value_t plankton_serialize(runtime_t *runtime, value_t data);
 
 // Plankton deserialize a binary blob containing a serialized object graph. The
-// access mapping is used to acquire values from the environment.
+// access mapping is used to acquire values from the environment. If the
+// deserialization causes the heap to be exhausted a gc will be run.
 value_t plankton_deserialize(runtime_t *runtime, object_factory_t *factory,
-    value_t blob);
+    safe_value_t s_blob);
 
 #endif // _SERIALIZE

@@ -7,6 +7,7 @@
 #include "derived.h"
 #include "freeze.h"
 #include "process.h"
+#include "runtime-inl.h"
 #include "sync.h"
 #include "tagged.h"
 #include "try-inl.h"
@@ -1331,6 +1332,12 @@ value_t set_id_hash_map_at(runtime_t *runtime, value_t map, value_t key, value_t
   } else {
     return first_try;
   }
+}
+
+value_t safe_set_id_hash_map_at(runtime_t *runtime, safe_value_t s_map,
+    safe_value_t s_key, safe_value_t s_value) {
+  RETRY_ONCE_IMPL(runtime, set_id_hash_map_at(runtime, deref(s_map), deref(s_key),
+      deref(s_value)));
 }
 
 value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,

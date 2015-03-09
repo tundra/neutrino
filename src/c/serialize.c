@@ -227,6 +227,8 @@ void value_mapping_init(value_mapping_t *resolver,
 
 // Collection of state used when serializing data.
 typedef struct {
+  // The input blob.
+  safe_value_t s_blob;
   // The buffer we're reading input from.
   byte_stream_t *in;
   // Map from object offsets we've seen to their values.
@@ -241,7 +243,8 @@ typedef struct {
 
 // Initialize deserialization state.
 static value_t deserialize_state_init(deserialize_state_t *state, runtime_t *runtime,
-    object_factory_t *factory, byte_stream_t *in) {
+    object_factory_t *factory, safe_value_t s_blob, byte_stream_t *in) {
+  state->s_blob = s_blob;
   state->in = in;
   state->object_offset = 0;
   state->runtime = runtime;
@@ -253,24 +256,76 @@ static value_t deserialize_state_init(deserialize_state_t *state, runtime_t *run
 // Reads the next value from the stream.
 static value_t value_deserialize(deserialize_state_t *state);
 
+static value_t deserialize_garbage_collect(deserialize_state_t *state) {
+  TRY(runtime_garbage_collect(state->runtime));
+  state->in->blob = get_blob_data(deref(state->s_blob));
+  return success();
+}
+
+#define E_S_RETRY()
+
+#define E_TRY_DEF_TRY_AGAIN(POOL, NAME, EXPR)                                  \
+  safe_value_t NAME;                                                           \
+  do {                                                                         \
+    value_t raw_##NAME = (EXPR);                                               \
+    if (in_condition_cause(ccHeapExhausted, raw_##NAME)) {                     \
+      E_TRY(deserialize_garbage_collect(state));                               \
+      raw_##NAME = (EXPR);                                                     \
+    }                                                                          \
+    E_TRY(raw_##NAME);                                                         \
+    NAME = protect(POOL, raw_##NAME);                                          \
+  } while (false)
+
+
+#define E_TRY_DEF_TRY_AGAIN(POOL, NAME, EXPR)                                  \
+  safe_value_t NAME;                                                           \
+  do {                                                                         \
+    value_t raw_##NAME = (EXPR);                                               \
+    if (in_condition_cause(ccHeapExhausted, raw_##NAME)) {                     \
+      E_TRY(deserialize_garbage_collect(state));                               \
+      raw_##NAME = (EXPR);                                                     \
+    }                                                                          \
+    E_TRY(raw_##NAME);                                                         \
+    NAME = protect(POOL, raw_##NAME);                                          \
+  } while (false)
+
 static value_t array_deserialize(size_t length, deserialize_state_t *state) {
-  TRY_DEF(result, new_heap_array(state->runtime, length));
-  for (size_t i = 0; i < length; i++) {
-    TRY_DEF(value, value_deserialize(state));
-    set_array_at(result, i, value);
-  }
-  TRY(ensure_frozen(state->runtime, result));
-  return result;
+  CREATE_SAFE_VALUE_POOL(state->runtime, 1, pool);
+  E_BEGIN_TRY_FINALLY();
+    E_TRY_DEF_TRY_AGAIN(pool, s_result, new_heap_array(state->runtime, length));
+    for (size_t i = 0; i < length; i++) {
+      E_TRY_DEF(value, value_deserialize(state));
+      set_array_at(deref(s_result), i, value);
+    }
+    E_TRY(ensure_frozen(state->runtime, deref(s_result)));
+    E_RETURN(deref(s_result));
+  E_FINALLY();
+    DISPOSE_SAFE_VALUE_POOL(pool);
+  E_END_TRY_FINALLY();
+}
+
+static value_t map_entry_deserialize(safe_value_t s_map, deserialize_state_t *state) {
+  CREATE_SAFE_VALUE_POOL(state->runtime, 2, pool);
+  E_BEGIN_TRY_FINALLY();
+    E_S_TRY_DEF(s_key, protect(pool, value_deserialize(state)));
+    E_S_TRY_DEF(s_value, protect(pool, value_deserialize(state)));
+    E_TRY(safe_set_id_hash_map_at(state->runtime, s_map, s_key, s_value));
+    E_RETURN(success());
+  E_FINALLY();
+    DISPOSE_SAFE_VALUE_POOL(pool);
+  E_END_TRY_FINALLY();
 }
 
 static value_t map_deserialize(size_t entry_count, deserialize_state_t *state) {
-  TRY_DEF(result, new_heap_id_hash_map(state->runtime, 16));
-  for (size_t i = 0; i < entry_count; i++) {
-    TRY_DEF(key, value_deserialize(state));
-    TRY_DEF(value, value_deserialize(state));
-    set_id_hash_map_at(state->runtime, result, key, value);
-  }
-  return result;
+  CREATE_SAFE_VALUE_POOL(state->runtime, 1, pool);
+  E_BEGIN_TRY_FINALLY();
+    E_TRY_DEF_TRY_AGAIN(pool, s_result, new_heap_id_hash_map(state->runtime, 16));
+    for (size_t i = 0; i < entry_count; i++)
+      E_TRY(map_entry_deserialize(s_result, state));
+    E_RETURN(deref(s_result));
+  E_FINALLY();
+    DISPOSE_SAFE_VALUE_POOL(pool);
+  E_END_TRY_FINALLY();
 }
 
 static value_t default_string_deserialize(pton_instr_t *instr, deserialize_state_t *state) {
@@ -351,11 +406,10 @@ static value_t value_deserialize(deserialize_state_t *state) {
 }
 
 value_t plankton_deserialize(runtime_t *runtime, object_factory_t *factory_or_null,
-    value_t blob) {
+    safe_value_t s_blob) {
   // Make a byte stream out of the blob.
-  blob_t data = get_blob_data(blob);
   byte_stream_t in;
-  byte_stream_init(&in, data);
+  byte_stream_init(&in, get_blob_data(deref(s_blob)));
   // Use a failing environment accessor if the access pointer is null.
   object_factory_t factory;
   if (factory_or_null == NULL) {
@@ -364,6 +418,6 @@ value_t plankton_deserialize(runtime_t *runtime, object_factory_t *factory_or_nu
     factory = *factory_or_null;
   }
   deserialize_state_t state;
-  TRY(deserialize_state_init(&state, runtime, &factory, &in));
+  TRY(deserialize_state_init(&state, runtime, &factory, s_blob, &in));
   return value_deserialize(&state);
 }

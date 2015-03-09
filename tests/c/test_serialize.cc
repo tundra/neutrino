@@ -2,10 +2,12 @@
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "test.hh"
+#include "plankton-inl.hh"
 
 BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "plankton.h"
+#include "safe-inl.h"
 #include "serialize.h"
 #include "try-inl.h"
 #include "value-inl.h"
@@ -16,8 +18,11 @@ static value_t transcode_plankton(runtime_t *runtime, value_t value) {
   // Encode and decode the value.
   value_t encoded = plankton_serialize(runtime, value);
   ASSERT_SUCCESS(encoded);
-  value_t decoded = plankton_deserialize(runtime, NULL, encoded);
+  CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
+  safe_value_t s_encoded = protect(pool, encoded);
+  value_t decoded = plankton_deserialize(runtime, NULL, s_encoded);
   ASSERT_SUCCESS(decoded);
+  DISPOSE_SAFE_VALUE_POOL(pool);
   return decoded;
 }
 
@@ -154,5 +159,76 @@ TEST(serialize, cycles) {
   ASSERT_SAME(d1, get_instance_field(d3, k0));
 
 
+  DISPOSE_RUNTIME();
+}
+
+static plankton::Variant test_data_gen(plankton::Factory *factory, size_t depth,
+    size_t seed) {
+  if (depth == 0) {
+    return (seed % 239);
+  } else if ((depth % 2) == 0) {
+    plankton::Array result = factory->new_array();
+    result.add(test_data_gen(factory, depth - 1, (3 * seed) + 5));
+    result.add(test_data_gen(factory, depth - 1, (5 * seed) + 7));
+    return result;
+  } else {
+    size_t root = (seed % 257);
+    plankton::Map result = factory->new_map();
+    result.set(root, test_data_gen(factory, depth - 1, (11 * seed) + 13));
+    result.set(root + 1, test_data_gen(factory, depth - 1, (13 * seed) + 17));
+    return result;
+  }
+}
+
+static void test_data_validate(value_t value, size_t depth, size_t seed) {
+  if (depth == 0) {
+    ASSERT_EQ(seed % 239, get_integer_value(value));
+  } else if ((depth % 2) == 0) {
+    ASSERT_TRUE(in_family(ofArray, value));
+    test_data_validate(get_array_at(value, 0), depth - 1, (3 * seed) + 5);
+    test_data_validate(get_array_at(value, 1), depth - 1, (5 * seed) + 7);
+  } else {
+    ASSERT_TRUE(in_family(ofIdHashMap, value));
+    ASSERT_EQ(2, get_id_hash_map_size(value));
+    size_t root = (seed % 257);
+    test_data_validate(get_id_hash_map_at(value, new_integer(root)), depth - 1,
+        (11 * seed) + 13);
+    test_data_validate(get_id_hash_map_at(value, new_integer(root + 1)),
+        depth - 1, (13 * seed) + 17);
+  }
+}
+
+TEST(serialize, collection) {
+  extended_runtime_config_t config = *extended_runtime_config_get_default();
+  config.base.semispace_size_bytes = 224 * kKB;
+  CREATE_RUNTIME_WITH_CONFIG(&config);
+  CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
+
+  // Build a large blob containing an encoded plankton value.
+  safe_value_t s_blob;
+  {
+    plankton::Arena arena;
+    plankton::Variant value = test_data_gen(&arena, 9, 76647);
+    plankton::BinaryWriter writer;
+    writer.write(value);
+    value_t blob = new_heap_blob_with_data(runtime, new_blob(*writer, writer.size()));
+    ASSERT_SUCCESS(blob);
+    s_blob = protect(pool, blob);
+  }
+
+  // It definitely should be possible to deserialize once immediately after a
+  // collection, otherwise the heap needs to be bigger.
+  ASSERT_SUCCESS(runtime_garbage_collect(runtime));
+  ASSERT_SUCCESS(plankton_deserialize(runtime, NULL, s_blob));
+
+  // Repeatedly deserialize the value. This should cause gcs while the
+  // deserialization is going on.
+  for (size_t i = 0; i < 10; i++) {
+    value_t decoded = plankton_deserialize(runtime, NULL, s_blob);
+    ASSERT_SUCCESS(decoded);
+    test_data_validate(decoded, 9, 76647);
+  }
+
+  DISPOSE_SAFE_VALUE_POOL(pool);
   DISPOSE_RUNTIME();
 }

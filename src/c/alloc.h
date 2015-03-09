@@ -461,4 +461,9 @@ value_t set_instance_field(runtime_t *runtime, value_t instance, value_t key,
 // Returns a neutrino value that corresponds to the given plankton variant.
 value_t import_pton_variant(runtime_t *runtime, pton_variant_t value);
 
+// Gc-safe version of set_id_hash_map_at which will run a gc is the heap runs
+// out of space.
+value_t safe_set_id_hash_map_at(runtime_t *runtime, safe_value_t map,
+    safe_value_t key, safe_value_t value);
+
 #endif // _ALLOC

@@ -182,7 +182,7 @@ Runtime::Internal::Internal(Runtime *owner)
 
 Runtime::Internal::~Internal() {
   if (runtime_ != NULL) {
-    delete_runtime(runtime_);
+    delete_runtime(runtime_, dfDefault);
     runtime_ = NULL;
   }
 }

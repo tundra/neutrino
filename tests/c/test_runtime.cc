@@ -19,7 +19,7 @@ TEST(runtime, create) {
   // Successfully create a runtime->
   runtime_t r0;
   ASSERT_SUCCESS(runtime_init(&r0, NULL));
-  ASSERT_SUCCESS(runtime_dispose(&r0));
+  ASSERT_SUCCESS(runtime_dispose(&r0, dfDefault));
 
   // Propagating failure correctly when malloc fails during startup.
   runtime_t r1;
@@ -39,6 +39,10 @@ TEST(runtime, singletons) {
   ASSERT_FALSE(get_boolean_value(fahlse));
 
   DISPOSE_RUNTIME();
+}
+
+TEST(runtime, delete_null) {
+  ASSERT_SUCCESS(delete_runtime(NULL, dfDefault));
 }
 
 TEST(runtime, runtime_validation) {

@@ -496,15 +496,23 @@ value_t new_runtime(extended_runtime_config_t *config, runtime_t **runtime_out) 
   runtime_t *runtime = (runtime_t*) memory.memory;
   value_t result = runtime_init(runtime, config);
   if (is_condition(result)) {
-    delete_runtime(runtime);
-    return result;
+    // Something went wrong initializing the runtime so watch out when disposing
+    // it.
+    delete_runtime(runtime, dfMayBeInvalid);
+    *runtime_out = NULL;
+  } else {
+    *runtime_out = runtime;
   }
-  *runtime_out = runtime;
   return result;
 }
 
-value_t delete_runtime(runtime_t *runtime) {
-  TRY(runtime_dispose(runtime));
+value_t delete_runtime(runtime_t *runtime, uint32_t flags) {
+  if (runtime == NULL)
+    // Because new_runtime may yield a NULL it's simpler to allow it here too
+    // so you don't need to test explicitly for that possibility, you can just
+    // delete in any case.
+    return success();
+  TRY(runtime_dispose(runtime, flags));
   allocator_default_free(new_memory_block(runtime, sizeof(runtime_t)));
   return success();
 }
@@ -862,15 +870,24 @@ void runtime_clear(runtime_t *runtime) {
 }
 
 // Perform any pre-processing we need to do before releasing the runtime.
-static value_t runtime_prepare_dispose(runtime_t *runtime) {
-  return
-      heap_collect_before_dispose(&runtime->heap) ?
-          runtime_garbage_collect(runtime) :
-          runtime_validate(runtime, nothing());
+static value_t runtime_prepare_dispose(runtime_t *runtime, uint32_t flags) {
+  bool require_collection = heap_collect_before_dispose(&runtime->heap);
+  if ((flags & dfMayBeInvalid) != 0) {
+    // If the runtime may be invalid we can't very well run a gc so we just skip
+    // that, which may cause problems if a collection is required before
+    // disposal.
+    if (require_collection)
+      WARN("Disposing possibly invalid runtime without running required collection");
+    return success();
+  } else if (require_collection) {
+    return runtime_garbage_collect(runtime);
+  } else {
+    return runtime_validate(runtime, nothing());
+  }
 }
 
-value_t runtime_dispose(runtime_t *runtime) {
-  value_t result = runtime_prepare_dispose(runtime);
+value_t runtime_dispose(runtime_t *runtime, uint32_t flags) {
+  value_t result = runtime_prepare_dispose(runtime, flags);
   // If preparing fails we keep going and try to free the allocated memory.
   // This may be a bad idea but until there's some evidence one way or the other
   // let's do it this way.
@@ -925,13 +942,13 @@ object_factory_t runtime_default_object_factory() {
       NULL);
 }
 
-value_t runtime_plankton_deserialize(runtime_t *runtime, value_t blob) {
+value_t runtime_plankton_deserialize(runtime_t *runtime, safe_value_t s_blob) {
   object_factory_t factory = runtime_default_object_factory();
-  return plankton_deserialize(runtime, &factory, blob);
+  return plankton_deserialize(runtime, &factory, s_blob);
 }
 
 value_t safe_runtime_plankton_deserialize(runtime_t *runtime, safe_value_t blob) {
-  RETRY_ONCE_IMPL(runtime, runtime_plankton_deserialize(runtime, deref(blob)));
+  RETRY_ONCE_IMPL(runtime, runtime_plankton_deserialize(runtime, blob));
 }
 
 void safe_value_destroy(runtime_t *runtime, safe_value_t s_value) {
@@ -990,24 +1007,28 @@ value_t get_runtime_plugin_factory_at(runtime_t *runtime, size_t index) {
 
 value_t runtime_load_library_from_stream(runtime_t *runtime,
     in_stream_t *stream, value_t display_name) {
-  TRY_DEF(data, read_stream_to_blob(runtime, stream));
-  TRY_DEF(library, runtime_plankton_deserialize(runtime, data));
-  if (!in_family(ofLibrary, library))
-    return new_invalid_input_condition();
-  set_library_display_name(library, display_name);
-  // Load all the modules from the library into this module loader.
-  value_t loader = deref(runtime->module_loader);
-  id_hash_map_iter_t iter;
-  id_hash_map_iter_init(&iter, get_library_modules(library));
-  while (id_hash_map_iter_advance(&iter)) {
-    value_t key;
-    value_t value;
-    id_hash_map_iter_get_current(&iter, &key, &value);
-    TRY(
-        set_id_hash_map_at(runtime, get_module_loader_modules(loader), key,
-            value));
-  }
-  return success();
+  CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
+  E_BEGIN_TRY_FINALLY();
+    E_S_TRY_DEF(s_data, protect(pool, read_stream_to_blob(runtime, stream)));
+    E_TRY_DEF(library, runtime_plankton_deserialize(runtime, s_data));
+    if (!in_family(ofLibrary, library))
+      return new_invalid_input_condition();
+    set_library_display_name(library, display_name);
+    // Load all the modules from the library into this module loader.
+    value_t loader = deref(runtime->module_loader);
+    id_hash_map_iter_t iter;
+    id_hash_map_iter_init(&iter, get_library_modules(library));
+    while (id_hash_map_iter_advance(&iter)) {
+      value_t key;
+      value_t value;
+      id_hash_map_iter_get_current(&iter, &key, &value);
+      E_TRY(set_id_hash_map_at(runtime, get_module_loader_modules(loader), key,
+          value));
+    }
+    E_RETURN(success());
+  E_FINALLY();
+    DISPOSE_SAFE_VALUE_POOL(pool);
+  E_END_TRY_FINALLY();
 }
 
 // Assemble a module that can be executed from unbound modules in the module

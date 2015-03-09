@@ -267,8 +267,17 @@ struct runtime_t {
 // Creates a new runtime object, storing it in the given runtime out parameter.
 value_t new_runtime(extended_runtime_config_t *config, runtime_t **runtime);
 
-// Disposes the given runtime and frees the memory.
-value_t delete_runtime(runtime_t *runtime);
+// Flags that control how disposing a runtime behaves.
+typedef enum {
+  // No special considerations are necessary.
+  dfDefault = 0x0,
+  // Beware: the runtime is known to possibly be in an invalid state.
+  dfMayBeInvalid = 0x1
+} runtime_dispose_flags_t;
+
+// Disposes the given runtime and frees the memory. The flags must be a
+// combination of runtime_dispose_flags_t indicating how to delete the runtime.
+value_t delete_runtime(runtime_t *runtime, uint32_t flags);
 
 // Initializes the given runtime according to the given config.
 value_t runtime_init(runtime_t *runtime, const extended_runtime_config_t *config);
@@ -280,8 +289,9 @@ void runtime_clear(runtime_t *runtime);
 
 // Disposes of the given runtime. If disposing fails a condition is returned but
 // an attempt will be made to fully dispose the runtime anyway to the extent the
-// problem allows.
-value_t runtime_dispose(runtime_t *runtime);
+// problem allows. The flags must be a combination of runtime_dispose_flags_t
+// indicating how to dispose.
+value_t runtime_dispose(runtime_t *runtime, uint32_t flags);
 
 // Collect garbage in the given runtime. If anything goes wrong, such as the os
 // running out a memory, a condition will be returned.
@@ -309,7 +319,7 @@ safe_value_t runtime_protect_value_with_flags(runtime_t *runtime, value_t value,
 object_factory_t runtime_default_object_factory();
 
 // Deserialize the given data using the environment bindings from this runtime.
-value_t runtime_plankton_deserialize(runtime_t *runtime, value_t blob);
+value_t runtime_plankton_deserialize(runtime_t *runtime, safe_value_t s_blob);
 
 // Retrying version of runtime plankton deserialization.
 value_t safe_runtime_plankton_deserialize(runtime_t *runtime, safe_value_t blob);

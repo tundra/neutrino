@@ -22,15 +22,18 @@ bool value_structural_equal(value_t a, value_t b);
 // This pattern is used *everywhere* and packing it into a macro ensures that it
 // is used consistently and allows other macros to depend on the variables
 // created here.
-#define CREATE_RUNTIME()                                                       \
+#define CREATE_RUNTIME() CREATE_RUNTIME_WITH_CONFIG(NULL)
+
+// Works the same as CREATE_RUNTIME but takes an explicit runtime config.
+#define CREATE_RUNTIME_WITH_CONFIG(CONFIG)                                     \
 runtime_t *runtime = NULL;                                                     \
 value_t ambience = nothing();                                                  \
-ASSERT_SUCCESS(new_runtime(NULL, &runtime));                                   \
+ASSERT_SUCCESS(new_runtime((CONFIG), &runtime));                               \
 ASSERT_SUCCESS(ambience = new_heap_ambience(runtime));
 
 // Disposes a runtime created using the CREATE_RUNTIME method.
 #define DISPOSE_RUNTIME()                                                      \
-ASSERT_SUCCESS(delete_runtime(runtime));
+ASSERT_SUCCESS(delete_runtime(runtime, dfDefault));
 
 IMPLEMENTATION(check_recorder_o, abort_o);
 
