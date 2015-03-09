@@ -21,47 +21,47 @@
 #define E_S_RETURN(V) E_RETURN(deref_immediate(V))
 
 // Extract components from the types.
-#define __TRY_GET_TYPE__(TYPE, IS_COND, IS_EXHAUSTED) TYPE
-#define __TRY_GET_IS_COND__(TYPE, IS_COND, IS_EXHAUSTED) IS_COND
-#define __TRY_GET_IS_EXHAUSTED__(TYPE, IS_COND, IS_EXHAUSTED) IS_EXHAUSTED
+#define __FLAVOR_TYPE__(TYPE, IS_COND, IS_EXHAUSTED) TYPE
+#define __FLAVOR_IS_COND__(TYPE, IS_COND, IS_EXHAUSTED) IS_COND
+#define __FLAVOR_IS_EXHAUSTED__(TYPE, IS_COND, IS_EXHAUSTED) IS_EXHAUSTED
 
 #define __GENERIC_TRY__(FLAVOR, EXPR, RETURN) do {                             \
-  FLAVOR(__TRY_GET_TYPE__) __result__ = (EXPR);                                \
-  if (FLAVOR(__TRY_GET_IS_COND__)(__result__))                                 \
-    RETURN(__result__);                                                        \
+  FLAVOR(__FLAVOR_TYPE__) __gt_value__ = (EXPR);                               \
+  if (FLAVOR(__FLAVOR_IS_COND__)(__gt_value__))                                \
+    RETURN(__gt_value__);                                                      \
 } while (false)
 
 #define __GENERIC_TRY_SET__(FLAVOR, TARGET, EXPR, RETURN) do {                 \
-  FLAVOR(__TRY_GET_TYPE__) __value__ = (EXPR);                                 \
-  __GENERIC_TRY__(FLAVOR, __value__, RETURN);                                  \
-  TARGET = __value__;                                                          \
+  FLAVOR(__FLAVOR_TYPE__) __gts_value__ = (EXPR);                              \
+  __GENERIC_TRY__(FLAVOR, __gts_value__, RETURN);                              \
+  TARGET = __gts_value__;                                                      \
 } while (false)
 
 #define __GENERIC_TRY_DEF__(FLAVOR, TARGET, EXPR, RETURN)                      \
-FLAVOR(__TRY_GET_TYPE__) TARGET;                                               \
+FLAVOR(__FLAVOR_TYPE__) TARGET;                                                \
 __GENERIC_TRY_SET__(FLAVOR, TARGET, EXPR, RETURN)
 
 // Try performing the given expression. If it fails with heap exhausted gc and
 // try again. If this fails too abort with an oom. Otherwise store the result
 // in the target variable.
 #define __GENERIC_RETRY_SET__(FLAVOR, RUNTIME, TARGET, EXPR, RETURN) do {      \
-  FLAVOR(__TRY_GET_TYPE__) __value__ = (EXPR);                                 \
-  if (FLAVOR(__TRY_GET_IS_EXHAUSTED__)(__value__)) {                           \
+  FLAVOR(__FLAVOR_TYPE__) __grs_value__ = (EXPR);                              \
+  if (FLAVOR(__FLAVOR_IS_EXHAUSTED__)(__grs_value__)) {                        \
     __GENERIC_TRY_DEF__(FLAVOR, __recall__,                                    \
-        runtime_prepare_retry_after_heap_exhausted(RUNTIME, __value__),        \
+        runtime_prepare_retry_after_heap_exhausted(RUNTIME, __grs_value__),    \
         RETURN);                                                               \
-    __value__ = (EXPR);                                                        \
+    __grs_value__ = (EXPR);                                                    \
     runtime_complete_retry_after_heap_exhausted(RUNTIME, __recall__);          \
-    if (FLAVOR(__TRY_GET_IS_EXHAUSTED__)(__value__))                           \
-      RETURN(new_out_of_memory_condition(__value__));                          \
+    if (FLAVOR(__FLAVOR_IS_EXHAUSTED__)(__grs_value__))                        \
+      RETURN(new_out_of_memory_condition(__grs_value__));                      \
   }                                                                            \
-  __GENERIC_TRY__(FLAVOR, __value__, RETURN);                                  \
-  TARGET = __value__;                                                          \
+  __GENERIC_TRY__(FLAVOR, __grs_value__, RETURN);                              \
+  TARGET = __grs_value__;                                                      \
 } while (false)
 
 // Same as __GENERIC_RETRY_SET__ but declares the variable too.
 #define __GENERIC_RETRY_DEF__(FLAVOR, RUNTIME, TARGET, EXPR, RETURN)           \
-  FLAVOR(__TRY_GET_TYPE__) TARGET;                                             \
+  FLAVOR(__FLAVOR_TYPE__) TARGET;                                              \
   __GENERIC_RETRY_SET__(FLAVOR, RUNTIME, TARGET, EXPR, RETURN)
 
 
