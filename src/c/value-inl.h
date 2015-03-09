@@ -75,6 +75,11 @@ static inline bool in_condition_cause(consition_cause_t cause, value_t value) {
   return is_condition(value) && (get_condition_cause(value) == cause);
 }
 
+// Is the given value a heap exhausted condition?
+static inline bool is_heap_exhausted_condition(value_t value) {
+  return in_condition_cause(ccHeapExhausted, value);
+}
+
 
 // --- T u p l e   s h o r t h a n d s ---
 

@@ -127,9 +127,11 @@ static value_t new_heap_exhausted_condition(int32_t requested) {
   return new_condition_with_details(ccHeapExhausted, requested);
 }
 
-// Creates a new out-of-memory condition.
-static value_t new_out_of_memory_condition() {
-  return new_condition(ccOutOfMemory);
+// Creates a new out-of-memory condition caused by the given heap-exhausted
+// condition.
+static value_t new_out_of_memory_condition(value_t heap_exhausted) {
+  CHECK_EQ("not exhausted", ccHeapExhausted, get_condition_cause(heap_exhausted));
+  return new_condition_with_details(ccOutOfMemory, get_condition_details(heap_exhausted));
 }
 
 // Creates a new invalid-mode-change condition whose current mode is the given

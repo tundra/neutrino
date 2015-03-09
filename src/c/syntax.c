@@ -53,11 +53,11 @@ value_t compile_expression(runtime_t *runtime, value_t program, value_t fragment
   // Don't try to execute cleanup if this fails since there'll not be an
   // assembler to dispose.
   TRY(single_compile_state_init(&state, runtime, fragment, scope, config_opt));
-  E_BEGIN_TRY_FINALLY();
+  TRY_FINALLY {
     E_RETURN(compile_expression_with_state(&state, program));
-  E_FINALLY();
+  } FINALLY {
     single_compile_state_dispose(&state);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 value_t compile_expression_with_state(single_compile_state_t *state,

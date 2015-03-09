@@ -9,9 +9,18 @@
 
 #include "value-inl.h"
 
+// Plain flavor, works with normal values.
 #define P_FLAVOR(F) F(value_t, is_condition, is_heap_exhausted_condition)
+#define P_RETURN(V) return (V)
+
+// Safe flavor, works with gc-safe values.
 #define S_FLAVOR(F) F(safe_value_t, safe_value_is_condition, 0)
 
+// We never return safe values, always unsafe ones. It's the caller's
+// responsibility to wrap the returned value if it needs to be safe.
+#define E_S_RETURN(V) E_RETURN(deref_immediate(V))
+
+// Extract components from the types.
 #define __TRY_GET_TYPE__(TYPE, IS_COND, IS_EXHAUSTED) TYPE
 #define __TRY_GET_IS_COND__(TYPE, IS_COND, IS_EXHAUSTED) IS_COND
 #define __TRY_GET_IS_EXHAUSTED__(TYPE, IS_COND, IS_EXHAUSTED) IS_EXHAUSTED
@@ -32,28 +41,34 @@
 FLAVOR(__TRY_GET_TYPE__) TARGET;                                               \
 __GENERIC_TRY_SET__(FLAVOR, TARGET, EXPR, RETURN)
 
+// Try performing the given expression. If it fails with heap exhausted gc and
+// try again. If this fails too abort with an oom. Otherwise store the result
+// in the target variable.
+#define __GENERIC_RETRY_SET__(FLAVOR, RUNTIME, TARGET, EXPR, RETURN) do {      \
+  FLAVOR(__TRY_GET_TYPE__) __value__ = (EXPR);                                 \
+  if (FLAVOR(__TRY_GET_IS_EXHAUSTED__)(__value__)) {                           \
+    __GENERIC_TRY_DEF__(FLAVOR, __recall__,                                    \
+        runtime_prepare_retry_after_heap_exhausted(RUNTIME, __value__),        \
+        RETURN);                                                               \
+    __value__ = (EXPR);                                                        \
+    runtime_complete_retry_after_heap_exhausted(RUNTIME, __recall__);          \
+    if (FLAVOR(__TRY_GET_IS_EXHAUSTED__)(__value__))                           \
+      RETURN(new_out_of_memory_condition(__value__));                          \
+  }                                                                            \
+  __GENERIC_TRY__(FLAVOR, __value__, RETURN);                                  \
+  TARGET = __value__;                                                          \
+} while (false)
+
+// Same as __GENERIC_RETRY_SET__ but declares the variable too.
 #define __GENERIC_RETRY_DEF__(FLAVOR, RUNTIME, TARGET, EXPR, RETURN)           \
   FLAVOR(__TRY_GET_TYPE__) TARGET;                                             \
-  do {                                                                         \
-    FLAVOR(__TRY_GET_TYPE__) __value__ = (EXPR);                               \
-    if (FLAVOR(__TRY_GET_IS_EXHAUSTED__)(__value__)) {                         \
-      runtime_garbage_collect(RUNTIME);                                        \
-      runtime_toggle_fuzzing(RUNTIME, false);                                  \
-      __value__ = (EXPR);                                                      \
-      runtime_toggle_fuzzing(RUNTIME, true);                                   \
-      if (FLAVOR(__TRY_GET_IS_EXHAUSTED__)(__value__))                         \
-        RETURN(new_out_of_memory_condition());                                 \
-    }                                                                          \
-    __GENERIC_TRY__(FLAVOR, __value__, RETURN);                                \
-    TARGET = __value__;                                                        \
-  } while (false)
+  __GENERIC_RETRY_SET__(FLAVOR, RUNTIME, TARGET, EXPR, RETURN)
 
 
 // --- P l a i n ---
 
 // Evaluates the given expression; if it yields a condition returns it otherwise
 // ignores the value.
-#define P_RETURN(V) return (V)
 #define TRY(EXPR) __GENERIC_TRY__(P_FLAVOR, EXPR, P_RETURN)
 
 // Evaluates the value and if it yields a condition bails out, otherwise assigns
@@ -72,8 +87,27 @@ __GENERIC_TRY_SET__(FLAVOR, TARGET, EXPR, RETURN)
 
 // Declares that the following code uses the E_ macros to perform cleanup on
 // leaving the method. This is super crude and need refinement but it works okay.
-#define E_BEGIN_TRY_FINALLY() {                                                \
-  value_t __ensure_result__;
+#define TRY_FINALLY {                                                          \
+  value_t __try_finally_result__;
+
+// Marks the end of the try-part of a try/finally block, the following code is
+// the finally part.
+#define FINALLY                                                                \
+  finally: {                                                                   \
+
+// Marks the end of a try/finally block. This must come at the and of a function,
+// any code following this macro will not be executed.
+#define YRT                                                                    \
+    }                                                                          \
+    return __try_finally_result__;                                             \
+  }
+
+// Does the same as a normal return of the specified value but ensures that the
+// containing function's FINALLY clause is executed.
+#define E_RETURN(V) do {                                                       \
+  __try_finally_result__ = (V);                                                \
+  goto finally;                                                                \
+} while (false)
 
 // Does the same as a TRY except makes sure that the function's FINALLY block
 // is executed before bailing out on a condition.
@@ -87,8 +121,6 @@ __GENERIC_TRY_SET__(FLAVOR, TARGET, EXPR, RETURN)
 // executed before bailing on a condition.
 #define E_TRY_DEF(NAME, EXPR) __GENERIC_TRY_DEF__(P_FLAVOR, NAME, EXPR, E_RETURN)
 
-#define E_S_RETURN(V) E_RETURN(deref_immediate(V))
-
 // Does the same as a S_TRY except makes sure that the function's FINALLY block
 // is executed before bailing out on a condition.
 #define E_S_TRY(EXPR) __GENERIC_TRY__(S_FLAVOR, EXPR, E_S_RETURN)
@@ -100,27 +132,5 @@ __GENERIC_TRY_SET__(FLAVOR, TARGET, EXPR, RETURN)
 // Does the same as S_TRY_DEF except makes sure the function's FINALLY block is
 // executed before bailing on a condition.
 #define E_S_TRY_DEF(NAME, EXPR) __GENERIC_TRY_DEF__(S_FLAVOR, NAME, EXPR, E_S_RETURN)
-
-// Does the same as a normal return of the specified value but ensures that the
-// containing function's FINALLY clause is executed.
-#define E_RETURN(V) do {                                                       \
-  __ensure_result__ = V;                                                       \
-  goto finally;                                                                \
-} while (false)
-
-// Marks the end of a try/finally block. This must come at the and of a function,
-// any code following this macro will not be executed.
-#define E_END_TRY_FINALLY()                                                    \
-    }                                                                          \
-    return __ensure_result__;                                                  \
-  }                                                                            \
-  SWALLOW_SEMI(etf)
-
-// Marks the end of the try-part of a try/finally block, the following code is
-// the finally part. The implementation is a bit fiddly in order for a semi to
-// be allowed after this macro, that's what the extra { is for.
-#define E_FINALLY()                                                            \
-  finally: {                                                                   \
-    SWALLOW_SEMI(ef)
 
 #endif // _TRY_INL

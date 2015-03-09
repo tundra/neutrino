@@ -318,7 +318,20 @@ value_t safe_runtime_plankton_deserialize(runtime_t *runtime, safe_value_t blob)
 void safe_value_destroy(runtime_t *runtime, safe_value_t value_s);
 
 // Set whether fuzzing is on or off. If there is no fuzzer this has no effect.
-void runtime_toggle_fuzzing(runtime_t *runtime, bool enable);
+// Returns the previous setting.
+bool runtime_toggle_fuzzing(runtime_t *runtime, bool enable);
+
+// Performs the work following the heap being exhausted, before retrying the
+// operation that caused the exhaustion. This includes GC'ing, obviously.
+// Returns a condition if preparations fail, otherwise an immediate value which
+// must be passed to runtime_complete_retry_after_heap_exhausted when that is
+// called.
+value_t runtime_prepare_retry_after_heap_exhausted(runtime_t *runtime,
+    value_t condition);
+
+// Notify the runtime that the retry is complete.
+void runtime_complete_retry_after_heap_exhausted(runtime_t *runtime,
+    value_t recall);
 
 // Performs module-level static initialization. Both C and C++ have facilities
 // that to some extent support doing this implicitly but this seems saner and

@@ -533,16 +533,15 @@ static value_t runtime_soft_init(runtime_t *runtime,
   TRY_DEF(module_loader, new_heap_empty_module_loader(runtime));
   runtime->module_loader = runtime_protect_value(runtime, module_loader);
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
-  E_BEGIN_TRY_FINALLY()
-  ;
-  safe_value_t s_builtin_impls = protect(pool, ROOT(runtime, builtin_impls));
-  E_TRY(add_builtin_implementations(runtime, s_builtin_impls));
-  E_TRY(init_special_imports(runtime, ROOT(runtime, special_imports)));
-  E_TRY(init_services(runtime, ROOT(runtime, special_imports), config));
-  E_RETURN(runtime_validate(runtime, nothing()));
-  E_FINALLY();
-  DISPOSE_SAFE_VALUE_POOL(pool);
-  E_END_TRY_FINALLY();
+  TRY_FINALLY {
+    safe_value_t s_builtin_impls = protect(pool, ROOT(runtime, builtin_impls));
+    E_TRY(add_builtin_implementations(runtime, s_builtin_impls));
+    E_TRY(init_special_imports(runtime, ROOT(runtime, special_imports)));
+    E_TRY(init_services(runtime, ROOT(runtime, special_imports), config));
+    E_RETURN(runtime_validate(runtime, nothing()));
+  } FINALLY {
+    DISPOSE_SAFE_VALUE_POOL(pool);
+  } YRT
 }
 
 // Freeze the runtime such that any state that can be shared is deep frozen.
@@ -942,13 +941,25 @@ void safe_value_destroy(runtime_t *runtime, safe_value_t s_value) {
   }
 }
 
-void runtime_toggle_fuzzing(runtime_t *runtime, bool enable) {
+bool runtime_toggle_fuzzing(runtime_t *runtime, bool enable) {
   gc_fuzzer_t *fuzzer = runtime->gc_fuzzer;
   if (fuzzer == NULL)
-    return;
-  CHECK_EQ("invalid fuzz toggle", !enable, fuzzer->is_enabled);
+    return false;
+  bool result = fuzzer->is_enabled;
   fuzzer->is_enabled = enable;
+  return result;
 }
+
+value_t runtime_prepare_retry_after_heap_exhausted(runtime_t *runtime,
+    value_t condition) {
+  TRY(runtime_garbage_collect(runtime));
+  return new_boolean(runtime_toggle_fuzzing(runtime, false));
+}
+
+void runtime_complete_retry_after_heap_exhausted(runtime_t *runtime, value_t recall) {
+  runtime_toggle_fuzzing(runtime, get_boolean_value(recall));
+}
+
 
 value_t get_modal_species_sibling_with_mode(runtime_t *runtime, value_t species,
     value_mode_t mode) {
@@ -1017,19 +1028,18 @@ value_t safe_runtime_execute_syntax(runtime_t *runtime, safe_value_t s_program) 
   safe_value_t s_ambience = protect(pool, ambience);
   // Forward declare these to avoid msvc complaining.
   safe_value_t s_module, s_entry_point;
-  E_BEGIN_TRY_FINALLY()
-  ;
-  value_t unbound_module = get_program_ast_module(deref(s_program));
-  E_TRY_DEF(module, assemble_module(deref(s_ambience), unbound_module));
-  s_module = protect(pool, module);
-  s_entry_point = protect(pool, get_program_ast_entry_point(deref(s_program)));
-  E_TRY_DEF(code_block,
-      safe_compile_expression(runtime, s_entry_point, s_module,
-          scope_get_bottom()));
-  E_RETURN(run_code_block(s_ambience, protect(pool, code_block)));
-  E_FINALLY();
-  DISPOSE_SAFE_VALUE_POOL(pool);
-  E_END_TRY_FINALLY();
+  TRY_FINALLY {
+    value_t unbound_module = get_program_ast_module(deref(s_program));
+    E_TRY_DEF(module, assemble_module(deref(s_ambience), unbound_module));
+    s_module = protect(pool, module);
+    s_entry_point = protect(pool, get_program_ast_entry_point(deref(s_program)));
+    E_TRY_DEF(code_block,
+        safe_compile_expression(runtime, s_entry_point, s_module,
+            scope_get_bottom()));
+    E_RETURN(run_code_block(s_ambience, protect(pool, code_block)));
+  } FINALLY {
+    DISPOSE_SAFE_VALUE_POOL(pool);
+  } YRT
 }
 
 // Have the modules we depend on had their static initializers run?

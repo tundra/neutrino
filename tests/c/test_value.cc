@@ -666,21 +666,21 @@ typedef struct {
 } try_finally_data_t;
 
 static value_t try_finally_condition(try_finally_data_t *data) {
-  E_BEGIN_TRY_FINALLY();
+  TRY_FINALLY {
     E_TRY(new_condition(ccNothing));
     E_RETURN(success());
-  E_FINALLY();
+  } FINALLY {
     data->called = true;
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 static value_t try_finally_return(try_finally_data_t *data) {
-  E_BEGIN_TRY_FINALLY();
+  TRY_FINALLY {
     E_TRY(success());
     E_RETURN(new_integer(4));
-  E_FINALLY();
+  } FINALLY {
     data->called = true;
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 TEST(value, try_finally) {

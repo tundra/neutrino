@@ -80,11 +80,11 @@ static value_t load_library_from_file(runtime_t *runtime, value_t self,
       library_path_str, OPEN_FILE_MODE_READ);
   if (!streams.is_open)
     return new_system_error_condition(seFileNotFound);
-  E_BEGIN_TRY_FINALLY();
+  TRY_FINALLY {
     E_RETURN(runtime_load_library_from_stream(runtime, streams.in, library_path_val));
-  E_FINALLY();
+  } FINALLY {
     file_streams_close(&streams);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 // Constructs a module loader based on the given command-line options.
@@ -135,7 +135,7 @@ static value_t neutrino_main_with_options(neutrino::RuntimeConfig *config,
   runtime.initialize(config);
   size_t argc = 0;
   CREATE_SAFE_VALUE_POOL(*runtime, 4, pool);
-  E_BEGIN_TRY_FINALLY();
+  TRY_FINALLY {
     value_t result = whatever();
     E_TRY(build_module_loader(*runtime, options->cmdline));
     argc = pton_command_line_argument_count(options->cmdline);
@@ -159,9 +159,9 @@ static value_t neutrino_main_with_options(neutrino::RuntimeConfig *config,
       result = safe_runtime_execute_syntax(*runtime, protect(pool, program));
     }
     E_RETURN(result);
-  E_FINALLY();
+  } FINALLY {
     DISPOSE_SAFE_VALUE_POOL(pool);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 // Set up the environment, parse arguments, create a vm, and run the program.
@@ -178,12 +178,12 @@ static value_t neutrino_main(int raw_argc, const char **argv) {
   if (!parse_options(raw_argc - 1, argv + 1, &options))
     return new_invalid_input_condition();
 
-  E_BEGIN_TRY_FINALLY();
+  TRY_FINALLY {
     E_RETURN(neutrino_main_with_options(&config, &options));
-  E_FINALLY();
+  } FINALLY {
     main_options_dispose(&options);
     limited_allocator_uninstall(&limited_allocator);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 int main(int argc, const char *argv[]) {

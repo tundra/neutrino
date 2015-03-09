@@ -48,8 +48,8 @@ value_t add_builtin_method_impl(runtime_t *runtime, value_t map,
     const char *name_c_str, size_t arg_count, builtin_implementation_t impl,
     int leave_argc) {
   CHECK_FAMILY(ofIdHashMap, map);
-  E_BEGIN_TRY_FINALLY();
-    assembler_t assm;
+  assembler_t assm;
+  TRY_FINALLY {
     E_TRY(assembler_init(&assm, runtime, nothing(), scope_get_bottom()));
     if (leave_argc == -1) {
       // Simple case where there can be no signals.
@@ -74,9 +74,9 @@ value_t add_builtin_method_impl(runtime_t *runtime, value_t map,
     E_TRY_DEF(builtin, new_heap_builtin_implementation(runtime, afFreeze,
         name, code_block, arg_count, new_flag_set(kFlagSetAllOff)));
     E_RETURN(set_id_hash_map_at(runtime, map, name, builtin));
-  E_FINALLY();
+  } FINALLY {
     assembler_dispose(&assm);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 value_t add_custom_method_impl(runtime_t *runtime, value_t map,

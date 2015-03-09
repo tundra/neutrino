@@ -140,12 +140,12 @@ static value_t ctrino_to_string(builtin_arguments_t *args) {
   string_buffer_init(&buf);
   string_buffer_printf(&buf, "%9v", value);
   utf8_t as_string = string_buffer_flush(&buf);
-  E_BEGIN_TRY_FINALLY();
+  TRY_FINALLY {
     E_TRY_DEF(result, new_heap_utf8(runtime, as_string));
     E_RETURN(result);
-  E_FINALLY();
+  } FINALLY {
     string_buffer_dispose(&buf);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 static value_t ctrino_get_current_backtrace(builtin_arguments_t *args) {

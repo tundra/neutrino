@@ -7,20 +7,11 @@
 
 #include "runtime.h"
 
-
 // Expands to the body of a safe_ function that works by calling a delegate and
 // if it fails garbage collecting and trying again once.
 #define RETRY_ONCE_IMPL(RUNTIME, DELEGATE) do {                                \
-  value_t __result__ = (DELEGATE);                                             \
-  if (in_condition_cause(ccHeapExhausted, __result__)) {                       \
-    runtime_garbage_collect(RUNTIME);                                          \
-    runtime_toggle_fuzzing(RUNTIME, false);                                    \
-    __result__ = (DELEGATE);                                                   \
-    runtime_toggle_fuzzing(RUNTIME, true);                                     \
-    if (in_condition_cause(ccHeapExhausted, __result__))                       \
-      return new_out_of_memory_condition();                                    \
-  }                                                                            \
-  return __result__;                                                           \
+  __GENERIC_RETRY_DEF__(P_FLAVOR, RUNTIME, value, DELEGATE, P_RETURN);         \
+  return value;                                                                \
 } while (false)
 
 #endif // _RUNTIME_INL

@@ -82,12 +82,12 @@ static value_t compile_method(runtime_t *runtime, value_t method) {
   value_t fragment = get_method_module_fragment(method);
   assembler_t assm;
   TRY(assembler_init(&assm, runtime, fragment, scope_get_bottom()));
-  E_BEGIN_TRY_FINALLY();
+  TRY_FINALLY {
     E_TRY_DEF(code, compile_method_body(&assm, method_ast));
     E_RETURN(code);
-  E_FINALLY();
+  } FINALLY {
     assembler_dispose(&assm);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 // Gets the code from a method object, compiling the method if necessary.
@@ -229,7 +229,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
   frame_t frame = open_stack(stack);
   code_cache_t cache;
   code_cache_refresh(&cache, &frame);
-  E_BEGIN_TRY_FINALLY();
+  TRY_FINALLY {
     while (true) {
       opcode_t opcode = (opcode_t) read_short(&cache, &frame, 0);
       TOPIC_INFO(Interpreter, "Opcode: %s (%i)", get_opcode_name(opcode),
@@ -837,9 +837,9 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           break;
       }
     }
-  E_FINALLY();
+  } FINALLY {
     close_frame(&frame);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 // Runs the given stack until it hits a condition or completes successfully.
@@ -951,16 +951,16 @@ static value_t run_next_process_job(safe_value_t s_ambience, safe_value_t s_proc
   TRY(deliver_process_incoming(runtime, deref(s_process)));
   TRY(take_process_job(deref(s_process), &job));
   CREATE_SAFE_VALUE_POOL(runtime, 5, pool);
-  E_BEGIN_TRY_FINALLY();
+  TRY_FINALLY {
     E_S_TRY_DEF(s_task, protect(pool, get_process_root_task(deref(s_process))));
     E_S_TRY_DEF(s_promise, protect(pool, job.promise));
     E_TRY(prepare_run_job(runtime, get_task_stack(deref(s_task)), &job));
     E_TRY_DEF(result, run_task_until_signal(s_ambience, s_task));
     E_TRY(resolve_job_promise(result, s_promise));
     E_RETURN(result);
-  E_FINALLY();
+  } FINALLY {
     DISPOSE_SAFE_VALUE_POOL(pool);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 static value_t run_process_until_idle(safe_value_t s_ambience, safe_value_t s_process) {
@@ -980,14 +980,14 @@ static value_t run_process_until_idle(safe_value_t s_ambience, safe_value_t s_pr
 value_t run_code_block(safe_value_t s_ambience, safe_value_t s_code) {
   runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
   CREATE_SAFE_VALUE_POOL(runtime, 5, pool);
-  E_BEGIN_TRY_FINALLY();
+  TRY_FINALLY {
     // Build a process to run the code within.
     E_S_TRY_DEF(s_process, protect(pool, new_heap_process(runtime)));
     job_t job;
     job_init(&job, deref(s_code), null(), nothing(), nothing());
     E_TRY(offer_process_job(runtime, deref(s_process), &job));
     E_RETURN(run_process_until_idle(s_ambience, s_process));
-  E_FINALLY();
+  } FINALLY {
     DISPOSE_SAFE_VALUE_POOL(pool);
-  E_END_TRY_FINALLY();
+  } YRT
 }

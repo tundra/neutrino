@@ -204,7 +204,7 @@ value_t plankton_serialize(runtime_t *runtime, value_t data) {
   pton_assembler_t *assm = pton_new_assembler();
   blob_t blob;
   memory_block_t code;
-  E_BEGIN_TRY_FINALLY();
+  TRY_FINALLY {
     serialize_state_t state;
     E_TRY(serialize_state_init(&state, runtime, assm));
     E_TRY(value_serialize(data, &state));
@@ -212,9 +212,9 @@ value_t plankton_serialize(runtime_t *runtime, value_t data) {
     blob = new_blob(code.memory, code.size);
     E_TRY_DEF(result, new_heap_blob_with_data(runtime, blob));
     E_RETURN(result);
-  E_FINALLY();
+  } FINALLY {
     pton_dispose_assembler(assm);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 void value_mapping_init(value_mapping_t *resolver,

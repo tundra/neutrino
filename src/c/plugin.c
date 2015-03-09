@@ -45,9 +45,9 @@ static value_t build_builtin_method_signature(runtime_t *runtime,
 static value_t add_builtin_method(runtime_t *runtime, const c_object_method_t *method,
     value_t subject, value_t space) {
   CHECK_FAMILY(ofMethodspace, space);
-  E_BEGIN_TRY_FINALLY();
+  assembler_t assm;
+  TRY_FINALLY {
     // Build the implementation.
-    assembler_t assm;
     E_TRY(assembler_init(&assm, runtime, nothing(), scope_get_bottom()));
     E_TRY(assembler_emit_builtin(&assm, method->impl));
     E_TRY(assembler_emit_return(&assm));
@@ -60,9 +60,9 @@ static value_t add_builtin_method(runtime_t *runtime, const c_object_method_t *m
         code_block, nothing(), new_flag_set(kFlagSetAllOff)));
     // And in the methodspace bind them.
     E_RETURN(add_methodspace_method(runtime, space, method));
-  E_FINALLY();
+  } FINALLY {
     assembler_dispose(&assm);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 value_t new_c_object_factory(runtime_t *runtime, const c_object_info_t *info,

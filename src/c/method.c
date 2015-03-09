@@ -236,15 +236,15 @@ value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
     value_t fragment) {
   reusable_scratch_memory_t scratch;
   reusable_scratch_memory_init(&scratch);
-  E_BEGIN_TRY_FINALLY();
+  TRY_FINALLY {
     E_TRY_DEF(signature, build_method_signature(runtime, fragment, &scratch,
         get_method_ast_signature(method_ast)));
     E_TRY_DEF(method, new_heap_method(runtime, afMutable, signature, method_ast,
         nothing(), fragment, new_flag_set(kFlagSetAllOff)));
     E_RETURN(method);
-  E_FINALLY();
+  } FINALLY {
     reusable_scratch_memory_dispose(&scratch);
-  E_END_TRY_FINALLY();
+  } YRT
 }
 
 // --- S i g n a t u r e   m a p ---
