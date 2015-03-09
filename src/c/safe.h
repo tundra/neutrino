@@ -154,6 +154,9 @@ bool safe_value_is_garbage(safe_value_t s_value);
 // Does the given safe value wrap nothing?
 bool safe_value_is_nothing(safe_value_t s_value);
 
+// Does the given safe value wrap a condition?
+bool safe_value_is_condition(safe_value_t s_value);
+
 // A pool of safe values that can be disposed together. This is not a scoped
 // value and safe values can be allocated into this in any order.
 typedef struct {

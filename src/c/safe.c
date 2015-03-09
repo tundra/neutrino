@@ -29,6 +29,11 @@ bool safe_value_is_nothing(safe_value_t s_value) {
   return is_nothing(s_value.as_value);
 }
 
+bool safe_value_is_condition(safe_value_t s_value) {
+  // Same as safe_value_is_nothing.
+  return is_condition(s_value.as_value);
+}
+
 bool object_tracker_is_currently_weak(object_tracker_t *tracker) {
   if (object_tracker_is_always_weak(tracker)) {
     return true;
@@ -106,7 +111,7 @@ safe_value_t protect(safe_value_pool_t *pool, value_t value) {
   COND_CHECK_TRUE_WITH_VALUE("safe value pool overflow", ccSafePoolFull,
       protect_immediate(new_condition(ccSafePoolFull)),
       pool->used < pool->capacity);
-  S_TRY_DEF(result, runtime_protect_value(pool->runtime, value));
+  safe_value_t result = runtime_protect_value(pool->runtime, value);
   // Technically we only need to record the non-immediate values but that makes
   // the number of used values highly variable. This way it's harder (though
   // not impossible obviously) for bugs to hide.

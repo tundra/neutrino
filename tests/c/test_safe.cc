@@ -50,50 +50,6 @@ TEST(safe, simple_safe_conditions) {
   DISPOSE_RUNTIME();
 }
 
-static safe_value_t simple_try_helper(runtime_t *runtime, value_t value,
-    bool *succeeded) {
-  S_TRY(runtime_protect_value(runtime, value));
-  *succeeded = true;
-  return protect_immediate(success());
-}
-
-TEST(safe, simple_try) {
-  CREATE_RUNTIME();
-
-  bool succeeded = false;
-  simple_try_helper(runtime, new_condition(ccNotFound), &succeeded);
-  ASSERT_FALSE(succeeded);
-  simple_try_helper(runtime, new_integer(8), &succeeded);
-  ASSERT_TRUE(succeeded);
-
-  DISPOSE_RUNTIME();
-}
-
-static safe_value_t simple_try_set_helper(runtime_t *runtime, value_t value,
-    bool *succeeded) {
-  safe_value_t target;
-  S_TRY_SET(target, runtime_protect_value(runtime, value));
-  *succeeded = true;
-  safe_value_destroy(runtime, target);
-  return protect_immediate(success());
-}
-
-TEST(safe, simple_try_set) {
-  CREATE_RUNTIME();
-
-  bool succeeded = false;
-  simple_try_set_helper(runtime, new_condition(ccNotFound), &succeeded);
-  ASSERT_FALSE(succeeded);
-  simple_try_set_helper(runtime, new_integer(8), &succeeded);
-  ASSERT_TRUE(succeeded);
-  succeeded = false;
-  value_t arr = new_heap_array(runtime, 3);
-  simple_try_set_helper(runtime, arr, &succeeded);
-  ASSERT_TRUE(succeeded);
-
-  DISPOSE_RUNTIME();
-}
-
 TEST(safe, simple_pool) {
   CREATE_RUNTIME();
 
