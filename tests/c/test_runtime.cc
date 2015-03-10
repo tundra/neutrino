@@ -198,8 +198,7 @@ TEST(runtime, on_gc_done_observer) {
 
   size_t gc_count = 0;
 
-  runtime_observer_t observer;
-  runtime_observer_init(&observer);
+  runtime_observer_t observer = runtime_observer_empty();
   observer.on_gc_done = unary_callback_new_1(on_gc, p2o(&gc_count));
 
   runtime_push_observer(runtime, &observer);

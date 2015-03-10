@@ -20,7 +20,7 @@ static value_t transcode_plankton(runtime_t *runtime, value_t value) {
   ASSERT_SUCCESS(encoded);
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
   safe_value_t s_encoded = protect(pool, encoded);
-  value_t decoded = plankton_deserialize(runtime, NULL, s_encoded);
+  value_t decoded = plankton_deserialize_blob(runtime, NULL, s_encoded);
   ASSERT_SUCCESS(decoded);
   DISPOSE_SAFE_VALUE_POOL(pool);
   return decoded;
@@ -255,18 +255,17 @@ TEST(serialize, collection) {
   // It definitely should be possible to deserialize once immediately after a
   // collection, otherwise the heap needs to be bigger.
   ASSERT_SUCCESS(runtime_garbage_collect(runtime));
-  ASSERT_SUCCESS(plankton_deserialize(runtime, NULL, s_blob));
+  ASSERT_SUCCESS(plankton_deserialize_blob(runtime, NULL, s_blob));
 
   size_t gc_count = 0;
-  runtime_observer_t observer;
-  runtime_observer_init(&observer);
+  runtime_observer_t observer = runtime_observer_empty();
   observer.on_gc_done = unary_callback_new_1(add_one, p2o(&gc_count));
   runtime_push_observer(runtime, &observer);
 
   // Repeatedly deserialize the value. This should cause gcs while the
   // deserialization is going on.
   for (size_t i = 0; i < 10; i++) {
-    value_t decoded = plankton_deserialize(runtime, NULL, s_blob);
+    value_t decoded = plankton_deserialize_blob(runtime, NULL, s_blob);
     ASSERT_SUCCESS(decoded);
     test_data_validate(decoded, 9, 76647);
   }

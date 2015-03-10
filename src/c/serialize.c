@@ -228,8 +228,7 @@ void value_mapping_init(value_mapping_t *resolver,
 
 // Collection of state used when serializing data.
 typedef struct {
-  // The input blob.
-  safe_value_t s_blob;
+  blob_t *data;
   size_t cursor;
   // Map from object offsets we've seen to their values.
   safe_value_t s_ref_map;
@@ -243,8 +242,8 @@ typedef struct {
 
 // Initialize deserialization state.
 static value_t deserialize_state_init(deserialize_state_t *state, runtime_t *runtime,
-    object_factory_t *factory, safe_value_t s_blob, byte_stream_t *in) {
-  state->s_blob = s_blob;
+    object_factory_t *factory, blob_t *data) {
+  state->data = data;
   state->cursor = 0;
   state->object_offset = 0;
   state->runtime = runtime;
@@ -368,7 +367,7 @@ static value_t reference_deserialize(uint64_t offset, deserialize_state_t *state
 }
 
 static value_t value_deserialize(deserialize_state_t *state) {
-  blob_t blob = get_blob_data(deref(state->s_blob));
+  blob_t blob = *state->data;
   size_t cursor = state->cursor;
   pton_instr_t instr;
   uint8_t *code = (uint8_t*) blob.data;
@@ -398,11 +397,13 @@ static value_t value_deserialize(deserialize_state_t *state) {
   }
 }
 
-value_t plankton_deserialize(runtime_t *runtime, object_factory_t *factory_or_null,
-    safe_value_t s_blob) {
-  // Make a byte stream out of the blob.
-  byte_stream_t in;
-  byte_stream_init(&in, get_blob_data(deref(s_blob)));
+// Deserialize the given raw blob. Subtle note: the blob is passed by ref not
+// value and the implementation assumes that its state may change during
+// parsing. The data it contains should not change but it is okay for it to
+// point to different arrays as long as those arrays always contain the same
+// data (think: for the array to be moved by gc).
+static value_t plankton_deserialize_data_ptr(runtime_t *runtime,
+    object_factory_t *factory_or_null, blob_t *in) {
   // Use a failing environment accessor if the access pointer is null.
   object_factory_t factory;
   if (factory_or_null == NULL) {
@@ -411,8 +412,44 @@ value_t plankton_deserialize(runtime_t *runtime, object_factory_t *factory_or_nu
     factory = *factory_or_null;
   }
   deserialize_state_t state;
-  TRY(deserialize_state_init(&state, runtime, &factory, s_blob, &in));
-  value_t result = value_deserialize(&state);
-  deserialize_state_dispose(&state);
-  return result;
+  TRY(deserialize_state_init(&state, runtime, &factory, in));
+  TRY_FINALLY {
+    E_RETURN(value_deserialize(&state));
+  } FINALLY {
+    deserialize_state_dispose(&state);
+  } YRT
+}
+
+static opaque_t on_gc_during_deserialize(opaque_t opaque_s_blob,
+    opaque_t opaque_data, opaque_t opaque_runtime) {
+  safe_value_t *s_blob = (safe_value_t*) o2p(opaque_s_blob);
+  blob_t *data = (blob_t*) o2p(opaque_data);
+  *data = get_blob_data(deref(*s_blob));
+  return opaque_null();
+}
+
+value_t plankton_deserialize_blob(runtime_t *runtime,
+    object_factory_t *factory_or_null, safe_value_t s_blob) {
+  // Make a byte stream out of the blob.
+  blob_t data = get_blob_data(deref(s_blob));
+  runtime_observer_t observer = runtime_observer_empty();
+  TRY_FINALLY {
+    // Install a runtime observer that fixes up the data blob when a gc
+    // happens. Admittedly this is unsavory but for the same path to be able
+    // to handle raw streams in the C heap and blobs in the neutrino heap it's
+    // really convenient to make the neutrino blob look like it's just a
+    // normal stream.
+    observer.on_gc_done = unary_callback_new_2(on_gc_during_deserialize,
+        p2o(&s_blob), p2o(&data));
+    runtime_push_observer(runtime, &observer);
+    E_RETURN(plankton_deserialize_data_ptr(runtime, factory_or_null, &data));
+  } FINALLY {
+    runtime_pop_observer(runtime, &observer);
+    callback_destroy(observer.on_gc_done);
+  } YRT
+}
+
+value_t plankton_deserialize_data(runtime_t *runtime,
+    object_factory_t *factory_or_null, blob_t data) {
+  return plankton_deserialize_data_ptr(runtime, factory_or_null, &data);
 }

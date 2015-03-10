@@ -51,7 +51,12 @@ value_t plankton_serialize(runtime_t *runtime, value_t data);
 // Plankton deserialize a binary blob containing a serialized object graph. The
 // access mapping is used to acquire values from the environment. If the
 // deserialization causes the heap to be exhausted a gc will be run.
-value_t plankton_deserialize(runtime_t *runtime, object_factory_t *factory,
+value_t plankton_deserialize_blob(runtime_t *runtime, object_factory_t *factory,
     safe_value_t s_blob);
+
+// Deserialize the given blob of data which must, importantly, not be affected
+// by gcs in the given runtime.
+value_t plankton_deserialize_data(runtime_t *runtime, object_factory_t *factory,
+    blob_t in);
 
 #endif // _SERIALIZE

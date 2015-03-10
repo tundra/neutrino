@@ -249,9 +249,8 @@ typedef struct runtime_observer_t {
   unary_callback_t *on_gc_done;
 } runtime_observer_t;
 
-// Initializes the given observer to a state where it observes nothing. You
-// can then set the struct's fields to indicate which events to observe.
-void runtime_observer_init(runtime_observer_t *observer);
+// Use as the initial value of runtime observers.
+runtime_observer_t runtime_observer_empty();
 
 // All the data associated with a single VM instance.
 struct runtime_t {
@@ -342,7 +341,7 @@ safe_value_t runtime_protect_value_with_flags(runtime_t *runtime, value_t value,
 object_factory_t runtime_default_object_factory();
 
 // Retrying version of runtime plankton deserialization.
-value_t safe_runtime_plankton_deserialize(runtime_t *runtime, safe_value_t s_blob);
+value_t safe_runtime_plankton_deserialize_blob(runtime_t *runtime, safe_value_t s_blob);
 
 // Disposes a gc-safe reference.
 void safe_value_destroy(runtime_t *runtime, safe_value_t value_s);

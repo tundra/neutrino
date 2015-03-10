@@ -601,8 +601,10 @@ value_t runtime_init(runtime_t *runtime,
   return success();
 }
 
-void runtime_observer_init(runtime_observer_t *observer) {
-  memset(observer, 0, sizeof(runtime_observer_t));
+runtime_observer_t runtime_observer_empty() {
+  runtime_observer_t result;
+  memset(&result, 0, sizeof(runtime_observer_t));
+  return result;
 }
 
 void runtime_push_observer(runtime_t *runtime, runtime_observer_t *observer) {
@@ -973,13 +975,10 @@ object_factory_t runtime_default_object_factory() {
       NULL);
 }
 
-static value_t runtime_plankton_deserialize(runtime_t *runtime, safe_value_t s_blob) {
-  object_factory_t factory = runtime_default_object_factory();
-  return plankton_deserialize(runtime, &factory, s_blob);
-}
 
-value_t safe_runtime_plankton_deserialize(runtime_t *runtime, safe_value_t blob) {
-  RETRY_ONCE_IMPL(runtime, runtime_plankton_deserialize(runtime, blob));
+value_t safe_runtime_plankton_deserialize_blob(runtime_t *runtime, safe_value_t blob) {
+  object_factory_t factory = runtime_default_object_factory();
+  RETRY_ONCE_IMPL(runtime, plankton_deserialize_blob(runtime, &factory, blob));
 }
 
 void safe_value_destroy(runtime_t *runtime, safe_value_t s_value) {
@@ -1038,17 +1037,18 @@ value_t get_runtime_plugin_factory_at(runtime_t *runtime, size_t index) {
 
 value_t runtime_load_library_from_stream(runtime_t *runtime,
     in_stream_t *stream, value_t display_name) {
-  CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
+  CREATE_SAFE_VALUE_POOL(runtime, 2, pool);
   TRY_FINALLY {
     E_S_TRY_DEF(s_data, protect(pool, read_stream_to_blob(runtime, stream)));
-    E_TRY_DEF(library, runtime_plankton_deserialize(runtime, s_data));
-    if (!in_family(ofLibrary, library))
+    E_S_TRY_DEF(s_library, protect(pool, safe_runtime_plankton_deserialize_blob(
+        runtime, s_data)));
+    if (!in_family(ofLibrary, deref(s_library)))
       return new_invalid_input_condition();
-    set_library_display_name(library, display_name);
+    set_library_display_name(deref(s_library), display_name);
     // Load all the modules from the library into this module loader.
     value_t loader = deref(runtime->s_module_loader);
     id_hash_map_iter_t iter;
-    id_hash_map_iter_init(&iter, get_library_modules(library));
+    id_hash_map_iter_init(&iter, get_library_modules(deref(s_library)));
     while (id_hash_map_iter_advance(&iter)) {
       value_t key;
       value_t value;
