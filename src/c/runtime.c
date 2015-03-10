@@ -539,7 +539,7 @@ static value_t runtime_hard_init(runtime_t *runtime,
 static value_t runtime_soft_init(runtime_t *runtime,
     const extended_runtime_config_t *config) {
   TRY_DEF(module_loader, new_heap_empty_module_loader(runtime));
-  runtime->module_loader = runtime_protect_value(runtime, module_loader);
+  runtime->s_module_loader = runtime_protect_value(runtime, module_loader);
   CREATE_SAFE_VALUE_POOL(runtime, 4, pool);
   TRY_FINALLY {
     safe_value_t s_builtin_impls = protect(pool, ROOT(runtime, builtin_impls));
@@ -599,6 +599,21 @@ value_t runtime_init(runtime_t *runtime,
         config->base.gc_fuzz_freq, config->base.gc_fuzz_seed);
   }
   return success();
+}
+
+void runtime_observer_init(runtime_observer_t *observer) {
+  memset(observer, 0, sizeof(runtime_observer_t));
+}
+
+void runtime_push_observer(runtime_t *runtime, runtime_observer_t *observer) {
+  CHECK_TRUE("observer already registered", observer->prev == NULL);
+  observer->prev = runtime->top_observer;
+  runtime->top_observer = observer;
+}
+
+void runtime_pop_observer(runtime_t *runtime, runtime_observer_t *observer) {
+  CHECK_PTREQ("not top observer", runtime->top_observer, observer);
+  runtime->top_observer = observer->prev;
 }
 
 IMPLEMENTATION(value_validator_o, value_visitor_o);
@@ -834,6 +849,18 @@ static void runtime_apply_fixups(garbage_collection_state_o *self) {
   }
 }
 
+// Works the opposite way from offsetof: yields a member based on a base pointer
+// and an offset. So memberof(M, o, offsetof(T, m)) should be equivalent to
+// o->m assuming the type of o is T and the type of o->m is M.
+#define memberof(TYPE, BASE, OFFSET) (*((TYPE*) (((byte_t*) (BASE)) + (OFFSET))))
+
+static void runtime_notify_observers(runtime_t *runtime, size_t field_offset) {
+  for (runtime_observer_t *obs = runtime->top_observer; obs != NULL; obs = obs->prev) {
+    unary_callback_t *callback = memberof(unary_callback_t*, obs, field_offset);
+    unary_callback_call(callback, p2o(runtime));
+  }
+}
+
 value_t runtime_garbage_collect(runtime_t *runtime) {
   // Validate that everything's healthy before we start.
   TRY(runtime_validate(runtime, nothing()));
@@ -858,7 +885,10 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
   // Now everything has been migrated so we can throw away from-space.
   TRY(heap_complete_garbage_collection(&runtime->heap));
   // Validate that everything's still healthy.
-  return runtime_validate(runtime, nothing());
+  TRY(runtime_validate(runtime, nothing()));
+  // Notify any observers.
+  runtime_notify_observers(runtime, offsetof(runtime_observer_t, on_gc_done));
+  return success();
 }
 
 void runtime_clear(runtime_t *runtime) {
@@ -866,7 +896,8 @@ void runtime_clear(runtime_t *runtime) {
   runtime->gc_fuzzer = NULL;
   runtime->roots = whatever();
   runtime->mutable_roots = whatever();
-  runtime->module_loader = empty_safe_value();
+  runtime->s_module_loader = empty_safe_value();
+  runtime->top_observer = NULL;
 }
 
 // Perform any pre-processing we need to do before releasing the runtime.
@@ -891,7 +922,7 @@ value_t runtime_dispose(runtime_t *runtime, uint32_t flags) {
   // If preparing fails we keep going and try to free the allocated memory.
   // This may be a bad idea but until there's some evidence one way or the other
   // let's do it this way.
-  safe_value_destroy(runtime, runtime->module_loader);
+  safe_value_destroy(runtime, runtime->s_module_loader);
   result = condition_and(result, heap_dispose(&runtime->heap));
   if (runtime->gc_fuzzer != NULL) {
     allocator_default_free(
@@ -942,7 +973,7 @@ object_factory_t runtime_default_object_factory() {
       NULL);
 }
 
-value_t runtime_plankton_deserialize(runtime_t *runtime, safe_value_t s_blob) {
+static value_t runtime_plankton_deserialize(runtime_t *runtime, safe_value_t s_blob) {
   object_factory_t factory = runtime_default_object_factory();
   return plankton_deserialize(runtime, &factory, s_blob);
 }
@@ -1015,7 +1046,7 @@ value_t runtime_load_library_from_stream(runtime_t *runtime,
       return new_invalid_input_condition();
     set_library_display_name(library, display_name);
     // Load all the modules from the library into this module loader.
-    value_t loader = deref(runtime->module_loader);
+    value_t loader = deref(runtime->s_module_loader);
     id_hash_map_iter_t iter;
     id_hash_map_iter_init(&iter, get_library_modules(library));
     while (id_hash_map_iter_advance(&iter)) {

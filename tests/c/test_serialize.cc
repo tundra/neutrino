@@ -228,6 +228,12 @@ static void test_data_validate(value_t value, size_t depth, size_t seed) {
   }
 }
 
+static opaque_t add_one(opaque_t opaque_count, opaque_t) {
+  size_t *count = (size_t*) o2p(opaque_count);
+  (*count)++;
+  return opaque_null();
+}
+
 TEST(serialize, collection) {
   extended_runtime_config_t config = *extended_runtime_config_get_default();
   config.base.semispace_size_bytes = 650 * kKB;
@@ -251,6 +257,12 @@ TEST(serialize, collection) {
   ASSERT_SUCCESS(runtime_garbage_collect(runtime));
   ASSERT_SUCCESS(plankton_deserialize(runtime, NULL, s_blob));
 
+  size_t gc_count = 0;
+  runtime_observer_t observer;
+  runtime_observer_init(&observer);
+  observer.on_gc_done = unary_callback_new_1(add_one, p2o(&gc_count));
+  runtime_push_observer(runtime, &observer);
+
   // Repeatedly deserialize the value. This should cause gcs while the
   // deserialization is going on.
   for (size_t i = 0; i < 10; i++) {
@@ -259,6 +271,12 @@ TEST(serialize, collection) {
     test_data_validate(decoded, 9, 76647);
   }
 
+  // Assert at least a certain number of collections. The concrete number isn't
+  // all that important, it just has to be nontrivial.
+  ASSERT_TRUE(gc_count > 10);
+
+  runtime_pop_observer(runtime, &observer);
+  callback_destroy(observer.on_gc_done);
   DISPOSE_SAFE_VALUE_POOL(pool);
   DISPOSE_RUNTIME();
 }

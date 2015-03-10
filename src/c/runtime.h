@@ -239,6 +239,19 @@ void gc_fuzzer_init(gc_fuzzer_t *fuzzer, size_t min_freq, size_t mean_freq,
 // of the fuzzer.
 bool gc_fuzzer_tick(gc_fuzzer_t *fuzzer);
 
+// A link in the chain of observers registered with this runtime. Callbacks that
+// are non-NULL will be invoked when the indicated events happen, NULLs are
+// fine and will be ignored.
+typedef struct runtime_observer_t {
+  // The observer below this one.
+  struct runtime_observer_t *prev;
+  // The callback to invoke after a gc.
+  unary_callback_t *on_gc_done;
+} runtime_observer_t;
+
+// Initializes the given observer to a state where it observes nothing. You
+// can then set the struct's fields to indicate which events to observe.
+void runtime_observer_init(runtime_observer_t *observer);
 
 // All the data associated with a single VM instance.
 struct runtime_t {
@@ -253,7 +266,7 @@ struct runtime_t {
   // Optional allocation failure fuzzer.
   gc_fuzzer_t *gc_fuzzer;
   // The module loader used by this runtime.
-  safe_value_t module_loader;
+  safe_value_t s_module_loader;
   // The object that provides access to the file system. This value is never
   // null.
   file_system_t *file_system;
@@ -262,6 +275,8 @@ struct runtime_t {
   // Non-cryptographic (but decent) random number generator used to provide
   // pseudo randomness.
   tinymt64_t random;
+  // The top gc callback, NULL if empty.
+  runtime_observer_t *top_observer;
 };
 
 // Creates a new runtime object, storing it in the given runtime out parameter.
@@ -304,6 +319,14 @@ value_t runtime_garbage_collect(runtime_t *runtime);
 // debugging.
 value_t runtime_validate(runtime_t *runtime, value_t cause);
 
+// Push a runtime observer on top of the given runtime's stack of observers.
+// The observer must not already be observing the runtime.
+void runtime_push_observer(runtime_t *runtime, runtime_observer_t *observer);
+
+// Pop the given observer off the runtime's stack of observers. The given
+// observer must be on top of the stack.
+void runtime_pop_observer(runtime_t *runtime, runtime_observer_t *observer);
+
 // Creates a gc-safe reference to the given value. The value will be kept alive
 // as long as the reference exists and you can get the current location of the
 // value at any time by calling deref.
@@ -318,11 +341,8 @@ safe_value_t runtime_protect_value_with_flags(runtime_t *runtime, value_t value,
 // for a runtime.
 object_factory_t runtime_default_object_factory();
 
-// Deserialize the given data using the environment bindings from this runtime.
-value_t runtime_plankton_deserialize(runtime_t *runtime, safe_value_t s_blob);
-
 // Retrying version of runtime plankton deserialization.
-value_t safe_runtime_plankton_deserialize(runtime_t *runtime, safe_value_t blob);
+value_t safe_runtime_plankton_deserialize(runtime_t *runtime, safe_value_t s_blob);
 
 // Disposes a gc-safe reference.
 void safe_value_destroy(runtime_t *runtime, safe_value_t value_s);

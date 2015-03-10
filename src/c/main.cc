@@ -93,7 +93,7 @@ static value_t build_module_loader(runtime_t *runtime, pton_command_line_t *cmdl
       pton_c_str("module_loader"), pton_null());
   if (pton_is_null(options))
     return success();
-  value_t loader = deref(runtime->module_loader);
+  value_t loader = deref(runtime->s_module_loader);
   pton_variant_t libraries = pton_map_get(options, pton_c_str("libraries"));
   for (size_t i = 0; i < pton_array_length(libraries); i++) {
     pton_variant_t library_path = pton_array_get(libraries, i);

@@ -186,3 +186,28 @@ TEST(runtime, ambience_gc) {
   DISPOSE_SAFE_VALUE_POOL(pool);
   DISPOSE_RUNTIME();
 }
+
+static opaque_t on_gc(opaque_t opaque_gc_count, opaque_t opaque_runtime) {
+  size_t *gc_count = (size_t*) o2p(opaque_gc_count);
+  (*gc_count)++;
+  return opaque_null();
+}
+
+TEST(runtime, on_gc_done_observer) {
+  CREATE_RUNTIME();
+
+  size_t gc_count = 0;
+
+  runtime_observer_t observer;
+  runtime_observer_init(&observer);
+  observer.on_gc_done = unary_callback_new_1(on_gc, p2o(&gc_count));
+
+  runtime_push_observer(runtime, &observer);
+  ASSERT_EQ(0, gc_count);
+  runtime_garbage_collect(runtime);
+  ASSERT_EQ(1, gc_count);
+  runtime_pop_observer(runtime, &observer);
+
+  callback_destroy(observer.on_gc_done);
+  DISPOSE_RUNTIME();
+}

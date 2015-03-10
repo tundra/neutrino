@@ -253,7 +253,7 @@ static value_t ensure_module_in_array(runtime_t *runtime, value_t array,
     for (size_t ii = 0; ii < get_array_length(imports); ii++) {
       value_t import = get_array_at(imports, ii);
       TRY_DEF(imported_module, module_loader_lookup_module(
-          deref(runtime->module_loader), import));
+          deref(runtime->s_module_loader), import));
       TRY(ensure_module_in_array(runtime, array, imported_module));
     }
   }
