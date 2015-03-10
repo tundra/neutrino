@@ -497,11 +497,11 @@ value_t new_heap_path_with_names(runtime_t *runtime, alloc_flags_t flags,
   return result;
 }
 
-value_t new_heap_unknown(runtime_t *runtime, value_t header, value_t payload) {
-  size_t size = kUnknownSize;
-  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, unknown_species)));
-  set_unknown_header(result, header);
-  set_unknown_payload(result, payload);
+value_t new_heap_seed(runtime_t *runtime, value_t header, value_t payload) {
+  size_t size = kSeedSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, seed_species)));
+  set_seed_header(result, header);
+  set_seed_payload(result, payload);
   return post_create_sanity_check(result, size);
 }
 

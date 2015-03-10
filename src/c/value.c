@@ -2488,30 +2488,30 @@ void function_print_on(value_t value, print_on_context_t *context) {
 }
 
 
-// --- U n k n o w n ---
+/// ## Seed
 
-FIXED_GET_MODE_IMPL(unknown, vmMutable);
+FIXED_GET_MODE_IMPL(seed, vmMutable);
 
-ACCESSORS_IMPL(Unknown, unknown, acNoCheck, 0, Header, header);
-ACCESSORS_IMPL(Unknown, unknown, acNoCheck, 0, Payload, payload);
+ACCESSORS_IMPL(Seed, seed, acNoCheck, 0, Header, header);
+ACCESSORS_IMPL(Seed, seed, acNoCheck, 0, Payload, payload);
 
-value_t unknown_validate(value_t self) {
-  VALIDATE_FAMILY(ofUnknown, self);
+value_t seed_validate(value_t self) {
+  VALIDATE_FAMILY(ofSeed, self);
   return success();
 }
 
-value_t plankton_set_unknown_contents(value_t object, runtime_t *runtime,
+value_t plankton_set_seed_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  set_unknown_payload(object, contents);
+  set_seed_payload(object, contents);
   return success();
 }
 
-void unknown_print_on(value_t value, print_on_context_t *context) {
+void seed_print_on(value_t value, print_on_context_t *context) {
   string_buffer_printf(context->buf, "#<? ");
-  value_t header = get_unknown_header(value);
+  value_t header = get_seed_header(value);
   value_print_inner_on(header, context, -1);
   string_buffer_printf(context->buf, " ");
-  value_t payload = get_unknown_payload(value);
+  value_t payload = get_seed_payload(value);
   value_print_inner_on(payload, context, -1);
   string_buffer_printf(context->buf, ">");
 }

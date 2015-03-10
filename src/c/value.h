@@ -455,6 +455,7 @@ static inline value_t chase_moved_object(value_t raw) {
   F(Reference,               reference,                 X, _, (_, _, _, _, _, _, _, _, _, _), 68)\
   F(ReifiedArguments,        reified_arguments,         _, X, (_, _, _, _, _, _, _, _, _, _), 14)\
   F(Roots,                   roots,                     X, _, (_, _, _, _, _, _, _, X, _, _),  2)\
+  F(Seed,                    seed,                      _, _, (_, _, X, _, _, _, _, _, _, _), 15)\
   F(SequenceAst,             sequence_ast,              X, X, (_, _, X, _, _, _, X, _, _, _), 35)\
   F(SignalAst,               signal_ast,                X, X, (_, _, X, _, _, _, X, _, _, _), 48)\
   F(SignalHandlerAst,        signal_handler_ast,        X, X, (_, _, X, _, _, _, X, _, _, _), 75)\
@@ -469,7 +470,6 @@ static inline value_t chase_moved_object(value_t raw) {
   F(Type,                    type,                      X, X, (_, _, X, _, _, _, _, _, _, _), 32)\
   F(UnboundModule,           unbound_module,            _, _, (_, _, X, _, _, _, _, _, _, _), 55)\
   F(UnboundModuleFragment,   unbound_module_fragment,   _, _, (_, _, X, _, _, _, _, _, _, _), 52)\
-  F(Unknown,                 unknown,                   _, _, (_, _, X, _, _, _, _, _, _, _), 15)\
   F(Utf8,                    utf8,                      _, X, (X, X, _, X, X, _, _, _, _, _), 57)\
   F(VariableAssignmentAst,   variable_assignment_ast,   X, _, (_, _, X, _, _, _, X, _, _, _), 22)\
   F(VoidP,                   void_p,                    _, _, (_, _, _, _, X, _, _, _, _, _), 26)\
@@ -1839,17 +1839,17 @@ static const size_t kFunctionDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(function, display_name);
 
 
-// --- U n k n o w n ---
+/// ## Seed
 
-static const size_t kUnknownSize = HEAP_OBJECT_SIZE(2);
-static const size_t kUnknownHeaderOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kUnknownPayloadOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kSeedSize = HEAP_OBJECT_SIZE(2);
+static const size_t kSeedHeaderOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kSeedPayloadOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
-// The header of this object of unknown type.
-ACCESSORS_DECL(unknown, header);
+// The header of this seed.
+ACCESSORS_DECL(seed, header);
 
-// The payload of this object of unknown type.
-ACCESSORS_DECL(unknown, payload);
+// The payload of this seed.
+ACCESSORS_DECL(seed, payload);
 
 
 // --- D e c i m a l   f r a c t i o n ---

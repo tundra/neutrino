@@ -214,11 +214,11 @@ static void test_data_validate(value_t value, size_t depth, size_t seed) {
       break;
     }
     default: {
-      ASSERT_TRUE(in_family(ofUnknown, value));
-      value_t payload = get_unknown_payload(value);
+      ASSERT_TRUE(in_family(ofSeed, value));
+      value_t payload = get_seed_payload(value);
       ASSERT_EQ(2, get_id_hash_map_size(payload));
       size_t root = (seed % 259);
-      test_data_validate(get_unknown_header(value), depth - 1, (17 * seed) + 19);
+      test_data_validate(get_seed_header(value), depth - 1, (17 * seed) + 19);
       test_data_validate(get_id_hash_map_at(payload, new_integer(root)), depth - 1,
           (19 * seed) + 23);
       test_data_validate(get_id_hash_map_at(payload, new_integer(root + 3)),

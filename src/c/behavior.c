@@ -519,8 +519,8 @@ value_t value_to_plankton(pton_arena_t *arena, value_t self,
 
 // --- N e w   i n s t a n c e ---
 
-static value_t new_instance_of_unknown(runtime_t *runtime, value_t type) {
-  return new_heap_unknown(runtime, type, nothing());
+static value_t new_instance_of_seed(runtime_t *runtime, value_t type) {
+  return new_heap_seed(runtime, type, nothing());
 }
 
 static value_t new_instance_of_type(runtime_t *runtime, value_t type) {
@@ -538,7 +538,7 @@ static value_t new_instance_of_string(runtime_t *runtime, value_t type) {
     factory_new_instance_t *new_instance = (factory_new_instance_t*) (intptr_t) new_instance_ptr;
     return new_instance(runtime);
   } else {
-    return new_heap_unknown(runtime, type, nothing());
+    return new_heap_seed(runtime, type, nothing());
   }
 }
 
@@ -550,7 +550,7 @@ static value_t new_heap_object_with_object_type(runtime_t *runtime, value_t type
     case ofUtf8:
       return new_instance_of_string(runtime, type);
     default: {
-      return new_instance_of_unknown(runtime, type);
+      return new_instance_of_seed(runtime, type);
     }
   }
 }
@@ -563,7 +563,7 @@ static value_t new_heap_object_with_custom_tagged_type(runtime_t *runtime, value
       // replaced by something else, something species-like possibly.
       return new_heap_instance(runtime, ROOT(runtime, empty_instance_species));
     default:
-      return new_instance_of_unknown(runtime, type);
+      return new_instance_of_seed(runtime, type);
   }
 }
 
@@ -593,7 +593,7 @@ static value_t set_heap_object_contents_with_utf8_type(runtime_t *runtime,
     factory_set_contents_t *set_contents = (factory_set_contents_t*) (intptr_t) set_contents_ptr;
     return set_contents(object, runtime, payload);
   } else {
-    set_unknown_payload(object, payload);
+    set_seed_payload(object, payload);
     return success();
   }
 }
@@ -606,7 +606,7 @@ static value_t set_heap_object_contents_with_object_type(runtime_t *runtime, val
       return set_heap_object_contents_with_utf8_type(runtime, object, header,
           payload);
     default: {
-      set_unknown_payload(object, payload);
+      set_seed_payload(object, payload);
       return success();
     }
   }
@@ -621,7 +621,7 @@ static value_t set_heap_object_contents_with_custom_tagged_type(runtime_t *runti
       // replaced by something else, something species-like possibly.
       return plankton_set_instance_contents(object, runtime, payload);
     default:
-      set_unknown_payload(object, payload);
+      set_seed_payload(object, payload);
       return success();
   }
 }
