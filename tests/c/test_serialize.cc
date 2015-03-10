@@ -181,8 +181,11 @@ static plankton::Variant test_data_gen(plankton::Factory *factory, size_t depth,
       return result;
     }
     default: {
+      size_t root = (seed % 259);
       plankton::Seed result = factory->new_seed();
       result.set_header(test_data_gen(factory, depth - 1, (17 * seed) + 19));
+      result.set_field(root, test_data_gen(factory, depth - 1, (19 * seed) + 23));
+      result.set_field(root + 3, test_data_gen(factory, depth - 1, (23 * seed) + 29));
       return result;
     }
   }
@@ -212,7 +215,14 @@ static void test_data_validate(value_t value, size_t depth, size_t seed) {
     }
     default: {
       ASSERT_TRUE(in_family(ofUnknown, value));
+      value_t payload = get_unknown_payload(value);
+      ASSERT_EQ(2, get_id_hash_map_size(payload));
+      size_t root = (seed % 259);
       test_data_validate(get_unknown_header(value), depth - 1, (17 * seed) + 19);
+      test_data_validate(get_id_hash_map_at(payload, new_integer(root)), depth - 1,
+          (19 * seed) + 23);
+      test_data_validate(get_id_hash_map_at(payload, new_integer(root + 3)),
+          depth - 1, (23 * seed) + 29);
       break;
     }
   }
@@ -220,7 +230,7 @@ static void test_data_validate(value_t value, size_t depth, size_t seed) {
 
 TEST(serialize, collection) {
   extended_runtime_config_t config = *extended_runtime_config_get_default();
-  config.base.semispace_size_bytes = 224 * kKB;
+  config.base.semispace_size_bytes = 650 * kKB;
   CREATE_RUNTIME_WITH_CONFIG(&config);
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
