@@ -19,6 +19,9 @@ c_all = add_alias("c-all")
 c_all.add_member(ctrino)
 c_all.add_member(c_tests)
 
+all = add_alias("all")
+all.add_member(c_all)
+
 # Add some hooks for describing the build env.
 c.get_env_printer("c-env")
 
