@@ -135,8 +135,9 @@ static time_service_descriptor_t time_impl;
 
 // Initializes the singleton time instance.
 static void run_time_impl_static_init() {
+  void *clone = callback_invisible_clone(unary_callback_new_0(native_time_current));
   service_method_init(&(time_impl.methods[0]), pton_c_str("current"),
-      callback_invisible_clone(unary_callback_new_0(native_time_current)));
+      (unary_callback_t*) clone);
   service_descriptor_init(&time_impl.service, pton_c_str("time"),
       pton_c_str("Time"), 1, time_impl.methods);
 }
