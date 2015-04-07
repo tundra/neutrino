@@ -157,7 +157,7 @@ static value_t apply_custom_plugins(runtime_t *runtime,
     return ROOT(runtime, empty_array);
   TRY_DEF(result, new_heap_array(runtime, config->base.plugin_count));
   for (size_t i = 0; i < config->base.plugin_count; i++) {
-    const c_object_info_t *plugin = config->base.plugins[i];
+    const c_object_info_t *plugin = (const c_object_info_t*) config->base.plugins[i];
     if (plugin == NULL)
       continue;
     TRY_DEF(factory, new_c_object_factory(runtime, plugin, methodspace));

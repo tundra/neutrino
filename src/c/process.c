@@ -1003,7 +1003,7 @@ bool process_airlock_next_complete_foreign(process_airlock_t *airlock,
   bool took = bounded_buffer_try_take(airlock->complete_buffer, &next);
   native_mutex_unlock(&airlock->complete_buffer_mutex);
   if (took) {
-    *result_out = o2p(next);
+    *result_out = (foreign_request_state_t*) o2p(next);
     native_semaphore_release(&airlock->foreign_vacancies);
   }
   return took;
@@ -1016,7 +1016,7 @@ bool process_airlock_next_incoming(process_airlock_t *airlock,
   bool took = bounded_buffer_try_take(airlock->incoming_buffer, &next);
   native_mutex_unlock(&airlock->incoming_buffer_mutex);
   if (took) {
-    *result_out = o2p(next);
+    *result_out = (incoming_request_state_t*) o2p(next);
     native_semaphore_release(&airlock->incoming_vacancies);
   }
   return took;
