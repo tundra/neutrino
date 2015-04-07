@@ -1392,6 +1392,7 @@ static bool find_id_hash_map_entry(value_t map, value_t key, size_t hash,
   value_t *first_deleted_entry = NULL;
   while (true) {
     value_t *entry = get_id_hash_map_entry(map, current_index);
+    size_t entry_hash;
     if (is_id_hash_map_entry_empty(entry)) {
       if (is_id_hash_map_entry_deleted(entry)) {
         // If this was the first deleted entry we've seen we record it such that
@@ -1418,7 +1419,7 @@ static bool find_id_hash_map_entry(value_t map, value_t key, size_t hash,
         return true;
       }
     }
-    size_t entry_hash = get_id_hash_map_entry_hash(entry);
+    entry_hash = get_id_hash_map_entry_hash(entry);
     if (entry_hash == hash) {
       value_t entry_key = get_id_hash_map_entry_key(entry);
       if (value_identity_compare(key, entry_key)) {
