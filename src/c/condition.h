@@ -252,7 +252,7 @@ static bool is_signal_escape(value_t self) {
 // Artificial condition that signals that the runtime should be validated. The
 // serial number can be used to identify the condition which can be useful for
 // logging and debugging.
-static value_t new_force_validate_condition(size_t serial) {
+static value_t new_force_validate_condition(uint32_t serial) {
   return new_condition_with_details(ccForceValidate, serial);
 }
 

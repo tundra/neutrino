@@ -301,9 +301,9 @@ SWALLOW_SEMI(mgi)
 
 // Expands to an integer getter and setter.
 #define INTEGER_ACCESSORS_IMPL(Receiver, receiver, Field, field)               \
-__MAPPING_SETTER_IMPL__(Receiver, receiver, size_t, Field, field,              \
+__MAPPING_SETTER_IMPL__(Receiver, receiver, int64_t, Field, field,             \
     __NEW_INTEGER_MAP__);                                                      \
-__MAPPING_GETTER_IMPL__(Receiver, receiver, size_t, Field, field,              \
+__MAPPING_GETTER_IMPL__(Receiver, receiver, int64_t, Field, field,             \
     __GET_INTEGER_VALUE_MAP__)
 
 // Expands to an enum getter and setter.

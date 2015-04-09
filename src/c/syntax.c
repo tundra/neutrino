@@ -85,12 +85,12 @@ value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,
 
 size_t get_parameter_order_index_for_array(value_t tags) {
   size_t result = kMaxOrderIndex;
-  for (size_t i = 0; i < get_array_length(tags); i++) {
+  for (int64_t i = 0; i < get_array_length(tags); i++) {
     value_t tag = get_array_at(tags, i);
     if (is_integer(tag)) {
-      result = min_size(result, kImplicitArgumentCount + get_integer_value(tag));
+      result = min_size(result, kImplicitArgumentCount + (size_t) get_integer_value(tag));
     } else if (in_family(ofKey, tag)) {
-      size_t id = get_key_id(tag);
+      size_t id = (size_t) get_key_id(tag);
       if (id < kImplicitArgumentCount)
         result = min_size(result, id);
     }
@@ -119,7 +119,7 @@ static int compare_parameter_ordering_entries(const void *vp_a, const void *vp_b
 // argument is responsible for extracting the tags.
 size_t *calc_parameter_ast_ordering(reusable_scratch_memory_t *scratch,
     value_t params) {
-  size_t tagc = get_array_length(params);
+  size_t tagc = (size_t) get_array_length(params);
 
   // Allocate the temporary storage and result array.
   value_t *pairs = NULL;
@@ -209,7 +209,7 @@ ACCESSORS_IMPL(ArrayAst, array_ast, acInFamilyOpt, ofArray, Elements, elements);
 value_t emit_array_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofArrayAst, value);
   value_t elements = get_array_ast_elements(value);
-  size_t length = get_array_length(elements);
+  size_t length = (size_t) get_array_length(elements);
   for (size_t i = 0; i < length; i++)
     TRY(emit_value(get_array_at(elements, i), assm));
   TRY(assembler_emit_new_array(assm, length));
@@ -250,7 +250,7 @@ ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt, ofArray, Arguments,
     arguments);
 
 static value_t create_call_tags(value_t arguments, assembler_t *assm) {
-  size_t arg_count = get_array_length(arguments);
+  size_t arg_count = (size_t) get_array_length(arguments);
   // Build the invocation record and emit the values at the same time.
   TRY_DEF(entries, new_heap_pair_array(assm->runtime, arg_count));
   for (size_t i = 0; i < arg_count; i++) {
@@ -286,7 +286,7 @@ static value_t evaluate_guard(runtime_t *runtime, value_t guard_ast, value_t fra
 // a next call, otherwise nothing.
 static value_t create_call_next_guards(value_t arguments, assembler_t *assm) {
   bool has_next = false;
-  size_t arg_count = get_array_length(arguments);
+  size_t arg_count = (size_t) get_array_length(arguments);
   for (size_t i = 0; i < arg_count && !has_next; i++) {
     value_t arg = get_array_at(arguments, i);
     has_next = !is_nothing(get_argument_ast_next_guard(arg));
@@ -317,7 +317,7 @@ value_t emit_invocation_ast(value_t value, assembler_t *assm) {
   TRY_DEF(record, create_call_tags(arguments, assm));
   TRY_DEF(next_guards, create_call_next_guards(arguments, assm));
   TRY(assembler_emit_invocation(assm, assm->fragment, record, next_guards));
-  size_t argc = get_call_tags_entry_count(record);
+  size_t argc = (size_t) get_call_tags_entry_count(record);
   TRY(assembler_emit_slap(assm, argc));
   return success();
 }
@@ -350,7 +350,7 @@ ACCESSORS_IMPL(CallLiteralAst, call_literal_ast, acInFamilyOpt, ofArray, Argumen
 
 value_t emit_call_literal_ast(value_t value, assembler_t *assm) {
   value_t args = get_call_literal_ast_arguments(value);
-  size_t argc = get_array_length(args);
+  size_t argc = (size_t) get_array_length(args);
   for (size_t i = 0; i < argc; i++) {
     value_t arg = get_array_at(args, i);
     value_t tag = get_call_literal_argument_ast_tag(arg);
@@ -440,7 +440,7 @@ value_t emit_signal_ast(value_t value, assembler_t *assm) {
   //
   // Either way, if execution does continue we'll arrive at the goto's
   // destination with a new argument on the stack.
-  size_t argc = get_call_tags_entry_count(record);
+  size_t argc = (size_t) get_call_tags_entry_count(record);
   if (escape) {
     assembler_adjust_stack_height(assm, +1);
     TRY(assembler_emit_leave_or_fire_barrier(assm, argc));
@@ -459,7 +459,7 @@ value_t emit_signal_ast(value_t value, assembler_t *assm) {
       TRY(emit_value(defawlt, assm));
     }
     size_t code_end_offset = assembler_get_code_cursor(assm);
-    short_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
+    short_buffer_cursor_set(&dest, (uint16_t) (code_end_offset - code_start_offset));
   }
   // We've now either executed the handler (the goto will have jumped here)
   // or there was no handler and the default will have been executed. In either
@@ -504,7 +504,7 @@ static value_t build_methodspace_from_method_asts(value_t method_asts,
   runtime_t *runtime = assm->runtime;
   TRY_DEF(space, new_heap_methodspace(runtime, nothing()));
 
-  for (size_t i = 0; i < get_array_length(method_asts); i++) {
+  for (int64_t i = 0; i < get_array_length(method_asts); i++) {
     value_t method_ast = get_array_at(method_asts, i);
     // Compile the signature and, if we're in a nontrivial inner scope, the
     // body of the lambda.
@@ -536,7 +536,7 @@ value_t emit_signal_handler_ast(value_t value, assembler_t *assm) {
   size_t start_offset = assembler_get_code_cursor(assm);
   TRY(emit_value(get_signal_handler_ast_body(value), assm));
   size_t end_offset = assembler_get_code_cursor(assm);
-  short_buffer_cursor_set(&cursor, end_offset - start_offset);
+  short_buffer_cursor_set(&cursor, (uint16_t) (end_offset - start_offset));
   TRY(assembler_emit_uninstall_signal_handler(assm));
 
   return success();
@@ -656,7 +656,7 @@ ACCESSORS_IMPL(SequenceAst, sequence_ast, acInFamily, ofArray, Values, values);
 value_t emit_sequence_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofSequenceAst, value);
   value_t values = get_sequence_ast_values(value);
-  size_t length = get_array_length(values);
+  size_t length = (size_t) get_array_length(values);
   if (length == 0) {
     // A no-element sequence has value null.
     TRY(assembler_emit_push(assm, null()));
@@ -735,7 +735,8 @@ value_t emit_local_declaration_ast(value_t self, assembler_t *assm) {
     // We're trying to redefine an already defined symbol. That's not valid.
     return new_invalid_syntax_condition(isSymbolAlreadyBound);
   single_symbol_scope_o scope;
-  assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal, offset);
+  assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal,
+      (uint16_t) offset);
   value_t body = get_local_declaration_ast_body(self);
   // Emit the body in scope of the local.
   TRY(emit_value(body, assm));
@@ -876,7 +877,8 @@ value_t emit_block_ast(value_t self, assembler_t *assm) {
     // We're trying to redefine an already defined symbol. That's not valid.
     return new_invalid_syntax_condition(isSymbolAlreadyBound);
   single_symbol_scope_o scope;
-  assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal, offset);
+  assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal,
+      (uint16_t) offset);
   value_t body = get_block_ast_body(self);
   // Emit the body in scope of the local.
   TRY(emit_value(body, assm));
@@ -937,7 +939,8 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
     // We're trying to redefine an already defined symbol. That's not valid.
     return new_invalid_syntax_condition(isSymbolAlreadyBound);
   single_symbol_scope_o scope;
-  assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal, stack_offset);
+  assembler_push_single_symbol_scope(assm, &scope, symbol, btLocal,
+      (uint16_t) stack_offset);
   value_t body = get_with_escape_ast_body(self);
   // Emit the body in scope of the local.
   TRY(emit_value(body, assm));
@@ -946,7 +949,7 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
   // the value on top of the stack. That way the stack cleanup happens the same
   // way whether you return normally or escape.
   size_t code_end_offset = assembler_get_code_cursor(assm);
-  short_buffer_cursor_set(&dest, code_end_offset - code_start_offset);
+  short_buffer_cursor_set(&dest, (uint16_t) (code_end_offset - code_start_offset));
   // Ensure that the escape is dead and remove the section, leaving just the
   // value of the body or the escaped value.
   TRY(assembler_emit_dispose_escape(assm));
@@ -1154,7 +1157,7 @@ value_t quick_and_dirty_evaluate_syntax(runtime_t *runtime, value_t fragment,
 value_t build_method_signature(runtime_t *runtime, value_t fragment,
     reusable_scratch_memory_t *scratch, value_t signature_ast) {
   value_t param_asts = get_signature_ast_parameters(signature_ast);
-  size_t param_astc = get_array_length(param_asts);
+  size_t param_astc = (size_t) get_array_length(param_asts);
 
   // Calculate the parameter ordering. Note that we're assuming that this will
   // give the same order as the signature, which got its order from a different
@@ -1169,7 +1172,7 @@ value_t build_method_signature(runtime_t *runtime, value_t fragment,
   for (size_t i = 0; i < param_astc; i++) {
     value_t param = get_array_at(param_asts, i);
     value_t tags = get_parameter_ast_tags(param);
-    tag_count += get_array_length(tags);
+    tag_count += (size_t) get_array_length(tags);
   }
 
   TRY_DEF(tag_array, new_heap_pair_array(runtime, tag_count));
@@ -1185,7 +1188,7 @@ value_t build_method_signature(runtime_t *runtime, value_t fragment,
     value_t tags = get_parameter_ast_tags(param_ast);
     TRY_DEF(param, new_heap_parameter(runtime, afFreeze, guard, tags, false, param_index));
     // Add all this parameter's tags to the tag array.
-    size_t tagc = get_array_length(tags);
+    size_t tagc = (size_t) get_array_length(tags);
     for (size_t j = 0; j < tagc; j++, tag_index++) {
       value_t tag = get_array_at(tags, j);
       set_pair_array_first_at(tag_array, tag_index, tag);
@@ -1218,7 +1221,7 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
   value_t signature_ast = get_method_ast_signature(method_ast);
   runtime_t *runtime = assm->runtime;
   value_t param_asts = get_signature_ast_parameters(signature_ast);
-  size_t param_astc = get_array_length(param_asts);
+  size_t param_astc = (size_t) get_array_length(param_asts);
 
   // Push the scope that holds the parameters.
   map_scope_o param_scope;
@@ -1238,7 +1241,7 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
     value_t symbol = get_parameter_ast_symbol(param_ast);
     if (!is_nothing(symbol)) {
       TRY(sanity_check_symbol(assm, symbol));
-      TRY(map_scope_bind(&param_scope, symbol, btArgument, offsets[i]));
+      TRY(map_scope_bind(&param_scope, symbol, btArgument, (uint16_t) offsets[i]));
     }
   }
 
@@ -1284,7 +1287,7 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   // Push the captured variables onto the stack so they can to be stored in the
   // lambda.
   value_t captures = lambda_scope.captures;
-  size_t capture_count = get_array_buffer_length(captures);
+  size_t capture_count = (size_t) get_array_buffer_length(captures);
   for (size_t i = 0; i < capture_count; i++)
     // Push the captured symbols onto the stack in reverse order just to make
     // it simpler to pop them into the capture array at runtime. It makes no
@@ -1452,7 +1455,7 @@ value_t plankton_new_signature_ast(runtime_t *runtime) {
 void signature_ast_print_on(value_t self, print_on_context_t *context) {
   string_buffer_printf(context->buf, "#<signature ast ");
   value_t params = get_signature_ast_parameters(self);
-  for (size_t i = 0; i < get_array_length(params); i++) {
+  for (int64_t i = 0; i < get_array_length(params); i++) {
     if (i > 0)
       string_buffer_printf(context->buf, ", ");
     value_print_inner_on(get_array_at(params, i), context, -1);

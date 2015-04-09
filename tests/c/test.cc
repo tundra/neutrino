@@ -41,10 +41,10 @@ void fail(const char *file, int line, const char *fmt, ...) {
 static bool array_structural_equal(value_t a, value_t b) {
   CHECK_FAMILY(ofArray, a);
   CHECK_FAMILY(ofArray, b);
-  size_t length = get_array_length(a);
+  int64_t length = get_array_length(a);
   if (get_array_length(b) != length)
     return false;
-  for (size_t i = 0; i < length; i++) {
+  for (int64_t i = 0; i < length; i++) {
     if (!(value_structural_equal(get_array_at(a, i), get_array_at(b, i))))
       return false;
   }
@@ -54,10 +54,10 @@ static bool array_structural_equal(value_t a, value_t b) {
 static bool array_buffer_structural_equal(value_t a, value_t b) {
   CHECK_FAMILY(ofArrayBuffer, a);
   CHECK_FAMILY(ofArrayBuffer, b);
-  size_t length = get_array_buffer_length(a);
+  int64_t length = get_array_buffer_length(a);
   if (get_array_buffer_length(b) != length)
     return false;
-  for (size_t i = 0; i < length; i++) {
+  for (int64_t i = 0; i < length; i++) {
     if (!(value_structural_equal(get_array_buffer_at(a, i),
         get_array_buffer_at(b, i))))
       return false;
@@ -283,7 +283,7 @@ value_t expand_variant_to_integer(runtime_t *runtime, variant_value_t *value) {
 }
 
 value_t expand_variant_to_stage_offset(runtime_t *runtime, variant_value_t *value) {
-  return new_stage_offset(value->as_int64);
+  return new_stage_offset((int32_t) value->as_int64);
 }
 
 value_t expand_variant_to_string(runtime_t *runtime, variant_value_t *value) {
@@ -359,7 +359,7 @@ value_t expand_variant_to_identifier(runtime_t *runtime, variant_value_t *value)
 value_t expand_variant_to_signature(runtime_t *runtime, variant_value_t *value) {
   TRY_DEF(args, expand_variant_to_array(runtime, value));
   bool allow_extra = get_boolean_value(get_array_at(args, 0));
-  size_t param_count = get_array_length(args) - 1;
+  size_t param_count = (size_t) get_array_length(args) - 1;
   size_t mandatory_count = 0;
   size_t tag_count = 0;
   // First we just collect some information, then we'll build the signature.
@@ -368,7 +368,7 @@ value_t expand_variant_to_signature(runtime_t *runtime, variant_value_t *value) 
     value_t tags = get_parameter_tags(param);
     if (!get_parameter_is_optional(param))
       mandatory_count++;
-    tag_count += get_array_length(tags);
+    tag_count += (size_t) get_array_length(tags);
   }
   // Create an array with pairs of values, the first entry of which is the tag
   // and the second is the parameter.
@@ -381,7 +381,7 @@ value_t expand_variant_to_signature(runtime_t *runtime, variant_value_t *value) 
     set_parameter_index(param, i);
     ensure_frozen(runtime, param);
     value_t tags = get_parameter_tags(param);
-    for (size_t j = 0; j < get_array_length(tags); j++, t++) {
+    for (int64_t j = 0; j < get_array_length(tags); j++, t++) {
       value_t tag = get_array_at(tags, j);
       set_pair_array_first_at(entries, t, tag);
       set_pair_array_second_at(entries, t, param);

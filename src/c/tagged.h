@@ -203,7 +203,7 @@ static value_t new_float_32(float32_t value) {
 // Returns the value stored in a tagged float-32.
 static float32_t get_float_32_value(value_t self) {
   CHECK_PHYLUM(tpFloat32, self);
-  uint32_t binary = get_custom_tagged_payload(self);
+  uint32_t binary = (uint32_t) get_custom_tagged_payload(self);
   float32_t result;
   memcpy(&result, &binary, sizeof(float));
   return result;

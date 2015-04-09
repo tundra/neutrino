@@ -221,9 +221,9 @@ typedef struct {
   // Random number generator to use.
   pseudo_random_t random;
   // The smallest legal interval between allocation failures.
-  size_t min_freq;
+  uint32_t min_freq;
   // The range within which to pick random values.
-  size_t spread;
+  uint32_t spread;
   // The number of allocations remaining before the next forced failure.
   size_t remaining;
   // Is fuzzing currently enabled?
@@ -232,8 +232,8 @@ typedef struct {
 
 // Initializes an garbage collection fuzzer according to the given runtime
 // config.
-void gc_fuzzer_init(gc_fuzzer_t *fuzzer, size_t min_freq, size_t mean_freq,
-    size_t seed);
+void gc_fuzzer_init(gc_fuzzer_t *fuzzer, uint32_t min_freq, uint32_t mean_freq,
+    uint32_t seed);
 
 // Returns true if the next allocation should fail. This also advances the state
 // of the fuzzer.

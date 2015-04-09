@@ -333,7 +333,7 @@ void assert_match_with_offsets(value_t ambience, match_result_t expected_result,
     int64_t *expected_offsets, value_t signature, variant_t *args_var) {
   runtime_t *runtime = get_ambience_runtime(ambience);
   value_t args = C(args_var);
-  size_t arg_count = get_array_length(args);
+  size_t arg_count = (size_t) get_array_length(args);
   // Build a descriptor from the tags and a stack from the values.
   for (size_t is_frame_test = 0; is_frame_test < 2; is_frame_test++) {
     frame_t frame;

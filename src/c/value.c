@@ -348,7 +348,7 @@ value_t set_modal_heap_object_mode_unchecked(runtime_t *runtime, value_t self,
 
 size_t get_modal_species_base_root(value_t value) {
   value_t base_root = *access_heap_object_field(value, kModalSpeciesBaseRootOffset);
-  return get_integer_value(base_root);
+  return (size_t) get_integer_value(base_root);
 }
 
 void set_modal_species_base_root(value_t value, size_t base_root) {
@@ -377,13 +377,13 @@ char *get_utf8_chars(value_t value) {
 }
 
 utf8_t get_utf8_contents(value_t value) {
-  return new_string(get_utf8_chars(value), get_utf8_length(value));
+  return new_string(get_utf8_chars(value), (size_t) get_utf8_length(value));
 }
 
 value_t utf8_validate(value_t value) {
   VALIDATE_FAMILY(ofUtf8, value);
   // Check that the string is null-terminated.
-  size_t length = get_utf8_length(value);
+  size_t length = (size_t) get_utf8_length(value);
   VALIDATE(get_utf8_chars(value)[length] == '\0');
   return success();
 }
@@ -392,13 +392,13 @@ value_t utf8_to_plankton(pton_arena_t *arena, value_t self,
     pton_variant_t *pton_out) {
   CHECK_FAMILY(ofUtf8, self);
   utf8_t contents = get_utf8_contents(self);
-  *pton_out = pton_new_string(arena, contents.chars, contents.size);
+  *pton_out = pton_new_string(arena, contents.chars, (uint32_t) contents.size);
   return success();
 }
 
 void get_utf8_layout(value_t value, heap_object_layout_t *layout) {
   // Strings have no value fields.
-  size_t size = calc_utf8_size(get_utf8_length(value));
+  size_t size = calc_utf8_size((size_t) get_utf8_length(value));
   heap_object_layout_set(layout, size, size);
 }
 
@@ -530,7 +530,7 @@ static value_t ascii_string_view_get_at(builtin_arguments_t *args) {
   value_t value = get_ascii_string_view_value(subject);
   utf8_t contents = get_utf8_contents(value);
   int64_t i = get_integer_value(index);
-  return new_ascii_character(string_byte_at(contents, i));
+  return new_ascii_character(string_byte_at(contents, (size_t) i));
 }
 
 static value_t ascii_string_view_length(builtin_arguments_t *args) {
@@ -551,7 +551,7 @@ static value_t ascii_string_view_substring(builtin_arguments_t *args) {
   value_t value = get_ascii_string_view_value(subject);
   utf8_t contents = get_utf8_contents(value);
   utf8_t substring = string_substring(contents, get_integer_value(from),
-      get_integer_value(to));
+      (size_t) get_integer_value(to));
   return new_heap_utf8(runtime, substring);
 }
 
@@ -579,7 +579,7 @@ INTEGER_ACCESSORS_IMPL(Blob, blob, Length, length);
 
 blob_t get_blob_data(value_t value) {
   CHECK_FAMILY(ofBlob, value);
-  size_t length = get_blob_length(value);
+  size_t length = (size_t) get_blob_length(value);
   void *data = access_heap_object_field(value, kBlobDataOffset);
   return new_blob(data, length);
 }
@@ -591,7 +591,7 @@ value_t blob_validate(value_t value) {
 
 void get_blob_layout(value_t value, heap_object_layout_t *layout) {
   // Blobs have no value fields.
-  size_t size = calc_blob_size(get_blob_length(value));
+  size_t size = calc_blob_size((size_t) get_blob_length(value));
   heap_object_layout_set(layout, size, size);
 }
 
@@ -662,25 +662,27 @@ void get_void_p_layout(value_t value, heap_object_layout_t *layout) {
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(array);
 
-size_t calc_array_size(size_t length) {
-  return kHeapObjectHeaderSize       // header
-       + kValueSize              // length
-       + (length * kValueSize);  // contents
+size_t calc_array_size(int64_t length) {
+  return (size_t) (
+         kHeapObjectHeaderSize    // header
+       + kValueSize               // length
+       + (length * kValueSize));  // contents
 }
 
 INTEGER_ACCESSORS_IMPL(Array, array, Length, length);
 
-value_t get_array_at(value_t value, size_t index) {
+value_t get_array_at(value_t value, int64_t index) {
   CHECK_FAMILY(ofArray, value);
   COND_CHECK_TRUE("array index out of bounds", ccOutOfBounds,
-      index < get_array_length(value));
+      ((uint64_t) index) < ((uint64_t) get_array_length(value)));
   return get_array_start(value)[index];
 }
 
-void set_array_at(value_t value, size_t index, value_t element) {
+void set_array_at(value_t value, int64_t index, value_t element) {
   CHECK_FAMILY(ofArray, value);
   CHECK_MUTABLE(value);
-  CHECK_REL("array index out of bounds", index, <, get_array_length(value));
+  CHECK_REL("array index out of bounds", (uint64_t) index, <,
+      (uint64_t) get_array_length(value));
   get_array_start(value)[index] = element;
 }
 
@@ -695,7 +697,7 @@ value_t *get_array_start_unchecked(value_t value) {
 
 value_array_t get_array_elements(value_t self) {
   CHECK_FAMILY(ofArray, self);
-  return new_value_array(get_array_start(self), get_array_length(self));
+  return new_value_array(get_array_start(self), (size_t) get_array_length(self));
 }
 
 void value_array_copy_to(value_array_t dest, value_array_t src) {
@@ -726,7 +728,7 @@ void array_print_on(value_t value, print_on_context_t *context) {
     string_buffer_printf(context->buf, "#<array[%i]>", (int) get_array_length(value));
   } else {
     string_buffer_printf(context->buf, "[");
-    for (size_t i = 0; i < get_array_length(value); i++) {
+    for (int64_t i = 0; i < get_array_length(value); i++) {
       if (i > 0)
         string_buffer_printf(context->buf, ", ");
       value_print_inner_on(get_array_at(value, i), context, -1);
@@ -738,9 +740,9 @@ void array_print_on(value_t value, print_on_context_t *context) {
 value_t array_to_plankton(pton_arena_t *arena, value_t self,
     pton_variant_t *pton_out) {
   CHECK_FAMILY(ofArray, self);
-  size_t length = get_array_length(self);
+  uint32_t length = (uint32_t) get_array_length(self);
   pton_variant_t result = pton_new_array_with_capacity(arena, length);
-  for (size_t i = 0; i < length; i++) {
+  for (uint32_t i = 0; i < length; i++) {
     pton_variant_t elm = pton_null();
     TRY(value_to_plankton(arena, get_array_at(self, i), &elm));
     pton_array_add(result, elm);
@@ -762,22 +764,22 @@ value_t sort_array(value_t value) {
   return sort_array_partial(value, get_array_length(value));
 }
 
-value_t sort_array_partial(value_t value, size_t elmc) {
+value_t sort_array_partial(value_t value, int64_t elmc) {
   CHECK_FAMILY(ofArray, value);
   CHECK_MUTABLE(value);
-  CHECK_REL("sorting out of bounds", elmc, <=, get_array_length(value));
+  CHECK_REL("sorting out of bounds", (uint64_t) elmc, <=, (uint64_t) get_array_length(value));
   value_t *elements = get_array_start(value);
   // Just use qsort. This means that we can't propagate conditions from the
   // compare functions back out but that shouldn't be a huge issue. We'll check
   // on them for now and later on this will have to be rewritten in n anyway.
-  qsort(elements, elmc, kValueSize, &value_compare_function);
+  qsort(elements, (size_t) elmc, kValueSize, &value_compare_function);
   return success();
 }
 
 bool is_array_sorted(value_t value) {
   CHECK_FAMILY(ofArray, value);
-  size_t length = get_array_length(value);
-  for (size_t i = 1; i < length; i++) {
+  int64_t length = get_array_length(value);
+  for (int64_t i = 1; i < length; i++) {
     value_t a = get_array_at(value, i - 1);
     value_t b = get_array_at(value, i);
     if (test_relation(value_ordering_compare(a, b), reGreaterThan))
@@ -786,45 +788,45 @@ bool is_array_sorted(value_t value) {
   return true;
 }
 
-void set_pair_array_first_at(value_t self, size_t index, value_t value) {
+void set_pair_array_first_at(value_t self, int64_t index, value_t value) {
   set_array_at(self, index << 1, value);
 }
 
-value_t get_pair_array_first_at(value_t self, size_t index) {
+value_t get_pair_array_first_at(value_t self, int64_t index) {
   return get_array_at(self, index << 1);
 }
 
-void set_pair_array_second_at(value_t self, size_t index, value_t value) {
+void set_pair_array_second_at(value_t self, int64_t index, value_t value) {
   set_array_at(self, (index << 1) + 1, value);
 }
 
-value_t get_pair_array_second_at(value_t self, size_t index) {
+value_t get_pair_array_second_at(value_t self, int64_t index) {
   return get_array_at(self, (index << 1) + 1);
 }
 
-size_t get_pair_array_length(value_t self) {
+int64_t get_pair_array_length(value_t self) {
   return get_array_length(self) >> 1;
 }
 
 value_t co_sort_pair_array(value_t value) {
   CHECK_FAMILY(ofArray, value);
   CHECK_MUTABLE(value);
-  size_t length = get_array_length(value);
+  int64_t length = get_array_length(value);
   CHECK_EQ("pair sorting odd-length array", 0, length & 1);
-  size_t pair_count = length >> 1;
+  int64_t pair_count = length >> 1;
   value_t *elements = get_array_start(value);
   // The value compare function works in this case too because it'll compare the
   // first value pointed to by its arguments, it doesn't care if there are more
   // values after it.
-  qsort(elements, pair_count, kValueSize << 1, &value_compare_function);
+  qsort(elements, (size_t) pair_count, kValueSize << 1, &value_compare_function);
   return success();
 }
 
 bool is_pair_array_sorted(value_t value) {
   CHECK_FAMILY(ofArray, value);
   CHECK_EQ("not pair array", 0, get_array_length(value) & 1);
-  size_t length = get_pair_array_length(value);
-  for (size_t i = 1; i < length; i++) {
+  int64_t length = get_pair_array_length(value);
+  for (int64_t i = 1; i < length; i++) {
     value_t a = get_pair_array_first_at(value, i - 1);
     value_t b = get_pair_array_first_at(value, i);
     if (test_relation(value_ordering_compare(a, b), reGreaterThan))
@@ -871,11 +873,11 @@ value_t get_pair_second(value_t pair) {
 
 value_t array_transient_identity_hash(value_t value, hash_stream_t *stream,
     cycle_detector_t *outer) {
-  size_t length = get_array_length(value);
+  int64_t length = get_array_length(value);
   hash_stream_write_int64(stream, length);
   cycle_detector_t inner;
   TRY(cycle_detector_enter(outer, &inner, value));
-  for (size_t i = 0; i < length; i++) {
+  for (int64_t i = 0; i < length; i++) {
     value_t elm = get_array_at(value, i);
     TRY(value_transient_identity_hash_cycle_protect(elm, stream, &inner));
   }
@@ -883,13 +885,13 @@ value_t array_transient_identity_hash(value_t value, hash_stream_t *stream,
 }
 
 value_t array_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
-  size_t length = get_array_length(a);
-  size_t b_length = get_array_length(b);
+  int64_t length = get_array_length(a);
+  int64_t b_length = get_array_length(b);
   if (length != b_length)
     return no();
   cycle_detector_t inner;
   TRY(cycle_detector_enter(outer, &inner, a));
-  for (size_t i = 0; i < length; i++) {
+  for (int64_t i = 0; i < length; i++) {
     value_t a_elm = get_array_at(a, i);
     value_t b_elm = get_array_at(b, i);
     TRY_DEF(cmp, value_identity_compare_cycle_protect(a_elm, b_elm, &inner));
@@ -900,7 +902,7 @@ value_t array_identity_compare(value_t a, value_t b, cycle_detector_t *outer) {
 }
 
 bool in_array(value_t self, value_t value) {
-  for (size_t i = 0; i < get_array_length(self); i++) {
+  for (int64_t i = 0; i < get_array_length(self); i++) {
     if (value_identity_compare(value, get_array_at(self, i)))
       return true;
   }
@@ -916,7 +918,7 @@ static value_t array_length(builtin_arguments_t *args) {
 static value_t array_get_at(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t index_value = get_builtin_argument(args, 0);
-  size_t index = get_integer_value(index_value);
+  int64_t index = get_integer_value(index_value);
   if (index >= get_array_length(self)) {
     ESCAPE_BUILTIN(args, out_of_bounds, index_value);
   } else {
@@ -927,7 +929,7 @@ static value_t array_get_at(builtin_arguments_t *args) {
 static value_t array_set_at(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t index_value = get_builtin_argument(args, 0);
-  size_t index = get_integer_value(index_value);
+  int64_t index = get_integer_value(index_value);
   if (index >= get_array_length(self)) {
     ESCAPE_BUILTIN(args, out_of_bounds, index_value);
   } else if (!is_mutable(self)) {
@@ -949,7 +951,7 @@ value_t add_array_builtin_implementations(runtime_t *runtime, safe_value_t s_map
 
 // --- T u p l e ---
 
-value_t get_tuple_at(value_t self, size_t index) {
+value_t get_tuple_at(value_t self, int64_t index) {
   return get_array_at(self, index);
 }
 
@@ -977,8 +979,8 @@ bool try_add_to_array_buffer(value_t self, value_t value) {
   CHECK_FAMILY(ofArrayBuffer, self);
   CHECK_MUTABLE(self);
   value_t elements = get_array_buffer_elements(self);
-  size_t capacity = get_array_length(elements);
-  size_t index = get_array_buffer_length(self);
+  size_t capacity = (size_t) get_array_length(elements);
+  size_t index = (size_t) get_array_buffer_length(self);
   if (index >= capacity)
     return false;
   set_array_at(elements, index, value);
@@ -988,7 +990,7 @@ bool try_add_to_array_buffer(value_t self, value_t value) {
 
 static value_t extend_array_buffer(runtime_t *runtime, value_t buffer) {
   value_t old_elements = get_array_buffer_elements(buffer);
-  size_t old_capacity = get_array_length(old_elements);
+  size_t old_capacity = (size_t) get_array_length(old_elements);
   size_t new_capacity = (old_capacity + 1) * 2;
   TRY_DEF(new_elements, new_heap_array(runtime, new_capacity));
   for (size_t i = 0; i < old_capacity; i++)
@@ -1011,8 +1013,8 @@ bool try_add_to_pair_array_buffer(value_t self, value_t first, value_t second) {
   CHECK_FAMILY(ofArrayBuffer, self);
   CHECK_MUTABLE(self);
   value_t elements = get_array_buffer_elements(self);
-  size_t capacity = get_array_length(elements);
-  size_t index = get_array_buffer_length(self);
+  size_t capacity = (size_t) get_array_length(elements);
+  size_t index = (size_t) get_array_buffer_length(self);
   if ((index + 1) >= capacity)
     return false;
   set_array_at(elements, index, first);
@@ -1033,7 +1035,7 @@ value_t add_to_pair_array_buffer(runtime_t *runtime, value_t buffer, value_t fir
 }
 
 bool in_array_buffer(value_t self, value_t value) {
-  for (size_t i = 0; i < get_array_buffer_length(self); i++) {
+  for (int64_t i = 0; i < get_array_buffer_length(self); i++) {
     if (value_identity_compare(value, get_array_buffer_at(self, i)))
       return true;
   }
@@ -1052,24 +1054,24 @@ void sort_array_buffer(value_t self) {
   sort_array_partial(elements, get_array_buffer_length(self));
 }
 
-value_t get_array_buffer_at(value_t self, size_t index) {
+value_t get_array_buffer_at(value_t self, int64_t index) {
   CHECK_FAMILY(ofArrayBuffer, self);
   COND_CHECK_TRUE("array buffer index out of bounds", ccOutOfBounds,
-      index < get_array_buffer_length(self));
+      ((uint64_t) index) < ((uint64_t) get_array_buffer_length(self)));
   return get_array_at(get_array_buffer_elements(self), index);
 }
 
-void set_array_buffer_at(value_t self, size_t index, value_t value) {
+void set_array_buffer_at(value_t self, int64_t index, value_t value) {
   CHECK_FAMILY(ofArrayBuffer, self);
   CHECK_MUTABLE(self);
   CHECK_TRUE("array buffer index out of bounds",
-      index < get_array_buffer_length(self));
+      ((uint64_t) index) < ((uint64_t) get_array_buffer_length(self)));
   set_array_at(get_array_buffer_elements(self), index, value);
 }
 
 void array_buffer_print_on(value_t value, print_on_context_t *context) {
   string_buffer_printf(context->buf, "%[");
-  for (size_t i = 0; i < get_array_buffer_length(value); i++) {
+  for (int64_t i = 0; i < get_array_buffer_length(value); i++) {
     if (i > 0)
       string_buffer_printf(context->buf, ", ");
     value_print_inner_on(get_array_buffer_at(value, i), context, -1);
@@ -1077,15 +1079,15 @@ void array_buffer_print_on(value_t value, print_on_context_t *context) {
   string_buffer_printf(context->buf, "]");
 }
 
-value_t get_pair_array_buffer_first_at(value_t self, size_t index) {
+value_t get_pair_array_buffer_first_at(value_t self, int64_t index) {
   return get_array_buffer_at(self, index << 1);
 }
 
-value_t get_pair_array_buffer_second_at(value_t self, size_t index) {
+value_t get_pair_array_buffer_second_at(value_t self, int64_t index) {
   return get_array_buffer_at(self, (index << 1) + 1);
 }
 
-size_t get_pair_array_buffer_length(value_t self) {
+int64_t get_pair_array_buffer_length(value_t self) {
   return get_array_buffer_length(self) >> 1;
 }
 
@@ -1111,13 +1113,13 @@ size_t get_fifo_buffer_nodes_length(size_t width, size_t capacity) {
 }
 
 static size_t get_fifo_buffer_node_length(value_t self) {
-  return get_fifo_buffer_node_length_for_width(get_fifo_buffer_width(self));
+  return (size_t) get_fifo_buffer_node_length_for_width((size_t) get_fifo_buffer_width(self));
 }
 
 size_t get_fifo_buffer_capacity(value_t self) {
   CHECK_FAMILY(ofFifoBuffer, self);
   value_t data = get_fifo_buffer_nodes(self);
-  return (get_array_length(data) / get_fifo_buffer_node_length(self)) - kFifoBufferReservedNodeCount;
+  return (size_t) ((get_array_length(data) / get_fifo_buffer_node_length(self)) - kFifoBufferReservedNodeCount);
 }
 
 void get_fifo_buffer_values_at(value_t self, size_t index, value_t *values_out,
@@ -1137,14 +1139,14 @@ void set_fifo_buffer_values_at(value_t self, size_t index, value_t *values,
 }
 
 void clear_fifo_buffer_values_at(value_t self, size_t index) {
-  size_t width = get_fifo_buffer_width(self);
-  size_t node_offset = index * get_fifo_buffer_node_length(self) + kFifoBufferNodeHeaderSize;
+  size_t width = (size_t) get_fifo_buffer_width(self);
+  size_t node_offset = (size_t) (index * get_fifo_buffer_node_length(self) + kFifoBufferNodeHeaderSize);
   value_t *nodes_start = get_array_start(get_fifo_buffer_nodes(self));
   fast_fill_with_whatever(nodes_start + node_offset, width);
 }
 
 size_t get_fifo_buffer_next_at(value_t self, size_t index) {
-  return get_integer_value(get_array_at(get_fifo_buffer_nodes(self),
+  return (size_t) get_integer_value(get_array_at(get_fifo_buffer_nodes(self),
       index * get_fifo_buffer_node_length(self)));
 }
 
@@ -1154,7 +1156,7 @@ void set_fifo_buffer_next_at(value_t self, size_t index, size_t next) {
 }
 
 size_t get_fifo_buffer_prev_at(value_t self, size_t index) {
-  return get_integer_value(get_array_at(get_fifo_buffer_nodes(self),
+  return (size_t) get_integer_value(get_array_at(get_fifo_buffer_nodes(self),
       index * get_fifo_buffer_node_length(self) + 1));
 }
 
@@ -1186,7 +1188,7 @@ bool try_offer_to_fifo_buffer(value_t self, value_t *values, size_t values_size)
   CHECK_MUTABLE(self);
   CHECK_EQ("offer has wrong width", get_fifo_buffer_width(self), values_size);
   size_t capacity = get_fifo_buffer_capacity(self);
-  size_t size = get_fifo_buffer_size(self);
+  size_t size = (size_t) get_fifo_buffer_size(self);
   if (size == capacity)
     // If the buffer is full we bail out immediately.
     return false;
@@ -1215,7 +1217,7 @@ value_t take_from_fifo_buffer(value_t self, value_t *values_out, size_t values_s
   unhook_fifo_buffer_entry(self, prev_occupied);
   // Hook it into the free list.
   hook_fifo_buffer_entry(self, kFifoBufferFreeRootOffset, prev_occupied);
-  size_t size = get_fifo_buffer_size(self);
+  size_t size = (size_t) get_fifo_buffer_size(self);
   set_fifo_buffer_size(self, size - 1);
   return success();
 }
@@ -1233,7 +1235,7 @@ value_t offer_to_fifo_buffer(runtime_t *runtime, value_t buffer, value_t *values
   // Doesn't fit; allocate a new backing array.
   size_t old_capacity = get_fifo_buffer_capacity(buffer);
   value_t old_nodes = get_fifo_buffer_nodes(buffer);
-  size_t old_nodes_size = get_array_length(old_nodes);
+  size_t old_nodes_size = (size_t) get_array_length(old_nodes);
   size_t new_nodes_size = old_nodes_size << 1;
   TRY_DEF(new_nodes, new_heap_array(runtime, new_nodes_size));
   // Copy the contents of the old array directly into the new one.
@@ -1295,7 +1297,7 @@ void fifo_buffer_iter_take_current(fifo_buffer_iter_t *iter) {
   unhook_fifo_buffer_entry(iter->buffer, iter->current);
   // Hook it into the free list.
   hook_fifo_buffer_entry(iter->buffer, kFifoBufferFreeRootOffset, iter->current);
-  size_t size = get_fifo_buffer_size(iter->buffer);
+  size_t size = (size_t) get_fifo_buffer_size(iter->buffer);
   set_fifo_buffer_size(iter->buffer, size - 1);
 }
 
@@ -1311,7 +1313,7 @@ INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Capacity, capacity);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, OccupiedCount, occupied_count);
 
 // Returns a pointer to the start of the index'th entry in the given map.
-static value_t *get_id_hash_map_entry(value_t map, size_t index) {
+static value_t *get_id_hash_map_entry(value_t map, int64_t index) {
   CHECK_REL("map entry out of bounds", index, <, get_id_hash_map_capacity(map));
   value_t array = get_id_hash_map_entry_array(map);
   return get_array_start(array) + (index * kIdHashMapEntryFieldCount);
@@ -1329,7 +1331,7 @@ static bool is_id_hash_map_entry_empty(value_t *entry) {
 }
 
 // Returns the hash value stored in this map entry, which must not be empty.
-static size_t get_id_hash_map_entry_hash(value_t *entry) {
+static int64_t get_id_hash_map_entry_hash(value_t *entry) {
   CHECK_FALSE("empty id hash map entry", is_id_hash_map_entry_empty(entry));
   return get_integer_value(entry[kIdHashMapEntryHashOffset]);
 }
@@ -1347,7 +1349,7 @@ static value_t get_id_hash_map_entry_value(value_t *entry) {
 }
 
 // Sets the full contents of a map entry.
-static void set_id_hash_map_entry(value_t *entry, value_t key, size_t hash,
+static void set_id_hash_map_entry(value_t *entry, value_t key, int64_t hash,
     value_t value) {
   entry[kIdHashMapEntryKeyOffset] = key;
   entry[kIdHashMapEntryHashOffset] = new_integer(hash);
@@ -1378,21 +1380,21 @@ typedef enum {
 // create_mode parameter is passed then a free index is stored in the out
 // parameter and the mode of creation is stored in create_mode. Otherwise false
 // is returned.
-static bool find_id_hash_map_entry(value_t map, value_t key, size_t hash,
+static bool find_id_hash_map_entry(value_t map, value_t key, int64_t hash,
     value_t **entry_out, id_hash_map_entry_create_mode_t *create_mode) {
   CHECK_FAMILY(ofIdHashMap, map);
   CHECK_TRUE("was_created not initialized", (create_mode == NULL) ||
       (*create_mode == cmNotCreated));
-  size_t capacity = get_id_hash_map_capacity(map);
+  size_t capacity = (size_t) get_id_hash_map_capacity(map);
   CHECK_REL("map overfull", get_id_hash_map_size(map), <, capacity);
-  size_t current_index = hash % capacity;
+  int64_t current_index = hash % capacity;
   // Loop around until we find the key or an empty entry. Since we know the
   // capacity is at least one greater than the size there must be at least
   // one empty entry so we know the loop will terminate.
   value_t *first_deleted_entry = NULL;
   while (true) {
     value_t *entry = get_id_hash_map_entry(map, current_index);
-    size_t entry_hash;
+    int64_t entry_hash;
     if (is_id_hash_map_entry_empty(entry)) {
       if (is_id_hash_map_entry_deleted(entry)) {
         // If this was the first deleted entry we've seen we record it such that
@@ -1440,13 +1442,13 @@ value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value,
     bool allow_frozen) {
   CHECK_FAMILY(ofIdHashMap, map);
   CHECK_TRUE("mutating frozen map", allow_frozen || is_mutable(map));
-  size_t occupied_count = get_id_hash_map_occupied_count(map);
-  size_t size = get_id_hash_map_size(map);
-  size_t capacity = get_id_hash_map_capacity(map);
+  size_t occupied_count = (size_t) get_id_hash_map_occupied_count(map);
+  size_t size = (size_t) get_id_hash_map_size(map);
+  size_t capacity = (size_t) get_id_hash_map_capacity(map);
   bool is_full = (occupied_count == (capacity - 1));
   // Calculate the hash.
   TRY_DEF(hash_value, value_transient_identity_hash(key));
-  size_t hash = get_integer_value(hash_value);
+  size_t hash = (size_t) get_integer_value(hash_value);
   // Locate where the new entry goes in the entry array.
   value_t *entry = NULL;
   id_hash_map_entry_create_mode_t create_mode = cmNotCreated;
@@ -1473,7 +1475,7 @@ value_t try_set_id_hash_map_at(value_t map, value_t key, value_t value,
 value_t get_id_hash_map_at(value_t map, value_t key) {
   CHECK_FAMILY(ofIdHashMap, map);
   TRY_DEF(hash_value, value_transient_identity_hash(key));
-  size_t hash = get_integer_value(hash_value);
+  size_t hash = (size_t) get_integer_value(hash_value);
   value_t *entry = NULL;
   if (find_id_hash_map_entry(map, key, hash, &entry, NULL)) {
     return get_id_hash_map_entry_value(entry);
@@ -1497,7 +1499,7 @@ value_t delete_id_hash_map_at(runtime_t *runtime, value_t map, value_t key) {
   CHECK_MUTABLE(map);
   TRY_DEF(hash_value, value_transient_identity_hash(key));
   // Try to find the key in the map.
-  size_t hash = get_integer_value(hash_value);
+  size_t hash = (size_t) get_integer_value(hash_value);
   value_t *entry = NULL;
   if (find_id_hash_map_entry(map, key, hash, &entry, NULL)) {
     // We found the key; mark its entry as deleted.
@@ -1522,7 +1524,7 @@ void fixup_id_hash_map_post_migrate(runtime_t *runtime, value_t new_heap_object,
 
   // Get the raw entry array from the new map.
   value_t new_entry_array = get_id_hash_map_entry_array(new_heap_object);
-  size_t entry_array_length = get_array_length(new_entry_array);
+  size_t entry_array_length = (size_t) get_array_length(new_entry_array);
   value_t *new_entries = get_array_start(new_entry_array);
   // Get the raw entry array from the old map. This requires going directly
   // through the object since the nice accessors do sanity checking and the
@@ -1594,7 +1596,7 @@ value_t id_hash_map_validate(value_t value) {
   VALIDATE_FAMILY(ofIdHashMap, value);
   value_t entry_array = get_id_hash_map_entry_array(value);
   VALIDATE_FAMILY(ofArray, entry_array);
-  size_t capacity = get_id_hash_map_capacity(value);
+  int64_t capacity = get_id_hash_map_capacity(value);
   VALIDATE(get_id_hash_map_size(value) < capacity);
   VALIDATE(get_array_length(entry_array) == (capacity * kIdHashMapEntryFieldCount));
   return success();
@@ -1644,8 +1646,8 @@ value_t key_validate(value_t value) {
 }
 
 value_t key_identity_compare(value_t a, value_t b, size_t depth) {
-  size_t a_id = get_key_id(a);
-  size_t b_id = get_key_id(b);
+  int64_t a_id = get_key_id(a);
+  int64_t b_id = get_key_id(b);
   return new_boolean(a_id == b_id);
 }
 
@@ -1899,7 +1901,7 @@ value_t argument_map_trie_validate(value_t value) {
 
 // Converts an argument map key object to a plain integer. Argument map keys
 // can only be nonnegative integers or null.
-static size_t argument_map_key_to_integer(value_t key) {
+static int64_t argument_map_key_to_integer(value_t key) {
   // This is okay for now but later on if we want to optimize how arg map tries
   // are built this scheme may have to be replaced by something better.
   return is_null(key) ? 0 : (1 + get_integer_value(key));
@@ -1907,7 +1909,7 @@ static size_t argument_map_key_to_integer(value_t key) {
 
 value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, value_t key) {
   CHECK_MUTABLE(self);
-  size_t index = argument_map_key_to_integer(key);
+  int64_t index = argument_map_key_to_integer(key);
   value_t children = get_argument_map_trie_children(self);
   // Check if we've already build that child.
   if (index < get_array_buffer_length(children)) {
@@ -1916,11 +1918,11 @@ value_t get_argument_map_trie_child(runtime_t *runtime, value_t self, value_t ke
       return cached;
   }
   // Pad the children buffer if necessary.
-  for (size_t i = get_array_buffer_length(children); i <= index; i++)
+  for (int64_t i = get_array_buffer_length(children); i <= index; i++)
     TRY(add_to_array_buffer(runtime, children, null()));
   // Create the new child.
   value_t old_value = get_argument_map_trie_value(self);
-  size_t old_length = get_array_length(old_value);
+  size_t old_length = (size_t) get_array_length(old_value);
   size_t new_length = old_length + 1;
   TRY_DEF(new_value, new_heap_array(runtime, new_length));
   for (size_t i = 0; i < old_length; i++)
@@ -2033,7 +2035,7 @@ void module_print_on(value_t value, print_on_context_t *context) {
 
 value_t get_module_fragment_at(value_t self, value_t stage) {
   value_t fragments = get_module_fragments(self);
-  for (size_t i = 0; i < get_array_buffer_length(fragments); i++) {
+  for (int64_t i = 0; i < get_array_buffer_length(fragments); i++) {
     value_t fragment = get_array_buffer_at(fragments, i);
     if (is_same_value(get_module_fragment_stage(fragment), stage))
       return fragment;
@@ -2070,7 +2072,7 @@ value_t get_module_fragment_before(value_t self, value_t stage) {
   value_t fragments = get_module_fragments(self);
   int32_t best_stage = kMostNegativeInt32;
   value_t best_fragment = new_not_found_condition();
-  for (size_t i = 0; i < get_array_buffer_length(fragments); i++) {
+  for (int64_t i = 0; i < get_array_buffer_length(fragments); i++) {
     value_t fragment = get_array_buffer_at(fragments, i);
     int32_t fragment_stage = get_stage_offset_value(get_module_fragment_stage(fragment));
     if (fragment_stage < limit && fragment_stage > best_stage) {
@@ -2418,7 +2420,8 @@ value_t plankton_new_identifier(runtime_t *runtime) {
 value_t plankton_set_identifier_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, stage, path);
-  set_identifier_stage(object, new_stage_offset(get_integer_value(stage_value)));
+  int32_t stage_index = (int32_t) get_integer_value(stage_value);
+  set_identifier_stage(object, new_stage_offset(stage_index));
   set_identifier_path(object, path_value);
   return ensure_frozen(runtime, object);
 }

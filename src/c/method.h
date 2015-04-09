@@ -32,14 +32,14 @@ INTEGER_ACCESSORS_DECL(signature, allow_extra);
 
 // Returns the number of tags defined by this signature, including optional
 // ones.
-size_t get_signature_tag_count(value_t self);
+int64_t get_signature_tag_count(value_t self);
 
 // Returns the index'th tag in this signature in the sorted tag order.
-value_t get_signature_tag_at(value_t self, size_t index);
+value_t get_signature_tag_at(value_t self, int64_t index);
 
 // Returns the parameter descriptor for the index'th parameter in sorted tag
 // order.
-value_t get_signature_parameter_at(value_t self, size_t index);
+value_t get_signature_parameter_at(value_t self, int64_t index);
 
 // The status of a match -- whether it succeeded and if not why.
 typedef enum {
@@ -392,13 +392,13 @@ ACCESSORS_DECL(call_tags, selector_offset);
 ACCESSORS_DECL(call_tags, subject_offset);
 
 // Returns the number of argument in this call tags object.
-size_t get_call_tags_entry_count(value_t self);
+int64_t get_call_tags_entry_count(value_t self);
 
 // Returns the index'th tag in this call tag set.
-value_t get_call_tags_tag_at(value_t self, size_t index);
+value_t get_call_tags_tag_at(value_t self, int64_t index);
 
 // Returns the index'th argument offset in this call tag set.
-size_t get_call_tags_offset_at(value_t self, size_t index);
+int64_t get_call_tags_offset_at(value_t self, int64_t index);
 
 // Constructs an argument vector based on the given array of tags. For instance,
 // if given ["c", "a", "b"] returns a vector corresponding to ["a": 1, "b": 0,
@@ -431,7 +431,7 @@ ACCESSORS_DECL(call_data, tags);
 ACCESSORS_DECL(call_data, values);
 
 // Returns the value given for the index'th parameter in this call data.
-value_t get_call_data_value_at(value_t self, size_t param_index);
+value_t get_call_data_value_at(value_t self, int64_t param_index);
 
 
 // --- O p e r a t i o n ---

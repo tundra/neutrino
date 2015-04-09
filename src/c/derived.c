@@ -19,7 +19,7 @@ derived_object_genus_t get_derived_object_genus(value_t self) {
 value_t get_derived_object_host(value_t self) {
   address_t addr = get_derived_object_address(self);
   value_t anchor = get_derived_object_anchor(self);
-  size_t host_offset = get_derived_object_anchor_host_offset(anchor);
+  size_t host_offset = (size_t) get_derived_object_anchor_host_offset(anchor);
   address_t host_addr = addr - host_offset;
   return new_heap_object(host_addr);
 }

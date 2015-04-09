@@ -76,11 +76,11 @@ static void test_import_map(value_t ambience, variant_t *expected,
   value_t deps = build_fragment_entry_map(&context, C(modules));
   // Flatten the map so we can compare it deterministically.
   value_t flat_deps = sort_and_flatten_map(runtime, deps);
-  for (size_t mi = 0; mi < get_pair_array_length(flat_deps); mi++) {
+  for (int64_t mi = 0; mi < get_pair_array_length(flat_deps); mi++) {
     value_t map = get_pair_array_second_at(flat_deps, mi);
     value_t flat = sort_and_flatten_map(runtime, map);
     set_pair_array_second_at(flat_deps, mi, flat);
-    for (size_t fi = 0; fi < get_pair_array_length(flat); fi++) {
+    for (int64_t fi = 0; fi < get_pair_array_length(flat); fi++) {
       value_t entry = get_pair_array_second_at(flat, fi);
       value_t imports = get_array_at(entry, 1);
       set_pair_array_second_at(flat, fi, imports);

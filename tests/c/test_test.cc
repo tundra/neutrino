@@ -63,7 +63,7 @@ static void test_permutations(int64_t *entries, size_t count) {
   bit_vector_init(&seen, (1 << (3 * count)), false);
   size_t seen_count = 0;
   do {
-    int64_t hash = calc_permutation_hash(entries, count);
+    size_t hash = (size_t) calc_permutation_hash(entries, count);
     ASSERT_FALSE(bit_vector_get_at(&seen, hash));
     seen_count++;
     bit_vector_set_at(&seen, hash, true);

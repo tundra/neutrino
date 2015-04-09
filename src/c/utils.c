@@ -98,9 +98,9 @@ void bit_vector_set_at(bit_vector_t *vector, size_t index, bool value) {
   size_t segment = index >> 3;
   size_t offset = (index & 0x7);
   if (value) {
-    vector->data[segment] |= (1 << offset);
+    vector->data[segment] |= (uint8_t) (1 << offset);
   } else {
-    vector->data[segment] &= ~(1 << offset);
+    vector->data[segment] &= (uint8_t) ~(1 << offset);
   }
 }
 
@@ -137,13 +137,13 @@ uint32_t pseudo_random_next(pseudo_random_t *random, uint32_t max) {
 }
 
 void pseudo_random_shuffle(pseudo_random_t *random, void *data,
-    size_t elem_count, size_t elem_size) {
+    uint32_t elem_count, size_t elem_size) {
   // Fisher-Yates shuffle
   CHECK_REL("element size too big", elem_size, <, 16);
   byte_t scratch[16];
   byte_t *start = (byte_t*) data;
-  for (size_t i = 0; i < elem_count - 1; i++) {
-    size_t target = elem_count - i - 1;
+  for (uint32_t i = 0; i < elem_count - 1; i++) {
+    uint32_t target = elem_count - i - 1;
     size_t source = pseudo_random_next(random, target + 1);
     if (source == target)
       continue;
@@ -277,13 +277,13 @@ void base64_decode(utf8_t str, byte_buffer_t *out) {
     // Read the next block of 4 characters.
     uint8_t a = kBase64CharToSextet[(uint8_t) string_byte_at(str, i)];
     uint8_t b = kBase64CharToSextet[(uint8_t) string_byte_at(str, i + 1)];
-    byte_buffer_append(out, (a << 2) | (b >> 4));
+    byte_buffer_append(out, (uint8_t) ((a << 2) | (b >> 4)));
     uint8_t c = kBase64CharToSextet[(uint8_t) string_byte_at(str, i + 2)];
     if (c != 255) {
-      byte_buffer_append(out, (b << 4) | (c >> 2));
+      byte_buffer_append(out, (uint8_t) ((b << 4) | (c >> 2)));
       uint8_t d = kBase64CharToSextet[(uint8_t) string_byte_at(str, i + 3)];
       if (d != 255)
-        byte_buffer_append(out, (c << 6) | d);
+        byte_buffer_append(out, (uint8_t) ((c << 6) | d));
     }
   }
 }
@@ -317,7 +317,7 @@ void wordy_encode(int64_t signed_value, char *buf, size_t bufc) {
   // Even if value is 0 we have to run at least once.
   do {
     utf8_t table = kCharTables[table_index];
-    size_t char_index = value % string_size(table);
+    size_t char_index = (size_t) (value % string_size(table));
     char c = table.chars[char_index];
     CHECK_REL("wordy_encode buf too small", cursor, <, bufc);
     buf[cursor] = c;

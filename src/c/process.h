@@ -235,7 +235,7 @@ value_t frame_get_raw_argument(frame_t *frame, size_t eval_index);
 // tag order from the given frame. The argument is pending in the sense that
 // the call hasn't actually been performed yet, the arguments are just on the
 // top of the stack.
-value_t frame_get_pending_argument_at(frame_t *frame, value_t self, size_t index);
+value_t frame_get_pending_argument_at(frame_t *frame, value_t self, int64_t index);
 
 // Sets the value of the index'th parameter. This is kind of a dubious thing to
 // be doing so avoid if at all possible.

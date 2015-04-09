@@ -245,12 +245,12 @@ static value_t foreign_service_clone_args(pton_arena_t *arena, value_t raw_args,
   pton_variant_t args = pton_new_map(arena);
   value_t tags = get_reified_arguments_tags(raw_args);
   value_t values = get_reified_arguments_values(raw_args);
-  for (size_t i = 0; i < get_call_tags_entry_count(tags); i++) {
+  for (int64_t i = 0; i < get_call_tags_entry_count(tags); i++) {
     value_t tag = get_call_tags_tag_at(tags, i);
     if (get_value_domain(tag) == vdHeapObject && get_heap_object_family(tag) == ofKey)
       // Skip the keys for now. Figure out how to deal with them later.
       continue;
-    size_t offset = get_call_tags_offset_at(tags, i);
+    size_t offset = (size_t) get_call_tags_offset_at(tags, i);
     value_t arg = get_array_at(values, offset);
     pton_variant_t key;
     TRY(value_to_plankton(arena, tag, &key));

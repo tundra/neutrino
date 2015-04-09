@@ -144,12 +144,15 @@ value_t new_heap_modal_species(runtime_t *runtime, family_behavior_t *behavior,
   return post_create_sanity_check(result, kModalSpeciesSize);
 }
 
-value_t new_heap_array(runtime_t *runtime, size_t length) {
+value_t new_heap_array(runtime_t *runtime, int64_t length) {
+  // It's unclear exactly how we want these limits to work but it may be too
+  // early to tell. If this ever fails reconsider.
+  CHECK_TRUE("array too large", fits_in_signed_bits(IF_32_BIT(30, 60), length));
   size_t size = calc_array_size(length);
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_array_species)));
   set_array_length(result, length);
-  for (size_t i = 0; i < length; i++)
+  for (int64_t i = 0; i < length; i++)
     set_array_at(result, i, null());
   return post_create_sanity_check(result, size);
 }
@@ -189,7 +192,7 @@ value_t new_heap_triple(runtime_t *runtime, value_t e0, value_t e1,
   return result;
 }
 
-value_t new_heap_pair_array(runtime_t *runtime, size_t length) {
+value_t new_heap_pair_array(runtime_t *runtime, int64_t length) {
   return new_heap_array(runtime, length << 1);
 }
 
@@ -304,7 +307,7 @@ value_t new_heap_c_object(runtime_t *runtime, alloc_flags_t flags, value_t speci
 
 value_t new_heap_key(runtime_t *runtime, value_t display_name) {
   size_t size = kKeySize;
-  size_t id = runtime->next_key_index++;
+  uint64_t id = runtime->next_key_index++;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, mutable_key_species)));
   set_key_id(result, id);
@@ -487,7 +490,7 @@ value_t new_heap_path(runtime_t *runtime, alloc_flags_t flags, value_t head,
 
 value_t new_heap_path_with_names(runtime_t *runtime, alloc_flags_t flags,
     value_t names, size_t offset) {
-  size_t length = get_array_length(names);
+  size_t length = (size_t) get_array_length(names);
   if (offset == length)
     return ROOT(runtime, empty_path);
   TRY_DEF(tail, new_heap_path_with_names(runtime, flags, names, offset + 1));
@@ -657,7 +660,8 @@ static void push_stack_bottom_frame(runtime_t *runtime, value_t stack) {
   value_t code_block = ROOT(runtime, stack_bottom_code_block);
   frame_t bottom = open_stack(stack);
   bool pushed = try_push_new_frame(&bottom,
-      get_code_block_high_water_mark(code_block), ffSynthetic | ffStackBottom,
+      (size_t) get_code_block_high_water_mark(code_block),
+      ffSynthetic | ffStackBottom,
       false);
   CHECK_TRUE("pushing bottom frame", pushed);
   frame_set_code_block(&bottom, code_block);
@@ -916,7 +920,7 @@ value_t new_heap_call_tags(runtime_t *runtime, alloc_flags_t flags,
   // from the entries. Also, this way we're sure they are determined correctly.
   set_call_tags_subject_offset(result, nothing());
   set_call_tags_selector_offset(result, nothing());
-  for (size_t i = 0; i < get_call_tags_entry_count(result); i++) {
+  for (int64_t i = 0; i < get_call_tags_entry_count(result); i++) {
     value_t tag = get_call_tags_tag_at(result, i);
     if (is_same_value(tag, ROOT(runtime, subject_key)))
       set_call_tags_subject_offset(result, new_integer(i));
@@ -1275,10 +1279,10 @@ value_t alloc_heap_object(runtime_t *runtime, size_t bytes, value_t species) {
   address_t addr = NULL;
   if (runtime->gc_fuzzer != NULL) {
     if (gc_fuzzer_tick(runtime->gc_fuzzer))
-      return new_heap_exhausted_condition(bytes);
+      return new_heap_exhausted_condition((uint32_t) bytes);
   }
   if (!heap_try_alloc(&runtime->heap, bytes, &addr))
-    return new_heap_exhausted_condition(bytes);
+    return new_heap_exhausted_condition((uint32_t) bytes);
   value_t result = new_heap_object(addr);
   set_heap_object_header(result, species);
   return result;
@@ -1296,7 +1300,7 @@ value_t clone_heap_object(runtime_t *runtime, value_t original) {
 
 static value_t extend_id_hash_map(runtime_t *runtime, value_t map) {
   // Create the new entry array first so that if it fails we bail out asap.
-  size_t old_capacity = get_id_hash_map_capacity(map);
+  size_t old_capacity = (size_t) get_id_hash_map_capacity(map);
   size_t new_capacity = old_capacity * 2;
   TRY_DEF(new_entry_array, new_heap_id_hash_map_entry_array(runtime, new_capacity));
   // Capture the relevant old state in an iterator before resetting the map.
@@ -1359,9 +1363,9 @@ value_t import_pton_variant(runtime_t *runtime, pton_variant_t variant) {
       return new_heap_utf8(runtime, new_string(chars, size));
     }
     case PTON_ARRAY: {
-      size_t size = pton_array_length(variant);
+      uint32_t size = pton_array_length(variant);
       TRY_DEF(result, new_heap_array(runtime, size));
-      for (size_t i = 0; i < size; i++) {
+      for (uint32_t i = 0; i < size; i++) {
         TRY_DEF(value, import_pton_variant(runtime, pton_array_get(variant, i)));
         set_array_at(result, i, value);
       }

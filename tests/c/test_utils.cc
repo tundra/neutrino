@@ -97,11 +97,11 @@ TEST(utils, pseudo_random) {
     ASSERT_TRUE(index < kBucketCount);
     buckets[index]++;
   }
-  double mid = tries / kBucketCount;
-  size_t min = tries;
-  size_t max = 0;
+  double mid = ((double) tries) / kBucketCount;
+  double min = (double) tries;
+  double max = 0;
   for (size_t i = 0; i < kBucketCount; i++) {
-    size_t bucket = buckets[i];
+    double bucket = (double) buckets[i];
     if (bucket < min)
       min = bucket;
     if (bucket > max)

@@ -125,7 +125,7 @@ TEST(runtime, gc_fuzzer) {
       ticks_since_last++;
     }
   }
-  double average = 65536.0 / total_failures;
+  double average = 65536.0 / ((double) total_failures);
   double deviation = (average - kMean) / kMean;
   if (deviation < 0)
     deviation = -deviation;

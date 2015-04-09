@@ -229,7 +229,7 @@ value_t score_ordering_compare(value_t a, value_t b) {
 void derived_object_anchor_print_on(value_t value, print_on_context_t *context) {
   derived_object_genus_t genus = get_derived_object_anchor_genus(value);
   const char *genus_name = get_derived_object_genus_name(genus);
-  size_t host_offset = get_derived_object_anchor_host_offset(value);
+  size_t host_offset = (size_t) get_derived_object_anchor_host_offset(value);
   string_buffer_printf(context->buf, "#<anchor %s @+%i>",
       genus_name, host_offset);
 }
@@ -285,7 +285,7 @@ static value_t ascii_character_ordinal(builtin_arguments_t *args) {
 
 static value_t ascii_character_from_ordinal(builtin_arguments_t *args) {
   value_t ordinal = get_builtin_argument(args, 0);
-  return new_ascii_character(get_integer_value(ordinal) & 0xFF);
+  return new_ascii_character((uint8_t) (get_integer_value(ordinal) & 0xFF));
 }
 
 static value_t ascii_character_less_ascii_character(builtin_arguments_t *args) {

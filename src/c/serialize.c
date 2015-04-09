@@ -85,17 +85,17 @@ static value_t integer_serialize(value_t value, pton_assembler_t *assm) {
 
 static value_t array_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofArray, value);
-  size_t length = get_array_length(value);
-  pton_assembler_begin_array(state->assm, length);
-  for (size_t i = 0; i < length; i++) {
+  int64_t length = get_array_length(value);
+  pton_assembler_begin_array(state->assm, (uint32_t) length);
+  for (int64_t i = 0; i < length; i++) {
     TRY(value_serialize(get_array_at(value, i), state));
   }
   return success();
 }
 
-static value_t map_contents_serialize(size_t entry_count, id_hash_map_iter_t *iter,
+static value_t map_contents_serialize(uint32_t entry_count, id_hash_map_iter_t *iter,
     serialize_state_t *state) {
-  size_t entries_written = 0;
+  uint32_t entries_written = 0;
   while (id_hash_map_iter_advance(iter)) {
     value_t key;
     value_t value;
@@ -110,7 +110,7 @@ static value_t map_contents_serialize(size_t entry_count, id_hash_map_iter_t *it
 
 static value_t map_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofIdHashMap, value);
-  size_t entry_count = get_id_hash_map_size(value);
+  uint32_t entry_count = (uint32_t) get_id_hash_map_size(value);
   pton_assembler_begin_map(state->assm, entry_count);
   id_hash_map_iter_t iter;
   id_hash_map_iter_init(&iter, value);
@@ -120,7 +120,8 @@ static value_t map_serialize(value_t value, serialize_state_t *state) {
 static value_t string_serialize(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofUtf8, value);
   utf8_t contents = get_utf8_contents(value);
-  pton_assembler_emit_default_string(state->assm, contents.chars, string_size(contents));
+  pton_assembler_emit_default_string(state->assm, contents.chars,
+      (uint32_t) string_size(contents));
   return success();
 }
 
@@ -135,7 +136,7 @@ static value_t instance_serialize(value_t value, serialize_state_t *state) {
   value_t ref = get_id_hash_map_at(state->ref_map, value);
   if (in_condition_cause(ccNotFound, ref)) {
     value_t fields = get_instance_fields(value);
-    size_t fieldc = get_id_hash_map_size(fields);
+    uint32_t fieldc = (uint32_t) get_id_hash_map_size(fields);
     pton_assembler_begin_seed(state->assm, 1, fieldc);
     pton_assembler_emit_null(state->assm);
     // Cycles are only allowed through the payload of an object so we only
@@ -147,8 +148,8 @@ static value_t instance_serialize(value_t value, serialize_state_t *state) {
   } else {
     // We've already seen this object; write a reference back to the last time
     // we saw it.
-    size_t delta = get_integer_value(ref);
-    size_t offset = state->object_offset - delta - 1;
+    int64_t delta = get_integer_value(ref);
+    int64_t offset = state->object_offset - delta - 1;
     pton_assembler_emit_reference(state->assm, offset);
     return success();
   }
@@ -233,7 +234,7 @@ typedef struct {
   // Map from object offsets we've seen to their values.
   safe_value_t s_ref_map;
   // The offset of the next object we're going to write.
-  size_t object_offset;
+  uint64_t object_offset;
   // The runtime to use for heap allocation.
   runtime_t *runtime;
   // The factory used to construct object instances.
@@ -322,12 +323,12 @@ static value_t default_string_deserialize(pton_instr_t *instr, deserialize_state
 }
 
 // Grabs and returns the next object index.
-static size_t acquire_object_index(deserialize_state_t *state) {
+static uint64_t acquire_object_index(deserialize_state_t *state) {
   return state->object_offset++;
 }
 
 static value_t seed_deserialize(size_t headerc, size_t fieldc, deserialize_state_t *state) {
-  size_t offset = acquire_object_index(state);
+  uint64_t offset = acquire_object_index(state);
   CREATE_SAFE_VALUE_POOL(state->runtime, 5, pool);
   TRY_FINALLY {
     // Read the header before creating the instance.
@@ -359,8 +360,8 @@ static value_t seed_deserialize(size_t headerc, size_t fieldc, deserialize_state
   } YRT
 }
 
-static value_t reference_deserialize(size_t offset, deserialize_state_t *state) {
-  size_t index = state->object_offset - offset - 1;
+static value_t reference_deserialize(uint64_t offset, deserialize_state_t *state) {
+  int64_t index = state->object_offset - offset - 1;
   value_t result = get_id_hash_map_at(deref(state->s_ref_map), new_integer(index));
   CHECK_FALSE("missing reference", in_condition_cause(ccNotFound, result));
   return result;

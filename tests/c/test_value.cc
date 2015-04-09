@@ -55,6 +55,15 @@ TEST(value, fits_as_tagged_integer) {
 #undef kTestCaseCount
 }
 
+TEST(value, fits_in_signed_bits) {
+  ASSERT_TRUE(fits_in_signed_bits(8, 127));
+  ASSERT_TRUE(fits_in_signed_bits(8, -128));
+  ASSERT_FALSE(fits_in_signed_bits(8, 128));
+  ASSERT_FALSE(fits_in_signed_bits(8, -129));
+  ASSERT_TRUE(fits_in_signed_bits(9, 128));
+  ASSERT_TRUE(fits_in_signed_bits(9, -129));
+}
+
 TEST(value, encoding) {
   ASSERT_EQ(sizeof(unknown_value_t), sizeof(encoded_value_t));
   ASSERT_EQ(sizeof(integer_value_t), sizeof(encoded_value_t));
@@ -428,11 +437,11 @@ TEST(value, array_sort) {
   co_sort_pair_array(a1);
   for (size_t i = 0; i < kTestArraySize; i++) {
     // The first values are now in sorted order.
-    int value = get_integer_value(get_pair_array_first_at(a1, i));
+    int64_t value = get_integer_value(get_pair_array_first_at(a1, i));
     ASSERT_EQ(kSorted[i], value);
     // The second value says where in the unsorted order the value was and they
     // should still match.
-    int order = get_integer_value(get_pair_array_second_at(a1, i));
+    int64_t order = get_integer_value(get_pair_array_second_at(a1, i));
     ASSERT_EQ(value, kUnsorted[order]);
   }
 
@@ -575,7 +584,7 @@ TEST(value, map_delete) {
         value_t key;
         value_t value;
         id_hash_map_iter_get_current(&iter, &key, &value);
-        ASSERT_TRUE(bit_vector_get_at(&bits, get_integer_value(key)));
+        ASSERT_TRUE(bit_vector_get_at(&bits, (size_t) get_integer_value(key)));
         seen++;
       }
       ASSERT_EQ(get_id_hash_map_size(map), seen);
@@ -596,7 +605,8 @@ typedef struct {
 
 // Creates a new random test argument map. Remember to dispose it after use.
 void new_test_argument_map(test_argument_map_t *map, pseudo_random_t *random) {
-  size_t length = map->length = 4 + pseudo_random_next(random, 8);
+  uint32_t length = 4 + pseudo_random_next(random, 8);
+  map->length = length;
   size_t *values = map->values = (size_t*) malloc(length * sizeof(size_t));
   for (size_t i = 0; i < length; i++)
     values[i] = i;
@@ -702,19 +712,19 @@ TEST(value, array_identity) {
   value_t v_nn_0 = C(vArray(vNull(), vNull()));
   value_t v_nn_1 = C(vArray(vNull(), vNull()));
   ASSERT_TRUE(value_identity_compare(v_nn_0, v_nn_1));
-  size_t h_nn_0 = get_integer_value(value_transient_identity_hash(v_nn_0));
-  size_t h_nn_1 = get_integer_value(value_transient_identity_hash(v_nn_1));
+  int64_t h_nn_0 = get_integer_value(value_transient_identity_hash(v_nn_0));
+  int64_t h_nn_1 = get_integer_value(value_transient_identity_hash(v_nn_1));
   ASSERT_EQ(h_nn_0, h_nn_1);
 
   value_t v_1n = C(vArray(vInt(1), vNull()));
   ASSERT_FALSE(value_identity_compare(v_1n, v_nn_0));
-  size_t h_1n = get_integer_value(value_transient_identity_hash(v_1n));
+  int64_t h_1n = get_integer_value(value_transient_identity_hash(v_1n));
   ASSERT_FALSE(h_nn_0 == h_1n);
 
   value_t v_12 = C(vArray(vInt(1), vInt(2)));
   ASSERT_FALSE(value_identity_compare(v_12, v_nn_0));
   ASSERT_FALSE(value_identity_compare(v_12, v_1n));
-  size_t h_12 = get_integer_value(value_transient_identity_hash(v_12));
+  int64_t h_12 = get_integer_value(value_transient_identity_hash(v_12));
   ASSERT_FALSE(h_nn_0 == h_12);
   ASSERT_FALSE(h_1n == h_12);
 
@@ -722,14 +732,14 @@ TEST(value, array_identity) {
   ASSERT_FALSE(value_identity_compare(v_21_0, v_nn_0));
   ASSERT_FALSE(value_identity_compare(v_21_0, v_1n));
   ASSERT_FALSE(value_identity_compare(v_21_0, v_12));
-  size_t h_21_0 = get_integer_value(value_transient_identity_hash(v_21_0));
+  int64_t h_21_0 = get_integer_value(value_transient_identity_hash(v_21_0));
   ASSERT_FALSE(h_21_0 == h_nn_0);
   ASSERT_FALSE(h_21_0 == h_1n);
   ASSERT_FALSE(h_21_0 == h_12);
 
   value_t v_21_1 = C(vArray(vInt(2), vInt(1)));
   ASSERT_TRUE(value_identity_compare(v_21_1, v_21_0));
-  size_t h_21_1 = get_integer_value(value_transient_identity_hash(v_21_1));
+  int64_t h_21_1 = get_integer_value(value_transient_identity_hash(v_21_1));
   ASSERT_EQ(h_21_1, h_21_0);
 
   value_t v_nv_0 = new_heap_array(runtime, 2);

@@ -162,7 +162,7 @@ reusable_scratch_memory_t *assembler_get_scratch_memory(assembler_t *assm);
 
 // Adds the given delta to the recorded stack height and updates the high water
 // mark if necessary.
-void assembler_adjust_stack_height(assembler_t *assm, int delta);
+void assembler_adjust_stack_height(assembler_t *assm, int64_t delta);
 
 // Returns the offset in words of the next location in the code stream which
 // will be written, that is, one past the last written instruction.
@@ -339,7 +339,7 @@ struct single_symbol_scope_o {
 
 // Pushes a single symbol scope onto the scope stack.
 void assembler_push_single_symbol_scope(assembler_t *assm,
-    single_symbol_scope_o *scope, value_t symbol, binding_type_t type, uint32_t data);
+    single_symbol_scope_o *scope, value_t symbol, binding_type_t type, uint16_t data);
 
 // Pops a single symbol scope off the scope stack.
 void assembler_pop_single_symbol_scope(assembler_t *assm,
@@ -368,7 +368,7 @@ void assembler_pop_map_scope(assembler_t *assm, map_scope_o *scope);
 // Binds a symbol on the given map scope. The symbol must not already be bound
 // in this scope.
 value_t map_scope_bind(map_scope_o *scope, value_t symbol, binding_type_t type,
-    uint32_t data);
+    uint16_t data);
 
 IMPLEMENTATION(lambda_scope_o, scope_o);
 

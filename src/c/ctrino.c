@@ -20,7 +20,7 @@ const char *get_c_object_int_tag_name(uint32_t tag) {
 }
 
 static uint32_t get_c_object_int_tag(value_t self) {
-  return get_integer_value(get_c_object_tag(self));
+  return (uint32_t) get_integer_value(get_c_object_tag(self));
 }
 
 
@@ -61,7 +61,7 @@ static value_t ctrino_new_plugin_instance(builtin_arguments_t *args) {
   value_t index = get_builtin_argument(args, 0);
   CHECK_C_OBJECT_TAG(btCtrino, self);
   CHECK_DOMAIN(vdInteger, index);
-  value_t factory = get_runtime_plugin_factory_at(runtime, get_integer_value(index));
+  value_t factory = get_runtime_plugin_factory_at(runtime, (size_t) get_integer_value(index));
   return new_c_object(runtime, factory, new_blob(NULL, 0), new_value_array(NULL, 0));
 }
 
@@ -106,13 +106,13 @@ static value_t ctrino_new_float_32(builtin_arguments_t *args) {
   CHECK_FAMILY(ofDecimalFraction, decimal);
   // TODO: This may or may not produce the most accurate approximation of the
   //   fractional value. Either verify that it does or replace it.
-  double value = get_integer_value(get_decimal_fraction_numerator(decimal));
-  int32_t log_denom = get_integer_value(get_decimal_fraction_denominator(decimal));
+  double value = (double) get_integer_value(get_decimal_fraction_numerator(decimal));
+  int32_t log_denom = (int32_t) get_integer_value(get_decimal_fraction_denominator(decimal));
   while (log_denom > 0) {
     value = value / 10.0;
     log_denom--;
   }
-  return new_float_32(value);
+  return new_float_32((float32_t) value);
 }
 
 static value_t ctrino_log_info(builtin_arguments_t *args) {
@@ -318,9 +318,9 @@ void get_c_object_species_layout_gc_tolerant(value_t raw_self,
   // accessors assume the heap is in a consistent state which it may not be
   // because of gc when this is called.
   c_object_layout_t layout;
-  layout.data_size = get_integer_value(*access_heap_object_field(self,
+  layout.data_size = (size_t) get_integer_value(*access_heap_object_field(self,
       kCObjectSpeciesDataSizeOffset));
-  layout.value_count = get_integer_value(*access_heap_object_field(self,
+  layout.value_count = (size_t) get_integer_value(*access_heap_object_field(self,
       kCObjectSpeciesValueCountOffset));
   *layout_out = layout;
 }
@@ -401,13 +401,13 @@ blob_t get_mutable_c_object_data(value_t self) {
   CHECK_MUTABLE(self);
   value_t species = get_heap_object_species(self);
   value_t data_size_val = get_c_object_species_data_size(species);
-  return new_blob(get_c_object_data_start(self), get_integer_value(data_size_val));
+  return new_blob(get_c_object_data_start(self), (size_t) get_integer_value(data_size_val));
 }
 
 size_t get_c_object_species_values_offset(value_t self) {
   CHECK_DIVISION(sdCObject, self);
   value_t data_size_val = get_c_object_species_data_size(self);
-  return calc_c_object_values_offset(get_integer_value(data_size_val));
+  return calc_c_object_values_offset((size_t) get_integer_value(data_size_val));
 }
 
 value_t *get_c_object_value_start(value_t self) {
@@ -422,7 +422,7 @@ static value_array_t get_c_object_values(value_t self) {
   value_t species = get_heap_object_species(self);
   value_t value_count_val = get_c_object_species_value_count(species);
   return new_value_array(get_c_object_value_start(self),
-      get_integer_value(value_count_val));
+      (size_t) get_integer_value(value_count_val));
 }
 
 value_array_t get_mutable_c_object_values(value_t self) {

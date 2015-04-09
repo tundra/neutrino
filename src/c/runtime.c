@@ -459,8 +459,8 @@ value_t ensure_mutable_roots_owned_values_frozen(runtime_t *runtime,
   return new_condition(ccWat);
 }
 
-void gc_fuzzer_init(gc_fuzzer_t *fuzzer, size_t min_freq, size_t mean_freq,
-    size_t seed) {
+void gc_fuzzer_init(gc_fuzzer_t *fuzzer, uint32_t min_freq, uint32_t mean_freq,
+    uint32_t seed) {
   CHECK_REL("min frequency must be nonzero", min_freq, >, 0);
   CHECK_REL("mean frequency must be nonzero", mean_freq, >, 0);
   // It's best if we can vary the min frequency freely without breaking anything
@@ -518,7 +518,7 @@ value_t delete_runtime(runtime_t *runtime, uint32_t flags) {
 }
 
 // The least number of allocations between forced allocation failures.
-static const size_t kGcFuzzerMinFrequency = 64;
+static const uint32_t kGcFuzzerMinFrequency = 64;
 
 // Perform "hard" initialization, the stuff where the runtime isn't fully
 // consistent yet.
@@ -808,7 +808,7 @@ static value_t migrate_derived_object(garbage_collection_state_o *self,
   value_t new_host = ensure_heap_object_migrated(self, old_host);
   // Calculate the new address derived from the new host.
   value_t anchor = get_derived_object_anchor(old_derived);
-  size_t host_offset = get_derived_object_anchor_host_offset(anchor);
+  size_t host_offset = (size_t) get_derived_object_anchor_host_offset(anchor);
   address_t new_addr = get_heap_object_address(new_host) + host_offset;
   return new_derived_object(new_addr);
 }

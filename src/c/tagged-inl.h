@@ -79,7 +79,7 @@ static score_category_t get_score_category(value_t score) {
 // Returns the subscore of the given score object.
 static uint32_t get_score_subscore(value_t score) {
   uint64_t kMask = (1LL << kScoreSubscoreWidth) - 1LL;
-  return ((uint64_t) get_custom_tagged_payload(score)) & kMask;
+  return (uint32_t) (((uint64_t) get_custom_tagged_payload(score)) & kMask);
 }
 
 // Returns true if a is a better score than b.

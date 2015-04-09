@@ -32,13 +32,13 @@ value_t generic_match_signature(value_t self, I *input, value_t space,
   size_t argc = input->get_argument_count();
   CHECK_REL("score array too short", argc, <=, match_info->capacity);
   // Fast case if fewer than that minimum number of arguments is given.
-  size_t mandatory_count = get_signature_mandatory_count(self);
+  size_t mandatory_count = (size_t) get_signature_mandatory_count(self);
   if (argc < mandatory_count) {
     *result_out = mrMissingArgument;
     return success();
   }
   // Fast case if too many arguments are given.
-  size_t param_count = get_signature_parameter_count(self);
+  size_t param_count = (size_t) get_signature_parameter_count(self);
   bool allow_extra = get_signature_allow_extra(self);
   if (!allow_extra && (argc > param_count)) {
     *result_out = mrUnexpectedArgument;
@@ -80,7 +80,7 @@ value_t generic_match_signature(value_t self, I *input, value_t space,
     }
     CHECK_FALSE("binary search failed", get_value_domain(tags) == vdCondition);
     // The tag matched one in this signature.
-    size_t index = get_parameter_index(param);
+    size_t index = (size_t) get_parameter_index(param);
     if (bit_vector_get_at(&params_seen, index)) {
       // We've now seen two tags that match the same parameter. Bail out.
       bit_vector_dispose(&params_seen);
@@ -194,7 +194,7 @@ value_t continue_sigmap_lookup(sigmap_state_t<I, O> *state, value_t sigmap, valu
   CHECK_FAMILY(ofMethodspace, space);
   TOPIC_INFO(Lookup, "Looking up in signature map %v", sigmap);
   value_t entries = get_signature_map_entries(sigmap);
-  size_t entry_count = get_pair_array_buffer_length(entries);
+  size_t entry_count = (size_t) get_pair_array_buffer_length(entries);
   value_t scratch_score[kSmallLookupLimit];
   match_info_t match_info;
   match_info_init(&match_info, scratch_score, state->scratch_offsets,
@@ -307,7 +307,7 @@ private:
 AbstractSigmapInput::AbstractSigmapInput(sigmap_input_layout_t *layout) {
   ambience_ = layout->ambience;
   tags_ = layout->tags;
-  argc_ = is_nothing(tags_) ? 0 : get_call_tags_entry_count(tags_);
+  argc_ = is_nothing(tags_) ? 0 : (size_t) get_call_tags_entry_count(tags_);
   runtime_ = get_ambience_runtime(layout->ambience);
 }
 
@@ -320,7 +320,7 @@ value_t AbstractSigmapInput::get_tag_at(size_t index) {
 }
 
 size_t AbstractSigmapInput::get_offset_at(size_t index) {
-  return get_call_tags_offset_at(tags_, index);
+  return (size_t) get_call_tags_offset_at(tags_, index);
 }
 
 runtime_t *AbstractSigmapInput::get_runtime() {
@@ -433,7 +433,7 @@ ValueArraySigmapInput::ValueArraySigmapInput(sigmap_input_layout_t *layout,
   , values_(values) { }
 
 value_t ValueArraySigmapInput::get_value_at(size_t param_index) {
-  size_t offset = get_call_tags_offset_at(get_tags(), param_index);
+  int64_t offset = get_call_tags_offset_at(get_tags(), param_index);
   return get_array_at(values_, offset);
 }
 
@@ -441,14 +441,14 @@ value_t ValueArraySigmapInput::get_subject() {
   value_t offset = get_call_tags_subject_offset(get_tags());
   return is_nothing(offset)
       ? nothing()
-      : get_value_at(get_integer_value(offset));
+      : get_value_at((size_t) get_integer_value(offset));
 }
 
 value_t ValueArraySigmapInput::get_selector() {
   value_t offset = get_call_tags_selector_offset(get_tags());
   return is_nothing(offset)
       ? nothing()
-      : get_value_at(get_integer_value(offset));
+      : get_value_at((size_t) get_integer_value(offset));
 }
 
 value_t ValueArraySigmapInput::match_value_at(size_t param_index, value_t guard,

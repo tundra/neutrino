@@ -62,7 +62,7 @@ static void restore_escape_state(frame_t *frame, value_t stack,
   frame->limit_pointer = stack_start + get_integer_value(limit_pointer);
   frame->flags = get_escape_state_flags(destination);
   value_t pc = get_escape_state_pc(destination);
-  frame->pc = get_integer_value(pc);
+  frame->pc = (size_t) get_integer_value(pc);
 }
 
 // Returns the short value at the given offset from the current pc.
@@ -145,7 +145,7 @@ static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
     value_t argmap = ROOT(runtime, array_of_zero);
     value_t code_block = payload;
     push_stack_frame(runtime, stack, frame,
-        get_code_block_high_water_mark(code_block), argmap);
+        (size_t) get_code_block_high_water_mark(code_block), argmap);
     frame_set_code_block(frame, code_block);
     code_cache_refresh(cache, frame);
   } else {
@@ -182,7 +182,7 @@ static always_inline value_t do_reify_arguments(runtime_t *runtime, frame_t *fra
   value_t argmap = frame_get_argument_map(frame);
   value_t params = read_value(cache, frame, 1);
   value_t tags = get_caller_call_tags(frame);
-  size_t argc = get_array_length(argmap);
+  size_t argc = (size_t) get_array_length(argmap);
   TRY_DEF(values, new_heap_array(runtime, argc));
   TRY_DEF(reified, new_heap_reified_arguments(runtime, params, values,
       argmap, tags));
@@ -212,8 +212,8 @@ static uint64_t interrupt_counter = 0;
 // Expands to a block that checks whether it's time to force validation.
 #define MAYBE_INTERRUPT() do {                                                 \
   if ((++interrupt_counter & (kForceValidateInterval - 1)) == 0) {             \
-    size_t serial = interrupt_counter / kForceValidateInterval;                \
-    E_RETURN(new_force_validate_condition(serial));                            \
+    uint64_t serial = interrupt_counter / kForceValidateInterval;              \
+    E_RETURN(new_force_validate_condition((uint32_t) serial));                 \
   }                                                                            \
 } while (false)
 
@@ -290,7 +290,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           frame.pc += kInvokeOperationSize;
           // Push a new activation.
           value_t pushed = push_stack_frame(runtime, stack, &frame,
-              get_code_block_high_water_mark(code_block), arg_map);
+              (size_t) get_code_block_high_water_mark(code_block), arg_map);
           if (is_condition(pushed)) {
             // Pushing failed, usually because we ran out of memory. Rewind so
             // we're ready to try again.
@@ -335,7 +335,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
             E_TRY(method);
             E_TRY_DEF(code_block, ensure_method_code(runtime, method));
             E_TRY(push_stack_frame(runtime, stack, &frame,
-                get_code_block_high_water_mark(code_block), arg_map));
+                (size_t) get_code_block_high_water_mark(code_block), arg_map));
             frame_set_code_block(&frame, code_block);
             CHECK_TRUE("subject not null", is_null(frame_get_argument(&frame, 0)));
             frame_set_argument(&frame, 0, handler);
@@ -407,7 +407,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
             frame.pc += dest_offset;
             // Run the handler.
             value_t pushed = push_stack_frame(runtime, stack, &frame,
-                get_code_block_high_water_mark(code_block), arg_map);
+                (size_t) get_code_block_high_water_mark(code_block), arg_map);
             if (is_condition(pushed)) {
               frame.pc -= dest_offset;
               E_RETURN(pushed);
@@ -626,7 +626,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           frame.pc += kCallEnsurerOperationSize;
           value_t argmap = ROOT(runtime, array_of_zero);
           value_t pushed = push_stack_frame(runtime, stack, &frame,
-              get_code_block_high_water_mark(code_block), argmap);
+              (size_t) get_code_block_high_water_mark(code_block), argmap);
           if (is_condition(pushed)) {
             frame.pc -= kCallEnsurerOperationSize;
             E_RETURN(pushed);
@@ -813,7 +813,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           // Method lookup succeeded. Build the frame that holds the arguments.
           // The argument frame needs room for all the arguments as well as
           // the return value.
-          size_t argc = get_array_length(values);
+          size_t argc = (size_t) get_array_length(values);
           value_t pushed = push_stack_frame(runtime, stack, &frame, argc + 1, nothing());
           if (is_condition(pushed)) {
             frame.pc -= kModuleFragmentPrivateInvokeCallDataOperationSize;
@@ -824,7 +824,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
             frame_push_value(&frame, get_array_at(values, argc - i - 1));
           // Then build the method's frame.
           pushed = push_stack_frame(runtime, stack, &frame,
-              get_code_block_high_water_mark(code_block), arg_map);
+              (size_t) get_code_block_high_water_mark(code_block), arg_map);
           // This should be handled gracefully.
           CHECK_FALSE("call literal invocation failed", is_condition(pushed));
           frame_set_code_block(&frame, code_block);
@@ -900,7 +900,7 @@ value_t run_code_block_until_condition(value_t ambience, value_t code) {
   TRY_DEF(task, get_process_root_task(process));
   TRY_DEF(stack, get_task_stack(task));
   // Push an activation onto the empty stack to get execution going.
-  size_t frame_size = get_code_block_high_water_mark(code);
+  size_t frame_size = (size_t) get_code_block_high_water_mark(code);
   frame_t frame = open_stack(stack);
   TRY(push_stack_frame(runtime, stack, &frame, frame_size, ROOT(runtime, empty_array)));
   frame_set_code_block(&frame, code);
@@ -927,7 +927,7 @@ static value_t prepare_run_job(runtime_t *runtime, value_t stack, job_t *job) {
   frame_set_code_block(&frame, ROOT(runtime, return_code_block));
   frame_push_value(&frame, job->data);
   // Set up the frame for running the code.
-  size_t frame_size = get_code_block_high_water_mark(job->code);
+  size_t frame_size = (size_t) get_code_block_high_water_mark(job->code);
   TRY(push_stack_frame(runtime, stack, &frame, frame_size,
       ROOT(runtime, empty_array)));
   frame_set_code_block(&frame, job->code);

@@ -81,7 +81,7 @@ value_t clone_heap_instance_species(runtime_t *runtime, value_t original);
 
 // Allocates a new heap array in the given runtime with room for the given
 // number of elements. The array will be initialized to null.
-value_t new_heap_array(runtime_t *runtime, size_t length);
+value_t new_heap_array(runtime_t *runtime, int64_t length);
 
 // Creates a new array that holds the given contents.
 value_t new_heap_array_with_contents(runtime_t *runtime, alloc_flags_t flags,
@@ -98,7 +98,7 @@ value_t new_heap_triple(runtime_t *runtime, value_t e0, value_t e1, value_t e2);
 
 // Allocates a new array that is going to be used as a pair array containing
 // the given number of pairs.
-value_t new_heap_pair_array(runtime_t *runtime, size_t length);
+value_t new_heap_pair_array(runtime_t *runtime, int64_t length);
 
 // Allocates a new heap array buffer in the given runtime with the given
 // initial capacity.

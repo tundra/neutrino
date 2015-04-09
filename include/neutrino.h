@@ -18,10 +18,10 @@ typedef struct {
   // has happened, because the OS doesn't necessarily handle that very well.
   size_t system_memory_limit;
   // How often, on average, to simulate an allocation failure when fuzzing?
-  size_t gc_fuzz_freq;
+  uint32_t gc_fuzz_freq;
   // Random seed used to initialize the pseudo random generator used to
   // determine when to simulate a failure when fuzzing.
-  size_t gc_fuzz_seed;
+  uint32_t gc_fuzz_seed;
   // The plugins to install in runtimes created from this config.
   const void **plugins;
   size_t plugin_count;

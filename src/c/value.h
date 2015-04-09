@@ -200,6 +200,12 @@ static bool fits_as_tagged_integer(int64_t value) {
   return (uvalue + 0x1000000000000000) < 0x2000000000000000;
 }
 
+// Returns true if the given signed value fits as a signed 'bits'-bit quantity.
+static bool fits_in_signed_bits(uint8_t bits, int64_t value) {
+  uint64_t shift = 64 - bits;
+  return ((value << shift) >> shift) == value;
+}
+
 // Creates a new tagged integer with the given value.
 static value_t new_integer(int64_t value) {
   CHECK_TRUE("new integer overflow", fits_as_tagged_integer(value));
@@ -665,9 +671,9 @@ ACCESSORS_DECL(receiver, field)
 ACCESSORS_DECL(receiver##_species, field);                                     \
 TYPED_GETTER_DECL(receiver, value_t, field)
 
-#define INTEGER_SETTER_DECL(receiver, field) TYPED_SETTER_DECL(receiver, size_t, field)
+#define INTEGER_SETTER_DECL(receiver, field) TYPED_SETTER_DECL(receiver, int64_t, field)
 
-#define INTEGER_GETTER_DECL(receiver, field) TYPED_GETTER_DECL(receiver, size_t, field)
+#define INTEGER_GETTER_DECL(receiver, field) TYPED_GETTER_DECL(receiver, int64_t, field)
 
 #define INTEGER_ACCESSORS_DECL(receiver, field)                                \
 INTEGER_SETTER_DECL(receiver, field);                                          \
@@ -1178,17 +1184,21 @@ static const size_t kArrayLengthOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kArrayElementsOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // Calculates the size of a heap array with the given number of elements.
-size_t calc_array_size(size_t length);
+size_t calc_array_size(int64_t length);
 
 // The number of elements in this array.
 INTEGER_ACCESSORS_DECL(array, length);
 
 // Returns the index'th element in the given array. Bounds checks the index and
-// returns an OutOfBounds condition under soft check failures.
-value_t get_array_at(value_t value, size_t index);
+// returns an OutOfBounds condition under soft check failures. The index is
+// a signed 64-bit quantity on all platforms, even though it's impossible for
+// one to hold more than size_t elements. This is because it's closer to the
+// representation -- the typical index is a small integer which is signed and
+// wider than 32 bits even on a 32-bit machine.
+value_t get_array_at(value_t value, int64_t index);
 
 // Sets the index'th element in the given array.
-void set_array_at(value_t value, size_t index, value_t element);
+void set_array_at(value_t value, int64_t index, value_t element);
 
 // Returns a pointer to the beginning of the underlying element array.
 value_t *get_array_start(value_t value);
@@ -1205,7 +1215,7 @@ value_t *get_array_start_unchecked(value_t value);
 value_t sort_array(value_t value);
 
 // Sorts the first 'elmc' elements of this array.
-value_t sort_array_partial(value_t value, size_t elmc);
+value_t sort_array_partial(value_t value, int64_t elmc);
 
 // Returns true if the given array is sorted.
 bool is_array_sorted(value_t value);
@@ -1228,22 +1238,22 @@ value_t binary_search_pair_array(value_t self, value_t key);
 
 // Sets the first entry in the index'th pair in the given array, viewed as a
 // pair array.
-void set_pair_array_first_at(value_t self, size_t index, value_t value);
+void set_pair_array_first_at(value_t self, int64_t index, value_t value);
 
 // Gets the first entry in the index'th pair in the given array, viewed as a
 // pair array.
-value_t get_pair_array_first_at(value_t self, size_t index);
+value_t get_pair_array_first_at(value_t self, int64_t index);
 
 // Sets the second entry in the index'th pair in the given array, viewed as a
 // pair array.
-void set_pair_array_second_at(value_t self, size_t index, value_t value);
+void set_pair_array_second_at(value_t self, int64_t index, value_t value);
 
 // Gets the second entry in the index'th pair in the given array, viewed as a
 // pair array.
-value_t get_pair_array_second_at(value_t self, size_t index);
+value_t get_pair_array_second_at(value_t self, int64_t index);
 
 // Returns the length of this array when viewed as a pair array.
-size_t get_pair_array_length(value_t self);
+int64_t get_pair_array_length(value_t self);
 
 // Returns the first element in a heap pair, which is really just a length-2
 // array.
@@ -1260,7 +1270,7 @@ bool in_array(value_t self, value_t value);
 // --- T u p l e ---
 
 // Returns the index'th entry in the given tuple.
-value_t get_tuple_at(value_t self, size_t index);
+value_t get_tuple_at(value_t self, int64_t index);
 
 
 // --- A r r a y   b u f f e r ---
@@ -1280,10 +1290,10 @@ INTEGER_ACCESSORS_DECL(array_buffer, length);
 
 // Returns the index'th element in the given array buffer. Bounds checks the
 // index and returns an OutOfBounds condition under soft check failures.
-value_t get_array_buffer_at(value_t self, size_t index);
+value_t get_array_buffer_at(value_t self, int64_t index);
 
 // Sets the index'th element in this array buffer. Bounds checks the index.
-void set_array_buffer_at(value_t self, size_t index, value_t value);
+void set_array_buffer_at(value_t self, int64_t index, value_t value);
 
 // Attempts to add an element at the end of this array buffer, increasing its
 // length by 1. Returns true if this succeeds, false if it wasn't possible.
@@ -1322,14 +1332,14 @@ value_t add_to_pair_array_buffer(runtime_t *runtime, value_t buffer, value_t fir
 
 // Gets the first entry in the index'th pair in the given array, viewed as a
 // pair array.
-value_t get_pair_array_buffer_first_at(value_t self, size_t index);
+value_t get_pair_array_buffer_first_at(value_t self, int64_t index);
 
 // Gets the second entry in the index'th pair in the given array, viewed as a
 // pair array.
-value_t get_pair_array_buffer_second_at(value_t self, size_t index);
+value_t get_pair_array_buffer_second_at(value_t self, int64_t index);
 
 // Returns the length of this array when viewed as a pair array.
-size_t get_pair_array_buffer_length(value_t self);
+int64_t get_pair_array_buffer_length(value_t self);
 
 
 /// ## Fifo buffer
@@ -1460,7 +1470,7 @@ static const size_t kIdHashMapCapacityOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 static const size_t kIdHashMapOccupiedCountOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 static const size_t kIdHashMapEntryArrayOffset = HEAP_OBJECT_FIELD_OFFSET(3);
 
-static const size_t kIdHashMapEntryFieldCount = 3;
+static const int32_t kIdHashMapEntryFieldCount = 3;
 static const size_t kIdHashMapEntryKeyOffset = 0;
 static const size_t kIdHashMapEntryHashOffset = 1;
 static const size_t kIdHashMapEntryValueOffset = 2;
@@ -1513,9 +1523,9 @@ typedef struct {
   // The entries we're iterating through.
   value_t *entries;
   // The starting point from which to search for the next entry to return.
-  size_t cursor;
+  int64_t cursor;
   // The total capacity of this map.
-  size_t capacity;
+  int64_t capacity;
   // The current entry.
   value_t *current;
 } id_hash_map_iter_t;
@@ -1545,9 +1555,9 @@ static const size_t kKeyIdOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kKeyDisplayNameOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // Hardcoded key ids for the implicit arguments.
-static const size_t kSubjectKeyId = 0;
-static const size_t kSelectorKeyId = 1;
-static const size_t kTransportKeyId = 2;
+static const int64_t kSubjectKeyId = 0;
+static const int64_t kSelectorKeyId = 1;
+static const int64_t kTransportKeyId = 2;
 
 // The unique id for this key (unique across this runtime).
 INTEGER_ACCESSORS_DECL(key, id);

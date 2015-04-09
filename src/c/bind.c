@@ -88,8 +88,8 @@ static value_t apply_namespace_declaration(value_t ambience, value_t decl,
 // surface-level method.
 static value_t validate_builtin_method_binding(value_t method, value_t impl) {
   value_t signature = get_method_signature(method);
-  size_t posc = get_signature_parameter_count(signature) - kImplicitArgumentCount;
-  size_t required_posc = get_builtin_implementation_argument_count(impl);
+  size_t posc = (size_t) (get_signature_parameter_count(signature) - kImplicitArgumentCount);
+  size_t required_posc = (size_t) get_builtin_implementation_argument_count(impl);
   if (posc != required_posc) {
     ERROR("Argument count mismatch (found %i, expected %i) binding %9v to %9v",
         posc, required_posc, impl, signature);
@@ -107,7 +107,7 @@ static value_t apply_method_declaration(value_t ambience, value_t decl,
   // Look for the :builtin annotation on this method.
   value_t annots = get_method_declaration_ast_annotations(decl);
   value_t builtin_name = new_not_found_condition();
-  for (size_t i = 0; i < get_array_length(annots); i++) {
+  for (int64_t i = 0; i < get_array_length(annots); i++) {
     value_t annot = get_array_at(annots, i);
     TRY_DEF(value, run_expression_until_condition(ambience, fragment, annot));
     if (in_family(ofBuiltinMarker, value))
@@ -173,7 +173,7 @@ static value_t bind_module_fragment_imports(binding_context_t *context,
   // importspace.
   value_t importspace = get_module_fragment_imports(bound_fragment);
   runtime_t *runtime = get_ambience_runtime(context->ambience);
-  for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
+  for (int64_t i = 0; i < get_array_buffer_length(imports); i++) {
     // Look up the imported module.
     value_t import_ident = get_array_buffer_at(imports, i);
     value_t import_path = get_identifier_path(import_ident);
@@ -193,7 +193,7 @@ static value_t bind_module_fragment_imports(binding_context_t *context,
 static value_t apply_module_fragment_elements(binding_context_t *context,
     value_t unbound_fragment, value_t bound_fragment) {
   value_t elements = get_unbound_module_fragment_elements(unbound_fragment);
-  for (size_t i = 0; i < get_array_length(elements); i++) {
+  for (int64_t i = 0; i < get_array_length(elements); i++) {
     value_t element = get_array_at(elements, i);
     TRY(apply_unbound_fragment_element(context->ambience, element, bound_fragment));
   }
@@ -247,10 +247,10 @@ static value_t ensure_module_in_array(runtime_t *runtime, value_t array,
   // stage the module is imported into doesn't matter at this point, we just
   // have to enumerate them.
   value_t unbound_fragments = get_unbound_module_fragments(unbound_module);
-  for (size_t fi = 0; fi < get_array_length(unbound_fragments); fi++) {
+  for (int64_t fi = 0; fi < get_array_length(unbound_fragments); fi++) {
     value_t unbound_fragment = get_array_at(unbound_fragments, fi);
     value_t imports = get_unbound_module_fragment_imports(unbound_fragment);
-    for (size_t ii = 0; ii < get_array_length(imports); ii++) {
+    for (int64_t ii = 0; ii < get_array_length(imports); ii++) {
       value_t import = get_array_at(imports, ii);
       TRY_DEF(imported_module, module_loader_lookup_module(
           deref(runtime->s_module_loader), import));
@@ -293,7 +293,7 @@ static value_t new_empty_module_fragment(binding_context_t *context, value_t sta
 // Creates and binds modules and fragments according to the given schedule.
 static value_t execute_binding_schedule(binding_context_t *context, value_t schedule) {
   runtime_t *runtime = get_ambience_runtime(context->ambience);
-  for (size_t i = 0; i < get_array_buffer_length(schedule); i++) {
+  for (int64_t i = 0; i < get_array_buffer_length(schedule); i++) {
     value_t next = get_array_buffer_at(schedule, i);
     TOPIC_INFO(Library, "About to bind %v", next);
     value_t path = get_identifier_path(next);
@@ -349,11 +349,11 @@ value_t build_bound_module(value_t ambience, value_t unbound_module) {
 static value_t build_real_fragment_entries(binding_context_t *context,
     value_t modules) {
   runtime_t *runtime = get_ambience_runtime(context->ambience);
-  for (size_t mi = 0; mi < get_array_buffer_length(modules); mi++) {
+  for (int64_t mi = 0; mi < get_array_buffer_length(modules); mi++) {
     value_t module = get_array_buffer_at(modules, mi);
     value_t path = get_unbound_module_path(module);
     value_t fragments = get_unbound_module_fragments(module);
-    for (size_t fi = 0; fi < get_array_length(fragments); fi++) {
+    for (int64_t fi = 0; fi < get_array_length(fragments); fi++) {
       value_t fragment = get_array_at(fragments, fi);
       value_t stage = get_unbound_module_fragment_stage(fragment);
       bool dummy = false;
@@ -361,7 +361,7 @@ static value_t build_real_fragment_entries(binding_context_t *context,
           path, fragment, &dummy));
       value_t imports = get_fragment_entry_imports(entry);
       value_t fragment_imports = get_unbound_module_fragment_imports(fragment);
-      for (size_t ii = 0; ii < get_array_length(fragment_imports); ii++) {
+      for (int64_t ii = 0; ii < get_array_length(fragment_imports); ii++) {
         value_t import = get_array_at(fragment_imports, ii);
         TRY_DEF(ident, new_heap_identifier(runtime, afFreeze, present_stage(),
             import));
@@ -401,7 +401,7 @@ static value_t build_synthetic_fragment_entries(binding_context_t *context) {
         // Scan through the fragment's imports and ensure that their import
         // targets have been created.
         value_t imports = get_fragment_entry_imports(entry);
-        for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
+        for (int64_t i = 0; i < get_array_buffer_length(imports); i++) {
           value_t import = get_array_buffer_at(imports, i);
           value_t import_fragment_stage = get_identifier_stage(import);
           if (!value_identity_compare(import_fragment_stage, present_stage()))
@@ -528,7 +528,7 @@ static bool should_fragment_be_bound(binding_context_t *context, value_t schedul
   value_t entry = get_id_hash_map_at(module, stage);
   value_t imports = get_fragment_entry_imports(entry);
   // Check whether all its explicit dependencies are satisfied.
-  for (size_t i = 0; i < get_array_buffer_length(imports); i++) {
+  for (int64_t i = 0; i < get_array_buffer_length(imports); i++) {
     value_t import = get_array_buffer_at(imports, i);
     if (!is_fragment_scheduled(schedule, import))
       return false;
@@ -548,7 +548,7 @@ value_t build_binding_schedule(binding_context_t *context) {
   TRY_DEF(schedule, new_heap_array_buffer(runtime, 16));
   TRY_DEF(all_fragments, build_fragment_identifier_array(context));
   loop: do {
-    for (size_t i = 0; i < get_array_buffer_length(all_fragments); i++) {
+    for (int64_t i = 0; i < get_array_buffer_length(all_fragments); i++) {
       value_t ident = get_array_buffer_at(all_fragments, i);
       if (should_fragment_be_bound(context, schedule, ident)) {
         TRY(add_to_array_buffer(runtime, schedule, ident));
@@ -681,7 +681,8 @@ value_t plankton_new_unbound_module_fragment(runtime_t *runtime) {
 value_t plankton_set_unbound_module_fragment_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   UNPACK_PLANKTON_MAP(contents, stage, imports, elements);
-  set_unbound_module_fragment_stage(object, new_stage_offset(get_integer_value(stage_value)));
+  int32_t stage_index = (int32_t) get_integer_value(stage_value);
+  set_unbound_module_fragment_stage(object, new_stage_offset(stage_index));
   set_unbound_module_fragment_imports(object, imports_value);
   set_unbound_module_fragment_elements(object, elements_value);
   return success();

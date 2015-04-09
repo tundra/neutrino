@@ -46,7 +46,7 @@ static void main_options_dispose(main_options_t *flags) {
 }
 
 // Parse a set of command-line arguments.
-static bool parse_options(size_t argc, const char **argv, main_options_t *flags_out) {
+static bool parse_options(int argc, const char **argv, main_options_t *flags_out) {
   pton_command_line_reader_t *reader = pton_new_command_line_reader();
   flags_out->owner = reader;
   pton_command_line_t *cmdline = pton_command_line_reader_parse(reader, argc, argv);
@@ -58,11 +58,11 @@ static bool parse_options(size_t argc, const char **argv, main_options_t *flags_
     return false;
   }
 
-  flags_out->config->gc_fuzz_freq = pton_int64_value(
+  flags_out->config->gc_fuzz_freq = (uint32_t) pton_int64_value(
       pton_command_line_option(cmdline,
           pton_c_str("garbage-collect-fuzz-frequency"),
           pton_integer(0)));
-  flags_out->config->gc_fuzz_seed = pton_int64_value(
+  flags_out->config->gc_fuzz_seed = (uint32_t) pton_int64_value(
       pton_command_line_option(cmdline,
           pton_c_str("garbage-collect-fuzz-seed"),
           pton_integer(0)));
@@ -95,7 +95,7 @@ static value_t build_module_loader(runtime_t *runtime, pton_command_line_t *cmdl
     return success();
   value_t loader = deref(runtime->s_module_loader);
   pton_variant_t libraries = pton_map_get(options, pton_c_str("libraries"));
-  for (size_t i = 0; i < pton_array_length(libraries); i++) {
+  for (uint32_t i = 0; i < pton_array_length(libraries); i++) {
     pton_variant_t library_path = pton_array_get(libraries, i);
     TRY(load_library_from_file(runtime, loader, library_path));
   }
@@ -139,7 +139,7 @@ static value_t neutrino_main_with_options(neutrino::RuntimeConfig *config,
     value_t result = whatever();
     E_TRY(build_module_loader(*runtime, options->cmdline));
     argc = pton_command_line_argument_count(options->cmdline);
-    for (size_t i = 0; i < argc; i++) {
+    for (uint32_t i = 0; i < argc; i++) {
       pton_variant_t filename_var = pton_command_line_argument(options->cmdline, i);
       utf8_t filename = new_string(pton_string_chars(filename_var),
           pton_string_length(filename_var));

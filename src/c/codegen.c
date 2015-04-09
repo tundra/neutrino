@@ -63,7 +63,7 @@ VTABLE(single_symbol_scope_o, scope_o) { single_symbol_scope_lookup };
 
 void assembler_push_single_symbol_scope(assembler_t *assm,
     single_symbol_scope_o *scope, value_t symbol, binding_type_t type,
-    uint32_t data) {
+    uint16_t data) {
   VTABLE_INIT(single_symbol_scope_o, UPCAST(scope));
   scope->symbol = symbol;
   binding_info_set(&scope->binding, type, data, 0);
@@ -116,7 +116,7 @@ void assembler_pop_map_scope(assembler_t *assm, map_scope_o *scope) {
 }
 
 value_t map_scope_bind(map_scope_o *scope, value_t symbol, binding_type_t type,
-    uint32_t data) {
+    uint16_t data) {
   binding_info_codec_t codec;
   binding_info_set(&codec.decoded, type, data, 0);
   value_t value = new_integer(codec.encoded);
@@ -127,14 +127,14 @@ value_t map_scope_bind(map_scope_o *scope, value_t symbol, binding_type_t type,
 static value_t lambda_scope_lookup(scope_o *super_self, value_t symbol,
     binding_info_t *info_out) {
   lambda_scope_o *self = DOWNCAST(lambda_scope_o, super_self);
-  size_t capture_count_before = get_array_buffer_length(self->captures);
+  int64_t capture_count_before = get_array_buffer_length(self->captures);
   // See if we've captured this variable before.
-  for (size_t i = 0; i < capture_count_before; i++) {
+  for (int64_t i = 0; i < capture_count_before; i++) {
     value_t captured = get_array_buffer_at(self->captures, i);
     if (value_identity_compare(captured, symbol)) {
       // Found it. Record that we did if necessary and return success.
       if (info_out != NULL)
-        binding_info_set(info_out, btLambdaCaptured, i, 0);
+        binding_info_set(info_out, btLambdaCaptured, (uint16_t) i, 0);
       return success();
     }
   }
@@ -149,7 +149,7 @@ static value_t lambda_scope_lookup(scope_o *super_self, value_t symbol,
       TRY_SET(self->captures, new_heap_array_buffer(runtime, 2));
     }
     TRY(add_to_array_buffer(runtime, self->captures, symbol));
-    binding_info_set(info_out, btLambdaCaptured, capture_count_before, 0);
+    binding_info_set(info_out, btLambdaCaptured, (uint16_t) capture_count_before, 0);
   }
   return value;
 }
@@ -281,16 +281,16 @@ value_t assembler_flush(assembler_t *assm) {
   if (is_nothing(value_pool_map)) {
     value_pool = ROOT(assm->runtime, empty_array);
   } else {
-    size_t value_pool_size = get_id_hash_map_size(value_pool_map);
-    TRY_SET(value_pool, new_heap_array(assm->runtime, value_pool_size));
+    int64_t value_pool_size = get_id_hash_map_size(value_pool_map);
+    TRY_SET(value_pool, new_heap_array(assm->runtime, (size_t) value_pool_size));
     id_hash_map_iter_t iter;
     id_hash_map_iter_init(&iter, value_pool_map);
-    size_t entries_seen = 0;
+    int64_t entries_seen = 0;
     while (id_hash_map_iter_advance(&iter)) {
       value_t key;
       value_t value;
       id_hash_map_iter_get_current(&iter, &key, &value);
-      size_t index = get_integer_value(value);
+      int64_t index = get_integer_value(value);
       // Check that the entry hasn't been set already.
       CHECK_PHYLUM(tpNull, get_array_at(value_pool, index));
       set_array_at(value_pool, index, key);
@@ -341,7 +341,7 @@ static value_t assembler_emit_value(assembler_t *assm, value_t value) {
   // TODO: handle the case where there's more than 0xFF constants.
   CHECK_REL("negative index", index, >=, 0);
   CHECK_REL("large index", index, <=, 0xFF);
-  short_buffer_append(&assm->code, index);
+  short_buffer_append(&assm->code, (uint16_t) index);
   return success();
 }
 
@@ -352,12 +352,12 @@ static void assembler_emit_stack_height_check(assembler_t *assm) {
 }
 
 // Adjusts the stack height without inserting a check stack height op.
-static void assembler_adjust_stack_height_nocheck(assembler_t *assm, int delta) {
-  assm->stack_height += delta;
+static void assembler_adjust_stack_height_nocheck(assembler_t *assm, int64_t delta) {
+  assm->stack_height = (size_t) (assm->stack_height + delta);
   assm->high_water_mark = max_size(assm->high_water_mark, assm->stack_height);
 }
 
-void assembler_adjust_stack_height(assembler_t *assm, int delta) {
+void assembler_adjust_stack_height(assembler_t *assm, int64_t delta) {
   assembler_adjust_stack_height_nocheck(assm, delta);
   IF_EXPENSIVE_CHECKS_ENABLED(assembler_emit_stack_height_check(assm));
 }

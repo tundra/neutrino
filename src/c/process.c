@@ -38,7 +38,7 @@ int set_stack_piece_storage(value_t self, value_t value) {
 }
 
 void get_stack_piece_layout(value_t value, heap_object_layout_t *layout) {
-  size_t capacity = get_integer_value(get_stack_piece_capacity(value));
+  size_t capacity = (size_t) get_integer_value(get_stack_piece_capacity(value));
   size_t size = calc_stack_piece_size(capacity);
   heap_object_layout_set(layout, size, kHeapObjectHeaderSize);
 }
@@ -104,9 +104,9 @@ static void push_stack_piece_bottom_frame(runtime_t *runtime,
   // passed from this frame so we have to "allocate" enough room for them on
   // the stack.
   open_stack_piece(stack_piece, &bottom);
-  size_t arg_count = get_array_length(arg_map);
+  size_t arg_count = (size_t) get_array_length(arg_map);
   bool pushed = try_push_new_frame(&bottom,
-      get_code_block_high_water_mark(code_block) + arg_count,
+      (size_t) (get_code_block_high_water_mark(code_block) + arg_count),
       ffSynthetic | ffStackPieceBottom, false);
   CHECK_TRUE("pushing bottom frame", pushed);
   frame_set_code_block(&bottom, code_block);
@@ -152,8 +152,8 @@ value_t push_stack_frame(runtime_t *runtime, value_t stack, frame_t *frame,
   if (!try_push_new_frame(frame, frame_capacity, ffOrganic, false)) {
     // There wasn't room to push this frame onto the top stack piece so
     // allocate a new top piece that definitely has room.
-    size_t default_capacity = get_stack_default_piece_capacity(stack);
-    size_t transfer_arg_count = get_array_length(arg_map);
+    size_t default_capacity = (size_t) get_stack_default_piece_capacity(stack);
+    size_t transfer_arg_count = (size_t) get_array_length(arg_map);
     size_t required_capacity =
           frame_capacity      // the new frame's locals
         + kFrameHeaderSize    // the new frame's header
@@ -242,7 +242,7 @@ bool try_push_new_frame(frame_t *frame, size_t frame_capacity, uint32_t flags,
   frame_t old_frame = *frame;
   // Determine how much room is left in the stack piece.
   value_t *stack_piece_start = get_stack_piece_storage(stack_piece);
-  size_t capacity = get_integer_value(get_stack_piece_capacity(stack_piece));
+  size_t capacity = (size_t) get_integer_value(get_stack_piece_capacity(stack_piece));
   value_t *stack_piece_limit = stack_piece_start + capacity;
   // There must always be room on a stack piece for the lid frame because it
   // must always be possible to close a stack if a condition occurs, which we
@@ -299,7 +299,7 @@ void frame_set_previous_frame_pointer(frame_t *frame, size_t value) {
 }
 
 size_t frame_get_previous_frame_pointer(frame_t *frame) {
-  return get_integer_value(
+  return (size_t) get_integer_value(
       *access_frame_header_field(frame, kFrameHeaderPreviousFramePointerOffset));
 }
 
@@ -309,7 +309,7 @@ void frame_set_previous_limit_pointer(frame_t *frame, size_t value) {
 }
 
 size_t frame_get_previous_limit_pointer(frame_t *frame) {
-  return get_integer_value(*access_frame_header_field(frame,
+  return (size_t) get_integer_value(*access_frame_header_field(frame,
       kFrameHeaderPreviousLimitPointerOffset));
 }
 
@@ -343,7 +343,7 @@ void frame_set_previous_pc(frame_t *frame, size_t pc) {
 }
 
 size_t frame_get_previous_pc(frame_t *frame) {
-  return get_integer_value(*access_frame_header_field(frame,
+  return (size_t) get_integer_value(*access_frame_header_field(frame,
       kFrameHeaderPreviousPcOffset));
 }
 
@@ -398,7 +398,7 @@ value_t frame_peek_value(frame_t *frame, size_t index) {
 value_t frame_get_argument(frame_t *frame, size_t param_index) {
   value_t *stack_pointer = frame->frame_pointer - kFrameHeaderSize;
   value_t arg_map = frame_get_argument_map(frame);
-  size_t offset = get_integer_value(get_array_at(arg_map, param_index));
+  size_t offset = (size_t) get_integer_value(get_array_at(arg_map, param_index));
   return stack_pointer[-(offset + 1)];
 }
 
@@ -408,16 +408,16 @@ value_t frame_get_raw_argument(frame_t *frame, size_t eval_index) {
 }
 
 value_t frame_get_pending_argument_at(frame_t *frame, value_t tags,
-    size_t index) {
+    int64_t index) {
   CHECK_FAMILY(ofCallTags, tags);
-  size_t offset = get_call_tags_offset_at(tags, index);
+  size_t offset = (size_t) get_call_tags_offset_at(tags, index);
   return frame_peek_value(frame, offset);
 }
 
 void frame_set_argument(frame_t *frame, size_t param_index, value_t value) {
   value_t *stack_pointer = frame->frame_pointer - kFrameHeaderSize;
   value_t arg_map = frame_get_argument_map(frame);
-  size_t offset = get_integer_value(get_array_at(arg_map, param_index));
+  size_t offset = (size_t) get_integer_value(get_array_at(arg_map, param_index));
   stack_pointer[-(offset + 1)] = value;
 }
 
@@ -588,7 +588,7 @@ void get_refractor_refracted_frame(value_t self, size_t block_depth,
     // Locate the next refraction point.
     value_t refraction_point = get_refraction_point(current);
     value_t fp_val = get_refraction_point_frame_pointer(refraction_point);
-    size_t fp = get_integer_value(fp_val);
+    size_t fp = (size_t) get_integer_value(fp_val);
     // Update the frame state to point to it.
     frame->stack_piece = get_derived_object_host(refraction_point);
     frame->frame_pointer = get_stack_piece_storage(frame->stack_piece) + fp;
@@ -622,7 +622,7 @@ void backtrace_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofBacktrace, value);
   string_buffer_printf(context->buf, "--- backtrace ---");
   value_t entries = get_backtrace_entries(value);
-  for (size_t i = 0; i < get_array_buffer_length(entries); i++) {
+  for (int64_t i = 0; i < get_array_buffer_length(entries); i++) {
     string_buffer_putc(context->buf, '\n');
     string_buffer_printf(context->buf, "- ");
     value_print_inner_on(get_array_buffer_at(entries, i), context, -1);
@@ -672,7 +672,7 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
     value_t value;
     id_hash_map_iter_get_current(&iter, &key, &value);
     if (in_family(ofKey, key)) {
-      size_t id = get_key_id(key);
+      int64_t id = get_key_id(key);
       if (id == kSubjectKeyId) {
         subject = value;
       } else if (id == kSelectorKeyId) {
@@ -720,7 +720,7 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
     value_t value;
     id_hash_map_iter_get_current(&iter, &key, &value);
     if (in_family(ofKey, key)) {
-      size_t id = get_key_id(key);
+      int64_t id = get_key_id(key);
       if (id == kSubjectKeyId || id == kSelectorKeyId || id == kTransportKeyId)
         // Don't print the subject/selector again.
         continue;
@@ -748,7 +748,7 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
 void backtrace_entry_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofBacktraceEntry, value);
   value_t invocation = get_backtrace_entry_invocation(value);
-  int32_t opcode = get_integer_value(get_backtrace_entry_opcode(value));
+  int32_t opcode = (int32_t) get_integer_value(get_backtrace_entry_opcode(value));
   backtrace_entry_invocation_print_on(invocation, opcode, context);
 }
 
@@ -794,8 +794,8 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
   }
   // Scan through the record to build the invocation map.
   TRY_DEF(invocation, new_heap_id_hash_map(runtime, 16));
-  size_t arg_count = get_call_tags_entry_count(tags);
-  for (size_t i = 0; i < arg_count; i++) {
+  int64_t arg_count = get_call_tags_entry_count(tags);
+  for (int64_t i = 0; i < arg_count; i++) {
     value_t tag = get_call_tags_tag_at(tags, i);
     value_t arg = frame_get_pending_argument_at(frame, tags, i);
     TRY(set_id_hash_map_at(runtime, invocation, tag, arg));
@@ -1063,12 +1063,12 @@ static bool reified_arguments_get_value_index(value_t self, value_t tag,
   // First try to find the argument based on the tags used by the caller. The
   // expectation is that this will usually work.
   value_t call_tags = get_reified_arguments_tags(self);
-  size_t argc = get_call_tags_entry_count(call_tags);
+  size_t argc = (size_t) get_call_tags_entry_count(call_tags);
   for (size_t ia = 0; ia < argc; ia++) {
     value_t candidate = get_call_tags_tag_at(call_tags, ia);
     if (value_identity_compare(candidate, tag)) {
       // Found it among the arguments.
-      size_t offset = get_call_tags_offset_at(call_tags, ia);
+      size_t offset = (size_t) get_call_tags_offset_at(call_tags, ia);
       *index_out = offset;
       return true;
     }
@@ -1079,16 +1079,16 @@ static bool reified_arguments_get_value_index(value_t self, value_t tag,
   value_t params = get_reified_arguments_params(self);
   // Paramc may be different from argc if there are extra arguments not
   // anticipated in the method declaration.
-  size_t paramc = get_array_length(params);
+  size_t paramc = (size_t) get_array_length(params);
   for (size_t ip = 0; ip < paramc; ip++) {
     value_t param = get_array_at(params, ip);
     value_t tags = get_parameter_ast_tags(param);
-    for (size_t it = 0; it < get_array_length(tags); it++) {
+    for (int64_t it = 0; it < get_array_length(tags); it++) {
       value_t candidate = get_array_at(tags, it);
       if (value_identity_compare(candidate, tag)) {
         // Found it among the parameters!
         value_t argmap = get_reified_arguments_argmap(self);
-        size_t eval_index = get_integer_value(get_array_at(argmap, ip));
+        size_t eval_index = (size_t) get_integer_value(get_array_at(argmap, ip));
         *index_out = eval_index;
         return true;
       }
@@ -1120,7 +1120,7 @@ static value_t reified_arguments_replace_argument(builtin_arguments_t *args) {
   runtime_t *runtime = get_builtin_runtime(args);
   // Found the index to replace. Clone the values array and replace the value.
   value_t new_value = get_builtin_argument(args, 1);
-  size_t argc = get_array_length(old_values);
+  size_t argc = (size_t) get_array_length(old_values);
   TRY_DEF(new_values, new_heap_array(runtime, argc));
   value_array_copy_to(get_array_elements(new_values), get_array_elements(old_values));
   set_array_at(new_values, index, new_value);

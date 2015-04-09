@@ -40,24 +40,24 @@ value_t ensure_signature_owned_values_frozen(runtime_t *runtime, value_t self) {
   return ensure_frozen(runtime, get_signature_tags(self));
 }
 
-size_t get_signature_tag_count(value_t self) {
+int64_t get_signature_tag_count(value_t self) {
   CHECK_FAMILY(ofSignature, self);
   return get_pair_array_length(get_signature_tags(self));
 }
 
-value_t get_signature_tag_at(value_t self, size_t index) {
+value_t get_signature_tag_at(value_t self, int64_t index) {
   CHECK_FAMILY(ofSignature, self);
   return get_pair_array_first_at(get_signature_tags(self), index);
 }
 
-value_t get_signature_parameter_at(value_t self, size_t index) {
+value_t get_signature_parameter_at(value_t self, int64_t index) {
   CHECK_FAMILY(ofSignature, self);
   return get_pair_array_second_at(get_signature_tags(self), index);
 }
 
 void signature_print_on(value_t self, print_on_context_t *context) {
   string_buffer_printf(context->buf, "#<signature: ");
-  for (size_t i = 0; i < get_signature_parameter_count(self); i++) {
+  for (int64_t i = 0; i < get_signature_parameter_count(self); i++) {
     if (i > 0)
       string_buffer_printf(context->buf, ", ");
     value_print_inner_on(get_signature_tag_at(self, i), context, -1);
@@ -142,9 +142,9 @@ static value_t find_best_match(runtime_t *runtime, value_t current,
     return success();
   } else {
     TRY_DEF(parents, get_type_parents(runtime, space, current));
-    size_t length = get_array_buffer_length(parents);
+    int64_t length = get_array_buffer_length(parents);
     value_t score = new_no_match_score();
-    for (size_t i = 0; i < length; i++) {
+    for (int64_t i = 0; i < length; i++) {
       value_t parent = get_array_buffer_at(parents, i);
       value_t next_score = whatever();
       TRY(find_best_match(runtime, parent, target, get_score_successor(current_score),
@@ -348,10 +348,10 @@ value_t get_type_parents(runtime_t *runtime, value_t space, value_t type) {
 // Returns true if the given signature could possibly match an invocation where
 // the given tag maps to the given value.
 static bool can_match_eq(value_t signature, value_t tag, value_t value) {
-  size_t paramc = get_signature_parameter_count(signature);
+  int64_t paramc = get_signature_parameter_count(signature);
   // First look for a matching parameter in the signature.
   value_t match = nothing();
-  for (size_t i = 0; i < paramc; i++) {
+  for (int64_t i = 0; i < paramc; i++) {
     value_t param = get_signature_parameter_at(signature, i);
     value_t tags = get_parameter_tags(param);
     if (in_array(tags, tag)) {
@@ -381,7 +381,7 @@ static value_t create_methodspace_selector_slice(runtime_t *runtime, value_t sel
   while (!is_nothing(current)) {
     value_t methods = get_methodspace_methods(current);
     value_t entries = get_signature_map_entries(methods);
-    for (size_t i = 0; i < get_pair_array_buffer_length(entries); i++) {
+    for (int64_t i = 0; i < get_pair_array_buffer_length(entries); i++) {
       value_t signature = get_pair_array_buffer_first_at(entries, i);
       if (can_match_eq(signature, ROOT(runtime, selector_key), selector)) {
         value_t method = get_pair_array_buffer_second_at(entries, i);
@@ -438,19 +438,19 @@ value_t call_tags_validate(value_t self) {
   return success();
 }
 
-value_t get_call_tags_tag_at(value_t self, size_t index) {
+value_t get_call_tags_tag_at(value_t self, int64_t index) {
   CHECK_FAMILY(ofCallTags, self);
   value_t entries = get_call_tags_entries(self);
   return get_pair_array_first_at(entries, index);
 }
 
-size_t get_call_tags_offset_at(value_t self, size_t index) {
+int64_t get_call_tags_offset_at(value_t self, int64_t index) {
   CHECK_FAMILY(ofCallTags, self);
   value_t entries = get_call_tags_entries(self);
   return get_integer_value(get_pair_array_second_at(entries, index));
 }
 
-size_t get_call_tags_entry_count(value_t self) {
+int64_t get_call_tags_entry_count(value_t self) {
   CHECK_FAMILY(ofCallTags, self);
   value_t entries = get_call_tags_entries(self);
   return get_pair_array_length(entries);
@@ -460,7 +460,7 @@ void check_call_tags_entries_unique(value_t tags) {
   if (get_pair_array_length(tags) == 0)
     return;
   value_t last_tag = get_pair_array_first_at(tags, 0);
-  for (size_t i = 1; i < get_pair_array_length(tags); i++) {
+  for (int64_t i = 1; i < get_pair_array_length(tags); i++) {
     value_t next_tag = get_pair_array_first_at(tags, i);
     if (value_identity_compare(last_tag, next_tag))
       FATAL("Tag %v occurs twice in %v", last_tag, tags);
@@ -469,14 +469,14 @@ void check_call_tags_entries_unique(value_t tags) {
 }
 
 value_t build_call_tags_entries(runtime_t *runtime, value_t tags) {
-  size_t tag_count = get_array_length(tags);
+  int64_t tag_count = get_array_length(tags);
   TRY_DEF(result, new_heap_pair_array(runtime, tag_count));
-  for (size_t i = 0; i < tag_count; i++) {
+  for (int64_t i = 0; i < tag_count; i++) {
     set_pair_array_first_at(result, i, get_array_at(tags, i));
     // The offset is counted backwards because the argument evaluated last will
     // be at the top of the stack, that is, offset 0, and the first will be at
     // the bottom so has the highest offset.
-    size_t offset = tag_count - i - 1;
+    int64_t offset = tag_count - i - 1;
     set_pair_array_second_at(result, i, new_integer(offset));
   }
   TRY(co_sort_pair_array(result));
@@ -485,9 +485,9 @@ value_t build_call_tags_entries(runtime_t *runtime, value_t tags) {
 }
 
 void print_invocation_on(value_t tags, frame_t *frame, string_buffer_t *buf) {
-  size_t arg_count = get_call_tags_entry_count(tags);
+  int64_t arg_count = get_call_tags_entry_count(tags);
   string_buffer_printf(buf, "{");
-  for (size_t i = 0;  i < arg_count; i++) {
+  for (int64_t i = 0;  i < arg_count; i++) {
     value_t tag = get_call_tags_tag_at(tags, i);
     value_t arg = frame_get_pending_argument_at(frame, tags, i);
     if (i > 0)
@@ -499,12 +499,12 @@ void print_invocation_on(value_t tags, frame_t *frame, string_buffer_t *buf) {
 
 void call_tags_print_on(value_t self, print_on_context_t *context) {
   string_buffer_printf(context->buf, "{");
-  size_t arg_count = get_call_tags_entry_count(self);
-  for (size_t i = 0; i < arg_count; i++) {
+  int64_t arg_count = get_call_tags_entry_count(self);
+  for (int64_t i = 0; i < arg_count; i++) {
     if (i > 0)
       string_buffer_printf(context->buf, ", ");
     value_t tag = get_call_tags_tag_at(self, i);
-    size_t offset = get_call_tags_offset_at(self, i);
+    size_t offset = (size_t) get_call_tags_offset_at(self, i);
     value_print_inner_on(tag, context, -1);
     string_buffer_printf(context->buf, "@%i", offset);
   }
@@ -548,9 +548,9 @@ value_t call_data_validate(value_t self) {
   return success();
 }
 
-value_t get_call_data_value_at(value_t self, size_t param_index) {
+value_t get_call_data_value_at(value_t self, int64_t param_index) {
   value_t tags = get_call_data_tags(self);
-  size_t offset = get_call_tags_offset_at(tags, param_index);
+  int64_t offset = get_call_tags_offset_at(tags, param_index);
   value_t values = get_call_data_values(self);
   return get_array_at(values, offset);
 }
@@ -567,7 +567,7 @@ static value_t call_data_get(builtin_arguments_t *args) {
   CHECK_FAMILY(ofCallData, self);
   value_t needle = get_builtin_argument(args, 0);
   value_t tags = get_call_data_tags(self);
-  for (size_t i = 0; i < get_call_tags_entry_count(tags); i++) {
+  for (int64_t i = 0; i < get_call_tags_entry_count(tags); i++) {
     value_t tag = get_call_tags_tag_at(tags, i);
     if (value_identity_compare(needle, tag))
       return get_call_data_value_at(self, i);
