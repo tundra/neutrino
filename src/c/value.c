@@ -674,15 +674,26 @@ INTEGER_ACCESSORS_IMPL(Array, array, Length, length);
 value_t get_array_at(value_t value, int64_t index) {
   CHECK_FAMILY(ofArray, value);
   COND_CHECK_TRUE("array index out of bounds", ccOutOfBounds,
-      ((uint64_t) index) < ((uint64_t) get_array_length(value)));
+      within_array_bounds(value, index));
   return get_array_start(value)[index];
 }
+
+bool within_array_bounds(value_t self, int64_t index) {
+  // Casting the index to an unsigned value moves negative values into the very
+  // large values which makes the comparison fail agains a realistic array
+  // length.
+  return ((uint64_t) index) < ((uint64_t) get_array_length(self));
+}
+
+bool limit_within_array_bounds(value_t self, int64_t index) {
+  return ((uint64_t) index) <= ((uint64_t) get_array_length(self));
+}
+
 
 void set_array_at(value_t value, int64_t index, value_t element) {
   CHECK_FAMILY(ofArray, value);
   CHECK_MUTABLE(value);
-  CHECK_REL("array index out of bounds", (uint64_t) index, <,
-      (uint64_t) get_array_length(value));
+  CHECK_TRUE("array index out of bounds", within_array_bounds(value, index));
   get_array_start(value)[index] = element;
 }
 
@@ -767,7 +778,7 @@ value_t sort_array(value_t value) {
 value_t sort_array_partial(value_t value, int64_t elmc) {
   CHECK_FAMILY(ofArray, value);
   CHECK_MUTABLE(value);
-  CHECK_REL("sorting out of bounds", (uint64_t) elmc, <=, (uint64_t) get_array_length(value));
+  CHECK_TRUE("sorting out of bounds", limit_within_array_bounds(value, elmc));
   value_t *elements = get_array_start(value);
   // Just use qsort. This means that we can't propagate conditions from the
   // compare functions back out but that shouldn't be a huge issue. We'll check
@@ -919,7 +930,7 @@ static value_t array_get_at(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t index_value = get_builtin_argument(args, 0);
   int64_t index = get_integer_value(index_value);
-  if (index >= get_array_length(self)) {
+  if (!within_array_bounds(self, index)) {
     ESCAPE_BUILTIN(args, out_of_bounds, index_value);
   } else {
     return get_array_at(self, index);
@@ -930,7 +941,7 @@ static value_t array_set_at(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t index_value = get_builtin_argument(args, 0);
   int64_t index = get_integer_value(index_value);
-  if (index >= get_array_length(self)) {
+  if (!within_array_bounds(self, index)) {
     ESCAPE_BUILTIN(args, out_of_bounds, index_value);
   } else if (!is_mutable(self)) {
     ESCAPE_BUILTIN(args, is_frozen, self);

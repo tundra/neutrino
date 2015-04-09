@@ -1197,6 +1197,14 @@ INTEGER_ACCESSORS_DECL(array, length);
 // wider than 32 bits even on a 32-bit machine.
 value_t get_array_at(value_t value, int64_t index);
 
+// Returns true iff the given index is within the bounds of the given array.
+bool within_array_bounds(value_t self, int64_t index);
+
+// Returns true iff the given limit fits within the bounds of the given array.
+// The limit is different from an index in that you'll never access the limit,
+// it's the point just past the last element you'll access.
+bool limit_within_array_bounds(value_t self, int64_t index);
+
 // Sets the index'th element in the given array.
 void set_array_at(value_t value, int64_t index, value_t element);
 
