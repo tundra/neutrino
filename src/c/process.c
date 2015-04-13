@@ -976,7 +976,7 @@ value_t deliver_process_complete_foreign(value_t process) {
   while (process_airlock_next_complete_foreign(airlock, &state)) {
     airlock->open_foreign_request_count--;
     TRY_DEF(result, import_pton_variant(airlock->runtime, state->result));
-    fulfill_promise(state->surface_promise, result);
+    fulfill_promise(deref(state->s_surface_promise), result);
     foreign_request_state_destroy(state);
   }
   return success();

@@ -18,6 +18,7 @@ def $test_echo() {
   def $run := fn ($in) {
     # Test round-tripping a single argument through a remote call.
     @core:echo->echo($in).then(fn $out => $assert:equals($in, $out));
+    @ctrino.collect_garbage!();
   }
   $run(946);
   $run("hey");

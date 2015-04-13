@@ -172,23 +172,24 @@ static opaque_t on_foreign_request_success(opaque_t opaque_state,
 
 void foreign_request_state_init(foreign_request_state_t *state,
     unary_callback_t *callback, process_airlock_t *airlock,
-    value_t surface_promise, pton_variant_t result) {
+    safe_value_t s_surface_promise, pton_variant_t result) {
   state->callback = callback;
   state->airlock = airlock;
-  state->surface_promise = surface_promise;
+  state->s_surface_promise = s_surface_promise;
   state->result = result;
 }
 
 value_t foreign_request_state_new(runtime_t *runtime, value_t process,
     foreign_request_state_t **result_out) {
   TRY_DEF(promise, new_heap_pending_promise(runtime));
+  safe_value_t s_promise = runtime_protect_value(runtime, promise);
   memory_block_t memory = allocator_default_malloc(sizeof(foreign_request_state_t));
   if (memory_block_is_empty(memory))
     return new_system_call_failed_condition("malloc");
   foreign_request_state_t *state = (foreign_request_state_t*) memory.memory;
   unary_callback_t *callback = unary_callback_new_1(on_foreign_request_success, p2o(state));
   foreign_request_state_init(state, callback, get_process_airlock(process),
-      promise, pton_null());
+      s_promise, pton_null());
   native_request_t *request = &state->request;
   opaque_promise_t *impl_promise = opaque_promise_empty();
   pton_arena_t *arena = pton_new_arena();
@@ -202,6 +203,7 @@ void foreign_request_state_destroy(foreign_request_state_t *state) {
   callback_destroy(state->callback);
   opaque_promise_destroy(state->request.impl_promise);
   pton_dispose_arena(state->request.arena);
+  safe_value_destroy(state->airlock->runtime, state->s_surface_promise);
   allocator_default_free(new_memory_block(state, sizeof(foreign_request_state_t)));
 }
 
@@ -288,7 +290,7 @@ static value_t foreign_service_call_with_args(builtin_arguments_t *args) {
   TRY(foreign_service_clone_args(state->request.arena, reified, &state->request.args));
   get_process_airlock(process)->open_foreign_request_count++;
   unary_callback_call(impl, p2o(&state->request));
-  return state->surface_promise;
+  return deref(state->s_surface_promise);
 }
 
 value_t add_foreign_service_builtin_implementations(runtime_t *runtime,

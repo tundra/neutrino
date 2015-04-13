@@ -81,7 +81,6 @@ static bool is_promise_state_resolved(value_t self) {
 
 // Extra state maintained around a foreign request.
 struct foreign_request_state_t {
-  // TODO: make gc safe.
   // The part of the data that will be passed to the native impl.
   native_request_t request;
   // The callback that will be called; kept around so we can destroy it later.
@@ -90,7 +89,7 @@ struct foreign_request_state_t {
   process_airlock_t *airlock;
   // The promise value that will be delivered to the surface language to
   // represent the result of this request.
-  value_t surface_promise;
+  safe_value_t s_surface_promise;
   // This is where the result will be held between the request completing and
   // the process delivering it to the promise.
   pton_variant_t result;
@@ -98,7 +97,7 @@ struct foreign_request_state_t {
 
 void foreign_request_state_init(foreign_request_state_t *state,
     unary_callback_t *callback, process_airlock_t *airlock,
-    value_t surface_promise, pton_variant_t result);
+    safe_value_t s_surface_promise, pton_variant_t result);
 
 // Create an initialize a new native request state. Note that the arguments
 // will not have been set, this only initializes the rest.
