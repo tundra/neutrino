@@ -420,6 +420,8 @@ static value_t plankton_deserialize_data_ptr(runtime_t *runtime,
   } YRT
 }
 
+// If a gc happens during deserialization we fix up the blob such that it can
+// always be accessed directly and you'll get the heap blob's data.
 static opaque_t on_gc_during_deserialize(opaque_t opaque_s_blob,
     opaque_t opaque_data, opaque_t opaque_runtime) {
   safe_value_t *s_blob = (safe_value_t*) o2p(opaque_s_blob);
