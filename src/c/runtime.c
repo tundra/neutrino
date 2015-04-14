@@ -166,6 +166,141 @@ static value_t apply_custom_plugins(runtime_t *runtime,
   return result;
 }
 
+// Information about a family passed when iterating over the types.
+typedef struct {
+  heap_object_family_t family;
+  family_behavior_t *behavior;
+  root_key_t root_key;
+  const char *camel_name;
+} family_info_t;
+
+typedef value_t (family_callback_t)(family_info_t *info, void *data);
+
+// Invokes the given callback for each modal species. The key given is the key
+// for the fluid species.
+static value_t roots_for_each_modal_species(family_callback_t callback, void *data) {
+#define __CALL_CALLBACK__(Family, family) do {                                 \
+  family_info_t info = {of##Family, &k##Family##Behavior, rk_fluid_##family##_species, #Family}; \
+  TRY(callback(&info, data));                                                  \
+} while (false)
+#define __GEN_FAMILY_CLAUSE__(Family, family, MD, SR, MINOR, N)                \
+    MD(__CALL_CALLBACK__(Family, family);,)
+  ENUM_HEAP_OBJECT_FAMILIES(__GEN_FAMILY_CLAUSE__)
+#undef __GEN_FAMILY_CLAUSE__
+#undef __CALL_CALLBACK__
+  return success();
+}
+
+// Invokes the given callback for each compact species. The key given is the key
+// for the family's species.
+static value_t roots_for_each_compact_species(family_callback_t callback, void *data) {
+#define __CALL_CALLBACK__(Family, family) do {                                 \
+  family_info_t info = {of##Family, &k##Family##Behavior, rk_##family##_species, #Family}; \
+  TRY(callback(&info, data));                                                  \
+} while (false)
+#define __GEN_FAMILY_CLAUSE__(Family, family, MD, SR, MINOR, N)                \
+    MD(,__CALL_CALLBACK__(Family, family);)
+  ENUM_HEAP_OBJECT_FAMILIES(__GEN_FAMILY_CLAUSE__)
+#undef __GEN_FAMILY_CLAUSE__
+#undef __CALL_CALLBACK__
+  return success();
+}
+
+// Invokes the given callback for each surface type. The key given is the key
+// for the family's type.
+static value_t roots_for_each_family_type(family_callback_t callback, void *data) {
+#define __CALL_CALLBACK__(Family, family) do {                                 \
+  family_info_t info = {of##Family, &k##Family##Behavior, rk_##family##_type, #Family}; \
+  TRY(callback(&info, data));                                                  \
+} while (false)
+#define __GEN_FAMILY_CLAUSE__(Family, family, MD, SR, MINOR, N)                \
+  SR(__CALL_CALLBACK__(Family, family);,)
+  ENUM_HEAP_OBJECT_FAMILIES(__GEN_FAMILY_CLAUSE__)
+#undef __GEN_FAMILY_CLAUSE__
+#undef __CALL_CALLBACK__
+  return success();
+}
+
+// Information about a phylum passed when iterating over the types.
+typedef struct {
+  custom_tagged_phylum_t phylum;
+  phylum_behavior_t *behavior;
+  root_key_t root_key;
+  const char *camel_name;
+} phylum_info_t;
+
+typedef value_t (phylum_callback_t)(phylum_info_t *info, void *data);
+
+// Invokes the given callback for each surface type. The key given is the key
+// for the family's type.
+static value_t roots_for_each_phylum_type(phylum_callback_t callback, void *data) {
+#define __CALL_CALLBACK__(Phylum, phylum) do {                                 \
+  phylum_info_t info = {tp##Phylum, &k##Phylum##PhylumBehavior, rk_##phylum##_type, #Phylum}; \
+  TRY(callback(&info, data));                                                  \
+} while (false)
+#define __GEN_PHYLUM_CLAUSE__(Family, family, SR, MINOR, N)                    \
+  SR(__CALL_CALLBACK__(Family, family);,)
+  ENUM_CUSTOM_TAGGED_PHYLUMS(__GEN_PHYLUM_CLAUSE__)
+#undef __GEN_PHYLUM_CLAUSE__
+#undef __CALL_CALLBACK__
+  return success();
+}
+
+// Given a root key for a modal species, and a desired mode, returns the root
+// key for the species the same species in the desired mode.
+static root_key_t get_modal_key_from_fluid(root_key_t fluid_key,
+    value_mode_t mode) {
+  return (root_key_t) (fluid_key + mode - vmFluid);
+}
+
+// Data passed into the species constructor callbacks.
+typedef struct {
+  value_t roots;
+  runtime_t *runtime;
+} init_roots_data_t;
+
+static value_t roots_create_modal_species_callback(family_info_t *info, void *raw_data) {
+  init_roots_data_t *data = (init_roots_data_t*) raw_data;
+  root_key_t fluid_key = info->root_key;
+  TRY_SET(*access_roots_entry_at(data->roots, fluid_key),
+      new_heap_modal_species(data->runtime, info->behavior, vmFluid, fluid_key));
+  root_key_t mutable_key = get_modal_key_from_fluid(fluid_key, vmMutable);
+  TRY_SET(*access_roots_entry_at(data->roots, mutable_key),
+      new_heap_modal_species(data->runtime, info->behavior, vmMutable, fluid_key));
+  root_key_t frozen_key = get_modal_key_from_fluid(fluid_key, vmFrozen);
+  TRY_SET(*access_roots_entry_at(data->roots, frozen_key),
+      new_heap_modal_species(data->runtime, info->behavior, vmFrozen, fluid_key));
+  root_key_t deep_frozen_key = get_modal_key_from_fluid(fluid_key, vmDeepFrozen);
+  TRY_SET(*access_roots_entry_at(data->roots, deep_frozen_key),
+      new_heap_modal_species(data->runtime, info->behavior, vmDeepFrozen, fluid_key));
+  return success();
+}
+
+static value_t roots_create_compact_species_callback(family_info_t *info, void *raw_data) {
+  init_roots_data_t *data = (init_roots_data_t*) raw_data;
+  TRY_SET(*access_roots_entry_at(data->roots, info->root_key),
+      new_heap_compact_species(data->runtime, info->behavior));
+  return success();
+}
+
+static value_t roots_create_type(runtime_t *runtime, value_t roots,
+    const char *camel_name, root_key_t type_key) {
+  value_t display_name = new_heap_utf8(runtime, new_c_string(camel_name));
+  TRY_SET(*access_roots_entry_at(roots, type_key), new_heap_type(runtime,
+      afFreeze, display_name));
+  return success();
+}
+
+static value_t roots_create_family_type_callback(family_info_t *info, void *raw_data) {
+  init_roots_data_t *data = (init_roots_data_t*) raw_data;
+  return roots_create_type(data->runtime, data->roots, info->camel_name, info->root_key);
+}
+
+static value_t roots_create_phylum_type_callback(phylum_info_t *info, void *raw_data) {
+  init_roots_data_t *data = (init_roots_data_t*) raw_data;
+  return roots_create_type(data->runtime, data->roots, info->camel_name, info->root_key);
+}
+
 value_t roots_init(value_t roots, const extended_runtime_config_t *config,
     runtime_t *runtime) {
   // The modal meta-roots are tricky because the species relationship between
@@ -191,25 +326,9 @@ value_t roots_init(value_t roots, const extended_runtime_config_t *config,
   RAW_ROOT(roots, frozen_species_species) = frozen_meta;
   RAW_ROOT(roots, deep_frozen_species_species) = deep_frozen_meta;
 
-  // Generate initialization for the other compact species.
-#define __CREATE_COMPACT_SPECIES__(Family, family) \
-  TRY_SET(RAW_ROOT(roots, family##_species), new_heap_compact_species(         \
-      runtime, &k##Family##Behavior));
-#define __CREATE_MODAL_SPECIES__(Family, family)                               \
-  TRY_SET(RAW_ROOT(roots, fluid_##family##_species),new_heap_modal_species(    \
-      runtime, &k##Family##Behavior, vmFluid, rk_fluid_##family##_species));   \
-  TRY_SET(RAW_ROOT(roots, mutable_##family##_species), new_heap_modal_species( \
-      runtime, &k##Family##Behavior, vmMutable, rk_fluid_##family##_species)); \
-  TRY_SET(RAW_ROOT(roots, frozen_##family##_species), new_heap_modal_species(  \
-      runtime, &k##Family##Behavior, vmFrozen, rk_fluid_##family##_species));  \
-  TRY_SET(RAW_ROOT(roots, deep_frozen_##family##_species), new_heap_modal_species(\
-      runtime, &k##Family##Behavior, vmDeepFrozen, rk_fluid_##family##_species));
-#define __CREATE_OTHER_SPECIES__(Family, family, MD, SR, MINOR, N)             \
-  MD(__CREATE_MODAL_SPECIES__(Family, family),__CREATE_COMPACT_SPECIES__(Family, family))
-  ENUM_OTHER_HEAP_OBJECT_FAMILIES(__CREATE_OTHER_SPECIES__)
-#undef __CREATE_OTHER_SPECIES__
-#undef __CREATE_COMPACT_SPECIES__
-#undef __CREATE_MODAL_SPECIES__
+  init_roots_data_t data = {roots, runtime};
+  TRY(roots_for_each_modal_species(roots_create_modal_species_callback, &data));
+  TRY(roots_for_each_compact_species(roots_create_compact_species_callback, &data));
 
   // At this point we'll have created the root species so we can set its header.
   CHECK_EQ("roots already initialized", vdInteger,
@@ -280,17 +399,8 @@ value_t roots_init(value_t roots, const extended_runtime_config_t *config,
   TRY_SET(RAW_ROOT(roots, transport_key_array),
       new_heap_array_with_contents(runtime, afFreeze, new_value_array(&RAW_ROOT(roots, transport_key), 1)));
 
-  // Generate initialization for the per-family types.
-#define __CREATE_TYPE__(Name, name) do {                                       \
-  TRY_DEF(__display_name__, new_heap_utf8(runtime, new_c_string(#Name)));      \
-  TRY_SET(RAW_ROOT(roots, name##_type), new_heap_type(runtime, afFreeze,       \
-      __display_name__));                                                      \
-} while (false);
-  __CREATE_TYPE__(Integer, integer);
-#define __CREATE_FAMILY_TYPE_OPT__(Family, family, MD, SR, MINOR, N)           \
-  SR(__CREATE_TYPE__(Family, family),)
-  ENUM_HEAP_OBJECT_FAMILIES(__CREATE_FAMILY_TYPE_OPT__)
-#undef __CREATE_FAMILY_TYPE_OPT__
+  TRY(roots_for_each_family_type(roots_create_family_type_callback, &data));
+  TRY(roots_create_type(runtime, roots, "Integer", rk_integer_type));
 
   TRY_DEF(builtin_methodspace, new_heap_methodspace(runtime, nothing()));
   RAW_ROOT(roots, builtin_methodspace) = builtin_methodspace;
@@ -304,13 +414,7 @@ value_t roots_init(value_t roots, const extended_runtime_config_t *config,
 
   TRY(ensure_frozen(runtime, builtin_methodspace));
 
-  // Generate initialization for the per-phylum types.
-#define __CREATE_PHYLUM_TYPE__(Phylum, phylum, SR, MINOR, N)                   \
-  SR(__CREATE_TYPE__(Phylum, phylum),)
-  ENUM_CUSTOM_TAGGED_PHYLUMS(__CREATE_PHYLUM_TYPE__)
-#undef __CREATE_PHYLUM_TYPE__
-
-#undef __CREATE_TYPE__
+  TRY(roots_for_each_phylum_type(roots_create_phylum_type_callback, &data));
 
   TRY_DEF(plankton_factories, new_heap_id_hash_map(runtime, 16));
   init_plankton_core_factories(plankton_factories, runtime);
@@ -328,55 +432,67 @@ COND_CHECK_TRUE("validation", ccValidationFailed, EXPR)
 #define VALIDATE_CHECK_EQ(A, B)                                                \
 COND_CHECK_EQ("validation", ccValidationFailed, A, B)
 
+// Checks whether the argument is within the specified family, otherwise
+// signals a validation failure.
+#define VALIDATE_HEAP_OBJECT(ofFamily, value) do {                             \
+  VALIDATE_CHECK_TRUE(in_family(ofFamily, (value)));                           \
+  TRY(heap_object_validate(value));                                            \
+} while (false)
+
+// Checks that the given value is a species with the specified instance
+// family.
+#define VALIDATE_SPECIES(ofFamily, value) do {                                 \
+  VALIDATE_HEAP_OBJECT(ofSpecies, value);                                      \
+  VALIDATE_CHECK_EQ(get_species_instance_family(value), ofFamily);             \
+  TRY(heap_object_validate(value));                                            \
+} while (false)
+
+static value_t roots_validate_modal_species(value_t roots,
+    heap_object_family_t family, value_mode_t mode, root_key_t key) {
+  value_t species = get_roots_entry_at(roots, key);
+  VALIDATE(get_species_division(species) == sdModal);
+  VALIDATE(get_modal_species_mode(species) == mode);
+  VALIDATE_SPECIES(family, species);
+  return success();
+}
+
+// Data passed through when validating species.
+typedef struct {
+  value_t roots;
+} validate_species_data_t;
+
+static value_t roots_validate_modal_species_callback(family_info_t *info, void *data) {
+  value_t roots = ((validate_species_data_t*) data)->roots;
+  root_key_t fluid_key = info->root_key;
+  TRY(roots_validate_modal_species(roots, info->family, vmFluid, fluid_key));
+  root_key_t mutable_key = get_modal_key_from_fluid(fluid_key, vmMutable);
+  TRY(roots_validate_modal_species(roots, info->family, vmMutable, mutable_key));
+  root_key_t frozen_key = get_modal_key_from_fluid(fluid_key, vmFrozen);
+  TRY(roots_validate_modal_species(roots, info->family, vmFrozen, frozen_key));
+  root_key_t deep_frozen_key = get_modal_key_from_fluid(fluid_key, vmDeepFrozen);
+  TRY(roots_validate_modal_species(roots, info->family, vmDeepFrozen, deep_frozen_key));
+  return success();
+}
+
+static value_t roots_validate_surface_family_callback(family_info_t *info, void *data) {
+  value_t roots = ((validate_species_data_t*) data)->roots;
+  VALIDATE_HEAP_OBJECT(ofType, get_roots_entry_at(roots, info->root_key));
+  return success();
+}
+
+static value_t roots_validate_surface_phylum_callback(phylum_info_t *info, void *data) {
+  value_t roots = ((validate_species_data_t*) data)->roots;
+  VALIDATE_HEAP_OBJECT(ofType, get_roots_entry_at(roots, info->root_key));
+  return success();
+}
+
+// This function is split up into multiple parts to make compilation faster,
+// it really strains the compilers otherwise.
 value_t roots_validate(value_t roots) {
-  // Checks whether the argument is within the specified family, otherwise
-  // signals a validation failure.
-#define VALIDATE_HEAP_OBJECT(ofFamily, value) do {                           \
-    VALIDATE_CHECK_TRUE(in_family(ofFamily, (value)));                         \
-    TRY(heap_object_validate(value));                                          \
-  } while (false)
-
-  // Checks that the given value is a species with the specified instance
-  // family.
-#define VALIDATE_SPECIES(ofFamily, value) do {                               \
-    VALIDATE_HEAP_OBJECT(ofSpecies, value);                                    \
-    VALIDATE_CHECK_EQ(get_species_instance_family(value), ofFamily);           \
-    TRY(heap_object_validate(value));                                          \
-  } while (false)
-
-  // Checks all the species that belong to the given modal family.
-#define VALIDATE_ALL_MODAL_SPECIES(ofFamily, family)                                              \
-    VALIDATE_MODAL_SPECIES(ofFamily, vmFluid, RAW_ROOT(roots, fluid_##family##_species));           \
-    VALIDATE_MODAL_SPECIES(ofFamily, vmMutable, RAW_ROOT(roots, mutable_##family##_species));       \
-    VALIDATE_MODAL_SPECIES(ofFamily, vmFrozen, RAW_ROOT(roots, frozen_##family##_species));         \
-    VALIDATE_MODAL_SPECIES(ofFamily, vmDeepFrozen, RAW_ROOT(roots, deep_frozen_##family##_species))
-
-  // Checks that the given value is a modal species for the given family and in
-  // the given mode.
-#define VALIDATE_MODAL_SPECIES(ofFamily, vmMode, value) do {                 \
-    VALIDATE(get_species_division(value) == sdModal);                          \
-    VALIDATE(get_modal_species_mode(value) == vmMode);                         \
-    VALIDATE_SPECIES(ofFamily, value);                                         \
-  } while (false)
-
-  // Generate validation for species.
-#define __VALIDATE_PER_FAMILY_FIELDS__(Family, family, MD, SR, MINOR, N)       \
-  MD(                                                                          \
-    VALIDATE_ALL_MODAL_SPECIES(of##Family, family),                            \
-    VALIDATE_SPECIES(of##Family, RAW_ROOT(roots, family##_species)));          \
-  SR(                                                                          \
-    VALIDATE_HEAP_OBJECT(ofType, RAW_ROOT(roots, family##_type));,             \
-    )
-  ENUM_HEAP_OBJECT_FAMILIES(__VALIDATE_PER_FAMILY_FIELDS__)
-#undef __VALIDATE_PER_FAMILY_FIELDS__
-
-  // Generate validation for phylums.
-#define __VALIDATE_PER_PHYLUM_FIELDS__(Phylum, phylum, SR, MINOR, N)           \
-  SR(                                                                          \
-    VALIDATE_HEAP_OBJECT(ofType, RAW_ROOT(roots, phylum##_type));,             \
-    )
-  ENUM_CUSTOM_TAGGED_PHYLUMS(__VALIDATE_PER_PHYLUM_FIELDS__)
-#undef __VALIDATE_PER_PHYLUM_FIELDS__
+  validate_species_data_t data = {roots};
+  TRY(roots_for_each_modal_species(roots_validate_modal_species_callback, &data));
+  TRY(roots_for_each_family_type(roots_validate_surface_family_callback, &data));
+  TRY(roots_for_each_phylum_type(roots_validate_surface_phylum_callback, &data));
 
   // Validate singletons manually.
   VALIDATE_HEAP_OBJECT(ofArray, RAW_ROOT(roots, empty_array));
@@ -1007,12 +1123,11 @@ void runtime_complete_retry_after_heap_exhausted(runtime_t *runtime, value_t rec
   runtime_toggle_fuzzing(runtime, get_boolean_value(recall));
 }
 
-
 value_t get_modal_species_sibling_with_mode(runtime_t *runtime, value_t species,
     value_mode_t mode) {
   CHECK_DIVISION(sdModal, species);
   root_key_t base_root = (root_key_t) get_modal_species_base_root(species);
-  root_key_t mode_root = (root_key_t) (base_root + mode - vmFluid);
+  root_key_t mode_root = get_modal_key_from_fluid(base_root, mode);
   value_t result = get_roots_entry_at(runtime->roots, mode_root);
   CHECK_EQ("incorrect sibling mode", mode, get_modal_species_mode(result));
   CHECK_EQ("incorrect sibling family", get_species_instance_family(species),
