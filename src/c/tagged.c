@@ -59,12 +59,6 @@ void null_print_on(value_t value, print_on_context_t *context) {
   string_buffer_printf(context->buf, "null");
 }
 
-value_t null_to_plankton(pton_arena_t *arena, value_t self,
-    pton_variant_t *pton_out) {
-  *pton_out = pton_null();
-  return success();
-}
-
 
 // --- B o o l e a n ---
 
@@ -79,12 +73,6 @@ value_t boolean_ordering_compare(value_t a, value_t b) {
   CHECK_PHYLUM(tpBoolean, a);
   CHECK_PHYLUM(tpBoolean, b);
   return compare_signed_integers(get_boolean_value(a), get_boolean_value(b));
-}
-
-value_t boolean_to_plankton(pton_arena_t *arena, value_t self,
-    pton_variant_t *pton_out) {
-  *pton_out = pton_bool(get_boolean_value(self));
-  return success();
 }
 
 

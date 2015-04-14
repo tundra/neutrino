@@ -485,48 +485,6 @@ void value_print_inner_on(value_t value, print_on_context_t *context,
 }
 
 
-/// ## Plankton
-
-static value_t heap_object_to_plankton(pton_arena_t *arena, value_t self,
-    pton_variant_t *pton_out) {
-  CHECK_DOMAIN(vdHeapObject, self);
-  family_behavior_t *behavior = get_heap_object_family_behavior(self);
-  if (behavior->to_plankton == NULL) {
-    WARN("Can't convert %s to plankton", get_heap_object_family_name(behavior->family));
-    return new_invalid_input_condition();
-  } else {
-    return (behavior->to_plankton)(arena, self, pton_out);
-  }
-}
-
-static value_t custom_tagged_to_plankton(pton_arena_t *arena, value_t self,
-    pton_variant_t *pton_out) {
-  CHECK_DOMAIN(vdCustomTagged, self);
-  phylum_behavior_t *behavior = get_custom_tagged_behavior(self);
-  if (behavior->to_plankton == NULL) {
-    WARN("Can't convert %s to plankton", get_custom_tagged_phylum_name(behavior->phylum));
-    return new_invalid_input_condition();
-  } else {
-    return (behavior->to_plankton)(arena, self, pton_out);
-  }
-}
-
-value_t value_to_plankton(pton_arena_t *arena, value_t self,
-    pton_variant_t *pton_out) {
-  switch (get_value_domain(self)) {
-    case vdInteger:
-      *pton_out = pton_integer(get_integer_value(self));
-      return success();
-    case vdHeapObject:
-      return heap_object_to_plankton(arena, self, pton_out);
-    case vdCustomTagged:
-      return custom_tagged_to_plankton(arena, self, pton_out);
-    default:
-      return new_invalid_input_condition();
-  }
-}
-
-
 // --- N e w   i n s t a n c e ---
 
 static value_t new_instance_of_seed(runtime_t *runtime, value_t type) {
@@ -745,9 +703,6 @@ family_behavior_t k##Family##Behavior = {                                      \
   mfFl MINOR (                                                                 \
     finalize_##family,                                                         \
     NULL),                                                                     \
-  mfPo MINOR (                                                                 \
-    family##_to_plankton,                                                      \
-    NULL),                                                                     \
   mfSo MINOR (                                                                 \
     serialize_##family,                                                        \
     NULL)                                                                      \
@@ -780,9 +735,6 @@ phylum_behavior_t k##Phylum##PhylumBehavior = {                                \
   SR(                                                                          \
     &get_##phylum##_primary_type,                                              \
     &get_internal_object_type),                                                \
-  mpPo MINOR (                                                                 \
-    phylum##_to_plankton,                                                      \
-    NULL),                                                                     \
 };
 ENUM_CUSTOM_TAGGED_PHYLUMS(DEFINE_TAGGED_PHYLUM_BEHAVIOR)
 #undef DEFINE_TAGGED_PHYLUM_BEHAVIOR

@@ -388,14 +388,6 @@ value_t utf8_validate(value_t value) {
   return success();
 }
 
-value_t utf8_to_plankton(pton_arena_t *arena, value_t self,
-    pton_variant_t *pton_out) {
-  CHECK_FAMILY(ofUtf8, self);
-  utf8_t contents = get_utf8_contents(self);
-  *pton_out = pton_new_string(arena, contents.chars, (uint32_t) contents.size);
-  return success();
-}
-
 void get_utf8_layout(value_t value, heap_object_layout_t *layout) {
   // Strings have no value fields.
   size_t size = calc_utf8_size((size_t) get_utf8_length(value));
@@ -746,20 +738,6 @@ void array_print_on(value_t value, print_on_context_t *context) {
     }
     string_buffer_printf(context->buf, "]");
   }
-}
-
-value_t array_to_plankton(pton_arena_t *arena, value_t self,
-    pton_variant_t *pton_out) {
-  CHECK_FAMILY(ofArray, self);
-  uint32_t length = (uint32_t) get_array_length(self);
-  pton_variant_t result = pton_new_array_with_capacity(arena, length);
-  for (uint32_t i = 0; i < length; i++) {
-    pton_variant_t elm = pton_null();
-    TRY(value_to_plankton(arena, get_array_at(self, i), &elm));
-    pton_array_add(result, elm);
-  }
-  *pton_out = result;
-  return success();
 }
 
 // Compares two values pointed to by two void pointers.
