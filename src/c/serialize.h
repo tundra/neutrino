@@ -5,6 +5,7 @@
 #ifndef _SERIALIZE
 #define _SERIALIZE
 
+#include "plankton.h"
 #include "value.h"
 
 // Callback that can be used to resolve environment references.
@@ -46,7 +47,13 @@ value_t value_mapping_apply(value_mapping_t *mapping, value_t value,
 // Serializes an object graph into a plankton encoded binary blob. The resolver
 // is used to decide which objects to fetch from the environment and which to
 // serialize.
-value_t plankton_serialize(runtime_t *runtime, value_t data);
+value_t plankton_serialize_to_blob(runtime_t *runtime, value_t data);
+
+// Works like plankton_serialize_to_blob but serializes to raw data, not a heap
+// object. Stores the assembler used to create the blob in the given out
+// parameter.
+value_t plankton_serialize_to_data(runtime_t *runtime, value_t data,
+    blob_t *blob_out, pton_assembler_t **assm_out);
 
 // Plankton deserialize a binary blob containing a serialized object graph. The
 // access mapping is used to acquire values from the environment. If the

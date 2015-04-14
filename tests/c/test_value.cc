@@ -1015,7 +1015,7 @@ TEST(value, c_object) {
   // Try reading the data back out again.
   blob_t blob0 = get_mutable_c_object_data(o0);
   ASSERT_EQ(sizeof(Point), blob0.size);
-  Point *back0 = static_cast<Point*>(blob0.data);
+  Point *back0 = static_cast<Point*>(blob0.memory);
   ASSERT_EQ(10, back0->x);
   ASSERT_EQ(43, back0->y);
   // Try reading the values back out too.
@@ -1035,7 +1035,7 @@ TEST(value, c_object) {
       new_value_array(NULL, 0));
   blob_t blob1 = get_mutable_c_object_data(o1);
   ASSERT_EQ(sizeof(Point), blob1.size);
-  Point *back1 = static_cast<Point*>(blob1.data);
+  Point *back1 = static_cast<Point*>(blob1.memory);
   ASSERT_EQ(0, back1->x);
   ASSERT_EQ(0, back1->y);
   value_array_t values1 = get_mutable_c_object_values(o1);

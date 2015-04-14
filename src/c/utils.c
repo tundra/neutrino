@@ -9,11 +9,15 @@
 
 #include <stdarg.h>
 
-blob_t new_blob(void *data, size_t size) {
+blob_t new_blob(void *memory, size_t size) {
   blob_t result;
-  result.data = data;
+  result.memory = memory;
   result.size = size;
   return result;
+}
+
+blob_t blob_empty() {
+  return new_blob(NULL, 0);
 }
 
 size_t blob_byte_length(blob_t blob) {
@@ -27,22 +31,22 @@ size_t blob_short_length(blob_t blob) {
 
 byte_t blob_byte_at(blob_t blob, size_t index) {
   CHECK_REL("blob index out of bounds", index, <, blob_byte_length(blob));
-  return ((byte_t*) blob.data)[index];
+  return ((byte_t*) blob.memory)[index];
 }
 
 short_t blob_short_at(blob_t blob, size_t index) {
   CHECK_REL("blob index out of bounds", index, <, blob_short_length(blob));
-  return ((short_t*) blob.data)[index];
+  return ((short_t*) blob.memory)[index];
 }
 
 void blob_fill(blob_t blob, byte_t value) {
-  memset(blob.data, value, blob_byte_length(blob));
+  memset(blob.memory, value, blob_byte_length(blob));
 }
 
 void blob_copy_to(blob_t src, blob_t dest) {
   CHECK_REL("blob copy destination too small", blob_byte_length(dest), >=,
       blob_byte_length(src));
-  memcpy(dest.data, src.data, blob_byte_length(src));
+  memcpy(dest.memory, src.memory, blob_byte_length(src));
 }
 
 

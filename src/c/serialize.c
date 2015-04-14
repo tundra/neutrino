@@ -42,7 +42,7 @@ byte_t byte_stream_read(byte_stream_t *stream) {
 // --- S e r i a l i z e ---
 
 // Collection of state used when serializing data.
-typedef struct {
+struct serialize_state_t {
   // The plankton assembler.
   pton_assembler_t *assm;
   // Map from objects we've seen to their index.
@@ -51,7 +51,7 @@ typedef struct {
   size_t object_offset;
   // The runtime to use for heap allocation.
   runtime_t *runtime;
-} serialize_state_t;
+};
 
 object_factory_t new_object_factory(new_empty_object_t *new_empty_object,
     set_object_fields_t *set_object_fields, void *data) {
@@ -83,7 +83,7 @@ static value_t integer_serialize(value_t value, pton_assembler_t *assm) {
   return success();
 }
 
-static value_t array_serialize(value_t value, serialize_state_t *state) {
+value_t serialize_array(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofArray, value);
   int64_t length = get_array_length(value);
   pton_assembler_begin_array(state->assm, (uint32_t) length);
@@ -108,7 +108,7 @@ static value_t map_contents_serialize(uint32_t entry_count, id_hash_map_iter_t *
   return success();
 }
 
-static value_t map_serialize(value_t value, serialize_state_t *state) {
+value_t serialize_id_hash_map(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofIdHashMap, value);
   uint32_t entry_count = (uint32_t) get_id_hash_map_size(value);
   pton_assembler_begin_map(state->assm, entry_count);
@@ -117,11 +117,53 @@ static value_t map_serialize(value_t value, serialize_state_t *state) {
   return map_contents_serialize(entry_count, &iter, state);
 }
 
-static value_t string_serialize(value_t value, serialize_state_t *state) {
+static bool skip_reified_tag(value_t tag) {
+  return in_family(ofKey, tag);
+}
+
+value_t serialize_reified_arguments(value_t value, serialize_state_t *state) {
+  CHECK_FAMILY(ofReifiedArguments, value);
+  value_t values = get_reified_arguments_values(value);
+  value_t tags = get_reified_arguments_tags(value);
+  uint32_t raw_argc = (uint32_t) get_call_tags_entry_count(tags);
+  uint32_t argc = 0;
+  // First count how may tags are not going to be skipped.
+  for (uint32_t i = 0; i < raw_argc; i++) {
+    value_t tag = get_call_tags_tag_at(tags, i);
+    if (!skip_reified_tag(tag))
+      argc++;
+  }
+  // Then serialize those tags.
+  pton_assembler_begin_map(state->assm, argc);
+  for (uint32_t i = 0; i < raw_argc; i++) {
+    value_t tag = get_call_tags_tag_at(tags, i);
+    if (skip_reified_tag(tag))
+      continue;
+    int64_t offset = get_call_tags_offset_at(tags, i);
+    value_t value = get_array_at(values, offset);
+    TRY(value_serialize(tag, state));
+    TRY(value_serialize(value, state));
+  }
+  return success();
+}
+
+value_t serialize_utf8(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofUtf8, value);
   utf8_t contents = get_utf8_contents(value);
   pton_assembler_emit_default_string(state->assm, contents.chars,
       (uint32_t) string_size(contents));
+  return success();
+}
+
+value_t serialize_operation(value_t value, serialize_state_t *state) {
+  CHECK_FAMILY(ofOperation, value);
+  pton_assembler_begin_seed(state->assm, 1, 2);
+  pton_assembler_emit_default_string(state->assm, kOperationHeader,
+      (uint32_t) strlen(kOperationHeader));
+  pton_assembler_emit_default_string(state->assm, "type", 4);
+  pton_assembler_emit_int64(state->assm, get_operation_type(value));
+  pton_assembler_emit_default_string(state->assm, "value", 5);
+  value_serialize(get_operation_value(value), state);
   return success();
 }
 
@@ -131,7 +173,7 @@ static void register_serialized_object(value_t value, serialize_state_t *state) 
   set_id_hash_map_at(state->runtime, state->ref_map, value, new_integer(offset));
 }
 
-static value_t instance_serialize(value_t value, serialize_state_t *state) {
+value_t serialize_instance(value_t value, serialize_state_t *state) {
   CHECK_FAMILY(ofInstance, value);
   value_t ref = get_id_hash_map_at(state->ref_map, value);
   if (in_condition_cause(ccNotFound, ref)) {
@@ -155,19 +197,13 @@ static value_t instance_serialize(value_t value, serialize_state_t *state) {
   }
 }
 
-static value_t object_serialize(value_t value, serialize_state_t *state) {
-  CHECK_DOMAIN(vdHeapObject, value);
-  switch (get_heap_object_family(value)) {
-    case ofArray:
-      return array_serialize(value, state);
-    case ofIdHashMap:
-      return map_serialize(value, state);
-    case ofUtf8:
-      return string_serialize(value, state);
-    case ofInstance:
-      return instance_serialize(value, state);
-    default:
-      return new_invalid_input_condition();
+static value_t heap_object_serialize(value_t self, serialize_state_t *state) {
+  CHECK_DOMAIN(vdHeapObject, self);
+  family_behavior_t *behavior = get_heap_object_family_behavior(self);
+  if (behavior->serialize == NULL) {
+    return new_family_not_serializable_condition(behavior->family);
+  } else {
+    return (behavior->serialize)(self, state);
   }
 }
 
@@ -191,7 +227,7 @@ static value_t value_serialize(value_t data, serialize_state_t *state) {
     case vdInteger:
       return integer_serialize(data, state->assm);
     case vdHeapObject:
-      return object_serialize(data, state);
+      return heap_object_serialize(data, state);
     case vdCustomTagged:
       return custom_tagged_serialize(data, state);
     default:
@@ -201,20 +237,35 @@ static value_t value_serialize(value_t data, serialize_state_t *state) {
   }
 }
 
-value_t plankton_serialize(runtime_t *runtime, value_t data) {
-  pton_assembler_t *assm = pton_new_assembler();
+value_t plankton_serialize_to_blob(runtime_t *runtime, value_t data) {
   blob_t blob;
+  pton_assembler_t *assm = NULL;
+  TRY_FINALLY {
+    E_TRY(plankton_serialize_to_data(runtime, data, &blob, &assm));
+    E_TRY_DEF(result, new_heap_blob_with_data(runtime, blob));
+    E_RETURN(result);
+  } FINALLY {
+    if (assm != NULL)
+      pton_dispose_assembler(assm);
+  } YRT
+}
+
+value_t plankton_serialize_to_data(runtime_t *runtime, value_t data,
+    blob_t *blob_out, pton_assembler_t **assm_out) {
+  pton_assembler_t *assm = pton_new_assembler();
   memory_block_t code;
   TRY_FINALLY {
     serialize_state_t state;
     E_TRY(serialize_state_init(&state, runtime, assm));
     E_TRY(value_serialize(data, &state));
     code = pton_assembler_peek_code(assm);
-    blob = new_blob(code.memory, code.size);
-    E_TRY_DEF(result, new_heap_blob_with_data(runtime, blob));
-    E_RETURN(result);
+    *blob_out = new_blob(code.memory, code.size);
+    *assm_out = assm;
+    assm = NULL;
+    E_RETURN(success());
   } FINALLY {
-    pton_dispose_assembler(assm);
+    if (assm != NULL)
+      pton_dispose_assembler(assm);
   } YRT
 }
 
@@ -370,7 +421,7 @@ static value_t value_deserialize(deserialize_state_t *state) {
   blob_t blob = *state->data;
   size_t cursor = state->cursor;
   pton_instr_t instr;
-  uint8_t *code = (uint8_t*) blob.data;
+  uint8_t *code = (uint8_t*) blob.memory;
   if (!pton_decode_next_instruction(code + cursor, blob.size - cursor, &instr))
     return new_invalid_input_condition();
   state->cursor += instr.size;

@@ -86,7 +86,7 @@ value_t new_native_remote(runtime_t *runtime, service_descriptor_t *impl) {
 }
 
 void native_request_init(native_request_t *req, runtime_t *runtime,
-    opaque_promise_t *impl_promise, pton_arena_t *arena, pton_variant_t args) {
+    opaque_promise_t *impl_promise, pton_arena_t *arena, blob_t args) {
   req->runtime = runtime;
   req->impl_promise = impl_promise;
   req->arena = arena;

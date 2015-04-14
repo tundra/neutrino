@@ -392,6 +392,16 @@ static void condition_print_on(value_t value, string_buffer_t *buf) {
       }
       break;
     }
+    case ccNotSerializable: {
+      value_type_details_codec_t codec;
+      codec.encoded = details;
+      value_domain_t domain = codec.decoded.domain;
+      string_buffer_printf(buf, "%s", get_value_domain_name(domain));
+      heap_object_family_t family = codec.decoded.family;
+      if (family != __ofUnknown__)
+        string_buffer_printf(buf, "/%s", get_heap_object_family_name(family));
+      break;
+    }
     case ccSignal: {
       string_buffer_printf(buf, is_signal_escape(value) ? "escape" : "non-escape");
       break;
@@ -738,6 +748,9 @@ family_behavior_t k##Family##Behavior = {                                      \
   mfPo MINOR (                                                                 \
     family##_to_plankton,                                                      \
     NULL),                                                                     \
+  mfSo MINOR (                                                                 \
+    serialize_##family,                                                        \
+    NULL)                                                                      \
 };
 ENUM_HEAP_OBJECT_FAMILIES(DEFINE_OBJECT_FAMILY_BEHAVIOR)
 #undef DEFINE_FAMILY_BEHAVIOR

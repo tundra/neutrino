@@ -107,6 +107,8 @@ struct family_behavior_t {
   value_t (*finalize)(garbage_value_t dead_self);
   // Convert this value to plankton in the given arena.
   value_t (*to_plankton)(pton_arena_t *arena, value_t self, pton_variant_t *pton_out);
+  // Serialize thie value as binary plankton.
+  value_t (*serialize)(value_t self, serialize_state_t *state);
 };
 
 // Validates a heap object. Check fails if validation fails except in soft check
@@ -275,6 +277,9 @@ mfOw MINOR (                                                                   \
   )                                                                            \
 mfFl MINOR (                                                                   \
   value_t finalize_##family(garbage_value_t dead_self);,                       \
+  )                                                                            \
+mfSo MINOR (                                                                   \
+  value_t serialize_##family(value_t self, serialize_state_t *state);,         \
   )
 ENUM_HEAP_OBJECT_FAMILIES(__DECLARE_FAMILY_FUNCTIONS__)
 #undef __DECLARE_FAMILY_FUNCTIONS__

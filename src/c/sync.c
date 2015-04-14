@@ -177,6 +177,7 @@ void foreign_request_state_init(foreign_request_state_t *state,
   state->airlock = airlock;
   state->s_surface_promise = s_surface_promise;
   state->result = result;
+  state->request.args = blob_empty();
 }
 
 value_t foreign_request_state_new(runtime_t *runtime, value_t process,
@@ -193,7 +194,7 @@ value_t foreign_request_state_new(runtime_t *runtime, value_t process,
   native_request_t *request = &state->request;
   opaque_promise_t *impl_promise = opaque_promise_empty();
   pton_arena_t *arena = pton_new_arena();
-  native_request_init(request, runtime, impl_promise, arena, pton_null());
+  native_request_init(request, runtime, impl_promise, arena, blob_empty());
   opaque_promise_on_success(impl_promise, state->callback);
   *result_out = state;
   return success();
@@ -204,6 +205,7 @@ void foreign_request_state_destroy(foreign_request_state_t *state) {
   opaque_promise_destroy(state->request.impl_promise);
   pton_dispose_arena(state->request.arena);
   safe_value_destroy(state->airlock->runtime, state->s_surface_promise);
+  pton_assembler_dispose_code(state->request.args);
   allocator_default_free(new_memory_block(state, sizeof(foreign_request_state_t)));
 }
 
@@ -241,26 +243,14 @@ void incoming_request_state_destroy(runtime_t *runtime,
 }
 
 // Create a plankton-ified copy of the raw arguments.
-static value_t foreign_service_clone_args(pton_arena_t *arena, value_t raw_args,
-    pton_variant_t *args_out) {
+static value_t foreign_service_clone_args(runtime_t *runtime, value_t raw_args,
+    blob_t *args_out) {
   CHECK_FAMILY(ofReifiedArguments, raw_args);
-  pton_variant_t args = pton_new_map(arena);
-  value_t tags = get_reified_arguments_tags(raw_args);
-  value_t values = get_reified_arguments_values(raw_args);
-  for (int64_t i = 0; i < get_call_tags_entry_count(tags); i++) {
-    value_t tag = get_call_tags_tag_at(tags, i);
-    if (get_value_domain(tag) == vdHeapObject && get_heap_object_family(tag) == ofKey)
-      // Skip the keys for now. Figure out how to deal with them later.
-      continue;
-    size_t offset = (size_t) get_call_tags_offset_at(tags, i);
-    value_t arg = get_array_at(values, offset);
-    pton_variant_t key;
-    TRY(value_to_plankton(arena, tag, &key));
-    pton_variant_t value;
-    TRY(value_to_plankton(arena, arg, &value));
-    pton_map_set(args, key, value);
-  }
-  *args_out = args;
+  blob_t data = blob_empty();
+  pton_assembler_t *assm = NULL;
+  TRY(plankton_serialize_to_data(runtime, raw_args, &data, &assm));
+  *args_out = pton_assembler_release_code(assm);
+  pton_dispose_assembler(assm);
   return success();
 }
 
@@ -287,7 +277,8 @@ static value_t foreign_service_call_with_args(builtin_arguments_t *args) {
   foreign_request_state_t *state = NULL;
   value_t process = get_builtin_process(args);
   TRY(foreign_request_state_new(runtime, process, &state));
-  TRY(foreign_service_clone_args(state->request.arena, reified, &state->request.args));
+  TRY(foreign_service_clone_args(state->request.runtime, reified,
+      &state->request.args));
   get_process_airlock(process)->open_foreign_request_count++;
   unary_callback_call(impl, p2o(&state->request));
   return deref(state->s_surface_promise);

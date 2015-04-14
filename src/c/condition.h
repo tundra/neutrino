@@ -102,6 +102,14 @@ typedef union {
   struct {
     value_domain_t domain : 8;
     heap_object_family_t family : 16;
+  } decoded;
+  uint32_t encoded;
+} value_type_details_codec_t;
+
+typedef union {
+  struct {
+    value_domain_t domain : 8;
+    heap_object_family_t family : 16;
     unsupported_behavior_cause_t cause : 8;
   } decoded;
   uint32_t encoded;
@@ -148,6 +156,13 @@ static value_t new_not_deep_frozen_condition() {
 // Creates a new invalid input condition.
 static value_t new_invalid_input_condition() {
   return new_condition(ccInvalidInput);
+}
+
+static value_t new_family_not_serializable_condition(heap_object_family_t family) {
+  value_type_details_codec_t codec;
+  codec.decoded.domain = vdHeapObject;
+  codec.decoded.family = family;
+  return new_condition_with_details(ccNotSerializable, codec.encoded);
 }
 
 // Converter to get and set details for invalid input as a uint32_t.

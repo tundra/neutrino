@@ -454,6 +454,7 @@ typedef enum {
   otSuffix = 7
 } operation_type_t;
 
+#define kOperationHeader "core:Operation"
 static const size_t kOperationSize = HEAP_OBJECT_SIZE(2);
 static const size_t kOperationTypeOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kOperationValueOffset = HEAP_OBJECT_FIELD_OFFSET(1);

@@ -29,12 +29,6 @@ static size_t align_size(uint32_t alignment, size_t size) {
 
 // --- B l o b ---
 
-// A block of data with a length.
-struct blob_t {
-  size_t size;
-  void *data;
-};
-
 // Similar to init but returns the blob rather than use an out parameter.
 blob_t new_blob(void *data, size_t size);
 
@@ -55,6 +49,9 @@ void blob_fill(blob_t blob, byte_t value);
 
 // Write the contents of the source blob into the destination.
 void blob_copy_to(blob_t src, blob_t dest);
+
+// Returns a 0-byte empty blob.
+blob_t blob_empty();
 
 
 // --- B y t e   b u f f e r ---

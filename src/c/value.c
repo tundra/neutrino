@@ -2897,7 +2897,7 @@ value_t init_plankton_core_factories(value_t map, runtime_t *runtime) {
   ADD_PLANKTON_FACTORY(map, "core:DecimalFraction", decimal_fraction);
   ADD_PLANKTON_FACTORY(map, "core:Identifier", identifier);
   ADD_PLANKTON_FACTORY(map, "core:Library", library);
-  ADD_PLANKTON_FACTORY(map, "core:Operation", operation);
+  ADD_PLANKTON_FACTORY(map, kOperationHeader, operation);
   ADD_PLANKTON_FACTORY(map, "core:Path", path);
   ADD_PLANKTON_FACTORY(map, "core:Type", type);
   ADD_PLANKTON_FACTORY(map, "core:UnboundModule", unbound_module);

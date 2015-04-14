@@ -127,12 +127,14 @@ private:
 // Concrete implementation of the service request interface.
 class ServiceRequestImpl : public ServiceRequest {
 public:
-  ServiceRequestImpl(native_request_t *native) : native_(native) { }
+  explicit ServiceRequestImpl(native_request_t *native);
   virtual void fulfill(plankton::Variant result);
   virtual plankton::Variant argument(plankton::Variant key);
   virtual plankton::Factory *factory();
 private:
   native_request_t *native_;
+  plankton::BinaryReader reader_;
+  plankton::Map args_;
 };
 
 RuntimeConfig::RuntimeConfig() {
@@ -292,6 +294,12 @@ value_t NativeServiceBinderImpl::process(NativeService *service,
   return success();
 }
 
+ServiceRequestImpl::ServiceRequestImpl(native_request_t *native)
+  : native_(native)
+  , reader_(factory()) {
+  args_ = reader_.parse(native->args.memory, native->args.size);
+}
+
 plankton::Factory *ServiceRequestImpl::factory() {
   return static_cast<plankton::Arena*>(native_->arena);
 }
@@ -302,8 +310,7 @@ void ServiceRequestImpl::fulfill(plankton::Variant result) {
 }
 
 plankton::Variant ServiceRequestImpl::argument(plankton::Variant key) {
-  plankton::Map args = plankton::Variant(native_->args);
-  return args[key];
+  return args_[key];
 }
 
 internal::MaybeMessage::MaybeMessage(const char *message)

@@ -16,7 +16,7 @@ END_C_INCLUDES
 // Encodes and decodes a plankton value and returns the result.
 static value_t transcode_plankton(runtime_t *runtime, value_t value) {
   // Encode and decode the value.
-  value_t encoded = plankton_serialize(runtime, value);
+  value_t encoded = plankton_serialize_to_blob(runtime, value);
   ASSERT_SUCCESS(encoded);
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
   safe_value_t s_encoded = protect(pool, encoded);
