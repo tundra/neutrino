@@ -117,6 +117,7 @@ value_t serialize_id_hash_map(value_t value, serialize_state_t *state) {
   return map_contents_serialize(entry_count, &iter, state);
 }
 
+// Skip this tag when serializing a reified arguments set?
 static bool skip_reified_tag(value_t tag) {
   return in_family(ofKey, tag);
 }
