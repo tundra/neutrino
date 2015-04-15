@@ -29,6 +29,7 @@ def $test_echo() {
   $run([]);
   $run([1, 2, 3]);
   $run([1, [2, [3, [4]]]]);
+  $run(op.foo());
   $run({});
 }
 

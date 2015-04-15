@@ -165,18 +165,23 @@ void foreign_service_print_on(value_t self, print_on_context_t *context) {
 static opaque_t on_foreign_request_success(opaque_t opaque_state,
     opaque_t opaque_result) {
   foreign_request_state_t *state = (foreign_request_state_t*) o2p(opaque_state);
-  state->result = *((pton_variant_t*) o2p(opaque_result));
+  pton_variant_t result = *((pton_variant_t*) o2p(opaque_result));
+  pton_assembler_t *assm = pton_new_assembler();
+  pton_binary_writer_write(assm, result);
+  pton_assembler_peek_code(assm);
+  state->result = pton_assembler_release_code(assm);
+  pton_dispose_assembler(assm);
   process_airlock_complete_foreign_request(state->airlock, state);
   return opaque_null();
 }
 
 void foreign_request_state_init(foreign_request_state_t *state,
     unary_callback_t *callback, process_airlock_t *airlock,
-    safe_value_t s_surface_promise, pton_variant_t result) {
+    safe_value_t s_surface_promise) {
   state->callback = callback;
   state->airlock = airlock;
   state->s_surface_promise = s_surface_promise;
-  state->result = result;
+  state->result = blob_empty();
   state->request.args = blob_empty();
 }
 
@@ -190,7 +195,7 @@ value_t foreign_request_state_new(runtime_t *runtime, value_t process,
   foreign_request_state_t *state = (foreign_request_state_t*) memory.memory;
   unary_callback_t *callback = unary_callback_new_1(on_foreign_request_success, p2o(state));
   foreign_request_state_init(state, callback, get_process_airlock(process),
-      s_promise, pton_null());
+      s_promise);
   native_request_t *request = &state->request;
   opaque_promise_t *impl_promise = opaque_promise_empty();
   pton_arena_t *arena = pton_new_arena();
@@ -206,6 +211,7 @@ void foreign_request_state_destroy(foreign_request_state_t *state) {
   pton_dispose_arena(state->request.arena);
   safe_value_destroy(state->airlock->runtime, state->s_surface_promise);
   pton_assembler_dispose_code(state->request.args);
+  pton_assembler_dispose_code(state->result);
   allocator_default_free(new_memory_block(state, sizeof(foreign_request_state_t)));
 }
 

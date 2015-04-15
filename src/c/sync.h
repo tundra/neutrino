@@ -92,12 +92,12 @@ struct foreign_request_state_t {
   safe_value_t s_surface_promise;
   // This is where the result will be held between the request completing and
   // the process delivering it to the promise.
-  pton_variant_t result;
+  blob_t result;
 };
 
 void foreign_request_state_init(foreign_request_state_t *state,
     unary_callback_t *callback, process_airlock_t *airlock,
-    safe_value_t s_surface_promise, pton_variant_t result);
+    safe_value_t s_surface_promise);
 
 // Create an initialize a new native request state. Note that the arguments
 // will not have been set, this only initializes the rest.
