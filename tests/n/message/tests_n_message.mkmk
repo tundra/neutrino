@@ -40,6 +40,7 @@ for file_base in file_names:
   test_case.set_runner(tester)
   test_case.set_arguments(output_file.get_input_file().get_path(),
     runner.get_output_path(), program.get_output_path(), opts)
+  test_case.add_dependency(runner)
   test_case.add_dependency(program)
   test_case.add_dependency(library)
   test_case.add_dependency(output_file)
