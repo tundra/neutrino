@@ -7,6 +7,7 @@
 #include "freeze.h"
 #include "heap.h"
 #include "interp.h"
+#include "io/iop.h"
 #include "runtime.h"
 #include "tagged-inl.h"
 #include "try-inl.h"
@@ -610,10 +611,15 @@ value_t read_stream_to_blob(runtime_t *runtime, in_stream_t *stream) {
   while (true) {
     static const size_t kBufSize = 1024;
     byte_t raw_buffer[kBufSize];
-    size_t was_read = in_stream_read_bytes(stream, raw_buffer, kBufSize);
+    read_iop_t iop;
+    read_iop_init(&iop, stream, raw_buffer, kBufSize);
+    read_iop_execute(&iop);
+    size_t was_read = read_iop_bytes_read(&iop);
+    bool at_eof = read_iop_at_eof(&iop);
     for (size_t i = 0; i < was_read; i++)
       byte_buffer_append(&buffer, raw_buffer[i]);
-    if (in_stream_at_eof(stream))
+    read_iop_dispose(&iop);
+    if (at_eof)
       break;
   }
   blob_t data_blob = byte_buffer_flush(&buffer);
