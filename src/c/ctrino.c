@@ -248,7 +248,14 @@ static value_t ctrino_new_global_hash_oracle(builtin_arguments_t *args) {
   return new_heap_hash_oracle(runtime, source);
 }
 
-#define kCtrinoMethodCount 21
+static value_t ctrino_new_anonymous_pipe(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_C_OBJECT_TAG(btCtrino, self);
+  runtime_t *runtime = get_builtin_runtime(args);
+  return new_heap_pipe(runtime);
+}
+
+#define kCtrinoMethodCount 22
 static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("builtin", 1, ctrino_builtin),
   BUILTIN_METHOD("collect_garbage!", 0, ctrino_collect_garbage),
@@ -263,11 +270,12 @@ static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("new_exported_service", 2, ctrino_new_exported_service),
   BUILTIN_METHOD("new_float_32", 1, ctrino_new_float_32),
   BUILTIN_METHOD("new_function", 1, ctrino_new_function),
-  BUILTIN_METHOD("new_hash_source", 1, ctrino_new_hash_source),
-  BUILTIN_METHOD("new_hash_oracle", 1, ctrino_new_hash_oracle),
   BUILTIN_METHOD("new_global_hash_oracle", 0, ctrino_new_global_hash_oracle),
+  BUILTIN_METHOD("new_hash_oracle", 1, ctrino_new_hash_oracle),
+  BUILTIN_METHOD("new_hash_source", 1, ctrino_new_hash_source),
   BUILTIN_METHOD("new_instance_manager", 1, ctrino_new_instance_manager),
   BUILTIN_METHOD("new_pending_promise", 0, ctrino_new_pending_promise),
+  BUILTIN_METHOD("new_anonymous_pipe", 0, ctrino_new_anonymous_pipe),
   BUILTIN_METHOD("new_plugin_instance", 1, ctrino_new_plugin_instance),
   BUILTIN_METHOD("print_ln", 1, ctrino_print_ln),
   BUILTIN_METHOD("to_string", 1, ctrino_to_string)

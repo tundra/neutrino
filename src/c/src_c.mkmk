@@ -15,6 +15,7 @@ library_file_names = [
   "freeze.c",
   "heap.c",
   "interp.c",
+  "io.c",
   "method.c",
   "method.cc",
   "plugin.c",

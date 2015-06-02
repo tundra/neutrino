@@ -1,0 +1,18 @@
+# Copyright 2015 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+# A native OS pipe.
+def @io:Pipe := @ctrino.get_builtin_type("Pipe");
+
+def type @io:Pipe is @Object;
+
+## Creates and returns a new OS pipe.
+def ($this == @io:Pipe).new() => @ctrino.new_anonymous_pipe();
+
+# Yields the pipe's read end.
+@ctrino.builtin("pipe.in")
+def ($this is @io:Pipe).in;
+
+# Yields the pipe's write end.
+@ctrino.builtin("pipe.out")
+def ($this is @io:Pipe).out;

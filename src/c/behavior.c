@@ -6,6 +6,7 @@
 #include "ctrino.h"
 #include "derived-inl.h"
 #include "freeze.h"
+#include "io.h"
 #include "runtime.h"
 #include "sync.h"
 #include "syntax.h"

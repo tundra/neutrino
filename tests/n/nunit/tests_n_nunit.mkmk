@@ -43,6 +43,7 @@ file_names = [
   "module.n",
   "next.n",
   "object.n",
+  "pipe.n",
   "promise.n",
   "selector.n",
   "signal.n",

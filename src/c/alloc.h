@@ -437,6 +437,20 @@ value_t new_heap_is_declaration_ast(runtime_t *runtime, alloc_flags_t flags,
 value_t new_heap_current_module_ast(runtime_t *runtime);
 
 
+/// ## Sync
+
+// Creates a new native pipe value.
+value_t new_heap_pipe(runtime_t *runtime);
+
+// Creates a new out stream that wraps the given native stream and keeps the
+// given lifeline object alive.
+value_t new_heap_out_stream(runtime_t *runtime, out_stream_t *out, value_t lifeline);
+
+// Creates a new in stream that wraps the given native stream and keeps the
+// given lifeline object alive.
+value_t new_heap_in_stream(runtime_t *runtime, in_stream_t *out, value_t lifeline);
+
+
 // --- U t i l s ---
 
 // Allocates a new heap object in the given runtime of the given size and
@@ -465,5 +479,9 @@ value_t import_pton_variant(runtime_t *runtime, pton_variant_t value);
 // out of space.
 value_t safe_set_id_hash_map_at(runtime_t *runtime, safe_value_t map,
     safe_value_t key, safe_value_t value);
+
+// Run a couple of sanity checks before returning the value from a constructor.
+// Returns a condition if the check fails, otherwise returns the given value.
+value_t post_create_sanity_check(value_t value, size_t size);
 
 #endif // _ALLOC

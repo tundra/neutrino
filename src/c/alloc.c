@@ -6,20 +6,19 @@
 #include "ctrino.h"
 #include "derived.h"
 #include "freeze.h"
+#include "io.h"
 #include "process.h"
 #include "runtime-inl.h"
 #include "sync.h"
 #include "tagged.h"
 #include "try-inl.h"
-#include "value-inl.h"
 #include "utils/string-inl.h"
+#include "value-inl.h"
 
 
 // --- B a s i c ---
 
-// Run a couple of sanity checks before returning the value from a constructor.
-// Returns a condition if the check fails, otherwise returns the given value.
-static value_t post_create_sanity_check(value_t value, size_t size) {
+value_t post_create_sanity_check(value_t value, size_t size) {
   TRY(heap_object_validate(value));
   heap_object_layout_t layout;
   heap_object_layout_init(&layout);

@@ -18,8 +18,10 @@ module $core {
     "lambda.n",
     "null.n",
     "object.n",
+    "pipe.n",
     "promise.n",
     "selector.n",
+    "stream.n",
     "string.n",
     "tuple.n"
   ]
