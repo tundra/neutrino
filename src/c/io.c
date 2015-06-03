@@ -4,6 +4,7 @@
 #include "alloc.h"
 #include "freeze.h"
 #include "io.h"
+#include "sync.h"
 #include "sync/pipe.h"
 #include "value-inl.h"
 
@@ -107,8 +108,14 @@ static value_t out_stream_write(builtin_arguments_t *args) {
   CHECK_FAMILY(ofOutStream, self);
   value_t data = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofUtf8, data);
-  // TODO: actually make the write.
-  return data;
+  runtime_t *runtime = get_builtin_runtime(args);
+  TRY_DEF(promise, new_heap_pending_promise(runtime));
+  safe_value_t s_promise = runtime_protect_value(runtime, promise);
+  pending_iop_state_t *state = pending_iop_state_new(s_promise);
+  value_t process = get_builtin_process(args);
+  process_airlock_schedule_atomic(get_process_airlock(process),
+      UPCAST_TO_PENDING_ATOMIC(state));
+  return promise;
 }
 
 value_t add_out_stream_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
@@ -143,4 +150,30 @@ value_t new_heap_in_stream(runtime_t *runtime, in_stream_t *in, value_t lifeline
 
 value_t add_in_stream_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   return success();
+}
+
+
+/// ## Async interface
+
+value_t pending_iop_state_apply_atomic(pending_iop_state_t *state,
+    process_airlock_t *airlock) {
+  value_t promise = deref(state->s_promise);
+  fulfill_promise(promise, yes());
+  return success();
+}
+
+pending_iop_state_t *pending_iop_state_new(safe_value_t s_promise) {
+  memory_block_t memory = allocator_default_malloc(sizeof(pending_iop_state_t));
+  if (memory_block_is_empty(memory))
+    return NULL;
+  pending_iop_state_t *state = (pending_iop_state_t*) memory.memory;
+  state->as_pending_atomic.type = paIopComplete;
+  state->s_promise = s_promise;
+  return state;
+}
+
+void pending_iop_state_destroy(runtime_t *runtime, pending_iop_state_t *state) {
+  safe_value_destroy(runtime, state->s_promise);
+  memory_block_t memory = new_memory_block(state, sizeof(pending_iop_state_t));
+  allocator_default_free(memory);
 }

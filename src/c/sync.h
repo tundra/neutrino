@@ -79,8 +79,34 @@ static bool is_promise_state_resolved(value_t self) {
 /// A foreign service is a remote process that is immediately backed by an
 /// in-process native implementation.
 
+#define ENUM_PENDING_ATOMIC(F)                                                 \
+  F(ForeignRequestResolved, foreign_request_resolved, foreign_request_state)   \
+  F(IopComplete, iop_complete, pending_iop_state)
+
+// The type of a pending atomic operation.
+typedef enum {
+  __paFirst__ = -1
+#define __DECLARE_PENDING_ATOMIC_TYPE__(Name, name, type) , pa##Name
+  ENUM_PENDING_ATOMIC(__DECLARE_PENDING_ATOMIC_TYPE__)
+#undef __DECLARE_PENDING_ATOMIC_TYPE__
+} pending_atomic_type_t;
+
+// An abstract type that encapsulates a pending atomic operation, that is, an
+// operation that has been scheduled to be applied to a process inbetween turns.
+// The atomic part refers to how the operation is seen from code running in the
+// process: because it happens between turns it is impossible to observe an
+// operation in process.
+struct pending_atomic_t {
+  pending_atomic_type_t type;
+};
+
+// Destroy the given pending atomic operation in whatever way is appropriate for
+// that type.
+void pending_atomic_destroy(runtime_t *runtime, pending_atomic_t *op);
+
 // Extra state maintained around a foreign request.
-struct foreign_request_state_t {
+typedef struct {
+  pending_atomic_t as_pending_atomic;
   // The part of the data that will be passed to the native impl.
   native_request_t request;
   // The callback that will be called; kept around so we can destroy it later.
@@ -93,7 +119,10 @@ struct foreign_request_state_t {
   // This is where the result will be held between the request completing and
   // the process delivering it to the promise.
   blob_t result;
-};
+} foreign_request_state_t;
+
+// "Upcast" something that "inherits" from pending_atomic_t to that type.
+#define UPCAST_TO_PENDING_ATOMIC(EXPR) (&(EXPR)->as_pending_atomic)
 
 void foreign_request_state_init(foreign_request_state_t *state,
     unary_callback_t *callback, process_airlock_t *airlock,
@@ -103,9 +132,6 @@ void foreign_request_state_init(foreign_request_state_t *state,
 // will not have been set, this only initializes the rest.
 value_t foreign_request_state_new(runtime_t *runtime, value_t process,
     foreign_request_state_t **result_out);
-
-// Destroy the given state.
-void foreign_request_state_destroy(foreign_request_state_t *state);
 
 static const size_t kForeignServiceSize = HEAP_OBJECT_SIZE(2);
 static const size_t kForeignServiceImplsOffset = HEAP_OBJECT_FIELD_OFFSET(0);

@@ -4,7 +4,9 @@
 #ifndef _IO
 #define _IO
 
+#include "sync.h"
 #include "value.h"
+#include "io/iop.h"
 
 /// ## Pipe
 
@@ -24,6 +26,25 @@ ACCESSORS_DECL(pipe, out);
 
 
 /// ## Out stream
+
+// An outstanding iop.
+typedef struct {
+  pending_atomic_t as_pending_atomic;
+  read_iop_t as_read;
+  safe_value_t s_promise;
+} pending_iop_state_t;
+
+// When the process is ready for the result of the iop to be delivered this
+// will be called.
+value_t pending_iop_state_apply_atomic(pending_iop_state_t *state,
+    process_airlock_t *airlock);
+
+// Allocates and a new pending iop state on the heap and returns it. The state
+// takes ownership of s_promise.
+pending_iop_state_t *pending_iop_state_new(safe_value_t s_promise);
+
+// Disposes a pending iop state after its result has been applied.
+void pending_iop_state_destroy(runtime_t *runtime, pending_iop_state_t *state);
 
 static const size_t kOutStreamSize = HEAP_OBJECT_SIZE(2);
 static const size_t kOutStreamNativeOffset = HEAP_OBJECT_FIELD_OFFSET(0);

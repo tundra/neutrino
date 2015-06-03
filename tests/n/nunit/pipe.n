@@ -6,7 +6,11 @@ import $core;
 
 def $test_simple() {
   def $pipe := new @core:io:Pipe();
-  $assert:equals("Hello, World!", $pipe.out.write("Hello, World!"));
+  def $p_write := $pipe.out.write("Hello, World!");
+  $assert:not($p_write.is_resolved?);
+  $p_write.then(fn $v {
+    $assert:that($v);
+  });
 }
 
 do {

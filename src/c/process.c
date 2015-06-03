@@ -5,6 +5,7 @@
 #include "behavior.h"
 #include "derived-inl.h"
 #include "freeze.h"
+#include "io.h"
 #include "process.h"
 #include "sync.h"
 #include "tagged-inl.h"
@@ -947,13 +948,13 @@ process_airlock_t *process_airlock_new(runtime_t *runtime) {
   return airlock;
 }
 
-void process_airlock_complete_foreign_request(process_airlock_t *airlock,
-    foreign_request_state_t *result) {
+void process_airlock_schedule_atomic(process_airlock_t *airlock,
+    pending_atomic_t *op) {
   // Acquire room to store the result and access to the buffer.
   native_semaphore_acquire(&airlock->foreign_vacancies, duration_unlimited());
   native_mutex_lock(&airlock->complete_buffer_mutex);
   bool offered = bounded_buffer_try_offer(airlock->complete_buffer,
-      p2o(result));
+      p2o(op));
   CHECK_TRUE("out of capacity", offered);
   native_mutex_unlock(&airlock->complete_buffer_mutex);
 }
@@ -969,15 +970,34 @@ void process_airlock_schedule_incoming_request(process_airlock_t *airlock,
   native_mutex_unlock(&airlock->incoming_buffer_mutex);
 }
 
-value_t deliver_process_complete_foreign(value_t process) {
+static value_t foreign_request_state_apply_atomic(foreign_request_state_t *state,
+    process_airlock_t *airlock) {
+  airlock->open_foreign_request_count--;
+  TRY_DEF(result, plankton_deserialize_data(airlock->runtime, NULL, state->result));
+  fulfill_promise(deref(state->s_surface_promise), result);
+  return success();
+}
+
+static value_t pending_atomic_apply(pending_atomic_t *op,
+    process_airlock_t *airlock) {
+  switch (op->type) {
+#define __GEN_CASE__(Name, name, type) case pa##Name:                          \
+  return type##_apply_atomic((type##_t*) op, airlock);
+  ENUM_PENDING_ATOMIC(__GEN_CASE__)
+#undef __GEN_CASE__
+    default:
+      UNREACHABLE("invalid pending atomic");
+      return new_condition(ccWat);
+  }
+}
+
+value_t deliver_process_outstanding_pending_atomic(value_t process) {
   CHECK_FAMILY(ofProcess, process);
   process_airlock_t *airlock = get_process_airlock(process);
-  foreign_request_state_t *state = NULL;
-  while (process_airlock_next_complete_foreign(airlock, &state)) {
-    airlock->open_foreign_request_count--;
-    TRY_DEF(result, plankton_deserialize_data(airlock->runtime, NULL, state->result));
-    fulfill_promise(deref(state->s_surface_promise), result);
-    foreign_request_state_destroy(state);
+  pending_atomic_t *op = NULL;
+  while (process_airlock_next_pending_atomic(airlock, &op)) {
+    TRY(pending_atomic_apply(op, airlock));
+    pending_atomic_destroy(airlock->runtime, op);
   }
   return success();
 }
@@ -996,14 +1016,14 @@ value_t deliver_process_incoming(runtime_t *runtime, value_t process) {
   return success();
 }
 
-bool process_airlock_next_complete_foreign(process_airlock_t *airlock,
-    foreign_request_state_t **result_out) {
+bool process_airlock_next_pending_atomic(process_airlock_t *airlock,
+    pending_atomic_t **result_out) {
   native_mutex_lock(&airlock->complete_buffer_mutex);
   opaque_t next = opaque_null();
   bool took = bounded_buffer_try_take(airlock->complete_buffer, &next);
   native_mutex_unlock(&airlock->complete_buffer_mutex);
   if (took) {
-    *result_out = (foreign_request_state_t*) o2p(next);
+    *result_out = (pending_atomic_t*) o2p(next);
     native_semaphore_release(&airlock->foreign_vacancies);
   }
   return took;

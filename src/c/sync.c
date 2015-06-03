@@ -5,6 +5,7 @@
 #include "alloc.h"
 #include "builtin.h"
 #include "freeze.h"
+#include "io.h"
 #include "plugin.h"
 #include "sync.h"
 #include "tagged-inl.h"
@@ -171,13 +172,14 @@ static opaque_t on_foreign_request_success(opaque_t opaque_state,
   pton_assembler_peek_code(assm);
   state->result = pton_assembler_release_code(assm);
   pton_dispose_assembler(assm);
-  process_airlock_complete_foreign_request(state->airlock, state);
+  process_airlock_schedule_atomic(state->airlock, UPCAST_TO_PENDING_ATOMIC(state));
   return opaque_null();
 }
 
 void foreign_request_state_init(foreign_request_state_t *state,
     unary_callback_t *callback, process_airlock_t *airlock,
     safe_value_t s_surface_promise) {
+  state->as_pending_atomic.type = paForeignRequestResolved;
   state->callback = callback;
   state->airlock = airlock;
   state->s_surface_promise = s_surface_promise;
@@ -205,14 +207,27 @@ value_t foreign_request_state_new(runtime_t *runtime, value_t process,
   return success();
 }
 
-void foreign_request_state_destroy(foreign_request_state_t *state) {
+static void foreign_request_state_destroy(runtime_t *runtime,
+    foreign_request_state_t *state) {
   callback_destroy(state->callback);
   opaque_promise_destroy(state->request.impl_promise);
   pton_dispose_arena(state->request.arena);
-  safe_value_destroy(state->airlock->runtime, state->s_surface_promise);
+  safe_value_destroy(runtime, state->s_surface_promise);
   pton_assembler_dispose_code(state->request.args);
   pton_assembler_dispose_code(state->result);
   allocator_default_free(new_memory_block(state, sizeof(foreign_request_state_t)));
+}
+
+void pending_atomic_destroy(runtime_t *runtime, pending_atomic_t *op) {
+  switch (op->type) {
+#define __GEN_CASE__(Name, name, type) case pa##Name:                          \
+  type##_destroy(runtime, (type##_t*) op);                                     \
+  break;
+  ENUM_PENDING_ATOMIC(__GEN_CASE__)
+#undef __GEN_CASE__
+    default:
+      break;
+  }
 }
 
 void incoming_request_state_init(incoming_request_state_t *state,

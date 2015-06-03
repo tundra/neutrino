@@ -578,7 +578,7 @@ ACCESSORS_DECL(task, stack);
 /// (potentially) independently of each other and can only affect each other
 /// through explicitly sending asynchronous messages.
 
-typedef struct foreign_request_state_t foreign_request_state_t;
+typedef struct pending_atomic_t pending_atomic_t;
 typedef struct incoming_request_state_t incoming_request_state_t;
 typedef struct exported_service_capsule_t exported_service_capsule_t;
 
@@ -616,13 +616,13 @@ typedef struct {
 process_airlock_t *process_airlock_new(runtime_t *runtime);
 
 // Notify the process that the request with the given state has completed.
-void process_airlock_complete_foreign_request(process_airlock_t *airlock,
-    foreign_request_state_t *result);
+void process_airlock_schedule_atomic(process_airlock_t *airlock,
+    pending_atomic_t *result);
 
-// If the given airlock has a pending complete foreign request takes it, stores
-// it in result_out, and returns true. If not returns false. Never blocks.
-bool process_airlock_next_complete_foreign(process_airlock_t *airlock,
-    foreign_request_state_t **result_out);
+// If the given airlock has a pending atomic operation takes it, stores it in
+// result_out, and returns true. If not returns false. Never blocks.
+bool process_airlock_next_pending_atomic(process_airlock_t *airlock,
+    pending_atomic_t **result_out);
 
 // If the given airlock has a pending incoming request takes it, stores
 // it in result_out, and returns true. If not returns false. Never blocks.
@@ -642,8 +642,6 @@ static const size_t kProcessWorkQueueOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kProcessRootTaskOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 static const size_t kProcessHashSourceOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 static const size_t kProcessAirlockPtrOffset = HEAP_OBJECT_FIELD_OFFSET(3);
-
-#define kProcessWorkQueueWidth 4
 
 // The work queue that holds tasks for this process.
 ACCESSORS_DECL(process, work_queue);
@@ -673,6 +671,8 @@ typedef struct {
   value_t guard;
 } job_t;
 
+#define kProcessWorkQueueWidth (sizeof(job_t) / sizeof(value_t))
+
 // Initialize a job struct.
 void job_init(job_t *job, value_t code, value_t data, value_t promise,
     value_t guard);
@@ -685,9 +685,8 @@ value_t offer_process_job(runtime_t *runtime, value_t process, job_t *job);
 // If there are no more work left a NotFound condition is returned.
 value_t take_process_job(value_t process, job_t *job_out);
 
-// Process any foreign request results that have been delivered to this process'
-// airlock.
-value_t deliver_process_complete_foreign(value_t process);
+// Process any pending atomic requests.
+value_t deliver_process_outstanding_pending_atomic(value_t process);
 
 // Schedule any incoming requests in this process' airlock onto the worklist.
 value_t deliver_process_incoming(runtime_t *runtime, value_t process);
