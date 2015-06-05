@@ -198,10 +198,12 @@ void pending_iop_state_destroy(runtime_t *runtime, pending_iop_state_t *state) {
 
 /// ## I/O engine
 
+// The main loop of the io engine's thread.
 static void io_engine_main_loop(io_engine_t *engine) {
   // TODO
 }
 
+// Allows the main loop to be called from a callback.
 static opaque_t io_engine_main_loop_bridge(opaque_t opaque_io_engine) {
   io_engine_t *engine = (io_engine_t*) o2p(opaque_io_engine);
   io_engine_main_loop(engine);

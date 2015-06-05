@@ -75,15 +75,22 @@ void pending_iop_state_destroy(runtime_t *runtime, pending_iop_state_t *state);
 
 /// ## I/O engine abstraction
 
+// The I/O engine is an abstraction that performs asynchronous native I/O on
+// behalf of the runtime. It multiplexes any I/O operations to perform and
+// dispatches the results back through pending atomic ops to the respective
+// processes that initiate the operations.
 struct io_engine_t {
   nullary_callback_t *main_loop_callback;
   native_thread_t *thread;
 };
 
-// Creates a new I/O engine.
+// Creates a new I/O engine, starting up the background thread that performs
+// the I/O.
 io_engine_t *io_engine_new();
 
-// Disposes and frees an I/O engine.
+// Disposes and frees an I/O engine. This may include some amount of blocking
+// because this involves shutting down worker threads that are currently
+// blocked waiting for I/O and we have to wait for those to finish up.
 void io_engine_destroy(io_engine_t *engine);
 
 #endif // _IO

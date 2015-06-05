@@ -6,7 +6,8 @@ def @io:OutStream := @ctrino.get_builtin_type("OutStream");
 
 def type @io:OutStream is @Object;
 
-# Yields the pipe's read end.
+# Writes a block of data to the given output stream.
+# TODO: switch to using an actual block of data instead of a string.
 @ctrino.builtin("out_stream.write")
 def ($this is @io:OutStream).write($data);
 
@@ -15,6 +16,6 @@ def @io:InStream := @ctrino.get_builtin_type("InStream");
 
 def type @io:InStream is @Object;
 
-# Yields the pipe's read end.
+# Reads a block of data from the given input stream.
 @ctrino.builtin("in_stream.read")
 def ($this is @io:InStream).read($bytes);
