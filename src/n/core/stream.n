@@ -9,3 +9,12 @@ def type @io:OutStream is @Object;
 # Yields the pipe's read end.
 @ctrino.builtin("out_stream.write")
 def ($this is @io:OutStream).write($data);
+
+# A native OS input stream.
+def @io:InStream := @ctrino.get_builtin_type("InStream");
+
+def type @io:InStream is @Object;
+
+# Yields the pipe's read end.
+@ctrino.builtin("in_stream.read")
+def ($this is @io:InStream).read($bytes);

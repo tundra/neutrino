@@ -112,6 +112,7 @@ static value_t out_stream_write(builtin_arguments_t *args) {
   TRY_DEF(promise, new_heap_pending_promise(runtime));
   safe_value_t s_promise = runtime_protect_value(runtime, promise);
   pending_iop_state_t *state = pending_iop_state_new(s_promise);
+  runtime_get_io_engine(runtime);
   value_t process = get_builtin_process(args);
   process_airlock_schedule_atomic(get_process_airlock(process),
       UPCAST_TO_PENDING_ATOMIC(state));
@@ -148,7 +149,23 @@ value_t new_heap_in_stream(runtime_t *runtime, in_stream_t *in, value_t lifeline
   return post_create_sanity_check(result, size);
 }
 
+static value_t in_stream_read(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofInStream, self);
+  value_t data = get_builtin_argument(args, 0);
+  CHECK_DOMAIN(vdInteger, data);
+  runtime_t *runtime = get_builtin_runtime(args);
+  TRY_DEF(promise, new_heap_pending_promise(runtime));
+  safe_value_t s_promise = runtime_protect_value(runtime, promise);
+  pending_iop_state_t *state = pending_iop_state_new(s_promise);
+  value_t process = get_builtin_process(args);
+  process_airlock_schedule_atomic(get_process_airlock(process),
+      UPCAST_TO_PENDING_ATOMIC(state));
+  return promise;
+}
+
 value_t add_in_stream_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("in_stream.read", 1, in_stream_read);
   return success();
 }
 
@@ -175,5 +192,38 @@ pending_iop_state_t *pending_iop_state_new(safe_value_t s_promise) {
 void pending_iop_state_destroy(runtime_t *runtime, pending_iop_state_t *state) {
   safe_value_destroy(runtime, state->s_promise);
   memory_block_t memory = new_memory_block(state, sizeof(pending_iop_state_t));
+  allocator_default_free(memory);
+}
+
+
+/// ## I/O engine
+
+static void io_engine_main_loop(io_engine_t *engine) {
+  // TODO
+}
+
+static opaque_t io_engine_main_loop_bridge(opaque_t opaque_io_engine) {
+  io_engine_t *engine = (io_engine_t*) o2p(opaque_io_engine);
+  io_engine_main_loop(engine);
+  return opaque_null();
+}
+
+io_engine_t *io_engine_new() {
+  memory_block_t memory = allocator_default_malloc(sizeof(io_engine_t));
+  if (memory_block_is_empty(memory))
+    return NULL;
+  io_engine_t *engine = (io_engine_t*) memory.memory;
+  engine->main_loop_callback = nullary_callback_new_1(io_engine_main_loop_bridge,
+      p2o(engine));
+  engine->thread = native_thread_new(engine->main_loop_callback);
+  native_thread_start(engine->thread);
+  return engine;
+}
+
+void io_engine_destroy(io_engine_t *engine) {
+  native_thread_join(engine->thread);
+  native_thread_destroy(engine->thread);
+  callback_destroy(engine->main_loop_callback);
+  memory_block_t memory = new_memory_block(engine, sizeof(io_engine_t));
   allocator_default_free(memory);
 }

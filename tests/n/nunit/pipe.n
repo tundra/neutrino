@@ -11,6 +11,11 @@ def $test_simple() {
   $p_write.then(fn $v {
     $assert:that($v);
   });
+  def $p_read := $pipe.in.read(5);
+  $assert:not($p_read.is_resolved?);
+  $p_read.then(fn $v {
+    $assert:equals(true, $v);
+  });
 }
 
 do {

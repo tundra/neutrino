@@ -252,6 +252,8 @@ typedef struct runtime_observer_t {
 // Use as the initial value of runtime observers.
 runtime_observer_t runtime_observer_empty();
 
+typedef struct io_engine_t io_engine_t;
+
 // All the data associated with a single VM instance.
 struct runtime_t {
   // The heap where all the data lives.
@@ -276,6 +278,9 @@ struct runtime_t {
   tinymt64_t random;
   // The top gc callback, NULL if empty.
   runtime_observer_t *top_observer;
+  // The io engine used by this runtime to perform I/O. Starts out NULL and gets
+  // set on the first access.
+  io_engine_t *io_engine;
 };
 
 // Creates a new runtime object, storing it in the given runtime out parameter.
@@ -379,6 +384,9 @@ value_t get_modal_species_sibling_with_mode(runtime_t *runtime, value_t species,
 // Returns the code block that implements the builtin method with the given name
 // or a condition if the name is unknown.
 value_t runtime_get_builtin_implementation(runtime_t *runtime, value_t name);
+
+// Returns this runtime's io engine, creating it on the first call.
+io_engine_t *runtime_get_io_engine(runtime_t *runtime);
 
 // Initialize this root set.
 value_t roots_init(value_t roots, const extended_runtime_config_t *config,

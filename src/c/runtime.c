@@ -7,6 +7,7 @@
 #include "derived.h"
 #include "format.h"
 #include "freeze.h"
+#include "io.h"
 #include "runtime-inl.h"
 #include "safe-inl.h"
 #include "try-inl.h"
@@ -1016,6 +1017,7 @@ void runtime_clear(runtime_t *runtime) {
   runtime->mutable_roots = whatever();
   runtime->s_module_loader = empty_safe_value();
   runtime->top_observer = NULL;
+  runtime->io_engine = NULL;
 }
 
 // Perform any pre-processing we need to do before releasing the runtime.
@@ -1046,6 +1048,10 @@ value_t runtime_dispose(runtime_t *runtime, uint32_t flags) {
     allocator_default_free(
         new_memory_block(runtime->gc_fuzzer, sizeof(gc_fuzzer_t)));
     runtime->gc_fuzzer = NULL;
+  }
+  if (runtime->io_engine != NULL) {
+    io_engine_destroy(runtime->io_engine);
+    runtime->io_engine = NULL;
   }
   return result;
 }
@@ -1148,6 +1154,12 @@ value_t runtime_get_builtin_implementation(runtime_t *runtime, value_t name) {
 
 value_t get_runtime_plugin_factory_at(runtime_t *runtime, size_t index) {
   return get_array_at(ROOT(runtime, plugin_factories), index);
+}
+
+io_engine_t *runtime_get_io_engine(runtime_t *runtime) {
+  if (runtime->io_engine == NULL)
+    runtime->io_engine = io_engine_new();
+  return runtime->io_engine;
 }
 
 value_t runtime_load_library_from_stream(runtime_t *runtime,
