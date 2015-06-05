@@ -600,12 +600,12 @@ typedef struct {
   // Mutex that guards the complete request buffer.
   native_mutex_t complete_buffer_mutex;
   // Buffer that holds the state of completed requests.
-  byte_t complete_buffer[BOUNDED_BUFFER_SIZE(kProcessAirlockCompleteBufferSize)];
+  bounded_buffer_t(kProcessAirlockCompleteBufferSize) complete_buffer;
   // The number of outstanding foreign requests whose results haven't been
   // delivered to their associated promise.
   size_t open_foreign_request_count;
   // Buffer that holds the state of incoming requests.
-  byte_t incoming_buffer[BOUNDED_BUFFER_SIZE(kProcessAirlockIncomingBufferSize)];
+  bounded_buffer_t(kProcessAirlockIncomingBufferSize) incoming_buffer;
   // How much room is left in the incoming request buffer?
   native_semaphore_t incoming_vacancies;
   // Mutex that guards the incoming request buffer.
