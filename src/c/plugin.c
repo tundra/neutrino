@@ -115,8 +115,8 @@ void service_descriptor_init(service_descriptor_t *remote,
 opaque_t native_time_current(opaque_t opaque_request) {
   native_request_t *request = (native_request_t*) o2p(opaque_request);
   real_time_clock_t *clock = request->runtime->system_time;
-  uint64_t time = real_time_clock_millis_since_epoch_utc(clock);
-  pton_variant_t result = pton_integer(time);
+  native_time_t time = real_time_clock_time_since_epoch_utc(clock);
+  pton_variant_t result = pton_integer(native_time_to_millis(time));
   native_request_fulfill(request, &result);
   return opaque_null();
 }

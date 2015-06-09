@@ -38,7 +38,7 @@
 #include "derived.h"
 #include "value-inl.h"
 #include "sync/semaphore.h"
-#include "utils/boundbuf.h"
+#include "sync/worklist.h"
 
 /// ## Stack piece
 ///
@@ -583,10 +583,10 @@ typedef struct incoming_request_state_t incoming_request_state_t;
 typedef struct exported_service_capsule_t exported_service_capsule_t;
 
 // The number of pending results that we'll let buffer in an airlock.
-#define kProcessAirlockCompleteBufferSize 16
+#define kAirlockPendingAtomicCount 256
 
 // The number of incoming requests we'll let buffer in an airlock.
-#define kProcessAirlockIncomingBufferSize 16
+#define kAirlockIncomingCount 16
 
 // Data allocated in the C heap which is accessible from other threads
 // throughout the lifetime of the process. This is how asynchronous interaction
@@ -595,21 +595,13 @@ typedef struct exported_service_capsule_t exported_service_capsule_t;
 typedef struct {
   // The runtime that contains the process.
   runtime_t *runtime;
-  // How much space is available for foreign requests to be completed?
-  native_semaphore_t foreign_vacancies;
-  // Mutex that guards the complete request buffer.
-  native_mutex_t complete_buffer_mutex;
-  // Buffer that holds the state of completed requests.
-  bounded_buffer_t(kProcessAirlockCompleteBufferSize) complete_buffer;
+  // Atomic operations to perform after the current turn.
+  worklist_t(kAirlockPendingAtomicCount, 1) pending_atomic;
   // The number of outstanding foreign requests whose results haven't been
   // delivered to their associated promise.
   size_t open_foreign_request_count;
   // Buffer that holds the state of incoming requests.
-  bounded_buffer_t(kProcessAirlockIncomingBufferSize) incoming_buffer;
-  // How much room is left in the incoming request buffer?
-  native_semaphore_t incoming_vacancies;
-  // Mutex that guards the incoming request buffer.
-  native_mutex_t incoming_buffer_mutex;
+  worklist_t(kAirlockIncomingCount, 1) incoming_requests;
 } process_airlock_t;
 
 // Create and initialize a process airlock. Returns null if anything fails.

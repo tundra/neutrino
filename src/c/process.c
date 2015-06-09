@@ -891,7 +891,7 @@ bool is_process_idle(value_t process) {
     return false;
   // If there are incoming requests that haven't been processed there's also
   // work to do there.
-  if (!bounded_buffer_is_empty(kProcessAirlockIncomingBufferSize)(&airlock->incoming_buffer))
+  if (!worklist_is_empty(kAirlockIncomingCount, 1)(&airlock->incoming_requests))
     return false;
   return true;
 }
@@ -927,43 +927,28 @@ process_airlock_t *process_airlock_new(runtime_t *runtime) {
     return NULL;
   process_airlock_t *airlock = (process_airlock_t*) block.memory;
   airlock->runtime = runtime;
-  bounded_buffer_init(kProcessAirlockCompleteBufferSize)(&airlock->complete_buffer);
-  bounded_buffer_init(kProcessAirlockIncomingBufferSize)(&airlock->incoming_buffer);
   airlock->open_foreign_request_count = 0;
-  native_semaphore_construct_with_count(&airlock->foreign_vacancies,
-  kProcessAirlockCompleteBufferSize);
-  native_semaphore_construct_with_count(&airlock->incoming_vacancies,
-  kProcessAirlockIncomingBufferSize);
-  native_mutex_construct(&airlock->complete_buffer_mutex);
-  native_mutex_construct(&airlock->incoming_buffer_mutex);
-  if (!native_semaphore_initialize(&airlock->foreign_vacancies)
-      || !native_semaphore_initialize(&airlock->incoming_vacancies)
-      || !native_mutex_initialize(&airlock->complete_buffer_mutex)
-      || !native_mutex_initialize(&airlock->incoming_buffer_mutex))
+  if (!worklist_init(kAirlockPendingAtomicCount, 1)(&airlock->pending_atomic)
+      || !worklist_init(kAirlockIncomingCount, 1)(&airlock->incoming_requests))
     return NULL;
   return airlock;
 }
 
 void process_airlock_schedule_atomic(process_airlock_t *airlock,
     pending_atomic_t *op) {
-  // Acquire room to store the result and access to the buffer.
-  native_semaphore_acquire(&airlock->foreign_vacancies, duration_unlimited());
-  native_mutex_lock(&airlock->complete_buffer_mutex);
-  bool offered = bounded_buffer_try_offer(kProcessAirlockCompleteBufferSize)(
-      &airlock->complete_buffer, p2o(op));
+  opaque_t opaque_op = p2o(op);
+  bool offered = worklist_schedule(kAirlockPendingAtomicCount, 1)
+      (&airlock->pending_atomic, &opaque_op, 1, duration_unlimited());
   CHECK_TRUE("out of capacity", offered);
-  native_mutex_unlock(&airlock->complete_buffer_mutex);
 }
 
 void process_airlock_schedule_incoming_request(process_airlock_t *airlock,
     incoming_request_state_t *request) {
   // Acquire room to store the result and access to the buffer.
-  native_semaphore_acquire(&airlock->incoming_vacancies, duration_unlimited());
-  native_mutex_lock(&airlock->incoming_buffer_mutex);
-  bool offered = bounded_buffer_try_offer(kProcessAirlockIncomingBufferSize)(
-      &airlock->incoming_buffer, p2o(request));
+  opaque_t opaque_request = p2o(request);
+  bool offered = worklist_schedule(kAirlockIncomingCount, 1)(
+      &airlock->incoming_requests, &opaque_request, 1, duration_unlimited());
   CHECK_TRUE("out of capacity", offered);
-  native_mutex_unlock(&airlock->incoming_buffer_mutex);
 }
 
 static value_t foreign_request_state_apply_atomic(foreign_request_state_t *state,
@@ -1014,37 +999,27 @@ value_t deliver_process_incoming(runtime_t *runtime, value_t process) {
 
 bool process_airlock_next_pending_atomic(process_airlock_t *airlock,
     pending_atomic_t **result_out) {
-  native_mutex_lock(&airlock->complete_buffer_mutex);
   opaque_t next = opaque_null();
-  bool took = bounded_buffer_try_take(kProcessAirlockCompleteBufferSize)(
-      &airlock->complete_buffer, &next);
-  native_mutex_unlock(&airlock->complete_buffer_mutex);
-  if (took) {
+  bool took = worklist_take(kAirlockPendingAtomicCount, 1)(
+      &airlock->pending_atomic, &next, 1, duration_instant());
+  if (took)
     *result_out = (pending_atomic_t*) o2p(next);
-    native_semaphore_release(&airlock->foreign_vacancies);
-  }
   return took;
 }
 
 bool process_airlock_next_incoming(process_airlock_t *airlock,
     incoming_request_state_t **result_out) {
-  native_mutex_lock(&airlock->incoming_buffer_mutex);
   opaque_t next = opaque_null();
-  bool took = bounded_buffer_try_take(kProcessAirlockIncomingBufferSize)(
-      &airlock->incoming_buffer, &next);
-  native_mutex_unlock(&airlock->incoming_buffer_mutex);
-  if (took) {
+  bool took = worklist_take(kAirlockIncomingCount, 1)(
+      &airlock->incoming_requests, &next, 1, duration_instant());
+  if (took)
     *result_out = (incoming_request_state_t*) o2p(next);
-    native_semaphore_release(&airlock->incoming_vacancies);
-  }
   return took;
 }
 
 bool process_airlock_destroy(process_airlock_t *airlock) {
-  native_semaphore_dispose(&airlock->foreign_vacancies);
-  native_semaphore_dispose(&airlock->incoming_vacancies);
-  native_mutex_dispose(&airlock->complete_buffer_mutex);
-  native_mutex_dispose(&airlock->incoming_buffer_mutex);
+  worklist_dispose(kAirlockPendingAtomicCount, 1)(&airlock->pending_atomic);
+  worklist_dispose(kAirlockIncomingCount, 1)(&airlock->incoming_requests);
   allocator_default_free(new_memory_block(airlock, sizeof(process_airlock_t)));
   return true;
 }
