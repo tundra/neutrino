@@ -479,7 +479,7 @@ static opaque_t on_gc_during_deserialize(opaque_t opaque_s_blob,
   safe_value_t *s_blob = (safe_value_t*) o2p(opaque_s_blob);
   blob_t *data = (blob_t*) o2p(opaque_data);
   *data = get_blob_data(deref(*s_blob));
-  return opaque_null();
+  return o0();
 }
 
 value_t plankton_deserialize_blob(runtime_t *runtime,

@@ -118,7 +118,7 @@ opaque_t native_time_current(opaque_t opaque_request) {
   native_time_t time = real_time_clock_time_since_epoch_utc(clock);
   pton_variant_t result = pton_integer(native_time_to_millis(time));
   native_request_fulfill(request, &result);
-  return opaque_null();
+  return o0();
 }
 
 // Has this module's static initializer been run?

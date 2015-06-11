@@ -244,8 +244,8 @@ value_t report_system_call_failed_condition(const char *file, int line,
 // the context gives the information needed to understand it. If it indicates an
 // error that should be propagated it should still be caught and then converted
 // to a more informative condition.
-static value_t new_not_found_condition() {
-  return new_condition(ccNotFound);
+static value_t new_not_found_condition(uint32_t marker) {
+  return new_condition_with_details(ccNotFound, marker);
 }
 
 // Creates a new condition indicating that no builtin with a given name is known

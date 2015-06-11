@@ -1038,6 +1038,13 @@ static value_t runtime_prepare_dispose(runtime_t *runtime, uint32_t flags) {
 }
 
 value_t runtime_dispose(runtime_t *runtime, uint32_t flags) {
+  // Destroying the io engine requires it to wrap the currently executing iops
+  // up nicely which requires the heap to be intact, so we do that as the very
+  // first thing.
+  if (runtime->io_engine != NULL) {
+    io_engine_destroy(runtime->io_engine);
+    runtime->io_engine = NULL;
+  }
   value_t result = runtime_prepare_dispose(runtime, flags);
   // If preparing fails we keep going and try to free the allocated memory.
   // This may be a bad idea but until there's some evidence one way or the other
@@ -1048,10 +1055,6 @@ value_t runtime_dispose(runtime_t *runtime, uint32_t flags) {
     allocator_default_free(
         new_memory_block(runtime->gc_fuzzer, sizeof(gc_fuzzer_t)));
     runtime->gc_fuzzer = NULL;
-  }
-  if (runtime->io_engine != NULL) {
-    io_engine_destroy(runtime->io_engine);
-    runtime->io_engine = NULL;
   }
   return result;
 }
@@ -1159,6 +1162,10 @@ value_t get_runtime_plugin_factory_at(runtime_t *runtime, size_t index) {
 io_engine_t *runtime_get_io_engine(runtime_t *runtime) {
   if (runtime->io_engine == NULL)
     runtime->io_engine = io_engine_new();
+  return runtime->io_engine;
+}
+
+io_engine_t *runtime_peek_io_engine(runtime_t *runtime) {
   return runtime->io_engine;
 }
 

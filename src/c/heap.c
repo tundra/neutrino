@@ -66,7 +66,7 @@ value_t space_init(space_t *space, const extended_runtime_config_t *config) {
   if (memory_block_is_empty(memory))
     return new_system_call_failed_condition("malloc");
   // Clear the newly allocated memory to a recognizable value.
-  memset(memory.memory, kUnusedHeapMarker, bytes);
+  memory_block_fill(memory, kUnusedHeapMarker);
   address_t aligned = align_address(kValueSize, (address_t) memory.memory);
   space->memory = memory;
   space->next_free = space->start = aligned;
@@ -81,7 +81,7 @@ value_t space_init(space_t *space, const extended_runtime_config_t *config) {
 void space_dispose(space_t *space) {
   if (memory_block_is_empty(space->memory))
     return;
-  memset(space->memory.memory, kFreedHeapMarker, space->memory.size);
+  memory_block_fill(space->memory, kFreedHeapMarker);
   allocator_default_free(space->memory);
   space_clear(space);
 }

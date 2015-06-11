@@ -231,7 +231,7 @@ static void test_data_validate(value_t value, size_t depth, size_t seed) {
 static opaque_t add_one(opaque_t opaque_count, opaque_t) {
   size_t *count = (size_t*) o2p(opaque_count);
   (*count)++;
-  return opaque_null();
+  return o0();
 }
 
 TEST(serialize, collection) {

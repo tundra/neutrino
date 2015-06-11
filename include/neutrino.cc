@@ -247,7 +247,7 @@ unary_callback_t *NativeServiceBinderImpl::MethodBridge::bridge() {
 opaque_t NativeServiceBinderImpl::MethodBridge::invoke(opaque_t args) {
   ServiceRequestImpl request(static_cast<native_request_t*>(o2p(args)));
   original_(&request);
-  return opaque_null();
+  return o0();
 }
 
 NativeServiceBinderImpl::NativeServiceBinderImpl(plankton::Arena *scratch_arena,

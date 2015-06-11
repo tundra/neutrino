@@ -103,6 +103,7 @@ int get_value_domain_ordinal(value_domain_t domain);
   F(NotSerializable)                                                           \
   F(OutOfBounds)                                                               \
   F(OutOfMemory)                                                               \
+  F(ProcessIdle)                                                               \
   F(SafePoolFull)                                                              \
   F(Signal)                                                                    \
   F(SystemError)                                                               \

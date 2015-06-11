@@ -39,10 +39,6 @@ short_t blob_short_at(blob_t blob, size_t index) {
   return ((short_t*) blob.memory)[index];
 }
 
-void blob_fill(blob_t blob, byte_t value) {
-  memset(blob.memory, value, blob_byte_length(blob));
-}
-
 void blob_copy_to(blob_t src, blob_t dest) {
   CHECK_REL("blob copy destination too small", blob_byte_length(dest), >=,
       blob_byte_length(src));

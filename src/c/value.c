@@ -612,7 +612,7 @@ value_t read_stream_to_blob(runtime_t *runtime, in_stream_t *stream) {
     static const size_t kBufSize = 1024;
     byte_t raw_buffer[kBufSize];
     read_iop_t iop;
-    read_iop_init(&iop, stream, raw_buffer, kBufSize);
+    read_iop_init(&iop, stream, raw_buffer, kBufSize, o0());
     read_iop_execute(&iop);
     size_t was_read = read_iop_bytes_read(&iop);
     bool at_eof = read_iop_at_eof(&iop);
@@ -855,7 +855,7 @@ value_t binary_search_pair_array(value_t self, value_t key) {
       return get_pair_array_second_at(self, mid);
     }
   }
-  return new_not_found_condition();
+  return new_not_found_condition('h');
 }
 
 value_t get_pair_first(value_t pair) {
@@ -1475,7 +1475,7 @@ value_t get_id_hash_map_at(value_t map, value_t key) {
   if (find_id_hash_map_entry(map, key, hash, &entry, NULL)) {
     return get_id_hash_map_entry_value(entry);
   } else {
-    return new_not_found_condition();
+    return new_not_found_condition('i');
   }
 }
 
@@ -1504,7 +1504,7 @@ value_t delete_id_hash_map_at(runtime_t *runtime, value_t map, value_t key) {
     set_id_hash_map_size(map, get_id_hash_map_size(map) - 1);
     return success();
   } else {
-    return new_not_found_condition();
+    return new_not_found_condition('j');
   }
 }
 
@@ -1958,7 +1958,7 @@ value_t get_namespace_binding_at(value_t self, value_t path) {
     // would be easier but conditions can not be stored in the heap.
     value_t value = get_namespace_value(self);
     return is_nothing(value)
-        ? new_not_found_condition()
+        ? new_not_found_condition('k')
         : value;
   }
   value_t head = get_path_head(path);
@@ -2035,7 +2035,7 @@ value_t get_module_fragment_at(value_t self, value_t stage) {
     if (is_same_value(get_module_fragment_stage(fragment), stage))
       return fragment;
   }
-  return new_not_found_condition();
+  return new_not_found_condition('l');
 }
 
 value_t get_or_create_module_fragment_at(runtime_t *runtime, value_t self,
@@ -2066,7 +2066,7 @@ value_t get_module_fragment_before(value_t self, value_t stage) {
   int32_t limit = get_stage_offset_value(stage);
   value_t fragments = get_module_fragments(self);
   int32_t best_stage = kMostNegativeInt32;
-  value_t best_fragment = new_not_found_condition();
+  value_t best_fragment = new_not_found_condition('m');
   for (int64_t i = 0; i < get_array_buffer_length(fragments); i++) {
     value_t fragment = get_array_buffer_at(fragments, i);
     int32_t fragment_stage = get_stage_offset_value(get_module_fragment_stage(fragment));

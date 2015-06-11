@@ -388,6 +388,9 @@ value_t runtime_get_builtin_implementation(runtime_t *runtime, value_t name);
 // Returns this runtime's io engine, creating it on the first call.
 io_engine_t *runtime_get_io_engine(runtime_t *runtime);
 
+// Returns this runtime's io engine if one has been created, otherwise NULL.
+io_engine_t *runtime_peek_io_engine(runtime_t *runtime);
+
 // Initialize this root set.
 value_t roots_init(value_t roots, const extended_runtime_config_t *config,
     runtime_t *runtime);

@@ -44,8 +44,7 @@ byte_t blob_byte_at(blob_t blob, size_t index);
 // Returns the index'th short in the given blob.
 short_t blob_short_at(blob_t blob, size_t index);
 
-// Fills this blob's data with the given value.
-void blob_fill(blob_t blob, byte_t value);
+#define blob_fill memory_block_fill
 
 // Write the contents of the source blob into the destination.
 void blob_copy_to(blob_t src, blob_t dest);

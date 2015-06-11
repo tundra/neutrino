@@ -42,6 +42,9 @@ value_t new_heap_mutable_roots(runtime_t *runtime);
 // returns a condition to indicate an error.
 value_t new_heap_utf8(runtime_t *runtime, utf8_t contents);
 
+// Allocates a new heap string of the given size whose contents are empty.
+value_t new_heap_utf8_empty(runtime_t *runtime, size_t length);
+
 // Returns a new ascii view on the given string.
 value_t new_heap_ascii_string_view(runtime_t *runtime, value_t value);
 

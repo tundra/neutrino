@@ -663,9 +663,9 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
     string_buffer_printf(context->buf, "ensure");
     return;
   }
-  value_t subject = new_not_found_condition();
-  value_t selector = new_not_found_condition();
-  value_t transport = new_not_found_condition();
+  value_t subject = new_not_found_condition('e');
+  value_t selector = new_not_found_condition('f');
+  value_t transport = new_not_found_condition('g');
   id_hash_map_iter_t iter;
   id_hash_map_iter_init(&iter, invocation);
   while (id_hash_map_iter_advance(&iter)) {
@@ -877,7 +877,7 @@ value_t take_process_job(value_t process, job_t *job_out) {
       return success();
     }
   }
-  return new_condition(ccNotFound);
+  return new_condition(ccProcessIdle);
 }
 
 bool is_process_idle(value_t process) {
@@ -999,7 +999,7 @@ value_t deliver_process_incoming(runtime_t *runtime, value_t process) {
 
 bool process_airlock_next_pending_atomic(process_airlock_t *airlock,
     pending_atomic_t **result_out) {
-  opaque_t next = opaque_null();
+  opaque_t next = o0();
   bool took = worklist_take(kAirlockPendingAtomicCount, 1)(
       &airlock->pending_atomic, &next, 1, duration_instant());
   if (took)
@@ -1009,7 +1009,7 @@ bool process_airlock_next_pending_atomic(process_airlock_t *airlock,
 
 bool process_airlock_next_incoming(process_airlock_t *airlock,
     incoming_request_state_t **result_out) {
-  opaque_t next = opaque_null();
+  opaque_t next = o0();
   bool took = worklist_take(kAirlockIncomingCount, 1)(
       &airlock->incoming_requests, &next, 1, duration_instant());
   if (took)

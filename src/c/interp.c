@@ -5,6 +5,7 @@
 #include "derived-inl.h"
 #include "freeze.h"
 #include "interp.h"
+#include "io.h"
 #include "process.h"
 #include "safe-inl.h"
 #include "sync.h"
@@ -966,12 +967,28 @@ static value_t run_next_process_job(safe_value_t s_ambience, safe_value_t s_proc
 static value_t run_process_until_idle(safe_value_t s_ambience, safe_value_t s_process) {
   if (!is_process_idle(deref(s_process))) {
     // There's at least one job to run.
-    do {
-      TRY_DEF(result, run_next_process_job(s_ambience, s_process));
-      if (is_process_idle(deref(s_process)))
-        // The last job completed normally and it was the last job; return its
-        // value.
+    while (true) {
+      value_t result = run_next_process_job(s_ambience, s_process);
+      if (is_condition(result)) {
+        if (!in_condition_cause(ccProcessIdle, result))
+          // Some problem occurred; propagate.
+          return result;
+        // The process has become idle. Maybe it's because it's waiting for I/O?
+        runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
+        io_engine_t *engine = runtime_peek_io_engine(runtime);
+        if (engine != NULL && !io_engine_is_idle(engine)) {
+          // There is still I/O going on at least so let's wait a bit for that
+          // to finish.
+          if (!native_thread_sleep(duration_seconds(0.1)))
+            return new_system_call_failed_condition("sleep");
+        } else {
+          // There's no more I/O to wait for so just propagate.
+          return result;
+        }
+      } else if (is_process_idle(deref(s_process))) {
+        // We performed the last job so we're done.
         return result;
+      }
     } while (true);
   }
   return nothing();

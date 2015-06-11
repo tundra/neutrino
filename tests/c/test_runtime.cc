@@ -190,7 +190,7 @@ TEST(runtime, ambience_gc) {
 static opaque_t on_gc(opaque_t opaque_gc_count, opaque_t opaque_runtime) {
   size_t *gc_count = (size_t*) o2p(opaque_gc_count);
   (*gc_count)++;
-  return opaque_null();
+  return o0();
 }
 
 TEST(runtime, on_gc_done_observer) {

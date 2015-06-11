@@ -173,7 +173,7 @@ static opaque_t on_foreign_request_success(opaque_t opaque_state,
   state->result = pton_assembler_release_code(assm);
   pton_dispose_assembler(assm);
   process_airlock_schedule_atomic(state->airlock, UPCAST_TO_PENDING_ATOMIC(state));
-  return opaque_null();
+  return o0();
 }
 
 void foreign_request_state_init(foreign_request_state_t *state,
