@@ -177,7 +177,7 @@ static value_t in_stream_read(builtin_arguments_t *args) {
   CHECK_FAMILY(ofInStream, self);
   value_t size_val = get_builtin_argument(args, 0);
   CHECK_DOMAIN(vdInteger, size_val);
-  uint64_t size = get_integer_value(size_val);
+  size_t size = (size_t) get_integer_value(size_val);
   memory_block_t scratch = allocator_default_malloc(size);
   runtime_t *runtime = get_builtin_runtime(args);
   TRY_DEF(result, new_heap_utf8_empty(runtime, size));
