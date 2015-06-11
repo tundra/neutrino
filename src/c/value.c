@@ -552,10 +552,30 @@ static value_t ascii_string_view_substring(builtin_arguments_t *args) {
   return new_heap_utf8(runtime, substring);
 }
 
+static value_t ascii_string_view_to_blob(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofAsciiStringView, self);
+  value_t value = get_ascii_string_view_value(self);
+  blob_t contents = get_utf8_raw_contents(value);
+  runtime_t *runtime = get_builtin_runtime(args);
+  return new_heap_blob_with_data(runtime, contents);
+}
+
+static value_t ascii_string_from_blob(builtin_arguments_t *args) {
+  value_t blob = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofBlob, blob);
+  blob_t data = get_blob_data(blob);
+  utf8_t contents = new_string((char*) data.memory, data.size);
+  runtime_t *runtime = get_builtin_runtime(args);
+  return new_heap_utf8(runtime, contents);
+}
+
 value_t add_ascii_string_view_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   ADD_BUILTIN_IMPL("ascii_string_view[]", 1, ascii_string_view_get_at);
   ADD_BUILTIN_IMPL("ascii_string_view.length", 0, ascii_string_view_length);
   ADD_BUILTIN_IMPL("ascii_string_view.substring", 2, ascii_string_view_substring);
+  ADD_BUILTIN_IMPL("ascii_string_view.to_blob", 1, ascii_string_view_to_blob);
+  ADD_BUILTIN_IMPL("ascii.string_from_blob", 1, ascii_string_from_blob);
   return success();
 }
 
@@ -564,7 +584,6 @@ value_t add_ascii_string_view_builtin_implementations(runtime_t *runtime, safe_v
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(blob);
 NO_BUILTIN_METHODS(blob);
-FIXED_GET_MODE_IMPL(blob, vmDeepFrozen);
 
 size_t calc_blob_size(size_t size) {
   return kHeapObjectHeaderSize              // header
@@ -579,6 +598,11 @@ blob_t get_blob_data(value_t value) {
   size_t length = (size_t) get_blob_length(value);
   void *data = access_heap_object_field(value, kBlobDataOffset);
   return new_blob(data, length);
+}
+
+void set_blob_data(value_t self, blob_t data) {
+  CHECK_MUTABLE(self);
+  blob_copy_to(data, get_blob_data(self));
 }
 
 value_t blob_validate(value_t value) {

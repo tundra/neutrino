@@ -113,8 +113,8 @@ static value_t out_stream_write(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofOutStream, self);
   value_t data = get_builtin_argument(args, 0);
-  CHECK_FAMILY(ofUtf8, data);
-  memory_block_t contents = get_utf8_raw_contents(data);
+  CHECK_FAMILY(ofBlob, data);
+  memory_block_t contents = get_blob_data(data);
   // Copy the string contents into a temporary block of memory because the
   // contents may be moved by the gc.
   memory_block_t scratch = allocator_default_malloc(contents.size);
@@ -180,7 +180,7 @@ static value_t in_stream_read(builtin_arguments_t *args) {
   size_t size = (size_t) get_integer_value(size_val);
   memory_block_t scratch = allocator_default_malloc(size);
   runtime_t *runtime = get_builtin_runtime(args);
-  TRY_DEF(result, new_heap_utf8_empty(runtime, size));
+  TRY_DEF(result, new_heap_blob(runtime, size, afMutable));
   TRY_DEF(promise, new_heap_pending_promise(runtime));
   safe_value_t s_promise = runtime_protect_value(runtime, promise);
   safe_value_t s_stream = runtime_protect_value(runtime, self);
@@ -210,8 +210,8 @@ value_t pending_iop_state_apply_atomic(pending_iop_state_t *state,
     process_airlock_t *airlock) {
   if (state->iop.type_ == ioRead) {
     value_t result = deref(state->s_result);
-    memory_block_t target = get_utf8_raw_contents(result);
-    blob_copy_to(state->scratch, target);
+    set_blob_data(result, state->scratch);
+    TRY(ensure_frozen(airlock->runtime, result));
     fulfill_promise(deref(state->s_promise), result);
   } else {
     fulfill_promise(deref(state->s_promise),

@@ -51,7 +51,7 @@ value_t new_heap_ascii_string_view(runtime_t *runtime, value_t value);
 // Allocates a new heap blob in the given runtime, if there is room, otherwise
 // returns a condition to indicate an error. The result's data will be reset to
 // all zeros.
-value_t new_heap_blob(runtime_t *runtime, size_t length);
+value_t new_heap_blob(runtime_t *runtime, size_t length, alloc_flags_t flags);
 
 // Allocates a new heap blob in the given runtime, if there is room, otherwise
 // returns a condition to indicate an error. The result will contain a copy of the

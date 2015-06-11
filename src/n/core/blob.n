@@ -1,0 +1,7 @@
+# Copyright 2015 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## The built-in type of runtime-native byte blobs.
+def @Blob := @ctrino.get_builtin_type("Blob");
+
+def type @Blob is @Object;

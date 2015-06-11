@@ -25,7 +25,7 @@ TEST(alloc, heap_string) {
 TEST(alloc, heap_blob) {
   CREATE_RUNTIME();
 
-  value_t blob = new_heap_blob(runtime, 9);
+  value_t blob = new_heap_blob(runtime, 9, afFreeze);
   ASSERT_DOMAIN(vdHeapObject, blob);
   ASSERT_FAMILY(ofBlob, blob);
   ASSERT_EQ(9, get_blob_length(blob));

@@ -5,6 +5,7 @@
 files = get_group("files")
 
 core_file_names = [
+  "core/blob.n",
   "core/block.n",
   "core/bool.n",
   "core/call_literal.n",

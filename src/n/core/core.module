@@ -4,6 +4,7 @@
 module $core {
 
   source [
+    "blob.n",
     "block.n",
     "bool.n",
     "call_literal.n",

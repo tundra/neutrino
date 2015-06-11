@@ -361,7 +361,7 @@ value_t roots_init(value_t roots, const extended_runtime_config_t *config,
   TRY_DEF(array_of_zero, new_heap_array(runtime, 1));
   set_array_at(array_of_zero, 0, new_integer(0));
   RAW_ROOT(roots, array_of_zero) = array_of_zero;
-  TRY_DEF(empty_blob, new_heap_blob(runtime, 0));
+  TRY_DEF(empty_blob, new_heap_blob(runtime, 0, afFreeze));
   TRY_SET(RAW_ROOT(roots, empty_code_block),
       new_heap_code_block(runtime, empty_blob, empty_array, 0));
   TRY_SET(RAW_ROOT(roots, empty_array_buffer),

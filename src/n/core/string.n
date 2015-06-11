@@ -35,6 +35,11 @@ def ($this is @String).get_ascii_characters();
 ## Marker used to identify the ascii string view.
 type @Ascii;
 
+# Returns a new string whose contents are taken from the given blob of data,
+# assumed to be ascii encoded.
+@ctrino.builtin("ascii.string_from_blob")
+def ($this == @Ascii).string_from($data is @Blob);
+
 ## Returns a ascii/ctype view of this string.
 @ctrino.builtin("str.view_ascii")
 def ($this is @String).view($enc == @Ascii);
@@ -55,6 +60,9 @@ def ($this is @AsciiStringView).length;
 ## characters from $from to but not including $to.
 @ctrino.builtin("ascii_string_view.substring")
 def ($this is @AsciiStringView).substring($from is @Integer, $to is @Integer);
+
+@ctrino.builtin("ascii_string_view.to_blob")
+def ($this is @AsciiStringView).to($type == @Blob);
 
 ## An individual character in an ascii string.
 def @AsciiCharacter := @ctrino.get_builtin_type("AsciiCharacter");

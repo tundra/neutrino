@@ -81,23 +81,23 @@ value_t new_heap_ascii_string_view(runtime_t *runtime, value_t value) {
 
 }
 
-value_t new_heap_blob(runtime_t *runtime, size_t length) {
+value_t new_heap_blob(runtime_t *runtime, size_t length, alloc_flags_t flags) {
   size_t size = calc_blob_size(length);
   TRY_DEF(result, alloc_heap_object(runtime, size,
-      ROOT(runtime, blob_species)));
+      ROOT(runtime, mutable_blob_species)));
   set_blob_length(result, length);
   blob_t data = get_blob_data(result);
   blob_fill(data, 0);
+  TRY(post_process_result(runtime, result, flags));
   return post_create_sanity_check(result, size);
 }
 
 value_t new_heap_blob_with_data(runtime_t *runtime, blob_t contents) {
   // Allocate the blob object to hold the data.
-  TRY_DEF(blob, new_heap_blob(runtime, blob_byte_length(contents)));
-  // Pull out the contents of the heap blob.
-  blob_t blob_data = get_blob_data(blob);
+  TRY_DEF(blob, new_heap_blob(runtime, blob_byte_length(contents), afMutable));
   // Copy the contents into the heap blob.
-  blob_copy_to(contents, blob_data);
+  set_blob_data(blob, contents);
+  TRY(ensure_frozen(runtime, blob));
   return blob;
 }
 

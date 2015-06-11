@@ -403,7 +403,7 @@ static inline value_t chase_moved_object(value_t raw) {
   F(AsciiStringView,         ascii_string_view,         _, X, (_, _, _, _, _, _, _, _, _, _), 85)\
   F(Backtrace,               backtrace,                 _, X, (_, _, _, _, _, _, _, _, _, _), 54)\
   F(BacktraceEntry,          backtrace_entry,           _, _, (_, _, _, _, _, _, _, _, _, _), 64)\
-  F(Blob,                    blob,                      _, X, (_, _, _, X, _, _, _, _, _, _), 63)\
+  F(Blob,                    blob,                      X, X, (_, _, _, X, _, _, _, _, _, _), 63)\
   F(Block,                   block,                     X, X, (_, _, _, _, _, _, _, _, _, _), 73)\
   F(BlockAst,                block_ast,                 X, X, (_, _, X, _, _, X, _, _, _, _), 72)\
   F(BuiltinImplementation,   builtin_implementation,    X, _, (_, _, _, _, _, _, _, _, _, _),  6)\
@@ -1150,6 +1150,10 @@ INTEGER_ACCESSORS_DECL(blob, length);
 
 // Gives access to the data in the given blob value.
 blob_t get_blob_data(value_t value);
+
+// Sets the contents of this blob. The data array must be the same size as this
+// blob.
+void set_blob_data(value_t self, blob_t data);
 
 // Reads the full contents of an io stream into a blob.
 value_t read_stream_to_blob(runtime_t *runtime, in_stream_t *stream);

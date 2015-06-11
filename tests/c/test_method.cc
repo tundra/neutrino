@@ -754,7 +754,7 @@ TEST(method, dense_perfect_lookup) {
   value_t values[4] = {a, b, c, d};
 
   value_t dummy_code = new_heap_code_block(runtime,
-      new_heap_blob(runtime, 0),
+      new_heap_blob(runtime, 0, afFreeze),
       ROOT(runtime, empty_array),
       0);
   // Build a method for each combination of parameter types.
