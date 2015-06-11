@@ -1119,6 +1119,11 @@ char *get_utf8_chars(value_t value);
 // Stores the contents of this string in the given output.
 utf8_t get_utf8_contents(value_t value);
 
+// Returns a view of the contents of the given string as a raw blob of data.
+// Note that the null terminator is not included in the blob so you only get the
+// chars like with the utf8_t version.
+blob_t get_utf8_raw_contents(value_t self);
+
 // Writes the raw contents of the given string on the given buffer
 void string_buffer_append_utf8(string_buffer_t *buf, value_t value);
 

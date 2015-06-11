@@ -106,7 +106,7 @@ static value_t apply_method_declaration(value_t ambience, value_t decl,
   runtime_t *runtime = get_ambience_runtime(ambience);
   // Look for the :builtin annotation on this method.
   value_t annots = get_method_declaration_ast_annotations(decl);
-  value_t builtin_name = new_not_found_condition('b');
+  value_t builtin_name = new_not_found_condition(0x7d7dcbb9);
   for (int64_t i = 0; i < get_array_length(annots); i++) {
     value_t annot = get_array_at(annots, i);
     TRY_DEF(value, run_expression_until_condition(ambience, fragment, annot));
@@ -493,7 +493,7 @@ static value_t get_fragment_entry_before(value_t module, value_t stage) {
   // one before the given stage.
   int32_t stage_offset = get_stage_offset_value(stage);
   int32_t closest_stage_value = kMostNegativeInt32;
-  value_t closest_stage_entry = new_not_found_condition('c');
+  value_t closest_stage_entry = new_not_found_condition(0x1c8d12bb);
   id_hash_map_iter_t fragment_iter;
   id_hash_map_iter_init(&fragment_iter, module);
   while (id_hash_map_iter_advance(&fragment_iter)) {

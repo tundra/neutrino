@@ -381,6 +381,10 @@ utf8_t get_utf8_contents(value_t value) {
   return new_string(get_utf8_chars(value), (size_t) get_utf8_length(value));
 }
 
+blob_t get_utf8_raw_contents(value_t self) {
+  return new_memory_block(get_utf8_chars(self), (size_t) get_utf8_length(self));
+}
+
 value_t utf8_validate(value_t value) {
   VALIDATE_FAMILY(ofUtf8, value);
   // Check that the string is null-terminated.
@@ -855,7 +859,7 @@ value_t binary_search_pair_array(value_t self, value_t key) {
       return get_pair_array_second_at(self, mid);
     }
   }
-  return new_not_found_condition('h');
+  return new_not_found_condition(0xa9869a29);
 }
 
 value_t get_pair_first(value_t pair) {
@@ -1475,7 +1479,7 @@ value_t get_id_hash_map_at(value_t map, value_t key) {
   if (find_id_hash_map_entry(map, key, hash, &entry, NULL)) {
     return get_id_hash_map_entry_value(entry);
   } else {
-    return new_not_found_condition('i');
+    return new_not_found_condition(0xa9869a29);
   }
 }
 
@@ -1504,7 +1508,7 @@ value_t delete_id_hash_map_at(runtime_t *runtime, value_t map, value_t key) {
     set_id_hash_map_size(map, get_id_hash_map_size(map) - 1);
     return success();
   } else {
-    return new_not_found_condition('j');
+    return new_not_found_condition(0x85ec99e0);
   }
 }
 
@@ -1958,7 +1962,7 @@ value_t get_namespace_binding_at(value_t self, value_t path) {
     // would be easier but conditions can not be stored in the heap.
     value_t value = get_namespace_value(self);
     return is_nothing(value)
-        ? new_not_found_condition('k')
+        ? new_not_found_condition(0xaca2a610)
         : value;
   }
   value_t head = get_path_head(path);
@@ -2035,7 +2039,7 @@ value_t get_module_fragment_at(value_t self, value_t stage) {
     if (is_same_value(get_module_fragment_stage(fragment), stage))
       return fragment;
   }
-  return new_not_found_condition('l');
+  return new_not_found_condition(0x43f297c8);
 }
 
 value_t get_or_create_module_fragment_at(runtime_t *runtime, value_t self,
@@ -2066,7 +2070,7 @@ value_t get_module_fragment_before(value_t self, value_t stage) {
   int32_t limit = get_stage_offset_value(stage);
   value_t fragments = get_module_fragments(self);
   int32_t best_stage = kMostNegativeInt32;
-  value_t best_fragment = new_not_found_condition('m');
+  value_t best_fragment = new_not_found_condition(0xa4a5643d);
   for (int64_t i = 0; i < get_array_buffer_length(fragments); i++) {
     value_t fragment = get_array_buffer_at(fragments, i);
     int32_t fragment_stage = get_stage_offset_value(get_module_fragment_stage(fragment));

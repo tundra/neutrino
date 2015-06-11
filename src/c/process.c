@@ -663,9 +663,9 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
     string_buffer_printf(context->buf, "ensure");
     return;
   }
-  value_t subject = new_not_found_condition('e');
-  value_t selector = new_not_found_condition('f');
-  value_t transport = new_not_found_condition('g');
+  value_t subject = new_not_found_condition(0xc8e7fc1b);
+  value_t selector = new_not_found_condition(0x39063f3a);
+  value_t transport = new_not_found_condition(0x255364c3);
   id_hash_map_iter_t iter;
   id_hash_map_iter_init(&iter, invocation);
   while (id_hash_map_iter_advance(&iter)) {

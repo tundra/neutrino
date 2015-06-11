@@ -114,9 +114,11 @@ static value_t out_stream_write(builtin_arguments_t *args) {
   CHECK_FAMILY(ofOutStream, self);
   value_t data = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofUtf8, data);
-  utf8_t contents = get_utf8_contents(data);
-  memory_block_t block = allocator_default_malloc(contents.size);
-  blob_copy_to(new_memory_block((char*) contents.chars, contents.size), block);
+  memory_block_t contents = get_utf8_raw_contents(data);
+  // Copy the string contents into a temporary block of memory because the
+  // contents may be moved by the gc.
+  memory_block_t scratch = allocator_default_malloc(contents.size);
+  blob_copy_to(contents, scratch);
   runtime_t *runtime = get_builtin_runtime(args);
   TRY_DEF(promise, new_heap_pending_promise(runtime));
   safe_value_t s_promise = runtime_protect_value(runtime, promise);
@@ -124,9 +126,10 @@ static value_t out_stream_write(builtin_arguments_t *args) {
   value_t process = get_builtin_process(args);
   safe_value_t s_process = runtime_protect_value(runtime, process);
   process_airlock_t *airlock = get_process_airlock(process);
-  pending_iop_state_t *state = pending_iop_state_new(block, s_promise, s_stream,
+  pending_iop_state_t *state = pending_iop_state_new(scratch, s_promise, s_stream,
       s_process, protect_immediate(nothing()), airlock);
-  iop_init_write(&state->iop, get_out_stream_native(self), block.memory, block.size, p2o(state));
+  iop_init_write(&state->iop, get_out_stream_native(self), scratch.memory,
+      scratch.size, p2o(state));
   io_engine_t *io_engine = runtime_get_io_engine(runtime);
   if (!io_engine_schedule(io_engine, state))
     return new_condition(ccWat);
@@ -175,7 +178,7 @@ static value_t in_stream_read(builtin_arguments_t *args) {
   value_t size_val = get_builtin_argument(args, 0);
   CHECK_DOMAIN(vdInteger, size_val);
   uint64_t size = get_integer_value(size_val);
-  memory_block_t block = allocator_default_malloc(size);
+  memory_block_t scratch = allocator_default_malloc(size);
   runtime_t *runtime = get_builtin_runtime(args);
   TRY_DEF(result, new_heap_utf8_empty(runtime, size));
   TRY_DEF(promise, new_heap_pending_promise(runtime));
@@ -185,10 +188,10 @@ static value_t in_stream_read(builtin_arguments_t *args) {
   safe_value_t s_process = runtime_protect_value(runtime, process);
   safe_value_t s_result = runtime_protect_value(runtime, result);
   process_airlock_t *airlock = get_process_airlock(process);
-  pending_iop_state_t *state = pending_iop_state_new(block, s_promise, s_stream,
-      s_process, s_result, airlock);
-  iop_init_read(&state->iop, get_in_stream_native(self), block.memory, block.size,
-      p2o(state));
+  pending_iop_state_t *state = pending_iop_state_new(scratch, s_promise,
+      s_stream, s_process, s_result, airlock);
+  iop_init_read(&state->iop, get_in_stream_native(self), scratch.memory,
+      scratch.size, p2o(state));
   io_engine_t *io_engine = runtime_get_io_engine(runtime);
   if (!io_engine_schedule(io_engine, state))
     return new_condition(ccWat);
@@ -207,7 +210,8 @@ value_t pending_iop_state_apply_atomic(pending_iop_state_t *state,
     process_airlock_t *airlock) {
   if (state->iop.type_ == ioRead) {
     value_t result = deref(state->s_result);
-    memcpy(get_utf8_chars(result), state->scratch.memory, state->scratch.size);
+    memory_block_t target = get_utf8_raw_contents(result);
+    blob_copy_to(state->scratch, target);
     fulfill_promise(deref(state->s_promise), result);
   } else {
     fulfill_promise(deref(state->s_promise),
@@ -251,7 +255,6 @@ void pending_iop_state_destroy(runtime_t *runtime, pending_iop_state_t *state) {
 
 static void io_engine_activate_pending(io_engine_t *engine,
     pending_iop_state_t *state) {
-  HEST("Scheduling %p", state);
   iop_group_schedule(&engine->iop_group, &state->iop);
 }
 
@@ -264,6 +267,8 @@ static void io_engine_transfer_pending(io_engine_t *engine) {
         duration_instant())) {
       io_engine_activate_pending(engine, (pending_iop_state_t*) o2p(next));
     } else {
+      // As soon as we run out of pending ops we don't wait for new ones, we
+      // just move on.
       break;
     }
   }
@@ -289,7 +294,6 @@ static void io_engine_select(io_engine_t *engine, duration_t timeout) {
     if (!iop_group_wait_for_next(&engine->iop_group, timeout, &opaque_state))
       return;
     pending_iop_state_t *state = (pending_iop_state_t*) o2p(opaque_state);
-    HEST("Completed %p", state);
     process_airlock_schedule_atomic(state->airlock,
         UPCAST_TO_PENDING_ATOMIC(state));
   }
@@ -300,19 +304,18 @@ bool io_engine_is_idle(io_engine_t *engine) {
       && iop_group_pending_count(&engine->iop_group) == 0;
 }
 
-// Is this engine done running?
+// Is it time for this engine to shut down?
 static bool io_engine_shut_down(io_engine_t *engine) {
   return io_engine_is_idle(engine) && engine->terminate_when_idle;
 }
 
 // The main loop of the io engine's thread.
 static void io_engine_main_loop(io_engine_t *engine) {
-  duration_t interval = duration_seconds(1);
+  duration_t interval = duration_seconds(0.1);
   while (!io_engine_shut_down(engine)) {
     io_engine_transfer_pending(engine);
     io_engine_select(engine, interval);
   }
-  HEST("Leaving io engine");
 }
 
 // Allows the main loop to be called from a callback.
@@ -352,9 +355,7 @@ void io_engine_destroy(io_engine_t *engine) {
 }
 
 bool io_engine_schedule(io_engine_t *engine, pending_iop_state_t *op) {
-  if (engine->terminate_when_idle)
-    // If the engine has been asked to terminate we stop scheduling ops.
-    return false;
+  CHECK_FALSE("scheduling while terminating", engine->terminate_when_idle);
   opaque_t opaque_op = p2o(op);
   return worklist_schedule(kIoEngineMaxIncoming, 1)(&engine->incoming,
       &opaque_op, 1, duration_unlimited());

@@ -28,7 +28,7 @@ static scope_o *bottom_scope = NULL;
 IMPLEMENTATION(bottom_scope_o, scope_o);
 
 static value_t bottom_scope_lookup(scope_o *self, value_t symbol, binding_info_t *info_out) {
-  return new_not_found_condition('d');
+  return new_not_found_condition(0xb91c8bdd);
 }
 
 VTABLE(bottom_scope_o, scope_o) { bottom_scope_lookup };
