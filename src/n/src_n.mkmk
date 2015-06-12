@@ -20,10 +20,10 @@ core_file_names = [
   "core/lambda.n",
   "core/null.n",
   "core/object.n",
-  "core/pipe.n",
+  "core/os_pipe.n",
+  "core/os_stream.n",
   "core/promise.n",
   "core/selector.n",
-  "core/stream.n",
   "core/string.n",
   "core/tuple.n",
 ]

@@ -434,7 +434,6 @@ static inline value_t chase_moved_object(value_t raw) {
   F(IncomingRequestThunk,    incoming_request_thunk,    _, X, (_, _, _, _, _, _, _, _, _, _), 92)\
   F(Instance,                instance,                  _, X, (_, _, X, _, _, _, X, _, _, X), 60)\
   F(InstanceManager,         instance_manager,          _, X, (_, _, _, _, _, _, _, _, _, _),  3)\
-  F(InStream,                in_stream,                 _, X, (_, _, _, _, _, _, _, _, _, _), 95)\
   F(InvocationAst,           invocation_ast,            X, X, (_, _, X, _, _, X, _, _, _, _),  4)\
   F(IsDeclarationAst,        is_declaration_ast,        X, _, (_, _, X, _, _, _, _, _, _, _), 21)\
   F(Lambda,                  lambda,                    X, X, (_, _, _, _, _, _, X, _, _, _), 47)\
@@ -456,11 +455,12 @@ static inline value_t chase_moved_object(value_t raw) {
   F(NamespaceDeclarationAst, namespace_declaration_ast, X, _, (_, _, X, _, _, _, _, _, _, _), 44)\
   F(NamespaceVariableAst,    namespace_variable_ast,    X, X, (_, _, X, _, _, X, _, _, _, _), 42)\
   F(Operation,               operation,                 X, X, (_, X, X, _, _, _, _, _, _, X), 46)\
-  F(OutStream,               out_stream,                _, X, (_, _, _, _, _, _, _, _, _, _), 94)\
+  F(OsInStream,              os_in_stream,              _, X, (_, _, _, _, _, _, _, _, _, _), 95)\
+  F(OsOutStream,             os_out_stream,             _, X, (_, _, _, _, _, _, _, _, _, _), 94)\
+  F(OsPipe,                  os_pipe,                   _, X, (_, _, _, _, _, _, _, _, X, _), 93)\
   F(Parameter,               parameter,                 X, _, (_, _, _, _, _, _, _, _, _, _), 51)\
   F(ParameterAst,            parameter_ast,             X, X, (_, _, X, _, _, _, _, _, _, _),  8)\
   F(Path,                    path,                      X, X, (X, X, X, _, _, _, _, _, _, _), 36)\
-  F(Pipe,                    pipe,                      _, X, (_, _, _, _, _, _, _, _, X, _), 93)\
   F(Process,                 process,                   _, _, (_, _, _, _, _, _, _, _, X, _), 83)\
   F(ProgramAst,              program_ast,               X, _, (_, _, X, _, _, _, _, _, _, _), 17)\
   F(Promise,                 promise,                   _, X, (_, _, _, _, _, _, _, _, _, _), 78)\

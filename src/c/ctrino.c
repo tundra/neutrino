@@ -252,7 +252,7 @@ static value_t ctrino_new_anonymous_pipe(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_C_OBJECT_TAG(btCtrino, self);
   runtime_t *runtime = get_builtin_runtime(args);
-  return new_heap_pipe(runtime);
+  return new_heap_os_pipe(runtime);
 }
 
 #define kCtrinoMethodCount 22

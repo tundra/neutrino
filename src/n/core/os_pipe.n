@@ -2,7 +2,7 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 # A native OS pipe.
-def @io:Pipe := @ctrino.get_builtin_type("Pipe");
+def @io:Pipe := @ctrino.get_builtin_type("OsPipe");
 
 def type @io:Pipe is @Object;
 
@@ -10,9 +10,9 @@ def type @io:Pipe is @Object;
 def ($this == @io:Pipe).new() => @ctrino.new_anonymous_pipe();
 
 # Yields the pipe's read end.
-@ctrino.builtin("pipe.in")
+@ctrino.builtin("os_pipe.in")
 def ($this is @io:Pipe).in;
 
 # Yields the pipe's write end.
-@ctrino.builtin("pipe.out")
+@ctrino.builtin("os_pipe.out")
 def ($this is @io:Pipe).out;

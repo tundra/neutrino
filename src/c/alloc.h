@@ -443,15 +443,15 @@ value_t new_heap_current_module_ast(runtime_t *runtime);
 /// ## Sync
 
 // Creates a new native pipe value.
-value_t new_heap_pipe(runtime_t *runtime);
+value_t new_heap_os_pipe(runtime_t *runtime);
 
 // Creates a new out stream that wraps the given native stream and keeps the
 // given lifeline object alive.
-value_t new_heap_out_stream(runtime_t *runtime, out_stream_t *out, value_t lifeline);
+value_t new_heap_os_out_stream(runtime_t *runtime, out_stream_t *out, value_t lifeline);
 
 // Creates a new in stream that wraps the given native stream and keeps the
 // given lifeline object alive.
-value_t new_heap_in_stream(runtime_t *runtime, in_stream_t *out, value_t lifeline);
+value_t new_heap_os_in_stream(runtime_t *runtime, in_stream_t *out, value_t lifeline);
 
 
 // --- U t i l s ---

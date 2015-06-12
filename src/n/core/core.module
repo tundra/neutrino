@@ -19,10 +19,10 @@ module $core {
     "lambda.n",
     "null.n",
     "object.n",
-    "pipe.n",
+    "os_pipe.n",
+    "os_stream.n",
     "promise.n",
     "selector.n",
-    "stream.n",
     "string.n",
     "tuple.n"
   ]

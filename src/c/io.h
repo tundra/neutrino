@@ -10,49 +10,49 @@
 
 /// ## Pipe
 
-static const size_t kPipeSize = HEAP_OBJECT_SIZE(3);
-static const size_t kPipeNativeOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kPipeInOffset = HEAP_OBJECT_FIELD_OFFSET(1);
-static const size_t kPipeOutOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kOsPipeSize = HEAP_OBJECT_SIZE(3);
+static const size_t kOsPipeNativeOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kOsPipeInOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kOsPipeOutOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
 // The underlying native pipe.
-ACCESSORS_DECL(pipe, native_ptr);
+ACCESSORS_DECL(os_pipe, native_ptr);
 
 // This pipe's input stream.
-ACCESSORS_DECL(pipe, in);
+ACCESSORS_DECL(os_pipe, in);
 
 // This pipe's output stream.
-ACCESSORS_DECL(pipe, out);
+ACCESSORS_DECL(os_pipe, out);
 
 
 /// ## Out stream
 
-static const size_t kOutStreamSize = HEAP_OBJECT_SIZE(2);
-static const size_t kOutStreamNativePtrOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kOutStreamLifelineOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kOsOutStreamSize = HEAP_OBJECT_SIZE(2);
+static const size_t kOsOutStreamNativePtrOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kOsOutStreamLifelineOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The underlying native out stream.
-ACCESSORS_DECL(out_stream, native_ptr);
+ACCESSORS_DECL(os_out_stream, native_ptr);
 
 // Optional value kept alive by this out stream.
-ACCESSORS_DECL(out_stream, lifeline);
+ACCESSORS_DECL(os_out_stream, lifeline);
 
-out_stream_t *get_out_stream_native(value_t self);
+out_stream_t *get_os_out_stream_native(value_t self);
 
 
 /// ## In stream
 
-static const size_t kInStreamSize = HEAP_OBJECT_SIZE(2);
-static const size_t kInStreamNativePtrOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kInStreamLifelineOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kOsInStreamSize = HEAP_OBJECT_SIZE(2);
+static const size_t kOsInStreamNativePtrOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kOsInStreamLifelineOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The underlying native in stream.
-ACCESSORS_DECL(in_stream, native_ptr);
+ACCESSORS_DECL(os_in_stream, native_ptr);
 
 // Optional value kept alive by this in stream.
-ACCESSORS_DECL(in_stream, lifeline);
+ACCESSORS_DECL(os_in_stream, lifeline);
 
-in_stream_t *get_in_stream_native(value_t self);
+in_stream_t *get_os_in_stream_native(value_t self);
 
 
 /// ## Process interface

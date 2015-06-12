@@ -10,46 +10,46 @@
 
 /// # Pipe
 
-GET_FAMILY_PRIMARY_TYPE_IMPL(pipe);
-FIXED_GET_MODE_IMPL(pipe, vmMutable);
-TRIVIAL_PRINT_ON_IMPL(Pipe, pipe);
+GET_FAMILY_PRIMARY_TYPE_IMPL(os_pipe);
+FIXED_GET_MODE_IMPL(os_pipe, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(OsPipe, os_pipe);
 
-ACCESSORS_IMPL(Pipe, pipe, acInFamilyOpt, ofVoidP, Native, native);
-ACCESSORS_IMPL(Pipe, pipe, acNoCheck, 0, In, in);
-ACCESSORS_IMPL(Pipe, pipe, acNoCheck, 0, Out, out);
+ACCESSORS_IMPL(OsPipe, os_pipe, acInFamilyOpt, ofVoidP, Native, native);
+ACCESSORS_IMPL(OsPipe, os_pipe, acInFamilyOpt, ofOsInStream, In, in);
+ACCESSORS_IMPL(OsPipe, os_pipe, acInFamilyOpt, ofOsOutStream, Out, out);
 
-value_t pipe_validate(value_t self) {
-  VALIDATE_FAMILY(ofPipe, self);
-  VALIDATE_FAMILY_OPT(ofVoidP, get_pipe_native(self));
-  VALIDATE_FAMILY(ofOutStream, get_pipe_out(self));
-  VALIDATE_FAMILY(ofInStream, get_pipe_in(self));
+value_t os_pipe_validate(value_t self) {
+  VALIDATE_FAMILY(ofOsPipe, self);
+  VALIDATE_FAMILY_OPT(ofVoidP, get_os_pipe_native(self));
+  VALIDATE_FAMILY(ofOsOutStream, get_os_pipe_out(self));
+  VALIDATE_FAMILY(ofOsInStream, get_os_pipe_in(self));
   return success();
 }
 
-value_t new_heap_pipe(runtime_t *runtime) {
+value_t new_heap_os_pipe(runtime_t *runtime) {
   memory_block_t memory = allocator_default_malloc(sizeof(native_pipe_t));
   native_pipe_t *pipe = (native_pipe_t*) memory.memory;
   if (!native_pipe_open(pipe))
     return new_system_call_failed_condition("native_pipe_open");
   TRY_DEF(native, new_heap_void_p(runtime, pipe));
-  TRY_DEF(out, new_heap_out_stream(runtime, native_pipe_out(pipe), nothing()));
-  TRY_DEF(in, new_heap_in_stream(runtime, native_pipe_in(pipe), nothing()));
-  size_t size = kPipeSize;
-  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, pipe_species)));
-  set_pipe_native(result, native);
-  set_pipe_out(result, out);
-  set_out_stream_lifeline(out, result);
-  set_pipe_in(result, in);
-  set_in_stream_lifeline(in, result);
+  TRY_DEF(out, new_heap_os_out_stream(runtime, native_pipe_out(pipe), nothing()));
+  TRY_DEF(in, new_heap_os_in_stream(runtime, native_pipe_in(pipe), nothing()));
+  size_t size = kOsPipeSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, os_pipe_species)));
+  set_os_pipe_native(result, native);
+  set_os_pipe_out(result, out);
+  set_os_out_stream_lifeline(out, result);
+  set_os_pipe_in(result, in);
+  set_os_in_stream_lifeline(in, result);
   runtime_protect_value_with_flags(runtime, result, tfAlwaysWeak | tfSelfDestruct | tfFinalize, NULL);
   return post_create_sanity_check(result, size);
 }
 
-value_t finalize_pipe(garbage_value_t dead_self) {
-  CHECK_EQ("running process finalizer on non-process", ofPipe,
+value_t finalize_os_pipe(garbage_value_t dead_self) {
+  CHECK_EQ("running process finalizer on non-process", ofOsPipe,
       get_garbage_object_family(dead_self));
   garbage_value_t dead_native_ptr = get_garbage_object_field(dead_self,
-      kPipeNativeOffset);
+      kOsPipeNativeOffset);
   CHECK_EQ("invalid process during finalization", ofVoidP,
       get_garbage_object_family(dead_native_ptr));
   garbage_value_t native_value = get_garbage_object_field(dead_native_ptr,
@@ -60,58 +60,59 @@ value_t finalize_pipe(garbage_value_t dead_self) {
   return success();
 }
 
-static value_t pipe_in(builtin_arguments_t *args) {
+static value_t os_pipe_in(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  CHECK_FAMILY(ofPipe, self);
-  return get_pipe_in(self);
+  CHECK_FAMILY(ofOsPipe, self);
+  return get_os_pipe_in(self);
 }
 
-static value_t pipe_out(builtin_arguments_t *args) {
+static value_t os_pipe_out(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  CHECK_FAMILY(ofPipe, self);
-  return get_pipe_out(self);
+  CHECK_FAMILY(ofOsPipe, self);
+  return get_os_pipe_out(self);
 }
 
-value_t add_pipe_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  ADD_BUILTIN_IMPL("pipe.in", 0, pipe_in);
-  ADD_BUILTIN_IMPL("pipe.out", 0, pipe_out);
+value_t add_os_pipe_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("os_pipe.in", 0, os_pipe_in);
+  ADD_BUILTIN_IMPL("os_pipe.out", 0, os_pipe_out);
   return success();
 }
 
 
 /// ## Out stream
 
-GET_FAMILY_PRIMARY_TYPE_IMPL(out_stream);
-FIXED_GET_MODE_IMPL(out_stream, vmMutable);
-TRIVIAL_PRINT_ON_IMPL(OutStream, out_stream);
+GET_FAMILY_PRIMARY_TYPE_IMPL(os_out_stream);
+FIXED_GET_MODE_IMPL(os_out_stream, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(OsOutStream, os_out_stream);
 
-ACCESSORS_IMPL(OutStream, out_stream, acInFamilyOpt, ofVoidP, NativePtr, native_ptr);
-ACCESSORS_IMPL(OutStream, out_stream, acNoCheck, 0, Lifeline, lifeline);
+ACCESSORS_IMPL(OsOutStream, os_out_stream, acInFamilyOpt, ofVoidP, NativePtr, native_ptr);
+ACCESSORS_IMPL(OsOutStream, os_out_stream, acNoCheck, 0, Lifeline, lifeline);
 
-out_stream_t *get_out_stream_native(value_t self) {
-  value_t ptr = get_out_stream_native_ptr(self);
+out_stream_t *get_os_out_stream_native(value_t self) {
+  value_t ptr = get_os_out_stream_native_ptr(self);
   return (out_stream_t*) get_void_p_value(ptr);
 }
 
-value_t out_stream_validate(value_t self) {
-  VALIDATE_FAMILY(ofOutStream, self);
-  VALIDATE_FAMILY_OPT(ofVoidP, get_out_stream_native_ptr(self));
+value_t os_out_stream_validate(value_t self) {
+  VALIDATE_FAMILY(ofOsOutStream, self);
+  VALIDATE_FAMILY_OPT(ofVoidP, get_os_out_stream_native_ptr(self));
   return success();
 }
 
-value_t new_heap_out_stream(runtime_t *runtime, out_stream_t *native,
+value_t new_heap_os_out_stream(runtime_t *runtime, out_stream_t *native,
     value_t lifeline) {
   TRY_DEF(native_ptr, new_heap_void_p(runtime, native));
-  size_t size = kOutStreamSize;
-  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, out_stream_species)));
-  set_out_stream_native_ptr(result, native_ptr);
-  set_out_stream_lifeline(result, lifeline);
+  size_t size = kOsOutStreamSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, os_out_stream_species)));
+  set_os_out_stream_native_ptr(result, native_ptr);
+  set_os_out_stream_lifeline(result, lifeline);
   return post_create_sanity_check(result, size);
 }
 
-static value_t out_stream_write(builtin_arguments_t *args) {
+static value_t os_out_stream_write(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  CHECK_FAMILY(ofOutStream, self);
+  CHECK_FAMILY(ofOsOutStream, self);
   value_t data = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofBlob, data);
   memory_block_t contents = get_blob_data(data);
@@ -128,7 +129,7 @@ static value_t out_stream_write(builtin_arguments_t *args) {
   process_airlock_t *airlock = get_process_airlock(process);
   pending_iop_state_t *state = pending_iop_state_new(scratch, s_promise, s_stream,
       s_process, protect_immediate(nothing()), airlock);
-  iop_init_write(&state->iop, get_out_stream_native(self), scratch.memory,
+  iop_init_write(&state->iop, get_os_out_stream_native(self), scratch.memory,
       scratch.size, p2o(state));
   io_engine_t *io_engine = runtime_get_io_engine(runtime);
   if (!io_engine_schedule(io_engine, state))
@@ -136,45 +137,46 @@ static value_t out_stream_write(builtin_arguments_t *args) {
   return promise;
 }
 
-value_t add_out_stream_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  ADD_BUILTIN_IMPL("out_stream.write", 1, out_stream_write);
+value_t add_os_out_stream_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("os_out_stream.write", 1, os_out_stream_write);
   return success();
 }
 
 
 /// ## In stream
 
-GET_FAMILY_PRIMARY_TYPE_IMPL(in_stream);
-FIXED_GET_MODE_IMPL(in_stream, vmMutable);
-TRIVIAL_PRINT_ON_IMPL(InStream, in_stream);
+GET_FAMILY_PRIMARY_TYPE_IMPL(os_in_stream);
+FIXED_GET_MODE_IMPL(os_in_stream, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(OsInStream, os_in_stream);
 
-ACCESSORS_IMPL(InStream, in_stream, acInFamilyOpt, ofVoidP, NativePtr, native_ptr);
-ACCESSORS_IMPL(InStream, in_stream, acNoCheck, 0, Lifeline, lifeline);
+ACCESSORS_IMPL(OsInStream, os_in_stream, acInFamilyOpt, ofVoidP, NativePtr, native_ptr);
+ACCESSORS_IMPL(OsInStream, os_in_stream, acNoCheck, 0, Lifeline, lifeline);
 
-in_stream_t *get_in_stream_native(value_t self) {
-  value_t ptr = get_in_stream_native_ptr(self);
+in_stream_t *get_os_in_stream_native(value_t self) {
+  value_t ptr = get_os_in_stream_native_ptr(self);
   return (in_stream_t*) get_void_p_value(ptr);
 }
 
-value_t in_stream_validate(value_t self) {
-  VALIDATE_FAMILY(ofInStream, self);
-  VALIDATE_FAMILY_OPT(ofVoidP, get_in_stream_native_ptr(self));
+value_t os_in_stream_validate(value_t self) {
+  VALIDATE_FAMILY(ofOsInStream, self);
+  VALIDATE_FAMILY_OPT(ofVoidP, get_os_in_stream_native_ptr(self));
   return success();
 }
 
-value_t new_heap_in_stream(runtime_t *runtime, in_stream_t *native,
+value_t new_heap_os_in_stream(runtime_t *runtime, in_stream_t *native,
     value_t lifeline) {
   TRY_DEF(native_ptr, new_heap_void_p(runtime, native));
-  size_t size = kInStreamSize;
-  TRY_DEF(result, alloc_heap_object(runtime, size, ROOT(runtime, in_stream_species)));
-  set_in_stream_native_ptr(result, native_ptr);
-  set_in_stream_lifeline(result, lifeline);
+  size_t size = kOsInStreamSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, os_in_stream_species)));
+  set_os_in_stream_native_ptr(result, native_ptr);
+  set_os_in_stream_lifeline(result, lifeline);
   return post_create_sanity_check(result, size);
 }
 
-static value_t in_stream_read(builtin_arguments_t *args) {
+static value_t os_in_stream_read(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  CHECK_FAMILY(ofInStream, self);
+  CHECK_FAMILY(ofOsInStream, self);
   value_t size_val = get_builtin_argument(args, 0);
   CHECK_DOMAIN(vdInteger, size_val);
   size_t size = (size_t) get_integer_value(size_val);
@@ -190,7 +192,7 @@ static value_t in_stream_read(builtin_arguments_t *args) {
   process_airlock_t *airlock = get_process_airlock(process);
   pending_iop_state_t *state = pending_iop_state_new(scratch, s_promise,
       s_stream, s_process, s_result, airlock);
-  iop_init_read(&state->iop, get_in_stream_native(self), scratch.memory,
+  iop_init_read(&state->iop, get_os_in_stream_native(self), scratch.memory,
       scratch.size, p2o(state));
   io_engine_t *io_engine = runtime_get_io_engine(runtime);
   if (!io_engine_schedule(io_engine, state))
@@ -198,8 +200,8 @@ static value_t in_stream_read(builtin_arguments_t *args) {
   return promise;
 }
 
-value_t add_in_stream_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
-  ADD_BUILTIN_IMPL("in_stream.read", 1, in_stream_read);
+value_t add_os_in_stream_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("os_in_stream.read", 1, os_in_stream_read);
   return success();
 }
 
