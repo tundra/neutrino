@@ -15,12 +15,12 @@
 IF_CHECKS_ENABLED(__CHECK_CLASS__(uint32_t, TAG, EXPR, get_c_object_int_tag))
 
 #define FOR_EACH_BUILTIN_TAG(F)                                                \
-  F(Ctrino)
+  F(Ctrino, 9dcda24f)
 
 // Enum identifying the type of a condition.
 typedef enum {
   __btFirst__ = -1
-#define DECLARE_BUILTIN_TAG_ENUM(Builtin) , bt##Builtin
+#define DECLARE_BUILTIN_TAG_ENUM(Builtin, UID) , bt##Builtin = (0x##UID)
   FOR_EACH_BUILTIN_TAG(DECLARE_BUILTIN_TAG_ENUM)
 #undef DECLARE_BUILTIN_TAG_ENUM
 } builtin_tag_t;

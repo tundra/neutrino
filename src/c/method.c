@@ -81,18 +81,18 @@ void match_info_init(match_info_t *info, value_t *scores, size_t *offsets,
 
 join_status_t join_score_vectors(value_t *target, value_t *source, size_t length) {
   // The bit fiddling here works because of how the enum values are chosen.
-  join_status_t result = jsEqual;
+  uint32_t result = jsEqual;
   for (size_t i = 0; i < length; i++) {
     if (is_score_better(target[i], source[i])) {
       // The source was strictly worse than the target.
-      result = SET_ENUM_FLAG(join_status_t, result, jsWorse);
+      result |= jsWorse;
     } else if (is_score_better(source[i], target[i])) {
       // The source was strictly better than the target; override.
-      result = SET_ENUM_FLAG(join_status_t, result, jsBetter);
+      result |= jsBetter;
       target[i] = source[i];
     }
   }
-  return result;
+  return (join_status_t) result;
 }
 
 
@@ -619,7 +619,7 @@ value_t operation_identity_compare(value_t a, value_t b,
 void operation_print_on(value_t self, print_on_context_t *context) {
   value_t value = get_operation_value(self);
   print_on_context_t unquote_context = *context;
-  unquote_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
+  unquote_context.flags |= pfUnquote;
   switch (get_operation_type(self)) {
     case otAssign:
       // Since the operator for the assignment is kind of sort of part of the
@@ -662,7 +662,7 @@ void operation_print_open_on(value_t self, value_t transport,
     print_on_context_t *context) {
   value_t value = get_operation_value(self);
   print_on_context_t unquote_context = *context;
-  unquote_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
+  unquote_context.flags |= pfUnquote;
   bool is_async = is_same_value(transport, transport_async());
   switch (get_operation_type(self)) {
   case otAssign:
@@ -704,7 +704,7 @@ void operation_print_open_on(value_t self, value_t transport,
 void operation_print_close_on(value_t self, print_on_context_t *context) {
   value_t value = get_operation_value(self);
   print_on_context_t unquote_context = *context;
-  unquote_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
+  unquote_context.flags |= pfUnquote;
   switch (get_operation_type(self)) {
   case otAssign:
   case otCall:

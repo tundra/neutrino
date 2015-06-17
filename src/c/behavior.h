@@ -45,15 +45,18 @@ void heap_object_layout_set(heap_object_layout_t *layout, size_t size, size_t va
 // Flags that control how values are printed. These can be or'ed together.
 typedef enum {
   pfNone = 0x0,
-  pfUnquote = 0x1
+  // When printing strings, don't print quotation marks.
+  pfUnquote = 0x1,
+  // When printing integers, print them as hex not decimal.
+  pfHex = 0x2
 } print_flags_t;
 
 // Data that is passed around when printing objects.
 typedef struct {
   // The string buffer to print on.
   string_buffer_t *buf;
-  // Flags that control how values are printed.
-  print_flags_t flags;
+  // Flags that control how values are printed; made up of print_flags_t.
+  uint32_t flags;
   // Remaining recursion depth.
   size_t depth;
 } print_on_context_t;
@@ -158,7 +161,7 @@ value_t value_ordering_compare(value_t a, value_t b);
 
 // Sets the fields of a print_on_context.
 void print_on_context_init(print_on_context_t *context, string_buffer_t *buf,
-  print_flags_t flags, size_t depth);
+  uint32_t flags, size_t depth);
 
 // Prints a human-readable representation of the given value on the given
 // string buffer. The flags control how the value is printed, the depth

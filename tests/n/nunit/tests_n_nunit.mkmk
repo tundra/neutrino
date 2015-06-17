@@ -32,6 +32,7 @@ file_names = [
   "functino_multis.n",
   "functino_selectors.n",
   "function.n",
+  "getenv.n",
   "hanoi.n",
   "hash_oracle.n",
   "if.n",

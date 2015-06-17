@@ -51,9 +51,4 @@ static size_t min_size(size_t a, size_t b) {
 // The native 32-bit single precision floating point type.
 typedef float float32_t;
 
-// Given an enum type and a mask and a flag both belonging to the enum, returns
-// a new enum value that represents the mast with the given flag enabled.
-#define SET_ENUM_FLAG(ENUM, MASK, FLAG) ((ENUM) (((uint32_t) MASK) | ((uint32_t) FLAG)))
-
-
 #endif // _GLOBALS

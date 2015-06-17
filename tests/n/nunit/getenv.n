@@ -1,0 +1,21 @@
+# Copyright 2015 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $assert;
+import $core;
+
+def $test_expected() {
+  # We assume that either HOME or USERNAME is set, all unices should have HOME
+  # and all windoces USERNAME.
+  def $p_home := @core:ctrino.get_environment_variable("HOME");
+  $assert:not($p_home.is_resolved?);
+  def $p_username := @core:ctrino.get_environment_variable("USERNAME");
+  $assert:not($p_username.is_resolved?);
+  $p_home.then(fn $home => $p_username.then(fn $username {
+    $assert:not(if $home.is_null? then $username.is_null? else false);
+  }));
+}
+
+do {
+  $test_expected();
+}

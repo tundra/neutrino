@@ -336,15 +336,16 @@ value_t value_ordering_compare(value_t a, value_t b) {
 // --- P r i n t i n g ---
 
 void print_on_context_init(print_on_context_t *context, string_buffer_t *buf,
-  print_flags_t flags, size_t depth) {
+  uint32_t flags, size_t depth) {
   context->buf = buf;
   context->flags = flags;
   context->depth = depth;
 }
 
-static void integer_print_on(value_t value, string_buffer_t *buf) {
+static void integer_print_on(value_t value, print_on_context_t *context) {
   CHECK_DOMAIN(vdInteger, value);
-  string_buffer_printf(buf, "%lli", get_integer_value(value));
+  const char *fmt = (context->flags & pfHex) ? "%llx" : "%lli";
+  string_buffer_printf(context->buf, fmt, get_integer_value(value));
 }
 
 static void condition_print_on(value_t value, string_buffer_t *buf) {
@@ -437,7 +438,7 @@ static void derived_object_print_on(value_t value, print_on_context_t *context) 
 void value_print_on_cycle_detect(value_t value, print_on_context_t *context) {
   switch (get_value_domain(value)) {
     case vdInteger:
-      integer_print_on(value, context->buf);
+      integer_print_on(value, context);
       break;
     case vdHeapObject:
       heap_object_print_on(value, context);

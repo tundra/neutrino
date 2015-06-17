@@ -58,7 +58,7 @@ in_stream_t *get_os_in_stream_native(value_t self);
 /// ## Process interface
 
 // An outstanding iop.
-typedef struct {
+struct pending_iop_state_t {
   // Header so this can be used as an abstract pending atomic.
   pending_atomic_t as_pending_atomic;
   // Iop.
@@ -80,7 +80,7 @@ typedef struct {
   safe_value_t s_result;
   // The airlock to notify when this iop is complete.
   process_airlock_t *airlock;
-} pending_iop_state_t;
+};
 
 // When the process is ready for the result of the iop to be delivered this
 // will be called.

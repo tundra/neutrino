@@ -5,3 +5,5 @@
 def @Null := @ctrino.get_builtin_type("Null");
 
 def type @Null is @Object;
+
+def ($this is @Null).is_null? => true;

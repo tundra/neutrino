@@ -2,6 +2,10 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 ## The built-in type of native os processes.
-def @OsProcess := @ctrino.get_builtin_type("OsProcess");
+def @io:OsProcess := @ctrino.get_builtin_type("OsProcess");
 
-def type @OsProcess is @Object;
+def type @io:OsProcess is @Object;
+
+type @io:Process is @Object;
+
+field ($this is @io:Process).executable;

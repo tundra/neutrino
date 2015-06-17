@@ -29,6 +29,11 @@ bool is_promise_resolved(value_t self);
 // noop.
 void fulfill_promise(value_t self, value_t value);
 
+// Schedule for the given promise to be fulfilled to the given value at some
+// point after the end of the current turn.
+value_t schedule_promise_fulfill_atomic(runtime_t *runtime, value_t self,
+    value_t value, value_t process);
+
 
 /// ## Promise state
 
@@ -81,7 +86,8 @@ static bool is_promise_state_resolved(value_t self) {
 
 #define ENUM_PENDING_ATOMIC(F)                                                 \
   F(ForeignRequestResolved, foreign_request_resolved, foreign_request_state)   \
-  F(IopComplete, iop_complete, pending_iop_state)
+  F(IopComplete, iop_complete, pending_iop_state)                              \
+  F(FulfillPromise, fulfill_promise, fulfill_promise_state)
 
 // The type of a pending atomic operation.
 typedef enum {
@@ -90,6 +96,13 @@ typedef enum {
   ENUM_PENDING_ATOMIC(__DECLARE_PENDING_ATOMIC_TYPE__)
 #undef __DECLARE_PENDING_ATOMIC_TYPE__
 } pending_atomic_type_t;
+
+#define __DECLARE_ATOMIC_TYPE__(Name, name, type)                              \
+  typedef struct type##_t type##_t;                                            \
+  value_t type##_apply_atomic(type##_t*, process_airlock_t*);                  \
+  void type##_destroy(runtime_t*, type##_t*);
+  ENUM_PENDING_ATOMIC(__DECLARE_ATOMIC_TYPE__)
+#undef __DECLARE_ATOMIC_TYPE__
 
 // An abstract type that encapsulates a pending atomic operation, that is, an
 // operation that has been scheduled to be applied to a process inbetween turns.
@@ -100,12 +113,8 @@ struct pending_atomic_t {
   pending_atomic_type_t type;
 };
 
-// Destroy the given pending atomic operation in whatever way is appropriate for
-// that type.
-void pending_atomic_destroy(runtime_t *runtime, pending_atomic_t *op);
-
 // Extra state maintained around a foreign request.
-typedef struct {
+struct foreign_request_state_t {
   pending_atomic_t as_pending_atomic;
   // The part of the data that will be passed to the native impl.
   native_request_t request;
@@ -119,7 +128,7 @@ typedef struct {
   // This is where the result will be held between the request completing and
   // the process delivering it to the promise.
   blob_t result;
-} foreign_request_state_t;
+};
 
 // "Upcast" something that "inherits" from pending_atomic_t to that type.
 #define UPCAST_TO_PENDING_ATOMIC(EXPR) (&(EXPR)->as_pending_atomic)

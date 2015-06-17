@@ -31,6 +31,39 @@ void fulfill_promise(value_t self, value_t value) {
   }
 }
 
+// The state associated with a delayed promise fulfillment.
+struct fulfill_promise_state_t {
+  pending_atomic_t as_pending_atomic;
+  safe_value_t s_promise;
+  safe_value_t s_value;
+};
+
+value_t schedule_promise_fulfill_atomic(runtime_t *runtime, value_t self,
+    value_t value, value_t process) {
+  process_airlock_t *airlock = get_process_airlock(process);
+  memory_block_t memory = allocator_default_malloc(sizeof(fulfill_promise_state_t));
+  if (memory_block_is_empty(memory))
+    return new_system_error_condition(seAllocationFailed);
+  fulfill_promise_state_t *state = (fulfill_promise_state_t*) memory.memory;
+  state->as_pending_atomic.type = paFulfillPromise;
+  state->s_promise = runtime_protect_value(runtime, self);
+  state->s_value = runtime_protect_value(runtime, value);
+  process_airlock_schedule_atomic(airlock, UPCAST_TO_PENDING_ATOMIC(state));
+  return success();
+}
+
+value_t fulfill_promise_state_apply_atomic(fulfill_promise_state_t *state,
+    process_airlock_t *airlock) {
+  fulfill_promise(deref(state->s_promise), deref(state->s_value));
+  return success();
+}
+
+void fulfill_promise_state_destroy(runtime_t *runtime, fulfill_promise_state_t *state) {
+  safe_value_destroy(runtime, state->s_promise);
+  safe_value_destroy(runtime, state->s_value);
+  allocator_default_free(new_memory_block(state, sizeof(fulfill_promise_state_t)));
+}
+
 value_t promise_validate(value_t self) {
   VALIDATE_FAMILY(ofPromise, self);
   VALIDATE_PHYLUM(tpPromiseState, get_promise_state(self));
@@ -156,7 +189,7 @@ value_t foreign_service_validate(value_t self) {
 void foreign_service_print_on(value_t self, print_on_context_t *context) {
   string_buffer_printf(context->buf, "#<foreign_service: ");
   print_on_context_t sub_context = *context;
-  sub_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
+  sub_context.flags |= pfUnquote;
   value_print_inner_on(get_foreign_service_display_name(self), &sub_context, -1);
   string_buffer_printf(context->buf, ">");
 }
@@ -207,7 +240,7 @@ value_t foreign_request_state_new(runtime_t *runtime, value_t process,
   return success();
 }
 
-static void foreign_request_state_destroy(runtime_t *runtime,
+void foreign_request_state_destroy(runtime_t *runtime,
     foreign_request_state_t *state) {
   callback_destroy(state->callback);
   opaque_promise_destroy(state->request.impl_promise);
@@ -216,18 +249,6 @@ static void foreign_request_state_destroy(runtime_t *runtime,
   pton_assembler_dispose_code(state->request.args);
   pton_assembler_dispose_code(state->result);
   allocator_default_free(new_memory_block(state, sizeof(foreign_request_state_t)));
-}
-
-void pending_atomic_destroy(runtime_t *runtime, pending_atomic_t *op) {
-  switch (op->type) {
-#define __GEN_CASE__(Name, name, type) case pa##Name:                          \
-  type##_destroy(runtime, (type##_t*) op);                                     \
-  break;
-  ENUM_PENDING_ATOMIC(__GEN_CASE__)
-#undef __GEN_CASE__
-    default:
-      break;
-  }
 }
 
 void incoming_request_state_init(incoming_request_state_t *state,

@@ -11,6 +11,9 @@ def ($this is @Object).to($target == @String) => @ctrino.to_string($this);
 ## Prints the internal representation of this object.
 def ($this is @Object).print() => $this.to(@String).print_raw();
 
+## Is this object the null value?
+def ($this is @Object).is_null? => false;
+
 ## Returns true if this object is identical to the given one. By default this
 ## means object identity which for user-defined objects means heap pointer
 ## equality. For some built-in families, for instance strings, true object

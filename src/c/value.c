@@ -1686,7 +1686,7 @@ void key_print_on(value_t value, print_on_context_t *context) {
     display_name = new_integer(get_key_id(value));
   string_buffer_printf(context->buf, "%%");
   print_on_context_t new_context = *context;
-  new_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
+  new_context.flags |= pfUnquote;
   value_print_inner_on(display_name, &new_context, -1);
 }
 
@@ -1888,7 +1888,7 @@ void type_print_on(value_t value, print_on_context_t *context) {
   if (!is_nothing(display_name)) {
     string_buffer_printf(context->buf, " ");
     print_on_context_t new_context = *context;
-    new_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
+    new_context.flags |= pfUnquote;
     value_print_inner_on(display_name, &new_context, -1);
   }
   string_buffer_printf(context->buf, ">");
@@ -2376,7 +2376,7 @@ void path_print_on(value_t value, print_on_context_t *context) {
     while (!is_path_empty(current)) {
       string_buffer_printf(context->buf, ":");
       print_on_context_t new_context = *context;
-      new_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
+      new_context.flags |= pfUnquote;
       value_print_inner_on(get_path_head(current), &new_context, -1);
       current = get_path_tail(current);
     }
@@ -2509,7 +2509,7 @@ void function_print_on(value_t value, print_on_context_t *context) {
   value_t display_name = get_function_display_name(value);
   if (!is_nothing(display_name)) {
     print_on_context_t new_context = *context;
-    new_context.flags = SET_ENUM_FLAG(print_flags_t, context->flags, pfUnquote);
+    new_context.flags |= pfUnquote;
     value_print_inner_on(display_name, &new_context, -1);
   }
 }

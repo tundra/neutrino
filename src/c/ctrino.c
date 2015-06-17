@@ -6,12 +6,13 @@
 #include "builtin.h"
 #include "ctrino.h"
 #include "freeze.h"
+#include "sync.h"
 #include "utils/log.h"
 #include "value-inl.h"
 
 const char *get_c_object_int_tag_name(uint32_t tag) {
   switch (tag) {
-#define __EMIT_TAG_CASE__(Name) case bt##Name: return #Name;
+#define __EMIT_TAG_CASE__(Name, UID) case bt##Name: return #Name;
   FOR_EACH_BUILTIN_TAG(__EMIT_TAG_CASE__)
 #undef __EMIT_DOMAIN_CASE__
     default:
@@ -255,7 +256,26 @@ static value_t ctrino_new_anonymous_pipe(builtin_arguments_t *args) {
   return new_heap_os_pipe(runtime);
 }
 
-#define kCtrinoMethodCount 22
+static value_t ctrino_get_environment_variable(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_C_OBJECT_TAG(btCtrino, self);
+  value_t name = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofUtf8, name);
+  char *raw_env = getenv(get_utf8_chars(name));
+  value_t value = whatever();
+  runtime_t *runtime = get_builtin_runtime(args);
+  if (raw_env == NULL) {
+    value = null();
+  } else {
+    TRY_SET(value, new_heap_utf8(runtime, new_c_string(raw_env)));
+  }
+  TRY_DEF(result, new_heap_pending_promise(runtime));
+  value_t process = get_builtin_process(args);
+  TRY(schedule_promise_fulfill_atomic(runtime, result, value, process));
+  return result;
+}
+
+#define kCtrinoMethodCount 23
 static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("builtin", 1, ctrino_builtin),
   BUILTIN_METHOD("collect_garbage!", 0, ctrino_collect_garbage),
@@ -263,6 +283,7 @@ static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("freeze", 1, ctrino_freeze),
   BUILTIN_METHOD("get_builtin_type", 1, ctrino_get_builtin_type),
   BUILTIN_METHOD("get_current_backtrace", 0, ctrino_get_current_backtrace),
+  BUILTIN_METHOD("get_environment_variable", 1, ctrino_get_environment_variable),
   BUILTIN_METHOD("is_deep_frozen?", 1, ctrino_is_deep_frozen),
   BUILTIN_METHOD("is_frozen?", 1, ctrino_is_frozen),
   BUILTIN_METHOD("log_info", 1, ctrino_log_info),
@@ -385,9 +406,11 @@ value_t c_object_validate(value_t value) {
 }
 
 void c_object_print_on(value_t value, print_on_context_t *context) {
-  string_buffer_printf(context->buf, "#<c_object ~%w: ", value);
-  value_print_inner_on(get_c_object_tag(value), context, -1);
-  string_buffer_printf(context->buf, ">");
+  string_buffer_printf(context->buf, "#<c_object[");
+  print_on_context_t inner = *context;
+  inner.flags |= pfHex;
+  value_print_inner_on(get_c_object_tag(value), &inner, -1);
+  string_buffer_printf(context->buf, "] ~%w>", value);
 }
 
 void get_c_object_layout(value_t self, heap_object_layout_t *layout) {

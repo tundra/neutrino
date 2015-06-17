@@ -951,7 +951,7 @@ void process_airlock_schedule_incoming_request(process_airlock_t *airlock,
   CHECK_TRUE("out of capacity", offered);
 }
 
-static value_t foreign_request_state_apply_atomic(foreign_request_state_t *state,
+value_t foreign_request_state_apply_atomic(foreign_request_state_t *state,
     process_airlock_t *airlock) {
   airlock->open_foreign_request_count--;
   TRY_DEF(result, plankton_deserialize_data(airlock->runtime, NULL, state->result));
@@ -963,12 +963,24 @@ static value_t pending_atomic_apply(pending_atomic_t *op,
     process_airlock_t *airlock) {
   switch (op->type) {
 #define __GEN_CASE__(Name, name, type) case pa##Name:                          \
-  return type##_apply_atomic((type##_t*) op, airlock);
+  return type##_apply_atomic((struct type##_t*) op, airlock);
   ENUM_PENDING_ATOMIC(__GEN_CASE__)
 #undef __GEN_CASE__
     default:
       UNREACHABLE("invalid pending atomic");
       return new_condition(ccWat);
+  }
+}
+
+static void pending_atomic_destroy(runtime_t *runtime, pending_atomic_t *op) {
+  switch (op->type) {
+#define __GEN_CASE__(Name, name, type) case pa##Name:                          \
+    type##_destroy(runtime, (type##_t*) op);                                     \
+    break;
+    ENUM_PENDING_ATOMIC(__GEN_CASE__)
+#undef __GEN_CASE__
+  default:
+    break;
   }
 }
 
