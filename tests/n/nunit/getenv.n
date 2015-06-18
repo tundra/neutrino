@@ -4,27 +4,15 @@
 import $assert;
 import $core;
 
-def $try_getenv($index, $vars) {
-  $assert:not($index == ($vars.length));
-  def $name := $vars[$index];
-  def $p_value := @core:ctrino.get_environment_variable($name);
+def $test_durian_main() {
+  # This should be set for all tests so we can use that for this too.
+  def $p_value := @core:ctrino.get_environment_variable("DURIAN_MAIN");
   $assert:not($p_value.is_resolved?);
   $p_value.then(fn $value {
-    if $value.is_null?
-      then $try_getenv($index + 1, $vars);
+    $assert:not($value.is_null?);
   });
 }
 
-def $test_expected() {
-  # One of these should be set.
-  def $vars := [
-    "HOME", # most unices
-    "USERNAME", # most windoces
-    "WORKSPACE" # jenkins
-  ];
-  $try_getenv(0, $vars);
-}
-
 do {
-  $test_expected();
+  $test_durian_main();
 }

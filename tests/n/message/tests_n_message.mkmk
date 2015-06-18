@@ -36,10 +36,10 @@ for file_base in file_names:
   # Run the test
   test_case = test.get_exec_test_case(file_name)
   suite.add_member(test_case)
-  opts = "--module_loader { --libraries [ \"%s\" ] }" % library.get_output_path()
+  opts = ["--module_loader", "{", "--libraries", "[", '"%s"' % library.get_output_path(), "]", "}"]
   test_case.set_runner(tester)
-  test_case.set_arguments(output_file.get_input_file().get_path(),
-    runner.get_output_path(), program.get_output_path(), opts)
+  test_case.set_arguments('"%s"' % output_file.get_input_file().get_path(),
+    '"%s"' % runner.get_output_path(), '"%s"' % program.get_output_path(), *opts)
   test_case.add_dependency(runner)
   test_case.add_dependency(program)
   test_case.add_dependency(library)

@@ -16,7 +16,7 @@ tm_language.set_title("Building sublime package")
 
 # Package everything into a zip file.
 package = get_system_exec_file("Neutrino.sublime-package")
-package.set_command("zip")
+package.set_executable("zip")
 package.set_arguments(
   "-j",
   package.get_output_path(),
