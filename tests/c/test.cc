@@ -18,25 +18,7 @@ BEGIN_C_INCLUDES
 #include "value-inl.h"
 END_C_INCLUDES
 
-#include <stdio.h>
 #include <stdlib.h>
-
-// Dump an error on test failure.
-void fail(const char *file, int line, const char *fmt, ...) {
-  // Write the error message into a string buffer.
-  string_buffer_t buf;
-  string_buffer_init(&buf);
-  va_list argp;
-  va_start(argp, fmt);
-  string_buffer_vprintf(&buf, fmt, argp);
-  va_end(argp);
-  // Flush the string buffer.
-  utf8_t str = string_buffer_flush(&buf);
-  // Print the formatted error message.
-  log_message(llError, file, line, "%s", str.chars);
-  string_buffer_dispose(&buf);
-  abort();
-}
 
 static bool array_structural_equal(value_t a, value_t b) {
   CHECK_FAMILY(ofArray, a);
