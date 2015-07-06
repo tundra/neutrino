@@ -246,7 +246,6 @@ value_t finalize_os_process(garbage_value_t dead_self) {
   garbage_value_t native_value = get_garbage_object_field(dead_native_ptr,
       kVoidPValueOffset);
   void *process = value_to_pointer_bit_cast(native_value.value);
-  HEST("destroy");
   native_process_destroy((native_process_t*) process);
   return success();
 }
