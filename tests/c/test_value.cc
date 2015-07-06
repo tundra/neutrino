@@ -1009,13 +1009,13 @@ TEST(value, c_object) {
   // Create an instance
   Point p0 = { 10, 43 };
   value_t init_values0[2] = { new_integer(18), new_integer(53) };
-  value_t o0 = new_heap_c_object(runtime, afMutable, species, new_blob(&p0, sizeof(p0)),
+  value_t o0 = new_heap_c_object(runtime, afMutable, species, blob_new(&p0, sizeof(p0)),
       new_value_array(init_values0, 2));
   ASSERT_VALEQ(new_integer(15), get_c_object_tag(o0));
   // Try reading the data back out again.
   blob_t blob0 = get_mutable_c_object_data(o0);
   ASSERT_EQ(sizeof(Point), blob0.size);
-  Point *back0 = static_cast<Point*>(blob0.memory);
+  Point *back0 = static_cast<Point*>(blob0.start);
   ASSERT_EQ(10, back0->x);
   ASSERT_EQ(43, back0->y);
   // Try reading the values back out too.
@@ -1031,11 +1031,11 @@ TEST(value, c_object) {
   ASSERT_VALEQ(new_integer(53), get_c_object_value_at(o0, 1));
 
   // Creating an object without passing full contents.
-  value_t o1 = new_heap_c_object(runtime, afMutable, species, new_blob(NULL, 0),
+  value_t o1 = new_heap_c_object(runtime, afMutable, species, blob_new(NULL, 0),
       new_value_array(NULL, 0));
   blob_t blob1 = get_mutable_c_object_data(o1);
   ASSERT_EQ(sizeof(Point), blob1.size);
-  Point *back1 = static_cast<Point*>(blob1.memory);
+  Point *back1 = static_cast<Point*>(blob1.start);
   ASSERT_EQ(0, back1->x);
   ASSERT_EQ(0, back1->y);
   value_array_t values1 = get_mutable_c_object_values(o1);
@@ -1044,4 +1044,29 @@ TEST(value, c_object) {
   ASSERT_VALEQ(null(), values1.start[1]);
 
   DISPOSE_RUNTIME();
+}
+
+typedef struct {
+  bool ordinals_seen[kNextFamilyOrdinal];
+} family_test_data_t;
+
+static void visit_family(family_test_data_t *data, int ordinal) {
+  ASSERT_REL(ordinal, >=, 0);
+  ASSERT_REL(ordinal, <, kNextFamilyOrdinal);
+  ASSERT_FALSE(data->ordinals_seen[ordinal]);
+  data->ordinals_seen[ordinal] = true;
+}
+
+TEST(value, enum_families) {
+  // Check the individual families.
+  family_test_data_t data;
+  memset(&data, 0, sizeof(family_test_data_t));
+#define VISIT_FAMILY(Family, family, MD, SR, MINOR, N) visit_family(&data, N);
+  ENUM_HEAP_OBJECT_FAMILIES(VISIT_FAMILY)
+#undef VISIT_FAMILY
+
+  // Now check that there are no unused ordinals. There shouldn't be a reason to
+  // leave ordinals unused.
+  for (int i = 0; i < kNextFamilyOrdinal; i++)
+    ASSERT_TRUE_WITH_HINT(i, data.ordinals_seen[i]);
 }

@@ -11,8 +11,8 @@ BEGIN_C_INCLUDES
 END_C_INCLUDES
 
 // A malloc that refuses to yield any memory.
-memory_block_t blocking_malloc(void *data, size_t size) {
-  return memory_block_empty();
+blob_t blocking_malloc(allocator_t *self, size_t size) {
+  return blob_empty();
 }
 
 TEST(runtime, create) {

@@ -6,6 +6,7 @@
 #include "builtin.h"
 #include "ctrino.h"
 #include "freeze.h"
+#include "io.h"
 #include "sync.h"
 #include "utils/log.h"
 #include "value-inl.h"
@@ -63,7 +64,7 @@ static value_t ctrino_new_plugin_instance(builtin_arguments_t *args) {
   CHECK_C_OBJECT_TAG(btCtrino, self);
   CHECK_DOMAIN(vdInteger, index);
   value_t factory = get_runtime_plugin_factory_at(runtime, (size_t) get_integer_value(index));
-  return new_c_object(runtime, factory, new_blob(NULL, 0), new_value_array(NULL, 0));
+  return new_c_object(runtime, factory, blob_empty(), new_value_array(NULL, 0));
 }
 
 static value_t ctrino_new_function(builtin_arguments_t *args) {
@@ -249,11 +250,18 @@ static value_t ctrino_new_global_hash_oracle(builtin_arguments_t *args) {
   return new_heap_hash_oracle(runtime, source);
 }
 
-static value_t ctrino_new_anonymous_pipe(builtin_arguments_t *args) {
+static value_t ctrino_new_os_pipe(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_C_OBJECT_TAG(btCtrino, self);
   runtime_t *runtime = get_builtin_runtime(args);
   return new_heap_os_pipe(runtime);
+}
+
+static value_t ctrino_new_os_process(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_C_OBJECT_TAG(btCtrino, self);
+  runtime_t *runtime = get_builtin_runtime(args);
+  return new_heap_os_process(runtime);
 }
 
 static value_t ctrino_get_environment_variable(builtin_arguments_t *args) {
@@ -275,7 +283,7 @@ static value_t ctrino_get_environment_variable(builtin_arguments_t *args) {
   return result;
 }
 
-#define kCtrinoMethodCount 23
+#define kCtrinoMethodCount 24
 static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("builtin", 1, ctrino_builtin),
   BUILTIN_METHOD("collect_garbage!", 0, ctrino_collect_garbage),
@@ -295,8 +303,9 @@ static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("new_hash_oracle", 1, ctrino_new_hash_oracle),
   BUILTIN_METHOD("new_hash_source", 1, ctrino_new_hash_source),
   BUILTIN_METHOD("new_instance_manager", 1, ctrino_new_instance_manager),
+  BUILTIN_METHOD("new_os_pipe", 0, ctrino_new_os_pipe),
+  BUILTIN_METHOD("new_os_process", 0, ctrino_new_os_process),
   BUILTIN_METHOD("new_pending_promise", 0, ctrino_new_pending_promise),
-  BUILTIN_METHOD("new_anonymous_pipe", 0, ctrino_new_anonymous_pipe),
   BUILTIN_METHOD("new_plugin_instance", 1, ctrino_new_plugin_instance),
   BUILTIN_METHOD("print_ln", 1, ctrino_print_ln),
   BUILTIN_METHOD("to_string", 1, ctrino_to_string)
@@ -432,7 +441,7 @@ blob_t get_mutable_c_object_data(value_t self) {
   CHECK_MUTABLE(self);
   value_t species = get_heap_object_species(self);
   value_t data_size_val = get_c_object_species_data_size(species);
-  return new_blob(get_c_object_data_start(self), (size_t) get_integer_value(data_size_val));
+  return blob_new(get_c_object_data_start(self), (size_t) get_integer_value(data_size_val));
 }
 
 size_t get_c_object_species_values_offset(value_t self) {

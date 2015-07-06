@@ -36,9 +36,9 @@
 #define _PROCESS
 
 #include "derived.h"
-#include "value-inl.h"
 #include "sync/semaphore.h"
 #include "sync/worklist.h"
+#include "value-inl.h"
 
 /// ## Stack piece
 ///
@@ -578,7 +578,7 @@ ACCESSORS_DECL(task, stack);
 /// (potentially) independently of each other and can only affect each other
 /// through explicitly sending asynchronous messages.
 
-typedef struct pending_atomic_t pending_atomic_t;
+typedef struct external_async_t external_async_t;
 typedef struct incoming_request_state_t incoming_request_state_t;
 typedef struct exported_service_capsule_t exported_service_capsule_t;
 
@@ -596,34 +596,30 @@ typedef struct {
   // The runtime that contains the process.
   runtime_t *runtime;
   // Atomic operations to perform after the current turn.
-  worklist_t(kAirlockPendingAtomicCount, 1) pending_atomic;
-  // The number of outstanding foreign requests whose results haven't been
-  // delivered to their associated promise.
-  size_t open_foreign_request_count;
-  // Buffer that holds the state of incoming requests.
-  worklist_t(kAirlockIncomingCount, 1) incoming_requests;
+  worklist_t(kAirlockPendingAtomicCount, 1) pending_external_async;
+  // The number of outstanding tasks that will eventually resolve to a pending
+  // atomic op but are currently processing.
+  atomic_int64_t open_external_async;
 } process_airlock_t;
 
 // Create and initialize a process airlock. Returns null if anything fails.
 process_airlock_t *process_airlock_new(runtime_t *runtime);
 
-// Notify the process that the request with the given state has completed.
-void process_airlock_schedule_atomic(process_airlock_t *airlock,
-    pending_atomic_t *result);
+// Notifies this airlock that an external async operation is being started. This
+// can be called by any thread.
+void process_airlock_open_external_async(process_airlock_t *airlock,
+    external_async_t *async, int32_t type);
+
+// Notify the process that the request with the given state has completed. The
+// given atomic must have been registered in advance. This can be called by any
+// thread.
+void process_airlock_deliver_external_async(process_airlock_t *airlock,
+    external_async_t *async);
 
 // If the given airlock has a pending atomic operation takes it, stores it in
-// result_out, and returns true. If not returns false. Never blocks.
-bool process_airlock_next_pending_atomic(process_airlock_t *airlock,
-    pending_atomic_t **result_out);
-
-// If the given airlock has a pending incoming request takes it, stores
-// it in result_out, and returns true. If not returns false. Never blocks.
-bool process_airlock_next_incoming(process_airlock_t *airlock,
-    incoming_request_state_t **result_out);
-
-// Notify the process that there is a request to an exported service incoming.
-void process_airlock_schedule_incoming_request(process_airlock_t *airlock,
-    incoming_request_state_t *request);
+// result_out, and returns true. If not returns false.
+bool process_airlock_next_finished_async(process_airlock_t *airlock,
+    duration_t timeout, external_async_t **result_out);
 
 // Dispose the airlock's state appropriately, including deleting the airlock
 // value.
@@ -673,18 +669,15 @@ void job_init(job_t *job, value_t code, value_t data, value_t promise,
 // is copied so it can be disposed immediately after this call.
 value_t offer_process_job(runtime_t *runtime, value_t process, job_t *job);
 
-// Returns the next scheduled code block to be executed on the given process.
-// If there are no more work left a NotFound condition is returned.
-value_t take_process_job(value_t process, job_t *job_out);
+// Stores the next job for the given process that is ready to be run in the out
+// parameter and returns true, unless there are no jobs ready to run in which
+// case it returns false.
+bool take_process_ready_job(value_t process, job_t *job_out);
 
-// Process any pending atomic requests.
-value_t deliver_process_outstanding_pending_atomic(value_t process);
-
-// Schedule any incoming requests in this process' airlock onto the worklist.
-value_t deliver_process_incoming(runtime_t *runtime, value_t process);
-
-// Returns true if there is no more work for this process to perform.
-bool is_process_idle(value_t process);
+// If any external asyncs have been delivered, finish and dispose them. If the
+// blocking flag is true we'll block waiting for at least one to become
+// available.
+value_t finish_process_external_asyncs(value_t process, bool blocking, size_t *count);
 
 
 /// ## Reified arguments
@@ -720,11 +713,19 @@ ACCESSORS_DECL(reified_arguments, tags);
 /// An incoming request thunk is all the data about an incoming request bundled
 /// together.
 
-static const size_t kIncomingRequestThunkSize = HEAP_OBJECT_SIZE(1);
-static const size_t kIncomingRequestThunkRequestStatePtrOffset = HEAP_OBJECT_SIZE(0);
+static const size_t kIncomingRequestThunkSize = HEAP_OBJECT_SIZE(3);
+static const size_t kIncomingRequestThunkServiceOffset = HEAP_OBJECT_SIZE(0);
+static const size_t kIncomingRequestThunkRequestOffset = HEAP_OBJECT_SIZE(1);
+static const size_t kIncomingRequestThunkPromiseOffset = HEAP_OBJECT_SIZE(2);
 
-// Pointer to the C request state data.
-ACCESSORS_DECL(incoming_request_thunk, request_state_ptr);
+// The service this request should be delivered to.
+ACCESSORS_DECL(incoming_request_thunk, service);
+
+// The request data.
+ACCESSORS_DECL(incoming_request_thunk, request);
+
+// The promise to fulfill with the result.
+ACCESSORS_DECL(incoming_request_thunk, promise);
 
 
 #endif // _PROCESS

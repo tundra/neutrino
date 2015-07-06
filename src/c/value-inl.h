@@ -59,6 +59,12 @@ static inline bool in_family_opt(heap_object_family_t family, value_t value) {
   return is_nothing(value) || in_family(family, value);
 }
 
+// Returns true iff the given value is either null or an object within the given
+// family.
+static inline bool in_family_or_null(heap_object_family_t family, value_t value) {
+  return is_null(value) || in_family(family, value);
+}
+
 // Returns true iff the given value is either nothing or a value within the
 // given domain.
 static inline bool in_domain_opt(value_domain_t domain, value_t value) {
@@ -149,6 +155,11 @@ VALIDATE(in_family(ofFamily, EXPR))
 VALIDATE(in_family_opt(ofFamily, EXPR))
 
 // Checks whether the value at the end of the given pointer belongs to the
+// specified family. If not, returns a validation failure.
+#define VALIDATE_FAMILY_OR_NULL(ofFamily, EXPR)                                \
+VALIDATE(in_family_or_null(ofFamily, EXPR))
+
+// Checks whether the value at the end of the given pointer belongs to the
 // specified domain. If not, returns a validation failure.
 #define VALIDATE_DOMAIN(vdDomain, EXPR)                                        \
 VALIDATE(in_domain(vdDomain, EXPR))
@@ -225,6 +236,11 @@ SWALLOW_SEMI(gi)
 // belong to the family specified in the argument.
 #define acInFamilyOpt(ofFamily, VALUE)                                         \
   CHECK_FAMILY_OPT(ofFamily, (VALUE))
+
+// Accessor check that indicates that the argument should either be nothing or
+// belong to the family specified in the argument.
+#define acInFamilyOrNull(ofFamily, VALUE)                                      \
+  CHECK_FAMILY_OR_NULL(ofFamily, (VALUE))
 
 // Accessor check that indicates that the argument should belong to the domain
 // specified in the argument.

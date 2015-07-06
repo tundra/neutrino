@@ -860,7 +860,7 @@ value_t offer_process_job(runtime_t *runtime, value_t process, job_t *job) {
   return offer_to_fifo_buffer(runtime, work_queue, data, kProcessWorkQueueWidth);
 }
 
-value_t take_process_job(value_t process, job_t *job_out) {
+bool take_process_ready_job(value_t process, job_t *job_out) {
   CHECK_FAMILY(ofProcess, process);
   // Scan through the jobs to find the first one that's ready to run.
   fifo_buffer_iter_t iter;
@@ -874,26 +874,10 @@ value_t take_process_job(value_t process, job_t *job_out) {
     if (is_nothing(guard) || is_promise_resolved(guard)) {
       // This one is ready to run. Remove it from the buffer.
       fifo_buffer_iter_take_current(&iter);
-      return success();
+      return true;
     }
   }
-  return new_condition(ccProcessIdle);
-}
-
-bool is_process_idle(value_t process) {
-  // If there is more work to do the process is definitely not idle.
-  if (!is_fifo_buffer_empty(get_process_work_queue(process)))
-    return false;
-  // If there is no more work but we're still waiting for outstanding requests
-  // it also shouldn't be considered idle.
-  process_airlock_t *airlock = get_process_airlock(process);
-  if (airlock->open_foreign_request_count > 0)
-    return false;
-  // If there are incoming requests that haven't been processed there's also
-  // work to do there.
-  if (!worklist_is_empty(kAirlockIncomingCount, 1)(&airlock->incoming_requests))
-    return false;
-  return true;
+  return false;
 }
 
 value_t finalize_process(garbage_value_t dead_self) {
@@ -922,49 +906,47 @@ process_airlock_t *get_process_airlock(value_t process) {
 }
 
 process_airlock_t *process_airlock_new(runtime_t *runtime) {
-  memory_block_t block = allocator_default_malloc(sizeof(process_airlock_t));
-  if (memory_block_is_empty(block))
+  process_airlock_t *airlock = allocator_default_malloc_struct(process_airlock_t);
+  if (airlock == NULL)
     return NULL;
-  process_airlock_t *airlock = (process_airlock_t*) block.memory;
   airlock->runtime = runtime;
-  airlock->open_foreign_request_count = 0;
-  if (!worklist_init(kAirlockPendingAtomicCount, 1)(&airlock->pending_atomic)
-      || !worklist_init(kAirlockIncomingCount, 1)(&airlock->incoming_requests))
+  airlock->open_external_async = atomic_int64_new(0);
+  if (!worklist_init(kAirlockPendingAtomicCount, 1)(&airlock->pending_external_async))
     return NULL;
   return airlock;
 }
 
-void process_airlock_schedule_atomic(process_airlock_t *airlock,
-    pending_atomic_t *op) {
-  opaque_t opaque_op = p2o(op);
+void process_airlock_open_external_async(process_airlock_t *airlock,
+    external_async_t *async, int32_t type) {
+  async->has_been_registered = true;
+  async->type = (external_async_type_t) type;
+  atomic_int64_increment(&airlock->open_external_async);
+}
+
+void process_airlock_deliver_external_async(process_airlock_t *airlock,
+    external_async_t *async) {
+  CHECK_TRUE("deliveing unregistered async", async->has_been_registered);
+  async->has_been_registered = false;
+  opaque_t o_async = p2o(async);
   bool offered = worklist_schedule(kAirlockPendingAtomicCount, 1)
-      (&airlock->pending_atomic, &opaque_op, 1, duration_unlimited());
+      (&airlock->pending_external_async, &o_async, 1, duration_unlimited());
   CHECK_TRUE("out of capacity", offered);
+  atomic_int64_decrement(&airlock->open_external_async);
 }
 
-void process_airlock_schedule_incoming_request(process_airlock_t *airlock,
-    incoming_request_state_t *request) {
-  // Acquire room to store the result and access to the buffer.
-  opaque_t opaque_request = p2o(request);
-  bool offered = worklist_schedule(kAirlockIncomingCount, 1)(
-      &airlock->incoming_requests, &opaque_request, 1, duration_unlimited());
-  CHECK_TRUE("out of capacity", offered);
-}
-
-value_t foreign_request_state_apply_atomic(foreign_request_state_t *state,
-    process_airlock_t *airlock) {
-  airlock->open_foreign_request_count--;
+value_t foreign_request_state_finish(foreign_request_state_t *state,
+    value_t process, process_airlock_t *airlock) {
   TRY_DEF(result, plankton_deserialize_data(airlock->runtime, NULL, state->result));
   fulfill_promise(deref(state->s_surface_promise), result);
   return success();
 }
 
-static value_t pending_atomic_apply(pending_atomic_t *op,
-    process_airlock_t *airlock) {
-  switch (op->type) {
-#define __GEN_CASE__(Name, name, type) case pa##Name:                          \
-  return type##_apply_atomic((struct type##_t*) op, airlock);
-  ENUM_PENDING_ATOMIC(__GEN_CASE__)
+static value_t external_async_finish(external_async_t *async,
+    value_t process, process_airlock_t *airlock) {
+  switch (async->type) {
+#define __GEN_CASE__(Name, name, type) case ea##Name:                          \
+  return type##_finish((struct type##_t*) async, process, airlock);
+  ENUM_EXTERNAL_ASYNC(__GEN_CASE__)
 #undef __GEN_CASE__
     default:
       UNREACHABLE("invalid pending atomic");
@@ -972,67 +954,63 @@ static value_t pending_atomic_apply(pending_atomic_t *op,
   }
 }
 
-static void pending_atomic_destroy(runtime_t *runtime, pending_atomic_t *op) {
-  switch (op->type) {
-#define __GEN_CASE__(Name, name, type) case pa##Name:                          \
-    type##_destroy(runtime, (type##_t*) op);                                     \
+static void external_async_destroy(runtime_t *runtime, external_async_t *async) {
+  switch (async->type) {
+#define __GEN_CASE__(Name, name, type) case ea##Name:                          \
+    type##_destroy(runtime, (type##_t*) async);                                \
     break;
-    ENUM_PENDING_ATOMIC(__GEN_CASE__)
+  ENUM_EXTERNAL_ASYNC(__GEN_CASE__)
 #undef __GEN_CASE__
   default:
     break;
   }
 }
 
-value_t deliver_process_outstanding_pending_atomic(value_t process) {
+value_t finish_process_external_asyncs(value_t process, bool blocking, size_t *count_out) {
   CHECK_FAMILY(ofProcess, process);
   process_airlock_t *airlock = get_process_airlock(process);
-  pending_atomic_t *op = NULL;
-  while (process_airlock_next_pending_atomic(airlock, &op)) {
-    TRY(pending_atomic_apply(op, airlock));
-    pending_atomic_destroy(airlock->runtime, op);
+  external_async_t *async = NULL;
+  if (count_out != NULL)
+    *count_out = 0;
+  duration_t timeout = blocking ? duration_unlimited() : duration_instant();
+  while (process_airlock_next_finished_async(airlock, timeout, &async)) {
+    TRY(external_async_finish(async, process, airlock));
+    external_async_destroy(airlock->runtime, async);
+    async = NULL;
+    timeout = duration_instant();
+    if (count_out != NULL)
+      (*count_out)++;
   }
   return success();
 }
 
-value_t deliver_process_incoming(runtime_t *runtime, value_t process) {
+value_t incoming_request_state_finish(incoming_request_state_t *state,
+    value_t process, process_airlock_t *airlock) {
   CHECK_FAMILY(ofProcess, process);
-  process_airlock_t *airlock = get_process_airlock(process);
-  incoming_request_state_t *state = NULL;
-  while (process_airlock_next_incoming(airlock, &state)) {
-    TRY_DEF(thunk, new_heap_incoming_request_thunk(runtime, state));
-    job_t job;
-    job_init(&job, ROOT(runtime, call_thunk_code_block), thunk,
+  runtime_t *runtime = airlock->runtime;
+  TRY_DEF(thunk, new_heap_incoming_request_thunk(runtime,
+      deref(state->capsule->s_service), deref(state->s_request),
+      deref(state->s_surface_promise)));
+  job_t job;
+  job_init(&job, ROOT(runtime, call_thunk_code_block), thunk,
         deref(state->s_surface_promise), nothing());
-    TRY(offer_process_job(runtime, process, &job));
-  }
+  TRY(offer_process_job(runtime, process, &job));
   return success();
 }
 
-bool process_airlock_next_pending_atomic(process_airlock_t *airlock,
-    pending_atomic_t **result_out) {
+bool process_airlock_next_finished_async(process_airlock_t *airlock,
+    duration_t timeout, external_async_t **result_out) {
   opaque_t next = o0();
   bool took = worklist_take(kAirlockPendingAtomicCount, 1)(
-      &airlock->pending_atomic, &next, 1, duration_instant());
+      &airlock->pending_external_async, &next, 1, timeout);
   if (took)
-    *result_out = (pending_atomic_t*) o2p(next);
-  return took;
-}
-
-bool process_airlock_next_incoming(process_airlock_t *airlock,
-    incoming_request_state_t **result_out) {
-  opaque_t next = o0();
-  bool took = worklist_take(kAirlockIncomingCount, 1)(
-      &airlock->incoming_requests, &next, 1, duration_instant());
-  if (took)
-    *result_out = (incoming_request_state_t*) o2p(next);
+    *result_out = (external_async_t*) o2p(next);
   return took;
 }
 
 bool process_airlock_destroy(process_airlock_t *airlock) {
-  worklist_dispose(kAirlockPendingAtomicCount, 1)(&airlock->pending_atomic);
-  worklist_dispose(kAirlockIncomingCount, 1)(&airlock->incoming_requests);
-  allocator_default_free(new_memory_block(airlock, sizeof(process_airlock_t)));
+  worklist_dispose(kAirlockPendingAtomicCount, 1)(&airlock->pending_external_async);
+  allocator_default_free_struct(process_airlock_t, airlock);
   return true;
 }
 
@@ -1151,52 +1129,53 @@ FIXED_GET_MODE_IMPL(incoming_request_thunk, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(IncomingRequestThunk, incoming_request_thunk);
 GET_FAMILY_PRIMARY_TYPE_IMPL(incoming_request_thunk);
 
-ACCESSORS_IMPL(IncomingRequestThunk, incoming_request_thunk, acInFamily,
-    ofVoidP, RequestStatePtr, request_state_ptr);
+ACCESSORS_IMPL(IncomingRequestThunk, incoming_request_thunk, acInFamilyOpt,
+    ofExportedService, Service, service);
+ACCESSORS_IMPL(IncomingRequestThunk, incoming_request_thunk, acInFamilyOrNull,
+    ofReifiedArguments, Request, request);
+ACCESSORS_IMPL(IncomingRequestThunk, incoming_request_thunk, acInFamilyOrNull,
+    ofPromise, Promise, promise);
 
 value_t incoming_request_thunk_validate(value_t self) {
   VALIDATE_FAMILY(ofIncomingRequestThunk, self);
-  VALIDATE_FAMILY(ofVoidP, get_incoming_request_thunk_request_state_ptr(self));
+  VALIDATE_FAMILY_OPT(ofExportedService, get_incoming_request_thunk_service(self));
+  VALIDATE_FAMILY_OR_NULL(ofReifiedArguments, get_incoming_request_thunk_request(self));
+  VALIDATE_FAMILY_OR_NULL(ofPromise, get_incoming_request_thunk_promise(self));
   return success();
 }
 
-static incoming_request_state_t *incoming_request_thunk_state(builtin_arguments_t *args) {
+static value_t incoming_request_thunk_handler(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofIncomingRequestThunk, self);
-  value_t state_ptr = get_incoming_request_thunk_request_state_ptr(self);
-  return (incoming_request_state_t*) get_void_p_value(state_ptr);
-}
-
-static value_t incoming_request_thunk_handler(builtin_arguments_t *args) {
-  incoming_request_state_t *state = incoming_request_thunk_state(args);
-  safe_value_t s_service = state->capsule->s_service;
-  return (state == NULL) ? null() : get_exported_service_handler(deref(s_service));
+  value_t service = get_incoming_request_thunk_service(self);
+  return is_nothing(service) ? null() : get_exported_service_handler(service);
 }
 
 static value_t incoming_request_thunk_module(builtin_arguments_t *args) {
-  incoming_request_state_t *state = incoming_request_thunk_state(args);
-  safe_value_t s_service = state->capsule->s_service;
-  return (state == NULL) ? null() : get_exported_service_module(deref(s_service));
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofIncomingRequestThunk, self);
+  value_t service = get_incoming_request_thunk_service(self);
+  return is_nothing(service) ? null() : get_exported_service_module(service);
 }
 
 static value_t incoming_request_thunk_request(builtin_arguments_t *args) {
-  incoming_request_state_t *state = incoming_request_thunk_state(args);
-  return (state == NULL) ? null() : deref(state->s_request);
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofIncomingRequestThunk, self);
+  return get_incoming_request_thunk_request(self);
 }
 
 static value_t incoming_request_thunk_promise(builtin_arguments_t *args) {
-  incoming_request_state_t *state = incoming_request_thunk_state(args);
-  return (state == NULL) ? null() : deref(state->s_surface_promise);
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofIncomingRequestThunk, self);
+  return get_incoming_request_thunk_promise(self);
 }
 
 static value_t incoming_request_thunk_clear(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofIncomingRequestThunk, self);
-  value_t state_ptr = get_incoming_request_thunk_request_state_ptr(self);
-  runtime_t *runtime = get_builtin_runtime(args);
-  incoming_request_state_destroy(runtime,
-      (incoming_request_state_t*) get_void_p_value(state_ptr));
-  set_void_p_value(state_ptr, NULL);
+  set_incoming_request_thunk_service(self, nothing());
+  set_incoming_request_thunk_request(self, null());
+  set_incoming_request_thunk_promise(self, null());
   return null();
 }
 

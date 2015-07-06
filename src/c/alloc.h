@@ -278,7 +278,7 @@ value_t new_heap_exported_service(runtime_t *runtime, value_t process,
 
 // Creates a new incoming request thunk value.
 value_t new_heap_incoming_request_thunk(runtime_t *runtime,
-    incoming_request_state_t *state);
+    value_t service, value_t request, value_t promise);
 
 
 // --- M e t h o d ---

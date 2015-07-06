@@ -174,8 +174,8 @@ static void test_arena_retire_current_block(test_arena_t *arena) {
       // The first time the old capacity will be 0 so we go directly to 4.
       new_capacity = 4;
     // Allocate a new past blocks array.
-    memory_block_t new_memory = allocator_default_malloc(new_capacity * sizeof(memory_block_t));
-    memory_block_t *new_blocks = (memory_block_t*) new_memory.memory;
+    blob_t new_memory = allocator_default_malloc(new_capacity * sizeof(blob_t));
+    blob_t *new_blocks = (blob_t*) new_memory.start;
     // Copy the previous values.
     for (size_t i = 0; i < arena->past_block_capacity; i++)
       new_blocks[i] = arena->past_blocks[i];
@@ -196,7 +196,7 @@ void *test_arena_malloc(test_arena_t *arena, size_t size) {
   CHECK_REL("variant block too big", size, <, kVariantContainerBlockSize);
   if ((arena->current_block_cursor + size) > arena->current_block.size)
     test_arena_retire_current_block(arena);
-  byte_t *start = (byte_t*) arena->current_block.memory;
+  byte_t *start = (byte_t*) arena->current_block.start;
   byte_t *result = start + arena->current_block_cursor;
   arena->current_block_cursor += size;
   return result;
@@ -230,7 +230,7 @@ void *test_arena_copy_array(test_arena_t *arena, size_t size, size_t elmsize, ..
 }
 
 void test_arena_init(test_arena_t *arena) {
-  arena->past_blocks_memory = memory_block_empty();
+  arena->past_blocks_memory = blob_empty();
   arena->current_block = allocator_default_malloc(kVariantContainerBlockSize);
   arena->current_block_cursor = 0;
   arena->past_block_capacity = 0;
@@ -240,7 +240,7 @@ void test_arena_init(test_arena_t *arena) {
 
 void test_arena_dispose(test_arena_t *arena) {
   for (size_t i = 0; i < arena->past_block_count; i++) {
-    memory_block_t past_block = arena->past_blocks[i];
+    blob_t past_block = arena->past_blocks[i];
     allocator_default_free(past_block);
   }
   allocator_default_free(arena->past_blocks_memory);

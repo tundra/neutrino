@@ -90,7 +90,7 @@ scope_o *scope_get_bottom();
 // have two different users at the same time.
 typedef struct {
   // The current memory block.
-  memory_block_t memory;
+  blob_t memory;
 } reusable_scratch_memory_t;
 
 // Initializes a reusable scratch memory block.

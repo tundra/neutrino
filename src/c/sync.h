@@ -84,38 +84,43 @@ static bool is_promise_state_resolved(value_t self) {
 /// A foreign service is a remote process that is immediately backed by an
 /// in-process native implementation.
 
-#define ENUM_PENDING_ATOMIC(F)                                                 \
+#define ENUM_EXTERNAL_ASYNC(F)                                                 \
   F(ForeignRequestResolved, foreign_request_resolved, foreign_request_state)   \
   F(IopComplete, iop_complete, pending_iop_state)                              \
-  F(FulfillPromise, fulfill_promise, fulfill_promise_state)
+  F(FulfillPromise, fulfill_promise, fulfill_promise_state)                    \
+  F(IncomingForeign, incoming_foreign, incoming_request_state)
 
 // The type of a pending atomic operation.
 typedef enum {
-  __paFirst__ = -1
-#define __DECLARE_PENDING_ATOMIC_TYPE__(Name, name, type) , pa##Name
-  ENUM_PENDING_ATOMIC(__DECLARE_PENDING_ATOMIC_TYPE__)
-#undef __DECLARE_PENDING_ATOMIC_TYPE__
-} pending_atomic_type_t;
+  __eaFirst__ = -1
+#define __DECLARE_EXTERNAL_ASYNC_ENUM__(Name, name, type) , ea##Name
+  ENUM_EXTERNAL_ASYNC(__DECLARE_EXTERNAL_ASYNC_ENUM__)
+#undef __DECLARE_EXTERNAL_ASYNC_ENUM__
+} external_async_type_t;
 
-#define __DECLARE_ATOMIC_TYPE__(Name, name, type)                              \
+#define __DECLARE_EXTERNAL_ASYNC_TYPE__(Name, name, type)                      \
   typedef struct type##_t type##_t;                                            \
-  value_t type##_apply_atomic(type##_t*, process_airlock_t*);                  \
+  value_t type##_finish(type##_t*, value_t process, process_airlock_t*);       \
   void type##_destroy(runtime_t*, type##_t*);
-  ENUM_PENDING_ATOMIC(__DECLARE_ATOMIC_TYPE__)
-#undef __DECLARE_ATOMIC_TYPE__
+  ENUM_EXTERNAL_ASYNC(__DECLARE_EXTERNAL_ASYNC_TYPE__)
+#undef __DECLARE_EXTERNAL_ASYNC_TYPE__
 
 // An abstract type that encapsulates a pending atomic operation, that is, an
 // operation that has been scheduled to be applied to a process inbetween turns.
 // The atomic part refers to how the operation is seen from code running in the
 // process: because it happens between turns it is impossible to observe an
-// operation in process.
-struct pending_atomic_t {
-  pending_atomic_type_t type;
+// operation in process. The pending atomic struct must be created before the
+// operation that will eventually produce the result is started since the
+// process associates information with the operation, using the pending atomic,
+// while it is running.
+struct external_async_t {
+  external_async_type_t type;
+  bool has_been_registered;
 };
 
 // Extra state maintained around a foreign request.
 struct foreign_request_state_t {
-  pending_atomic_t as_pending_atomic;
+  external_async_t as_external_async;
   // The part of the data that will be passed to the native impl.
   native_request_t request;
   // The callback that will be called; kept around so we can destroy it later.
@@ -130,8 +135,15 @@ struct foreign_request_state_t {
   blob_t result;
 };
 
-// "Upcast" something that "inherits" from pending_atomic_t to that type.
-#define UPCAST_TO_PENDING_ATOMIC(EXPR) (&(EXPR)->as_pending_atomic)
+// The state associated with a delayed promise fulfillment.
+struct fulfill_promise_state_t {
+  external_async_t as_external_async;
+  safe_value_t s_promise;
+  safe_value_t s_value;
+};
+
+// "Upcast" something that "inherits" from external async to that type.
+#define UPCAST_EXTERNAL_ASYNC(EXPR) (&(EXPR)->as_external_async)
 
 void foreign_request_state_init(foreign_request_state_t *state,
     unary_callback_t *callback, process_airlock_t *airlock,
@@ -157,6 +169,7 @@ FROZEN_ACCESSORS_DECL(foreign_service, display_name);
 
 // Extra state maintained around a request to an exported service.
 struct incoming_request_state_t {
+  external_async_t as_external_async;
   // Capsule for the service that should handle this request.
   exported_service_capsule_t *capsule;
   // The request data.

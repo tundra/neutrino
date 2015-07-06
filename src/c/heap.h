@@ -87,7 +87,7 @@ typedef struct {
   address_t limit;
   // The memory to free when disposing this space. The start address may point
   // somewhere inside this memory so we can't free that directly.
-  memory_block_t memory;
+  blob_t memory;
 } space_t;
 
 // Initialize the given space, assumed to be uninitialized. If this fails for

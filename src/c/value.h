@@ -43,7 +43,7 @@
 #include "utils/string.h"
 #include "utils/tinymt.h"
 
-typedef memory_block_t blob_t;
+typedef blob_t blob_t;
 FORWARD(cycle_detector_t);
 FORWARD(hash_stream_t);
 FORWARD(runtime_t);
@@ -455,9 +455,10 @@ static inline value_t chase_moved_object(value_t raw) {
   F(NamespaceDeclarationAst, namespace_declaration_ast, X, _, (_, _, X, _, _, _, _, _, _, _), 44)\
   F(NamespaceVariableAst,    namespace_variable_ast,    X, X, (_, _, X, _, _, X, _, _, _, _), 42)\
   F(Operation,               operation,                 X, X, (_, X, X, _, _, _, _, _, _, X), 46)\
-  F(OsInStream,              os_in_stream,              _, X, (_, _, _, _, _, _, _, _, _, _), 95)\
-  F(OsOutStream,             os_out_stream,             _, X, (_, _, _, _, _, _, _, _, _, _), 94)\
+  F(OsInStream,              os_in_stream,              _, X, (_, _, _, _, _, _, _, _, _, _), 84)\
+  F(OsOutStream,             os_out_stream,             _, X, (_, _, _, _, _, _, _, _, _, _), 88)\
   F(OsPipe,                  os_pipe,                   _, X, (_, _, _, _, _, _, _, _, X, _), 93)\
+  F(OsProcess,               os_process,                _, X, (_, _, _, _, _, _, _, _, X, _), 94)\
   F(Parameter,               parameter,                 X, _, (_, _, _, _, _, _, _, _, _, _), 51)\
   F(ParameterAst,            parameter_ast,             X, X, (_, _, X, _, _, _, _, _, _, _),  8)\
   F(Path,                    path,                      X, X, (X, X, X, _, _, _, _, _, _, _), 36)\
@@ -492,7 +493,7 @@ static inline value_t chase_moved_object(value_t raw) {
 // family enum values are not the raw ordinals but the ordinals shifted left by
 // the tag size so that they're tagged as integers. Those values are sometimes
 // stored as uint16s so the ordinals are allowed to take up to 14 bits.
-static const int kNextFamilyOrdinal = 96;
+static const int kNextFamilyOrdinal = 95;
 
 // Enumerates all the object families.
 #define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \

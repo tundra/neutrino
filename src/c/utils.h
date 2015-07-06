@@ -29,9 +29,6 @@ static size_t align_size(uint32_t alignment, size_t size) {
 
 // --- B l o b ---
 
-// Similar to init but returns the blob rather than use an out parameter.
-blob_t new_blob(void *data, size_t size);
-
 // The number of bytes in this blob.
 size_t blob_byte_length(blob_t blob);
 
@@ -43,11 +40,6 @@ byte_t blob_byte_at(blob_t blob, size_t index);
 
 // Returns the index'th short in the given blob.
 short_t blob_short_at(blob_t blob, size_t index);
-
-#define blob_fill memory_block_fill
-
-// Write the contents of the source blob into the destination.
-void blob_copy_to(blob_t src, blob_t dest);
 
 // Returns a 0-byte empty blob.
 blob_t blob_empty();
@@ -99,7 +91,7 @@ typedef struct {
 // their storage on the heap.
 typedef struct {
   // The heap allocated memory block holding the vector.
-  memory_block_t memory;
+  blob_t memory;
 } large_bit_vector_store_t;
 
 // A compact vector of bits.

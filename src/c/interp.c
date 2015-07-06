@@ -943,55 +943,70 @@ static value_t resolve_job_promise(value_t result, safe_value_t s_promise) {
   return success();
 }
 
+
+
 // Grabs the next work job from the given process, which must have more work,
 // and executes it on the process' main task.
 static value_t run_next_process_job(safe_value_t s_ambience, safe_value_t s_process) {
   runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
-  job_t job;
-  TRY(deliver_process_outstanding_pending_atomic(deref(s_process)));
-  TRY(deliver_process_incoming(runtime, deref(s_process)));
-  TRY(take_process_job(deref(s_process), &job));
-  CREATE_SAFE_VALUE_POOL(runtime, 5, pool);
-  TRY_FINALLY {
-    E_S_TRY_DEF(s_task, protect(pool, get_process_root_task(deref(s_process))));
-    E_S_TRY_DEF(s_promise, protect(pool, job.promise));
-    E_TRY(prepare_run_job(runtime, get_task_stack(deref(s_task)), &job));
-    E_TRY_DEF(result, run_task_until_signal(s_ambience, s_task));
-    E_TRY(resolve_job_promise(result, s_promise));
-    E_RETURN(result);
-  } FINALLY {
-    DISPOSE_SAFE_VALUE_POOL(pool);
-  } YRT
+  process_airlock_t *airlock = get_process_airlock(deref(s_process));
+  // First, if there are external inputs ready to be delivered we deliver
+  // those nonblocking.
+  TRY(finish_process_external_asyncs(deref(s_process), false, NULL));
+  while (true) {
+    job_t job;
+    // Try to get the next job that's ready to be run.
+    if (!take_process_ready_job(deref(s_process), &job)) {
+      // There was no job to run. That doesn't mean we're done, it might just
+      // mean that we have to wait for some asyncs to finish before we can go
+      // on.
+      if (atomic_int64_get(&airlock->open_external_async) > 0) {
+        // There is at least one open async that hasn't been delivered yet. Wait
+        // for that to be delivered. There is a race condition here where
+        // some other async has been delivered in the meantime but that doesn't
+        // matter we'll just run that one instead. In any case there will be,
+        // either now or later, an async to finish. And then we'll loop around
+        // again.
+        TRY(finish_process_external_asyncs(deref(s_process), true, NULL));
+        continue;
+      } else {
+        // There are no open external asyncs so unless we can finish some now
+        // there is simply no more work left.
+        size_t finish_count = 0;
+        TRY(finish_process_external_asyncs(deref(s_process), false, &finish_count));
+        if (finish_count == 0)
+          return new_condition(ccProcessIdle);
+      }
+    }
+    CREATE_SAFE_VALUE_POOL(runtime, 5, pool);
+    TRY_FINALLY {
+      E_S_TRY_DEF(s_task, protect(pool, get_process_root_task(deref(s_process))));
+      E_S_TRY_DEF(s_promise, protect(pool, job.promise));
+      E_TRY(prepare_run_job(runtime, get_task_stack(deref(s_task)), &job));
+      E_TRY_DEF(result, run_task_until_signal(s_ambience, s_task));
+      E_TRY(resolve_job_promise(result, s_promise));
+      E_RETURN(result);
+    } FINALLY {
+      DISPOSE_SAFE_VALUE_POOL(pool);
+    } YRT
+  }
 }
 
 static value_t run_process_until_idle(safe_value_t s_ambience, safe_value_t s_process) {
-  if (!is_process_idle(deref(s_process))) {
-    // There's at least one job to run.
-    while (true) {
-      value_t result = run_next_process_job(s_ambience, s_process);
-      if (is_condition(result)) {
-        if (!in_condition_cause(ccProcessIdle, result))
-          // Some problem occurred; propagate.
-          return result;
-        // The process has become idle. Maybe it's because it's waiting for I/O?
-        runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
-        io_engine_t *engine = runtime_peek_io_engine(runtime);
-        if (engine != NULL && !io_engine_is_idle(engine)) {
-          // There is still I/O going on at least so let's wait a bit for that
-          // to finish.
-          if (!native_thread_sleep(duration_seconds(0.1)))
-            return new_system_call_failed_condition("sleep");
-        } else {
-          // There's no more I/O to wait for so just propagate.
-          return result;
-        }
-      } else if (is_process_idle(deref(s_process))) {
-        // We performed the last job so we're done.
-        return result;
+  value_t value = nothing();
+  while (true) {
+    value_t next_value = run_next_process_job(s_ambience, s_process);
+    if (is_condition(next_value)) {
+      if (in_condition_cause(ccProcessIdle, next_value)) {
+        return value;
+      } else {
+        return next_value;
       }
-    } while (true);
+    } else {
+      value = next_value;
+    }
   }
-  return nothing();
+  return value;
 }
 
 value_t run_code_block(safe_value_t s_ambience, safe_value_t s_code) {

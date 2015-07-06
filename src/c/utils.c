@@ -9,17 +9,6 @@
 
 #include <stdarg.h>
 
-blob_t new_blob(void *memory, size_t size) {
-  blob_t result;
-  result.memory = memory;
-  result.size = size;
-  return result;
-}
-
-blob_t blob_empty() {
-  return new_blob(NULL, 0);
-}
-
 size_t blob_byte_length(blob_t blob) {
   return blob.size;
 }
@@ -31,18 +20,12 @@ size_t blob_short_length(blob_t blob) {
 
 byte_t blob_byte_at(blob_t blob, size_t index) {
   CHECK_REL("blob index out of bounds", index, <, blob_byte_length(blob));
-  return ((byte_t*) blob.memory)[index];
+  return ((byte_t*) blob.start)[index];
 }
 
 short_t blob_short_at(blob_t blob, size_t index) {
   CHECK_REL("blob index out of bounds", index, <, blob_short_length(blob));
-  return ((short_t*) blob.memory)[index];
-}
-
-void blob_copy_to(blob_t src, blob_t dest) {
-  CHECK_REL("blob copy destination too small", blob_byte_length(dest), >=,
-      blob_byte_length(src));
-  memcpy(dest.memory, src.memory, blob_byte_length(src));
+  return ((short_t*) blob.start)[index];
 }
 
 
@@ -80,9 +63,9 @@ value_t bit_vector_init(bit_vector_t *vector, size_t length, bool value) {
   if (bit_vector_is_small(vector)) {
     vector->data = vector->storage.as_small.inline_data;
   } else {
-    memory_block_t memory = allocator_default_malloc(byte_size);
+    blob_t memory = allocator_default_malloc(byte_size);
     vector->storage.as_large.memory = memory;
-    vector->data = (byte_t*) memory.memory;
+    vector->data = (byte_t*) memory.start;
   }
   memset(vector->data, value ? 0xFF : 0x00, byte_size);
   return success();

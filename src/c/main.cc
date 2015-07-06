@@ -17,6 +17,7 @@ BEGIN_C_INCLUDES
 #include "tagged.h"
 #include "try-inl.h"
 #include "utils/crash.h"
+#include "utils/lifetime.h"
 #include "utils/log.h"
 #include "value.h"
 END_C_INCLUDES
@@ -164,36 +165,55 @@ static value_t neutrino_main_with_options(neutrino::RuntimeConfig *config,
   } YRT
 }
 
+typedef struct {
+  limited_allocator_t limited;
+  fingerprinting_allocator_t fingerprinter;
+} main_allocator_t;
+
+static void main_allocator_install(main_allocator_t *alloc, size_t limit) {
+  limited_allocator_install(&alloc->limited, limit);
+  fingerprinting_allocator_install(&alloc->fingerprinter);
+}
+
+static bool main_allocator_uninstall(main_allocator_t *alloc) {
+  return fingerprinting_allocator_uninstall(&alloc->fingerprinter)
+      & limited_allocator_uninstall(&alloc->limited);
+}
+
 // Set up the environment, parse arguments, create a vm, and run the program.
-static value_t neutrino_main(int raw_argc, const char **argv) {
+// The force_fail out parameter will be set to true if the process should fail
+// regardless of the returned value.
+static value_t neutrino_main(int raw_argc, const char **argv, main_allocator_t *alloc) {
   neutrino::RuntimeConfig config;
   runtime_config_init_main_defaults(&config);
   // Set up a custom allocator we get tighter control over allocation.
-  limited_allocator_t limited_allocator;
-  limited_allocator_install(&limited_allocator, config.system_memory_limit);
+  main_allocator_install(alloc, config.system_memory_limit);
 
   // Parse the options.
   main_options_t options;
   main_options_init(&options, &config);
   if (!parse_options(raw_argc - 1, argv + 1, &options))
     return new_invalid_input_condition();
-
   TRY_FINALLY {
     E_RETURN(neutrino_main_with_options(&config, &options));
   } FINALLY {
     main_options_dispose(&options);
-    limited_allocator_uninstall(&limited_allocator);
   } YRT
 }
 
 int main(int argc, const char *argv[]) {
   install_crash_handler();
-  value_t result = neutrino_main(argc, argv);
+  main_allocator_t alloc;
+  lifetime_t lifetime;
+  lifetime_begin_default(&lifetime);
+  value_t result = neutrino_main(argc, argv, &alloc);
+  lifetime_end_default(&lifetime);
+  bool force_fail = main_allocator_uninstall(&alloc);
   if (is_condition(result)) {
     out_stream_t *out = file_system_stderr(file_system_native());
     print_ln(out, "Error: %v", result);
     return 1;
   } else {
-    return 0;
+    return force_fail ? 1 : 0;
   }
 }

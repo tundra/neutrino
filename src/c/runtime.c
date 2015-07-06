@@ -12,6 +12,7 @@
 #include "safe-inl.h"
 #include "try-inl.h"
 #include "utils/check.h"
+#include "utils/lifetime.h"
 #include "utils/log.h"
 #include "utils/ook-inl.h"
 #include "value-inl.h"
@@ -86,7 +87,7 @@ static value_t create_call_thunk_code_block(runtime_t *runtime) {
 // Populates the special imports map.
 static value_t init_special_imports(runtime_t *runtime, value_t imports) {
   TRY_DEF(ctrino,
-      new_c_object(runtime, ROOT(runtime, ctrino_factory), new_blob(NULL, 0), new_value_array(NULL, 0)));
+      new_c_object(runtime, ROOT(runtime, ctrino_factory), blob_new(NULL, 0), new_value_array(NULL, 0)));
   TRY(set_id_hash_map_at(runtime, imports, RSTR(runtime, ctrino), ctrino));
   TRY_DEF(time, new_native_remote(runtime, native_remote_time()));
   TRY(set_id_hash_map_at(runtime, imports, RSTR(runtime, time), time));
@@ -608,9 +609,7 @@ bool gc_fuzzer_tick(gc_fuzzer_t *fuzzer) {
 }
 
 value_t new_runtime(extended_runtime_config_t *config, runtime_t **runtime_out) {
-  memory_block_t memory = allocator_default_malloc(sizeof(runtime_t));
-  CHECK_EQ("wrong runtime_t memory size", sizeof(runtime_t), memory.size);
-  runtime_t *runtime = (runtime_t*) memory.memory;
+  runtime_t *runtime = allocator_default_malloc_struct(runtime_t);
   value_t result = runtime_init(runtime, config);
   if (is_condition(result)) {
     // Something went wrong initializing the runtime so watch out when disposing
@@ -630,7 +629,7 @@ value_t delete_runtime(runtime_t *runtime, uint32_t flags) {
     // delete in any case.
     return success();
   TRY(runtime_dispose(runtime, flags));
-  allocator_default_free(new_memory_block(runtime, sizeof(runtime_t)));
+  allocator_default_free_struct(runtime_t, runtime);
   return success();
 }
 
@@ -687,6 +686,7 @@ static value_t runtime_freeze_shared_state(runtime_t *runtime) {
 
 value_t runtime_init(runtime_t *runtime,
     const extended_runtime_config_t *config) {
+  CHECK_TRUE("no default lifetime", lifetime_get_default() != NULL);
   runtime_ensure_static_inits_run();
   ensure_neutrino_format_handlers_registered();
   if (config == NULL)
@@ -710,8 +710,7 @@ value_t runtime_init(runtime_t *runtime,
   // from being fuzzed. Longer term (probably after this has been rewritten) we
   // want more of this to be gc safe.
   if (config->base.gc_fuzz_freq > 0) {
-    memory_block_t memory = allocator_default_malloc(sizeof(gc_fuzzer_t));
-    runtime->gc_fuzzer = (gc_fuzzer_t*) memory.memory;
+    runtime->gc_fuzzer = allocator_default_malloc_struct(gc_fuzzer_t);
     gc_fuzzer_init(runtime->gc_fuzzer, kGcFuzzerMinFrequency,
         config->base.gc_fuzz_freq, config->base.gc_fuzz_seed);
   }
@@ -780,7 +779,7 @@ typedef struct {
   // The fixups.
   pending_fixup_t *fixups;
   // The memory where the fixups are stored.
-  memory_block_t memory;
+  blob_t memory;
 } pending_fixup_worklist_t;
 
 // Initialize a worklist. This doesn't allocate any storage, that only happens
@@ -789,7 +788,7 @@ static void pending_fixup_worklist_init(pending_fixup_worklist_t *worklist) {
   worklist->capacity = 0;
   worklist->length = 0;
   worklist->fixups = NULL;
-  worklist->memory = memory_block_empty();
+  worklist->memory = blob_empty();
 }
 
 // Add a new fixup to the list. This returns a value such that it can return
@@ -800,9 +799,9 @@ static value_t pending_fixup_worklist_add(pending_fixup_worklist_t *worklist,
     // There's no room for the new element so increase capacity.
     size_t old_capacity = worklist->capacity;
     size_t new_capacity = (old_capacity == 0) ? 16 : 2 * old_capacity;
-    memory_block_t new_memory = allocator_default_malloc(
+    blob_t new_memory = allocator_default_malloc(
         new_capacity * sizeof(pending_fixup_t));
-    pending_fixup_t *new_fixups = (pending_fixup_t*) new_memory.memory;
+    pending_fixup_t *new_fixups = (pending_fixup_t*) new_memory.start;
     if (old_capacity > 0) {
       // Copy the previous data over to the new backing store.
       memcpy(new_fixups, worklist->fixups,
@@ -820,9 +819,9 @@ static value_t pending_fixup_worklist_add(pending_fixup_worklist_t *worklist,
 
 // Dispose the given worklist.
 static void pending_fixup_worklist_dispose(pending_fixup_worklist_t *worklist) {
-  if (!memory_block_is_empty(worklist->memory)) {
+  if (!blob_is_empty(worklist->memory)) {
     allocator_default_free(worklist->memory);
-    worklist->memory = memory_block_empty();
+    worklist->memory = blob_empty();
     worklist->fixups = NULL;
   }
 }
@@ -1052,8 +1051,7 @@ value_t runtime_dispose(runtime_t *runtime, uint32_t flags) {
   safe_value_destroy(runtime, runtime->s_module_loader);
   result = condition_and(result, heap_dispose(&runtime->heap));
   if (runtime->gc_fuzzer != NULL) {
-    allocator_default_free(
-        new_memory_block(runtime->gc_fuzzer, sizeof(gc_fuzzer_t)));
+    allocator_default_free_struct(gc_fuzzer_t, runtime->gc_fuzzer);
     runtime->gc_fuzzer = NULL;
   }
   return result;

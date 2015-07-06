@@ -212,16 +212,16 @@ struct variant_t {
 // A stack-allocated arena that holds the memory used by test cases.
 typedef struct {
   // The memory where the past blocks array is stored.
-  memory_block_t past_blocks_memory;
+  blob_t past_blocks_memory;
   // Array of past blocks that have been exhausted and are waiting to be
   // disposed.
-  memory_block_t *past_blocks;
+  blob_t *past_blocks;
   // The size of the past blocks array.
   size_t past_block_capacity;
   // The number of entries in the past blocks array that are in use.
   size_t past_block_count;
   // The block from which we're currently grabbing memory.
-  memory_block_t current_block;
+  blob_t current_block;
   // Pointer into the current block where the free memory starts.
   size_t current_block_cursor;
 } test_arena_t;

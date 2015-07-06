@@ -1,11 +1,43 @@
 # Copyright 2015 the Neutrino authors (see AUTHORS).
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-## The built-in type of native os processes.
+## The built-in type of native os processes. This is not a type you would
+## use directly, instead use io:Process.
 def @io:OsProcess := @ctrino.get_builtin_type("OsProcess");
 
 def type @io:OsProcess is @Object;
 
+@ctrino.builtin("os_process.start!")
+def ($this is @io:OsProcess).start!($executable, $args, $exit_code);
+
+## An io:Process is a wrapper around a raw process that collects configuration
+## before the process is started.
 type @io:Process is @Object;
 
+## The name of the executable to run.
 field ($this is @io:Process).executable;
+
+## A list of process arguments, not including the executable, to pass to the
+## process.
+field ($this is @io:Process).arguments;
+
+## Handle for the underlying os process.
+field ($this is @io:Process).handle;
+
+## Promise that holds the process' exit code.
+field ($this is @io:Process).exit_code;
+
+## Creates a new empty process instance.
+def ($this == @io:Process).new() {
+  def $result := @manager.new_instance($this);
+  $result.executable := null;
+  $result.arguments := [];
+  $result.handle := @ctrino.new_os_process();
+  $result.exit_code := @Promise.new();
+  $result;
+}
+
+## Runs the specified executable with the specified arguments. Returns true iff
+## starting succeeded.
+def ($this is @io:Process).start!()
+  => $this.handle.start!($this.executable, $this.arguments, $this.exit_code);

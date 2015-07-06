@@ -254,13 +254,13 @@ value_t plankton_serialize_to_blob(runtime_t *runtime, value_t data) {
 value_t plankton_serialize_to_data(runtime_t *runtime, value_t data,
     blob_t *blob_out, pton_assembler_t **assm_out) {
   pton_assembler_t *assm = pton_new_assembler();
-  memory_block_t code;
+  blob_t code;
   TRY_FINALLY {
     serialize_state_t state;
     E_TRY(serialize_state_init(&state, runtime, assm));
     E_TRY(value_serialize(data, &state));
     code = pton_assembler_peek_code(assm);
-    *blob_out = new_blob(code.memory, code.size);
+    *blob_out = blob_new(code.start, code.size);
     *assm_out = assm;
     assm = NULL;
     E_RETURN(success());
@@ -422,7 +422,7 @@ static value_t value_deserialize(deserialize_state_t *state) {
   blob_t blob = *state->data;
   size_t cursor = state->cursor;
   pton_instr_t instr;
-  uint8_t *code = (uint8_t*) blob.memory;
+  uint8_t *code = (uint8_t*) blob.start;
   if (!pton_decode_next_instruction(code + cursor, blob.size - cursor, &instr))
     return new_invalid_input_condition();
   state->cursor += instr.size;

@@ -28,20 +28,20 @@ static void MAKE_BUFFER_NAME(ensure_capacity)(MAKE_BUFFER_NAME(t) *buf, size_t l
   if (length_bytes < buf->memory.size)
     return;
   size_t new_capacity = (length * 2);
-  memory_block_t new_memory = allocator_default_malloc(new_capacity * sizeof(BUFFER_TYPE));
-  memcpy(new_memory.memory, buf->memory.memory, buf->length * sizeof(BUFFER_TYPE));
+  blob_t new_memory = allocator_default_malloc(new_capacity * sizeof(BUFFER_TYPE));
+  memcpy(new_memory.start, buf->memory.start, buf->length * sizeof(BUFFER_TYPE));
   allocator_default_free(buf->memory);
   buf->memory = new_memory;
 }
 
 void MAKE_BUFFER_NAME(append)(MAKE_BUFFER_NAME(t) *buf, BUFFER_TYPE value) {
   MAKE_BUFFER_NAME(ensure_capacity)(buf, buf->length + 1);
-  ((BUFFER_TYPE*) buf->memory.memory)[buf->length] = value;
+  ((BUFFER_TYPE*) buf->memory.start)[buf->length] = value;
   buf->length++;
 }
 
 blob_t MAKE_BUFFER_NAME(flush)(MAKE_BUFFER_NAME(t) *buf) {
-  return new_blob(buf->memory.memory, buf->length * sizeof(BUFFER_TYPE));
+  return blob_new(buf->memory.start, buf->length * sizeof(BUFFER_TYPE));
 }
 
 void MAKE_BUFFER_NAME(append_cursor)(MAKE_BUFFER_NAME(t) *buf,
@@ -53,6 +53,6 @@ void MAKE_BUFFER_NAME(append_cursor)(MAKE_BUFFER_NAME(t) *buf,
 
 void MAKE_BUFFER_NAME(cursor_set)(MAKE_BUFFER_NAME(cursor_t) *cursor,
     BUFFER_TYPE value) {
-  BUFFER_TYPE *block = (BUFFER_TYPE*) cursor->buf->memory.memory;
+  BUFFER_TYPE *block = (BUFFER_TYPE*) cursor->buf->memory.start;
   block[cursor->offset] = value;
 }

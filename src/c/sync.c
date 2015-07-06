@@ -31,29 +31,22 @@ void fulfill_promise(value_t self, value_t value) {
   }
 }
 
-// The state associated with a delayed promise fulfillment.
-struct fulfill_promise_state_t {
-  pending_atomic_t as_pending_atomic;
-  safe_value_t s_promise;
-  safe_value_t s_value;
-};
-
 value_t schedule_promise_fulfill_atomic(runtime_t *runtime, value_t self,
     value_t value, value_t process) {
   process_airlock_t *airlock = get_process_airlock(process);
-  memory_block_t memory = allocator_default_malloc(sizeof(fulfill_promise_state_t));
-  if (memory_block_is_empty(memory))
+  fulfill_promise_state_t *state = allocator_default_malloc_struct(fulfill_promise_state_t);
+  if (state == NULL)
     return new_system_error_condition(seAllocationFailed);
-  fulfill_promise_state_t *state = (fulfill_promise_state_t*) memory.memory;
-  state->as_pending_atomic.type = paFulfillPromise;
   state->s_promise = runtime_protect_value(runtime, self);
   state->s_value = runtime_protect_value(runtime, value);
-  process_airlock_schedule_atomic(airlock, UPCAST_TO_PENDING_ATOMIC(state));
+  process_airlock_open_external_async(airlock, UPCAST_EXTERNAL_ASYNC(state),
+      eaFulfillPromise);
+  process_airlock_deliver_external_async(airlock, UPCAST_EXTERNAL_ASYNC(state));
   return success();
 }
 
-value_t fulfill_promise_state_apply_atomic(fulfill_promise_state_t *state,
-    process_airlock_t *airlock) {
+value_t fulfill_promise_state_finish(fulfill_promise_state_t *state,
+    value_t process, process_airlock_t *airlock) {
   fulfill_promise(deref(state->s_promise), deref(state->s_value));
   return success();
 }
@@ -61,7 +54,7 @@ value_t fulfill_promise_state_apply_atomic(fulfill_promise_state_t *state,
 void fulfill_promise_state_destroy(runtime_t *runtime, fulfill_promise_state_t *state) {
   safe_value_destroy(runtime, state->s_promise);
   safe_value_destroy(runtime, state->s_value);
-  allocator_default_free(new_memory_block(state, sizeof(fulfill_promise_state_t)));
+  allocator_default_free_struct(fulfill_promise_state_t, state);
 }
 
 value_t promise_validate(value_t self) {
@@ -205,29 +198,30 @@ static opaque_t on_foreign_request_success(opaque_t opaque_state,
   pton_assembler_peek_code(assm);
   state->result = pton_assembler_release_code(assm);
   pton_dispose_assembler(assm);
-  process_airlock_schedule_atomic(state->airlock, UPCAST_TO_PENDING_ATOMIC(state));
+  process_airlock_deliver_external_async(state->airlock,
+      UPCAST_EXTERNAL_ASYNC(state));
   return o0();
 }
 
 void foreign_request_state_init(foreign_request_state_t *state,
     unary_callback_t *callback, process_airlock_t *airlock,
     safe_value_t s_surface_promise) {
-  state->as_pending_atomic.type = paForeignRequestResolved;
   state->callback = callback;
   state->airlock = airlock;
   state->s_surface_promise = s_surface_promise;
   state->result = blob_empty();
   state->request.args = blob_empty();
+  process_airlock_open_external_async(airlock, UPCAST_EXTERNAL_ASYNC(state),
+      eaForeignRequestResolved);
 }
 
 value_t foreign_request_state_new(runtime_t *runtime, value_t process,
     foreign_request_state_t **result_out) {
   TRY_DEF(promise, new_heap_pending_promise(runtime));
   safe_value_t s_promise = runtime_protect_value(runtime, promise);
-  memory_block_t memory = allocator_default_malloc(sizeof(foreign_request_state_t));
-  if (memory_block_is_empty(memory))
+  foreign_request_state_t *state = allocator_default_malloc_struct(foreign_request_state_t);
+  if (state == NULL)
     return new_system_call_failed_condition("malloc");
-  foreign_request_state_t *state = (foreign_request_state_t*) memory.memory;
   unary_callback_t *callback = unary_callback_new_1(on_foreign_request_success, p2o(state));
   foreign_request_state_init(state, callback, get_process_airlock(process),
       s_promise);
@@ -235,7 +229,7 @@ value_t foreign_request_state_new(runtime_t *runtime, value_t process,
   opaque_promise_t *impl_promise = opaque_promise_empty();
   pton_arena_t *arena = pton_new_arena();
   native_request_init(request, runtime, impl_promise, arena, blob_empty());
-  opaque_promise_on_success(impl_promise, state->callback);
+  opaque_promise_on_success(impl_promise, state->callback, omDontTakeOwnership);
   *result_out = state;
   return success();
 }
@@ -248,7 +242,7 @@ void foreign_request_state_destroy(runtime_t *runtime,
   safe_value_destroy(runtime, state->s_surface_promise);
   pton_assembler_dispose_code(state->request.args);
   pton_assembler_dispose_code(state->result);
-  allocator_default_free(new_memory_block(state, sizeof(foreign_request_state_t)));
+  allocator_default_free_struct(foreign_request_state_t, state);
 }
 
 void incoming_request_state_init(incoming_request_state_t *state,
@@ -265,10 +259,9 @@ void incoming_request_state_init(incoming_request_state_t *state,
 value_t incoming_request_state_new(exported_service_capsule_t *capsule,
     safe_value_t s_request, safe_value_t s_surface_promise,
     size_t request_count_delta, incoming_request_state_t **result_out) {
-  memory_block_t memory = allocator_default_malloc(sizeof(incoming_request_state_t));
-  if (memory_block_is_empty(memory))
+  incoming_request_state_t *state = allocator_default_malloc_struct(incoming_request_state_t);
+  if (state == NULL)
     return new_system_call_failed_condition("malloc");
-  incoming_request_state_t *state = (incoming_request_state_t*) memory.memory;
   incoming_request_state_init(state, capsule, s_request, s_surface_promise,
       request_count_delta);
   *result_out = state;
@@ -281,7 +274,7 @@ void incoming_request_state_destroy(runtime_t *runtime,
     state->capsule->request_count -= state->request_count_delta;
   safe_value_destroy(runtime, state->s_request);
   safe_value_destroy(runtime, state->s_surface_promise);
-  allocator_default_free(new_memory_block(state, sizeof(incoming_request_state_t)));
+  allocator_default_free_struct(incoming_request_state_t, state);
 }
 
 // Create a plankton-ified copy of the raw arguments.
@@ -321,7 +314,6 @@ static value_t foreign_service_call_with_args(builtin_arguments_t *args) {
   TRY(foreign_request_state_new(runtime, process, &state));
   TRY(foreign_service_clone_args(state->request.runtime, reified,
       &state->request.args));
-  get_process_airlock(process)->open_foreign_request_count++;
   unary_callback_call(impl, p2o(&state->request));
   return deref(state->s_surface_promise);
 }
@@ -398,17 +390,16 @@ void exported_service_capsule_init(exported_service_capsule_t *capsule,
 
 exported_service_capsule_t *exported_service_capsule_new(runtime_t *runtime,
     safe_value_t s_service) {
-  memory_block_t block = allocator_default_malloc(sizeof(exported_service_capsule_t));
-  if (memory_block_is_empty(block))
+  exported_service_capsule_t *capsule = allocator_default_malloc_struct(exported_service_capsule_t);
+  if (capsule == NULL)
     return NULL;
-  exported_service_capsule_t *capsule = (exported_service_capsule_t*) block.memory;
   exported_service_capsule_init(capsule, s_service);
   return capsule;
 }
 
 bool exported_service_capsule_destroy(exported_service_capsule_t *capsule) {
   CHECK_TRUE("destroying capsule in use", capsule->request_count == 0);
-  allocator_default_free(new_memory_block(capsule, sizeof(exported_service_capsule_t)));
+  allocator_default_free_struct(exported_service_capsule_t, capsule);
   return true;
 }
 
@@ -435,7 +426,9 @@ static value_t exported_service_call_with_args(builtin_arguments_t *args) {
   TRY(incoming_request_state_new(capsule, s_request, s_promise, 1, &state));
   value_t process = get_exported_service_process(self);
   process_airlock_t *airlock = get_process_airlock(process);
-  process_airlock_schedule_incoming_request(airlock, state);
+  process_airlock_open_external_async(airlock, UPCAST_EXTERNAL_ASYNC(state),
+      eaIncomingForeign);
+  process_airlock_deliver_external_async(airlock, UPCAST_EXTERNAL_ASYNC(state));
   return promise;
 }
 

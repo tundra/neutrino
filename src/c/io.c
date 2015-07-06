@@ -6,6 +6,7 @@
 #include "io.h"
 #include "sync.h"
 #include "sync/pipe.h"
+#include "utils/log.h"
 #include "value-inl.h"
 
 /// # Pipe
@@ -27,8 +28,7 @@ value_t os_pipe_validate(value_t self) {
 }
 
 value_t new_heap_os_pipe(runtime_t *runtime) {
-  memory_block_t memory = allocator_default_malloc(sizeof(native_pipe_t));
-  native_pipe_t *pipe = (native_pipe_t*) memory.memory;
+  native_pipe_t *pipe = allocator_default_malloc_struct(native_pipe_t);
   if (!native_pipe_open(pipe))
     return new_system_call_failed_condition("native_pipe_open");
   TRY_DEF(native, new_heap_void_p(runtime, pipe));
@@ -46,17 +46,17 @@ value_t new_heap_os_pipe(runtime_t *runtime) {
 }
 
 value_t finalize_os_pipe(garbage_value_t dead_self) {
-  CHECK_EQ("running process finalizer on non-process", ofOsPipe,
+  CHECK_EQ("running os pipe finalizer on non-os-pipe", ofOsPipe,
       get_garbage_object_family(dead_self));
   garbage_value_t dead_native_ptr = get_garbage_object_field(dead_self,
       kOsPipeNativeOffset);
-  CHECK_EQ("invalid process during finalization", ofVoidP,
+  CHECK_EQ("invalid os pipe during finalization", ofVoidP,
       get_garbage_object_family(dead_native_ptr));
   garbage_value_t native_value = get_garbage_object_field(dead_native_ptr,
       kVoidPValueOffset);
   void *pipe = value_to_pointer_bit_cast(native_value.value);
   native_pipe_dispose((native_pipe_t*) pipe);
-  allocator_default_free(new_memory_block(pipe, sizeof(native_pipe_t)));
+  allocator_default_free_struct(native_pipe_t, pipe);
   return success();
 }
 
@@ -115,10 +115,10 @@ static value_t os_out_stream_write(builtin_arguments_t *args) {
   CHECK_FAMILY(ofOsOutStream, self);
   value_t data = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofBlob, data);
-  memory_block_t contents = get_blob_data(data);
+  blob_t contents = get_blob_data(data);
   // Copy the string contents into a temporary block of memory because the
   // contents may be moved by the gc.
-  memory_block_t scratch = allocator_default_malloc(contents.size);
+  blob_t scratch = allocator_default_malloc(contents.size);
   blob_copy_to(contents, scratch);
   runtime_t *runtime = get_builtin_runtime(args);
   TRY_DEF(promise, new_heap_pending_promise(runtime));
@@ -129,7 +129,7 @@ static value_t os_out_stream_write(builtin_arguments_t *args) {
   process_airlock_t *airlock = get_process_airlock(process);
   pending_iop_state_t *state = pending_iop_state_new(scratch, s_promise, s_stream,
       s_process, protect_immediate(nothing()), airlock);
-  iop_init_write(&state->iop, get_os_out_stream_native(self), scratch.memory,
+  iop_init_write(&state->iop, get_os_out_stream_native(self), scratch.start,
       scratch.size, p2o(state));
   io_engine_t *io_engine = runtime_get_io_engine(runtime);
   if (!io_engine_schedule(io_engine, state))
@@ -180,7 +180,7 @@ static value_t os_in_stream_read(builtin_arguments_t *args) {
   value_t size_val = get_builtin_argument(args, 0);
   CHECK_DOMAIN(vdInteger, size_val);
   size_t size = (size_t) get_integer_value(size_val);
-  memory_block_t scratch = allocator_default_malloc(size);
+  blob_t scratch = allocator_default_malloc(size);
   runtime_t *runtime = get_builtin_runtime(args);
   TRY_DEF(result, new_heap_blob(runtime, size, afMutable));
   TRY_DEF(promise, new_heap_pending_promise(runtime));
@@ -192,7 +192,7 @@ static value_t os_in_stream_read(builtin_arguments_t *args) {
   process_airlock_t *airlock = get_process_airlock(process);
   pending_iop_state_t *state = pending_iop_state_new(scratch, s_promise,
       s_stream, s_process, s_result, airlock);
-  iop_init_read(&state->iop, get_os_in_stream_native(self), scratch.memory,
+  iop_init_read(&state->iop, get_os_in_stream_native(self), scratch.start,
       scratch.size, p2o(state));
   io_engine_t *io_engine = runtime_get_io_engine(runtime);
   if (!io_engine_schedule(io_engine, state))
@@ -206,10 +206,101 @@ value_t add_os_in_stream_builtin_implementations(runtime_t *runtime, safe_value_
 }
 
 
+/// ## Os process
+
+GET_FAMILY_PRIMARY_TYPE_IMPL(os_process);
+FIXED_GET_MODE_IMPL(os_process, vmMutable);
+TRIVIAL_PRINT_ON_IMPL(OsProcess, os_process);
+
+ACCESSORS_IMPL(OsProcess, os_process, acInFamilyOpt, ofVoidP, NativePtr, native_ptr);
+
+native_process_t *get_os_process_native(value_t self) {
+  value_t ptr = get_os_process_native_ptr(self);
+  return (native_process_t*) get_void_p_value(ptr);
+}
+
+value_t os_process_validate(value_t self) {
+  VALIDATE_FAMILY(ofOsProcess, self);
+  VALIDATE_FAMILY_OPT(ofVoidP, get_os_process_native_ptr(self));
+  return success();
+}
+
+value_t new_heap_os_process(runtime_t *runtime) {
+  native_process_t *native = native_process_new();
+  TRY_DEF(native_ptr, new_heap_void_p(runtime, native));
+  size_t size = kOsProcessSize;
+  TRY_DEF(result, alloc_heap_object(runtime, size,
+      ROOT(runtime, os_process_species)));
+  set_os_process_native_ptr(result, native_ptr);
+  runtime_protect_value_with_flags(runtime, result, tfAlwaysWeak | tfSelfDestruct | tfFinalize, NULL);
+  return post_create_sanity_check(result, size);
+}
+
+value_t finalize_os_process(garbage_value_t dead_self) {
+  CHECK_EQ("running os process finalizer on non-os-process", ofOsProcess,
+      get_garbage_object_family(dead_self));
+  garbage_value_t dead_native_ptr = get_garbage_object_field(dead_self,
+      kOsProcessNativePtrOffset);
+  CHECK_EQ("invalid os process during finalization", ofVoidP,
+      get_garbage_object_family(dead_native_ptr));
+  garbage_value_t native_value = get_garbage_object_field(dead_native_ptr,
+      kVoidPValueOffset);
+  void *process = value_to_pointer_bit_cast(native_value.value);
+  HEST("destroy");
+  native_process_destroy((native_process_t*) process);
+  return success();
+}
+
+static void on_exit_code_ready(process_airlock_t *airlock,
+    fulfill_promise_state_t *state, int exit_code) {
+  state->s_value = protect_immediate(new_integer(exit_code));
+  process_airlock_deliver_external_async(airlock, UPCAST_EXTERNAL_ASYNC(state));
+}
+
+static opaque_t on_exit_code_ready_bridge(opaque_t o_airlock, opaque_t o_state,
+    opaque_t o_exit_code) {
+  on_exit_code_ready((process_airlock_t*) o2p(o_airlock),
+      (fulfill_promise_state_t*) o2p(o_state),
+      (int) o2u(o_exit_code));
+  return o0();
+}
+
+static value_t os_process_start(builtin_arguments_t *args) {
+  value_t os_process = get_builtin_subject(args);
+  CHECK_FAMILY(ofOsProcess, os_process);
+  utf8_t executable = get_utf8_contents(get_builtin_argument(args, 0));
+  value_t arguments = get_builtin_argument(args, 1);
+  CHECK_FAMILY(ofArray, arguments);
+  value_t exit_code_promise = get_builtin_argument(args, 2);
+  CHECK_FAMILY(ofPromise, exit_code_promise);
+  native_process_t *native = get_os_process_native(os_process);
+  bool started = native_process_start(native, executable.chars, 0, NULL);
+  CHECK_TRUE("failed to start process", started);
+  opaque_promise_t *exit_code = native_process_exit_code(native);
+  process_airlock_t *airlock = get_process_airlock(get_builtin_process(args));
+  fulfill_promise_state_t *state = allocator_default_malloc_struct(fulfill_promise_state_t);
+  runtime_t *runtime = get_builtin_runtime(args);
+  state->s_promise = runtime_protect_value(runtime, exit_code_promise);
+  state->s_value = protect_immediate(nothing());
+  process_airlock_open_external_async(airlock, UPCAST_EXTERNAL_ASYNC(state),
+      eaFulfillPromise);
+  opaque_promise_on_success(exit_code,
+      unary_callback_new_2(on_exit_code_ready_bridge, p2o(airlock),
+          p2o(state)),
+      omTakeOwnership);
+  return null();
+}
+
+value_t add_os_process_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("os_process.start!", 3, os_process_start);
+  return success();
+}
+
+
 /// ## Async interface
 
-value_t pending_iop_state_apply_atomic(pending_iop_state_t *state,
-    process_airlock_t *airlock) {
+value_t pending_iop_state_finish(pending_iop_state_t *state,
+    value_t process, process_airlock_t *airlock) {
   if (state->iop.type_ == ioRead) {
     value_t result = deref(state->s_result);
     set_blob_data(result, state->scratch);
@@ -222,20 +313,20 @@ value_t pending_iop_state_apply_atomic(pending_iop_state_t *state,
   return success();
 }
 
-pending_iop_state_t *pending_iop_state_new(memory_block_t scratch,
+pending_iop_state_t *pending_iop_state_new(blob_t scratch,
     safe_value_t s_promise, safe_value_t s_stream, safe_value_t s_process,
     safe_value_t s_result, process_airlock_t *airlock) {
-  memory_block_t memory = allocator_default_malloc(sizeof(pending_iop_state_t));
-  if (memory_block_is_empty(memory))
+  pending_iop_state_t *state = allocator_default_malloc_struct(pending_iop_state_t);
+  if (state == NULL)
     return NULL;
-  pending_iop_state_t *state = (pending_iop_state_t*) memory.memory;
-  state->as_pending_atomic.type = paIopComplete;
   state->scratch = scratch;
   state->s_promise = s_promise;
   state->s_stream = s_stream;
   state->s_process = s_process;
   state->s_result = s_result;
   state->airlock = airlock;
+  process_airlock_open_external_async(airlock, UPCAST_EXTERNAL_ASYNC(state),
+      eaIopComplete);
   return state;
 }
 
@@ -246,7 +337,7 @@ void pending_iop_state_destroy(runtime_t *runtime, pending_iop_state_t *state) {
   safe_value_destroy(runtime, state->s_process);
   safe_value_destroy(runtime, state->s_result);
   iop_dispose(&state->iop);
-  memory_block_t memory = new_memory_block(state, sizeof(pending_iop_state_t));
+  blob_t memory = blob_new(state, sizeof(pending_iop_state_t));
   allocator_default_free(memory);
 }
 
@@ -292,12 +383,12 @@ static void io_engine_select(io_engine_t *engine, duration_t timeout) {
     // we don't perform it in this round, we loop around again first.
     io_engine_wait_for_pending(engine, timeout);
   } else {
-    opaque_t opaque_state = o0();
-    if (!iop_group_wait_for_next(&engine->iop_group, timeout, &opaque_state))
+    iop_t *next = NULL;
+    if (!iop_group_wait_for_next(&engine->iop_group, timeout, &next))
       return;
-    pending_iop_state_t *state = (pending_iop_state_t*) o2p(opaque_state);
-    process_airlock_schedule_atomic(state->airlock,
-        UPCAST_TO_PENDING_ATOMIC(state));
+    pending_iop_state_t *state = (pending_iop_state_t*) o2p(iop_extra(next));
+    process_airlock_deliver_external_async(state->airlock,
+        UPCAST_EXTERNAL_ASYNC(state));
   }
 }
 
@@ -328,10 +419,9 @@ static opaque_t io_engine_main_loop_bridge(opaque_t opaque_io_engine) {
 }
 
 io_engine_t *io_engine_new() {
-  memory_block_t memory = allocator_default_malloc(sizeof(io_engine_t));
-  if (memory_block_is_empty(memory))
+  io_engine_t *engine = allocator_default_malloc_struct(io_engine_t);
+  if (engine == NULL)
     return NULL;
-  io_engine_t *engine = (io_engine_t*) memory.memory;
   engine->terminate_when_idle = false;
   if (!worklist_init(kIoEngineMaxIncoming, 1)(&engine->incoming))
     return NULL;
@@ -352,7 +442,7 @@ void io_engine_destroy(io_engine_t *engine) {
   callback_destroy(engine->main_loop_callback);
   worklist_dispose(kIoEngineMaxIncoming, 1)(&engine->incoming);
   iop_group_dispose(&engine->iop_group);
-  memory_block_t memory = new_memory_block(engine, sizeof(io_engine_t));
+  blob_t memory = blob_new(engine, sizeof(io_engine_t));
   allocator_default_free(memory);
 }
 

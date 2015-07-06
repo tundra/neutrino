@@ -297,7 +297,7 @@ value_t new_heap_c_object(runtime_t *runtime, alloc_flags_t flags, value_t speci
     // If the aligned backing array is larger than the initial data we clear the
     // whole thing to 0 to not have data lying around that hasn't been
     // deliberately set.
-    blob_t aligned_data = new_blob(get_c_object_data_start(result), aligned_data_size);
+    blob_t aligned_data = blob_new(get_c_object_data_start(result), aligned_data_size);
     blob_fill(aligned_data, 0);
   }
   // Copy the initial data into the object. This time we'll use just the
@@ -821,12 +821,13 @@ value_t new_heap_exported_service(runtime_t *runtime, value_t process,
 }
 
 value_t new_heap_incoming_request_thunk(runtime_t *runtime,
-    incoming_request_state_t *state) {
-  TRY_DEF(state_ptr, new_heap_void_p(runtime, state));
+    value_t service, value_t request, value_t promise) {
   size_t size = kIncomingRequestThunkSize;
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, incoming_request_thunk_species)));
-  set_incoming_request_thunk_request_state_ptr(result, state_ptr);
+  set_incoming_request_thunk_service(result, service);
+  set_incoming_request_thunk_request(result, request);
+  set_incoming_request_thunk_promise(result, promise);
   return post_create_sanity_check(result, size);
 }
 
@@ -1300,8 +1301,8 @@ value_t clone_heap_object(runtime_t *runtime, value_t original) {
   heap_object_layout_t layout;
   get_heap_object_layout(original, &layout);
   TRY_DEF(result, alloc_heap_object(runtime, layout.size, get_heap_object_species(original)));
-  blob_t dest_blob = new_blob(get_heap_object_address(result), layout.size);
-  blob_t src_blob = new_blob(get_heap_object_address(original), layout.size);
+  blob_t dest_blob = blob_new(get_heap_object_address(result), layout.size);
+  blob_t src_blob = blob_new(get_heap_object_address(original), layout.size);
   blob_copy_to(src_blob, dest_blob);
   return result;
 }

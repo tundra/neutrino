@@ -35,7 +35,7 @@ TEST(alloc, heap_blob) {
     ASSERT_EQ(0, blob_byte_at(data, i));
 
   byte_t content_array[3] = {6, 5, 4};
-  blob_t contents = new_blob(content_array, 3);
+  blob_t contents = blob_new(content_array, 3);
   blob = new_heap_blob_with_data(runtime, contents);
   blob_t heap_blob = get_blob_data(blob);
   ASSERT_EQ(3, blob_byte_length(heap_blob));

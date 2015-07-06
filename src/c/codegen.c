@@ -208,17 +208,17 @@ bool assembler_is_symbol_bound(assembler_t *assm, value_t symbol) {
 // --- S c r a t c h ---
 
 void reusable_scratch_memory_init(reusable_scratch_memory_t *memory) {
-  memory->memory = memory_block_empty();
+  memory->memory = blob_empty();
 }
 
 void reusable_scratch_memory_dispose(reusable_scratch_memory_t *memory) {
   allocator_default_free(memory->memory);
-  memory->memory = memory_block_empty();
+  memory->memory = blob_empty();
 }
 
 void *reusable_scratch_memory_alloc(reusable_scratch_memory_t *memory,
     size_t size) {
-  memory_block_t current = memory->memory;
+  blob_t current = memory->memory;
   if (current.size < size) {
     // If the current memory block is too small to handle what we're asking
     // for replace it with a new one with room enough.
@@ -226,7 +226,7 @@ void *reusable_scratch_memory_alloc(reusable_scratch_memory_t *memory,
     current = allocator_default_malloc(size * 2);
     memory->memory = current;
   }
-  return current.memory;
+  return current.start;
 }
 
 void reusable_scratch_memory_double_alloc(reusable_scratch_memory_t *memory,

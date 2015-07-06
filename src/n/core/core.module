@@ -20,6 +20,7 @@ module $core {
     "null.n",
     "object.n",
     "os_pipe.n",
+    "os_process.n",
     "os_stream.n",
     "promise.n",
     "selector.n",

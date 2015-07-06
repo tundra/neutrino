@@ -17,7 +17,7 @@ struct MAKE_BUFFER_NAME(t) {
   // Size of data currently in the buffer counted in elements, not bytes.
   size_t length;
   // The data block.
-  memory_block_t memory;
+  blob_t memory;
 };
 
 // Initialize a buffer.

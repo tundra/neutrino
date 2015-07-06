@@ -62,12 +62,12 @@ value_t space_init(space_t *space, const extended_runtime_config_t *config) {
   // Allocate one word more than strictly necessary to account for possible
   // alignment.
   size_t bytes = config->base.semispace_size_bytes + kValueSize;
-  memory_block_t memory = allocator_default_malloc(bytes);
-  if (memory_block_is_empty(memory))
+  blob_t memory = allocator_default_malloc(bytes);
+  if (blob_is_empty(memory))
     return new_system_call_failed_condition("malloc");
   // Clear the newly allocated memory to a recognizable value.
-  memory_block_fill(memory, kUnusedHeapMarker);
-  address_t aligned = align_address(kValueSize, (address_t) memory.memory);
+  blob_fill(memory, kUnusedHeapMarker);
+  address_t aligned = align_address(kValueSize, (address_t) memory.start);
   space->memory = memory;
   space->next_free = space->start = aligned;
   // If malloc gives us an aligned pointer using only 'size_bytes' of memory
@@ -79,9 +79,9 @@ value_t space_init(space_t *space, const extended_runtime_config_t *config) {
 }
 
 void space_dispose(space_t *space) {
-  if (memory_block_is_empty(space->memory))
+  if (blob_is_empty(space->memory))
     return;
-  memory_block_fill(space->memory, kFreedHeapMarker);
+  blob_fill(space->memory, kFreedHeapMarker);
   allocator_default_free(space->memory);
   space_clear(space);
 }
@@ -89,7 +89,7 @@ void space_dispose(space_t *space) {
 void space_clear(space_t *space) {
   space->next_free = NULL;
   space->limit = NULL;
-  space->memory = memory_block_empty();
+  space->memory = blob_empty();
 }
 
 bool space_is_empty(space_t *space) {
@@ -115,7 +115,7 @@ bool space_try_alloc(space_t *space, size_t size, address_t *memory_out) {
 
 bool space_contains(space_t *space, address_t addr) {
   CHECK_FALSE("space is empty", space_is_empty(space));
-  return (((address_t) space->memory.memory) <= addr) && (addr < space->next_free);
+  return (((address_t) space->memory.start) <= addr) && (addr < space->next_free);
 }
 
 value_t space_for_each_object(space_t *space, value_visitor_o *visitor) {
@@ -196,8 +196,8 @@ object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value,
     uint32_t flags, protect_value_data_t *data) {
   CHECK_FALSE("tracker for immediate", value_is_immediate(value));
   size_t size = object_tracker_size(flags);
-  memory_block_t memory = allocator_default_malloc(size);
-  object_tracker_t *new_tracker = (object_tracker_t*) memory.memory;
+  blob_t memory = allocator_default_malloc(size);
+  object_tracker_t *new_tracker = (object_tracker_t*) memory.start;
   object_tracker_t *next = heap->root_object_tracker.next;
   object_tracker_t *prev = next->prev;
   new_tracker->value = value;
@@ -224,7 +224,7 @@ void heap_destroy_object_tracker(heap_t *heap, object_tracker_t *tracker) {
   object_tracker_t *next = tracker->next;
   CHECK_PTREQ("wrong tracker next", tracker, next->prev);
   size_t size = object_tracker_size(tracker->flags);
-  allocator_default_free(new_memory_block(tracker, size));
+  allocator_default_free(blob_new(tracker, size));
   prev->next = next;
   next->prev = prev;
   heap->object_tracker_count--;

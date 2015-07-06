@@ -382,7 +382,7 @@ utf8_t get_utf8_contents(value_t value) {
 }
 
 blob_t get_utf8_raw_contents(value_t self) {
-  return new_memory_block(get_utf8_chars(self), (size_t) get_utf8_length(self));
+  return blob_new(get_utf8_chars(self), (size_t) get_utf8_length(self));
 }
 
 value_t utf8_validate(value_t value) {
@@ -565,7 +565,7 @@ static value_t ascii_string_from_blob(builtin_arguments_t *args) {
   value_t blob = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofBlob, blob);
   blob_t data = get_blob_data(blob);
-  utf8_t contents = new_string((char*) data.memory, data.size);
+  utf8_t contents = new_string((char*) data.start, data.size);
   runtime_t *runtime = get_builtin_runtime(args);
   return new_heap_utf8(runtime, contents);
 }
@@ -597,7 +597,7 @@ blob_t get_blob_data(value_t value) {
   CHECK_FAMILY(ofBlob, value);
   size_t length = (size_t) get_blob_length(value);
   void *data = access_heap_object_field(value, kBlobDataOffset);
-  return new_blob(data, length);
+  return blob_new(data, length);
 }
 
 void set_blob_data(value_t self, blob_t data) {

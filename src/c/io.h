@@ -4,9 +4,10 @@
 #ifndef _IO
 #define _IO
 
-#include "sync.h"
-#include "value.h"
 #include "io/iop.h"
+#include "sync.h"
+#include "sync/process.h"
+#include "value.h"
 
 /// ## Pipe
 
@@ -55,17 +56,30 @@ ACCESSORS_DECL(os_in_stream, lifeline);
 in_stream_t *get_os_in_stream_native(value_t self);
 
 
-/// ## Process interface
+/// ## Os process
+
+static const size_t kOsProcessSize = HEAP_OBJECT_SIZE(1);
+static const size_t kOsProcessNativePtrOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+
+// The underlying native process.
+ACCESSORS_DECL(os_process, native_ptr);
+
+native_process_t *get_os_process_native(value_t self);
+
+value_t new_heap_os_process(runtime_t *runtime);
+
+
+/// ## Process/iop interface
 
 // An outstanding iop.
 struct pending_iop_state_t {
-  // Header so this can be used as an abstract pending atomic.
-  pending_atomic_t as_pending_atomic;
+  // Header so this can be used as an external async.
+  external_async_t as_external_async;
   // Iop.
   iop_t iop;
   // Scratch storage to use for the source or destination data. Owned by the
   // state value so gets deallocated along with it.
-  memory_block_t scratch;
+  blob_t scratch;
   // The promise to resolve with the result.
   safe_value_t s_promise;
   // The heap stream value this operates on. Accessing this outside the runtime
@@ -75,7 +89,7 @@ struct pending_iop_state_t {
   // deliver the result to its airlock.
   safe_value_t s_process;
   // Optionally pre-allocated result to eventually resolve the promise with.
-  // This gets pre-allocateds uch that we don't need to do an allocation that
+  // This gets pre-allocated such that we don't need to do an allocation that
   // might fail when the op has succeeded.
   safe_value_t s_result;
   // The airlock to notify when this iop is complete.
@@ -89,7 +103,7 @@ value_t pending_iop_state_apply_atomic(pending_iop_state_t *state,
 
 // Allocates and a new pending iop state on the heap and returns it. The state
 // takes ownership of s_promise.
-pending_iop_state_t *pending_iop_state_new(memory_block_t scratch,
+pending_iop_state_t *pending_iop_state_new(blob_t scratch,
     safe_value_t s_promise, safe_value_t s_stream, safe_value_t s_process,
     safe_value_t s_result, process_airlock_t *airlock);
 

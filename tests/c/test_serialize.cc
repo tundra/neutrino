@@ -247,7 +247,7 @@ TEST(serialize, collection) {
     plankton::Variant value = test_data_gen(&arena, 9, 76647);
     plankton::BinaryWriter writer;
     writer.write(value);
-    value_t blob = new_heap_blob_with_data(runtime, new_blob(*writer, writer.size()));
+    value_t blob = new_heap_blob_with_data(runtime, blob_new(*writer, writer.size()));
     ASSERT_SUCCESS(blob);
     s_blob = protect(pool, blob);
   }

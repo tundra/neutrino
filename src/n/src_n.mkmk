@@ -21,6 +21,7 @@ core_file_names = [
   "core/null.n",
   "core/object.n",
   "core/os_pipe.n",
+  "core/os_process.n",
   "core/os_stream.n",
   "core/promise.n",
   "core/selector.n",

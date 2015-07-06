@@ -297,7 +297,7 @@ value_t NativeServiceBinderImpl::process(NativeService *service,
 ServiceRequestImpl::ServiceRequestImpl(native_request_t *native)
   : native_(native)
   , reader_(factory()) {
-  args_ = reader_.parse(native->args.memory, native->args.size);
+  args_ = reader_.parse(native->args.start, native->args.size);
 }
 
 plankton::Factory *ServiceRequestImpl::factory() {
