@@ -43,7 +43,6 @@
 #include "utils/string.h"
 #include "utils/tinymt.h"
 
-typedef blob_t blob_t;
 FORWARD(cycle_detector_t);
 FORWARD(hash_stream_t);
 FORWARD(runtime_t);

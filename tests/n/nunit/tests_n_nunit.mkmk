@@ -83,6 +83,7 @@ for file_name in file_names:
       "--libraries", "[", '"%s"' % library.get_output_path(), "]", "}")
   test_case.add_dependency(program)
   test_case.add_dependency(library)
+  test_case.add_dependency(durian_main)
   test_case.add_env("DURIAN_MAIN", durian_main.get_output_path())
   # Create a shorthand for running this test case.
   shorthand = add_alias("run-nunit-%s" % filename)
