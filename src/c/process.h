@@ -579,7 +579,6 @@ ACCESSORS_DECL(task, stack);
 /// through explicitly sending asynchronous messages.
 
 typedef struct external_async_t external_async_t;
-typedef struct incoming_request_state_t incoming_request_state_t;
 typedef struct exported_service_capsule_t exported_service_capsule_t;
 
 // The number of pending results that we'll let buffer in an airlock.
