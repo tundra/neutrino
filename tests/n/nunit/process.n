@@ -8,9 +8,10 @@ def $test_calls() {
   @core:ctrino.get_environment_variable("DURIAN_MAIN").then(fn $durian_main {
     def $p := new ($core:io:Process)();
     $p.executable := $durian_main;
+    $p.arguments := ["--quiet", "--exit-code", "99"];
     $p.start!();
     $p.exit_code.then(fn $exit_code {
-      $assert:equals(0, $exit_code);
+      $assert:equals(99, $exit_code);
     });
   });
 }
