@@ -597,7 +597,8 @@ typedef struct {
   // Atomic operations to perform after the current turn.
   worklist_t(kAirlockPendingAtomicCount, 1) pending_external_async;
   // The number of outstanding tasks that will eventually resolve to a pending
-  // atomic op but are currently processing.
+  // atomic op but are currently processing. If this value is nonzero there must
+  // be external asyncs that will eventually be delivered.
   atomic_int64_t open_external_async;
 } process_airlock_t;
 

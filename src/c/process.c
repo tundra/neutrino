@@ -928,10 +928,13 @@ void process_airlock_deliver_external_async(process_airlock_t *airlock,
   CHECK_TRUE("deliveing unregistered async", async->has_been_registered);
   async->has_been_registered = false;
   opaque_t o_async = p2o(async);
+  // Decrement the number of external asyncs first to avoid the 1-case where
+  // the last open async has just been scheduled and there will be no more but
+  // the count is nonzero.
+  atomic_int64_decrement(&airlock->open_external_async);
   bool offered = worklist_schedule(kAirlockPendingAtomicCount, 1)
       (&airlock->pending_external_async, &o_async, 1, duration_unlimited());
   CHECK_TRUE("out of capacity", offered);
-  atomic_int64_decrement(&airlock->open_external_async);
 }
 
 value_t foreign_request_state_finish(foreign_request_state_t *state,
@@ -1009,6 +1012,7 @@ bool process_airlock_next_finished_async(process_airlock_t *airlock,
 }
 
 bool process_airlock_destroy(process_airlock_t *airlock) {
+  CHECK_EQ("open asyncs", 0, atomic_int64_get(&airlock->open_external_async));
   worklist_dispose(kAirlockPendingAtomicCount, 1)(&airlock->pending_external_async);
   allocator_default_free_struct(process_airlock_t, airlock);
   return true;
