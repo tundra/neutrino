@@ -273,16 +273,15 @@ static value_t os_process_start(builtin_arguments_t *args) {
   value_t exit_code_promise = get_builtin_argument(args, 2);
   CHECK_FAMILY(ofPromise, exit_code_promise);
   native_process_t *native = get_os_process_native(os_process);
-  size_t argc = get_array_length(arguments);
-  blob_t argv_blob = allocator_default_malloc(sizeof(utf8_t) * argc);
-  utf8_t *argv = (utf8_t*) argv_blob.start;
+  size_t argc = (size_t) get_array_length(arguments);
+  utf8_t *argv = allocator_default_malloc_structs(utf8_t, argc);
   for (size_t i = 0; i < argc; i++) {
     value_t arg = get_array_at(arguments, i);
     CHECK_FAMILY(ofUtf8, arg);
     argv[i] = get_utf8_contents(arg);
   }
   bool started = native_process_start(native, executable, argc, argv);
-  allocator_default_free(argv_blob);
+  allocator_default_free_structs(utf8_t, argc, argv);
   CHECK_TRUE("failed to start process", started);
   opaque_promise_t *exit_code = native_process_exit_code(native);
   process_airlock_t *airlock = get_process_airlock(get_builtin_process(args));
