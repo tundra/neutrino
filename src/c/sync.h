@@ -105,14 +105,21 @@ typedef enum {
   ENUM_EXTERNAL_ASYNC(__DECLARE_EXTERNAL_ASYNC_TYPE__)
 #undef __DECLARE_EXTERNAL_ASYNC_TYPE__
 
-// An abstract type that encapsulates a pending atomic operation, that is, an
-// operation that has been scheduled to be applied to a process inbetween turns.
-// The atomic part refers to how the operation is seen from code running in the
-// process: because it happens between turns it is impossible to observe an
-// operation in process. The pending atomic struct must be created before the
-// operation that will eventually produce the result is started since the
-// process associates information with the operation, using the pending atomic,
-// while it is running.
+// An abstract type that encapsulates a an asynchronous operation external to
+// the runtime, that is, an operation that can be completed concurrently to the
+// interpreter. An external async has three phases.
+//
+//   1. Once it has been created it is synchronously opened by the process. The
+//      process needs to know many asyncs are open so that it can wait for
+//      outstanding ones, that's the purpose of opening.
+//   2. When it is complete the async must be delivered to the airlock of the
+//      process. This can happen asynchronously.
+//   3. At some point after the current turn the process will finish the async
+//      in some way appropriate to the type of the async. This is again
+//      synchronous.
+//
+// Seen from code running in the process any effect the async has happens
+// between turns.
 struct external_async_t {
   external_async_type_t type;
   bool has_been_registered;
