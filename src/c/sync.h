@@ -8,6 +8,8 @@
 #ifndef _SYNC
 #define _SYNC
 
+#include "plugin.h"
+#include "undertaking.h"
 #include "value.h"
 
 /// ## Promise
@@ -78,56 +80,14 @@ static bool is_promise_state_resolved(value_t self) {
   return !is_same_value(self, promise_state_pending());
 }
 
-
 /// ## Foreign service
 ///
 /// A foreign service is a remote process that is immediately backed by an
 /// in-process native implementation.
 
-#define ENUM_EXTERNAL_ASYNC(F)                                                 \
-  F(ForeignRequestResolved, foreign_request_resolved, foreign_request_state)   \
-  F(IopComplete, iop_complete, pending_iop_state)                              \
-  F(FulfillPromise, fulfill_promise, fulfill_promise_state)                    \
-  F(IncomingForeign, incoming_foreign, incoming_request_state)
-
-// The type of a pending atomic operation.
-typedef enum {
-  __eaFirst__ = -1
-#define __DECLARE_EXTERNAL_ASYNC_ENUM__(Name, name, type) , ea##Name
-  ENUM_EXTERNAL_ASYNC(__DECLARE_EXTERNAL_ASYNC_ENUM__)
-#undef __DECLARE_EXTERNAL_ASYNC_ENUM__
-} external_async_type_t;
-
-#define __DECLARE_EXTERNAL_ASYNC_TYPE__(Name, name, type)                      \
-  typedef struct type##_t type##_t;                                            \
-  value_t type##_finish(type##_t*, value_t process, process_airlock_t*);       \
-  void type##_destroy(runtime_t*, type##_t*);
-  ENUM_EXTERNAL_ASYNC(__DECLARE_EXTERNAL_ASYNC_TYPE__)
-#undef __DECLARE_EXTERNAL_ASYNC_TYPE__
-
-// An abstract type that encapsulates a an asynchronous operation external to
-// the runtime, that is, an operation that can be completed concurrently to the
-// interpreter. An external async has three phases.
-//
-//   1. Once it has been created it is synchronously opened by the process. The
-//      process needs to know many asyncs are open so that it can wait for
-//      outstanding ones, that's the purpose of opening.
-//   2. When it is complete the async must be delivered to the airlock of the
-//      process. This can happen asynchronously.
-//   3. At some point after the current turn the process will finish the async
-//      in some way appropriate to the type of the async. This is again
-//      synchronous.
-//
-// Seen from code running in the process any effect the async has happens
-// between turns.
-struct external_async_t {
-  external_async_type_t type;
-  bool has_been_registered;
-};
-
 // Extra state maintained around a foreign request.
 struct foreign_request_state_t {
-  external_async_t as_external_async;
+  undertaking_t as_undertaking;
   // The part of the data that will be passed to the native impl.
   native_request_t request;
   // The callback that will be called; kept around so we can destroy it later.
@@ -144,13 +104,10 @@ struct foreign_request_state_t {
 
 // The state associated with a delayed promise fulfillment.
 struct fulfill_promise_state_t {
-  external_async_t as_external_async;
+  undertaking_t as_undertaking;
   safe_value_t s_promise;
   safe_value_t s_value;
 };
-
-// "Upcast" something that "inherits" from external async to that type.
-#define UPCAST_EXTERNAL_ASYNC(EXPR) (&(EXPR)->as_external_async)
 
 void foreign_request_state_init(foreign_request_state_t *state,
     unary_callback_t *callback, process_airlock_t *airlock,
@@ -176,7 +133,7 @@ FROZEN_ACCESSORS_DECL(foreign_service, display_name);
 
 // Extra state maintained around a request to an exported service.
 struct incoming_request_state_t {
-  external_async_t as_external_async;
+  undertaking_t as_undertaking;
   // Capsule for the service that should handle this request.
   exported_service_capsule_t *capsule;
   // The request data.
@@ -198,10 +155,6 @@ void incoming_request_state_init(incoming_request_state_t *state,
 value_t incoming_request_state_new(exported_service_capsule_t *capsule,
     safe_value_t s_request, safe_value_t s_surface_promise,
     size_t request_count_delta, incoming_request_state_t **result_out);
-
-// Destroy the given incomine request state. Note that this may change the
-// request count of the request's capsule as a side-effect.
-void incoming_request_state_destroy(runtime_t *runtime, incoming_request_state_t *state);
 
 // State allocated on the C heap associated with an exported service. Unlike the
 // service itself which may move around in the heap, this state can safely be

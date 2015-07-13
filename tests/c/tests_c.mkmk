@@ -23,6 +23,7 @@ test_file_names = [
   "test_syntax.cc",
   "test_tagged.cc",
   "test_test.cc",
+  "test_undertaking.cc",
   "test_utils.cc",
   "test_value.cc"
 ]

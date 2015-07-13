@@ -943,37 +943,42 @@ static value_t resolve_job_promise(value_t result, safe_value_t s_promise) {
   return success();
 }
 
-
-
 // Grabs the next work job from the given process, which must have more work,
 // and executes it on the process' main task.
 static value_t run_next_process_job(safe_value_t s_ambience, safe_value_t s_process) {
   runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
   process_airlock_t *airlock = get_process_airlock(deref(s_process));
-  // First, if there are external inputs ready to be delivered we deliver
+  // First, if there are delivered undertakings ready to be finished we finish
   // those nonblocking.
-  TRY(finish_process_external_asyncs(deref(s_process), false, NULL));
+  TRY(finish_process_delivered_undertakings(deref(s_process), false, NULL));
   while (true) {
     job_t job;
     // Try to get the next job that's ready to be run.
     if (!take_process_ready_job(deref(s_process), &job)) {
       // There was no job to run. That doesn't mean we're done, it might just
-      // mean that we have to wait for some asyncs to finish before we can go
-      // on.
-      if (atomic_int64_get(&airlock->open_external_async) > 0) {
-        // There is at least one open async that hasn't been delivered yet. Wait
-        // for that to be delivered. There is a race condition here where
-        // some other async has been delivered in the meantime but that doesn't
-        // matter we'll just run that one instead. In any case there will be,
-        // either now or later, an async to finish. And then we'll loop around
-        // again.
-        TRY(finish_process_external_asyncs(deref(s_process), true, NULL));
+      // mean that we have to wait for some undertakings to be delivered before
+      // we can go on.
+      if (atomic_int64_get(&airlock->undelivered_undertakings) > 0) {
+        // There is at least one open undertaking that hasn't been delivered
+        // yet. Wait for that to happen. There is a race condition here where
+        // some other undertaking has been delivered in the meantime but that
+        // doesn't matter we'll just run that one instead. In any case there
+        // will be, either now or later, an undertaking to finish. And then
+        // we'll loop around again.
+        TRY(finish_process_delivered_undertakings(deref(s_process), true, NULL));
         continue;
       } else {
-        // There are no open external asyncs so unless we can finish some now
-        // there is simply no more work left.
+        // There are no open undertakings so unless we can finish some now there
+        // is simply no more work left.
+        //
+        // TODO: there is a subtle race condition here if it takes a very long
+        //   time between the undelivered undertakings counter to be decremented
+        //   the the undertaking to be delivered, where the count will be zero
+        //   but there will be an undertaking on the way that isn't ready at the
+        //   point where we calls this.
         size_t finish_count = 0;
-        TRY(finish_process_external_asyncs(deref(s_process), false, &finish_count));
+        TRY(finish_process_delivered_undertakings(deref(s_process), false,
+            &finish_count));
         if (finish_count == 0)
           return new_condition(ccProcessIdle);
       }

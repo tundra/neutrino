@@ -253,7 +253,7 @@ value_t finalize_os_process(garbage_value_t dead_self) {
 static void on_exit_code_ready(process_airlock_t *airlock,
     fulfill_promise_state_t *state, int exit_code) {
   state->s_value = protect_immediate(new_integer(exit_code));
-  process_airlock_deliver_external_async(airlock, UPCAST_EXTERNAL_ASYNC(state));
+  process_airlock_deliver_undertaking(airlock, UPCAST_UNDERTAKING(state));
 }
 
 static opaque_t on_exit_code_ready_bridge(opaque_t o_airlock, opaque_t o_state,
@@ -286,11 +286,11 @@ static value_t os_process_start(builtin_arguments_t *args) {
   opaque_promise_t *exit_code = native_process_exit_code(native);
   process_airlock_t *airlock = get_process_airlock(get_builtin_process(args));
   fulfill_promise_state_t *state = allocator_default_malloc_struct(fulfill_promise_state_t);
+  undertaking_init(UPCAST_UNDERTAKING(state), &kFulfillPromiseController);
   runtime_t *runtime = get_builtin_runtime(args);
   state->s_promise = runtime_protect_value(runtime, exit_code_promise);
   state->s_value = protect_immediate(nothing());
-  process_airlock_open_external_async(airlock, UPCAST_EXTERNAL_ASYNC(state),
-      eaFulfillPromise);
+  process_airlock_begin_undertaking(airlock, UPCAST_UNDERTAKING(state));
   opaque_promise_on_success(exit_code,
       unary_callback_new_2(on_exit_code_ready_bridge, p2o(airlock),
           p2o(state)),
@@ -306,7 +306,7 @@ value_t add_os_process_builtin_implementations(runtime_t *runtime, safe_value_t 
 
 /// ## Async interface
 
-value_t pending_iop_state_finish(pending_iop_state_t *state,
+value_t perform_iop_undertaking_finish(pending_iop_state_t *state,
     value_t process, process_airlock_t *airlock) {
   if (state->iop.type_ == ioRead) {
     value_t result = deref(state->s_result);
@@ -326,18 +326,18 @@ pending_iop_state_t *pending_iop_state_new(blob_t scratch,
   pending_iop_state_t *state = allocator_default_malloc_struct(pending_iop_state_t);
   if (state == NULL)
     return NULL;
+  undertaking_init(UPCAST_UNDERTAKING(state), &kPerformIopController);
   state->scratch = scratch;
   state->s_promise = s_promise;
   state->s_stream = s_stream;
   state->s_process = s_process;
   state->s_result = s_result;
   state->airlock = airlock;
-  process_airlock_open_external_async(airlock, UPCAST_EXTERNAL_ASYNC(state),
-      eaIopComplete);
+  process_airlock_begin_undertaking(airlock, UPCAST_UNDERTAKING(state));
   return state;
 }
 
-void pending_iop_state_destroy(runtime_t *runtime, pending_iop_state_t *state) {
+void perform_iop_undertaking_destroy(runtime_t *runtime, pending_iop_state_t *state) {
   allocator_default_free(state->scratch);
   safe_value_destroy(runtime, state->s_promise);
   safe_value_destroy(runtime, state->s_stream);
@@ -394,8 +394,7 @@ static void io_engine_select(io_engine_t *engine, duration_t timeout) {
     if (!iop_group_wait_for_next(&engine->iop_group, timeout, &next))
       return;
     pending_iop_state_t *state = (pending_iop_state_t*) o2p(iop_extra(next));
-    process_airlock_deliver_external_async(state->airlock,
-        UPCAST_EXTERNAL_ASYNC(state));
+    process_airlock_deliver_undertaking(state->airlock, UPCAST_UNDERTAKING(state));
   }
 }
 

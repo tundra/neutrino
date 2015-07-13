@@ -26,6 +26,7 @@ library_file_names = [
   "sync.c",
   "syntax.c",
   "tagged.c",
+  "undertaking.c",
   "utils.c",
   "value.c"
 ]

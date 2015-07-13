@@ -580,6 +580,7 @@ ACCESSORS_DECL(task, stack);
 
 typedef struct external_async_t external_async_t;
 typedef struct exported_service_capsule_t exported_service_capsule_t;
+typedef struct undertaking_t undertaking_t;
 
 // The number of pending results that we'll let buffer in an airlock.
 #define kAirlockPendingAtomicCount 256
@@ -594,32 +595,35 @@ typedef struct exported_service_capsule_t exported_service_capsule_t;
 typedef struct {
   // The runtime that contains the process.
   runtime_t *runtime;
-  // Atomic operations to perform after the current turn.
-  worklist_t(kAirlockPendingAtomicCount, 1) pending_external_async;
-  // The number of outstanding tasks that will eventually resolve to a pending
-  // atomic op but are currently processing. If this value is nonzero there must
-  // be external asyncs that will eventually be delivered.
-  atomic_int64_t open_external_async;
+  // Undertakings that have been delivered and are waiting to be finished.
+  worklist_t(kAirlockPendingAtomicCount, 1) delivered_undertakings;
+  // The number of outstanding undertakings that will eventually be delivered
+  // but are currently processing. There is a race between this and the worklist
+  // of delivered undertakings when an undertaking is delivered so this count
+  // is conservative in that it is a lower bound -- it may be lower than the
+  // number of actual undelivered undertakings.
+  atomic_int64_t undelivered_undertakings;
 } process_airlock_t;
 
 // Create and initialize a process airlock. Returns null if anything fails.
 process_airlock_t *process_airlock_new(runtime_t *runtime);
 
-// Notifies this airlock that an external async operation is being started. This
+// Notifies this airlock that an undertaking operation is being started. This
 // can be called by any thread.
-void process_airlock_open_external_async(process_airlock_t *airlock,
-    external_async_t *async, int32_t type);
+void process_airlock_begin_undertaking(process_airlock_t *airlock,
+    undertaking_t *undertaking);
 
-// Notify the process that the request with the given state has completed. The
-// given atomic must have been registered in advance. This can be called by any
-// thread.
-void process_airlock_deliver_external_async(process_airlock_t *airlock,
-    external_async_t *async);
+// Notify the process that the given external undertaking has completed
+// processing and is ready to be finished by the process. This can be called by
+// any thread.
+void process_airlock_deliver_undertaking(process_airlock_t *airlock,
+    undertaking_t *undertaking);
 
-// If the given airlock has a pending atomic operation takes it, stores it in
-// result_out, and returns true. If not returns false.
-bool process_airlock_next_finished_async(process_airlock_t *airlock,
-    duration_t timeout, external_async_t **result_out);
+// If the given airlock has an outstanding delivered undertaking, stores it in
+// result_out and returns true. If not returns false. Will wait up to the given
+// timeout.
+bool process_airlock_next_delivered_undertaking(process_airlock_t *airlock,
+    duration_t timeout, undertaking_t **result_out);
 
 // Dispose the airlock's state appropriately, including deleting the airlock
 // value.
@@ -677,7 +681,7 @@ bool take_process_ready_job(value_t process, job_t *job_out);
 // If any external asyncs have been delivered, finish and dispose them. If the
 // blocking flag is true we'll block waiting for at least one to become
 // available.
-value_t finish_process_external_asyncs(value_t process, bool blocking, size_t *count);
+value_t finish_process_delivered_undertakings(value_t process, bool blocking, size_t *count);
 
 
 /// ## Reified arguments

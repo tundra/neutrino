@@ -910,76 +910,57 @@ process_airlock_t *process_airlock_new(runtime_t *runtime) {
   if (airlock == NULL)
     return NULL;
   airlock->runtime = runtime;
-  airlock->open_external_async = atomic_int64_new(0);
-  if (!worklist_init(kAirlockPendingAtomicCount, 1)(&airlock->pending_external_async))
+  airlock->undelivered_undertakings = atomic_int64_new(0);
+  if (!worklist_init(kAirlockPendingAtomicCount, 1)(&airlock->delivered_undertakings))
     return NULL;
   return airlock;
 }
 
-void process_airlock_open_external_async(process_airlock_t *airlock,
-    external_async_t *async, int32_t type) {
-  async->has_been_registered = true;
-  async->type = (external_async_type_t) type;
-  atomic_int64_increment(&airlock->open_external_async);
+void process_airlock_begin_undertaking(process_airlock_t *airlock,
+    undertaking_t *undertaking) {
+  CHECK_EQ("opening non initialized", usInitialized, undertaking->state);
+  undertaking->state = usBegun;
+  atomic_int64_increment(&airlock->undelivered_undertakings);
 }
 
-void process_airlock_deliver_external_async(process_airlock_t *airlock,
-    external_async_t *async) {
-  CHECK_TRUE("deliveing unregistered async", async->has_been_registered);
-  async->has_been_registered = false;
-  opaque_t o_async = p2o(async);
-  // Decrement the number of external asyncs first to avoid the 1-case where
-  // the last open async has just been scheduled and there will be no more but
-  // the count is nonzero.
-  atomic_int64_decrement(&airlock->open_external_async);
+void process_airlock_deliver_undertaking(process_airlock_t *airlock,
+    undertaking_t *undertaking) {
+  CHECK_EQ("deliveing undertaking not begun", usBegun, undertaking->state);
+  undertaking->state = usDelivered;
+  opaque_t o_undertaking = p2o(undertaking);
+  // Decrement the number of undertakings first to avoid the 1-case where
+  // the last open undertaking has just been delivered and there will be no more
+  // but the count is briefly nonzero.
+  atomic_int64_decrement(&airlock->undelivered_undertakings);
   bool offered = worklist_schedule(kAirlockPendingAtomicCount, 1)
-      (&airlock->pending_external_async, &o_async, 1, duration_unlimited());
+      (&airlock->delivered_undertakings, &o_undertaking, 1, duration_unlimited());
   CHECK_TRUE("out of capacity", offered);
 }
 
-value_t foreign_request_state_finish(foreign_request_state_t *state,
+static value_t undertaking_finish(undertaking_t *undertaking,
     value_t process, process_airlock_t *airlock) {
-  TRY_DEF(result, plankton_deserialize_data(airlock->runtime, NULL, state->result));
-  fulfill_promise(deref(state->s_surface_promise), result);
-  return success();
+  CHECK_EQ("finishing undelivered", usDelivered, undertaking->state);
+  undertaking->state = usFinished;
+  return (undertaking->controller->finish)(undertaking, process, airlock);
 }
 
-static value_t external_async_finish(external_async_t *async,
-    value_t process, process_airlock_t *airlock) {
-  switch (async->type) {
-#define __GEN_CASE__(Name, name, type) case ea##Name:                          \
-  return type##_finish((struct type##_t*) async, process, airlock);
-  ENUM_EXTERNAL_ASYNC(__GEN_CASE__)
-#undef __GEN_CASE__
-    default:
-      UNREACHABLE("invalid pending atomic");
-      return new_condition(ccWat);
-  }
+static void undertaking_destroy(runtime_t *runtime, undertaking_t *undertaking) {
+  CHECK_EQ("destroying unfinished", usFinished, undertaking->state);
+  (undertaking->controller->destroy)(runtime, undertaking);
 }
 
-static void external_async_destroy(runtime_t *runtime, external_async_t *async) {
-  switch (async->type) {
-#define __GEN_CASE__(Name, name, type) case ea##Name:                          \
-    type##_destroy(runtime, (type##_t*) async);                                \
-    break;
-  ENUM_EXTERNAL_ASYNC(__GEN_CASE__)
-#undef __GEN_CASE__
-  default:
-    break;
-  }
-}
-
-value_t finish_process_external_asyncs(value_t process, bool blocking, size_t *count_out) {
+value_t finish_process_delivered_undertakings(value_t process, bool blocking,
+    size_t *count_out) {
   CHECK_FAMILY(ofProcess, process);
   process_airlock_t *airlock = get_process_airlock(process);
-  external_async_t *async = NULL;
+  undertaking_t *undertaking = NULL;
   if (count_out != NULL)
     *count_out = 0;
   duration_t timeout = blocking ? duration_unlimited() : duration_instant();
-  while (process_airlock_next_finished_async(airlock, timeout, &async)) {
-    TRY(external_async_finish(async, process, airlock));
-    external_async_destroy(airlock->runtime, async);
-    async = NULL;
+  while (process_airlock_next_delivered_undertaking(airlock, timeout, &undertaking)) {
+    TRY(undertaking_finish(undertaking, process, airlock));
+    undertaking_destroy(airlock->runtime, undertaking);
+    undertaking = NULL;
     timeout = duration_instant();
     if (count_out != NULL)
       (*count_out)++;
@@ -987,33 +968,19 @@ value_t finish_process_external_asyncs(value_t process, bool blocking, size_t *c
   return success();
 }
 
-value_t incoming_request_state_finish(incoming_request_state_t *state,
-    value_t process, process_airlock_t *airlock) {
-  CHECK_FAMILY(ofProcess, process);
-  runtime_t *runtime = airlock->runtime;
-  TRY_DEF(thunk, new_heap_incoming_request_thunk(runtime,
-      deref(state->capsule->s_service), deref(state->s_request),
-      deref(state->s_surface_promise)));
-  job_t job;
-  job_init(&job, ROOT(runtime, call_thunk_code_block), thunk,
-        deref(state->s_surface_promise), nothing());
-  TRY(offer_process_job(runtime, process, &job));
-  return success();
-}
-
-bool process_airlock_next_finished_async(process_airlock_t *airlock,
-    duration_t timeout, external_async_t **result_out) {
+bool process_airlock_next_delivered_undertaking(process_airlock_t *airlock,
+    duration_t timeout, undertaking_t **result_out) {
   opaque_t next = o0();
   bool took = worklist_take(kAirlockPendingAtomicCount, 1)(
-      &airlock->pending_external_async, &next, 1, timeout);
+      &airlock->delivered_undertakings, &next, 1, timeout);
   if (took)
-    *result_out = (external_async_t*) o2p(next);
+    *result_out = (undertaking_t*) o2p(next);
   return took;
 }
 
 bool process_airlock_destroy(process_airlock_t *airlock) {
-  CHECK_EQ("open asyncs", 0, atomic_int64_get(&airlock->open_external_async));
-  worklist_dispose(kAirlockPendingAtomicCount, 1)(&airlock->pending_external_async);
+  CHECK_EQ("open undertakings", 0, atomic_int64_get(&airlock->undelivered_undertakings));
+  worklist_dispose(kAirlockPendingAtomicCount, 1)(&airlock->delivered_undertakings);
   allocator_default_free_struct(process_airlock_t, airlock);
   return true;
 }

@@ -74,7 +74,7 @@ value_t new_heap_os_process(runtime_t *runtime);
 // An outstanding iop.
 struct pending_iop_state_t {
   // Header so this can be used as an external async.
-  external_async_t as_external_async;
+  undertaking_t as_undertaking;
   // Iop.
   iop_t iop;
   // Scratch storage to use for the source or destination data. Owned by the
@@ -96,19 +96,11 @@ struct pending_iop_state_t {
   process_airlock_t *airlock;
 };
 
-// When the process is ready for the result of the iop to be delivered this
-// will be called.
-value_t pending_iop_state_apply_atomic(pending_iop_state_t *state,
-    process_airlock_t *airlock);
-
 // Allocates and a new pending iop state on the heap and returns it. The state
 // takes ownership of s_promise.
 pending_iop_state_t *pending_iop_state_new(blob_t scratch,
     safe_value_t s_promise, safe_value_t s_stream, safe_value_t s_process,
     safe_value_t s_result, process_airlock_t *airlock);
-
-// Disposes a pending iop state after its result has been applied.
-void pending_iop_state_destroy(runtime_t *runtime, pending_iop_state_t *state);
 
 
 /// ## I/O engine abstraction
