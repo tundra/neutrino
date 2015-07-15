@@ -4,18 +4,84 @@
 import $assert;
 import $core;
 
-def $test_calls() {
-  @core:ctrino.get_environment_variable("DURIAN_MAIN").then(fn $durian_main {
-    def $p := new ($core:io:Process)();
-    $p.executable := $durian_main;
-    $p.arguments := ["--quiet", "--exit-code", "99"];
+# Utility that makes it simpler (ideally) to create and run a test process.
+type @ProcessHelper {
+
+  field $this.process;
+  field $this.stdout;
+  field $this.stderr;
+  field $this.stdin;
+
+  def $this.start!() => $this.process.start!();
+
+  def $this.exit_code => $this.process.exit_code;
+
+}
+
+def ($This == @ProcessHelper).new($process) {
+  def $this := @core:manager.new_instance(@ProcessHelper);
+  $this.process := $process;
+  $this.stdout := (new @core:io:Pipe());
+  $this.stderr := (new @core:io:Pipe());
+  $this.stdin := (new @core:io:Pipe());
+  $this.process.stdout := $this.stdout;
+  $this.process.stderr := $this.stderr;
+  $this.process.stdin := $this.stdin;
+  $this;
+}
+
+# Wrapper that keeps state for all the process tests.
+type @ProcessTest {
+
+  field $this.durian_main;
+
+  def $this.run() {
+    $this.test_simple();
+    $this.test_echo();
+  }
+
+  def $this.new_process($args) {
+    def $process := new (@core:io:Process)();
+    $process.executable := $this.durian_main;
+    $process.arguments := $args;
+    new @ProcessHelper($process);
+  }
+
+  def $this.test_simple() {
+    def $p := $this.new_process(["--quiet", "--exit-code", "99"]);
     $p.start!();
-    $p.exit_code.then(fn $exit_code {
-      $assert:equals(99, $exit_code);
+    $p.exit_code.then(fn $exit_code => $assert:equals(99, $exit_code));
+  }
+
+  def $this.test_echo() {
+    def $p := $this.new_process(["--quiet", "--echo-stdin"]);
+    $p.start!();
+    # Write a message to stdin and then close so the program will terminate.
+    $p.stdin.out.write!("Hello, World!".view(@core:Ascii)).then(fn $written {
+      $assert:equals(13, $written);
+      $p.stdin.out.close!();
     });
-  });
+    # Read the message back from stderr.
+    $p.stderr.in.read!(13).then(fn $blob {
+      def $str := @core:Ascii.string_from($blob);
+      $assert:equals("Hello, World!", $str);
+    });
+  }
+
+}
+
+def ($This == @ProcessTest).new($durian_main) {
+  def $this := @core:manager.new_instance(@ProcessTest);
+  $this.durian_main := $durian_main;
+  $this;
+}
+
+def $test_all() {
+  @core:ctrino
+    .get_environment_variable("DURIAN_MAIN")
+    .then(fn $durian_main => (new @ProcessTest($durian_main)).run());
 }
 
 do {
-  $test_calls();
+  $test_all();
 }

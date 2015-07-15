@@ -12,7 +12,7 @@
 /// ## Pipe
 
 static const size_t kOsPipeSize = HEAP_OBJECT_SIZE(3);
-static const size_t kOsPipeNativeOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kOsPipeNativePtrOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 static const size_t kOsPipeInOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 static const size_t kOsPipeOutOffset = HEAP_OBJECT_FIELD_OFFSET(2);
 
@@ -24,6 +24,9 @@ ACCESSORS_DECL(os_pipe, in);
 
 // This pipe's output stream.
 ACCESSORS_DECL(os_pipe, out);
+
+// Returns the native underlying pipe.
+native_pipe_t *get_os_pipe_native(value_t self);
 
 
 /// ## Out stream
@@ -58,11 +61,20 @@ in_stream_t *get_os_in_stream_native(value_t self);
 
 /// ## Os process
 
-static const size_t kOsProcessSize = HEAP_OBJECT_SIZE(1);
+static const size_t kOsProcessSize = HEAP_OBJECT_SIZE(4);
 static const size_t kOsProcessNativePtrOffset = HEAP_OBJECT_FIELD_OFFSET(0);
+static const size_t kOsProcessStdinLifelineOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kOsProcessStdoutLifelineOffset = HEAP_OBJECT_FIELD_OFFSET(2);
+static const size_t kOsProcessStderrLifelineOffset = HEAP_OBJECT_FIELD_OFFSET(3);
 
 // The underlying native process.
 ACCESSORS_DECL(os_process, native_ptr);
+
+// Pointers to stdin/out/err to keep them alive while they're being used by the
+// underlying process.
+ACCESSORS_DECL(os_process, stdin_lifeline);
+ACCESSORS_DECL(os_process, stdout_lifeline);
+ACCESSORS_DECL(os_process, stderr_lifeline);
 
 native_process_t *get_os_process_native(value_t self);
 

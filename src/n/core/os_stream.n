@@ -7,12 +7,16 @@ def @io:OutStream := @ctrino.get_builtin_type("OsOutStream");
 def type @io:OutStream is @Object;
 
 # Writes a block of data to the given output stream.
-@ctrino.builtin("os_out_stream.write")
-def ($this is @io:OutStream).write($data is @Blob);
+@ctrino.builtin("os_out_stream.write!")
+def ($this is @io:OutStream).write!($data is @Blob);
+
+# Closes the stream.
+@ctrino.builtin("os_out_stream.close!")
+def ($this is @io:OutStream).close!();
 
 # Writes the given value to the given output stream. The data is first converted
 # to a block of binary data so whatever it is it must support that.
-def ($this is @io:OutStream).write($data) => $this.write($data .to @Blob);
+def ($this is @io:OutStream).write!($data) => $this.write!($data .to @Blob);
 
 # A native OS input stream.
 def @io:InStream := @ctrino.get_builtin_type("OsInStream");
@@ -20,5 +24,5 @@ def @io:InStream := @ctrino.get_builtin_type("OsInStream");
 def type @io:InStream is @Object;
 
 # Reads a block of data from the given input stream.
-@ctrino.builtin("os_in_stream.read")
-def ($this is @io:InStream).read($bytes is @Integer);
+@ctrino.builtin("os_in_stream.read!")
+def ($this is @io:InStream).read!($bytes is @Integer);

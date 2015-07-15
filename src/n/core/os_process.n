@@ -10,22 +10,38 @@ def type @io:OsProcess is @Object;
 @ctrino.builtin("os_process.start!")
 def ($this is @io:OsProcess).start!($executable, $args, $exit_code);
 
+@ctrino.builtin("os_process.set_stdin!")
+def ($this is @io:OsProcess).set_stdin!($value);
+
+@ctrino.builtin("os_process.set_stdout!")
+def ($this is @io:OsProcess).set_stdout!($value);
+
+@ctrino.builtin("os_process.set_stderr!")
+def ($this is @io:OsProcess).set_stderr!($value);
+
 ## An io:Process is a wrapper around a raw process that collects configuration
 ## before the process is started.
-type @io:Process is @Object;
+type @io:Process is @Object {
 
-## The name of the executable to run.
-field ($this is @io:Process).executable;
+  ## The name of the executable to run.
+  field $this.executable;
 
-## A list of process arguments, not including the executable, to pass to the
-## process.
-field ($this is @io:Process).arguments;
+  ## A list of process arguments, not including the executable, to pass to the
+  ## process.
+  field $this.arguments;
 
-## Handle for the underlying os process.
-field ($this is @io:Process).handle;
+  ## Handle for the underlying os process.
+  field $this.handle;
 
-## Promise that holds the process' exit code.
-field ($this is @io:Process).exit_code;
+  ## Promise that holds the process' exit code.
+  field $this.exit_code;
+
+  ## Sets the standard streams.
+  def $this.stdout := $v => ($this.handle.set_stdout! $v);
+  def $this.stderr := $v => ($this.handle.set_stderr! $v);
+  def $this.stdin := $v => ($this.handle.set_stdin! $v);
+
+}
 
 ## Creates a new empty process instance.
 def ($this == @io:Process).new() {
