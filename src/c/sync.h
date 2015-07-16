@@ -31,6 +31,10 @@ bool is_promise_resolved(value_t self);
 // noop.
 void fulfill_promise(value_t self, value_t value);
 
+// Fail the given promise if it hasn't been already, otherwise this is a
+// noop.
+void reject_promise(value_t self, value_t error);
+
 // Schedule for the given promise to be fulfilled to the given value at some
 // point after the end of the current turn.
 value_t schedule_promise_fulfill_atomic(runtime_t *runtime, value_t self,

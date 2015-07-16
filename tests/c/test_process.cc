@@ -163,8 +163,7 @@ TEST(process, walk_stack_frames) {
     ASSERT_SUCCESS(push_stack_frame(runtime, stack, &frame, 1,
         ROOT(runtime, empty_array)));
     ASSERT_SUCCESS(frame_push_value(&frame, new_integer(i + 5)));
-    frame_iter_t iter;
-    frame_iter_init_from_frame(&iter, &frame);
+    frame_iter_t iter = frame_iter_from_frame(&frame);
     for (size_t j = 0; j <= i; j++) {
       size_t frame_i = i - j;
       frame_t *current = frame_iter_get_current(&iter);

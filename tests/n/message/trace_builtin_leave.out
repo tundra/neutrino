@@ -1,4 +1,4 @@
-Error: %<condition: Signal(escape)>
+Error: %<condition: UncaughtSignal(escape)>
 Info: --- backtrace ---
 - leave.out_of_bounds(100)
 - [null][100]

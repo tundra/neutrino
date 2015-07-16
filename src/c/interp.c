@@ -108,7 +108,7 @@ static value_t ensure_method_code(runtime_t *runtime, value_t method) {
 // caught though, it's mainly a trick to get the stack trace when lookup fails.
 static value_t signal_lookup_error(runtime_t *runtime, value_t stack, frame_t *frame) {
   frame->pc += kInvokeOperationSize;
-  return new_signal_condition(true);
+  return new_uncaught_signal_condition(true);
 }
 
 // Validates that the stack looks correct after execution completes normally.
@@ -157,8 +157,7 @@ static bool maybe_fire_next_barrier(code_cache_t *cache, frame_t *frame,
 
 static always_inline value_t get_caller_call_tags(frame_t *callee) {
   // Get access to the caller's frame.
-  frame_iter_t iter;
-  frame_iter_init_from_frame(&iter, callee);
+  frame_iter_t iter = frame_iter_from_frame(callee);
   bool advanced = frame_iter_advance(&iter);
   CHECK_TRUE("error advancing to get caller tags", advanced);
   frame_t *caller = frame_iter_get_current(&iter);
@@ -323,7 +322,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
               // The stack tracing code expects all frames to have a valid code block
               // object. The rest makes less of a difference.
               frame_set_code_block(&frame, ROOT(runtime, empty_code_block));
-              E_RETURN(new_signal_condition(is_escape));
+              E_RETURN(new_uncaught_signal_condition(is_escape));
             } else {
               // There was no handler but this is not an escape so we skip over
               // the post-handler goto to the default block.
@@ -374,7 +373,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           builtin_arguments_t args;
           builtin_arguments_init(&args, runtime, &frame, process);
           value_t result = impl(&args);
-          if (in_condition_cause(ccSignal, result)) {
+          if (in_condition_cause(ccUncaughtSignal, result)) {
             // The builtin failed. Find the appropriate signal handler and call
             // it. The invocation record is at the top of the stack.
             value_t tags = frame_pop_value(&frame);
@@ -397,7 +396,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
               // The stack tracing code expects all frames to have a valid code block
               // object. The rest makes less of a difference.
               frame_set_code_block(&frame, ROOT(runtime, empty_code_block));
-              E_RETURN(new_signal_condition(true));
+              E_RETURN(new_uncaught_signal_condition(true));
             }
             // Either found a signal or encountered a different condition.
             E_TRY(method);
@@ -843,17 +842,26 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
   } YRT
 }
 
+// Print a trace of the task's stack.
+static value_t print_task_stack_trace(value_t ambience, value_t task) {
+  runtime_t *runtime = get_ambience_runtime(ambience);
+  frame_t frame = open_stack(get_task_stack(task));
+  TRY_FINALLY {
+    E_TRY_DEF(trace, capture_backtrace(runtime, &frame));
+    INFO_DETERMINISTIC("%9v", trace);
+    E_RETURN(success());
+  } FINALLY {
+    close_frame(&frame);
+  } YRT
+}
+
 // Runs the given stack until it hits a condition or completes successfully.
 static value_t run_task_until_condition(value_t ambience, value_t task) {
   CHECK_FAMILY(ofAmbience, ambience);
   CHECK_FAMILY(ofTask, task);
   value_t result = run_task_pushing_signals(ambience, task);
-  if (in_condition_cause(ccSignal, result)) {
-    runtime_t *runtime = get_ambience_runtime(ambience);
-    frame_t frame = open_stack(get_task_stack(task));
-    TRY_DEF(trace, capture_backtrace(runtime, &frame));
-    INFO_DETERMINISTIC("%9v", trace);
-  }
+  if (in_condition_cause(ccUncaughtSignal, result))
+    TRY(print_task_stack_trace(ambience, task));
   return result;
 }
 
@@ -866,7 +874,7 @@ static value_t run_task_until_signal(safe_value_t s_ambience, safe_value_t s_tas
   loop: do {
     value_t ambience = deref(s_ambience);
     value_t task = deref(s_task);
-    value_t result = run_task_until_condition(ambience, task);
+    value_t result = run_task_pushing_signals(ambience, task);
     if (in_condition_cause(ccHeapExhausted, result)) {
       runtime_t *runtime = get_ambience_runtime(ambience);
       runtime_garbage_collect(runtime);
@@ -936,17 +944,65 @@ static value_t prepare_run_job(runtime_t *runtime, value_t stack, job_t *job) {
   return success();
 }
 
-static value_t resolve_job_promise(value_t result, safe_value_t s_promise) {
-  if (safe_value_is_nothing(s_promise))
-    return success();
-  fulfill_promise(deref(s_promise), result);
-  return success();
+// TODO: grab the reified arguments.
+static value_t reify_signal(value_t task) {
+  value_t stack = get_task_stack(task);
+  frame_t frame = open_stack(stack);
+  frame_pop_within_stack_piece(&frame);
+  close_frame(&frame);
+  return stack;
+}
+
+// Clears all the frames from the given stack down to the bottom.
+static void clear_stack_to_bottom(value_t stack) {
+  frame_t frame = open_stack(stack);
+  while (!frame_has_flag(&frame, ffStackBottom))
+    frame_pop_within_stack_piece(&frame);
+  close_frame(&frame);
+}
+
+// Is the given stack cleared down to the bottom?
+static bool stack_is_clear(value_t stack) {
+  frame_t frame = open_stack(stack);
+  bool result = frame_has_flag(&frame, ffStackBottom);
+  close_frame(&frame);
+  return result;
+}
+
+// Runs an individual job.
+static value_t run_process_job(job_t *job, safe_value_pool_t *pool,
+    safe_value_t s_ambience, safe_value_t s_process) {
+  safe_value_t s_task = protect(pool, get_process_root_task(deref(s_process)));
+  CHECK_TRUE("stack not clear", stack_is_clear(get_task_stack(deref(s_task))));
+  safe_value_t s_promise = protect(pool, job->promise);
+  runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
+  TRY(prepare_run_job(runtime, get_task_stack(deref(s_task)), job));
+  value_t result = run_task_until_signal(s_ambience, s_task);
+  if (in_condition_cause(ccUncaughtSignal, result)) {
+    result = nothing();
+    if (safe_value_is_nothing(s_promise)) {
+      // The job resulted in an uncaught signal but there is no promise to
+      // deliver the error to so just print the stack trace.
+      print_task_stack_trace(deref(s_ambience), deref(s_task));
+    } else {
+      // There was an uncaught signal which we deliver to the promise.
+      value_t error = reify_signal(deref(s_task));
+      reject_promise(deref(s_promise), error);
+    }
+    // The uncaught signal may have left any amount of stuff on the stack so
+    // we clear it.
+    clear_stack_to_bottom(get_task_stack(deref(s_task)));
+  } else {
+    TRY(result);
+    if (!safe_value_is_nothing(s_promise))
+      fulfill_promise(deref(s_promise), result);
+  }
+  return result;
 }
 
 // Grabs the next work job from the given process, which must have more work,
 // and executes it on the process' main task.
 static value_t run_next_process_job(safe_value_t s_ambience, safe_value_t s_process) {
-  runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
   process_airlock_t *airlock = get_process_airlock(deref(s_process));
   // First, if there are delivered undertakings ready to be finished we finish
   // those nonblocking.
@@ -983,14 +1039,10 @@ static value_t run_next_process_job(safe_value_t s_ambience, safe_value_t s_proc
           return new_condition(ccProcessIdle);
       }
     }
+    runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
     CREATE_SAFE_VALUE_POOL(runtime, 5, pool);
     TRY_FINALLY {
-      E_S_TRY_DEF(s_task, protect(pool, get_process_root_task(deref(s_process))));
-      E_S_TRY_DEF(s_promise, protect(pool, job.promise));
-      E_TRY(prepare_run_job(runtime, get_task_stack(deref(s_task)), &job));
-      E_TRY_DEF(result, run_task_until_signal(s_ambience, s_task));
-      E_TRY(resolve_job_promise(result, s_promise));
-      E_RETURN(result);
+      E_RETURN(run_process_job(&job, pool, s_ambience, s_process));
     } FINALLY {
       DISPOSE_SAFE_VALUE_POOL(pool);
     } YRT

@@ -260,13 +260,14 @@ static value_t new_unknown_builtin_condition() {
   return new_condition(ccUnknownBuiltin);
 }
 
-// Creates a new condition indicating that a signal was raised.
-static value_t new_signal_condition(bool escape) {
-  return new_condition_with_details(ccSignal, escape);
+// Creates a new condition indicating that a signal was raised and not caught
+// by any handler.
+static value_t new_uncaught_signal_condition(bool escape) {
+  return new_condition_with_details(ccUncaughtSignal, escape);
 }
 
 // Given a signal condition, returns true iff it escapes.
-static bool is_signal_escape(value_t self) {
+static bool is_uncaught_signal_escape(value_t self) {
   return !!get_condition_details(self);
 }
 

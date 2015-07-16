@@ -431,12 +431,17 @@ value_t frame_get_local(frame_t *frame, size_t index) {
 
 // --- F r a m e   i t e r a t o r ---
 
-void frame_iter_init_from_frame(frame_iter_t *iter, frame_t *frame) {
-  iter->current = *frame;
+frame_iter_t frame_iter_from_frame(frame_t *frame) {
+  frame_iter_t result = {*frame};
+  return result;
 }
 
 frame_t *frame_iter_get_current(frame_iter_t *iter) {
   return &iter->current;
+}
+
+bool frame_iter_at_bottom(frame_iter_t *iter) {
+  return frame_has_flag(&iter->current, ffStackBottom);
 }
 
 bool frame_iter_advance(frame_iter_t *iter) {
@@ -632,8 +637,7 @@ void backtrace_print_on(value_t value, print_on_context_t *context) {
 
 value_t capture_backtrace(runtime_t *runtime, frame_t *top) {
   TRY_DEF(frames, new_heap_array_buffer(runtime, 16));
-  frame_iter_t iter;
-  frame_iter_init_from_frame(&iter, top);
+  frame_iter_t iter = frame_iter_from_frame(top);
   do {
     frame_t *frame = frame_iter_get_current(&iter);
     TRY_DEF(entry, capture_backtrace_entry(runtime, frame));

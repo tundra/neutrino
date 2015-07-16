@@ -191,7 +191,7 @@ TEST(interp, lookup_error) {
 
   log_validator_o validator;
   install_log_validator(&validator, validate_lookup_error, NULL);
-  ASSERT_CONDITION(ccSignal, assert_ast_value(ambience, vInt(13), ast));
+  ASSERT_CONDITION(ccUncaughtSignal, assert_ast_value(ambience, vInt(13), ast));
   uninstall_log_validator(&validator);
   ASSERT_EQ(1, validator.count);
 

@@ -1,4 +1,4 @@
-Error: %<condition: Signal(escape)>
+Error: %<condition: UncaughtSignal(escape)>
 Info: --- backtrace ---
 - leave.get_me_outta_here(10, "foo")
 - :really_fire_abort()

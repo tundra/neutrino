@@ -15,4 +15,14 @@ def $test_simple_promise() {
   $assert:equals(19, $p.get());
 }
 
-do $test_simple_promise();
+def $test_fail() {
+  def $p := @core:Promise.defer(fn {
+    leave.ouch();
+  });
+  $p.then(@core:info);
+}
+
+do {
+  $test_simple_promise();
+  # $test_fail();
+}

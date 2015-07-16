@@ -287,7 +287,7 @@ typedef struct {
 
 // Initializes the given frame iterator. After this call the current frame will
 // be the one passed as an argument.
-void frame_iter_init_from_frame(frame_iter_t *iter, frame_t *frame);
+frame_iter_t frame_iter_from_frame(frame_t *frame);
 
 // Returns the current frame. The result is well-defined until the first call to
 // frame_iter_advance that returns false.
@@ -297,6 +297,9 @@ frame_t *frame_iter_get_current(frame_iter_t *iter);
 // successful, in which case frame_iter_get_current can be called to get the
 // next frame.
 bool frame_iter_advance(frame_iter_t *iter);
+
+// Has this iterator been iterated to the bottom?
+bool frame_iter_at_bottom(frame_iter_t *iter);
 
 
 /// ## Stack

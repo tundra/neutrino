@@ -33,9 +33,20 @@ def ($this is @Promise).get();
 @ctrino.builtin("promise.fulfill!")
 def ($this is @Promise).fulfill!($value);
 
+@ctrino.builtin("promise.reject!")
+def ($this is @Promise).reject!($args);
+
 ## Executes the given thunk eventually, after this promise has been resolved.
 def ($this is @Promise).then($thunk) {
   def $result := new @Promise();
   @ctrino.delay(fn => $thunk($this.get()), $result, $this);
+  $result;
+}
+
+## Execute the given thunk in a subsequent turn. Returns a promise for the
+## resule.
+def ($This == @Promise).defer($thunk) {
+  def $result := new @Promise();
+  @ctrino.delay($thunk, $result, null);
   $result;
 }

@@ -41,7 +41,7 @@ value_t escape_builtin(builtin_arguments_t *args, value_array_t values) {
   value_t escape_records = ROOT(args->runtime, escape_records);
   value_t record = get_array_at(escape_records, values.length);
   frame_push_value(args->frame, record);
-  return new_signal_condition(true);
+  return new_uncaught_signal_condition(true);
 }
 
 value_t add_builtin_method_impl(runtime_t *runtime, value_t map,

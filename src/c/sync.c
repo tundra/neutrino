@@ -31,6 +31,13 @@ void fulfill_promise(value_t self, value_t value) {
   }
 }
 
+void reject_promise(value_t self, value_t error) {
+  if (!is_promise_resolved(self)) {
+    set_promise_state(self, promise_state_rejected());
+    set_promise_value(self, error);
+  }
+}
+
 value_t schedule_promise_fulfill_atomic(runtime_t *runtime, value_t self,
     value_t value, value_t process) {
   process_airlock_t *airlock = get_process_airlock(process);
@@ -105,11 +112,21 @@ static value_t promise_fulfill(builtin_arguments_t *args) {
   return value;
 }
 
+static value_t promise_reject(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofPromise, self);
+  value_t error = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofReifiedArguments, error);
+  reject_promise(self, error);
+  return error;
+}
+
 value_t add_promise_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   ADD_BUILTIN_IMPL("promise.state", 0, promise_state);
   ADD_BUILTIN_IMPL("promise.is_resolved?", 0, promise_is_resolved);
   ADD_BUILTIN_IMPL_MAY_ESCAPE("promise.get", 0, 1, promise_get);
   ADD_BUILTIN_IMPL("promise.fulfill!", 1, promise_fulfill);
+  ADD_BUILTIN_IMPL("promise.reject!", 1, promise_reject);
   return success();
 }
 

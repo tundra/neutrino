@@ -104,8 +104,8 @@ int get_value_domain_ordinal(value_domain_t domain);
   F(OutOfMemory)                                                               \
   F(ProcessIdle)                                                               \
   F(SafePoolFull)                                                              \
-  F(Signal)                                                                    \
   F(SystemError)                                                               \
+  F(UncaughtSignal)                                                            \
   F(UnknownBuiltin)                                                            \
   F(UnsupportedBehavior)                                                       \
   F(ValidationFailed)                                                          \

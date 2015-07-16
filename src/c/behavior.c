@@ -404,8 +404,8 @@ static void condition_print_on(value_t value, string_buffer_t *buf) {
         string_buffer_printf(buf, "/%s", get_heap_object_family_name(family));
       break;
     }
-    case ccSignal: {
-      string_buffer_printf(buf, is_signal_escape(value) ? "escape" : "non-escape");
+    case ccUncaughtSignal: {
+      string_buffer_printf(buf, is_uncaught_signal_escape(value) ? "escape" : "non-escape");
       break;
     }
     default: {
