@@ -979,7 +979,6 @@ static value_t run_process_job(job_t *job, safe_value_pool_t *pool,
   TRY(prepare_run_job(runtime, get_task_stack(deref(s_task)), job));
   value_t result = run_task_until_signal(s_ambience, s_task);
   if (in_condition_cause(ccUncaughtSignal, result)) {
-    result = nothing();
     if (safe_value_is_nothing(s_promise)) {
       // The job resulted in an uncaught signal but there is no promise to
       // deliver the error to so just print the stack trace.
@@ -988,6 +987,7 @@ static value_t run_process_job(job_t *job, safe_value_pool_t *pool,
       // There was an uncaught signal which we deliver to the promise.
       value_t error = reify_signal(deref(s_task));
       reject_promise(deref(s_promise), error);
+      result = nothing();
     }
     // The uncaught signal may have left any amount of stuff on the stack so
     // we clear it.
