@@ -311,7 +311,7 @@ static value_t os_process_start(builtin_arguments_t *args) {
   state->s_promise = runtime_protect_value(runtime, exit_code_promise);
   state->s_value = protect_immediate(nothing());
   process_airlock_begin_undertaking(airlock, UPCAST_UNDERTAKING(state));
-  opaque_promise_on_success(exit_code,
+  opaque_promise_on_fulfill(exit_code,
       unary_callback_new_2(on_exit_code_ready_bridge, p2o(airlock),
           p2o(state)),
       omTakeOwnership);

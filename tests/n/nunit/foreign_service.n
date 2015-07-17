@@ -6,7 +6,7 @@ import $core;
 
 def $test_time() {
   def $current_p := @core:time->current();
-  $assert:not($current_p.is_resolved?);
+  $assert:not($current_p.is_settled?);
   $current_p.then(fn $value => $assert:that($value > 0));
 }
 

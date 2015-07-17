@@ -19,20 +19,20 @@ FIXED_GET_MODE_IMPL(promise, vmMutable);
 ACCESSORS_IMPL(Promise, promise, acInPhylum, tpPromiseState, State, state);
 ACCESSORS_IMPL(Promise, promise, acNoCheck, 0, Value, value);
 
-bool is_promise_resolved(value_t self) {
+bool is_promise_settled(value_t self) {
   CHECK_FAMILY(ofPromise, self);
-  return is_promise_state_resolved(get_promise_state(self));
+  return is_promise_state_settled(get_promise_state(self));
 }
 
 void fulfill_promise(value_t self, value_t value) {
-  if (!is_promise_resolved(self)) {
+  if (!is_promise_settled(self)) {
     set_promise_state(self, promise_state_fulfilled());
     set_promise_value(self, value);
   }
 }
 
 void reject_promise(value_t self, value_t error) {
-  if (!is_promise_resolved(self)) {
+  if (!is_promise_settled(self)) {
     set_promise_state(self, promise_state_rejected());
     set_promise_value(self, error);
   }
@@ -88,19 +88,19 @@ static value_t promise_state(builtin_arguments_t *args) {
   return get_promise_state(self);
 }
 
-static value_t promise_is_resolved(builtin_arguments_t *args) {
+static value_t promise_is_settled(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofPromise, self);
-  return new_boolean(is_promise_resolved(self));
+  return new_boolean(is_promise_settled(self));
 }
 
 static value_t promise_get(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofPromise, self);
-  if (is_promise_resolved(self)) {
+  if (is_promise_settled(self)) {
     return get_promise_value(self);
   } else {
-    ESCAPE_BUILTIN(args, promise_not_resolved, self);
+    ESCAPE_BUILTIN(args, promise_not_settled, self);
   }
 }
 
@@ -123,7 +123,7 @@ static value_t promise_reject(builtin_arguments_t *args) {
 
 value_t add_promise_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   ADD_BUILTIN_IMPL("promise.state", 0, promise_state);
-  ADD_BUILTIN_IMPL("promise.is_resolved?", 0, promise_is_resolved);
+  ADD_BUILTIN_IMPL("promise.is_settled?", 0, promise_is_settled);
   ADD_BUILTIN_IMPL_MAY_ESCAPE("promise.get", 0, 1, promise_get);
   ADD_BUILTIN_IMPL("promise.fulfill!", 1, promise_fulfill);
   ADD_BUILTIN_IMPL("promise.reject!", 1, promise_reject);
@@ -219,11 +219,9 @@ static opaque_t on_foreign_request_success(opaque_t opaque_state,
   return o0();
 }
 
-void foreign_request_state_init(foreign_request_state_t *state,
-    unary_callback_t *callback, process_airlock_t *airlock,
+void foreign_request_state_init(foreign_request_state_t *state, process_airlock_t *airlock,
     safe_value_t s_surface_promise) {
   undertaking_init(UPCAST_UNDERTAKING(state), &kOutgoingRequestController);
-  state->callback = callback;
   state->airlock = airlock;
   state->s_surface_promise = s_surface_promise;
   state->result = blob_empty();
@@ -238,14 +236,14 @@ value_t foreign_request_state_new(runtime_t *runtime, value_t process,
   foreign_request_state_t *state = allocator_default_malloc_struct(foreign_request_state_t);
   if (state == NULL)
     return new_system_call_failed_condition("malloc");
-  unary_callback_t *callback = unary_callback_new_1(on_foreign_request_success, p2o(state));
-  foreign_request_state_init(state, callback, get_process_airlock(process),
+  foreign_request_state_init(state, get_process_airlock(process),
       s_promise);
   native_request_t *request = &state->request;
-  opaque_promise_t *impl_promise = opaque_promise_empty();
+  opaque_promise_t *impl_promise = opaque_promise_pending();
   pton_arena_t *arena = pton_new_arena();
   native_request_init(request, runtime, impl_promise, arena, blob_empty());
-  opaque_promise_on_success(impl_promise, state->callback, omDontTakeOwnership);
+  opaque_promise_on_fulfill(impl_promise,
+      unary_callback_new_1(on_foreign_request_success, p2o(state)), omTakeOwnership);
   *result_out = state;
   return success();
 }
@@ -258,7 +256,6 @@ value_t outgoing_request_undertaking_finish(foreign_request_state_t *state,
 }
 
 void outgoing_request_undertaking_destroy(runtime_t *runtime, foreign_request_state_t *state) {
-  callback_destroy(state->callback);
   opaque_promise_destroy(state->request.impl_promise);
   pton_dispose_arena(state->request.arena);
   safe_value_destroy(runtime, state->s_surface_promise);

@@ -6,15 +6,15 @@ import $core;
 
 def $test_simple_delay() {
   def $p0 := $core:delay(fn => 4);
-  $assert:equals(false, $p0.is_resolved?);
+  $assert:equals(false, $p0.is_settled?);
   def $p1 := $core:delay(fn {
-    $assert:equals(true, $p0.is_resolved?);
+    $assert:equals(true, $p0.is_settled?);
     $assert:equals(4, $p0.get());
     5;
   });
   $core:delay(fn {
-    $assert:equals(true, $p0.is_resolved?);
-    $assert:equals(true, $p1.is_resolved?);
+    $assert:equals(true, $p0.is_settled?);
+    $assert:equals(true, $p1.is_settled?);
     $assert:equals(4, $p0.get());
     $assert:equals(5, $p1.get());
   });

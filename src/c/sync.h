@@ -24,8 +24,8 @@ ACCESSORS_DECL(promise, state);
 // For resolved promises the value, for failed the failure.
 ACCESSORS_DECL(promise, value);
 
-// Returns true if the given promise is in a resolved (non-pending) state.
-bool is_promise_resolved(value_t self);
+// Returns true if the given promise is in a settled (non-pending) state.
+bool is_promise_settled(value_t self);
 
 // Fulfill the given promise if it hasn't been already, otherwise this is a
 // noop.
@@ -78,8 +78,8 @@ static promise_state_t get_promise_state_value(value_t self) {
   return (promise_state_t) get_custom_tagged_payload(self);
 }
 
-// Does this promise state value represent a state the is considered resolved?
-static bool is_promise_state_resolved(value_t self) {
+// Does this promise state value represent a state that is not pending?
+static bool is_promise_state_settled(value_t self) {
   CHECK_PHYLUM(tpPromiseState, self);
   return !is_same_value(self, promise_state_pending());
 }
@@ -94,8 +94,6 @@ struct foreign_request_state_t {
   undertaking_t as_undertaking;
   // The part of the data that will be passed to the native impl.
   native_request_t request;
-  // The callback that will be called; kept around so we can destroy it later.
-  unary_callback_t *callback;
   // The airlock of the process to return the result to.
   process_airlock_t *airlock;
   // The promise value that will be delivered to the surface language to
@@ -114,8 +112,7 @@ struct fulfill_promise_state_t {
 };
 
 void foreign_request_state_init(foreign_request_state_t *state,
-    unary_callback_t *callback, process_airlock_t *airlock,
-    safe_value_t s_surface_promise);
+    process_airlock_t *airlock, safe_value_t s_surface_promise);
 
 // Create an initialize a new native request state. Note that the arguments
 // will not have been set, this only initializes the rest.

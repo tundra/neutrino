@@ -875,7 +875,7 @@ bool take_process_ready_job(value_t process, job_t *job_out) {
     // Read the current entry into the output job for convenience.
     job_init(job_out, result[0], result[1], result[2], result[3]);
     value_t guard = job_out->guard;
-    if (is_nothing(guard) || is_promise_resolved(guard)) {
+    if (is_nothing(guard) || is_promise_settled(guard)) {
       // This one is ready to run. Remove it from the buffer.
       fifo_buffer_iter_take_current(&iter);
       return true;
