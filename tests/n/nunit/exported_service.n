@@ -13,7 +13,7 @@ def $test_wrapping() {
 type @Helper {
 
   def $this.step($n) {
-    @ctrino.collect_garbage!();
+    @ctrino.collect_garbage!;
     $n * $n;
   }
 
@@ -24,7 +24,7 @@ type @Helper {
 def $next_step($service, $n) {
   if $n < 20 then {
     def $p := $service->step($n);
-    @ctrino.collect_garbage!();
+    @ctrino.collect_garbage!;
     $p.then(fn $v {
       $assert:equals($n * $n, $v);
       $next_step($service, $n + 1);
@@ -43,7 +43,7 @@ def $test_roundtrip() {
   def $service := new @core:fsi:ExportedService($helper, module);
   def $run := fn ($in) {
     def $out_p := $service->echo($in).then(fn $out => $assert:equals($in, $out));
-    @ctrino.collect_garbage!();
+    @ctrino.collect_garbage!;
   }
   $run(946);
   $run("hey");

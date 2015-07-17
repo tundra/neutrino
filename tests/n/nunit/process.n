@@ -12,7 +12,7 @@ type @ProcessHelper {
   field $this.stderr;
   field $this.stdin;
 
-  def $this.start!() => $this.process.start!();
+  def $this.start! => $this.process.start!;
 
   def $this.exit_code => $this.process.exit_code;
 
@@ -48,18 +48,18 @@ type @ProcessTest {
   }
 
   def $this.test_simple() {
-    def $p := $this.new_process(["--quiet", "--exit-code", "99"]);
-    $p.start!();
+    def $p := $this.new_process ["--quiet", "--exit-code", "99"];
+    $p.start!;
     $p.exit_code.then(fn $exit_code => $assert:equals(99, $exit_code));
   }
 
   def $this.test_echo() {
-    def $p := $this.new_process(["--quiet", "--echo-stdin"]);
-    $p.start!();
+    def $p := $this.new_process ["--quiet", "--echo-stdin"];
+    $p.start!;
     # Write a message to stdin and then close so the program will terminate.
     $p.stdin.out.write!("Hello, World!".view(@core:Ascii)).then(fn $written {
       $assert:equals(13, $written);
-      $p.stdin.out.close!();
+      $p.stdin.out.close!;
     });
     # Read the message back from stderr.
     $p.stderr.in.read!(13).then(fn $blob {

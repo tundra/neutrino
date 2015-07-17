@@ -296,9 +296,7 @@ class Parser(object):
       if self.at_punctuation('('):
         self.expect_punctuation('(')
         self.expect_punctuation(')')
-        op = data.Operation.infix(value)
-      else:
-        op = data.Operation.property(value)
+      op = data.Operation.infix(value)
     elif self.at_punctuation('('):
       self.expect_punctuation('(')
       self.expect_punctuation(')')
@@ -363,7 +361,7 @@ class Parser(object):
     self.expect_word('field')
     subject = self.parse_subject()
     (op, is_async) = self.expect_type(Token.OPERATION)
-    prop = data.Operation.property(op)
+    prop = data.Operation.infix(op)
     getter = self.name_as_selector(prop)
     setter = self.name_as_selector(data.Operation.assign(prop))
     self.expect_statement_delimiter(True)
@@ -614,7 +612,7 @@ class Parser(object):
       if name is None:
         op = Parser._SAUSAGES
       else:
-        op = data.Operation.property(name)
+        op = data.Operation.infix(name)
     else:
       op = param_operation
     is_async_param = ast.Parameter(None, [data._TRANSPORT], ast.Guard.eq(ast.Literal(data._ASYNC if is_async else data._SYNC)))
@@ -759,7 +757,7 @@ class Parser(object):
       selector = data.Operation.infix(name)
       rest = self.parse_arguments('(', ')')
     else:
-      selector = data.Operation.property(name)
+      selector = data.Operation.infix(name)
       rest = []
     return (selector, is_async, rest)
 

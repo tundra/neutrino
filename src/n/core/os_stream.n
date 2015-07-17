@@ -12,7 +12,7 @@ def ($this is @io:OutStream).write!($data is @Blob);
 
 # Closes the stream.
 @ctrino.builtin("os_out_stream.close!")
-def ($this is @io:OutStream).close!();
+def ($this is @io:OutStream).close!;
 
 # Writes the given value to the given output stream. The data is first converted
 # to a block of binary data so whatever it is it must support that.
