@@ -644,10 +644,6 @@ void operation_print_on(value_t self, print_on_context_t *context) {
       value_print_inner_on(value, &unquote_context, -1);
       string_buffer_printf(context->buf, "()");
       break;
-    case otProperty:
-      string_buffer_printf(context->buf, ".");
-      value_print_inner_on(value, &unquote_context, -1);
-      break;
     case otSuffix:
       string_buffer_printf(context->buf, "()");
       value_print_inner_on(value, &unquote_context, -1);
@@ -688,10 +684,6 @@ void operation_print_open_on(value_t self, value_t transport,
     value_print_inner_on(value, &unquote_context, -1);
     string_buffer_printf(context->buf, "(");
     break;
-  case otProperty:
-    string_buffer_printf(context->buf, is_async ? "->" : ".");
-    value_print_inner_on(value, &unquote_context, -1);
-    break;
   case otSuffix:
     string_buffer_printf(context->buf, "(");
     break;
@@ -714,8 +706,6 @@ void operation_print_close_on(value_t self, print_on_context_t *context) {
     break;
   case otIndex:
     string_buffer_printf(context->buf, "]");
-    break;
-  case otProperty:
     break;
   case otSuffix:
     string_buffer_printf(context->buf, ")");

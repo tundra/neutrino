@@ -40,7 +40,7 @@ def ($this is @IncomingRequestThunk).promise;
 
 # Clears the C-allocated backing data from this request.
 @ctrino.builtin("incoming_request_thunk.clear!")
-def ($this is @IncomingRequestThunk).clear!();
+def ($this is @IncomingRequestThunk).clear!;
 
 # The entry-point called by the event loop to execute an external request to an
 # exported service.

@@ -62,7 +62,7 @@ type @TupleArray is @Array {
     null;
   }
 
-  def $this.clear!() {
+  def $this.clear! {
     $this.length := 0;
     null;
   }

@@ -821,8 +821,6 @@ TEST(method, operation_printing) {
   CHECK_OP_PRINT(".foo()", OP(otInfix, vStr("foo")));
   CHECK_OP_PRINT("!()", OP(otPrefix, vStr("!")));
   CHECK_OP_PRINT("blah()", OP(otPrefix, vStr("blah")));
-  CHECK_OP_PRINT(".+", OP(otProperty, vStr("+")));
-  CHECK_OP_PRINT(".foo", OP(otProperty, vStr("foo")));
   CHECK_OP_PRINT("()!", OP(otSuffix, vStr("!")));
   CHECK_OP_PRINT("()blah", OP(otSuffix, vStr("blah")));
 
@@ -830,12 +828,11 @@ TEST(method, operation_printing) {
   CHECK_OP_PRINT("[]:=", OP(otAssign, vValue(OP(otIndex, vNull()))));
   CHECK_OP_PRINT(".foo():=", OP(otAssign, vValue(OP(otInfix, vStr("foo")))));
   CHECK_OP_PRINT("!():=", OP(otAssign, vValue(OP(otPrefix, vStr("!")))));
-  CHECK_OP_PRINT(".foo:=", OP(otAssign, vValue(OP(otProperty, vStr("foo")))));
   CHECK_OP_PRINT("()!:=", OP(otAssign, vValue(OP(otSuffix, vStr("!")))));
 
   // Okay this is just ridiculous.
-  CHECK_OP_PRINT(".foo:=:=", OP(otAssign, vValue(OP(otAssign,
-      vValue(OP(otProperty, vStr("foo")))))));
+  CHECK_OP_PRINT(".foo():=:=", OP(otAssign, vValue(OP(otAssign,
+      vValue(OP(otInfix, vStr("foo")))))));
 
   DISPOSE_TEST_ARENA();
   DISPOSE_RUNTIME();

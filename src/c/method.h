@@ -448,10 +448,8 @@ typedef enum {
   otInfix = 4,
   // Prefix operation: !$foo
   otPrefix = 5,
-  // Property access: $p.x
-  otProperty = 6,
   // Suffix operation: $foo!
-  otSuffix = 7
+  otSuffix = 6
 } operation_type_t;
 
 #define kOperationHeader "core:Operation"

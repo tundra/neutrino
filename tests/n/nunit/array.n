@@ -20,7 +20,7 @@ def $test_simple() {
   $assert:equals(6, $buf[0]);
   $assert:equals(1, try ($buf[1] := 4) on.out_of_bounds($i) => $i);
   $assert:equals((-1), try ($buf[-1] := 4) on.out_of_bounds($i) => $i);
-  $buf.clear! ();
+  $buf.clear!;
   $assert:that($buf.is_empty?);
   $assert:equals(0, $buf.length);
   for $i in (0 .to 100) do {
