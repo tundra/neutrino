@@ -107,6 +107,7 @@ int get_value_domain_ordinal(value_domain_t domain);
   F(SystemError)                                                               \
   F(UncaughtSignal)                                                            \
   F(UnknownBuiltin)                                                            \
+  F(UnknownReference)                                                          \
   F(UnsupportedBehavior)                                                       \
   F(ValidationFailed)                                                          \
   F(Wat)

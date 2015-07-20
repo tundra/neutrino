@@ -414,8 +414,9 @@ static value_t seed_deserialize(size_t headerc, size_t fieldc, deserialize_state
 static value_t reference_deserialize(uint64_t offset, deserialize_state_t *state) {
   int64_t index = state->object_offset - offset - 1;
   value_t result = get_id_hash_map_at(deref(state->s_ref_map), new_integer(index));
-  CHECK_FALSE("missing reference", in_condition_cause(ccNotFound, result));
-  return result;
+  return in_condition_cause(ccNotFound, result)
+      ? new_condition_with_details(ccUnknownReference, (int32_t) index)
+      : result;
 }
 
 static value_t value_deserialize(deserialize_state_t *state) {
