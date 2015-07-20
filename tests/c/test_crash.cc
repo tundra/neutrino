@@ -3,7 +3,7 @@
 
 #include "test.hh"
 
-static value_t do_check(bool value, consition_cause_t cause) {
+static value_t do_check(bool value, condition_cause_t cause) {
   COND_CHECK_TRUE("foo", cause, value);
   return success();
 }

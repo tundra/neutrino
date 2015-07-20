@@ -11,7 +11,7 @@
 #include "value.h"
 
 // Creates a new condition with the specified cause and details.
-static value_t new_condition_with_details(consition_cause_t cause, uint32_t details) {
+static value_t new_condition_with_details(condition_cause_t cause, uint32_t details) {
   value_t result;
   result.as_condition.domain = vdCondition;
   result.as_condition.cause = cause;
@@ -20,7 +20,7 @@ static value_t new_condition_with_details(consition_cause_t cause, uint32_t deta
 }
 
 // Creates a new condition with the specified cause and no details.
-static value_t new_condition(consition_cause_t cause) {
+static value_t new_condition(condition_cause_t cause) {
   return new_condition_with_details(cause, 0);
 }
 
@@ -33,13 +33,13 @@ static value_t condition_and(value_t a, value_t b) {
 }
 
 // Returns the cause of a condition.
-static consition_cause_t get_condition_cause(value_t value) {
+static condition_cause_t get_condition_cause(value_t value) {
   CHECK_DOMAIN(vdCondition, value);
   return value.as_condition.cause;
 }
 
 // Returns the string name of a condition cause.
-const char *get_condition_cause_name(consition_cause_t cause);
+const char *get_condition_cause_name(condition_cause_t cause);
 
 // Returns the details associated with the given condition.
 static uint32_t get_condition_details(value_t value) {
@@ -100,27 +100,17 @@ typedef enum {
 
 typedef union {
   struct {
-    value_domain_t domain : 8;
-    heap_object_family_t family : 16;
-  } decoded;
-  uint32_t encoded;
-} value_type_details_codec_t;
-
-typedef union {
-  struct {
-    value_domain_t domain : 8;
-    heap_object_family_t family : 16;
-    unsupported_behavior_cause_t cause : 8;
+    uint16_t cause : 16;
+    uint16_t type_info : 16;
   } decoded;
   uint32_t encoded;
 } unsupported_behavior_details_codec_t;
 
 // Creates a new UnsupportedBehavior condition for the given type of behavior.
-static value_t new_unsupported_behavior_condition(value_domain_t domain,
-    heap_object_family_t family, unsupported_behavior_cause_t cause) {
+static value_t new_unsupported_behavior_condition(value_type_info_t type,
+    unsupported_behavior_cause_t cause) {
   unsupported_behavior_details_codec_t codec;
-  codec.decoded.domain = domain;
-  codec.decoded.family = family;
+  codec.decoded.type_info = value_type_info_encode(type);
   codec.decoded.cause = cause;
   return new_condition_with_details(ccUnsupportedBehavior, codec.encoded);
 }
@@ -158,11 +148,8 @@ static value_t new_invalid_input_condition() {
   return new_condition(ccInvalidInput);
 }
 
-static value_t new_family_not_serializable_condition(heap_object_family_t family) {
-  value_type_details_codec_t codec;
-  codec.decoded.domain = vdHeapObject;
-  codec.decoded.family = family;
-  return new_condition_with_details(ccNotSerializable, codec.encoded);
+static value_t new_family_not_serializable_condition(value_type_info_t type) {
+  return new_condition_with_details(ccNotSerializable, value_type_info_encode(type));
 }
 
 // Converter to get and set details for invalid input as a uint32_t.

@@ -202,7 +202,7 @@ static value_t heap_object_serialize(value_t self, serialize_state_t *state) {
   CHECK_DOMAIN(vdHeapObject, self);
   family_behavior_t *behavior = get_heap_object_family_behavior(self);
   if (behavior->serialize == NULL) {
-    return new_family_not_serializable_condition(behavior->family);
+    return new_family_not_serializable_condition(get_value_type_info(self));
   } else {
     return (behavior->serialize)(self, state);
   }
@@ -223,8 +223,7 @@ static value_t custom_tagged_serialize(value_t value, serialize_state_t *state) 
 }
 
 static value_t value_serialize(value_t data, serialize_state_t *state) {
-  value_domain_t domain = get_value_domain(data);
-  switch (domain) {
+  switch (get_value_domain(data)) {
     case vdInteger:
       return integer_serialize(data, state->assm);
     case vdHeapObject:
@@ -233,7 +232,7 @@ static value_t value_serialize(value_t data, serialize_state_t *state) {
       return custom_tagged_serialize(data, state);
     default:
       UNREACHABLE("value serialize");
-      return new_unsupported_behavior_condition(domain, __ofUnknown__,
+      return new_unsupported_behavior_condition(get_value_type_info(data),
           ubPlanktonSerialize);
   }
 }

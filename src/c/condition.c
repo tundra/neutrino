@@ -28,7 +28,7 @@ const char *get_unsupported_behavior_cause_name(unsupported_behavior_cause_t cau
   }
 }
 
-const char *get_condition_cause_name(consition_cause_t cause) {
+const char *get_condition_cause_name(condition_cause_t cause) {
   switch (cause) {
 #define __GEN_CASE__(Name) case cc##Name: return #Name;
     ENUM_CONDITION_CAUSES(__GEN_CASE__)

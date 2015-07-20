@@ -204,8 +204,7 @@ value_t value_transient_identity_hash(value_t value) {
 
 value_t value_transient_identity_hash_cycle_protect(value_t value,
     hash_stream_t *stream, cycle_detector_t *detector) {
-  value_domain_t domain = get_value_domain(value);
-  switch (domain) {
+  switch (get_value_domain(value)) {
     case vdInteger:
       return integer_transient_identity_hash(value, stream);
     case vdHeapObject:
@@ -213,7 +212,7 @@ value_t value_transient_identity_hash_cycle_protect(value_t value,
     case vdCustomTagged:
       return custom_tagged_transient_identity_hash(value, stream);
     default:
-      return new_unsupported_behavior_condition(domain, __ofUnknown__,
+      return new_unsupported_behavior_condition(get_value_type_info(value),
           ubTransientIdentityHash);
   }
 }
@@ -350,7 +349,7 @@ static void integer_print_on(value_t value, print_on_context_t *context) {
 
 static void condition_print_on(value_t value, string_buffer_t *buf) {
   CHECK_DOMAIN(vdCondition, value);
-  consition_cause_t cause = get_condition_cause(value);
+  condition_cause_t cause = get_condition_cause(value);
   const char *cause_name = get_condition_cause_name(cause);
   string_buffer_printf(buf, "%%<condition: %s(", cause_name);
   uint32_t details = get_condition_details(value);
@@ -363,13 +362,10 @@ static void condition_print_on(value_t value, string_buffer_t *buf) {
     case ccUnsupportedBehavior: {
       unsupported_behavior_details_codec_t codec;
       codec.encoded = details;
-      unsupported_behavior_cause_t cause = codec.decoded.cause;
+      unsupported_behavior_cause_t cause = (unsupported_behavior_cause_t) codec.decoded.cause;
       string_buffer_printf(buf, "%s", get_unsupported_behavior_cause_name(cause));
-      value_domain_t domain = codec.decoded.domain;
-      string_buffer_printf(buf, " of %s", get_value_domain_name(domain));
-      heap_object_family_t family = codec.decoded.family;
-      if (family != __ofUnknown__)
-        string_buffer_printf(buf, "/%s", get_heap_object_family_name(family));
+      value_type_info_t type = value_type_info_decode(codec.decoded.type_info);
+      string_buffer_printf(buf, " of %s", value_type_info_name(type));
       break;
     }
     case ccLookupError: {
@@ -395,13 +391,8 @@ static void condition_print_on(value_t value, string_buffer_t *buf) {
       break;
     }
     case ccNotSerializable: {
-      value_type_details_codec_t codec;
-      codec.encoded = details;
-      value_domain_t domain = codec.decoded.domain;
-      string_buffer_printf(buf, "%s", get_value_domain_name(domain));
-      heap_object_family_t family = codec.decoded.family;
-      if (family != __ofUnknown__)
-        string_buffer_printf(buf, "/%s", get_heap_object_family_name(family));
+      value_type_info_t type = value_type_info_decode((uint16_t) details);
+      string_buffer_printf(buf, "%s", value_type_info_name(type));
       break;
     }
     case ccUncaughtSignal: {
@@ -538,14 +529,13 @@ static value_t new_heap_object_with_custom_tagged_type(runtime_t *runtime, value
 }
 
 value_t new_heap_object_with_type(runtime_t *runtime, value_t header) {
-  value_domain_t domain = get_value_domain(header);
-  switch (domain) {
+  switch (get_value_domain(header)) {
     case vdHeapObject:
       return new_heap_object_with_object_type(runtime, header);
     case vdCustomTagged:
       return new_heap_object_with_custom_tagged_type(runtime, header);
     default:
-      return new_unsupported_behavior_condition(domain, __ofUnknown__,
+      return new_unsupported_behavior_condition(get_value_type_info(header),
           ubNewObjectWithType);
   }
 }
@@ -598,8 +588,7 @@ static value_t set_heap_object_contents_with_custom_tagged_type(runtime_t *runti
 
 value_t set_heap_object_contents(runtime_t *runtime, value_t object,
     value_t header, value_t payload) {
-  value_domain_t domain = get_value_domain(header);
-  switch (domain) {
+  switch (get_value_domain(header)) {
     case vdHeapObject:
       return set_heap_object_contents_with_object_type(runtime, object, header, payload);
       break;
@@ -607,7 +596,7 @@ value_t set_heap_object_contents(runtime_t *runtime, value_t object,
       return set_heap_object_contents_with_custom_tagged_type(runtime, object, header, payload);
       break;
     default:
-      return new_unsupported_behavior_condition(domain, __ofUnknown__,
+      return new_unsupported_behavior_condition(get_value_type_info(header),
           ubNewObjectWithType);
   }
 }
@@ -626,8 +615,7 @@ static value_t get_custom_tagged_primary_type(value_t self, runtime_t *runtime) 
 }
 
 value_t get_primary_type(value_t self, runtime_t *runtime) {
-  value_domain_t domain = get_value_domain(self);
-  switch (domain) {
+  switch (get_value_domain(self)) {
     case vdInteger:
       return ROOT(runtime, integer_type);
     case vdHeapObject:
@@ -635,7 +623,7 @@ value_t get_primary_type(value_t self, runtime_t *runtime) {
     case vdCustomTagged:
       return get_custom_tagged_primary_type(self, runtime);
     default:
-      return new_unsupported_behavior_condition(domain, __ofUnknown__,
+      return new_unsupported_behavior_condition(get_value_type_info(self),
           ubGetPrimaryType);
   }
 }

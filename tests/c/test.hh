@@ -43,7 +43,7 @@ struct check_recorder_o {
   // How many check failures were triggered?
   size_t count;
   // What was the cause of the last check failure triggered?
-  consition_cause_t last_cause;
+  condition_cause_t last_cause;
   // The abort callback to restore when we're done recording checks.
   abort_o *previous;
 };
@@ -123,7 +123,7 @@ ASSERT_CLASS(heap_object_family_t, ofFamily, EXPR, get_heap_object_family)
 
 // Fails unless the given value is a condition of the given type.
 #define ASSERT_CONDITION(scCause, EXPR) \
-ASSERT_CLASS(consition_cause_t, scCause, EXPR, get_condition_cause)
+ASSERT_CLASS(condition_cause_t, scCause, EXPR, get_condition_cause)
 
 #define ASSERT_CLASS(class_t, cExpected, EXPR, get_class) do {                 \
   class_t __class__ = get_class(EXPR);                                         \

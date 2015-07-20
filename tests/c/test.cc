@@ -110,7 +110,7 @@ bool value_structural_equal(value_t a, value_t b) {
 static void recorder_abort_callback(abort_o *super_self, abort_message_t *message) {
   check_recorder_o *self = DOWNCAST(check_recorder_o, super_self);
   self->count++;
-  self->last_cause = (consition_cause_t) message->condition_cause;
+  self->last_cause = (condition_cause_t) message->condition_cause;
 }
 
 VTABLE(check_recorder_o, abort_o) { recorder_abort_callback };

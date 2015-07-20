@@ -65,6 +65,57 @@ const char *get_custom_tagged_phylum_name(custom_tagged_phylum_t phylum) {
   }
 }
 
+value_type_info_t get_value_type_info(value_t value) {
+  value_type_info_t result;
+  value_domain_t domain = get_value_domain(value);
+  result.domain = domain;
+  switch (domain) {
+    case vdInteger: case __vdLast__: case vdMovedObject:
+      break;
+    case vdHeapObject:
+      result.flavor.family = get_heap_object_family(value);
+      break;
+    case vdCondition:
+      result.flavor.cause = get_condition_cause(value);
+      break;
+    case vdCustomTagged:
+      result.flavor.phylum = get_custom_tagged_phylum(value);
+      break;
+    case vdDerivedObject:
+      result.flavor.genus = get_derived_object_genus(value);
+      break;
+  }
+  return result;
+}
+
+uint16_t value_type_info_encode(value_type_info_t info) {
+  return (uint16_t) (info.domain | (info.flavor.encoded << 3));
+}
+
+value_type_info_t value_type_info_decode(uint16_t encoded) {
+  value_type_info_t result;
+  result.domain = (value_domain_t) (encoded & 0x7);
+  result.flavor.encoded = (encoded >> 3);
+  return result;
+}
+
+const char *value_type_info_name(value_type_info_t info) {
+  switch (info.domain) {
+    case vdInteger:
+      return "Integer";
+    case vdHeapObject:
+      return get_heap_object_family_name(info.flavor.family);
+    case vdCondition:
+      return get_condition_cause_name(info.flavor.cause);
+    case vdCustomTagged:
+      return get_custom_tagged_phylum_name(info.flavor.phylum);
+    case vdDerivedObject:
+      return get_derived_object_genus_name(info.flavor.genus);
+    default:
+      return "(invalid type)";
+  }
+}
+
 
 // --- I n t e g e r ---
 

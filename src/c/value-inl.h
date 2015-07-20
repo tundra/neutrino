@@ -77,7 +77,7 @@ static inline bool in_division(species_division_t division, value_t value) {
 }
 
 // Returns true iff the value is a condition with the specified cause.
-static inline bool in_condition_cause(consition_cause_t cause, value_t value) {
+static inline bool in_condition_cause(condition_cause_t cause, value_t value) {
   return is_condition(value) && (get_condition_cause(value) == cause);
 }
 

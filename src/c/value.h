@@ -118,8 +118,7 @@ typedef enum {
 #define DECLARE_CONDITION_CAUSE_ENUM(Cause) , cc##Cause
   ENUM_CONDITION_CAUSES(DECLARE_CONDITION_CAUSE_ENUM)
 #undef DECLARE_CONDITION_CAUSE_ENUM
-} consition_cause_t;
-
+} condition_cause_t;
 
 // Data for a tagged integer value.
 typedef struct {
@@ -134,7 +133,7 @@ typedef struct {
 // Data for conditions.
 typedef struct {
   value_domain_t domain : 3;
-  consition_cause_t cause : 8;
+  condition_cause_t cause : 8;
   uint32_t details;
 } condition_value_t;
 
@@ -931,6 +930,36 @@ typedef enum {
 // since it indirectly dictates the max size of objects that can hold a derived
 // pointer and you don't typically want to fiddle with that kind of limit.
 static const size_t kDerivedObjectGenusTagSize = 6;
+
+// A small struct that holds the description of the full type of a value,
+// independent of the domain of the value.
+typedef struct {
+  value_domain_t domain;
+  union {
+    heap_object_family_t family;
+    condition_cause_t cause;
+    custom_tagged_phylum_t phylum;
+    derived_object_genus_t genus;
+    uint16_t encoded;
+  } flavor;
+} value_type_info_t;
+
+// Returns a type info struct that describes the given value. This is mainly
+// for logging and debugging, it's not an efficient way to dispatch on the type
+// of a value.
+value_type_info_t get_value_type_info(value_t value);
+
+// Returns an integer that can be decoded to a value type info identical to the
+// given one.
+uint16_t value_type_info_encode(value_type_info_t info);
+
+// Decodes an integer that was encoded from a value type info by
+// value_type_info_encode.
+value_type_info_t value_type_info_decode(uint16_t encoded);
+
+// Returns a string description of the given value type info.
+const char *value_type_info_name(value_type_info_t info);
+
 
 /// ## Species
 ///

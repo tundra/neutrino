@@ -802,7 +802,10 @@ TEST(value, set_value_mode) {
 }
 
 #define CHECK_UNSUPPORTED(vdDomain, ofFamily, ubCause, EXPECTED) do {          \
-  value_t condition = new_unsupported_behavior_condition(vdDomain, ofFamily, ubCause);\
+  value_type_info_t info;                                                      \
+  info.domain = vdDomain;                                                      \
+  info.flavor.family = ofFamily;                                               \
+  value_t condition = new_unsupported_behavior_condition(info, ubCause);       \
   value_to_string_t to_string;                                                 \
   const char *found = value_to_string(&to_string, condition);                  \
   ASSERT_C_STREQ(EXPECTED, found);                                             \
@@ -812,10 +815,8 @@ TEST(value, set_value_mode) {
 TEST(value, unsupported) {
   CHECK_UNSUPPORTED(vdInteger, __ofUnknown__, ubUnspecified,
       "%<condition: UnsupportedBehavior(Unspecified of Integer)>");
-  CHECK_UNSUPPORTED(vdHeapObject, __ofUnknown__, ubSetContents,
-      "%<condition: UnsupportedBehavior(SetContents of HeapObject)>");
   CHECK_UNSUPPORTED(vdHeapObject, ofArray, ubPlanktonSerialize,
-      "%<condition: UnsupportedBehavior(PlanktonSerialize of HeapObject/Array)>");
+      "%<condition: UnsupportedBehavior(PlanktonSerialize of Array)>");
 }
 
 TEST(value, invalid_input) {
@@ -1069,4 +1070,54 @@ TEST(value, enum_families) {
   // leave ordinals unused.
   for (int i = 0; i < kNextFamilyOrdinal; i++)
     ASSERT_TRUE_WITH_HINT(i, data.ordinals_seen[i]);
+}
+
+static value_type_info_t transcode_type_info(value_type_info_t info) {
+  uint16_t encoded = value_type_info_encode(info);
+  value_type_info_t decoded = value_type_info_decode(encoded);
+  ASSERT_EQ(info.domain, decoded.domain);
+  return decoded;
+}
+
+static void test_family_type_info(heap_object_family_t family) {
+  value_type_info_t info;
+  info.domain = vdHeapObject;
+  info.flavor.family = family;
+  ASSERT_EQ(family, transcode_type_info(info).flavor.family);
+}
+
+static void test_phylum_type_info(custom_tagged_phylum_t phylum) {
+  value_type_info_t info;
+  info.domain = vdCustomTagged;
+  info.flavor.phylum = phylum;
+  ASSERT_EQ(phylum, transcode_type_info(info).flavor.phylum);
+}
+
+static void test_cause_type_info(condition_cause_t cause) {
+  value_type_info_t info;
+  info.domain = vdCondition;
+  info.flavor.cause = cause;
+  ASSERT_EQ(cause, transcode_type_info(info).flavor.cause);
+}
+
+static void test_genus_type_info(derived_object_genus_t genus) {
+  value_type_info_t info;
+  info.domain = vdDerivedObject;
+  info.flavor.genus = genus;
+  ASSERT_EQ(genus, transcode_type_info(info).flavor.genus);
+}
+
+TEST(value, type_info) {
+#define __TEST_FAMILY__(Family, family, MD, SR, MINOR, N) test_family_type_info(of##Family);
+  ENUM_HEAP_OBJECT_FAMILIES(__TEST_FAMILY__)
+#undef __TEST_FAMILY__
+#define __TEST_PHYLUM__(Phylum, phylum, SR, MINOR, N) test_phylum_type_info(tp##Phylum);
+  ENUM_CUSTOM_TAGGED_PHYLUMS(__TEST_PHYLUM__)
+#undef __TEST_PHYLUM__
+#define __TEST_CAUSE__(Cause) test_cause_type_info(cc##Cause);
+  ENUM_CONDITION_CAUSES(__TEST_CAUSE__)
+#undef __TEST_CAUSE__
+#define __TEST_GENUS__(Genus, genus, SC) test_genus_type_info(dg##Genus);
+  ENUM_DERIVED_OBJECT_GENERA(__TEST_GENUS__)
+#undef __TEST_GENUS__
 }
