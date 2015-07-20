@@ -156,7 +156,7 @@ static value_t neutrino_main_with_options(neutrino::RuntimeConfig *config,
         E_TRY_SET(input, read_stream_to_blob(*runtime, streams.in));
         file_streams_close(&streams);
       }
-      E_TRY_DEF(program, safe_runtime_plankton_deserialize_blob(*runtime, protect(pool, input)));
+      E_C_TRY_DEF(ttInFamily(ofProgramAst), program, safe_runtime_plankton_deserialize_blob(*runtime, protect(pool, input)));
       result = safe_runtime_execute_syntax(*runtime, protect(pool, program));
     }
     E_RETURN(result);

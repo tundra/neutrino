@@ -152,6 +152,24 @@ static value_t new_family_not_serializable_condition(value_type_info_t type) {
   return new_condition_with_details(ccNotSerializable, value_type_info_encode(type));
 }
 
+typedef union {
+  struct {
+    uint16_t expected;
+    uint16_t found;
+  } decoded;
+  uint32_t encoded;
+} unexpected_type_info_codec_t;
+
+// Creates a new unexpected type condition where the actual type was the given
+// value.
+static value_t new_unexpected_type_condition(value_type_info_t expected,
+    value_type_info_t found) {
+  unexpected_type_info_codec_t codec;
+  codec.decoded.expected = value_type_info_encode(expected);
+  codec.decoded.found = value_type_info_encode(found);
+  return new_condition_with_details(ccUnexpectedType, codec.encoded);
+}
+
 // Converter to get and set details for invalid input as a uint32_t.
 typedef union {
   char decoded[4];

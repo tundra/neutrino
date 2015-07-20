@@ -106,6 +106,7 @@ int get_value_domain_ordinal(value_domain_t domain);
   F(SafePoolFull)                                                              \
   F(SystemError)                                                               \
   F(UncaughtSignal)                                                            \
+  F(UnexpectedType)                                                            \
   F(UnknownBuiltin)                                                            \
   F(UnknownReference)                                                          \
   F(UnsupportedBehavior)                                                       \
@@ -959,6 +960,14 @@ value_type_info_t value_type_info_decode(uint16_t encoded);
 
 // Returns a string description of the given value type info.
 const char *value_type_info_name(value_type_info_t info);
+
+// Returns a type info struct that describes a member of the given family.
+static inline value_type_info_t value_type_info_for_family(heap_object_family_t family) {
+  value_type_info_t result;
+  result.domain = vdHeapObject;
+  result.flavor.family = family;
+  return result;
+}
 
 
 /// ## Species
