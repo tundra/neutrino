@@ -936,11 +936,11 @@ static const size_t kDerivedObjectGenusTagSize = 6;
 typedef struct {
   value_domain_t domain;
   union {
-    heap_object_family_t family;
-    condition_cause_t cause;
-    custom_tagged_phylum_t phylum;
-    derived_object_genus_t genus;
-    uint16_t encoded;
+    heap_object_family_t family : 16;
+    condition_cause_t cause : 16;
+    custom_tagged_phylum_t phylum : 16;
+    derived_object_genus_t genus : 16;
+    uint16_t encoded : 16;
   } flavor;
 } value_type_info_t;
 
