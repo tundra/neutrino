@@ -364,16 +364,16 @@ void get_c_object_species_layout_gc_tolerant(value_t raw_self,
 }
 
 CHECKED_SPECIES_ACCESSORS_IMPL(CObject, c_object, CObject, c_object,
-    acInDomain, vdInteger, DataSize, data_size);
+    acInDomain(vdInteger), DataSize, data_size);
 
 CHECKED_SPECIES_ACCESSORS_IMPL(CObject, c_object, CObject, c_object,
-    acInDomain, vdInteger, ValueCount, value_count);
+    acInDomain(vdInteger), ValueCount, value_count);
 
 CHECKED_SPECIES_ACCESSORS_IMPL(CObject, c_object, CObject, c_object,
-    acInFamily, ofType, Type, type);
+    acInFamily(ofType), Type, type);
 
 CHECKED_SPECIES_ACCESSORS_IMPL(CObject, c_object, CObject, c_object,
-    acNoCheck, 0, Tag, tag);
+    acNoCheck, Tag, tag);
 
 
 /// ## C object

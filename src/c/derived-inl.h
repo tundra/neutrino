@@ -43,8 +43,7 @@ VALIDATE(in_genus_opt(dgGenus, EXPR))
 
 // Accessor check that indicates that the argument should be nothing or belong
 // to the genus specified in the argument.
-#define acInGenusOpt(dgGenus, VALUE)                                           \
-  CHECK_GENUS_OPT(dgGenus, (VALUE))
+#define acInGenusOpt(dgGenus) (CHECK_GENUS_OPT, dgGenus)
 
 // Returns the derived object descriptor for the given derived object.
 static genus_descriptor_t *get_derived_object_descriptor(value_t self) {

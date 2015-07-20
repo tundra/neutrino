@@ -26,23 +26,23 @@
 #define __FLAVOR_IS_EXHAUSTED__(TYPE, IS_COND, IS_EXHAUSTED) IS_EXHAUSTED
 
 // Implementation of no type checking at all.
-#define __NO_CHECK_IMPL__(ARG, EXPR)
+#define __TT_NO_CHECK_IMPL__(ARG, EXPR)
 
 // A try-check that does nothing.
-#define ttNoCheck (__NO_CHECK_IMPL__, 0)
+#define ttNoCheck (__TT_NO_CHECK_IMPL__, 0)
 
 // A try-check that returns a signal if the value is not within the given
 // family.
 #define ttInFamily(ofFamily) (DYN_CHECK_FAMILY, ofFamily)
 
 // Applies a check tuple to a concrete argument.
-#define __APPLY_CHECK__(CHECK, EXPR) __CHECK_HANDLER__ CHECK(__CHECK_ARG__ CHECK, EXPR)
+#define __APPLY_CHECK__(CHECK, EXPR) __PAIR_FIRST__ CHECK(__PAIR_SECOND__ CHECK, EXPR)
 
 // Extracts the try check handler from a check tuple.
-#define __CHECK_HANDLER__(HANDLER, ARG) HANDLER
+#define __PAIR_FIRST__(F, S) F
 
 // Extracts the try check argument from a check tuple.
-#define __CHECK_ARG__(HANDLER, ARG) ARG
+#define __PAIR_SECOND__(F, S) S
 
 // Performs a dynamic check that the given expression is a heap object in the
 // given family.

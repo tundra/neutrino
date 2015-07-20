@@ -21,14 +21,11 @@ VALIDATE(in_phylum(tpPhylum, EXPR))
 
 // Accessor check that indicates that the argument should belong to the phylum
 // specified in the argument.
-#define acInPhylum(tpPhylum, VALUE)                                            \
-  CHECK_PHYLUM(tpPhylum, (VALUE))
+#define acInPhylum(tpPhylum) (CHECK_PHYLUM, tpPhylum)
 
 // Accessor check that indicates that the argument should either be nothing or
 // belong to the phylum specified in the argument.
-#define acInPhylumOpt(tpPhylum, VALUE)                                         \
-  CHECK_PHYLUM_OPT(tpPhylum, (VALUE))
-
+#define acInPhylumOpt(tpPhylum) (CHECK_PHYLUM_OPT, tpPhylum)
 
 /// ## Flag set
 
