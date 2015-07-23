@@ -1382,7 +1382,7 @@ value_t plankton_set_guard_ast_contents(value_t object, runtime_t *runtime,
   guard_type_t type_enum;
   // Maybe passing an integer enum will be good enough? Or does that conflict
   // with being self-describing?
-  EXPECT_FAMILY(ccInvalidInput, ofUtf8, type_value);
+  EXPECT_FAMILY(ofUtf8, type_value);
   char type_char = get_utf8_chars(type_value)[0];
   switch (type_char) {
     case '=': type_enum = gtEq; break;
@@ -1619,7 +1619,9 @@ value_t program_ast_validate(value_t self) {
 
 value_t plankton_set_program_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, entry_point, module);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, entry_point);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofUnboundModule), module);
   set_program_ast_entry_point(object, entry_point_value);
   set_program_ast_module(object, module_value);
   return ensure_frozen(runtime, object);

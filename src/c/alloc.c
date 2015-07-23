@@ -3,6 +3,7 @@
 
 #include "alloc.h"
 #include "behavior.h"
+#include "check.h"
 #include "ctrino.h"
 #include "derived.h"
 #include "freeze.h"

@@ -5,6 +5,7 @@
 #ifndef _VALUE_INL
 #define _VALUE_INL
 
+#include "check.h"
 #include "condition.h"
 #include "derived.h"
 #include "runtime.h"
@@ -24,51 +25,12 @@
 
 // Returns true if the value of the given expression is in the specified
 // domain.
-static inline bool in_domain(value_domain_t domain, value_t value) {
-  return get_value_domain(value) == domain;
-}
 
-// Is the given value a tagged integer?
-static inline bool is_integer(value_t value) {
-  return in_domain(vdInteger, value);
-}
-
-// Returns true iff the given value is a condition.
-static inline bool is_condition(value_t value) {
-  return in_domain(vdCondition, value);
-}
-
-// Returns true iff the given value is a heap object.
-static inline bool is_heap_object(value_t value) {
-  return in_domain(vdHeapObject, value);
-}
-
-// Returns true iff the given value is a derived object.
-static inline bool is_derived_object(value_t value) {
-  return in_domain(vdDerivedObject, value);
-}
-
-// Returns true iff the given value is an object within the given family.
-static inline bool in_family(heap_object_family_t family, value_t value) {
-  return is_heap_object(value) && (get_heap_object_family(value) == family);
-}
-
-// Returns true iff the given value is either nothing or an object within the
-// given family.
-static inline bool in_family_opt(heap_object_family_t family, value_t value) {
-  return is_nothing(value) || in_family(family, value);
-}
 
 // Returns true iff the given value is either null or an object within the given
 // family.
 static inline bool in_family_or_null(heap_object_family_t family, value_t value) {
   return is_null(value) || in_family(family, value);
-}
-
-// Returns true iff the given value is either nothing or a value within the
-// given domain.
-static inline bool in_domain_opt(value_domain_t domain, value_t value) {
-  return is_nothing(value) || in_domain(domain, value);
 }
 
 // Returns true iff the given species belongs to the given division.
@@ -384,11 +346,23 @@ SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
   value_t name##_value = get_id_hash_map_at(__source__, RSTR(runtime, name));  \
   __CHECK_MAP_ENTRY_FOUND__(name##_value);
 
+#define UNPACK_PLANKTON_FIELD(CHECK, name)                                     \
+    value_t name##_value;                                                      \
+    do {                                                                       \
+      name##_value = get_id_hash_map_at(__source__, RSTR(runtime, name));      \
+      __CHECK_MAP_ENTRY_FOUND__(name##_value);                                 \
+      C_TRY(CHECK, name##_value);                                              \
+    } while (false)
+
+#define BEGIN_UNPACK_PLANKTON(SOURCE)                                          \
+  value_t __source__ = (SOURCE);                                               \
+  EXPECT_FAMILY(ofIdHashMap, __source__)
+
 // Reads successive values from a plankton map, storing them in variables with
 // names matching the keys of the values.
 #define UNPACK_PLANKTON_MAP(SOURCE, ...)                                       \
   value_t __source__ = (SOURCE);                                               \
-  EXPECT_FAMILY(ccInvalidInput, ofIdHashMap, __source__);                      \
+  EXPECT_FAMILY(ofIdHashMap, __source__);                                      \
   FOR_EACH_VA_ARG(__GET_PLANKTON_MAP_ENTRY__, __VA_ARGS__)                     \
   SWALLOW_SEMI(upm)
 

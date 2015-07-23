@@ -3,3 +3,4 @@
 
 include('nunit', 'tests_n_nunit.mkmk')
 include('message', 'tests_n_message.mkmk')
+include('crash', 'tests_n_crash.mkmk')

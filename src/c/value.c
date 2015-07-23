@@ -111,9 +111,15 @@ const char *value_type_info_name(value_type_info_t info) {
       return get_custom_tagged_phylum_name(info.flavor.phylum);
     case vdDerivedObject:
       return get_derived_object_genus_name(info.flavor.genus);
+    case __vdLast__:
+      return "(empty)";
     default:
       return "(invalid type)";
   }
+}
+
+bool value_type_info_is_empty(value_type_info_t info) {
+  return info.domain == __vdLast__;
 }
 
 
@@ -1796,7 +1802,7 @@ void instance_print_on(value_t value, print_on_context_t *context) {
 
 value_t plankton_set_instance_contents(value_t instance, runtime_t *runtime,
     value_t contents) {
-  EXPECT_FAMILY(ccInvalidInput, ofIdHashMap, contents);
+  EXPECT_FAMILY(ofIdHashMap, contents);
   set_instance_fields(instance, contents);
   return success();
 }
@@ -2394,7 +2400,8 @@ value_t plankton_new_path(runtime_t *runtime) {
 
 value_t plankton_set_path_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, names);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofArray), names);
   if (get_array_length(names_value) == 0) {
     CHECK_TRUE("new path was non-empty", is_path_empty(object));
   } else {

@@ -4,10 +4,12 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "bind.h"
+#include "check.h"
 #include "freeze.h"
 #include "interp.h"
 #include "runtime.h"
 #include "tagged.h"
+#include "try-inl.h"
 #include "utils/log.h"
 
 // --- B i n d i n g ---
@@ -640,7 +642,9 @@ value_t plankton_new_unbound_module(runtime_t *runtime) {
 
 value_t plankton_set_unbound_module_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, path, fragments);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofPath), path);
+  UNPACK_PLANKTON_FIELD(snIsArrayOfFamily(ofUnboundModuleFragment), fragments);
   set_unbound_module_path(object, path_value);
   set_unbound_module_fragments(object, fragments_value);
   return success();
@@ -680,7 +684,10 @@ value_t plankton_new_unbound_module_fragment(runtime_t *runtime) {
 
 value_t plankton_set_unbound_module_fragment_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, stage, imports, elements);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInDomain(vdInteger), stage);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofArray), imports);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofArray), elements);
   int32_t stage_index = (int32_t) get_integer_value(stage_value);
   set_unbound_module_fragment_stage(object, new_stage_offset(stage_index));
   set_unbound_module_fragment_imports(object, imports_value);

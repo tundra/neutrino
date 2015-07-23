@@ -7,6 +7,7 @@
 #ifndef _TRY_INL
 #define _TRY_INL
 
+#include "sentry-inl.h"
 #include "value-inl.h"
 
 // Plain flavor, works with normal values.
@@ -25,19 +26,6 @@
 #define __FLAVOR_IS_COND__(TYPE, IS_COND, IS_EXHAUSTED) IS_COND
 #define __FLAVOR_IS_EXHAUSTED__(TYPE, IS_COND, IS_EXHAUSTED) IS_EXHAUSTED
 
-// Implementation of no type checking at all.
-#define __TT_NO_CHECK_IMPL__(ARG, EXPR)
-
-// A try-check that does nothing.
-#define ttNoCheck (__TT_NO_CHECK_IMPL__, 0)
-
-// A try-check that returns a signal if the value is not within the given
-// family.
-#define ttInFamily(ofFamily) (DYN_CHECK_FAMILY, ofFamily)
-
-// Applies a check tuple to a concrete argument.
-#define __APPLY_CHECK__(CHECK, EXPR) __PAIR_FIRST__ CHECK(__PAIR_SECOND__ CHECK, EXPR)
-
 // Extracts the try check handler from a check tuple.
 #define __PAIR_FIRST__(F, S) F
 
@@ -53,11 +41,11 @@
       get_value_type_info(__dcf_value__));                                     \
 } while (false)
 
-#define __GENERIC_TRY__(FLAVOR, EXPR, RETURN, CHECK) do {                      \
+#define __GENERIC_TRY__(FLAVOR, EXPR, RETURN, SENTRY) do {                     \
   FLAVOR(__FLAVOR_TYPE__) __gt_value__ = (EXPR);                               \
   if (FLAVOR(__FLAVOR_IS_COND__)(__gt_value__))                                \
     RETURN(__gt_value__);                                                      \
-  __APPLY_CHECK__(CHECK, __gt_value__);                                        \
+  EXPECT_SENTRY(SENTRY, __gt_value__);                                         \
 } while (false)
 
 #define __GENERIC_TRY_SET__(FLAVOR, TARGET, EXPR, RETURN, CHECK) do {          \
@@ -75,13 +63,13 @@ __GENERIC_TRY_SET__(FLAVOR, TARGET, EXPR, RETURN, CHECK)
   if (FLAVOR(__FLAVOR_IS_EXHAUSTED__)(__gr_value__)) {                         \
     __GENERIC_TRY_DEF__(FLAVOR, __recall__,                                    \
         runtime_prepare_retry_after_heap_exhausted(RUNTIME, __gr_value__),     \
-        RETURN, ttNoCheck);                                                    \
+        RETURN, snNoCheck);                                                    \
     __gr_value__ = (EXPR);                                                     \
     runtime_complete_retry_after_heap_exhausted(RUNTIME, __recall__);          \
     if (FLAVOR(__FLAVOR_IS_EXHAUSTED__)(__gr_value__))                         \
       RETURN(new_out_of_memory_condition(__gr_value__));                       \
   }                                                                            \
-  __GENERIC_TRY__(FLAVOR, __gr_value__, RETURN, ttNoCheck);                    \
+  __GENERIC_TRY__(FLAVOR, __gr_value__, RETURN, snNoCheck);                    \
 } while (false)
 
 // Try performing the given expression. If it fails with heap exhausted gc and
@@ -92,13 +80,13 @@ __GENERIC_TRY_SET__(FLAVOR, TARGET, EXPR, RETURN, CHECK)
   if (FLAVOR(__FLAVOR_IS_EXHAUSTED__)(__grs_value__)) {                        \
     __GENERIC_TRY_DEF__(FLAVOR, __recall__,                                    \
         runtime_prepare_retry_after_heap_exhausted(RUNTIME, __grs_value__),    \
-        RETURN, ttNoCheck);                                                    \
+        RETURN, snNoCheck);                                                    \
     __grs_value__ = (EXPR);                                                    \
     runtime_complete_retry_after_heap_exhausted(RUNTIME, __recall__);          \
     if (FLAVOR(__FLAVOR_IS_EXHAUSTED__)(__grs_value__))                        \
       RETURN(new_out_of_memory_condition(__grs_value__));                      \
   }                                                                            \
-  __GENERIC_TRY__(FLAVOR, __grs_value__, RETURN, ttNoCheck);                   \
+  __GENERIC_TRY__(FLAVOR, __grs_value__, RETURN, snNoCheck);                   \
   TARGET = __grs_value__;                                                      \
 } while (false)
 
@@ -112,15 +100,19 @@ __GENERIC_TRY_SET__(FLAVOR, TARGET, EXPR, RETURN, CHECK)
 
 // Evaluates the given expression; if it yields a condition returns it otherwise
 // ignores the value.
-#define TRY(EXPR) __GENERIC_TRY__(P_FLAVOR, EXPR, P_RETURN, ttNoCheck)
+#define TRY(EXPR) C_TRY(snNoCheck, EXPR)
+
+#define C_TRY(CHECK, EXPR) __GENERIC_TRY__(P_FLAVOR, EXPR, P_RETURN, CHECK)
 
 // Evaluates the value and if it yields a condition bails out, otherwise assigns
 // the result to the given target.
-#define TRY_SET(TARGET, EXPR) __GENERIC_TRY_SET__(P_FLAVOR, TARGET, EXPR, P_RETURN, ttNoCheck)
+#define TRY_SET(TARGET, EXPR) C_TRY_SET(snNoCheck, TARGET, EXPR)
+
+#define C_TRY_SET(CHECK, TARGET, EXPR) __GENERIC_TRY_SET__(P_FLAVOR, TARGET, EXPR, P_RETURN, CHECK)
 
 // Declares a new variable to have the specified value. If the initializer
 // yields a condition we bail out and return that value.
-#define TRY_DEF(NAME, EXPR) __GENERIC_TRY_DEF__(P_FLAVOR, NAME, EXPR, P_RETURN, ttNoCheck)
+#define TRY_DEF(NAME, EXPR) __GENERIC_TRY_DEF__(P_FLAVOR, NAME, EXPR, P_RETURN, snNoCheck)
 
 
 // --- E n s u r e ---
@@ -154,15 +146,15 @@ __GENERIC_TRY_SET__(FLAVOR, TARGET, EXPR, RETURN, CHECK)
 
 // Does the same as a TRY except makes sure that the function's FINALLY block
 // is executed before bailing out on a condition.
-#define E_TRY(EXPR) __GENERIC_TRY__(P_FLAVOR, EXPR, E_RETURN, ttNoCheck)
+#define E_TRY(EXPR) __GENERIC_TRY__(P_FLAVOR, EXPR, E_RETURN, snNoCheck)
 
 // Does the same as TRY_SET except makes sure the function's FINALLY block is
 // executed before bailing on a condition.
-#define E_TRY_SET(TARGET, EXPR) __GENERIC_TRY_SET__(P_FLAVOR, TARGET, EXPR, E_RETURN, ttNoCheck)
+#define E_TRY_SET(TARGET, EXPR) __GENERIC_TRY_SET__(P_FLAVOR, TARGET, EXPR, E_RETURN, snNoCheck)
 
 // Does the same as TRY_DEF except makes sure the function's FINALLY block is
 // executed before bailing on a condition.
-#define E_TRY_DEF(NAME, EXPR) E_C_TRY_DEF(ttNoCheck, NAME, EXPR)
+#define E_TRY_DEF(NAME, EXPR) E_C_TRY_DEF(snNoCheck, NAME, EXPR)
 
 #define E_C_TRY_DEF(CHECK, NAME, EXPR) __GENERIC_TRY_DEF__(P_FLAVOR, NAME, EXPR, E_RETURN, CHECK)
 
@@ -176,6 +168,6 @@ __GENERIC_TRY_SET__(FLAVOR, TARGET, EXPR, RETURN, CHECK)
 
 // Does the same as S_TRY_DEF except makes sure the function's FINALLY block is
 // executed before bailing on a condition.
-#define E_S_TRY_DEF(NAME, EXPR) __GENERIC_TRY_DEF__(S_FLAVOR, NAME, EXPR, E_S_RETURN, ttNoCheck)
+#define E_S_TRY_DEF(NAME, EXPR) __GENERIC_TRY_DEF__(S_FLAVOR, NAME, EXPR, E_S_RETURN, snNoCheck)
 
 #endif // _TRY_INL

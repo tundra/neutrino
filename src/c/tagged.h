@@ -59,15 +59,6 @@ static value_t nothing() {
   return new_custom_tagged(tpNothing, 0);
 }
 
-// A compile-time constant that is equal to the encoded representation of the
-// nothing value.
-#define ENCODED_NOTHING ((encoded_value_t) ((tpNothing << kDomainTagSize) | vdCustomTagged))
-
-// Returns true iff the given value is the nothing value.
-static inline bool is_nothing(value_t value) {
-  return value.encoded == ENCODED_NOTHING;
-}
-
 
 // --- N u l l ---
 

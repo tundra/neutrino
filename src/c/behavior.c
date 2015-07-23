@@ -399,9 +399,12 @@ static void condition_print_on(value_t value, string_buffer_t *buf) {
       unexpected_type_info_codec_t codec;
       codec.encoded = details;
       value_type_info_t expected = value_type_info_decode(codec.decoded.expected);
+      if (!value_type_info_is_empty(expected))
+        // It's okay to leave out the expected type, we skip printing it if it's
+        // not there.
+        string_buffer_printf(buf, "expected: %s, ", value_type_info_name(expected));
       value_type_info_t found = value_type_info_decode(codec.decoded.found);
-      string_buffer_printf(buf, "expected: %s, found: %s", value_type_info_name(expected),
-          value_type_info_name(found));
+      string_buffer_printf(buf, "found: %s", value_type_info_name(found));
       break;
     }
     case ccUncaughtSignal: {

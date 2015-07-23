@@ -88,6 +88,7 @@ int get_value_domain_ordinal(value_domain_t domain);
   F(FatalError)                                                                \
   F(ForceValidate)                                                             \
   F(HeapExhausted)                                                             \
+  F(IntegerOutOfRange)                                                         \
   F(InternalFamily)                                                            \
   F(InvalidCast)                                                               \
   F(InvalidInput)                                                              \
@@ -174,6 +175,30 @@ static bool is_same_value(value_t a, value_t b) {
   return a.encoded == b.encoded;
 }
 
+static inline bool in_domain(value_domain_t domain, value_t value) {
+  return get_value_domain(value) == domain;
+}
+
+// Is the given value a tagged integer?
+static inline bool is_integer(value_t value) {
+  return in_domain(vdInteger, value);
+}
+
+// Returns true iff the given value is a condition.
+static inline bool is_condition(value_t value) {
+  return in_domain(vdCondition, value);
+}
+
+// Returns true iff the given value is a heap object.
+static inline bool is_heap_object(value_t value) {
+  return in_domain(vdHeapObject, value);
+}
+
+// Returns true iff the given value is a derived object.
+static inline bool is_derived_object(value_t value) {
+  return in_domain(vdDerivedObject, value);
+}
+
 
 /// ## Integers
 ///
@@ -224,7 +249,7 @@ static value_t new_integer(int64_t value) {
 
 // Returns the integer value stored in a tagged integer.
 static int64_t get_integer_value(value_t value) {
-  CHECK_DOMAIN(vdInteger, value);
+  CHECK_DOMAIN_RAW(vdInteger, value);
   return value.as_integer.data >> kDomainTagSize;
 }
 
@@ -268,17 +293,17 @@ static value_t decode_value(encoded_value_t value) {
 // Given a moved object forward pointer returns the object this object has been
 // moved to.
 static value_t get_moved_object_target(value_t value) {
-  CHECK_DOMAIN(vdMovedObject, value);
+  CHECK_DOMAIN_RAW(vdMovedObject, value);
   value_t target = decode_value(value.encoded - (vdMovedObject-vdHeapObject));
-  CHECK_DOMAIN(vdHeapObject, target);
+  CHECK_DOMAIN_RAW(vdHeapObject, target);
   return target;
 }
 
 // Creates a new moved object pointer pointing to the given target object.
 static value_t new_moved_object(value_t target) {
-  CHECK_DOMAIN(vdHeapObject, target);
+  CHECK_DOMAIN_RAW(vdHeapObject, target);
   value_t moved = decode_value(target.encoded + (vdMovedObject-vdHeapObject));
-  CHECK_DOMAIN(vdMovedObject, moved);
+  CHECK_DOMAIN_RAW(vdMovedObject, moved);
   return moved;
 }
 
@@ -569,7 +594,7 @@ static value_t pointer_to_value_bit_cast(void *ptr) {
 // Converts a pointer to an object into an tagged object value pointer.
 static value_t new_heap_object(address_t addr) {
   value_t result = pointer_to_value_bit_cast(addr + vdHeapObject);
-  CHECK_DOMAIN(vdHeapObject, result);
+  CHECK_DOMAIN_RAW(vdHeapObject, result);
   return result;
 }
 
@@ -804,16 +829,31 @@ static value_t new_custom_tagged(custom_tagged_phylum_t phylum, int64_t payload)
 
 // Returns the phylum of a custom tagged value.
 static custom_tagged_phylum_t get_custom_tagged_phylum(value_t value) {
-  CHECK_DOMAIN(vdCustomTagged, value);
+  CHECK_DOMAIN_RAW(vdCustomTagged, value);
   uint64_t data = value.as_custom_tagged.data;
   return (custom_tagged_phylum_t) ((data >> kDomainTagSize) & kCustomTaggedPhylumTagMask);
 }
 
 // Returns the payload of a custom tagged value.
 static int64_t get_custom_tagged_payload(value_t value) {
-  CHECK_DOMAIN(vdCustomTagged, value);
+  CHECK_DOMAIN_RAW(vdCustomTagged, value);
   int64_t data = value.as_custom_tagged.data;
   return (data >> (kCustomTaggedPhylumTagSize + kDomainTagSize));
+}
+
+// A compile-time constant that is equal to the encoded representation of the
+// nothing value.
+#define ENCODED_NOTHING ((encoded_value_t) ((tpNothing << kDomainTagSize) | vdCustomTagged))
+
+// Returns true iff the given value is the nothing value.
+static inline bool is_nothing(value_t value) {
+  return value.encoded == ENCODED_NOTHING;
+}
+
+// Returns true iff the given value is either nothing or a value within the
+// given domain.
+static inline bool in_domain_opt(value_domain_t domain, value_t value) {
+  return is_nothing(value) || in_domain(domain, value);
 }
 
 
@@ -961,6 +1001,16 @@ value_type_info_t value_type_info_decode(uint16_t encoded);
 // Returns a string description of the given value type info.
 const char *value_type_info_name(value_type_info_t info);
 
+// Returns a type info struct that will be recognized as empty by
+// value_type_info_is_empty. Don't rely on the values of the struct's fields
+// of an empty type info.
+static inline value_type_info_t value_type_info_empty() {
+  value_type_info_t result;
+  result.domain = __vdLast__;
+  result.flavor.encoded = 0;
+  return result;
+}
+
 // Returns a type info struct that describes a member of the given family.
 static inline value_type_info_t value_type_info_for_family(heap_object_family_t family) {
   value_type_info_t result;
@@ -968,6 +1018,8 @@ static inline value_type_info_t value_type_info_for_family(heap_object_family_t 
   result.flavor.family = family;
   return result;
 }
+
+bool value_type_info_is_empty(value_type_info_t info);
 
 
 /// ## Species
@@ -1068,6 +1120,17 @@ species_division_t get_species_division(value_t value);
 
 // Returns the division the given object belongs to.
 species_division_t get_heap_object_division(value_t value);
+
+// Returns true iff the given value is an object within the given family.
+static inline bool in_family(heap_object_family_t family, value_t value) {
+  return is_heap_object(value) && (get_heap_object_family(value) == family);
+}
+
+// Returns true iff the given value is either nothing or an object within the
+// given family.
+static inline bool in_family_opt(heap_object_family_t family, value_t value) {
+  return is_nothing(value) || in_family(family, value);
+}
 
 
 // --- C o m p a c t   s p e c i e s ---

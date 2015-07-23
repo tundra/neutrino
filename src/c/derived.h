@@ -43,7 +43,7 @@ genus_descriptor_t *get_genus_descriptor(derived_object_genus_t genus);
 // pointer.
 static value_t new_derived_object(address_t addr) {
   value_t result = pointer_to_value_bit_cast(addr + vdDerivedObject);
-  CHECK_DOMAIN(vdDerivedObject, result);
+  CHECK_DOMAIN_RAW(vdDerivedObject, result);
   return result;
 }
 

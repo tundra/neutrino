@@ -34,7 +34,7 @@ static value_t condition_and(value_t a, value_t b) {
 
 // Returns the cause of a condition.
 static condition_cause_t get_condition_cause(value_t value) {
-  CHECK_DOMAIN(vdCondition, value);
+  CHECK_DOMAIN_RAW(vdCondition, value);
   return value.as_condition.cause;
 }
 
@@ -43,7 +43,7 @@ const char *get_condition_cause_name(condition_cause_t cause);
 
 // Returns the details associated with the given condition.
 static uint32_t get_condition_details(value_t value) {
-  CHECK_DOMAIN(vdCondition, value);
+  CHECK_DOMAIN_RAW(vdCondition, value);
   return value.as_condition.details;
 }
 
@@ -168,6 +168,13 @@ static value_t new_unexpected_type_condition(value_type_info_t expected,
   codec.decoded.expected = value_type_info_encode(expected);
   codec.decoded.found = value_type_info_encode(found);
   return new_condition_with_details(ccUnexpectedType, codec.encoded);
+}
+
+// Returns a new condition signaling a value that can't be represented as a
+// tagged integer.
+static value_t new_integer_out_of_range_condition(int64_t value) {
+  // TODO: maybe report the magnitude of the value?
+  return new_condition(ccIntegerOutOfRange);
 }
 
 // Converter to get and set details for invalid input as a uint32_t.

@@ -19,6 +19,7 @@ test_file_names = [
   "test_process.cc",
   "test_runtime.cc",
   "test_safe.cc",
+  "test_sentry.cc",
   "test_serialize.cc",
   "test_syntax.cc",
   "test_tagged.cc",
