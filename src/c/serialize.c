@@ -412,9 +412,8 @@ static value_t seed_deserialize(size_t headerc, size_t fieldc, deserialize_state
 
 static value_t reference_deserialize(uint64_t offset, deserialize_state_t *state) {
   int64_t index = state->object_offset - offset - 1;
-  if (!fits_as_tagged_integer(index))
-    return new_integer_out_of_range_condition(index);
-  value_t result = get_id_hash_map_at(deref(state->s_ref_map), new_integer(index));
+  TRY_DEF(key, try_new_integer(index));
+  value_t result = get_id_hash_map_at(deref(state->s_ref_map), key);
   return in_condition_cause(ccNotFound, result)
       ? new_condition_with_details(ccUnknownReference, (int32_t) index)
       : result;
@@ -430,9 +429,7 @@ static value_t value_deserialize(deserialize_state_t *state) {
   state->cursor += instr.size;
   switch (instr.opcode) {
     case PTON_OPCODE_INT64:
-      return fits_as_tagged_integer(instr.payload.int64_value)
-          ? new_integer(instr.payload.int64_value)
-          : new_integer_out_of_range_condition(instr.payload.int64_value);
+      return try_new_integer(instr.payload.int64_value);
     case PTON_OPCODE_NULL:
       return null();
     case PTON_OPCODE_BOOL:

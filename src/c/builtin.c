@@ -4,7 +4,6 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "builtin.h"
-#include "check.h"
 #include "interp.h"
 #include "try-inl.h"
 #include "utils/log.h"

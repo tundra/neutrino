@@ -3,7 +3,6 @@
 
 #include "alloc.h"
 #include "behavior.h"
-#include "check.h"
 #include "codegen.h"
 #include "try-inl.h"
 #include "utils/log.h"

@@ -2,7 +2,6 @@
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "behavior.h"
-#include "check.h"
 #include "heap.h"
 #include "try-inl.h"
 #include "utils/check.h"

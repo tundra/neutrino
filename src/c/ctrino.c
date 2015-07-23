@@ -4,7 +4,6 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "builtin.h"
-#include "check.h"
 #include "ctrino.h"
 #include "freeze.h"
 #include "io.h"

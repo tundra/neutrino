@@ -4,7 +4,6 @@
 #include "alloc.h"
 #include "behavior.h"
 #include "bind.h"
-#include "check.h"
 #include "freeze.h"
 #include "interp.h"
 #include "runtime.h"

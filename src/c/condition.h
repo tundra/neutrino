@@ -177,6 +177,14 @@ static value_t new_integer_out_of_range_condition(int64_t value) {
   return new_condition(ccIntegerOutOfRange);
 }
 
+// If the given value fits in a tagged integer returns one, otherwise returns
+// a signal.
+static value_t try_new_integer(int64_t value) {
+  return fits_as_tagged_integer(value)
+      ? new_integer(value)
+      : new_integer_out_of_range_condition(value);
+}
+
 // Converter to get and set details for invalid input as a uint32_t.
 typedef union {
   char decoded[4];

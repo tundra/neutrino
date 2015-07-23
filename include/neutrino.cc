@@ -9,7 +9,6 @@
 BEGIN_C_INCLUDES
 #include "plugin.h"
 #include "runtime.h"
-#include "try-inl.h"
 #include "utils/log.h"
 #include "value-inl.h"
 END_C_INCLUDES

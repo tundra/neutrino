@@ -7,7 +7,6 @@
 #ifndef _DERIVED_INL
 #define _DERIVED_INL
 
-#include "check.h"
 #include "derived.h"
 #include "utils.h"
 #include "utils/check.h"
