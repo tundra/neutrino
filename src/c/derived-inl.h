@@ -36,14 +36,31 @@ VALIDATE(in_genus(dgGenus, EXPR))
 #define VALIDATE_GENUS_OPT(dgGenus, EXPR)                                      \
 VALIDATE(in_genus_opt(dgGenus, EXPR))
 
-// Accessor check that indicates that the argument should belong to the genus
-// specified in the argument.
-#define acInGenus(dgGenus, VALUE)                                              \
-  CHECK_GENUS(dgGenus, (VALUE))
+// Is the value in the given genus?
+#define snInGenus(dgGenus) (_, in_genus_sentry_impl, dgGenus, "inGenus(" #dgGenus ")")
 
-// Accessor check that indicates that the argument should be nothing or belong
-// to the genus specified in the argument.
-#define acInGenusOpt(dgGenus) (CHECK_GENUS_OPT, dgGenus)
+static inline bool in_genus_sentry_impl(derived_object_genus_t genus, value_t self, value_t *error_out) {
+  if (!in_genus(genus, self)) {
+    *error_out = new_unexpected_type_condition(value_type_info_for_genus(genus),
+        get_value_type_info(self));
+    return false;
+  } else {
+    return true;
+  }
+}
+
+// Is the value nothing or in a the given genus?
+#define snInGenusOpt(dgGenus) (_, in_genus_opt_sentry_impl, dgGenus, "inGenusOpt(" #dgGenus ")")
+
+static inline bool in_genus_opt_sentry_impl(derived_object_genus_t genus, value_t self, value_t *error_out) {
+  if (!in_genus_opt(genus, self)) {
+    *error_out = new_unexpected_type_condition(value_type_info_for_genus(genus),
+        get_value_type_info(self));
+    return false;
+  } else {
+    return true;
+  }
+}
 
 // Returns the derived object descriptor for the given derived object.
 static genus_descriptor_t *get_derived_object_descriptor(value_t self) {

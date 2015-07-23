@@ -363,13 +363,13 @@ void get_instance_species_layout(value_t species, heap_object_layout_t *layout) 
 }
 
 CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance,
-    acInFamily(ofType), PrimaryTypeField, primary_type_field);
+    snInFamily(ofType), PrimaryTypeField, primary_type_field);
 CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance,
-    acInFamilyOpt(ofInstanceManager), Manager, manager);
+    snInFamilyOpt(ofInstanceManager), Manager, manager);
 CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance,
-    acInDomain(vdInteger), RawMode, raw_mode);
+    snInDomain(vdInteger), RawMode, raw_mode);
 CHECKED_SPECIES_ACCESSORS_IMPL(Instance, instance, Instance, instance,
-    acInFamilyOpt(ofArray), Derivatives, derivatives);
+    snInFamilyOpt(ofArray), Derivatives, derivatives);
 
 
 // --- M o d a l   s p e c i e s ---
@@ -567,7 +567,7 @@ GET_FAMILY_PRIMARY_TYPE_IMPL(ascii_string_view);
 FIXED_GET_MODE_IMPL(ascii_string_view, vmDeepFrozen);
 TRIVIAL_PRINT_ON_IMPL(AsciiStringView, ascii_string_view);
 
-FROZEN_ACCESSORS_IMPL(AsciiStringView, ascii_string_view, acInFamily(ofUtf8),
+FROZEN_ACCESSORS_IMPL(AsciiStringView, ascii_string_view, snInFamily(ofUtf8),
     Value, value);
 
 value_t ascii_string_view_validate(value_t self) {
@@ -1041,7 +1041,7 @@ value_t get_tuple_at(value_t self, int64_t index) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(array_buffer);
 NO_BUILTIN_METHODS(array_buffer);
 
-ACCESSORS_IMPL(ArrayBuffer, array_buffer, acInFamily(ofArray), Elements, elements);
+ACCESSORS_IMPL(ArrayBuffer, array_buffer, snInFamily(ofArray), Elements, elements);
 INTEGER_ACCESSORS_IMPL(ArrayBuffer, array_buffer, Length, length);
 
 value_t array_buffer_validate(value_t self) {
@@ -1177,7 +1177,7 @@ int64_t get_pair_array_buffer_length(value_t self) {
 TRIVIAL_PRINT_ON_IMPL(FifoBuffer, fifo_buffer);
 FIXED_GET_MODE_IMPL(fifo_buffer, vmMutable);
 
-ACCESSORS_IMPL(FifoBuffer, fifo_buffer, acInFamily(ofArray), Nodes, nodes);
+ACCESSORS_IMPL(FifoBuffer, fifo_buffer, snInFamily(ofArray), Nodes, nodes);
 INTEGER_ACCESSORS_IMPL(FifoBuffer, fifo_buffer, Size, size);
 INTEGER_ACCESSORS_IMPL(FifoBuffer, fifo_buffer, Width, width);
 
@@ -1387,7 +1387,7 @@ void fifo_buffer_iter_take_current(fifo_buffer_iter_t *iter) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(id_hash_map);
 NO_BUILTIN_METHODS(id_hash_map);
 
-ACCESSORS_IMPL(IdHashMap, id_hash_map, acInFamily(ofArray), EntryArray, entry_array);
+ACCESSORS_IMPL(IdHashMap, id_hash_map, snInFamily(ofArray), EntryArray, entry_array);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Size, size);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, Capacity, capacity);
 INTEGER_ACCESSORS_IMPL(IdHashMap, id_hash_map, OccupiedCount, occupied_count);
@@ -1718,7 +1718,7 @@ GET_FAMILY_PRIMARY_TYPE_IMPL(key);
 NO_BUILTIN_METHODS(key);
 
 INTEGER_ACCESSORS_IMPL(Key, key, Id, id);
-ACCESSORS_IMPL(Key, key, acNoCheck, DisplayName, display_name);
+ACCESSORS_IMPL(Key, key, snNoCheck, DisplayName, display_name);
 
 value_t key_validate(value_t value) {
   VALIDATE_FAMILY(ofKey, value);
@@ -1772,7 +1772,7 @@ value_t plankton_set_key_contents(value_t instance, runtime_t *runtime,
 
 // --- I n s t a n c e ---
 
-ACCESSORS_IMPL(Instance, instance, acInFamily(ofIdHashMap), Fields, fields);
+ACCESSORS_IMPL(Instance, instance, snInFamily(ofIdHashMap), Fields, fields);
 NO_BUILTIN_METHODS(instance);
 
 value_t get_instance_field(value_t value, value_t key) {
@@ -1844,7 +1844,7 @@ value_t ensure_instance_owned_values_frozen(runtime_t *runtime, value_t self) {
 
 // --- I n s t a n c e   m a n a g e r ---
 
-FROZEN_ACCESSORS_IMPL(InstanceManager, instance_manager, acNoCheck, DisplayName, display_name);
+FROZEN_ACCESSORS_IMPL(InstanceManager, instance_manager, snNoCheck, DisplayName, display_name);
 GET_FAMILY_PRIMARY_TYPE_IMPL(instance_manager);
 FIXED_GET_MODE_IMPL(instance_manager, vmDeepFrozen);
 
@@ -1877,9 +1877,9 @@ value_t add_instance_manager_builtin_implementations(runtime_t *runtime, safe_va
 
 // --- F a c t o r y ---
 
-FROZEN_ACCESSORS_IMPL(Factory, factory, acInFamily(ofVoidP), NewInstance, new_instance);
-FROZEN_ACCESSORS_IMPL(Factory, factory, acInFamily(ofVoidP), SetContents, set_contents);
-FROZEN_ACCESSORS_IMPL(Factory, factory, acInFamily(ofUtf8), Name, name);
+FROZEN_ACCESSORS_IMPL(Factory, factory, snInFamily(ofVoidP), NewInstance, new_instance);
+FROZEN_ACCESSORS_IMPL(Factory, factory, snInFamily(ofVoidP), SetContents, set_contents);
+FROZEN_ACCESSORS_IMPL(Factory, factory, snInFamily(ofUtf8), Name, name);
 FIXED_GET_MODE_IMPL(factory, vmDeepFrozen);
 
 value_t factory_validate(value_t value) {
@@ -1902,8 +1902,8 @@ void factory_print_on(value_t value, print_on_context_t *context) {
 
 // --- C o d e   b l o c k ---
 
-ACCESSORS_IMPL(CodeBlock, code_block, acInFamily(ofBlob), Bytecode, bytecode);
-ACCESSORS_IMPL(CodeBlock, code_block, acInFamily(ofArray), ValuePool, value_pool);
+ACCESSORS_IMPL(CodeBlock, code_block, snInFamily(ofBlob), Bytecode, bytecode);
+ACCESSORS_IMPL(CodeBlock, code_block, snInFamily(ofArray), ValuePool, value_pool);
 INTEGER_ACCESSORS_IMPL(CodeBlock, code_block, HighWaterMark, high_water_mark);
 
 value_t code_block_validate(value_t value) {
@@ -1931,7 +1931,7 @@ value_t ensure_code_block_owned_values_frozen(runtime_t *runtime, value_t self) 
 GET_FAMILY_PRIMARY_TYPE_IMPL(type);
 NO_BUILTIN_METHODS(type);
 
-ACCESSORS_IMPL(Type, type, acNoCheck, DisplayName, display_name);
+ACCESSORS_IMPL(Type, type, snNoCheck, DisplayName, display_name);
 
 value_t type_validate(value_t value) {
   VALIDATE_FAMILY(ofType, value);
@@ -1968,8 +1968,8 @@ value_t plankton_set_type_contents(value_t object, runtime_t *runtime,
 NO_BUILTIN_METHODS(argument_map_trie);
 TRIVIAL_PRINT_ON_IMPL(ArgumentMapTrie, argument_map_trie);
 
-ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, acInFamily(ofArray), Value, value);
-ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, acInFamily(ofArrayBuffer),
+ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, snInFamily(ofArray), Value, value);
+ACCESSORS_IMPL(ArgumentMapTrie, argument_map_trie, snInFamily(ofArrayBuffer),
     Children, children);
 
 value_t argument_map_trie_validate(value_t value) {
@@ -2023,8 +2023,8 @@ value_t ensure_argument_map_trie_owned_values_frozen(runtime_t *runtime,
 
 // --- N a m e s p a c e ---
 
-ACCESSORS_IMPL(Namespace, namespace, acInFamilyOpt(ofIdHashMap), Bindings, bindings);
-ACCESSORS_IMPL(Namespace, namespace, acNoCheck, Value, value);
+ACCESSORS_IMPL(Namespace, namespace, snInFamilyOpt(ofIdHashMap), Bindings, bindings);
+ACCESSORS_IMPL(Namespace, namespace, snNoCheck, Value, value);
 
 value_t namespace_validate(value_t self) {
   VALIDATE_FAMILY(ofNamespace, self);
@@ -2096,8 +2096,8 @@ void namespace_print_on(value_t value, print_on_context_t *context) {
 
 FIXED_GET_MODE_IMPL(module, vmMutable);
 
-ACCESSORS_IMPL(Module, module, acInFamilyOpt(ofPath), Path, path);
-ACCESSORS_IMPL(Module, module, acInFamily(ofArrayBuffer), Fragments, fragments);
+ACCESSORS_IMPL(Module, module, snInFamilyOpt(ofPath), Path, path);
+ACCESSORS_IMPL(Module, module, snInFamily(ofArrayBuffer), Fragments, fragments);
 
 value_t module_validate(value_t self) {
   VALIDATE_FAMILY(ofModule, self);
@@ -2238,19 +2238,19 @@ value_t ensure_module_owned_values_frozen(runtime_t *runtime, value_t self) {
 
 // --- M o d u l e   f r a g m e n t ---
 
-ACCESSORS_IMPL(ModuleFragment, module_fragment, acInPhylumOpt(tpStageOffset),
+ACCESSORS_IMPL(ModuleFragment, module_fragment, snInPhylumOpt(tpStageOffset),
     Stage, stage);
-ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt(ofPath), Path,
+ACCESSORS_IMPL(ModuleFragment, module_fragment, snInFamilyOpt(ofPath), Path,
     path);
-ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt(ofModuleFragment),
+ACCESSORS_IMPL(ModuleFragment, module_fragment, snInFamilyOpt(ofModuleFragment),
     Predecessor, predecessor);
-ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt(ofNamespace),
+ACCESSORS_IMPL(ModuleFragment, module_fragment, snInFamilyOpt(ofNamespace),
     Namespace, namespace);
-ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt(ofMethodspace),
+ACCESSORS_IMPL(ModuleFragment, module_fragment, snInFamilyOpt(ofMethodspace),
     Methodspace, methodspace);
-ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamilyOpt(ofIdHashMap),
+ACCESSORS_IMPL(ModuleFragment, module_fragment, snInFamilyOpt(ofIdHashMap),
     Imports, imports);
-ACCESSORS_IMPL(ModuleFragment, module_fragment, acInFamily(ofModuleFragmentPrivate),
+ACCESSORS_IMPL(ModuleFragment, module_fragment, snInFamily(ofModuleFragmentPrivate),
     Private, private);
 
 void set_module_fragment_epoch(value_t self, module_fragment_epoch_t value) {
@@ -2302,7 +2302,7 @@ value_t get_module_fragment_predecessor_at(value_t self, value_t stage) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(module_fragment_private);
 
 ACCESSORS_IMPL(ModuleFragmentPrivate, module_fragment_private,
-    acInFamilyOpt(ofModuleFragment), Owner, owner);
+    snInFamilyOpt(ofModuleFragment), Owner, owner);
 
 value_t module_fragment_private_validate(value_t value) {
   VALIDATE_FAMILY(ofModuleFragmentPrivate, value);
@@ -2379,8 +2379,8 @@ value_t add_module_fragment_private_builtin_implementations(runtime_t *runtime,
 GET_FAMILY_PRIMARY_TYPE_IMPL(path);
 NO_BUILTIN_METHODS(path);
 
-ACCESSORS_IMPL(Path, path, acNoCheck, RawHead, raw_head);
-ACCESSORS_IMPL(Path, path, acInFamilyOpt(ofPath), RawTail, raw_tail);
+ACCESSORS_IMPL(Path, path, snNoCheck, RawHead, raw_head);
+ACCESSORS_IMPL(Path, path, snInFamilyOpt(ofPath), RawTail, raw_tail);
 
 value_t path_validate(value_t self) {
   VALIDATE_FAMILY(ofPath, self);
@@ -2485,8 +2485,8 @@ value_t path_ordering_compare(value_t a, value_t b) {
 
 // --- I d e n t i f i e r ---
 
-ACCESSORS_IMPL(Identifier, identifier, acInFamilyOpt(ofPath), Path, path);
-ACCESSORS_IMPL(Identifier, identifier, acNoCheck, Stage, stage);
+ACCESSORS_IMPL(Identifier, identifier, snInFamilyOpt(ofPath), Path, path);
+ACCESSORS_IMPL(Identifier, identifier, snNoCheck, Stage, stage);
 
 value_t identifier_validate(value_t self) {
   VALIDATE_FAMILY(ofIdentifier, self);
@@ -2556,7 +2556,7 @@ value_t identifier_ordering_compare(value_t a, value_t b) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(function);
 NO_BUILTIN_METHODS(function);
 
-ACCESSORS_IMPL(Function, function, acNoCheck, DisplayName, display_name);
+ACCESSORS_IMPL(Function, function, snNoCheck, DisplayName, display_name);
 
 value_t function_validate(value_t self) {
   VALIDATE_FAMILY(ofFunction, self);
@@ -2577,8 +2577,8 @@ void function_print_on(value_t value, print_on_context_t *context) {
 
 FIXED_GET_MODE_IMPL(seed, vmMutable);
 
-ACCESSORS_IMPL(Seed, seed, acNoCheck, Header, header);
-ACCESSORS_IMPL(Seed, seed, acNoCheck, Payload, payload);
+ACCESSORS_IMPL(Seed, seed, snNoCheck, Header, header);
+ACCESSORS_IMPL(Seed, seed, snNoCheck, Payload, payload);
 
 value_t seed_validate(value_t self) {
   VALIDATE_FAMILY(ofSeed, self);
@@ -2606,9 +2606,9 @@ void seed_print_on(value_t value, print_on_context_t *context) {
 
 FIXED_GET_MODE_IMPL(decimal_fraction, vmDeepFrozen);
 
-FROZEN_ACCESSORS_IMPL(DecimalFraction, decimal_fraction, acNoCheck, Numerator, numerator);
-FROZEN_ACCESSORS_IMPL(DecimalFraction, decimal_fraction, acNoCheck, Denominator, denominator);
-FROZEN_ACCESSORS_IMPL(DecimalFraction, decimal_fraction, acNoCheck, Precision, precision);
+FROZEN_ACCESSORS_IMPL(DecimalFraction, decimal_fraction, snNoCheck, Numerator, numerator);
+FROZEN_ACCESSORS_IMPL(DecimalFraction, decimal_fraction, snNoCheck, Denominator, denominator);
+FROZEN_ACCESSORS_IMPL(DecimalFraction, decimal_fraction, snNoCheck, Precision, precision);
 
 value_t decimal_fraction_validate(value_t self) {
   VALIDATE_FAMILY(ofDecimalFraction, self);
@@ -2650,7 +2650,7 @@ value_t plankton_new_decimal_fraction(runtime_t *runtime) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(hard_field);
 FIXED_GET_MODE_IMPL(hard_field, vmDeepFrozen);
 
-FROZEN_ACCESSORS_IMPL(HardField, hard_field, acNoCheck, DisplayName, display_name);
+FROZEN_ACCESSORS_IMPL(HardField, hard_field, snNoCheck, DisplayName, display_name);
 
 value_t hard_field_validate(value_t self) {
   VALIDATE_FAMILY(ofHardField, self);
@@ -2703,8 +2703,8 @@ value_t add_hard_field_builtin_implementations(runtime_t *runtime, safe_value_t 
 GET_FAMILY_PRIMARY_TYPE_IMPL(soft_field);
 FIXED_GET_MODE_IMPL(soft_field, vmMutable);
 
-ACCESSORS_IMPL(SoftField, soft_field, acNoCheck, DisplayName, display_name);
-ACCESSORS_IMPL(SoftField, soft_field, acInFamily(ofIdHashMap), OverlayMap, overlay_map);
+ACCESSORS_IMPL(SoftField, soft_field, snNoCheck, DisplayName, display_name);
+ACCESSORS_IMPL(SoftField, soft_field, snInFamily(ofIdHashMap), OverlayMap, overlay_map);
 
 value_t soft_field_validate(value_t self) {
   VALIDATE_FAMILY(ofSoftField, self);
@@ -2767,7 +2767,7 @@ value_t add_soft_field_builtin_implementations(runtime_t *runtime, safe_value_t 
 
 FIXED_GET_MODE_IMPL(reference, vmMutable);
 
-ACCESSORS_IMPL(Reference, reference, acNoCheck, Value, value);
+ACCESSORS_IMPL(Reference, reference, snNoCheck, Value, value);
 
 value_t reference_validate(value_t self) {
   VALIDATE_FAMILY(ofReference, self);
@@ -2786,7 +2786,7 @@ void reference_print_on(value_t self, print_on_context_t *context) {
 TRIVIAL_PRINT_ON_IMPL(Ambience, ambience);
 FIXED_GET_MODE_IMPL(ambience, vmMutable);
 
-ACCESSORS_IMPL(Ambience, ambience, acInFamily(ofMethodspace), Methodspace,
+ACCESSORS_IMPL(Ambience, ambience, snInFamily(ofMethodspace), Methodspace,
     methodspace);
 
 value_t ambience_validate(value_t self) {
@@ -2817,9 +2817,9 @@ runtime_t *get_ambience_runtime(value_t self) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(hash_oracle);
 TRIVIAL_PRINT_ON_IMPL(HashOracle, hash_oracle);
 
-ACCESSORS_IMPL(HashOracle, hash_oracle, acInFamily(ofHashSource), Source,
+ACCESSORS_IMPL(HashOracle, hash_oracle, snInFamily(ofHashSource), Source,
     source);
-FROZEN_ACCESSORS_IMPL(HashOracle, hash_oracle, acInDomainOpt(vdInteger), Limit,
+FROZEN_ACCESSORS_IMPL(HashOracle, hash_oracle, snInDomainOpt(vdInteger), Limit,
     limit);
 
 value_t hash_oracle_validate(value_t self) {

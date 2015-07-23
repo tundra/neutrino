@@ -9,6 +9,7 @@
 #define _SYNC
 
 #include "plugin.h"
+#include "tagged-inl.h"
 #include "undertaking.h"
 #include "value.h"
 

@@ -25,7 +25,7 @@ sigmap_input_layout_t sigmap_input_layout_new(value_t ambience, value_t tags,
 
 // --- S i g n a t u r e ---
 
-ACCESSORS_IMPL(Signature, signature, acInFamilyOpt(ofArray), Tags, tags);
+ACCESSORS_IMPL(Signature, signature, snInFamilyOpt(ofArray), Tags, tags);
 INTEGER_ACCESSORS_IMPL(Signature, signature, ParameterCount, parameter_count);
 INTEGER_ACCESSORS_IMPL(Signature, signature, MandatoryCount, mandatory_count);
 INTEGER_ACCESSORS_IMPL(Signature, signature, AllowExtra, allow_extra);
@@ -98,8 +98,8 @@ join_status_t join_score_vectors(value_t *target, value_t *source, size_t length
 
 // --- P a r a m e t e r ---
 
-ACCESSORS_IMPL(Parameter, parameter, acInFamilyOpt(ofGuard), Guard, guard);
-ACCESSORS_IMPL(Parameter, parameter, acInFamilyOpt(ofArray), Tags, tags);
+ACCESSORS_IMPL(Parameter, parameter, snInFamilyOpt(ofGuard), Guard, guard);
+ACCESSORS_IMPL(Parameter, parameter, snInFamilyOpt(ofArray), Tags, tags);
 INTEGER_ACCESSORS_IMPL(Parameter, parameter, IsOptional, is_optional);
 INTEGER_ACCESSORS_IMPL(Parameter, parameter, Index, index);
 
@@ -123,7 +123,7 @@ void parameter_print_on(value_t self, print_on_context_t *context) {
 // --- G u a r d ---
 
 ENUM_ACCESSORS_IMPL(Guard, guard, guard_type_t, Type, type);
-ACCESSORS_IMPL(Guard, guard, acNoCheck, Value, value);
+ACCESSORS_IMPL(Guard, guard, snNoCheck, Value, value);
 
 value_t guard_validate(value_t value) {
   VALIDATE_FAMILY(ofGuard, value);
@@ -203,12 +203,12 @@ void guard_print_on(value_t self, print_on_context_t *context) {
 
 // ## Method
 
-ACCESSORS_IMPL(Method, method, acInFamilyOpt(ofSignature), Signature, signature);
-ACCESSORS_IMPL(Method, method, acInFamily(ofFreezeCheat), CodePtr, code_ptr);
-ACCESSORS_IMPL(Method, method, acInFamilyOpt(ofMethodAst), Syntax, syntax);
-ACCESSORS_IMPL(Method, method, acInFamilyOpt(ofModuleFragment), ModuleFragment,
+ACCESSORS_IMPL(Method, method, snInFamilyOpt(ofSignature), Signature, signature);
+ACCESSORS_IMPL(Method, method, snInFamily(ofFreezeCheat), CodePtr, code_ptr);
+ACCESSORS_IMPL(Method, method, snInFamilyOpt(ofMethodAst), Syntax, syntax);
+ACCESSORS_IMPL(Method, method, snInFamilyOpt(ofModuleFragment), ModuleFragment,
     module_fragment);
-ACCESSORS_IMPL(Method, method, acInPhylum(tpFlagSet), Flags, flags);
+ACCESSORS_IMPL(Method, method, snInPhylum(tpFlagSet), Flags, flags);
 
 value_t method_validate(value_t self) {
   VALIDATE_FAMILY(ofMethod, self);
@@ -251,7 +251,7 @@ value_t compile_method_ast_to_method(runtime_t *runtime, value_t method_ast,
 
 TRIVIAL_PRINT_ON_IMPL(SignatureMap, signature_map);
 
-ACCESSORS_IMPL(SignatureMap, signature_map, acInFamily(ofArrayBuffer), Entries,
+ACCESSORS_IMPL(SignatureMap, signature_map, snInFamily(ofArrayBuffer), Entries,
     entries);
 
 value_t signature_map_validate(value_t value) {
@@ -277,13 +277,13 @@ value_t ensure_signature_map_owned_values_frozen(runtime_t *runtime, value_t sel
 
 // --- M e t h o d   s p a c e ---
 
-ACCESSORS_IMPL(Methodspace, methodspace, acInFamily(ofIdHashMap), Inheritance,
+ACCESSORS_IMPL(Methodspace, methodspace, snInFamily(ofIdHashMap), Inheritance,
     inheritance);
-ACCESSORS_IMPL(Methodspace, methodspace, acInFamily(ofSignatureMap), Methods,
+ACCESSORS_IMPL(Methodspace, methodspace, snInFamily(ofSignatureMap), Methods,
     methods);
-ACCESSORS_IMPL(Methodspace, methodspace, acInFamilyOpt(ofMethodspace), Parent,
+ACCESSORS_IMPL(Methodspace, methodspace, snInFamilyOpt(ofMethodspace), Parent,
     parent);
-ACCESSORS_IMPL(Methodspace, methodspace, acInFamily(ofFreezeCheat), CachePtr,
+ACCESSORS_IMPL(Methodspace, methodspace, snInFamily(ofFreezeCheat), CachePtr,
     cache_ptr);
 
 value_t methodspace_validate(value_t self) {
@@ -426,9 +426,9 @@ void methodspace_print_on(value_t self, print_on_context_t *context) {
 
 /// ## Call tags
 
-ACCESSORS_IMPL(CallTags, call_tags, acInFamily(ofArray), Entries, entries);
-ACCESSORS_IMPL(CallTags, call_tags, acInDomainOpt(vdInteger), SubjectOffset, subject_offset);
-ACCESSORS_IMPL(CallTags, call_tags, acInDomainOpt(vdInteger), SelectorOffset, selector_offset);
+ACCESSORS_IMPL(CallTags, call_tags, snInFamily(ofArray), Entries, entries);
+ACCESSORS_IMPL(CallTags, call_tags, snInDomainOpt(vdInteger), SubjectOffset, subject_offset);
+ACCESSORS_IMPL(CallTags, call_tags, snInDomainOpt(vdInteger), SelectorOffset, selector_offset);
 
 value_t call_tags_validate(value_t self) {
   VALIDATE_FAMILY(ofCallTags, self);
@@ -538,8 +538,8 @@ value_t call_tags_identity_compare(value_t a, value_t b, cycle_detector_t *outer
 GET_FAMILY_PRIMARY_TYPE_IMPL(call_data);
 TRIVIAL_PRINT_ON_IMPL(CallData, call_data);
 
-ACCESSORS_IMPL(CallData, call_data, acInFamily(ofCallTags), Tags, tags);
-ACCESSORS_IMPL(CallData, call_data, acInFamily(ofArray), Values, values);
+ACCESSORS_IMPL(CallData, call_data, snInFamily(ofCallTags), Tags, tags);
+ACCESSORS_IMPL(CallData, call_data, snInFamily(ofArray), Values, values);
 
 value_t call_data_validate(value_t self) {
   VALIDATE_FAMILY(ofCallData, self);
@@ -588,7 +588,7 @@ GET_FAMILY_PRIMARY_TYPE_IMPL(operation);
 NO_BUILTIN_METHODS(operation);
 
 INTEGER_ACCESSORS_IMPL(Operation, operation, Type, type);
-ACCESSORS_IMPL(Operation, operation, acNoCheck, Value, value);
+ACCESSORS_IMPL(Operation, operation, snNoCheck, Value, value);
 
 value_t operation_validate(value_t self) {
   VALIDATE_FAMILY(ofOperation, self);
@@ -736,7 +736,7 @@ GET_FAMILY_PRIMARY_TYPE_IMPL(builtin_marker);
 NO_BUILTIN_METHODS(builtin_marker);
 FIXED_GET_MODE_IMPL(builtin_marker, vmMutable);
 
-ACCESSORS_IMPL(BuiltinMarker, builtin_marker, acNoCheck, Name, name);
+ACCESSORS_IMPL(BuiltinMarker, builtin_marker, snNoCheck, Name, name);
 
 value_t builtin_marker_validate(value_t self) {
   VALIDATE_FAMILY(ofBuiltinMarker, self);
@@ -755,13 +755,13 @@ void builtin_marker_print_on(value_t self, print_on_context_t *context) {
 
 FIXED_GET_MODE_IMPL(builtin_implementation, vmMutable);
 
-ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation, acInFamily(ofUtf8),
+ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation, snInFamily(ofUtf8),
     Name, name);
 ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation,
-    acInFamily(ofCodeBlock), Code, code);
+    snInFamily(ofCodeBlock), Code, code);
 INTEGER_ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation,
     ArgumentCount, argument_count);
-ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation, acInPhylum(tpFlagSet),
+ACCESSORS_IMPL(BuiltinImplementation, builtin_implementation, snInPhylum(tpFlagSet),
     MethodFlags, method_flags);
 
 value_t builtin_implementation_validate(value_t self) {

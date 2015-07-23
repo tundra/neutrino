@@ -15,9 +15,9 @@ GET_FAMILY_PRIMARY_TYPE_IMPL(os_pipe);
 FIXED_GET_MODE_IMPL(os_pipe, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(OsPipe, os_pipe);
 
-ACCESSORS_IMPL(OsPipe, os_pipe, acInFamilyOpt(ofVoidP), NativePtr, native_ptr);
-ACCESSORS_IMPL(OsPipe, os_pipe, acInFamilyOpt(ofOsInStream), In, in);
-ACCESSORS_IMPL(OsPipe, os_pipe, acInFamilyOpt(ofOsOutStream), Out, out);
+ACCESSORS_IMPL(OsPipe, os_pipe, snInFamilyOpt(ofVoidP), NativePtr, native_ptr);
+ACCESSORS_IMPL(OsPipe, os_pipe, snInFamilyOpt(ofOsInStream), In, in);
+ACCESSORS_IMPL(OsPipe, os_pipe, snInFamilyOpt(ofOsOutStream), Out, out);
 
 native_pipe_t *get_os_pipe_native(value_t self) {
   value_t ptr = get_os_pipe_native_ptr(self);
@@ -90,8 +90,8 @@ GET_FAMILY_PRIMARY_TYPE_IMPL(os_out_stream);
 FIXED_GET_MODE_IMPL(os_out_stream, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(OsOutStream, os_out_stream);
 
-ACCESSORS_IMPL(OsOutStream, os_out_stream, acInFamilyOpt(ofVoidP), NativePtr, native_ptr);
-ACCESSORS_IMPL(OsOutStream, os_out_stream, acNoCheck, Lifeline, lifeline);
+ACCESSORS_IMPL(OsOutStream, os_out_stream, snInFamilyOpt(ofVoidP), NativePtr, native_ptr);
+ACCESSORS_IMPL(OsOutStream, os_out_stream, snNoCheck, Lifeline, lifeline);
 
 out_stream_t *get_os_out_stream_native(value_t self) {
   value_t ptr = get_os_out_stream_native_ptr(self);
@@ -163,8 +163,8 @@ GET_FAMILY_PRIMARY_TYPE_IMPL(os_in_stream);
 FIXED_GET_MODE_IMPL(os_in_stream, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(OsInStream, os_in_stream);
 
-ACCESSORS_IMPL(OsInStream, os_in_stream, acInFamilyOpt(ofVoidP), NativePtr, native_ptr);
-ACCESSORS_IMPL(OsInStream, os_in_stream, acNoCheck, Lifeline, lifeline);
+ACCESSORS_IMPL(OsInStream, os_in_stream, snInFamilyOpt(ofVoidP), NativePtr, native_ptr);
+ACCESSORS_IMPL(OsInStream, os_in_stream, snNoCheck, Lifeline, lifeline);
 
 in_stream_t *get_os_in_stream_native(value_t self) {
   value_t ptr = get_os_in_stream_native_ptr(self);
@@ -226,10 +226,10 @@ GET_FAMILY_PRIMARY_TYPE_IMPL(os_process);
 FIXED_GET_MODE_IMPL(os_process, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(OsProcess, os_process);
 
-ACCESSORS_IMPL(OsProcess, os_process, acInFamilyOpt(ofVoidP), NativePtr, native_ptr);
-ACCESSORS_IMPL(OsProcess, os_process, acNoCheck, StdinLifeline, stdin_lifeline);
-ACCESSORS_IMPL(OsProcess, os_process, acNoCheck, StdoutLifeline, stdout_lifeline);
-ACCESSORS_IMPL(OsProcess, os_process, acNoCheck, StderrLifeline, stderr_lifeline);
+ACCESSORS_IMPL(OsProcess, os_process, snInFamilyOpt(ofVoidP), NativePtr, native_ptr);
+ACCESSORS_IMPL(OsProcess, os_process, snNoCheck, StdinLifeline, stdin_lifeline);
+ACCESSORS_IMPL(OsProcess, os_process, snNoCheck, StdoutLifeline, stdout_lifeline);
+ACCESSORS_IMPL(OsProcess, os_process, snNoCheck, StderrLifeline, stderr_lifeline);
 
 native_process_t *get_os_process_native(value_t self) {
   value_t ptr = get_os_process_native_ptr(self);

@@ -7,6 +7,7 @@
 #include "freeze.h"
 #include "io.h"
 #include "plugin.h"
+#include "sentry-inl.h"
 #include "sync.h"
 #include "tagged-inl.h"
 #include "value-inl.h"
@@ -16,8 +17,8 @@
 GET_FAMILY_PRIMARY_TYPE_IMPL(promise);
 FIXED_GET_MODE_IMPL(promise, vmMutable);
 
-ACCESSORS_IMPL(Promise, promise, acInPhylum(tpPromiseState), State, state);
-ACCESSORS_IMPL(Promise, promise, acNoCheck, Value, value);
+ACCESSORS_IMPL(Promise, promise, snInPhylum(tpPromiseState), State, state);
+ACCESSORS_IMPL(Promise, promise, snNoCheck, Value, value);
 
 bool is_promise_settled(value_t self) {
   CHECK_FAMILY(ofPromise, self);
@@ -185,9 +186,9 @@ void promise_state_print_on(value_t value, print_on_context_t *context) {
 FIXED_GET_MODE_IMPL(foreign_service, vmDeepFrozen);
 GET_FAMILY_PRIMARY_TYPE_IMPL(foreign_service);
 
-FROZEN_ACCESSORS_IMPL(ForeignService, foreign_service, acInFamily(ofIdHashMap), Impls,
+FROZEN_ACCESSORS_IMPL(ForeignService, foreign_service, snInFamily(ofIdHashMap), Impls,
     impls);
-FROZEN_ACCESSORS_IMPL(ForeignService, foreign_service, acNoCheck, DisplayName,
+FROZEN_ACCESSORS_IMPL(ForeignService, foreign_service, snNoCheck, DisplayName,
     display_name);
 
 value_t foreign_service_validate(value_t self) {
@@ -370,14 +371,14 @@ FIXED_GET_MODE_IMPL(exported_service, vmMutable);
 GET_FAMILY_PRIMARY_TYPE_IMPL(exported_service);
 TRIVIAL_PRINT_ON_IMPL(ExportedService, exported_service);
 
-ACCESSORS_IMPL(ExportedService, exported_service, acInFamily(ofVoidP),
+ACCESSORS_IMPL(ExportedService, exported_service, snInFamily(ofVoidP),
     CapsulePtr, capsule_ptr);
-ACCESSORS_IMPL(ExportedService, exported_service, acInFamily(ofProcess),
+ACCESSORS_IMPL(ExportedService, exported_service, snInFamily(ofProcess),
     Process, process);
-ACCESSORS_IMPL(ExportedService, exported_service, acNoCheck, Handler,
+ACCESSORS_IMPL(ExportedService, exported_service, snNoCheck, Handler,
     handler);
 ACCESSORS_IMPL(ExportedService, exported_service,
-    acInFamily(ofModuleFragmentPrivate), Module, module);
+    snInFamily(ofModuleFragmentPrivate), Module, module);
 
 exported_service_capsule_t *get_exported_service_capsule(value_t self) {
   value_t ptr = get_exported_service_capsule_ptr(self);

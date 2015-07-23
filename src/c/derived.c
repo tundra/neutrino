@@ -92,8 +92,8 @@ value_t stack_pointer_validate(value_t self) {
 
 /// ## Barrier state
 
-DERIVED_ACCESSORS_IMPL(BarrierState, barrier_state, acNoCheck, Payload, payload);
-DERIVED_ACCESSORS_IMPL(BarrierState, barrier_state, acInDomainOpt(vdDerivedObject),
+DERIVED_ACCESSORS_IMPL(BarrierState, barrier_state, snNoCheck, Payload, payload);
+DERIVED_ACCESSORS_IMPL(BarrierState, barrier_state, snInDomainOpt(vdDerivedObject),
     Previous, previous);
 
 void barrier_state_unregister(value_t self, value_t stack) {
@@ -112,15 +112,15 @@ value_t barrier_state_validate(value_t self) {
 
 /// ## Escape state
 
-DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, acInDomainOpt(vdInteger),
+DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, snInDomainOpt(vdInteger),
     StackPointer, stack_pointer);
-DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, acInDomainOpt(vdInteger),
+DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, snInDomainOpt(vdInteger),
     FramePointer, frame_pointer);
-DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, acInDomainOpt(vdInteger),
+DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, snInDomainOpt(vdInteger),
     LimitPointer, limit_pointer);
-DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, acInPhylumOpt(tpFlagSet),
+DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, snInPhylumOpt(tpFlagSet),
     Flags, flags);
-DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, acInDomainOpt(vdInteger),
+DERIVED_ACCESSORS_IMPL(EscapeState, escape_state, snInDomainOpt(vdInteger),
     Pc, pc);
 
 value_t escape_state_validate(value_t self) {
@@ -163,7 +163,7 @@ void on_escape_section_exit(value_t self) {
 
 /// ## Refraction point
 
-DERIVED_ACCESSORS_IMPL(RefractionPoint, refraction_point, acInDomainOpt(vdInteger),
+DERIVED_ACCESSORS_IMPL(RefractionPoint, refraction_point, snInDomainOpt(vdInteger),
     FramePointer, frame_pointer);
 
 void refraction_point_init(value_t self, frame_t *frame) {
@@ -182,7 +182,7 @@ value_t refraction_point_validate(value_t self) {
 
 TRIVIAL_DERIVED_PRINT_ON_IMPL(BlockSection, block_section);
 
-DERIVED_ACCESSORS_IMPL(BlockSection, block_section, acInFamily(ofMethodspace),
+DERIVED_ACCESSORS_IMPL(BlockSection, block_section, snInFamily(ofMethodspace),
     Methodspace, methodspace);
 
 value_t block_section_validate(value_t self) {

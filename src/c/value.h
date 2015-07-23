@@ -1031,6 +1031,22 @@ static inline value_type_info_t value_type_info_for_family(heap_object_family_t 
   return result;
 }
 
+// Returns a type info struct that describes a member of the given phylum.
+static inline value_type_info_t value_type_info_for_phylum(custom_tagged_phylum_t phylum) {
+  value_type_info_t result;
+  result.domain = vdCustomTagged;
+  result.flavor.phylum = phylum;
+  return result;
+}
+
+// Returns a type info struct that describes a member of the given genus.
+static inline value_type_info_t value_type_info_for_genus(derived_object_genus_t genus) {
+  value_type_info_t result;
+  result.domain = vdDerivedObject;
+  result.flavor.genus = genus;
+  return result;
+}
+
 bool value_type_info_is_empty(value_type_info_t info);
 
 
@@ -1142,6 +1158,12 @@ static inline bool in_family(heap_object_family_t family, value_t value) {
 // given family.
 static inline bool in_family_opt(heap_object_family_t family, value_t value) {
   return is_nothing(value) || in_family(family, value);
+}
+
+// Returns true iff the given value is either nothing or an object within a
+// syntax family.
+static inline bool in_syntax_family_opt(value_t value) {
+  return is_nothing(value) || in_syntax_family(value);
 }
 
 

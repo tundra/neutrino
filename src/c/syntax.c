@@ -170,7 +170,7 @@ size_t *calc_parameter_ast_ordering(reusable_scratch_memory_t *scratch,
 GET_FAMILY_PRIMARY_TYPE_IMPL(literal_ast);
 NO_BUILTIN_METHODS(literal_ast);
 
-ACCESSORS_IMPL(LiteralAst, literal_ast, acNoCheck, Value, value);
+ACCESSORS_IMPL(LiteralAst, literal_ast, snNoCheck, Value, value);
 
 value_t literal_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofLiteralAst, self);
@@ -205,7 +205,7 @@ value_t emit_literal_ast(value_t value, assembler_t *assm) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(array_ast);
 NO_BUILTIN_METHODS(array_ast);
 
-ACCESSORS_IMPL(ArrayAst, array_ast, acInFamilyOpt(ofArray), Elements, elements);
+ACCESSORS_IMPL(ArrayAst, array_ast, snInFamilyOpt(ofArray), Elements, elements);
 
 value_t emit_array_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofArrayAst, value);
@@ -247,7 +247,7 @@ TRIVIAL_PRINT_ON_IMPL(InvocationAst, invocation_ast);
 GET_FAMILY_PRIMARY_TYPE_IMPL(invocation_ast);
 NO_BUILTIN_METHODS(invocation_ast);
 
-ACCESSORS_IMPL(InvocationAst, invocation_ast, acInFamilyOpt(ofArray), Arguments,
+ACCESSORS_IMPL(InvocationAst, invocation_ast, snInFamilyOpt(ofArray), Arguments,
     arguments);
 
 static value_t create_call_tags(value_t arguments, assembler_t *assm) {
@@ -346,7 +346,7 @@ value_t plankton_new_invocation_ast(runtime_t *runtime) {
 TRIVIAL_PRINT_ON_IMPL(CallLiteralAst, call_literal_ast);
 NO_BUILTIN_METHODS(call_literal_ast);
 
-ACCESSORS_IMPL(CallLiteralAst, call_literal_ast, acInFamilyOpt(ofArray), Arguments,
+ACCESSORS_IMPL(CallLiteralAst, call_literal_ast, snInFamilyOpt(ofArray), Arguments,
     arguments);
 
 value_t emit_call_literal_ast(value_t value, assembler_t *assm) {
@@ -386,10 +386,10 @@ value_t plankton_new_call_literal_ast(runtime_t *runtime) {
 TRIVIAL_PRINT_ON_IMPL(CallLiteralArgumentAst, call_literal_argument_ast);
 NO_BUILTIN_METHODS(call_literal_argument_ast);
 
-ACCESSORS_IMPL(CallLiteralArgumentAst, call_literal_argument_ast, acIsSyntaxOpt,
+ACCESSORS_IMPL(CallLiteralArgumentAst, call_literal_argument_ast, snInSyntaxFamilyOpt,
     Tag, tag);
 
-ACCESSORS_IMPL(CallLiteralArgumentAst, call_literal_argument_ast, acIsSyntaxOpt,
+ACCESSORS_IMPL(CallLiteralArgumentAst, call_literal_argument_ast, snInSyntaxFamilyOpt,
     Value, value);
 
 value_t call_literal_argument_ast_validate(value_t value) {
@@ -416,10 +416,10 @@ TRIVIAL_PRINT_ON_IMPL(SignalAst, signal_ast);
 GET_FAMILY_PRIMARY_TYPE_IMPL(signal_ast);
 NO_BUILTIN_METHODS(signal_ast);
 
-ACCESSORS_IMPL(SignalAst, signal_ast, acInFamilyOpt(ofArray), Arguments,
+ACCESSORS_IMPL(SignalAst, signal_ast, snInFamilyOpt(ofArray), Arguments,
     arguments);
-ACCESSORS_IMPL(SignalAst, signal_ast, acNoCheck, Escape, escape);
-ACCESSORS_IMPL(SignalAst, signal_ast, acNoCheck, Default, default);
+ACCESSORS_IMPL(SignalAst, signal_ast, snNoCheck, Escape, escape);
+ACCESSORS_IMPL(SignalAst, signal_ast, snNoCheck, Default, default);
 
 value_t emit_signal_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofSignalAst, value);
@@ -495,8 +495,8 @@ TRIVIAL_PRINT_ON_IMPL(SignalHandlerAst, signal_handler_ast);
 GET_FAMILY_PRIMARY_TYPE_IMPL(signal_handler_ast);
 NO_BUILTIN_METHODS(signal_handler_ast);
 
-ACCESSORS_IMPL(SignalHandlerAst, signal_handler_ast, acIsSyntaxOpt, Body, body);
-ACCESSORS_IMPL(SignalHandlerAst, signal_handler_ast, acInFamilyOpt(ofArray),
+ACCESSORS_IMPL(SignalHandlerAst, signal_handler_ast, snInSyntaxFamilyOpt, Body, body);
+ACCESSORS_IMPL(SignalHandlerAst, signal_handler_ast, snInFamilyOpt(ofArray),
     Handlers, handlers);
 
 static value_t build_methodspace_from_method_asts(value_t method_asts,
@@ -568,8 +568,8 @@ TRIVIAL_PRINT_ON_IMPL(EnsureAst, ensure_ast);
 GET_FAMILY_PRIMARY_TYPE_IMPL(ensure_ast);
 NO_BUILTIN_METHODS(ensure_ast);
 
-ACCESSORS_IMPL(EnsureAst, ensure_ast, acIsSyntaxOpt, Body, body);
-ACCESSORS_IMPL(EnsureAst, ensure_ast, acIsSyntaxOpt, OnExit, on_exit);
+ACCESSORS_IMPL(EnsureAst, ensure_ast, snInSyntaxFamilyOpt, Body, body);
+ACCESSORS_IMPL(EnsureAst, ensure_ast, snInSyntaxFamilyOpt, OnExit, on_exit);
 
 static value_t emit_ensurer(value_t code, assembler_t *assm) {
   // Push a block scope that refracts any symbols accessed outside the block.
@@ -622,9 +622,9 @@ TRIVIAL_PRINT_ON_IMPL(ArgumentAst, argument_ast);
 GET_FAMILY_PRIMARY_TYPE_IMPL(argument_ast);
 NO_BUILTIN_METHODS(argument_ast);
 
-ACCESSORS_IMPL(ArgumentAst, argument_ast, acNoCheck, Tag, tag);
-ACCESSORS_IMPL(ArgumentAst, argument_ast, acIsSyntaxOpt, Value, value);
-ACCESSORS_IMPL(ArgumentAst, argument_ast, acInFamilyOpt(ofGuardAst), NextGuard, next_guard);
+ACCESSORS_IMPL(ArgumentAst, argument_ast, snNoCheck, Tag, tag);
+ACCESSORS_IMPL(ArgumentAst, argument_ast, snInSyntaxFamilyOpt, Value, value);
+ACCESSORS_IMPL(ArgumentAst, argument_ast, snInFamilyOpt(ofGuardAst), NextGuard, next_guard);
 
 value_t argument_ast_validate(value_t value) {
   VALIDATE_FAMILY(ofArgumentAst, value);
@@ -652,7 +652,7 @@ value_t plankton_new_argument_ast(runtime_t *runtime) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(sequence_ast);
 NO_BUILTIN_METHODS(sequence_ast);
 
-ACCESSORS_IMPL(SequenceAst, sequence_ast, acInFamily(ofArray), Values, values);
+ACCESSORS_IMPL(SequenceAst, sequence_ast, snInFamily(ofArray), Values, values);
 
 value_t emit_sequence_ast(value_t value, assembler_t *assm) {
   CHECK_FAMILY(ofSequenceAst, value);
@@ -707,12 +707,12 @@ GET_FAMILY_PRIMARY_TYPE_IMPL(local_declaration_ast);
 NO_BUILTIN_METHODS(local_declaration_ast);
 
 ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast,
-    acInFamilyOpt(ofSymbolAst), Symbol, symbol);
-ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acNoCheck,
+    snInFamilyOpt(ofSymbolAst), Symbol, symbol);
+ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, snNoCheck,
     IsMutable, is_mutable);
-ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acIsSyntaxOpt,
+ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, snInSyntaxFamilyOpt,
     Value, value);
-ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, acIsSyntaxOpt,
+ACCESSORS_IMPL(LocalDeclarationAst, local_declaration_ast, snInSyntaxFamilyOpt,
     Body, body);
 
 value_t emit_local_declaration_ast(value_t self, assembler_t *assm) {
@@ -785,9 +785,9 @@ GET_FAMILY_PRIMARY_TYPE_IMPL(block_ast);
 NO_BUILTIN_METHODS(block_ast);
 TRIVIAL_PRINT_ON_IMPL(BlockAst, block_ast);
 
-ACCESSORS_IMPL(BlockAst, block_ast, acInFamilyOpt(ofSymbolAst), Symbol, symbol);
-ACCESSORS_IMPL(BlockAst, block_ast, acInFamilyOpt(ofArray), Methods, methods);
-ACCESSORS_IMPL(BlockAst, block_ast, acIsSyntaxOpt, Body, body);
+ACCESSORS_IMPL(BlockAst, block_ast, snInFamilyOpt(ofSymbolAst), Symbol, symbol);
+ACCESSORS_IMPL(BlockAst, block_ast, snInFamilyOpt(ofArray), Methods, methods);
+ACCESSORS_IMPL(BlockAst, block_ast, snInSyntaxFamilyOpt, Body, body);
 
 // Pushes the binding of a symbol onto the stack. If the symbol is mutable this
 // will push the reference, not the value. It is the caller's responsibility to
@@ -913,9 +913,9 @@ value_t plankton_new_block_ast(runtime_t *runtime) {
 
 TRIVIAL_PRINT_ON_IMPL(WithEscapeAst, with_escape_ast);
 
-ACCESSORS_IMPL(WithEscapeAst, with_escape_ast, acInFamilyOpt(ofSymbolAst),
+ACCESSORS_IMPL(WithEscapeAst, with_escape_ast, snInFamilyOpt(ofSymbolAst),
     Symbol, symbol);
-ACCESSORS_IMPL(WithEscapeAst, with_escape_ast, acIsSyntaxOpt, Body, body);
+ACCESSORS_IMPL(WithEscapeAst, with_escape_ast, snInSyntaxFamilyOpt, Body, body);
 
 value_t with_escape_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofWithEscapeAst, self);
@@ -974,9 +974,9 @@ value_t plankton_new_with_escape_ast(runtime_t *runtime) {
 
 TRIVIAL_PRINT_ON_IMPL(VariableAssignmentAst, variable_assignment_ast);
 
-ACCESSORS_IMPL(VariableAssignmentAst, variable_assignment_ast, acIsSyntaxOpt,
+ACCESSORS_IMPL(VariableAssignmentAst, variable_assignment_ast, snInSyntaxFamilyOpt,
     Target, target);
-ACCESSORS_IMPL(VariableAssignmentAst, variable_assignment_ast, acIsSyntaxOpt,
+ACCESSORS_IMPL(VariableAssignmentAst, variable_assignment_ast, snInSyntaxFamilyOpt,
     Value, value);
 
 value_t variable_assignment_ast_validate(value_t self) {
@@ -1028,7 +1028,7 @@ value_t emit_variable_assignment_ast(value_t self, assembler_t *assm) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(local_variable_ast);
 NO_BUILTIN_METHODS(local_variable_ast);
 
-ACCESSORS_IMPL(LocalVariableAst, local_variable_ast, acInFamilyOpt(ofSymbolAst),
+ACCESSORS_IMPL(LocalVariableAst, local_variable_ast, snInFamilyOpt(ofSymbolAst),
     Symbol, symbol);
 
 value_t emit_local_variable_ast(value_t self, assembler_t *assm) {
@@ -1069,7 +1069,7 @@ NO_BUILTIN_METHODS(namespace_variable_ast);
 TRIVIAL_PRINT_ON_IMPL(NamespaceVariableAst, namespace_variable_ast);
 
 ACCESSORS_IMPL(NamespaceVariableAst, namespace_variable_ast,
-    acInFamilyOpt(ofIdentifier), Identifier, identifier);
+    snInFamilyOpt(ofIdentifier), Identifier, identifier);
 
 value_t emit_namespace_variable_ast(value_t self, assembler_t *assm) {
   value_t ident = get_namespace_variable_ast_identifier(self);
@@ -1102,8 +1102,8 @@ value_t plankton_new_namespace_variable_ast(runtime_t *runtime) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(symbol_ast);
 NO_BUILTIN_METHODS(symbol_ast);
 
-ACCESSORS_IMPL(SymbolAst, symbol_ast, acNoCheck, Name, name);
-ACCESSORS_IMPL(SymbolAst, symbol_ast, acNoCheck, Origin, origin);
+ACCESSORS_IMPL(SymbolAst, symbol_ast, snNoCheck, Name, name);
+ACCESSORS_IMPL(SymbolAst, symbol_ast, snNoCheck, Origin, origin);
 
 value_t symbol_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofSymbolAst, self);
@@ -1135,7 +1135,7 @@ GET_FAMILY_PRIMARY_TYPE_IMPL(lambda_ast);
 NO_BUILTIN_METHODS(lambda_ast);
 TRIVIAL_PRINT_ON_IMPL(LambdaAst, lambda_ast);
 
-ACCESSORS_IMPL(LambdaAst, lambda_ast, acInFamilyOpt(ofArray), Methods,
+ACCESSORS_IMPL(LambdaAst, lambda_ast, snInFamilyOpt(ofArray), Methods,
     methods);
 
 value_t quick_and_dirty_evaluate_syntax(runtime_t *runtime, value_t fragment,
@@ -1328,10 +1328,10 @@ value_t plankton_new_lambda_ast(runtime_t *runtime) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(parameter_ast);
 NO_BUILTIN_METHODS(parameter_ast);
 
-ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt(ofSymbolAst), Symbol,
+ACCESSORS_IMPL(ParameterAst, parameter_ast, snInFamilyOpt(ofSymbolAst), Symbol,
     symbol);
-ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt(ofArray), Tags, tags);
-ACCESSORS_IMPL(ParameterAst, parameter_ast, acInFamilyOpt(ofGuardAst), Guard, guard);
+ACCESSORS_IMPL(ParameterAst, parameter_ast, snInFamilyOpt(ofArray), Tags, tags);
+ACCESSORS_IMPL(ParameterAst, parameter_ast, snInFamilyOpt(ofGuardAst), Guard, guard);
 
 value_t parameter_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofParameterAst, self);
@@ -1370,7 +1370,7 @@ GET_FAMILY_PRIMARY_TYPE_IMPL(guard_ast);
 NO_BUILTIN_METHODS(guard_ast);
 
 ENUM_ACCESSORS_IMPL(GuardAst, guard_ast, guard_type_t, Type, type);
-ACCESSORS_IMPL(GuardAst, guard_ast, acNoCheck, Value, value);
+ACCESSORS_IMPL(GuardAst, guard_ast, snNoCheck, Value, value);
 
 value_t guard_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofGuardAst, self);
@@ -1425,11 +1425,11 @@ void guard_ast_print_on(value_t self, print_on_context_t *context) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(signature_ast);
 NO_BUILTIN_METHODS(signature_ast);
 
-ACCESSORS_IMPL(SignatureAst, signature_ast, acInFamilyOpt(ofArray),
+ACCESSORS_IMPL(SignatureAst, signature_ast, snInFamilyOpt(ofArray),
     Parameters, parameters);
-ACCESSORS_IMPL(SignatureAst, signature_ast, acNoCheck, AllowExtra,
+ACCESSORS_IMPL(SignatureAst, signature_ast, snNoCheck, AllowExtra,
     allow_extra);
-ACCESSORS_IMPL(SignatureAst, signature_ast, acInFamilyOpt(ofSymbolAst),
+ACCESSORS_IMPL(SignatureAst, signature_ast, snInFamilyOpt(ofSymbolAst),
     Reified, reified);
 
 value_t signature_ast_validate(value_t self) {
@@ -1470,9 +1470,9 @@ void signature_ast_print_on(value_t self, print_on_context_t *context) {
 GET_FAMILY_PRIMARY_TYPE_IMPL(method_ast);
 NO_BUILTIN_METHODS(method_ast);
 
-ACCESSORS_IMPL(MethodAst, method_ast, acInFamilyOpt(ofSignatureAst), Signature,
+ACCESSORS_IMPL(MethodAst, method_ast, snInFamilyOpt(ofSignatureAst), Signature,
     signature);
-ACCESSORS_IMPL(MethodAst, method_ast, acIsSyntaxOpt, Body, body);
+ACCESSORS_IMPL(MethodAst, method_ast, snInSyntaxFamilyOpt, Body, body);
 
 value_t method_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofMethodAst, self);
@@ -1506,11 +1506,11 @@ void method_ast_print_on(value_t self, print_on_context_t *context) {
 // --- N a m e s p a c e   d e c l a r a t i o n   a s t ---
 
 ACCESSORS_IMPL(NamespaceDeclarationAst, namespace_declaration_ast,
-    acInFamilyOpt(ofArray), Annotations, annotations);
+    snInFamilyOpt(ofArray), Annotations, annotations);
 ACCESSORS_IMPL(NamespaceDeclarationAst, namespace_declaration_ast,
-    acInFamilyOpt(ofPath), Path, path);
+    snInFamilyOpt(ofPath), Path, path);
 ACCESSORS_IMPL(NamespaceDeclarationAst, namespace_declaration_ast,
-    acIsSyntaxOpt, Value, value);
+    snInSyntaxFamilyOpt, Value, value);
 
 value_t namespace_declaration_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofNamespaceDeclarationAst, self);
@@ -1545,9 +1545,9 @@ void namespace_declaration_ast_print_on(value_t value, print_on_context_t *conte
 // --- M e t h o d   d e c l a r a t i o n   a s t ---
 
 ACCESSORS_IMPL(MethodDeclarationAst, method_declaration_ast,
-    acInFamilyOpt(ofArray), Annotations, annotations);
+    snInFamilyOpt(ofArray), Annotations, annotations);
 ACCESSORS_IMPL(MethodDeclarationAst, method_declaration_ast,
-    acInFamilyOpt(ofMethodAst), Method, method);
+    snInFamilyOpt(ofMethodAst), Method, method);
 
 value_t method_declaration_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofMethodDeclarationAst, self);
@@ -1577,9 +1577,9 @@ void method_declaration_ast_print_on(value_t value, print_on_context_t *context)
 
 // --- I s   d e c l a r a t i o n   a s t ---
 
-ACCESSORS_IMPL(IsDeclarationAst, is_declaration_ast, acIsSyntaxOpt, Subtype,
+ACCESSORS_IMPL(IsDeclarationAst, is_declaration_ast, snInSyntaxFamilyOpt, Subtype,
     subtype);
-ACCESSORS_IMPL(IsDeclarationAst, is_declaration_ast, acIsSyntaxOpt, Supertype,
+ACCESSORS_IMPL(IsDeclarationAst, is_declaration_ast, snInSyntaxFamilyOpt, Supertype,
     supertype);
 
 value_t is_declaration_ast_validate(value_t self) {
@@ -1610,8 +1610,8 @@ void is_declaration_ast_print_on(value_t value, print_on_context_t *context) {
 
 // --- P r o g r a m   a s t ---
 
-ACCESSORS_IMPL(ProgramAst, program_ast, acIsSyntaxOpt, EntryPoint, entry_point);
-ACCESSORS_IMPL(ProgramAst, program_ast, acNoCheck, Module, module);
+ACCESSORS_IMPL(ProgramAst, program_ast, snInSyntaxFamilyOpt, EntryPoint, entry_point);
+ACCESSORS_IMPL(ProgramAst, program_ast, snNoCheck, Module, module);
 
 value_t program_ast_validate(value_t self) {
   VALIDATE_FAMILY(ofProgramAst, self);

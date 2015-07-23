@@ -69,33 +69,6 @@ static inline bool in_family_or_null_sentry_impl(heap_object_family_t family, va
 }
 
 
-// A sentry that checks that a value is in a particular family.
-#define snInPhylum(tpPhylum) (_, in_phylum_sentry_impl, tpPhylum, "inPhylum(" #tpPhylum ")")
-
-static inline bool in_phylum_sentry_impl(custom_tagged_phylum_t phylum, value_t self, value_t *error_out) {
-  if (!in_phylum(phylum, self)) {
-    *error_out = new_unexpected_type_condition(value_type_info_empty(),
-        get_value_type_info(self));
-    return false;
-  } else {
-    return true;
-  }
-}
-
-// Is the value nothing or in a particular family?
-#define snInPhylumOpt(tpPhylum) (_, in_phylum_opt_sentry_impl, tpPhylum, "inPhylumOpt(" #tpPhylum ")")
-
-static inline bool in_phylum_opt_sentry_impl(custom_tagged_phylum_t phylum, value_t self, value_t *error_out) {
-  if (!in_phylum_opt(phylum, self)) {
-    *error_out = new_unexpected_type_condition(value_type_info_empty(),
-        get_value_type_info(self));
-    return false;
-  } else {
-    return true;
-  }
-}
-
-
 // Is the value in a particular domain?
 #define snInDomain(vdDomain) (_, in_domain_sentry_impl, vdDomain, "inDomain(" #vdDomain ")")
 
@@ -137,6 +110,20 @@ bool is_array_of_family_sentry_impl(heap_object_family_t family, value_t self, v
 
 static inline bool in_syntax_family_sentry_impl(int unused, value_t self, value_t *error_out) {
   if (!in_syntax_family(self)) {
+    *error_out = new_unexpected_type_condition(value_type_info_empty(),
+        get_value_type_info(self));
+    return false;
+  } else {
+    return true;
+  }
+}
+
+
+// Sentry that checks that the given value is within a syntax family.
+#define snInSyntaxFamilyOpt (_, in_syntax_family_opt_sentry_impl, 0, "inSyntaxFamilyOpt")
+
+static inline bool in_syntax_family_opt_sentry_impl(int unused, value_t self, value_t *error_out) {
+  if (!in_syntax_family_opt(self)) {
     *error_out = new_unexpected_type_condition(value_type_info_empty(),
         get_value_type_info(self));
     return false;

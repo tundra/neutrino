@@ -173,59 +173,24 @@ value_t get_##receiver##_##field(value_t self) {                               \
 }                                                                              \
 SWALLOW_SEMI(gi)
 
-#define __APPLY_AC_CHECK__(CHECK, VALUE) __PAIR_FIRST__ CHECK(__PAIR_SECOND__ CHECK, VALUE)
-
-#define __AC_NO_CHECK_IMPL__(UNUSED, VALUE) CHECK_FALSE("storing condition in heap", is_condition(VALUE))
-
-// Accessor check that indicates that no check should be performed. A check that
-// the value is not a condition will be performed in any case since that is a
-// global invariant.
-#define acNoCheck (__AC_NO_CHECK_IMPL__, 0)
-
-// Accessor check that indicates that the argument should belong to the family
-// specified in the argument.
-#define acInFamily(ofFamily) (CHECK_FAMILY, ofFamily)
-
-// Accessor check that indicates that the argument should either be nothing or
-// belong to the family specified in the argument.
-#define acInFamilyOpt(ofFamily) (CHECK_FAMILY_OPT, ofFamily)
-
-// Accessor check that indicates that the argument should either be nothing or
-// belong to the family specified in the argument.
-#define acInFamilyOrNull(ofFamily) (CHECK_FAMILY_OR_NULL, ofFamily)
-
-// Accessor check that indicates that the argument should belong to the domain
-// specified in the argument.
-#define acInDomain(vdDomain) (CHECK_DOMAIN, vdDomain)
-
-// Accessor check that indicates that the argument should either be nothing or
-// belong to the domain specified in the argument.
-#define acInDomainOpt(vdDomain) (CHECK_DOMAIN_OPT, vdDomain)
-
-#define __AC_IS_SYNTAX_OPT_IMPL__(UNUSED, VALUE) CHECK_SYNTAX_FAMILY_OPT(VALUE)
-
-// Accessor check that indicates that the argument should either be nothing or
-// belong to a syntax family.
-#define acIsSyntaxOpt (__AC_IS_SYNTAX_OPT_IMPL__, 0)
-
 // Expands to the same as ACCESSORS_IMPL but also gives a _frozen_ version of
 // setter which allows fields of frozen objects to be set.
-#define FROZEN_ACCESSORS_IMPL(Receiver, receiver, CHECK, Field, field)         \
+#define FROZEN_ACCESSORS_IMPL(Receiver, receiver, SENTRY, Field, field)        \
 void init_frozen_##receiver##_##field(value_t self, value_t value) {           \
   CHECK_FAMILY(of##Receiver, self);                                            \
   CHECK_DEEP_FROZEN(value);                                                    \
-  __APPLY_AC_CHECK__(CHECK, value);                                            \
+  CHECK_SENTRY(SENTRY, value);                                                 \
   *access_heap_object_field(self, k##Receiver##Field##Offset) = value;         \
 }                                                                              \
-ACCESSORS_IMPL(Receiver, receiver, CHECK, Field, field)
+ACCESSORS_IMPL(Receiver, receiver, SENTRY, Field, field)
 
 // Expands to a setter and a getter for the specified types. The setter will
 // have a custom check on the value and a mutability check on the instance.
-#define ACCESSORS_IMPL(Receiver, receiver, CHECK, Field, field)                \
+#define ACCESSORS_IMPL(Receiver, receiver, SENTRY, Field, field)               \
 void set_##receiver##_##field(value_t self, value_t value) {                   \
   CHECK_FAMILY(of##Receiver, self);                                            \
   CHECK_MUTABLE(self);                                                         \
-  __APPLY_AC_CHECK__(CHECK, value);                                            \
+  CHECK_SENTRY(SENTRY, value);                                                 \
   *access_heap_object_field(self, k##Receiver##Field##Offset) = value;         \
 }                                                                              \
 GETTER_IMPL(Receiver, receiver, Field, field)
@@ -239,9 +204,9 @@ value_t get_##receiver##_##field(value_t self) {                               \
 SWALLOW_SEMI(gi)
 
 // Expands to an unchecked setter and a getter for the specified types.
-#define DERIVED_ACCESSORS_IMPL(Receiver, receiver, CHECK, Field, field)        \
+#define DERIVED_ACCESSORS_IMPL(Receiver, receiver, SENTRY, Field, field)       \
 void set_##receiver##_##field(value_t self, value_t value) {                   \
-  __APPLY_AC_CHECK__(CHECK, value);                                            \
+  CHECK_SENTRY(SENTRY, value);                                                 \
   *access_derived_object_field(self, k##Receiver##Field##Offset) = value;      \
 }                                                                              \
 DERIVED_GETTER_IMPL(Receiver, receiver, Field, field)
@@ -302,10 +267,10 @@ SWALLOW_SEMI(sgi)
 // Expands to function implementations that get and set checked values on a
 // particular kind of species.
 #define CHECKED_SPECIES_ACCESSORS_IMPL(Receiver, receiver, ReceiverSpecies,    \
-    receiver_species, CHECK, Field, field)                                     \
+    receiver_species, SENTRY, Field, field)                                     \
 void set_##receiver_species##_species_##field(value_t self, value_t value) {   \
   CHECK_DIVISION(sd##ReceiverSpecies, self);                                   \
-  __APPLY_AC_CHECK__(CHECK, value);                                            \
+  CHECK_SENTRY(SENTRY, value);                                                 \
   *access_heap_object_field(self, k##ReceiverSpecies##Species##Field##Offset) = value; \
 }                                                                              \
 SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \

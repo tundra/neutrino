@@ -17,11 +17,11 @@
 
 FIXED_GET_MODE_IMPL(stack_piece, vmMutable);
 
-ACCESSORS_IMPL(StackPiece, stack_piece, acNoCheck, Capacity, capacity);
-ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt(ofStackPiece), Previous,
+ACCESSORS_IMPL(StackPiece, stack_piece, snNoCheck, Capacity, capacity);
+ACCESSORS_IMPL(StackPiece, stack_piece, snInFamilyOpt(ofStackPiece), Previous,
     previous);
-ACCESSORS_IMPL(StackPiece, stack_piece, acInFamilyOpt(ofStack), Stack, stack);
-ACCESSORS_IMPL(StackPiece, stack_piece, acNoCheck, LidFramePointer,
+ACCESSORS_IMPL(StackPiece, stack_piece, snInFamilyOpt(ofStack), Stack, stack);
+ACCESSORS_IMPL(StackPiece, stack_piece, snNoCheck, LidFramePointer,
     lid_frame_pointer);
 
 size_t calc_stack_piece_size(size_t capacity) {
@@ -67,10 +67,10 @@ bool is_stack_piece_closed(value_t self) {
 FIXED_GET_MODE_IMPL(stack, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(Stack, stack);
 
-ACCESSORS_IMPL(Stack, stack, acInFamily(ofStackPiece), TopPiece, top_piece);
+ACCESSORS_IMPL(Stack, stack, snInFamily(ofStackPiece), TopPiece, top_piece);
 INTEGER_ACCESSORS_IMPL(Stack, stack, DefaultPieceCapacity,
     default_piece_capacity);
-ACCESSORS_IMPL(Stack, stack, acNoCheck, TopBarrier, top_barrier);
+ACCESSORS_IMPL(Stack, stack, snNoCheck, TopBarrier, top_barrier);
 
 value_t stack_validate(value_t self) {
   VALIDATE_FAMILY(ofStack, self);
@@ -469,7 +469,7 @@ FIXED_GET_MODE_IMPL(escape, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(Escape, escape);
 GET_FAMILY_PRIMARY_TYPE_IMPL(escape);
 
-ACCESSORS_IMPL(Escape, escape, acInGenusOpt(dgEscapeSection), Section, section);
+ACCESSORS_IMPL(Escape, escape, snInGenusOpt(dgEscapeSection), Section, section);
 
 value_t escape_validate(value_t value) {
   VALIDATE_FAMILY(ofEscape, value);
@@ -500,8 +500,8 @@ value_t add_escape_builtin_implementations(runtime_t *runtime,
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(lambda);
 
-ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt(ofMethodspace), Methods, methods);
-ACCESSORS_IMPL(Lambda, lambda, acInFamilyOpt(ofArray), Captures, captures);
+ACCESSORS_IMPL(Lambda, lambda, snInFamilyOpt(ofMethodspace), Methods, methods);
+ACCESSORS_IMPL(Lambda, lambda, snInFamilyOpt(ofArray), Captures, captures);
 
 value_t lambda_validate(value_t self) {
   VALIDATE_FAMILY(ofLambda, self);
@@ -542,7 +542,7 @@ value_t ensure_lambda_owned_values_frozen(runtime_t *runtime, value_t self) {
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(block);
 
-ACCESSORS_IMPL(Block, block, acNoCheck, Section, section);
+ACCESSORS_IMPL(Block, block, snNoCheck, Section, section);
 
 value_t block_validate(value_t self) {
   VALIDATE_FAMILY(ofBlock, self);
@@ -616,7 +616,7 @@ FIXED_GET_MODE_IMPL(backtrace, vmMutable);
 GET_FAMILY_PRIMARY_TYPE_IMPL(backtrace);
 NO_BUILTIN_METHODS(backtrace);
 
-ACCESSORS_IMPL(Backtrace, backtrace, acInFamily(ofArrayBuffer), Entries,
+ACCESSORS_IMPL(Backtrace, backtrace, snInFamily(ofArrayBuffer), Entries,
     entries);
 
 value_t backtrace_validate(value_t value) {
@@ -651,9 +651,9 @@ value_t capture_backtrace(runtime_t *runtime, frame_t *top) {
 
 FIXED_GET_MODE_IMPL(backtrace_entry, vmMutable);
 
-ACCESSORS_IMPL(BacktraceEntry, backtrace_entry, acNoCheck, Invocation,
+ACCESSORS_IMPL(BacktraceEntry, backtrace_entry, snNoCheck, Invocation,
     invocation);
-ACCESSORS_IMPL(BacktraceEntry, backtrace_entry, acNoCheck, Opcode, opcode);
+ACCESSORS_IMPL(BacktraceEntry, backtrace_entry, snNoCheck, Opcode, opcode);
 
 value_t backtrace_entry_validate(value_t value) {
   VALIDATE_FAMILY(ofBacktraceEntry, value);
@@ -814,8 +814,8 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
 FIXED_GET_MODE_IMPL(task, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(Task, task);
 
-ACCESSORS_IMPL(Task, task, acInFamilyOpt(ofProcess), Process, process);
-ACCESSORS_IMPL(Task, task, acInFamily(ofStack), Stack, stack);
+ACCESSORS_IMPL(Task, task, snInFamilyOpt(ofProcess), Process, process);
+ACCESSORS_IMPL(Task, task, snInFamily(ofStack), Stack, stack);
 
 value_t task_validate(value_t self) {
   VALIDATE_FAMILY(ofTask, self);
@@ -829,12 +829,12 @@ value_t task_validate(value_t self) {
 FIXED_GET_MODE_IMPL(process, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(Process, process);
 
-ACCESSORS_IMPL(Process, process, acInFamily(ofFifoBuffer), WorkQueue,
+ACCESSORS_IMPL(Process, process, snInFamily(ofFifoBuffer), WorkQueue,
     work_queue);
-ACCESSORS_IMPL(Process, process, acInFamily(ofTask), RootTask, root_task);
-ACCESSORS_IMPL(Process, process, acInFamily(ofHashSource), HashSource,
+ACCESSORS_IMPL(Process, process, snInFamily(ofTask), RootTask, root_task);
+ACCESSORS_IMPL(Process, process, snInFamily(ofHashSource), HashSource,
     hash_source);
-ACCESSORS_IMPL(Process, process, acInFamily(ofVoidP), AirlockPtr, airlock_ptr);
+ACCESSORS_IMPL(Process, process, snInFamily(ofVoidP), AirlockPtr, airlock_ptr);
 
 value_t process_validate(value_t self) {
   VALIDATE_FAMILY(ofProcess, self);
@@ -995,13 +995,13 @@ FIXED_GET_MODE_IMPL(reified_arguments, vmMutable);
 TRIVIAL_PRINT_ON_IMPL(ReifiedArguments, reified_arguments);
 GET_FAMILY_PRIMARY_TYPE_IMPL(reified_arguments);
 
-ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily(ofArray), Params,
+ACCESSORS_IMPL(ReifiedArguments, reified_arguments, snInFamily(ofArray), Params,
     params);
-ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily(ofArray), Values,
+ACCESSORS_IMPL(ReifiedArguments, reified_arguments, snInFamily(ofArray), Values,
     values);
-ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily(ofArray), Argmap,
+ACCESSORS_IMPL(ReifiedArguments, reified_arguments, snInFamily(ofArray), Argmap,
     argmap);
-ACCESSORS_IMPL(ReifiedArguments, reified_arguments, acInFamily(ofCallTags),
+ACCESSORS_IMPL(ReifiedArguments, reified_arguments, snInFamily(ofCallTags),
     Tags, tags);
 
 value_t reified_arguments_validate(value_t self) {
@@ -1105,11 +1105,11 @@ TRIVIAL_PRINT_ON_IMPL(IncomingRequestThunk, incoming_request_thunk);
 GET_FAMILY_PRIMARY_TYPE_IMPL(incoming_request_thunk);
 
 ACCESSORS_IMPL(IncomingRequestThunk, incoming_request_thunk,
-    acInFamilyOpt(ofExportedService), Service, service);
+    snInFamilyOpt(ofExportedService), Service, service);
 ACCESSORS_IMPL(IncomingRequestThunk, incoming_request_thunk,
-    acInFamilyOrNull(ofReifiedArguments), Request, request);
+    snInFamilyOrNull(ofReifiedArguments), Request, request);
 ACCESSORS_IMPL(IncomingRequestThunk, incoming_request_thunk,
-    acInFamilyOrNull(ofPromise), Promise, promise);
+    snInFamilyOrNull(ofPromise), Promise, promise);
 
 value_t incoming_request_thunk_validate(value_t self) {
   VALIDATE_FAMILY(ofIncomingRequestThunk, self);

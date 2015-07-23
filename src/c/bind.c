@@ -565,7 +565,7 @@ value_t build_binding_schedule(binding_context_t *context) {
 
 FIXED_GET_MODE_IMPL(module_loader, vmMutable);
 
-ACCESSORS_IMPL(ModuleLoader, module_loader, acInFamilyOpt(ofIdHashMap), Modules, modules);
+ACCESSORS_IMPL(ModuleLoader, module_loader, snInFamilyOpt(ofIdHashMap), Modules, modules);
 
 value_t module_loader_validate(value_t self) {
   VALIDATE_FAMILY(ofModuleLoader, self);
@@ -592,8 +592,8 @@ value_t module_loader_lookup_module(value_t self, value_t path) {
 
 FIXED_GET_MODE_IMPL(library, vmMutable);
 
-ACCESSORS_IMPL(Library, library, acNoCheck, DisplayName, display_name);
-ACCESSORS_IMPL(Library, library, acInFamilyOpt(ofIdHashMap), Modules, modules);
+ACCESSORS_IMPL(Library, library, snNoCheck, DisplayName, display_name);
+ACCESSORS_IMPL(Library, library, snInFamilyOpt(ofIdHashMap), Modules, modules);
 
 value_t library_validate(value_t self) {
   VALIDATE_FAMILY(ofLibrary, self);
@@ -626,8 +626,8 @@ void library_print_on(value_t value, print_on_context_t *context) {
 
 FIXED_GET_MODE_IMPL(unbound_module, vmMutable);
 
-ACCESSORS_IMPL(UnboundModule, unbound_module, acInFamilyOpt(ofPath), Path, path);
-ACCESSORS_IMPL(UnboundModule, unbound_module, acInFamilyOpt(ofArray), Fragments, fragments);
+ACCESSORS_IMPL(UnboundModule, unbound_module, snInFamilyOpt(ofPath), Path, path);
+ACCESSORS_IMPL(UnboundModule, unbound_module, snInFamilyOpt(ofArray), Fragments, fragments);
 
 value_t unbound_module_validate(value_t self) {
   VALIDATE_FAMILY(ofUnboundModule, self);
@@ -664,12 +664,12 @@ void unbound_module_print_on(value_t value, print_on_context_t *context) {
 
 FIXED_GET_MODE_IMPL(unbound_module_fragment, vmMutable);
 
-ACCESSORS_IMPL(UnboundModuleFragment, unbound_module_fragment, acNoCheck,
+ACCESSORS_IMPL(UnboundModuleFragment, unbound_module_fragment, snNoCheck,
     Stage, stage);
 ACCESSORS_IMPL(UnboundModuleFragment, unbound_module_fragment,
-    acInFamilyOpt(ofArray), Imports, imports);
+    snInFamilyOpt(ofArray), Imports, imports);
 ACCESSORS_IMPL(UnboundModuleFragment, unbound_module_fragment,
-    acInFamilyOpt(ofArray), Elements, elements);
+    snInFamilyOpt(ofArray), Elements, elements);
 
 value_t unbound_module_fragment_validate(value_t self) {
   VALIDATE_FAMILY(ofUnboundModuleFragment, self);
