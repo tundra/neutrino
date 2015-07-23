@@ -8,12 +8,6 @@
 #include "tagged.h"
 #include "value-inl.h"
 
-// Returns true iff the given value is a custom tagged value within the given
-// phylum.
-static inline bool in_phylum(custom_tagged_phylum_t phylum, value_t value) {
-  return in_domain(vdCustomTagged, value) && (get_custom_tagged_phylum(value) == phylum);
-}
-
 // Checks whether the value at the end of the given pointer belongs to the
 // specified family. If not, returns a validation failure.
 #define VALIDATE_PHYLUM(tpPhylum, EXPR)                                        \
@@ -130,6 +124,126 @@ static value_t new_extra_match_score() {
 // anything more specific would match better.
 static value_t new_any_match_score() {
   return  new_score(scAny, 0);
+}
+
+
+/// ## Stage offset
+
+// Returns the integer value of the given stage offset.
+static int32_t get_stage_offset_value(value_t value) {
+  CHECK_PHYLUM(tpStageOffset, value);
+  return (int32_t) get_custom_tagged_payload(value);
+}
+
+// Returns a value representing the next stage after the given stage. For
+// instance, the successor of the past is the present.
+static value_t get_stage_offset_successor(value_t stage) {
+  return new_stage_offset(get_stage_offset_value(stage) + 1);
+}
+
+// Returns a new tagged integer which is the sum of the two given tagged
+// integers.
+static value_t add_stage_offsets(value_t a, value_t b) {
+  return new_stage_offset(get_stage_offset_value(a) + get_stage_offset_value(b));
+}
+
+
+/// ## Boolean
+
+// Returns whether the given bool is true.
+static bool get_boolean_value(value_t value) {
+  CHECK_PHYLUM(tpBoolean, value);
+  return get_custom_tagged_payload(value);
+}
+
+
+/// ## Relation
+
+// Returns the enum value indicating the type of this relation.
+static relation_t get_relation_value(value_t value) {
+  CHECK_PHYLUM(tpRelation, value);
+  return (relation_t) get_custom_tagged_payload(value);
+}
+
+// Given a relation, returns an integer that represents the same relation such
+// that -1 is smaller, 0 is equal, and 1 is greater. If the value is unordered
+// an arbitrary value is returned.
+static int relation_to_integer(value_t value) {
+  switch (get_relation_value(value)) {
+    case reLessThan: return -1;
+    case reEqual: return 0;
+    case reGreaterThan: return 1;
+    default: return 2;
+  }
+}
+
+// Tests what kind of relation the given value is. For instance, if you call
+// test_relation(x, reLessThan | reEqual) the result will be true iff x is
+// the relation less_than() or equal().
+static bool test_relation(value_t relation, unsigned mask) {
+  return (get_relation_value(relation) & mask) != 0;
+}
+
+
+/// ## Float 32
+
+// Returns the value stored in a tagged float-32.
+static float32_t get_float_32_value(value_t self) {
+  CHECK_PHYLUM(tpFloat32, self);
+  uint32_t binary = (uint32_t) get_custom_tagged_payload(self);
+  float32_t result;
+  memcpy(&result, &binary, sizeof(float));
+  return result;
+}
+
+
+/// ## Derived object anchor
+
+// Returns the genus of the given derived object anchor.
+static derived_object_genus_t get_derived_object_anchor_genus(value_t self) {
+  CHECK_PHYLUM(tpDerivedObjectAnchor, self);
+  int64_t payload = get_custom_tagged_payload(self);
+  return (derived_object_genus_t) (payload & ((1 << kDerivedObjectGenusTagSize) - 1));
+}
+
+// Returns the raw offset (in bytes) within the host of the derived object which
+// is anchored by the given anchor.
+static uint64_t get_derived_object_anchor_host_offset(value_t self) {
+  CHECK_PHYLUM(tpDerivedObjectAnchor, self);
+  int64_t payload = get_custom_tagged_payload(self);
+  return payload >> kDerivedObjectGenusTagSize;
+}
+
+
+/// ## Ascii character
+
+// Returns the ordinal of the given ascii character.
+static uint8_t get_ascii_character_value(value_t value) {
+  CHECK_PHYLUM(tpAsciiCharacter, value);
+  return (uint8_t) get_custom_tagged_payload(value);
+}
+
+
+/// ## Hash code
+
+// Returns the integer value of the given hash code.
+static uint64_t get_hash_code_value(value_t value) {
+  CHECK_PHYLUM(tpHashCode, value);
+  return get_custom_tagged_payload(value) & ((1ULL << kCustomTaggedPayloadSize) - 1);
+}
+
+
+/// ## Transport mode
+
+// Returns the mode of the given transport.
+static transport_mode_t get_transport_mode(value_t value) {
+  CHECK_PHYLUM(tpTransport, value);
+  return (transport_mode_t) get_custom_tagged_payload(value);
+}
+
+// Is the given value the synchronous transport value?
+static bool is_transport_sync(value_t value) {
+  return get_transport_mode(value) == tmSync;
 }
 
 

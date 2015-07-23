@@ -6,6 +6,7 @@
 #include "runtime.h"
 #include "safe-inl.h"
 #include "serialize.h"
+#include "tagged-inl.h"
 #include "try-inl.h"
 #include "value-inl.h"
 #include "plankton.h"

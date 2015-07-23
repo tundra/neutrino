@@ -15,6 +15,9 @@
 #define CHECK_DOMAIN_OPT(vdDomain, EXPR) CHECK_SENTRY(snInDomainOpt(vdDomain), EXPR)
 #define CHECK_FAMILY(ofFamily, EXPR) CHECK_SENTRY(snInFamily(ofFamily), EXPR)
 #define CHECK_FAMILY_OPT(ofFamily, EXPR) CHECK_SENTRY(snInFamilyOpt(ofFamily), EXPR)
+#define CHECK_FAMILY_OR_NULL(ofFamily, EXPR) CHECK_SENTRY(snInFamilyOrNull(ofFamily), EXPR)
+#define CHECK_PHYLUM(tpPhylum, EXPR) CHECK_SENTRY(snInPhylum(tpPhylum), EXPR)
+#define CHECK_PHYLUM_OPT(tpPhylum, EXPR) CHECK_SENTRY(snInPhylumOpt(tpPhylum), EXPR)
 
 #define EXPECT_FAMILY(ofFamily, EXPR) EXPECT_SENTRY(snInFamily(ofFamily), EXPR)
 

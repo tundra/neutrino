@@ -10,6 +10,7 @@
 #include "runtime.h"
 #include "sync.h"
 #include "syntax.h"
+#include "tagged-inl.h"
 #include "try-inl.h"
 #include "utils/log.h"
 #include "value-inl.h"

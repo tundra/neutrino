@@ -10,6 +10,7 @@
 #include "io.h"
 #include "runtime-inl.h"
 #include "safe-inl.h"
+#include "tagged-inl.h"
 #include "try-inl.h"
 #include "utils/check.h"
 #include "utils/lifetime.h"

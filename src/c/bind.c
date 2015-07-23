@@ -7,7 +7,7 @@
 #include "freeze.h"
 #include "interp.h"
 #include "runtime.h"
-#include "tagged.h"
+#include "tagged-inl.h"
 #include "try-inl.h"
 #include "utils/log.h"
 

@@ -33,24 +33,6 @@ static value_t past_past_stage() {
   return new_stage_offset(-2);
 }
 
-// Returns the integer value of the given stage offset.
-static int32_t get_stage_offset_value(value_t value) {
-  CHECK_PHYLUM(tpStageOffset, value);
-  return (int32_t) get_custom_tagged_payload(value);
-}
-
-// Returns a value representing the next stage after the given stage. For
-// instance, the successor of the past is the present.
-static value_t get_stage_offset_successor(value_t stage) {
-  return new_stage_offset(get_stage_offset_value(stage) + 1);
-}
-
-// Returns a new tagged integer which is the sum of the two given tagged
-// integers.
-static value_t add_stage_offsets(value_t a, value_t b) {
-  return new_stage_offset(get_stage_offset_value(a) + get_stage_offset_value(b));
-}
-
 
 // --- N o t h i n g ---
 
@@ -77,6 +59,12 @@ static inline value_t null_to_nothing(value_t value) {
   return is_null(value) ? nothing() : value;
 }
 
+// Returns true iff the given value is either null or an object within the given
+// family.
+static inline bool in_family_or_null(heap_object_family_t family, value_t value) {
+  return is_null(value) || in_family(family, value);
+}
+
 
 // --- B o o l e a n s ---
 
@@ -95,12 +83,6 @@ static value_t no() {
 // Returns the tagged boolean corresponding to the given C boolean.
 static value_t new_boolean(bool value) {
   return new_custom_tagged(tpBoolean, value ? 1 : 0);
-}
-
-// Returns whether the given bool is true.
-static bool get_boolean_value(value_t value) {
-  CHECK_PHYLUM(tpBoolean, value);
-  return get_custom_tagged_payload(value);
 }
 
 
@@ -156,31 +138,6 @@ static value_t integer_to_relation(int64_t value) {
   return compare_signed_integers(value, 0);
 }
 
-// Returns the enum value indicating the type of this relation.
-static relation_t get_relation_value(value_t value) {
-  CHECK_PHYLUM(tpRelation, value);
-  return (relation_t) get_custom_tagged_payload(value);
-}
-
-// Given a relation, returns an integer that represents the same relation such
-// that -1 is smaller, 0 is equal, and 1 is greater. If the value is unordered
-// an arbitrary value is returned.
-static int relation_to_integer(value_t value) {
-  switch (get_relation_value(value)) {
-    case reLessThan: return -1;
-    case reEqual: return 0;
-    case reGreaterThan: return 1;
-    default: return 2;
-  }
-}
-
-// Tests what kind of relation the given value is. For instance, if you call
-// test_relation(x, reLessThan | reEqual) the result will be true iff x is
-// the relation less_than() or equal().
-static bool test_relation(value_t relation, unsigned mask) {
-  return (get_relation_value(relation) & mask) != 0;
-}
-
 
 // --- F l o a t   3 2 ---
 
@@ -189,15 +146,6 @@ static value_t new_float_32(float32_t value) {
   uint32_t binary;
   memcpy(&binary, &value, sizeof(uint32_t));
   return new_custom_tagged(tpFloat32, binary);
-}
-
-// Returns the value stored in a tagged float-32.
-static float32_t get_float_32_value(value_t self) {
-  CHECK_PHYLUM(tpFloat32, self);
-  uint32_t binary = (uint32_t) get_custom_tagged_payload(self);
-  float32_t result;
-  memcpy(&result, &binary, sizeof(float));
-  return result;
 }
 
 // Returns the float-32 value representing infinity.
@@ -290,21 +238,6 @@ static value_t new_derived_object_anchor(derived_object_genus_t genus,
   return new_custom_tagged(tpDerivedObjectAnchor, payload);
 }
 
-// Returns the genus of the given derived object anchor.
-static derived_object_genus_t get_derived_object_anchor_genus(value_t self) {
-  CHECK_PHYLUM(tpDerivedObjectAnchor, self);
-  int64_t payload = get_custom_tagged_payload(self);
-  return (derived_object_genus_t) (payload & ((1 << kDerivedObjectGenusTagSize) - 1));
-}
-
-// Returns the raw offset (in bytes) within the host of the derived object which
-// is anchored by the given anchor.
-static uint64_t get_derived_object_anchor_host_offset(value_t self) {
-  CHECK_PHYLUM(tpDerivedObjectAnchor, self);
-  int64_t payload = get_custom_tagged_payload(self);
-  return payload >> kDerivedObjectGenusTagSize;
-}
-
 
 /// ## Ascii character
 ///
@@ -314,12 +247,6 @@ static uint64_t get_derived_object_anchor_host_offset(value_t self) {
 // Creates a new tagged stage offset value.
 static value_t new_ascii_character(uint8_t value) {
   return new_custom_tagged(tpAsciiCharacter, value);
-}
-
-// Returns the ordinal of the given ascii character.
-static uint8_t get_ascii_character_value(value_t value) {
-  CHECK_PHYLUM(tpAsciiCharacter, value);
-  return (uint8_t) get_custom_tagged_payload(value);
 }
 
 
@@ -338,12 +265,6 @@ static value_t new_hash_code(uint64_t value) {
   size_t bits_to_discard = 64 - kCustomTaggedPayloadSize;
   int64_t truncated = (((int64_t) value) << bits_to_discard) >> bits_to_discard;
   return new_custom_tagged(tpHashCode, truncated);
-}
-
-// Returns the integer value of the given hash code.
-static uint64_t get_hash_code_value(value_t value) {
-  CHECK_PHYLUM(tpHashCode, value);
-  return get_custom_tagged_payload(value) & ((1ULL << kCustomTaggedPayloadSize) - 1);
 }
 
 
@@ -371,17 +292,6 @@ static value_t transport_async() {
 // Returns the synchronous transport mode.
 static value_t transport_sync() {
   return new_transport(tmSync);
-}
-
-// Returns the mode of the given transport.
-static transport_mode_t get_transport_mode(value_t value) {
-  CHECK_PHYLUM(tpTransport, value);
-  return (transport_mode_t) get_custom_tagged_payload(value);
-}
-
-// Is the given value the synchronous transport value?
-static bool is_transport_sync(value_t value) {
-  return get_transport_mode(value) == tmSync;
 }
 
 

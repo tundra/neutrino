@@ -8,7 +8,7 @@ BEGIN_C_INCLUDES
 #include "behavior.h"
 #include "freeze.h"
 #include "runtime.h"
-#include "tagged.h"
+#include "tagged-inl.h"
 #include "try-inl.h"
 #include "utils.h"
 #include "utils/check.h"

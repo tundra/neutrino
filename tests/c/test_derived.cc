@@ -6,6 +6,7 @@
 BEGIN_C_INCLUDES
 #include "behavior.h"
 #include "derived-inl.h"
+#include "tagged-inl.h"
 END_C_INCLUDES
 
 TEST(derived, array) {

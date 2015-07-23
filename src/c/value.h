@@ -841,6 +841,12 @@ static int64_t get_custom_tagged_payload(value_t value) {
   return (data >> (kCustomTaggedPhylumTagSize + kDomainTagSize));
 }
 
+// Returns true iff the given value is a custom tagged value within the given
+// phylum.
+static inline bool in_phylum(custom_tagged_phylum_t phylum, value_t value) {
+  return in_domain(vdCustomTagged, value) && (get_custom_tagged_phylum(value) == phylum);
+}
+
 // A compile-time constant that is equal to the encoded representation of the
 // nothing value.
 #define ENCODED_NOTHING ((encoded_value_t) ((tpNothing << kDomainTagSize) | vdCustomTagged))
@@ -854,6 +860,12 @@ static inline bool is_nothing(value_t value) {
 // given domain.
 static inline bool in_domain_opt(value_domain_t domain, value_t value) {
   return is_nothing(value) || in_domain(domain, value);
+}
+
+// Returns true iff the given value is a custom tagged value within the given
+// phylum or nothing.
+static inline bool in_phylum_opt(custom_tagged_phylum_t phylum, value_t value) {
+  return is_nothing(value) || in_phylum(phylum, value);
 }
 
 

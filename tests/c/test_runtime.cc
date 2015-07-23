@@ -7,6 +7,7 @@ BEGIN_C_INCLUDES
 #include "alloc.h"
 #include "runtime.h"
 #include "safe-inl.h"
+#include "tagged-inl.h"
 #include "value-inl.h"
 END_C_INCLUDES
 

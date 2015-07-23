@@ -23,16 +23,6 @@
 // but are shorter and it may be possible to optimize them when the value is
 // hardcoded.
 
-// Returns true if the value of the given expression is in the specified
-// domain.
-
-
-// Returns true iff the given value is either null or an object within the given
-// family.
-static inline bool in_family_or_null(heap_object_family_t family, value_t value) {
-  return is_null(value) || in_family(family, value);
-}
-
 // Returns true iff the given species belongs to the given division.
 static inline bool in_division(species_division_t division, value_t value) {
   return in_family(ofSpecies, value) && (get_species_division(value) == division);

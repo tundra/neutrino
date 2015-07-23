@@ -13,6 +13,7 @@
 #define _SENTRY
 
 #include "condition.h"
+#include "tagged.h"
 #include "value-inl.h"
 
 // A sentry is a tuple of the components you need to implement the check
@@ -42,11 +43,51 @@ static inline bool in_family_sentry_impl(heap_object_family_t family, value_t se
 }
 
 // Is the value nothing or in a particular family?
-#define snInFamilyOpt(vdDomain) (_, in_family_opt_sentry_impl, vdDomain, "inFamilyOpt(" #vdDomain ")")
+#define snInFamilyOpt(ofFamily) (_, in_family_opt_sentry_impl, ofFamily, "inFamilyOpt(" #ofFamily ")")
 
 static inline bool in_family_opt_sentry_impl(heap_object_family_t family, value_t self, value_t *error_out) {
   if (!in_family_opt(family, self)) {
     *error_out = new_unexpected_type_condition(value_type_info_for_family(family),
+        get_value_type_info(self));
+    return false;
+  } else {
+    return true;
+  }
+}
+
+// Is the value null or in a particular family?
+#define snInFamilyOrNull(ofFamily) (_, in_family_or_null_sentry_impl, ofFamily, "inFamilyOrNull(" #ofFamily ")")
+
+static inline bool in_family_or_null_sentry_impl(heap_object_family_t family, value_t self, value_t *error_out) {
+  if (!in_family_or_null(family, self)) {
+    *error_out = new_unexpected_type_condition(value_type_info_for_family(family),
+        get_value_type_info(self));
+    return false;
+  } else {
+    return true;
+  }
+}
+
+
+// A sentry that checks that a value is in a particular family.
+#define snInPhylum(tpPhylum) (_, in_phylum_sentry_impl, tpPhylum, "inPhylum(" #tpPhylum ")")
+
+static inline bool in_phylum_sentry_impl(custom_tagged_phylum_t phylum, value_t self, value_t *error_out) {
+  if (!in_phylum(phylum, self)) {
+    *error_out = new_unexpected_type_condition(value_type_info_empty(),
+        get_value_type_info(self));
+    return false;
+  } else {
+    return true;
+  }
+}
+
+// Is the value nothing or in a particular family?
+#define snInPhylumOpt(tpPhylum) (_, in_phylum_opt_sentry_impl, tpPhylum, "inPhylumOpt(" #tpPhylum ")")
+
+static inline bool in_phylum_opt_sentry_impl(custom_tagged_phylum_t phylum, value_t self, value_t *error_out) {
+  if (!in_phylum_opt(phylum, self)) {
+    *error_out = new_unexpected_type_condition(value_type_info_empty(),
         get_value_type_info(self));
     return false;
   } else {

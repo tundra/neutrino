@@ -8,6 +8,7 @@ BEGIN_C_INCLUDES
 #include "freeze.h"
 #include "heap.h"
 #include "runtime.h"
+#include "tagged-inl.h"
 #include "try-inl.h"
 #include "utils/log.h"
 #include "value-inl.h"
