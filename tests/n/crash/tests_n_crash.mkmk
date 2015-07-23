@@ -1,27 +1,20 @@
 # Copyright 2015 the Neutrino authors (see AUTHORS).
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
+import os
 import os.path
-
-file_names = [
-  "id_000000_sig_06_src_000000_op_flip1_pos_0",
-  "id_000010_sig_06_src_000000_op_flip1_pos_102",
-  "id_000022_sig_06_src_000000_op_flip2_pos_187",
-  "id_000001_sig_06_src_000000_op_flip1_pos_4",
-  "id_000012_sig_06_src_000000_op_flip1_pos_138",
-  "id_000052_sig_06_src_000000_op_havoc_rep_64",
-  "id_000005_sig_06_src_000000_op_flip1_pos_34",
-  "id_000014_sig_06_src_000000_op_flip1_pos_158",
-  "id_000063_sig_06_src_000000_op_havoc_rep_32",
-  "id_000007_sig_06_src_000000_op_flip1_pos_66",
-  "id_000016_sig_06_src_000000_op_flip1_pos_171",
-]
 
 suite = get_group("suite")
 tester = wrap_source_file(get_root().get_child("src", "sh", "run-crash-test.py"))
 runner = get_external("src", "c", "ctrino")
 
-for file_name in file_names:
+def is_crash_file(name):
+  return not (name.endswith(".sh") or name.endswith(".mkmk"))
+
+root_dir = get_root().get_child("tests", "n", "crash").get_path()
+for file_name in os.listdir(root_dir):
+  if not is_crash_file(file_name):
+    continue
   crash_file = get_source_file(file_name)
   test_case = test.get_exec_test_case(file_name)
   suite.add_member(test_case)
