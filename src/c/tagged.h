@@ -7,8 +7,35 @@
 #ifndef _TAGGED
 #define _TAGGED
 
+#include "condition.h"
 #include "utils/check.h"
 #include "value.h"
+
+// Sentry that checks whether a value is in the given phylum.
+#define snInPhylum(tpPhylum) (_, in_phylum_sentry_impl, tpPhylum, "inPhylum(" #tpPhylum ")")
+
+static inline bool in_phylum_sentry_impl(custom_tagged_phylum_t phylum, value_t self, value_t *error_out) {
+  if (!in_phylum(phylum, self)) {
+    *error_out = new_unexpected_type_condition(value_type_info_for_phylum(phylum),
+        get_value_type_info(self));
+    return false;
+  } else {
+    return true;
+  }
+}
+
+// Sentry that checks whether the value is nothing or in the given phylum.
+#define snInPhylumOpt(tpPhylum) (_, in_phylum_opt_sentry_impl, tpPhylum, "inPhylumOpt(" #tpPhylum ")")
+
+static inline bool in_phylum_opt_sentry_impl(custom_tagged_phylum_t phylum, value_t self, value_t *error_out) {
+  if (!in_phylum_opt(phylum, self)) {
+    *error_out = new_unexpected_type_condition(value_type_info_for_phylum(phylum),
+        get_value_type_info(self));
+    return false;
+  } else {
+    return true;
+  }
+}
 
 
 // --- S t a g e   o f f s e t ---

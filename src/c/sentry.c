@@ -1,7 +1,7 @@
 //- Copyright 2015 the Neutrino authors (see AUTHORS).
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
-#include "sentry-inl.h"
+#include "sentry.h"
 #include "value-inl.h"
 
 bool is_array_of_family_sentry_impl(heap_object_family_t family, value_t self, value_t *error_out) {

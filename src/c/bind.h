@@ -8,7 +8,7 @@
 #define _BIND
 
 #include "plankton.h"
-#include "value-inl.h"
+#include "value.h"
 
 
 // --- B i n d i n g ---

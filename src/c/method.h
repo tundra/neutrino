@@ -8,7 +8,7 @@
 #define _METHOD
 
 #include "process.h"
-#include "value-inl.h"
+#include "value.h"
 
 // --- S i g n a t u r e ---
 

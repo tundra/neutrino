@@ -7,7 +7,7 @@
 #include "freeze.h"
 #include "io.h"
 #include "plugin.h"
-#include "sentry-inl.h"
+#include "sentry.h"
 #include "sync.h"
 #include "tagged-inl.h"
 #include "value-inl.h"

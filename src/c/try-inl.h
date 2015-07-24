@@ -7,7 +7,7 @@
 #ifndef _TRY_INL
 #define _TRY_INL
 
-#include "sentry-inl.h"
+#include "sentry.h"
 #include "value-inl.h"
 
 // Plain flavor, works with normal values.

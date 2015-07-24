@@ -13,31 +13,6 @@
 #define VALIDATE_PHYLUM(tpPhylum, EXPR)                                        \
 VALIDATE(in_phylum(tpPhylum, EXPR))
 
-// Is the value in the given phylum?
-#define snInPhylum(tpPhylum) (_, in_phylum_sentry_impl, tpPhylum, "inPhylum(" #tpPhylum ")")
-
-static inline bool in_phylum_sentry_impl(custom_tagged_phylum_t phylum, value_t self, value_t *error_out) {
-  if (!in_phylum(phylum, self)) {
-    *error_out = new_unexpected_type_condition(value_type_info_for_phylum(phylum),
-        get_value_type_info(self));
-    return false;
-  } else {
-    return true;
-  }
-}
-
-// Is the value nothing or in a the given phylum?
-#define snInPhylumOpt(tpPhylum) (_, in_phylum_opt_sentry_impl, tpPhylum, "inPhylumOpt(" #tpPhylum ")")
-
-static inline bool in_phylum_opt_sentry_impl(custom_tagged_phylum_t phylum, value_t self, value_t *error_out) {
-  if (!in_phylum_opt(phylum, self)) {
-    *error_out = new_unexpected_type_condition(value_type_info_for_phylum(phylum),
-        get_value_type_info(self));
-    return false;
-  } else {
-    return true;
-  }
-}
 
 /// ## Flag set
 

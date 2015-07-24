@@ -7,8 +7,9 @@
 #ifndef _CHECK
 #define _CHECK
 
-#include "sentry-inl.h"
+#include "tagged.h"
 #include "utils/check.h"
+#include "sentry.h"
 
 // Shorthands for sentry checks
 #define CHECK_DOMAIN(vdDomain, EXPR) CHECK_SENTRY(snInDomain(vdDomain), EXPR)

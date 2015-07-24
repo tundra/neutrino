@@ -2,8 +2,9 @@
 //- Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 #include "alloc.h"
-#include "plugin.h"
 #include "async/promise.h"
+#include "plugin.h"
+#include "try-inl.h"
 
 // Builds a signature for the built-in ctrino method with the given name and
 // positional argument count.

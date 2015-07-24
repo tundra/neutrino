@@ -14,7 +14,7 @@
 
 #include "condition.h"
 #include "tagged.h"
-#include "value-inl.h"
+#include "value.h"
 
 // A sentry is a tuple of the components you need to implement the check
 // appropriate for the different places they're used. The entries are.

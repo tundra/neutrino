@@ -38,7 +38,8 @@
 #include "derived.h"
 #include "sync/semaphore.h"
 #include "sync/worklist.h"
-#include "value-inl.h"
+#include "tagged.h"
+#include "value.h"
 
 /// ## Stack piece
 ///

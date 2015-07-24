@@ -8,8 +8,9 @@
 #ifndef _SYNC
 #define _SYNC
 
+#include "check.h"
 #include "plugin.h"
-#include "tagged-inl.h"
+#include "tagged.h"
 #include "undertaking.h"
 #include "value.h"
 
