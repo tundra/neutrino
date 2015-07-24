@@ -11,15 +11,25 @@ for OLD_NAME in ls $ROOT/*; do
   if [ -f $OLD_NAME ]; then
     NEW_NAME=$(echo $OLD_NAME | sed -e 's/[:,]/_/g')
     if [ "$OLD_NAME" != "$NEW_NAME" ]; then
-      read -p "Rename $OLD_NAME to $NEW_NAME? [yn] " CHOICE
-      if [[ $CHOICE =~ ^[Yy]$ ]]; then
-        mv $OLD_NAME $NEW_NAME
-        COUNT=$(($COUNT + 1))
+      if [ -f "$NEW_NAME" ]; then
+        read -p "Renamed file already exists. Delete $OLD_NAME? [yn] " CHOICE
+        if [[ $CHOICE =~ ^[Yy]$ ]]; then
+          rm $OLD_NAME
+          COUNT=$(($COUNT + 1))
+        else
+          echo "Skipped deleting"
+        fi
       else
-        echo "Skipping"
+        read -p "Rename $OLD_NAME to $NEW_NAME? [yn] " CHOICE
+        if [[ $CHOICE =~ ^[Yy]$ ]]; then
+          mv $OLD_NAME $NEW_NAME
+          COUNT=$(($COUNT + 1))
+        else
+          echo "Skipped renaming"
+        fi
       fi
     fi
   fi
 done
 
-echo "Files renamed: $COUNT"
+echo "Files touched: $COUNT"
