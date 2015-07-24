@@ -458,6 +458,9 @@ static value_t value_deserialize(deserialize_state_t *state) {
 // data (think: for the array to be moved by gc).
 static value_t plankton_deserialize_data_ptr(runtime_t *runtime,
     object_factory_t *factory_or_null, blob_t *in) {
+  bool validate = pton_validate(in->start, in->size);
+  if (!validate)
+    return new_invalid_input_condition();
   // Use a failing environment accessor if the access pointer is null.
   object_factory_t factory;
   if (factory_or_null == NULL) {
