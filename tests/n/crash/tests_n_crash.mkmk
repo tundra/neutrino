@@ -9,7 +9,7 @@ tester = wrap_source_file(get_root().get_child("src", "sh", "run-crash-test.py")
 runner = get_external("src", "c", "ctrino")
 
 def is_crash_file(name):
-  return not (name.endswith(".sh") or name.endswith(".mkmk"))
+  return not (name.endswith(".sh") or name.endswith(".mkmk") or name.endswith(".skip"))
 
 root_dir = get_root().get_child("tests", "n", "crash").get_path()
 for file_name in os.listdir(root_dir):

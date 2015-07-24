@@ -2444,7 +2444,7 @@ void path_print_on(value_t value, print_on_context_t *context) {
 value_t path_transient_identity_hash(value_t value, hash_stream_t *stream,
     cycle_detector_t *outer) {
   cycle_detector_t inner;
-  cycle_detector_enter(outer, &inner, value);
+  TRY(cycle_detector_enter(outer, &inner, value));
   // TODO: This should really be done iteratively since this gives a huge
   //   pointless overhead per segment. Alternatively it makes sense to
   //   canonicalize paths and then the address works as a hash.
@@ -2516,7 +2516,7 @@ void identifier_print_on(value_t value, print_on_context_t *context) {
 value_t identifier_transient_identity_hash(value_t value, hash_stream_t *stream,
     cycle_detector_t *outer) {
   cycle_detector_t inner;
-  cycle_detector_enter(outer, &inner, value);
+  TRY(cycle_detector_enter(outer, &inner, value));
   value_t stage = get_identifier_stage(value);
   value_t path = get_identifier_path(value);
   TRY(value_transient_identity_hash_cycle_protect(stage, stream, &inner));
