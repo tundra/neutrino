@@ -313,13 +313,5 @@ SPECIES_GETTER_IMPL(Receiver, receiver, ReceiverSpecies, receiver_species,     \
   value_t __source__ = (SOURCE);                                               \
   EXPECT_FAMILY(ofIdHashMap, __source__)
 
-// Reads successive values from a plankton map, storing them in variables with
-// names matching the keys of the values.
-#define UNPACK_PLANKTON_MAP(SOURCE, ...)                                       \
-  value_t __source__ = (SOURCE);                                               \
-  EXPECT_FAMILY(ofIdHashMap, __source__);                                      \
-  FOR_EACH_VA_ARG(__GET_PLANKTON_MAP_ENTRY__, __VA_ARGS__)                     \
-  SWALLOW_SEMI(upm)
-
 
 #endif // _VALUE_INL
