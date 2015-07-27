@@ -606,7 +606,8 @@ value_t plankton_new_library(runtime_t *runtime) {
 
 value_t plankton_set_library_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, modules);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInFamilyOpt(ofIdHashMap), modules);
   set_library_modules(object, modules_value);
   return success();
 }
@@ -643,7 +644,7 @@ value_t plankton_set_unbound_module_contents(value_t object, runtime_t *runtime,
     value_t contents) {
   BEGIN_UNPACK_PLANKTON(contents);
   UNPACK_PLANKTON_FIELD(snInFamily(ofPath), path);
-  UNPACK_PLANKTON_FIELD(snIsArrayOfFamily(ofUnboundModuleFragment), fragments);
+  UNPACK_PLANKTON_FIELD(snIsArrayOfFamily(snInFamily(ofUnboundModuleFragment)), fragments);
   set_unbound_module_path(object, path_value);
   set_unbound_module_fragments(object, fragments_value);
   return success();
@@ -685,7 +686,7 @@ value_t plankton_set_unbound_module_fragment_contents(value_t object, runtime_t 
     value_t contents) {
   BEGIN_UNPACK_PLANKTON(contents);
   UNPACK_PLANKTON_FIELD(snInDomain(vdInteger), stage);
-  UNPACK_PLANKTON_FIELD(snInFamily(ofArray), imports);
+  UNPACK_PLANKTON_FIELD(snIsArrayOfFamily(snInFamily(ofPath)), imports);
   UNPACK_PLANKTON_FIELD(snInFamily(ofArray), elements);
   int32_t stage_index = (int32_t) get_integer_value(stage_value);
   set_unbound_module_fragment_stage(object, new_stage_offset(stage_index));

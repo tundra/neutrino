@@ -189,7 +189,8 @@ value_t plankton_new_literal_ast(runtime_t *runtime) {
 
 value_t plankton_set_literal_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, value);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snNoCheck, value);
   set_literal_ast_value(object, value_value);
   return ensure_frozen(runtime, object);
 }
@@ -231,7 +232,8 @@ void array_ast_print_on(value_t value, print_on_context_t *context) {
 
 value_t plankton_set_array_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, elements);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInFamilyOpt(ofArray), elements);
   set_array_ast_elements(object, elements_value);
   return ensure_frozen(runtime, object);
 }
@@ -331,7 +333,8 @@ value_t invocation_ast_validate(value_t value) {
 
 value_t plankton_set_invocation_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, arguments);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInFamilyOpt(ofArray), arguments);
   set_invocation_ast_arguments(object, arguments_value);
   return ensure_frozen(runtime, object);
 }
@@ -371,7 +374,8 @@ value_t call_literal_ast_validate(value_t value) {
 
 value_t plankton_set_call_literal_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, arguments);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snIsArrayOfFamily(snInFamily(ofCallLiteralArgumentAst)), arguments);
   set_call_literal_ast_arguments(object, arguments_value);
   return ensure_frozen(runtime, object);
 }
@@ -399,7 +403,9 @@ value_t call_literal_argument_ast_validate(value_t value) {
 
 value_t plankton_set_call_literal_argument_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, tag, value);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, tag);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, value);
   set_call_literal_argument_ast_tag(object, tag_value);
   set_call_literal_argument_ast_value(object, value_value);
   return ensure_frozen(runtime, object);
@@ -477,7 +483,10 @@ value_t signal_ast_validate(value_t value) {
 
 value_t plankton_set_signal_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, arguments, escape, default);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snIsArrayOfFamily(snInFamily(ofArgumentAst)), arguments);
+  UNPACK_PLANKTON_FIELD(snInPhylum(tpBoolean), escape);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamilyOrNull, default);
   set_signal_ast_escape(object, escape_value);
   set_signal_ast_arguments(object, arguments_value);
   set_signal_ast_default(object, null_to_nothing(default_value));
@@ -551,7 +560,9 @@ value_t signal_handler_ast_validate(value_t value) {
 
 value_t plankton_set_signal_handler_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, body, handlers);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, body);
+  UNPACK_PLANKTON_FIELD(snIsArrayOfFamily(snInFamily(ofMethodAst)), handlers);
   set_signal_handler_ast_body(object, body_value);
   set_signal_handler_ast_handlers(object, handlers_value);
   return ensure_frozen(runtime, object);
@@ -605,7 +616,9 @@ value_t ensure_ast_validate(value_t value) {
 
 value_t plankton_set_ensure_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, body, on_exit);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, body);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, on_exit);
   set_ensure_ast_body(object, body_value);
   set_ensure_ast_on_exit(object, on_exit_value);
   return ensure_frozen(runtime, object);
@@ -634,7 +647,10 @@ value_t argument_ast_validate(value_t value) {
 
 value_t plankton_set_argument_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, tag, value, next_guard);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snNoCheck, tag);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, value);
+  UNPACK_PLANKTON_FIELD(snInFamilyOrNull(ofGuardAst), next_guard);
   set_argument_ast_tag(object, tag_value);
   set_argument_ast_value(object, value_value);
   if (!is_null(next_guard_value))
@@ -691,7 +707,8 @@ void sequence_ast_print_on(value_t value, print_on_context_t *context) {
 
 value_t plankton_set_sequence_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, values);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snIsArrayOfFamily(snInSyntaxFamily), values);
   set_sequence_ast_values(object, values_value);
   return ensure_frozen(runtime, object);
 }
@@ -765,7 +782,11 @@ void local_declaration_ast_print_on(value_t value, print_on_context_t *context) 
 
 value_t plankton_set_local_declaration_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, symbol, is_mutable, value, body);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofSymbolAst), symbol);
+  UNPACK_PLANKTON_FIELD(snInPhylum(tpBoolean), is_mutable);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, value);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, body);
   set_local_declaration_ast_symbol(object, symbol_value);
   set_local_declaration_ast_is_mutable(object, is_mutable_value);
   set_local_declaration_ast_value(object, value_value);
@@ -897,7 +918,10 @@ value_t block_ast_validate(value_t self) {
 
 value_t plankton_set_block_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, symbol, methods, body);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofSymbolAst), symbol);
+  UNPACK_PLANKTON_FIELD(snIsArrayOfFamily(snInFamily(ofMethodAst)), methods);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, body);
   set_block_ast_symbol(object, symbol_value);
   set_block_ast_methods(object, methods_value);
   set_block_ast_body(object, body_value);
@@ -959,7 +983,9 @@ value_t emit_with_escape_ast(value_t self, assembler_t *assm) {
 
 value_t plankton_set_with_escape_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, symbol, body);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofSymbolAst), symbol);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, body);
   set_with_escape_ast_symbol(object, symbol_value);
   set_with_escape_ast_body(object, body_value);
   return ensure_frozen(runtime, object);
@@ -986,7 +1012,9 @@ value_t variable_assignment_ast_validate(value_t self) {
 
 value_t plankton_set_variable_assignment_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, target, value);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofLocalVariableAst), target);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, value);
   set_variable_assignment_ast_target(object, target_value);
   set_variable_assignment_ast_value(object, value_value);
   return ensure_frozen(runtime, object);
@@ -1052,7 +1080,8 @@ void local_variable_ast_print_on(value_t value, print_on_context_t *context) {
 
 value_t plankton_set_local_variable_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, symbol);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofSymbolAst), symbol);
   set_local_variable_ast_symbol(object, symbol_value);
   return ensure_frozen(runtime, object);
 }
@@ -1087,7 +1116,8 @@ value_t namespace_variable_ast_validate(value_t self) {
 
 value_t plankton_set_namespace_variable_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, name);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInFamilyOpt(ofIdentifier), name);
   set_namespace_variable_ast_identifier(object, name_value);
   return ensure_frozen(runtime, object);
 }
@@ -1118,7 +1148,9 @@ void symbol_ast_print_on(value_t value, print_on_context_t *context) {
 
 value_t plankton_set_symbol_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, name, origin);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snNoCheck, name);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamilyOrNull, origin);
   set_symbol_ast_name(object, name_value);
   set_symbol_ast_origin(object, origin_value);
   return ensure_frozen(runtime, object);
@@ -1313,7 +1345,8 @@ value_t lambda_ast_validate(value_t self) {
 
 value_t plankton_set_lambda_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, methods);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snIsArrayOfFamily(snInFamily(ofMethodAst)), methods);
   set_lambda_ast_methods(object, methods_value);
   return ensure_frozen(runtime, object);
 }
@@ -1343,7 +1376,10 @@ value_t parameter_ast_validate(value_t self) {
 
 value_t plankton_set_parameter_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, symbol, tags, guard);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInFamilyOrNull(ofSymbolAst), symbol);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofArray), tags);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofGuardAst), guard);
   set_parameter_ast_symbol(object, null_to_nothing(symbol_value));
   set_parameter_ast_tags(object, tags_value);
   set_parameter_ast_guard(object, guard_value);
@@ -1379,11 +1415,12 @@ value_t guard_ast_validate(value_t self) {
 
 value_t plankton_set_guard_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, type, value);
-  guard_type_t type_enum;
+  BEGIN_UNPACK_PLANKTON(contents);
   // Maybe passing an integer enum will be good enough? Or does that conflict
   // with being self-describing?
-  EXPECT_FAMILY(ofUtf8, type_value);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofUtf8), type);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamilyOrNull, value);
+  guard_type_t type_enum;
   char type_char = get_utf8_chars(type_value)[0];
   switch (type_char) {
     case '=': type_enum = gtEq; break;
@@ -1441,7 +1478,10 @@ value_t signature_ast_validate(value_t self) {
 
 value_t plankton_set_signature_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, parameters, allow_extra, reified);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snIsArrayOfFamily(snInFamily(ofParameterAst)), parameters);
+  UNPACK_PLANKTON_FIELD(snInPhylum(tpBoolean), allow_extra);
+  UNPACK_PLANKTON_FIELD(snInFamilyOrNull(ofSymbolAst), reified);
   set_signature_ast_parameters(object, parameters_value);
   set_signature_ast_allow_extra(object, allow_extra_value);
   set_signature_ast_reified(object, null_to_nothing(reified_value));
@@ -1482,7 +1522,9 @@ value_t method_ast_validate(value_t self) {
 
 value_t plankton_set_method_ast_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, signature, body);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofSignatureAst), signature);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, body);
   set_method_ast_signature(object, signature_value);
   set_method_ast_body(object, body_value);
   return ensure_frozen(runtime, object);
@@ -1521,7 +1563,10 @@ value_t namespace_declaration_ast_validate(value_t self) {
 
 value_t plankton_set_namespace_declaration_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, path, value, annotations);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snIsArrayOfFamily(snInSyntaxFamily), annotations);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofPath), path);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, value);
   set_namespace_declaration_ast_annotations(object, annotations_value);
   set_namespace_declaration_ast_path(object, path_value);
   set_namespace_declaration_ast_value(object, value_value);
@@ -1558,7 +1603,9 @@ value_t method_declaration_ast_validate(value_t self) {
 
 value_t plankton_set_method_declaration_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, method, annotations);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofMethodAst), method);
+  UNPACK_PLANKTON_FIELD(snIsArrayOfFamily(snInSyntaxFamily), annotations);
   set_method_declaration_ast_annotations(object, annotations_value);
   set_method_declaration_ast_method(object, method_value);
   return ensure_frozen(runtime, object);
@@ -1589,7 +1636,9 @@ value_t is_declaration_ast_validate(value_t self) {
 
 value_t plankton_set_is_declaration_ast_contents(value_t object,
     runtime_t *runtime, value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, subtype, supertype);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, subtype);
+  UNPACK_PLANKTON_FIELD(snInSyntaxFamily, supertype);
   set_is_declaration_ast_subtype(object, subtype_value);
   set_is_declaration_ast_supertype(object, supertype_value);
   return ensure_frozen(runtime, object);

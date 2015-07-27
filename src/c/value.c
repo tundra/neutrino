@@ -1753,7 +1753,8 @@ value_t plankton_new_key(runtime_t *runtime) {
 
 value_t plankton_set_key_contents(value_t instance, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, id);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snNoCheck, id);
   if (value_identity_compare(id_value, RSTR(runtime, core_transport))) {
     return ROOT(runtime, transport_key);
   } else if (value_identity_compare(id_value, RSTR(runtime, core_selector))) {
@@ -1957,7 +1958,8 @@ value_t plankton_new_type(runtime_t *runtime) {
 
 value_t plankton_set_type_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, name);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snNoCheck, name);
   set_type_display_name(object, name_value);
   return ensure_frozen(runtime, object);
 }
@@ -2500,7 +2502,9 @@ value_t plankton_new_identifier(runtime_t *runtime) {
 
 value_t plankton_set_identifier_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, stage, path);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInDomain(vdInteger), stage);
+  UNPACK_PLANKTON_FIELD(snInFamily(ofPath), path);
   int32_t stage_index = (int32_t) get_integer_value(stage_value);
   set_identifier_stage(object, new_stage_offset(stage_index));
   set_identifier_path(object, path_value);
@@ -2630,7 +2634,10 @@ void decimal_fraction_print_on(value_t value, print_on_context_t *context) {
 
 value_t plankton_set_decimal_fraction_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, numerator, denominator, precision);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInDomain(vdInteger), numerator);
+  UNPACK_PLANKTON_FIELD(snInDomain(vdInteger), denominator);
+  UNPACK_PLANKTON_FIELD(snInDomain(vdInteger), precision);
   TRY(validate_deep_frozen(runtime, numerator_value, NULL));
   TRY(validate_deep_frozen(runtime, denominator_value, NULL));
   TRY(validate_deep_frozen(runtime, precision_value, NULL));

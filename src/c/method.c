@@ -723,7 +723,9 @@ value_t plankton_new_operation(runtime_t *runtime) {
 
 value_t plankton_set_operation_contents(value_t object, runtime_t *runtime,
     value_t contents) {
-  UNPACK_PLANKTON_MAP(contents, type, value);
+  BEGIN_UNPACK_PLANKTON(contents);
+  UNPACK_PLANKTON_FIELD(snInDomain(vdInteger), type);
+  UNPACK_PLANKTON_FIELD(snNoCheck, value);
   set_operation_type(object, get_integer_value(type_value));
   set_operation_value(object, value_value);
   return ensure_frozen(runtime, object);
