@@ -12,7 +12,11 @@
 #include "value.h"
 
 // Sentry that checks whether a value is in the given phylum.
-#define snInPhylum(tpPhylum) (_, in_phylum_sentry_impl, 0, tpPhylum, "inPhylum(" #tpPhylum ")")
+#define snInPhylum(tpPhylum) (_,                                               \
+    in_phylum_sentry_impl,                                                     \
+    0,                                                                         \
+    tpPhylum,                                                                  \
+    "inPhylum(" #tpPhylum ")")
 
 static inline bool in_phylum_sentry_impl(custom_tagged_phylum_t phylum, value_t self, value_t *error_out) {
   if (!in_phylum(phylum, self)) {
@@ -25,7 +29,11 @@ static inline bool in_phylum_sentry_impl(custom_tagged_phylum_t phylum, value_t 
 }
 
 // Sentry that checks whether the value is nothing or in the given phylum.
-#define snInPhylumOpt(tpPhylum) (_, in_phylum_opt_sentry_impl, 0, tpPhylum, "inPhylumOpt(" #tpPhylum ")")
+#define snInPhylumOpt(tpPhylum) (_,                                            \
+    in_phylum_opt_sentry_impl,                                                 \
+    0,                                                                         \
+    tpPhylum,                                                                  \
+    "inPhylumOpt(" #tpPhylum ")")
 
 static inline bool in_phylum_opt_sentry_impl(custom_tagged_phylum_t phylum, value_t self, value_t *error_out) {
   if (!in_phylum_opt(phylum, self)) {

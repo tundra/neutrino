@@ -37,7 +37,10 @@ VALIDATE(in_genus(dgGenus, EXPR))
 VALIDATE(in_genus_opt(dgGenus, EXPR))
 
 // Is the value in the given genus?
-#define snInGenus(dgGenus) (_, in_genus_sentry_impl, 0, dgGenus, "inGenus(" #dgGenus ")")
+#define snInGenus(dgGenus) (_,                                                 \
+    in_genus_sentry_impl,                                                      \
+    0,                                                                         \
+    dgGenus, "inGenus(" #dgGenus ")")
 
 static inline bool in_genus_sentry_impl(derived_object_genus_t genus, value_t self, value_t *error_out) {
   if (!in_genus(genus, self)) {
@@ -50,7 +53,11 @@ static inline bool in_genus_sentry_impl(derived_object_genus_t genus, value_t se
 }
 
 // Is the value nothing or in a the given genus?
-#define snInGenusOpt(dgGenus) (_, in_genus_opt_sentry_impl, 0, dgGenus, "inGenusOpt(" #dgGenus ")")
+#define snInGenusOpt(dgGenus) (_,                                              \
+    in_genus_opt_sentry_impl,                                                  \
+    0,                                                                         \
+    dgGenus,                                                                   \
+    "inGenusOpt(" #dgGenus ")")
 
 static inline bool in_genus_opt_sentry_impl(derived_object_genus_t genus, value_t self, value_t *error_out) {
   if (!in_genus_opt(genus, self)) {

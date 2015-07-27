@@ -142,7 +142,7 @@ static inline bool in_domain_opt_sentry_impl(value_domain_t domain, value_t self
 #define EVAL(E)
 
 // Sentry that checks that the value is an array and the elements are all heap
-// objects within the given family.
+// objects that pass the given sentry.
 #define snIsArrayOfFamily(SENTRY) (_,                                          \
     is_array_of_family_sentry_impl,                                            \
     0,                                                                         \
@@ -213,7 +213,11 @@ static inline bool in_syntax_family_or_null_sentry_impl(heap_object_family_t unu
 
 
 // A sentry that does nothing.
-#define snNoCheck (X, no_check_sentry_impl, 0, 0, "noCheck")
+#define snNoCheck (X,                                                          \
+    no_check_sentry_impl,                                                      \
+    0,                                                                         \
+    0,                                                                         \
+    "noCheck")
 
 // Expect function used for the no-check sentry. Always succeeds.
 static inline bool no_check_sentry_impl(int unused, value_t self, value_t *error_out) {
