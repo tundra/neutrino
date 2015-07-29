@@ -325,7 +325,7 @@ value_t create_ctrino_factory(runtime_t *runtime, value_t space) {
   c_object_info_t ctrino_info;
   c_object_info_reset(&ctrino_info);
   c_object_info_set_methods(&ctrino_info, kCtrinoMethods, kCtrinoMethodCount);
-  c_object_info_set_tag(&ctrino_info, new_integer(btCtrino));
+  c_object_info_set_tag(&ctrino_info, new_integer((uint32_t) btCtrino));
   return new_c_object_factory(runtime, &ctrino_info, space);
 }
 
