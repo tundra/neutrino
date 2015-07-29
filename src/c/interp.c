@@ -847,7 +847,7 @@ static value_t print_task_stack_trace(value_t ambience, value_t task) {
   runtime_t *runtime = get_ambience_runtime(ambience);
   frame_t frame = open_stack(get_task_stack(task));
   TRY_FINALLY {
-    E_TRY_DEF(trace, capture_backtrace(runtime, &frame));
+    E_TRY_DEF(trace, capture_backtrace(runtime, &frame, 0));
     INFO_DETERMINISTIC("%9v", trace);
     E_RETURN(success());
   } FINALLY {

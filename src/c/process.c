@@ -638,14 +638,23 @@ void backtrace_print_on(value_t value, print_on_context_t *context) {
   }
 }
 
-value_t capture_backtrace(runtime_t *runtime, frame_t *top) {
+value_t capture_backtrace(runtime_t *runtime, frame_t *top, size_t skip_count) {
   TRY_DEF(frames, new_heap_array_buffer(runtime, 16));
   frame_iter_t iter = frame_iter_from_frame(top);
+  size_t remaining_skips = skip_count;
   do {
     frame_t *frame = frame_iter_get_current(&iter);
+    // We won't know if a frame represents an entry before we've tried to
+    // capture it so do that first before deciding whether to skip. It's a
+    // little wasteful but shouldn't be a big deal.
     TRY_DEF(entry, capture_backtrace_entry(runtime, frame));
-    if (!is_nothing(entry))
-      TRY(add_to_array_buffer(runtime, frames, entry));
+    if (!is_nothing(entry)) {
+      if (remaining_skips == 0) {
+        TRY(add_to_array_buffer(runtime, frames, entry));
+      } else {
+        remaining_skips--;
+      }
+    }
   } while (frame_iter_advance(&iter));
   return new_heap_backtrace(runtime, frames);
 }

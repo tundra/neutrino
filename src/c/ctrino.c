@@ -162,7 +162,8 @@ static value_t ctrino_to_string(builtin_arguments_t *args) {
 static value_t ctrino_get_current_backtrace(builtin_arguments_t *args) {
   runtime_t *runtime = get_builtin_runtime(args);
   frame_t *frame = args->frame;
-  return capture_backtrace(runtime, frame);
+  // Skip the top call which will be get_current_backtrace.
+  return capture_backtrace(runtime, frame, 1);
 }
 
 static value_t ctrino_builtin(builtin_arguments_t *args) {

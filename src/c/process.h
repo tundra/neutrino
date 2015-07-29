@@ -532,8 +532,8 @@ static const size_t kBacktraceEntriesOffset = HEAP_OBJECT_FIELD_OFFSET(0);
 ACCESSORS_DECL(backtrace, entries);
 
 // Creates a new backtrace by traversing the stack starting from the given
-// frame.
-value_t capture_backtrace(runtime_t *runtime, frame_t *frame);
+// frame. Skip the top up to skip_count frames.
+value_t capture_backtrace(runtime_t *runtime, frame_t *frame, size_t skip_count);
 
 
 // --- B a c k t r a c e   e n t r y ---
