@@ -7,7 +7,7 @@ do {
   def $p0 := new $core:Promise();
   def $p1 := $p0.then(fn $x => $core:print_ln(1));
   def $p2 := $p1.then(fn $x => $core:print_ln(2));
-  def $p3 := $p2.then(fn $x {
+  $p2.then(fn $x {
     $core:print_ln(3);
     $core:print_ln($p0.get());
     $core:print_ln($p1.get());

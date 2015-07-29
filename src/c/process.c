@@ -54,7 +54,8 @@ value_t stack_piece_validate(value_t value) {
 
 void stack_piece_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofStackPiece, value);
-  string_buffer_printf(context->buf, "#<stack piece ~%w: st@%i>", value,
+  string_buffer_printf(context->buf, "#<stack piece ~%w: st@%i>",
+      canonicalize_value_for_print(value, context),
       get_stack_piece_capacity(value));
 }
 
@@ -512,7 +513,8 @@ value_t lambda_validate(value_t self) {
 
 void lambda_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofLambda, value);
-  string_buffer_printf(context->buf, "lambda~%w", value); // Unicode lambda.
+  string_buffer_printf(context->buf, "lambda~%w",
+      canonicalize_value_for_print(value, context));
 }
 
 value_t emit_lambda_call_trampoline(assembler_t *assm) {
@@ -552,7 +554,8 @@ value_t block_validate(value_t self) {
 
 void block_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofBlock, value);
-  string_buffer_printf(context->buf, "block~%w", value); // Unicode beta.
+  string_buffer_printf(context->buf, "block~%w",
+      canonicalize_value_for_print(value, context));
 }
 
 static value_t emit_block_call_trampoline(assembler_t *assm) {

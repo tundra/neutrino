@@ -75,7 +75,8 @@ void promise_print_on(value_t self, print_on_context_t *context) {
   value_t state_value = get_promise_state(self);
   promise_state_t state = get_promise_state_value(state_value);
   if (state == psPending) {
-    string_buffer_printf(context->buf, "#<pending promise ~%w>", self);
+    string_buffer_printf(context->buf, "#<pending promise ~%w>",
+        canonicalize_value_for_print(self, context));
   } else {
     string_buffer_printf(context->buf, "#<%v promise ", state_value);
     value_print_inner_on(get_promise_value(self), context, -1);

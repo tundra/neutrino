@@ -118,6 +118,14 @@ static value_t ctrino_new_float_32(builtin_arguments_t *args) {
   return new_float_32((float32_t) value);
 }
 
+static value_t ctrino_log_error_canonical(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  value_t value = get_builtin_argument(args, 0);
+  CHECK_C_OBJECT_TAG(btCtrino, self);
+  log_message(llError, NULL, 0, "%-9v", value);
+  return null();
+}
+
 static value_t ctrino_log_info(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t value = get_builtin_argument(args, 0);
@@ -284,7 +292,7 @@ static value_t ctrino_get_environment_variable(builtin_arguments_t *args) {
   return result;
 }
 
-#define kCtrinoMethodCount 24
+#define kCtrinoMethodCount 25
 static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("builtin", 1, ctrino_builtin),
   BUILTIN_METHOD("collect_garbage!", 0, ctrino_collect_garbage),
@@ -295,7 +303,8 @@ static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("get_environment_variable", 1, ctrino_get_environment_variable),
   BUILTIN_METHOD("is_deep_frozen?", 1, ctrino_is_deep_frozen),
   BUILTIN_METHOD("is_frozen?", 1, ctrino_is_frozen),
-  BUILTIN_METHOD("log_info", 1, ctrino_log_info),
+  BUILTIN_METHOD("log_error_canonical!", 1, ctrino_log_error_canonical),
+  BUILTIN_METHOD("log_info!", 1, ctrino_log_info),
   BUILTIN_METHOD("new_array", 1, ctrino_new_array),
   BUILTIN_METHOD("new_exported_service", 2, ctrino_new_exported_service),
   BUILTIN_METHOD("new_float_32", 1, ctrino_new_float_32),
@@ -420,7 +429,7 @@ void c_object_print_on(value_t value, print_on_context_t *context) {
   print_on_context_t inner = *context;
   inner.flags |= pfHex;
   value_print_inner_on(get_c_object_tag(value), &inner, -1);
-  string_buffer_printf(context->buf, "] ~%w>", value);
+  string_buffer_printf(context->buf, "] ~%w>", canonicalize_value_for_print(value, &inner));
 }
 
 void get_c_object_layout(value_t self, heap_object_layout_t *layout) {

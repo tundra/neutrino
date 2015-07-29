@@ -3,6 +3,7 @@
 
 #include "behavior.h"
 #include "format.h"
+#include "tagged.h"
 #include "utils.h"
 #include "utils/ook-inl.h"
 #include "utils/strbuf.h"
@@ -18,8 +19,11 @@ static void format_value(format_handler_o *self, format_request_t *request,
   value_t value;
   value.encoded = encoded;
   size_t depth = (request->width == -1) ? kDefaultPrintDepth : ((size_t) request->width);
+  uint32_t flags = pfNone;
+  if ((request->flags & ffDash) != 0)
+    flags = flags | pfCanonical;
   print_on_context_t context;
-  print_on_context_init(&context, request->buf, pfNone, depth);
+  print_on_context_init(&context, request->buf, flags, depth);
   value_print_on(value, &context);
 }
 
@@ -30,9 +34,16 @@ format_handler_o kValueFormatHandler;
 static void format_value_pointer(format_handler_o *self, format_request_t *request,
     va_list_ref_t argp) {
   encoded_value_t encoded = va_arg(VA_LIST_DEREF(argp), encoded_value_t);
-  char wordy[kMaxWordyNameSize];
-  wordy_encode(encoded, wordy, kMaxWordyNameSize);
-  string_buffer_native_printf(request->buf, "%s", wordy);
+  value_t decoded;
+  decoded.encoded = encoded;
+  if (is_same_value(decoded, new_rogue_sentinel(rsCanonicalized))) {
+    // Print the canonicalized marker specially so that it's recognizable.
+    string_buffer_native_printf(request->buf, "(canonicalized)");
+  } else {
+    char wordy[kMaxWordyNameSize];
+    wordy_encode(encoded, wordy, kMaxWordyNameSize);
+    string_buffer_native_printf(request->buf, "%s", wordy);
+  }
 }
 
 IMPLEMENTATION(value_pointer_format_handler_o, format_handler_o);

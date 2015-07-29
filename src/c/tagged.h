@@ -330,4 +330,21 @@ static value_t transport_sync() {
 }
 
 
+/// ## Rogue sentinel
+///
+/// Value that indicates some special situation. Sort of like a condition but
+/// one that does't trigger try-statements.
+
+typedef enum {
+  // This rogue sentinel stands in for a value that shouldn't be printed because
+  // we're canonicalizing output and printing it would make the output non-
+  // canonical.
+  rsCanonicalized
+} rogue_sentinel_type_t;
+
+static value_t new_rogue_sentinel(rogue_sentinel_type_t type) {
+  return new_custom_tagged(tpRogueSentinel, type);
+}
+
+
 #endif // _TAGGED

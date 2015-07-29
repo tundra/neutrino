@@ -5,12 +5,8 @@ import $assert;
 import $core;
 
 def $test_durian_main() {
-  # This should be set for all tests so we can use that for this too.
-  def $p_value := @core:ctrino.get_environment_variable("DURIAN_MAIN");
-  $assert:not($p_value.is_settled?);
-  $p_value.then(fn $value {
-    $assert:not($value.is_null?);
-  });
+  when def $durian_main := @core:ctrino.get_environment_variable("DURIAN_MAIN")
+    do $assert:not($durian_main.is_null?);
 }
 
 do {

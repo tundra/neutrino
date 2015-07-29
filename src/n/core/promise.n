@@ -51,3 +51,7 @@ def ($This == @Promise).defer($thunk) {
   @ctrino.delay($thunk, $result, null);
   $result;
 }
+
+## Executes $thunk when the given value has been resolved.
+def @when_def($promise is @Promise, $thunk) => $promise.then($thunk);
+def @when_def($value, $thunk) => $thunk($value);

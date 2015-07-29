@@ -7,7 +7,8 @@ import $core;
 def $test_time() {
   def $current_p := @core:time->current;
   $assert:not($current_p.is_settled?);
-  $current_p.then(fn $value => $assert:that($value > 0));
+  when def $value := $current_p
+    do $assert:that($value > 0);
 }
 
 def $test_unknown() {
@@ -17,7 +18,8 @@ def $test_unknown() {
 def $test_echo() {
   def $run := fn ($in) {
     # Test round-tripping a single argument through a remote call.
-    @core:echo->echo($in).then(fn $out => $assert:equals($in, $out));
+    when def $out := @core:echo->echo($in)
+      do $assert:equals($in, $out);
     @ctrino.collect_garbage!();
   }
   $run(946);
@@ -35,12 +37,12 @@ def $test_echo() {
 
 # Chained calls to the echo service.
 def $step_echo_chain($n) {
-  @core:echo->echo($n).then(fn $v {
+  when def $v := @core:echo->echo($n) do {
     $assert:equals($n, $v);
     if $v == 0
       then 0;
       else $step_echo_chain($v - 1);
-  });
+  }
 }
 
 def $test_echo_chain() {

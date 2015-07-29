@@ -272,6 +272,8 @@ class Parser(object):
       return self.parse_while_expression(expect_delim)
     elif self.at_word('for'):
       return self.parse_for_expression(expect_delim)
+    elif self.at_word('when'):
+      return self.parse_when_expression(expect_delim)
     elif self.at_word('with_escape'):
       return self.parse_with_escape_expression(expect_delim)
     elif self.at_word('leave') or self.at_word('signal'):
@@ -509,6 +511,23 @@ class Parser(object):
       ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES)),
       ast.Argument(data._TRANSPORT, ast.Literal(data._SYNC)),
       ast.Argument(0, elms),
+      ast.Argument(1, thunk),
+    ])
+
+  def parse_when_expression(self, expect_delim):
+    self.expect_word('when')
+    self.expect_word('def')
+    sig = self.parse_signature()
+    self.expect_punctuation(':=')
+    value = self.parse_expression(False)
+    self.expect_word('do')
+    body = self.parse_expression(expect_delim)
+    thunk = ast.Lambda([ast.Method(sig, body)])
+    return ast.Invocation([
+      ast.Argument(data._SUBJECT, ast.Variable(data.Identifier(-1, data.Path(["core", "when_def"])))),
+      ast.Argument(data._SELECTOR, ast.Literal(Parser._SAUSAGES)),
+      ast.Argument(data._TRANSPORT, ast.Literal(data._SYNC)),
+      ast.Argument(0, value),
       ast.Argument(1, thunk),
     ])
 

@@ -240,4 +240,12 @@ static bool is_transport_sync(value_t value) {
 }
 
 
+/// ## Rogue sentinel
+
+static rogue_sentinel_type_t get_rogue_sentinel_type(value_t value) {
+  CHECK_PHYLUM(tpRogueSentinel, value);
+  return (rogue_sentinel_type_t) get_custom_tagged_payload(value);
+}
+
+
 #endif // _TAGGED_INL

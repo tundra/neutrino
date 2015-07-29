@@ -7,7 +7,8 @@ import $core;
 def $test_wrapping() {
   def $str := "foo".view(@core:Ascii);
   def $foo := new @core:fsi:ExportedService($str, module);
-  $foo->length.then(fn $v => $assert:equals(3, $v));
+  when def $length := $foo->length
+    do $assert:equals(3, $length);
 }
 
 type @Helper {
@@ -25,10 +26,10 @@ def $next_step($service, $n) {
   if $n < 20 then {
     def $p := $service->step($n);
     @ctrino.collect_garbage!;
-    $p.then(fn $v {
+    when def $v := $p do {
       $assert:equals($n * $n, $v);
       $next_step($service, $n + 1);
-    });
+    }
   }
 }
 
@@ -42,7 +43,8 @@ def $test_roundtrip() {
   def $helper := @ctrino.new_instance_manager(null).new_instance(@Helper);
   def $service := new @core:fsi:ExportedService($helper, module);
   def $run := fn ($in) {
-    def $out_p := $service->echo($in).then(fn $out => $assert:equals($in, $out));
+    when def $out := $service->echo($in)
+      do $assert:equals($in, $out);
     @ctrino.collect_garbage!;
   }
   $run(946);

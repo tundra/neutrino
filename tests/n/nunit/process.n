@@ -50,22 +50,23 @@ type @ProcessTest {
   def $this.test_simple() {
     def $p := $this.new_process ["--quiet", "--exit-code", "99"];
     $p.start!;
-    $p.exit_code.then(fn $exit_code => $assert:equals(99, $exit_code));
+    when def $exit_code := $p.exit_code
+      do $assert:equals(99, $exit_code);
   }
 
   def $this.test_echo() {
     def $p := $this.new_process ["--quiet", "--echo-stdin"];
     $p.start!;
     # Write a message to stdin and then close so the program will terminate.
-    $p.stdin.out.write!("Hello, World!".view(@core:Ascii)).then(fn $written {
+    when def $written := $p.stdin.out.write!("Hello, World!".view(@core:Ascii)) do {
       $assert:equals(13, $written);
       $p.stdin.out.close!;
-    });
+    }
     # Read the message back from stderr.
-    $p.stderr.in.read!(13).then(fn $blob {
+    when def $blob := $p.stderr.in.read!(13) do {
       def $str := @core:Ascii.string_from($blob);
       $assert:equals("Hello, World!", $str);
-    });
+    }
   }
 
 }
@@ -77,9 +78,8 @@ def ($This == @ProcessTest).new($durian_main) {
 }
 
 def $test_all() {
-  @core:ctrino
-    .get_environment_variable("DURIAN_MAIN")
-    .then(fn $durian_main => (new @ProcessTest($durian_main)).run());
+  when def $durian_main := @core:ctrino.get_environment_variable("DURIAN_MAIN")
+    do (new @ProcessTest($durian_main)).run();
 }
 
 do {

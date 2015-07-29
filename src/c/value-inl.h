@@ -128,7 +128,8 @@ VALIDATE(in_domain_opt(vdDomain, EXPR))
 #define TRIVIAL_PRINT_ON_IMPL(Family, family)                                  \
 void family##_print_on(value_t value, print_on_context_t *context) {           \
   CHECK_FAMILY(of##Family, value);                                             \
-  string_buffer_printf(context->buf, "#<" #family " ~%w>", value.encoded);     \
+  string_buffer_printf(context->buf, "#<" #family " ~%w>",                     \
+      canonicalize_value_for_print(value, context));                           \
 }                                                                              \
 SWALLOW_SEMI(tpo)
 

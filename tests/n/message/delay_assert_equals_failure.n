@@ -1,0 +1,3 @@
+import $assert;
+import $core;
+do $core:delay(fn => $assert:equals(1, 2));

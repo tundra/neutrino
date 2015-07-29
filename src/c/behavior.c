@@ -490,6 +490,12 @@ void value_print_inner_on(value_t value, print_on_context_t *context,
   }
 }
 
+value_t canonicalize_value_for_print(value_t value, print_on_context_t *context) {
+  return ((context->flags & pfCanonical) == 0)
+      ? value
+      : new_rogue_sentinel(rsCanonicalized);
+}
+
 
 // --- N e w   i n s t a n c e ---
 

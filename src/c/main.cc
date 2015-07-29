@@ -209,6 +209,7 @@ int main(int argc, const char *argv[]) {
   value_t result = neutrino_main(argc, argv, &alloc);
   lifetime_end_default(&lifetime);
   bool force_fail = !main_allocator_uninstall(&alloc);
+  force_fail = force_fail || has_logged_error_code_exit_entry();
   if (is_condition(result)) {
     out_stream_t *out = file_system_stderr(file_system_native());
     print_ln(out, "Error: %v", result);

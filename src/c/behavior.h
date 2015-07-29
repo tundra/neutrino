@@ -48,7 +48,11 @@ typedef enum {
   // When printing strings, don't print quotation marks.
   pfUnquote = 0x1,
   // When printing integers, print them as hex not decimal.
-  pfHex = 0x2
+  pfHex = 0x2,
+  // Print values such that they are the same from run to run. This may cause
+  // some debugging relevant info to not be printed but makes testing output
+  // easier.
+  pfCanonical = 0x4
 } print_flags_t;
 
 // Data that is passed around when printing objects.
@@ -190,6 +194,12 @@ void value_print_on_cycle_protect(value_t value, string_buffer_t *buf,
 // a marker, "-".
 void value_print_inner_on(value_t value, print_on_context_t *context,
     int32_t delta_depth);
+
+// Returns a value that will print appropriately when used with %w considering
+// the flags set in the given context. In particular, in canonical mode a marker
+// will be returned that causes %w to not print the value's actual address.
+value_t canonicalize_value_for_print(value_t value, print_on_context_t *context);
+
 
 // Creates a new empty instance of the given type. Not all types support this,
 // in which case an unsupported behavior condition is returned.

@@ -10,16 +10,20 @@ def $test_simple() {
   def $pipe := new @core:io:Pipe();
   def $p_write := $pipe.out.write!("Hello, World!".view(@core:Ascii));
   $assert:not($p_write.is_settled?);
-  $p_write.then(fn $v => $assert:equals(13, $v));
+  when def $v := $p_write
+    do $assert:equals(13, $v);
   def $p_read_1 := $pipe.in.read!(5);
   $assert:not($p_read_1.is_settled?);
-  $p_read_1.then(fn $v => $assert:equals("Hello", $to_str($v)));
+  when def $v := $p_read_1
+    do $assert:equals("Hello", $to_str($v));
   def $p_read_2 := $pipe.in.read!(2);
   $assert:not($p_read_2.is_settled?);
-  $p_read_2.then(fn $v => $assert:equals(", ", $to_str($v)));
+  when def $v := $p_read_2
+    do $assert:equals(", ", $to_str($v));
   def $p_read_3 := $pipe.in.read!(6);
   $assert:not($p_read_3.is_settled?);
-  $p_read_3.then(fn $v => $assert:equals("World!", $to_str($v)));
+  when def $v := $p_read_3
+    do $assert:equals("World!", $to_str($v));
 }
 
 do {

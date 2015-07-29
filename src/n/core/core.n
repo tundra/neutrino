@@ -4,7 +4,12 @@
 import @meta;
 
 ## Info-log the given value to stdout using the built-in INFO macro.
-def $info($value) => @ctrino.log_info($value);
+def $info!($value) => @ctrino.log_info!($value);
+
+## Error-log the given value to stdout using the vm's logging but with the
+## output canonicalized. This will cause the vm execution to return a non-zero
+## exit code.
+def $error!($value) => @ctrino.log_error_canonical!($value);
 
 ## Print the given value to stdout, followed by a newline.
 def $print_ln($value) => @ctrino.print_ln($value);

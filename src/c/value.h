@@ -360,12 +360,6 @@ static inline value_t chase_moved_object(value_t raw) {
 ///
 /// Any value can be in one of four modes. See {{freeze.h}} for details.
 
-// Indicates that a family has a particular attribute.
-#define X(T, F) T
-
-// Indicates that a family does not have a particular attribute.
-#define _(T, F) F
-
 /// ### Family property index
 ///
 /// This macro nightmare is the index of family properties. Each `_` or `X`
@@ -776,6 +770,7 @@ ACCESSORS_DECL(heap_object, header);
   F(DerivedObjectAnchor,     derived_object_anchor,     _, (_),  10)           \
   F(HashCode,                hash_code,                 X, (X),  11)           \
   F(Transport,               transport,                 X, (_),  12)           \
+  F(RogueSentinel,           rogue_sentinel,            _, (_),  13)           \
   F(UnusedMemory,            unused_memory,             _, (_), 148)           \
   F(AllocatedMemory,         allocated_memory,          _, (_), 150)           \
   F(FreedMemory,             freed_memory,              _, (_), 152)

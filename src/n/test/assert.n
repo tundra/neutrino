@@ -7,16 +7,20 @@ import $core;
 
 ## Does nothing if the given value is 'true', fails if the value is 'false'.
 def $that($value == false) => $fail();
-def $that($value == true) => null;
+def $that($value == true) => true;
 
 ## Does nothing if the given value is 'false', fails if the value is 'true'.
-def $not($value == false) => null;
+def $not($value == false) => false;
 def $not($value == true) => $fail();
 
 ## Does nothing if the two given values are collection equal, fails otherwise.
-def $equals(expected: $a, found: $b) => $that($a ==* $b);
+def $equals(expected: $a, found: $b) {
+  $that($a ==* $b);
+  $b;
+}
 
 ## Aborts the test with a failure.
 def $fail() {
+  $core:error!(@ctrino.get_current_backtrace());
   leave.assert_failed();
 }

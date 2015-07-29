@@ -327,6 +327,14 @@ value_t add_transport_builtin_implementations(runtime_t *runtime, safe_value_t s
   return success();
 }
 
+/// ## Rogue sentinel
+
+void rogue_sentinel_print_on(value_t value, print_on_context_t *context) {
+  string_buffer_printf(context->buf, "#<rogue_sentinel %i>",
+      get_rogue_sentinel_type(value));
+}
+
+
 
 /// Memory markers
 

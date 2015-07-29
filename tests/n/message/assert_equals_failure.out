@@ -1,3 +1,8 @@
+Error: --- backtrace ---
+- #<c_object[9dcda24f] ~(canonicalized)>.get_current_backtrace()
+- :fail()
+- :that(false)
+- :equals(1, 2)
 Error: %<condition: UncaughtSignal(escape)>
 Info: --- backtrace ---
 - leave.assert_failed()
