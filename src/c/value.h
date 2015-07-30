@@ -94,6 +94,7 @@ int get_value_domain_ordinal(value_domain_t domain);
   F(InvalidInput)                                                              \
   F(InvalidModeChange)                                                         \
   F(InvalidSyntax)                                                             \
+  F(InvalidUseOfBuiltin)                                                       \
   F(LookupError)                                                               \
   F(MapFull)                                                                   \
   F(NotComparable)                                                             \

@@ -108,7 +108,7 @@ static value_t build_module_loader(runtime_t *runtime, pton_command_line_t *cmdl
 static void runtime_config_init_main_defaults(neu_runtime_config_t *config) {
   // Currently the runtime doesn't handle allocation failures super well
   // (particularly plankton parsing) so keep the semispace size big.
-  config->semispace_size_bytes = 10 * kMB;
+  config->semispace_size_bytes = 16 * kMB;
 }
 
 // Native echo service, mainly for testing.

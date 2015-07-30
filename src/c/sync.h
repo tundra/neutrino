@@ -32,6 +32,9 @@ bool is_promise_settled(value_t self);
 // Has this promise been settled by fulfilling?
 bool is_promise_fulfilled(value_t self);
 
+// Has this promise been settled by rejecting?
+bool is_promise_rejected(value_t self);
+
 // Returns the value of the given promise which must have been fulfilled.
 value_t get_promise_value(value_t self);
 

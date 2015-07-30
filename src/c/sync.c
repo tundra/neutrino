@@ -30,6 +30,11 @@ bool is_promise_fulfilled(value_t self) {
   return get_promise_state_value(get_promise_state(self)) == psFulfilled;
 }
 
+bool is_promise_rejected(value_t self) {
+  CHECK_FAMILY(ofPromise, self);
+  return get_promise_state_value(get_promise_state(self)) == psRejected;
+}
+
 value_t get_promise_value(value_t self) {
   CHECK_EQ("getting value of unfulfilled", psFulfilled,
       get_promise_state_value(get_promise_state(self)));
@@ -115,16 +120,26 @@ static value_t promise_is_settled(builtin_arguments_t *args) {
   return new_boolean(is_promise_settled(self));
 }
 
-static value_t promise_get(builtin_arguments_t *args) {
+static value_t promise_is_fulfilled(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofPromise, self);
-  if (!is_promise_settled(self))
-    ESCAPE_BUILTIN(args, promise_not_settled, self);
-  if (is_promise_fulfilled(self)) {
-    return get_promise_value(self);
-  } else {
-    return get_promise_error(self);
-  }
+  return new_boolean(is_promise_fulfilled(self));
+}
+
+static value_t promise_fulfilled_value(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofPromise, self);
+  if (!is_promise_fulfilled(self))
+    return new_condition(ccInvalidUseOfBuiltin);
+  return get_promise_value(self);
+}
+
+static value_t promise_rejected_error(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofPromise, self);
+  if (!is_promise_rejected(self))
+    return new_condition(ccInvalidUseOfBuiltin);
+  return get_promise_error(self);
 }
 
 static value_t promise_fulfill(builtin_arguments_t *args) {
@@ -147,7 +162,9 @@ static value_t promise_reject(builtin_arguments_t *args) {
 value_t add_promise_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
   ADD_BUILTIN_IMPL("promise.state", 0, promise_state);
   ADD_BUILTIN_IMPL("promise.is_settled?", 0, promise_is_settled);
-  ADD_BUILTIN_IMPL_MAY_ESCAPE("promise.get", 0, 1, promise_get);
+  ADD_BUILTIN_IMPL("promise.is_fulfilled?", 0, promise_is_fulfilled);
+  ADD_BUILTIN_IMPL("promise.fulfilled_value", 0, promise_fulfilled_value);
+  ADD_BUILTIN_IMPL("promise.rejected_error", 0, promise_rejected_error);
   ADD_BUILTIN_IMPL("promise.fulfill!", 1, promise_fulfill);
   ADD_BUILTIN_IMPL("promise.reject!", 1, promise_reject);
   return success();

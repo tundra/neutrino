@@ -88,8 +88,7 @@
   F(no_such_field,              "no_such_field")                               \
   F(no_such_tag,                "no_such_tag")                                 \
   F(unknown_foreign_method,     "unknown_foreign_method")                      \
-  F(is_frozen,                  "is_frozen")                                   \
-  F(promise_not_settled,        "promise_not_settled")
+  F(is_frozen,                  "is_frozen")
 
 // Invokes the argument for each singleton root (that is, roots that are not
 // generated from the family list).

@@ -19,10 +19,23 @@ def ($this is @Promise).state;
 @ctrino.builtin("promise.is_settled?")
 def ($this is @Promise).is_settled?;
 
+## Returns true iff this promise is in the fulfilled state.
+@ctrino.builtin("promise.is_fulfilled?")
+def ($this is @Promise).is_fulfilled?;
+
+@ctrino.builtin("promise.fulfilled_value")
+def ($this is @Promise).fulfilled_value;
+
+@ctrino.builtin("promise.rejected_error")
+def ($this is @Promise).rejected_error;
+
 ## Returns the value of this promise if it has been resolved, otherwise signals
 ## promise_not_resolved.
-@ctrino.builtin("promise.get")
-def ($this is @Promise).get();
+def ($this is @Promise).get => @if($this.is_settled?, fn
+  on.then() => @if($this.is_fulfilled?, fn
+    on.then() => $this.fulfilled_value
+    on.else() => $this.rejected_error)
+  on.else() => leave.promise_not_settled($this));
 
 ## Fulfills this promise. After this call the promise will return true for
 ## is_resolved? and get() will return the given value. If the promise is already
