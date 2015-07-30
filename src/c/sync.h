@@ -18,16 +18,25 @@
 
 static const size_t kPromiseSize = HEAP_OBJECT_SIZE(2);
 static const size_t kPromiseStateOffset = HEAP_OBJECT_FIELD_OFFSET(0);
-static const size_t kPromiseValueOffset = HEAP_OBJECT_FIELD_OFFSET(1);
+static const size_t kPromisePayloadOffset = HEAP_OBJECT_FIELD_OFFSET(1);
 
 // The current state of this promise.
 ACCESSORS_DECL(promise, state);
 
-// For resolved promises the value, for failed the failure.
-ACCESSORS_DECL(promise, value);
+// For fulfilled promises the value, for rejected the error.
+ACCESSORS_DECL(promise, payload);
 
 // Returns true if the given promise is in a settled (non-pending) state.
 bool is_promise_settled(value_t self);
+
+// Has this promise been settled by fulfilling?
+bool is_promise_fulfilled(value_t self);
+
+// Returns the value of the given promise which must have been fulfilled.
+value_t get_promise_value(value_t self);
+
+// Returns the error stored in the given promise which must have been rejected.
+value_t get_promise_error(value_t self);
 
 // Fulfill the given promise if it hasn't been already, otherwise this is a
 // noop.

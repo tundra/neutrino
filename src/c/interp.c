@@ -944,13 +944,24 @@ static value_t prepare_run_job(runtime_t *runtime, value_t stack, job_t *job) {
   return success();
 }
 
-// TODO: grab the reified arguments.
-static value_t reify_signal(value_t task) {
+// Grabs the signal arguments on the stack and packages them into a reified
+// arguments struct.
+static value_t reify_signal(runtime_t *runtime, value_t task) {
   value_t stack = get_task_stack(task);
   frame_t frame = open_stack(stack);
-  frame_pop_within_stack_piece(&frame);
+
+  value_t tags = get_caller_call_tags(&frame);
+  size_t argc = (size_t) get_call_tags_entry_count(tags);
+  TRY_DEF(values, new_heap_array(runtime, argc));
+  TRY_DEF(reified, new_heap_reified_arguments(runtime, ROOT(runtime, empty_array),
+      values, ROOT(runtime, empty_array), tags));
+  for (size_t i = 0; i < argc; i++) {
+    value_t value = frame_get_raw_argument(&frame, i);
+    set_array_at(values, i, value);
+  }
+
   close_frame(&frame);
-  return stack;
+  return reified;
 }
 
 // Clears all the frames from the given stack down to the bottom.
@@ -985,7 +996,7 @@ static value_t run_process_job(job_t *job, safe_value_pool_t *pool,
       print_task_stack_trace(deref(s_ambience), deref(s_task));
     } else {
       // There was an uncaught signal which we deliver to the promise.
-      value_t error = reify_signal(deref(s_task));
+      value_t error = reify_signal(runtime, deref(s_task));
       reject_promise(deref(s_promise), error);
       result = nothing();
     }

@@ -18,24 +18,43 @@ GET_FAMILY_PRIMARY_TYPE_IMPL(promise);
 FIXED_GET_MODE_IMPL(promise, vmMutable);
 
 ACCESSORS_IMPL(Promise, promise, snInPhylum(tpPromiseState), State, state);
-ACCESSORS_IMPL(Promise, promise, snNoCheck, Value, value);
+ACCESSORS_IMPL(Promise, promise, snNoCheck, Payload, payload);
 
 bool is_promise_settled(value_t self) {
   CHECK_FAMILY(ofPromise, self);
   return is_promise_state_settled(get_promise_state(self));
 }
 
+bool is_promise_fulfilled(value_t self) {
+  CHECK_FAMILY(ofPromise, self);
+  return get_promise_state_value(get_promise_state(self)) == psFulfilled;
+}
+
+value_t get_promise_value(value_t self) {
+  CHECK_EQ("getting value of unfulfilled", psFulfilled,
+      get_promise_state_value(get_promise_state(self)));
+  return get_promise_payload(self);
+}
+
+value_t get_promise_error(value_t self) {
+  CHECK_EQ("getting error of unrejected", psRejected,
+      get_promise_state_value(get_promise_state(self)));
+  value_t error = get_promise_payload(self);
+  CHECK_FAMILY(ofReifiedArguments, error);
+  return error;
+}
+
 void fulfill_promise(value_t self, value_t value) {
   if (!is_promise_settled(self)) {
     set_promise_state(self, promise_state_fulfilled());
-    set_promise_value(self, value);
+    set_promise_payload(self, value);
   }
 }
 
 void reject_promise(value_t self, value_t error) {
   if (!is_promise_settled(self)) {
     set_promise_state(self, promise_state_rejected());
-    set_promise_value(self, error);
+    set_promise_payload(self, error);
   }
 }
 
@@ -99,10 +118,12 @@ static value_t promise_is_settled(builtin_arguments_t *args) {
 static value_t promise_get(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofPromise, self);
-  if (is_promise_settled(self)) {
+  if (!is_promise_settled(self))
+    ESCAPE_BUILTIN(args, promise_not_settled, self);
+  if (is_promise_fulfilled(self)) {
     return get_promise_value(self);
   } else {
-    ESCAPE_BUILTIN(args, promise_not_settled, self);
+    return get_promise_error(self);
   }
 }
 

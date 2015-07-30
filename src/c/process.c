@@ -1004,7 +1004,6 @@ bool process_airlock_destroy(process_airlock_t *airlock) {
 /// ## Reified arguments
 
 FIXED_GET_MODE_IMPL(reified_arguments, vmMutable);
-TRIVIAL_PRINT_ON_IMPL(ReifiedArguments, reified_arguments);
 GET_FAMILY_PRIMARY_TYPE_IMPL(reified_arguments);
 
 ACCESSORS_IMPL(ReifiedArguments, reified_arguments, snInFamily(ofArray), Params,
@@ -1023,6 +1022,21 @@ value_t reified_arguments_validate(value_t self) {
   VALIDATE_FAMILY(ofArray, get_reified_arguments_argmap(self));
   VALIDATE_FAMILY(ofCallTags, get_reified_arguments_tags(self));
   return success();
+}
+
+void reified_arguments_print_on(value_t value, print_on_context_t *context) {
+  if (context->depth == 1) {
+    // If we can't print the elements anyway we might as well just show the
+    // argument count.
+    string_buffer_printf(context->buf, "#<reified_arguments[%i]>",
+        (int) get_array_length(get_reified_arguments_values(value)));
+  } else {
+    string_buffer_printf(context->buf, "#<reified_arguments values: ");
+    value_print_inner_on(get_reified_arguments_values(value), context, -1);
+    string_buffer_printf(context->buf, ", tags: ");
+    value_print_inner_on(get_reified_arguments_tags(value), context, -1);
+    string_buffer_printf(context->buf, ">");
+  }
 }
 
 // If there is an argument corresponding to the given tag, store the value array

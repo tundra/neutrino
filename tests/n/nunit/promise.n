@@ -16,13 +16,18 @@ def $test_simple_promise() {
 }
 
 def $test_fail() {
-  def $p := @core:Promise.defer(fn {
-    leave.ouch();
-  });
-  $p.then(@core:info);
+  def $p := @core:Promise.defer(fn => leave.ouch!(a: 5, c: 2, b: 9));
+  when def $e := $p do {
+    $assert:equals(null, $e[subject]);
+    $assert:equals(op.ouch!, $e[selector]);
+    $assert:equals(sync, $e[transport]);
+    $assert:equals(5, $e["a"]);
+    $assert:equals(9, $e["b"]);
+    $assert:equals(2, $e["c"]);
+  }
 }
 
 do {
   $test_simple_promise();
-  # $test_fail();
+  $test_fail();
 }

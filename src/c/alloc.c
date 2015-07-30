@@ -606,7 +606,7 @@ value_t new_heap_pending_promise(runtime_t *runtime) {
   TRY_DEF(result, alloc_heap_object(runtime, size,
       ROOT(runtime, promise_species)));
   set_promise_state(result, promise_state_pending());
-  set_promise_value(result, nothing());
+  set_promise_payload(result, nothing());
   return post_create_sanity_check(result, size);
 }
 
