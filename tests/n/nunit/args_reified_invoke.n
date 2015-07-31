@@ -58,5 +58,5 @@ def $test_leave() {
 do {
   $test_direct_invoke();
   $test_op_invoke();
-  $test_raise();
+  $test_leave();
 }
