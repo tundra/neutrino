@@ -346,6 +346,9 @@ value_t lookup_methodspace_method_from_frame(sigmap_input_layout_t *layout,
 value_t lookup_signal_handler_method_from_frame(sigmap_input_layout_t *layout,
     frame_t *frame, value_t *handler_out, value_t *arg_map_out);
 
+value_t lookup_signal_handler_method_from_value_array(sigmap_input_layout_t *layout,
+    value_t values, frame_t *frame, value_t *handler_out, value_t *arg_map_out);
+
 
 /// ## Call tags
 ///

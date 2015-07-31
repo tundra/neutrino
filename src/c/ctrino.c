@@ -123,7 +123,7 @@ static value_t ctrino_log_error_canonical(builtin_arguments_t *args) {
   value_t value = get_builtin_argument(args, 0);
   CHECK_C_OBJECT_TAG(btCtrino, self);
   log_message(llError, NULL, 0, "%-9v", value);
-  return null();
+  return value;
 }
 
 static value_t ctrino_log_info(builtin_arguments_t *args) {
@@ -131,7 +131,7 @@ static value_t ctrino_log_info(builtin_arguments_t *args) {
   value_t value = get_builtin_argument(args, 0);
   CHECK_C_OBJECT_TAG(btCtrino, self);
   INFO("%9v", value);
-  return null();
+  return value;
 }
 
 static value_t ctrino_print_ln(builtin_arguments_t *args) {

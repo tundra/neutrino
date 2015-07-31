@@ -7,10 +7,12 @@ import $core;
 # Positional arguments.
 def $pos($a, $b, $c, $d) => (1000000 * $a) + (10000 * $b) + (100 * $c) + $d;
 def $cpos(*) as $args => $args.replace_argument(subject, $pos);
+def $rpos(*) as $args => $args.replace_argument(subject, null);
 
 # Keyword arguments.
 def $kwd(a: $a, b: $b, c: $c, d: $d) => (1000000 * $a) + (10000 * $b) + (100 * $c) + $d;
 def $ckwd(*) as $args => $args.replace_argument(subject, $kwd);
+def $rkwd(*) as $args => $args.replace_argument(subject, null);
 
 # Reverse keyword arguments.
 def $rkw(d: $d, c: $c, b: $b, a: $a) => (1000000 * $d) + (10000 * $c) + (100 * $b) + $a;
@@ -38,13 +40,23 @@ def $test_direct_invoke() {
 }
 
 def ($a).blah($b) as $args => $args;
+def ($a).rblah($b) as $args => $args.replace_argument(subject, null);
 
 def $test_op_invoke() {
   $assert:equals(2, module.invoke((1 .blah 1).replace_argument(selector, op+())));
   $assert:equals(3, module.invoke((4 .blah 1).replace_argument(selector, op-())));
 }
 
+def $test_leave() {
+  $assert:equals(18, try module.leave($rpos(3, 4, 5, 6)) on($a, $b, $c, $d) => 18);
+  $assert:equals(7080910, try module.leave($rpos(7, 8, 9, 10)) on($a, $b, $c, $d) => $pos($a, $b, $c, $d));
+  $assert:equals(11121314, try module.leave($rkwd(11, 12, 13, 14)) on(a: $a, b: $b, c: $c, d: $d) => $pos($a, $b, $c, $d));
+  $assert:equals(18171615, try module.leave($rkwd(15, 16, 17, 18)) on(d: $d, c: $c, b: $b, a: $a) => $pos($a, $b, $c, $d));
+  $assert:equals("y", try module.leave("x" .rblah "y") on.rblah($v) => $v);
+}
+
 do {
   $test_direct_invoke();
   $test_op_invoke();
+  $test_raise();
 }

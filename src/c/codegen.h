@@ -290,6 +290,9 @@ value_t assembler_emit_module_fragment_private_invoke_call_data(assembler_t *ass
 // Invoke a reified arguments set in the given module.
 value_t assembler_emit_module_fragment_private_invoke_reified_arguments(assembler_t *assm);
 
+// Raise a reified arguments set in the given module.
+value_t assembler_emit_module_fragment_private_leave_reified_arguments(assembler_t *assm);
+
 // Capture an escape, pushing it onto the stack. The offset_out is a cursor
 // where the offset to jump to when returning to the escape should be written.
 value_t assembler_emit_create_escape(assembler_t *assm,

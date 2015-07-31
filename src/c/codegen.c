@@ -429,6 +429,12 @@ value_t assembler_emit_module_fragment_private_invoke_reified_arguments(assemble
   return success();
 }
 
+value_t assembler_emit_module_fragment_private_leave_reified_arguments(assembler_t *assm) {
+  assembler_emit_opcode(assm, ocModuleFragmentPrivateLeaveReifiedArguments);
+  assembler_adjust_stack_height(assm, +1);
+  return success();
+}
+
 value_t assembler_emit_create_escape(assembler_t *assm,
     short_buffer_cursor_t *offset_out) {
   assembler_emit_opcode(assm, ocCreateEscape);

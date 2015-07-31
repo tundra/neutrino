@@ -14,6 +14,7 @@ _PHYLUM_TAG_MASK = (1 << _PHYLUM_TAG_SIZE) - 1
 _VALUE_SIZE = 8
 
 _OBJECT_TAG = 1
+_DERIVED_TAG = 5
 
 # A convenience wrapper around a value.
 class Value(object):
@@ -65,6 +66,9 @@ class Value(object):
   def is_string(self):
     return False
 
+  def is_nothing(self):
+    return False
+
   # Returns the name of the enum in the given type whose ordinal value is as
   # specified. Returns None if one is not found.
   @staticmethod
@@ -88,7 +92,9 @@ class Value(object):
     elif domain == 'vdHeapObject':
       return HeapObjectValue.wrap(value)
     elif domain == 'vdCustomTagged':
-      return CustomTaggedValue(value)
+      return CustomTaggedValue.wrap(value)
+    elif domain == 'vdDerivedObject':
+      return DerivedObjectValue(value)
     else:
       return unspecific
 
@@ -142,6 +148,9 @@ class CustomTaggedValue(Value):
     code = self.get_phylum_code()
     return Value.get_enum_name(code, 'custom_tagged_phylum_t')
 
+  def is_nothing(self):
+    return self.get_phylum() == 'tpNothing'
+
   def __str__(self):
     phylum = self.get_phylum()
     payload = self.get_custom_tagged_payload()
@@ -157,6 +166,58 @@ class CustomTaggedValue(Value):
     elif phylum == 'tpAllocatedMemory':
       return '#allocated'
     return '#<%s (%s)>' % (enum_to_phrase(phylum), payload)
+
+  @staticmethod
+  def wrap(value):
+    unspecific = CustomTaggedValue(value)
+    phylum = unspecific.get_phylum()
+    if phylum == 'tpDerivedObjectAnchor':
+      return DerivedObjectAnchorValue(value)
+    else:
+      return unspecific
+
+
+_DERIVED_OBJECT_GENUS_TAG_SIZE = 6
+
+class DerivedObjectAnchorValue(CustomTaggedValue):
+
+  def get_genus_code(self):
+    payload = self.get_custom_tagged_payload()
+    return payload & ((1 << _DERIVED_OBJECT_GENUS_TAG_SIZE) - 1)
+
+  def get_host_offset(self):
+    return self.get_custom_tagged_payload() >> _DERIVED_OBJECT_GENUS_TAG_SIZE
+
+
+class DerivedObjectValue(Value):
+
+  # Returns the integer genus code of this value.
+  def get_anchor_address(self):
+    return self.value['encoded'] - _DERIVED_TAG
+
+  def get_field(self, index):
+    type = gdb.Type.pointer(gdb.lookup_type('value_t'))
+    return Value.wrap(self.get_anchor_address().cast(type)[index])
+
+  def get_anchor(self):
+    return self.get_field(0)
+
+  def get_genus_code(self):
+    return self.get_anchor().get_genus_code()
+
+  def get_genus(self):
+    code = self.get_genus_code()
+    return Value.get_enum_name(code, 'derived_object_genus_t')
+
+  def get_host(self):
+    offset = self.get_anchor().get_host_offset()
+    host_addr = self.get_anchor_address() - offset
+    host_ptr = host_addr + _OBJECT_TAG
+    return Value.wrap(host_ptr.cast(gdb.lookup_type('value_t')))
+
+  def __str__(self):
+    genus = self.get_genus()
+    return '#<%s of %s>' % (enum_to_phrase(genus), self.get_host())
 
 
 class HeapObjectValue(Value):
@@ -203,6 +264,10 @@ class HeapObjectValue(Value):
       return UnknownObject(value)
     elif family == 'ofIdHashMap':
       return IdHashMapObject(value)
+    elif family == 'ofPath':
+      return PathObject(value)
+    elif family == 'ofOperation':
+      return OperationObject(value)
     else:
       return unspecific
 
@@ -277,6 +342,52 @@ class UnknownObject(HeapObjectValue):
   def __str__(self):
     header = self.get_field(0)
     return "#<an Unknown %s>" % str(header)
+
+
+class PathObject(HeapObjectValue):
+
+  def __str__(self):
+    parts = []
+    current = self
+    while True:
+      head = current.get_field(0)
+      if head.is_nothing():
+        break
+      else:
+        parts.append(str(head))
+        current = current.get_field(1)
+    return "#<a Path %s>" % ":".join(parts)
+
+
+_OPERATION_ASSIGN_TAG = 1
+_OPERATION_CALL_TAG = 2
+_OPERATION_INDEX_TAG = 3
+_OPERATION_INFIX_TAG = 4
+_OPERATION_PREFIX_TAG = 5
+_OPERATION_SUFFIX_TAG = 6
+
+
+class OperationObject(HeapObjectValue):
+
+  def __str__(self):
+    value = str(self.get_field(1))
+    tag = self.get_field(0).get_integer_value()
+    name = None
+    if tag == _OPERATION_ASSIGN_TAG:
+      name = "%s:=" % value
+    elif tag == _OPERATION_CALL_TAG:
+      name = "()"
+    elif tag == _OPERATION_INDEX_TAG:
+      name = "[]"
+    elif tag == _OPERATION_INFIX_TAG:
+      name = ".%s" % value
+    elif tag == _OPERATION_PREFIX_TAG:
+      name = "%s()" % value
+    elif tag == _OPERATION_SUFFIX_TAG:
+      name = "()%s" % value
+    else:
+      name = str(value)
+    return "#<an Operation %s>" % name
 
 
 # Convert an enum value (say "vdGuard") into smalltalk-style "a Guard". This is

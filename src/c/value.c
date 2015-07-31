@@ -2358,6 +2358,15 @@ value_t emit_module_fragment_private_invoke_reified_arguments(assembler_t *assm)
   return success();
 }
 
+value_t emit_module_fragment_private_leave_reified_arguments(assembler_t *assm) {
+  // First emit the signal arguments.
+  // Try invoking the handler.
+  TRY(assembler_emit_module_fragment_private_leave_reified_arguments(assm));
+  TRY(assembler_emit_return(assm));
+  TRY(assembler_emit_leave_or_fire_barrier(assm, 0));
+  return success();
+}
+
 value_t add_module_fragment_private_builtin_implementations(runtime_t *runtime,
     safe_value_t s_map) {
   ADD_BUILTIN_IMPL("module_fragment_private.new_type", 1,
@@ -2372,6 +2381,9 @@ value_t add_module_fragment_private_builtin_implementations(runtime_t *runtime,
   TRY(add_custom_method_impl(runtime, deref(s_map),
       "module_fragment_private.invoke_reified_arguments", 1, new_flag_set(kFlagSetAllOff),
       emit_module_fragment_private_invoke_reified_arguments));
+  TRY(add_custom_method_impl(runtime, deref(s_map),
+      "module_fragment_private.leave_reified_arguments", 1, new_flag_set(kFlagSetAllOff),
+      emit_module_fragment_private_leave_reified_arguments));
   return success();
 }
 

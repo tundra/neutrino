@@ -831,6 +831,95 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
           code_cache_refresh(&cache, &frame);
           break;
         }
+
+        /*
+
+          // Look up the method in the method space.
+          value_t tags = read_value(&cache, &frame, 1);
+          CHECK_FAMILY(ofCallTags, tags);
+          frame.pc += kSignalEscapeOperationSize;
+          value_t arg_map = whatever();
+          value_t handler = whatever();
+          sigmap_input_layout_t layout = sigmap_input_layout_new(ambience, tags,
+              nothing());
+          value_t method = lookup_signal_handler_method_from_frame(&layout,
+              &frame, &handler, &arg_map);
+          bool is_escape = (opcode == ocSignalEscape);
+          if (in_condition_cause(ccLookupError, method)) {
+            if (is_escape) {
+              // There was no handler for this so we have to escape out of the
+              // interpreter altogether. Push the signal frame onto the stack to
+              // record the state of it for the enclosing code.
+              E_TRY(push_stack_frame(runtime, stack, &frame, 1, nothing()));
+              // The stack tracing code expects all frames to have a valid code block
+              // object. The rest makes less of a difference.
+              frame_set_code_block(&frame, ROOT(runtime, empty_code_block));
+              E_RETURN(new_uncaught_signal_condition(is_escape));
+            } else {
+              // There was no handler but this is not an escape so we skip over
+              // the post-handler goto to the default block.
+              CHECK_EQ("signal not followed by goto", ocGoto,
+                  read_short(&cache, &frame, 0));
+              frame.pc += kGotoOperationSize;
+            }
+          } else {
+            // We found a method. Invoke it.
+            E_TRY(method);
+            E_TRY_DEF(code_block, ensure_method_code(runtime, method));
+            E_TRY(push_stack_frame(runtime, stack, &frame,
+                (size_t) get_code_block_high_water_mark(code_block), arg_map));
+            frame_set_code_block(&frame, code_block);
+            CHECK_TRUE("subject not null", is_null(frame_get_argument(&frame, 0)));
+            frame_set_argument(&frame, 0, handler);
+            code_cache_refresh(&cache, &frame);
+          }
+          break;
+
+         */
+
+        case ocModuleFragmentPrivateLeaveReifiedArguments: {
+          // Perform the method lookup.
+          value_t phrivate = frame_get_argument(&frame, 0);
+          CHECK_FAMILY(ofModuleFragmentPrivate, phrivate);
+          value_t values = whatever();
+          sigmap_input_layout_t layout;
+          value_t reified = frame_get_argument(&frame, 3);
+          CHECK_FAMILY(ofReifiedArguments, reified);
+          values = get_reified_arguments_values(reified);
+          layout = sigmap_input_layout_new(ambience,
+              get_reified_arguments_tags(reified), nothing());
+          value_t arg_map = whatever();
+          value_t handler = whatever();
+          value_t method = lookup_signal_handler_method_from_value_array(&layout,
+              values, &frame, &handler, &arg_map);
+          if (in_condition_cause(ccLookupError, method))
+            E_RETURN(signal_lookup_error(runtime, stack, &frame));
+          E_TRY(method);
+          E_TRY_DEF(code_block, ensure_method_code(runtime, method));
+          frame.pc += kModuleFragmentPrivateInvokeCallDataOperationSize;
+          // Method lookup succeeded. Build the frame that holds the arguments.
+          // The argument frame needs room for all the arguments as well as
+          // the return value.
+          size_t argc = (size_t) get_array_length(values);
+          value_t pushed = push_stack_frame(runtime, stack, &frame, argc + 1, nothing());
+          if (is_condition(pushed)) {
+            frame.pc -= kModuleFragmentPrivateLeaveReifiedArgumentsOperationSize;
+            E_RETURN(pushed);
+          }
+          frame_set_code_block(&frame, ROOT(runtime, return_code_block));
+          for (size_t i = 0; i < argc; i++)
+            frame_push_value(&frame, get_array_at(values, argc - i - 1));
+          // Then build the method's frame.
+          pushed = push_stack_frame(runtime, stack, &frame,
+              (size_t) get_code_block_high_water_mark(code_block), arg_map);
+          // This should be handled gracefully.
+          CHECK_FALSE("call literal invocation failed", is_condition(pushed));
+          frame_set_code_block(&frame, code_block);
+          CHECK_TRUE("subject not null", is_null(frame_get_argument(&frame, 0)));
+          frame_set_argument(&frame, 0, handler);
+          code_cache_refresh(&cache, &frame);
+          break;
+        }
         default:
           ERROR("Unexpected opcode %i", opcode);
           UNREACHABLE("unexpected opcode");
