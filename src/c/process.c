@@ -672,8 +672,8 @@ value_t backtrace_entry_validate(value_t value) {
   return success();
 }
 
-void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
-    print_on_context_t *context) {
+void generic_invocation_print_on(invocation_entry_t *invocation,
+    size_t invocation_size, int32_t opcode, print_on_context_t *context) {
   // Ensure entries don't have arguments etc. so get them out of the way first.
   if (opcode == ocCallEnsurer) {
     string_buffer_printf(context->buf, "ensure");
@@ -682,14 +682,11 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
   value_t subject = new_not_found_condition(0xc8e7fc1b);
   value_t selector = new_not_found_condition(0x39063f3a);
   value_t transport = new_not_found_condition(0x255364c3);
-  id_hash_map_iter_t iter;
-  id_hash_map_iter_init(&iter, invocation);
-  while (id_hash_map_iter_advance(&iter)) {
-    value_t key;
-    value_t value;
-    id_hash_map_iter_get_current(&iter, &key, &value);
-    if (in_family(ofKey, key)) {
-      int64_t id = get_key_id(key);
+  for (size_t i = 0; i < invocation_size; i++) {
+    value_t tag = invocation[i].tag;
+    value_t value = invocation[i].value;
+    if (in_family(ofKey, tag)) {
+      int64_t id = get_key_id(tag);
       if (id == kSubjectKeyId) {
         subject = value;
       } else if (id == kSelectorKeyId) {
@@ -720,9 +717,15 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
   size_t argc;
   // Print the positional arguments.
   for (posc = argc = 0; true; posc++, argc++) {
-    value_t key = new_integer(posc);
-    value_t value = get_id_hash_map_at(invocation, key);
-    if (in_condition_cause(ccNotFound, value))
+    value_t tag = new_integer(posc);
+    value_t value = nothing();
+    for (size_t i = 0; i < invocation_size; i++) {
+      if (is_same_value(invocation[i].tag, tag)) {
+        value = invocation[i].value;
+        break;
+      }
+    }
+    if (is_nothing(value))
       break;
     if (argc > 0)
       string_buffer_printf(context->buf, ", ");
@@ -731,17 +734,15 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
   // Print any remaining arguments. Note that this will print them in
   // nondeterministic order since the order depends on the iteration order of
   // the map. This is bad.
-  id_hash_map_iter_init(&iter, invocation);
-  while (id_hash_map_iter_advance(&iter)) {
-    value_t key;
-    value_t value;
-    id_hash_map_iter_get_current(&iter, &key, &value);
-    if (in_family(ofKey, key)) {
-      int64_t id = get_key_id(key);
+  for (size_t i = 0; i < invocation_size; i++) {
+    value_t tag = invocation[i].tag;
+    value_t value = invocation[i].value;
+    if (in_family(ofKey, tag)) {
+      int64_t id = get_key_id(tag);
       if (id == kSubjectKeyId || id == kSelectorKeyId || id == kTransportKeyId)
         // Don't print the subject/selector again.
         continue;
-    } else if (is_integer(key) && ((size_t) get_integer_value(key)) < posc) {
+    } else if (is_integer(tag) && ((size_t) get_integer_value(tag)) < posc) {
       // Don't print any of the positional arguments again. The size_t cast of
       // the integer value means that negative values will become very large
       // positive ones and hence compare greater than posc.
@@ -752,7 +753,7 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
     // Unquote the value such that string tags are unquoted as you would expect.
     print_on_context_t new_context = *context;
     new_context.flags = pfUnquote;
-    value_print_inner_on(key, &new_context, -1);
+    value_print_inner_on(tag, &new_context, -1);
     string_buffer_printf(context->buf, ": ");
     value_print_inner_on(value, context, -1);
     argc++;
@@ -760,6 +761,18 @@ void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
   // End the selector.
   if (in_family(ofOperation, selector))
     operation_print_close_on(selector, context);
+}
+
+void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
+    print_on_context_t *context) {
+  size_t size = get_id_hash_map_size(invocation);
+  invocation_entry_t *entries = allocator_default_malloc_structs(invocation_entry_t, size);
+  id_hash_map_iter_t iter;
+  id_hash_map_iter_init(&iter, invocation);
+  for (size_t i = 0; id_hash_map_iter_advance(&iter); i++)
+    id_hash_map_iter_get_current(&iter, &entries[i].tag, &entries[i].value);
+  generic_invocation_print_on(entries, size, opcode, context);
+  allocator_default_free_structs(invocation_entry_t, size, entries);
 }
 
 void backtrace_entry_print_on(value_t value, print_on_context_t *context) {
@@ -1031,11 +1044,19 @@ void reified_arguments_print_on(value_t value, print_on_context_t *context) {
     string_buffer_printf(context->buf, "#<reified_arguments[%i]>",
         (int) get_array_length(get_reified_arguments_values(value)));
   } else {
-    string_buffer_printf(context->buf, "#<reified_arguments values: ");
-    value_print_inner_on(get_reified_arguments_values(value), context, -1);
-    string_buffer_printf(context->buf, ", tags: ");
-    value_print_inner_on(get_reified_arguments_tags(value), context, -1);
+    value_t values = get_reified_arguments_values(value);
+    value_t tags = get_reified_arguments_tags(value);
+    size_t size = get_array_length(values);
+    invocation_entry_t *entries = allocator_default_malloc_structs(invocation_entry_t, size);
+    for (size_t i = 0; i < size; i++) {
+      entries[i].tag = get_call_tags_tag_at(tags, i);
+      int64_t offset = get_call_tags_offset_at(tags, i);
+      entries[i].value = get_array_at(values, offset);
+    }
+    string_buffer_printf(context->buf, "#<reified_arguments ");
+    generic_invocation_print_on(entries, size, ocInvoke, context);
     string_buffer_printf(context->buf, ">");
+    allocator_default_free_structs(invocation_entry_t, size, entries);
   }
 }
 

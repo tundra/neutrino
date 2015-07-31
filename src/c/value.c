@@ -2314,7 +2314,7 @@ value_t module_fragment_private_validate(value_t value) {
 
 void module_fragment_private_print_on(value_t value, print_on_context_t *context) {
   CHECK_FAMILY(ofModuleFragmentPrivate, value);
-  string_buffer_printf(context->buf, "#<privileged access to ");
+  string_buffer_printf(context->buf, "#<module ");
   value_t fragment = get_module_fragment_private_owner(value);
   value_t stage = get_module_fragment_stage(fragment);
   value_print_inner_on(stage, context, -1);

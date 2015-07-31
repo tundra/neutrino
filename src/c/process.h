@@ -548,6 +548,16 @@ ACCESSORS_DECL(backtrace_entry, invocation);
 // The opcode that caused this entry to be created.
 ACCESSORS_DECL(backtrace_entry, opcode);
 
+// Utility struct that holds the data for an individual invocation argument.
+typedef struct {
+  value_t tag;
+  value_t value;
+} invocation_entry_t;
+
+// Prints an invocation appropriately on the given context.
+void generic_invocation_print_on(invocation_entry_t *invocation,
+    size_t invocation_size, int32_t opcode, print_on_context_t *context);
+
 // Print the given invocation map on the given context. This is really an
 // implementation detail of how backtrace entries print themselves but it's
 // tricky enough that it makes sense to be able to test as a separate thing.

@@ -850,7 +850,7 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
             E_RETURN(signal_lookup_error(runtime, stack, &frame));
           E_TRY(method);
           E_TRY_DEF(code_block, ensure_method_code(runtime, method));
-          frame.pc += kModuleFragmentPrivateInvokeCallDataOperationSize;
+          frame.pc += kModuleFragmentPrivateLeaveReifiedArgumentsOperationSize;
           // Method lookup succeeded. Build the frame that holds the arguments.
           // The argument frame needs room for all the arguments as well as
           // the return value.

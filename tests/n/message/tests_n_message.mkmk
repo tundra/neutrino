@@ -9,6 +9,7 @@ file_names = [
   "async_lookup_failure",
   "delay_assert_equals_failure",
   "delay_happens",
+  "leave_failure",
   "lookup_failure",
   "then_happens",
   "trace_builtin_leave",
