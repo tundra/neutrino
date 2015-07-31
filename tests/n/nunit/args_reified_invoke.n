@@ -78,8 +78,64 @@ def $test_leave() {
     on(a: $a, b: $b, c: $c, d: $d) => $pos($a, $b, $c, $d));
 }
 
+def $test_leave_ensure() {
+  var $x := 0;
+  $assert:equals(108, try {
+    try {
+      module.leave(107 .rblah 108);
+    } ensure {
+      $x := 1;
+    }
+  } on.rblah($v) {
+    $assert:equals(0, $x);
+    $v;
+  });
+  $assert:equals(1, $x);
+}
+
+def $test_inner_leave() {
+  var $x := 0;
+  $assert:equals(112, try {
+    try {
+      module.leave(110 .rblah 111);
+    } ensure {
+      $assert:equals(1, $x);
+      $x := 2;
+      leave.bloh(112);
+    }
+  } on.rblah($v) {
+    $assert:equals(0, $x);
+    $x := 1;
+    $v;
+  } on.bloh($v) {
+    $assert:equals(2, $x);
+    $x := 3;
+    $v;
+  });
+  $assert:equals(3, $x);
+  $assert:equals(116, try {
+    try {
+      module.leave(113 .rblah 114);
+    } ensure {
+      $assert:equals(5, $x);
+      $x := 6;
+    }
+  } on.rblah($v) {
+    $assert:equals(3, $x);
+    $x := 4;
+    leave.bloh(115);
+  } on.bloh($v) {
+    $assert:equals(4, $x);
+    $x := 5;
+    $v + 1;
+  });
+  $assert:equals(6, $x);
+}
+
 do {
   $test_direct_invoke();
   $test_op_invoke();
   $test_leave();
+  $test_leave_ensure();
+  $test_inner_leave();
 }
