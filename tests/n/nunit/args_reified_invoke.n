@@ -47,12 +47,35 @@ def $test_op_invoke() {
   $assert:equals(3, module.invoke((4 .blah 1).replace_argument(selector, op-())));
 }
 
+def $try_leave_value($v) =>
+  try module.leave($v)
+  on.rblah($v) => $v
+  on($a, $b, $c, $d) => $pos($a, $b, $c, $d);
+
 def $test_leave() {
-  $assert:equals(18, try module.leave($rpos(3, 4, 5, 6)) on($a, $b, $c, $d) => 18);
-  $assert:equals(7080910, try module.leave($rpos(7, 8, 9, 10)) on($a, $b, $c, $d) => $pos($a, $b, $c, $d));
-  $assert:equals(11121314, try module.leave($rkwd(11, 12, 13, 14)) on(a: $a, b: $b, c: $c, d: $d) => $pos($a, $b, $c, $d));
-  $assert:equals(18171615, try module.leave($rkwd(15, 16, 17, 18)) on(d: $d, c: $c, b: $b, a: $a) => $pos($a, $b, $c, $d));
-  $assert:equals("y", try module.leave("x" .rblah "y") on.rblah($v) => $v);
+  $assert:equals(18,
+    try module.leave($rpos(3, 4, 5, 6))
+    on($a, $b, $c, $d) => 18);
+  $assert:equals(7080910,
+    try module.leave($rpos(7, 8, 9, 10))
+    on($a, $b, $c, $d) => $pos($a, $b, $c, $d));
+  $assert:equals(11121314,
+    try module.leave($rkwd(11, 12, 13, 14))
+    on(a: $a, b: $b, c: $c, d: $d) => $pos($a, $b, $c, $d));
+  $assert:equals(18171615,
+    try module.leave($rkwd(15, 16, 17, 18))
+    on(d: $d, c: $c, b: $b, a: $a) => $pos($a, $b, $c, $d));
+  $assert:equals(27282930,
+    try module.leave($rkwd(a: 27, b: 28, c: 29, d: 30))
+    on(a: $a, b: $b, c: $c, d: $d) => $pos($a, $b, $c, $d));
+  $assert:equals("y",
+    try module.leave("x" .rblah "y")
+    on.rblah($v) => $v);
+  $assert:equals(19202122, $try_leave_value($rpos(19, 20, 21, 22)));
+  $assert:equals(980, $try_leave_value("x" .rblah 980));
+  $assert:equals(23242526,
+    try $try_leave_value($rkwd(a: 23, b: 24, c: 25, d: 26))
+    on(a: $a, b: $b, c: $c, d: $d) => $pos($a, $b, $c, $d));
 }
 
 do {
