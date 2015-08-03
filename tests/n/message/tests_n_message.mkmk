@@ -11,6 +11,7 @@ file_names = [
   "delay_happens",
   "leave_failure",
   "lookup_failure",
+  "promise_on_happens",
   "then_happens",
   "trace_builtin_leave",
   "trace_explicit_leave",

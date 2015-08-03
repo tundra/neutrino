@@ -12,7 +12,7 @@ def $info!($value) => @ctrino.log_info!($value);
 def $error!($value) => @ctrino.log_error_canonical!($value);
 
 ## Print the given value to stdout, followed by a newline.
-def $print_ln($value) => @ctrino.print_ln($value);
+def $print_ln!($value) => @ctrino.print_ln!($value);
 
 ## Instance manager used within the core library.
 def @manager := @ctrino.new_instance_manager(null);

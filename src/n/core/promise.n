@@ -51,6 +51,7 @@ def ($this is @Promise).fulfill!($value);
 def ($this is @Promise).reject!($args);
 
 ## Executes the given thunk eventually, after this promise has been resolved.
+## If this promise fails the resulting promise will fail in the same way.
 def ($this is @Promise).then($thunk) {
   def $result := new @Promise();
   @ctrino.delay(fn => @if($this.is_fulfilled?, fn
@@ -58,6 +59,15 @@ def ($this is @Promise).then($thunk) {
       on.else() => $result.reject!($this.rejected_error)),
     $this);
   $result;
+}
+
+## Executes the given exception lambda with the failure arguments if this
+## promise fails.
+def ($this is @Promise).on($handler) {
+  @ctrino.delay(fn => @if($this.is_fulfilled?, fn
+      on.then() => null
+      on.else() => module.invoke(subject: $handler, $this.rejected_error)),
+    $this);
 }
 
 ## Execute the given thunk in a subsequent turn. Returns a promise for the

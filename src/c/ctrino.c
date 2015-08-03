@@ -316,7 +316,7 @@ static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("new_os_process", 0, ctrino_new_os_process),
   BUILTIN_METHOD("new_pending_promise", 0, ctrino_new_pending_promise),
   BUILTIN_METHOD("new_plugin_instance", 1, ctrino_new_plugin_instance),
-  BUILTIN_METHOD("print_ln", 1, ctrino_print_ln),
+  BUILTIN_METHOD("print_ln!", 1, ctrino_print_ln),
   BUILTIN_METHOD("to_string", 1, ctrino_to_string)
 };
 

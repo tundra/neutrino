@@ -1,0 +1,8 @@
+import $assert;
+import $core;
+do $core:delay(fn => leave.blam(1, 2, 3)).on(fn.blam($a, $b, $c) {
+  $assert:equals(1, $a);
+  $assert:equals(2, $b);
+  $assert:equals(3, $c);
+  $core:print_ln!("Called");
+});

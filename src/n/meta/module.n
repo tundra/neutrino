@@ -25,5 +25,8 @@ def ($this is @ModuleFragmentPrivate).invoke($call is @CallLiteral);
 @ctrino.builtin("module_fragment_private.invoke_reified_arguments")
 def ($this is @ModuleFragmentPrivate).invoke($call is @ReifiedArguments);
 
+def ($this is @ModuleFragmentPrivate).invoke(subject: $subj, $args)
+  => $this.invoke($args.replace_argument(subject, $subj));
+
 @ctrino.builtin("module_fragment_private.leave_reified_arguments")
 def ($this is @ModuleFragmentPrivate).leave($call is @ReifiedArguments);
