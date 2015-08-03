@@ -184,7 +184,7 @@ static size_t get_subject_offset(value_t tags) {
   if (is_nothing(index)) {
     return 0xFFFF;
   } else {
-    return get_call_tags_offset_at(tags, get_integer_value(index));
+    return (size_t) get_call_tags_offset_at(tags, get_integer_value(index));
   }
 }
 
@@ -998,26 +998,6 @@ static value_t prepare_run_job(runtime_t *runtime, value_t stack, job_t *job) {
   frame_set_code_block(&frame, job->code);
   close_frame(&frame);
   return success();
-}
-
-// Grabs the signal arguments on the stack and packages them into a reified
-// arguments struct.
-static value_t reify_signal(runtime_t *runtime, value_t task) {
-  value_t stack = get_task_stack(task);
-  frame_t frame = open_stack(stack);
-
-  value_t tags = get_caller_call_tags(&frame);
-  size_t argc = (size_t) get_call_tags_entry_count(tags);
-  TRY_DEF(values, new_heap_array(runtime, argc));
-  TRY_DEF(reified, new_heap_reified_arguments(runtime, ROOT(runtime, empty_array),
-      values, ROOT(runtime, empty_array), tags));
-  for (size_t i = 0; i < argc; i++) {
-    value_t value = frame_get_raw_argument(&frame, i);
-    set_array_at(values, i, value);
-  }
-
-  close_frame(&frame);
-  return reified;
 }
 
 // Clears all the frames from the given stack down to the bottom.
