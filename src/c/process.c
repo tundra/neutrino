@@ -765,7 +765,7 @@ void generic_invocation_print_on(invocation_entry_t *invocation,
 
 void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
     print_on_context_t *context) {
-  size_t size = get_id_hash_map_size(invocation);
+  size_t size = (size_t) get_id_hash_map_size(invocation);
   invocation_entry_t *entries = allocator_default_malloc_structs(invocation_entry_t, size);
   id_hash_map_iter_t iter;
   id_hash_map_iter_init(&iter, invocation);
@@ -1046,7 +1046,7 @@ void reified_arguments_print_on(value_t value, print_on_context_t *context) {
   } else {
     value_t values = get_reified_arguments_values(value);
     value_t tags = get_reified_arguments_tags(value);
-    size_t size = get_array_length(values);
+    size_t size = (size_t) get_array_length(values);
     invocation_entry_t *entries = allocator_default_malloc_structs(invocation_entry_t, size);
     for (size_t i = 0; i < size; i++) {
       entries[i].tag = get_call_tags_tag_at(tags, i);
