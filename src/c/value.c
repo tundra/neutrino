@@ -2318,8 +2318,6 @@ void module_fragment_private_print_on(value_t value, print_on_context_t *context
   value_t fragment = get_module_fragment_private_owner(value);
   value_t stage = get_module_fragment_stage(fragment);
   value_print_inner_on(stage, context, -1);
-  value_t path = get_module_fragment_path(fragment);
-  value_print_inner_on(path, context, -1);
   string_buffer_printf(context->buf, ">");
 }
 

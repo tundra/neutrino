@@ -765,14 +765,18 @@ void generic_invocation_print_on(invocation_entry_t *invocation,
 
 void backtrace_entry_invocation_print_on(value_t invocation, int32_t opcode,
     print_on_context_t *context) {
-  size_t size = (size_t) get_id_hash_map_size(invocation);
-  invocation_entry_t *entries = allocator_default_malloc_structs(invocation_entry_t, size);
-  id_hash_map_iter_t iter;
-  id_hash_map_iter_init(&iter, invocation);
-  for (size_t i = 0; id_hash_map_iter_advance(&iter); i++)
-    id_hash_map_iter_get_current(&iter, &entries[i].tag, &entries[i].value);
-  generic_invocation_print_on(entries, size, opcode, context);
-  allocator_default_free_structs(invocation_entry_t, size, entries);
+  if (is_nothing(invocation)) {
+    generic_invocation_print_on(NULL, 0, opcode, context);
+  } else {
+    size_t size = (size_t) get_id_hash_map_size(invocation);
+    invocation_entry_t *entries = allocator_default_malloc_structs(invocation_entry_t, size);
+    id_hash_map_iter_t iter;
+    id_hash_map_iter_init(&iter, invocation);
+    for (size_t i = 0; id_hash_map_iter_advance(&iter); i++)
+      id_hash_map_iter_get_current(&iter, &entries[i].tag, &entries[i].value);
+    generic_invocation_print_on(entries, size, opcode, context);
+    allocator_default_free_structs(invocation_entry_t, size, entries);
+  }
 }
 
 void backtrace_entry_print_on(value_t value, print_on_context_t *context) {
