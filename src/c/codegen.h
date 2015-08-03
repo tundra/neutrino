@@ -172,7 +172,8 @@ size_t assembler_get_code_cursor(assembler_t *assm);
 value_t assembler_emit_push(assembler_t *assm, value_t value);
 
 // Capture the arguments and push the reified representation onto the stack.
-value_t assembler_emit_reify_arguments(assembler_t *assm, value_t params);
+value_t assembler_emit_reify_arguments(assembler_t *assm, value_t params,
+    size_t clear_index);
 
 // Emits a pop instruction. Pops count elements off the stack.
 value_t assembler_emit_pop(assembler_t *assm, size_t count);

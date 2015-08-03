@@ -874,22 +874,18 @@ value_t process_validate(value_t self) {
   return success();
 }
 
-void job_init(job_t *job, value_t code, value_t data, value_t promise,
-    value_t guard) {
+void job_init(job_t *job, value_t code, value_t data, value_t guard) {
   CHECK_FAMILY(ofCodeBlock, code);
-  CHECK_FAMILY_OPT(ofPromise, promise);
   CHECK_FAMILY_OPT(ofPromise, guard);
   job->code = code;
   job->data = data;
-  job->promise = promise;
   job->guard = guard;
 }
 
 value_t offer_process_job(runtime_t *runtime, value_t process, job_t *job) {
   CHECK_FAMILY(ofProcess, process);
   value_t work_queue = get_process_work_queue(process);
-  value_t data[kProcessWorkQueueWidth] = { job->code, job->data, job->promise,
-      job->guard };
+  value_t data[kProcessWorkQueueWidth] = { job->code, job->data, job->guard };
   return offer_to_fifo_buffer(runtime, work_queue, data, kProcessWorkQueueWidth);
 }
 
@@ -902,7 +898,7 @@ bool take_process_ready_job(value_t process, job_t *job_out) {
     value_t result[kProcessWorkQueueWidth];
     fifo_buffer_iter_get_current(&iter, result, kProcessWorkQueueWidth);
     // Read the current entry into the output job for convenience.
-    job_init(job_out, result[0], result[1], result[2], result[3]);
+    job_init(job_out, result[0], result[1], result[2]);
     value_t guard = job_out->guard;
     if (is_nothing(guard) || is_promise_settled(guard)) {
       // This one is ready to run. Remove it from the buffer.

@@ -3,3 +3,4 @@ Error: --- backtrace ---
 - :that(false)
 - :equals(1, 2)
 - lambda~(canonicalized)()
+- lambda~(canonicalized)()

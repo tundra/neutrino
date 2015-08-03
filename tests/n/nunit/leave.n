@@ -44,8 +44,19 @@ def $test_multi_levels() {
   $assert:equals(2, signal.bar() else 2);
 }
 
+def $test_catchall() {
+  var $caught := false;
+  try {
+    leave.blah();
+  } on(*) {
+    $caught := true;
+  }
+  $assert:that($caught);
+}
+
 do {
   $test_simple_leave();
   $test_ensures();
   $test_multi_levels();
+  $test_catchall();
 }

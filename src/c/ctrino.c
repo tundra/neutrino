@@ -187,16 +187,14 @@ static value_t ctrino_collect_garbage(builtin_arguments_t *args) {
 static value_t ctrino_delay(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t thunk = get_builtin_argument(args, 0);
-  value_t promise = get_builtin_argument(args, 1);
-  value_t guard = null_to_nothing(get_builtin_argument(args, 2));
+  value_t guard = null_to_nothing(get_builtin_argument(args, 1));
   CHECK_C_OBJECT_TAG(btCtrino, self);
   CHECK_FAMILY(ofLambda, thunk);
-  CHECK_FAMILY_OPT(ofPromise, promise);
   CHECK_FAMILY_OPT(ofPromise, guard);
   value_t process = get_builtin_process(args);
   runtime_t *runtime = get_builtin_runtime(args);
   job_t job;
-  job_init(&job, ROOT(runtime, call_thunk_code_block), thunk, promise, guard);
+  job_init(&job, ROOT(runtime, call_thunk_code_block), thunk, guard);
   TRY(offer_process_job(runtime, process, &job));
   return null();
 }
@@ -297,7 +295,7 @@ static value_t ctrino_get_environment_variable(builtin_arguments_t *args) {
 static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("builtin", 1, ctrino_builtin),
   BUILTIN_METHOD("collect_garbage!", 0, ctrino_collect_garbage),
-  BUILTIN_METHOD("delay", 3, ctrino_delay),
+  BUILTIN_METHOD("delay", 2, ctrino_delay),
   BUILTIN_METHOD("freeze", 1, ctrino_freeze),
   BUILTIN_METHOD("get_builtin_type", 1, ctrino_get_builtin_type),
   BUILTIN_METHOD("get_current_backtrace", 0, ctrino_get_current_backtrace),

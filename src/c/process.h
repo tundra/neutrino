@@ -671,8 +671,6 @@ typedef struct {
   value_t code;
   // An optional piece of data that is available to the code block.
   value_t data;
-  // Optional promise to resolve with the result of running this job.
-  value_t promise;
   // Optional promise that must be resolved before this job can be run.
   value_t guard;
 } job_t;
@@ -680,8 +678,7 @@ typedef struct {
 #define kProcessWorkQueueWidth (sizeof(job_t) / sizeof(value_t))
 
 // Initialize a job struct.
-void job_init(job_t *job, value_t code, value_t data, value_t promise,
-    value_t guard);
+void job_init(job_t *job, value_t code, value_t data, value_t guard);
 
 // Adds a job to the queue of work to perform for this process. The job struct
 // is copied so it can be disposed immediately after this call.

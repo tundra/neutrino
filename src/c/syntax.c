@@ -18,6 +18,7 @@
 
 void single_compile_config_clear(single_compile_config_t *config) {
   config->reify_params_opt = nothing();
+  config->clear_reified_subject = false;
 }
 
 // Returns a shared singleton compile config that contains the default config
@@ -66,7 +67,8 @@ value_t compile_expression_with_state(single_compile_state_t *state,
   assembler_t *assm = &state->assm;
   bool should_reify = !is_nothing(state->config->reify_params_opt);
   if (should_reify)
-    TRY(assembler_emit_reify_arguments(assm, state->config->reify_params_opt));
+    TRY(assembler_emit_reify_arguments(assm, state->config->reify_params_opt,
+        state->config->clear_reified_subject));
   TRY(emit_value(program, assm));
   if (should_reify)
     // We could in principle leave the reified args on the stack but this allows
@@ -509,7 +511,7 @@ ACCESSORS_IMPL(SignalHandlerAst, signal_handler_ast, snInFamilyOpt(ofArray),
     Handlers, handlers);
 
 static value_t build_methodspace_from_method_asts(value_t method_asts,
-    assembler_t *assm) {
+    assembler_t *assm, bool is_signal_handler) {
   CHECK_FAMILY(ofArray, method_asts);
   runtime_t *runtime = assm->runtime;
   TRY_DEF(space, new_heap_methodspace(runtime, nothing()));
@@ -520,7 +522,7 @@ static value_t build_methodspace_from_method_asts(value_t method_asts,
     // body of the lambda.
     value_t body_code = nothing();
     if (assm->scope != scope_get_bottom())
-      TRY_SET(body_code, compile_method_body(assm, method_ast));
+      TRY_SET(body_code, compile_method_body(assm, method_ast, is_signal_handler));
     TRY_DEF(signature, build_method_signature(assm->runtime, assm->fragment,
         assembler_get_scratch_memory(assm), get_method_ast_signature(method_ast)));
 
@@ -538,7 +540,7 @@ value_t emit_signal_handler_ast(value_t value, assembler_t *assm) {
   block_scope_o block_scope;
   TRY(assembler_push_block_scope(assm, &block_scope));
   value_t handler_asts = get_signal_handler_ast_handlers(value);
-  TRY_DEF(space, build_methodspace_from_method_asts(handler_asts, assm));
+  TRY_DEF(space, build_methodspace_from_method_asts(handler_asts, assm, true));
   assembler_pop_block_scope(assm, &block_scope);
 
   short_buffer_cursor_t cursor;
@@ -875,7 +877,7 @@ static value_t emit_block_value(value_t method_asts, assembler_t *assm) {
   block_scope_o block_scope;
   TRY(assembler_push_block_scope(assm, &block_scope));
 
-  TRY_DEF(space, build_methodspace_from_method_asts(method_asts, assm));
+  TRY_DEF(space, build_methodspace_from_method_asts(method_asts, assm, false));
 
   // Pop the block scope off, we're done refracting.
   assembler_pop_block_scope(assm, &block_scope);
@@ -1248,7 +1250,7 @@ static value_t sanity_check_symbol(assembler_t *assm, value_t probably_symbol) {
   return success();
 }
 
-value_t compile_method_body(assembler_t *assm, value_t method_ast) {
+value_t compile_method_body(assembler_t *assm, value_t method_ast, bool is_signal_handler) {
   CHECK_FAMILY(ofMethodAst, method_ast);
 
   value_t signature_ast = get_method_ast_signature(method_ast);
@@ -1290,6 +1292,7 @@ value_t compile_method_body(assembler_t *assm, value_t method_ast) {
     for (size_t i = 0; i < param_astc; i++)
       set_array_at(reify_params, offsets[i], get_array_at(param_asts, i));
     config.reify_params_opt = reify_params;
+    config.clear_reified_subject = is_signal_handler;
   }
 
   // We don't need this more so clear it to ensure that we don't accidentally
@@ -1312,7 +1315,7 @@ value_t emit_lambda_ast(value_t value, assembler_t *assm) {
   lambda_scope_o lambda_scope;
   TRY(assembler_push_lambda_scope(assm, &lambda_scope));
 
-  TRY_DEF(space, build_methodspace_from_method_asts(method_asts, assm));
+  TRY_DEF(space, build_methodspace_from_method_asts(method_asts, assm, false));
 
   // Pop the capturing scope off, we're done capturing.
   assembler_pop_lambda_scope(assm, &lambda_scope);

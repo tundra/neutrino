@@ -207,6 +207,21 @@ def $test_replace() {
   $assert:equals(64, $k3["c"]);
 }
 
+def $test_catch_reify() {
+  var $args := null;
+  try {
+    leave.nirk(1, 2, 3);
+  } on(*) as $a {
+    $args := $a;
+  }
+  $assert:equals(null, $args[subject]);
+  $assert:equals(op.nirk, $args[selector]);
+  $assert:equals(sync, $args[transport]);
+  $assert:equals(1, $args[0]);
+  $assert:equals(2, $args[1]);
+  $assert:equals(3, $args[2]);
+}
+
 do {
   $test_positional();
   $test_keyword();
@@ -215,4 +230,5 @@ do {
   $test_extra();
   $test_reverse();
   $test_replace();
+  $test_catch_reify();
 }
