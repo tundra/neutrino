@@ -22,6 +22,7 @@ type @ProcessHelper {
   def $this.read_stdout!($current) {
     when def $blob := $this.stdout.in.read! 1024 do {
       if $blob.is_null? then {
+        # We've reached the end so we can fulfill the output promise.
         $this.output.fulfill! $current;
       } else {
         def $str := @core:Ascii.string_from($blob);

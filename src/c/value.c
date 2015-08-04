@@ -725,7 +725,7 @@ void truncate_blob(runtime_t *runtime, value_t self, size_t new_length) {
   size_t new_size = calc_blob_size(new_length);
   address_t left_over_start = object_start + new_size;
   CHECK_PTREQ("unaligned start", left_over_start, align_address((uint32_t) kDeadWoodSize, left_over_start));
-  size_t old_size = calc_blob_size(get_blob_length(self));
+  size_t old_size = calc_blob_size((size_t) get_blob_length(self));
   address_t left_over_end = object_start + old_size;
   CHECK_PTREQ("unaligned start", left_over_end, align_address((uint32_t) kDeadWoodSize, left_over_end));
   for (address_t addr = left_over_start; addr < left_over_end; addr += kDeadWoodSize)

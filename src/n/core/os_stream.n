@@ -23,6 +23,9 @@ def @io:InStream := @ctrino.get_builtin_type("OsInStream");
 
 def type @io:InStream is @Object;
 
-# Reads a block of data from the given input stream.
+## Reads a block of data from the given input stream of up to the given size.
+## Returns a promise that will be fulfilled with the result of the operation,
+## either a blob that is up to the given number of bytes in length or null if
+## we've reached the end of the stream.
 @ctrino.builtin("os_in_stream.read!")
 def ($this is @io:InStream).read!($bytes is @Integer);
