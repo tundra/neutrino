@@ -118,6 +118,27 @@ class Token(object):
   def quote(delta, delimiter=NO_DELIMITER):
     return Token(Token.QUOTE, delta, delimiter)
 
+_ESCAPES = {
+  "n": "\n",
+  "r": "\r"
+}
+
+def process_escapes(str):
+  result = []
+  current = 0
+  while current < len(str):
+    c = str[current]
+    if c == '\\':
+      current += 1
+      if current < len(str):
+        c = str[current]
+        result.append(_ESCAPES.get(c, c))
+        current += 1
+    else:
+      result.append(c)
+      current += 1
+  return "".join(result)
+
 
 # Keeps track of state while parsing input.
 class Tokenizer(object):
@@ -330,7 +351,7 @@ class Tokenizer(object):
       self.advance()
     end = self.cursor
     value = self.slice(start + 1, end - 1)
-    return Token.literal(value, delim)
+    return Token.literal(process_escapes(value), delim)
 
   # Returns a punctuation token for the specified value and update the internal
   # state of the tokenizer to reflect that we've just seen that token.

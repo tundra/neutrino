@@ -5,7 +5,11 @@ import $assert;
 import $core;
 
 ## Converts a one-character string into an ascii character.
-def $a($s) => ($s.view(@core:Ascii))[0];
+def $a($s) {
+  def $view := $s.view(@core:Ascii);
+  $assert:equals(1, $view.length);
+  $view[0];
+}
 
 def $test_ascii_view() {
   def $chars := "hello!".view(@core:Ascii);
@@ -26,6 +30,9 @@ def $test_ascii_chars() {
   $assert:equals(48, $a("0").ordinal);
   $assert:equals(32, $a(" ").ordinal);
   $assert:equals(37, $a("%").ordinal);
+  $assert:equals(10, $a("\n").ordinal);
+  $assert:equals(13, $a("\r").ordinal);
+  $assert:equals(92, $a("\\").ordinal);
   $assert:equals($a("a"), @core:AsciiCharacter.from_ordinal(97));
   $assert:equals($a("A"), @core:AsciiCharacter.from_ordinal(65));
   $assert:equals($a("0"), @core:AsciiCharacter.from_ordinal(48));
@@ -93,9 +100,34 @@ def $test_substring() {
   $assert:equals("foo bar baz", $fbb.substring(-100, 100));
 }
 
+def $run_split_test($str, $parts) {
+  $assert:equals($parts, $str.view(@core:Ascii).split_lines);
+}
+
+def $test_split() {
+  $run_split_test("", []);
+  $run_split_test("a", ["a"]);
+  $run_split_test("a\n", ["a", ""]);
+  $run_split_test("a\nb", ["a", "b"]);
+  $run_split_test("a\nb\n", ["a", "b", ""]);
+  $run_split_test("a\nb\nc", ["a", "b", "c"]);
+  $run_split_test("a\n\n\nb", ["a", "", "", "b"]);
+  $run_split_test("a\r", ["a", ""]);
+  $run_split_test("a\rb", ["a", "b"]);
+  $run_split_test("a\rb\r", ["a", "b", ""]);
+  $run_split_test("a\rb\rc", ["a", "b", "c"]);
+  $run_split_test("a\r\r\rb", ["a", "", "", "b"]);
+  $run_split_test("a\r\nb", ["a", "b"]);
+  $run_split_test("a\r\nb\r\n", ["a", "b", ""]);
+  $run_split_test("a\r\nb\r\nc", ["a", "b", "c"]);
+  $run_split_test("a\r\n\r\n\r\nb", ["a", "", "", "b"]);
+  $run_split_test("a\n\rb", ["a", "", "b"]);
+}
+
 do {
   $test_ascii_view();
   $test_ascii_chars();
   $test_ctype();
   $test_substring();
+  $test_split();
 }

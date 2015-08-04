@@ -64,6 +64,12 @@ def ($this is @AsciiStringView).substring($from is @Integer, $to is @Integer);
 @ctrino.builtin("ascii_string_view.to_blob")
 def ($this is @AsciiStringView).to($type == @Blob);
 
+## Returns a tuple of the lines in this string. Lines are split at newlines
+## (ascii 10, "\n"), carriage return  (ascii 13, "\r"), or carriage return and
+## newline ("\r\n").
+@ctrino.builtin("ascii_string_view.split_lines")
+def ($this is @AsciiStringView).split_lines();
+
 ## An individual character in an ascii string.
 def @AsciiCharacter := @ctrino.get_builtin_type("AsciiCharacter");
 def type @AsciiCharacter is @Object;

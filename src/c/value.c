@@ -618,6 +618,59 @@ static value_t ascii_string_view_to_blob(builtin_arguments_t *args) {
   return new_heap_blob_with_data(runtime, contents);
 }
 
+// Returns true if there is a line break in the given string at the given index.
+// The unit size out parameter contains the number of characters to skip to get
+// to the next character in the string. This is to be able to count \r\n as one
+// line break.
+static bool at_line_break(utf8_t data, size_t index, size_t *unit_size_out) {
+  *unit_size_out = 1;
+  switch (data.chars[index]) {
+    case '\n':
+      return true;
+    case '\r':
+      if ((index + 1 < data.size) && data.chars[index + 1] == '\n')
+        *unit_size_out = 2;
+      return true;
+    default:
+      return false;
+  }
+}
+
+static value_t ascii_string_view_split_lines(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofAsciiStringView, self);
+  value_t value = get_ascii_string_view_value(self);
+  utf8_t contents = get_utf8_contents(value);
+  runtime_t *runtime = get_builtin_runtime(args);
+  if (contents.size == 0)
+    // Without this special case the result would be [""].
+    return ROOT(runtime, empty_array);
+  // Scan the string and count line breaks.
+  size_t line_count = 1;
+  size_t unit_size = 0;
+  for (size_t i = 0; i < contents.size; i += unit_size) {
+    if (at_line_break(contents, i, &unit_size))
+      line_count++;
+  }
+  // Build the result array by scanning again in the same way.
+  TRY_DEF(result, new_heap_array(runtime, line_count));
+  size_t last_start = 0;
+  size_t line_index = 0;
+  for (size_t i = 0; i < contents.size; i += unit_size) {
+    if (at_line_break(contents, i, &unit_size)) {
+      utf8_t line_chars = string_substring(contents, last_start, i);
+      TRY_DEF(line, new_heap_utf8(runtime, line_chars));
+      set_array_at(result, line_index, line);
+      line_index++;
+      last_start = i + unit_size;
+    }
+  }
+  utf8_t last_chars = string_substring(contents, last_start, contents.size);
+  TRY_DEF(last_line, new_heap_utf8(runtime, last_chars));
+  set_array_at(result, line_index, last_line);
+  return result;
+}
+
 static value_t ascii_string_from_blob(builtin_arguments_t *args) {
   value_t blob = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofBlob, blob);
@@ -632,6 +685,7 @@ value_t add_ascii_string_view_builtin_implementations(runtime_t *runtime, safe_v
   ADD_BUILTIN_IMPL("ascii_string_view.length", 0, ascii_string_view_length);
   ADD_BUILTIN_IMPL("ascii_string_view.substring", 2, ascii_string_view_substring);
   ADD_BUILTIN_IMPL("ascii_string_view.to_blob", 1, ascii_string_view_to_blob);
+  ADD_BUILTIN_IMPL("ascii_string_view.split_lines", 0, ascii_string_view_split_lines);
   ADD_BUILTIN_IMPL("ascii.string_from_blob", 1, ascii_string_from_blob);
   return success();
 }
