@@ -435,6 +435,7 @@ static inline value_t chase_moved_object(value_t raw) {
   F(CObject,                 c_object,                  _, X, (_, _, _, X, _, _, _, _, _, _), 67)\
   F(CodeBlock,               code_block,                X, _, (_, _, _, _, _, _, X, _, _, _), 49)\
   F(CurrentModuleAst,        current_module_ast,        _, _, (_, _, X, _, _, X, _, _, _, _), 61)\
+  F(DeadWood,                dead_wood,                 _, _, (_, _, _, _, _, _, _, _, _, _), 95)\
   F(DecimalFraction,         decimal_fraction,          _, _, (_, _, X, _, _, _, _, _, _, _), 25)\
   F(EnsureAst,               ensure_ast,                X, X, (_, _, X, _, _, X, _, _, _, _), 74)\
   F(Escape,                  escape,                    _, X, (_, _, _, _, _, _, _, _, _, _), 50)\
@@ -513,7 +514,7 @@ static inline value_t chase_moved_object(value_t raw) {
 // family enum values are not the raw ordinals but the ordinals shifted left by
 // the tag size so that they're tagged as integers. Those values are sometimes
 // stored as uint16s so the ordinals are allowed to take up to 14 bits.
-static const int kNextFamilyOrdinal = 95;
+static const int kNextFamilyOrdinal = 96;
 
 // Enumerates all the object families.
 #define ENUM_HEAP_OBJECT_FAMILIES(F)                                           \
@@ -1289,6 +1290,9 @@ void set_blob_data(value_t self, blob_t data);
 
 // Reads the full contents of an io stream into a blob.
 value_t read_stream_to_blob(runtime_t *runtime, in_stream_t *stream);
+
+// Given a blob of length N, reduces its length to M (M <= N).
+void truncate_blob(runtime_t *runtime, value_t self, size_t new_length);
 
 
 // --- V o i d   P ---
@@ -2159,6 +2163,27 @@ hash_source_state_t *get_hash_source_state(value_t self);
 // TODO: change this to a soft field so it also works for frozen objects and
 //   primitive values.
 ACCESSORS_DECL(hash_source, field);
+
+
+/// ## Dead wood
+///
+/// Dead wood is a type of pseudo heap-object that takes up space but has no
+/// function. The heap is a contiguous array of heap objects and if you need to
+/// clear out part of it it needs to be cleared to valid objects or the gc will
+/// choke. If you write the dead wood species into a word in the heap then that
+/// makes the word a valid species-only object that the gc can understand and
+/// discard on the next collection.
+///
+/// Note that if dead wood starts turning up in nontrivial places or surviving
+/// garbage collection then something is wrong.
+
+static const size_t kDeadWoodSize = HEAP_OBJECT_SIZE(0);
+
+// Writes a dead wood object into the given blob. The blob's size must match the
+// size of a dead wood object. Returns the blob viewed as a dead wood object;
+// cannot fail so it is safe to ignore the return value, indeed it is best to
+// ignore it except for debugging and sanity checking.
+value_t make_dead_wood(runtime_t *runtime, blob_t blob);
 
 
 // --- M i s c ---

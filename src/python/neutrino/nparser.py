@@ -443,8 +443,8 @@ class Parser(object):
     else:
       else_part = ast.Literal(None)
     methods = [
-      ast.Lambda.method(then_part, data.Operation.infix('then')),
-      ast.Lambda.method(else_part, data.Operation.infix('else'))
+      ast.Lambda.method(then_part, data.Operation.infix('then!')),
+      ast.Lambda.method(else_part, data.Operation.infix('else!'))
     ]
     args = [
       ast.Argument(data._SUBJECT, ast.Variable(data.Identifier(-1, data.Path(["core", "if"])))),
@@ -464,8 +464,8 @@ class Parser(object):
     self.expect_word('do')
     body = self.parse_expression(expect_delim)
     methods = [
-      ast.Lambda.method(cond, data.Operation.infix('keep_running')),
-      ast.Lambda.method(body, data.Operation.infix('run'))
+      ast.Lambda.method(cond, data.Operation.infix('keep_running?')),
+      ast.Lambda.method(body, data.Operation.infix('run!'))
     ]
     return ast.Invocation([
       ast.Argument(data._SUBJECT, ast.Variable(data.Identifier(-1, data.Path(["core", "while"])))),

@@ -2,6 +2,7 @@
 # Licensed under the Apache License, Version 2.0 (see LICENSE).
 
 import $assert;
+import $collection;
 import $core;
 
 # Utility that makes it simpler (ideally) to create and run a test process.
@@ -11,8 +12,23 @@ type @ProcessHelper {
   field $this.stdout;
   field $this.stderr;
   field $this.stdin;
+  field $this.output;
 
-  def $this.start! => $this.process.start!;
+  def $this.start! {
+    $this.process.start!;
+    $this.read_stdout! "";
+  }
+
+  def $this.read_stdout!($current) {
+    when def $blob := $this.stdout.in.read! 1024 do {
+      if $blob.is_null? then {
+        $this.output.fulfill! $current;
+      } else {
+        def $str := @core:Ascii.string_from($blob);
+        $this.read_stdout! ($current + $str);
+      }
+    }
+  }
 
   def $this.exit_code => $this.process.exit_code;
 
@@ -24,6 +40,7 @@ def ($This == @ProcessHelper).new($process) {
   $this.stdout := (new @core:io:Pipe());
   $this.stderr := (new @core:io:Pipe());
   $this.stdin := (new @core:io:Pipe());
+  $this.output := (new @core:Promise());
   $this.process.stdout := $this.stdout;
   $this.process.stderr := $this.stderr;
   $this.process.stdin := $this.stdin;
@@ -48,14 +65,14 @@ type @ProcessTest {
   }
 
   def $this.test_simple() {
-    def $p := $this.new_process ["--quiet", "--exit-code", "99"];
+    def $p := $this.new_process ["--exit-code", "99"];
     $p.start!;
     when def $exit_code := $p.exit_code
       do $assert:equals(99, $exit_code);
   }
 
   def $this.test_echo() {
-    def $p := $this.new_process ["--quiet", "--echo-stdin"];
+    def $p := $this.new_process ["--echo-stdin"];
     $p.start!;
     # Write a message to stdin and then close so the program will terminate.
     when def $written := $p.stdin.out.write!("Hello, World!".view(@core:Ascii)) do {

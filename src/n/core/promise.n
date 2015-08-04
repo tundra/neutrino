@@ -32,10 +32,10 @@ def ($this is @Promise).rejected_error;
 ## Returns the value of this promise if it has been resolved, otherwise signals
 ## promise_not_resolved.
 def ($this is @Promise).get => @if($this.is_settled?, fn
-  on.then() => @if($this.is_fulfilled?, fn
-    on.then() => $this.fulfilled_value
-    on.else() => $this.rejected_error)
-  on.else() => leave.promise_not_settled($this));
+  on.then! => @if($this.is_fulfilled?, fn
+    on.then! => $this.fulfilled_value
+    on.else! => $this.rejected_error)
+  on.else! => leave.promise_not_settled($this));
 
 ## Fulfills this promise. After this call the promise will return true for
 ## is_resolved? and get() will return the given value. If the promise is already
@@ -55,8 +55,8 @@ def ($this is @Promise).reject!($args);
 def ($this is @Promise).then($thunk) {
   def $result := new @Promise();
   @ctrino.delay(fn => @if($this.is_fulfilled?, fn
-      on.then() => $result.fulfill!($thunk($this.fulfilled_value))
-      on.else() => $result.reject!($this.rejected_error)),
+      on.then! => $result.fulfill!($thunk($this.fulfilled_value))
+      on.else! => $result.reject!($this.rejected_error)),
     $this);
   $result;
 }
@@ -65,8 +65,8 @@ def ($this is @Promise).then($thunk) {
 ## promise fails.
 def ($this is @Promise).on($handler) {
   @ctrino.delay(fn => @if($this.is_fulfilled?, fn
-      on.then() => null
-      on.else() => module.invoke(subject: $handler, $this.rejected_error)),
+      on.then! => null
+      on.else! => module.invoke(subject: $handler, $this.rejected_error)),
     $this);
 }
 

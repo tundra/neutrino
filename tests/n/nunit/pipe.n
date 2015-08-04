@@ -10,8 +10,10 @@ def $test_simple() {
   def $pipe := new @core:io:Pipe();
   def $p_write := $pipe.out.write!("Hello, World!".view(@core:Ascii));
   $assert:not($p_write.is_settled?);
-  when def $v := $p_write
-    do $assert:equals(13, $v);
+  when def $v := $p_write do {
+    $assert:equals(13, $v);
+    $pipe.out.close!;
+  }
   def $p_read_1 := $pipe.in.read!(5);
   $assert:not($p_read_1.is_settled?);
   when def $v := $p_read_1
@@ -24,6 +26,8 @@ def $test_simple() {
   $assert:not($p_read_3.is_settled?);
   when def $v := $p_read_3
     do $assert:equals("World!", $to_str($v));
+  when def $v := $pipe.in.read!(1)
+    do $assert:equals(null, $v);
 }
 
 do {

@@ -12,8 +12,8 @@ type @Interval is @FiniteCollection {
   def $this.for($thunk) {
     var $i := $this.from;
     def $limit := $this.to;
-    bk $callback.keep_running() => $i < $limit
-       on.run() => { $thunk($i); $i := $i.successor; }
+    bk $callback.keep_running? => $i < $limit
+       on.run! { $thunk($i); $i := $i.successor; }
     in @core:while($callback);
   }
 

@@ -1122,3 +1122,20 @@ TEST(value, type_info) {
   ENUM_DERIVED_OBJECT_GENERA(__TEST_GENUS__)
 #undef __TEST_GENUS__
 }
+
+TEST(value, blob_truncate) {
+  CREATE_RUNTIME();
+
+  value_t blob = new_heap_blob(runtime, 32, afMutable);
+  ASSERT_EQ(32, get_blob_length(blob));
+  ASSERT_EQ(32, get_blob_data(blob).size);
+  for (int i = 31; i >= 0; i--) {
+    size_t new_size = (size_t) i;
+    truncate_blob(runtime, blob, new_size);
+    ASSERT_EQ(new_size, get_blob_length(blob));
+    ASSERT_EQ(new_size, get_blob_data(blob).size);
+    ASSERT_SUCCESS(runtime_validate(runtime, nothing()));
+  }
+
+  DISPOSE_RUNTIME();
+}

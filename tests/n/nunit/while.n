@@ -7,8 +7,8 @@ import $core;
 def $test_while_call() {
   var $i := 0;
   @core:while(fn 
-    on.keep_running() => $i < 10
-    on.run() {
+    on.keep_running? => $i < 10
+    on.run! {
       $assert:that($i < 10);
       $i := $i + 1;
     }
@@ -16,8 +16,8 @@ def $test_while_call() {
   $assert:equals(10, $i);
   $i := 0;
   def $v := @core:while(fn
-    on.keep_running() => $i < 10
-    on.run() => $i := $i + 1);
+    on.keep_running? => $i < 10
+    on.run! => $i := $i + 1);
   $assert:equals(10, $i);
   $assert:equals(null, $v);
 }

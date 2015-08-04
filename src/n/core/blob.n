@@ -5,3 +5,7 @@
 def @Blob := @ctrino.get_builtin_type("Blob");
 
 def type @Blob is @Object;
+
+## Returns the number of bytes in this blob.
+@ctrino.builtin("blob.length")
+def ($this is @Blob).length;

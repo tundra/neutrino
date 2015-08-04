@@ -357,10 +357,17 @@ value_t add_os_process_builtin_implementations(runtime_t *runtime, safe_value_t 
 value_t perform_iop_undertaking_finish(pending_iop_state_t *state,
     value_t process, process_airlock_t *airlock) {
   if (state->iop.type_ == ioRead) {
-    value_t result = deref(state->s_result);
-    set_blob_data(result, state->scratch);
-    TRY(ensure_frozen(airlock->runtime, result));
-    fulfill_promise(deref(state->s_promise), result);
+    if (read_iop_at_eof((read_iop_t*) &state->iop)) {
+      fulfill_promise(deref(state->s_promise), null());
+    } else {
+      value_t result = deref(state->s_result);
+      size_t size = read_iop_bytes_read((read_iop_t*) &state->iop);
+      truncate_blob(airlock->runtime, result, size);
+      blob_t data = blob_new(state->scratch.start, size);
+      set_blob_data(result, data);
+      TRY(ensure_frozen(airlock->runtime, result));
+      fulfill_promise(deref(state->s_promise), result);
+    }
   } else {
     size_t written = write_iop_bytes_written((write_iop_t*) &state->iop);
     fulfill_promise(deref(state->s_promise), new_integer(written));

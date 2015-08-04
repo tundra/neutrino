@@ -15,8 +15,8 @@ def ($this == @Tuple).new($length) => @ctrino.new_array($length);
 def ($this is @Tuple).for($thunk) {
   var $i := 0;
   bk
-    $callback.keep_running() => $i < ($this.length)
-    on.run() {
+    $callback.keep_running? => $i < ($this.length)
+    on.run! {
       $thunk($this[$i]);
       $i := $i + 1;
     }

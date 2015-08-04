@@ -11,8 +11,8 @@ def $test_select() {
 
 ## Test direct calls to the if function.
 def $test_if_call() {
-  $assert:equals(1, @core:if(true, fn on.then() => 1 on.else() => 2));
-  $assert:equals(4, @core:if(false, fn on.then() => 3 on.else() => 4));
+  $assert:equals(1, @core:if(true, fn on.then! => 1 on.else! => 2));
+  $assert:equals(4, @core:if(false, fn on.then! => 3 on.else! => 4));
 }
 
 ## Test the if syntax form used as an expression.

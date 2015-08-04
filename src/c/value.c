@@ -640,7 +640,6 @@ value_t add_ascii_string_view_builtin_implementations(runtime_t *runtime, safe_v
 // --- B l o b ---
 
 GET_FAMILY_PRIMARY_TYPE_IMPL(blob);
-NO_BUILTIN_METHODS(blob);
 
 size_t calc_blob_size(size_t size) {
   return kHeapObjectHeaderSize              // header
@@ -712,6 +711,37 @@ value_t read_stream_to_blob(runtime_t *runtime, in_stream_t *stream) {
   value_t result = new_heap_blob_with_data(runtime, data_blob);
   byte_buffer_dispose(&buffer);
   return result;
+}
+
+void truncate_blob(runtime_t *runtime, value_t self, size_t new_length) {
+  CHECK_REL("expanding blob", new_length, <=, get_blob_length(self));
+  // Truncating a blob is a question of more than just changing the length. The
+  // length is used to calculate the extent of the object in the heap and so if
+  // we just make it shorter that may leave random data past the new end of the
+  // blob. We have to explicitly overwrite the data that's left over with dead
+  // wood so the heap remains a contiguous array of valid objects. For this to
+  // work the bounds of the region left over must be dead-wood-size aligned.
+  address_t object_start = get_heap_object_address(self);
+  size_t new_size = calc_blob_size(new_length);
+  address_t left_over_start = object_start + new_size;
+  CHECK_PTREQ("unaligned start", left_over_start, align_address((uint32_t) kDeadWoodSize, left_over_start));
+  size_t old_size = calc_blob_size(get_blob_length(self));
+  address_t left_over_end = object_start + old_size;
+  CHECK_PTREQ("unaligned start", left_over_end, align_address((uint32_t) kDeadWoodSize, left_over_end));
+  for (address_t addr = left_over_start; addr < left_over_end; addr += kDeadWoodSize)
+    make_dead_wood(runtime, blob_new(addr, kDeadWoodSize));
+  set_blob_length(self, new_length);
+}
+
+static value_t blob_length(builtin_arguments_t *args) {
+  value_t subject = get_builtin_subject(args);
+  CHECK_FAMILY(ofBlob, subject);
+  return new_integer(get_blob_length(subject));
+}
+
+value_t add_blob_builtin_implementations(runtime_t *runtime, safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("blob.length", 0, blob_length);
+  return success();
 }
 
 
@@ -2967,6 +2997,25 @@ value_t add_hash_source_builtin_implementations(runtime_t *runtime, safe_value_t
   return success();
 }
 
+/// ## Dead wood
+
+TRIVIAL_PRINT_ON_IMPL(DeadWood, dead_wood);
+FIXED_GET_MODE_IMPL(dead_wood, vmDeepFrozen);
+
+value_t dead_wood_validate(value_t self) {
+  VALIDATE_FAMILY(ofDeadWood, self);
+  return success();
+}
+
+value_t make_dead_wood(runtime_t *runtime, blob_t blob) {
+  CHECK_EQ("invalid dead wood blob", kValueSize, blob.size);
+  // If we change the size of no-field objects then something has to change here
+  // too in order for dead wood objects to be valid objects.
+  (*((value_t*) blob.start)) = ROOT(runtime, dead_wood_species);
+  value_t result = new_heap_object((address_t) blob.start);
+  CHECK_FAMILY(ofDeadWood, result);
+  return result;
+}
 
 
 // --- M i s c ---
