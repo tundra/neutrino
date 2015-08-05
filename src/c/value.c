@@ -680,11 +680,13 @@ static value_t ascii_string_view_split_lines(builtin_arguments_t *args) {
   return result;
 }
 
+// Scratch storage for a scanf conversion.
 typedef union {
   value_t as_value;
   int as_int;
 } scanf_result_t;
 
+// How many format specifiers do we allow?
 #define kMaxScanfFormats 4
 
 static value_t ascii_string_view_scanf(builtin_arguments_t *args) {
@@ -695,22 +697,23 @@ static value_t ascii_string_view_scanf(builtin_arguments_t *args) {
   CHECK_FAMILY(ofUtf8, format_value);
   utf8_t format = get_utf8_contents(format_value);
   scanf_conversion_t convs[kMaxScanfFormats];
-  int64_t formatc = string_scanf_analyze_conversions(format, convs, kMaxScanfFormats);
-  if (formatc == -1)
+  int64_t convc = string_scanf_analyze_conversions(format, convs, kMaxScanfFormats);
+  if (convc == -1)
     ESCAPE_BUILTIN(args, invalid_scanf_format, format_value);
-  runtime_t *runtime = get_builtin_runtime(args);
-  scanf_result_t results[kMaxScanfFormats];
+  // Prepare the scanf arguments.
+  scanf_result_t scratch[kMaxScanfFormats];
   void *ptrs[kMaxScanfFormats];
-  for (size_t i = 0; i < (size_t) formatc; i++) {
+  runtime_t *runtime = get_builtin_runtime(args);
+  for (size_t i = 0; i < (size_t) convc; i++) {
     switch (convs[i].type) {
       case stString: {
         TRY_DEF(str, new_heap_utf8_empty(runtime, (size_t) convs[i].width));
         ptrs[i] = get_utf8_chars(str);
-        results[i].as_value = str;
+        scratch[i].as_value = str;
         break;
       }
       case stSignedInt:
-        ptrs[i] = &results[i].as_int;
+        ptrs[i] = &scratch[i].as_int;
         break;
       default:
         ESCAPE_BUILTIN(args, invalid_scanf_format, format_value);
@@ -718,25 +721,28 @@ static value_t ascii_string_view_scanf(builtin_arguments_t *args) {
     }
   }
   int64_t scanned = string_scanf(format, get_utf8_contents(input), convs,
-      (size_t) formatc, ptrs);
-  if (scanned != formatc)
+      (size_t) convc, ptrs);
+  if (scanned != convc)
     return null();
-  TRY_DEF(result, new_heap_array(runtime, formatc));
-  for (size_t i = 0; i < (size_t) formatc; i++) {
+  // Then, once scanning has succeeded, get the results back into neutrino
+  // values.
+  TRY_DEF(result, new_heap_array(runtime, convc));
+  for (size_t i = 0; i < (size_t) convc; i++) {
     value_t value = whatever();
     switch (convs[i].type) {
       case stString: {
-        value = results[i].as_value;
+        value = scratch[i].as_value;
         utf8_t full_contents = get_utf8_contents(value);
         utf8_t short_contents = new_c_string(full_contents.chars);
         truncate_utf8(runtime, value, short_contents.size);
         break;
       }
       case stSignedInt:
-        TRY_SET(value, try_new_integer(results[i].as_int));
+        TRY_SET(value, try_new_integer(scratch[i].as_int));
         break;
       default:
-        ESCAPE_BUILTIN(args, invalid_scanf_format, format_value);
+        // This should be handled above.
+        UNREACHABLE("unhandled format type");
         break;
     }
     set_array_at(result, i, value);
@@ -843,6 +849,7 @@ value_t read_stream_to_blob(runtime_t *runtime, in_stream_t *stream) {
 
 void shed_heap_object_tail(runtime_t *runtime, value_t value, size_t old_size,
     size_t new_size) {
+  CHECK_REL("expanding tail", new_size, <=, old_size);
   // Truncating a blob is a question of more than just changing the length. The
   // length is used to calculate the extent of the object in the heap and so if
   // we just make it shorter that may leave random data past the new end of the
