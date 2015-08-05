@@ -88,7 +88,8 @@
   F(no_such_field,              "no_such_field")                               \
   F(no_such_tag,                "no_such_tag")                                 \
   F(unknown_foreign_method,     "unknown_foreign_method")                      \
-  F(is_frozen,                  "is_frozen")
+  F(is_frozen,                  "is_frozen")                                   \
+  F(invalid_scanf_format,       "invalid_scanf_format")
 
 // Invokes the argument for each singleton root (that is, roots that are not
 // generated from the family list).

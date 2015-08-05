@@ -594,6 +594,11 @@ static value_t new_heap_object(address_t addr) {
   return result;
 }
 
+// Clears the last words of the given object such that the garbage collector
+// can cope with them not being part of the given object.
+void shed_heap_object_tail(runtime_t *runtime, value_t value, size_t old_size,
+    size_t new_size);
+
 // Bit cast a value to a void*. Defined as a macro because this is an extremely
 // hot operation so we need to be sure it gets inlined even in debug mode.
 #define value_to_pointer_bit_cast(VALUE) ((void*) (address_arith_t) (VALUE).encoded)
@@ -1259,6 +1264,9 @@ blob_t get_utf8_raw_contents(value_t self);
 
 // Writes the raw contents of the given string on the given buffer
 void string_buffer_append_utf8(string_buffer_t *buf, value_t value);
+
+// Truncates the end of the given string so it becomes the new length.
+void truncate_utf8(runtime_t *runtime, value_t self, size_t new_length);
 
 
 /// ## Ascii string view

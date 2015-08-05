@@ -124,10 +124,62 @@ def $test_split() {
   $run_split_test("a\n\rb", ["a", "", "b"]);
 }
 
+def $run_scanf_test($fmt, $input, $expected) {
+  $assert:equals($expected, $input.view(@core:Ascii).scanf($fmt));
+}
+
+def $run_scanf_invalid_test($fmt) {
+  $assert:equals($fmt, try {"blah".view(@core:Ascii).scanf($fmt); null;} on.invalid_scanf_format($v) => $v);
+}
+
+def $test_scanf() {
+  $run_scanf_test("%i %i %i", "123 456 789", [123, 456, 789]);
+  $run_scanf_test("%i %i %i", "123 456 789", [123, 456, 789]);
+  $run_scanf_test("%8s %i %i", "123 456 789", ["123", 456, 789]);
+  $run_scanf_test("%8s %8s %i", "123 456 789", ["123", "456", 789]);
+  $run_scanf_test("%8s %8s %8s", "123 456 789", ["123", "456", "789"]);
+  $run_scanf_test("%8[a]%8[b]%8[c]", "aaabbbbbccccccc", ["aaa", "bbbbb", "ccccccc"]);
+  $run_scanf_test("%*8s %8s %8s", "123 456 789", ["456", "789"]);
+  $run_scanf_test("%8s %*8s %8s", "123 456 789", ["123", "789"]);
+  $run_scanf_test("%8s %8s %*8s", "123 456 789", ["123", "456"]);
+  $run_scanf_test("%4[%]", "%%%---", ["%%%"]);
+  $run_scanf_test("%4[[]", "[[[---", ["[[["]);
+  $run_scanf_test("%4[]]", "]]]---", ["]]]"]);
+  $run_scanf_test("%4[^]]", "abc]]]", ["abc"]);
+  $run_scanf_test("%4[^]]", "abc^^^", ["abc^"]);
+  $run_scanf_test("%4[^^]", "abc^^^", ["abc"]);
+  $run_scanf_test("%4s%4s", "12345678", ["1234", "5678"]);
+  $run_scanf_test("%d", "45645", [45645]);
+  $run_scanf_test("%d", "00045645", [45645]);
+  $run_scanf_test("%d", "-45645", [0-45645]);
+  $run_scanf_test("%i", "-45645", [0-45645]);
+  $run_scanf_test("%x", "fade", [64222]);
+  $run_scanf_test("%x", "FADE", [64222]);
+  $run_scanf_test("%%", "%", []);
+  $run_scanf_test("foo %x bar", "foo 123 bar", [291]);
+  $run_scanf_test("foo %x bar", "foo 123 bar blah fbo", [291]);
+  $run_scanf_test("foo %x bar", "fo 123 bar", null);
+  $run_scanf_invalid_test("%s");
+  $run_scanf_invalid_test("%o");
+  $run_scanf_invalid_test("%u");
+  $run_scanf_invalid_test("%n");
+  $run_scanf_invalid_test("%e");
+  $run_scanf_invalid_test("%f");
+  $run_scanf_invalid_test("%g");
+  $run_scanf_invalid_test("%p");
+  $run_scanf_invalid_test("%hi");
+  $run_scanf_invalid_test("%li");
+  $run_scanf_invalid_test("%Li");
+  $run_scanf_invalid_test("%");
+  $run_scanf_invalid_test("%4[");
+  $run_scanf_invalid_test("%i %i %i %i %i");
+}
+
 do {
   $test_ascii_view();
   $test_ascii_chars();
   $test_ctype();
   $test_substring();
   $test_split();
+  $test_scanf();
 }

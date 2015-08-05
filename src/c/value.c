@@ -493,6 +493,15 @@ void string_buffer_append_utf8(string_buffer_t *buf, value_t value) {
   string_buffer_printf(buf, "%s", contents.chars);
 }
 
+void truncate_utf8(runtime_t *runtime, value_t self, size_t new_length) {
+  CHECK_REL("expanding string", new_length, <=, get_utf8_length(self));
+  size_t old_length = (size_t) get_utf8_length(self);
+  size_t old_size = calc_utf8_size(old_length);
+  size_t new_size = calc_utf8_size(new_length);
+  set_utf8_length(self, new_length);
+  shed_heap_object_tail(runtime, self, old_size, new_size);
+}
+
 static value_t string_plus_string(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t that = get_builtin_argument(args, 0);
@@ -671,6 +680,70 @@ static value_t ascii_string_view_split_lines(builtin_arguments_t *args) {
   return result;
 }
 
+typedef union {
+  value_t as_value;
+  int as_int;
+} scanf_result_t;
+
+#define kMaxScanfFormats 4
+
+static value_t ascii_string_view_scanf(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofAsciiStringView, self);
+  value_t input = get_ascii_string_view_value(self);
+  value_t format_value = get_builtin_argument(args, 0);
+  CHECK_FAMILY(ofUtf8, format_value);
+  utf8_t format = get_utf8_contents(format_value);
+  scanf_conversion_t convs[kMaxScanfFormats];
+  int64_t formatc = string_scanf_analyze_conversions(format, convs, kMaxScanfFormats);
+  if (formatc == -1)
+    ESCAPE_BUILTIN(args, invalid_scanf_format, format_value);
+  runtime_t *runtime = get_builtin_runtime(args);
+  scanf_result_t results[kMaxScanfFormats];
+  void *ptrs[kMaxScanfFormats];
+  for (size_t i = 0; i < (size_t) formatc; i++) {
+    switch (convs[i].type) {
+      case stString: {
+        TRY_DEF(str, new_heap_utf8_empty(runtime, (size_t) convs[i].width));
+        ptrs[i] = get_utf8_chars(str);
+        results[i].as_value = str;
+        break;
+      }
+      case stSignedInt:
+        ptrs[i] = &results[i].as_int;
+        break;
+      default:
+        ESCAPE_BUILTIN(args, invalid_scanf_format, format_value);
+        break;
+    }
+  }
+  int64_t scanned = string_scanf(format, get_utf8_contents(input), convs,
+      (size_t) formatc, ptrs);
+  if (scanned != formatc)
+    return null();
+  TRY_DEF(result, new_heap_array(runtime, formatc));
+  for (size_t i = 0; i < (size_t) formatc; i++) {
+    value_t value = whatever();
+    switch (convs[i].type) {
+      case stString: {
+        value = results[i].as_value;
+        utf8_t full_contents = get_utf8_contents(value);
+        utf8_t short_contents = new_c_string(full_contents.chars);
+        truncate_utf8(runtime, value, short_contents.size);
+        break;
+      }
+      case stSignedInt:
+        TRY_SET(value, try_new_integer(results[i].as_int));
+        break;
+      default:
+        ESCAPE_BUILTIN(args, invalid_scanf_format, format_value);
+        break;
+    }
+    set_array_at(result, i, value);
+  }
+  return result;
+}
+
 static value_t ascii_string_from_blob(builtin_arguments_t *args) {
   value_t blob = get_builtin_argument(args, 0);
   CHECK_FAMILY(ofBlob, blob);
@@ -686,6 +759,7 @@ value_t add_ascii_string_view_builtin_implementations(runtime_t *runtime, safe_v
   ADD_BUILTIN_IMPL("ascii_string_view.substring", 2, ascii_string_view_substring);
   ADD_BUILTIN_IMPL("ascii_string_view.to_blob", 1, ascii_string_view_to_blob);
   ADD_BUILTIN_IMPL("ascii_string_view.split_lines", 0, ascii_string_view_split_lines);
+  ADD_BUILTIN_IMPL_MAY_ESCAPE("ascii_string_view.scanf", 1, 1, ascii_string_view_scanf);
   ADD_BUILTIN_IMPL("ascii.string_from_blob", 1, ascii_string_from_blob);
   return success();
 }
@@ -767,26 +841,32 @@ value_t read_stream_to_blob(runtime_t *runtime, in_stream_t *stream) {
   return result;
 }
 
-void truncate_blob(runtime_t *runtime, value_t self, size_t new_length) {
-  CHECK_REL("expanding blob", new_length, <=, get_blob_length(self));
+void shed_heap_object_tail(runtime_t *runtime, value_t value, size_t old_size,
+    size_t new_size) {
   // Truncating a blob is a question of more than just changing the length. The
   // length is used to calculate the extent of the object in the heap and so if
   // we just make it shorter that may leave random data past the new end of the
   // blob. We have to explicitly overwrite the data that's left over with dead
   // wood so the heap remains a contiguous array of valid objects. For this to
   // work the bounds of the region left over must be dead-wood-size aligned.
-  address_t object_start = get_heap_object_address(self);
-  size_t new_size = calc_blob_size(new_length);
+  address_t object_start = get_heap_object_address(value);
   address_t left_over_start = object_start + new_size;
   CHECK_PTREQ("unaligned start", left_over_start, align_address(
       (uint32_t) kDeadWoodSize, left_over_start));
-  size_t old_size = calc_blob_size((size_t) get_blob_length(self));
   address_t left_over_end = object_start + old_size;
   CHECK_PTREQ("unaligned start", left_over_end, align_address(
       (uint32_t) kDeadWoodSize, left_over_end));
   for (address_t addr = left_over_start; addr < left_over_end; addr += kDeadWoodSize)
     make_dead_wood(runtime, blob_new(addr, kDeadWoodSize));
+}
+
+void truncate_blob(runtime_t *runtime, value_t self, size_t new_length) {
+  CHECK_REL("expanding blob", new_length, <=, get_blob_length(self));
+  size_t old_length = (size_t) get_blob_length(self);
+  size_t old_size = calc_blob_size(old_length);
+  size_t new_size = calc_blob_size(new_length);
   set_blob_length(self, new_length);
+  shed_heap_object_tail(runtime, self, old_size, new_size);
 }
 
 static value_t blob_length(builtin_arguments_t *args) {
