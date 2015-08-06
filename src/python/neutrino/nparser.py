@@ -34,10 +34,11 @@ class Parser(object):
   _FOR = data.Operation.infix("for")
   _NEW = data.Operation.infix("new")
 
-  def __init__(self, tokens, module):
+  def __init__(self, tokens, module, filename=None):
     self.tokens = tokens
     self.cursor = 0
     self.module = module
+    self.filename = filename
     self.default_subject_guard = ast.Guard.any()
 
   # Does this parser have more tokens to process?
@@ -616,6 +617,9 @@ class Parser(object):
   def parse_functino_signature(self, subject, is_prefix, default_name=None):
     name = default_name
     is_async = False
+    if self.at_punctuation("->"):
+      is_async = True
+      self.expect_punctuation("->")
     if (not is_prefix) and self.at_type(Token.OPERATION):
       (name, is_async) = self.expect_type(Token.OPERATION)
     if name:
@@ -833,6 +837,12 @@ class Parser(object):
   def parse_call_expression(self):
     recv = self.parse_atomic_expression()
     while True:
+      is_async = False
+      if self.at_punctuation('->'):
+        self.expect_punctuation('->')
+        is_async = True
+      elif self.at_punctuation('.'):
+        self.expect_punctuation('.')
       if self.at_punctuation('('):
         selector = Parser._SAUSAGES
         start = '('
@@ -846,7 +856,7 @@ class Parser(object):
       prefix = [
         ast.Argument(data._SUBJECT, recv),
         ast.Argument(data._SELECTOR, ast.Literal(selector)),
-        ast.Argument(data._TRANSPORT, ast.Literal(data._SYNC))
+        ast.Argument(data._TRANSPORT, ast.Literal(data._ASYNC if is_async else data._SYNC))
       ]
       rest = self.parse_arguments(start, end)
       recv = ast.Invocation(prefix + rest)
@@ -1018,6 +1028,7 @@ class Parser(object):
 
   # Creates a new syntax error at the current token.
   def new_syntax_error(self):
+    print self.filename
     return SyntaxError(self.current())
 
 

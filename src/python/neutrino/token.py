@@ -163,6 +163,12 @@ class Tokenizer(object):
   def current(self):
     return self.source[self.cursor]
 
+  def next(self):
+    if self.has_more():
+      return self.source[self.cursor + 1]
+    else:
+      return None
+
   # Skips ahead to the next character
   def advance(self):
     assert self.has_more()
@@ -216,6 +222,8 @@ class Tokenizer(object):
       result = self.scan_identifier(delim)
     elif c == '.':
       result = self.scan_sync_operation(delim)
+    elif c == '-' and (self.next() == '>'):
+      result = self.scan_async_operation(delim)
     elif self.is_operator(c):
       result = self.scan_operator(delim)
     elif self.is_punctuation(c):
@@ -281,6 +289,14 @@ class Tokenizer(object):
     self.advance()
     return self.scan_named_operation(delim, False)
 
+      # Scans over the next asynchronous operation.
+  def scan_async_operation(self, delim):
+    assert self.current() == '-'
+    self.advance()
+    assert self.current() == '>'
+    self.advance()
+    return self.scan_named_operation(delim, True)
+
   # Scans over the next operation assuming that we've already seen the sync/async
   # character (. or ->).
   def scan_named_operation(self, delim, is_async):
@@ -289,7 +305,10 @@ class Tokenizer(object):
       self.advance()
     end = self.cursor
     value = self.slice(start, end)
-    return Token.operation(value, is_async, delim)
+    if len(value) == 0:
+      return Token.punctuation("->" if is_async else ".", delim)
+    else:
+      return Token.operation(value, is_async, delim)
 
   # Scans over the next special operator.
   def scan_operator(self, delim):

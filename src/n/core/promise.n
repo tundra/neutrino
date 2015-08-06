@@ -4,6 +4,8 @@
 ## The built-in type of runtime-native blocks.
 def @Promise := @ctrino.get_builtin_type("Promise");
 
+def type @Promise is @Object;
+
 ## Creates and returns a new unresolved promise.
 def ($this == @Promise).new() => @ctrino.new_pending_promise();
 

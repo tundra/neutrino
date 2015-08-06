@@ -49,7 +49,7 @@ class ModuleCompile(object):
   def parse_source_file(self, name):
     source = open(name, "rt").read()
     tokens = token.tokenize(source)
-    nparser.Parser(tokens, self.module).parse_program()
+    nparser.Parser(tokens, self.module, name).parse_program()
 
   def add_to_library(self, library):
     unbound = self.module.as_unbound_module()

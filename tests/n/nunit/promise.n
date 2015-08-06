@@ -24,7 +24,21 @@ def $test_fail() {
   });
 }
 
+def $defer($fn) => @core:Promise.defer($fn);
+
+def $test_eventual() {
+  $assert:equals(6, 5->successor);
+  when def $s := 6->successor do $assert:equals(7, $s);
+  when def $s := ($defer(fn => 7)->successor)->successor do $assert:equals(9, $s);
+  $assert:equals(15, (10).+(5));
+  $assert:equals(15, (10)->+(5));
+  when def $v := $defer(fn => fn.abc($a, $b) => ($a + $b))->abc(7, 4) do $assert:equals(11, $v);
+  when def $v := $defer(fn => fn($a, $b) => ($a + $b))->(8, 6) do $assert:equals(14, $v);
+  when def $v := $defer(fn => ["x", "y"])->[0] do $assert:equals("x", $v);
+}
+
 do {
   $test_simple_promise();
   $test_fail();
+  $test_eventual();
 }
