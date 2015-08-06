@@ -120,7 +120,8 @@ class Token(object):
 
 _ESCAPES = {
   "n": "\n",
-  "r": "\r"
+  "r": "\r",
+  '"': "\""
 }
 
 def process_escapes(str):
@@ -365,7 +366,10 @@ class Tokenizer(object):
     start = self.cursor
     self.advance()
     while self.has_more() and self.current() != '"':
+      at_slash = (self.current() == "\\")
       self.advance()
+      if at_slash and self.has_more():
+        self.advance()
     if self.has_more():
       self.advance()
     end = self.cursor

@@ -5,6 +5,33 @@ import $assert;
 import $collection;
 import $core;
 
+## Reads the full contents of an input stream and once the end has been reached
+## resolves the given destination promise with the contents split into lines.
+def $read_stream!($dest, $in, $accum) {
+  when def $blob := $in.read! 1024 do {
+    if $blob.is_null? then {
+      # We've reached the end so we can fulfill the promise.
+      $dest.fulfill! ($accum.view(@core:Ascii).split_lines());
+    } else {
+      def $str := @core:Ascii.string_from($blob);
+      $read_stream!($dest, $in, $accum + $str);
+    }
+  }
+}
+
+## Attemt to scanf each line in the given set of lines and on the first
+## successful match returns the matching value.
+def $scan_lines($p_lines, $pattern) {
+  when def $lines := $p_lines do with_escape $e do {
+    for $line in $lines do {
+      def $match := $line.view(@core:Ascii).scanf($pattern);
+      if $match.is_null?.not
+        then $e($match);
+    }
+    null;
+  }
+}
+
 # Utility that makes it simpler (ideally) to create and run a test process.
 type @ProcessHelper {
 
@@ -13,25 +40,38 @@ type @ProcessHelper {
   field $this.stderr;
   field $this.stdin;
   field $this.output;
+  field $this.errors;
 
   def $this.start! {
     $this.process.start!;
-    $this.read_stdout! "";
+    $read_stream!($this.output, $this.stdout.in, "");
+    $read_stream!($this.errors, $this.stderr.in, "");
   }
 
-  def $this.read_stdout!($current) {
-    when def $blob := $this.stdout.in.read! 1024 do {
-      if $blob.is_null? then {
-        # We've reached the end so we can fulfill the output promise.
-        $this.output.fulfill! ($current.view(@core:Ascii).split_lines());
-      } else {
-        def $str := @core:Ascii.string_from($blob);
-        $this.read_stdout! ($current + $str);
-      }
+  # Writes the given string to the process' stdin.
+  def $this.write! $str => $this.stdin.out.write!($str.view(@core:Ascii));
+
+  # Returns a promise for the process' error code.
+  def $this.exit_code => $this.process.exit_code;
+
+  # Returns an array of the process' arguments as reported by the process.
+  def $this.args_out {
+    when def $argc := $this.argc_out do {
+      def $args := (new @core:Tuple($argc));
+      for $i in (0 .to $argc)
+        do $args[$i] := $this.get_arg_out($i);
+      @core:Promise.join($args);
     }
   }
 
-  def $this.exit_code => $this.process.exit_code;
+  # Returns a promise for the process' $index'th argument.
+  def $this.get_arg_out $index {
+    def $format := "ARGV[" + ($index.to(@core:String)) + "]: {%256[^}]}";
+    $scan_lines($this.output, $format)->[0];
+  }
+
+  # Returns a promise for the number of arguments passed to the process.
+  def $this.argc_out => $scan_lines($this.output, "ARGC: {%i}")->[0];
 
 }
 
@@ -42,6 +82,7 @@ def ($This == @ProcessHelper).new($process) {
   $this.stderr := (new @core:io:Pipe());
   $this.stdin := (new @core:io:Pipe());
   $this.output := (new @core:Promise());
+  $this.errors := (new @core:Promise());
   $this.process.stdout := $this.stdout;
   $this.process.stderr := $this.stderr;
   $this.process.stdin := $this.stdin;
@@ -56,6 +97,7 @@ type @ProcessTest {
   def $this.run() {
     $this.test_simple();
     $this.test_echo();
+    $this.test_args();
   }
 
   def $this.new_process($args) {
@@ -76,21 +118,39 @@ type @ProcessTest {
     def $p := $this.new_process ["--echo-stdin"];
     $p.start!;
     # Write a message to stdin and then close so the program will terminate.
-    when def $written := $p.stdin.out.write!("Hello, World!".view(@core:Ascii)) do {
+    when def $written := $p.write! "Hello, World!" do {
       $assert:equals(13, $written);
       $p.stdin.out.close!;
     }
-    # Read the message back from stderr.
-    when def $blob := $p.stderr.in.read!(13) do {
-      def $str := @core:Ascii.string_from($blob);
-      $assert:equals("Hello, World!", $str);
+    when def $errors := $p.errors
+      do $assert:equals(["Hello, World!"], $errors);
+  }
+
+  def $this.test_arg_passing $args_in {
+    def $p := $this.new_process $args_in;
+    $p.start!;
+    when def $exit_code := $p.exit_code do {
+      $assert:equals(0, $exit_code);
+      when def $args_out := $p.args_out do {
+        for $i in (0 .to ($args_in.length))
+          do $assert:equals($args_in[$i], $args_out[$i + 1]);
+      }
     }
+  }
+
+  def $this.test_args {
+    $this.test_arg_passing ["foo"];
+    $this.test_arg_passing ["foo", "bar", "baz"];
+    $this.test_arg_passing ["\"foo\""];
+    $this.test_arg_passing ["\\foo"];
+    $this.test_arg_passing ["foo\\"];
+    $this.test_arg_passing ["^b^l\"^\"a\\^\\h^"];
   }
 
 }
 
 def ($This == @ProcessTest).new($durian_main) {
-  def $this := @core:manager.new_instance(@ProcessTest);
+  def $this := @core:manager.new_instance @ProcessTest;
   $this.durian_main := $durian_main;
   $this;
 }

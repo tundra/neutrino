@@ -37,8 +37,18 @@ def $test_eventual() {
   when def $v := $defer(fn => ["x", "y"])->[0] do $assert:equals("x", $v);
 }
 
+def $test_join() {
+  when def $v := @core:Promise.join []
+    do $assert:equals([], $v);
+  when def $v := @core:Promise.join [$defer(fn => 1)]
+    do $assert:equals([1], $v);
+  when def $v := @core:Promise.join [$defer(fn => "a"), $defer(fn => "b"), $defer(fn => "c")]
+    do $assert:equals(["a", "b", "c"], $v);
+}
+
 do {
   $test_simple_promise();
   $test_fail();
   $test_eventual();
+  $test_join();
 }

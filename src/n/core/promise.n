@@ -48,6 +48,13 @@ def ($this is @Promise).get => @if($this.is_settled?, fn
 @ctrino.builtin("promise.fulfill!")
 def ($this is @Promise).fulfill!($value);
 
+## Fulfilling a promise with another promise will cause it to be fulfilled the
+## same way as the other promise, rather than fulfilling it with the raw
+## promise value which is not particularly useful. Or, if it does turn out to be
+## useful we should probably introduce a separate concept from fulfilling to
+## cover that.
+def ($this is @Promise).fulfill!($other is @Promise) => $other.forward($this);
+
 ## TODO
 @ctrino.builtin("promise.reject!")
 def ($this is @Promise).reject!($args);
@@ -61,6 +68,14 @@ def ($this is @Promise).then($thunk) {
       on.else! => $result.reject!($this.rejected_error)),
     $this);
   $result;
+}
+
+# Schedules the given promise to be settled the same way as this one.
+def ($this is @Promise).forward($that) {
+  @ctrino.delay(fn => @if($this.is_fulfilled?, fn
+      on.then! => $that.fulfill!($this.fulfilled_value)
+      on.else! => $that.reject!($this.rejected_error)),
+    $this);
 }
 
 ## Executes the given exception lambda with the failure arguments if this
@@ -80,6 +95,27 @@ def ($This == @Promise).defer($thunk) {
       try $result.fulfill!($thunk()) 
       on(*) as $error => $result.reject!($error),
     null);
+  $result;
+}
+
+def $schedule_join_promises($promises, $index, $values, $result) {
+  @if($index == ($promises.length), fn
+    on.then! => $result.fulfill!($values)
+    on.else! {
+      def $next := $promises[$index];
+      @when_def($next, fn $value {
+        $values[$index] := $value;
+        $schedule_join_promises($promises, $index + 1, $values, $result);
+      });
+  });
+}
+
+## Given a list of promises, returns a promise that will be fulfilled when all
+## the promises in the list have been with a tuple of the sub-promises' values.
+def ($this == @Promise).join($promises) {
+  def $values := new @Tuple($promises.length);
+  def $result := new @Promise();
+  $schedule_join_promises($promises, 0, $values, $result);
   $result;
 }
 
