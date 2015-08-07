@@ -1,6 +1,8 @@
+import $assert;
 import $core;
 do {
   var $obj := $core:manager.new_instance(@core:Object);
   def $thunk := (fn => $core:print_ln!("Aaaaarrrrrrggghhh"));
-  $core:post_mortem($obj, $thunk);
+  $assert:not($core:post_mortem(4, $thunk));
+  $assert:that($core:post_mortem($obj, $thunk));
 }

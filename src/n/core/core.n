@@ -47,4 +47,9 @@ def $delay($thunk) => @Promise.defer($thunk);
 ## Note that if the thunk holds a reference to the object then this will prevent
 ## the object from ever being collected and hence prevent the thunk from ever
 ## being run. So be careful.
+##
+## Returns true iff the callback was successfully scheduled. The call will fail
+## if the object does not have a well-defined lifetime. For instance, if you
+## try to schedule a callback when the number 4 becomes garbage the call will
+## return false because 4 always exists.
 def $post_mortem($object, $thunk) => @ctrino.schedule_post_mortem($object, $thunk);

@@ -170,6 +170,8 @@ static value_t ctrino_schedule_post_mortem(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_C_OBJECT_TAG(btCtrino, self);
   value_t value = get_builtin_argument(args, 0);
+  if (value_is_immediate(value))
+    return no();
   value_t thunk = get_builtin_argument(args, 1);
   runtime_t *runtime = get_builtin_runtime(args);
   process_airlock_t *airlock = get_process_airlock(get_builtin_process(args));
@@ -183,7 +185,7 @@ static value_t ctrino_schedule_post_mortem(builtin_arguments_t *args) {
   runtime_protect_value_with_flags(runtime, value,
       tfAlwaysWeak | tfSelfDestruct | tfFinalizeExplicit,
       &pv_data);
-  return value;
+  return yes();
 }
 
 static value_t ctrino_to_string(builtin_arguments_t *args) {
