@@ -9,6 +9,7 @@
 
 #include "builtin.h"
 #include "plugin.h"
+#include "undertaking.h"
 
 // Check that fails unless the object is in the specified family.
 #define CHECK_C_OBJECT_TAG(TAG, EXPR)                                               \
@@ -28,6 +29,13 @@ typedef enum {
 // Adds the ctrino method to the given methodspace.
 value_t create_ctrino_factory(runtime_t *runtime, value_t space);
 
+// The state used when scheduling a post-mortem callback.
+struct post_mortem_state_t {
+  undertaking_t as_undertaking;
+  process_airlock_t *airlock;
+  // The thunk to invoke.
+  safe_value_t s_thunk;
+};
 
 /// ## C object species
 

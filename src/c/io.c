@@ -46,7 +46,9 @@ value_t new_heap_os_pipe(runtime_t *runtime) {
   set_os_out_stream_lifeline(out, result);
   set_os_pipe_in(result, in);
   set_os_in_stream_lifeline(in, result);
-  runtime_protect_value_with_flags(runtime, result, tfAlwaysWeak | tfSelfDestruct | tfFinalize, NULL);
+  runtime_protect_value_with_flags(runtime, result,
+      tfAlwaysWeak | tfSelfDestruct | tfFinalizeImplicit,
+      NULL);
   return post_create_sanity_check(result, size);
 }
 
@@ -252,7 +254,9 @@ value_t new_heap_os_process(runtime_t *runtime) {
   set_os_process_stdin_lifeline(result, nothing());
   set_os_process_stdout_lifeline(result, nothing());
   set_os_process_stderr_lifeline(result, nothing());
-  runtime_protect_value_with_flags(runtime, result, tfAlwaysWeak | tfSelfDestruct | tfFinalize, NULL);
+  runtime_protect_value_with_flags(runtime, result,
+      tfAlwaysWeak | tfSelfDestruct | tfFinalizeImplicit,
+      NULL);
   return post_create_sanity_check(result, size);
 }
 

@@ -198,6 +198,10 @@ typedef union {
     is_weak_function_t *is_weak;
     void *is_weak_data;
   } maybe_weak;
+  struct {
+    finalize_explicit_function_t *finalize;
+    void *finalize_data;
+  } finalize_explicit;
 } protect_value_data_t;
 
 // Creates a new object tracker that holds the specified value.

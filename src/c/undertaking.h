@@ -15,7 +15,8 @@
   F(OutgoingRequest, outgoing_request, foreign_request_state_t)                \
   F(PerformIop,      perform_iop,      pending_iop_state_t)                    \
   F(FulfillPromise,  fulfill_promise,  fulfill_promise_state_t)                \
-  F(IncomingRequest, incoming_request, incoming_request_state_t)
+  F(IncomingRequest, incoming_request, incoming_request_state_t)               \
+  F(PostMortem,      post_mortem,      post_mortem_state_t)
 
 typedef struct undertaking_controller_t undertaking_controller_t;
 

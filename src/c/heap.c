@@ -136,7 +136,7 @@ value_t space_for_each_object(space_t *space, value_visitor_o *visitor) {
 // --- G C   S a f e ---
 
 // Data used when iterating object trackers within a heap.
-typedef struct object_tracker_iter_t {
+typedef struct {
   // The current node being visited.
   object_tracker_t *current;
   // The node that indicates when we've reached the end.
@@ -188,13 +188,19 @@ static void object_tracker_iter_advance(object_tracker_iter_t *iter) {
 }
 
 size_t object_tracker_size(uint32_t flags) {
-  bool is_maybe_weak = (flags & tfMaybeWeak) != 0;
-  return is_maybe_weak ? sizeof(maybe_weak_object_tracker_t) : sizeof(object_tracker_t);
+  if ((flags & tfMaybeWeak) != 0) {
+    return sizeof(maybe_weak_object_tracker_t);
+  } else if ((flags & tfFinalizeExplicit) != 0) {
+    return sizeof(finalize_explicit_object_tracker_t);
+  } else {
+    return sizeof(object_tracker_t);
+  }
 }
 
 object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value,
     uint32_t flags, protect_value_data_t *data) {
   CHECK_FALSE("tracker for immediate", value_is_immediate(value));
+  CHECK_FALSE("invalid flags", (flags & tfMaybeWeak) && (flags & tfFinalizeExplicit));
   size_t size = object_tracker_size(flags);
   blob_t memory = allocator_default_malloc(size);
   object_tracker_t *new_tracker = (object_tracker_t*) memory.start;
@@ -213,6 +219,12 @@ object_tracker_t *heap_new_heap_object_tracker(heap_t *heap, value_t value,
     maybe_weak->weakness = wsUnknown;
     maybe_weak->is_weak = data->maybe_weak.is_weak;
     maybe_weak->is_weak_data = data->maybe_weak.is_weak_data;
+  } else if (object_tracker_is_finalize_explicit(new_tracker)) {
+    CHECK_TRUE("no finalize-explicit data", data != NULL);
+    finalize_explicit_object_tracker_t *explithit
+      = finalize_explicit_object_tracker_from(new_tracker);
+    explithit->finalize = data->finalize_explicit.finalize;
+    explithit->finalize_data = data->finalize_explicit.finalize_data;
   }
   return new_tracker;
 }
@@ -339,6 +351,11 @@ value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor,
   return space_for_each_object(&heap->to_space, UPCAST(&delegator));
 }
 
+static value_t finalize_heap_object_explicit(object_tracker_t *raw_tracker) {
+  finalize_explicit_object_tracker_t *tracker = finalize_explicit_object_tracker_from(raw_tracker);
+  return (tracker->finalize)(tracker->finalize_data);
+}
+
 value_t heap_post_process_object_trackers(heap_t *heap) {
   object_tracker_iter_t iter;
   object_tracker_iter_init(&iter, heap, true);
@@ -361,9 +378,11 @@ value_t heap_post_process_object_trackers(heap_t *heap) {
         value_t garbage_value = current->value;
         current->value = nothing();
         current->state |= tsGarbage;
-        if ((current->flags & tfFinalize) != 0)
+        if ((current->flags & tfFinalizeImplicit) != 0)
           // This object has a finalizer; call it.
           TRY(finalize_heap_object(garbage_value));
+        if ((current->flags & tfFinalizeExplicit) != 0)
+          TRY(finalize_heap_object_explicit(current));
         if ((current->flags & tfSelfDestruct) != 0) {
           // This is a self-destructing tracker and it's become time to kill it.
           heap_destroy_object_tracker(heap, current);
@@ -377,7 +396,7 @@ value_t heap_post_process_object_trackers(heap_t *heap) {
 // Is there a action or side-effect associated with the value of this tracker
 // becoming garbage?
 static bool object_tracker_has_action_on_garbage(object_tracker_t *tracker) {
-  return (tracker->flags & (tfSelfDestruct | tfFinalize)) != 0;
+  return (tracker->flags & (tfSelfDestruct | tfFinalizeImplicit | tfFinalizeExplicit)) != 0;
 }
 
 bool heap_collect_before_dispose(heap_t *heap) {

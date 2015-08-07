@@ -1016,6 +1016,17 @@ static bool stack_is_clear(value_t stack) {
   return result;
 }
 
+// Clears all stack fields to null above the current high water mark. This is
+// a cheap hack to ensure that the stack doesn't keep cruft alive. A better
+// solution surely exists but eludes me right now.
+static void zap_stack(value_t stack) {
+  frame_t frame = open_stack(stack);
+  value_t *top = frame_get_stack_piece_top(&frame);
+  for (value_t *current = frame.frame_pointer; current != top; current++)
+    (*current) = null();
+  close_frame(&frame);
+}
+
 // Runs an individual job.
 static value_t run_process_job(job_t *job, safe_value_pool_t *pool,
     safe_value_t s_ambience, safe_value_t s_process) {
@@ -1031,6 +1042,7 @@ static value_t run_process_job(job_t *job, safe_value_pool_t *pool,
     // we clear it.
     clear_stack_to_bottom(get_task_stack(deref(s_task)));
   }
+  zap_stack(get_task_stack(deref(s_task)));
   return result;
 }
 
@@ -1100,16 +1112,28 @@ static value_t run_process_until_idle(safe_value_t s_ambience, safe_value_t s_pr
   return value;
 }
 
+// After running a piece of code there may be hanging post mortems that are
+// ready to run. This runs those.
+static value_t run_process_finalizers(safe_value_t s_ambience, safe_value_t s_process) {
+  runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
+  TRY(runtime_garbage_collect(runtime));
+  return run_process_until_idle(s_ambience, s_process);
+  // TODO: a post mortem may cause other post mortems to be scheduled and those
+  //   should also be run. The trick is to know when there definitely are no
+  //   more which the gc can tell us but that's for later.
+}
+
 value_t run_code_block(safe_value_t s_ambience, safe_value_t s_code) {
   runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
   CREATE_SAFE_VALUE_POOL(runtime, 5, pool);
   TRY_FINALLY {
     // Build a process to run the code within.
     E_S_TRY_DEF(s_process, protect(pool, new_heap_process(runtime)));
-    job_t job;
-    job_init(&job, deref(s_code), null(), nothing());
-    E_TRY(offer_process_job(runtime, deref(s_process), &job));
-    E_RETURN(run_process_until_idle(s_ambience, s_process));
+    job_t job = job_new(deref(s_code), null(), nothing());
+    E_TRY(offer_process_job(runtime, deref(s_process), job));
+    E_TRY_DEF(result, run_process_until_idle(s_ambience, s_process));
+    E_TRY(run_process_finalizers(s_ambience, s_process));
+    E_RETURN(result);
   } FINALLY {
     DISPOSE_SAFE_VALUE_POOL(pool);
   } YRT

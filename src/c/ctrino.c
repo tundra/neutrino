@@ -142,6 +142,50 @@ static value_t ctrino_print_ln(builtin_arguments_t *args) {
   return value;
 }
 
+value_t post_mortem_undertaking_finish(post_mortem_state_t *state, value_t process,
+    process_airlock_t *airlock) {
+  job_t job = job_new(ROOT(airlock->runtime, call_thunk_code_block),
+      deref(state->s_thunk), nothing());
+  offer_process_job(airlock->runtime, process, job);
+  return success();
+}
+
+void post_mortem_undertaking_destroy(runtime_t *runtime, post_mortem_state_t *state) {
+  safe_value_destroy(runtime, state->s_thunk);
+  allocator_default_free_struct(post_mortem_state_t, state);
+}
+
+static value_t finalize_post_mortem(void *raw_data) {
+  // This gets called synchronously by the gc when the object we're waiting for
+  // has become garbage. To avoid doing too much work that affects the gc we
+  // treat this basically as an asynchronous message and just schedule the rest
+  // of the work to be done later on by the process as a normal undertaking.
+  post_mortem_state_t *data = (post_mortem_state_t*) raw_data;
+  process_airlock_begin_undertaking(data->airlock, UPCAST_UNDERTAKING(data));
+  process_airlock_deliver_undertaking(data->airlock, UPCAST_UNDERTAKING(data));
+  return success();
+}
+
+static value_t ctrino_schedule_post_mortem(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_C_OBJECT_TAG(btCtrino, self);
+  value_t value = get_builtin_argument(args, 0);
+  value_t thunk = get_builtin_argument(args, 1);
+  runtime_t *runtime = get_builtin_runtime(args);
+  process_airlock_t *airlock = get_process_airlock(get_builtin_process(args));
+  post_mortem_state_t *pm_data = allocator_default_malloc_struct(post_mortem_state_t);
+  undertaking_init(UPCAST_UNDERTAKING(pm_data), &kPostMortemController);
+  pm_data->airlock = airlock;
+  pm_data->s_thunk = runtime_protect_value(runtime, thunk);
+  protect_value_data_t pv_data;
+  pv_data.finalize_explicit.finalize = finalize_post_mortem;
+  pv_data.finalize_explicit.finalize_data = pm_data;
+  runtime_protect_value_with_flags(runtime, value,
+      tfAlwaysWeak | tfSelfDestruct | tfFinalizeExplicit,
+      &pv_data);
+  return value;
+}
+
 static value_t ctrino_to_string(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t value = get_builtin_argument(args, 0);
@@ -217,9 +261,8 @@ static value_t ctrino_delay(builtin_arguments_t *args) {
   CHECK_FAMILY_OPT(ofPromise, guard);
   value_t process = get_builtin_process(args);
   runtime_t *runtime = get_builtin_runtime(args);
-  job_t job;
-  job_init(&job, ROOT(runtime, call_thunk_code_block), thunk, guard);
-  TRY(offer_process_job(runtime, process, &job));
+  job_t job = job_new(ROOT(runtime, call_thunk_code_block), thunk, guard);
+  TRY(offer_process_job(runtime, process, job));
   return null();
 }
 
@@ -315,7 +358,7 @@ static value_t ctrino_get_environment_variable(builtin_arguments_t *args) {
   return result;
 }
 
-#define kCtrinoMethodCount 28
+#define kCtrinoMethodCount 29
 static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("builtin", 1, ctrino_builtin),
   BUILTIN_METHOD("collect_garbage!", 0, ctrino_collect_garbage),
@@ -341,6 +384,7 @@ static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("new_pending_promise", 0, ctrino_new_pending_promise),
   BUILTIN_METHOD("new_plugin_instance", 1, ctrino_new_plugin_instance),
   BUILTIN_METHOD("print_ln!", 1, ctrino_print_ln),
+  BUILTIN_METHOD("schedule_post_mortem", 2, ctrino_schedule_post_mortem),
   BUILTIN_METHOD("stdin", 0, ctrino_stdin),
   BUILTIN_METHOD("stdout", 0, ctrino_stdout),
   BUILTIN_METHOD("stderr", 0, ctrino_stderr),

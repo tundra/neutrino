@@ -11,6 +11,7 @@ file_names = [
   "delay_happens",
   "leave_failure",
   "lookup_failure",
+  "post_mortem_called",
   "promise_on_happens",
   "standard_streams",
   "then_happens",

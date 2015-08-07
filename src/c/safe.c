@@ -19,6 +19,10 @@ bool object_tracker_is_maybe_weak(object_tracker_t *tracker) {
   return (tracker->flags & tfMaybeWeak) != 0;
 }
 
+bool object_tracker_is_finalize_explicit(object_tracker_t *tracker) {
+  return (tracker->flags & tfFinalizeExplicit) != 0;
+}
+
 bool object_tracker_is_garbage(object_tracker_t *tracker) {
   return (tracker->state & tsGarbage) != 0;
 }
@@ -47,9 +51,15 @@ bool object_tracker_is_currently_weak(object_tracker_t *tracker) {
 }
 
 maybe_weak_object_tracker_t *maybe_weak_object_tracker_from(object_tracker_t *tracker) {
-  return (tracker->flags & tfMaybeWeak) == 0
-      ? NULL
-      : (maybe_weak_object_tracker_t*) tracker;
+  return object_tracker_is_maybe_weak(tracker)
+      ? (maybe_weak_object_tracker_t*) tracker
+      : NULL;
+}
+
+finalize_explicit_object_tracker_t *finalize_explicit_object_tracker_from(object_tracker_t *tracker) {
+  return object_tracker_is_finalize_explicit(tracker)
+      ? (finalize_explicit_object_tracker_t*) tracker
+      : NULL;
 }
 
 safe_value_t object_tracker_to_safe_value(object_tracker_t *handle) {

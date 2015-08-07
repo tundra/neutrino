@@ -1,0 +1,6 @@
+import $core;
+do {
+  var $obj := $core:manager.new_instance(@core:Object);
+  def $thunk := (fn => $core:print_ln!("Aaaaarrrrrrggghhh"));
+  $core:post_mortem($obj, $thunk);
+}

@@ -22,11 +22,16 @@ typedef enum {
   // testing easier without involving a bunch of other flags.
   tfSelfDestruct = 0x2,
   // When the object tracked by this tracker becomes garbage invoke the object's
-  // finalizer. Note that creating multiple finalizing trackers for the same
-  // object will cause the finalizer to be called for each tracker so you either
-  // need to ensure that finalization is idempotent or that only one tracker is
-  // created for an object. Selbstdisziplin haben!
-  tfFinalize = 0x4,
+  // implicit finalizer. Note that creating multiple finalizing trackers for the
+  // same object will cause the same implicit finalizer to be called for each
+  // tracker so you either need to ensure that finalization is idempotent or
+  // that only one tracker is created for an object. Selbstdisziplin haben!
+  tfFinalizeImplicit = 0x4,
+  // When the object tracked by this tracker becomes garbage invoke the explicit
+  // finalize function passed along in the constructor. This can not be set at
+  // the same time as tfMaybeWeak because they both need extra state and making
+  // them mutually exclusive makes that simpler.
+  tfFinalizeExplicit = 0x8,
   // This reference may or may not be weak, depending on the state of the object
   // in question. The predicate used to determine whether the value is weak is
   // passed along in the constructor. Note that only the thread that runs the
@@ -36,7 +41,7 @@ typedef enum {
   // a gc is running they may think the value is strong when the gc believes it
   // is weak and kill the value, hence invalidating the other thread's
   // assumptions.
-  tfMaybeWeak = 0x8
+  tfMaybeWeak = 0x10
 } object_tracker_flags_t;
 
 // Flags set by the gc on object trackers that indicate their current state.
@@ -68,6 +73,9 @@ bool object_tracker_is_always_weak(object_tracker_t *tracker);
 
 // Returns if the given tracker may or may not be weak at any given time.
 bool object_tracker_is_maybe_weak(object_tracker_t *tracker);
+
+// Returns true if the given tracker has an explicit finalizer.
+bool object_tracker_is_finalize_explicit(object_tracker_t *tracker);
 
 // Returns true if the given tracker represented an object that has now become
 // garbage.
@@ -106,6 +114,19 @@ maybe_weak_object_tracker_t *maybe_weak_object_tracker_from(
 // Returns true iff the given object tracker is currently weak. If the tracker
 // is maybe-weak this requires that its weakness has been determined previously.
 bool object_tracker_is_currently_weak(object_tracker_t *tracker);
+
+// Callback invoked when an object is explicitly finalized. Note that there is
+// no reference to the object since at this point it will be dead and invalid.
+typedef value_t (finalize_explicit_function_t)(void *data);
+
+typedef struct {
+  object_tracker_t base;
+  finalize_explicit_function_t *finalize;
+  void *finalize_data;
+} finalize_explicit_object_tracker_t;
+
+finalize_explicit_object_tracker_t *finalize_explicit_object_tracker_from(
+    object_tracker_t *tracker);
 
 // An immutable gc-safe reference. Gc-safe references work much like values,
 // they are tagged like the value they reference. Indeed, for non-objects a safe

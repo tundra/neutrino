@@ -38,3 +38,13 @@ def $is_deep_frozen?($value) => @ctrino.is_deep_frozen?($value);
 ## Delays the execution of the given lambda to a future turn, returning a
 ## promise for the eventual result.
 def $delay($thunk) => @Promise.defer($thunk);
+
+## Schedules the given thunk to be run after the object has been garbage
+## collected. There is no guarantee how long it might take between the object
+## being collected and the thunk being run. Also, not all objects will ever be
+## collected.
+##
+## Note that if the thunk holds a reference to the object then this will prevent
+## the object from ever being collected and hence prevent the thunk from ever
+## being run. So be careful.
+def $post_mortem($object, $thunk) => @ctrino.schedule_post_mortem($object, $thunk);

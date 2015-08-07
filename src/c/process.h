@@ -253,7 +253,7 @@ bool frame_has_flag(frame_t *frame, frame_flag_t flag);
 // currently executing.
 value_t *frame_get_stack_piece_bottom(frame_t *frame);
 
-// Returns a pointer to te top of the stack piece which this frame is currently
+// Returns a pointer to the top of the stack piece which this frame is currently
 // executing.
 value_t *frame_get_stack_piece_top(frame_t *frame);
 
@@ -678,11 +678,10 @@ typedef struct {
 #define kProcessWorkQueueWidth (sizeof(job_t) / sizeof(value_t))
 
 // Initialize a job struct.
-void job_init(job_t *job, value_t code, value_t data, value_t guard);
+job_t job_new(value_t code, value_t data, value_t guard);
 
-// Adds a job to the queue of work to perform for this process. The job struct
-// is copied so it can be disposed immediately after this call.
-value_t offer_process_job(runtime_t *runtime, value_t process, job_t *job);
+// Adds a job to the queue of work to perform for this process.
+value_t offer_process_job(runtime_t *runtime, value_t process, job_t job);
 
 // Stores the next job for the given process that is ready to be run in the out
 // parameter and returns true, unless there are no jobs ready to run in which
