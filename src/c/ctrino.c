@@ -174,6 +174,30 @@ static value_t ctrino_builtin(builtin_arguments_t *args) {
   return new_heap_builtin_marker(runtime, name);
 }
 
+static value_t ctrino_stdin(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_C_OBJECT_TAG(btCtrino, self);
+  runtime_t *runtime = get_builtin_runtime(args);
+  return new_heap_os_in_stream(runtime, file_system_stdin(file_system_native()),
+      nothing());
+}
+
+static value_t ctrino_stdout(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_C_OBJECT_TAG(btCtrino, self);
+  runtime_t *runtime = get_builtin_runtime(args);
+  return new_heap_os_out_stream(runtime, file_system_stdout(file_system_native()),
+      nothing());
+}
+
+static value_t ctrino_stderr(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_C_OBJECT_TAG(btCtrino, self);
+  runtime_t *runtime = get_builtin_runtime(args);
+  return new_heap_os_out_stream(runtime, file_system_stderr(file_system_native()),
+      nothing());
+}
+
 static value_t ctrino_collect_garbage(builtin_arguments_t *args) {
   // Advance past the current instruction forcefully. I'm not 100% sure this
   // isn't unsafe for some reason that hasn't occurred to me but it seems to
@@ -291,7 +315,7 @@ static value_t ctrino_get_environment_variable(builtin_arguments_t *args) {
   return result;
 }
 
-#define kCtrinoMethodCount 25
+#define kCtrinoMethodCount 28
 static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("builtin", 1, ctrino_builtin),
   BUILTIN_METHOD("collect_garbage!", 0, ctrino_collect_garbage),
@@ -317,6 +341,9 @@ static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("new_pending_promise", 0, ctrino_new_pending_promise),
   BUILTIN_METHOD("new_plugin_instance", 1, ctrino_new_plugin_instance),
   BUILTIN_METHOD("print_ln!", 1, ctrino_print_ln),
+  BUILTIN_METHOD("stdin", 0, ctrino_stdin),
+  BUILTIN_METHOD("stdout", 0, ctrino_stdout),
+  BUILTIN_METHOD("stderr", 0, ctrino_stderr),
   BUILTIN_METHOD("to_string", 1, ctrino_to_string)
 };
 

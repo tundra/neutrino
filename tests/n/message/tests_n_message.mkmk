@@ -12,6 +12,7 @@ file_names = [
   "leave_failure",
   "lookup_failure",
   "promise_on_happens",
+  "standard_streams",
   "then_happens",
   "trace_builtin_leave",
   "trace_explicit_leave",

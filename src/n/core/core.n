@@ -6,6 +6,15 @@ import @meta;
 ## Info-log the given value to stdout using the built-in INFO macro.
 def $info!($value) => @ctrino.log_info!($value);
 
+## The standard output stream connected to this process.
+def $stdout := @ctrino.stdout;
+
+## The standard error stream connected to this process.
+def $stderr := @ctrino.stderr;
+
+## The standard input stream connected to this process.
+def $stdin := @ctrino.stdin;
+
 ## Error-log the given value to stdout using the vm's logging but with the
 ## output canonicalized. This will cause the vm execution to return a non-zero
 ## exit code.

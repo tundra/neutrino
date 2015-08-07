@@ -1,0 +1,11 @@
+# Copyright 2014 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+import $core;
+
+do {
+  $core:stdout.write! ("Foo1\n".view($core:Ascii));
+  $core:stderr.write! ("Foo2\n".view($core:Ascii));
+  $core:stdout.write! ("Foo3\n".view($core:Ascii));
+  $core:stderr.write! ("Foo4\n".view($core:Ascii));
+}

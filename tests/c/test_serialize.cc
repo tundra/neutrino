@@ -236,7 +236,7 @@ static opaque_t add_one(opaque_t opaque_count, opaque_t) {
 
 TEST(serialize, collection) {
   extended_runtime_config_t config = *extended_runtime_config_get_default();
-  config.base.semispace_size_bytes = 650 * kKB;
+  config.base.semispace_size_bytes = 750 * kKB;
   CREATE_RUNTIME_WITH_CONFIG(&config);
   CREATE_SAFE_VALUE_POOL(runtime, 1, pool);
 
@@ -272,7 +272,7 @@ TEST(serialize, collection) {
 
   // Assert at least a certain number of collections. The concrete number isn't
   // all that important, it just has to be nontrivial.
-  ASSERT_TRUE(gc_count > 10);
+  ASSERT_REL(gc_count, >=, 10);
 
   runtime_pop_observer(runtime, &observer);
   callback_destroy(observer.on_gc_done);
