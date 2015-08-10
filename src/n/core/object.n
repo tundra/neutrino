@@ -6,7 +6,9 @@ type @Object;
 
 ## Generic converter method that returns the internal string representation of
 ## the given object.
-def ($this is @Object).to($target == @String) => @ctrino.to_string($this);
+def ($this is @Object).to($target == @String) => @ctrino.to_string($this, false);
+
+def ($this is @Object).to_canonical_string => @ctrino.to_string($this, true);
 
 ## Prints the internal representation of this object.
 def ($this is @Object).print() => $this.to(@String).print_raw();

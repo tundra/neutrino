@@ -48,7 +48,7 @@
   F(NewReference,                               1)                             \
   F(Pop,                                        2)                             \
   F(Push,                                       2)                             \
-  F(ReifyArguments,                             3)                             \
+  F(ReifyArguments,                             2)                             \
   F(Return,                                     1)                             \
   F(SetReference,                               1)                             \
   F(SignalEscape,                               4)                             \

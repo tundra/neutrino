@@ -25,6 +25,7 @@ module $core {
     "promise.n",
     "selector.n",
     "string.n",
+    "trace.n",
     "tuple.n"
   ]
 

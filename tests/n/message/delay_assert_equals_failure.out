@@ -1,4 +1,5 @@
 Error: --- backtrace ---
+- leave.assert_failed()
 - :fail()
 - :that(false)
 - :equals(1, 2)

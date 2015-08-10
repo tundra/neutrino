@@ -554,9 +554,9 @@ value_t ensure_roots_owned_values_frozen(runtime_t *runtime, value_t self) {
   // Freeze *all* the things!
   value_field_iter_t iter;
   value_field_iter_init(&iter, self);
-  value_t *field = NULL;
+  value_field_t field = value_field_empty();
   while (value_field_iter_next(&iter, &field))
-    TRY(ensure_frozen(runtime, *field));
+    TRY(ensure_frozen(runtime, *field.ptr));
   return success();
 }
 
@@ -878,10 +878,23 @@ static bool needs_post_migrate_fixup(value_t old_object) {
 
 /// ## Field migration
 
+// Records that a given child value is kept alive by the given parent. Both the
+// parent and child are assumed to be in to-space.
+static void record_backpointer(heap_t *heap, value_t parent, value_t child) {
+  CHECK_FALSE("no backspace", blob_is_empty(heap->backpointer_space));
+  space_t to_space = heap->to_space;
+  address_t child_addr = get_heap_object_address(child);
+  CHECK_REL("outside to space", child_addr, <, to_space.limit);
+  CHECK_REL("outside to space", to_space.start, <=, child_addr);
+  size_t offset = child_addr - to_space.start;
+  address_t backpointer = ((address_t) heap->backpointer_space.start) + offset;
+  *((value_t*) backpointer) = parent;
+}
+
 // Ensures that the given object has a clone in to-space, returning a pointer to
 // it. If there is no pre-existing clone a shallow one will be created.
 static value_t ensure_heap_object_migrated(garbage_collection_state_o *self,
-    value_t old_object) {
+    value_t parent, value_t old_object) {
   // Check if this object has already been moved.
   value_t old_header = get_heap_object_header(old_object);
   if (get_value_domain(old_header) == vdMovedObject) {
@@ -902,6 +915,8 @@ static value_t ensure_heap_object_migrated(garbage_collection_state_o *self,
     value_t new_object = migrate_object_shallow(old_object,
         &self->runtime->heap.to_space);
     CHECK_DOMAIN(vdHeapObject, new_object);
+    if (!blob_is_empty(self->runtime->heap.backpointer_space))
+      record_backpointer(&self->runtime->heap, parent, new_object);
     // Now that we know where the new object is going to be we can schedule the
     // fixup if necessary.
     if (needs_fixup) {
@@ -921,10 +936,10 @@ static value_t ensure_heap_object_migrated(garbage_collection_state_o *self,
 // Returns a new derived object pointer identical to the given one except that
 // it points to the new clone of the host rather than the old one.
 static value_t migrate_derived_object(garbage_collection_state_o *self,
-    value_t old_derived) {
+    value_t parent, value_t old_derived) {
   // Ensure that the host has been migrated.
   value_t old_host = get_derived_object_host(old_derived);
-  value_t new_host = ensure_heap_object_migrated(self, old_host);
+  value_t new_host = ensure_heap_object_migrated(self, parent, old_host);
   // Calculate the new address derived from the new host.
   value_t anchor = get_derived_object_anchor(old_derived);
   size_t host_offset = (size_t) get_derived_object_anchor_host_offset(anchor);
@@ -935,16 +950,16 @@ static value_t migrate_derived_object(garbage_collection_state_o *self,
 // Callback that migrates an object from from to to space, if it hasn't been
 // migrated already.
 static value_t migrate_field_shallow(field_visitor_o *super_self,
-    value_t *field) {
+    value_field_t field) {
   garbage_collection_state_o *self = DOWNCAST(garbage_collection_state_o,
       super_self);
-  value_t old_value = *field;
+  value_t old_value = *field.ptr;
   // If this is not a heap object there's nothing to do.
   value_domain_t domain = get_value_domain(old_value);
   if (domain == vdHeapObject) {
-    TRY_SET(*field, ensure_heap_object_migrated(self, old_value));
+    TRY_SET(*field.ptr, ensure_heap_object_migrated(self, field.parent, old_value));
   } else if (domain == vdDerivedObject) {
-    TRY_SET(*field, migrate_derived_object(self, old_value));
+    TRY_SET(*field.ptr, migrate_derived_object(self, field.parent, old_value));
   }
   return success();
 }
@@ -989,8 +1004,8 @@ value_t runtime_garbage_collect(runtime_t *runtime) {
   garbage_collection_state_o state = garbage_collection_state_new(runtime);
   field_visitor_o *visitor = UPCAST(&state);
   // Shallow migration of all the roots.
-  TRY(field_visitor_visit(visitor, &runtime->roots));
-  TRY(field_visitor_visit(visitor, &runtime->mutable_roots));
+  TRY(field_visitor_visit(visitor, value_field_new(nothing(), &runtime->roots)));
+  TRY(field_visitor_visit(visitor, value_field_new(nothing(), &runtime->mutable_roots)));
   // Shallow migration of everything currently stored in non-weak references in
   // to-space which, since we keep going until all objects have been migrated,
   // effectively makes a deep migration.

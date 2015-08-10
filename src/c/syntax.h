@@ -23,10 +23,6 @@ typedef struct {
   // If this is something it signals that the compiler should reify the
   // arguments in the preamble.
   value_t reify_params_opt;
-  // If we're reifying parameters should the subject be cleared? This is useful
-  // in cases where the subject is "magical" and shouldn't be exposed to the
-  // surface language.
-  bool clear_reified_subject;
 } single_compile_config_t;
 
 // Clears the given config to its defaults.
@@ -54,7 +50,7 @@ value_t compile_expression_with_state(single_compile_state_t *state,
     value_t ast);
 
 // Compiles a method into a bytecode implementation.
-value_t compile_method_body(assembler_t *assm, value_t method_ast, bool is_catch);
+value_t compile_method_body(assembler_t *assm, value_t method_ast);
 
 // Retrying version of compile_expression.
 value_t safe_compile_expression(runtime_t *runtime, safe_value_t ast,

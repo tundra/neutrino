@@ -1,6 +1,3 @@
-Error: --- backtrace ---
-- :fail()
-- :that(false)
 Error: %<condition: UncaughtSignal(escape)>
 Info: --- backtrace ---
 - leave.assert_failed()

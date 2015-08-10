@@ -8,6 +8,7 @@
 #include "freeze.h"
 #include "io.h"
 #include "sync.h"
+#include "tagged-inl.h"
 #include "try-inl.h"
 #include "utils/log.h"
 #include "value-inl.h"
@@ -122,7 +123,7 @@ static value_t ctrino_log_error_canonical(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   value_t value = get_builtin_argument(args, 0);
   CHECK_C_OBJECT_TAG(btCtrino, self);
-  log_message(llError, NULL, 0, "%-9v", value);
+  log_message(llError, NULL, 0, "%-#9v", value);
   return value;
 }
 
@@ -191,12 +192,15 @@ static value_t ctrino_schedule_post_mortem(builtin_arguments_t *args) {
 
 static value_t ctrino_to_string(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
-  value_t value = get_builtin_argument(args, 0);
-  runtime_t *runtime = get_builtin_runtime(args);
   CHECK_C_OBJECT_TAG(btCtrino, self);
+  value_t value = get_builtin_argument(args, 0);
+  value_t canonicalize = get_builtin_argument(args, 1);
+  CHECK_PHYLUM(tpBoolean, canonicalize);
+  runtime_t *runtime = get_builtin_runtime(args);
   string_buffer_t buf;
   string_buffer_init(&buf);
-  string_buffer_printf(&buf, "%9v", value);
+  string_buffer_printf(&buf, get_boolean_value(canonicalize) ? "%-9v" : "%9v",
+      value);
   utf8_t as_string = string_buffer_flush(&buf);
   TRY_FINALLY {
     E_TRY_DEF(result, new_heap_utf8(runtime, as_string));
@@ -391,7 +395,7 @@ static const c_object_method_t kCtrinoMethods[kCtrinoMethodCount] = {
   BUILTIN_METHOD("stdin", 0, ctrino_stdin),
   BUILTIN_METHOD("stdout", 0, ctrino_stdout),
   BUILTIN_METHOD("stderr", 0, ctrino_stderr),
-  BUILTIN_METHOD("to_string", 1, ctrino_to_string)
+  BUILTIN_METHOD("to_string", 2, ctrino_to_string)
 };
 
 value_t create_ctrino_factory(runtime_t *runtime, value_t space) {

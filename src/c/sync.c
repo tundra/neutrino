@@ -44,9 +44,7 @@ value_t get_promise_value(value_t self) {
 value_t get_promise_error(value_t self) {
   CHECK_EQ("getting error of unrejected", psRejected,
       get_promise_state_value(get_promise_state(self)));
-  value_t error = get_promise_payload(self);
-  CHECK_FAMILY(ofReifiedArguments, error);
-  return error;
+  return get_promise_payload(self);
 }
 
 void fulfill_promise(value_t self, value_t value) {
@@ -154,7 +152,6 @@ static value_t promise_reject(builtin_arguments_t *args) {
   value_t self = get_builtin_subject(args);
   CHECK_FAMILY(ofPromise, self);
   value_t error = get_builtin_argument(args, 0);
-  CHECK_FAMILY(ofReifiedArguments, error);
   reject_promise(self, error);
   return error;
 }

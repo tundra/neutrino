@@ -15,8 +15,8 @@ value_t value_visitor_visit(value_visitor_o *self, value_t value) {
   return METHOD(self, visit)(self, value);
 }
 
-value_t field_visitor_visit(field_visitor_o *self, value_t *value) {
-  return METHOD(self, visit)(self, value);
+value_t field_visitor_visit(field_visitor_o *self, value_field_t field) {
+  return METHOD(self, visit)(self, field);
 }
 
 
@@ -275,6 +275,7 @@ value_t heap_init(heap_t *heap, const extended_runtime_config_t *config) {
   heap->root_object_tracker.next = heap->root_object_tracker.prev = &heap->root_object_tracker;
   heap->object_tracker_count = 0;
   heap->creator_ = native_thread_get_current_id();
+  heap->backpointer_space = blob_empty();
   return success();
 }
 
@@ -325,10 +326,10 @@ static value_t field_delegator_visit(value_visitor_o *super_self, value_t object
   // know they must be species but the heap may not be in a state that allows
   // us to easily check that.
   CHECK_DOMAIN(vdHeapObject, *header);
-  field_visitor_visit(self->field_visitor, header);
+  field_visitor_visit(self->field_visitor, value_field_new(object, header));
   value_field_iter_t iter;
   value_field_iter_init(&iter, object);
-  value_t *field;
+  value_field_t field = value_field_empty();
   while (value_field_iter_next(&iter, &field))
     TRY(field_visitor_visit(self->field_visitor, field));
   return success();
@@ -342,7 +343,7 @@ value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor,
   object_tracker_iter_init(&iter, heap, include_weak);
   while (object_tracker_iter_has_current(&iter)) {
     object_tracker_t *current = object_tracker_iter_get_current(&iter);
-    field_visitor_visit(visitor, &current->value);
+    field_visitor_visit(visitor, value_field_new(nothing(), &current->value));
     object_tracker_iter_advance(&iter);
   }
   field_delegator_o delegator;
@@ -354,6 +355,23 @@ value_t heap_for_each_field(heap_t *heap, field_visitor_o *visitor,
 static value_t finalize_heap_object_explicit(object_tracker_t *raw_tracker) {
   finalize_explicit_object_tracker_t *tracker = finalize_explicit_object_tracker_from(raw_tracker);
   return (tracker->finalize)(tracker->finalize_data);
+}
+
+// Print a trace of the path that kept the given tracker's value alive.
+void heap_trace_live_tracker(heap_t *heap, object_tracker_t *tracker, out_stream_t *out) {
+  CHECK_FALSE("no backpointer space", blob_is_empty(heap->backpointer_space));
+  out_stream_printf(out, "Tracker trace %p\n", tracker);
+  value_t current = tracker->value;
+  while (true) {
+    value_type_info_t info = get_value_type_info(current);
+    out_stream_printf(out, " - %s\n", value_type_info_name(info));
+    if (!is_heap_object(current))
+      break;
+    address_t addr = get_heap_object_address(current);
+    size_t offset = addr - heap->to_space.start;
+    address_t back_addr = ((address_t) heap->backpointer_space.start) + offset;
+    current = *((value_t*) back_addr);
+  }
 }
 
 value_t heap_post_process_object_trackers(heap_t *heap) {
@@ -372,6 +390,8 @@ value_t heap_post_process_object_trackers(heap_t *heap) {
         // value ref since the first pass will have skipped this and hence it
         // hasn't been updated yet.
         current->value = get_moved_object_target(header);
+        if ((current->flags & tfTraceLiveness) != 0)
+          heap_trace_live_tracker(heap, current, file_system_stdout(file_system_native()));
       } else {
         // This is a weak reference whose object hasn't been moved so it must
         // be garbage; update the tracker's state accordingly.
@@ -433,7 +453,7 @@ static void maybe_weak_object_tracker_determine_weakness(
 }
 
 // For each maybe-weak object tracker, determine whether it's currently weak.
-static value_t heap_determine_maybe_weak_tracker_weakness(heap_t *heap) {
+static value_t heap_pre_process_object_trackers(heap_t *heap) {
   object_tracker_iter_t iter;
   object_tracker_iter_init(&iter, heap, true);
   while (object_tracker_iter_has_current(&iter)) {
@@ -441,6 +461,12 @@ static value_t heap_determine_maybe_weak_tracker_weakness(heap_t *heap) {
     if (object_tracker_is_maybe_weak(current)) {
       maybe_weak_object_tracker_determine_weakness(
           maybe_weak_object_tracker_from(current));
+    }
+    if ((current->flags & tfTraceLiveness) != 0) {
+      if (blob_is_empty(heap->backpointer_space))
+        // Create the backpointer space when we see the first tracker that
+        // needs tracing.
+        heap->backpointer_space = allocator_default_malloc(heap->to_space.memory.size);
     }
     object_tracker_iter_advance(&iter);
   }
@@ -468,7 +494,7 @@ value_t heap_prepare_garbage_collection(heap_t *heap) {
   space_clear(&heap->to_space);
   // Then create a new empty to-space.
   TRY(space_init(&heap->to_space, &heap->config));
-  TRY(heap_determine_maybe_weak_tracker_weakness(heap));
+  TRY(heap_pre_process_object_trackers(heap));
   return success();
 }
 
@@ -477,10 +503,13 @@ value_t heap_complete_garbage_collection(heap_t *heap) {
   CHECK_FALSE("to space empty", space_is_empty(&heap->to_space));
   heap_clear_maybe_weak_tracker_weakness(heap);
   space_dispose(&heap->from_space);
+  allocator_default_free(heap->backpointer_space);
+  heap->backpointer_space = blob_empty();
   return success();
 }
 
 void value_field_iter_init(value_field_iter_t *iter, value_t value) {
+  iter->value = value;
   if (!is_heap_object(value)) {
     iter->limit = iter->next = NULL;
     return;
@@ -495,11 +524,11 @@ void value_field_iter_init(value_field_iter_t *iter, value_t value) {
   iter->next = object_start + layout.value_offset;
 }
 
-bool value_field_iter_next(value_field_iter_t *iter, value_t **value_out) {
+bool value_field_iter_next(value_field_iter_t *iter, value_field_t *field_out) {
   if (iter->limit == iter->next) {
     return false;
   } else {
-    *value_out = (value_t*) iter->next;
+    *field_out = value_field_new(iter->value, (value_t*) iter->next);
     iter->next += kValueSize;
     return true;
   }

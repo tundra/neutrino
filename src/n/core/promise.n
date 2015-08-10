@@ -12,6 +12,40 @@ def ($this == @Promise).new() => @ctrino.new_pending_promise();
 ## Creates and returns a new unresolved promise.
 def ($this == @Promise).pending() => @ctrino.new_pending_promise();
 
+## A detached signal is a wrapper created around a signal that has been caught
+## and stored for later. If the signal is attached later on using .attached,
+## which returns the signal, nothing happens but if it is never attached an
+## error will be reported.
+type @DetachedSignal {
+
+  field $this.signal;
+  field $this.attachment;
+
+  ## Mark this signal as having been reattached and return the reified signal.
+  ## This mutes logging the error.
+  def $this.attach {
+    (($this.attachment)[0]) := true;
+    $this.signal;
+  }
+
+}
+
+def $maybe_report_detached_signal($attachment, $trace) {
+  @if($attachment[0], fn
+    on.then! => null
+    on.else! => $error!($trace));
+}
+
+def ($This == @DetachedSignal).new($signal, $trace) {
+  def $result := @manager.new_instance(@DetachedSignal);
+  def $attachment := [false];
+  def $str_trace := $trace.to_canonical_string;
+  $result.signal := $signal;
+  $result.attachment := $attachment;
+  $post_mortem($result, fn => $maybe_report_detached_signal($attachment, $str_trace));
+  $result;
+}
+
 ## Returns a value representing the state of the given promise, one of pending,
 ## fulfilled, and rejected.
 @ctrino.builtin("promise.state")
@@ -83,7 +117,7 @@ def ($this is @Promise).forward($that) {
 def ($this is @Promise).on($handler) {
   @ctrino.delay(fn => @if($this.is_fulfilled?, fn
       on.then! => null
-      on.else! => module.invoke(subject: $handler, $this.rejected_error)),
+      on.else! => module.invoke(subject: $handler, $this.rejected_error.attach)),
     $this);
 }
 
@@ -93,7 +127,7 @@ def ($This == @Promise).defer($thunk) {
   def $result := new @Promise();
   @ctrino.delay(fn => 
       try $result.fulfill!($thunk()) 
-      on(*) as $error => $result.reject!($error),
+      on(*) as $error => $result.reject!(new @DetachedSignal($error, @ctrino.get_current_backtrace())),
     null);
   $result;
 }

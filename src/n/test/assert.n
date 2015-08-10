@@ -20,7 +20,4 @@ def $equals(expected: $a, found: $b) {
 }
 
 ## Aborts the test with a failure.
-def $fail() {
-  $core:error!(@ctrino.get_current_backtrace());
-  leave.assert_failed();
-}
+def $fail() => leave.assert_failed();

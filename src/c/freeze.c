@@ -52,15 +52,15 @@ value_t transitively_validate_deep_frozen(runtime_t *runtime, value_t value,
   // Scan through the object's fields.
   value_field_iter_t iter;
   value_field_iter_init(&iter, value);
-  value_t *field = NULL;
+  value_field_t field = value_field_empty();
   while (value_field_iter_next(&iter, &field)) {
     // Try to deep freeze the field's value.
-    value_t ensured = validate_deep_frozen(runtime, *field, offender_out);
+    value_t ensured = validate_deep_frozen(runtime, *field.ptr, offender_out);
     if (is_condition(ensured)) {
       // Deep freezing failed. Restore the object to its previous state and bail.
       TRY(set_value_mode_unchecked(runtime, value, vmFrozen));
       TOPIC_INFO(Freeze, "Failed to validate %v@%x (= %2v)", value,
-          value_field_iter_offset(&iter, value), *field);
+          value_field_iter_offset(&iter, value), *field.ptr);
       return ensured;
     }
   }

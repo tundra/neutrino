@@ -22,6 +22,8 @@ static void format_value(format_handler_o *self, format_request_t *request,
   uint32_t flags = pfNone;
   if ((request->flags & ffDash) != 0)
     flags = flags | pfCanonical;
+  if ((request->flags & ffHash) != 0)
+    flags = flags | pfUnquote;
   print_on_context_t context;
   print_on_context_init(&context, request->buf, flags, depth);
   value_print_on(value, &context);

@@ -41,7 +41,10 @@ typedef enum {
   // a gc is running they may think the value is strong when the gc believes it
   // is weak and kill the value, hence invalidating the other thread's
   // assumptions.
-  tfMaybeWeak = 0x10
+  tfMaybeWeak = 0x10,
+  // When garbage collecting, if the value pointed to by this tracker is live
+  // print a trace of a path that keeps it alive.
+  tfTraceLiveness = 0x20
 } object_tracker_flags_t;
 
 // Flags set by the gc on object trackers that indicate their current state.

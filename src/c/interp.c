@@ -78,13 +78,13 @@ static value_t read_value(code_cache_t *cache, frame_t *frame, size_t offset) {
 }
 
 // Returns the code that implements the given method object.
-static value_t compile_method(runtime_t *runtime, value_t method, bool is_signal_handler) {
+static value_t compile_method(runtime_t *runtime, value_t method) {
   value_t method_ast = get_method_syntax(method);
   value_t fragment = get_method_module_fragment(method);
   assembler_t assm;
   TRY(assembler_init(&assm, runtime, fragment, scope_get_bottom()));
   TRY_FINALLY {
-    E_TRY_DEF(code, compile_method_body(&assm, method_ast, is_signal_handler));
+    E_TRY_DEF(code, compile_method_body(&assm, method_ast));
     E_RETURN(code);
   } FINALLY {
     assembler_dispose(&assm);
@@ -96,7 +96,7 @@ static value_t ensure_method_code(runtime_t *runtime, value_t method) {
   value_t code_ptr = get_method_code_ptr(method);
   value_t code = get_freeze_cheat_value(code_ptr);
   if (is_nothing(code)) {
-    TRY_SET(code, compile_method(runtime, method, false));
+    TRY_SET(code, compile_method(runtime, method));
     // TODO: this is not an initialization, it needs to be changed to a freeze
     // cheat.
     set_freeze_cheat_value(code_ptr, code);
@@ -177,33 +177,20 @@ static always_inline value_t get_caller_call_tags(frame_t *callee) {
   return tags;
 }
 
-// Returns the raw index of the subject argument or a very large value if no
-// subject is found.
-static size_t get_subject_offset(value_t tags) {
-  value_t index = get_call_tags_subject_offset(tags);
-  if (is_nothing(index)) {
-    return 0xFFFF;
-  } else {
-    return (size_t) get_call_tags_offset_at(tags, get_integer_value(index));
-  }
-}
-
 static always_inline value_t do_reify_arguments(runtime_t *runtime, frame_t *frame,
     code_cache_t *cache) {
   value_t argmap = frame_get_argument_map(frame);
   value_t params = read_value(cache, frame, 1);
-  bool clear_subject = !!read_short(cache, frame, 2);
   value_t tags = get_caller_call_tags(frame);
   size_t argc = (size_t) get_array_length(argmap);
   TRY_DEF(values, new_heap_array(runtime, argc));
   TRY_DEF(reified, new_heap_reified_arguments(runtime, params, values,
       argmap, tags));
-  size_t subject_index = clear_subject ? get_subject_offset(tags) : argc;
   for (size_t i = 0; i < argc; i++) {
     // We have to get the raw arguments because extra arguments aren't
     // accessible through frame_get_argument because it uses the param
     // index and extra args don't have a param index.
-    value_t value = (i == subject_index) ? null() : frame_get_raw_argument(frame, i);
+    value_t value = frame_detach_value(frame_get_raw_argument(frame, i));
     set_array_at(values, i, value);
   }
   frame_push_value(frame, reified);

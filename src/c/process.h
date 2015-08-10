@@ -232,6 +232,12 @@ value_t frame_get_argument(frame_t *frame, size_t param_index);
 // Returns the value of the index'th argument in evaluation order.
 value_t frame_get_raw_argument(frame_t *frame, size_t eval_index);
 
+// Given a value that has been read from a frame, returns a value that can be
+// stored in its place in a heap object. This is because some stack values are
+// transient and cannot safely be saved elsewhere so by calling this those
+// values will be replaced by a safe value that can be stored.
+value_t frame_detach_value(value_t value);
+
 // Returns the index'th argument to an invocation using the given tags in sorted
 // tag order from the given frame. The argument is pending in the sense that
 // the call hasn't actually been performed yet, the arguments are just on the

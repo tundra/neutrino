@@ -1,0 +1,7 @@
+# Copyright 2015 the Neutrino authors (see AUTHORS).
+# Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+## The built-in type of a backtrace or stack trace.
+def @Backtrace := @ctrino.get_builtin_type("Backtrace");
+
+def type @Backtrace is @Object;

@@ -409,6 +409,10 @@ value_t frame_get_raw_argument(frame_t *frame, size_t eval_index) {
   return stack_pointer[-(eval_index + 1)];
 }
 
+value_t frame_detach_value(value_t value) {
+  return in_domain(vdDerivedObject, value) ? null() : value;
+}
+
 value_t frame_get_pending_argument_at(frame_t *frame, value_t tags,
     int64_t index) {
   CHECK_FAMILY(ofCallTags, tags);
@@ -831,7 +835,7 @@ value_t capture_backtrace_entry(runtime_t *runtime, frame_t *frame) {
   int64_t arg_count = get_call_tags_entry_count(tags);
   for (int64_t i = 0; i < arg_count; i++) {
     value_t tag = get_call_tags_tag_at(tags, i);
-    value_t arg = frame_get_pending_argument_at(frame, tags, i);
+    value_t arg = frame_detach_value(frame_get_pending_argument_at(frame, tags, i));
     TRY(set_id_hash_map_at(runtime, invocation, tag, arg));
   }
   // Wrap the result in a backtrace entry.
@@ -1040,7 +1044,10 @@ ACCESSORS_IMPL(ReifiedArguments, reified_arguments, snInFamily(ofCallTags),
 value_t reified_arguments_validate(value_t self) {
   VALIDATE_FAMILY(ofReifiedArguments, self);
   VALIDATE_FAMILY(ofArray, get_reified_arguments_params(self));
-  VALIDATE_FAMILY(ofArray, get_reified_arguments_values(self));
+  value_t values = get_reified_arguments_values(self);
+  VALIDATE_FAMILY(ofArray, values);
+  for (int64_t i = 0; i < get_array_length(values); i++)
+    VALIDATE(!in_domain(vdDerivedObject, get_array_at(values, i)));
   VALIDATE_FAMILY(ofArray, get_reified_arguments_argmap(self));
   VALIDATE_FAMILY(ofCallTags, get_reified_arguments_tags(self));
   return success();

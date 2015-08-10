@@ -37,10 +37,10 @@ static bool in_modal_division(heap_object_family_t family) {
 static void deep_frozen_heap_object_validate(value_t value) {
   value_field_iter_t iter;
   value_field_iter_init(&iter, value);
-  value_t *field = NULL;
+  value_field_t field = value_field_empty();
   while (value_field_iter_next(&iter, &field)) {
-    if (!peek_deep_frozen(*field)) {
-      ERROR("Holder: %v, field: %v", value, *field);
+    if (!peek_deep_frozen(*field.ptr)) {
+      ERROR("Holder: %v, field: %v", value, *field.ptr);
       UNREACHABLE("deep frozen reference of not deep frozen");
     }
   }

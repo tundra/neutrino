@@ -56,8 +56,25 @@ value_t value_visitor_visit(value_visitor_o *self, value_t value);
 
 INTERFACE(field_visitor_o);
 
+// Description of the field of a value.
+typedef struct {
+  // The value that holds this field.
+  value_t parent;
+  // Pointer to the field.
+  value_t *ptr;
+} value_field_t;
+
+static value_field_t value_field_new(value_t parent, value_t *ptr) {
+  value_field_t result = {parent, ptr};
+  return result;
+}
+
+static value_field_t value_field_empty() {
+  return value_field_new(new_integer(0), NULL);
+}
+
 // The type of a field (pointer to value) function.
-typedef value_t (*field_visitor_visit_m)(field_visitor_o *self, value_t *field);
+typedef value_t (*field_visitor_visit_m)(field_visitor_o *self, value_field_t field);
 
 struct field_visitor_o_vtable_t {
   field_visitor_visit_m visit;
@@ -70,7 +87,7 @@ struct field_visitor_o {
 };
 
 // Invokes the given callback with the given value.
-value_t field_visitor_visit(field_visitor_o *self, value_t *field);
+value_t field_visitor_visit(field_visitor_o *self, value_field_t field);
 
 // Returns a pointer to a runtime config that holds the default values.
 const extended_runtime_config_t *extended_runtime_config_get_default();
@@ -122,6 +139,7 @@ address_t align_address(address_arith_t alignment, address_t ptr);
 // Returns true if the given address is within the given space.
 bool space_contains(space_t *space, address_t addr);
 
+#define kMaxTraceLivenessTrackers 4
 
 // A full garbage-collectable heap.
 typedef struct {
@@ -139,6 +157,8 @@ typedef struct {
   size_t object_tracker_count;
   // The thread that created this heap.
   native_thread_id_t creator_;
+  // If we're recording backpointers this blob is where they'll be recorded.
+  blob_t backpointer_space;
 } heap_t;
 
 // Initialize the given heap, returning a condition to indicate success or
@@ -216,6 +236,8 @@ void heap_destroy_object_tracker(heap_t *heap, object_tracker_t *gc_safe);
 
 // Data for iterating through all the value fields in an object.
 typedef struct {
+  // The object we're iterating through.
+  value_t value;
   // Points to the next field to return.
   address_t next;
   // Points immediately past the end of the object's fields.
@@ -229,7 +251,7 @@ void value_field_iter_init(value_field_iter_t *iter, value_t value);
 
 // If the iterator has more fields stores the next field in the given out
 // argument, advances the iterator, and returns true. Otherwise returns false.
-bool value_field_iter_next(value_field_iter_t *iter, value_t **field_out);
+bool value_field_iter_next(value_field_iter_t *iter, value_field_t *field_out);
 
 // Returns the offset within the given object of the last field returned from
 // this iterator.
