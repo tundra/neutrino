@@ -673,12 +673,14 @@ typedef struct {
   value_t data;
   // Optional promise that must be resolved before this job can be run.
   value_t guard;
+  // Serial number that uniquely identifies this job.
+  value_t serial;
 } job_t;
 
 #define kProcessWorkQueueWidth (sizeof(job_t) / sizeof(value_t))
 
 // Initialize a job struct.
-job_t job_new(value_t code, value_t data, value_t guard);
+job_t job_new(runtime_t *runtime, value_t code, value_t data, value_t guard);
 
 // Adds a job to the queue of work to perform for this process.
 value_t offer_process_job(runtime_t *runtime, value_t process, job_t job);

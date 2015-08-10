@@ -1018,6 +1018,7 @@ void runtime_clear(runtime_t *runtime) {
   runtime->s_module_loader = empty_safe_value();
   runtime->top_observer = NULL;
   runtime->io_engine = NULL;
+  runtime->next_job_serial = 0;
 }
 
 // Perform any pre-processing we need to do before releasing the runtime.

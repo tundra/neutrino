@@ -144,8 +144,9 @@ static value_t ctrino_print_ln(builtin_arguments_t *args) {
 
 value_t post_mortem_undertaking_finish(post_mortem_state_t *state, value_t process,
     process_airlock_t *airlock) {
-  job_t job = job_new(ROOT(airlock->runtime, call_thunk_code_block),
-      deref(state->s_thunk), nothing());
+  job_t job = job_new(airlock->runtime,
+      ROOT(airlock->runtime, call_thunk_code_block), deref(state->s_thunk),
+      nothing());
   offer_process_job(airlock->runtime, process, job);
   return success();
 }
@@ -263,7 +264,7 @@ static value_t ctrino_delay(builtin_arguments_t *args) {
   CHECK_FAMILY_OPT(ofPromise, guard);
   value_t process = get_builtin_process(args);
   runtime_t *runtime = get_builtin_runtime(args);
-  job_t job = job_new(ROOT(runtime, call_thunk_code_block), thunk, guard);
+  job_t job = job_new(runtime, ROOT(runtime, call_thunk_code_block), thunk, guard);
   TRY(offer_process_job(runtime, process, job));
   return null();
 }

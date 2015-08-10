@@ -335,7 +335,7 @@ value_t incoming_request_undertaking_finish(incoming_request_state_t *state,
   TRY_DEF(thunk, new_heap_incoming_request_thunk(runtime,
       deref(state->capsule->s_service), deref(state->s_request),
       deref(state->s_surface_promise)));
-  job_t job = job_new(ROOT(runtime, call_thunk_code_block), thunk, nothing());
+  job_t job = job_new(runtime, ROOT(runtime, call_thunk_code_block), thunk, nothing());
   TRY(offer_process_job(runtime, process, job));
   return success();
 }

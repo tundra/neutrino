@@ -777,20 +777,20 @@ static value_t run_task_pushing_signals(value_t ambience, value_t task) {
         }
         case ocCreateCallData: {
           size_t argc = read_short(&cache, &frame, 1);
-          TRY_DEF(raw_tags, new_heap_array(runtime, argc));
+          E_TRY_DEF(raw_tags, new_heap_array(runtime, argc));
           for (size_t i = 0; i < argc; i++) {
             value_t tag = frame_peek_value(&frame, 2 * (argc - i) - 1);
             set_array_at(raw_tags, i, tag);
           }
-          TRY_DEF(entries, build_call_tags_entries(runtime, raw_tags));
-          TRY_DEF(call_tags, new_heap_call_tags(runtime, afFreeze, entries));
+          E_TRY_DEF(entries, build_call_tags_entries(runtime, raw_tags));
+          E_TRY_DEF(call_tags, new_heap_call_tags(runtime, afFreeze, entries));
           value_t values = raw_tags;
           for (size_t i = 0; i < argc; i++) {
             value_t value = frame_pop_value(&frame);
             frame_pop_value(&frame);
             set_array_at(values, i, value);
           }
-          TRY_DEF(call_data, new_heap_call_data(runtime, call_tags, values));
+          E_TRY_DEF(call_data, new_heap_call_data(runtime, call_tags, values));
           frame_push_value(&frame, call_data);
           frame.pc += kCreateCallDataOperationSize;
           break;
@@ -1053,14 +1053,17 @@ static value_t run_next_process_job(safe_value_t s_ambience, safe_value_t s_proc
   // First, if there are delivered undertakings ready to be finished we finish
   // those nonblocking.
   TRY(finish_process_delivered_undertakings(deref(s_process), false, NULL));
+  runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
   while (true) {
     job_t job;
+    struct_zero_fill(job);
     // Try to get the next job that's ready to be run.
     if (!take_process_ready_job(deref(s_process), &job)) {
       // There was no job to run. That doesn't mean we're done, it might just
       // mean that we have to wait for some undertakings to be delivered before
       // we can go on.
-      if (atomic_int64_get(&airlock->undelivered_undertakings) > 0) {
+      int64_t undelivered = atomic_int64_get(&airlock->undelivered_undertakings);
+      if (undelivered > 0) {
         // There is at least one open undertaking that hasn't been delivered
         // yet. Wait for that to happen. There is a race condition here where
         // some other undertaking has been delivered in the meantime but that
@@ -1081,11 +1084,16 @@ static value_t run_next_process_job(safe_value_t s_ambience, safe_value_t s_proc
         size_t finish_count = 0;
         TRY(finish_process_delivered_undertakings(deref(s_process), false,
             &finish_count));
-        if (finish_count == 0)
+        if (finish_count == 0) {
+          // There were no more undertakings so we're done it appears.
           return new_condition(ccProcessIdle);
+        } else {
+          // There were more undertakings so loop around and see if a job has
+          // become ready now.
+          continue;
+        }
       }
     }
-    runtime_t *runtime = get_ambience_runtime(deref(s_ambience));
     CREATE_SAFE_VALUE_POOL(runtime, 5, pool);
     TRY_FINALLY {
       E_RETURN(run_process_job(&job, pool, s_ambience, s_process));
@@ -1129,7 +1137,7 @@ value_t run_code_block(safe_value_t s_ambience, safe_value_t s_code) {
   TRY_FINALLY {
     // Build a process to run the code within.
     E_S_TRY_DEF(s_process, protect(pool, new_heap_process(runtime)));
-    job_t job = job_new(deref(s_code), null(), nothing());
+    job_t job = job_new(runtime, deref(s_code), null(), nothing());
     E_TRY(offer_process_job(runtime, deref(s_process), job));
     E_TRY_DEF(result, run_process_until_idle(s_ambience, s_process));
     E_TRY(run_process_finalizers(s_ambience, s_process));

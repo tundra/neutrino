@@ -7,6 +7,7 @@
 #include "io/iop.h"
 #include "sync.h"
 #include "sync/process.h"
+#include "utils/eventseq.h"
 #include "value.h"
 
 /// ## Pipe

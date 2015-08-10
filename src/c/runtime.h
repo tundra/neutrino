@@ -281,6 +281,9 @@ struct runtime_t {
   // The io engine used by this runtime to perform I/O. Starts out NULL and gets
   // set on the first access.
   io_engine_t *io_engine;
+  // The next job serial number. This has to fit in an integer so stick with
+  // 32-bit ints. Also it should be okay if this overflows.
+  uint32_t next_job_serial;
 };
 
 // Creates a new runtime object, storing it in the given runtime out parameter.
