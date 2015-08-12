@@ -5,3 +5,9 @@
 def @Backtrace := @ctrino.get_builtin_type("Backtrace");
 
 def type @Backtrace is @Object;
+
+## Returns a new backtrace that is identical to this one except that if this
+## one contains an entry where the given tag is bound to the given value that
+## entry and all below it are removed.
+@ctrino.builtin("backtrace.remove_below")
+def ($this is @Backtrace).remove_below($tag, $value);

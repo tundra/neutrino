@@ -694,6 +694,7 @@ value_t runtime_init(runtime_t *runtime,
     config = extended_runtime_config_get_default();
   // First reset all the fields to a well-defined value.
   runtime_clear(runtime);
+  event_sequence_init(&runtime->debug_events, 256);
   // Set up the file system pointer. Null means default to the native system.
   runtime->file_system = config->base.file_system;
   if (runtime->file_system == NULL)
@@ -1071,7 +1072,16 @@ value_t runtime_dispose(runtime_t *runtime, uint32_t flags) {
     allocator_default_free_struct(gc_fuzzer_t, runtime->gc_fuzzer);
     runtime->gc_fuzzer = NULL;
   }
+  if (!event_sequence_is_empty(&runtime->debug_events)) {
+    event_sequence_dump(&runtime->debug_events,
+        file_system_stderr(runtime->file_system));
+  }
+  event_sequence_dispose(&runtime->debug_events);
   return result;
+}
+
+void runtime_record_debug_event(runtime_t *runtime, const char *tag, void *payload) {
+  event_sequence_record(&runtime->debug_events, tag, payload);
 }
 
 bool value_is_immediate(value_t value) {

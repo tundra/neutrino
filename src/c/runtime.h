@@ -11,6 +11,7 @@
 #include "heap.h"
 #include "serialize.h"
 #include "sync/mutex.h"
+#include "utils/eventseq.h"
 
 // Enumerates the string table strings that will be stored as easily accessible
 // roots.
@@ -284,6 +285,9 @@ struct runtime_t {
   // The next job serial number. This has to fit in an integer so stick with
   // 32-bit ints. Also it should be okay if this overflows.
   uint32_t next_job_serial;
+  // A debug event sequence that can optionally be used to trace execution. Will
+  // be printed on dispose if non-empty.
+  event_sequence_t debug_events;
 };
 
 // Creates a new runtime object, storing it in the given runtime out parameter.
@@ -402,6 +406,12 @@ value_t roots_init(value_t roots, const extended_runtime_config_t *config,
 static inline value_t get_runtime_root_at(runtime_t *runtime, root_key_t key) {
   return get_roots_entry_at(runtime->roots, key);
 }
+
+// Records a debug event in the given runtime's debug log. This is a lightweight
+// operation and shouldn't impact timing too much because the event won't be
+// printed until the runtime is disposed, and only the last N events will be
+// displayed.
+void runtime_record_debug_event(runtime_t *runtime, const char *tag, void *payload);
 
 // Returns the instance factory that was created for the index'th entry in the
 // plugin list used to create the given runtime.

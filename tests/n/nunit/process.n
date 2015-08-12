@@ -129,8 +129,8 @@ type @ProcessTest {
     $p.start!;
     # Write a message to stdin and then close so the program will terminate.
     when def $written := $p.write! "Hello, World!" do {
-      $assert:equals(13, $written);
       $p.stdin.out.close!;
+      $assert:equals(13, $written);
     }
     when def $errors := $p.errors
       do $assert:equals(["Hello, World!"], $errors);

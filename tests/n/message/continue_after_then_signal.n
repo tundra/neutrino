@@ -1,0 +1,5 @@
+import $core;
+do {
+  $core:delay(fn => $core:print_ln!("a")).then(fn $a => leave.blam! $a);
+  $core:delay(fn => $core:print_ln!("b"));
+}

@@ -98,7 +98,7 @@ def ($this is @Promise).reject!($args);
 def ($this is @Promise).then($thunk) {
   def $result := new @Promise();
   @ctrino.delay(fn => @if($this.is_fulfilled?, fn
-      on.then! => $result.fulfill!($thunk($this.fulfilled_value))
+      on.then! => $forward_thunk($result, fn => $thunk($this.fulfilled_value))
       on.else! => $result.reject!($this.rejected_error)),
     $this);
   $result;
@@ -121,14 +121,27 @@ def ($this is @Promise).on($handler) {
     $this);
 }
 
+## Executes the given thunk and resolves the given promise appropriately
+## according to how the thunk completed.
+def $forward_thunk($promise, $thunk) {
+  try {
+    $promise.fulfill!($thunk());
+  } on(*) as $error {
+    # We censor the stack trace so that the machinery below the call to the
+    # thunk is hidden.
+    def $trace := @ctrino.get_current_backtrace().remove_below(subject, $thunk);
+    # Since we're capturing the signal and there is no guarantee that it will
+    # be re-raised and handled we wrap it in a detached signal which will deal
+    # with reporting an error in that case.
+    $promise.reject!(new @DetachedSignal($error, $trace));
+  }
+}
+
 ## Execute the given thunk in a subsequent turn. Returns a promise for the
 ## result.
 def ($This == @Promise).defer($thunk) {
   def $result := new @Promise();
-  @ctrino.delay(fn => 
-      try $result.fulfill!($thunk()) 
-      on(*) as $error => $result.reject!(new @DetachedSignal($error, @ctrino.get_current_backtrace())),
-    null);
+  @ctrino.delay(fn => $forward_thunk($result, $thunk), null);
   $result;
 }
 

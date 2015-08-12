@@ -621,7 +621,6 @@ void get_refractor_refracted_frame(value_t self, size_t block_depth,
 
 FIXED_GET_MODE_IMPL(backtrace, vmMutable);
 GET_FAMILY_PRIMARY_TYPE_IMPL(backtrace);
-NO_BUILTIN_METHODS(backtrace);
 
 ACCESSORS_IMPL(Backtrace, backtrace, snInFamily(ofArrayBuffer), Entries,
     entries);
@@ -661,6 +660,46 @@ value_t capture_backtrace(runtime_t *runtime, frame_t *top, size_t skip_count) {
     }
   } while (frame_iter_advance(&iter));
   return new_heap_backtrace(runtime, frames);
+}
+
+// Given a backtrace returns the first index, counted from the top, at which an
+// entry contains a mapping from the given tag to the given value. If no entry
+// is found -1 is returned.
+static int64_t get_backtrace_entry_index(value_t trace, value_t tag, value_t value) {
+  value_t entries = get_backtrace_entries(trace);
+  for (int64_t i = 0; i < get_array_buffer_length(entries); i++) {
+    value_t entry = get_array_buffer_at(entries, i);
+    value_t invocation = get_backtrace_entry_invocation(entry);
+    if (value_identity_compare(get_id_hash_map_at(invocation, tag), value))
+      // Note that value_identity_compare implicitly deals with the case where
+      // the result is a condition.
+      return i;
+  }
+  return -1;
+}
+
+static value_t backtrace_remove_below(builtin_arguments_t *args) {
+  value_t self = get_builtin_subject(args);
+  CHECK_FAMILY(ofBacktrace, self);
+  value_t tag = get_builtin_argument(args, 0);
+  value_t value = get_builtin_argument(args, 1);
+  int64_t index = get_backtrace_entry_index(self, tag, value);
+  if (index == -1)
+    // Didn't find an entry that matched so just return the value unchanged.
+    return self;
+  runtime_t *runtime = get_builtin_runtime(args);
+  value_t old_entries = get_backtrace_entries(self);
+  // Copy over the top entries to a new backtrace.
+  TRY_DEF(new_entries, new_heap_array_buffer(runtime, index));
+  for (int64_t i = 0; i < index; i++)
+    TRY(add_to_array_buffer(runtime, new_entries, get_array_buffer_at(old_entries, i)));
+  return new_heap_backtrace(runtime, new_entries);
+}
+
+value_t add_backtrace_builtin_implementations(runtime_t *runtime,
+    safe_value_t s_map) {
+  ADD_BUILTIN_IMPL("backtrace.remove_below", 2, backtrace_remove_below);
+  return success();
 }
 
 // --- B a c k t r a c e   e n t r y ---
