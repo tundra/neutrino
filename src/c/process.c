@@ -690,7 +690,7 @@ static value_t backtrace_remove_below(builtin_arguments_t *args) {
   runtime_t *runtime = get_builtin_runtime(args);
   value_t old_entries = get_backtrace_entries(self);
   // Copy over the top entries to a new backtrace.
-  TRY_DEF(new_entries, new_heap_array_buffer(runtime, index));
+  TRY_DEF(new_entries, new_heap_array_buffer(runtime, (size_t) index));
   for (int64_t i = 0; i < index; i++)
     TRY(add_to_array_buffer(runtime, new_entries, get_array_buffer_at(old_entries, i)));
   return new_heap_backtrace(runtime, new_entries);
