@@ -8,6 +8,8 @@ type @Object;
 ## the given object.
 def ($this is @Object).to($target == @String) => @ctrino.to_string($this, false);
 
+## Converts this object to a canonical string, one that doesn't change across
+## executions.
 def ($this is @Object).to_canonical_string => @ctrino.to_string($this, true);
 
 ## Prints the internal representation of this object.

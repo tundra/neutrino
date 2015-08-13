@@ -357,7 +357,9 @@ static value_t finalize_heap_object_explicit(object_tracker_t *raw_tracker) {
   return (tracker->finalize)(tracker->finalize_data);
 }
 
-// Print a trace of the path that kept the given tracker's value alive.
+// Print a trace of the path that kept the given tracker's value alive. This
+// can only be called after a gc has migrated all objects but before it is
+// complete.
 void heap_trace_live_tracker(heap_t *heap, object_tracker_t *tracker, out_stream_t *out) {
   CHECK_FALSE("no backpointer space", blob_is_empty(heap->backpointer_space));
   out_stream_printf(out, "Tracker trace %p\n", tracker);
@@ -367,6 +369,8 @@ void heap_trace_live_tracker(heap_t *heap, object_tracker_t *tracker, out_stream
     out_stream_printf(out, " - %s\n", value_type_info_name(info));
     if (!is_heap_object(current))
       break;
+    // Use the backpointer space to find the object that kept the current one
+    // alive.
     address_t addr = get_heap_object_address(current);
     size_t offset = addr - heap->to_space.start;
     address_t back_addr = ((address_t) heap->backpointer_space.start) + offset;

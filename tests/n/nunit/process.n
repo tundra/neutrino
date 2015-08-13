@@ -64,16 +64,6 @@ type @ProcessHelper {
     }
   }
 
-  def $this.other() => $this.read_from_the_web(0, new @core:Promise());
-
-  def $this.read_from_the_web($i, $result) {
-    when def $v := $xhr($i) do {
-      $process($v);
-      $this.read_from_the_web($i + 1, $result).forward($result);
-      $result;
-    }
-  }
-
   # Returns a promise for the process' $index'th argument.
   def $this.get_arg_out $index {
     def $format := "ARGV[" + ($index.to(@core:String)) + "]: {%256[^}]}";
@@ -122,7 +112,7 @@ type @ProcessTest {
     $p.start!;
     when def $exit_code := $p.exit_code
       do $assert:equals(99, $exit_code);
-  } 
+  }
 
   def $this.test_echo() {
     def $p := $this.new_process ["--echo-stdin"];

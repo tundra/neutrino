@@ -885,8 +885,8 @@ static void record_backpointer(heap_t *heap, value_t parent, value_t child) {
   CHECK_FALSE("no backspace", blob_is_empty(heap->backpointer_space));
   space_t to_space = heap->to_space;
   address_t child_addr = get_heap_object_address(child);
-  CHECK_REL("outside to space", child_addr, <, to_space.limit);
-  CHECK_REL("outside to space", to_space.start, <=, child_addr);
+  CHECK_REL("outside to space", (address_arith_t) child_addr, <, (address_arith_t) to_space.limit);
+  CHECK_REL("outside to space", (address_arith_t) to_space.start, <=, (address_arith_t) child_addr);
   size_t offset = child_addr - to_space.start;
   address_t backpointer = ((address_t) heap->backpointer_space.start) + offset;
   *((value_t*) backpointer) = parent;

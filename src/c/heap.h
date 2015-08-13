@@ -64,16 +64,18 @@ typedef struct {
   value_t *ptr;
 } value_field_t;
 
+// Bundles the two values together as a value field.
 static value_field_t value_field_new(value_t parent, value_t *ptr) {
   value_field_t result = {parent, ptr};
   return result;
 }
 
+// Returns a well-defined field with no meaningful contents.
 static value_field_t value_field_empty() {
   return value_field_new(new_integer(0), NULL);
 }
 
-// The type of a field (pointer to value) function.
+// The type of a field callback function.
 typedef value_t (*field_visitor_visit_m)(field_visitor_o *self, value_field_t field);
 
 struct field_visitor_o_vtable_t {
@@ -138,8 +140,6 @@ address_t align_address(address_arith_t alignment, address_t ptr);
 
 // Returns true if the given address is within the given space.
 bool space_contains(space_t *space, address_t addr);
-
-#define kMaxTraceLivenessTrackers 4
 
 // A full garbage-collectable heap.
 typedef struct {

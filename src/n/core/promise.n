@@ -30,15 +30,22 @@ type @DetachedSignal {
 
 }
 
+## Error-log the given trace if the detached signal hasn't been attached. We use
+## the signal's fields rather than the whole signal because the signal will have
+## been gc'ed by the time this gets called.
 def $maybe_report_detached_signal($attachment, $trace) {
   @if($attachment[0], fn
     on.then! => null
     on.else! => $error!($trace));
 }
 
+## Creates and returns a new detached signal that will print the given trace if
+## not attached.
 def ($This == @DetachedSignal).new($signal, $trace) {
   def $result := @manager.new_instance(@DetachedSignal);
   def $attachment := [false];
+  # Convert the trace to a string since otherwise it may keep the signal alive.
+  # Probably we need a better solution for this but for now it'll do.
   def $str_trace := $trace.to_canonical_string;
   $result.signal := $signal;
   $result.attachment := $attachment;
