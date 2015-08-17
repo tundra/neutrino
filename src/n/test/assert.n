@@ -19,5 +19,15 @@ def $equals(expected: $a, found: $b) {
   $b;
 }
 
+## Assert that when $a and $b are fulfilled their values are equal. Both $a and
+## $b can be either a promise or a concrete value.
+def $yields($a, $b) {
+  when def $av := $a do {
+    when def $bv := $b do {
+      $equals($av, $bv);
+    }
+  }
+}
+
 ## Aborts the test with a failure.
 def $fail() => leave.assert_failed();

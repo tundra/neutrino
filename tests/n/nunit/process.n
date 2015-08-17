@@ -73,6 +73,11 @@ type @ProcessHelper {
   # Returns a promise for the number of arguments passed to the process.
   def $this.argc_out => $scan_lines($this.output, "ARGC: {%i}")->[0];
 
+  ## Is the stream with the given name a tty when viewed from the process?
+  def $this.is_a_tty? $stream =>
+    when def $code := $scan_lines($this.output, "ISATTY[" + $stream + "]: {%i}")->[0]
+      do ($code == 0).not;
+
 }
 
 def ($This == @ProcessHelper).new($process) {
@@ -136,6 +141,9 @@ type @ProcessTest {
           do $assert:equals($args_in[$i], $args_out[$i + 1]);
       }
     }
+    $assert:yields(false, $p.is_a_tty? "in");
+    $assert:yields(false, $p.is_a_tty? "out");
+    $assert:yields(false, $p.is_a_tty? "err");
   }
 
   def $this.test_args {
