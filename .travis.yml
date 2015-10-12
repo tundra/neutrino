@@ -5,6 +5,11 @@ compiler: gcc
 script: ./configure --noisy && ./build.sh run-tests
 before_install: git submodule update --init --recursive
 install: source ./tools/enter-devenv.sh
+sudo: false
+addons:
+  apt:
+    packages:
+    - python-virtualenv
 
 matrix:
   include:
@@ -13,7 +18,12 @@ matrix:
       compiler: clang
       script: ./configure --debug --valgrind --noisy && ./build.sh run-tests
       before_install: git submodule update --init --recursive
-      install: source ./tools/enter-devenv.sh && sudo apt-get update && sudo apt-get install valgrind
+      install: source ./tools/enter-devenv.sh
+      addons:
+        apt:
+          packages:
+          - python-virtualenv
+          - valgrind
     # Test a debug build with expensive checks but not under valgrind.
     - language: c
       compiler: clang
