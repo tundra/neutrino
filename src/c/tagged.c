@@ -127,11 +127,11 @@ relation_t compare_float_32(float32_t a, float32_t b) {
 }
 
 value_t float_32_infinity() {
-  return new_float_32(INFINITY);
+  return new_float_32(kFloatInfinity);
 }
 
 value_t float_32_minus_infinity() {
-  return new_float_32(-INFINITY);
+  return new_float_32(-kFloatInfinity);
 }
 
 value_t float_32_nan() {
