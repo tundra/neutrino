@@ -45,7 +45,7 @@ value_t escape_builtin(builtin_arguments_t *args, value_array_t values);
 
 // Convenience macro for escaping from a builtin. Builds the appropriate
 // arguments to escape_builtin, calls it and returns the result.
-#define __GEN_ESCAPE_ARG__(VAL) , (VAL)
+#define __GEN_ESCAPE_ARG__(VAL, _) , (VAL)
 #define ESCAPE_BUILTIN(ARGS, selector, ...) do {                               \
   builtin_arguments_t *__args__ = (ARGS);                                      \
   runtime_t *__runtime__ = get_builtin_runtime(__args__);                      \
@@ -53,10 +53,10 @@ value_t escape_builtin(builtin_arguments_t *args, value_array_t values);
     null(),                                                                    \
     RSEL(__runtime__, selector),                                               \
     transport_sync()                                                           \
-    FOR_EACH_VA_ARG(__GEN_ESCAPE_ARG__, __VA_ARGS__)                           \
+    FOR_EACH_VA_ARG(__GEN_ESCAPE_ARG__, _, __VA_ARGS__)                        \
   };                                                                           \
   return escape_builtin(__args__,                                              \
-      new_value_array(values, VA_ARGC(__VA_ARGS__) + kImplicitArgumentCount));                      \
+      new_value_array(values, VA_ARGC(__VA_ARGS__) + kImplicitArgumentCount)); \
 } while (false)
 
 // Signature of a function that implements a built-in method.

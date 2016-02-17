@@ -106,7 +106,7 @@ class Ci(object):
     # On windows the $0 argument to mkmk gets messed up so we pass the command
     # explicitly. On linux it's fine automatically but there's no harm in
     # passing it anyway, that's one less special case.
-    run_mkmk_init = ["mkmk", "init", "--config", flags["config"], "--self", "mkmk", sticky_init_flags] + init_flags
+    run_mkmk_init = ["mkmk", "init", "--config", flags["config"], "--self", "mkmk", "--fail-on-devutils", sticky_init_flags] + init_flags
     build_script = "build.bat" if self.is_windows() else "./build.sh"
     run_clean_opt = [[build_script, "clean"]] if always_clean else []
     run_build = [build_script] + run_flags
